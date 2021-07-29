@@ -253,7 +253,7 @@ def test_superstaq_client_get_job(mock_get: mock.MagicMock) -> None:
 
     expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     mock_get.assert_called_with(
-        "http://example.com/v0.1/jobs/job_id", headers=expected_headers, verify=False
+        "http://example.com/v0.1/job/job_id", headers=expected_headers, verify=False
     )
 
 
