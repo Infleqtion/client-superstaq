@@ -30,7 +30,7 @@ print(cirq_superstaq_packages)
 setup(
     name=name,
     version=__version__,
-    url="https://github.com/SupertechLabs/SuperstaQ",
+    url="https://github.com/SupertechLabs/cirq-superstaq",
     author="Super.tech",
     author_email="pranav@super.tech",
     python_requires=(">=3.8.0"),
