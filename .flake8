@@ -1,7 +1,6 @@
 [flake8]
 
 count = True
-exclude = examples/quantum-benchmark-suite
 max-complexity = 10
 max-line-length = 100
 show_source = True
@@ -10,4 +9,3 @@ statistics = True
 
 # specific configurations for flake8-import-order plugin:
 import-order-style = smarkets
-application-import-names = superstaq, web  # these are the libraries considered local
