@@ -17,6 +17,7 @@ import os
 from typing import Optional
 
 import cirq
+
 import cirq_superstaq
 from cirq_superstaq import job, superstaq_client
 

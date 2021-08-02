@@ -14,8 +14,9 @@
 
 from unittest import mock
 
-import cirq_superstaq as superstaq
 import pytest
+
+import cirq_superstaq as superstaq
 
 
 def test_job_fields() -> None:

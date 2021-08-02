@@ -15,9 +15,10 @@ import os
 from unittest import mock
 
 import cirq
-import cirq_superstaq
 import pytest
 import sympy
+
+import cirq_superstaq
 
 
 def test_service_run() -> None:

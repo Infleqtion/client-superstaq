@@ -20,8 +20,10 @@ from cirq_superstaq.superstaq_exceptions import (
     SuperstaQNotFoundException,
     SuperstaQUnsuccessfulJobException,
 )
+from .applications import aqt_compile
 
 __all__ = [
+    "aqt_compile",
     "API_URL",
     "API_VERSION",
     "Job",

@@ -15,9 +15,10 @@ import io
 import json
 from unittest import mock
 
-import cirq_superstaq as superstaq
 import pytest
 import requests
+
+import cirq_superstaq as superstaq
 
 
 def test_superstaq_exception_str() -> None:

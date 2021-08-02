@@ -18,8 +18,9 @@ import time
 import urllib
 from typing import Any, Callable, cast, Dict, Optional
 
-import cirq_superstaq
 import requests
+
+import cirq_superstaq
 
 
 class _SuperstaQClient:
