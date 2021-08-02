@@ -4,11 +4,11 @@ import os
 import cirq
 import requests
 
-import cirq_superstaq as css
+from cirq_superstaq import API_URL, API_VERSION
 
 
 def _get_api_url() -> str:
-    return os.getenv("SUPERSTAQ_REMOTE_HOST", default=css.API_URL)
+    return os.getenv("SUPERSTAQ_REMOTE_HOST", default=API_URL)
 
 
 def _get_headers() -> dict:
@@ -22,9 +22,9 @@ def _should_verify_requests() -> bool:
     """Returns the appropriate ``verify`` kwarg for requests.
 
     When we test locally, we don't have a certificate so we can't verify.
-    When running against the production server (css.API_URL), we should verify.
+    When running against the production server (API_URL), we should verify.
     """
-    return _get_api_url() == css.API_URL
+    return _get_api_url() == API_URL
 
 
 def aqt_compile(circuit: cirq.Circuit) -> cirq.Circuit:
@@ -39,7 +39,7 @@ def aqt_compile(circuit: cirq.Circuit) -> cirq.Circuit:
     superstaq_json = {"circuit": json.loads(cirq.to_json(circuit))}
 
     result = requests.post(
-        _get_api_url() + "/" + css.API_VERSION + "/aqt_compile",
+        _get_api_url() + "/" + API_VERSION + "/aqt_compile",
         json=superstaq_json,
         headers=_get_headers(),
         verify=_should_verify_requests(),
