@@ -14,21 +14,21 @@ backend = superstaq.get_backend("ibmq_qasm_simulator")
 qc1 = qiskit.QuantumCircuit(2, 2)
 qc1.h(0)
 qc1.cx(0, 1)
-qc1.measure([0,1], [0,1])
+qc1.measure([0, 1], [0, 1])
 
 # 3-qubit GHZ state
-qc2 = qiskit.QuantumCircuit(3,3)
+qc2 = qiskit.QuantumCircuit(3, 3)
 qc2.h(0)
-qc2.cx(0,1)
-qc2.cx(0,2)
-qc2.measure([0,1,2], [0,1,2])
+qc2.cx(0, 1)
+qc2.cx(0, 2)
+qc2.measure([0, 1, 2], [0, 1, 2])
 
 
 """
 Submit list of jobs to backend. Circuits submitted simultaneously 
 will run with the same backend and the same number of shots.
 """
-job = backend.run([qc1,qc2], shots=100)
+job = backend.run([qc1, qc2], shots=100)
 
 # List of result counts
 print(job.result().get_counts())
@@ -38,4 +38,3 @@ print(job.result().get_counts(1))
 
 # The status of the circuit furthest behind in the queue.
 print(job.status())
-
