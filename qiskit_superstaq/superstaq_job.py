@@ -122,9 +122,7 @@ class SuperstaQJob(qiskit.providers.JobV1):
         for job_id in job_id_list:
             get_url = self._backend.url + "/" + qss.API_VERSION + f"/job/{job_id}"
             result = requests.get(
-                get_url,
-                headers=header,
-                verify = (self._backend.url == qss.API_URL)
+                get_url, headers=header, verify=(self._backend.url == qss.API_URL)
             )
 
             temp_status = result.json()["status"]
