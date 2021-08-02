@@ -25,7 +25,7 @@ qc2.measure([0, 1, 2], [0, 1, 2])
 
 
 """
-Submit list of jobs to backend. Circuits submitted simultaneously 
+Submit list of jobs to backend. Circuits submitted simultaneously
 will run with the same backend and the same number of shots.
 """
 job = backend.run([qc1, qc2], shots=100)
