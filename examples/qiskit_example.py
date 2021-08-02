@@ -1,40 +1,41 @@
 import qiskit
 import qiskit_superstaq as qss
 
-token = "insert-token-here"
+# SuperstaQ token retrieved through API
+token = "insert token here"
 
-superstaq = qss.superstaq_provider.SuperstaQProvider(
-    token,
-    url=qss.API_URL,
-)
+# Create provider using authorization token
+superstaq = qss.superstaq_provider.SuperstaQProvider(token)
 
-print(superstaq.get_backend("ibmq_qasm_simulator"))
-
+# Retrieve backend from superstaq provider
 backend = superstaq.get_backend("ibmq_qasm_simulator")
-qc = qiskit.QuantumCircuit(2, 2)
-qc.h(0)
-qc.cx(0, 1)
-qc.measure(0, 0)
-qc.measure(1, 1)
 
-print(qc)
-job = backend.run(qc, shots=100)
+# Standard bell circuit
+qc1 = qiskit.QuantumCircuit(2, 2)
+qc1.h(0)
+qc1.cx(0, 1)
+qc1.measure([0,1], [0,1])
+
+# 3-qubit GHZ state
+qc2 = qiskit.QuantumCircuit(3,3)
+qc2.h(0)
+qc2.cx(0,1)
+qc2.cx(0,2)
+qc2.measure([0,1,2], [0,1,2])
+
+
+"""
+Submit list of jobs to backend. Circuits submitted simultaneously 
+will run with the same backend and the same number of shots.
+"""
+job = backend.run([qc1,qc2], shots=100)
+
+# List of result counts
 print(job.result().get_counts())
 
+# ith result counts (0-indexed)
+print(job.result().get_counts(1))
 
-# qc = QuantumCircuit(5, 5)
-# qc.x(0)
-# qc.swap(0, 1)
-# qc.swap(1, 2)
-# qc.swap(2, 3)
-# qc.swap(3, 4)
-# qc.measure(0, 0)
-# qc.measure(1, 1)
-# qc.measure(2, 2)
-# qc.measure(3, 3)
-# qc.measure(4, 4)
+# The status of the circuit furthest behind in the queue.
+print(job.status())
 
-# job = backend.run(qc, shots=10, target="ibmq_qasm_simulator")
-# job = SuperstaQJob(backend, "60d26ea74fc8d411cfc97269")
-
-# print(job.get_counts())
