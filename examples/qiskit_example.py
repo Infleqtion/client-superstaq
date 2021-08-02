@@ -38,4 +38,3 @@ print(job.result().get_counts(1))
 
 # The status of the circuit furthest behind in the queue.
 print(job.status())
-
