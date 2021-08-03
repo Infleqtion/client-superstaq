@@ -2,10 +2,10 @@ import qiskit
 import qiskit_superstaq as qss
 
 # SuperstaQ token retrieved through API
-token = "ya29.a0ARrdaM9-JrnWggt7-G-JSsz8l28KI81BSvRJycfFUyFIqljgCJlUhQ11qR0qwwsYkITwrwaYFYJrxEcMVc_ErywO_5pSLRdde7Rpwo5DMztXyXuFFf718fay0FyVF1vDJMRn1M9HShnXHaohs-F_god37VIMgw"
+token = "insert API token"
 
 # Create provider using authorization token
-superstaq = qss.superstaq_provider.SuperstaQProvider(token, url = "https://127.0.0.1:5000")
+superstaq = qss.superstaq_provider.SuperstaQProvider(token)
 
 # Retrieve backend from superstaq provider
 backend = superstaq.get_backend("ibmq_qasm_simulator")
