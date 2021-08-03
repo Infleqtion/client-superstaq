@@ -2,7 +2,7 @@ import qiskit
 import qiskit_superstaq as qss
 
 # SuperstaQ token retrieved through API
-token = "ya29.a0ARrdaM8I0Kj-cRYKS7xwNPj646imPAV9eCSGpgMQd7dcLY2QLO2kmWBkkZc6bujnc9VawQ3dyxih_s4w82JEJI89EX518M47jset8GD93p6ww-pyC_stG9_plNfi8ZcVWQfR3-KRbA9h4SL9kAMytrjWyLPG0Q"
+token = "ya29.a0ARrdaM9-JrnWggt7-G-JSsz8l28KI81BSvRJycfFUyFIqljgCJlUhQ11qR0qwwsYkITwrwaYFYJrxEcMVc_ErywO_5pSLRdde7Rpwo5DMztXyXuFFf718fay0FyVF1vDJMRn1M9HShnXHaohs-F_god37VIMgw"
 
 # Create provider using authorization token
 superstaq = qss.superstaq_provider.SuperstaQProvider(token, url = "https://127.0.0.1:5000")
