@@ -67,9 +67,9 @@ class SuperstaQJob(qiskit.providers.JobV1):
                         "Timed out waiting for result"
                     )  # pragma: no cover b/c don't want slow test or mocking time
 
-                getstr = f"{self._backend.url}/" + qss.API_VERSION + f"/jobs/{jid}"
+                getstr = f"{self._backend.url}/" + qss.API_VERSION + f"/job/{jid}"
                 result = requests.get(
-                    getstr, headers=header, verify=bool(self._backend.url == qss.API_URL)
+                    getstr, headers=header, verify=(self._backend.url == qss.API_URL)
                 ).json()
 
                 if result["status"] == "Done":
@@ -120,10 +120,9 @@ class SuperstaQJob(qiskit.providers.JobV1):
         # For example, if any of the jobs are still queued, we report Queued as the status
         # for the entire batch.
         for job_id in job_id_list:
-            get_url = qss.API_URL + "/" + qss.API_VERSION + f"/jobs/{job_id}"
+            get_url = self._backend.url + "/" + qss.API_VERSION + f"/job/{job_id}"
             result = requests.get(
-                get_url,
-                headers=header,
+                get_url, headers=header, verify=(self._backend.url == qss.API_URL)
             )
 
             temp_status = result.json()["status"]
