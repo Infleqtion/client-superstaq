@@ -158,7 +158,7 @@ class _SuperstaQClient:
 
         def request() -> requests.Response:
             return requests.get(
-                f"{self.url}/jobs/{job_id}",
+                f"{self.url}/job/{job_id}",
                 headers=self.headers,
                 verify=(cirq_superstaq.API_URL == self.url),
             )
