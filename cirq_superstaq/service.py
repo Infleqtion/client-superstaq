@@ -14,12 +14,12 @@
 
 import collections
 import os
-from typing import Optional
+from typing import Optional, Union
 
 import cirq
 
 import cirq_superstaq
-from cirq_superstaq import job, superstaq_client
+from cirq_superstaq import aqt, job, superstaq_client
 
 
 class Service:
@@ -161,3 +161,17 @@ class Service:
         """
         job_dict = self._client.get_job(job_id=job_id)
         return job.Job(client=self._client, job_dict=job_dict)
+
+    def aqt_compile(self, circuit: cirq.Circuit) -> Union[cirq.Circuit, tuple]:
+        """Compiles the given circuit to AQT device, optimized to its native gate set.
+
+        Args:
+            circuit: a cirq Circuit object with operations on qubits 4 through 8.
+        Returns:
+            If qtrl is not installed, returns an optimized cirq Circuit. If qtrl is installed,
+            also returns (in a tuple) a qtrl Sequence object of the pulse sequence corresponding
+            to the cirq Circuit.
+        """
+        serialized_program = cirq.to_json(circuit)
+        json_dict = self._client.aqt_compile(serialized_program)
+        return aqt.read_json(json_dict)

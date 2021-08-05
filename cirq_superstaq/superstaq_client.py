@@ -166,6 +166,20 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
+    def aqt_compile(self, serialized_program: str) -> dict:
+        """Makes a POST request to SuperstaQ API to compile a circuit for Berkeley-AQT."""
+        json_dict = {"circuit": json.loads(serialized_program)}
+
+        def request() -> requests.Response:
+            return requests.post(
+                f"{self.url}/aqt_compile",
+                headers=self.headers,
+                json=json_dict,
+                verify=(cirq_superstaq.API_URL == self.url),
+            )
+
+        return self._make_request(request).json()
+
     def _target(self, target: Optional[str]) -> str:
         """Returns the target if not None or the default target.
 

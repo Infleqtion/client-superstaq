@@ -15,6 +15,7 @@ import io
 import json
 from unittest import mock
 
+import cirq
 import pytest
 import requests
 
@@ -311,3 +312,26 @@ def test_superstaq_client_get_job_retry(mock_get: mock.MagicMock) -> None:
     )
     _ = client.get_job("job_id")
     assert mock_get.call_count == 2
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_aqt_compile(mock_post: mock.MagicMock) -> None:
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
+    )
+    client.aqt_compile(cirq.to_json(cirq.Circuit(cirq.H(cirq.LineQubit(5)))))
+
+    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
+    blah = """{\n  "cirq_type": "Circuit",\n  "moments": [\n    {\n      "cirq_type": "Moment",
+           \n      "operations": [\n        {\n          "cirq_type": "GateOperation",\n
+           "gate": {\n            "cirq_type": "HPowGate",\n            "exponent": 1.0,\n
+           "global_shift": 0.0\n          },\n          "qubits": [\n            {\n
+           "cirq_type": "LineQubit",\n              "x": 5\n            }\n          ]\n        }\n
+           ]\n    }\n  ],\n  "device": {\n    "cirq_type": "_UnconstrainedDevice"\n  }\n}"""
+    expected_json = {"circuit": json.loads(blah)}
+    mock_post.assert_called_with(
+        "http://example.com/v0.1/aqt_compile",
+        headers=expected_headers,
+        json=expected_json,
+        verify=False,
+    )

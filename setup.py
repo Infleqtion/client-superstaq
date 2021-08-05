@@ -25,7 +25,11 @@ cirq_superstaq_packages = ["cirq_superstaq"] + [
     "cirq_superstaq." + package for package in find_packages(where="cirq_superstaq")
 ]
 
-print(cirq_superstaq_packages)
+
+# Optional installations. For example, pip install cirq-superstaq[aqt] will include
+# the package(s) needed for AQT use cases.
+aqt_extra = ["qtrl"]
+all_extra = aqt_extra
 
 setup(
     name=name,
@@ -40,4 +44,5 @@ setup(
     long_description=long_description,
     packages=cirq_superstaq_packages,
     package_data={"cirq_superstaq": ["py.typed"]},
+    extras_require={"aqt": aqt_extra, "all": all_extra},
 )
