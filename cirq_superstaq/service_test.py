@@ -95,7 +95,8 @@ def test_service_create_job() -> None:
 )
 def test_service_aqt_compile(mock_aqt_compile: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    assert service.aqt_compile(cirq.Circuit()) == cirq.Circuit()
+    expected = cirq_superstaq.aqt.AQTCompilerOutput(cirq.Circuit())
+    assert service.aqt_compile(cirq.Circuit()) == expected
 
 
 def test_service_api_key_via_env() -> None:
