@@ -43,11 +43,11 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
     def __init__(
         self,
         access_token: str,
-        url: str = qss.API_URL,
+        url: Optional[str],
     ) -> None:
         self.access_token = access_token
         self._name = "superstaq_provider"
-        self.url = url
+        self.url = url or os.getenv("SUPERSTAQ_REMOTE_HOST") or qss.API_URL
 
     def __str__(self) -> str:
         return f"<SuperstaQProvider(name={self._name})>"
