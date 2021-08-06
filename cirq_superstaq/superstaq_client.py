@@ -18,8 +18,9 @@ import time
 import urllib
 from typing import Any, Callable, cast, Dict, Optional
 
-import cirq_superstaq
 import requests
+
+import cirq_superstaq
 
 
 class _SuperstaQClient:
@@ -160,6 +161,20 @@ class _SuperstaQClient:
             return requests.get(
                 f"{self.url}/job/{job_id}",
                 headers=self.headers,
+                verify=(cirq_superstaq.API_URL == self.url),
+            )
+
+        return self._make_request(request).json()
+
+    def aqt_compile(self, serialized_program: str) -> dict:
+        """Makes a POST request to SuperstaQ API to compile a circuit for Berkeley-AQT."""
+        json_dict = {"circuit": json.loads(serialized_program)}
+
+        def request() -> requests.Response:
+            return requests.post(
+                f"{self.url}/aqt_compile",
+                headers=self.headers,
+                json=json_dict,
                 verify=(cirq_superstaq.API_URL == self.url),
             )
 

@@ -17,6 +17,7 @@ import os
 from typing import Optional
 
 import cirq
+
 import cirq_superstaq
 from cirq_superstaq import job, superstaq_client
 
@@ -160,3 +161,19 @@ class Service:
         """
         job_dict = self._client.get_job(job_id=job_id)
         return job.Job(client=self._client, job_dict=job_dict)
+
+    def aqt_compile(self, circuit: cirq.Circuit) -> "cirq_superstaq.aqt.AQTCompilerOutput":
+        """Compiles the given circuit to AQT device, optimized to its native gate set.
+
+        Args:
+            circuit: a cirq Circuit object with operations on qubits 4 through 8.
+        Returns:
+            AQTCompilerOutput object, whose .circuit attribute contains an optimized cirq Circuit.
+            If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
+            pulse sequence corresponding to the optimized cirq Circuit.
+        """
+        serialized_program = cirq.to_json(circuit)
+        json_dict = self._client.aqt_compile(serialized_program)
+        from cirq_superstaq import aqt
+
+        return aqt.read_json(json_dict)

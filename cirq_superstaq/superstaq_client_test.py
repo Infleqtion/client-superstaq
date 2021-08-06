@@ -15,60 +15,66 @@ import io
 import json
 from unittest import mock
 
-import cirq_superstaq as superstaq
+import cirq
 import pytest
 import requests
 
+import cirq_superstaq
 
-def test_superstaq_exception_str() -> None:
-    ex = superstaq.SuperstaQException("err", status_code=501)
+
+def test_cirq_superstaq_exception_str() -> None:
+    ex = cirq_superstaq.SuperstaQException("err", status_code=501)
     assert str(ex) == "Status code: 501, Message: 'err'"
 
 
-def test_superstaq_not_found_exception_str() -> None:
-    ex = superstaq.SuperstaQNotFoundException("err")
+def test_cirq_superstaq_not_found_exception_str() -> None:
+    ex = cirq_superstaq.SuperstaQNotFoundException("err")
     assert str(ex) == "Status code: 404, Message: 'err'"
 
 
 def test_superstaq_client_invalid_remote_host() -> None:
     for invalid_url in ("", "url", "http://", "ftp://", "http://"):
         with pytest.raises(AssertionError, match="not a valid url"):
-            _ = superstaq.superstaq_client._SuperstaQClient(remote_host=invalid_url, api_key="a")
+            _ = cirq_superstaq.superstaq_client._SuperstaQClient(
+                remote_host=invalid_url, api_key="a"
+            )
         with pytest.raises(AssertionError, match=invalid_url):
-            _ = superstaq.superstaq_client._SuperstaQClient(remote_host=invalid_url, api_key="a")
+            _ = cirq_superstaq.superstaq_client._SuperstaQClient(
+                remote_host=invalid_url, api_key="a"
+            )
 
 
 def test_superstaq_client_invalid_api_version() -> None:
     with pytest.raises(AssertionError, match="is accepted"):
-        _ = superstaq.superstaq_client._SuperstaQClient(
+        _ = cirq_superstaq.superstaq_client._SuperstaQClient(
             remote_host="http://example.com", api_key="a", api_version="v0.0"
         )
     with pytest.raises(AssertionError, match="0.0"):
-        _ = superstaq.superstaq_client._SuperstaQClient(
+        _ = cirq_superstaq.superstaq_client._SuperstaQClient(
             remote_host="http://example.com", api_key="a", api_version="v0.0"
         )
 
 
 def test_superstaq_client_invalid_target() -> None:
     with pytest.raises(AssertionError, match="the store"):
-        _ = superstaq.superstaq_client._SuperstaQClient(
+        _ = cirq_superstaq.superstaq_client._SuperstaQClient(
             remote_host="http://example.com", api_key="a", default_target="the store"
         )
     with pytest.raises(AssertionError, match="Target"):
-        _ = superstaq.superstaq_client._SuperstaQClient(
+        _ = cirq_superstaq.superstaq_client._SuperstaQClient(
             remote_host="http://example.com", api_key="a", default_target="the store"
         )
 
 
 def test_superstaq_client_time_travel() -> None:
     with pytest.raises(AssertionError, match="time machine"):
-        _ = superstaq.superstaq_client._SuperstaQClient(
+        _ = cirq_superstaq.superstaq_client._SuperstaQClient(
             remote_host="http://example.com", api_key="a", max_retry_seconds=-1
         )
 
 
 def test_superstaq_client_attributes() -> None:
-    client = superstaq.superstaq_client._SuperstaQClient(
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com",
         api_key="to_my_heart",
         default_target="qpu",
@@ -90,10 +96,10 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
     mock_post.return_value.status_code.return_value = requests.codes.ok
     mock_post.return_value.json.return_value = {"foo": "bar"}
 
-    client = superstaq.superstaq_client._SuperstaQClient(
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart"
     )
-    # program = superstaq.SerializedProgram(body={"job": "mine"}, metadata={"a": "0,1"})
+    # program = cirq_superstaq.SerializedProgram(body={"job": "mine"}, metadata={"a": "0,1"})
     response = client.create_job(
         serialized_program=json.dumps({"job": "mine"}), repetitions=200, target="qpu", name="bacon"
     )
@@ -123,7 +129,7 @@ def test_superstaq_client_create_job_default_target(mock_post: mock.MagicMock) -
     mock_post.return_value.status_code.return_value = requests.codes.ok
     mock_post.return_value.json.return_value = {"foo"}
 
-    client = superstaq.superstaq_client._SuperstaQClient(
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     _ = client.create_job(json.dumps({"job": "mine"}))
@@ -137,7 +143,7 @@ def test_superstaq_client_create_job_target_overrides_default_target(
     mock_post.return_value.status_code.return_value = requests.codes.ok
     mock_post.return_value.json.return_value = {"foo"}
 
-    client = superstaq.superstaq_client._SuperstaQClient(
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     _ = client.create_job(
@@ -149,7 +155,7 @@ def test_superstaq_client_create_job_target_overrides_default_target(
 
 
 def test_superstaq_client_create_job_no_targets() -> None:
-    client = superstaq.superstaq_client._SuperstaQClient(
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart"
     )
     with pytest.raises(AssertionError, match="neither were set"):
@@ -161,10 +167,10 @@ def test_superstaq_client_create_job_unauthorized(mock_post: mock.MagicMock) -> 
     mock_post.return_value.ok = False
     mock_post.return_value.status_code = requests.codes.unauthorized
 
-    client = superstaq.superstaq_client._SuperstaQClient(
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    with pytest.raises(superstaq.SuperstaQException, match="Not authorized"):
+    with pytest.raises(cirq_superstaq.SuperstaQException, match="Not authorized"):
         _ = client.create_job(serialized_program=json.dumps({"job": "mine"}))
 
 
@@ -173,10 +179,10 @@ def test_superstaq_client_create_job_not_found(mock_post: mock.MagicMock) -> Non
     mock_post.return_value.ok = False
     mock_post.return_value.status_code = requests.codes.not_found
 
-    client = superstaq.superstaq_client._SuperstaQClient(
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    with pytest.raises(superstaq.SuperstaQNotFoundException, match="not find"):
+    with pytest.raises(cirq_superstaq.SuperstaQNotFoundException, match="not find"):
         _ = client.create_job(serialized_program=json.dumps({"job": "mine"}))
 
 
@@ -185,10 +191,10 @@ def test_superstaq_client_create_job_not_retriable(mock_post: mock.MagicMock) ->
     mock_post.return_value.ok = False
     mock_post.return_value.status_code = requests.codes.not_implemented
 
-    client = superstaq.superstaq_client._SuperstaQClient(
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    with pytest.raises(superstaq.SuperstaQException, match="Status: 501"):
+    with pytest.raises(cirq_superstaq.SuperstaQException, match="Status: 501"):
         _ = client.create_job(serialized_program=json.dumps({"job": "mine"}))
 
 
@@ -200,7 +206,7 @@ def test_superstaq_client_create_job_retry(mock_post: mock.MagicMock) -> None:
     response1.ok = False
     response1.status_code = requests.codes.service_unavailable
     response2.ok = True
-    client = superstaq.superstaq_client._SuperstaQClient(
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com",
         api_key="to_my_heart",
         default_target="simulator",
@@ -218,7 +224,7 @@ def test_superstaq_client_create_job_retry_request_error(mock_post: mock.MagicMo
     response2 = mock.MagicMock()
     mock_post.side_effect = [requests.exceptions.ConnectionError(), response2]
     response2.ok = True
-    client = superstaq.superstaq_client._SuperstaQClient(
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     _ = client.create_job(serialized_program=json.dumps({"job": "mine"}))
@@ -230,7 +236,7 @@ def test_superstaq_client_create_job_timeout(mock_post: mock.MagicMock) -> None:
     mock_post.return_value.ok = False
     mock_post.return_value.status_code = requests.codes.service_unavailable
 
-    client = superstaq.superstaq_client._SuperstaQClient(
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com",
         api_key="to_my_heart",
         default_target="simulator",
@@ -245,7 +251,7 @@ def test_superstaq_client_get_job(mock_get: mock.MagicMock) -> None:
     print("Type of mock_get")
     mock_get.return_value.ok = True
     mock_get.return_value.json.return_value = {"foo": "bar"}
-    client = superstaq.superstaq_client._SuperstaQClient(
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart"
     )
     response = client.get_job(job_id="job_id")
@@ -262,10 +268,10 @@ def test_superstaq_client_get_job_unauthorized(mock_get: mock.MagicMock) -> None
     mock_get.return_value.ok = False
     mock_get.return_value.status_code = requests.codes.unauthorized
 
-    client = superstaq.superstaq_client._SuperstaQClient(
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    with pytest.raises(superstaq.SuperstaQException, match="Not authorized"):
+    with pytest.raises(cirq_superstaq.SuperstaQException, match="Not authorized"):
         _ = client.get_job("job_id")
 
 
@@ -274,10 +280,10 @@ def test_superstaq_client_get_job_not_found(mock_get: mock.MagicMock) -> None:
     (mock_get.return_value).ok = False
     (mock_get.return_value).status_code = requests.codes.not_found
 
-    client = superstaq.superstaq_client._SuperstaQClient(
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    with pytest.raises(superstaq.SuperstaQNotFoundException, match="not find"):
+    with pytest.raises(cirq_superstaq.SuperstaQNotFoundException, match="not find"):
         _ = client.get_job("job_id")
 
 
@@ -286,10 +292,10 @@ def test_superstaq_client_get_job_not_retriable(mock_get: mock.MagicMock) -> Non
     mock_get.return_value.ok = False
     mock_get.return_value.status_code = requests.codes.not_implemented
 
-    client = superstaq.superstaq_client._SuperstaQClient(
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    with pytest.raises(superstaq.SuperstaQException, match="Status: 501"):
+    with pytest.raises(cirq_superstaq.SuperstaQException, match="Status: 501"):
         _ = client.get_job("job_id")
 
 
@@ -301,8 +307,31 @@ def test_superstaq_client_get_job_retry(mock_get: mock.MagicMock) -> None:
     response1.ok = False
     response1.status_code = requests.codes.service_unavailable
     response2.ok = True
-    client = superstaq.superstaq_client._SuperstaQClient(
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     _ = client.get_job("job_id")
     assert mock_get.call_count == 2
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_aqt_compile(mock_post: mock.MagicMock) -> None:
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
+    )
+    client.aqt_compile(cirq.to_json(cirq.Circuit(cirq.H(cirq.LineQubit(5)))))
+
+    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
+    blah = """{\n  "cirq_type": "Circuit",\n  "moments": [\n    {\n      "cirq_type": "Moment",
+           \n      "operations": [\n        {\n          "cirq_type": "GateOperation",\n
+           "gate": {\n            "cirq_type": "HPowGate",\n            "exponent": 1.0,\n
+           "global_shift": 0.0\n          },\n          "qubits": [\n            {\n
+           "cirq_type": "LineQubit",\n              "x": 5\n            }\n          ]\n        }\n
+           ]\n    }\n  ],\n  "device": {\n    "cirq_type": "_UnconstrainedDevice"\n  }\n}"""
+    expected_json = {"circuit": json.loads(blah)}
+    mock_post.assert_called_with(
+        "http://example.com/v0.1/aqt_compile",
+        headers=expected_headers,
+        json=expected_json,
+        verify=False,
+    )

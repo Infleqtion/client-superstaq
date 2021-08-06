@@ -16,8 +16,9 @@
 import collections
 import time
 
-import cirq_superstaq
 from cirq._doc import document
+
+import cirq_superstaq
 from cirq_superstaq import superstaq_client
 
 

@@ -25,8 +25,6 @@ cirq_superstaq_packages = ["cirq_superstaq"] + [
     "cirq_superstaq." + package for package in find_packages(where="cirq_superstaq")
 ]
 
-print(cirq_superstaq_packages)
-
 setup(
     name=name,
     version=__version__,

@@ -11,22 +11,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import cirq_superstaq as superstaq
+import cirq_superstaq
 
 
 def test_superstaq_exception() -> None:
-    ex = superstaq.SuperstaQException(message="Hello", status_code=500)
+    ex = cirq_superstaq.SuperstaQException(message="Hello", status_code=500)
     assert str(ex) == "Status code: 500, Message: 'Hello'"
     assert ex.status_code == 500
 
 
 def test_superstaq_not_found_exception() -> None:
-    ex = superstaq.SuperstaQNotFoundException(message="Where are you")
+    ex = cirq_superstaq.SuperstaQNotFoundException(message="Where are you")
     assert str(ex) == "Status code: 404, Message: 'Where are you'"
     assert ex.status_code == 404
 
 
 def test_superstaq_unsuccessful_job_exception() -> None:
-    ex = superstaq.SuperstaQUnsuccessfulJobException(job_id="SWE", status="canceled")
+    ex = cirq_superstaq.SuperstaQUnsuccessfulJobException(job_id="SWE", status="canceled")
     assert str(ex) == "Status code: None, Message: 'Job SWE was canceled.'"
     assert ex.status_code is None

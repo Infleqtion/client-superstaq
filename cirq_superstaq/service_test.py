@@ -15,9 +15,10 @@ import os
 from unittest import mock
 
 import cirq
-import cirq_superstaq
 import pytest
 import sympy
+
+import cirq_superstaq
 
 
 def test_service_run() -> None:
@@ -86,6 +87,16 @@ def test_service_create_job() -> None:
     # Serialization induces a float, so we don't validate full circuit.
     assert create_job_kwargs["repetitions"] == 100
     assert create_job_kwargs["target"] == "qpu"
+
+
+@mock.patch(
+    "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
+    return_value={"compiled_circuit": cirq.to_json(cirq.Circuit())},
+)
+def test_service_aqt_compile(mock_aqt_compile: mock.MagicMock) -> None:
+    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    expected = cirq_superstaq.aqt.AQTCompilerOutput(cirq.Circuit())
+    assert service.aqt_compile(cirq.Circuit()) == expected
 
 
 def test_service_api_key_via_env() -> None:
