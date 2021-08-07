@@ -254,7 +254,7 @@ def test_superstaq_client_get_job(mock_get: mock.MagicMock) -> None:
     client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart"
     )
-    response = client.get_job(job_id="job_id")
+    response = client.get_job(ss_id="job_id")
     assert response == {"foo": "bar"}
 
     expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}

@@ -112,7 +112,7 @@ class _SuperstaQClient:
                 from the returned job.
             target: If supplied the target to run on. Supports one of `qpu` or `simulator`. If not
                 set, uses `default_target`.
-            name: An optional name of the job. Different than the `job_id` of the job.
+            name: An optional name of the job. Different than the `ss_id` of the job.
 
         Returns:
             The json body of the response as a dict. This does not contain populated information
@@ -143,23 +143,23 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def get_job(self, job_id: str) -> dict:
+    def get_job(self, ss_id: str) -> dict:
         """Get the job from the SuperstaQ API.
 
         Args:
-            job_id: The UUID of the job (returned when the job was created).
+            ss_id: The SuperstaQ UUID of the job (returned when the job was created).
 
         Returns:
             The json body of the response as a dict.
 
         Raises:
-            SuperstaQNotFoundException: If a job with the given job_id does not exist.
+            SuperstaQNotFoundException: If a job with the given ss_id does not exist.
             SuperstaQException: For other API call failures.
         """
 
         def request() -> requests.Response:
             return requests.get(
-                f"{self.url}/job/{job_id}",
+                f"{self.url}/job/{ss_id}",
                 headers=self.headers,
                 verify=(cirq_superstaq.API_URL == self.url),
             )

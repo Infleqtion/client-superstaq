@@ -104,7 +104,7 @@ class Service:
         Args:
             circuit: The circuit to run.
             repetitions: The number of times to run the circuit.
-            name: An optional name for the created job. Different from the `job_id`.
+            name: An optional name for the created job. Different from the `ss_id`.
             target: Where to run the job. Can be 'qpu' or 'simulator'.
             param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
 
@@ -128,7 +128,7 @@ class Service:
         Args:
             circuit: The circuit to run.
             repetitions: The number of times to repeat the circuit. Defaults to 100.
-            name: An optional name for the created job. Different from the `job_id`.
+            name: An optional name for the created job. Different from the `ss_id`.
             target: Where to run the job. Can be 'qpu' or 'simulator'.
 
         Returns:
@@ -143,23 +143,23 @@ class Service:
         )
         # The returned job does not have fully populated fields, so make
         # a second call and return the results of the fully filled out job.
-        return self.get_job(result["id"])
+        return self.get_job(result["ss_id"])
 
-    def get_job(self, job_id: str) -> job.Job:
+    def get_job(self, ss_id: str) -> job.Job:
         """Gets a job that has been created on the SuperstaQ API.
 
         Args:
-            job_id: The UUID of the job. Jobs are assigned these numbers by the server during the
-            creation of the job.
+            ss_id: The SuperstaQ UUID of the job. Jobs are assigned these numbers by the server
+            during the creation of the job.
 
         Returns:
             A `cirq_superstaq.Job` which can be queried for status or results.
 
         Raises:
-            SuperstaQNotFoundException: If there was no job with the given `job_id`.
+            SuperstaQNotFoundException: If there was no job with the given `ss_id`.
             SuperstaQException: If there was an error accessing the API.
         """
-        job_dict = self._client.get_job(job_id=job_id)
+        job_dict = self._client.get_job(ss_id=ss_id)
         return job.Job(client=self._client, job_dict=job_dict)
 
     def aqt_compile(self, circuit: cirq.Circuit) -> "cirq_superstaq.aqt.AQTCompilerOutput":

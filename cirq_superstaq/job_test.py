@@ -23,7 +23,7 @@ def test_job_fields() -> None:
     job_dict = {
         "data": {"histogram": {"11": 1}},
         "num_qubits": 2,
-        "id": "my_id",
+        "ss_id": "my_id",
         "samples": {"11": 1},
         "shots": [
             {
@@ -37,7 +37,7 @@ def test_job_fields() -> None:
 
     mock_client = mock.MagicMock()
     job = cirq_superstaq.Job(mock_client, job_dict)
-    assert job.job_id() == "my_id"
+    assert job.ss_id() == "my_id"
     assert job.target() == "simulator"
     assert job.num_qubits() == 2
     assert job.repetitions() == 1
@@ -46,28 +46,28 @@ def test_job_fields() -> None:
 def test_job_status_refresh() -> None:
     for status in cirq_superstaq.Job.NON_TERMINAL_STATES:
         mock_client = mock.MagicMock()
-        mock_client.get_job.return_value = {"id": "my_id", "status": "completed"}
-        job = cirq_superstaq.Job(mock_client, {"id": "my_id", "status": status})
+        mock_client.get_job.return_value = {"ss_id": "my_id", "status": "completed"}
+        job = cirq_superstaq.Job(mock_client, {"ss_id": "my_id", "status": status})
         assert job.status() == "completed"
         mock_client.get_job.assert_called_with("my_id")
     for status in cirq_superstaq.Job.TERMINAL_STATES:
         mock_client = mock.MagicMock()
-        job = cirq_superstaq.Job(mock_client, {"id": "my_id", "status": status})
+        job = cirq_superstaq.Job(mock_client, {"ss_id": "my_id", "status": status})
         assert job.status() == status
         mock_client.get_job.assert_not_called()
 
 
 def test_job_str() -> None:
     mock_client = mock.MagicMock()
-    job = cirq_superstaq.Job(mock_client, {"id": "my_id"})
-    assert str(job) == "cirq_superstaq.Job(job_id=my_id)"
+    job = cirq_superstaq.Job(mock_client, {"ss_id": "my_id"})
+    assert str(job) == "Job with SuperstaQ ss_id my_id"
 
 
 def test_job_counts() -> None:
     job_dict = {
         "data": {"histogram": {"11": 1}},
         "num_qubits": 2,
-        "id": "my_id",
+        "ss_id": "my_id",
         "samples": {"11": 1},
         "shots": [
             {
@@ -88,7 +88,7 @@ def test_job_counts_failed() -> None:
     job_dict = {
         "data": {"histogram": {"11": 1}},
         "num_qubits": 2,
-        "id": "my_id",
+        "ss_id": "my_id",
         "samples": {"11": 1},
         "shots": [
             {
@@ -110,13 +110,13 @@ def test_job_counts_failed() -> None:
 @mock.patch("time.sleep", return_value=None)
 def test_job_counts_poll(mock_sleep: mock.MagicMock) -> None:
     ready_job = {
-        "id": "my_id",
+        "ss_id": "my_id",
         "status": "ready",
     }
     completed_job = {
         "data": {"histogram": {"11": 1}},
         "num_qubits": 2,
-        "id": "my_id",
+        "ss_id": "my_id",
         "samples": {"11": 1},
         "shots": [
             {
@@ -138,7 +138,7 @@ def test_job_counts_poll(mock_sleep: mock.MagicMock) -> None:
 @mock.patch("time.sleep", return_value=None)
 def test_job_counts_poll_timeout(mock_sleep: mock.MagicMock) -> None:
     ready_job = {
-        "id": "my_id",
+        "ss_id": "my_id",
         "status": "ready",
     }
     mock_client = mock.MagicMock()
@@ -151,7 +151,7 @@ def test_job_counts_poll_timeout(mock_sleep: mock.MagicMock) -> None:
 
 @mock.patch("time.sleep", return_value=None)
 def test_job_results_poll_timeout_with_error_message(mock_sleep: mock.MagicMock) -> None:
-    ready_job = {"id": "my_id", "status": "failure", "failure": {"error": "too many qubits"}}
+    ready_job = {"ss_id": "my_id", "status": "failure", "failure": {"error": "too many qubits"}}
     mock_client = mock.MagicMock()
     mock_client.get_job.return_value = ready_job
     job = cirq_superstaq.Job(mock_client, ready_job)
@@ -163,7 +163,7 @@ def test_job_results_poll_timeout_with_error_message(mock_sleep: mock.MagicMock)
 def test_job_fields_unsuccessful() -> None:
     job_dict = {
         "data": {"histogram": {"11": 1}},
-        "id": "my_id",
+        "ss_id": "my_id",
         "num_qubits": 2,
         "samples": {"11": 1},
         "shots": [

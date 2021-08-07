@@ -25,12 +25,12 @@ def test_service_run() -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
     mock_client = mock.MagicMock()
     mock_client.create_job.return_value = {
-        "id": "job_id",
+        "ss_id": "job_id",
         "status": "ready",
     }
     mock_client.get_job.return_value = {
         "data": {"histogram": {"11": 1}},
-        "id": "my_id",
+        "ss_id": "my_id",
         "samples": {"11": 1},
         "shots": [
             {
@@ -64,20 +64,20 @@ def test_service_run() -> None:
 def test_service_get_job() -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
     mock_client = mock.MagicMock()
-    job_dict = {"id": "job_id", "status": "ready"}
+    job_dict = {"ss_id": "job_id", "status": "ready"}
     mock_client.get_job.return_value = job_dict
     service._client = mock_client
 
     job = service.get_job("job_id")
-    assert job.job_id() == "job_id"
-    mock_client.get_job.assert_called_with(job_id="job_id")
+    assert job.ss_id() == "job_id"
+    mock_client.get_job.assert_called_with(ss_id="job_id")
 
 
 def test_service_create_job() -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
     mock_client = mock.MagicMock()
-    mock_client.create_job.return_value = {"id": "job_id", "status": "ready"}
-    mock_client.get_job.return_value = {"id": "job_id", "status": "completed"}
+    mock_client.create_job.return_value = {"ss_id": "job_id", "status": "ready"}
+    mock_client.get_job.return_value = {"ss_id": "job_id", "status": "completed"}
     service._client = mock_client
 
     circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)))

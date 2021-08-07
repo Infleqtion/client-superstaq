@@ -27,6 +27,6 @@ def test_superstaq_not_found_exception() -> None:
 
 
 def test_superstaq_unsuccessful_job_exception() -> None:
-    ex = cirq_superstaq.SuperstaQUnsuccessfulJobException(job_id="SWE", status="canceled")
+    ex = cirq_superstaq.SuperstaQUnsuccessfulJobException(ss_id="SWE", status="canceled")
     assert str(ex) == "Status code: None, Message: 'Job SWE was canceled.'"
     assert ex.status_code is None
