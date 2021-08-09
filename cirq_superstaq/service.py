@@ -143,7 +143,7 @@ class Service:
         )
         # The returned job does not have fully populated fields, so make
         # a second call and return the results of the fully filled out job.
-        return self.get_job(result["id"])
+        return self.get_job(result["job_id"])
 
     def get_job(self, job_id: str) -> job.Job:
         """Gets a job that has been created on the SuperstaQ API.

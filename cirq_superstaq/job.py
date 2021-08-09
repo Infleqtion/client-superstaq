@@ -84,7 +84,7 @@ class Job:
 
         This is the id used for identifying the job by the API.
         """
-        return self._job["id"]
+        return self._job["job_id"]
 
     def status(self) -> str:
         """Gets the current status of the job.
@@ -169,4 +169,4 @@ class Job:
         return self._job["samples"]
 
     def __str__(self) -> str:
-        return f"cirq_superstaq.Job(job_id={self.job_id()})"
+        return f"Job with job_id={self.job_id()}"
