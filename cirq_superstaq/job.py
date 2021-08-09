@@ -58,7 +58,7 @@ class Job:
     def __init__(self, client: superstaq_client._SuperstaQClient, job_dict: dict):
         """Construct a Job.
 
-        Users should not call this themselves. If you only know the `ss_id`, use `get_job`
+        Users should not call this themselves. If you only know the `job_id`, use `get_job`
         on `cirq_superstaq.Service`.
 
         Args:
@@ -71,20 +71,20 @@ class Job:
     def _refresh_job(self) -> None:
         """If the last fetched job is not terminal, gets the job from the API."""
         if self._job["status"] not in self.TERMINAL_STATES:
-            self._job = self._client.get_job(self.ss_id())
+            self._job = self._client.get_job(self.job_id())
 
     def _check_if_unsuccessful(self) -> None:
         if self.status() in self.UNSUCCESSFUL_STATES:
             raise cirq_superstaq.superstaq_exceptions.SuperstaQUnsuccessfulJobException(
-                self.ss_id(), self.status()
+                self.job_id(), self.status()
             )
 
-    def ss_id(self) -> str:
-        """Returns the SuperstaQ job id (a UUID) for the job.
+    def job_id(self) -> str:
+        """Returns the job id (UID) for the job.
 
         This is the id used for identifying the job by the API.
         """
-        return self._job["ss_id"]
+        return self._job["job_id"]
 
     def status(self) -> str:
         """Gets the current status of the job.
@@ -169,4 +169,4 @@ class Job:
         return self._job["samples"]
 
     def __str__(self) -> str:
-        return f"Job with SuperstaQ ss_id {self.ss_id()}"
+        return f"Job with job_id={self.job_id()}"
