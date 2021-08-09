@@ -36,6 +36,7 @@ setup(
     license="N/A",
     description=description,
     long_description=long_description,
+    long_description_content_type="text/markdown",
     packages=cirq_superstaq_packages,
     package_data={"cirq_superstaq": ["py.typed"]},
 )
