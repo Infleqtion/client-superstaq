@@ -130,12 +130,12 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
 
         res.raise_for_status()
         response = res.json()
-        if "ids" not in response:
+        if "job_ids" not in response:
             raise Exception
 
         #  we make a virtual job_id that aggregates all of the individual jobs
         # into a single one, that comma-separates the individual jobs:
-        job_id = ",".join(response["ids"])
+        job_id = ",".join(response["job_ids"])
         job = qss.superstaq_job.SuperstaQJob(self, job_id)
 
         return job
