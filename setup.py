@@ -36,7 +36,7 @@ setup(
     license="N/A",
     description=description,
     long_description=long_description,
-    long_description_content_type='text/markdown',
+    long_description_content_type="text/markdown",
     packages=qiskit_superstaq_packages,
     package_data={"qiskit_superstaq": ["py.typed"]},
 )
