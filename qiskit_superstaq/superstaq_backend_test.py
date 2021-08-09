@@ -138,7 +138,7 @@ def test_default_options() -> None:
 
 class MockResponse:
     def __init__(self, ids: List[str]) -> None:
-        self.content = json.dumps({"ids": ids})
+        self.content = json.dumps({"ss_ids": ids})
 
     def json(self) -> Dict:
         return json.loads(self.content)
