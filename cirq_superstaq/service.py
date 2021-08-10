@@ -14,7 +14,7 @@
 
 import collections
 import os
-from typing import Optional
+from typing import Dict, Optional
 
 import cirq
 
@@ -178,16 +178,24 @@ class Service:
 
         return aqt.read_json(json_dict)
 
-    def aqt_configs(self, aqt_configs) -> "cirq_superstaq.aqt.AQTCompilerOutput":
-        """Compiles the given circuit to AQT device, optimized to its native gate set.
+    def upload_aqt_configs(self, pulses_file_path: str, variables_file_path: str) -> Dict[str, str]:
+        """Uploads configs for AQT
 
         Args:
-            circuit: a cirq Circuit object with operations on qubits 4 through 8.
+            pulses_file_path: The filepath for Pulses.yaml
+            variables_file_path: The filepath for Variables.yaml
         Returns:
-            AQTCompilerOutput object, whose .circuit attribute contains an optimized cirq Circuit.
-            If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the optimized cirq Circuit.
+            A dictionary of of the status of the update (Whether or not it failed)
         """
-        json_dict = self._client.aqt_configs(aqt_configs)
+        pulses_file = open(pulses_file_path)
+        read_pulses = pulses_file.read()
+        pulses_file.close()
+
+        variables_file = open(variables_file_path)
+        read_variables = variables_file.read()
+        variables_file.close()
+        json_dict = self._client.upload_aqt_configs(
+            {"pulses": read_pulses, "variables": read_variables}
+        )
 
         return json_dict
