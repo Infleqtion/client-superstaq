@@ -177,3 +177,17 @@ class Service:
         from cirq_superstaq import aqt
 
         return aqt.read_json(json_dict)
+
+    def aqt_configs(self, aqt_configs) -> "cirq_superstaq.aqt.AQTCompilerOutput":
+        """Compiles the given circuit to AQT device, optimized to its native gate set.
+
+        Args:
+            circuit: a cirq Circuit object with operations on qubits 4 through 8.
+        Returns:
+            AQTCompilerOutput object, whose .circuit attribute contains an optimized cirq Circuit.
+            If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
+            pulse sequence corresponding to the optimized cirq Circuit.
+        """
+        json_dict = self._client.aqt_configs(aqt_configs)
+
+        return json_dict

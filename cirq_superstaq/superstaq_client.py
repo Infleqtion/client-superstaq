@@ -180,6 +180,19 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
+    def aqt_configs(self, aqt_configs: Dict[str, str]) -> dict:
+        """Makes a POST request to SuperstaQ API to upload configurations."""
+
+        def request() -> requests.Response:
+            return requests.post(
+                f"{self.url}/aqt_config",
+                headers=self.headers,
+                json=aqt_configs,
+                verify=(cirq_superstaq.API_URL == self.url),
+            )
+
+        return self._make_request(request).json()
+
     def _target(self, target: Optional[str]) -> str:
         """Returns the target if not None or the default target.
 
