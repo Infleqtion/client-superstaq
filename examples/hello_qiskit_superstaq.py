@@ -1,8 +1,18 @@
+"""
+Creates and simulates a bell circuit.
+
+=== EXAMPLE OUTPUT ===
+
+job has successfully run
+{'00': 52, '11': 48}
+
+"""
+
 import qiskit
 import qiskit_superstaq as qss
 
 # SuperstaQ token retrieved through API
-token = "insert API token"
+token = "insert api token"
 
 # Create provider using authorization token
 superstaq = qss.superstaq_provider.SuperstaQProvider(token)
@@ -20,7 +30,7 @@ qc.measure([0, 1], [0, 1])
 job = backend.run(qc, shots=100)
 
 # Get job status
-print(job.status())
+print(job.status().value)
 
 # Get result of job
 result = job.result()
