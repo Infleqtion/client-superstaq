@@ -105,12 +105,12 @@ def test_service_aqt_compile(mock_aqt_compile: mock.MagicMock) -> None:
 )
 def test_service_aqt_upload_configs(mock_aqt_compile: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    pulses_file = open("/tmp/Pulses.yaml", "w")
-    pulses_file.write("Hello")
-    pulses_file.close()
-    variables_file = open("/tmp/Variables.yaml", "w")
-    variables_file.write("World")
-    variables_file.close()
+
+    with open("/tmp/Pulses.yaml", "w") as pulses_file:
+        pulses_file.write("Hello")
+
+    with open("/tmp/Variables.yaml", "w") as pulses_file:
+        pulses_file.write("World")
 
     assert service.aqt_upload_configs("/tmp/Pulses.yaml", "/tmp/Variables.yaml") == {
         "status": "Your AQT configuration has been updated"

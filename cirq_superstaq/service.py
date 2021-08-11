@@ -187,13 +187,12 @@ class Service:
         Returns:
             A dictionary of of the status of the update (Whether or not it failed)
         """
-        pulses_file = open(pulses_file_path)
-        read_pulses = pulses_file.read()
-        pulses_file.close()
+        with open(pulses_file_path) as pulses_file:
+            read_pulses = pulses_file.read()
 
-        variables_file = open(variables_file_path)
-        read_variables = variables_file.read()
-        variables_file.close()
+        with open(variables_file_path) as variables_file:
+            read_variables = variables_file.read()
+
         json_dict = self._client.aqt_upload_configs(
             {"pulses": read_pulses, "variables": read_variables}
         )
