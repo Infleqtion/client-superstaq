@@ -32,9 +32,8 @@ class SuperstaQJob(qiskit.providers.JobV1):
 
         Parameters:
             backend (BaseBackend): Backend that job was executed on.
-            job_id (str): The unique job ID.
-            access_token (str): The AQT access token.
-            qobj (Qobj): Quantum object, if any.
+            job_id (str): The unique job ID from SuperstaQ.
+            access_token (str): The access token.
         """
         super().__init__(backend, job_id)
 
