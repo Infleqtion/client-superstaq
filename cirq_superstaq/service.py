@@ -177,3 +177,157 @@ class Service:
         from cirq_superstaq import aqt
 
         return aqt.read_json(json_dict)
+
+    def find_min_vol_portfolio(
+        self,
+        stock_symbols: List[str],
+        desired_return: float,
+        years_window: float = 5.0,
+        solver: str = "anneal",
+    ):
+        """Finds the portfolio with minimum volatility that exceeds a specified desired return.
+
+        Args:
+            stock_symbols: A list of stock tickers to pick from.
+            desired_return: The minimum return needed.
+            years_window: The number of years previous from today to pull data from
+            for price data.
+            solver: Specifies which solver to use. Defaults to a simulated annealer.
+
+        Returns:
+            A dictionary containing the assets in the optimal portfolio and
+            the portfolio's expected return and standard deviation.
+
+        """
+        input_dict = {
+            "stock_symbols": stock_symbols,
+            "desired_return": desired_return,
+            "years_window": years_window,
+            "solver": solver,
+        }
+        json_dict = self._client.find_min_vol_portfolio(input_dict)
+        from cirq_superstaq import finance
+
+        return finance.read_json_minvol(json_dict)
+
+    def find_max_pseudo_sharpe_ratio(
+        stock_symbols: List[str],
+        k: float,
+        num_assets_in_portfolio: int = None,
+        years_window: float = 5.0,
+        solver: str = "anneal",
+    ):
+        """
+        Finds the optimal equal-weight portfolio from a possible pool of stocks
+        according to the following rules:
+        -All stock must come from the stock_symbols list.
+        -All stocks will be equally weighted in the portfolio.
+        -The "pseudo" Sharpe ratio of the portfolio is maximized.
+
+        The Sharpe ratio can be thought of as the ratio of reward to risk.
+        The formula for the Sharpe ratio is the portfolio's expected return less the risk-free
+        rate divided by the portfolio standard deviation. For the risk-free rate, we will use the
+        three month treasury bill rate. Instead of maximizing the Sharpe ratio directly, we will
+        minimize variance minus return net the risk-free rate. The user specifies a factor k, as
+        describes below to favor reducing risk or favor increasing expected return, each likely
+        at the expense of the other. The Sharpe ratio of the resulting portfolio is returned,
+        since it is relevant information.
+
+        To summarize, we optimize:
+        k * standard_deviation_expression - (1 - k) * expected_return_expression
+
+
+        Args:
+            stock_symbols: A list of stock tickers to pick from.
+            k: A risk factor coefficient between 0 and 1. A k closer to 1
+            indicates only being concerned with risk aversion, while a k closer to 0
+            indicates only being concerned with maximizing expected return regardless of
+            risk.
+            num_assets_in_portfolio: The number of desired assets in the portfolio.
+            If A is not specified, then the function will iterate through and
+            check for all portfolio sizes.
+            years_window: The number of years previous from today to pull data from
+            for price data.
+            solver: Specifies which solver to use. Defaults to a simulated annealer.
+
+        Return:
+            A dictionary containing the assets in the optimal portfolio and
+            the portfolio's expected return and standard deviation, as well as the Sharpe ratio
+            of the portfolio.
+
+        """
+        input_dict = {
+            "stock_symbols": stock_symbols,
+            "k": k,
+            "num_assets_in_portfolio": num_assets_in_portfolio,
+            "years_window": years_window,
+            "solver": solver,
+        }
+        json_dict = self._client.find_max_pseudo_sharpe_ratio(input_dict)
+        from cirq_superstaq import finance
+
+        return finance.read_json_maxsharpe(json_dict)
+
+    def tsp(locs: List[str], solver: str = "anneal"):
+        """
+        This function solves the traveling salesperson problem (TSP) and
+        takes a list of strings as input. TSP finds the shortest tour that
+        traverses all locations in a list.
+        Each string should be an addresss or name of a landmark
+        that can pinpoint a location as a Google Maps search.
+        It is assumed that the first string in the list is
+        the starting and ending point for the TSP tour.
+        The function returns a dictionary containing the route,
+        the indices of the route from the input list, and the total distance
+        of the tour in miles.
+
+        Args:
+            locs: List of strings where each string represents a location needed to be visited on tour.
+            solver: A string indicating which solver to use ("rqaoa" or "anneal").
+
+        Returns:
+            A dictionary with information representing the optimal tour.
+
+
+        """
+        input_dict = {"locs": locs}
+        json_dict = self._client.tsp(input_dict)
+        from cirq_superstaq import logistics
+
+        return logistics.read_json_tsp(json_dict)
+
+    def warehouse(
+        k: int, possible_warehouses: List[str], customers: List[str], solver: str = "anneal"
+    ):
+        """
+        This function solves the warehouse location problem, which is:
+        given a list of customers to be served and  a list of possible warehouse
+        locations, find the optimal k warehouse locations such that the sum of
+        the distances to each customer from the nearest facility is minimized.
+
+        Args:
+            k: An integer representing the number of warehouses in the solution.
+            possible_warehouses: A list of possible warehouse locations.
+            customers: A list of customer locations.
+            solver: A string indicating which solver to use ("rqaoa" or "anneal").
+
+        Returns:
+            A dictionary with:
+            -A list of tuples where the first string in the tuple is the warehouse
+            and the second is the customer served by that warehouse.
+            -The sum of all distances from nearest warehouse to each customer.
+            -A link to the map of the warehouse-customer pairings.
+            -A list of which k warehouses are open.
+
+
+        """
+        input_dict = {
+            "k": k,
+            "possible_warehouses": possible_warehouses,
+            "customers": customers,
+            "solver": solver,
+        }
+        json_dict = self._client.warehouse(input_dict)
+        from cirq_superstaq import logistics
+
+        return logistics.read_json_warehouse(json_dict)
