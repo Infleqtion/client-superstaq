@@ -31,7 +31,7 @@ setup(
     url="https://github.com/SupertechLabs/qiskit-superstaq",
     author="Super.tech",
     author_email="pranav@super.tech",
-    python_requires=(">=3.8.0"),
+    python_requires=(">=3.7.0"),
     install_requires=requirements,
     license="N/A",
     description=description,
