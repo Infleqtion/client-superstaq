@@ -33,7 +33,7 @@ def read_json(json_dict: dict) -> AQTCompilerOutput:
     except ModuleNotFoundError:
         return AQTCompilerOutput(compiled_circuit)
 
-    if True:  # pragma: no cover, b/c qtrl is not open source so it included in cirq-superstaq reqs
+    if True:  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
         state_str = json_dict["state_jp"]
         state = pickle.loads(codecs.decode(state_str.encode(), "base64"))
         seq = qtrl.sequencer.Sequence(n_elements=1)
