@@ -1,3 +1,2 @@
 cirq
-cirq-superstaq
 qiskit
