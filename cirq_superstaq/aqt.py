@@ -37,6 +37,6 @@ def read_json(json_dict: dict) -> AQTCompilerOutput:
         state_str = json_dict["state_jp"]
         state = pickle.loads(codecs.decode(state_str.encode(), "base64"))
         seq = qtrl.sequencer.Sequence(n_elements=1)
-        seq.set_state(state)
+        seq.__setstate__(state)
         seq.compile()
         return AQTCompilerOutput(compiled_circuit, seq)
