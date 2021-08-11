@@ -180,7 +180,7 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def upload_aqt_configs(self, aqt_configs: Dict[str, str]) -> dict:
+    def aqt_upload_configs(self, aqt_configs: Dict[str, str]) -> dict:
         """Makes a POST request to SuperstaQ API to upload configurations."""
 
         def request() -> requests.Response:

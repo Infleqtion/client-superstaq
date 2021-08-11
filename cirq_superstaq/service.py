@@ -178,7 +178,7 @@ class Service:
 
         return aqt.read_json(json_dict)
 
-    def upload_aqt_configs(self, pulses_file_path: str, variables_file_path: str) -> Dict[str, str]:
+    def aqt_upload_configs(self, pulses_file_path: str, variables_file_path: str) -> Dict[str, str]:
         """Uploads configs for AQT
 
         Args:
@@ -194,7 +194,7 @@ class Service:
         variables_file = open(variables_file_path)
         read_variables = variables_file.read()
         variables_file.close()
-        json_dict = self._client.upload_aqt_configs(
+        json_dict = self._client.aqt_upload_configs(
             {"pulses": read_pulses, "variables": read_variables}
         )
 
