@@ -1,11 +1,11 @@
 """
 Creates and simulates multiple circuits with batch submission.
 
-=== EXAMPLE OUTPUT ===
+Example Output:
 
 job has successfully run
-[{'00': 48, '11': 52}, {'000': 48, '111': 52}]
-{'000': 48, '111': 52}
+[{'00': 44, '11': 56}, {'000': 57, '111': 43}]
+{'000': 57, '111': 43}
 
 """
 

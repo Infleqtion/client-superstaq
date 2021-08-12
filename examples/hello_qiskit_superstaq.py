@@ -1,7 +1,7 @@
 """
 Creates and simulates a bell circuit.
 
-=== EXAMPLE OUTPUT ===
+Example Output:
 
 job has successfully run
 {'00': 52, '11': 48}
