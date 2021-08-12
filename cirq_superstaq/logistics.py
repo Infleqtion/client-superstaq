@@ -21,8 +21,8 @@ def read_json_tsp(json_dict: dict) -> TSPOutput:
     route = json_dict["route"]
     route_list_numbers = json_dict["route_list_numbers"]
     total_distance = json_dict["total_distance"]
-    map_link = json_dict["map_link"]
-    return TSPOutput(route, route_list_numbers, total_distance, map_link)
+    map_links = json_dict["map_link"]
+    return TSPOutput(route, route_list_numbers, total_distance, map_links)
 
 
 @dataclass

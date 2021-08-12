@@ -299,7 +299,7 @@ class Service:
             .route: The optimal TSP tour as a list of strings in order.
             .route_list_numbers: The indicies in locs of the optimal tour.
             .total_distance: The tour's total distance.
-            .map_link: A link to google maps that show the tour.
+            .map_links: A link to google maps that show the tour.
 
         """
         input_dict = {"locs": locs}
