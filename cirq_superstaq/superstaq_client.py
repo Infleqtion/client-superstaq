@@ -180,6 +180,58 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
+    def find_min_vol_portfolio(self, json_dict: dict) -> dict:
+        """Makes a POST request to SuperstaQ API to find a minimum volatility portfolio
+        that exceeds a certain specified return."""
+
+        def request() -> requests.Response:
+            return requests.post(
+                f"{self.url}/minvol",
+                headers=self.headers,
+                json=json_dict,
+                verify=(cirq_superstaq.API_URL == self.url),
+            )
+
+        return self._make_request(request).json()
+
+    def find_max_pseudo_sharpe_ratio(self, json_dict: dict) -> dict:
+        """Makes a POST request to SuperstaQ API to find a max Sharpe ratio portfolio."""
+
+        def request() -> requests.Response:
+            return requests.post(
+                f"{self.url}/maxsharpe",
+                headers=self.headers,
+                json=json_dict,
+                verify=(cirq_superstaq.API_URL == self.url),
+            )
+
+        return self._make_request(request).json()
+
+    def tsp(self, json_dict: dict) -> dict:
+        """Makes a POST request to SuperstaQ API to find a optimal TSP tour."""
+
+        def request() -> requests.Response:
+            return requests.post(
+                f"{self.url}/tsp",
+                headers=self.headers,
+                json=json_dict,
+                verify=(cirq_superstaq.API_URL == self.url),
+            )
+
+        return self._make_request(request).json()
+
+    def warehouse(self, json_dict: dict) -> dict:
+        """Makes a POST request to SuperstaQ API to find optimal warehouse assignment."""
+
+        def request() -> requests.Response:
+            return requests.post(
+                f"{self.url}/warehouse",
+                headers=self.headers,
+                json=json_dict,
+            )
+
+        return self._make_request(request).json()
+
     def aqt_upload_configs(self, aqt_configs: Dict[str, str]) -> dict:
         """Makes a POST request to SuperstaQ API to upload configurations."""
 
