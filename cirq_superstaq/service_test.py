@@ -158,6 +158,9 @@ def test_service_warehouse(mock_warehouse: mock.MagicMock) -> None:
         [("Chicago", "Rockford"), ("Chicago", "Aurora")], 100.0, "map.html", ["Chicago"]
     )
     assert service.warehouse(1, ["Chicago", "San Francisco"], ["Rockford", "Aurora"]) == expected
+
+
+@mock.patch(
     "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_upload_configs",
     return_value={"status": "Your AQT configuration has been updated"},
 )
@@ -173,6 +176,7 @@ def test_service_aqt_upload_configs(mock_aqt_compile: mock.MagicMock) -> None:
     assert service.aqt_upload_configs("/tmp/Pulses.yaml", "/tmp/Variables.yaml") == {
         "status": "Your AQT configuration has been updated"
     }
+
 
 def test_service_api_key_via_env() -> None:
     os.environ["SUPERSTAQ_API_KEY"] = "tomyheart"

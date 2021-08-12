@@ -14,7 +14,6 @@
 
 import collections
 import os
-
 from typing import Dict, List, Optional
 
 import cirq
@@ -198,8 +197,10 @@ class Service:
             solver: Specifies which solver to use. Defaults to a simulated annealer.
 
         Returns:
-            A dictionary containing the assets in the optimal portfolio and
-            the portfolio's expected return and standard deviation.
+            MinVolOutput object, with the following attributes:
+            .best_portfolio: The assets in the optimal portfolio.
+            .best_ret: The return of the optimal portfolio.
+            .best_std_dev: The volatility of the optimal portfolio.
 
         """
         input_dict = {
@@ -247,17 +248,20 @@ class Service:
             indicates only being concerned with risk aversion, while a k closer to 0
             indicates only being concerned with maximizing expected return regardless of
             risk.
+            k: The factor to weigh the portions of the expression.
             num_assets_in_portfolio: The number of desired assets in the portfolio.
-            If A is not specified, then the function will iterate through and
+            If not specified, then the function will iterate through and
             check for all portfolio sizes.
             years_window: The number of years previous from today to pull data from
             for price data.
             solver: Specifies which solver to use. Defaults to a simulated annealer.
 
         Return:
-            A dictionary containing the assets in the optimal portfolio and
-            the portfolio's expected return and standard deviation, as well as the Sharpe ratio
-            of the portfolio.
+            A MaxSharpeOutput object with the following attributes:
+            .best_portfolio: The assets in the optimal portfolio.
+            .best_ret: The return of the optimal portfolio.
+            .best_std_dev: The volatility of the optimal portfolio.
+            .best_sharpe_ratio: The Sharpe ratio of the optimal portfolio.
 
         """
         input_dict = {
@@ -291,8 +295,11 @@ class Service:
             solver: A string indicating which solver to use ("rqaoa" or "anneal").
 
         Returns:
-            A dictionary with information representing the optimal tour.
-
+            A TSPOutput object with the following attributes:
+            .route: The optimal TSP tour as a list of strings in order.
+            .route_list_numbers: The indicies in locs of the optimal tour.
+            .total_distance: The tour's total distance.
+            .map_link: A link to google maps that show the tour.
 
         """
         input_dict = {"locs": locs}
@@ -317,13 +324,11 @@ class Service:
             solver: A string indicating which solver to use ("rqaoa" or "anneal").
 
         Returns:
-            A dictionary with:
-            -A list of tuples where the first string in the tuple is the warehouse
-            and the second is the customer served by that warehouse.
-            -The sum of all distances from nearest warehouse to each customer.
-            -A link to the map of the warehouse-customer pairings.
-            -A list of which k warehouses are open.
-
+            A WarehouseOutput object with the following attributes:
+            .warehouse_to_destination: The optimal warehouse-customer pairings in List(Tuple) form.
+            .total_distance: The tour's total distance among all warehouse-customer pairings.
+            .map_link: A link to google maps that show the tour.
+            .open_warehouses: A list of all warehouses that are open.
 
         """
         input_dict = {

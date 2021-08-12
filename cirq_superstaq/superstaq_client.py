@@ -229,6 +229,9 @@ class _SuperstaQClient:
                 headers=self.headers,
                 json=json_dict,
             )
+
+        return self._make_request(request).json()
+
     def aqt_upload_configs(self, aqt_configs: Dict[str, str]) -> dict:
         """Makes a POST request to SuperstaQ API to upload configurations."""
 
@@ -237,7 +240,6 @@ class _SuperstaQClient:
                 f"{self.url}/aqt_configs",
                 headers=self.headers,
                 json=aqt_configs,
-
                 verify=(cirq_superstaq.API_URL == self.url),
             )
 
