@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-
-import cirq
+from typing import List
 
 
 @dataclass

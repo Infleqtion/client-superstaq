@@ -14,12 +14,14 @@
 
 import collections
 import os
-from typing import Optional
+from typing import List, Optional
 
 import cirq
 
 import cirq_superstaq
 from cirq_superstaq import job, superstaq_client
+from cirq_superstaq.finance import MaxSharpeOutput, MinVolOutput
+from cirq_superstaq.logistics import TSPOutput, WarehouseOutput
 
 
 class Service:
@@ -184,7 +186,7 @@ class Service:
         desired_return: float,
         years_window: float = 5.0,
         solver: str = "anneal",
-    ):
+    ) -> MinVolOutput:
         """Finds the portfolio with minimum volatility that exceeds a specified desired return.
 
         Args:
@@ -211,12 +213,13 @@ class Service:
         return finance.read_json_minvol(json_dict)
 
     def find_max_pseudo_sharpe_ratio(
+        self,
         stock_symbols: List[str],
         k: float,
         num_assets_in_portfolio: int = None,
         years_window: float = 5.0,
         solver: str = "anneal",
-    ):
+    ) -> MaxSharpeOutput:
         """
         Finds the optimal equal-weight portfolio from a possible pool of stocks
         according to the following rules:
@@ -268,7 +271,7 @@ class Service:
 
         return finance.read_json_maxsharpe(json_dict)
 
-    def tsp(locs: List[str], solver: str = "anneal"):
+    def tsp(self, locs: List[str], solver: str = "anneal") -> TSPOutput:
         """
         This function solves the traveling salesperson problem (TSP) and
         takes a list of strings as input. TSP finds the shortest tour that
@@ -282,7 +285,8 @@ class Service:
         of the tour in miles.
 
         Args:
-            locs: List of strings where each string represents a location needed to be visited on tour.
+            locs: List of strings where each string represents
+            a location needed to be visited on tour.
             solver: A string indicating which solver to use ("rqaoa" or "anneal").
 
         Returns:
@@ -297,8 +301,8 @@ class Service:
         return logistics.read_json_tsp(json_dict)
 
     def warehouse(
-        k: int, possible_warehouses: List[str], customers: List[str], solver: str = "anneal"
-    ):
+        self, k: int, possible_warehouses: List[str], customers: List[str], solver: str = "anneal"
+    ) -> WarehouseOutput:
         """
         This function solves the warehouse location problem, which is:
         given a list of customers to be served and  a list of possible warehouse

@@ -180,10 +180,9 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def find_min_vol_portfolio(self, input_dict: dict) -> dict:
+    def find_min_vol_portfolio(self, json_dict: dict) -> dict:
         """Makes a POST request to SuperstaQ API to find a minimum volatility portfolio
         that exceeds a certain specified return."""
-        json_dict = json.loads(input_dict)
 
         def request() -> requests.Response:
             return requests.get(
@@ -195,9 +194,8 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def find_max_pseudo_sharpe_ratio(self, input_dict: dict) -> dict:
+    def find_max_pseudo_sharpe_ratio(self, json_dict: dict) -> dict:
         """Makes a POST request to SuperstaQ API to find a max Sharpe ratio portfolio."""
-        json_dict = json.loads(input_dict)
 
         def request() -> requests.Response:
             return requests.get(
@@ -209,9 +207,8 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def tsp(self, input_dict: dict) -> dict:
+    def tsp(self, json_dict: dict) -> dict:
         """Makes a POST request to SuperstaQ API to find a optimal TSP tour."""
-        json_dict = json.loads(input_dict)
 
         def request() -> requests.Response:
             return requests.get(
@@ -223,9 +220,8 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def warehouse(self, input_dict: dict) -> dict:
+    def warehouse(self, json_dict: dict) -> dict:
         """Makes a POST request to SuperstaQ API to find optimal warehouse assignment."""
-        json_dict = json.loads(input_dict)
 
         def request() -> requests.Response:
             return requests.get(

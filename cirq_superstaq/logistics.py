@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-
-import cirq
+from typing import List
 
 
 @dataclass
@@ -22,6 +21,7 @@ def read_json_tsp(json_dict: dict) -> TSPOutput:
     route = json_dict["route"]
     route_list_numbers = json_dict["route_list_numbers"]
     total_distance = json_dict["total_distance"]
+    map_link = json_dict["map_link"]
     return TSPOutput(route, route_list_numbers, total_distance, map_link)
 
 
@@ -45,4 +45,4 @@ def read_json_warehouse(json_dict: dict) -> WarehouseOutput:
     total_distance = json_dict["total_distance"]
     map_link = json_dict["map_link"]
     open_warehouses = json_dict["open_warehouses"]
-    return TSPOutput(warehouse_to_destination, total_distance, map_link, open_warehouses)
+    return WarehouseOutput(warehouse_to_destination, total_distance, map_link, open_warehouses)
