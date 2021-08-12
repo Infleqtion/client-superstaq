@@ -415,6 +415,19 @@ def test_superstaq_client_warehouse(mock_post: mock.MagicMock) -> None:
     }
     mock_post.assert_called_with(
         "http://example.com/v0.1/warehouse",
+    )
+
+def test_superstaq_client_aqt_upload_configs(mock_post: mock.MagicMock) -> None:
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
+   
+
+    client.aqt_upload_configs({"pulses": "Hello", "variables": "World"})
+
+    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
+    expected_json = {"pulses": "Hello", "variables": "World"}
+    mock_post.assert_called_with(
+        "http://example.com/v0.1/aqt_configs",
         headers=expected_headers,
         json=expected_json,
         verify=False,
