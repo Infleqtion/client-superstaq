@@ -15,23 +15,10 @@
 import json
 from typing import Any, Iterable, List, Union
 
-import cirq
-import cirq.contrib.qasm_import
 import ply
 import qiskit
 import qiskit_superstaq as qss
 import requests
-
-
-class BarrierGateStatement(cirq.contrib.qasm_import._parser.QasmGateStatement):
-    def __init__(self) -> None:
-        pass
-
-    def on(
-        self, params: List[float], args: List[List[cirq.ops.Qid]], lineno: int
-    ) -> Iterable[cirq.ops.Operation]:
-        qubits = [q[0] for q in args]
-        yield cirq.ops.IdentityGate(len(qubits)).on(*qubits).with_tags("barrier")
 
 
 class SuperstaQBackend(qiskit.providers.BackendV1):
@@ -74,30 +61,6 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             and self.configuration_dict == other.configuration_dict
         )
 
-    def qiskit_to_circuit_json(
-        self,
-        circuit: qiskit.QuantumCircuit,
-    ) -> str:
-        """Return a json payload string (based on cirq.to_json) for the given Qiskit circuit."""
-
-        def p_quantum_arg_bit_line(self, p: ply.yacc.YaccProduction) -> None:  # type: ignore
-            """qarg : ID '[' NATURAL_NUMBER ']' """
-            reg = p[1]
-            idx = p[3]
-            arg_name = self.make_name(idx, reg)
-            if arg_name not in self.qubits.keys():
-                self.qubits[arg_name] = cirq.LineQubit(idx)
-            p[0] = [self.qubits[arg_name]]
-
-        setattr(
-            cirq.contrib.qasm_import._parser.QasmParser, "p_quantum_arg_bit", p_quantum_arg_bit_line
-        )
-
-        cirq.contrib.qasm_import._parser.QasmParser.all_gates["barrier"] = BarrierGateStatement()
-        qasm = circuit.qasm()
-        circuit = cirq.contrib.qasm_import._parser.QasmParser().parse(qasm).circuit
-        return json.loads(cirq.to_json(circuit))
-
     def run(
         self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]], **kwargs: int
     ) -> "qss.superstaq_job.SuperstaQJob":
@@ -106,7 +69,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             circuits = [circuits]
 
         superstaq_json = {
-            "circuits": [self.qiskit_to_circuit_json(circuit) for circuit in circuits],
+            "qasm_strings": [circuit.qasm() for circuit in circuits],
             "backend": self.name(),
             "shots": kwargs.get("shots"),
             "ibmq_token": kwargs.get("ibmq_token"),
@@ -122,7 +85,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         }
 
         res = requests.post(
-            self.url + "/" + qss.API_VERSION + "/multi_job",
+            self.url + "/" + qss.API_VERSION + "/qasm_strings_multi_job",
             json=superstaq_json,
             headers=headers,
             verify=(self.url == qss.API_URL),
