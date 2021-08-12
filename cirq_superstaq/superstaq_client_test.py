@@ -335,3 +335,87 @@ def test_superstaq_client_aqt_compile(mock_post: mock.MagicMock) -> None:
         json=expected_json,
         verify=False,
     )
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_find_min_vol_portfolio(mock_post: mock.MagicMock) -> None:
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
+    )
+    client.find_min_vol_portfolio(
+        {"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "desired_return": 8}
+    )
+
+    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
+
+    expected_json = {"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "desired_return": 8}
+    mock_post.assert_called_with(
+        "http://example.com/v0.1/minvol",
+        headers=expected_headers,
+        json=expected_json,
+        verify=False,
+    )
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_find_max_pseudo_sharpe_ratio(mock_post: mock.MagicMock) -> None:
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
+    )
+    client.find_max_pseudo_sharpe_ratio({"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "k": 0.5})
+
+    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
+
+    expected_json = {"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "k": 0.5}
+    mock_post.assert_called_with(
+        "http://example.com/v0.1/maxsharpe",
+        headers=expected_headers,
+        json=expected_json,
+        verify=False,
+    )
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_tsp(mock_post: mock.MagicMock) -> None:
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
+    )
+    client.tsp({"locs": ["Chicago", "St Louis", "St Paul"]})
+
+    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
+
+    expected_json = {"locs": ["Chicago", "St Louis", "St Paul"]}
+    mock_post.assert_called_with(
+        "http://example.com/v0.1/tsp",
+        headers=expected_headers,
+        json=expected_json,
+        verify=False,
+    )
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_warehouse(mock_post: mock.MagicMock) -> None:
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
+    )
+    client.warehouse(
+        {
+            "k": 1,
+            "possible_warehouses": ["Chicago", "San Francisco"],
+            "customers": ["Rockford", "Aurora"],
+        }
+    )
+
+    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
+
+    expected_json = {
+        "k": 1,
+        "possible_warehouses": ["Chicago", "San Francisco"],
+        "customers": ["Rockford", "Aurora"],
+    }
+    mock_post.assert_called_with(
+        "http://example.com/v0.1/warehouse",
+        headers=expected_headers,
+        json=expected_json,
+        verify=False,
+    )

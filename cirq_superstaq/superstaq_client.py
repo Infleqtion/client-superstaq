@@ -185,7 +185,7 @@ class _SuperstaQClient:
         that exceeds a certain specified return."""
 
         def request() -> requests.Response:
-            return requests.get(
+            return requests.post(
                 f"{self.url}/minvol",
                 headers=self.headers,
                 json=json_dict,
@@ -198,7 +198,7 @@ class _SuperstaQClient:
         """Makes a POST request to SuperstaQ API to find a max Sharpe ratio portfolio."""
 
         def request() -> requests.Response:
-            return requests.get(
+            return requests.post(
                 f"{self.url}/maxsharpe",
                 headers=self.headers,
                 json=json_dict,
@@ -211,7 +211,7 @@ class _SuperstaQClient:
         """Makes a POST request to SuperstaQ API to find a optimal TSP tour."""
 
         def request() -> requests.Response:
-            return requests.get(
+            return requests.post(
                 f"{self.url}/tsp",
                 headers=self.headers,
                 json=json_dict,
@@ -224,7 +224,7 @@ class _SuperstaQClient:
         """Makes a POST request to SuperstaQ API to find optimal warehouse assignment."""
 
         def request() -> requests.Response:
-            return requests.get(
+            return requests.post(
                 f"{self.url}/warehouse",
                 headers=self.headers,
                 json=json_dict,
