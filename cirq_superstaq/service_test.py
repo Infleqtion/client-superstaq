@@ -99,6 +99,24 @@ def test_service_aqt_compile(mock_aqt_compile: mock.MagicMock) -> None:
     assert service.aqt_compile(cirq.Circuit()) == expected
 
 
+@mock.patch(
+    "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_upload_configs",
+    return_value={"status": "Your AQT configuration has been updated"},
+)
+def test_service_aqt_upload_configs(mock_aqt_compile: mock.MagicMock) -> None:
+    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+
+    with open("/tmp/Pulses.yaml", "w") as pulses_file:
+        pulses_file.write("Hello")
+
+    with open("/tmp/Variables.yaml", "w") as variables_file:
+        variables_file.write("World")
+
+    assert service.aqt_upload_configs("/tmp/Pulses.yaml", "/tmp/Variables.yaml") == {
+        "status": "Your AQT configuration has been updated"
+    }
+
+
 def test_service_api_key_via_env() -> None:
     os.environ["SUPERSTAQ_API_KEY"] = "tomyheart"
     service = cirq_superstaq.Service(remote_host="http://example.com")

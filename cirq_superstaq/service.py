@@ -14,7 +14,7 @@
 
 import collections
 import os
-from typing import Optional
+from typing import Dict, Optional
 
 import cirq
 
@@ -177,3 +177,24 @@ class Service:
         from cirq_superstaq import aqt
 
         return aqt.read_json(json_dict)
+
+    def aqt_upload_configs(self, pulses_file_path: str, variables_file_path: str) -> Dict[str, str]:
+        """Uploads configs for AQT
+
+        Args:
+            pulses_file_path: The filepath for Pulses.yaml
+            variables_file_path: The filepath for Variables.yaml
+        Returns:
+            A dictionary of of the status of the update (Whether or not it failed)
+        """
+        with open(pulses_file_path) as pulses_file:
+            read_pulses = pulses_file.read()
+
+        with open(variables_file_path) as variables_file:
+            read_variables = variables_file.read()
+
+        json_dict = self._client.aqt_upload_configs(
+            {"pulses": read_pulses, "variables": read_variables}
+        )
+
+        return json_dict
