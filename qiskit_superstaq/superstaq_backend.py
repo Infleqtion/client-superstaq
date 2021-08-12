@@ -11,11 +11,8 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+from typing import Any, List, Union
 
-import json
-from typing import Any, Iterable, List, Union
-
-import ply
 import qiskit
 import qiskit_superstaq as qss
 import requests
