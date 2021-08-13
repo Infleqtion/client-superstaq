@@ -17,8 +17,6 @@ pip install -e .
 
 Make sure to always be in the qiskit-superstaq-env (via ``conda activate qiskit-superstaq-env``) when you're working on qiskit-superstaq.
 
-Pandoc must be installed prior to building the docs. This can be done via ```apt install pandoc``` on Linux and ```brew install pandoc``` on Mac.
-
 ### Creating and submitting a circuit through qiskit-superstaq
 ```
 import qiskit
@@ -41,14 +39,4 @@ qc.measure(1, 1)
 print(qc)
 job = backend.run(qc, shots=100)
 print(job.result().get_counts())
-```
-
-### Build the Docs
-
-To build and display the docs locally:
-
-```
-./dev_tools/build_docs
-open docs/build/html/index.html # For Mac
-xdg-open docs/build/html/index.html # For Linux
 ```
