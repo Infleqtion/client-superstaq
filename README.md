@@ -7,12 +7,10 @@ Please note that Python version `3.7` or higher is required. cirq-superstaq and 
 dependencies can be installed via:
 
 ```
-pip install cirq-superstaq
 python3 -m venv venv_cirq_superstaq
 source venv_cirq_superstaq/bin/activate
+pip install cirq-superstaq
 ```
-
-Make sure to always be in the cirq-superstaq-env (via ``source venv_cirq_superstaq/bin/activate``) when you're working on cirq-superstaq.
 
 ### Creating and submitting a circuit through cirq-superstaq
 ```
