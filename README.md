@@ -7,18 +7,20 @@ Please note that Python version `3.7` or higher is required. cirq-superstaq and 
 dependencies can be installed via:
 
 ```
-git clone https://github.com/SupertechLabs/qiskit-superstaq.git
-cd qiskit-superstaq
-conda create -n cirq-superstaq-env python=3.8
-conda activate cirq-superstaq-env
+pip install cirq-superstaq
+cd cirq-superstaq
+python3 -m venv venv_cirq_superstaq
+source venv_cirq_superstaq/bin/activate
 pip install -r dev-requirements.txt
 pip install -e .
 ```
 
-Make sure to always be in the cirq-superstaq-env (via ``conda activate cirq-superstaq-env``) when you're working on cirq-superstaq.
+Make sure to always be in the cirq-superstaq-env (via ``source venv_cirq_superstaq/bin/activate``) when you're working on cirq-superstaq.
 
 ### Creating and submitting a circuit through cirq-superstaq
 ```
+python3
+
 import cirq
 
 import cirq_superstaq
