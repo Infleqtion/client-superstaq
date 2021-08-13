@@ -15,8 +15,7 @@ source venv_qiskit_superstaq/bin/activate
 Make sure to always be in the qiskit-superstaq-env (via ``source venv_qiskit_superstaq/bin/activate``) when you're working on qiskit-superstaq.
 
 ### Creating and submitting a circuit through qiskit-superstaq
-```
-python3
+```python3
 
 import qiskit
 import qiskit_superstaq
