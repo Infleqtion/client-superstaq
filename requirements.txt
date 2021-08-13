@@ -1,1 +1,2 @@
+applications-superstaq
 cirq
