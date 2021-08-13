@@ -1,6 +1,6 @@
 This package is used to access SuperstaQ via a Web API through Qiskit. Qiskit programmers
 can take advantage of the applications, pulse level optimization, and write-once-target-all
-features of SuperstaQ.
+features of SuperstaQ with this package.
 
 
 Please note that Python version `3.7` or higher is required. qiskit-superstaq and all of its
