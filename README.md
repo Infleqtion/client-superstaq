@@ -19,6 +19,8 @@ Make sure to always be in the qiskit-superstaq-env (via ``source venv_qiskit_sup
 
 ### Creating and submitting a circuit through qiskit-superstaq
 ```
+python3
+
 import qiskit
 import qiskit_superstaq
 
