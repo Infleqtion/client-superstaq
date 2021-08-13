@@ -8,11 +8,8 @@ dependencies can be installed via:
 
 ```
 pip install qiskit-superstaq
-cd qiskit-superstaq
 python3 -m venv venv_qiskit_superstaq
 source venv_qiskit_superstaq/bin/activate
-pip install -r dev-requirements.txt
-pip install -e .
 ```
 
 Make sure to always be in the qiskit-superstaq-env (via ``source venv_qiskit_superstaq/bin/activate``) when you're working on qiskit-superstaq.
