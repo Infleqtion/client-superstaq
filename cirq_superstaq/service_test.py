@@ -11,7 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import codecs
 import os
+import pickle
 from unittest import mock
 
 import applications_superstaq
@@ -20,7 +22,6 @@ import pytest
 import sympy
 
 import cirq_superstaq
-from cirq_superstaq import aqt
 
 
 def test_service_run() -> None:
@@ -93,12 +94,16 @@ def test_service_create_job() -> None:
 
 @mock.patch(
     "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
-    return_value={"compiled_circuit": cirq.to_json(cirq.Circuit())},
+    return_value={
+        "compiled_circuit": cirq.to_json(cirq.Circuit()),
+        "state_jp": codecs.encode(pickle.dumps({}), "base64").decode(),
+        "pulse_list_jp": codecs.encode(pickle.dumps([]), "base64").decode(),
+    },
 )
 def test_service_aqt_compile(mock_aqt_compile: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    expected = aqt.AQTCompilerOutput(cirq.Circuit())
-    assert service.aqt_compile(cirq.Circuit()) == expected
+    expected = cirq.Circuit()
+    assert service.aqt_compile(cirq.Circuit()).circuit == expected
 
 
 @mock.patch(
