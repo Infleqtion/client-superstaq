@@ -1,2 +1,2 @@
 # applications-superstaq
-Home to finance and logistics endpoints for SuperstaQ
+This package is used to house endpoints for the finance and logistics applications for SuperstaQ.
