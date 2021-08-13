@@ -9,8 +9,8 @@ dependencies can be installed via:
 ```
 git clone https://github.com/SupertechLabs/qiskit-superstaq.git
 cd qiskit-superstaq
-conda create -n qiskit-superstaq-env python=3.8
-conda activate qiskit-superstaq-env
+python3 -m venv venv_qiskit_superstaq
+source venv_qiskit_superstaq/bin/activate
 pip install -r dev-requirements.txt
 pip install -e .
 ```
@@ -20,13 +20,13 @@ Make sure to always be in the qiskit-superstaq-env (via ``conda activate qiskit-
 ### Creating and submitting a circuit through qiskit-superstaq
 ```
 import qiskit
-import qiskit_superstaq as qss
+import qiskit_superstaq
 
 token = "Insert superstaq token that you received from https://superstaq.super.tech"
 
-superstaq = qss.superstaq_provider.SuperstaQProvider(
+superstaq = qiskit_superstaq.superstaq_provider.SuperstaQProvider(
     token,
-    url=qss.API_URL,
+    url=qiskit_superstaq.API_URL,
 )
 
 backend = superstaq.get_backend("ibmq_qasm_simulator")
