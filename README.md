@@ -1,5 +1,5 @@
 This package is used to access SuperstaQ via a Web API through Qiskit. Qiskit programmers
-can take advantage of the applications, pulse level optimization, and write-once-target-all
+can take advantage of the applications, pulse level optimizations, and write-once-target-all
 features of SuperstaQ with this package.
 
 
@@ -13,8 +13,7 @@ pip install qiskit-superstaq
 ```
 
 ### Creating and submitting a circuit through qiskit-superstaq
-```
-python3
+```python3
 
 import qiskit
 import qiskit_superstaq
