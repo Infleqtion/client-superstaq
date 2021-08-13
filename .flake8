@@ -8,5 +8,5 @@ statistics = True
 
 
 # specific configurations for flake8-import-order plugin:
-application-import-names = cirq_superstaq  # this library is considered local
+application-import-names = applications_superstaq  # this library is considered local
 import-order-style = smarkets
