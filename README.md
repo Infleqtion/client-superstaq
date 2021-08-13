@@ -15,7 +15,7 @@ source venv_cirq_superstaq/bin/activate
 Make sure to always be in the cirq-superstaq-env (via ``source venv_cirq_superstaq/bin/activate``) when you're working on cirq-superstaq.
 
 ### Creating and submitting a circuit through cirq-superstaq
-```
+```python
 python3
 
 import cirq
