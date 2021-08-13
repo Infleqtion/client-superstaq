@@ -15,7 +15,7 @@ pip install -r dev-requirements.txt
 pip install -e .
 ```
 
-Make sure to always be in the qiskit-superstaq-env (via ``conda activate qiskit-superstaq-env``) when you're working on qiskit-superstaq.
+Make sure to always be in the qiskit-superstaq-env (via ``source venv_qiskit_superstaq/bin/activate``) when you're working on qiskit-superstaq.
 
 ### Creating and submitting a circuit through qiskit-superstaq
 ```
