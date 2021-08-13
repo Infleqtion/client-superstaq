@@ -1,5 +1,6 @@
 This package is used to access SuperstaQ via a Web API through Qiskit. Qiskit programmers
 can take advantage of the applications, pulse level optimization, and write-once-target-all
+features of SuperstaQ.
 
 
 Please note that Python version `3.7` or higher is required. qiskit-superstaq and all of its
@@ -51,14 +52,3 @@ To build and display the docs locally:
 open docs/build/html/index.html # For Mac
 xdg-open docs/build/html/index.html # For Linux
 ```
-
-### Unit Tests
-
-In order to get unit tests to work locally, you must:
-1. Have an IBM quantum account (with access to the ibm-q-startup provider)
-2. Have an AWS Braket account, configured with these boto3 instructions https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html#configuration.
-3. Clone and install qtrl
-```
-git clone git@github.com:SupertechLabs/qtrl.git
-cd qtrl
-pip install .
