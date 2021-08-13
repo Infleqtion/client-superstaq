@@ -7,7 +7,7 @@ Please note that Python version `3.7` or higher is required. qiskit-superstaq an
 dependencies can be installed via:
 
 ```
-git clone https://github.com/SupertechLabs/qiskit-superstaq.git
+pip install qiskit-superstaq
 cd qiskit-superstaq
 python3 -m venv venv_qiskit_superstaq
 source venv_qiskit_superstaq/bin/activate
