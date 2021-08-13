@@ -8,11 +8,8 @@ dependencies can be installed via:
 
 ```
 pip install cirq-superstaq
-cd cirq-superstaq
 python3 -m venv venv_cirq_superstaq
 source venv_cirq_superstaq/bin/activate
-pip install -r dev-requirements.txt
-pip install -e .
 ```
 
 Make sure to always be in the cirq-superstaq-env (via ``source venv_cirq_superstaq/bin/activate``) when you're working on cirq-superstaq.
