@@ -17,11 +17,11 @@ import os
 from typing import Dict, List, Optional
 
 import cirq
+from applications_superstaq.finance import MaxSharpeOutput, MinVolOutput
+from applications_superstaq.logistics import TSPOutput, WarehouseOutput
 
 import cirq_superstaq
 from cirq_superstaq import job, superstaq_client
-from cirq_superstaq.finance import MaxSharpeOutput, MinVolOutput
-from cirq_superstaq.logistics import TSPOutput, WarehouseOutput
 
 
 class Service:
@@ -210,7 +210,7 @@ class Service:
             "solver": solver,
         }
         json_dict = self._client.find_min_vol_portfolio(input_dict)
-        from cirq_superstaq import finance
+        from applications_superstaq import finance
 
         return finance.read_json_minvol(json_dict)
 
@@ -272,7 +272,7 @@ class Service:
             "solver": solver,
         }
         json_dict = self._client.find_max_pseudo_sharpe_ratio(input_dict)
-        from cirq_superstaq import finance
+        from applications_superstaq import finance
 
         return finance.read_json_maxsharpe(json_dict)
 
@@ -304,7 +304,7 @@ class Service:
         """
         input_dict = {"locs": locs}
         json_dict = self._client.tsp(input_dict)
-        from cirq_superstaq import logistics
+        from applications_superstaq import logistics
 
         return logistics.read_json_tsp(json_dict)
 
@@ -338,7 +338,7 @@ class Service:
             "solver": solver,
         }
         json_dict = self._client.warehouse(input_dict)
-        from cirq_superstaq import logistics
+        from applications_superstaq import logistics
 
         return logistics.read_json_warehouse(json_dict)
 

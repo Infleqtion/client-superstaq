@@ -14,6 +14,7 @@
 import os
 from unittest import mock
 
+import applications_superstaq
 import cirq
 import pytest
 import sympy
@@ -105,7 +106,7 @@ def test_service_aqt_compile(mock_aqt_compile: mock.MagicMock) -> None:
 )
 def test_service_find_min_vol_portfolio(mock_find_min_vol_portfolio: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    expected = cirq_superstaq.finance.MinVolOutput(["AAPL", "GOOG"], 8.1, 10.5)
+    expected = applications_superstaq.finance.MinVolOutput(["AAPL", "GOOG"], 8.1, 10.5)
     assert service.find_min_vol_portfolio(["AAPL", "GOOG", "IEF", "MMM"], 8) == expected
 
 
@@ -122,7 +123,7 @@ def test_service_find_max_pseudo_sharpe_ratio(
     mock_find_max_pseudo_sharpe_ratio: mock.MagicMock,
 ) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    expected = cirq_superstaq.finance.MaxSharpeOutput(["AAPL", "GOOG"], 8.1, 10.5, 0.771)
+    expected = applications_superstaq.finance.MaxSharpeOutput(["AAPL", "GOOG"], 8.1, 10.5, 0.771)
     assert service.find_max_pseudo_sharpe_ratio(["AAPL", "GOOG", "IEF", "MMM"], k=0.5) == expected
 
 
@@ -137,7 +138,7 @@ def test_service_find_max_pseudo_sharpe_ratio(
 )
 def test_service_tsp(mock_tsp: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    expected = cirq_superstaq.logistics.TSPOutput(
+    expected = applications_superstaq.logistics.TSPOutput(
         ["Chicago", "St Louis", "St Paul", "Chicago"], [0, 1, 2, 0], 100.0, ["maps.google.com"]
     )
     assert service.tsp(["Chicago", "St Louis", "St Paul"]) == expected
@@ -154,7 +155,7 @@ def test_service_tsp(mock_tsp: mock.MagicMock) -> None:
 )
 def test_service_warehouse(mock_warehouse: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    expected = cirq_superstaq.logistics.WarehouseOutput(
+    expected = applications_superstaq.logistics.WarehouseOutput(
         [("Chicago", "Rockford"), ("Chicago", "Aurora")], 100.0, "map.html", ["Chicago"]
     )
     assert service.warehouse(1, ["Chicago", "San Francisco"], ["Rockford", "Aurora"]) == expected

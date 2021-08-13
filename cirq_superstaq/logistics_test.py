@@ -1,4 +1,4 @@
-from cirq_superstaq import logistics
+from applications_superstaq import logistics
 
 
 def test_read_json_tsp() -> None:
