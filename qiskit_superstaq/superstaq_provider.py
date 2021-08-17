@@ -12,6 +12,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import os
 from typing import List
 
 import qiskit
@@ -43,7 +44,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
     def __init__(
         self,
         access_token: str,
-        url: str = qss.API_URL,
+        url: str = os.getenv("SUPERSTAQ_REMOTE_HOST") or qss.API_URL,
     ) -> None:
         self.access_token = access_token
         self._name = "superstaq_provider"
