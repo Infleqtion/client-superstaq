@@ -290,12 +290,12 @@ def test_superstaq_client_get_job_not_found(mock_get: mock.MagicMock) -> None:
 @mock.patch("requests.get")
 def test_superstaq_client_get_job_not_retriable(mock_get: mock.MagicMock) -> None:
     mock_get.return_value.ok = False
-    mock_get.return_value.status_code = requests.codes.not_implemented
+    mock_get.return_value.status_code = requests.codes.bad_request
 
     client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    with pytest.raises(cirq_superstaq.SuperstaQException, match="Status: 501"):
+    with pytest.raises(cirq_superstaq.SuperstaQException, match="Status: 400"):
         _ = client.get_job("job_id")
 
 

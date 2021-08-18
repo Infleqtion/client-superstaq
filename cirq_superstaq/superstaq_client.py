@@ -257,6 +257,29 @@ class _SuperstaQClient:
         )
         return cast(str, target or self.default_target)
 
+    def _handle_status_codes(self, response: requests.Response) -> None:
+        if response.status_code == requests.codes.unauthorized:
+            raise cirq_superstaq.superstaq_exceptions.SuperstaQException(
+                '"Not authorized" returned by SuperstaQ API.  '
+                "Check to ensure you have supplied the correct API key.",
+                response.status_code,
+            )
+        if response.status_code == requests.codes.not_found:
+            raise cirq_superstaq.superstaq_exceptions.SuperstaQNotFoundException(
+                "SuperstaQ could not find requested resource."
+            )
+
+        if response.status_code not in self.RETRIABLE_STATUS_CODES:
+            message = response.reason
+            if response.status_code == 400:
+                message = str(response.text)
+            raise cirq_superstaq.superstaq_exceptions.SuperstaQException(
+                "Non-retriable error making request to SuperstaQ API. "
+                f"Status: {response.status_code} "
+                f"Error : {message}",
+                response.status_code,
+            )
+
     def _make_request(self, request: Callable[[], requests.Response]) -> requests.Response:
         """Make a request to the API, retrying if necessary.
 
@@ -277,25 +300,11 @@ class _SuperstaQClient:
                 response = request()
                 if response.ok:
                     return response
-                if response.status_code == requests.codes.unauthorized:
-                    raise cirq_superstaq.superstaq_exceptions.SuperstaQException(
-                        '"Not authorized" returned by SuperstaQ API.  '
-                        "Check to ensure you have supplied the correct API key.",
-                        response.status_code,
-                    )
-                if response.status_code == requests.codes.not_found:
-                    raise cirq_superstaq.superstaq_exceptions.SuperstaQNotFoundException(
-                        "SuperstaQ could not find requested resource."
-                    )
-                if response.status_code not in self.RETRIABLE_STATUS_CODES:
-                    raise cirq_superstaq.superstaq_exceptions.SuperstaQException(
-                        "Non-retry-able error making request to SuperstaQ API. "
-                        f"Status: {response.status_code} "
-                        f"Error :{response.reason}",
-                        response.status_code,
-                    )
+
+                self._handle_status_codes(response)
                 message = response.reason
-                # Fallthrough should retry.
+
+            # Fallthrough should retry.
             except requests.RequestException as e:
                 # Connection error, timeout at server, or too many redirects.
                 # Retry these.
