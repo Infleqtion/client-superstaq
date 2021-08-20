@@ -9,7 +9,7 @@ def test_read_json_qubo_result() -> None:
         dtype=[("solution", "O"), ("energy", "<f8"), ("num_occurrences", "<i8")],
     )
     json_dict = {
-        "solution": repr(example_solution),
+        "solution": example_solution.dumps(),
     }
     assert repr(qubo.read_json_qubo_result(json_dict)) == repr(example_solution)
 

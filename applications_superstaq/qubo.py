@@ -11,7 +11,7 @@ def read_json_qubo_result(json_dict: dict) -> np.recarray:
     Returns:
         a numpy.recarray containing the results of the optimization.
     """
-    return eval("np." + json_dict["solution"])
+    return np.loads(json_dict["solution"])
 
 
 def convert_qubo_to_model(qubo: qv.QUBO) -> List[Dict[str, Any]]:
