@@ -11,4 +11,4 @@
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$(git rev-parse --show-toplevel)"
 
-pylint --rcfile=.pylintrc examples applications-superstaq
+pylint --rcfile=.pylintrc applications_superstaq
