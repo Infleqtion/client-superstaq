@@ -1,3 +1,5 @@
+import codecs
+
 import numpy as np
 import qubo
 import qubovert as qv
@@ -9,7 +11,7 @@ def test_read_json_qubo_result() -> None:
         dtype=[("solution", "O"), ("energy", "<f8"), ("num_occurrences", "<i8")],
     )
     json_dict = {
-        "solution": example_solution.dumps(),
+        "solution": codecs.encode(example_solution.dumps(), "base64").decode(),
     }
     assert repr(qubo.read_json_qubo_result(json_dict)) == repr(example_solution)
 
