@@ -17,8 +17,11 @@ import os
 from typing import Dict, List, Optional
 
 import cirq
+import numpy as np
+import qubovert as qv
 from applications_superstaq.finance import MaxSharpeOutput, MinVolOutput
 from applications_superstaq.logistics import TSPOutput, WarehouseOutput
+from applications_superstaq.qubo import read_json_qubo_result
 
 import cirq_superstaq
 from cirq_superstaq import job, superstaq_client
@@ -179,6 +182,21 @@ class Service:
         from cirq_superstaq import aqt
 
         return aqt.read_json(json_dict)
+
+    def submit_qubo(self, qubo: qv.QUBO, target: str, repetitions: int = 1000) -> np.recarray:
+        """Submits the given QUBO to the target backend. The result of the optimization
+        is returned to the user as a numpy.recarray.
+
+        Args:
+            qubo: Qubovert QUBO object representing the optimization problem.
+            target: A string indicating which backend to use.
+            repetitions: Number of shots to execute on the device.
+        Returns:
+            Numpy.recarray containing the solution to the QUBO, the energy of the
+            different solutions, and the number of times each solution was found.
+        """
+        json_dict = self._client.submit_qubo(qubo, target, repetitions=repetitions)
+        return read_json_qubo_result(json_dict)
 
     def find_min_vol_portfolio(
         self,
