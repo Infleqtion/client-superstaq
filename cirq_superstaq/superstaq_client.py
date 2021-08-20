@@ -18,11 +18,11 @@ import time
 import urllib
 from typing import Any, Callable, cast, Dict, Optional
 
+import applications_superstaq
 import qubovert as qv
 import requests
 
 import cirq_superstaq
-import applications_superstaq
 
 
 class _SuperstaQClient:
@@ -184,9 +184,11 @@ class _SuperstaQClient:
 
     def submit_qubo(self, qubo: qv.QUBO, target: str, repetitions: int = 1000) -> dict:
         """Makes a POST request to SuperstaQ API to submit a QUBO problem to the given target."""
-        json_dict = {"qubo": applications_superstaq.qubo.convert_qubo_to_model(qubo),
-                     "backend": target,
-                     "shots": repetitions}
+        json_dict = {
+            "qubo": applications_superstaq.qubo.convert_qubo_to_model(qubo),
+            "backend": target,
+            "shots": repetitions,
+        }
 
         def request() -> requests.Response:
             return requests.post(
