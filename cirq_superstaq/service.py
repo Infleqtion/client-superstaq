@@ -184,14 +184,16 @@ class Service:
         return aqt.read_json(json_dict)
 
     def submit_qubo(self, qubo: qv.QUBO, target: str, repetitions: int = 1000) -> np.recarray:
-        """Compiles the given circuit to AQT device, optimized to its native gate set.
+        """Submits the given QUBO to the target backend. The result of the optimization
+        is returned to the user as a numpy.recarray.
 
         Args:
-            circuit: a cirq Circuit object with operations on qubits 4 through 8.
+            qubo: Qubovert QUBO object representing the optimization problem.
+            target: A string indicating which backend to use.
+            repetitions: Number of shots to execute on the device.
         Returns:
-            AQTCompilerOutput object, whose .circuit attribute contains an optimized cirq Circuit.
-            If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the optimized cirq Circuit.
+            Numpy.recarray containing the solution to the QUBO, the energy of the
+            different solutions, and the number of times each solution was found.
         """
         json_dict = self._client.submit_qubo(qubo, target, repetitions=repetitions)
         return read_json_qubo_result(json_dict)
