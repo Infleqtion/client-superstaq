@@ -1,2 +1,3 @@
 applications-superstaq
-cirqqubovert==1.2.3
+cirq
+qubovert==1.2.3
