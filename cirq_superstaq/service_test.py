@@ -18,7 +18,9 @@ from unittest import mock
 
 import applications_superstaq
 import cirq
+import numpy as np
 import pytest
+import qubovert as qv
 import sympy
 
 import cirq_superstaq
@@ -104,6 +106,27 @@ def test_service_aqt_compile(mock_aqt_compile: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
     expected = cirq.Circuit()
     assert service.aqt_compile(cirq.Circuit()).circuit == expected
+
+
+@mock.patch(
+    "cirq_superstaq.superstaq_client._SuperstaQClient.submit_qubo",
+    return_value={
+        "solution": codecs.encode(
+            np.rec.array(
+                [({0: 0, 1: 1, 3: 1}, -1, 6), ({0: 1, 1: 1, 3: 1}, -1, 4)],
+                dtype=[("solution", "O"), ("energy", "<f8"), ("num_occurrences", "<i8")],
+            ).dumps(),
+            "base64",
+        ).decode()
+    },
+)
+def test_service_submit_qubo(mock_submit_qubo: mock.MagicMock) -> None:
+    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    expected = np.rec.array(
+        [({0: 0, 1: 1, 3: 1}, -1, 6), ({0: 1, 1: 1, 3: 1}, -1, 4)],
+        dtype=[("solution", "O"), ("energy", "<f8"), ("num_occurrences", "<i8")],
+    )
+    assert repr(service.submit_qubo(qv.QUBO(), "target", repetitions=10)) == repr(expected)
 
 
 @mock.patch(

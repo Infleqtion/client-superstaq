@@ -17,6 +17,7 @@ from unittest import mock
 
 import cirq
 import pytest
+import qubovert as qv
 import requests
 
 import cirq_superstaq
@@ -331,6 +332,36 @@ def test_superstaq_client_aqt_compile(mock_post: mock.MagicMock) -> None:
     expected_json = {"circuit": json.loads(blah)}
     mock_post.assert_called_with(
         "http://example.com/v0.1/aqt_compile",
+        headers=expected_headers,
+        json=expected_json,
+        verify=False,
+    )
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
+    )
+
+    example_qubo = qv.QUBO({(0,): 1.0, (1,): 1.0, (0, 1): -2.0})
+    target = "example_target"
+    repetitions = 10
+    client.submit_qubo(example_qubo, target, repetitions=repetitions)
+
+    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
+    expected_json = {
+        "qubo": [
+            {"keys": ["0"], "value": 1.0},
+            {"keys": ["1"], "value": 1.0},
+            {"keys": ["0", "1"], "value": -2.0},
+        ],
+        "backend": target,
+        "shots": repetitions,
+    }
+
+    mock_post.assert_called_with(
+        "http://example.com/v0.1/qubo",
         headers=expected_headers,
         json=expected_json,
         verify=False,
