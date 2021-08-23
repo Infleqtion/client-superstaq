@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 from typing import List
 
+import qubovert as qv
+from qubo import convert_model_to_qubo
+
 
 @dataclass
 class TSPOutput:
@@ -8,6 +11,7 @@ class TSPOutput:
     route_list_numbers: List
     total_distance: float
     map_link: List[str]
+    qubo: qv.QUBO
 
 
 def read_json_tsp(json_dict: dict) -> TSPOutput:
@@ -22,7 +26,8 @@ def read_json_tsp(json_dict: dict) -> TSPOutput:
     route_list_numbers = json_dict["route_list_numbers"]
     total_distance = json_dict["total_distance"]
     map_links = json_dict["map_link"]
-    return TSPOutput(route, route_list_numbers, total_distance, map_links)
+    qubo = convert_model_to_qubo(json_dict["qubo"])
+    return TSPOutput(route, route_list_numbers, total_distance, map_links, qubo)
 
 
 @dataclass
@@ -31,6 +36,7 @@ class WarehouseOutput:
     total_distance: float
     map_link: str
     open_warehouses: List
+    qubo: qv.QUBO
 
 
 def read_json_warehouse(json_dict: dict) -> WarehouseOutput:
@@ -45,4 +51,7 @@ def read_json_warehouse(json_dict: dict) -> WarehouseOutput:
     total_distance = json_dict["total_distance"]
     map_link = json_dict["map_link"]
     open_warehouses = json_dict["open_warehouses"]
-    return WarehouseOutput(warehouse_to_destination, total_distance, map_link, open_warehouses)
+    qubo = convert_model_to_qubo(json_dict["qubo"])
+    return WarehouseOutput(
+        warehouse_to_destination, total_distance, map_link, open_warehouses, qubo
+    )

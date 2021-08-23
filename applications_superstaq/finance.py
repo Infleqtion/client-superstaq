@@ -1,12 +1,16 @@
 from dataclasses import dataclass
 from typing import List
 
+import qubovert as qv
+from qubo import convert_model_to_qubo
+
 
 @dataclass
 class MinVolOutput:
     best_portfolio: List[str]
     best_ret: float
     best_std_dev: float
+    qubo: qv.QUBO
 
 
 def read_json_minvol(json_dict: dict) -> MinVolOutput:
@@ -20,7 +24,8 @@ def read_json_minvol(json_dict: dict) -> MinVolOutput:
     best_portfolio = json_dict["best_portfolio"]
     best_ret = json_dict["best_ret"]
     best_std_dev = json_dict["best_std_dev"]
-    return MinVolOutput(best_portfolio, best_ret, best_std_dev)
+    qubo = convert_model_to_qubo(json_dict["qubo"])
+    return MinVolOutput(best_portfolio, best_ret, best_std_dev, qubo)
 
 
 @dataclass
@@ -29,6 +34,7 @@ class MaxSharpeOutput:
     best_ret: float
     best_std_dev: float
     best_sharpe_ratio: float
+    qubo: qv.QUBO
 
 
 def read_json_maxsharpe(json_dict: dict) -> MaxSharpeOutput:
@@ -43,4 +49,5 @@ def read_json_maxsharpe(json_dict: dict) -> MaxSharpeOutput:
     best_ret = json_dict["best_ret"]
     best_std_dev = json_dict["best_std_dev"]
     best_sharpe_ratio = json_dict["best_sharpe_ratio"]
-    return MaxSharpeOutput(best_portfolio, best_ret, best_std_dev, best_sharpe_ratio)
+    qubo = convert_model_to_qubo(json_dict["qubo"])
+    return MaxSharpeOutput(best_portfolio, best_ret, best_std_dev, best_sharpe_ratio, qubo)
