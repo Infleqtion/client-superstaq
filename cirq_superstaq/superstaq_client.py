@@ -182,7 +182,7 @@ class _SuperstaQClient:
             return requests.get(
                 f"{self.url}/balance",
                 headers=self.headers,
-                verify=(cirq_superstaq.API_URL == self.url),
+                verify=self.verify_https,
             )
 
         return self._make_request(request).json()
