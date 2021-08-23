@@ -94,6 +94,16 @@ def test_service_create_job() -> None:
     assert create_job_kwargs["target"] == "qpu"
 
 
+def test_service_get_balance() -> None:
+    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    mock_client = mock.MagicMock()
+    mock_client.get_balance.return_value = {"balance": 12345.6789}
+    service._client = mock_client
+
+    assert service.get_balance() == "$12,345.68"
+    assert service.get_balance(pretty_output=False) == 12345.6789
+
+
 @mock.patch(
     "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={

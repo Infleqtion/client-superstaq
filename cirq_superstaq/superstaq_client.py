@@ -168,6 +168,22 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
+    def get_balance(self) -> dict:
+        """Get the querying user's account balance in USD.
+
+        Returns:
+            The json body of the response as a dict.
+        """
+
+        def request() -> requests.Response:
+            return requests.get(
+                f"{self.url}/balance",
+                headers=self.headers,
+                verify=(cirq_superstaq.API_URL == self.url),
+            )
+
+        return self._make_request(request).json()
+
     def aqt_compile(self, serialized_program: str) -> dict:
         """Makes a POST request to SuperstaQ API to compile a circuit for Berkeley-AQT."""
         json_dict = {"circuit": json.loads(serialized_program)}

@@ -249,7 +249,6 @@ def test_superstaq_client_create_job_timeout(mock_post: mock.MagicMock) -> None:
 
 @mock.patch("requests.get")
 def test_superstaq_client_get_job(mock_get: mock.MagicMock) -> None:
-    print("Type of mock_get")
     mock_get.return_value.ok = True
     mock_get.return_value.json.return_value = {"foo": "bar"}
     client = cirq_superstaq.superstaq_client._SuperstaQClient(
@@ -261,6 +260,22 @@ def test_superstaq_client_get_job(mock_get: mock.MagicMock) -> None:
     expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     mock_get.assert_called_with(
         "http://example.com/v0.1/job/job_id", headers=expected_headers, verify=False
+    )
+
+
+@mock.patch("requests.get")
+def test_superstaq_client_get_balance(mock_get: mock.MagicMock) -> None:
+    mock_get.return_value.ok = True
+    mock_get.return_value.json.return_value = {"balance": 123.4567}
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="to_my_heart"
+    )
+    response = client.get_balance()
+    assert response == {"balance": 123.4567}
+
+    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
+    mock_get.assert_called_with(
+        "http://example.com/v0.1/balance", headers=expected_headers, verify=False
     )
 
 

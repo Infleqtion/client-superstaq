@@ -14,7 +14,7 @@
 
 import collections
 import os
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import cirq
 import numpy as np
@@ -166,6 +166,22 @@ class Service:
         """
         job_dict = self._client.get_job(job_id=job_id)
         return job.Job(client=self._client, job_dict=job_dict)
+
+    def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
+        """Get the querying user's account balance in USD.
+
+        Args:
+            pretty_output: whether to return a pretty string or a float of the balance.
+
+        Returns:
+            If pretty_output is True, returns the balance as a nicely formatted string ($-prefix,
+                commas on LHS every three digits, and two digits after period). Otherwise, simply
+                returns a float of the balance.
+        """
+        balance = self._client.get_balance()["balance"]
+        if pretty_output:
+            return f"${balance:,.2f}"
+        return balance
 
     def aqt_compile(self, circuit: cirq.Circuit) -> "cirq_superstaq.aqt.AQTCompilerOutput":
         """Compiles the given circuit to AQT device, optimized to its native gate set.
