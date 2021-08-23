@@ -26,3 +26,16 @@ def convert_qubo_to_model(qubo: qv.QUBO) -> List[Dict[str, Any]]:
     for key, value in qubo.items():
         model.append({"keys": [str(variable) for variable in key], "value": value})
     return model
+
+
+def convert_model_to_qubo(model: List[Dict[str, Any]]) -> qv.QUBO:
+    """Takes in qubo model transferred over the wire and converts it to the qubovert format.
+    Args:
+        model: The qubo model as specified in superstaq.web.server.
+    Returns:
+        An equivalent qubovert.QUBO object.
+    """
+    qubo_dict = {}
+    for term in model:
+        qubo_dict[tuple(term["keys"])] = term["value"]
+    return qv.QUBO(qubo_dict)
