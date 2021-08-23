@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from typing import List
 
 import qubovert as qv
-from qubo import convert_model_to_qubo
+
+import applications_superstaq
 
 
 @dataclass
@@ -24,7 +25,7 @@ def read_json_minvol(json_dict: dict) -> MinVolOutput:
     best_portfolio = json_dict["best_portfolio"]
     best_ret = json_dict["best_ret"]
     best_std_dev = json_dict["best_std_dev"]
-    qubo = convert_model_to_qubo(json_dict["qubo"])
+    qubo = applications_superstaq.qubo.convert_model_to_qubo(json_dict["qubo"])
     return MinVolOutput(best_portfolio, best_ret, best_std_dev, qubo)
 
 
@@ -49,5 +50,5 @@ def read_json_maxsharpe(json_dict: dict) -> MaxSharpeOutput:
     best_ret = json_dict["best_ret"]
     best_std_dev = json_dict["best_std_dev"]
     best_sharpe_ratio = json_dict["best_sharpe_ratio"]
-    qubo = convert_model_to_qubo(json_dict["qubo"])
+    qubo = applications_superstaq.qubo.convert_model_to_qubo(json_dict["qubo"])
     return MaxSharpeOutput(best_portfolio, best_ret, best_std_dev, best_sharpe_ratio, qubo)

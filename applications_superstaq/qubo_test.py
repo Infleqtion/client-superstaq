@@ -1,8 +1,9 @@
 import codecs
 
 import numpy as np
-import qubo
 import qubovert as qv
+
+import applications_superstaq
 
 
 def test_read_json_qubo_result() -> None:
@@ -13,7 +14,9 @@ def test_read_json_qubo_result() -> None:
     json_dict = {
         "solution": codecs.encode(example_solution.dumps(), "base64").decode(),
     }
-    assert repr(qubo.read_json_qubo_result(json_dict)) == repr(example_solution)
+    assert repr(applications_superstaq.qubo.read_json_qubo_result(json_dict)) == repr(
+        example_solution
+    )
 
 
 def test_convert_qubo_to_model() -> None:
@@ -23,4 +26,4 @@ def test_convert_qubo_to_model() -> None:
         {"keys": ["1"], "value": 1.0},
         {"keys": ["0", "1"], "value": -2.0},
     ]
-    assert qubo.convert_qubo_to_model(example_qubo) == qubo_model
+    assert applications_superstaq.qubo.convert_qubo_to_model(example_qubo) == qubo_model

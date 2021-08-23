@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from typing import List
 
 import qubovert as qv
-from qubo import convert_model_to_qubo
+
+import applications_superstaq
 
 
 @dataclass
@@ -26,7 +27,7 @@ def read_json_tsp(json_dict: dict) -> TSPOutput:
     route_list_numbers = json_dict["route_list_numbers"]
     total_distance = json_dict["total_distance"]
     map_links = json_dict["map_link"]
-    qubo = convert_model_to_qubo(json_dict["qubo"])
+    qubo = applications_superstaq.qubo.convert_model_to_qubo(json_dict["qubo"])
     return TSPOutput(route, route_list_numbers, total_distance, map_links, qubo)
 
 
@@ -51,7 +52,7 @@ def read_json_warehouse(json_dict: dict) -> WarehouseOutput:
     total_distance = json_dict["total_distance"]
     map_link = json_dict["map_link"]
     open_warehouses = json_dict["open_warehouses"]
-    qubo = convert_model_to_qubo(json_dict["qubo"])
+    qubo = applications_superstaq.qubo.convert_model_to_qubo(json_dict["qubo"])
     return WarehouseOutput(
         warehouse_to_destination, total_distance, map_link, open_warehouses, qubo
     )

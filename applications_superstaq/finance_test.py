@@ -1,6 +1,6 @@
-import finance
-import qubo
 import qubovert as qv
+
+import applications_superstaq
 
 
 def test_read_json_minvol() -> None:
@@ -12,9 +12,11 @@ def test_read_json_minvol() -> None:
         "best_portfolio": best_portfolio,
         "best_ret": best_ret,
         "best_std_dev": best_std_dev,
-        "qubo": qubo.convert_qubo_to_model(qubo_obj),
+        "qubo": applications_superstaq.qubo.convert_qubo_to_model(qubo_obj),
     }
-    assert finance.read_json_minvol(json_dict) == finance.MinVolOutput(
+    assert applications_superstaq.finance.read_json_minvol(
+        json_dict
+    ) == applications_superstaq.finance.MinVolOutput(
         best_portfolio, best_ret, best_std_dev, qubo_obj
     )
 
@@ -30,8 +32,10 @@ def test_read_json_maxsharpe() -> None:
         "best_ret": best_ret,
         "best_std_dev": best_std_dev,
         "best_sharpe_ratio": best_sharpe_ratio,
-        "qubo": qubo.convert_qubo_to_model(qubo_obj),
+        "qubo": applications_superstaq.qubo.convert_qubo_to_model(qubo_obj),
     }
-    assert finance.read_json_maxsharpe(json_dict) == finance.MaxSharpeOutput(
+    assert applications_superstaq.finance.read_json_maxsharpe(
+        json_dict
+    ) == applications_superstaq.finance.MaxSharpeOutput(
         best_portfolio, best_ret, best_std_dev, best_sharpe_ratio, qubo_obj
     )

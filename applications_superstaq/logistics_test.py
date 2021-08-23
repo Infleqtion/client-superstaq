@@ -1,6 +1,6 @@
-import logistics
-import qubo
 import qubovert as qv
+
+import applications_superstaq
 
 
 def test_read_json_tsp() -> None:
@@ -14,9 +14,11 @@ def test_read_json_tsp() -> None:
         "route_list_numbers": route_list_numbers,
         "total_distance": total_distance,
         "map_link": map_link,
-        "qubo": qubo.convert_qubo_to_model(qubo_obj),
+        "qubo": applications_superstaq.qubo.convert_qubo_to_model(qubo_obj),
     }
-    assert logistics.read_json_tsp(json_dict) == logistics.TSPOutput(
+    assert applications_superstaq.logistics.read_json_tsp(
+        json_dict
+    ) == applications_superstaq.logistics.TSPOutput(
         route, route_list_numbers, total_distance, map_link, qubo_obj
     )
 
@@ -32,8 +34,10 @@ def test_read_json_warehouse() -> None:
         "total_distance": total_distance,
         "map_link": map_link,
         "open_warehouses": open_warehouses,
-        "qubo": qubo.convert_qubo_to_model(qubo_obj),
+        "qubo": applications_superstaq.qubo.convert_qubo_to_model(qubo_obj),
     }
-    assert logistics.read_json_warehouse(json_dict) == logistics.WarehouseOutput(
+    assert applications_superstaq.logistics.read_json_warehouse(
+        json_dict
+    ) == applications_superstaq.logistics.WarehouseOutput(
         warehouse_to_destination, total_distance, map_link, open_warehouses, qubo_obj
     )
