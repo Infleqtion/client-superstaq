@@ -87,6 +87,9 @@ class _SuperstaQClient:
         assert max_retry_seconds >= 0, "Negative retry not possible without time machine."
 
         self.url = f"{url.scheme}://{url.netloc}/{api_version}"
+        self.verify_https: bool = (
+            cirq_superstaq.API_URL + "/" + cirq_superstaq.API_VERSION == self.url
+        )
         self.headers = {"Authorization": api_key, "Content-Type": "application/json"}
         self.default_target = default_target
         self.max_retry_seconds = max_retry_seconds
@@ -140,7 +143,7 @@ class _SuperstaQClient:
                 f"{self.url}/job",
                 json=json_dict,
                 headers=self.headers,
-                verify=(cirq_superstaq.API_URL == self.url),
+                verify=self.verify_https,
             )
 
         return self._make_request(request).json()
@@ -163,7 +166,7 @@ class _SuperstaQClient:
             return requests.get(
                 f"{self.url}/job/{job_id}",
                 headers=self.headers,
-                verify=(cirq_superstaq.API_URL == self.url),
+                verify=self.verify_https,
             )
 
         return self._make_request(request).json()
@@ -177,7 +180,7 @@ class _SuperstaQClient:
                 f"{self.url}/aqt_compile",
                 headers=self.headers,
                 json=json_dict,
-                verify=(cirq_superstaq.API_URL == self.url),
+                verify=self.verify_https,
             )
 
         return self._make_request(request).json()
@@ -195,7 +198,7 @@ class _SuperstaQClient:
                 f"{self.url}/qubo",
                 headers=self.headers,
                 json=json_dict,
-                verify=(cirq_superstaq.API_URL == self.url),
+                verify=self.verify_https,
             )
 
         return self._make_request(request).json()
@@ -209,7 +212,7 @@ class _SuperstaQClient:
                 f"{self.url}/minvol",
                 headers=self.headers,
                 json=json_dict,
-                verify=(cirq_superstaq.API_URL == self.url),
+                verify=self.verify_https,
             )
 
         return self._make_request(request).json()
@@ -222,7 +225,7 @@ class _SuperstaQClient:
                 f"{self.url}/maxsharpe",
                 headers=self.headers,
                 json=json_dict,
-                verify=(cirq_superstaq.API_URL == self.url),
+                verify=self.verify_https,
             )
 
         return self._make_request(request).json()
@@ -235,7 +238,7 @@ class _SuperstaQClient:
                 f"{self.url}/tsp",
                 headers=self.headers,
                 json=json_dict,
-                verify=(cirq_superstaq.API_URL == self.url),
+                verify=self.verify_https,
             )
 
         return self._make_request(request).json()
@@ -260,7 +263,7 @@ class _SuperstaQClient:
                 f"{self.url}/aqt_configs",
                 headers=self.headers,
                 json=aqt_configs,
-                verify=(cirq_superstaq.API_URL == self.url),
+                verify=self.verify_https,
             )
 
         return self._make_request(request).json()
