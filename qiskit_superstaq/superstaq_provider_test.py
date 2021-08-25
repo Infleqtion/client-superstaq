@@ -52,8 +52,12 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
 
-    out_qasm_str = """OPENQASM 2.0;\ninclude "qelib1.inc";\n\n\n//"""
-    out_qasm_str += """Qubits: [4, 5]\nqreg q[2];\n\n\ncz q[0],q[1];\n"""
+    out_qasm_str = """OPENQASM 2.0;
+    include "qelib1.inc";
+    Qubits: [4, 5]
+    qreg q[2];
+
+    cz q[0],q[1];"""
 
     mock_post.return_value.json = lambda: {
         "qasm_str": out_qasm_str,
