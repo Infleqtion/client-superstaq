@@ -14,8 +14,9 @@
 from typing import Any, List, Union
 
 import qiskit
-import qiskit_superstaq as qss
 import requests
+
+import qiskit_superstaq as qss
 
 
 class SuperstaQBackend(qiskit.providers.BackendV1):

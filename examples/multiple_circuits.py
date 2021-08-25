@@ -10,6 +10,7 @@ job has successfully run
 """
 
 import qiskit
+
 import qiskit_superstaq as qss
 
 # SuperstaQ token retrieved through API

@@ -3,8 +3,9 @@ from typing import Any, Dict, List
 
 import pytest
 import qiskit
-import qiskit_superstaq as qss
 import requests
+
+import qiskit_superstaq as qss
 
 
 def test_default_options() -> None:

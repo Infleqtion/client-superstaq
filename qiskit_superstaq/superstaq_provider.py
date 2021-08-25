@@ -16,6 +16,8 @@ import os
 from typing import List
 
 import qiskit
+import requests
+
 import qiskit_superstaq as qss
 
 
@@ -83,3 +85,32 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
             )
 
         return backends
+
+    def aqt_compile(self, circuit: qiskit.QuantumCircuit) -> "qss.aqt.AQTCompilerOutput":
+        """Compiles the given circuit to AQT device, optimized to its native gate set.
+
+        Args:
+            circuit: a qiskit QuantumCircuit
+        Returns:
+            AQTCompilerOutput object, whose .circuit attribute is an optimized qiskit QuantumCircuit
+            If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
+            pulse sequence corresponding to the optimized qiskit.QuantumCircuit.
+        """
+        qasm_str = circuit.qasm()
+        json_dict = {"qasm_str": qasm_str}
+        headers = {
+            "Authorization": self.get_access_token(),
+            "Content-Type": "application/json",
+        }
+        res = requests.post(
+            self.url + "/" + qss.API_VERSION + "/aqt_compile",
+            json=json_dict,
+            headers=headers,
+            verify=(self.url == qss.API_URL),
+        )
+        res.raise_for_status()
+        json_dict = res.json()
+
+        from qiskit_superstaq import aqt
+
+        return aqt.read_json(json_dict)

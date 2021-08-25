@@ -1,3 +1,9 @@
+import codecs
+import pickle
+from unittest.mock import MagicMock, patch
+
+import qiskit
+
 import qiskit_superstaq as qss
 
 
@@ -37,3 +43,24 @@ def test_provider() -> None:
         )
 
     assert ss_provider.backends() == backends
+
+
+@patch("requests.post")
+def test_aqt_compile(mock_post: MagicMock) -> None:
+    provider = qss.superstaq_provider.SuperstaQProvider(access_token="MY_TOKEN")
+
+    qc = qiskit.QuantumCircuit(8)
+    qc.cz(4, 5)
+
+    out_qasm_str = """OPENQASM 2.0;\ninclude "qelib1.inc";\n\n\n//"""
+    out_qasm_str += """Qubits: [4, 5]\nqreg q[2];\n\n\ncz q[0],q[1];\n"""
+
+    mock_post.return_value.json = lambda: {
+        "qasm_str": out_qasm_str,
+        "state_jp": codecs.encode(pickle.dumps({}), "base64").decode(),
+        "pulse_list_jp": codecs.encode(pickle.dumps({}), "base64").decode(),
+    }
+
+    expected_qc = qiskit.QuantumCircuit(2)
+    expected_qc.cz(0, 1)
+    assert provider.aqt_compile(qc).circuit == expected_qc
