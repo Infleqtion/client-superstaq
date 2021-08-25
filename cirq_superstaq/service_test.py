@@ -141,11 +141,17 @@ def test_service_submit_qubo(mock_submit_qubo: mock.MagicMock) -> None:
 
 @mock.patch(
     "cirq_superstaq.superstaq_client._SuperstaQClient.find_min_vol_portfolio",
-    return_value={"best_portfolio": ["AAPL", "GOOG"], "best_ret": 8.1, "best_std_dev": 10.5},
+    return_value={
+        "best_portfolio": ["AAPL", "GOOG"],
+        "best_ret": 8.1,
+        "best_std_dev": 10.5,
+        "qubo": [{"keys": ["0"], "value": 123}],
+    },
 )
 def test_service_find_min_vol_portfolio(mock_find_min_vol_portfolio: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    expected = applications_superstaq.finance.MinVolOutput(["AAPL", "GOOG"], 8.1, 10.5)
+    qubo = {("0",): 123}
+    expected = applications_superstaq.finance.MinVolOutput(["AAPL", "GOOG"], 8.1, 10.5, qubo)
     assert service.find_min_vol_portfolio(["AAPL", "GOOG", "IEF", "MMM"], 8) == expected
 
 
@@ -156,13 +162,17 @@ def test_service_find_min_vol_portfolio(mock_find_min_vol_portfolio: mock.MagicM
         "best_ret": 8.1,
         "best_std_dev": 10.5,
         "best_sharpe_ratio": 0.771,
+        "qubo": [{"keys": ["0"], "value": 123}],
     },
 )
 def test_service_find_max_pseudo_sharpe_ratio(
     mock_find_max_pseudo_sharpe_ratio: mock.MagicMock,
 ) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    expected = applications_superstaq.finance.MaxSharpeOutput(["AAPL", "GOOG"], 8.1, 10.5, 0.771)
+    qubo = {("0",): 123}
+    expected = applications_superstaq.finance.MaxSharpeOutput(
+        ["AAPL", "GOOG"], 8.1, 10.5, 0.771, qubo
+    )
     assert service.find_max_pseudo_sharpe_ratio(["AAPL", "GOOG", "IEF", "MMM"], k=0.5) == expected
 
 
@@ -173,12 +183,18 @@ def test_service_find_max_pseudo_sharpe_ratio(
         "route_list_numbers": [0, 1, 2, 0],
         "total_distance": 100.0,
         "map_link": ["maps.google.com"],
+        "qubo": [{"keys": ["0"], "value": 123}],
     },
 )
 def test_service_tsp(mock_tsp: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    qubo = {("0",): 123}
     expected = applications_superstaq.logistics.TSPOutput(
-        ["Chicago", "St Louis", "St Paul", "Chicago"], [0, 1, 2, 0], 100.0, ["maps.google.com"]
+        ["Chicago", "St Louis", "St Paul", "Chicago"],
+        [0, 1, 2, 0],
+        100.0,
+        ["maps.google.com"],
+        qubo,
     )
     assert service.tsp(["Chicago", "St Louis", "St Paul"]) == expected
 
@@ -190,12 +206,14 @@ def test_service_tsp(mock_tsp: mock.MagicMock) -> None:
         "total_distance": 100.0,
         "map_link": "map.html",
         "open_warehouses": ["Chicago"],
+        "qubo": [{"keys": ["0"], "value": 123}],
     },
 )
 def test_service_warehouse(mock_warehouse: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    qubo = {("0",): 123}
     expected = applications_superstaq.logistics.WarehouseOutput(
-        [("Chicago", "Rockford"), ("Chicago", "Aurora")], 100.0, "map.html", ["Chicago"]
+        [("Chicago", "Rockford"), ("Chicago", "Aurora")], 100.0, "map.html", ["Chicago"], qubo
     )
     assert service.warehouse(1, ["Chicago", "San Francisco"], ["Rockford", "Aurora"]) == expected
 
