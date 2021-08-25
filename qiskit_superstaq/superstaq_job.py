@@ -16,8 +16,9 @@ import time
 from typing import Any, Dict, List
 
 import qiskit
-import qiskit_superstaq as qss
 import requests
+
+import qiskit_superstaq as qss
 
 
 class SuperstaQJob(qiskit.providers.JobV1):

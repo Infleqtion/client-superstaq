@@ -3,8 +3,9 @@ from typing import Any, Dict
 
 import pytest
 import qiskit
-import qiskit_superstaq as qss
 import requests
+
+import qiskit_superstaq as qss
 
 
 class MockConfiguration:
