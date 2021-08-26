@@ -68,7 +68,9 @@ class FermionicSWAPGate(
 
 
 class Barrier(cirq.ops.IdentityGate):
-    """Barrier"""
+    """Barrier: temporal boundary restricting circuit compilation and pulse scheduling.
+    Otherwise equivalent to the identity gate.
+    """
 
     def _decompose_(self, qubits: Sequence["cirq.Qid"]) -> cirq.type_workarounds.NotImplementedType:
         return NotImplemented
