@@ -1,6 +1,6 @@
 """Miscellaneous custom gates that we encounter and want to explicitly define."""
 
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Any, Callable, Dict, Sequence, Tuple, Union
 
 import cirq
 import numpy as np
@@ -69,6 +69,9 @@ class FermionicSWAPGate(
 
 class Barrier(cirq.ops.IdentityGate):
     """Barrier"""
+
+    def _decompose_(self, qubits: Sequence["cirq.Qid"]) -> cirq.type_workarounds.NotImplementedType:
+        return NotImplemented
 
     def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, ...]) -> str:
         indices_str = ",".join([f"{{{i}}}" for i in range(len(qubits))])

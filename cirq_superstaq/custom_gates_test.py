@@ -39,8 +39,10 @@ def test_barrier() -> None:
 
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq.custom_gates")
 
-    qubits = cirq.LineQubit.range(3)
-    circuit = cirq.Circuit(gate.on(*qubits))
+    operation = gate.on(*cirq.LineQubit.range(3))
+    assert cirq.decompose(operation) == [operation]
+
+    circuit = cirq.Circuit(operation)
     expected_qasm = f"""// Generated from Cirq v{cirq.__version__}
 
 OPENQASM 2.0;
