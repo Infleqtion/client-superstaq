@@ -54,7 +54,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
     out_qasm_str = """OPENQASM 2.0;
     include "qelib1.inc";
-    
+
     //Qubits: [4, 5]
     qreg q[2];
 
