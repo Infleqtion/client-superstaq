@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from cirq_superstaq._init_vars import API_URL, API_VERSION
+from cirq_superstaq import custom_gates
 from cirq_superstaq.job import Job
 from cirq_superstaq.service import Service
 from cirq_superstaq.superstaq_exceptions import (
@@ -24,6 +25,7 @@ from cirq_superstaq.superstaq_exceptions import (
 __all__ = [
     "API_URL",
     "API_VERSION",
+    "custom_gates",
     "Job",
     "Service",
     "SuperstaQException",
