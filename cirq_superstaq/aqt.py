@@ -6,6 +6,8 @@ from typing import Optional
 
 import cirq
 
+import cirq_superstaq
+
 try:
     import qtrl.sequencer
 except ModuleNotFoundError:
@@ -27,7 +29,10 @@ def read_json(json_dict: dict) -> AQTCompilerOutput:
         a AQTCompilerOutput object with the compiled circuit. If qtrl is available locally,
         the object also stores the pulse sequence in the .seq attribute.
     """
-    compiled_circuit = cirq.read_json(json_text=json_dict["compiled_circuit"])
+    compiled_circuit = cirq.read_json(
+        json_text=json_dict["compiled_circuit"],
+        resolvers=[cirq_superstaq.custom_gates.custom_resolver, *cirq.DEFAULT_RESOLVERS],
+    )
 
     if not importlib.util.find_spec("qtrl"):
         return AQTCompilerOutput(compiled_circuit)
