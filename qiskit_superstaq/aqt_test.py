@@ -25,8 +25,16 @@ def test_read_json() -> None:
         "pulse_list_jp": pulse_list_str,
     }
     compiler_output = aqt.read_json(json_dict)
-
     assert compiler_output == aqt.AQTCompilerOutput(circuit)
+
+    # multiple circuits
+    json_dict = {
+        "qasm_strs": [circuit.qasm(), circuit.qasm()],
+        "state_jp": state_str,
+        "pulse_list_jp": pulse_list_str,
+    }
+    compiler_output = aqt.read_json(json_dict)
+    assert compiler_output == aqt.AQTCompilerOutputMulti([circuit, circuit])
 
 
 def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires qtrl installation
@@ -46,5 +54,18 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     }
     compiler_output = aqt.read_json(json_dict)
 
+    assert isinstance(compiler_output, aqt.AQTCompilerOutput)
     assert compiler_output.circuit == circuit
+    assert pickle.dumps(compiler_output.seq) == pickle.dumps(seq)
+
+    # multiple circuits
+    json_dict = {
+        "qasm_strs": [circuit.qasm(), circuit.qasm()],
+        "state_jp": state_str,
+        "pulse_list_jp": pulse_list_str,
+    }
+    compiler_output = aqt.read_json(json_dict)
+
+    assert isinstance(compiler_output, aqt.AQTCompilerOutputMulti)
+    assert compiler_output.circuits == [circuit, circuit]
     assert pickle.dumps(compiler_output.seq) == pickle.dumps(seq)

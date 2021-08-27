@@ -70,4 +70,16 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
     expected_qc = qiskit.QuantumCircuit(2)
     expected_qc.cz(0, 1)
-    assert provider.aqt_compile(qc).circuit == expected_qc
+
+    aqt_compiler_output = provider.aqt_compile(qc)
+    assert isinstance(aqt_compiler_output, qss.aqt.AQTCompilerOutput)
+    assert aqt_compiler_output.circuit == expected_qc
+
+    mock_post.return_value.json = lambda: {
+        "qasm_strs": [out_qasm_str, out_qasm_str],
+        "state_jp": codecs.encode(pickle.dumps({}), "base64").decode(),
+        "pulse_list_jp": codecs.encode(pickle.dumps({}), "base64").decode(),
+    }
+    aqt_compiler_output = provider.aqt_compile([qc, qc])
+    assert isinstance(aqt_compiler_output, qss.aqt.AQTCompilerOutputMulti)
+    assert aqt_compiler_output.circuits == [expected_qc, expected_qc]
