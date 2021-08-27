@@ -1,6 +1,6 @@
 """Miscellaneous custom gates that we encounter and want to explicitly define."""
 
-from typing import Any, Callable, Dict, Union
+from typing import Any, Callable, Dict, Sequence, Tuple, Union
 
 import cirq
 import numpy as np
@@ -67,7 +67,32 @@ class FermionicSWAPGate(
         return cirq.protocols.obj_to_dict_helper(self, ["theta"])
 
 
+class Barrier(cirq.ops.IdentityGate):
+    """Barrier: temporal boundary restricting circuit compilation and pulse scheduling.
+    Otherwise equivalent to the identity gate.
+    """
+
+    def _decompose_(self, qubits: Sequence["cirq.Qid"]) -> cirq.type_workarounds.NotImplementedType:
+        return NotImplemented
+
+    def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, ...]) -> str:
+        indices_str = ",".join([f"{{{i}}}" for i in range(len(qubits))])
+        format_str = f"barrier {indices_str};\n"
+        return args.format(format_str, *qubits)
+
+    def __str__(self) -> str:
+        return f"Barrier({self.num_qubits()})"
+
+    def __repr__(self) -> str:
+        return f"cirq_superstaq.custom_gates.Barrier({self.num_qubits()})"
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> Tuple[str, ...]:
+        return ("|",) * self.num_qubits()
+
+
 def custom_resolver(cirq_type: str) -> Union[Callable[..., cirq.Gate], None]:
     if cirq_type == "FermionicSWAPGate":
         return FermionicSWAPGate
+    if cirq_type == "Barrier":
+        return Barrier
     return None
