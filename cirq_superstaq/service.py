@@ -183,18 +183,24 @@ class Service:
             return f"${balance:,.2f}"
         return balance
 
-    def aqt_compile(self, circuit: cirq.Circuit) -> "cirq_superstaq.aqt.AQTCompilerOutput":
-        """Compiles the given circuit to AQT device, optimized to its native gate set.
+    def aqt_compile(
+        self, circuits: Union[cirq.Circuit, List[cirq.Circuit]]
+    ) -> Union["cirq_superstaq.aqt.AQTCompilerOutput", "cirq_superstaq.aqt.AQTCompilerOutputMulti"]:
+        """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
 
         Args:
-            circuit: a cirq Circuit object with operations on qubits 4 through 8.
+            circuits: cirq Circuit(s) with operations on qubits 4 through 8.
         Returns:
-            AQTCompilerOutput object, whose .circuit attribute contains an optimized cirq Circuit.
+            dataclass object whose .circuit(s) attribute contains an optimized cirq Circuit(s).
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the optimized cirq Circuit.
+            pulse sequence corresponding to the optimized cirq Circuit(s).
         """
-        serialized_program = cirq.to_json(circuit)
-        json_dict = self._client.aqt_compile(serialized_program)
+        serialized_program = cirq.to_json(circuits)
+        if isinstance(circuits, cirq.Circuit):
+            json_dict = self._client.aqt_compile(serialized_program)
+        else:
+            json_dict = self._client.aqt_multi_compile(serialized_program)
+
         from cirq_superstaq import aqt
 
         return aqt.read_json(json_dict)

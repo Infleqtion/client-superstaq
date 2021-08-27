@@ -24,6 +24,7 @@ import qubovert as qv
 import sympy
 
 import cirq_superstaq
+from cirq_superstaq import aqt
 
 
 def test_service_run() -> None:
@@ -115,7 +116,25 @@ def test_service_get_balance() -> None:
 def test_service_aqt_compile(mock_aqt_compile: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
     expected = cirq.Circuit()
-    assert service.aqt_compile(cirq.Circuit()).circuit == expected
+    aqt_compiler_output = service.aqt_compile(cirq.Circuit())
+    assert isinstance(aqt_compiler_output, aqt.AQTCompilerOutput)
+    assert aqt_compiler_output.circuit == expected
+
+
+@mock.patch(
+    "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_multi_compile",
+    return_value={
+        "compiled_circuits": [cirq.to_json(cirq.Circuit()), cirq.to_json(cirq.Circuit())],
+        "state_jp": codecs.encode(pickle.dumps({}), "base64").decode(),
+        "pulse_list_jp": codecs.encode(pickle.dumps([]), "base64").decode(),
+    },
+)
+def test_service_aqt_compile_multiple(mock_aqt_compile: mock.MagicMock) -> None:
+    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    expected = cirq.Circuit()
+    aqt_compiler_output = service.aqt_compile([cirq.Circuit(), cirq.Circuit()])
+    assert isinstance(aqt_compiler_output, aqt.AQTCompilerOutputMulti)
+    assert aqt_compiler_output.circuits == [expected, expected]
 
 
 @mock.patch(
