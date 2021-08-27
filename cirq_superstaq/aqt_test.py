@@ -17,6 +17,8 @@ def test_read_json() -> None:
     state_str = codecs.encode(pickle.dumps({}), "base64").decode()
     pulse_list_str = codecs.encode(pickle.dumps([]), "base64").decode()
 
+    json_dict: dict
+
     json_dict = {
         "compiled_circuit": cirq.to_json(circuit),
         "state_jp": state_str,
@@ -42,6 +44,8 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     circuit = cirq.Circuit(cirq.H(cirq.LineQubit(4)))
     state_str = codecs.encode(pickle.dumps(seq.__getstate__()), "base64").decode()
     pulse_list_str = codecs.encode(pickle.dumps([]), "base64").decode()
+
+    json_dict: dict
 
     json_dict = {
         "compiled_circuit": cirq.to_json(circuit),
