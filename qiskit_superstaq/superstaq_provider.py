@@ -88,7 +88,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
 
     def aqt_compile(
         self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]
-    ) -> Union["qss.aqt.AQTCompilerOutput", "qss.aqt.AQTCompilerOutputMulti"]:
+    ) -> "qss.aqt.AQTCompilerOutput":
         """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
 
         Args:

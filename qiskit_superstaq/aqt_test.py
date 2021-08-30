@@ -9,6 +9,14 @@ import qiskit
 from qiskit_superstaq import aqt
 
 
+def test_aqt_compiler_output_repr() -> None:
+    circuit = qiskit.QuantumCircuit(4)
+    assert repr(aqt.AQTCompilerOutput(circuit)) == f"AQTCompilerOutput({circuit!r}, None)"
+
+    circuits = [circuit, circuit]
+    assert repr(aqt.AQTCompilerOutput(circuits)) == f"AQTCompilerOutput({circuits!r}, None)"
+
+
 @mock.patch.dict("sys.modules", {"qtrl": None})
 def test_read_json() -> None:
     importlib.reload(aqt)
@@ -25,7 +33,7 @@ def test_read_json() -> None:
         "pulse_list_jp": pulse_list_str,
     }
     compiler_output = aqt.read_json(json_dict)
-    assert compiler_output == aqt.AQTCompilerOutput(circuit)
+    assert compiler_output.circuit == circuit
 
     # multiple circuits
     json_dict = {
@@ -34,7 +42,7 @@ def test_read_json() -> None:
         "pulse_list_jp": pulse_list_str,
     }
     compiler_output = aqt.read_json(json_dict)
-    assert compiler_output == aqt.AQTCompilerOutputMulti([circuit, circuit])
+    assert compiler_output.circuits == [circuit, circuit]
 
 
 def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires qtrl installation
@@ -54,7 +62,6 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     }
     compiler_output = aqt.read_json(json_dict)
 
-    assert isinstance(compiler_output, aqt.AQTCompilerOutput)
     assert compiler_output.circuit == circuit
     assert pickle.dumps(compiler_output.seq) == pickle.dumps(seq)
 
@@ -66,6 +73,5 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     }
     compiler_output = aqt.read_json(json_dict)
 
-    assert isinstance(compiler_output, aqt.AQTCompilerOutputMulti)
     assert compiler_output.circuits == [circuit, circuit]
     assert pickle.dumps(compiler_output.seq) == pickle.dumps(seq)

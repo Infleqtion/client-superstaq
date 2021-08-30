@@ -72,7 +72,6 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     expected_qc.cz(0, 1)
 
     aqt_compiler_output = provider.aqt_compile(qc)
-    assert isinstance(aqt_compiler_output, qss.aqt.AQTCompilerOutput)
     assert aqt_compiler_output.circuit == expected_qc
 
     mock_post.return_value.json = lambda: {
@@ -81,5 +80,4 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         "pulse_list_jp": codecs.encode(pickle.dumps({}), "base64").decode(),
     }
     aqt_compiler_output = provider.aqt_compile([qc, qc])
-    assert isinstance(aqt_compiler_output, qss.aqt.AQTCompilerOutputMulti)
     assert aqt_compiler_output.circuits == [expected_qc, expected_qc]
