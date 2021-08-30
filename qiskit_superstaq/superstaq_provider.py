@@ -99,18 +99,18 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
             pulse sequence corresponding to the optimized qiskit.QuantumCircuit(s).
         """
         if isinstance(circuits, qiskit.QuantumCircuit):
-            json_dict = {"qasm_str": circuits.qasm()}
-            endpoint = "/aqt_compile"
+            json_dict = {"qasm_strs": [circuits.qasm()]}
+            circuits_list = False
         else:
             json_dict = {"qasm_strs": [c.qasm() for c in circuits]}
-            endpoint = "/aqt_multi_compile"
+            circuits_list = True
 
         headers = {
             "Authorization": self.get_access_token(),
             "Content-Type": "application/json",
         }
         res = requests.post(
-            self.url + "/" + qss.API_VERSION + endpoint,
+            self.url + "/" + qss.API_VERSION + "/aqt_compile",
             json=json_dict,
             headers=headers,
             verify=(self.url == qss.API_URL),
@@ -120,4 +120,4 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
 
         from qiskit_superstaq import aqt
 
-        return aqt.read_json(json_dict)
+        return aqt.read_json(json_dict, circuits_list)

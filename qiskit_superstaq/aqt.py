@@ -32,11 +32,13 @@ class AQTCompilerOutput:
         return ret
 
 
-def read_json(json_dict: dict) -> AQTCompilerOutput:
+def read_json(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
     """Reads out returned JSON from SuperstaQ API's AQT compilation endpoint.
 
     Args:
-        json_dict: a JSON dictionary matching the format returned by /aqt_{multi_}compile endpoint
+        json_dict: a JSON dictionary matching the format returned by /aqt_compile endpoint
+        circuits_list: bool flag that controls whether the returned object has a .circuits
+            attribute (if True) or a .circuit attribute (False)
     Returns:
         a AQTCompilerOutput object with the compiled circuit(s). If qtrl is available locally,
         the returned object also stores the pulse sequence in the .seq attribute.
@@ -52,9 +54,8 @@ def read_json(json_dict: dict) -> AQTCompilerOutput:
         seq.__setstate__(state)
         seq.compile()
 
-    if "qasm_str" in json_dict:
-        compiled_circuit = qiskit.QuantumCircuit.from_qasm_str(json_dict["qasm_str"])
-        return AQTCompilerOutput(compiled_circuit, seq)
-
     compiled_circuits = [qiskit.QuantumCircuit.from_qasm_str(q) for q in json_dict["qasm_strs"]]
-    return AQTCompilerOutput(compiled_circuits, seq)
+    if circuits_list:
+        return AQTCompilerOutput(compiled_circuits, seq)
+
+    return AQTCompilerOutput(compiled_circuits[0], seq)
