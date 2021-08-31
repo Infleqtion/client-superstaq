@@ -1,7 +1,6 @@
 import codecs
 import importlib
 import pickle
-from dataclasses import dataclass
 from typing import List, Optional, Union
 
 import cirq
@@ -14,29 +13,38 @@ except ModuleNotFoundError:
     pass
 
 
-@dataclass
 class AQTCompilerOutput:
-    circuit: cirq.Circuit
-    seq: Optional["qtrl.sequencer.Sequence"] = None
+    def __init__(
+        self,
+        circuits: Union[cirq.Circuit, List[cirq.Circuit]],
+        seq: Optional["qtrl.sequencer.Sequence"] = None,
+    ) -> None:
+        if isinstance(circuits, cirq.Circuit):
+            self.circuit = circuits
+        else:
+            self.circuits = circuits
+        self.seq = seq
+
+    def __repr__(self) -> str:
+        ret = "AQTCompilerOutput("
+        if hasattr(self, "circuit"):
+            ret += f"{self.circuit!r}, {self.seq})"
+        else:
+            ret += f"{self.circuits!r}, {self.seq})"
+        return ret
 
 
-@dataclass
-class AQTCompilerOutputMulti:
-    circuits: List[cirq.Circuit]
-    seq: Optional["qtrl.sequencer.Sequence"] = None
-
-
-def read_json(json_dict: dict) -> Union[AQTCompilerOutput, AQTCompilerOutputMulti]:
+def read_json(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
     """Reads out returned JSON from SuperstaQ API's AQT compilation endpoint.
 
     Args:
-        json_dict: a JSON dictionary matching the format returned by /aqt_{multi_}compile endpoint
+        json_dict: a JSON dictionary matching the format returned by /aqt_compile endpoint
+        circuits_list: bool flag that controls whether the returned object has a .circuits
+            attribute (if True) or a .circuit attribute (False)
     Returns:
-        a AQTCompilerOutput object with the compiled circuit or a AQTCompilerOutputMulti object
-        with a list of compiled circuits. If qtrl is available locally, the returned object
-        also stores the pulse sequence in the .seq attribute.
+        a AQTCompilerOutput object with the compiled circuit(s). If qtrl is available locally,
+        the returned object also stores the pulse sequence in the .seq attribute.
     """
-
     seq = None
     if importlib.util.find_spec(
         "qtrl"
@@ -48,12 +56,11 @@ def read_json(json_dict: dict) -> Union[AQTCompilerOutput, AQTCompilerOutputMult
         seq.__setstate__(state)
         seq.compile()
 
-    if "compiled_circuit" in json_dict:
-        compiled_circuit = cirq.read_json(
-            json_text=json_dict["compiled_circuit"],
-            resolvers=[cirq_superstaq.custom_gates.custom_resolver, *cirq.DEFAULT_RESOLVERS],
-        )
-        return AQTCompilerOutput(compiled_circuit, seq)
+    resolvers = [cirq_superstaq.custom_gates.custom_resolver, *cirq.DEFAULT_RESOLVERS]
+    compiled_circuits = [
+        cirq.read_json(json_text=c, resolvers=resolvers) for c in json_dict["compiled_circuits"]
+    ]
+    if circuits_list:
+        return AQTCompilerOutput(compiled_circuits, seq)
 
-    compiled_circuits = [cirq.read_json(json_text=c) for c in json_dict["compiled_circuits"]]
-    return AQTCompilerOutputMulti(compiled_circuits, seq)
+    return AQTCompilerOutput(compiled_circuits[0], seq)

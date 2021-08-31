@@ -335,22 +335,11 @@ def test_superstaq_client_aqt_compile(mock_post: mock.MagicMock) -> None:
     client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    client.aqt_compile(cirq.to_json(cirq.Circuit(cirq.H(cirq.LineQubit(5)))))
+    circuit = cirq.Circuit(cirq.H(cirq.LineQubit(5)))
+    client.aqt_compile(cirq.to_json([circuit, circuit]))
 
     mock_post.assert_called_once()
     assert mock_post.call_args[0][0] == "http://example.com/v0.1/aqt_compile"
-
-
-@mock.patch("requests.post")
-def test_superstaq_client_aqt_multi_compile(mock_post: mock.MagicMock) -> None:
-    client = cirq_superstaq.superstaq_client._SuperstaQClient(
-        remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
-    )
-    circuit = cirq.Circuit(cirq.H(cirq.LineQubit(5)))
-    client.aqt_multi_compile(cirq.to_json([circuit, circuit]))
-
-    mock_post.assert_called_once()
-    assert mock_post.call_args[0][0] == "http://example.com/v0.1/aqt_multi_compile"
 
 
 @mock.patch("requests.post")

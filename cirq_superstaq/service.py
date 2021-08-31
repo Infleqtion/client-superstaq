@@ -185,25 +185,28 @@ class Service:
 
     def aqt_compile(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]]
-    ) -> Union["cirq_superstaq.aqt.AQTCompilerOutput", "cirq_superstaq.aqt.AQTCompilerOutputMulti"]:
+    ) -> "cirq_superstaq.aqt.AQTCompilerOutput":
         """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
 
         Args:
             circuits: cirq Circuit(s) with operations on qubits 4 through 8.
         Returns:
-            dataclass object whose .circuit(s) attribute contains an optimized cirq Circuit(s).
+            object whose .circuit(s) attribute is an optimized cirq Circuit(s)
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the optimized cirq Circuit(s).
+            pulse sequence corresponding to the optimized cirq.Circuit(s).
         """
-        serialized_program = cirq.to_json(circuits)
         if isinstance(circuits, cirq.Circuit):
-            json_dict = self._client.aqt_compile(serialized_program)
+            serialized_program = cirq.to_json([circuits])
+            circuits_list = False
         else:
-            json_dict = self._client.aqt_multi_compile(serialized_program)
+            serialized_program = cirq.to_json(circuits)
+            circuits_list = True
+
+        json_dict = self._client.aqt_compile(serialized_program)
 
         from cirq_superstaq import aqt
 
-        return aqt.read_json(json_dict)
+        return aqt.read_json(json_dict, circuits_list)
 
     def submit_qubo(self, qubo: qv.QUBO, target: str, repetitions: int = 1000) -> np.recarray:
         """Submits the given QUBO to the target backend. The result of the optimization

@@ -188,26 +188,12 @@ class _SuperstaQClient:
         return self._make_request(request).json()
 
     def aqt_compile(self, serialized_program: str) -> dict:
-        """Makes a POST request to SuperstaQ API to compile a circuit for Berkeley-AQT."""
-        json_dict = {"circuit": json.loads(serialized_program)}
-
-        def request() -> requests.Response:
-            return requests.post(
-                f"{self.url}/aqt_compile",
-                headers=self.headers,
-                json=json_dict,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
-
-    def aqt_multi_compile(self, serialized_program: str) -> dict:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
         json_dict = {"circuits": json.loads(serialized_program)}
 
         def request() -> requests.Response:
             return requests.post(
-                f"{self.url}/aqt_multi_compile",
+                f"{self.url}/aqt_compile",
                 headers=self.headers,
                 json=json_dict,
                 verify=self.verify_https,
