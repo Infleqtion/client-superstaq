@@ -22,6 +22,8 @@ import requests
 
 import cirq_superstaq
 
+API_VERSION = cirq_superstaq.API_VERSION
+
 
 def test_cirq_superstaq_exception_str() -> None:
     ex = cirq_superstaq.SuperstaQException("err", status_code=501)
@@ -46,7 +48,7 @@ def test_superstaq_client_invalid_remote_host() -> None:
 
 
 def test_superstaq_client_invalid_api_version() -> None:
-    with pytest.raises(AssertionError, match="is accepted"):
+    with pytest.raises(AssertionError, match="are accepted"):
         _ = cirq_superstaq.superstaq_client._SuperstaQClient(
             remote_host="http://example.com", api_key="a", api_version="v0.0"
         )
@@ -82,7 +84,7 @@ def test_superstaq_client_attributes() -> None:
         max_retry_seconds=10,
         verbose=True,
     )
-    assert client.url == "http://example.com/v0.1"
+    assert client.url == f"http://example.com/{API_VERSION}"
     assert client.headers == {
         "Authorization": "to_my_heart",
         "Content-Type": "application/json",
@@ -118,7 +120,7 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
     }
     expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     mock_post.assert_called_with(
-        "http://example.com/v0.1/job",
+        f"http://example.com/{API_VERSION}/job",
         json=expected_json,
         headers=expected_headers,
         verify=False,
@@ -259,7 +261,7 @@ def test_superstaq_client_get_job(mock_get: mock.MagicMock) -> None:
 
     expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     mock_get.assert_called_with(
-        "http://example.com/v0.1/job/job_id", headers=expected_headers, verify=False
+        f"http://example.com/{API_VERSION}/job/job_id", headers=expected_headers, verify=False
     )
 
 
@@ -275,7 +277,7 @@ def test_superstaq_client_get_balance(mock_get: mock.MagicMock) -> None:
 
     expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     mock_get.assert_called_with(
-        "http://example.com/v0.1/balance", headers=expected_headers, verify=False
+        f"http://example.com/{API_VERSION}/balance", headers=expected_headers, verify=False
     )
 
 
@@ -339,7 +341,7 @@ def test_superstaq_client_aqt_compile(mock_post: mock.MagicMock) -> None:
     client.aqt_compile(cirq.to_json([circuit, circuit]))
 
     mock_post.assert_called_once()
-    assert mock_post.call_args[0][0] == "http://example.com/v0.1/aqt_compile"
+    assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/aqt_compile"
 
 
 @mock.patch("requests.post")
@@ -365,7 +367,7 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
     }
 
     mock_post.assert_called_with(
-        "http://example.com/v0.1/qubo",
+        f"http://example.com/{API_VERSION}/qubo",
         headers=expected_headers,
         json=expected_json,
         verify=False,
@@ -385,7 +387,7 @@ def test_superstaq_client_find_min_vol_portfolio(mock_post: mock.MagicMock) -> N
 
     expected_json = {"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "desired_return": 8}
     mock_post.assert_called_with(
-        "http://example.com/v0.1/minvol",
+        f"http://example.com/{API_VERSION}/minvol",
         headers=expected_headers,
         json=expected_json,
         verify=False,
@@ -403,7 +405,7 @@ def test_superstaq_client_find_max_pseudo_sharpe_ratio(mock_post: mock.MagicMock
 
     expected_json = {"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "k": 0.5}
     mock_post.assert_called_with(
-        "http://example.com/v0.1/maxsharpe",
+        f"http://example.com/{API_VERSION}/maxsharpe",
         headers=expected_headers,
         json=expected_json,
         verify=False,
@@ -421,7 +423,7 @@ def test_superstaq_client_tsp(mock_post: mock.MagicMock) -> None:
 
     expected_json = {"locs": ["Chicago", "St Louis", "St Paul"]}
     mock_post.assert_called_with(
-        "http://example.com/v0.1/tsp",
+        f"http://example.com/{API_VERSION}/tsp",
         headers=expected_headers,
         json=expected_json,
         verify=False,
@@ -449,7 +451,7 @@ def test_superstaq_client_warehouse(mock_post: mock.MagicMock) -> None:
         "customers": ["Rockford", "Aurora"],
     }
     mock_post.assert_called_with(
-        "http://example.com/v0.1/warehouse",
+        f"http://example.com/{API_VERSION}/warehouse",
         headers=expected_headers,
         json=expected_json,
     )
@@ -466,7 +468,7 @@ def test_superstaq_client_aqt_upload_configs(mock_post: mock.MagicMock) -> None:
     expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     expected_json = {"pulses": "Hello", "variables": "World"}
     mock_post.assert_called_with(
-        "http://example.com/v0.1/aqt_configs",
+        f"http://example.com/{API_VERSION}/aqt_configs",
         headers=expected_headers,
         json=expected_json,
         verify=False,

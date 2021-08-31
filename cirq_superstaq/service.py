@@ -65,7 +65,7 @@ class Service:
                 and target must always be specified in calls. If set, then this default is used,
                 unless a target is specified for a given call. Supports either 'qpu' or
                 'simulator'.
-            api_version: Version of the api. Defaults to 'v0.1'.
+            api_version: Version of the api.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
             verbose: Whether to print to stdio and stderr on retriable errors.
 
