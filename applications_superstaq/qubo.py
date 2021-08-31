@@ -1,4 +1,5 @@
 import codecs
+import pickle
 from typing import Any, Dict, List
 
 import numpy as np
@@ -12,7 +13,7 @@ def read_json_qubo_result(json_dict: dict) -> np.recarray:
     Returns:
         a numpy.recarray containing the results of the optimization.
     """
-    return np.loads(codecs.decode(json_dict["solution"].encode(), "base64"))
+    return pickle.loads(codecs.decode(json_dict["solution"].encode(), "base64"))
 
 
 def convert_qubo_to_model(qubo: qv.QUBO) -> List[Dict[str, Any]]:
