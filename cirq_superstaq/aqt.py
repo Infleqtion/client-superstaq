@@ -6,6 +6,8 @@ from typing import List, Optional, Union
 
 import cirq
 
+import cirq_superstaq
+
 try:
     import qtrl.sequencer
 except ModuleNotFoundError:
@@ -47,7 +49,10 @@ def read_json(json_dict: dict) -> Union[AQTCompilerOutput, AQTCompilerOutputMult
         seq.compile()
 
     if "compiled_circuit" in json_dict:
-        compiled_circuit = cirq.read_json(json_text=json_dict["compiled_circuit"])
+        compiled_circuit = cirq.read_json(
+            json_text=json_dict["compiled_circuit"],
+            resolvers=[cirq_superstaq.custom_gates.custom_resolver, *cirq.DEFAULT_RESOLVERS],
+        )
         return AQTCompilerOutput(compiled_circuit, seq)
 
     compiled_circuits = [cirq.read_json(json_text=c) for c in json_dict["compiled_circuits"]]
