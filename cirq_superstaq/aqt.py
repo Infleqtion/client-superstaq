@@ -26,7 +26,6 @@ class AQTCompilerOutput:
         self.seq = seq
 
     def __repr__(self) -> str:
-        ret = "AQTCompilerOutput("
         if hasattr(self, "circuit"):
             return f"AQTCompilerOutput({self.circuit!r}, {self.seq})"
         return f"AQTCompilerOutput({self.circuits!r}, {self.seq})"
