@@ -107,7 +107,7 @@ def test_service_get_balance() -> None:
 @mock.patch(
     "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={
-        "compiled_circuits": [cirq.to_json(cirq.Circuit())],
+        "cirq_circuits": [cirq.to_json(cirq.Circuit())],
         "state_jp": codecs.encode(pickle.dumps({}), "base64").decode(),
     },
 )
@@ -121,7 +121,7 @@ def test_service_aqt_compile_single(mock_aqt_compile: mock.MagicMock) -> None:
 @mock.patch(
     "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={
-        "compiled_circuits": [cirq.to_json(cirq.Circuit()), cirq.to_json(cirq.Circuit())],
+        "cirq_circuits": [cirq.to_json(cirq.Circuit()), cirq.to_json(cirq.Circuit())],
         "state_jp": codecs.encode(pickle.dumps({}), "base64").decode(),
     },
 )

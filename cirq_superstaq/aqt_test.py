@@ -27,7 +27,7 @@ def test_read_json() -> None:
     json_dict: dict
 
     json_dict = {
-        "compiled_circuits": [cirq.to_json(circuit)],
+        "cirq_circuits": [cirq.to_json(circuit)],
         "state_jp": state_str,
     }
 
@@ -41,7 +41,7 @@ def test_read_json() -> None:
 
     # multiple circuits
     json_dict = {
-        "compiled_circuits": [cirq.to_json(circuit), cirq.to_json(circuit)],
+        "cirq_circuits": [cirq.to_json(circuit), cirq.to_json(circuit)],
         "state_jp": state_str,
     }
     compiler_output = aqt.read_json(json_dict, circuits_list=True)
@@ -59,7 +59,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     json_dict: dict
 
     json_dict = {
-        "compiled_circuits": [cirq.to_json(circuit)],
+        "cirq_circuits": [cirq.to_json(circuit)],
         "state_jp": state_str,
     }
 
@@ -75,7 +75,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
 
     # multiple circuits
     json_dict = {
-        "compiled_circuits": [cirq.to_json(circuit), cirq.to_json(circuit)],
+        "cirq_circuits": [cirq.to_json(circuit), cirq.to_json(circuit)],
         "state_jp": state_str,
     }
     compiler_output = aqt.read_json(json_dict, circuits_list=True)

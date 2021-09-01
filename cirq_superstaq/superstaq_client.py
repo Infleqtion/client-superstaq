@@ -189,7 +189,7 @@ class _SuperstaQClient:
 
     def aqt_compile(self, serialized_program: str) -> dict:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
-        json_dict = {"circuits": json.loads(serialized_program)}
+        json_dict = {"cirq_circuits": json.loads(serialized_program)}
 
         def request() -> requests.Response:
             return requests.post(

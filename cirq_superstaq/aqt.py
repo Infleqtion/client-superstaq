@@ -58,7 +58,7 @@ def read_json(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
 
     resolvers = [cirq_superstaq.custom_gates.custom_resolver, *cirq.DEFAULT_RESOLVERS]
     compiled_circuits = [
-        cirq.read_json(json_text=c, resolvers=resolvers) for c in json_dict["compiled_circuits"]
+        cirq.read_json(json_text=c, resolvers=resolvers) for c in json_dict["cirq_circuits"]
     ]
     if circuits_list:
         return AQTCompilerOutput(compiled_circuits, seq)
