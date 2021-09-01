@@ -25,8 +25,8 @@ class AQTCompilerOutput:
 
     def __repr__(self) -> str:
         if hasattr(self, "circuit"):
-            return f"AQTCompilerOutput({self.circuit!r}, {self.seq})"
-        return f"AQTCompilerOutput({self.circuits!r}, {self.seq})"
+            return f"AQTCompilerOutput({self.circuit!r}, {self.seq!r})"
+        return f"AQTCompilerOutput({self.circuits!r}, {self.seq!r})"
 
 
 def read_json(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
