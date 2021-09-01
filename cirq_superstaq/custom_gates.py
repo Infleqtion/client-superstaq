@@ -9,9 +9,7 @@ import cirq_superstaq
 
 
 @cirq.value_equality(approximate=True)
-class FermionicSWAPGate(
-    cirq.ops.gate_features.TwoQubitGate, cirq.ops.gate_features.InterchangeableQubitsGate
-):
+class FermionicSWAPGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     r"""The Fermionic SWAP gate, which performs the ZZ-interaction followed by a SWAP.
 
     Fermionic SWAPs are useful for applications like QAOA or Hamiltonian Simulation,
@@ -42,6 +40,9 @@ class FermionicSWAPGate(
         """
         self.theta = cirq.ops.fsim_gate._canonicalize(theta)  # between -pi and +pi
 
+    def _num_qubits_(self) -> int:
+        return 2
+
     def _unitary_(self) -> np.ndarray:
         return np.array(
             [
@@ -69,7 +70,7 @@ class FermionicSWAPGate(
         return cirq.protocols.obj_to_dict_helper(self, ["theta"])
 
 
-class ZXPowGate(cirq.EigenGate, cirq.TwoQubitGate):
+class ZXPowGate(cirq.EigenGate, cirq.Gate):
     r"""The ZX-parity gate, possibly raised to a power.
     Per arxiv.org/pdf/1904.06560v3 eq. 135, the ZX**t gate implements the following unitary:
      .. math::
@@ -102,6 +103,9 @@ class ZXPowGate(cirq.EigenGate, cirq.TwoQubitGate):
     def _eigen_shifts(self) -> List[float]:
         return [0, 1]
 
+    def _num_qubits_(self) -> int:
+        return 2
+
     def _circuit_diagram_info_(
         self, args: cirq.CircuitDiagramInfoArgs
     ) -> cirq.protocols.CircuitDiagramInfo:
@@ -128,11 +132,14 @@ class ZXPowGate(cirq.EigenGate, cirq.TwoQubitGate):
 CR = ZX = ZXPowGate()  # standard CR is a full turn of ZX, i.e. exponent = 1
 
 
-class AceCR(cirq.TwoQubitGate):
+class AceCR(cirq.Gate):
     def __init__(self, polarity: str) -> None:
         assert polarity in ["+-", "-+"]
         self.polarity = polarity
         super().__init__()
+
+    def _num_qubits_(self) -> int:
+        return 2
 
     def _decompose_(self, qubits: Tuple[cirq.LineQubit, cirq.LineQubit]) -> cirq.OP_TREE:
         yield cirq_superstaq.CR(*qubits) ** 0.25 if self.polarity == "+-" else cirq_superstaq.CR(
