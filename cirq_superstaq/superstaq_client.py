@@ -37,7 +37,7 @@ class _SuperstaQClient:
     }
     SUPPORTED_TARGETS = {"qpu", "simulator"}
     SUPPORTED_VERSIONS = {
-        "v0.1",
+        cirq_superstaq.API_VERSION,
     }
 
     def __init__(
@@ -68,8 +68,8 @@ class _SuperstaQClient:
             api_key: The key used for authenticating against the SuperstaQ API.
             default_target: The default target to run against. Supports one of 'qpu' and
                 'simulator'. Can be overridden by calls with target in their signature.
-            api_version: Which version fo the api to use. As of Dec, 2020, accepts 'v0.1' only,
-                which is the default.
+            api_version: Which version fo the api to use, defaults to cirq_superstaq.API_VERSION,
+                which is the most recent version when this client was downloaded.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
         """
@@ -80,7 +80,7 @@ class _SuperstaQClient:
         )
         assert (
             api_version in self.SUPPORTED_VERSIONS
-        ), f"Only api v0.1 is accepted but was {api_version}"
+        ), f"Only api versions {self.SUPPORTED_VERSIONS} are accepted but was {api_version}"
         assert (
             default_target is None or default_target in self.SUPPORTED_TARGETS
         ), f"Target can only be one of {self.SUPPORTED_TARGETS} but was {default_target}."
@@ -188,8 +188,8 @@ class _SuperstaQClient:
         return self._make_request(request).json()
 
     def aqt_compile(self, serialized_program: str) -> dict:
-        """Makes a POST request to SuperstaQ API to compile a circuit for Berkeley-AQT."""
-        json_dict = {"circuit": json.loads(serialized_program)}
+        """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
+        json_dict = {"cirq_circuits": json.loads(serialized_program)}
 
         def request() -> requests.Response:
             return requests.post(

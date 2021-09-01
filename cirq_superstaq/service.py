@@ -65,7 +65,7 @@ class Service:
                 and target must always be specified in calls. If set, then this default is used,
                 unless a target is specified for a given call. Supports either 'qpu' or
                 'simulator'.
-            api_version: Version of the api. Defaults to 'v0.1'.
+            api_version: Version of the api.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
             verbose: Whether to print to stdio and stderr on retriable errors.
 
@@ -183,21 +183,30 @@ class Service:
             return f"${balance:,.2f}"
         return balance
 
-    def aqt_compile(self, circuit: cirq.Circuit) -> "cirq_superstaq.aqt.AQTCompilerOutput":
-        """Compiles the given circuit to AQT device, optimized to its native gate set.
+    def aqt_compile(
+        self, circuits: Union[cirq.Circuit, List[cirq.Circuit]]
+    ) -> "cirq_superstaq.aqt.AQTCompilerOutput":
+        """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
 
         Args:
-            circuit: a cirq Circuit object with operations on qubits 4 through 8.
+            circuits: cirq Circuit(s) with operations on qubits 4 through 8.
         Returns:
-            AQTCompilerOutput object, whose .circuit attribute contains an optimized cirq Circuit.
+            object whose .circuit(s) attribute is an optimized cirq Circuit(s)
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the optimized cirq Circuit.
+            pulse sequence corresponding to the optimized cirq.Circuit(s).
         """
-        serialized_program = cirq.to_json(circuit)
+        if isinstance(circuits, cirq.Circuit):
+            serialized_program = cirq.to_json([circuits])
+            circuits_list = False
+        else:
+            serialized_program = cirq.to_json(circuits)
+            circuits_list = True
+
         json_dict = self._client.aqt_compile(serialized_program)
+
         from cirq_superstaq import aqt
 
-        return aqt.read_json(json_dict)
+        return aqt.read_json(json_dict, circuits_list)
 
     def submit_qubo(self, qubo: qv.QUBO, target: str, repetitions: int = 1000) -> np.recarray:
         """Submits the given QUBO to the target backend. The result of the optimization
