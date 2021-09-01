@@ -13,7 +13,7 @@
 # that they have been altered from the originals.
 
 import os
-from typing import List
+from typing import List, Union
 
 import qiskit
 import requests
@@ -86,18 +86,25 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
 
         return backends
 
-    def aqt_compile(self, circuit: qiskit.QuantumCircuit) -> "qss.aqt.AQTCompilerOutput":
-        """Compiles the given circuit to AQT device, optimized to its native gate set.
+    def aqt_compile(
+        self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]
+    ) -> "qss.aqt.AQTCompilerOutput":
+        """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
 
         Args:
-            circuit: a qiskit QuantumCircuit
+            circuits: qiskit QuantumCircuit(s)
         Returns:
-            AQTCompilerOutput object, whose .circuit attribute is an optimized qiskit QuantumCircuit
+            object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the optimized qiskit.QuantumCircuit.
+            pulse sequence corresponding to the optimized qiskit.QuantumCircuit(s).
         """
-        qasm_str = circuit.qasm()
-        json_dict = {"qasm_str": qasm_str}
+        if isinstance(circuits, qiskit.QuantumCircuit):
+            json_dict = {"qasm_strs": [circuits.qasm()]}
+            circuits_list = False
+        else:
+            json_dict = {"qasm_strs": [c.qasm() for c in circuits]}
+            circuits_list = True
+
         headers = {
             "Authorization": self.get_access_token(),
             "Content-Type": "application/json",
@@ -113,4 +120,4 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
 
         from qiskit_superstaq import aqt
 
-        return aqt.read_json(json_dict)
+        return aqt.read_json(json_dict, circuits_list)
