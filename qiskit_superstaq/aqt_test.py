@@ -1,4 +1,3 @@
-import codecs
 import importlib
 import pickle
 from unittest import mock
@@ -24,8 +23,8 @@ def test_read_json() -> None:
     circuit = qiskit.QuantumCircuit(4)
     for i in range(4):
         circuit.h(i)
-    state_str = codecs.encode(pickle.dumps({}), "base64").decode()
-    pulse_lists_str = codecs.encode(pickle.dumps([[[]]]), "base64").decode()
+    state_str = qiskit_superstaq.converters.serialize({})
+    pulse_lists_str = qiskit_superstaq.converters.serialize([[[]]])
 
     json_dict = {
         "qasm_strs": [circuit.qasm()],
@@ -41,7 +40,7 @@ def test_read_json() -> None:
     assert out.circuits == [circuit]
     assert not hasattr(out, "circuit")
 
-    pulse_lists_str = codecs.encode(pickle.dumps([[[]], [[]]]), "base64").decode()
+    pulse_lists_str = qiskit_superstaq.converters.serialize([[[]], [[]]])
     json_dict = {
         "qasm_strs": [circuit.qasm(), circuit.qasm()],
         "state_jp": state_str,
@@ -59,8 +58,8 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     circuit = qiskit.QuantumCircuit(4)
     for i in range(4):
         circuit.h(i)
-    state_str = codecs.encode(pickle.dumps(seq.__getstate__()), "base64").decode()
-    pulse_lists_str = codecs.encode(pickle.dumps([[[]]]), "base64").decode()
+    state_str = qiskit_superstaq.converters.serialize(seq.__getstate__())
+    pulse_lists_str = qiskit_superstaq.converters.serialize([[[]]])
     json_dict = {
         "qasm_strs": [circuit.qasm()],
         "state_jp": state_str,
@@ -79,7 +78,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     assert out.pulse_lists == [[[]]]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
-    pulse_lists_str = codecs.encode(pickle.dumps([[[]], [[]]]), "base64").decode()
+    pulse_lists_str = qiskit_superstaq.converters.serialize([[[]], [[]]])
     json_dict = {
         "qasm_strs": [circuit.qasm(), circuit.qasm()],
         "state_jp": state_str,

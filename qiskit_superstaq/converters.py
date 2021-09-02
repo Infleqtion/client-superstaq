@@ -1,5 +1,6 @@
 import codecs
 import io
+import pickle
 from typing import List, Union
 
 import qiskit
@@ -14,7 +15,7 @@ def _str_to_bytes(str_data: str) -> bytes:
     return codecs.decode(str_data.encode(), "base64")
 
 
-def serialize_obj(obj: Any) -> str:
+def serialize(obj: Any) -> str:
     """Serialize picklable object into a string
 
     Args:
@@ -27,11 +28,11 @@ def serialize_obj(obj: Any) -> str:
     return _bytes_to_str(pickle.dumps(obj))
 
 
-def deserialize_obj(serialized_obj: str) -> Any:
+def deserialize(serialized_obj: str) -> Any:
     """Deserialize serialized objects
 
     Args:
-        serialized_obj: a str generated via qiskit_superstaq.converters.serialize_obj()
+        serialized_obj: a str generated via qiskit_superstaq.converters.serialize()
 
     Returns:
         the serialized object
