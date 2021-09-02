@@ -1,2 +1,2 @@
-applications-superstaq==0.0.3
+applications-superstaq==0.0.4
 qiskit
