@@ -10,7 +10,6 @@ jobs:
   daily-integration-check:
     name: Pytest integration check
     env:
-      PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
       TEST_USER_TOKEN : ${{ secrets.TEST_USER_TOKEN }}
     runs-on: ubuntu-latest
     steps:
