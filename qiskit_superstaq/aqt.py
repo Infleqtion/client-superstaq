@@ -1,5 +1,4 @@
 import importlib
-import pickle
 from typing import List, Optional, Union
 
 import qiskit

@@ -5,6 +5,7 @@ from unittest import mock
 import pytest
 import qiskit
 
+import qiskit_superstaq
 from qiskit_superstaq import aqt
 
 

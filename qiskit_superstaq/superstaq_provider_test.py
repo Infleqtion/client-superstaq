@@ -64,8 +64,8 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qasm_strs": [out_qasm_str],
-        "state_jp": qiskit_superstaq.converters.serialize({}),
-        "pulse_lists_jp": qiskit_superstaq.converters.serialize([[[]]]),
+        "state_jp": qss.converters.serialize({}),
+        "pulse_lists_jp": qss.converters.serialize([[[]]]),
     }
     out = provider.aqt_compile(qc)
     assert out.circuit == expected_qc
@@ -77,8 +77,8 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qasm_strs": [out_qasm_str, out_qasm_str],
-        "state_jp": qiskit_superstaq.converters.serialize({}),
-        "pulse_lists_jp": qiskit_superstaq.converters.serialize([[[]], [[]]]),
+        "state_jp": qss.converters.serialize({}),
+        "pulse_lists_jp": qss.converters.serialize([[[]], [[]]]),
     }
     out = provider.aqt_compile([qc, qc])
     assert out.circuits == [expected_qc, expected_qc]

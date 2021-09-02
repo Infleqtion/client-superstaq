@@ -1,7 +1,7 @@
 import codecs
 import io
 import pickle
-from typing import List, Union
+from typing import Any, List, Union
 
 import qiskit
 import qiskit.circuit.qpy_serialization
