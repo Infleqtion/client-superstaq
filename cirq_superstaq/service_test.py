@@ -109,13 +109,14 @@ def test_service_get_balance() -> None:
     return_value={
         "cirq_circuits": [cirq.to_json(cirq.Circuit())],
         "state_jp": codecs.encode(pickle.dumps({}), "base64").decode(),
+        "pulse_lists_jp": codecs.encode(pickle.dumps([[[]]]), "base64").decode(),
     },
 )
 def test_service_aqt_compile_single(mock_aqt_compile: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    aqt_compiler_output = service.aqt_compile(cirq.Circuit())
-    assert aqt_compiler_output.circuit == cirq.Circuit()
-    assert not hasattr(aqt_compiler_output, "circuits")
+    out = service.aqt_compile(cirq.Circuit())
+    assert out.circuit == cirq.Circuit()
+    assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
 
 
 @mock.patch(
@@ -123,13 +124,14 @@ def test_service_aqt_compile_single(mock_aqt_compile: mock.MagicMock) -> None:
     return_value={
         "cirq_circuits": [cirq.to_json(cirq.Circuit()), cirq.to_json(cirq.Circuit())],
         "state_jp": codecs.encode(pickle.dumps({}), "base64").decode(),
+        "pulse_lists_jp": codecs.encode(pickle.dumps([[[]], [[]]]), "base64").decode(),
     },
 )
 def test_service_aqt_compile_multiple(mock_aqt_compile: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    aqt_compiler_output = service.aqt_compile([cirq.Circuit(), cirq.Circuit()])
-    assert aqt_compiler_output.circuits == [cirq.Circuit(), cirq.Circuit()]
-    assert not hasattr(aqt_compiler_output, "circuit")
+    out = service.aqt_compile([cirq.Circuit(), cirq.Circuit()])
+    assert out.circuits == [cirq.Circuit(), cirq.Circuit()]
+    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
 
 @mock.patch(
