@@ -3,6 +3,6 @@ import applications_superstaq
 
 def test_serialization() -> None:
     obj = {"object": ["to", "serialize"]}
-    serialized_obj = qiskit_superstaq.converters.serialize(obj)
+    serialized_obj = applications_superstaq.converters.serialize(obj)
     assert isinstance(serialized_obj, str)
-    assert qiskit_superstaq.converters.deserialize(serialized_obj) == obj
+    assert applications_superstaq.converters.deserialize(serialized_obj) == obj

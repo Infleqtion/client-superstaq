@@ -1,5 +1,6 @@
 import codecs
 import pickle
+from typing import Any
 
 
 def _bytes_to_str(bytes_data: bytes) -> str:
@@ -27,12 +28,10 @@ def deserialize(serialized_obj: str) -> Any:
     """Deserialize serialized objects
 
     Args:
-        serialized_obj: a str generated via qiskit_superstaq.converters.serialize()
+        serialized_obj: a str generated via applications_superstaq.converters.serialize()
 
     Returns:
         the serialized object
     """
 
     return pickle.loads(_str_to_bytes(serialized_obj))
-
-
