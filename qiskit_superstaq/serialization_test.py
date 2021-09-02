@@ -8,6 +8,6 @@ def test_circuit_serialization() -> None:
     circuits[0].cx(2, 1)
     circuits[0].cz(0, 1)
     circuits[1].swap(0, 1)
-    serialized_circuits = qiskit_superstaq.converters.serialize_circuits(circuits)
+    serialized_circuits = qiskit_superstaq.serialization.serialize_circuits(circuits)
     assert isinstance(serialized_circuits, str)
-    assert qiskit_superstaq.converters.deserialize_circuits(serialized_circuits) == circuits
+    assert qiskit_superstaq.serialization.deserialize_circuits(serialized_circuits) == circuits
