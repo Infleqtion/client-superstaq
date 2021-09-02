@@ -29,8 +29,16 @@ class AQTCompilerOutput:
 
         self.seq = seq
 
+    def has_multiple_circuits(self) -> bool:
+        """Returns True if this object represents multiple circuits.
+
+        If so, this object has .circuits and .pulse_lists attributes. Otherwise, this object
+        represents a single circuit, and has .circuit and .pulse_list attributes.
+        """
+        return hasattr(self, "circuits")
+
     def __repr__(self) -> str:
-        if hasattr(self, "circuit"):
+        if not self.has_multiple_circuits():
             return f"AQTCompilerOutput({self.circuit!r}, {self.seq!r}, {self.pulse_list!r})"
         return f"AQTCompilerOutput({self.circuits!r}, {self.seq!r}, {self.pulse_lists!r})"
 
