@@ -1,8 +1,9 @@
-import codecs
 from typing import Any, Dict, List
 
 import numpy as np
 import qubovert as qv
+
+import applications_superstaq
 
 
 def read_json_qubo_result(json_dict: dict) -> np.recarray:
@@ -12,7 +13,7 @@ def read_json_qubo_result(json_dict: dict) -> np.recarray:
     Returns:
         a numpy.recarray containing the results of the optimization.
     """
-    return np.loads(codecs.decode(json_dict["solution"].encode(), "base64"))
+    return applications_superstaq.converters.deserialize(json_dict["solution"])
 
 
 def convert_qubo_to_model(qubo: qv.QUBO) -> List[Dict[str, Any]]:
