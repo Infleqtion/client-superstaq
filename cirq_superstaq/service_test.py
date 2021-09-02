@@ -116,7 +116,6 @@ def test_service_aqt_compile_single(mock_aqt_compile: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
     out = service.aqt_compile(cirq.Circuit())
     assert out.circuit == cirq.Circuit()
-    assert out.pulse_list == [[]]
     assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
 
 
@@ -132,7 +131,6 @@ def test_service_aqt_compile_multiple(mock_aqt_compile: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
     out = service.aqt_compile([cirq.Circuit(), cirq.Circuit()])
     assert out.circuits == [cirq.Circuit(), cirq.Circuit()]
-    assert out.pulse_lists == [[[]], [[]]]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
 
