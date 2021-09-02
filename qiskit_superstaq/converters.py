@@ -13,7 +13,7 @@ def serialize_circuits(circuits: Union[qiskit.QuantumCircuit, List[qiskit.Quantu
         circuits: a QuantumCircuit or list of QuantumCircuits to be serialized
 
     Returns:
-        str representing the serialized circuits
+        str representing the serialized circuit(s)
     """
     buf = io.BytesIO()
     qiskit.circuit.qpy_serialization.dump(circuits, buf)
