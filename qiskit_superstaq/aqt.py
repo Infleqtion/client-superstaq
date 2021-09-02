@@ -1,9 +1,8 @@
 import importlib
 from typing import List, Optional, Union
 
+import applications_superstaq
 import qiskit
-
-import qiskit_superstaq
 
 try:
     import qtrl.sequencer
@@ -52,14 +51,14 @@ def read_json(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
         "qtrl"
     ):  # pragma: no cover, b/c qtrl is not open source so it is not in qiskit-superstaq reqs
         state_str = json_dict["state_jp"]
-        state = qiskit_superstaq.converters.deserialize(state_str)
+        state = applications_superstaq.converters.deserialize(state_str)
 
         seq = qtrl.sequencer.Sequence(n_elements=1)
         seq.__setstate__(state)
         seq.compile()
 
         pulse_lists_str = json_dict["pulse_lists_jp"]
-        pulse_lists = qiskit_superstaq.converters.deserialize(pulse_lists_str)
+        pulse_lists = applications_superstaq.converters.deserialize(pulse_lists_str)
 
     compiled_circuits = [qiskit.QuantumCircuit.from_qasm_str(q) for q in json_dict["qasm_strs"]]
     if circuits_list:

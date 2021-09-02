@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock, patch
 
+import applications_superstaq
 import qiskit
 
 import qiskit_superstaq as qss
@@ -64,8 +65,8 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qasm_strs": [out_qasm_str],
-        "state_jp": qss.converters.serialize({}),
-        "pulse_lists_jp": qss.converters.serialize([[[]]]),
+        "state_jp": applications_superstaq.converters.serialize({}),
+        "pulse_lists_jp": applications_superstaq.converters.serialize([[[]]]),
     }
     out = provider.aqt_compile(qc)
     assert out.circuit == expected_qc
@@ -77,8 +78,8 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qasm_strs": [out_qasm_str, out_qasm_str],
-        "state_jp": qss.converters.serialize({}),
-        "pulse_lists_jp": qss.converters.serialize([[[]], [[]]]),
+        "state_jp": applications_superstaq.converters.serialize({}),
+        "pulse_lists_jp": applications_superstaq.converters.serialize([[[]], [[]]]),
     }
     out = provider.aqt_compile([qc, qc])
     assert out.circuits == [expected_qc, expected_qc]

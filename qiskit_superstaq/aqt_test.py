@@ -2,10 +2,10 @@ import importlib
 import pickle
 from unittest import mock
 
+import applications_superstaq
 import pytest
 import qiskit
 
-import qiskit_superstaq
 from qiskit_superstaq import aqt
 
 
@@ -24,8 +24,8 @@ def test_read_json() -> None:
     circuit = qiskit.QuantumCircuit(4)
     for i in range(4):
         circuit.h(i)
-    state_str = qiskit_superstaq.converters.serialize({})
-    pulse_lists_str = qiskit_superstaq.converters.serialize([[[]]])
+    state_str = applications_superstaq.converters.serialize({})
+    pulse_lists_str = applications_superstaq.converters.serialize([[[]]])
 
     json_dict = {
         "qasm_strs": [circuit.qasm()],
@@ -41,7 +41,7 @@ def test_read_json() -> None:
     assert out.circuits == [circuit]
     assert not hasattr(out, "circuit")
 
-    pulse_lists_str = qiskit_superstaq.converters.serialize([[[]], [[]]])
+    pulse_lists_str = applications_superstaq.converters.serialize([[[]], [[]]])
     json_dict = {
         "qasm_strs": [circuit.qasm(), circuit.qasm()],
         "state_jp": state_str,
@@ -59,8 +59,8 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     circuit = qiskit.QuantumCircuit(4)
     for i in range(4):
         circuit.h(i)
-    state_str = qiskit_superstaq.converters.serialize(seq.__getstate__())
-    pulse_lists_str = qiskit_superstaq.converters.serialize([[[]]])
+    state_str = applications_superstaq.converters.serialize(seq.__getstate__())
+    pulse_lists_str = applications_superstaq.converters.serialize([[[]]])
     json_dict = {
         "qasm_strs": [circuit.qasm()],
         "state_jp": state_str,
@@ -79,7 +79,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     assert out.pulse_lists == [[[]]]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
-    pulse_lists_str = qiskit_superstaq.converters.serialize([[[]], [[]]])
+    pulse_lists_str = applications_superstaq.converters.serialize([[[]], [[]]])
     json_dict = {
         "qasm_strs": [circuit.qasm(), circuit.qasm()],
         "state_jp": state_str,
