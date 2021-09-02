@@ -12,7 +12,6 @@ import qiskit_superstaq
 @pytest.fixture
 def provider() -> qiskit_superstaq.superstaq_provider.SuperstaQProvider:
     token = os.getenv("TEST_USER_TOKEN")
-    token = "93b7b7c9-27a1-4786-a720-d6b3312d59a9"
     provider = qiskit_superstaq.superstaq_provider.SuperstaQProvider(token)
     return provider
 
