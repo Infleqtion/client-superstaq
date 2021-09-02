@@ -42,7 +42,7 @@ def deserialize(serialized_obj: str) -> Any:
 
 
 def serialize_circuits(circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]) -> str:
-    """Serialize QuantumCircuits into a single string
+    """Serialize QuantumCircuit(s) into a single string
 
     Args:
         circuits: a QuantumCircuit or list of QuantumCircuits to be serialized
