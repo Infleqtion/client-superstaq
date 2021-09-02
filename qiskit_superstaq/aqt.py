@@ -43,7 +43,7 @@ def read_json(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
     Returns:
         a AQTCompilerOutput object with the compiled circuit(s). If qtrl is available locally,
         the returned object also stores the pulse sequence in the .seq attribute and the
-        the list(s) of cycles in the .pulse_list(s) attribute.
+        list(s) of cycles in the .pulse_list(s) attribute.
     """
     seq = None
     pulse_lists = None
