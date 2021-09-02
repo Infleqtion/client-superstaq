@@ -1,4 +1,3 @@
-import codecs
 import importlib
 import pickle
 from unittest import mock
@@ -6,7 +5,7 @@ from unittest import mock
 import pytest
 import qiskit
 
-from qiskit_superstaq import aqt
+from qiskit_superstaq import aqt, converters
 
 
 def test_aqt_compiler_output_repr() -> None:
@@ -24,7 +23,7 @@ def test_read_json() -> None:
     circuit = qiskit.QuantumCircuit(4)
     for i in range(4):
         circuit.h(i)
-    state_str = codecs.encode(pickle.dumps({}), "base64").decode()
+    state_str = converters.bytes_to_str(pickle.dumps({}))
 
     json_dict = {
         "qasm_strs": [circuit.qasm()],
@@ -55,7 +54,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     circuit = qiskit.QuantumCircuit(4)
     for i in range(4):
         circuit.h(i)
-    state_str = codecs.encode(pickle.dumps(seq.__getstate__()), "base64").decode()
+    state_str = converters.bytes_to_str(pickle.dumps(seq.__getstate__()))
 
     json_dict = {
         "qasm_strs": [circuit.qasm()],

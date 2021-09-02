@@ -1,9 +1,10 @@
-import codecs
 import importlib
 import pickle
 from typing import List, Optional, Union
 
 import qiskit
+
+import qiskit_superstaq
 
 try:
     import qtrl.sequencer
@@ -45,7 +46,7 @@ def read_json(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
         "qtrl"
     ):  # pragma: no cover, b/c qtrl is not open source so it is not in qiskit-superstaq reqs
         state_str = json_dict["state_jp"]
-        state = pickle.loads(codecs.decode(state_str.encode(), "base64"))
+        state = pickle.loads(qiskit_superstaq.converters.str_to_bytes(state_str))
 
         seq = qtrl.sequencer.Sequence(n_elements=1)
         seq.__setstate__(state)
