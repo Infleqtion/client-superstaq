@@ -24,7 +24,7 @@ def deserialize_circuits(serialized_circuits: str) -> List[qiskit.QuantumCircuit
     """Deserialize serialized QuantumCircuit(s)
 
     Args:
-        serialized_circuits: str generated via qiskit_superstaq.converters.serialize_circuit()
+        serialized_circuits: str generated via qiskit_superstaq.serialization.serialize_circuit()
 
     Returns:
         a list of QuantumCircuits
