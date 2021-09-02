@@ -71,12 +71,10 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     }
     out = provider.aqt_compile(qc)
     assert out.circuit == expected_qc
-    assert out.pulse_list == [[]]
     assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
 
     out = provider.aqt_compile([qc])
     assert out.circuits == [expected_qc]
-    assert out.pulse_lists == [[[]]]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
     mock_post.return_value.json = lambda: {
@@ -86,5 +84,4 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     }
     out = provider.aqt_compile([qc, qc])
     assert out.circuits == [expected_qc, expected_qc]
-    assert out.pulse_lists == [[[]], [[]]]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
