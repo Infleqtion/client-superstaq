@@ -96,7 +96,8 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
         Returns:
             object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the optimized qiskit.QuantumCircuit(s).
+            pulse sequence corresponding to the optimized qiskit.QuantumCircuit(s) and the
+            .pulse_list(s) attribute is the list(s) of cycles.
         """
         if isinstance(circuits, qiskit.QuantumCircuit):
             json_dict = {"qasm_strs": [circuits.qasm()]}

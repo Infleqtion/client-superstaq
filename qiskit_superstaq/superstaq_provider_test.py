@@ -67,19 +67,21 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     mock_post.return_value.json = lambda: {
         "qasm_strs": [out_qasm_str],
         "state_jp": codecs.encode(pickle.dumps({}), "base64").decode(),
+        "pulse_lists_jp": codecs.encode(pickle.dumps([[[]]]), "base64").decode(),
     }
-    compiler_output = provider.aqt_compile(qc)
-    assert compiler_output.circuit == expected_qc
-    assert not hasattr(compiler_output, "circuits")
+    out = provider.aqt_compile(qc)
+    assert out.circuit == expected_qc
+    assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
 
-    compiler_output = provider.aqt_compile([qc])
-    assert compiler_output.circuits == [expected_qc]
-    assert not hasattr(compiler_output, "circuit")
+    out = provider.aqt_compile([qc])
+    assert out.circuits == [expected_qc]
+    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
     mock_post.return_value.json = lambda: {
         "qasm_strs": [out_qasm_str, out_qasm_str],
         "state_jp": codecs.encode(pickle.dumps({}), "base64").decode(),
+        "pulse_lists_jp": codecs.encode(pickle.dumps([[[]], [[]]]), "base64").decode(),
     }
-    compiler_output = provider.aqt_compile([qc, qc])
-    assert compiler_output.circuits == [expected_qc, expected_qc]
-    assert not hasattr(compiler_output, "circuit")
+    out = provider.aqt_compile([qc, qc])
+    assert out.circuits == [expected_qc, expected_qc]
+    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
