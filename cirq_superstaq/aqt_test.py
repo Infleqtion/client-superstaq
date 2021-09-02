@@ -9,12 +9,12 @@ import pytest
 from cirq_superstaq import aqt
 
 
-def test_aqt_compiler_output_repr() -> None:
+def test_aqt_out_repr() -> None:
     circuit = cirq.Circuit()
-    assert repr(aqt.AQTCompilerOutput(circuit)) == f"AQTCompilerOutput({circuit!r}, None)"
+    assert repr(aqt.AQTCompilerOutput(circuit)) == f"AQTCompilerOutput({circuit!r}, None, None)"
 
     circuits = [circuit, circuit]
-    assert repr(aqt.AQTCompilerOutput(circuits)) == f"AQTCompilerOutput({circuits!r}, None)"
+    assert repr(aqt.AQTCompilerOutput(circuits)) == f"AQTCompilerOutput({circuits!r}, None, None)"
 
 
 @mock.patch.dict("sys.modules", {"qtrl": None})
@@ -23,30 +23,34 @@ def test_read_json() -> None:
 
     circuit = cirq.Circuit(cirq.H(cirq.LineQubit(4)))
     state_str = codecs.encode(pickle.dumps({}), "base64").decode()
+    pulse_lists_str = codecs.encode(pickle.dumps([[[]]]), "base64").decode()
 
     json_dict: dict
 
     json_dict = {
         "cirq_circuits": [cirq.to_json(circuit)],
         "state_jp": state_str,
+        "pulse_lists_jp": pulse_lists_str,
     }
 
-    compiler_output = aqt.read_json(json_dict, circuits_list=False)
-    assert compiler_output.circuit == circuit
-    assert not hasattr(compiler_output, "circuits")
+    out = aqt.read_json(json_dict, circuits_list=False)
+    assert out.circuit == circuit
+    assert not hasattr(out, "circuits")
 
-    compiler_output = aqt.read_json(json_dict, circuits_list=True)
-    assert compiler_output.circuits == [circuit]
-    assert not hasattr(compiler_output, "circuit")
+    out = aqt.read_json(json_dict, circuits_list=True)
+    assert out.circuits == [circuit]
+    assert not hasattr(out, "circuit")
 
     # multiple circuits
+    pulse_lists_str = codecs.encode(pickle.dumps([[[]], [[]]]), "base64").decode()
     json_dict = {
         "cirq_circuits": [cirq.to_json(circuit), cirq.to_json(circuit)],
         "state_jp": state_str,
+        "pulse_lists_jp": pulse_lists_str,
     }
-    compiler_output = aqt.read_json(json_dict, circuits_list=True)
-    assert compiler_output.circuits == [circuit, circuit]
-    assert not hasattr(compiler_output, "circuit")
+    out = aqt.read_json(json_dict, circuits_list=True)
+    assert out.circuits == [circuit, circuit]
+    assert not hasattr(out, "circuit")
 
 
 def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires qtrl installation
@@ -55,30 +59,37 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
 
     circuit = cirq.Circuit(cirq.H(cirq.LineQubit(4)))
     state_str = codecs.encode(pickle.dumps(seq.__getstate__()), "base64").decode()
+    pulse_lists_str = codecs.encode(pickle.dumps([[[]]]), "base64").decode()
 
     json_dict: dict
 
     json_dict = {
         "cirq_circuits": [cirq.to_json(circuit)],
         "state_jp": state_str,
+        "pulse_lists_jp": pulse_lists_str,
     }
 
-    compiler_output = aqt.read_json(json_dict, circuits_list=False)
-    assert compiler_output.circuit == circuit
-    assert not hasattr(compiler_output, "circuits")
-    assert pickle.dumps(compiler_output.seq) == pickle.dumps(seq)
+    out = aqt.read_json(json_dict, circuits_list=False)
+    assert out.circuit == circuit
+    assert pickle.dumps(out.seq) == pickle.dumps(seq)
+    assert out.pulse_list == [[]]
+    assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
 
-    compiler_output = aqt.read_json(json_dict, circuits_list=True)
-    assert compiler_output.circuits == [circuit]
-    assert not hasattr(compiler_output, "circuit")
-    assert pickle.dumps(compiler_output.seq) == pickle.dumps(seq)
+    out = aqt.read_json(json_dict, circuits_list=True)
+    assert out.circuits == [circuit]
+    assert pickle.dumps(out.seq) == pickle.dumps(seq)
+    assert out.pulse_lists == [[[]]]
+    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
     # multiple circuits
+    pulse_lists_str = codecs.encode(pickle.dumps([[[]], [[]]]), "base64").decode()
     json_dict = {
         "cirq_circuits": [cirq.to_json(circuit), cirq.to_json(circuit)],
         "state_jp": state_str,
+        "pulse_lists_jp": pulse_lists_str,
     }
-    compiler_output = aqt.read_json(json_dict, circuits_list=True)
-    assert compiler_output.circuits == [circuit, circuit]
-    assert not hasattr(compiler_output, "circuit")
-    assert pickle.dumps(compiler_output.seq) == pickle.dumps(seq)
+    out = aqt.read_json(json_dict, circuits_list=True)
+    assert out.circuits == [circuit, circuit]
+    assert pickle.dumps(out.seq) == pickle.dumps(seq)
+    assert out.pulse_lists == [[[]], [[]]]
+    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")

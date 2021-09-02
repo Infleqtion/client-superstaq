@@ -18,17 +18,21 @@ class AQTCompilerOutput:
         self,
         circuits: Union[cirq.Circuit, List[cirq.Circuit]],
         seq: Optional["qtrl.sequencer.Sequence"] = None,
+        pulse_lists: Optional[Union[List[List], List[List[List]]]] = None,
     ) -> None:
         if isinstance(circuits, cirq.Circuit):
             self.circuit = circuits
+            self.pulse_list = pulse_lists
         else:
             self.circuits = circuits
+            self.pulse_lists = pulse_lists
+
         self.seq = seq
 
     def __repr__(self) -> str:
         if hasattr(self, "circuit"):
-            return f"AQTCompilerOutput({self.circuit!r}, {self.seq!r})"
-        return f"AQTCompilerOutput({self.circuits!r}, {self.seq!r})"
+            return f"AQTCompilerOutput({self.circuit!r}, {self.seq!r}, {self.pulse_list!r})"
+        return f"AQTCompilerOutput({self.circuits!r}, {self.seq!r}, {self.pulse_lists!r})"
 
 
 def read_json(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
@@ -40,9 +44,12 @@ def read_json(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
             attribute (if True) or a .circuit attribute (False)
     Returns:
         a AQTCompilerOutput object with the compiled circuit(s). If qtrl is available locally,
-        the returned object also stores the pulse sequence in the .seq attribute.
+        the returned object also stores the pulse sequence in the .seq attribute and the
+        list(s) of cycles in the .pulse_list(s) attribute.
     """
     seq = None
+    pulse_lists = None
+
     if importlib.util.find_spec(
         "qtrl"
     ):  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
@@ -53,11 +60,15 @@ def read_json(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
         seq.__setstate__(state)
         seq.compile()
 
+        pulse_lists_str = json_dict["pulse_lists_jp"]
+        pulse_lists = pickle.loads(codecs.decode(pulse_lists_str.encode(), "base64"))
+
     resolvers = [cirq_superstaq.custom_gates.custom_resolver, *cirq.DEFAULT_RESOLVERS]
     compiled_circuits = [
         cirq.read_json(json_text=c, resolvers=resolvers) for c in json_dict["cirq_circuits"]
     ]
     if circuits_list:
-        return AQTCompilerOutput(compiled_circuits, seq)
+        return AQTCompilerOutput(compiled_circuits, seq, pulse_lists)
 
-    return AQTCompilerOutput(compiled_circuits[0], seq)
+    pulse_list = pulse_lists[0] if pulse_lists is not None else None
+    return AQTCompilerOutput(compiled_circuits[0], seq, pulse_list)
