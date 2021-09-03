@@ -207,7 +207,7 @@ class _SuperstaQClient:
 
         def request() -> requests.Response:
             return requests.post(
-                f"{self.url}/ibm_compile",
+                f"{self.url}/ibmq_compile",
                 headers=self.headers,
                 json=json_dict,
                 verify=self.verify_https,
