@@ -27,6 +27,16 @@ class SuperstaQException(Exception):
         self.status_code = status_code
 
 
+class SuperstaQModuleNotFoundException(SuperstaQException):
+    """
+    An exception for SuperstaQ features requiring an uninstalled module."""
+
+    def __init__(self, name: str, context: str):
+        message = f"'{context}' requires module '{name}'"
+        super().__init__(message)
+        self.name = name
+
+
 class SuperstaQNotFoundException(SuperstaQException):
     """An exception for errors from SuperstaQ's API when a resource is not found."""
 
