@@ -34,7 +34,6 @@ class SuperstaQModuleNotFoundException(SuperstaQException):
     def __init__(self, name: str, context: str):
         message = f"'{context}' requires module '{name}'"
         super().__init__(message)
-        self.name = name
 
 
 class SuperstaQNotFoundException(SuperstaQException):
