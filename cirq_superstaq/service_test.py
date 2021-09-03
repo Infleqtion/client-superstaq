@@ -135,6 +135,15 @@ def test_service_aqt_compile_multiple(mock_aqt_compile: mock.MagicMock) -> None:
 
 
 @mock.patch(
+    "cirq_superstaq.superstaq_client._SuperstaQClient.ibm_compile",
+    return_value={"pulses": applications_superstaq.converters.serialize(["p"])},
+)
+def test_service_ibm_compile(mock_ibm_compile: mock.MagicMock) -> None:
+    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    assert service.ibm_compile(cirq.Circuit()) == "p"
+
+
+@mock.patch(
     "cirq_superstaq.superstaq_client._SuperstaQClient.submit_qubo",
     return_value={
         "solution": codecs.encode(

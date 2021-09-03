@@ -14,8 +14,9 @@
 
 import collections
 import os
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
+import applications_superstaq
 import cirq
 import numpy as np
 import qubovert as qv
@@ -208,6 +209,15 @@ class Service:
         from cirq_superstaq import aqt
 
         return aqt.read_json(json_dict, circuits_list)
+
+    def ibm_compile(self, circuit: cirq.Circuit) -> Any:
+        """Returns pulse schedule for the given circuit, on IBM Jakarta 7Q device.
+
+        Qiskit must be installed for returned object to correctly deserialize to a pulse schedule.
+        """
+        serialized_program = cirq.to_json([circuit])
+        json_dict = self._client.ibm_compile(serialized_program)
+        return applications_superstaq.converters.deserialize(json_dict["pulses"])[0]
 
     def submit_qubo(self, qubo: qv.QUBO, target: str, repetitions: int = 1000) -> np.recarray:
         """Submits the given QUBO to the target backend. The result of the optimization
