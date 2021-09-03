@@ -27,6 +27,7 @@ from cirq_superstaq.job import Job
 from cirq_superstaq.service import Service
 from cirq_superstaq.superstaq_exceptions import (
     SuperstaQException,
+    SuperstaQModuleNotFoundException,
     SuperstaQNotFoundException,
     SuperstaQUnsuccessfulJobException,
 )
@@ -43,6 +44,7 @@ __all__ = [
     "Job",
     "Service",
     "SuperstaQException",
+    "SuperstaQModuleNotFoundException",
     "SuperstaQNotFoundException",
     "SuperstaQUnsuccessfulJobException",
     "ZX",

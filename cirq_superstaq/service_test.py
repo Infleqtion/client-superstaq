@@ -136,11 +136,18 @@ def test_service_aqt_compile_multiple(mock_aqt_compile: mock.MagicMock) -> None:
 
 @mock.patch(
     "cirq_superstaq.superstaq_client._SuperstaQClient.ibm_compile",
-    return_value={"pulses": applications_superstaq.converters.serialize(["p"])},
+    return_value={"pulses": applications_superstaq.converters.serialize([sympy.var("p")])},
 )
-def test_service_ibm_compile(mock_ibm_compile: mock.MagicMock) -> None:
+def test_service_ibm_compile_(mock_ibm_compile: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    assert service.ibm_compile(cirq.Circuit()) == "p"
+    assert service.ibm_compile(cirq.Circuit()) == sympy.var("p")
+
+    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    with mock.patch.dict("sys.modules", {"sympy": None}), pytest.raises(
+        cirq_superstaq.SuperstaQModuleNotFoundException,
+        match="'ibm_compile' requires module 'sympy'",
+    ):
+        _ = service.ibm_compile(cirq.Circuit())
 
 
 @mock.patch(

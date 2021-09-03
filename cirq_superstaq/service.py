@@ -217,7 +217,12 @@ class Service:
         """
         serialized_program = cirq.to_json([circuit])
         json_dict = self._client.ibm_compile(serialized_program)
-        return applications_superstaq.converters.deserialize(json_dict["pulses"])[0]
+        try:
+            return applications_superstaq.converters.deserialize(json_dict["pulses"])[0]
+        except ModuleNotFoundError as e:
+            raise cirq_superstaq.SuperstaQModuleNotFoundException(
+                name=str(e.name), context="ibm_compile"
+            )
 
     def submit_qubo(self, qubo: qv.QUBO, target: str, repetitions: int = 1000) -> np.recarray:
         """Submits the given QUBO to the target backend. The result of the optimization
