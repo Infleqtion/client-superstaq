@@ -210,18 +210,18 @@ class Service:
 
         return aqt.read_json(json_dict, circuits_list)
 
-    def ibm_compile(self, circuit: cirq.Circuit) -> Any:
-        """Returns pulse schedule for the given circuit, on IBM Jakarta 7Q device.
+    def ibmq_compile(self, circuit: cirq.Circuit, target: Optional[str] = None) -> Any:
+        """Returns pulse schedule for the given circuit and target.
 
         Qiskit must be installed for returned object to correctly deserialize to a pulse schedule.
         """
         serialized_program = cirq.to_json([circuit])
-        json_dict = self._client.ibm_compile(serialized_program)
+        json_dict = self._client.ibmq_compile(serialized_program, target)
         try:
             return applications_superstaq.converters.deserialize(json_dict["pulses"])[0]
         except ModuleNotFoundError as e:
             raise cirq_superstaq.SuperstaQModuleNotFoundException(
-                name=str(e.name), context="ibm_compile"
+                name=str(e.name), context="ibmq_compile"
             )
 
     def submit_qubo(self, qubo: qv.QUBO, target: str, repetitions: int = 1000) -> np.recarray:
