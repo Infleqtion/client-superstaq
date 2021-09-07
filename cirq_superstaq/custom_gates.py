@@ -250,6 +250,11 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             qubits = qubits[num_qubits:]
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        """Generate a circuit diagram by connecting the wire symbols of each component gate.
+
+        Symbols belonging to separate gates are differentiated via subscripts, with groups of
+        symbols sharing the same subscript indicating multi-qubit operations.
+        """
         wire_symbols_with_subscripts = []
         for i, gate in enumerate(self.component_gates):
             diagram_info = cirq.circuit_diagram_info(gate, args)
