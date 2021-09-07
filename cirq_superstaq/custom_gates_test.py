@@ -1,5 +1,9 @@
+import itertools
+import textwrap
+
 import cirq
 import numpy as np
+import pytest
 
 import cirq_superstaq
 
@@ -9,7 +13,7 @@ def test_fermionic_swap_gate() -> None:
     gate = cirq_superstaq.FermionicSWAPGate(theta)
 
     assert str(gate) == "FermionicSWAPGate(0.123)"
-    assert repr(gate) == "cirq_superstaq.custom_gates.FermionicSWAPGate(0.123)"
+    assert repr(gate) == "cirq_superstaq.FermionicSWAPGate(0.123)"
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq")
 
     qubits = cirq.LineQubit.range(3)
@@ -105,7 +109,7 @@ def test_barrier() -> None:
     gate = cirq_superstaq.Barrier(n)
 
     assert str(gate) == "Barrier(3)"
-    assert repr(gate) == "cirq_superstaq.custom_gates.Barrier(3)"
+    assert repr(gate) == "cirq_superstaq.Barrier(3)"
 
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq")
 
@@ -152,14 +156,104 @@ barrier q[0],q[1],q[2];
     )
 
 
+def test_parallel_gates() -> None:
+    gate = cirq_superstaq.ParallelGates(cirq.CZ, cirq.CZ ** 0.5, cirq.CZ ** -0.5)
+    qubits = cirq.LineQubit.range(6)
+    operation = gate(*qubits)
+    circuit = cirq.Circuit(operation)
+
+    expected_diagram = textwrap.dedent(
+        """
+        0: ───@₁────────
+              │
+        1: ───@₁────────
+              │
+        2: ───@₂────────
+              │
+        3: ───@₂^0.5────
+              │
+        4: ───@₃────────
+              │
+        5: ───@₃^-0.5───
+        """
+    )
+    cirq.testing.assert_has_diagram(circuit, expected_diagram)
+    cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq, cirq_superstaq")
+    assert repr(gate) == "cirq_superstaq.ParallelGates(cirq.CZ, (cirq.CZ**0.5), (cirq.CZ**-0.5))"
+    assert str(gate) == "ParallelGates(CZ, CZ**0.5, CZ**-0.5)"
+
+    assert cirq.decompose(operation) == [
+        cirq.CZ(qubits[0], qubits[1]),
+        cirq.CZ(qubits[2], qubits[3]) ** 0.5,
+        cirq.CZ(qubits[4], qubits[5]) ** -0.5,
+    ]
+    assert cirq.equal_up_to_global_phase(
+        cirq.unitary(gate), cirq.unitary(cirq.Circuit(cirq.decompose(operation)))
+    )
+
+    assert [gate.qubit_index_to_equivalence_group_key(i) for i in range(6)] == [0, 0, 2, 2, 4, 4]
+    for permuted_qubits in itertools.permutations(operation.qubits):
+        sub_op_qubits = [
+            {permuted_qubits[0].x, permuted_qubits[1].x},
+            {permuted_qubits[2].x, permuted_qubits[3].x},
+            {permuted_qubits[4].x, permuted_qubits[5].x},
+        ]
+        if sub_op_qubits == [{0, 1}, {2, 3}, {4, 5}]:
+            assert operation == gate(*permuted_qubits)
+        else:
+            assert operation != gate(*permuted_qubits)
+
+    with pytest.raises(ValueError, match="index out of range"):
+        _ = gate.qubit_index_to_equivalence_group_key(6)
+
+    with pytest.raises(ValueError, match="index out of range"):
+        _ = gate.qubit_index_to_equivalence_group_key(-1)
+
+    with pytest.raises(ValueError, match="ParallelGates cannot contain measurements"):
+        _ = cirq_superstaq.ParallelGates(cirq.X, cirq.MeasurementGate(1, key="1"))
+
+    gate = cirq_superstaq.ParallelGates(cirq.X, cirq_superstaq.ZX, cirq.Y)
+    operation = gate(*qubits[:4])
+    assert [gate.qubit_index_to_equivalence_group_key(i) for i in range(4)] == [0, 1, 2, 3]
+    for permuted_qubits in itertools.permutations(operation.qubits):
+        if permuted_qubits == operation.qubits:
+            assert operation == gate(*permuted_qubits)
+        else:
+            assert operation != gate(*permuted_qubits)
+    assert cirq.equal_up_to_global_phase(
+        cirq.unitary(gate), cirq.unitary(cirq.Circuit(cirq.decompose(operation)))
+    )
+
+    gate = cirq_superstaq.ParallelGates(cirq.X, cirq_superstaq.FermionicSWAPGate(1.23), cirq.X)
+    operation = gate(*qubits[:4])
+    assert [gate.qubit_index_to_equivalence_group_key(i) for i in range(4)] == [0, 1, 1, 0]
+    equivalent_targets = [
+        (qubits[0], qubits[1], qubits[2], qubits[3]),
+        (qubits[0], qubits[2], qubits[1], qubits[3]),
+        (qubits[3], qubits[1], qubits[2], qubits[0]),
+        (qubits[3], qubits[2], qubits[1], qubits[0]),
+    ]
+    for permuted_qubits in itertools.permutations(operation.qubits):
+        if permuted_qubits in equivalent_targets:
+            assert operation == gate(*permuted_qubits)
+        else:
+            assert operation != gate(*permuted_qubits)
+    assert cirq.equal_up_to_global_phase(
+        cirq.unitary(gate), cirq.unitary(cirq.Circuit(cirq.decompose(operation)))
+    )
+
+
 def test_custom_resolver() -> None:
     circuit = cirq.Circuit()
-    qubits = cirq.LineQubit.range(2)
+    qubits = cirq.LineQubit.range(4)
     circuit += cirq_superstaq.FermionicSWAPGate(1.23).on(qubits[0], qubits[1])
     circuit += cirq_superstaq.AceCRPlusMinus(qubits[0], qubits[1])
     circuit += cirq_superstaq.Barrier(2).on(qubits[0], qubits[1])
     circuit += cirq_superstaq.CR(qubits[0], qubits[1])
     circuit += cirq_superstaq.AceCRMinusPlus(qubits[0], qubits[1])
+    circuit += cirq_superstaq.ParallelGates(cirq.X, cirq_superstaq.ZX).on(
+        qubits[0], qubits[2], qubits[3]
+    )
     circuit += cirq.CX(qubits[0], qubits[1])
 
     json_text = cirq.to_json(circuit)

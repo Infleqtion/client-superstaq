@@ -60,7 +60,7 @@ class FermionicSWAPGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsG
         return f"FermionicSWAPGate({self.theta})"
 
     def __repr__(self) -> str:
-        return f"cirq_superstaq.custom_gates.FermionicSWAPGate({self.theta})"
+        return f"cirq_superstaq.FermionicSWAPGate({self.theta})"
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         t = args.format_radians(self.theta)
@@ -136,7 +136,6 @@ class AceCR(cirq.Gate):
     def __init__(self, polarity: str) -> None:
         assert polarity in ["+-", "-+"]
         self.polarity = polarity
-        super().__init__()
 
     def _num_qubits_(self) -> int:
         return 2
@@ -197,12 +196,98 @@ class Barrier(cirq.ops.IdentityGate):
         return f"Barrier({self.num_qubits()})"
 
     def __repr__(self) -> str:
-        return f"cirq_superstaq.custom_gates.Barrier({self.num_qubits()})"
+        return f"cirq_superstaq.Barrier({self.num_qubits()})"
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> Tuple[str, ...]:
         if args.use_unicode_characters:
             return ("│",) * self.num_qubits()
         return ("|",) * self.num_qubits()
+
+
+@cirq.value_equality(approximate=True)
+class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
+    """A single Gate combining a collection of concurrent Gate(s) acting on different qubits"""
+
+    def __init__(self, *component_gates: cirq.Gate) -> None:
+        """
+        Args:
+            component_gates: Gate(s) to be collected into single gate
+        """
+        if any(cirq.is_measurement(gate) for gate in component_gates):
+            raise ValueError("ParallelGates cannot contain measurements")
+        self.component_gates = component_gates
+
+    def qubit_index_to_gate_and_index(self, index: int) -> Tuple[cirq.Gate, int]:
+        for gate in self.component_gates:
+            if gate.num_qubits() > index >= 0:
+                return gate, index
+            index -= gate.num_qubits()
+        raise ValueError("index out of range")
+
+    def qubit_index_to_equivalence_group_key(self, index: int) -> int:
+        indexed_gate, index_in_gate = self.qubit_index_to_gate_and_index(index)
+        if indexed_gate.num_qubits() == 1:
+            # find the first instance of the same gate
+            first_instance = self.component_gates.index(indexed_gate)
+            return sum(map(cirq.num_qubits, self.component_gates[:first_instance]))
+        if isinstance(indexed_gate, cirq.InterchangeableQubitsGate):
+            gate_key = indexed_gate.qubit_index_to_equivalence_group_key(index_in_gate)
+            for i in range(index_in_gate):
+                if gate_key == indexed_gate.qubit_index_to_equivalence_group_key(i):
+                    return index - index_in_gate + i
+        return index
+
+    def _value_equality_values_(self) -> Tuple[cirq.Gate, ...]:
+        return self.component_gates
+
+    def _num_qubits_(self) -> int:
+        return sum(map(cirq.num_qubits, self.component_gates))
+
+    def _decompose_(self, qubits: Tuple[cirq.Qid, ...]) -> cirq.OP_TREE:
+        """Decompose into each component gate"""
+        for gate in self.component_gates:
+            num_qubits = gate.num_qubits()
+            yield gate(*qubits[:num_qubits])
+            qubits = qubits[num_qubits:]
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        """Generate a circuit diagram by connecting the wire symbols of each component gate.
+
+        Symbols belonging to separate gates are differentiated via subscripts, with groups of
+        symbols sharing the same subscript indicating multi-qubit operations.
+        """
+        wire_symbols_with_subscripts = []
+        for i, gate in enumerate(self.component_gates):
+            diagram_info = cirq.circuit_diagram_info(gate, args)
+            full_wire_symbols = diagram_info._wire_symbols_including_formatted_exponent(
+                args,
+                preferred_exponent_index=cirq.num_qubits(gate) - 1,
+            )
+
+            index_str = f"_{i+1}"
+            if args.use_unicode_characters:
+                index_str = "".join(chr(ord("₁") + int(c)) for c in str(i))
+
+            for base_symbol, full_symbol in zip(diagram_info.wire_symbols, full_wire_symbols):
+                wire_symbols_with_subscripts.append(
+                    full_symbol.replace(base_symbol, base_symbol + index_str)
+                )
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols_with_subscripts)
+
+    def _json_dict_(self) -> Dict[str, Any]:
+        return cirq.protocols.obj_to_dict_helper(self, ["component_gates"])
+
+    @classmethod
+    def _from_json_dict_(cls, component_gates: List[cirq.Gate], **kwargs: Any) -> Any:
+        return cls(*component_gates)
+
+    def __str__(self) -> str:
+        component_gates_str = ", ".join(str(gate) for gate in self.component_gates)
+        return f"ParallelGates({component_gates_str})"
+
+    def __repr__(self) -> str:
+        component_gates_repr = ", ".join(repr(gate) for gate in self.component_gates)
+        return f"cirq_superstaq.ParallelGates({component_gates_repr})"
 
 
 def custom_resolver(cirq_type: str) -> Union[Callable[..., cirq.Gate], None]:
@@ -214,4 +299,6 @@ def custom_resolver(cirq_type: str) -> Union[Callable[..., cirq.Gate], None]:
         return ZXPowGate
     if cirq_type == "AceCR":
         return AceCR
+    if cirq_type == "ParallelGates":
+        return ParallelGates
     return None
