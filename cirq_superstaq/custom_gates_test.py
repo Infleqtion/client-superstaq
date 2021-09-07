@@ -210,7 +210,7 @@ def test_parallel_gates() -> None:
         _ = gate.qubit_index_to_equivalence_group_key(-1)
 
     with pytest.raises(ValueError, match="ParallelGates cannot contain measurements"):
-        _ = cirq_superstaq.ParallelGates(cirq.X, cirq.MeasurementGate(1))
+        _ = cirq_superstaq.ParallelGates(cirq.X, cirq.MeasurementGate(1, key="1"))
 
     gate = cirq_superstaq.ParallelGates(cirq.X, cirq_superstaq.ZX, cirq.Y)
     operation = gate(*qubits[:4])
