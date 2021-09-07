@@ -244,6 +244,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         return sum(map(cirq.num_qubits, self.component_gates))
 
     def _decompose_(self, qubits: Tuple[cirq.Qid, ...]) -> cirq.OP_TREE:
+        """Decompose into each component gate"""
         for gate in self.component_gates:
             num_qubits = gate.num_qubits()
             yield gate(*qubits[:num_qubits])
