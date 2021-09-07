@@ -254,7 +254,6 @@ def test_custom_resolver() -> None:
     circuit += cirq_superstaq.ParallelGates(cirq.X, cirq_superstaq.ZX).on(
         qubits[0], qubits[2], qubits[3]
     )
-    # circuit += cirq_superstaq.CZPowGates([0.5, -0.5])(qubits[0], qubits[1], qubits[2], qubits[3])
     circuit += cirq.CX(qubits[0], qubits[1])
 
     json_text = cirq.to_json(circuit)
