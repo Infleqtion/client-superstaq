@@ -134,12 +134,25 @@ barrier q[0],q[1],q[2];
     cirq.testing.assert_has_diagram(
         circuit,
         """
-0: ───|───
+0: ───│───
       │
-1: ───|───
+1: ───│───
       │
-2: ───|───
+2: ───│───
 """,
+        use_unicode_characters=True,
+    )
+
+    cirq.testing.assert_has_diagram(
+        circuit,
+        """
+0: ---|---
+      |
+1: ---|---
+      |
+2: ---|---
+""",
+        use_unicode_characters=False,
     )
 
 

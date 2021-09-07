@@ -199,6 +199,8 @@ class Barrier(cirq.ops.IdentityGate):
         return f"cirq_superstaq.custom_gates.Barrier({self.num_qubits()})"
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> Tuple[str, ...]:
+        if args.use_unicode_characters:
+            return ("│",) * self.num_qubits()
         return ("|",) * self.num_qubits()
 
 
