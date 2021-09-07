@@ -60,7 +60,7 @@ class FermionicSWAPGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsG
         return f"FermionicSWAPGate({self.theta})"
 
     def __repr__(self) -> str:
-        return f"cirq_superstaq.custom_gates.FermionicSWAPGate({self.theta})"
+        return f"cirq_superstaq.FermionicSWAPGate({self.theta})"
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         t = args.format_radians(self.theta)
@@ -196,7 +196,7 @@ class Barrier(cirq.ops.IdentityGate):
         return f"Barrier({self.num_qubits()})"
 
     def __repr__(self) -> str:
-        return f"cirq_superstaq.custom_gates.Barrier({self.num_qubits()})"
+        return f"cirq_superstaq.Barrier({self.num_qubits()})"
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> Tuple[str, ...]:
         if args.use_unicode_characters:
@@ -281,7 +281,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
 
     def __repr__(self) -> str:
         component_gates_repr = ", ".join(repr(gate) for gate in self.component_gates)
-        return f"cirq_superstaq.custom_gates.ParallelGates({component_gates_repr})"
+        return f"cirq_superstaq.ParallelGates({component_gates_repr})"
 
 
 def custom_resolver(cirq_type: str) -> Union[Callable[..., cirq.Gate], None]:

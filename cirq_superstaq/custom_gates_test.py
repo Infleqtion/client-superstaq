@@ -13,7 +13,7 @@ def test_fermionic_swap_gate() -> None:
     gate = cirq_superstaq.FermionicSWAPGate(theta)
 
     assert str(gate) == "FermionicSWAPGate(0.123)"
-    assert repr(gate) == "cirq_superstaq.custom_gates.FermionicSWAPGate(0.123)"
+    assert repr(gate) == "cirq_superstaq.FermionicSWAPGate(0.123)"
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq")
 
     qubits = cirq.LineQubit.range(3)
@@ -109,7 +109,7 @@ def test_barrier() -> None:
     gate = cirq_superstaq.Barrier(n)
 
     assert str(gate) == "Barrier(3)"
-    assert repr(gate) == "cirq_superstaq.custom_gates.Barrier(3)"
+    assert repr(gate) == "cirq_superstaq.Barrier(3)"
 
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq")
 
@@ -157,7 +157,7 @@ barrier q[0],q[1],q[2];
 
 
 def test_parallel_gates() -> None:
-    gate = cirq_superstaq.custom_gates.ParallelGates(cirq.CZ, cirq.CZ ** 0.5, cirq.CZ ** -0.5)
+    gate = cirq_superstaq.ParallelGates(cirq.CZ, cirq.CZ ** 0.5, cirq.CZ ** -0.5)
     qubits = cirq.LineQubit.range(6)
     operation = gate(*qubits)
     circuit = cirq.Circuit(operation)
@@ -179,10 +179,8 @@ def test_parallel_gates() -> None:
     )
     cirq.testing.assert_has_diagram(circuit, expected_diagram)
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq, cirq_superstaq")
+    assert repr(gate) == "cirq_superstaq.ParallelGates(cirq.CZ, (cirq.CZ**0.5), (cirq.CZ**-0.5))"
     assert str(gate) == "ParallelGates(CZ, CZ**0.5, CZ**-0.5)"
-    assert repr(gate) == (
-        "cirq_superstaq.custom_gates.ParallelGates(cirq.CZ, (cirq.CZ**0.5), (cirq.CZ**-0.5))"
-    )
 
     assert cirq.decompose(operation) == [
         cirq.CZ(qubits[0], qubits[1]),
@@ -214,7 +212,7 @@ def test_parallel_gates() -> None:
     with pytest.raises(ValueError, match="ParallelGates cannot contain measurements"):
         _ = cirq_superstaq.ParallelGates(cirq.X, cirq.MeasurementGate(1))
 
-    gate = cirq_superstaq.custom_gates.ParallelGates(cirq.X, cirq_superstaq.ZX, cirq.Y)
+    gate = cirq_superstaq.ParallelGates(cirq.X, cirq_superstaq.ZX, cirq.Y)
     operation = gate(*qubits[:4])
     assert [gate.qubit_index_to_equivalence_group_key(i) for i in range(4)] == [0, 1, 2, 3]
     for permuted_qubits in itertools.permutations(operation.qubits):
@@ -226,9 +224,7 @@ def test_parallel_gates() -> None:
         cirq.unitary(gate), cirq.unitary(cirq.Circuit(cirq.decompose(operation)))
     )
 
-    gate = cirq_superstaq.custom_gates.ParallelGates(
-        cirq.rx(1.23), cirq_superstaq.FermionicSWAPGate(1.23), cirq.rx(1.23)
-    )
+    gate = cirq_superstaq.ParallelGates(cirq.X, cirq_superstaq.FermionicSWAPGate(1.23), cirq.X)
     operation = gate(*qubits[:4])
     assert [gate.qubit_index_to_equivalence_group_key(i) for i in range(4)] == [0, 1, 1, 0]
     equivalent_targets = [
@@ -255,7 +251,7 @@ def test_custom_resolver() -> None:
     circuit += cirq_superstaq.Barrier(2).on(qubits[0], qubits[1])
     circuit += cirq_superstaq.CR(qubits[0], qubits[1])
     circuit += cirq_superstaq.AceCRMinusPlus(qubits[0], qubits[1])
-    circuit += cirq_superstaq.custom_gates.ParallelGates(cirq.X, cirq_superstaq.ZX).on(
+    circuit += cirq_superstaq.ParallelGates(cirq.X, cirq_superstaq.ZX).on(
         qubits[0], qubits[2], qubits[3]
     )
     # circuit += cirq_superstaq.CZPowGates([0.5, -0.5])(qubits[0], qubits[1], qubits[2], qubits[3])
