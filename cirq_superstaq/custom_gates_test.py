@@ -3,6 +3,7 @@ import textwrap
 
 import cirq
 import numpy as np
+import pytest
 
 import cirq_superstaq
 
@@ -176,15 +177,29 @@ def test_parallel_gates() -> None:
         cirq.CZ(qubits[4], qubits[5]) ** -0.5,
     ]
     assert cirq.equal_up_to_global_phase(
-        cirq.unitary(circuit), cirq.unitary(cirq.Circuit(cirq.decompose(operation)))
+        cirq.unitary(gate), cirq.unitary(cirq.Circuit(cirq.decompose(operation)))
     )
 
     assert [gate.qubit_index_to_equivalence_group_key(i) for i in range(6)] == [0, 0, 2, 2, 4, 4]
-    assert sorted(operation._group_interchangeable_qubits()) == [
-        (0, frozenset({qubits[0], qubits[1]})),
-        (2, frozenset({qubits[2], qubits[3]})),
-        (4, frozenset({qubits[4], qubits[5]})),
-    ]
+    for permuted_qubits in itertools.permutations(operation.qubits):
+        sub_op_qubits = [
+            {permuted_qubits[0].x, permuted_qubits[1].x},
+            {permuted_qubits[2].x, permuted_qubits[3].x},
+            {permuted_qubits[4].x, permuted_qubits[5].x},
+        ]
+        if sub_op_qubits == [{0, 1}, {2, 3}, {4, 5}]:
+            assert operation == gate(*permuted_qubits)
+        else:
+            assert operation != gate(*permuted_qubits)
+
+    with pytest.raises(ValueError, match="index out of range"):
+        _ = gate.qubit_index_to_equivalence_group_key(6)
+
+    with pytest.raises(ValueError, match="index out of range"):
+        _ = gate.qubit_index_to_equivalence_group_key(-1)
+
+    with pytest.raises(ValueError, match="ParallelGates cannot contain measurements"):
+        _ = cirq_superstaq.ParallelGates(cirq.X, cirq.MeasurementGate(1))
 
     gate = cirq_superstaq.custom_gates.ParallelGates(cirq.X, cirq_superstaq.ZX, cirq.Y)
     operation = gate(*qubits[:4])
@@ -199,7 +214,7 @@ def test_parallel_gates() -> None:
     )
 
     gate = cirq_superstaq.custom_gates.ParallelGates(
-        cirq.X, cirq_superstaq.FermionicSWAPGate(1.23), cirq.X
+        cirq.rx(1.23), cirq_superstaq.FermionicSWAPGate(1.23), cirq.rx(1.23)
     )
     operation = gate(*qubits[:4])
     assert [gate.qubit_index_to_equivalence_group_key(i) for i in range(4)] == [0, 1, 1, 0]

@@ -212,15 +212,15 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             component_gates: Gate(s) to be collected into single gate
         """
         if any(cirq.is_measurement(gate) for gate in component_gates):
-            raise ValueError("component_gates cannot be measurements")
+            raise ValueError("ParallelGates cannot contain measurements")
         self.component_gates = component_gates
 
     def qubit_index_to_gate_and_index(self, index: int) -> Tuple[cirq.Gate, int]:
         for gate in self.component_gates:
-            if gate.num_qubits() > index:
+            if gate.num_qubits() > index >= 0:
                 return gate, index
             index -= gate.num_qubits()
-        raise ValueError(f"index {index} out of range")
+        raise ValueError("index out of range")
 
     def qubit_index_to_equivalence_group_key(self, index: int) -> int:
         indexed_gate, index_in_gate = self.qubit_index_to_gate_and_index(index)
