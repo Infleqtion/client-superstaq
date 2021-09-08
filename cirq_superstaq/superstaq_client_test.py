@@ -345,6 +345,18 @@ def test_superstaq_client_aqt_compile(mock_post: mock.MagicMock) -> None:
 
 
 @mock.patch("requests.post")
+def test_superstaq_client_ibmq_compile(mock_post: mock.MagicMock) -> None:
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
+    )
+    circuit = cirq.Circuit()
+    client.ibmq_compile(cirq.to_json([circuit]))
+
+    mock_post.assert_called_once()
+    assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/ibmq_compile"
+
+
+@mock.patch("requests.post")
 def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
     client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
