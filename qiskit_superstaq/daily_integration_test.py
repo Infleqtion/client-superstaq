@@ -2,7 +2,6 @@
 
 import os
 
-import numpy as np
 import pytest
 import qiskit
 
@@ -20,9 +19,9 @@ def test_aqt_compile(provider: qiskit_superstaq.superstaq_provider.SuperstaQProv
     circuit = qiskit.QuantumCircuit(8)
     circuit.h(4)
     expected = qiskit.QuantumCircuit(1)
-    expected.rz(np.pi / 2, 0)
-    expected.rx(np.pi / 2, 0)
-    expected.rz(np.pi / 2, 0)
+    expected.s(0)
+    expected.sx(0)
+    expected.s(0)
     assert provider.aqt_compile(circuit).circuit == expected
     assert provider.aqt_compile([circuit]).circuits == [expected]
     assert provider.aqt_compile([circuit, circuit]).circuits == [expected, expected]
