@@ -1,1 +1,2 @@
-qiskit
+applications-superstaq>=0.0.4
+qiskit>=0.28.0
