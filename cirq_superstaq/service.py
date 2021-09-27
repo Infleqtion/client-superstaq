@@ -28,6 +28,54 @@ import cirq_superstaq
 from cirq_superstaq import job, superstaq_client
 
 
+def counts_to_results(
+    counter: collections.Counter, circuit: cirq.Circuit, param_resolver: cirq.ParamResolver
+) -> cirq.Result:
+    """Converts a collections.Counter to a cirq.Result.
+
+    Args:
+            counter: The collections.Counter of counts for the run.
+            circuit: The circuit to run.
+            param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuit`.
+
+        Returns:
+            A `cirq.Result` for the given circuit and counter.
+
+    """
+
+    measurement_key_names = list(circuit.all_measurement_keys())
+    measurement_key_names.sort()
+    # Combines all the measurement key names into a string: {'0', '1'} -> "01"
+    combine_key_names = "".join(measurement_key_names)
+
+    samples: List[List[int]] = []
+    for key in counter.keys():
+        keys_as_list: List[int] = []
+
+        # Combines the keys of the counter into a list. If key = "01", keys_as_list = [0, 1]
+        for index in key:
+            keys_as_list.append(int(index))
+
+        # Gets the number of counts of the key
+        # counter = collections.Counter({"01": 48, "11": 52})["01"] -> 48
+        counts_of_key = counter[key]
+
+        # Appends all the keys onto 'samples' list number-of-counts-in-the-key times
+        # If collections.Counter({"01": 48, "11": 52}), [0, 1] is appended to 'samples` 48 times and
+        # [1, 1] is appended to 'samples' 52 times
+        for key in range(counts_of_key):
+            samples.append(keys_as_list)
+
+    result = cirq.Result(
+        params=param_resolver,
+        measurements={
+            combine_key_names: np.array(samples),
+        },
+    )
+
+    return result
+
+
 class Service:
     """A class to access SuperstaQ's API.
 
@@ -97,7 +145,7 @@ class Service:
             ibmq_pulse=ibmq_pulse,
         )
 
-    def run(
+    def get_counts(
         self,
         circuit: "cirq.Circuit",
         repetitions: int,
@@ -105,7 +153,34 @@ class Service:
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
     ) -> collections.Counter:
-        """Run the given circuit on the SuperstaQ API.
+        """Runs the given circuit on the SuperstaQ API and returns the result
+        of the ran circuit as a collections.Counter
+
+        Args:
+            circuit: The circuit to run.
+            repetitions: The number of times to run the circuit.
+            name: An optional name for the created job. Different from the `job_id`.
+            target: Where to run the job. Can be 'qpu' or 'simulator'.
+            param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
+
+        Returns:
+            A `collection.Counter` for running the circuit.
+        """
+        resolved_circuit = cirq.protocols.resolve_parameters(circuit, param_resolver)
+        counts = self.create_job(resolved_circuit, repetitions, name, target).counts()
+
+        return counts
+
+    def run(
+        self,
+        circuit: "cirq.Circuit",
+        repetitions: int,
+        name: Optional[str] = None,
+        target: Optional[str] = None,
+        param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
+    ) -> cirq.Result:
+        """Run the given circuit on the SuperstaQ API and returns the result
+        of the ran circut as a cirq.Result.
 
         Args:
             circuit: The circuit to run.
@@ -117,10 +192,8 @@ class Service:
         Returns:
             A `cirq.Result` for running the circuit.
         """
-        resolved_circuit = cirq.protocols.resolve_parameters(circuit, param_resolver)
-        counts = self.create_job(resolved_circuit, repetitions, name, target).counts()
-
-        return counts
+        counts = self.get_counts(circuit, repetitions, name, target, param_resolver)
+        return counts_to_results(counts, circuit, param_resolver)
 
     def create_job(
         self,

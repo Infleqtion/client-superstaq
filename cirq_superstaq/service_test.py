@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import codecs
+import collections
 import os
 import pickle
 from unittest import mock
@@ -26,7 +27,33 @@ import sympy
 import cirq_superstaq
 
 
-def test_service_run() -> None:
+def test_counts_to_results() -> None:
+    qubits = cirq.LineQubit.range(3)
+
+    circuit = cirq.Circuit(
+        cirq.H(qubits[1]),
+        cirq.CNOT(qubits[0], qubits[1]),
+        cirq.measure(qubits[0]),
+        cirq.measure(qubits[1]),
+    )
+    result = cirq_superstaq.service.counts_to_results(
+        collections.Counter({"01": 1, "11": 2}), circuit, cirq.ParamResolver({})
+    )
+    assert result.histogram(key="01") == collections.Counter({3: 2, 1: 1})
+
+    circuit = cirq.Circuit(
+        cirq.H(qubits[0]),
+        cirq.CNOT(qubits[0], qubits[1]),
+        cirq.measure(qubits[0]),
+        cirq.measure(qubits[1]),
+    )
+    result = cirq_superstaq.service.counts_to_results(
+        collections.Counter({"00": 50, "11": 50}), circuit, cirq.ParamResolver({})
+    )
+    assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
+
+
+def test_service_run_and_get_counts() -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
     mock_client = mock.MagicMock()
     mock_client.create_job.return_value = {
@@ -56,6 +83,15 @@ def test_service_run() -> None:
     q = cirq.LineQubit(0)
     circuit = cirq.Circuit((cirq.X ** a)(q), cirq.measure(q, key="a"))
     params = cirq.ParamResolver({"a": 0.5})
+    counts = service.get_counts(
+        circuit=circuit,
+        repetitions=4,
+        target="ibmq_qasm_simulator",
+        name="bacon",
+        param_resolver=params,
+    )
+    assert counts == {"11": 1}
+
     result = service.run(
         circuit=circuit,
         repetitions=4,
@@ -63,7 +99,7 @@ def test_service_run() -> None:
         name="bacon",
         param_resolver=params,
     )
-    assert result == {"11": 1}
+    assert result.histogram(key="a") == collections.Counter({3: 1})
 
 
 def test_service_get_job() -> None:
