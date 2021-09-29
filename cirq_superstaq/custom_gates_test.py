@@ -131,7 +131,10 @@ def test_zx_circuit() -> None:
 
 
 def test_rzx() -> None:
-    assert cirq_superstaq.rzx(1.23 * np.pi) == cirq_superstaq.ZXPowGate(exponent=1.23)
+    assert cirq.equal_up_to_global_phase(
+        cirq.unitary(cirq_superstaq.rzx(1.23 * np.pi)),
+        cirq.unitary(cirq_superstaq.ZXPowGate(exponent=1.23)),
+    )
 
 
 def test_acecr() -> None:
