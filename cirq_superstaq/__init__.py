@@ -21,6 +21,7 @@ from cirq_superstaq.custom_gates import (
     CR,
     FermionicSWAPGate,
     ParallelGates,
+    rzx,
     ZX,
     ZXPowGate,
 )
@@ -44,6 +45,7 @@ __all__ = [
     "FermionicSWAPGate",
     "Job",
     "ParallelGates",
+    "rzx",
     "Service",
     "SuperstaQException",
     "SuperstaQModuleNotFoundException",

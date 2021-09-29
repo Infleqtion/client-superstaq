@@ -16,22 +16,52 @@ def test_fermionic_swap_gate() -> None:
     assert repr(gate) == "cirq_superstaq.FermionicSWAPGate(0.123)"
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq")
 
-    qubits = cirq.LineQubit.range(3)
-    circuit = cirq.Circuit(gate(qubits[0], qubits[2]))
-
-    cirq.testing.assert_has_diagram(
-        circuit,
-        """
-0: ───FermionicSWAP(0.0392π)───
-      │
-2: ───FermionicSWAP(0.0392π)───
-""",
-    )
-
     expected = np.array(
         [[1, 0, 0, 0], [0, 0, np.exp(1j * theta), 0], [0, np.exp(1j * theta), 0, 0], [0, 0, 0, 1]]
     )
     assert np.allclose(cirq.unitary(gate), expected)
+
+    qubits = cirq.LineQubit.range(3)
+    operation = gate(qubits[0], qubits[2])
+    assert cirq.decompose_once(operation) == [
+        cirq.CX(qubits[0], qubits[2]),
+        cirq.CX(qubits[2], qubits[0]),
+        cirq.rz(theta).on(qubits[2]),
+        cirq.CX(qubits[0], qubits[2]),
+    ]
+    assert cirq.equal_up_to_global_phase(
+        cirq.unitary(cirq.Circuit(cirq.decompose_once(operation))),
+        cirq.unitary(cirq.Circuit(operation)),
+    )
+
+
+def test_fermionic_swap_circuit() -> None:
+    qubits = cirq.LineQubit.range(3)
+    operation = cirq_superstaq.FermionicSWAPGate(0.456 * np.pi)(qubits[0], qubits[2])
+    circuit = cirq.Circuit(operation)
+
+    expected_diagram = """
+0: ───FermionicSWAP(0.456π)───
+      │
+2: ───FermionicSWAP(0.456π)───
+"""
+
+    expected_qasm = """OPENQASM 2.0;
+include "qelib1.inc";
+
+
+// Qubits: [0, 1, 2]
+qreg q[3];
+
+
+fermionic_swap(pi*0.456) q[0],q[2];
+"""
+
+    cirq.testing.assert_has_diagram(circuit, expected_diagram)
+    assert circuit.to_qasm(header="", qubit_order=qubits) == expected_qasm
+
+    circuit = cirq.Circuit(cirq_superstaq.FermionicSWAPGate(0.0)(qubits[0], qubits[1]))
+    assert circuit.to_qasm() == cirq.Circuit(cirq.SWAP(qubits[0], qubits[1])).to_qasm()
 
 
 def test_zx_matrix() -> None:
@@ -66,16 +96,42 @@ def test_zx_repr() -> None:
 def test_zx_circuit() -> None:
     a, b = cirq.LineQubit.range(2)
 
-    c = cirq.Circuit(cirq_superstaq.CR(a, b))
+    op = cirq_superstaq.CR(a, b)
 
     cirq.testing.assert_has_diagram(
-        c,
+        cirq.Circuit(op),
         """
 0: ───Z───
       │
 1: ───X───
     """,
     )
+
+    assert cirq.Circuit(op).to_qasm(header="") == """OPENQASM 2.0;
+include "qelib1.inc";
+
+
+// Qubits: [0, 1]
+qreg q[2];
+
+
+zx q[0],q[1];
+"""
+
+    assert cirq.Circuit(op ** 0.25).to_qasm(header="") == """OPENQASM 2.0;
+include "qelib1.inc";
+
+
+// Qubits: [0, 1]
+qreg q[2];
+
+
+rzx(pi*0.25) q[0],q[1];
+"""
+
+
+def test_rzx() -> None:
+    assert cirq_superstaq.rzx(1.23 * np.pi) == cirq_superstaq.ZXPowGate(exponent=1.23)
 
 
 def test_acecr() -> None:
@@ -96,6 +152,24 @@ def test_acecr() -> None:
     assert str(cirq_superstaq.AceCRMinusPlus) == "AceCR-+"
     assert hash(cirq_superstaq.AceCRMinusPlus) == hash("-+")
     assert cirq_superstaq.AceCRPlusMinus != cirq.CNOT
+
+    expected_qasm = """OPENQASM 2.0;
+include "qelib1.inc";
+
+
+// Qubits: [0, 1]
+qreg q[2];
+
+
+acecr_pm q[0],q[1];
+acecr_mp q[1],q[0];
+"""
+
+    circuit = cirq.Circuit(
+        cirq_superstaq.AceCR("+-").on(qubits[0], qubits[1]),
+        cirq_superstaq.AceCR("-+").on(qubits[1], qubits[0]),
+    )
+    assert circuit.to_qasm(header="") == expected_qasm
 
 
 def test_acecr_decompose() -> None:

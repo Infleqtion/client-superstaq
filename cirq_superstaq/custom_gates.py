@@ -1,6 +1,6 @@
 """Miscellaneous custom gates that we encounter and want to explicitly define."""
 
-from typing import Any, Callable, Dict, List, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import cirq
 import numpy as np
@@ -62,9 +62,27 @@ class FermionicSWAPGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsG
     def __repr__(self) -> str:
         return f"cirq_superstaq.FermionicSWAPGate({self.theta})"
 
+    def _decompose_(self, qubits: Tuple[cirq.Qid, cirq.Qid]) -> cirq.OP_TREE:
+        yield cirq.CX(qubits[0], qubits[1])
+        yield cirq.CX(qubits[1], qubits[0])
+        yield cirq.rz(self.theta)(qubits[1])
+        yield cirq.CX(qubits[0], qubits[1])
+
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         t = args.format_radians(self.theta)
         return cirq.CircuitDiagramInfo(wire_symbols=(f"FermionicSWAP({t})", f"FermionicSWAP({t})"))
+
+    def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, cirq.Qid]) -> Optional[str]:
+        if np.isclose(self.theta, 0.0):
+            return cirq.SWAP._qasm_(args, qubits)
+
+        args.validate_version("2.0")
+        return args.format(
+            "fermionic_swap({0:half_turns}) {1},{2};\n",
+            self.theta / np.pi,
+            qubits[0],
+            qubits[1],
+        )
 
     def _json_dict_(self) -> Dict[str, Any]:
         return cirq.protocols.obj_to_dict_helper(self, ["theta"])
@@ -113,6 +131,17 @@ class ZXPowGate(cirq.EigenGate, cirq.Gate):
             wire_symbols=("Z", "X"), exponent=self._diagram_exponent(args)
         )
 
+    def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, ...]) -> Optional[str]:
+        if cirq.canonicalize_half_turns(self.exponent) == 1:
+            return args.format("zx {0},{1};\n", qubits[0], qubits[1])
+        else:
+            return args.format(
+                "rzx({0:half_turns}) {1},{2};\n",
+                self.exponent,
+                qubits[0],
+                qubits[1],
+            )
+
     def __str__(self) -> str:
         if self.exponent == 1:
             return "ZX"
@@ -130,6 +159,10 @@ class ZXPowGate(cirq.EigenGate, cirq.Gate):
 
 
 CR = ZX = ZXPowGate()  # standard CR is a full turn of ZX, i.e. exponent = 1
+
+
+def rzx(rads: float) -> ZXPowGate:
+    return ZXPowGate(exponent=rads / np.pi)
 
 
 class AceCR(cirq.Gate):
@@ -154,6 +187,16 @@ class AceCR(cirq.Gate):
     ) -> cirq.protocols.CircuitDiagramInfo:
         return cirq.protocols.CircuitDiagramInfo(
             wire_symbols=(f"AceCR{self.polarity}(Z side)", f"AceCR{self.polarity}(X side)")
+        )
+
+    def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, cirq.Qid]) -> Optional[str]:
+        """QASM symbol for AceCR('+-') (AceCR('-+')) is acecr_pm (acecr_mp)"""
+        polarity_str = self.polarity.replace("+", "p").replace("-", "m")
+        return args.format(
+            "acecr_{0} {1},{2};\n",
+            polarity_str,
+            qubits[0],
+            qubits[1],
         )
 
     def __eq__(self, other: object) -> bool:
