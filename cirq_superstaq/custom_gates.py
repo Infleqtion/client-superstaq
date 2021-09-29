@@ -76,7 +76,6 @@ class FermionicSWAPGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsG
         if np.isclose(self.theta, 0.0):
             return cirq.SWAP._qasm_(args, qubits)
 
-        args.validate_version("2.0")
         return args.format(
             "fermionic_swap({0:half_turns}) {1},{2};\n",
             self.theta / np.pi,
@@ -134,13 +133,13 @@ class ZXPowGate(cirq.EigenGate, cirq.Gate):
     def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, ...]) -> Optional[str]:
         if cirq.canonicalize_half_turns(self.exponent) == 1:
             return args.format("zx {0},{1};\n", qubits[0], qubits[1])
-        else:
-            return args.format(
-                "rzx({0:half_turns}) {1},{2};\n",
-                self.exponent,
-                qubits[0],
-                qubits[1],
-            )
+
+        return args.format(
+            "rzx({0:half_turns}) {1},{2};\n",
+            self.exponent,
+            qubits[0],
+            qubits[1],
+        )
 
     def __str__(self) -> str:
         if self.exponent == 1:
@@ -162,7 +161,8 @@ CR = ZX = ZXPowGate()  # standard CR is a full turn of ZX, i.e. exponent = 1
 
 
 def rzx(rads: float) -> ZXPowGate:
-    return ZXPowGate(exponent=rads / np.pi)
+    """Returns a ZXPowGate with the matrix exp{-i ZX rads / 2)"""
+    return ZXPowGate(exponent=rads / np.pi, global_shift=-0.5)
 
 
 class AceCR(cirq.Gate):
