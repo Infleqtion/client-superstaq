@@ -27,3 +27,7 @@ def test_aqt_compile(service: cirq_superstaq.Service) -> None:
     assert service.aqt_compile(circuit).circuit == expected
     assert service.aqt_compile([circuit]).circuits == [expected]
     assert service.aqt_compile([circuit, circuit]).circuits == [expected, expected]
+
+
+def test_get_balance(service: cirq_superstaq.Service) -> None:
+    assert service.get_balance() >= 0
