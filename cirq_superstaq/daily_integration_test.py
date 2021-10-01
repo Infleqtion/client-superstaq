@@ -30,4 +30,4 @@ def test_aqt_compile(service: cirq_superstaq.Service) -> None:
 
 
 def test_get_balance(service: cirq_superstaq.Service) -> None:
-    assert service.get_balance() >= 0
+    assert isinstance(service.get_balance(), float)
