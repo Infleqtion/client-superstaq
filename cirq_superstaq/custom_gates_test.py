@@ -34,6 +34,10 @@ def test_fermionic_swap_gate() -> None:
         cirq.unitary(cirq.Circuit(operation)),
     )
 
+    assert gate ** 1 == gate
+    assert gate ** 1 == cirq_superstaq.FermionicSWAPGate(0.0)
+    assert gate ** -1 == cirq_superstaq.FermionicSWAPGate(-0.123)
+
 
 def test_fermionic_swap_circuit() -> None:
     qubits = cirq.LineQubit.range(3)
@@ -124,16 +128,9 @@ def test_zx_circuit() -> None:
         qreg q[2];
 
 
-        zx q[0],q[1];
+        rzx(pi) q[0],q[1];
         rzx(pi*0.25) q[0],q[1];
         """
-    )
-
-
-def test_rzx() -> None:
-    assert cirq.equal_up_to_global_phase(
-        cirq.unitary(cirq_superstaq.rzx(1.23 * np.pi)),
-        cirq.unitary(cirq_superstaq.ZXPowGate(exponent=1.23)),
     )
 
 
