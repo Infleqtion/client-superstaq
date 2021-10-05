@@ -14,9 +14,6 @@ def serialize_circuits(circuits: Union[cirq.Circuit, List[cirq.Circuit]]) -> str
     Returns:
         str representing the serialized circuit(s)
     """
-    if isinstance(circuits, cirq.Circuit):
-        return cirq.to_json([circuits])
-
     return cirq.to_json(circuits)
 
 
