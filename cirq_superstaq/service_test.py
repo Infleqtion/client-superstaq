@@ -11,10 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import codecs
 import collections
 import os
-import pickle
 from unittest import mock
 
 import applications_superstaq
@@ -144,8 +142,8 @@ def test_service_get_balance() -> None:
     "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={
         "cirq_circuits": [cirq.to_json(cirq.Circuit())],
-        "state_jp": codecs.encode(pickle.dumps({}), "base64").decode(),
-        "pulse_lists_jp": codecs.encode(pickle.dumps([[[]]]), "base64").decode(),
+        "state_jp": applications_superstaq.converters.serialize({}),
+        "pulse_lists_jp": applications_superstaq.converters.serialize([[[]]]),
     },
 )
 def test_service_aqt_compile_single(mock_aqt_compile: mock.MagicMock) -> None:
@@ -159,8 +157,8 @@ def test_service_aqt_compile_single(mock_aqt_compile: mock.MagicMock) -> None:
     "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={
         "cirq_circuits": [cirq.to_json(cirq.Circuit()), cirq.to_json(cirq.Circuit())],
-        "state_jp": codecs.encode(pickle.dumps({}), "base64").decode(),
-        "pulse_lists_jp": codecs.encode(pickle.dumps([[[]], [[]]]), "base64").decode(),
+        "state_jp": applications_superstaq.converters.serialize({}),
+        "pulse_lists_jp": applications_superstaq.converters.serialize([[[]], [[]]]),
     },
 )
 def test_service_aqt_compile_multiple(mock_aqt_compile: mock.MagicMock) -> None:
@@ -188,13 +186,12 @@ def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
 @mock.patch(
     "cirq_superstaq.superstaq_client._SuperstaQClient.submit_qubo",
     return_value={
-        "solution": codecs.encode(
+        "solution": applications_superstaq.converters.serialize(
             np.rec.array(
                 [({0: 0, 1: 1, 3: 1}, -1, 6), ({0: 1, 1: 1, 3: 1}, -1, 4)],
                 dtype=[("solution", "O"), ("energy", "<f8"), ("num_occurrences", "<i8")],
-            ).dumps(),
-            "base64",
-        ).decode()
+            )
+        )
     },
 )
 def test_service_submit_qubo(mock_submit_qubo: mock.MagicMock) -> None:

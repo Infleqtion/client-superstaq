@@ -216,7 +216,7 @@ class Service:
         Raises:
             SuperstaQException: If there was an error accessing the API.
         """
-        serialized_program = cirq.to_json(circuit)
+        serialized_program = cirq_superstaq.serialization.serialize_circuits(circuit)
         result = self._client.create_job(
             serialized_program=serialized_program, repetitions=repetitions, target=target, name=name
         )
@@ -271,10 +271,10 @@ class Service:
             .pulse_list(s) attribute is the list(s) of cycles.
         """
         if isinstance(circuits, cirq.Circuit):
-            serialized_program = cirq.to_json([circuits])
+            serialized_program = cirq_superstaq.serialization.serialize_circuits([circuits])
             circuits_list = False
         else:
-            serialized_program = cirq.to_json(circuits)
+            serialized_program = cirq_superstaq.serialization.serialize_circuits(circuits)
             circuits_list = True
 
         json_dict = self._client.aqt_compile(serialized_program)
@@ -288,7 +288,7 @@ class Service:
 
         Qiskit must be installed for returned object to correctly deserialize to a pulse schedule.
         """
-        serialized_program = cirq.to_json([circuit])
+        serialized_program = cirq_superstaq.serialization.serialize_circuits([circuit])
         json_dict = self._client.ibmq_compile(serialized_program, target)
         try:
             return applications_superstaq.converters.deserialize(json_dict["pulses"])[0]
