@@ -17,7 +17,7 @@ def serialize_circuits(circuits: Union[cirq.Circuit, List[cirq.Circuit]]) -> str
     return cirq.to_json(circuits)
 
 
-def deserialize_circuits(serialized_circuits: str) -> Union[cirq.Circuit, List[cirq.Circuit]]:
+def deserialize_circuits(serialized_circuits: str) -> List[cirq.Circuit]:
     """Deserialize serialized Circuit(s)
 
     Args:
@@ -27,4 +27,7 @@ def deserialize_circuits(serialized_circuits: str) -> Union[cirq.Circuit, List[c
         the Circuit or list of Circuits that was serialized
     """
     resolvers = [cirq_superstaq.custom_gates.custom_resolver, *cirq.DEFAULT_RESOLVERS]
-    return cirq.read_json(json_text=serialized_circuits, resolvers=resolvers)
+    circuits = cirq.read_json(json_text=serialized_circuits, resolvers=resolvers)
+    if isinstance(circuits, cirq.Circuit):
+        return [circuits]
+    return circuits
