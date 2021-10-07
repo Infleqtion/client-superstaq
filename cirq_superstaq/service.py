@@ -218,7 +218,10 @@ class Service:
         """
         serialized_circuits = cirq_superstaq.serialization.serialize_circuits(circuit)
         result = self._client.create_job(
-            serialized_circuits=serialized_circuits, repetitions=repetitions, target=target, name=name
+            serialized_circuits=serialized_circuits,
+            repetitions=repetitions,
+            target=target,
+            name=name,
         )
         # The returned job does not have fully populated fields, so make
         # a second call and return the results of the fully filled out job.
