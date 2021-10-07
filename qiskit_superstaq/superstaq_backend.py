@@ -67,7 +67,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             circuits = [circuits]
 
         superstaq_json = {
-            "qasm_strings": [circuit.qasm() for circuit in circuits],
+            "qiskit_circuits": qss.serialization.serialize_circuits(circuits),
             "backend": self.name(),
             "shots": kwargs.get("shots"),
             "ibmq_token": kwargs.get("ibmq_token"),
@@ -83,7 +83,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         }
 
         res = requests.post(
-            self.url + "/" + qss.API_VERSION + "/qasm_strings_multi_job",
+            self.url + "/" + qss.API_VERSION + "/multi_job",
             json=superstaq_json,
             headers=headers,
             verify=(self.url == qss.API_URL),

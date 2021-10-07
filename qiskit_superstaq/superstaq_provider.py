@@ -99,12 +99,8 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
             pulse sequence corresponding to the optimized qiskit.QuantumCircuit(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
         """
-        if isinstance(circuits, qiskit.QuantumCircuit):
-            json_dict = {"qasm_strs": [circuits.qasm()]}
-            circuits_list = False
-        else:
-            json_dict = {"qasm_strs": [c.qasm() for c in circuits]}
-            circuits_list = True
+        json_dict = {"qiskit_circuits": qss.serialization.serialize_circuits(circuits)}
+        circuits_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
         headers = {
             "Authorization": self.get_access_token(),

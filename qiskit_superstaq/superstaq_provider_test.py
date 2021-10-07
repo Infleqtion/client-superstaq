@@ -51,36 +51,24 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
 
-    out_qasm_str = """OPENQASM 2.0;
-    include "qelib1.inc";
-
-    //Qubits: [4, 5]
-    qreg q[2];
-
-
-    cz q[0],q[1];
-    """
-    expected_qc = qiskit.QuantumCircuit(2)
-    expected_qc.cz(0, 1)
-
     mock_post.return_value.json = lambda: {
-        "qasm_strs": [out_qasm_str],
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "state_jp": applications_superstaq.converters.serialize({}),
         "pulse_lists_jp": applications_superstaq.converters.serialize([[[]]]),
     }
     out = provider.aqt_compile(qc)
-    assert out.circuit == expected_qc
+    assert out.circuit == qc
     assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
 
     out = provider.aqt_compile([qc])
-    assert out.circuits == [expected_qc]
+    assert out.circuits == [qc]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
     mock_post.return_value.json = lambda: {
-        "qasm_strs": [out_qasm_str, out_qasm_str],
+        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
         "state_jp": applications_superstaq.converters.serialize({}),
         "pulse_lists_jp": applications_superstaq.converters.serialize([[[]], [[]]]),
     }
     out = provider.aqt_compile([qc, qc])
-    assert out.circuits == [expected_qc, expected_qc]
+    assert out.circuits == [qc, qc]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")

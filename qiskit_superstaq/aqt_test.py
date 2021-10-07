@@ -6,6 +6,7 @@ import applications_superstaq
 import pytest
 import qiskit
 
+import qiskit_superstaq
 from qiskit_superstaq import aqt
 
 
@@ -28,7 +29,7 @@ def test_read_json() -> None:
     pulse_lists_str = applications_superstaq.converters.serialize([[[]]])
 
     json_dict = {
-        "qasm_strs": [circuit.qasm()],
+        "qiskit_circuits": qiskit_superstaq.serialization.serialize_circuits(circuit),
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
     }
@@ -43,7 +44,7 @@ def test_read_json() -> None:
 
     pulse_lists_str = applications_superstaq.converters.serialize([[[]], [[]]])
     json_dict = {
-        "qasm_strs": [circuit.qasm(), circuit.qasm()],
+        "qiskit_circuits": qiskit_superstaq.serialization.serialize_circuits([circuit, circuit]),
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
     }
@@ -62,7 +63,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     state_str = applications_superstaq.converters.serialize(seq.__getstate__())
     pulse_lists_str = applications_superstaq.converters.serialize([[[]]])
     json_dict = {
-        "qasm_strs": [circuit.qasm()],
+        "qiskit_circuits": qiskit_superstaq.serialization.serialize_circuits(circuit),
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
     }
@@ -81,7 +82,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
 
     pulse_lists_str = applications_superstaq.converters.serialize([[[]], [[]]])
     json_dict = {
-        "qasm_strs": [circuit.qasm(), circuit.qasm()],
+        "qiskit_circuits": qiskit_superstaq.serialization.serialize_circuits([circuit, circuit]),
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
     }
