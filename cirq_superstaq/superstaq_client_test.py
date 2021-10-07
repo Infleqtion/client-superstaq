@@ -109,7 +109,7 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
     assert response == {"foo": "bar"}
 
     expected_json = {
-        "circuit": serialized_program,
+        "cirq_circuits": serialized_program,
         "backend": "qpu",
         "shots": 200,
         "ibmq_token": None,
