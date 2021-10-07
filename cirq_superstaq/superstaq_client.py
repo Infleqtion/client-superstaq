@@ -12,7 +12,6 @@
 # limitations under the License.
 """Client for making requests to SuperstaQ's API."""
 
-import json
 import sys
 import time
 import urllib
@@ -128,7 +127,7 @@ class _SuperstaQClient:
         """
         actual_target = self._target(target)
         json_dict: Dict[str, Any] = {
-            "circuit": json.loads(serialized_program),
+            "cirq_circuits": serialized_program,
             "backend": actual_target,
             "shots": repetitions,
             "ibmq_token": self.ibmq_token,
@@ -189,7 +188,7 @@ class _SuperstaQClient:
 
     def aqt_compile(self, serialized_program: str) -> dict:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
-        json_dict = {"cirq_circuits": json.loads(serialized_program)}
+        json_dict = {"cirq_circuits": serialized_program}
 
         def request() -> requests.Response:
             return requests.post(
@@ -203,7 +202,7 @@ class _SuperstaQClient:
 
     def ibmq_compile(self, serialized_program: str, target: Optional[str] = None) -> dict:
         """Makes a POST request to SuperstaQ API to compile a circuits for IBM devices."""
-        json_dict = {"cirq_circuits": json.loads(serialized_program), "backend": target}
+        json_dict = {"cirq_circuits": serialized_program, "backend": target}
 
         def request() -> requests.Response:
             return requests.post(

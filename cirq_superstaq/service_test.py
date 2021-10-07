@@ -141,7 +141,7 @@ def test_service_get_balance() -> None:
 @mock.patch(
     "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={
-        "cirq_circuits": [cirq.to_json(cirq.Circuit())],
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits([cirq.Circuit()]),
         "state_jp": applications_superstaq.converters.serialize({}),
         "pulse_lists_jp": applications_superstaq.converters.serialize([[[]]]),
     },
@@ -156,7 +156,9 @@ def test_service_aqt_compile_single(mock_aqt_compile: mock.MagicMock) -> None:
 @mock.patch(
     "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={
-        "cirq_circuits": [cirq.to_json(cirq.Circuit()), cirq.to_json(cirq.Circuit())],
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits(
+            [cirq.Circuit(), cirq.Circuit()]
+        ),
         "state_jp": applications_superstaq.converters.serialize({}),
         "pulse_lists_jp": applications_superstaq.converters.serialize([[[]], [[]]]),
     },

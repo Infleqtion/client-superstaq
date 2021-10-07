@@ -68,10 +68,9 @@ def read_json(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
 
         pulse_lists = applications_superstaq.converters.deserialize(json_dict["pulse_lists_jp"])
 
-    resolvers = [cirq_superstaq.custom_gates.custom_resolver, *cirq.DEFAULT_RESOLVERS]
-    compiled_circuits = [
-        cirq.read_json(json_text=c, resolvers=resolvers) for c in json_dict["cirq_circuits"]
-    ]
+    compiled_circuits = cirq_superstaq.serialization.deserialize_circuits(
+        json_dict["cirq_circuits"]
+    )
     if circuits_list:
         return AQTCompilerOutput(compiled_circuits, seq, pulse_lists)
 

@@ -6,6 +6,7 @@ import applications_superstaq
 import cirq
 import pytest
 
+import cirq_superstaq
 from cirq_superstaq import aqt
 
 
@@ -28,7 +29,7 @@ def test_read_json() -> None:
     json_dict: dict
 
     json_dict = {
-        "cirq_circuits": [cirq.to_json(circuit)],
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits([circuit]),
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
     }
@@ -44,7 +45,7 @@ def test_read_json() -> None:
     # multiple circuits
     pulse_lists_str = applications_superstaq.converters.serialize([[[]], [[]]])
     json_dict = {
-        "cirq_circuits": [cirq.to_json(circuit), cirq.to_json(circuit)],
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits([circuit, circuit]),
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
     }
@@ -64,7 +65,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     json_dict: dict
 
     json_dict = {
-        "cirq_circuits": [cirq.to_json(circuit)],
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits([circuit]),
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
     }
@@ -84,7 +85,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     # multiple circuits
     pulse_lists_str = applications_superstaq.converters.serialize([[[]], [[]]])
     json_dict = {
-        "cirq_circuits": [cirq.to_json(circuit), cirq.to_json(circuit)],
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits([circuit, circuit]),
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
     }
