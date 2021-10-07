@@ -101,15 +101,14 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
     client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart"
     )
-    # program = cirq_superstaq.SerializedProgram(body={"job": "mine"}, metadata={"a": "0,1"})
-    serialized_program = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
+    serialized_circuits = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
     response = client.create_job(
-        serialized_program=serialized_program, repetitions=200, target="qpu", name="bacon"
+        serialized_circuits=serialized_circuits, repetitions=200, target="qpu", name="bacon"
     )
     assert response == {"foo": "bar"}
 
     expected_json = {
-        "cirq_circuits": serialized_program,
+        "cirq_circuits": serialized_circuits,
         "backend": "qpu",
         "shots": 200,
         "ibmq_token": None,
@@ -135,8 +134,8 @@ def test_superstaq_client_create_job_default_target(mock_post: mock.MagicMock) -
     client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    serialized_program = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
-    _ = client.create_job(serialized_program)
+    serialized_circuits = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
+    _ = client.create_job(serialized_circuits)
     assert mock_post.call_args[1]["json"]["backend"] == "simulator"
 
 
@@ -151,9 +150,9 @@ def test_superstaq_client_create_job_target_overrides_default_target(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
 
-    serialized_program = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
+    serialized_circuits = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
     _ = client.create_job(
-        serialized_program=serialized_program,
+        serialized_circuits=serialized_circuits,
         target="qpu",
         repetitions=1,
     )
@@ -164,9 +163,9 @@ def test_superstaq_client_create_job_no_targets() -> None:
     client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart"
     )
-    serialized_program = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
+    serialized_circuits = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
     with pytest.raises(AssertionError, match="neither were set"):
-        _ = client.create_job(serialized_program=serialized_program)
+        _ = client.create_job(serialized_circuits=serialized_circuits)
 
 
 @mock.patch("requests.post")
@@ -177,9 +176,9 @@ def test_superstaq_client_create_job_unauthorized(mock_post: mock.MagicMock) -> 
     client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    serialized_program = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
+    serialized_circuits = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
     with pytest.raises(cirq_superstaq.SuperstaQException, match="Not authorized"):
-        _ = client.create_job(serialized_program=serialized_program)
+        _ = client.create_job(serialized_circuits=serialized_circuits)
 
 
 @mock.patch("requests.post")
@@ -190,9 +189,9 @@ def test_superstaq_client_create_job_not_found(mock_post: mock.MagicMock) -> Non
     client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    serialized_program = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
+    serialized_circuits = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
     with pytest.raises(cirq_superstaq.SuperstaQNotFoundException, match="not find"):
-        _ = client.create_job(serialized_program=serialized_program)
+        _ = client.create_job(serialized_circuits=serialized_circuits)
 
 
 @mock.patch("requests.post")
@@ -203,9 +202,9 @@ def test_superstaq_client_create_job_not_retriable(mock_post: mock.MagicMock) ->
     client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    serialized_program = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
+    serialized_circuits = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
     with pytest.raises(cirq_superstaq.SuperstaQException, match="Status: 501"):
-        _ = client.create_job(serialized_program=serialized_program)
+        _ = client.create_job(serialized_circuits=serialized_circuits)
 
 
 @mock.patch("requests.post")
@@ -223,9 +222,9 @@ def test_superstaq_client_create_job_retry(mock_post: mock.MagicMock) -> None:
         verbose=True,
     )
     test_stdout = io.StringIO()
-    serialized_program = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
+    serialized_circuits = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
     with contextlib.redirect_stdout(test_stdout):
-        _ = client.create_job(serialized_program=serialized_program)
+        _ = client.create_job(serialized_circuits=serialized_circuits)
     assert test_stdout.getvalue().strip() == "Waiting 0.1 seconds before retrying."
     assert mock_post.call_count == 2
 
@@ -238,8 +237,8 @@ def test_superstaq_client_create_job_retry_request_error(mock_post: mock.MagicMo
     client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    serialized_program = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
-    _ = client.create_job(serialized_program=serialized_program)
+    serialized_circuits = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
+    _ = client.create_job(serialized_circuits=serialized_circuits)
     assert mock_post.call_count == 2
 
 
@@ -254,9 +253,9 @@ def test_superstaq_client_create_job_timeout(mock_post: mock.MagicMock) -> None:
         default_target="simulator",
         max_retry_seconds=0.2,
     )
-    serialized_program = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
+    serialized_circuits = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
     with pytest.raises(TimeoutError):
-        _ = client.create_job(serialized_program=serialized_program)
+        _ = client.create_job(serialized_circuits=serialized_circuits)
 
 
 @mock.patch("requests.get")

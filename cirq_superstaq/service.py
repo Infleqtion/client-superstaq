@@ -216,9 +216,9 @@ class Service:
         Raises:
             SuperstaQException: If there was an error accessing the API.
         """
-        serialized_program = cirq_superstaq.serialization.serialize_circuits(circuit)
+        serialized_circuit = cirq_superstaq.serialization.serialize_circuits(circuit)
         result = self._client.create_job(
-            serialized_program=serialized_program, repetitions=repetitions, target=target, name=name
+            serialized_circuit=serialized_circuit, repetitions=repetitions, target=target, name=name
         )
         # The returned job does not have fully populated fields, so make
         # a second call and return the results of the fully filled out job.
@@ -270,14 +270,10 @@ class Service:
             pulse sequence corresponding to the optimized cirq.Circuit(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
         """
-        if isinstance(circuits, cirq.Circuit):
-            serialized_program = cirq_superstaq.serialization.serialize_circuits([circuits])
-            circuits_list = False
-        else:
-            serialized_program = cirq_superstaq.serialization.serialize_circuits(circuits)
-            circuits_list = True
+        serialized_circuits = cirq_superstaq.serialization.serialize_circuits(circuits)
+        circuits_list = not isinstance(circuits, cirq.Circuit)
 
-        json_dict = self._client.aqt_compile(serialized_program)
+        json_dict = self._client.aqt_compile(serialized_circuits)
 
         from cirq_superstaq import aqt
 
@@ -288,8 +284,8 @@ class Service:
 
         Qiskit must be installed for returned object to correctly deserialize to a pulse schedule.
         """
-        serialized_program = cirq_superstaq.serialization.serialize_circuits([circuit])
-        json_dict = self._client.ibmq_compile(serialized_program, target)
+        serialized_circuits = cirq_superstaq.serialization.serialize_circuits([circuit])
+        json_dict = self._client.ibmq_compile(serialized_circuits, target)
         try:
             return applications_superstaq.converters.deserialize(json_dict["pulses"])[0]
         except ModuleNotFoundError as e:

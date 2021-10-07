@@ -101,7 +101,7 @@ class _SuperstaQClient:
 
     def create_job(
         self,
-        serialized_program: str,
+        serialized_circuits: str,
         repetitions: Optional[int] = None,
         target: Optional[str] = None,
         name: Optional[str] = None,
@@ -109,8 +109,7 @@ class _SuperstaQClient:
         """Create a job.
 
         Args:
-            serialized_program: The `cirq_superstaq.SerializedProgram` containing the serialized
-                information about the circuit to run.
+            serialized_circuits: The serialized JSON representation of the circuit to run.
             repetitions: The number of times to repeat the circuit. For simulation the repeated
                 sampling is not done on the server, but is passed as metadata to be recovered
                 from the returned job.
@@ -127,7 +126,7 @@ class _SuperstaQClient:
         """
         actual_target = self._target(target)
         json_dict: Dict[str, Any] = {
-            "cirq_circuits": serialized_program,
+            "cirq_circuits": serialized_circuits,
             "backend": actual_target,
             "shots": repetitions,
             "ibmq_token": self.ibmq_token,
@@ -186,9 +185,9 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def aqt_compile(self, serialized_program: str) -> dict:
+    def aqt_compile(self, serialized_circuits: str) -> dict:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
-        json_dict = {"cirq_circuits": serialized_program}
+        json_dict = {"cirq_circuits": serialized_circuits}
 
         def request() -> requests.Response:
             return requests.post(
@@ -200,9 +199,9 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def ibmq_compile(self, serialized_program: str, target: Optional[str] = None) -> dict:
+    def ibmq_compile(self, serialized_circuits: str, target: Optional[str] = None) -> dict:
         """Makes a POST request to SuperstaQ API to compile a circuits for IBM devices."""
-        json_dict = {"cirq_circuits": serialized_program, "backend": target}
+        json_dict = {"cirq_circuits": serialized_circuits, "backend": target}
 
         def request() -> requests.Response:
             return requests.post(
