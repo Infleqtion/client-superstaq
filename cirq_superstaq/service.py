@@ -147,7 +147,7 @@ class Service:
 
     def get_counts(
         self,
-        circuit: "cirq.Circuit",
+        circuit: cirq.Circuit,
         repetitions: int,
         name: Optional[str] = None,
         target: Optional[str] = None,
@@ -173,7 +173,7 @@ class Service:
 
     def run(
         self,
-        circuit: "cirq.Circuit",
+        circuit: cirq.Circuit,
         repetitions: int,
         name: Optional[str] = None,
         target: Optional[str] = None,
@@ -197,7 +197,7 @@ class Service:
 
     def create_job(
         self,
-        circuit: cirq.Circuit,
+        circuit: cirq.Circuit,  # TODO accept list?
         repetitions: int = 1000,
         name: Optional[str] = None,
         target: Optional[str] = None,
@@ -225,7 +225,7 @@ class Service:
         )
         # The returned job does not have fully populated fields, so make
         # a second call and return the results of the fully filled out job.
-        return self.get_job(result["job_id"])
+        return self.get_job(result["job_ids"][0])
 
     def get_job(self, job_id: str) -> job.Job:
         """Gets a job that has been created on the SuperstaQ API.
@@ -282,19 +282,27 @@ class Service:
 
         return aqt.read_json(json_dict, circuits_list)
 
-    def ibmq_compile(self, circuit: cirq.Circuit, target: Optional[str] = None) -> Any:
+    def ibmq_compile(
+        self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: Optional[str] = None
+    ) -> Any:
         """Returns pulse schedule for the given circuit and target.
 
         Qiskit must be installed for returned object to correctly deserialize to a pulse schedule.
         """
-        serialized_circuits = cirq_superstaq.serialization.serialize_circuits([circuit])
+        serialized_circuits = cirq_superstaq.serialization.serialize_circuits(circuits)
+        circuits_list = not isinstance(circuits, cirq.Circuit)
+
         json_dict = self._client.ibmq_compile(serialized_circuits, target)
         try:
-            return applications_superstaq.converters.deserialize(json_dict["pulses"])[0]
+            pulses = applications_superstaq.converters.deserialize(json_dict["pulses"])
         except ModuleNotFoundError as e:
             raise cirq_superstaq.SuperstaQModuleNotFoundException(
                 name=str(e.name), context="ibmq_compile"
             )
+
+        if circuits_list:
+            return pulses
+        return pulses[0]
 
     def submit_qubo(self, qubo: qv.QUBO, target: str, repetitions: int = 1000) -> np.recarray:
         """Submits the given QUBO to the target backend. The result of the optimization
