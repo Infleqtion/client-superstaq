@@ -119,7 +119,7 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
     }
     expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     mock_post.assert_called_with(
-        f"http://example.com/{API_VERSION}/multi_job",
+        f"http://example.com/{API_VERSION}/jobs",
         json=expected_json,
         headers=expected_headers,
         verify=False,
