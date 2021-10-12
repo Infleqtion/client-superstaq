@@ -119,7 +119,7 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
     }
     expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     mock_post.assert_called_with(
-        f"http://example.com/{API_VERSION}/job",
+        f"http://example.com/{API_VERSION}/multi_job",
         json=expected_json,
         headers=expected_headers,
         verify=False,
@@ -359,7 +359,7 @@ def test_superstaq_client_ibmq_compile(mock_post: mock.MagicMock) -> None:
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     circuit = cirq.Circuit()
-    client.ibmq_compile(cirq_superstaq.serialization.serialize_circuits([circuit]))
+    client.ibmq_compile(cirq_superstaq.serialization.serialize_circuits(circuit))
 
     mock_post.assert_called_once()
     assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/ibmq_compile"

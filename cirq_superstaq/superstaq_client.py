@@ -138,7 +138,7 @@ class _SuperstaQClient:
 
         def request() -> requests.Response:
             return requests.post(
-                f"{self.url}/job",
+                f"{self.url}/multi_job",
                 json=json_dict,
                 headers=self.headers,
                 verify=self.verify_https,
