@@ -92,8 +92,8 @@ class _SuperstaQClient:
         self.headers = {
             "Authorization": api_key,
             "Content-Type": "application/json",
-            "X-Client-Version": cirq_superstaq.API_VERSION,
             "X-Client-Name": "cirq-superstaq",
+            "X-Client-Version": cirq_superstaq.API_VERSION,
         }
         self.default_target = default_target
         self.max_retry_seconds = max_retry_seconds
