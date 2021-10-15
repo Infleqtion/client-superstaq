@@ -86,6 +86,14 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
 
         return backends
 
+    def _http_headers(self) -> dict:
+        return {
+            "Authorization": self.get_access_token(),
+            "Content-Type": "application/json",
+            "X-Client-Name": "qiskit-superstaq",
+            "X-Client-Version": qss.API_VERSION,
+        }
+
     def aqt_compile(
         self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]
     ) -> "qss.aqt.AQTCompilerOutput":
@@ -106,14 +114,10 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
             json_dict = {"qasm_strs": [c.qasm() for c in circuits]}
             circuits_list = True
 
-        headers = {
-            "Authorization": self.get_access_token(),
-            "Content-Type": "application/json",
-        }
         res = requests.post(
             self.url + "/" + qss.API_VERSION + "/aqt_compile",
             json=json_dict,
-            headers=headers,
+            headers=self._http_headers(),
             verify=(self.url == qss.API_URL),
         )
         res.raise_for_status()
