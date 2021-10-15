@@ -89,7 +89,12 @@ class _SuperstaQClient:
         self.verify_https: bool = (
             cirq_superstaq.API_URL + "/" + cirq_superstaq.API_VERSION == self.url
         )
-        self.headers = {"Authorization": api_key, "Content-Type": "application/json"}
+        self.headers = {
+            "Authorization": api_key,
+            "Content-Type": "application/json",
+            "X-Client-Version": cirq_superstaq.API_VERSION,
+            "X-Client-Name": "cirq-superstaq",
+        }
         self.default_target = default_target
         self.max_retry_seconds = max_retry_seconds
         self.verbose = verbose
