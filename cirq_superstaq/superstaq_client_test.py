@@ -338,7 +338,9 @@ def test_superstaq_client_aqt_compile(mock_post: mock.MagicMock) -> None:
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     circuit = cirq.Circuit(cirq.H(cirq.LineQubit(5)))
-    client.aqt_compile(cirq_superstaq.serialization.serialize_circuits([circuit, circuit]))
+    client.aqt_compile(
+        cirq_superstaq.serialization.serialize_circuits([circuit, circuit]), target="keysight"
+    )
 
     mock_post.assert_called_once()
     assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/aqt_compile"
@@ -350,7 +352,10 @@ def test_superstaq_client_ibmq_compile(mock_post: mock.MagicMock) -> None:
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     circuit = cirq.Circuit()
-    client.ibmq_compile(cirq_superstaq.serialization.serialize_circuits([circuit]))
+    client.ibmq_compile(
+        cirq_superstaq.serialization.serialize_circuits([circuit]),
+        target="ibmq_qasm_simulator",
+    )
 
     mock_post.assert_called_once()
     assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/ibmq_compile"
