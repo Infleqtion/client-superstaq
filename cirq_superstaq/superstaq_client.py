@@ -32,7 +32,6 @@ class _SuperstaQClient:
     """
 
     RETRIABLE_STATUS_CODES = {
-        requests.codes.internal_server_error,
         requests.codes.service_unavailable,
     }
     SUPPORTED_TARGETS = {"qpu", "simulator"}
