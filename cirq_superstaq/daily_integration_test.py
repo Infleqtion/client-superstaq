@@ -35,4 +35,7 @@ def test_get_balance(service: cirq_superstaq.Service) -> None:
 
 def test_tsp(service: cirq_superstaq.Service) -> None:
     out = service.tsp(["Chicago", "San Francisco", "New York City", "New Orleans"])
-    assert out.map_link == ['https://www.google.com/maps/dir/?api=1&origin=Chicago&destination=Chicago&waypoints=San+Francisco%7CNew+Orleans%7CNew+York+City%7C']
+    assert out.map_link == [
+        "https://www.google.com/maps/dir/?api=1&origin=Chicago&destination=Chicago"
+        "&waypoints=San+Francisco%7CNew+Orleans%7CNew+York+City%7C"
+    ]
