@@ -77,15 +77,10 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             "ibmq_pulse": kwargs.get("ibmq_pulse"),
         }
 
-        headers = {
-            "Authorization": self._provider.get_access_token(),
-            "Content-Type": "application/json",
-        }
-
         res = requests.post(
             self.url + "/" + qss.API_VERSION + "/qasm_strings_multi_job",
             json=superstaq_json,
-            headers=headers,
+            headers=self._provider._http_headers(),
             verify=(self.url == qss.API_URL),
         )
 
