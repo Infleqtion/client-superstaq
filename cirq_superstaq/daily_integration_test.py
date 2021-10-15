@@ -12,7 +12,6 @@ import cirq_superstaq
 @pytest.fixture
 def service() -> cirq_superstaq.Service:
     token = os.getenv("TEST_USER_TOKEN")
-    token = "ya29.a0ARrdaM9Y3i1TldhKI3FjJ9CRur6__6OWoymGfDuDETbB92hQxt0UWdZcHluJCMhMGUIGpjELYtMdnBEitvqABJGiOGOhNF9VABqq8yGCAG28B569yo2I8I_eANPX14NbaGPFLGhiq4DLvyZP_gz90C8iAfY0Sg"
     service = cirq_superstaq.Service(api_key=token)
     return service
 
