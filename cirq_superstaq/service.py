@@ -197,7 +197,7 @@ class Service:
 
     def create_job(
         self,
-        circuit: cirq.Circuit,  # TODO accept list?
+        circuit: cirq.Circuit,
         repetitions: int = 1000,
         name: Optional[str] = None,
         target: Optional[str] = None,
