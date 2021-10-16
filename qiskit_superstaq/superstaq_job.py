@@ -50,11 +50,6 @@ class SuperstaQJob(qiskit.providers.JobV1):
         result_list: List[Dict] = []
         job_ids = self._job_id.split(",")  # separate aggregated job_ids
 
-        header = {
-            "Authorization": self._backend._provider.access_token,
-            "SDK": "qiskit",
-        }
-
         for jid in job_ids:
             start_time = time.time()
             result = None
@@ -69,7 +64,9 @@ class SuperstaQJob(qiskit.providers.JobV1):
 
                 getstr = f"{self._backend.url}/" + qss.API_VERSION + f"/job/{jid}"
                 result = requests.get(
-                    getstr, headers=header, verify=(self._backend.url == qss.API_URL)
+                    getstr,
+                    headers=self._backend._provider._http_headers(),
+                    verify=(self._backend.url == qss.API_URL),
                 ).json()
 
                 if result["status"] == "Done":
@@ -107,11 +104,6 @@ class SuperstaQJob(qiskit.providers.JobV1):
     def status(self) -> str:
         """Query for the job status."""
 
-        header = {
-            "Authorization": self._backend._provider.access_token,
-            "SDK": "qiskit",
-        }
-
         job_id_list = self._job_id.split(",")  # separate aggregated job ids
 
         status = "Done"
@@ -122,7 +114,9 @@ class SuperstaQJob(qiskit.providers.JobV1):
         for job_id in job_id_list:
             get_url = self._backend.url + "/" + qss.API_VERSION + f"/job/{job_id}"
             result = requests.get(
-                get_url, headers=header, verify=(self._backend.url == qss.API_URL)
+                get_url,
+                headers=self._backend._provider._http_headers(),
+                verify=(self._backend.url == qss.API_URL),
             )
 
             temp_status = result.json()["status"]
