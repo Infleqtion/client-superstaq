@@ -22,6 +22,12 @@ import requests
 import cirq_superstaq
 
 API_VERSION = cirq_superstaq.API_VERSION
+expected_headers = {
+    "Authorization": "to_my_heart",
+    "Content-Type": "application/json",
+    "X-Client-Version": API_VERSION,
+    "X-Client-Name": "cirq-superstaq",
+}
 
 
 def test_cirq_superstaq_exception_str() -> None:
@@ -84,10 +90,7 @@ def test_superstaq_client_attributes() -> None:
         verbose=True,
     )
     assert client.url == f"http://example.com/{API_VERSION}"
-    assert client.headers == {
-        "Authorization": "to_my_heart",
-        "Content-Type": "application/json",
-    }
+    assert client.headers == expected_headers
     assert client.default_target == "qpu"
     assert client.max_retry_seconds == 10
     assert client.verbose
@@ -117,7 +120,6 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         "ibmq_hub": None,
         "ibmq_pulse": True,
     }
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/jobs",
         json=expected_json,
@@ -268,7 +270,6 @@ def test_superstaq_client_get_job(mock_get: mock.MagicMock) -> None:
     response = client.get_job(job_id="job_id")
     assert response == {"foo": "bar"}
 
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     mock_get.assert_called_with(
         f"http://example.com/{API_VERSION}/job/job_id", headers=expected_headers, verify=False
     )
@@ -284,7 +285,6 @@ def test_superstaq_client_get_balance(mock_get: mock.MagicMock) -> None:
     response = client.get_balance()
     assert response == {"balance": 123.4567}
 
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     mock_get.assert_called_with(
         f"http://example.com/{API_VERSION}/balance", headers=expected_headers, verify=False
     )
@@ -347,7 +347,9 @@ def test_superstaq_client_aqt_compile(mock_post: mock.MagicMock) -> None:
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     circuit = cirq.Circuit(cirq.H(cirq.LineQubit(5)))
-    client.aqt_compile(cirq_superstaq.serialization.serialize_circuits([circuit, circuit]))
+    client.aqt_compile(
+        cirq_superstaq.serialization.serialize_circuits([circuit, circuit]), target="keysight"
+    )
 
     mock_post.assert_called_once()
     assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/aqt_compile"
@@ -359,7 +361,10 @@ def test_superstaq_client_ibmq_compile(mock_post: mock.MagicMock) -> None:
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     circuit = cirq.Circuit()
-    client.ibmq_compile(cirq_superstaq.serialization.serialize_circuits(circuit))
+    client.ibmq_compile(
+        cirq_superstaq.serialization.serialize_circuits(circuit),
+        target="ibmq_qasm_simulator",
+    )
 
     mock_post.assert_called_once()
     assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/ibmq_compile"
@@ -376,7 +381,6 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
     repetitions = 10
     client.submit_qubo(example_qubo, target, repetitions=repetitions)
 
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     expected_json = {
         "qubo": [
             {"keys": ["0"], "value": 1.0},
@@ -404,8 +408,6 @@ def test_superstaq_client_find_min_vol_portfolio(mock_post: mock.MagicMock) -> N
         {"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "desired_return": 8}
     )
 
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
-
     expected_json = {"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "desired_return": 8}
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/minvol",
@@ -422,8 +424,6 @@ def test_superstaq_client_find_max_pseudo_sharpe_ratio(mock_post: mock.MagicMock
     )
     client.find_max_pseudo_sharpe_ratio({"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "k": 0.5})
 
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
-
     expected_json = {"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "k": 0.5}
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/maxsharpe",
@@ -439,8 +439,6 @@ def test_superstaq_client_tsp(mock_post: mock.MagicMock) -> None:
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     client.tsp({"locs": ["Chicago", "St Louis", "St Paul"]})
-
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
 
     expected_json = {"locs": ["Chicago", "St Louis", "St Paul"]}
     mock_post.assert_called_with(
@@ -464,8 +462,6 @@ def test_superstaq_client_warehouse(mock_post: mock.MagicMock) -> None:
         }
     )
 
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
-
     expected_json = {
         "k": 1,
         "possible_warehouses": ["Chicago", "San Francisco"],
@@ -486,7 +482,6 @@ def test_superstaq_client_aqt_upload_configs(mock_post: mock.MagicMock) -> None:
 
     client.aqt_upload_configs({"pulses": "Hello", "variables": "World"})
 
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     expected_json = {"pulses": "Hello", "variables": "World"}
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/aqt_configs",

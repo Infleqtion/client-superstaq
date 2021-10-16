@@ -31,7 +31,6 @@ class _SuperstaQClient:
     """
 
     RETRIABLE_STATUS_CODES = {
-        requests.codes.internal_server_error,
         requests.codes.service_unavailable,
     }
     SUPPORTED_TARGETS = {"qpu", "simulator"}
@@ -89,7 +88,12 @@ class _SuperstaQClient:
         self.verify_https: bool = (
             cirq_superstaq.API_URL + "/" + cirq_superstaq.API_VERSION == self.url
         )
-        self.headers = {"Authorization": api_key, "Content-Type": "application/json"}
+        self.headers = {
+            "Authorization": api_key,
+            "Content-Type": "application/json",
+            "X-Client-Name": "cirq-superstaq",
+            "X-Client-Version": cirq_superstaq.API_VERSION,
+        }
         self.default_target = default_target
         self.max_retry_seconds = max_retry_seconds
         self.verbose = verbose
@@ -185,9 +189,9 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def aqt_compile(self, serialized_circuits: str) -> dict:
+    def aqt_compile(self, serialized_circuits: str, target: str) -> dict:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
-        json_dict = {"cirq_circuits": serialized_circuits}
+        json_dict = {"cirq_circuits": serialized_circuits, "backend": target}
 
         def request() -> requests.Response:
             return requests.post(
@@ -199,7 +203,7 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def ibmq_compile(self, serialized_circuits: str, target: Optional[str] = None) -> dict:
+    def ibmq_compile(self, serialized_circuits: str, target: str) -> dict:
         """Makes a POST request to SuperstaQ API to compile a circuits for IBM devices."""
         json_dict = {"cirq_circuits": serialized_circuits, "backend": target}
 
