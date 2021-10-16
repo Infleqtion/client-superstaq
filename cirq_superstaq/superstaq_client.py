@@ -113,7 +113,7 @@ class _SuperstaQClient:
         """Create a job.
 
         Args:
-            serialized_circuits: The serialized JSON representation of the circuit to run.
+            serialized_circuits: The serialized representation of the circuit to run.
             repetitions: The number of times to repeat the circuit. For simulation the repeated
                 sampling is not done on the server, but is passed as metadata to be recovered
                 from the returned job.
