@@ -291,7 +291,6 @@ class Service:
         Qiskit must be installed for returned object to correctly deserialize to a pulse schedule.
         """
         serialized_circuits = cirq_superstaq.serialization.serialize_circuits(circuits)
-        circuits_list = not isinstance(circuits, cirq.Circuit)
 
         json_dict = self._client.ibmq_compile(serialized_circuits, target)
         try:
@@ -301,9 +300,9 @@ class Service:
                 name=str(e.name), context="ibmq_compile"
             )
 
-        if circuits_list:
-            return pulses
-        return pulses[0]
+        if isinstance(circuits, cirq.Circuit):
+            return pulses[0]
+        return pulses
 
     def submit_qubo(self, qubo: qv.QUBO, target: str, repetitions: int = 1000) -> np.recarray:
         """Submits the given QUBO to the target backend. The result of the optimization
