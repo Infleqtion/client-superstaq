@@ -273,6 +273,8 @@ def test_parallel_gates() -> None:
         cirq.unitary(gate), cirq.unitary(cirq.Circuit(cirq.decompose(operation)))
     )
 
+    assert gate ** 0.5 == cirq_superstaq.ParallelGates(CZ ** 0.5, CZ ** 0.25, CZ ** -0.25)
+
     assert [gate.qubit_index_to_equivalence_group_key(i) for i in range(6)] == [0, 0, 2, 2, 4, 4]
     for permuted_qubits in itertools.permutations(operation.qubits):
         sub_op_qubits = [

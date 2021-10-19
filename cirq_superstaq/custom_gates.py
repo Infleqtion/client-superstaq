@@ -321,6 +321,10 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
     def _from_json_dict_(cls, component_gates: List[cirq.Gate], **kwargs: Any) -> Any:
         return cls(*component_gates)
 
+    def __pow__(self, exponent: float) -> "ParallelGates":
+        exponentiated_gates = [gate ** exponent for gate in self.component_gates]
+        return ParallelGates(*exponentiated_gates)
+
     def __str__(self) -> str:
         component_gates_str = ", ".join(str(gate) for gate in self.component_gates)
         return f"ParallelGates({component_gates_str})"
