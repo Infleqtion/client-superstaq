@@ -35,8 +35,9 @@ def test_fermionic_swap_gate() -> None:
     )
 
     assert gate ** 1 == gate
-    assert gate ** 1 == cirq_superstaq.FermionicSWAPGate(0.0)
+    assert gate ** 0 == cirq_superstaq.FermionicSWAPGate(0.0)
     assert gate ** -1 == cirq_superstaq.FermionicSWAPGate(-0.123)
+    assert gate.__pow__(1.23) is NotImplemented
 
 
 def test_fermionic_swap_circuit() -> None:
@@ -128,7 +129,7 @@ def test_zx_circuit() -> None:
         qreg q[2];
 
 
-        rzx(pi) q[0],q[1];
+        rzx(pi*1.0) q[0],q[1];
         rzx(pi*0.25) q[0],q[1];
         """
     )
@@ -273,29 +274,16 @@ def test_parallel_gates() -> None:
         cirq.unitary(gate), cirq.unitary(cirq.Circuit(cirq.decompose(operation)))
     )
 
-    assert gate ** 0.5 == cirq_superstaq.ParallelGates(CZ ** 0.5, CZ ** 0.25, CZ ** -0.25)
-
-    assert [gate.qubit_index_to_equivalence_group_key(i) for i in range(6)] == [0, 0, 2, 2, 4, 4]
-    for permuted_qubits in itertools.permutations(operation.qubits):
-        sub_op_qubits = [
-            {permuted_qubits[0].x, permuted_qubits[1].x},
-            {permuted_qubits[2].x, permuted_qubits[3].x},
-            {permuted_qubits[4].x, permuted_qubits[5].x},
-        ]
-        if sub_op_qubits == [{0, 1}, {2, 3}, {4, 5}]:
-            assert operation == gate(*permuted_qubits)
-        else:
-            assert operation != gate(*permuted_qubits)
-
-    with pytest.raises(ValueError, match="index out of range"):
-        _ = gate.qubit_index_to_equivalence_group_key(6)
-
-    with pytest.raises(ValueError, match="index out of range"):
-        _ = gate.qubit_index_to_equivalence_group_key(-1)
+    assert gate ** 0.5 == cirq_superstaq.ParallelGates(
+        cirq.CZ ** 0.5, cirq.CZ ** 0.25, cirq.CZ ** -0.25
+    )
 
     with pytest.raises(ValueError, match="ParallelGates cannot contain measurements"):
         _ = cirq_superstaq.ParallelGates(cirq.X, cirq.MeasurementGate(1, key="1"))
 
+
+def test_parallel_gates_equivalence_groups() -> None:
+    qubits = cirq.LineQubit.range(4)
     gate = cirq_superstaq.ParallelGates(cirq.X, cirq_superstaq.ZX, cirq.Y)
     operation = gate(*qubits[:4])
     assert [gate.qubit_index_to_equivalence_group_key(i) for i in range(4)] == [0, 1, 2, 3]
@@ -304,9 +292,6 @@ def test_parallel_gates() -> None:
             assert operation == gate(*permuted_qubits)
         else:
             assert operation != gate(*permuted_qubits)
-    assert cirq.equal_up_to_global_phase(
-        cirq.unitary(gate), cirq.unitary(cirq.Circuit(cirq.decompose(operation)))
-    )
 
     gate = cirq_superstaq.ParallelGates(cirq.X, cirq_superstaq.FermionicSWAPGate(1.23), cirq.X)
     operation = gate(*qubits[:4])
@@ -322,9 +307,12 @@ def test_parallel_gates() -> None:
             assert operation == gate(*permuted_qubits)
         else:
             assert operation != gate(*permuted_qubits)
-    assert cirq.equal_up_to_global_phase(
-        cirq.unitary(gate), cirq.unitary(cirq.Circuit(cirq.decompose(operation)))
-    )
+
+    with pytest.raises(ValueError, match="index out of range"):
+        _ = gate.qubit_index_to_equivalence_group_key(4)
+
+    with pytest.raises(ValueError, match="index out of range"):
+        _ = gate.qubit_index_to_equivalence_group_key(-1)
 
 
 def test_custom_resolver() -> None:
