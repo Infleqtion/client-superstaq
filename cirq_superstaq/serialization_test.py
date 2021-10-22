@@ -9,7 +9,7 @@ def test_serialization() -> None:
 
     serialized_circuit = cirq_superstaq.serialization.serialize_circuits(circuit)
     assert isinstance(serialized_circuit, str)
-    assert cirq_superstaq.serialization.deserialize_circuits(serialized_circuit) == circuit
+    assert cirq_superstaq.serialization.deserialize_circuits(serialized_circuit) == [circuit]
 
     circuits = [circuit, circuit]
     serialized_circuits = cirq_superstaq.serialization.serialize_circuits(circuits)

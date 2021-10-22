@@ -55,7 +55,7 @@ def test_service_run_and_get_counts() -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
     mock_client = mock.MagicMock()
     mock_client.create_job.return_value = {
-        "job_id": "job_id",
+        "job_ids": ["job_id"],
         "status": "ready",
     }
     mock_client.get_job.return_value = {
@@ -115,7 +115,7 @@ def test_service_get_job() -> None:
 def test_service_create_job() -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
     mock_client = mock.MagicMock()
-    mock_client.create_job.return_value = {"job_id": "job_id", "status": "ready"}
+    mock_client.create_job.return_value = {"job_ids": ["job_id"], "status": "ready"}
     mock_client.get_job.return_value = {"job_id": "job_id", "status": "completed"}
     service._client = mock_client
 
@@ -141,7 +141,7 @@ def test_service_get_balance() -> None:
 @mock.patch(
     "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={
-        "cirq_circuits": [cirq.to_json(cirq.Circuit())],
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()),
         "state_jp": applications_superstaq.converters.serialize({}),
         "pulse_lists_jp": applications_superstaq.converters.serialize([[[]]]),
     },
@@ -156,7 +156,9 @@ def test_service_aqt_compile_single(mock_aqt_compile: mock.MagicMock) -> None:
 @mock.patch(
     "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={
-        "cirq_circuits": [cirq.to_json(cirq.Circuit()), cirq.to_json(cirq.Circuit())],
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits(
+            [cirq.Circuit(), cirq.Circuit()]
+        ),
         "state_jp": applications_superstaq.converters.serialize({}),
         "pulse_lists_jp": applications_superstaq.converters.serialize([[[]], [[]]]),
     },
@@ -175,6 +177,7 @@ def test_service_aqt_compile_multiple(mock_aqt_compile: mock.MagicMock) -> None:
 def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
     assert service.ibmq_compile(cirq.Circuit()) == mock.DEFAULT
+    assert service.ibmq_compile([cirq.Circuit()]) == [mock.DEFAULT]
 
     with mock.patch.dict("sys.modules", {"unittest": None}), pytest.raises(
         cirq_superstaq.SuperstaQModuleNotFoundException,
