@@ -4,6 +4,8 @@ from typing import List, Optional, Union
 import applications_superstaq
 import qiskit
 
+import qiskit_superstaq
+
 try:
     import qtrl.sequencer
 except ModuleNotFoundError:
@@ -68,7 +70,9 @@ def read_json(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
         pulse_lists_str = json_dict["pulse_lists_jp"]
         pulse_lists = applications_superstaq.converters.deserialize(pulse_lists_str)
 
-    compiled_circuits = [qiskit.QuantumCircuit.from_qasm_str(q) for q in json_dict["qasm_strs"]]
+    compiled_circuits = qiskit_superstaq.serialization.deserialize_circuits(
+        json_dict["qiskit_circuits"]
+    )
     if circuits_list:
         return AQTCompilerOutput(compiled_circuits, seq, pulse_lists)
 
