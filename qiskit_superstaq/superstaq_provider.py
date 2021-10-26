@@ -119,6 +119,36 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
         res.raise_for_status()
         json_dict = res.json()
 
-        from qiskit_superstaq import aqt
+        from qiskit_superstaq import compiler_output
 
-        return aqt.read_json(json_dict, circuits_list)
+        return compiler_output.read_json_aqt(json_dict, circuits_list)
+
+
+    def qscout_compile(
+        self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]
+    ) -> "qss.compiler.CompilerOutput":
+        """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
+
+        Args:
+            circuits: qiskit QuantumCircuit(s)
+        Returns:
+            object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
+            If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
+            pulse sequence corresponding to the optimized qiskit.QuantumCircuit(s) and the
+            .pulse_list(s) attribute is the list(s) of cycles.
+        """
+        json_dict = {"qiskit_circuits": qss.serialization.serialize_circuits(circuits)}
+        circuits_list = not isinstance(circuits, qiskit.QuantumCircuit)
+
+        res = requests.post(
+            self.url + "/" + qss.API_VERSION + "/qscout_compile",
+            json=json_dict,
+            headers=self._http_headers(),
+            verify=(self.url == qss.API_URL),
+        )
+        res.raise_for_status()
+        json_dict = res.json()
+
+        from qiskit_superstaq import compiler_output
+
+        return compiler_output.read_json_qscout(json_dict, circuits_list)

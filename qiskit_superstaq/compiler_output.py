@@ -12,11 +12,12 @@ except ModuleNotFoundError:
     pass
 
 
-class AQTCompilerOutput:
+class CompilerOutput:
     def __init__(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         seq: Optional["qtrl.sequencer.Sequence"] = None,
+        jaqal_programs: List[str] = None,
         pulse_lists: Optional[Union[List[List], List[List[List]]]] = None,
     ) -> None:
         if isinstance(circuits, qiskit.QuantumCircuit):
@@ -27,6 +28,7 @@ class AQTCompilerOutput:
             self.pulse_lists = pulse_lists
 
         self.seq = seq
+        self.jaqal_programs = jaqal_programs
 
     def has_multiple_circuits(self) -> bool:
         """Returns True if this object represents multiple circuits.
@@ -38,11 +40,11 @@ class AQTCompilerOutput:
 
     def __repr__(self) -> str:
         if not self.has_multiple_circuits():
-            return f"AQTCompilerOutput({self.circuit!r}, {self.seq!r}, {self.pulse_list!r})"
-        return f"AQTCompilerOutput({self.circuits!r}, {self.seq!r}, {self.pulse_lists!r})"
+            return f"CompilerOutput({self.circuit!r}, {self.seq!r}, {self.jaqal_programs!r}, {self.pulse_list!r})"
+        return f"CompilerOutput({self.circuits!r}, {self.seq!r}, {self.jaqal_programs!r}, {self.pulse_lists!r})"
 
 
-def read_json(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
+def read_json_aqt(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
     """Reads out returned JSON from SuperstaQ API's AQT compilation endpoint.
 
     Args:
@@ -50,7 +52,7 @@ def read_json(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
         circuits_list: bool flag that controls whether the returned object has a .circuits
             attribute (if True) or a .circuit attribute (False)
     Returns:
-        a AQTCompilerOutput object with the compiled circuit(s). If qtrl is available locally,
+        a CompilerOutput object with the compiled circuit(s). If qtrl is available locally,
         the returned object also stores the pulse sequence in the .seq attribute and the
         list(s) of cycles in the .pulse_list(s) attribute.
     """
@@ -74,7 +76,32 @@ def read_json(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
         json_dict["qiskit_circuits"]
     )
     if circuits_list:
-        return AQTCompilerOutput(compiled_circuits, seq, pulse_lists)
+        return CompilerOutput(compiled_circuits, seq, pulse_lists)
 
     pulse_list = pulse_lists[0] if pulse_lists is not None else None
-    return AQTCompilerOutput(compiled_circuits[0], seq, pulse_list)
+    return CompilerOutput(compiled_circuits[0], seq, pulse_list)
+
+def read_json_qscout(json_dict: dict, circuits_list: bool) -> CompilerOutput:
+    """Reads out returned JSON from SuperstaQ API's QSCOUT compilation endpoint.
+
+    Args:
+        json_dict: a JSON dictionary matching the format returned by /aqt_compile endpoint
+        circuits_list: bool flag that controls whether the returned object has a .circuits
+            attribute (if True) or a .circuit attribute (False)
+    Returns:
+        a CompilerOutput object with the compiled circuit(s). If qtrl is available locally,
+        the returned object also stores the pulse sequence in the .seq attribute and the
+        list(s) of cycles in the .pulse_list(s) attribute.
+    """
+    seq = None
+    pulse_lists = None
+
+    compiled_circuits = qiskit_superstaq.serialization.deserialize_circuits(
+        json_dict["qiskit_circuits"]
+    )
+    if circuits_list:
+        return CompilerOutput(compiled_circuits, json_dict["jaqal_programs"])
+
+    pulse_list = pulse_lists[0] if pulse_lists is not None else None
+    return CompilerOutput(compiled_circuits[0], seq, json_dict["jaqal_programs"][0])
+
