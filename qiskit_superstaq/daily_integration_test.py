@@ -1,8 +1,7 @@
 """Integration checks that run daily (via Github action) between client and prod server."""
-
-import numpy as np
 import os
 
+import numpy as np
 import pytest
 import qiskit
 

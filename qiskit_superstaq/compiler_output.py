@@ -23,12 +23,13 @@ class CompilerOutput:
         if isinstance(circuits, qiskit.QuantumCircuit):
             self.circuit = circuits
             self.pulse_list = pulse_lists
+            self.jaqal_program = jaqal_programs
         else:
             self.circuits = circuits
             self.pulse_lists = pulse_lists
+            self.jaqal_programs = jaqal_programs
 
         self.seq = seq
-        self.jaqal_programs = jaqal_programs
 
     def has_multiple_circuits(self) -> bool:
         """Returns True if this object represents multiple circuits.
@@ -41,7 +42,7 @@ class CompilerOutput:
     def __repr__(self) -> str:
         if not self.has_multiple_circuits():
             return (
-                f"CompilerOutput({self.circuit!r}, {self.seq!r}, {self.jaqal_programs!r}, "
+                f"CompilerOutput({self.circuit!r}, {self.seq!r}, {self.jaqal_program!r}, "
                 f"{self.pulse_list!r})"
             )
         return (

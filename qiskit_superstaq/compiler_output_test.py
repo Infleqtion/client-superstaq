@@ -123,7 +123,7 @@ def test_read_json_with_qscout() -> None:
 
     out = compiler_output.read_json_qscout(json_dict, circuits_list=False)
     assert out.circuit == circuit
-    assert out.jaqal_programs == jaqal_program
+    assert out.jaqal_program == jaqal_program
 
     json_dict = {
         "qiskit_circuits": qiskit_superstaq.serialization.serialize_circuits([circuit, circuit]),
