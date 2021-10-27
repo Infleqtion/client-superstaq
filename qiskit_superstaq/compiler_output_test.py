@@ -1,5 +1,6 @@
 import importlib
 import pickle
+import textwrap
 from unittest import mock
 
 import applications_superstaq
@@ -104,46 +105,29 @@ def test_read_json_with_qscout() -> None:
     circuit = qiskit.QuantumCircuit(1)
     circuit.h(0)
 
+    jaqal_program = textwrap.dedent(
+        """\
+                register allqubits[1]
+
+                prepare_all
+                R allqubits[0] -1.5707963267948966 1.5707963267948966
+                Rz allqubits[0] -3.141592653589793
+                measure_all
+                """
+    )
+
     json_dict = {
         "qiskit_circuits": qiskit_superstaq.serialization.serialize_circuits(circuit),
-        "jaqal_programs": [
-            """register allqubits[1]
-
-prepare_all
-R allqubits[0] -1.5707963267948966 1.5707963267948966
-Rz allqubits[0] -3.141592653589793
-measure_all"""
-        ],
+        "jaqal_programs": [jaqal_program],
     }
 
     out = compiler_output.read_json_qscout(json_dict, circuits_list=False)
     assert out.circuit == circuit
-    assert (
-        out.jaqal_programs
-        == """register allqubits[1]
-
-prepare_all
-R allqubits[0] -1.5707963267948966 1.5707963267948966
-Rz allqubits[0] -3.141592653589793
-measure_all"""
-    )
+    assert out.jaqal_programs == jaqal_program
 
     json_dict = {
         "qiskit_circuits": qiskit_superstaq.serialization.serialize_circuits([circuit, circuit]),
-        "jaqal_programs": [
-            """register allqubits[1]
-
-prepare_all
-R allqubits[0] -1.5707963267948966 1.5707963267948966
-Rz allqubits[0] -3.141592653589793
-measure_all""",
-            """register allqubits[1]
-
-prepare_all
-R allqubits[0] -1.5707963267948966 1.5707963267948966
-Rz allqubits[0] -3.141592653589793
-measure_all""",
-        ],
+        "jaqal_programs": [jaqal_program, jaqal_program],
     }
     out = compiler_output.read_json_qscout(json_dict, circuits_list=True)
     assert out.circuits == [circuit, circuit]

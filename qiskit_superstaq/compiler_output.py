@@ -92,13 +92,12 @@ def read_json_qscout(json_dict: dict, circuits_list: bool) -> CompilerOutput:
     """Reads out returned JSON from SuperstaQ API's QSCOUT compilation endpoint.
 
     Args:
-        json_dict: a JSON dictionary matching the format returned by /aqt_compile endpoint
+        json_dict: a JSON dictionary matching the format returned by /qscout_compile endpoint
         circuits_list: bool flag that controls whether the returned object has a .circuits
             attribute (if True) or a .circuit attribute (False)
     Returns:
-        a CompilerOutput object with the compiled circuit(s). If qtrl is available locally,
-        the returned object also stores the pulse sequence in the .seq attribute and the
-        list(s) of cycles in the .pulse_list(s) attribute.
+        a CompilerOutput object with the compiled circuit(s) and a list of
+        jaql programs in a string representation.
     """
     compiled_circuits = qiskit_superstaq.serialization.deserialize_circuits(
         json_dict["qiskit_circuits"]
