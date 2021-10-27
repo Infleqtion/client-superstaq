@@ -72,3 +72,49 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     out = provider.aqt_compile([qc, qc])
     assert out.circuits == [qc, qc]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+
+
+@patch("requests.post")
+def test_qscout_compile(mock_post: MagicMock) -> None:
+    provider = qss.superstaq_provider.SuperstaQProvider(access_token="MY_TOKEN")
+
+    qc = qiskit.QuantumCircuit(1)
+    qc.h(0)
+
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "jaqal_programs": [
+            """register allqubits[1]
+
+prepare_all
+R allqubits[0] -1.5707963267948966 1.5707963267948966
+Rz allqubits[0] -3.141592653589793
+measure_all"""
+        ],
+    }
+    out = provider.qscout_compile(qc)
+    assert out.circuit == qc
+    assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
+
+    out = provider.qscout_compile([qc])
+    assert out.circuits == [qc]
+
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
+        "jaqal_programs": [
+            """register allqubits[1]
+
+prepare_all
+R allqubits[0] -1.5707963267948966 1.5707963267948966
+Rz allqubits[0] -3.141592653589793
+measure_all""",
+            """register allqubits[1]
+
+prepare_all
+R allqubits[0] -1.5707963267948966 1.5707963267948966
+Rz allqubits[0] -3.141592653589793
+measure_all""",
+        ],
+    }
+    out = provider.qscout_compile([qc, qc])
+    assert out.circuits == [qc, qc]

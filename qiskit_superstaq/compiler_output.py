@@ -40,11 +40,17 @@ class CompilerOutput:
 
     def __repr__(self) -> str:
         if not self.has_multiple_circuits():
-            return f"CompilerOutput({self.circuit!r}, {self.seq!r}, {self.jaqal_programs!r}, {self.pulse_list!r})"
-        return f"CompilerOutput({self.circuits!r}, {self.seq!r}, {self.jaqal_programs!r}, {self.pulse_lists!r})"
+            return (
+                f"CompilerOutput({self.circuit!r}, {self.seq!r}, {self.jaqal_programs!r}, "
+                f"{self.pulse_list!r})"
+            )
+        return (
+            f"CompilerOutput({self.circuits!r}, {self.seq!r}, {self.jaqal_programs!r}, "
+            f"{self.pulse_lists!r})"
+        )
 
 
-def read_json_aqt(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
+def read_json_aqt(json_dict: dict, circuits_list: bool) -> CompilerOutput:
     """Reads out returned JSON from SuperstaQ API's AQT compilation endpoint.
 
     Args:
@@ -76,10 +82,11 @@ def read_json_aqt(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
         json_dict["qiskit_circuits"]
     )
     if circuits_list:
-        return CompilerOutput(compiled_circuits, seq, pulse_lists)
+        return CompilerOutput(circuits=compiled_circuits, seq=seq, pulse_lists=pulse_lists)
 
     pulse_list = pulse_lists[0] if pulse_lists is not None else None
-    return CompilerOutput(compiled_circuits[0], seq, pulse_list)
+    return CompilerOutput(circuits=compiled_circuits[0], seq=seq, pulse_lists=pulse_list)
+
 
 def read_json_qscout(json_dict: dict, circuits_list: bool) -> CompilerOutput:
     """Reads out returned JSON from SuperstaQ API's QSCOUT compilation endpoint.
@@ -93,15 +100,14 @@ def read_json_qscout(json_dict: dict, circuits_list: bool) -> CompilerOutput:
         the returned object also stores the pulse sequence in the .seq attribute and the
         list(s) of cycles in the .pulse_list(s) attribute.
     """
-    seq = None
-    pulse_lists = None
-
     compiled_circuits = qiskit_superstaq.serialization.deserialize_circuits(
         json_dict["qiskit_circuits"]
     )
     if circuits_list:
-        return CompilerOutput(compiled_circuits, json_dict["jaqal_programs"])
+        return CompilerOutput(
+            circuits=compiled_circuits, jaqal_programs=json_dict["jaqal_programs"]
+        )
 
-    pulse_list = pulse_lists[0] if pulse_lists is not None else None
-    return CompilerOutput(compiled_circuits[0], seq, json_dict["jaqal_programs"][0])
-
+    return CompilerOutput(
+        circuits=compiled_circuits[0], jaqal_programs=json_dict["jaqal_programs"][0]
+    )
