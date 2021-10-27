@@ -99,7 +99,6 @@ def test_qscout_compile(mock_post: MagicMock) -> None:
     }
     out = provider.qscout_compile(qc)
     assert out.circuit == qc
-    assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
 
     out = provider.qscout_compile([qc])
     assert out.circuits == [qc]
