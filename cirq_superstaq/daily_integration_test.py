@@ -27,3 +27,14 @@ def test_aqt_compile(service: cirq_superstaq.Service) -> None:
     assert service.aqt_compile(circuit).circuit == expected
     assert service.aqt_compile([circuit]).circuits == [expected]
     assert service.aqt_compile([circuit, circuit]).circuits == [expected, expected]
+
+
+def test_get_balance(service: cirq_superstaq.Service) -> None:
+    assert isinstance(service.get_balance(pretty_output=False), float)
+
+
+def test_tsp(service: cirq_superstaq.Service) -> None:
+    cities = ["Chicago", "San Francisco", "New York City", "New Orleans"]
+    out = service.tsp(cities)
+    for city in cities:
+        assert city.replace(" ", "+") in out.map_link[0]

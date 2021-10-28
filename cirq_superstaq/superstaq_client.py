@@ -12,7 +12,6 @@
 # limitations under the License.
 """Client for making requests to SuperstaQ's API."""
 
-import json
 import sys
 import time
 import urllib
@@ -32,7 +31,6 @@ class _SuperstaQClient:
     """
 
     RETRIABLE_STATUS_CODES = {
-        requests.codes.internal_server_error,
         requests.codes.service_unavailable,
     }
     SUPPORTED_TARGETS = {"qpu", "simulator"}
@@ -90,7 +88,12 @@ class _SuperstaQClient:
         self.verify_https: bool = (
             cirq_superstaq.API_URL + "/" + cirq_superstaq.API_VERSION == self.url
         )
-        self.headers = {"Authorization": api_key, "Content-Type": "application/json"}
+        self.headers = {
+            "Authorization": api_key,
+            "Content-Type": "application/json",
+            "X-Client-Name": "cirq-superstaq",
+            "X-Client-Version": cirq_superstaq.API_VERSION,
+        }
         self.default_target = default_target
         self.max_retry_seconds = max_retry_seconds
         self.verbose = verbose
@@ -102,7 +105,7 @@ class _SuperstaQClient:
 
     def create_job(
         self,
-        serialized_program: str,
+        serialized_circuits: str,
         repetitions: Optional[int] = None,
         target: Optional[str] = None,
         name: Optional[str] = None,
@@ -110,8 +113,7 @@ class _SuperstaQClient:
         """Create a job.
 
         Args:
-            serialized_program: The `cirq_superstaq.SerializedProgram` containing the serialized
-                information about the circuit to run.
+            serialized_circuits: The serialized representation of the circuit to run.
             repetitions: The number of times to repeat the circuit. For simulation the repeated
                 sampling is not done on the server, but is passed as metadata to be recovered
                 from the returned job.
@@ -128,7 +130,7 @@ class _SuperstaQClient:
         """
         actual_target = self._target(target)
         json_dict: Dict[str, Any] = {
-            "circuit": json.loads(serialized_program),
+            "cirq_circuits": serialized_circuits,
             "backend": actual_target,
             "shots": repetitions,
             "ibmq_token": self.ibmq_token,
@@ -140,7 +142,7 @@ class _SuperstaQClient:
 
         def request() -> requests.Response:
             return requests.post(
-                f"{self.url}/job",
+                f"{self.url}/jobs",
                 json=json_dict,
                 headers=self.headers,
                 verify=self.verify_https,
@@ -187,9 +189,21 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def aqt_compile(self, serialized_program: str) -> dict:
+    def get_backends(self) -> dict:
+        """Makes a GET request to SuperstaQ API to get a list of available backends."""
+
+        def request() -> requests.Response:
+            return requests.get(
+                f"{self.url}/backends",
+                headers=self.headers,
+                verify=self.verify_https,
+            )
+
+        return self._make_request(request).json()
+
+    def aqt_compile(self, serialized_circuits: str, target: str) -> dict:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
-        json_dict = {"cirq_circuits": json.loads(serialized_program)}
+        json_dict = {"cirq_circuits": serialized_circuits, "backend": target}
 
         def request() -> requests.Response:
             return requests.post(
@@ -201,9 +215,9 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def ibmq_compile(self, serialized_program: str, target: Optional[str] = None) -> dict:
+    def ibmq_compile(self, serialized_circuits: str, target: str) -> dict:
         """Makes a POST request to SuperstaQ API to compile a circuits for IBM devices."""
-        json_dict = {"cirq_circuits": json.loads(serialized_program), "backend": target}
+        json_dict = {"cirq_circuits": serialized_circuits, "backend": target}
 
         def request() -> requests.Response:
             return requests.post(

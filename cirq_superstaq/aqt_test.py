@@ -1,11 +1,12 @@
-import codecs
 import importlib
 import pickle
 from unittest import mock
 
+import applications_superstaq
 import cirq
 import pytest
 
+import cirq_superstaq
 from cirq_superstaq import aqt
 
 
@@ -22,13 +23,13 @@ def test_read_json() -> None:
     importlib.reload(aqt)
 
     circuit = cirq.Circuit(cirq.H(cirq.LineQubit(4)))
-    state_str = codecs.encode(pickle.dumps({}), "base64").decode()
-    pulse_lists_str = codecs.encode(pickle.dumps([[[]]]), "base64").decode()
+    state_str = applications_superstaq.converters.serialize({})
+    pulse_lists_str = applications_superstaq.converters.serialize([[[]]])
 
     json_dict: dict
 
     json_dict = {
-        "cirq_circuits": [cirq.to_json(circuit)],
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits(circuit),
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
     }
@@ -42,9 +43,9 @@ def test_read_json() -> None:
     assert not hasattr(out, "circuit")
 
     # multiple circuits
-    pulse_lists_str = codecs.encode(pickle.dumps([[[]], [[]]]), "base64").decode()
+    pulse_lists_str = applications_superstaq.converters.serialize([[[]], [[]]])
     json_dict = {
-        "cirq_circuits": [cirq.to_json(circuit), cirq.to_json(circuit)],
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits([circuit, circuit]),
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
     }
@@ -58,13 +59,13 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     seq = qtrl.sequencer.Sequence(n_elements=1)
 
     circuit = cirq.Circuit(cirq.H(cirq.LineQubit(4)))
-    state_str = codecs.encode(pickle.dumps(seq.__getstate__()), "base64").decode()
-    pulse_lists_str = codecs.encode(pickle.dumps([[[]]]), "base64").decode()
+    state_str = applications_superstaq.converters.serialize(seq.__getstate__())
+    pulse_lists_str = applications_superstaq.converters.serialize([[[]]])
 
     json_dict: dict
 
     json_dict = {
-        "cirq_circuits": [cirq.to_json(circuit)],
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits(circuit),
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
     }
@@ -82,9 +83,9 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
     # multiple circuits
-    pulse_lists_str = codecs.encode(pickle.dumps([[[]], [[]]]), "base64").decode()
+    pulse_lists_str = applications_superstaq.converters.serialize([[[]], [[]]])
     json_dict = {
-        "cirq_circuits": [cirq.to_json(circuit), cirq.to_json(circuit)],
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits([circuit, circuit]),
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
     }

@@ -1,8 +1,7 @@
-import codecs
 import importlib
-import pickle
 from typing import List, Optional, Union
 
+import applications_superstaq
 import cirq
 
 import cirq_superstaq
@@ -61,20 +60,17 @@ def read_json(json_dict: dict, circuits_list: bool) -> AQTCompilerOutput:
     if importlib.util.find_spec(
         "qtrl"
     ):  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
-        state_str = json_dict["state_jp"]
-        state = pickle.loads(codecs.decode(state_str.encode(), "base64"))
+        state = applications_superstaq.converters.deserialize(json_dict["state_jp"])
 
         seq = qtrl.sequencer.Sequence(n_elements=1)
         seq.__setstate__(state)
         seq.compile()
 
-        pulse_lists_str = json_dict["pulse_lists_jp"]
-        pulse_lists = pickle.loads(codecs.decode(pulse_lists_str.encode(), "base64"))
+        pulse_lists = applications_superstaq.converters.deserialize(json_dict["pulse_lists_jp"])
 
-    resolvers = [cirq_superstaq.custom_gates.custom_resolver, *cirq.DEFAULT_RESOLVERS]
-    compiled_circuits = [
-        cirq.read_json(json_text=c, resolvers=resolvers) for c in json_dict["cirq_circuits"]
-    ]
+    compiled_circuits = cirq_superstaq.serialization.deserialize_circuits(
+        json_dict["cirq_circuits"]
+    )
     if circuits_list:
         return AQTCompilerOutput(compiled_circuits, seq, pulse_lists)
 

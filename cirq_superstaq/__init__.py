@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cirq_superstaq import serialization
 from cirq_superstaq._init_vars import API_URL, API_VERSION
 from cirq_superstaq.custom_gates import (
     AceCR,
@@ -44,6 +45,7 @@ __all__ = [
     "FermionicSWAPGate",
     "Job",
     "ParallelGates",
+    "serialization",
     "Service",
     "SuperstaQException",
     "SuperstaQModuleNotFoundException",

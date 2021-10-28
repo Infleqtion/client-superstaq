@@ -12,7 +12,6 @@
 # limitations under the License.
 import contextlib
 import io
-import json
 from unittest import mock
 
 import cirq
@@ -23,6 +22,12 @@ import requests
 import cirq_superstaq
 
 API_VERSION = cirq_superstaq.API_VERSION
+expected_headers = {
+    "Authorization": "to_my_heart",
+    "Content-Type": "application/json",
+    "X-Client-Version": API_VERSION,
+    "X-Client-Name": "cirq-superstaq",
+}
 
 
 def test_cirq_superstaq_exception_str() -> None:
@@ -85,10 +90,7 @@ def test_superstaq_client_attributes() -> None:
         verbose=True,
     )
     assert client.url == f"http://example.com/{API_VERSION}"
-    assert client.headers == {
-        "Authorization": "to_my_heart",
-        "Content-Type": "application/json",
-    }
+    assert client.headers == expected_headers
     assert client.default_target == "qpu"
     assert client.max_retry_seconds == 10
     assert client.verbose
@@ -102,14 +104,14 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
     client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart"
     )
-    # program = cirq_superstaq.SerializedProgram(body={"job": "mine"}, metadata={"a": "0,1"})
+    serialized_circuits = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
     response = client.create_job(
-        serialized_program=json.dumps({"job": "mine"}), repetitions=200, target="qpu", name="bacon"
+        serialized_circuits=serialized_circuits, repetitions=200, target="qpu", name="bacon"
     )
     assert response == {"foo": "bar"}
 
     expected_json = {
-        "circuit": {"job": "mine"},
+        "cirq_circuits": serialized_circuits,
         "backend": "qpu",
         "shots": 200,
         "ibmq_token": None,
@@ -118,9 +120,8 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         "ibmq_hub": None,
         "ibmq_pulse": True,
     }
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     mock_post.assert_called_with(
-        f"http://example.com/{API_VERSION}/job",
+        f"http://example.com/{API_VERSION}/jobs",
         json=expected_json,
         headers=expected_headers,
         verify=False,
@@ -135,7 +136,7 @@ def test_superstaq_client_create_job_default_target(mock_post: mock.MagicMock) -
     client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    _ = client.create_job(json.dumps({"job": "mine"}))
+    _ = client.create_job(cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()))
     assert mock_post.call_args[1]["json"]["backend"] == "simulator"
 
 
@@ -149,8 +150,9 @@ def test_superstaq_client_create_job_target_overrides_default_target(
     client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
+
     _ = client.create_job(
-        serialized_program=json.dumps({"job": "mine"}),
+        serialized_circuits=cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()),
         target="qpu",
         repetitions=1,
     )
@@ -162,7 +164,7 @@ def test_superstaq_client_create_job_no_targets() -> None:
         remote_host="http://example.com", api_key="to_my_heart"
     )
     with pytest.raises(AssertionError, match="neither were set"):
-        _ = client.create_job(serialized_program=json.dumps({"job": "mine"}))
+        _ = client.create_job(cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()))
 
 
 @mock.patch("requests.post")
@@ -174,7 +176,7 @@ def test_superstaq_client_create_job_unauthorized(mock_post: mock.MagicMock) -> 
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     with pytest.raises(cirq_superstaq.SuperstaQException, match="Not authorized"):
-        _ = client.create_job(serialized_program=json.dumps({"job": "mine"}))
+        _ = client.create_job(cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()))
 
 
 @mock.patch("requests.post")
@@ -186,7 +188,7 @@ def test_superstaq_client_create_job_not_found(mock_post: mock.MagicMock) -> Non
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     with pytest.raises(cirq_superstaq.SuperstaQNotFoundException, match="not find"):
-        _ = client.create_job(serialized_program=json.dumps({"job": "mine"}))
+        _ = client.create_job(cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()))
 
 
 @mock.patch("requests.post")
@@ -198,7 +200,7 @@ def test_superstaq_client_create_job_not_retriable(mock_post: mock.MagicMock) ->
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     with pytest.raises(cirq_superstaq.SuperstaQException, match="Status: 501"):
-        _ = client.create_job(serialized_program=json.dumps({"job": "mine"}))
+        _ = client.create_job(cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()))
 
 
 @mock.patch("requests.post")
@@ -217,7 +219,7 @@ def test_superstaq_client_create_job_retry(mock_post: mock.MagicMock) -> None:
     )
     test_stdout = io.StringIO()
     with contextlib.redirect_stdout(test_stdout):
-        _ = client.create_job(serialized_program=json.dumps({"job": "mine"}))
+        _ = client.create_job(cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()))
     assert test_stdout.getvalue().strip() == "Waiting 0.1 seconds before retrying."
     assert mock_post.call_count == 2
 
@@ -230,7 +232,7 @@ def test_superstaq_client_create_job_retry_request_error(mock_post: mock.MagicMo
     client = cirq_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    _ = client.create_job(serialized_program=json.dumps({"job": "mine"}))
+    _ = client.create_job(cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()))
     assert mock_post.call_count == 2
 
 
@@ -246,7 +248,7 @@ def test_superstaq_client_create_job_timeout(mock_post: mock.MagicMock) -> None:
         max_retry_seconds=0.2,
     )
     with pytest.raises(TimeoutError):
-        _ = client.create_job(serialized_program=json.dumps({"job": "mine"}))
+        _ = client.create_job(cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()))
 
 
 @mock.patch("requests.get")
@@ -259,7 +261,6 @@ def test_superstaq_client_get_job(mock_get: mock.MagicMock) -> None:
     response = client.get_job(job_id="job_id")
     assert response == {"foo": "bar"}
 
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     mock_get.assert_called_with(
         f"http://example.com/{API_VERSION}/job/job_id", headers=expected_headers, verify=False
     )
@@ -275,9 +276,50 @@ def test_superstaq_client_get_balance(mock_get: mock.MagicMock) -> None:
     response = client.get_balance()
     assert response == {"balance": 123.4567}
 
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     mock_get.assert_called_with(
         f"http://example.com/{API_VERSION}/balance", headers=expected_headers, verify=False
+    )
+
+
+@mock.patch("requests.get")
+def test_superstaq_client_get_backends(mock_get: mock.MagicMock) -> None:
+    mock_get.return_value.ok = True
+    backends = {
+        "superstaq_backends:": {
+            "compile-and-run": [
+                "ibmq_qasm_simulator",
+                "ibmq_armonk_qpu",
+                "ibmq_santiago_qpu",
+                "ibmq_bogota_qpu",
+                "ibmq_lima_qpu",
+                "ibmq_belem_qpu",
+                "ibmq_quito_qpu",
+                "ibmq_statevector_simulator",
+                "ibmq_mps_simulator",
+                "ibmq_extended-stabilizer_simulator",
+                "ibmq_stabilizer_simulator",
+                "ibmq_manila_qpu",
+                "aws_dm1_simulator",
+                "aws_sv1_simulator",
+                "d-wave_advantage-system4.1_qpu",
+                "d-wave_dw-2000q-6_qpu",
+                "aws_tn1_simulator",
+                "rigetti_aspen-9_qpu",
+                "d-wave_advantage-system1.1_qpu",
+                "ionq_ion_qpu",
+            ],
+            "compile-only": ["aqt_keysight_qpu", "sandia_qscout_qpu"],
+        }
+    }
+    mock_get.return_value.json.return_value = backends
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="to_my_heart"
+    )
+    response = client.get_backends()
+    assert response == backends
+
+    mock_get.assert_called_with(
+        f"http://example.com/{API_VERSION}/backends", headers=expected_headers, verify=False
     )
 
 
@@ -338,7 +380,9 @@ def test_superstaq_client_aqt_compile(mock_post: mock.MagicMock) -> None:
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     circuit = cirq.Circuit(cirq.H(cirq.LineQubit(5)))
-    client.aqt_compile(cirq.to_json([circuit, circuit]))
+    client.aqt_compile(
+        cirq_superstaq.serialization.serialize_circuits([circuit, circuit]), target="keysight"
+    )
 
     mock_post.assert_called_once()
     assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/aqt_compile"
@@ -350,7 +394,10 @@ def test_superstaq_client_ibmq_compile(mock_post: mock.MagicMock) -> None:
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     circuit = cirq.Circuit()
-    client.ibmq_compile(cirq.to_json([circuit]))
+    client.ibmq_compile(
+        cirq_superstaq.serialization.serialize_circuits(circuit),
+        target="ibmq_qasm_simulator",
+    )
 
     mock_post.assert_called_once()
     assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/ibmq_compile"
@@ -367,7 +414,6 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
     repetitions = 10
     client.submit_qubo(example_qubo, target, repetitions=repetitions)
 
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     expected_json = {
         "qubo": [
             {"keys": ["0"], "value": 1.0},
@@ -395,8 +441,6 @@ def test_superstaq_client_find_min_vol_portfolio(mock_post: mock.MagicMock) -> N
         {"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "desired_return": 8}
     )
 
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
-
     expected_json = {"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "desired_return": 8}
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/minvol",
@@ -413,8 +457,6 @@ def test_superstaq_client_find_max_pseudo_sharpe_ratio(mock_post: mock.MagicMock
     )
     client.find_max_pseudo_sharpe_ratio({"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "k": 0.5})
 
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
-
     expected_json = {"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "k": 0.5}
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/maxsharpe",
@@ -430,8 +472,6 @@ def test_superstaq_client_tsp(mock_post: mock.MagicMock) -> None:
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     client.tsp({"locs": ["Chicago", "St Louis", "St Paul"]})
-
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
 
     expected_json = {"locs": ["Chicago", "St Louis", "St Paul"]}
     mock_post.assert_called_with(
@@ -455,8 +495,6 @@ def test_superstaq_client_warehouse(mock_post: mock.MagicMock) -> None:
         }
     )
 
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
-
     expected_json = {
         "k": 1,
         "possible_warehouses": ["Chicago", "San Francisco"],
@@ -477,7 +515,6 @@ def test_superstaq_client_aqt_upload_configs(mock_post: mock.MagicMock) -> None:
 
     client.aqt_upload_configs({"pulses": "Hello", "variables": "World"})
 
-    expected_headers = {"Authorization": "to_my_heart", "Content-Type": "application/json"}
     expected_json = {"pulses": "Hello", "variables": "World"}
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/aqt_configs",
