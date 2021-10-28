@@ -4,6 +4,7 @@ import textwrap
 import cirq
 import numpy as np
 import pytest
+import sympy
 
 import cirq_superstaq
 
@@ -39,6 +40,8 @@ def test_fermionic_swap_gate() -> None:
     assert gate ** -1 == cirq_superstaq.FermionicSWAPGate(-0.123)
     assert gate.__pow__(1.23) is NotImplemented
 
+    cirq.testing.assert_pauli_expansion_is_consistent_with_unitary(gate)
+
 
 def test_fermionic_swap_circuit() -> None:
     qubits = cirq.LineQubit.range(3)
@@ -72,6 +75,20 @@ def test_fermionic_swap_circuit() -> None:
 
     circuit = cirq.Circuit(cirq_superstaq.FermionicSWAPGate(0.0)(qubits[0], qubits[1]))
     assert circuit.to_qasm() == cirq.Circuit(cirq.SWAP(qubits[0], qubits[1])).to_qasm()
+
+
+def test_fermionic_swap_parameterized() -> None:
+    gate = cirq_superstaq.FermionicSWAPGate(sympy.var("θ"))
+    assert cirq.is_parameterized(gate)
+    assert not cirq.has_unitary(gate)
+    assert cirq.parameter_names(gate) == {"θ"}
+    assert cirq.resolve_parameters(gate, {"θ": 1.23}) == cirq_superstaq.FermionicSWAPGate(1.23)
+
+    with pytest.raises(TypeError, match="cirq.unitary failed. Value doesn't have"):
+        _ = cirq.unitary(gate)
+
+    with pytest.raises(TypeError, match="No Pauli expansion"):
+        _ = cirq.pauli_expansion(gate)
 
 
 def test_zx_matrix() -> None:

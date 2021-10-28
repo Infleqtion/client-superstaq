@@ -1,6 +1,8 @@
 """Miscellaneous custom gates that we encounter and want to explicitly define."""
 
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from __future__ import annotations
+
+from typing import AbstractSet, Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import cirq
 import numpy as np
@@ -43,7 +45,9 @@ class FermionicSWAPGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsG
     def _num_qubits_(self) -> int:
         return 2
 
-    def _unitary_(self) -> np.ndarray:
+    def _unitary_(self) -> Optional[np.ndarray]:
+        if self._is_parameterized_():
+            return None
         return np.array(
             [
                 [1, 0, 0, 0],
@@ -76,6 +80,44 @@ class FermionicSWAPGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsG
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         t = args.format_radians(self.theta)
         return cirq.CircuitDiagramInfo(wire_symbols=(f"FermionicSWAP({t})", f"FermionicSWAP({t})"))
+
+    def _is_parameterized_(self) -> bool:
+        return cirq.is_parameterized(self.theta)
+
+    def _parameter_names_(self) -> AbstractSet[str]:
+        return cirq.parameter_names(self.theta)
+
+    def _resolve_parameters_(
+        self, resolver: cirq.ParamResolver, recursive: bool
+    ) -> FermionicSWAPGate:
+        return FermionicSWAPGate(
+            cirq.protocols.resolve_parameters(self.theta, resolver, recursive),
+        )
+
+    def _has_unitary_(self) -> bool:
+        return not self._is_parameterized_()
+
+    def _apply_unitary_(self, args: cirq.protocols.ApplyUnitaryArgs) -> Optional[np.ndarray]:
+        zo = args.subspace_index(0b01)
+        oz = args.subspace_index(0b10)
+        args.available_buffer[zo] = args.target_tensor[zo]
+        args.target_tensor[zo] = args.target_tensor[oz]
+        args.target_tensor[oz] = args.available_buffer[zo]
+        args.target_tensor[zo] *= np.exp(1j * self.theta)
+        args.target_tensor[oz] *= np.exp(1j * self.theta)
+        return args.target_tensor
+
+    def _pauli_expansion_(self) -> cirq.value.LinearDict[str]:
+        if cirq.protocols.is_parameterized(self):
+            return NotImplemented
+        return cirq.value.LinearDict(
+            {
+                "II": 0.5,
+                "XX": 0.5 * np.exp(1j * self.theta),
+                "YY": 0.5 * np.exp(1j * self.theta),
+                "ZZ": 0.5,
+            }
+        )
 
     def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, cirq.Qid]) -> Optional[str]:
         if np.isclose(self.theta, 0.0):
