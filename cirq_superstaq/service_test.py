@@ -138,6 +138,42 @@ def test_service_get_balance() -> None:
     assert service.get_balance(pretty_output=False) == 12345.6789
 
 
+def test_service_get_backends() -> None:
+    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    mock_client = mock.MagicMock()
+    backends = {
+        "superstaq_backends": {
+            "compile-and-run": [
+                "ibmq_qasm_simulator",
+                "ibmq_armonk_qpu",
+                "ibmq_santiago_qpu",
+                "ibmq_bogota_qpu",
+                "ibmq_lima_qpu",
+                "ibmq_belem_qpu",
+                "ibmq_quito_qpu",
+                "ibmq_statevector_simulator",
+                "ibmq_mps_simulator",
+                "ibmq_extended-stabilizer_simulator",
+                "ibmq_stabilizer_simulator",
+                "ibmq_manila_qpu",
+                "aws_dm1_simulator",
+                "aws_sv1_simulator",
+                "d-wave_advantage-system4.1_qpu",
+                "d-wave_dw-2000q-6_qpu",
+                "aws_tn1_simulator",
+                "rigetti_aspen-9_qpu",
+                "d-wave_advantage-system1.1_qpu",
+                "ionq_ion_qpu",
+            ],
+            "compile-only": ["aqt_keysight_qpu", "sandia_qscout_qpu"],
+        }
+    }
+    mock_client.get_backends.return_value = backends
+    service._client = mock_client
+
+    assert service.get_backends() == backends["superstaq_backends"]
+
+
 @mock.patch(
     "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={

@@ -260,6 +260,10 @@ class Service:
             return f"${balance:,.2f}"
         return balance
 
+    def get_backends(self) -> dict:
+        """Get list of available backends."""
+        return self._client.get_backends()["superstaq_backends"]
+
     def aqt_compile(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "keysight"
     ) -> "cirq_superstaq.aqt.AQTCompilerOutput":

@@ -282,6 +282,48 @@ def test_superstaq_client_get_balance(mock_get: mock.MagicMock) -> None:
 
 
 @mock.patch("requests.get")
+def test_superstaq_client_get_backends(mock_get: mock.MagicMock) -> None:
+    mock_get.return_value.ok = True
+    backends = {
+        "superstaq_backends:": {
+            "compile-and-run": [
+                "ibmq_qasm_simulator",
+                "ibmq_armonk_qpu",
+                "ibmq_santiago_qpu",
+                "ibmq_bogota_qpu",
+                "ibmq_lima_qpu",
+                "ibmq_belem_qpu",
+                "ibmq_quito_qpu",
+                "ibmq_statevector_simulator",
+                "ibmq_mps_simulator",
+                "ibmq_extended-stabilizer_simulator",
+                "ibmq_stabilizer_simulator",
+                "ibmq_manila_qpu",
+                "aws_dm1_simulator",
+                "aws_sv1_simulator",
+                "d-wave_advantage-system4.1_qpu",
+                "d-wave_dw-2000q-6_qpu",
+                "aws_tn1_simulator",
+                "rigetti_aspen-9_qpu",
+                "d-wave_advantage-system1.1_qpu",
+                "ionq_ion_qpu",
+            ],
+            "compile-only": ["aqt_keysight_qpu", "sandia_qscout_qpu"],
+        }
+    }
+    mock_get.return_value.json.return_value = backends
+    client = cirq_superstaq.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="to_my_heart"
+    )
+    response = client.get_backends()
+    assert response == backends
+
+    mock_get.assert_called_with(
+        f"http://example.com/{API_VERSION}/backends", headers=expected_headers, verify=False
+    )
+
+
+@mock.patch("requests.get")
 def test_superstaq_client_get_job_unauthorized(mock_get: mock.MagicMock) -> None:
     mock_get.return_value.ok = False
     mock_get.return_value.status_code = requests.codes.unauthorized
