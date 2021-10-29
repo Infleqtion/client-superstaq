@@ -1,7 +1,5 @@
 """Miscellaneous custom gates that we encounter and want to explicitly define."""
 
-from __future__ import annotations
-
 from typing import AbstractSet, Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import cirq
@@ -89,7 +87,7 @@ class FermionicSWAPGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsG
 
     def _resolve_parameters_(
         self, resolver: cirq.ParamResolver, recursive: bool
-    ) -> FermionicSWAPGate:
+    ) -> "FermionicSWAPGate":
         return FermionicSWAPGate(
             cirq.protocols.resolve_parameters(self.theta, resolver, recursive),
         )
