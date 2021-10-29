@@ -58,7 +58,9 @@ class FermionicSWAPGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsG
     def _value_equality_values_(self) -> Any:
         return self.theta
 
-    def __pow__(self, exponent: float) -> "FermionicSWAPGate":
+    def __pow__(
+        self, exponent: float
+    ) -> Union["FermionicSWAPGate", cirq.type_workarounds.NotImplementedType]:
         if exponent in (-1, 0, 1):
             return FermionicSWAPGate(exponent * self.theta)
         return NotImplemented
@@ -105,7 +107,9 @@ class FermionicSWAPGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsG
         args.target_tensor[oz] *= np.exp(1j * self.theta)
         return args.target_tensor
 
-    def _pauli_expansion_(self) -> cirq.value.LinearDict[str]:
+    def _pauli_expansion_(
+        self,
+    ) -> Union[cirq.value.LinearDict[str], cirq.type_workarounds.NotImplementedType]:
         if cirq.protocols.is_parameterized(self):
             return NotImplemented
         return cirq.value.LinearDict(
