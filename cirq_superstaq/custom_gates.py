@@ -71,7 +71,7 @@ class FermionicSWAPGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsG
     def __repr__(self) -> str:
         return f"cirq_superstaq.FermionicSWAPGate({self.theta})"
 
-    def _decompose_(self, qubits: Tuple[cirq.LineQubit, cirq.LineQubit]) -> cirq.OP_TREE:
+    def _decompose_(self, qubits: Tuple[cirq.Qid, cirq.Qid]) -> cirq.OP_TREE:
         yield cirq.CX(qubits[0], qubits[1])
         yield cirq.CX(qubits[1], qubits[0])
         yield cirq.rz(self.theta)(qubits[1])
@@ -325,7 +325,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
     def _num_qubits_(self) -> int:
         return sum(map(cirq.num_qubits, self.component_gates))
 
-    def _decompose_(self, qubits: Tuple[cirq.LineQubit, ...]) -> cirq.OP_TREE:
+    def _decompose_(self, qubits: Tuple[cirq.Qid, ...]) -> cirq.OP_TREE:
         """Decompose into each component gate"""
         for gate in self.component_gates:
             num_qubits = gate.num_qubits()
