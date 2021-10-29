@@ -30,16 +30,15 @@ def test_fermionic_swap_gate() -> None:
         cirq.rz(theta).on(qubits[2]),
         cirq.CX(qubits[0], qubits[2]),
     ]
-    assert cirq.equal_up_to_global_phase(
-        cirq.unitary(cirq.Circuit(cirq.decompose_once(operation))),
-        cirq.unitary(cirq.Circuit(operation)),
-    )
+
+    cirq.testing.assert_has_consistent_apply_unitary(gate)
+    cirq.testing.assert_decompose_is_consistent_with_unitary(gate, ignoring_global_phase=True)
+    cirq.testing.assert_consistent_resolve_parameters(gate)
+    cirq.testing.assert_pauli_expansion_is_consistent_with_unitary(gate)
 
     assert gate ** 1 == gate
     assert gate ** 0 == cirq_superstaq.FermionicSWAPGate(0.0)
     assert gate ** -1 == cirq_superstaq.FermionicSWAPGate(-0.123)
-
-    cirq.testing.assert_pauli_expansion_is_consistent_with_unitary(gate)
 
     with pytest.raises(TypeError, match="unsupported operand type"):
         _ = gate ** 1.23
@@ -81,10 +80,7 @@ def test_fermionic_swap_circuit() -> None:
 
 def test_fermionic_swap_parameterized() -> None:
     gate = cirq_superstaq.FermionicSWAPGate(sympy.var("θ"))
-    assert cirq.is_parameterized(gate)
-    assert not cirq.has_unitary(gate)
-    assert cirq.parameter_names(gate) == {"θ"}
-    assert cirq.resolve_parameters(gate, {"θ": 1.23}) == cirq_superstaq.FermionicSWAPGate(1.23)
+    cirq.testing.assert_consistent_resolve_parameters(gate)
 
     with pytest.raises(TypeError, match="cirq.unitary failed. Value doesn't have"):
         _ = cirq.unitary(gate)
@@ -199,6 +195,9 @@ def test_acecr_decompose() -> None:
     a = cirq.LineQubit(0)
     b = cirq.LineQubit(1)
     assert cirq.decompose_once(cirq_superstaq.AceCRMinusPlus(a, b)) is not None
+    cirq.testing.assert_decompose_is_consistent_with_unitary(
+        cirq_superstaq.AceCRMinusPlus, ignoring_global_phase=True
+    )
 
 
 def test_barrier() -> None:
@@ -289,9 +288,7 @@ def test_parallel_gates() -> None:
         cirq.CZ(qubits[2], qubits[3]) ** 0.5,
         cirq.CZ(qubits[4], qubits[5]) ** -0.5,
     ]
-    assert cirq.equal_up_to_global_phase(
-        cirq.unitary(gate), cirq.unitary(cirq.Circuit(cirq.decompose(operation)))
-    )
+    cirq.testing.assert_decompose_is_consistent_with_unitary(gate, ignoring_global_phase=True)
 
     assert gate ** 0.5 == cirq_superstaq.ParallelGates(
         cirq.CZ ** 0.5, cirq.CZ ** 0.25, cirq.CZ ** -0.25
