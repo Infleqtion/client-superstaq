@@ -38,9 +38,11 @@ def test_fermionic_swap_gate() -> None:
     assert gate ** 1 == gate
     assert gate ** 0 == cirq_superstaq.FermionicSWAPGate(0.0)
     assert gate ** -1 == cirq_superstaq.FermionicSWAPGate(-0.123)
-    assert gate.__pow__(1.23) is NotImplemented
 
     cirq.testing.assert_pauli_expansion_is_consistent_with_unitary(gate)
+
+    with pytest.raises(TypeError, match="unsupported operand type"):
+        _ = gate ** 1.23
 
 
 def test_fermionic_swap_circuit() -> None:
