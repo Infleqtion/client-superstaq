@@ -4,6 +4,7 @@ import textwrap
 import cirq
 import numpy as np
 import pytest
+import sympy
 
 import cirq_superstaq
 
@@ -16,22 +17,76 @@ def test_fermionic_swap_gate() -> None:
     assert repr(gate) == "cirq_superstaq.FermionicSWAPGate(0.123)"
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq")
 
-    qubits = cirq.LineQubit.range(3)
-    circuit = cirq.Circuit(gate(qubits[0], qubits[2]))
-
-    cirq.testing.assert_has_diagram(
-        circuit,
-        """
-0: ───FermionicSWAP(0.0392π)───
-      │
-2: ───FermionicSWAP(0.0392π)───
-""",
-    )
-
     expected = np.array(
         [[1, 0, 0, 0], [0, 0, np.exp(1j * theta), 0], [0, np.exp(1j * theta), 0, 0], [0, 0, 0, 1]]
     )
     assert np.allclose(cirq.unitary(gate), expected)
+
+    qubits = cirq.LineQubit.range(3)
+    operation = gate(qubits[0], qubits[2])
+    assert cirq.decompose_once(operation) == [
+        cirq.CX(qubits[0], qubits[2]),
+        cirq.CX(qubits[2], qubits[0]),
+        cirq.rz(theta).on(qubits[2]),
+        cirq.CX(qubits[0], qubits[2]),
+    ]
+
+    cirq.testing.assert_has_consistent_apply_unitary(gate)
+    cirq.testing.assert_decompose_is_consistent_with_unitary(gate, ignoring_global_phase=True)
+    cirq.testing.assert_consistent_resolve_parameters(gate)
+    cirq.testing.assert_pauli_expansion_is_consistent_with_unitary(gate)
+
+    assert gate ** 1 == gate
+    assert gate ** 0 == cirq_superstaq.FermionicSWAPGate(0.0)
+    assert gate ** -1 == cirq_superstaq.FermionicSWAPGate(-0.123)
+
+    with pytest.raises(TypeError, match="unsupported operand type"):
+        _ = gate ** 1.23
+
+
+def test_fermionic_swap_circuit() -> None:
+    qubits = cirq.LineQubit.range(3)
+    operation = cirq_superstaq.FermionicSWAPGate(0.456 * np.pi)(qubits[0], qubits[2])
+    circuit = cirq.Circuit(operation)
+
+    expected_diagram = textwrap.dedent(
+        """
+        0: ───FermionicSWAP(0.456π)───
+              │
+        2: ───FermionicSWAP(0.456π)───
+        """
+    )
+
+    expected_qasm = textwrap.dedent(
+        """\
+        OPENQASM 2.0;
+        include "qelib1.inc";
+
+
+        // Qubits: [0, 1, 2]
+        qreg q[3];
+
+
+        fermionic_swap(pi*0.456) q[0],q[2];
+        """
+    )
+
+    cirq.testing.assert_has_diagram(circuit, expected_diagram)
+    assert circuit.to_qasm(header="", qubit_order=qubits) == expected_qasm
+
+    circuit = cirq.Circuit(cirq_superstaq.FermionicSWAPGate(0.0)(qubits[0], qubits[1]))
+    assert circuit.to_qasm() == cirq.Circuit(cirq.SWAP(qubits[0], qubits[1])).to_qasm()
+
+
+def test_fermionic_swap_parameterized() -> None:
+    gate = cirq_superstaq.FermionicSWAPGate(sympy.var("θ"))
+    cirq.testing.assert_consistent_resolve_parameters(gate)
+
+    with pytest.raises(TypeError, match="cirq.unitary failed. Value doesn't have"):
+        _ = cirq.unitary(gate)
+
+    with pytest.raises(TypeError, match="No Pauli expansion"):
+        _ = cirq.pauli_expansion(gate)
 
 
 def test_zx_matrix() -> None:
@@ -66,15 +121,32 @@ def test_zx_repr() -> None:
 def test_zx_circuit() -> None:
     a, b = cirq.LineQubit.range(2)
 
-    c = cirq.Circuit(cirq_superstaq.CR(a, b))
+    op = cirq_superstaq.CR(a, b)
 
     cirq.testing.assert_has_diagram(
-        c,
+        cirq.Circuit(op),
+        textwrap.dedent(
+            """
+            0: ───Z───
+                  │
+            1: ───X───
+            """
+        ),
+    )
+
+    assert cirq.Circuit(op, op ** 0.25).to_qasm(header="") == textwrap.dedent(
+        """\
+        OPENQASM 2.0;
+        include "qelib1.inc";
+
+
+        // Qubits: [0, 1]
+        qreg q[2];
+
+
+        rzx(pi*1.0) q[0],q[1];
+        rzx(pi*0.25) q[0],q[1];
         """
-0: ───Z───
-      │
-1: ───X───
-    """,
     )
 
 
@@ -97,11 +169,35 @@ def test_acecr() -> None:
     assert hash(cirq_superstaq.AceCRMinusPlus) == hash("-+")
     assert cirq_superstaq.AceCRPlusMinus != cirq.CNOT
 
+    expected_qasm = textwrap.dedent(
+        """\
+        OPENQASM 2.0;
+        include "qelib1.inc";
+
+
+        // Qubits: [0, 1]
+        qreg q[2];
+
+
+        acecr_pm q[0],q[1];
+        acecr_mp q[1],q[0];
+        """
+    )
+
+    circuit = cirq.Circuit(
+        cirq_superstaq.AceCR("+-").on(qubits[0], qubits[1]),
+        cirq_superstaq.AceCR("-+").on(qubits[1], qubits[0]),
+    )
+    assert circuit.to_qasm(header="") == expected_qasm
+
 
 def test_acecr_decompose() -> None:
     a = cirq.LineQubit(0)
     b = cirq.LineQubit(1)
     assert cirq.decompose_once(cirq_superstaq.AceCRMinusPlus(a, b)) is not None
+    cirq.testing.assert_decompose_is_consistent_with_unitary(
+        cirq_superstaq.AceCRMinusPlus, ignoring_global_phase=True
+    )
 
 
 def test_barrier() -> None:
@@ -117,41 +213,46 @@ def test_barrier() -> None:
     assert cirq.decompose(operation) == [operation]
 
     circuit = cirq.Circuit(operation)
-    expected_qasm = f"""// Generated from Cirq v{cirq.__version__}
-
-OPENQASM 2.0;
-include "qelib1.inc";
-
-
-// Qubits: [0, 1, 2]
-qreg q[3];
+    expected_qasm = textwrap.dedent(
+        """\
+        OPENQASM 2.0;
+        include "qelib1.inc";
 
 
-barrier q[0],q[1],q[2];
-"""
-    assert cirq.qasm(circuit) == expected_qasm
+        // Qubits: [0, 1, 2]
+        qreg q[3];
+
+
+        barrier q[0],q[1],q[2];
+        """
+    )
+    assert circuit.to_qasm(header="") == expected_qasm
 
     cirq.testing.assert_has_diagram(
         circuit,
-        """
-0: ───│───
-      │
-1: ───│───
-      │
-2: ───│───
-""",
+        textwrap.dedent(
+            """
+            0: ───│───
+                  │
+            1: ───│───
+                  │
+            2: ───│───
+            """
+        ),
         use_unicode_characters=True,
     )
 
     cirq.testing.assert_has_diagram(
         circuit,
-        """
-0: ---|---
-      |
-1: ---|---
-      |
-2: ---|---
-""",
+        textwrap.dedent(
+            """
+            0: ---|---
+                  |
+            1: ---|---
+                  |
+            2: ---|---
+            """
+        ),
         use_unicode_characters=False,
     )
 
@@ -187,31 +288,18 @@ def test_parallel_gates() -> None:
         cirq.CZ(qubits[2], qubits[3]) ** 0.5,
         cirq.CZ(qubits[4], qubits[5]) ** -0.5,
     ]
-    assert cirq.equal_up_to_global_phase(
-        cirq.unitary(gate), cirq.unitary(cirq.Circuit(cirq.decompose(operation)))
+    cirq.testing.assert_decompose_is_consistent_with_unitary(gate, ignoring_global_phase=True)
+
+    assert gate ** 0.5 == cirq_superstaq.ParallelGates(
+        cirq.CZ ** 0.5, cirq.CZ ** 0.25, cirq.CZ ** -0.25
     )
-
-    assert [gate.qubit_index_to_equivalence_group_key(i) for i in range(6)] == [0, 0, 2, 2, 4, 4]
-    for permuted_qubits in itertools.permutations(operation.qubits):
-        sub_op_qubits = [
-            {permuted_qubits[0].x, permuted_qubits[1].x},
-            {permuted_qubits[2].x, permuted_qubits[3].x},
-            {permuted_qubits[4].x, permuted_qubits[5].x},
-        ]
-        if sub_op_qubits == [{0, 1}, {2, 3}, {4, 5}]:
-            assert operation == gate(*permuted_qubits)
-        else:
-            assert operation != gate(*permuted_qubits)
-
-    with pytest.raises(ValueError, match="index out of range"):
-        _ = gate.qubit_index_to_equivalence_group_key(6)
-
-    with pytest.raises(ValueError, match="index out of range"):
-        _ = gate.qubit_index_to_equivalence_group_key(-1)
 
     with pytest.raises(ValueError, match="ParallelGates cannot contain measurements"):
         _ = cirq_superstaq.ParallelGates(cirq.X, cirq.MeasurementGate(1, key="1"))
 
+
+def test_parallel_gates_equivalence_groups() -> None:
+    qubits = cirq.LineQubit.range(4)
     gate = cirq_superstaq.ParallelGates(cirq.X, cirq_superstaq.ZX, cirq.Y)
     operation = gate(*qubits[:4])
     assert [gate.qubit_index_to_equivalence_group_key(i) for i in range(4)] == [0, 1, 2, 3]
@@ -220,9 +308,6 @@ def test_parallel_gates() -> None:
             assert operation == gate(*permuted_qubits)
         else:
             assert operation != gate(*permuted_qubits)
-    assert cirq.equal_up_to_global_phase(
-        cirq.unitary(gate), cirq.unitary(cirq.Circuit(cirq.decompose(operation)))
-    )
 
     gate = cirq_superstaq.ParallelGates(cirq.X, cirq_superstaq.FermionicSWAPGate(1.23), cirq.X)
     operation = gate(*qubits[:4])
@@ -238,9 +323,12 @@ def test_parallel_gates() -> None:
             assert operation == gate(*permuted_qubits)
         else:
             assert operation != gate(*permuted_qubits)
-    assert cirq.equal_up_to_global_phase(
-        cirq.unitary(gate), cirq.unitary(cirq.Circuit(cirq.decompose(operation)))
-    )
+
+    with pytest.raises(ValueError, match="index out of range"):
+        _ = gate.qubit_index_to_equivalence_group_key(4)
+
+    with pytest.raises(ValueError, match="index out of range"):
+        _ = gate.qubit_index_to_equivalence_group_key(-1)
 
 
 def test_custom_resolver() -> None:
