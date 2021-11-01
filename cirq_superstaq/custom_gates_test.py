@@ -254,9 +254,9 @@ def test_custom_resolver() -> None:
     circuit += cirq_superstaq.ParallelGates(cirq.X, cirq_superstaq.ZX).on(
         qubits[0], qubits[2], qubits[3]
     )
+    circuit += cirq_superstaq.custom_gates.MSGate(rads=0.5).on(qubits[0], qubits[1])
     circuit += cirq.CX(qubits[0], qubits[1])
 
     json_text = cirq.to_json(circuit)
     resolvers = [cirq_superstaq.custom_gates.custom_resolver, *cirq.DEFAULT_RESOLVERS]
-
     assert cirq.read_json(json_text=json_text, resolvers=resolvers) == circuit

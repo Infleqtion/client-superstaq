@@ -290,6 +290,19 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         return f"cirq_superstaq.ParallelGates({component_gates_repr})"
 
 
+class MSGate(cirq.ion.ion_gates.MSGate):
+    def __init__(self, *, rads: float):  # Forces keyword args.
+        super().__init__(rads=rads)
+        self.rads = rads
+
+    def _json_dict_(self) -> Dict[str, Any]:
+        return cirq.protocols.obj_to_dict_helper(self, ["rads"])
+
+    @classmethod
+    def _from_json_dict_(cls, rads: float, **kwargs: Any) -> Any:
+        return cls(rads=rads)
+
+
 def custom_resolver(cirq_type: str) -> Union[Callable[..., cirq.Gate], None]:
     if cirq_type == "FermionicSWAPGate":
         return FermionicSWAPGate
@@ -301,4 +314,7 @@ def custom_resolver(cirq_type: str) -> Union[Callable[..., cirq.Gate], None]:
         return AceCR
     if cirq_type == "ParallelGates":
         return ParallelGates
+    if cirq_type == "MSGate":
+        return MSGate
+
     return None
