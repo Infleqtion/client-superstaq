@@ -98,7 +98,7 @@ def read_json_qscout(json_dict: dict, circuits_list: bool) -> CompilerOutput:
             attribute (if True) or a .circuit attribute (False)
     Returns:
         a CompilerOutput object with the compiled circuit(s) and a list of
-        jaql programs in a string representation.
+        jaqal programs in a string representation.
     """
     compiled_circuits = qiskit_superstaq.serialization.deserialize_circuits(
         json_dict["qiskit_circuits"]
