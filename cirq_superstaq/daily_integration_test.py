@@ -1,6 +1,7 @@
 """Integration checks that run daily (via Github action) between client and prod server."""
 
 import os
+import textwrap
 
 import cirq
 import numpy as np
@@ -38,3 +39,27 @@ def test_tsp(service: cirq_superstaq.Service) -> None:
     out = service.tsp(cities)
     for city in cities:
         assert city.replace(" ", "+") in out.map_link[0]
+
+
+def test_qscout_compile(service: cirq_superstaq.Service) -> None:
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
+    compiled_circuit = cirq.Circuit(
+        cirq.PhasedXPowGate(phase_exponent=-0.5, exponent=0.5).on(q0),
+        cirq.Z(q0) ** -1.0,
+        cirq.measure(q0),
+    )
+
+    jaqal_program = textwrap.dedent(
+        """\
+                register allqubits[1]
+
+                prepare_all
+                R allqubits[0] -1.5707963267948966 1.5707963267948966
+                Rz allqubits[0] -3.141592653589793
+                measure_all
+                """
+    )
+    out = service.qscout_compile(circuit)
+    assert out.circuit == compiled_circuit
+    assert out.jaqal_programs == jaqal_program
