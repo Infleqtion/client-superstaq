@@ -1,5 +1,6 @@
 import importlib
 import pickle
+import textwrap
 from unittest import mock
 
 import applications_superstaq
@@ -7,20 +8,27 @@ import pytest
 import qiskit
 
 import qiskit_superstaq
-from qiskit_superstaq import aqt
+from qiskit_superstaq import compiler_output
 
 
-def test_aqt_compiler_output_repr() -> None:
+def test_compiler_output_repr() -> None:
+
     circuit = qiskit.QuantumCircuit(4)
-    assert repr(aqt.AQTCompilerOutput(circuit)) == f"AQTCompilerOutput({circuit!r}, None, None)"
+    assert (
+        repr(compiler_output.CompilerOutput(circuit))
+        == f"""CompilerOutput({circuit!r}, None, None, None)"""
+    )
 
     circuits = [circuit, circuit]
-    assert repr(aqt.AQTCompilerOutput(circuits)) == f"AQTCompilerOutput({circuits!r}, None, None)"
+    assert (
+        repr(compiler_output.CompilerOutput(circuits))
+        == f"CompilerOutput({circuits!r}, None, None, None)"
+    )
 
 
 @mock.patch.dict("sys.modules", {"qtrl": None})
 def test_read_json() -> None:
-    importlib.reload(aqt)
+    importlib.reload(compiler_output)
 
     circuit = qiskit.QuantumCircuit(4)
     for i in range(4):
@@ -34,11 +42,11 @@ def test_read_json() -> None:
         "pulse_lists_jp": pulse_lists_str,
     }
 
-    out = aqt.read_json(json_dict, circuits_list=False)
+    out = compiler_output.read_json_aqt(json_dict, circuits_list=False)
     assert out.circuit == circuit
     assert not hasattr(out, "circuits")
 
-    out = aqt.read_json(json_dict, circuits_list=True)
+    out = compiler_output.read_json_aqt(json_dict, circuits_list=True)
     assert out.circuits == [circuit]
     assert not hasattr(out, "circuit")
 
@@ -48,7 +56,7 @@ def test_read_json() -> None:
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
     }
-    out = aqt.read_json(json_dict, circuits_list=True)
+    out = compiler_output.read_json_aqt(json_dict, circuits_list=True)
     assert out.circuits == [circuit, circuit]
     assert not hasattr(out, "circuit")
 
@@ -68,13 +76,13 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
         "pulse_lists_jp": pulse_lists_str,
     }
 
-    out = aqt.read_json(json_dict, circuits_list=False)
+    out = compiler_output.read_json_aqt(json_dict, circuits_list=False)
     assert out.circuit == circuit
     assert pickle.dumps(out.seq) == pickle.dumps(seq)
     assert out.pulse_list == [[]]
     assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
 
-    out = aqt.read_json(json_dict, circuits_list=True)
+    out = compiler_output.read_json_aqt(json_dict, circuits_list=True)
     assert out.circuits == [circuit]
     assert pickle.dumps(out.seq) == pickle.dumps(seq)
     assert out.pulse_lists == [[[]]]
@@ -86,8 +94,41 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
     }
-    out = aqt.read_json(json_dict, circuits_list=True)
+    out = compiler_output.read_json_aqt(json_dict, circuits_list=True)
     assert out.circuits == [circuit, circuit]
     assert pickle.dumps(out.seq) == pickle.dumps(seq)
     assert out.pulse_lists == [[[]], [[]]]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+
+
+def test_read_json_with_qscout() -> None:
+    circuit = qiskit.QuantumCircuit(1)
+    circuit.h(0)
+
+    jaqal_program = textwrap.dedent(
+        """\
+                register allqubits[1]
+
+                prepare_all
+                R allqubits[0] -1.5707963267948966 1.5707963267948966
+                Rz allqubits[0] -3.141592653589793
+                measure_all
+                """
+    )
+
+    json_dict = {
+        "qiskit_circuits": qiskit_superstaq.serialization.serialize_circuits(circuit),
+        "jaqal_programs": [jaqal_program],
+    }
+
+    out = compiler_output.read_json_qscout(json_dict, circuits_list=False)
+    assert out.circuit == circuit
+    assert out.jaqal_program == jaqal_program
+
+    json_dict = {
+        "qiskit_circuits": qiskit_superstaq.serialization.serialize_circuits([circuit, circuit]),
+        "jaqal_programs": [jaqal_program, jaqal_program],
+    }
+    out = compiler_output.read_json_qscout(json_dict, circuits_list=True)
+    assert out.circuits == [circuit, circuit]
+    assert out.jaqal_programs == json_dict["jaqal_programs"]
