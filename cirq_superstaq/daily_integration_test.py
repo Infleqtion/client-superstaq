@@ -61,8 +61,6 @@ def test_get_backends(service: cirq_superstaq.Service) -> None:
             "d-wave_advantage-system4.1_qpu",
             "d-wave_dw-2000q-6_qpu",
             "aws_tn1_simulator",
-            "rigetti_aspen-9_qpu",
-            "d-wave_advantage-system1.1_qpu",
             "ionq_ion_qpu",
         ],
         "compile-only": ["aqt_keysight_qpu", "sandia_qscout_qpu"],
