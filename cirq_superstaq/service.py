@@ -29,7 +29,7 @@ from cirq_superstaq import job, superstaq_client
 
 
 def counts_to_results(
-    counter: collections.Counter, circuit: cirq.Circuit, param_resolver: cirq.ParamResolver
+    counter: collections.Counter, circuit: cirq.AbstractCircuit, param_resolver: cirq.ParamResolver
 ) -> cirq.Result:
     """Converts a collections.Counter to a cirq.Result.
 
@@ -195,9 +195,20 @@ class Service:
         counts = self.get_counts(circuit, repetitions, name, target, param_resolver)
         return counts_to_results(counts, circuit, param_resolver)
 
+    def sampler(self, target: str) -> cirq.Sampler:
+        """Returns a `cirq.Sampler` object for accessing sampler interface.
+
+        Args:
+            target: Backend to sample against.
+
+        Returns:
+            A `cirq.Sampler` for the SuperstaQ API.
+        """
+        return cirq_superstaq.sampler.Sampler(service=self, target=target)
+
     def create_job(
         self,
-        circuit: cirq.Circuit,
+        circuit: cirq.AbstractCircuit,
         repetitions: int = 1000,
         name: Optional[str] = None,
         target: Optional[str] = None,

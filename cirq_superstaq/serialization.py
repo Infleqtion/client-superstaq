@@ -1,11 +1,13 @@
-from typing import List, Union
+from typing import List, Sequence, Union
 
 import cirq
 
 import cirq_superstaq
 
 
-def serialize_circuits(circuits: Union[cirq.Circuit, List[cirq.Circuit]]) -> str:
+def serialize_circuits(
+    circuits: Union[cirq.AbstractCircuit, Sequence[cirq.AbstractCircuit]]
+) -> str:
     """Serialize Circuit(s) into a json string
 
     Args:

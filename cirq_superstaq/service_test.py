@@ -19,6 +19,7 @@ from unittest import mock
 import applications_superstaq
 import cirq
 import numpy as np
+import pandas as pd
 import pytest
 import qubovert as qv
 import sympy
@@ -99,6 +100,39 @@ def test_service_run_and_get_counts() -> None:
         param_resolver=params,
     )
     assert result.histogram(key="a") == collections.Counter({3: 1})
+
+
+def test_service_sampler() -> None:
+    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    mock_client = mock.MagicMock()
+    service._client = mock_client
+    mock_client.create_job.return_value = {
+        "job_ids": ["job_id"],
+        "status": "ready",
+    }
+    mock_client.get_job.return_value = {
+        "data": {"histogram": {"0": 3, "1": 1}},
+        "num_qubits": 1,
+        "job_id": "my_id",
+        "samples": {"0": 3, "1": 1},
+        "shots": [
+            {
+                "shots": 1,
+                "status": "DONE",
+            }
+        ],
+        "status": "Done",
+        "target": "ibmq_qasm_simulator",
+    }
+
+    sampler = service.sampler(target="ibmq_qasm_simulator")
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.X(q0), cirq.measure(q0, key="a"))
+    results = sampler.sample(program=circuit, repetitions=4)
+    pd.testing.assert_frame_equal(
+        results, pd.DataFrame(columns=["a"], index=[0, 1, 2, 3], data=[[0], [0], [0], [1]])
+    )
+    mock_client.create_job.assert_called_once()
 
 
 def test_service_get_job() -> None:
