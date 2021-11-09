@@ -1,11 +1,8 @@
 """Client for making requests to SuperstaQ's API."""
 
-import sys
-import time
 import urllib
-from typing import Any, Callable, cast, Dict, Optional
+from typing import Optional
 
-import qubovert as qv
 import requests
 
 import applications_superstaq
@@ -14,7 +11,8 @@ import applications_superstaq
 class _SuperstaQClient:
     """Handles calls to SuperstaQ's API.
 
-    Users should not instantiate this themselves, but instead should use `cirq_superstaq.Service`.
+    Users should not instantiate this themselves, but instead should use
+    `applications_superstaq.Service`.
     """
 
     RETRIABLE_STATUS_CODES = {
