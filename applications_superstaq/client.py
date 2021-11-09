@@ -5,11 +5,10 @@ import time
 import urllib
 from typing import Any, Callable, cast, Dict, Optional
 
-import applications_superstaq
 import qubovert as qv
 import requests
 
-# import cirq_superstaq
+import applications_superstaq
 
 
 class _SuperstaQClient:
