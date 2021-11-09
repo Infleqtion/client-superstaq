@@ -1,3 +1,4 @@
+from applications_superstaq._init_vars import API_URL, API_VERSION
 from . import converters
 from . import finance
 from . import logistics
