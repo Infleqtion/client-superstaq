@@ -19,9 +19,11 @@ def test_superstaq_exception() -> None:
     assert str(ex) == "Status code: 500, Message: 'Hello'"
     assert ex.status_code == 500
 
+
 def test_module_not_found_exception() -> None:
     ex = applications_superstaq.SuperstaQModuleNotFoundException("hello_world", "test")
     assert str(ex) == "Status code: None, Message: ''test' requires module 'hello_world''"
+
 
 def test_superstaq_not_found_exception() -> None:
     ex = applications_superstaq.SuperstaQNotFoundException(message="Where are you")

@@ -31,7 +31,6 @@ expected_headers = {
 }
 
 
-
 def test_applications_superstaq_exception_str() -> None:
     ex = applications_superstaq.SuperstaQException("err", status_code=501)
     assert str(ex) == "Status code: 501, Message: 'err'"
