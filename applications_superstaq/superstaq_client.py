@@ -42,6 +42,7 @@ class _SuperstaQClient:
         self,
         remote_host: str,
         api_key: str,
+        client_name: str,
         default_target: Optional[str] = None,
         api_version: str = applications_superstaq.API_VERSION,
         max_retry_seconds: float = 3600,  # 1 hour
@@ -91,7 +92,7 @@ class _SuperstaQClient:
         self.headers = {
             "Authorization": api_key,
             "Content-Type": "application/json",
-            "X-Client-Name": "cirq-superstaq",
+            "X-Client-Name": client_name,
             "X-Client-Version": applications_superstaq.API_VERSION,
         }
         self.default_target = default_target
@@ -105,7 +106,7 @@ class _SuperstaQClient:
 
     def create_job(
         self,
-        serialized_circuits: str,
+        serialized_circuits: Dict[str, str],
         repetitions: Optional[int] = None,
         target: Optional[str] = None,
         name: Optional[str] = None,
@@ -130,7 +131,7 @@ class _SuperstaQClient:
         """
         actual_target = self._target(target)
         json_dict: Dict[str, Any] = {
-            "cirq_circuits": serialized_circuits,
+            **serialized_circuits,
             "backend": actual_target,
             "shots": repetitions,
             "ibmq_token": self.ibmq_token,
