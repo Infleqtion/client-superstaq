@@ -12,11 +12,11 @@
 # limitations under the License.
 """Client for making requests to SuperstaQ's API."""
 
-from typing import Any, Callable, cast, Dict, Optional
-
 import sys
 import time
 import urllib
+from typing import Any, Callable, cast, Dict, Optional
+
 import qubovert as qv
 import requests
 
@@ -201,9 +201,8 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def aqt_compile(self, serialized_circuits: str, target: str) -> dict:
+    def aqt_compile(self, json_dict: Dict[str, str], target: str) -> dict:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
-        json_dict = {"cirq_circuits": serialized_circuits, "backend": target}
 
         def request() -> requests.Response:
             return requests.post(
@@ -228,9 +227,8 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def ibmq_compile(self, serialized_circuits: str, target: str) -> dict:
+    def ibmq_compile(self, json_dict: Dict[str, str], target: str) -> dict:
         """Makes a POST request to SuperstaQ API to compile a circuits for IBM devices."""
-        json_dict = {"cirq_circuits": serialized_circuits, "backend": target}
 
         def request() -> requests.Response:
             return requests.post(

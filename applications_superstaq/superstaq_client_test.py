@@ -14,12 +14,10 @@ import contextlib
 import io
 from unittest import mock
 
-import cirq
 import pytest
 import qubovert as qv
 import requests
 
-import cirq_superstaq
 import applications_superstaq
 
 API_VERSION = applications_superstaq.API_VERSION
@@ -105,14 +103,13 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
     client = applications_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart"
     )
-    serialized_circuits = cirq_superstaq.serialization.serialize_circuits(cirq.Circuit())
     response = client.create_job(
-        serialized_circuits=serialized_circuits, repetitions=200, target="qpu", name="bacon"
+        serialized_circuits="Hello", repetitions=200, target="qpu", name="bacon"
     )
     assert response == {"foo": "bar"}
 
     expected_json = {
-        "cirq_circuits": serialized_circuits,
+        "cirq_circuits": "Hello",
         "backend": "qpu",
         "shots": 200,
         "ibmq_token": None,
@@ -137,7 +134,7 @@ def test_superstaq_client_create_job_default_target(mock_post: mock.MagicMock) -
     client = applications_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    _ = client.create_job(cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()))
+    _ = client.create_job("Hello")
     assert mock_post.call_args[1]["json"]["backend"] == "simulator"
 
 
@@ -153,7 +150,7 @@ def test_superstaq_client_create_job_target_overrides_default_target(
     )
 
     _ = client.create_job(
-        serialized_circuits=cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()),
+        serialized_circuits="Hello",
         target="qpu",
         repetitions=1,
     )
@@ -165,7 +162,7 @@ def test_superstaq_client_create_job_no_targets() -> None:
         remote_host="http://example.com", api_key="to_my_heart"
     )
     with pytest.raises(AssertionError, match="neither were set"):
-        _ = client.create_job(cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()))
+        _ = client.create_job("Hello")
 
 
 @mock.patch("requests.post")
@@ -177,7 +174,7 @@ def test_superstaq_client_create_job_unauthorized(mock_post: mock.MagicMock) -> 
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     with pytest.raises(applications_superstaq.SuperstaQException, match="Not authorized"):
-        _ = client.create_job(cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()))
+        _ = client.create_job("Hello")
 
 
 @mock.patch("requests.post")
@@ -189,7 +186,7 @@ def test_superstaq_client_create_job_not_found(mock_post: mock.MagicMock) -> Non
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     with pytest.raises(applications_superstaq.SuperstaQNotFoundException, match="not find"):
-        _ = client.create_job(cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()))
+        _ = client.create_job("Hello")
 
 
 @mock.patch("requests.post")
@@ -201,7 +198,7 @@ def test_superstaq_client_create_job_not_retriable(mock_post: mock.MagicMock) ->
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
     with pytest.raises(applications_superstaq.SuperstaQException, match="Status: 501"):
-        _ = client.create_job(cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()))
+        _ = client.create_job("Hello")
 
 
 @mock.patch("requests.post")
@@ -220,7 +217,7 @@ def test_superstaq_client_create_job_retry(mock_post: mock.MagicMock) -> None:
     )
     test_stdout = io.StringIO()
     with contextlib.redirect_stdout(test_stdout):
-        _ = client.create_job(cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()))
+        _ = client.create_job("Hello")
     assert test_stdout.getvalue().strip() == "Waiting 0.1 seconds before retrying."
     assert mock_post.call_count == 2
 
@@ -233,7 +230,7 @@ def test_superstaq_client_create_job_retry_request_error(mock_post: mock.MagicMo
     client = applications_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    _ = client.create_job(cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()))
+    _ = client.create_job("Hello")
     assert mock_post.call_count == 2
 
 
@@ -249,7 +246,7 @@ def test_superstaq_client_create_job_timeout(mock_post: mock.MagicMock) -> None:
         max_retry_seconds=0.2,
     )
     with pytest.raises(TimeoutError):
-        _ = client.create_job(cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()))
+        _ = client.create_job("Hello")
 
 
 @mock.patch("requests.get")
@@ -380,10 +377,7 @@ def test_superstaq_client_aqt_compile(mock_post: mock.MagicMock) -> None:
     client = applications_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    circuit = cirq.Circuit(cirq.H(cirq.LineQubit(5)))
-    client.aqt_compile(
-        cirq_superstaq.serialization.serialize_circuits([circuit, circuit]), target="keysight"
-    )
+    client.aqt_compile({"Hello": "1", "World": "2"}, target="keysight")
 
     mock_post.assert_called_once()
     assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/aqt_compile"
@@ -394,10 +388,7 @@ def test_superstaq_client_qscout_compile(mock_post: mock.MagicMock) -> None:
     client = applications_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    circuit = cirq.Circuit(cirq.H(cirq.LineQubit(5)))
-    client.qscout_compile(
-        cirq_superstaq.serialization.serialize_circuits([circuit, circuit]), target="qscout"
-    )
+    client.qscout_compile({"Hello": "1", "World": "2"}, target="qscout")
 
     mock_post.assert_called_once()
     assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/qscout_compile"
@@ -408,9 +399,8 @@ def test_superstaq_client_ibmq_compile(mock_post: mock.MagicMock) -> None:
     client = applications_superstaq.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="to_my_heart", default_target="simulator"
     )
-    circuit = cirq.Circuit()
     client.ibmq_compile(
-        cirq_superstaq.serialization.serialize_circuits(circuit),
+        {"Hello": "1", "World": "2"},
         target="ibmq_qasm_simulator",
     )
 
