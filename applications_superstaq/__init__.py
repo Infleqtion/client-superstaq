@@ -6,6 +6,13 @@ from . import superstaq_client
 from . import superstaq_exceptions
 from . import qubo
 
+from applications_superstaq.superstaq_exceptions import (
+    SuperstaQException,
+    SuperstaQModuleNotFoundException,
+    SuperstaQNotFoundException,
+    SuperstaQUnsuccessfulJobException,
+)
+
 __all__ = [
     "API_URL",
     "API_VERSION",

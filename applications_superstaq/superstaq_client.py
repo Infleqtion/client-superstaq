@@ -12,20 +12,22 @@
 # limitations under the License.
 """Client for making requests to SuperstaQ's API."""
 
+from typing import Any, Callable, cast, Dict, Optional
+
 import sys
 import time
 import urllib
-from typing import Any, Callable, cast, Dict, Optional
-
-import applications_superstaq
 import qubovert as qv
 import requests
+
+import applications_superstaq
 
 
 class _SuperstaQClient:
     """Handles calls to SuperstaQ's API.
 
-    Users should not instantiate this themselves, but instead should use `$client_superstaq.Service`.
+    Users should not instantiate this themselves,
+    but instead should use `$client_superstaq.Service`.
     """
 
     RETRIABLE_STATUS_CODES = {
@@ -337,13 +339,13 @@ class _SuperstaQClient:
 
     def _handle_status_codes(self, response: requests.Response) -> None:
         if response.status_code == requests.codes.unauthorized:
-            raise applications_superstaq.superstaq_exceptions.SuperstaQException(
+            raise applications_superstaq.SuperstaQException(
                 '"Not authorized" returned by SuperstaQ API.  '
                 "Check to ensure you have supplied the correct API key.",
                 response.status_code,
             )
         if response.status_code == requests.codes.not_found:
-            raise applications_superstaq.superstaq_exceptions.SuperstaQNotFoundException(
+            raise applications_superstaq.SuperstaQNotFoundException(
                 "SuperstaQ could not find requested resource."
             )
 
@@ -351,7 +353,7 @@ class _SuperstaQClient:
             message = response.reason
             if response.status_code == 400:
                 message = str(response.text)
-            raise applications_superstaq.superstaq_exceptions.SuperstaQException(
+            raise applications_superstaq.SuperstaQException(
                 "Non-retriable error making request to SuperstaQ API. "
                 f"Status: {response.status_code} "
                 f"Error : {message}",
