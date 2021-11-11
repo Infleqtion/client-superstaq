@@ -47,11 +47,6 @@ class _SuperstaQClient:
         api_version: str = applications_superstaq.API_VERSION,
         max_retry_seconds: float = 3600,  # 1 hour
         verbose: bool = False,
-        ibmq_token: str = None,
-        ibmq_group: str = None,
-        ibmq_project: str = None,
-        ibmq_hub: str = None,
-        ibmq_pulse: bool = True,
     ):
         """Creates the SuperstaQClient.
 
@@ -98,11 +93,6 @@ class _SuperstaQClient:
         self.default_target = default_target
         self.max_retry_seconds = max_retry_seconds
         self.verbose = verbose
-        self.ibmq_token = ibmq_token
-        self.ibmq_group = ibmq_group
-        self.ibmq_project = ibmq_project
-        self.ibmq_hub = ibmq_hub
-        self.ibmq_pulse = ibmq_pulse
 
     def create_job(
         self,
@@ -110,6 +100,8 @@ class _SuperstaQClient:
         repetitions: Optional[int] = None,
         target: Optional[str] = None,
         name: Optional[str] = None,
+        ibmq_token: str = None,
+        ibmq_pulse: bool = True,
     ) -> dict:
         """Create a job.
 
@@ -134,11 +126,8 @@ class _SuperstaQClient:
             **serialized_circuits,
             "backend": actual_target,
             "shots": repetitions,
-            "ibmq_token": self.ibmq_token,
-            "ibmq_group": self.ibmq_group,
-            "ibmq_project": self.ibmq_project,
-            "ibmq_hub": self.ibmq_hub,
-            "ibmq_pulse": self.ibmq_pulse,
+            "ibmq_token": ibmq_token,
+            "ibmq_pulse": ibmq_pulse,
         }
 
         def request() -> requests.Response:

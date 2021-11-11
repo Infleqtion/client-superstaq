@@ -131,9 +131,6 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         "backend": "qpu",
         "shots": 200,
         "ibmq_token": None,
-        "ibmq_group": None,
-        "ibmq_project": None,
-        "ibmq_hub": None,
         "ibmq_pulse": True,
     }
     mock_post.assert_called_with(
