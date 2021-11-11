@@ -15,7 +15,7 @@
 import sys
 import time
 import urllib
-from typing import Any, Callable, cast, Dict, Optional
+from typing import Any, Callable, cast, Dict, List, Optional, Union
 
 import qubovert as qv
 import requests
