@@ -215,7 +215,7 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def qscout_compile(self, json_dict: Dict[str, str], target: str) -> dict:
+    def qscout_compile(self, json_dict: Dict[str, Union[str, List[str]]], target: str) -> dict:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
 
         def request() -> requests.Response:
