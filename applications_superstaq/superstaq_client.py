@@ -228,7 +228,7 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def ibmq_compile(self, json_dict: Dict[str, str], target: str) -> dict:
+    def ibmq_compile(self, json_dict: Dict[str, Union[str, List[str]]], target: str) -> dict:
         """Makes a POST request to SuperstaQ API to compile a circuits for IBM devices."""
 
         def request() -> requests.Response:
