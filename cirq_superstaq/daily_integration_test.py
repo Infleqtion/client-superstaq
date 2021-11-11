@@ -63,7 +63,12 @@ def test_get_backends(service: cirq_superstaq.Service) -> None:
             "aws_tn1_simulator",
             "ionq_ion_qpu",
         ],
-        "compile-only": ["aqt_keysight_qpu", "sandia_qscout_qpu"],
+        "compile-only": [
+            "aqt_keysight_qpu",
+            "sandia_qscout_qpu",
+            "hqs_lt-s1-apival_qpu",
+            "hqs_lt-s1_qpu",
+        ],
     }
     result = service.get_backends()
     assert sorted(result["compile-and-run"]) == sorted(expected["compile-and-run"])
