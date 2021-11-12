@@ -21,9 +21,9 @@ import qiskit_superstaq as qss
 
 class SuperstaQBackend(qiskit.providers.BackendV1):
     def __init__(
-        self, provider: "qss.superstaq_provider.SuperstaQProvider", url: str, backend: str
+        self, provider: "qss.superstaq_provider.SuperstaQProvider", remote_host: str, backend: str
     ) -> None:
-        self.url = url
+        self.remote_host = remote_host
         self._provider = provider
         self.configuration_dict = {
             "backend_name": backend,
@@ -78,10 +78,10 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         }
 
         res = requests.post(
-            self.url + "/" + qss.API_VERSION + "/jobs",
+            f"{self.remote_host}/{qss.API_VERSION}/jobs",
             json=superstaq_json,
             headers=self._provider._http_headers(),
-            verify=(self.url == qss.API_URL),
+            verify=(self.remote_host == qss.API_URL),
         )
 
         res.raise_for_status()

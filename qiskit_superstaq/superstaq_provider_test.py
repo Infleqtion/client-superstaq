@@ -2,27 +2,29 @@ import textwrap
 from unittest.mock import MagicMock, patch
 
 import applications_superstaq
+import pytest
 import qiskit
 
 import qiskit_superstaq as qss
 
 
 def test_provider() -> None:
-    ss_provider = qss.superstaq_provider.SuperstaQProvider(access_token="MY_TOKEN")
+    ss_provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
+
+    with pytest.raises(EnvironmentError, match="api_key was not "):
+        qss.superstaq_provider.SuperstaQProvider()
 
     assert str(ss_provider.get_backend("ibmq_qasm_simulator")) == str(
         qss.superstaq_backend.SuperstaQBackend(
             provider=ss_provider,
-            url=qss.API_URL,
+            remote_host=qss.API_URL,
             backend="ibmq_qasm_simulator",
         )
     )
 
     assert str(ss_provider) == "<SuperstaQProvider(name=superstaq_provider)>"
 
-    assert (
-        repr(ss_provider) == "<SuperstaQProvider(name=superstaq_provider, access_token=MY_TOKEN)>"
-    )
+    assert repr(ss_provider) == "<SuperstaQProvider(name=superstaq_provider, api_key=MY_TOKEN)>"
 
     backend_names = [
         "aqt_device",
@@ -38,7 +40,7 @@ def test_provider() -> None:
     for name in backend_names:
         backends.append(
             qss.superstaq_backend.SuperstaQBackend(
-                provider=ss_provider, url=qss.API_URL, backend=name
+                provider=ss_provider, remote_host=qss.API_URL, backend=name
             )
         )
 
@@ -47,7 +49,7 @@ def test_provider() -> None:
 
 @patch("requests.post")
 def test_aqt_compile(mock_post: MagicMock) -> None:
-    provider = qss.superstaq_provider.SuperstaQProvider(access_token="MY_TOKEN")
+    provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
 
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
@@ -77,7 +79,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
 @patch("requests.post")
 def test_qscout_compile(mock_post: MagicMock) -> None:
-    provider = qss.superstaq_provider.SuperstaQProvider(access_token="MY_TOKEN")
+    provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
 
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)

@@ -15,7 +15,7 @@ class MockConfiguration:
 
 class MockProvider(qss.superstaq_provider.SuperstaQProvider):
     def __init__(self) -> None:
-        self.access_token = "very.tech"
+        self.api_key = "very.tech"
 
 
 class MockDevice(qss.superstaq_backend.SuperstaQBackend):
@@ -25,7 +25,7 @@ class MockDevice(qss.superstaq_backend.SuperstaQBackend):
 
     _configuration = MockConfiguration()
 
-    url = "super.tech"
+    remote_host = "super.tech"
 
 
 class MockJob(qss.superstaq_job.SuperstaQJob):

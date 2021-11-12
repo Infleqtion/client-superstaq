@@ -13,10 +13,11 @@
 # that they have been altered from the originals.
 
 import os
-from typing import List, Union
+from typing import List, Optional, Union
 
+import applications_superstaq
 import qiskit
-import requests
+from applications_superstaq import superstaq_client
 
 import qiskit_superstaq as qss
 
@@ -37,33 +38,72 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
     where `'MY_TOKEN'` is the access token provided by SuperstaQ,
     and 'my_backend' is the name of the desired backend.
 
-    Attributes:
-        access_token (str): The access token.
-        name (str): Name of the provider instance.
-        url (str): The url that the API is hosted on.
+    Args:
+         Args:
+            remote_host: The location of the API in the form of a URL. If this is None,
+                then this instance will use the environment variable `SUPERSTAQ_REMOTE_HOST`.
+                If that variable is not set, then this uses
+                `https://superstaq.super.tech/{api_version}`,
+                where `{api_version}` is the `api_version` specified below.
+            api_key: A string key which allows access to the API. If this is None,
+                then this instance will use the environment variable  `SUPERSTAQ_API_KEY`. If that
+                variable is not set, then this will raise an `EnvironmentError`.
+            default_target: Which target to default to using. If set to None, no default is set
+                and target must always be specified in calls. If set, then this default is used,
+                unless a target is specified for a given call. Supports either 'qpu' or
+                'simulator'.
+            api_version: Version of the API.
+            max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
+            verbose: Whether to print to stdio and stderr on retriable errors.
+        Raises:
+            EnvironmentError: if the `api_key` is None and has no corresponding environment
+                variable set.
     """
 
     def __init__(
         self,
-        access_token: str,
-        url: str = os.getenv("SUPERSTAQ_REMOTE_HOST") or qss.API_URL,
+        remote_host: Optional[str] = None,
+        api_key: Optional[str] = None,
+        default_target: str = None,
+        api_version: str = applications_superstaq.API_VERSION,
+        max_retry_seconds: int = 3600,
+        verbose: bool = False,
     ) -> None:
-        self.access_token = access_token
         self._name = "superstaq_provider"
-        self.url = url
+        self.remote_host = (
+            remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or applications_superstaq.API_URL
+        )
+        self.api_key = api_key or os.getenv("SUPERSTAQ_API_KEY")
+        if not self.api_key:
+            raise EnvironmentError(
+                "Parameter api_key was not specified and the environment variable "
+                "SUPERSTAQ_API_KEY was also not set."
+            )
+
+        self._client = superstaq_client._SuperstaQClient(
+            client_name="qiskit-superstaq",
+            remote_host=self.remote_host,
+            api_key=self.api_key,
+            default_target=default_target,
+            api_version=api_version,
+            max_retry_seconds=max_retry_seconds,
+            verbose=verbose,
+        )
 
     def __str__(self) -> str:
         return f"<SuperstaQProvider(name={self._name})>"
 
     def __repr__(self) -> str:
         repr1 = f"<SuperstaQProvider(name={self._name}, "
-        return repr1 + f"access_token={self.access_token})>"
+        return repr1 + f"api_key={self.api_key})>"
 
     def get_backend(self, backend: str) -> "qss.superstaq_backend.SuperstaQBackend":
-        return qss.superstaq_backend.SuperstaQBackend(provider=self, url=self.url, backend=backend)
+        return qss.superstaq_backend.SuperstaQBackend(
+            provider=self, remote_host=self.remote_host, backend=backend
+        )
 
-    def get_access_token(self) -> str:
-        return self.access_token
+    def get_access_token(self) -> Optional[str]:
+        return self.api_key
 
     def backends(self) -> List[qss.superstaq_backend.SuperstaQBackend]:
         # needs to be fixed (#469)
@@ -81,7 +121,9 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
 
         for name in backend_names:
             backends.append(
-                qss.superstaq_backend.SuperstaQBackend(provider=self, url=self.url, backend=name)
+                qss.superstaq_backend.SuperstaQBackend(
+                    provider=self, remote_host=self.remote_host, backend=name
+                )
             )
 
         return backends
@@ -95,7 +137,9 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
         }
 
     def aqt_compile(
-        self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]
+        self,
+        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        target: str = "keysight",
     ) -> "qss.compiler_output.CompilerOutput":
         """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
 
@@ -107,24 +151,19 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
             pulse sequence corresponding to the optimized qiskit.QuantumCircuit(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
         """
-        json_dict = {"qiskit_circuits": qss.serialization.serialize_circuits(circuits)}
+        serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
-        res = requests.post(
-            self.url + "/" + qss.API_VERSION + "/aqt_compile",
-            json=json_dict,
-            headers=self._http_headers(),
-            verify=(self.url == qss.API_URL),
-        )
-        res.raise_for_status()
-        json_dict = res.json()
+        json_dict = self._client.aqt_compile({"qiskit_circuits": serialized_circuits}, target)
 
         from qiskit_superstaq import compiler_output
 
         return compiler_output.read_json_aqt(json_dict, circuits_list)
 
     def qscout_compile(
-        self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]
+        self,
+        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        target: str = "qscout",
     ) -> "qss.compiler_output.CompilerOutput":
         """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
 
@@ -136,17 +175,9 @@ class SuperstaQProvider(qiskit.providers.ProviderV1):
             pulse sequence corresponding to the optimized qiskit.QuantumCircuit(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
         """
-        json_dict = {"qiskit_circuits": qss.serialization.serialize_circuits(circuits)}
+        serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_list = not isinstance(circuits, qiskit.QuantumCircuit)
-
-        res = requests.post(
-            self.url + "/" + qss.API_VERSION + "/qscout_compile",
-            json=json_dict,
-            headers=self._http_headers(),
-            verify=(self.url == qss.API_URL),
-        )
-        res.raise_for_status()
-        json_dict = res.json()
+        json_dict = self._client.qscout_compile({"qiskit_circuits": serialized_circuits}, target)
 
         from qiskit_superstaq import compiler_output
 
