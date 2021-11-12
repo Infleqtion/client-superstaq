@@ -210,7 +210,7 @@ def test_service_get_backends() -> None:
 
 
 @mock.patch(
-    "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
+    "applications_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={
         "cirq_circuits": cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()),
         "state_jp": applications_superstaq.converters.serialize({}),
@@ -225,7 +225,7 @@ def test_service_aqt_compile_single(mock_aqt_compile: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
+    "applications_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={
         "cirq_circuits": cirq_superstaq.serialization.serialize_circuits(
             [cirq.Circuit(), cirq.Circuit()]
@@ -241,7 +241,7 @@ def test_service_aqt_compile_multiple(mock_aqt_compile: mock.MagicMock) -> None:
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
 
-@mock.patch("cirq_superstaq.superstaq_client._SuperstaQClient.qscout_compile")
+@mock.patch("applications_superstaq.superstaq_client._SuperstaQClient.qscout_compile")
 def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> None:
 
     q0 = cirq.LineQubit(0)
@@ -269,7 +269,7 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
 
 
 @mock.patch(
-    "cirq_superstaq.superstaq_client._SuperstaQClient.ibmq_compile",
+    "applications_superstaq.superstaq_client._SuperstaQClient.ibmq_compile",
     return_value={"pulses": applications_superstaq.converters.serialize([mock.DEFAULT])},
 )
 def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
@@ -278,14 +278,14 @@ def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
     assert service.ibmq_compile([cirq.Circuit()]) == [mock.DEFAULT]
 
     with mock.patch.dict("sys.modules", {"unittest": None}), pytest.raises(
-        cirq_superstaq.SuperstaQModuleNotFoundException,
+        applications_superstaq.SuperstaQModuleNotFoundException,
         match="'ibmq_compile' requires module 'unittest'",
     ):
         _ = service.ibmq_compile(cirq.Circuit())
 
 
 @mock.patch(
-    "cirq_superstaq.superstaq_client._SuperstaQClient.submit_qubo",
+    "applications_superstaq.superstaq_client._SuperstaQClient.submit_qubo",
     return_value={
         "solution": applications_superstaq.converters.serialize(
             np.rec.array(
@@ -305,7 +305,7 @@ def test_service_submit_qubo(mock_submit_qubo: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "cirq_superstaq.superstaq_client._SuperstaQClient.find_min_vol_portfolio",
+    "applications_superstaq.superstaq_client._SuperstaQClient.find_min_vol_portfolio",
     return_value={
         "best_portfolio": ["AAPL", "GOOG"],
         "best_ret": 8.1,
@@ -321,7 +321,7 @@ def test_service_find_min_vol_portfolio(mock_find_min_vol_portfolio: mock.MagicM
 
 
 @mock.patch(
-    "cirq_superstaq.superstaq_client._SuperstaQClient.find_max_pseudo_sharpe_ratio",
+    "applications_superstaq.superstaq_client._SuperstaQClient.find_max_pseudo_sharpe_ratio",
     return_value={
         "best_portfolio": ["AAPL", "GOOG"],
         "best_ret": 8.1,
@@ -342,7 +342,7 @@ def test_service_find_max_pseudo_sharpe_ratio(
 
 
 @mock.patch(
-    "cirq_superstaq.superstaq_client._SuperstaQClient.tsp",
+    "applications_superstaq.superstaq_client._SuperstaQClient.tsp",
     return_value={
         "route": ["Chicago", "St Louis", "St Paul", "Chicago"],
         "route_list_numbers": [0, 1, 2, 0],
@@ -365,7 +365,7 @@ def test_service_tsp(mock_tsp: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "cirq_superstaq.superstaq_client._SuperstaQClient.warehouse",
+    "applications_superstaq.superstaq_client._SuperstaQClient.warehouse",
     return_value={
         "warehouse_to_destination": [("Chicago", "Rockford"), ("Chicago", "Aurora")],
         "total_distance": 100.0,
@@ -384,7 +384,7 @@ def test_service_warehouse(mock_warehouse: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "cirq_superstaq.superstaq_client._SuperstaQClient.aqt_upload_configs",
+    "applications_superstaq.superstaq_client._SuperstaQClient.aqt_upload_configs",
     return_value={"status": "Your AQT configuration has been updated"},
 )
 def test_service_aqt_upload_configs(mock_aqt_compile: mock.MagicMock) -> None:

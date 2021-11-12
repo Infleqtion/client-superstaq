@@ -16,10 +16,9 @@
 import collections
 import time
 
+import applications_superstaq
+from applications_superstaq import superstaq_client
 from cirq._doc import document
-
-import cirq_superstaq
-from cirq_superstaq import superstaq_client
 
 
 class Job:
@@ -75,7 +74,7 @@ class Job:
 
     def _check_if_unsuccessful(self) -> None:
         if self.status() in self.UNSUCCESSFUL_STATES:
-            raise cirq_superstaq.superstaq_exceptions.SuperstaQUnsuccessfulJobException(
+            raise applications_superstaq.superstaq_exceptions.SuperstaQUnsuccessfulJobException(
                 self.job_id(), self.status()
             )
 

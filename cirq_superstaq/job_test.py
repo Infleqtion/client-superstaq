@@ -14,7 +14,9 @@
 
 from unittest import mock
 
+import applications_superstaq
 import pytest
+
 
 import cirq_superstaq
 
@@ -177,9 +179,9 @@ def test_job_fields_unsuccessful() -> None:
     }
     mock_client = mock.MagicMock()
     job = cirq_superstaq.Job(mock_client, job_dict)
-    with pytest.raises(cirq_superstaq.SuperstaQUnsuccessfulJobException, match="Deleted"):
+    with pytest.raises(applications_superstaq.SuperstaQUnsuccessfulJobException, match="Deleted"):
         _ = job.target()
-    with pytest.raises(cirq_superstaq.SuperstaQUnsuccessfulJobException, match="Deleted"):
+    with pytest.raises(applications_superstaq.SuperstaQUnsuccessfulJobException, match="Deleted"):
         _ = job.num_qubits()
-    with pytest.raises(cirq_superstaq.SuperstaQUnsuccessfulJobException, match="Deleted"):
+    with pytest.raises(applications_superstaq.SuperstaQUnsuccessfulJobException, match="Deleted"):
         _ = job.repetitions()

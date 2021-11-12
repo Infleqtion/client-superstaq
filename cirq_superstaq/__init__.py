@@ -28,12 +28,6 @@ from cirq_superstaq.custom_gates import (
 from cirq_superstaq.job import Job
 from cirq_superstaq.sampler import Sampler
 from cirq_superstaq.service import Service
-from cirq_superstaq.superstaq_exceptions import (
-    SuperstaQException,
-    SuperstaQModuleNotFoundException,
-    SuperstaQNotFoundException,
-    SuperstaQUnsuccessfulJobException,
-)
 
 __all__ = [
     "AceCR",
@@ -49,10 +43,6 @@ __all__ = [
     "serialization",
     "Sampler",
     "Service",
-    "SuperstaQException",
-    "SuperstaQModuleNotFoundException",
-    "SuperstaQNotFoundException",
-    "SuperstaQUnsuccessfulJobException",
     "ZX",
     "ZXPowGate",
 ]
