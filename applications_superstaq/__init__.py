@@ -11,6 +11,7 @@ from . import logistics
 from . import qubo
 from . import superstaq_client
 from . import superstaq_exceptions
+from . import user_config
 
 __all__ = [
     "API_URL",
@@ -25,4 +26,5 @@ __all__ = [
     "qubo",
     "superstaq_client",
     "superstaq_exceptions",
+    "user_config",
 ]
