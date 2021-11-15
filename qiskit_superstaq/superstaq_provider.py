@@ -17,12 +17,17 @@ from typing import List, Optional, Union
 
 import applications_superstaq
 import qiskit
+from applications_superstaq import finance
+from applications_superstaq import logistics
 from applications_superstaq import superstaq_client
+from applications_superstaq import user_config
 
 import qiskit_superstaq as qss
 
 
-class SuperstaQProvider(qiskit.providers.ProviderV1):
+class SuperstaQProvider(
+    qiskit.providers.ProviderV1, finance.Finance, logistics.Logistics, user_config.UserConfig
+):
     """Provider for SuperstaQ backend.
 
     Typical usage is:
