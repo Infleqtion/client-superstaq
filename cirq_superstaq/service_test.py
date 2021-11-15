@@ -18,10 +18,8 @@ from unittest import mock
 
 import applications_superstaq
 import cirq
-import numpy as np
 import pandas as pd
 import pytest
-import qubovert as qv
 import sympy
 
 import cirq_superstaq
@@ -282,123 +280,6 @@ def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
         match="'ibmq_compile' requires module 'unittest'",
     ):
         _ = service.ibmq_compile(cirq.Circuit())
-
-
-@mock.patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.submit_qubo",
-    return_value={
-        "solution": applications_superstaq.converters.serialize(
-            np.rec.array(
-                [({0: 0, 1: 1, 3: 1}, -1, 6), ({0: 1, 1: 1, 3: 1}, -1, 4)],
-                dtype=[("solution", "O"), ("energy", "<f8"), ("num_occurrences", "<i8")],
-            )
-        )
-    },
-)
-def test_service_submit_qubo(mock_submit_qubo: mock.MagicMock) -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    expected = np.rec.array(
-        [({0: 0, 1: 1, 3: 1}, -1, 6), ({0: 1, 1: 1, 3: 1}, -1, 4)],
-        dtype=[("solution", "O"), ("energy", "<f8"), ("num_occurrences", "<i8")],
-    )
-    assert repr(service.submit_qubo(qv.QUBO(), "target", repetitions=10)) == repr(expected)
-
-
-@mock.patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.find_min_vol_portfolio",
-    return_value={
-        "best_portfolio": ["AAPL", "GOOG"],
-        "best_ret": 8.1,
-        "best_std_dev": 10.5,
-        "qubo": [{"keys": ["0"], "value": 123}],
-    },
-)
-def test_service_find_min_vol_portfolio(mock_find_min_vol_portfolio: mock.MagicMock) -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    qubo = {("0",): 123}
-    expected = applications_superstaq.finance.MinVolOutput(["AAPL", "GOOG"], 8.1, 10.5, qubo)
-    assert service.find_min_vol_portfolio(["AAPL", "GOOG", "IEF", "MMM"], 8) == expected
-
-
-@mock.patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.find_max_pseudo_sharpe_ratio",
-    return_value={
-        "best_portfolio": ["AAPL", "GOOG"],
-        "best_ret": 8.1,
-        "best_std_dev": 10.5,
-        "best_sharpe_ratio": 0.771,
-        "qubo": [{"keys": ["0"], "value": 123}],
-    },
-)
-def test_service_find_max_pseudo_sharpe_ratio(
-    mock_find_max_pseudo_sharpe_ratio: mock.MagicMock,
-) -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    qubo = {("0",): 123}
-    expected = applications_superstaq.finance.MaxSharpeOutput(
-        ["AAPL", "GOOG"], 8.1, 10.5, 0.771, qubo
-    )
-    assert service.find_max_pseudo_sharpe_ratio(["AAPL", "GOOG", "IEF", "MMM"], k=0.5) == expected
-
-
-@mock.patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.tsp",
-    return_value={
-        "route": ["Chicago", "St Louis", "St Paul", "Chicago"],
-        "route_list_numbers": [0, 1, 2, 0],
-        "total_distance": 100.0,
-        "map_link": ["maps.google.com"],
-        "qubo": [{"keys": ["0"], "value": 123}],
-    },
-)
-def test_service_tsp(mock_tsp: mock.MagicMock) -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    qubo = {("0",): 123}
-    expected = applications_superstaq.logistics.TSPOutput(
-        ["Chicago", "St Louis", "St Paul", "Chicago"],
-        [0, 1, 2, 0],
-        100.0,
-        ["maps.google.com"],
-        qubo,
-    )
-    assert service.tsp(["Chicago", "St Louis", "St Paul"]) == expected
-
-
-@mock.patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.warehouse",
-    return_value={
-        "warehouse_to_destination": [("Chicago", "Rockford"), ("Chicago", "Aurora")],
-        "total_distance": 100.0,
-        "map_link": "map.html",
-        "open_warehouses": ["Chicago"],
-        "qubo": [{"keys": ["0"], "value": 123}],
-    },
-)
-def test_service_warehouse(mock_warehouse: mock.MagicMock) -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    qubo = {("0",): 123}
-    expected = applications_superstaq.logistics.WarehouseOutput(
-        [("Chicago", "Rockford"), ("Chicago", "Aurora")], 100.0, "map.html", ["Chicago"], qubo
-    )
-    assert service.warehouse(1, ["Chicago", "San Francisco"], ["Rockford", "Aurora"]) == expected
-
-
-@mock.patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.aqt_upload_configs",
-    return_value={"status": "Your AQT configuration has been updated"},
-)
-def test_service_aqt_upload_configs(mock_aqt_compile: mock.MagicMock) -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-
-    with open("/tmp/Pulses.yaml", "w") as pulses_file:
-        pulses_file.write("Hello")
-
-    with open("/tmp/Variables.yaml", "w") as variables_file:
-        variables_file.write("World")
-
-    assert service.aqt_upload_configs("/tmp/Pulses.yaml", "/tmp/Variables.yaml") == {
-        "status": "Your AQT configuration has been updated"
-    }
 
 
 def test_service_api_key_via_env() -> None:
