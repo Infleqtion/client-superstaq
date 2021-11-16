@@ -29,6 +29,19 @@ EXPECTED_HEADERS = {
 }
 
 
+def test_superstaq_client_str_and_repr() -> None:
+    client = applications_superstaq.superstaq_client._SuperstaQClient(
+        client_name="applications-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+
+    assert (
+        str(client) == "Client with host=http://example.com/v0.1.0 and name=applications-superstaq"
+    )
+    assert str(eval(repr(client))) == str(client)
+
+
 def test_applications_superstaq_exception_str() -> None:
     ex = applications_superstaq.SuperstaQException("err", status_code=501)
     assert str(ex) == "Status code: 501, Message: 'err'"

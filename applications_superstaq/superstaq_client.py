@@ -13,6 +13,7 @@
 """Client for making requests to SuperstaQ's API."""
 
 import sys
+import textwrap
 import time
 import urllib
 from typing import Any, Callable, cast, Dict, List, Optional, Union
@@ -67,32 +68,35 @@ class _SuperstaQClient:
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
         """
+
+        self.api_key = api_key
+        self.client_name = client_name
+        self.api_version = api_version
+        self.default_target = default_target
+        self.max_retry_seconds = max_retry_seconds
+        self.verbose = verbose
         url = urllib.parse.urlparse(remote_host)
         assert url.scheme and url.netloc, (
             f"Specified remote_host {remote_host} is not a valid url, for example "
             "http://example.com"
         )
+
         assert (
-            api_version in self.SUPPORTED_VERSIONS
-        ), f"Only api versions {self.SUPPORTED_VERSIONS} are accepted but was {api_version}"
+            self.api_version in self.SUPPORTED_VERSIONS
+        ), f"Only API versions {self.SUPPORTED_VERSIONS} are accepted but got {self.api_version}"
         assert (
             default_target is None or default_target in self.SUPPORTED_TARGETS
         ), f"Target can only be one of {self.SUPPORTED_TARGETS} but was {default_target}."
         assert max_retry_seconds >= 0, "Negative retry not possible without time machine."
 
         self.url = f"{url.scheme}://{url.netloc}/{api_version}"
-        self.verify_https: bool = (
-            applications_superstaq.API_URL + "/" + applications_superstaq.API_VERSION == self.url
-        )
+        self.verify_https: bool = f"{applications_superstaq.API_URL}/{self.api_version}" == self.url
         self.headers = {
-            "Authorization": api_key,
+            "Authorization": self.api_key,
             "Content-Type": "application/json",
-            "X-Client-Name": client_name,
-            "X-Client-Version": applications_superstaq.API_VERSION,
+            "X-Client-Name": self.client_name,
+            "X-Client-Version": self.api_version,
         }
-        self.default_target = default_target
-        self.max_retry_seconds = max_retry_seconds
-        self.verbose = verbose
 
     def create_job(
         self,
@@ -387,3 +391,20 @@ class _SuperstaQClient:
                 print(f"Waiting {delay_seconds} seconds before retrying.")
             time.sleep(delay_seconds)
             delay_seconds *= 2
+
+    def __str__(self) -> str:
+        return f"Client with host={self.url} and name={self.client_name}"
+
+    def __repr__(self) -> str:
+        return textwrap.dedent(
+            f"""\
+            applications_superstaq.superstaq_client._SuperstaQClient(
+                remote_host={self.url!r},
+                api_key={self.api_key!r},
+                client_name={self.client_name!r},
+                default_target={self.default_target!r},
+                api_version={self.api_version!r},
+                max_retry_seconds={self.max_retry_seconds!r},
+                verbose={self.verbose!r},
+            )"""
+        )
