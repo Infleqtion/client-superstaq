@@ -15,8 +15,8 @@
 from unittest import mock
 
 import applications_superstaq
+import cirq
 import pytest
-
 
 import cirq_superstaq
 
@@ -59,10 +59,19 @@ def test_job_status_refresh() -> None:
         mock_client.get_job.assert_not_called()
 
 
-def test_job_str() -> None:
-    mock_client = mock.MagicMock()
-    job = cirq_superstaq.Job(mock_client, {"job_id": "my_id"})
+def test_job_str_repr_eq() -> None:
+    client = applications_superstaq.superstaq_client._SuperstaQClient(
+        client_name="applications-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    job = cirq_superstaq.Job(client, {"job_id": "my_id"})
     assert str(job) == "Job with job_id=my_id"
+    cirq.testing.assert_equivalent_repr(
+        job, setup_code="import cirq_superstaq\nimport applications_superstaq"
+    )
+
+    assert not job == 1
 
 
 def test_job_counts() -> None:
