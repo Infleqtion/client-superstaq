@@ -198,7 +198,7 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def aqt_compile(self, json_dict: Dict[str, Union[str, List[str]]], target: str) -> dict:
+    def aqt_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> dict:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
 
         def request() -> requests.Response:
@@ -211,7 +211,7 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def qscout_compile(self, json_dict: Dict[str, Union[str, List[str]]], target: str) -> dict:
+    def qscout_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> dict:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
 
         def request() -> requests.Response:
@@ -224,12 +224,25 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def ibmq_compile(self, json_dict: Dict[str, Union[str, List[str]]], target: str) -> dict:
+    def ibmq_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> dict:
         """Makes a POST request to SuperstaQ API to compile a circuits for IBM devices."""
 
         def request() -> requests.Response:
             return requests.post(
                 f"{self.url}/ibmq_compile",
+                headers=self.headers,
+                json=json_dict,
+                verify=self.verify_https,
+            )
+
+        return self._make_request(request).json()
+
+    def neutral_atom_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> dict:
+        """Makes a POST request to SuperstaQ API to compile a circuits for neutral atom devices."""
+
+        def request() -> requests.Response:
+            return requests.post(
+                f"{self.url}/neutral_atom_compile",
                 headers=self.headers,
                 json=json_dict,
                 verify=self.verify_https,
