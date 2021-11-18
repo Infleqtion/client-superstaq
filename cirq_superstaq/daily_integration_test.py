@@ -42,37 +42,9 @@ def test_tsp(service: cirq_superstaq.Service) -> None:
 
 
 def test_get_backends(service: cirq_superstaq.Service) -> None:
-    expected = {
-        "compile-and-run": [
-            "ibmq_qasm_simulator",
-            "ibmq_armonk_qpu",
-            "ibmq_santiago_qpu",
-            "ibmq_bogota_qpu",
-            "ibmq_lima_qpu",
-            "ibmq_belem_qpu",
-            "ibmq_quito_qpu",
-            "ibmq_statevector_simulator",
-            "ibmq_mps_simulator",
-            "ibmq_extended-stabilizer_simulator",
-            "ibmq_stabilizer_simulator",
-            "ibmq_manila_qpu",
-            "aws_dm1_simulator",
-            "aws_sv1_simulator",
-            "d-wave_advantage-system4.1_qpu",
-            "d-wave_dw-2000q-6_qpu",
-            "aws_tn1_simulator",
-            "ionq_ion_qpu",
-        ],
-        "compile-only": [
-            "aqt_keysight_qpu",
-            "sandia_qscout_qpu",
-            "hqs_lt-s1-apival_qpu",
-            "hqs_lt-s1_qpu",
-        ],
-    }
     result = service.get_backends()
-    assert sorted(result["compile-and-run"]) == sorted(expected["compile-and-run"])
-    assert sorted(result["compile-only"]) == sorted(expected["compile-only"])
+    assert "ibmq_qasm_simulator" in result["compile-and-run"]
+    assert "aqt_keysight_qpu" in result["compile-only"]
 
 
 def test_qscout_compile(service: cirq_superstaq.Service) -> None:
