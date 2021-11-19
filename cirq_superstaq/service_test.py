@@ -282,6 +282,23 @@ def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
         _ = service.ibmq_compile(cirq.Circuit())
 
 
+@mock.patch(
+    "applications_superstaq.superstaq_client._SuperstaQClient.neutral_atom_compile",
+    return_value={"pulses": applications_superstaq.converters.serialize([mock.DEFAULT])},
+)
+def test_service_neutral_atom_compile(mock_neutral_atom_compile: mock.MagicMock) -> None:
+    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    print(service.neutral_atom_compile(cirq.Circuit()))
+    assert service.neutral_atom_compile(cirq.Circuit()) == mock.DEFAULT
+    assert service.neutral_atom_compile([cirq.Circuit()]) == [mock.DEFAULT]
+
+    with mock.patch.dict("sys.modules", {"unittest": None}), pytest.raises(
+        applications_superstaq.SuperstaQModuleNotFoundException,
+        match="'neutral_atom_compile' requires module 'unittest'",
+    ):
+        _ = service.neutral_atom_compile(cirq.Circuit())
+
+
 def test_service_api_key_via_env() -> None:
     os.environ["SUPERSTAQ_API_KEY"] = "tomyheart"
     service = cirq_superstaq.Service(remote_host="http://example.com")
