@@ -159,7 +159,9 @@ class SuperstaQProvider(
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
-        json_dict = self._client.aqt_compile({"qiskit_circuits": serialized_circuits}, target)
+        json_dict = self._client.aqt_compile(
+            {"qiskit_circuits": serialized_circuits, "backend": target}
+        )
 
         from qiskit_superstaq import compiler_output
 
@@ -182,7 +184,9 @@ class SuperstaQProvider(
         """
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_list = not isinstance(circuits, qiskit.QuantumCircuit)
-        json_dict = self._client.qscout_compile({"qiskit_circuits": serialized_circuits}, target)
+        json_dict = self._client.qscout_compile(
+            {"qiskit_circuits": serialized_circuits, "backend": target}
+        )
 
         from qiskit_superstaq import compiler_output
 
