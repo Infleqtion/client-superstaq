@@ -91,13 +91,13 @@ def test_qscout_compile(mock_post: MagicMock) -> None:
 
     jaqal_program = textwrap.dedent(
         """\
-                register allqubits[1]
+        register allqubits[1]
 
-                prepare_all
-                R allqubits[0] -1.5707963267948966 1.5707963267948966
-                Rz allqubits[0] -3.141592653589793
-                measure_all
-                """
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        Rz allqubits[0] -3.141592653589793
+        measure_all
+        """
     )
 
     mock_post.return_value.json = lambda: {
