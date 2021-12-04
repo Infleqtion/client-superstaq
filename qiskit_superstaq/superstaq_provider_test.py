@@ -1,3 +1,4 @@
+import os
 import textwrap
 from unittest.mock import MagicMock, patch
 
@@ -11,8 +12,12 @@ import qiskit_superstaq as qss
 def test_provider() -> None:
     ss_provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
 
+    env_api_key = os.environ.pop("SUPERSTAQ_API_KEY", None)
     with pytest.raises(EnvironmentError, match="api_key was not "):
         qss.superstaq_provider.SuperstaQProvider()
+
+    if env_api_key is not None:
+        os.environ["SUPERSTAQ_API_KEY"] = env_api_key
 
     assert str(ss_provider.get_backend("ibmq_qasm_simulator")) == str(
         qss.superstaq_backend.SuperstaQBackend(
