@@ -1,5 +1,5 @@
-import os
 import textwrap
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import applications_superstaq
@@ -9,10 +9,10 @@ import qiskit
 import qiskit_superstaq as qss
 
 
-def test_provider(monkeypatch) -> None:
+def test_provider(monkeypatch: Any) -> None:
     ss_provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
 
-    monkeypatch.delenv("SUPERSTAQ_API_KEY")
+    monkeypatch.delenv("SUPERSTAQ_API_KEY", raising=False)
     with pytest.raises(EnvironmentError, match="api_key was not "):
         qss.superstaq_provider.SuperstaQProvider()
 
