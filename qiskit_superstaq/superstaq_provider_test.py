@@ -9,10 +9,10 @@ import qiskit
 import qiskit_superstaq as qss
 
 
-def test_provider() -> None:
+def test_provider(monkeypatch) -> None:
     ss_provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
 
-    _ = os.environ.pop("SUPERSTAQ_API_KEY", None)
+    monkeypatch.delenv("SUPERSTAQ_API_KEY")
     with pytest.raises(EnvironmentError, match="api_key was not "):
         qss.superstaq_provider.SuperstaQProvider()
 
