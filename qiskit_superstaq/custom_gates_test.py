@@ -14,12 +14,12 @@ def _check_gate_definition(gate: qiskit.circuit.Gate) -> None:
 
     defined_operation = qiskit.quantum_info.Operator(gate.definition)
     assert defined_operation.is_unitary()
-    assert defined_operation.equiv(gate.to_matrix(), rtol=1e-10)
+    assert defined_operation.equiv(gate.to_matrix(), atol=1e-10)
 
     inverse_operation = qiskit.quantum_info.Operator(gate.inverse().definition)
     assert inverse_operation.is_unitary()
-    assert inverse_operation.equiv(gate.inverse().to_matrix(), rtol=1e-10)
-    assert inverse_operation.equiv(gate.to_matrix().T.conj(), rtol=1e-10)
+    assert inverse_operation.equiv(gate.inverse().to_matrix(), atol=1e-10)
+    assert inverse_operation.equiv(gate.to_matrix().T.conj(), atol=1e-10)
 
 
 def test_acecr() -> None:
@@ -71,7 +71,7 @@ def test_parallel_gates() -> None:
     qc2.rx(1.23, 1)
     qc2.append(qiskit_superstaq.AceCR("+-"), [0, 2])
 
-    assert qiskit.quantum_info.Operator(qc1).equiv(qc2, rtol=1e-14)
+    assert qiskit.quantum_info.Operator(qc1).equiv(qc2, atol=1e-14)
 
     gate = qiskit_superstaq.ParallelGates(
         qiskit.circuit.library.XGate(),
