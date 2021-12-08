@@ -1,9 +1,61 @@
 import io
-from typing import List, Union
+from typing import Dict, List, Set, Tuple, Union
 
 import applications_superstaq
 import qiskit
 import qiskit.circuit.qpy_serialization
+from qiskit.converters.ast_to_dag import AstInterpreter
+
+import qiskit_superstaq
+
+
+def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:
+    """QPY requires unique custom gates to have unique `.name` attributes (including parameterized
+    gates differing by just their `.params` attributes). This function rewrites the input circuit
+    with new instruction names given by appending a unique (consecutive) "_{index}" string to the
+    name of any custom instruction which shares a name with a non-equivalent prior instruction in
+    the circuit.
+
+    Args:
+        circuit: qiskit.QuantumCircuit to be rewritten
+
+    Returns:
+        A copy of the input circuit with unique custom instruction names
+    """
+
+    unique_insts_by_name: Dict[str, List[qiskit.circuit.Instruction]] = {}
+    insts_to_update: List[Tuple[int, int]] = []
+    unique_inst_ids: Set[int] = set()
+
+    qiskit_gates = set(AstInterpreter.standard_extension) | {"measure"}
+
+    new_circuit = circuit.copy()
+    for pc, (inst, _, _) in enumerate(new_circuit):
+        if inst.name in qiskit_gates or id(inst) in unique_inst_ids:
+            continue
+
+        # save id() in case instruction instance is used more than once
+        unique_inst_ids.add(id(inst))
+
+        if inst.name in unique_insts_by_name:
+            index = 0
+            for other in unique_insts_by_name[inst.name]:
+                # compare qasm strings first because equality checking is very slow
+                if inst.qasm() == other.qasm() and inst == other:
+                    break
+                index += 1
+
+            if index == len(unique_insts_by_name[inst.name]):
+                unique_insts_by_name[inst.name].append(inst)
+            if index > 0:
+                insts_to_update.append((inst, index))
+        else:
+            unique_insts_by_name[inst.name] = [inst]
+
+    for inst, index in insts_to_update:
+        inst.name += f"_{index}"
+
+    return new_circuit
 
 
 def serialize_circuits(circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]) -> str:
@@ -15,6 +67,11 @@ def serialize_circuits(circuits: Union[qiskit.QuantumCircuit, List[qiskit.Quantu
     Returns:
         str representing the serialized circuit(s)
     """
+    if isinstance(circuits, qiskit.QuantumCircuit):
+        circuits = [_assign_unique_inst_names(circuits)]
+    else:
+        circuits = [_assign_unique_inst_names(circuit) for circuit in circuits]
+
     buf = io.BytesIO()
     qiskit.circuit.qpy_serialization.dump(circuits, buf)
     return applications_superstaq.converters._bytes_to_str(buf.getvalue())
@@ -30,4 +87,12 @@ def deserialize_circuits(serialized_circuits: str) -> List[qiskit.QuantumCircuit
         a list of QuantumCircuits
     """
     buf = io.BytesIO(applications_superstaq.converters._str_to_bytes(serialized_circuits))
-    return qiskit.circuit.qpy_serialization.load(buf)
+    circuits = qiskit.circuit.qpy_serialization.load(buf)
+
+    for circuit in circuits:
+        for pc, (inst, qargs, cargs) in enumerate(circuit._data):
+            new_inst = qiskit_superstaq.custom_gates.custom_resolver(inst)
+            if new_inst is not None:
+                circuit._data[pc] = (new_inst, qargs, cargs)
+
+    return circuits
