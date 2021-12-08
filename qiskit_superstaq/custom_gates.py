@@ -88,13 +88,6 @@ class FermionicSWAPGate(qiskit.circuit.Gate):
             label: an optional label for the constructed Gate
         """
         super().__init__("fermionic_swap", 2, [theta], label=label)
-        self._qasm_definition = (
-            "gate fermionic_swap(theta) q0,q1 { cx q0,q1; cx q1,q0; rz(theta) q0; cx q0,q1; }"
-        )
-
-    def qasm(self) -> str:
-        theta_str = qiskit.circuit.tools.pi_check(self.params[0], ndigits=8, output="qasm")
-        return f"fermionic_swap({theta_str})"
 
     def inverse(self) -> "FermionicSWAPGate":
         return FermionicSWAPGate(-self.params[0])
@@ -141,8 +134,8 @@ class ParallelGates(qiskit.circuit.Gate):
         if not all(isinstance(gate, qiskit.circuit.Gate) for gate in component_gates):
             raise ValueError("Component gates must be instances of qiskit.circuit.Gate")
 
-        name = "parallel_" + "_".join(gate.name.replace("_", "") for gate in component_gates)
         num_qubits = sum(gate.num_qubits for gate in component_gates)
+        name = "parallel_" + "_".join(gate.name for gate in component_gates)
 
         super().__init__(name, num_qubits, [], label=label)
         self.component_gates = component_gates
@@ -175,7 +168,11 @@ class ParallelGates(qiskit.circuit.Gate):
 
 
 def custom_resolver(gate: qiskit.circuit.Gate) -> Optional[qiskit.circuit.Gate]:
-    """Recover a custom gate type from a generic qiskit.circuit.Gate"""
+    """Recover a custom gate type from a generic qiskit.circuit.Gate. Resolution is done using
+    gate.definition.name rather than gate.name, as the former is set by all qiskit_superstaq
+    custom gates and the latter may be modified by calls such as QuantumCircuit.qasm()
+    """
+
     if gate.definition is None:
         return None
     if gate.definition.name == "acecr_pm":
