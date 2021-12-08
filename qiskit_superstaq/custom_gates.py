@@ -1,18 +1,18 @@
 import functools
-from typing import List, Optional, Type
+from typing import List, Literal, Optional, Type
 
 import numpy as np
 import qiskit
 
 
 class AceCR(qiskit.circuit.Gate):
-    def __init__(self, polarity: str, label: Optional[str] = None) -> None:
+    def __init__(self, polarity: Literal["+-", "-+"], label: Optional[str] = None) -> None:
         """
         Args:
             polarity: a str indicating the order of ZX ** ±0.25 interactions ('+-' or '-+')
             label: an optional label for the constructed Gate
         """
-        if len(polarity) != 2 or not set(polarity).issubset("+-"):
+        if polarity not in ("+-", "-+"):
             raise ValueError("Polarity must be either '+-' or '-+'")
 
         name = "acecr_" + polarity.replace("+", "p").replace("-", "m")
@@ -33,12 +33,9 @@ class AceCR(qiskit.circuit.Gate):
         if self.polarity == "+-":
             cval = np.cos(np.pi / 4)
             sval = 1j * np.sin(np.pi / 4)
-        elif self.polarity == "-+":
+        else:
             cval = np.cos(np.pi / 4)
             sval = -1j * np.sin(np.pi / 4)
-        else:
-            cval = 1
-            sval = 0
 
         return np.array(
             [

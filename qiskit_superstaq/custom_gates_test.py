@@ -31,9 +31,6 @@ def test_acecr() -> None:
     assert repr(gate) == "qiskit_superstaq.AceCR('-+', label='label')"
     assert str(gate) == "AceCR-+"
 
-    _check_gate_definition(qiskit_superstaq.AceCR("++"))
-    _check_gate_definition(qiskit_superstaq.AceCR("--"))
-
     with pytest.raises(ValueError, match="Polarity must be"):
         _ = qiskit_superstaq.AceCR("+-+")
 
