@@ -35,12 +35,11 @@ class AceCR(qiskit.circuit.Gate):
         self.definition = qc
 
     def __array__(self, dtype: Type = None) -> np.ndarray:
+        cval = 1 / np.sqrt(2)
         if self.polarity == "+-":
-            cval = np.cos(np.pi / 4)
-            sval = 1j * np.sin(np.pi / 4)
+            sval = 1j * cval
         else:
-            cval = np.cos(np.pi / 4)
-            sval = -1j * np.sin(np.pi / 4)
+            sval = -1j * cval
 
         return np.array(
             [
