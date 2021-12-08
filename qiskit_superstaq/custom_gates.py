@@ -24,9 +24,14 @@ class AceCR(qiskit.circuit.Gate):
 
     def _define(self) -> None:
         qc = qiskit.QuantumCircuit(2, name=self.name)
-        qc.rzx(np.pi / 4 if self.polarity[0] == "+" else -np.pi / 4, 0, 1)
-        qc.x(0)
-        qc.rzx(np.pi / 4 if self.polarity[1] == "+" else -np.pi / 4, 0, 1)
+        if self.polarity == "+-":
+            qc.rzx(np.pi / 4, 0, 1)
+            qc.x(0)
+            qc.rzx(-np.pi / 4, 0, 1)
+        else:
+            qc.rzx(-np.pi / 4, 0, 1)
+            qc.x(0)
+            qc.rzx(np.pi / 4, 0, 1)
         self.definition = qc
 
     def __array__(self, dtype: Type = None) -> np.ndarray:
