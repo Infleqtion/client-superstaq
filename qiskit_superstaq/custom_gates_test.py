@@ -1,3 +1,5 @@
+from typing import Set
+
 import numpy as np
 import pytest
 import qiskit
@@ -32,10 +34,7 @@ def test_acecr() -> None:
     assert str(gate) == "AceCR-+"
 
     with pytest.raises(ValueError, match="Polarity must be"):
-        _ = qiskit_superstaq.AceCR("+-+")
-
-    with pytest.raises(ValueError, match="Polarity must be"):
-        _ = qiskit_superstaq.AceCR("01")
+        _ = qiskit_superstaq.AceCR("++")  # type: ignore
 
 
 def test_fermionic_swap() -> None:
@@ -57,6 +56,13 @@ def test_parallel_gates() -> None:
     assert str(gate) == "ParallelGates(acecr_pm, rx(1.23))"
     _check_gate_definition(gate)
 
+    # confirm gates are applied to disjoint qubits
+    all_qargs: Set[qiskit.circuit.Qubit] = set()
+    for _, qargs, _ in gate.definition:
+        assert all_qargs.isdisjoint(qargs)
+        all_qargs.update(qargs)
+    assert len(all_qargs) == gate.num_qubits
+
     # double check qubit ordering
     qc1 = qiskit.QuantumCircuit(3)
     qc1.append(gate, [0, 2, 1])
@@ -75,6 +81,13 @@ def test_parallel_gates() -> None:
     )
     assert str(gate) == "ParallelGates(x, fermionic_swap(1.23), z)"
     _check_gate_definition(gate)
+
+    # confirm gates are applied to disjoint qubits
+    all_qargs.clear()
+    for _, qargs, _ in gate.definition:
+        assert all_qargs.isdisjoint(qargs)
+        all_qargs.update(qargs)
+    assert len(all_qargs) == gate.num_qubits
 
     with pytest.raises(ValueError, match="Component gates must be"):
         _ = qiskit_superstaq.ParallelGates(qiskit.circuit.Measure())
