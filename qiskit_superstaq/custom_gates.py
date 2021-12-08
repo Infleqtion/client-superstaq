@@ -156,12 +156,6 @@ class ParallelGates(qiskit.circuit.Gate):
         mat = functools.reduce(np.kron, (gate.to_matrix() for gate in self.component_gates[::-1]))
         return np.asarray(mat, dtype=dtype)
 
-    def __repr__(self) -> str:
-        args = ", ".join(repr(gate) for gate in self.component_gates)
-        if self.label:
-            args += f", label='{self.label}'"
-        return f"qiskit_superstaq.ParallelGates({args})"
-
     def __str__(self) -> str:
         args = ", ".join(gate.qasm() for gate in self.component_gates)
         return f"ParallelGates({args})"

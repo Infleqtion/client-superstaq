@@ -57,6 +57,8 @@ def test_parallel_gates() -> None:
         qiskit_superstaq.AceCR("+-"),
         qiskit.circuit.library.RXGate(1.23),
     )
+    assert str(gate) == "ParallelGates(acecr_pm, rx(1.23))"
+    _check_gate_definition(gate)
 
     # double check qubit ordering
     qc1 = qiskit.QuantumCircuit(3)
@@ -68,19 +70,12 @@ def test_parallel_gates() -> None:
 
     assert qiskit.quantum_info.Operator(qc1).equiv(qc2, rtol=1e-14)
 
-    expected_args = ", ".join(repr(g) for g in gate.component_gates)
-    assert repr(gate) == f"qiskit_superstaq.ParallelGates({expected_args})"
-    assert str(gate) == "ParallelGates(acecr_pm, rx(1.23))"
-    _check_gate_definition(gate)
-
     gate = qiskit_superstaq.ParallelGates(
         qiskit.circuit.library.XGate(),
         qiskit_superstaq.FermionicSWAPGate(1.23),
         qiskit.circuit.library.ZGate(),
         label="label",
     )
-    expected_args = ", ".join(repr(g) for g in gate.component_gates)
-    assert repr(gate) == f"qiskit_superstaq.ParallelGates({expected_args}, label='label')"
     assert str(gate) == "ParallelGates(x, fermionic_swap(1.23), z)"
     _check_gate_definition(gate)
 
