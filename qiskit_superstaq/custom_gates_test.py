@@ -34,7 +34,7 @@ def test_acecr() -> None:
     assert str(gate) == "AceCR-+"
 
     with pytest.raises(ValueError, match="Polarity must be"):
-        _ = qiskit_superstaq.AceCR("++")  # type: ignore
+        _ = qiskit_superstaq.AceCR("++")
 
 
 def test_fermionic_swap() -> None:

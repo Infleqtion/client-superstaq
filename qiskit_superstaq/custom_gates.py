@@ -1,12 +1,12 @@
 import functools
-from typing import List, Literal, Optional, Type
+from typing import List, Optional, Type
 
 import numpy as np
 import qiskit
 
 
 class AceCR(qiskit.circuit.Gate):
-    def __init__(self, polarity: Literal["+-", "-+"], label: Optional[str] = None) -> None:
+    def __init__(self, polarity: str, label: Optional[str] = None) -> None:
         """
         Args:
             polarity: a str indicating the order of ZX ** ±0.25 interactions ('+-' or '-+')
