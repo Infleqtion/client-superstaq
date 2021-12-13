@@ -11,7 +11,7 @@ import qiskit_superstaq
 @pytest.fixture
 def provider() -> qiskit_superstaq.superstaq_provider.SuperstaQProvider:
     token = os.environ["TEST_USER_TOKEN"]
-    provider = qiskit_superstaq.superstaq_provider.SuperstaQProvider(api_key=token)
+    provider = qiskit_superstaq.superstaq_provider.SuperstaQProvider(api_key=token, remote_host='https://127.0.0.1:5000')
     return provider
 
 
@@ -19,9 +19,9 @@ def test_aqt_compile(provider: qiskit_superstaq.superstaq_provider.SuperstaQProv
     circuit = qiskit.QuantumCircuit(8)
     circuit.h(4)
     expected = qiskit.QuantumCircuit(5)
-    expected.s(4)
-    expected.sx(4)
-    expected.s(4)
+    expected.rz(np.pi / 2, 4)
+    expected.rx(np.pi / 2, 4)
+    expected.rz(np.pi / 2, 4)
     assert provider.aqt_compile(circuit).circuit == expected
     assert provider.aqt_compile([circuit]).circuits == [expected]
     assert provider.aqt_compile([circuit, circuit]).circuits == [expected, expected]
@@ -31,8 +31,8 @@ def test_qscout_compile(provider: qiskit_superstaq.superstaq_provider.SuperstaQP
     circuit = qiskit.QuantumCircuit(1)
     circuit.h(0)
     expected = qiskit.QuantumCircuit(1)
-    expected.u2(-np.pi, np.pi, 0)
-    expected.rz(-np.pi, 0)
+    expected.u(-np.pi/2, 0, 0, 0)
+    expected.z(0)
     assert provider.qscout_compile(circuit).circuit == expected
     assert provider.qscout_compile([circuit]).circuits == [expected]
     assert provider.qscout_compile([circuit, circuit]).circuits == [expected, expected]
