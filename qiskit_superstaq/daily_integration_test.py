@@ -11,7 +11,7 @@ import qiskit_superstaq
 @pytest.fixture
 def provider() -> qiskit_superstaq.superstaq_provider.SuperstaQProvider:
     token = os.environ["TEST_USER_TOKEN"]
-    provider = qiskit_superstaq.superstaq_provider.SuperstaQProvider(api_key=token, remote_host='https://127.0.0.1:5000')
+    provider = qiskit_superstaq.superstaq_provider.SuperstaQProvider(api_key=token)
     return provider
 
 
