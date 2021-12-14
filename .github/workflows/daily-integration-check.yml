@@ -26,3 +26,11 @@ jobs:
       - name: Pytest integration check
         run: |
           check/pytest-daily-integration
+      - name: Create issue if integration check failed
+        if: ${{ failure() }}
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          filename: .github/integration-check-failure-issue.md
+          update_existing: true
