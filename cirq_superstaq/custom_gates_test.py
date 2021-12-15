@@ -351,15 +351,10 @@ def test_rxy() -> None:
 
     assert np.allclose(cirq.unitary(circuit), cirq.unitary(decomposed_circuit))
 
-
-def test_rxy_circuit() -> None:
-    qubit = cirq.LineQubit(0)
-    phase_exponent = 1
-    exponent = 0.5
     circuit = cirq.Circuit(
-        cirq_superstaq.custom_gates.Rxy(phase_exponent * np.pi, exponent * np.pi).on(qubit)
+        cirq_superstaq.custom_gates.Rxy(np.pi, 0.5 * np.pi).on(qubit)
     )
-    assert str(circuit) == "0: ───Rxy(π, 0.5π)───"
+    cirq.testing.assert_has_diagram(circuit, "0: ───Rxy(π, 0.5π)───")
 
 
 def test_custom_resolver() -> None:
