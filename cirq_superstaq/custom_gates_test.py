@@ -351,9 +351,7 @@ def test_rxy() -> None:
 
     assert np.allclose(cirq.unitary(circuit), cirq.unitary(decomposed_circuit))
 
-    circuit = cirq.Circuit(
-        cirq_superstaq.custom_gates.Rxy(np.pi, 0.5 * np.pi).on(qubit)
-    )
+    circuit = cirq.Circuit(cirq_superstaq.custom_gates.Rxy(np.pi, 0.5 * np.pi).on(qubit))
     cirq.testing.assert_has_diagram(circuit, "0: ───Rxy(π, 0.5π)───")
 
 
