@@ -340,15 +340,15 @@ def test_Rxy() -> None:
     cirq.testing.assert_equivalent_repr(rot_gate, setup_code="import cirq_superstaq")
     assert "Rxy" in str(rot_gate)
 
-    circ_A = cirq.Circuit(rot_gate.on(qubit))
-    assert "Rxy" in str(circ_A)
-
+   circuit = cirq.Circuit(rot_gate.on(qubit))
+    
     # build Rxy decomposition manually
-    circ_B = cirq.Circuit()
-    circ_B += cirq.rz(-rot_gate.axis_angle).on(qubit)
-    circ_B += cirq.rx(rot_gate.rot_angle).on(qubit)
-    circ_B += cirq.rz(+rot_gate.axis_angle).on(qubit)
-    assert np.allclose(cirq.unitary(circ_A), cirq.unitary(circ_B))
+    decomposed_circuit = cirq.Circuit(cirq.rz(-rot_gate.axis_angle).on(qubit),
+    cirq.rx(rot_gate.rot_angle).on(qubit),
+    cirq.rz(+rot_gate.axis_angle).on(qubit)
+    )
+    
+    assert np.allclose(cirq.unitary(circuit), cirq.unitary(decomposed_circuit))
 
 
 def test_custom_resolver() -> None:
