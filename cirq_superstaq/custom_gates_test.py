@@ -338,6 +338,7 @@ def test_Rxy() -> None:
         np.random.random() * 2 * np.pi, np.random.random() * 2 * np.pi
     )
     assert "Rxy" in repr(rot_gate)
+    assert "Rxy" in str(rot_gate)
 
     circ_A = cirq.Circuit(rot_gate.on(qubit))
     assert "Rxy" in str(circ_A)

@@ -415,10 +415,13 @@ class Rxy(cirq.PhasedXPowGate):
         return self.exponent * np.pi
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        return cirq.CircuitDiagramInfo(wire_symbols=(str(self),))
+        axis_angle_str = args.format_radians(self.axis_angle)
+        rot_angle_str = args.format_radians(self.rot_angle)
+        gate_str = f"Rxy({axis_angle_str}, {rot_angle_str})"
+        return cirq.CircuitDiagramInfo(wire_symbols=(gate_str,))
 
     def __str__(self) -> str:
-        return f"Rxy({self.phase_exponent}π,{self.exponent}π)"
+        return f"Rxy({self.phase_exponent}π, {self.exponent}π)"
 
     def __repr__(self) -> str:
         return f"superstaq.cq_device.Rxy({self.axis_angle}, {self.rot_angle})"
