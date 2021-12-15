@@ -337,7 +337,7 @@ def test_Rxy() -> None:
     rot_gate = cirq_superstaq.custom_gates.Rxy(
         np.random.random() * 2 * np.pi, np.random.random() * 2 * np.pi
     )
-    assert "Rxy" in repr(rot_gate)
+    cirq.testing.assert_equivalent_repr(rot_gate, setup_code="import cirq_superstaq")
     assert "Rxy" in str(rot_gate)
 
     circ_A = cirq.Circuit(rot_gate.on(qubit))
