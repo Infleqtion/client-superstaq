@@ -424,7 +424,7 @@ class Rxy(cirq.PhasedXPowGate):
         return f"Rxy({self.phase_exponent}π, {self.exponent}π)"
 
     def __repr__(self) -> str:
-        return f"cirq_superstaq.custom_gates.Rxy({self.axis_angle}, {self.rot_angle})"
+        return f"cirq_superstaq.Rxy({self.axis_angle}, {self.rot_angle})"
 
     def _json_dict_(self) -> Dict[str, Any]:
         return cirq.protocols.obj_to_dict_helper(self, ["axis_angle", "rot_angle"])

@@ -24,6 +24,7 @@ from cirq_superstaq.custom_gates import (
     ParallelGates,
     ZX,
     ZXPowGate,
+    Rxy,
 )
 from cirq_superstaq.job import Job
 from cirq_superstaq.sampler import Sampler
@@ -45,4 +46,5 @@ __all__ = [
     "Service",
     "ZX",
     "ZXPowGate",
+    "Rxy",
 ]
