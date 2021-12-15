@@ -331,24 +331,35 @@ def test_parallel_gates_equivalence_groups() -> None:
         _ = gate.qubit_index_to_equivalence_group_key(-1)
 
 
-def test_Rxy() -> None:
+def test_rxy() -> None:
     qubit = cirq.LineQubit(0)
 
     rot_gate = cirq_superstaq.custom_gates.Rxy(
         np.random.random() * 2 * np.pi, np.random.random() * 2 * np.pi
     )
     cirq.testing.assert_equivalent_repr(rot_gate, setup_code="import cirq_superstaq")
-    assert "Rxy" in str(rot_gate)
+    assert str(rot_gate) == f"Rxy({rot_gate.phase_exponent}π, {rot_gate.exponent}π)"
 
-   circuit = cirq.Circuit(rot_gate.on(qubit))
-    
+    circuit = cirq.Circuit(rot_gate.on(qubit))
+
     # build Rxy decomposition manually
-    decomposed_circuit = cirq.Circuit(cirq.rz(-rot_gate.axis_angle).on(qubit),
-    cirq.rx(rot_gate.rot_angle).on(qubit),
-    cirq.rz(+rot_gate.axis_angle).on(qubit)
+    decomposed_circuit = cirq.Circuit(
+        cirq.rz(-rot_gate.axis_angle).on(qubit),
+        cirq.rx(rot_gate.rot_angle).on(qubit),
+        cirq.rz(+rot_gate.axis_angle).on(qubit),
     )
-    
+
     assert np.allclose(cirq.unitary(circuit), cirq.unitary(decomposed_circuit))
+
+
+def test_rxy_circuit() -> None:
+    qubit = cirq.LineQubit(0)
+    phase_exponent = 1
+    exponent = 0.5
+    circuit = cirq.Circuit(
+        cirq_superstaq.custom_gates.Rxy(phase_exponent * np.pi, exponent * np.pi).on(qubit)
+    )
+    assert str(circuit) == "0: ───Rxy(π, 0.5π)───"
 
 
 def test_custom_resolver() -> None:
