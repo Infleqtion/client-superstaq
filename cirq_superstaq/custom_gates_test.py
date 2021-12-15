@@ -331,6 +331,25 @@ def test_parallel_gates_equivalence_groups() -> None:
         _ = gate.qubit_index_to_equivalence_group_key(-1)
 
 
+def test_Rxy() -> None:
+    qubit = cirq.LineQubit(0)
+
+    rot_gate = cirq_superstaq.custom_gates.Rxy(
+        np.random.random() * 2 * np.pi, np.random.random() * 2 * np.pi
+    )
+    assert "Rxy" in repr(rot_gate)
+
+    circ_A = cirq.Circuit(rot_gate.on(qubit))
+    assert "Rxy" in str(circ_A)
+
+    # build Rxy decomposition manually
+    circ_B = cirq.Circuit()
+    circ_B += cirq.rz(-rot_gate.axis_angle).on(qubit)
+    circ_B += cirq.rx(rot_gate.rot_angle).on(qubit)
+    circ_B += cirq.rz(+rot_gate.axis_angle).on(qubit)
+    assert np.allclose(cirq.unitary(circ_A), cirq.unitary(circ_B))
+
+
 def test_custom_resolver() -> None:
     circuit = cirq.Circuit()
     qubits = cirq.LineQubit.range(4)
@@ -343,6 +362,7 @@ def test_custom_resolver() -> None:
         qubits[0], qubits[2], qubits[3]
     )
     circuit += cirq_superstaq.custom_gates.MSGate(rads=0.5).on(qubits[0], qubits[1])
+    circuit += cirq_superstaq.custom_gates.Rxy(1.23, 4.56).on(qubits[0])
     circuit += cirq.CX(qubits[0], qubits[1])
 
     json_text = cirq.to_json(circuit)
