@@ -22,6 +22,7 @@ from cirq_superstaq.custom_gates import (
     CR,
     FermionicSWAPGate,
     ParallelGates,
+    Rxy,
     ZX,
     ZXPowGate,
 )
@@ -41,6 +42,7 @@ __all__ = [
     "Job",
     "ParallelGates",
     "serialization",
+    "Rxy",
     "Sampler",
     "Service",
     "ZX",

@@ -391,6 +391,49 @@ class MSGate(cirq.ion.ion_gates.MSGate):
         return cls(rads=rads)
 
 
+@cirq.value_equality(approximate=True)
+class Rxy(cirq.PhasedXPowGate):
+    """A single-qubit Rxy gate, defined by two angles.
+
+    The first angle (axis_angle) defines the axis of rotation:
+    'axis_angle' radians from x to y, or cos(axis_angle) x + sin(axis_angle) y.
+
+    The second angle (rot_angle) defines the angle by which to rotate (again, in radians).
+    """
+
+    def __init__(self, axis_angle: float, rot_angle: float) -> None:
+        super().__init__(
+            phase_exponent=axis_angle / np.pi, exponent=rot_angle / np.pi, global_shift=-0.5
+        )
+
+    @property
+    def axis_angle(self) -> float:
+        return self.phase_exponent * np.pi
+
+    @property
+    def rot_angle(self) -> float:
+        return self.exponent * np.pi
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        axis_angle_str = args.format_radians(self.axis_angle)
+        rot_angle_str = args.format_radians(self.rot_angle)
+        gate_str = f"Rxy({axis_angle_str}, {rot_angle_str})"
+        return cirq.CircuitDiagramInfo(wire_symbols=(gate_str,))
+
+    def __str__(self) -> str:
+        return f"Rxy({self.phase_exponent}π, {self.exponent}π)"
+
+    def __repr__(self) -> str:
+        return f"cirq_superstaq.Rxy({self.axis_angle}, {self.rot_angle})"
+
+    def _json_dict_(self) -> Dict[str, Any]:
+        return cirq.protocols.obj_to_dict_helper(self, ["axis_angle", "rot_angle"])
+
+    @classmethod
+    def _from_json_dict_(cls, axis_angle: float, rot_angle: float, **kwargs: Any) -> Any:
+        return cls(axis_angle, rot_angle)
+
+
 def custom_resolver(cirq_type: str) -> Union[Callable[..., cirq.Gate], None]:
     if cirq_type == "FermionicSWAPGate":
         return FermionicSWAPGate
@@ -404,5 +447,7 @@ def custom_resolver(cirq_type: str) -> Union[Callable[..., cirq.Gate], None]:
         return ParallelGates
     if cirq_type == "MSGate":
         return MSGate
+    if cirq_type == "Rxy":
+        return Rxy
 
     return None
