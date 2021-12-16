@@ -334,9 +334,7 @@ def test_parallel_gates_equivalence_groups() -> None:
 def test_rxy() -> None:
     qubit = cirq.LineQubit(0)
 
-    rot_gate = cirq_superstaq.custom_gates.Rxy(
-        np.random.random() * 2 * np.pi, np.random.random() * 2 * np.pi
-    )
+    rot_gate = cirq_superstaq.custom_gates.Rxy(1.23 * np.pi, 4.56 * np.pi)
     cirq.testing.assert_equivalent_repr(rot_gate, setup_code="import cirq_superstaq")
     assert str(rot_gate) == f"Rxy({rot_gate.phase_exponent}π, {rot_gate.exponent}π)"
 
