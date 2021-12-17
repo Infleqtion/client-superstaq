@@ -89,7 +89,6 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         self,
         remote_host: Optional[str] = None,
         api_key: Optional[str] = None,
-        ibmq_token: Optional[str] = None,
         default_target: str = None,
         api_version: str = cirq_superstaq.API_VERSION,
         max_retry_seconds: int = 3600,
@@ -127,7 +126,6 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
                 "Parameter api_key was not specified and the environment variable "
                 "SUPERSTAQ_API_KEY was also not set."
             )
-        self.ibmq_token = ibmq_token or os.getenv("IBMQ_TOKEN")
         self._client = superstaq_client._SuperstaQClient(
             client_name="cirq-superstaq",
             remote_host=self.remote_host,
@@ -220,11 +218,6 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Raises:
             SuperstaQException: If there was an error accessing the API.
         """
-        if target and "ibmq" in target and not self.ibmq_token:
-            raise EnvironmentError(
-                "Parameter ibmq_token was not specified and the environment variable IBMQ_TOKEN was"
-                "also not set."
-            )
         serialized_circuits = cirq_superstaq.serialization.serialize_circuits(circuit)
         result = self._client.create_job(
             serialized_circuits={"cirq_circuits": serialized_circuits},

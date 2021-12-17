@@ -52,9 +52,7 @@ def test_counts_to_results() -> None:
 
 
 def test_service_run_and_get_counts() -> None:
-    service = cirq_superstaq.Service(
-        remote_host="http://example.com", api_key="key", ibmq_token="token"
-    )
+    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
     mock_client = mock.MagicMock()
     mock_client.create_job.return_value = {
         "job_ids": ["job_id"],
@@ -103,9 +101,7 @@ def test_service_run_and_get_counts() -> None:
 
 
 def test_service_sampler() -> None:
-    service = cirq_superstaq.Service(
-        remote_host="http://example.com", api_key="key", ibmq_token="token"
-    )
+    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
     mock_client = mock.MagicMock()
     service._client = mock_client
     mock_client.create_job.return_value = {
@@ -163,15 +159,6 @@ def test_service_create_job() -> None:
     # Serialization induces a float, so we don't validate full circuit.
     assert create_job_kwargs["repetitions"] == 100
     assert create_job_kwargs["target"] == "qpu"
-
-
-@mock.patch.dict(os.environ, {"IBMQ_TOKEN": ""})
-def test_service_create_job_no_ibmq_token() -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-
-    circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)))
-    with pytest.raises(EnvironmentError, match="Parameter ibmq_token was not specified"):
-        _ = service.create_job(circuit=circuit, repetitions=100, target="ibmq_qpu")
 
 
 def test_service_get_balance() -> None:
