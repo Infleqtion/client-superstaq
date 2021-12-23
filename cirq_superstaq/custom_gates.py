@@ -414,6 +414,9 @@ class Rxy(cirq.PhasedXPowGate):
     def rot_angle(self) -> float:
         return self.exponent * np.pi
 
+    def __pow__(self, power: Union[float, int]) -> "Rxy":
+        return Rxy(self.axis_angle, power * self.rot_angle)
+
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         axis_angle_str = args.format_radians(self.axis_angle)
         rot_angle_str = args.format_radians(self.rot_angle)
@@ -434,6 +437,58 @@ class Rxy(cirq.PhasedXPowGate):
         return cls(axis_angle, rot_angle)
 
 
+@cirq.value_equality(approximate=True)
+class ParallelRxy(cirq.ParallelGate):
+    """Wrapper class to define a ParallelGate of identical Rxy gates."""
+
+    def __init__(self, num_copies: int, axis_angle: float, rot_angle: float) -> None:
+        self._phase_exponent = axis_angle / np.pi
+        self._exponent = rot_angle / np.pi
+        super().__init__(cirq_superstaq.Rxy(axis_angle, rot_angle), num_copies)
+
+    def on(self, *qubits: cirq.Qid) -> cirq.Operation:
+        return super().on(*sorted(qubits))
+
+    @property
+    def phase_exponent(self) -> float:
+        return self._phase_exponent
+
+    @property
+    def exponent(self) -> float:
+        return self._exponent
+
+    @property
+    def axis_angle(self) -> float:
+        return self._phase_exponent * np.pi
+
+    @property
+    def rot_angle(self) -> float:
+        return self._exponent * np.pi
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        diagram_info = cirq.protocols.circuit_diagram_info(self.sub_gate, args, NotImplemented)
+        wire_symbols = tuple(diagram_info.wire_symbols) + ("·",) * (self.num_copies - 1)
+        return cirq.protocols.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def __str__(self) -> str:
+        return f"Rxy({self.axis_angle/np.pi}π, {self.rot_angle/np.pi}π) x {self.num_copies}"
+
+    def __repr__(self) -> str:
+        return (
+            "cirq_superstaq.custom_gates.ParallelRxy"
+            f"({self.num_copies}, {self.axis_angle}, {self.rot_angle})"
+        )
+
+    def _json_dict_(self) -> Dict[str, Any]:
+        return cirq.protocols.obj_to_dict_helper(self, ["num_copies", "axis_angle", "rot_angle"])
+
+    @classmethod
+    def _from_json_dict_(
+        cls, num_copies: int, axis_angle: float, rot_angle: float, **kwargs: Any
+    ) -> Any:
+        return cls(num_copies, axis_angle, rot_angle)
+
+
 def custom_resolver(cirq_type: str) -> Union[Callable[..., cirq.Gate], None]:
     if cirq_type == "FermionicSWAPGate":
         return FermionicSWAPGate
@@ -449,5 +504,7 @@ def custom_resolver(cirq_type: str) -> Union[Callable[..., cirq.Gate], None]:
         return MSGate
     if cirq_type == "Rxy":
         return Rxy
+    if cirq_type == "ParallelRxy":
+        return ParallelRxy
 
     return None
