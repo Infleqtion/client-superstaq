@@ -1,6 +1,6 @@
 """Miscellaneous custom gates that we encounter and want to explicitly define."""
 
-from typing import AbstractSet, Any, Callable, cast, Dict, List, Optional, Sequence, Tuple, Union
+from typing import AbstractSet, Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import cirq
 import numpy as np
@@ -414,7 +414,7 @@ class Rxy(cirq.PhasedXPowGate):
     def rot_angle(self) -> float:
         return self.exponent * np.pi
 
-    def __pow__(self, power: Union[float, int]) -> "Rxy":
+    def __pow__(self, power: float) -> "Rxy":
         return Rxy(self.axis_angle, power * self.rot_angle)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
@@ -432,59 +432,53 @@ class Rxy(cirq.PhasedXPowGate):
     def _json_dict_(self) -> Dict[str, Any]:
         return cirq.protocols.obj_to_dict_helper(self, ["axis_angle", "rot_angle"])
 
-    @classmethod
-    def _from_json_dict_(cls, axis_angle: float, rot_angle: float, **kwargs: Any) -> Any:
-        return cls(axis_angle, rot_angle)
-
 
 @cirq.value_equality(approximate=True)
 class ParallelRxy(cirq.ParallelGate):
     """Wrapper class to define a ParallelGate of identical Rxy gates."""
 
-    def __init__(self, num_copies: int, axis_angle: float, rot_angle: float) -> None:
+    def __init__(self, axis_angle: float, rot_angle: float, num_copies: int) -> None:
         super().__init__(cirq_superstaq.Rxy(axis_angle, rot_angle), num_copies)
+        self._sub_gate: Rxy
 
-    def on(self, *qubits: cirq.Qid) -> cirq.Operation:
-        return super().on(*sorted(qubits))
+    @property
+    def sub_gate(self) -> Rxy:
+        return self._sub_gate
 
     @property
     def phase_exponent(self) -> float:
-        return cast(cirq_superstaq.Rxy, self.sub_gate).phase_exponent
+        return self.sub_gate.phase_exponent
 
     @property
     def exponent(self) -> float:
-        return cast(cirq_superstaq.Rxy, self.sub_gate).exponent
+        return self.sub_gate.exponent
 
     @property
     def axis_angle(self) -> float:
-        return cast(cirq_superstaq.Rxy, self.sub_gate).axis_angle
+        return self.sub_gate.axis_angle
 
     @property
     def rot_angle(self) -> float:
-        return cast(cirq_superstaq.Rxy, self.sub_gate).rot_angle
+        return self.sub_gate.rot_angle
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        diagram_info = cirq.protocols.circuit_diagram_info(self.sub_gate, args, NotImplemented)
-        wire_symbols = tuple(diagram_info.wire_symbols) + ("·",) * (self.num_copies - 1)
-        return cirq.protocols.CircuitDiagramInfo(wire_symbols=wire_symbols)
+        diagram_info = cirq.circuit_diagram_info(self.sub_gate, args)
+        wire_symbols = tuple(diagram_info.wire_symbols) + tuple(
+            f"#{idx}" for idx in range(2, self.num_copies + 1)
+        )
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def __str__(self) -> str:
-        return f"Rxy({self.axis_angle/np.pi}π, {self.rot_angle/np.pi}π) x {self.num_copies}"
+        return f"Rxy({self.phase_exponent}π, {self.exponent}π) x {self.num_copies}"
 
     def __repr__(self) -> str:
-        return (
-            "cirq_superstaq.custom_gates.ParallelRxy"
-            f"({self.num_copies}, {self.axis_angle}, {self.rot_angle})"
-        )
+        return f"cirq_superstaq.ParallelRxy({self.axis_angle}, {self.rot_angle}, {self.num_copies})"
 
     def _json_dict_(self) -> Dict[str, Any]:
-        return cirq.protocols.obj_to_dict_helper(self, ["num_copies", "axis_angle", "rot_angle"])
+        return cirq.protocols.obj_to_dict_helper(self, ["axis_angle", "rot_angle", "num_copies"])
 
-    @classmethod
-    def _from_json_dict_(
-        cls, num_copies: int, axis_angle: float, rot_angle: float, **kwargs: Any
-    ) -> Any:
-        return cls(num_copies, axis_angle, rot_angle)
+    def on(self, *qubits: cirq.Qid) -> cirq.Operation:
+        return super().on(*sorted(qubits))
 
 
 def custom_resolver(cirq_type: str) -> Union[Callable[..., cirq.Gate], None]:
