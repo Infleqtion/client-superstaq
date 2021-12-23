@@ -477,9 +477,6 @@ class ParallelRxy(cirq.ParallelGate):
     def _json_dict_(self) -> Dict[str, Any]:
         return cirq.protocols.obj_to_dict_helper(self, ["axis_angle", "rot_angle", "num_copies"])
 
-    def on(self, *qubits: cirq.Qid) -> cirq.Operation:
-        return super().on(*sorted(qubits))
-
 
 def custom_resolver(cirq_type: str) -> Union[Callable[..., cirq.Gate], None]:
     if cirq_type == "FermionicSWAPGate":
