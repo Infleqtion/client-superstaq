@@ -334,9 +334,10 @@ def test_parallel_gates_equivalence_groups() -> None:
 def test_rxy() -> None:
     qubit = cirq.LineQubit(0)
 
-    rot_gate = cirq_superstaq.custom_gates.Rxy(1.23 * np.pi, 4.56 * np.pi)
+    rot_gate = cirq_superstaq.Rxy(1.23 * np.pi, 4.56 * np.pi)
     cirq.testing.assert_equivalent_repr(rot_gate, setup_code="import cirq_superstaq")
     assert str(rot_gate) == f"Rxy({rot_gate.phase_exponent}π, {rot_gate.exponent}π)"
+    assert rot_gate ** -1 == cirq_superstaq.Rxy(rot_gate.axis_angle, -rot_gate.rot_angle)
 
     circuit = cirq.Circuit(rot_gate.on(qubit))
 
@@ -349,8 +350,36 @@ def test_rxy() -> None:
 
     assert np.allclose(cirq.unitary(circuit), cirq.unitary(decomposed_circuit))
 
-    circuit = cirq.Circuit(cirq_superstaq.custom_gates.Rxy(np.pi, 0.5 * np.pi).on(qubit))
+    circuit = cirq.Circuit(cirq_superstaq.Rxy(np.pi, 0.5 * np.pi).on(qubit))
     cirq.testing.assert_has_diagram(circuit, "0: ───Rxy(π, 0.5π)───")
+
+
+def test_parallel_rxy() -> None:
+    qubits = cirq.LineQubit.range(2)
+
+    rot_gate = cirq_superstaq.ParallelRxy(1.23 * np.pi, 4.56 * np.pi, len(qubits))
+    cirq.testing.assert_equivalent_repr(rot_gate, setup_code="import cirq; import cirq_superstaq")
+    text = f"Rxy({rot_gate.phase_exponent}π, {rot_gate.exponent}π) x {len(qubits)}"
+    assert str(rot_gate) == text
+
+    circuit = cirq.Circuit(rot_gate.on(*qubits))
+
+    # build ParallelRxy decomposition manually
+    manual_circuit = cirq.Circuit(
+        [cirq_superstaq.Rxy(rot_gate.axis_angle, rot_gate.rot_angle).on(qubit) for qubit in qubits]
+    )
+
+    assert np.allclose(cirq.unitary(circuit), cirq.unitary(manual_circuit))
+
+    circuit = cirq.Circuit(cirq_superstaq.ParallelRxy(np.pi, 0.5 * np.pi, len(qubits)).on(*qubits))
+    text = textwrap.dedent(
+        """
+        0: ───Rxy(π, 0.5π)───
+              │
+        1: ───#2─────────────
+        """
+    )
+    cirq.testing.assert_has_diagram(circuit, text)
 
 
 def test_custom_resolver() -> None:
@@ -365,7 +394,8 @@ def test_custom_resolver() -> None:
         qubits[0], qubits[2], qubits[3]
     )
     circuit += cirq_superstaq.custom_gates.MSGate(rads=0.5).on(qubits[0], qubits[1])
-    circuit += cirq_superstaq.custom_gates.Rxy(1.23, 4.56).on(qubits[0])
+    circuit += cirq_superstaq.Rxy(1.23, 4.56).on(qubits[0])
+    circuit += cirq_superstaq.ParallelRxy(1.23, 4.56, len(qubits)).on(*qubits)
     circuit += cirq.CX(qubits[0], qubits[1])
 
     json_text = cirq.to_json(circuit)
