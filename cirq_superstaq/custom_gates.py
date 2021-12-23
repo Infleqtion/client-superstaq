@@ -434,7 +434,7 @@ class Rxy(cirq.PhasedXPowGate):
 
 
 @cirq.value_equality(approximate=True)
-class ParallelRxy(cirq.ParallelGate):
+class ParallelRxy(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
     """Wrapper class to define a ParallelGate of identical Rxy gates."""
 
     def __init__(self, axis_angle: float, rot_angle: float, num_copies: int) -> None:
