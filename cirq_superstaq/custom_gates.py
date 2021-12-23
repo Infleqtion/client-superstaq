@@ -1,6 +1,6 @@
 """Miscellaneous custom gates that we encounter and want to explicitly define."""
 
-from typing import AbstractSet, Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import AbstractSet, Any, Callable, cast, Dict, List, Optional, Sequence, Tuple, Union
 
 import cirq
 import numpy as np
@@ -442,8 +442,6 @@ class ParallelRxy(cirq.ParallelGate):
     """Wrapper class to define a ParallelGate of identical Rxy gates."""
 
     def __init__(self, num_copies: int, axis_angle: float, rot_angle: float) -> None:
-        self._phase_exponent = axis_angle / np.pi
-        self._exponent = rot_angle / np.pi
         super().__init__(cirq_superstaq.Rxy(axis_angle, rot_angle), num_copies)
 
     def on(self, *qubits: cirq.Qid) -> cirq.Operation:
@@ -451,19 +449,19 @@ class ParallelRxy(cirq.ParallelGate):
 
     @property
     def phase_exponent(self) -> float:
-        return self._phase_exponent
+        return cast(cirq_superstaq.Rxy, self.sub_gate).phase_exponent
 
     @property
     def exponent(self) -> float:
-        return self._exponent
+        return cast(cirq_superstaq.Rxy, self.sub_gate).exponent
 
     @property
     def axis_angle(self) -> float:
-        return self._phase_exponent * np.pi
+        return cast(cirq_superstaq.Rxy, self.sub_gate).axis_angle
 
     @property
     def rot_angle(self) -> float:
-        return self._exponent * np.pi
+        return cast(cirq_superstaq.Rxy, self.sub_gate).rot_angle
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         diagram_info = cirq.protocols.circuit_diagram_info(self.sub_gate, args, NotImplemented)
