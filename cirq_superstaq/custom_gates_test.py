@@ -350,6 +350,21 @@ def test_rxy() -> None:
 
     assert np.allclose(cirq.unitary(circuit), cirq.unitary(decomposed_circuit))
 
+    expected_qasm = textwrap.dedent(
+        """\
+        OPENQASM 2.0;
+        include "qelib1.inc";
+
+
+        // Qubits: [0]
+        qreg q[1];
+
+
+        rxy(pi*-0.77,pi*4.56) q[0];
+        """
+    )
+    assert circuit.to_qasm(header="") == expected_qasm
+
     circuit = cirq.Circuit(cirq_superstaq.Rxy(np.pi, 0.5 * np.pi).on(qubit))
     cirq.testing.assert_has_diagram(circuit, "0: ───Rxy(π, 0.5π)───")
 
