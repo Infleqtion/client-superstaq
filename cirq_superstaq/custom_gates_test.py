@@ -376,6 +376,9 @@ def test_parallel_rxy() -> None:
     cirq.testing.assert_equivalent_repr(rot_gate, setup_code="import cirq; import cirq_superstaq")
     text = f"Rxy({rot_gate.phase_exponent}π, {rot_gate.exponent}π) x {len(qubits)}"
     assert str(rot_gate) == text
+    assert rot_gate ** -1 == cirq_superstaq.ParallelRxy(
+        rot_gate.axis_angle, -rot_gate.rot_angle, len(qubits)
+    )
 
     circuit = cirq.Circuit(rot_gate.on(*qubits))
 

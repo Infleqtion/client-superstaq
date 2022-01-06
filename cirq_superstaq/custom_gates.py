@@ -469,6 +469,9 @@ class ParallelRxy(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
     def rot_angle(self) -> float:
         return self.sub_gate.rot_angle
 
+    def __pow__(self, power: float) -> "ParallelRxy":
+        return ParallelRxy(self.axis_angle, power * self.rot_angle, self.num_copies)
+
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         diagram_info = cirq.circuit_diagram_info(self.sub_gate, args)
         wire_symbols = tuple(diagram_info.wire_symbols) + tuple(
