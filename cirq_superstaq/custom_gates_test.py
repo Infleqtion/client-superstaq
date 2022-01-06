@@ -360,7 +360,7 @@ def test_rxy() -> None:
         qreg q[1];
 
 
-        rxy(pi*-0.77,pi*4.56) q[0];
+        rphi(pi*-0.77,pi*4.56) q[0];
         """
     )
     assert circuit.to_qasm(header="") == expected_qasm

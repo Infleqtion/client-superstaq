@@ -425,7 +425,7 @@ class Rxy(cirq.PhasedXPowGate):
 
     def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, ...]) -> Optional[str]:
         return args.format(
-            "rxy({0:half_turns},{1:half_turns}) {2};\n",
+            "rphi({0:half_turns},{1:half_turns}) {2};\n",
             self.phase_exponent,
             self.exponent,
             qubits[0],
