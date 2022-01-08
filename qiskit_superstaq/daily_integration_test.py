@@ -4,6 +4,7 @@ import os
 import numpy as np
 import pytest
 import qiskit
+from applications_superstaq import SuperstaQException
 
 import qiskit_superstaq
 
@@ -13,6 +14,16 @@ def provider() -> qiskit_superstaq.superstaq_provider.SuperstaQProvider:
     token = os.environ["TEST_USER_TOKEN"]
     provider = qiskit_superstaq.superstaq_provider.SuperstaQProvider(api_key=token)
     return provider
+
+
+def test_ibmq_set_token() -> None:
+    api_token = os.environ["TEST_USER_TOKEN"]
+    ibmq_token = os.environ["TEST_USER_IBMQ_TOKEN"]
+    provider = qiskit_superstaq.superstaq_provider.SuperstaQProvider(api_key=api_token)
+    assert provider.ibmq_set_token(ibmq_token) == "Your IBM Q account token has been updated"
+
+    with pytest.raises(SuperstaQException, match="IBMQ token is invalid."):
+        assert provider.ibmq_set_token("INVALID_TOKEN")
 
 
 def test_aqt_compile(provider: qiskit_superstaq.superstaq_provider.SuperstaQProvider) -> None:
