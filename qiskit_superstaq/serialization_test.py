@@ -1,3 +1,9 @@
+import io
+import warnings
+from unittest import mock
+
+import applications_superstaq
+import pytest
 import qiskit
 
 import qiskit_superstaq
@@ -68,3 +74,27 @@ def test_circuit_serialization() -> None:
     serialized_circuits = qiskit_superstaq.serialization.serialize_circuits(circuits)
     assert isinstance(serialized_circuits, str)
     assert qiskit_superstaq.serialization.deserialize_circuits(serialized_circuits) == circuits
+
+
+def test_warning_suppression() -> None:
+    circuit = qiskit.QuantumCircuit(3)
+    circuit.cx(2, 1)
+    circuit.h(0)
+
+    major, minor, patch = qiskit.__version__.split(".")
+    newer_version = f"{major}.{minor}.{int(patch) + 1}"
+
+    # QPY encodes qiskit.__version__ into the serialized circuit, so mocking a newer version string
+    # during serialization will cause a QPY version UserWarning during deserialization
+    with mock.patch("qiskit.circuit.qpy_serialization.__version__", newer_version):
+        serialized_circuit = qiskit_superstaq.serialization.serialize_circuits(circuit)
+
+    # Check that a warning would normally be thrown
+    with pytest.warns(UserWarning):
+        buf = io.BytesIO(applications_superstaq.converters._str_to_bytes(serialized_circuit))
+        _ = qiskit.circuit.qpy_serialization.load(buf)
+
+    # Check that it is suppressed by deserialize_circuits
+    with warnings.catch_warnings():
+        warnings.filterwarnings("error")
+        _ = qiskit_superstaq.serialization.deserialize_circuits(serialized_circuit)

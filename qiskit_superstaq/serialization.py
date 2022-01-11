@@ -1,4 +1,5 @@
 import io
+import warnings
 from typing import Dict, List, Set, Tuple, Union
 
 import applications_superstaq
@@ -87,7 +88,10 @@ def deserialize_circuits(serialized_circuits: str) -> List[qiskit.QuantumCircuit
         a list of QuantumCircuits
     """
     buf = io.BytesIO(applications_superstaq.converters._str_to_bytes(serialized_circuits))
-    circuits = qiskit.circuit.qpy_serialization.load(buf)
+
+    with warnings.catch_warnings(record=False):
+        warnings.filterwarnings("ignore", "The qiskit version", UserWarning, "qiskit")
+        circuits = qiskit.circuit.qpy_serialization.load(buf)
 
     for circuit in circuits:
         for pc, (inst, qargs, cargs) in enumerate(circuit._data):
