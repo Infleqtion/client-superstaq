@@ -111,26 +111,10 @@ class SuperstaQProvider(
         return self.api_key
 
     def backends(self) -> List[qss.superstaq_backend.SuperstaQBackend]:
-        # needs to be fixed (#469)
-        backend_names = [
-            "aqt_device",
-            "ionq_device",
-            "rigetti_device",
-            "ibmq_botoga",
-            "ibmq_casablanca",
-            "ibmq_jakarta",
-            "ibmq_qasm_simulator",
-        ]
-
+        ss_backends = self._client.get_backends()["superstaq_backends"]
         backends = []
-
-        for name in backend_names:
-            backends.append(
-                qss.superstaq_backend.SuperstaQBackend(
-                    provider=self, remote_host=self.remote_host, backend=name
-                )
-            )
-
+        for backend_str in ss_backends["compile-and-run"]:
+            backends.append(self.get_backend(backend_str))
         return backends
 
     def _http_headers(self) -> dict:

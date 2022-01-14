@@ -16,6 +16,14 @@ def provider() -> qiskit_superstaq.superstaq_provider.SuperstaQProvider:
     return provider
 
 
+def test_backends() -> None:
+    token = os.environ["TEST_USER_TOKEN"]
+    provider = qiskit_superstaq.superstaq_provider.SuperstaQProvider(api_key=token)
+    result = provider.backends()
+    assert provider.get_backend("ibmq_qasm_simulator") in result
+    assert provider.get_backend("aqt_keysight_qpu") in result
+
+
 def test_ibmq_set_token() -> None:
     api_token = os.environ["TEST_USER_TOKEN"]
     ibmq_token = os.environ["TEST_USER_IBMQ_TOKEN"]
