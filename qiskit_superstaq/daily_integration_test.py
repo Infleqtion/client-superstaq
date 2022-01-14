@@ -26,6 +26,16 @@ def test_ibmq_set_token() -> None:
         assert provider.ibmq_set_token("INVALID_TOKEN")
 
 
+def test_ibmq_compile(provider: qiskit_superstaq.superstaq_provider.SuperstaQProvider) -> None:
+    qc = qiskit.QuantumCircuit(2)
+    qc.append(qiskit_superstaq.AceCR("+-"), [0, 1])
+    out = provider.ibmq_compile(qc, target="ibmq_jakarta_qpu")
+    assert isinstance(out, qiskit.pulse.Schedule)
+    assert 800 <= out.duration <= 1000  # 896 as of 12/27/2021
+    assert out.start_time == 0
+    assert len(out) == 5
+
+
 def test_aqt_compile(provider: qiskit_superstaq.superstaq_provider.SuperstaQProvider) -> None:
     circuit = qiskit.QuantumCircuit(8)
     circuit.h(4)

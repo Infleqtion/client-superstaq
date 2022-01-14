@@ -1,5 +1,6 @@
 import os
 import textwrap
+from unittest import mock
 from unittest.mock import MagicMock, patch
 
 import applications_superstaq
@@ -77,6 +78,16 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     out = provider.aqt_compile([qc, qc])
     assert out.circuits == [qc, qc]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+
+
+@patch(
+    "applications_superstaq.superstaq_client._SuperstaQClient.ibmq_compile",
+    return_value={"pulses": applications_superstaq.converters.serialize([mock.DEFAULT])},
+)
+def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
+    provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
+    assert provider.ibmq_compile(qiskit.QuantumCircuit()) == mock.DEFAULT
+    assert provider.ibmq_compile([qiskit.QuantumCircuit()]) == [mock.DEFAULT]
 
 
 @patch("requests.post")

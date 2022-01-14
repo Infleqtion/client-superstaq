@@ -167,6 +167,23 @@ class SuperstaQProvider(
 
         return compiler_output.read_json_aqt(json_dict, circuits_list)
 
+    def ibmq_compile(
+        self,
+        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        target: str = "ibmq_qasm_simulator",
+    ) -> Union[qiskit.pulse.Schedule, List[qiskit.pulse.Schedule]]:
+        """Returns pulse schedule(s) for the given circuit(s) and target."""
+        serialized_circuits = qss.serialization.serialize_circuits(circuits)
+
+        json_dict = self._client.ibmq_compile(
+            {"qiskit_circuits": serialized_circuits, "backend": target}
+        )
+
+        pulses = applications_superstaq.converters.deserialize(json_dict["pulses"])
+        if isinstance(circuits, qiskit.QuantumCircuit):
+            return pulses[0]
+        return pulses
+
     def qscout_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
