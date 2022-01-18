@@ -41,6 +41,10 @@ def test_aqt_compile(service: cirq_superstaq.Service) -> None:
 
 
 def test_get_balance(service: cirq_superstaq.Service) -> None:
+    balance_str = service.get_balance()
+    assert isinstance(balance_str, str)
+    assert balance_str.startswith("$")
+
     assert isinstance(service.get_balance(pretty_output=False), float)
 
 
