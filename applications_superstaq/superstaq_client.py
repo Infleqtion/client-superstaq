@@ -98,13 +98,32 @@ class _SuperstaQClient:
             "X-Client-Version": self.api_version,
         }
 
+    def get_request(self, endpoint: str) -> dict:
+        def request() -> requests.Response:
+            return requests.get(
+                f"{self.url}{endpoint}",
+                headers=self.headers,
+                verify=self.verify_https,
+            )
+
+        return self._make_request(request).json()
+
+    def post_request(self, endpoint: str, json_dict: Dict[str, Any]) -> dict:
+        def request() -> requests.Response:
+            return requests.post(
+                f"{self.url}{endpoint}",
+                json=json_dict,
+                headers=self.headers,
+                verify=self.verify_https,
+            )
+
+        return self._make_request(request).json()
+
     def create_job(
         self,
         serialized_circuits: Dict[str, str],
         repetitions: Optional[int] = None,
         target: Optional[str] = None,
-        name: Optional[str] = None,
-        ibmq_token: Optional[str] = None,
         ibmq_pulse: Optional[bool] = None,
     ) -> dict:
         """Create a job.
@@ -116,7 +135,7 @@ class _SuperstaQClient:
                 from the returned job.
             target: If supplied the target to run on. Supports one of `qpu` or `simulator`. If not
                 set, uses `default_target`.
-            name: An optional name of the job. Different than the `job_id` of the job.
+            ibmq_pulse: Specify whether to run the job using SuperstaQ's pulse-level optimizations
 
         Returns:
             The json body of the response as a dict. This does not contain populated information
@@ -131,21 +150,11 @@ class _SuperstaQClient:
             "backend": actual_target,
             "shots": repetitions,
         }
-        if ibmq_token:
-            json_dict["ibmq_token"] = ibmq_token
 
         if ibmq_pulse:
             json_dict["ibmq_pulse"] = ibmq_pulse
 
-        def request() -> requests.Response:
-            return requests.post(
-                f"{self.url}/jobs",
-                json=json_dict,
-                headers=self.headers,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
+        return self.post_request("/jobs", json_dict)
 
     def get_job(self, job_id: str) -> dict:
         """Get the job from the SuperstaQ API.
@@ -160,15 +169,7 @@ class _SuperstaQClient:
             SuperstaQNotFoundException: If a job with the given job_id does not exist.
             SuperstaQException: For other API call failures.
         """
-
-        def request() -> requests.Response:
-            return requests.get(
-                f"{self.url}/job/{job_id}",
-                headers=self.headers,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
+        return self.get_request(f"/job/{job_id}")
 
     def get_balance(self) -> dict:
         """Get the querying user's account balance in USD.
@@ -176,27 +177,11 @@ class _SuperstaQClient:
         Returns:
             The json body of the response as a dict.
         """
-
-        def request() -> requests.Response:
-            return requests.get(
-                f"{self.url}/balance",
-                headers=self.headers,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
+        return self.get_request("/balance")
 
     def get_backends(self) -> dict:
         """Makes a GET request to SuperstaQ API to get a list of available backends."""
-
-        def request() -> requests.Response:
-            return requests.get(
-                f"{self.url}/backends",
-                headers=self.headers,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
+        return self.get_request("/backends")
 
     def ibmq_set_token(self, ibmq_token: Dict[str, str]) -> dict:
         """Makes a POST request to SuperstaQ API to set IBMQ token field in database.
@@ -220,55 +205,23 @@ class _SuperstaQClient:
 
     def aqt_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> dict:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
-
-        def request() -> requests.Response:
-            return requests.post(
-                f"{self.url}/aqt_compile",
-                headers=self.headers,
-                json=json_dict,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
+        return self.post_request("/aqt_compile", json_dict)
 
     def qscout_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> dict:
-        """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
+        """Makes a POST request to SuperstaQ API to compile a list of circuits for QSCOUT."""
+        return self.post_request("/qscout_compile", json_dict)
 
-        def request() -> requests.Response:
-            return requests.post(
-                f"{self.url}/qscout_compile",
-                headers=self.headers,
-                json=json_dict,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
+    def cq_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> dict:
+        """Makes a POST request to SuperstaQ API to compile a list of circuits for CQ."""
+        return self.post_request("/cq_compile", json_dict)
 
     def ibmq_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> dict:
         """Makes a POST request to SuperstaQ API to compile a circuits for IBM devices."""
-
-        def request() -> requests.Response:
-            return requests.post(
-                f"{self.url}/ibmq_compile",
-                headers=self.headers,
-                json=json_dict,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
+        return self.post_request("/ibmq_compile", json_dict)
 
     def neutral_atom_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> dict:
         """Makes a POST request to SuperstaQ API to compile a circuits for neutral atom devices."""
-
-        def request() -> requests.Response:
-            return requests.post(
-                f"{self.url}/neutral_atom_compile",
-                headers=self.headers,
-                json=json_dict,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
+        return self.post_request("/neutral_atom_compile", json_dict)
 
     def submit_qubo(self, qubo: qv.QUBO, target: str, repetitions: int = 1000) -> dict:
         """Makes a POST request to SuperstaQ API to submit a QUBO problem to the given target."""
@@ -277,81 +230,28 @@ class _SuperstaQClient:
             "backend": target,
             "shots": repetitions,
         }
-
-        def request() -> requests.Response:
-            return requests.post(
-                f"{self.url}/qubo",
-                headers=self.headers,
-                json=json_dict,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
+        return self.post_request("/qubo", json_dict)
 
     def find_min_vol_portfolio(self, json_dict: dict) -> dict:
         """Makes a POST request to SuperstaQ API to find a minimum volatility portfolio
         that exceeds a certain specified return."""
-
-        def request() -> requests.Response:
-            return requests.post(
-                f"{self.url}/minvol",
-                headers=self.headers,
-                json=json_dict,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
+        return self.post_request("/minvol", json_dict)
 
     def find_max_pseudo_sharpe_ratio(self, json_dict: dict) -> dict:
         """Makes a POST request to SuperstaQ API to find a max Sharpe ratio portfolio."""
-
-        def request() -> requests.Response:
-            return requests.post(
-                f"{self.url}/maxsharpe",
-                headers=self.headers,
-                json=json_dict,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
+        return self.post_request("/maxsharpe", json_dict)
 
     def tsp(self, json_dict: dict) -> dict:
         """Makes a POST request to SuperstaQ API to find a optimal TSP tour."""
-
-        def request() -> requests.Response:
-            return requests.post(
-                f"{self.url}/tsp",
-                headers=self.headers,
-                json=json_dict,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
+        return self.post_request("/tsp", json_dict)
 
     def warehouse(self, json_dict: dict) -> dict:
         """Makes a POST request to SuperstaQ API to find optimal warehouse assignment."""
-
-        def request() -> requests.Response:
-            return requests.post(
-                f"{self.url}/warehouse",
-                headers=self.headers,
-                json=json_dict,
-            )
-
-        return self._make_request(request).json()
+        return self.post_request("/warehouse", json_dict)
 
     def aqt_upload_configs(self, aqt_configs: Dict[str, str]) -> dict:
         """Makes a POST request to SuperstaQ API to upload configurations."""
-
-        def request() -> requests.Response:
-            return requests.post(
-                f"{self.url}/aqt_configs",
-                headers=self.headers,
-                json=aqt_configs,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
+        return self.post_request("/aqt_configs", aqt_configs)
 
     def _target(self, target: Optional[str]) -> str:
         """Returns the target if not None or the default target.

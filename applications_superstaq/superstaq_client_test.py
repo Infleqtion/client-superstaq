@@ -138,8 +138,6 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         serialized_circuits={"Hello": "World"},
         repetitions=200,
         target="qpu",
-        name="bacon",
-        ibmq_token="Hi",
         ibmq_pulse=True,
     )
     assert response == {"foo": "bar"}
@@ -148,7 +146,6 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         "Hello": "World",
         "backend": "qpu",
         "shots": 200,
-        "ibmq_token": "Hi",
         "ibmq_pulse": True,
     }
     mock_post.assert_called_with(
@@ -494,6 +491,20 @@ def test_superstaq_client_qscout_compile(mock_post: mock.MagicMock) -> None:
 
 
 @mock.patch("requests.post")
+def test_superstaq_client_cq_compile(mock_post: mock.MagicMock) -> None:
+    client = applications_superstaq.superstaq_client._SuperstaQClient(
+        client_name="applications-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        default_target="simulator",
+    )
+    client.cq_compile({"Hello": "1", "World": "2"})
+
+    mock_post.assert_called_once()
+    assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/cq_compile"
+
+
+@mock.patch("requests.post")
 def test_superstaq_client_ibmq_compile(mock_post: mock.MagicMock) -> None:
     client = applications_superstaq.superstaq_client._SuperstaQClient(
         client_name="applications-superstaq",
@@ -641,6 +652,7 @@ def test_superstaq_client_warehouse(mock_post: mock.MagicMock) -> None:
         f"http://example.com/{API_VERSION}/warehouse",
         headers=EXPECTED_HEADERS,
         json=expected_json,
+        verify=False,
     )
 
 

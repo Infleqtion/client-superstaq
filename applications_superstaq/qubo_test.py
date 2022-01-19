@@ -5,7 +5,7 @@ import applications_superstaq
 
 
 def test_read_json_qubo_result() -> None:
-    example_solution = np.rec.array(
+    example_solution = np.rec.fromrecords(
         [({0: 0, 1: 1, 3: 1}, -1, 6), ({0: 1, 1: 1, 3: 1}, -1, 4)],
         dtype=[("solution", "O"), ("energy", "<f8"), ("num_occurrences", "<i8")],
     )
