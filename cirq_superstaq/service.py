@@ -269,7 +269,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
     def aqt_compile(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "keysight"
     ) -> "cirq_superstaq.compiler_output.CompilerOutput":
-        """Compiles the given circuit(s) to given target AQT device, optimized to its native gate set.
+        """Compiles the given circuit(s) to target AQT device, optimized to its native gate set.
 
         Args:
             circuits: cirq Circuit(s) with operations on qubits 4 through 8.
@@ -294,7 +294,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
     def qscout_compile(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "qscout"
     ) -> "cirq_superstaq.compiler_output.CompilerOutput":
-        """Compiles the given circuit(s) to given target  QSCOUT device, optimized to its native gate set.
+        """Compiles the given circuit(s) to target QSCOUT device, optimized to its native gate set.
 
         Args:
             circuits: cirq Circuit(s) with operations on qubits 0 and 1.
