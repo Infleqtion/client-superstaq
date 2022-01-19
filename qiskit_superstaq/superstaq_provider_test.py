@@ -157,3 +157,19 @@ def test_qscout_compile(mock_post: MagicMock) -> None:
     }
     out = provider.qscout_compile([qc, qc])
     assert out.circuits == [qc, qc]
+
+
+@patch(
+    "applications_superstaq.superstaq_client._SuperstaQClient.neutral_atom_compile",
+    return_value={"pulses": applications_superstaq.converters.serialize([mock.DEFAULT])},
+)
+def test_neutral_atom_compile(mock_ibmq_compile: MagicMock) -> None:
+    provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
+    assert provider.neutral_atom_compile(qiskit.QuantumCircuit()) == mock.DEFAULT
+    assert provider.neutral_atom_compile([qiskit.QuantumCircuit()]) == [mock.DEFAULT]
+
+    with mock.patch.dict("sys.modules", {"unittest": None}), pytest.raises(
+        applications_superstaq.SuperstaQModuleNotFoundException,
+        match="'neutral_atom_compile' requires module 'unittest'",
+    ):
+        _ = provider.neutral_atom_compile(qiskit.QuantumCircuit())

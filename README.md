@@ -10,6 +10,10 @@ dependencies can be installed via:
 python3 -m venv venv_qiskit_superstaq
 source venv_qiskit_superstaq/bin/activate
 pip install qiskit-superstaq
+pip install -e .
+
+# Run the following to install neutral atom device dependencies.
+pip install -r neutral-atom-requirements.txt
 ```
 
 ### Creating and submitting a circuit through qiskit-superstaq
