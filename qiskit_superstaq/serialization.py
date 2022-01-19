@@ -31,7 +31,7 @@ def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumC
     qiskit_gates = set(AstInterpreter.standard_extension) | {"measure"}
 
     new_circuit = circuit.copy()
-    for pc, (inst, _, _) in enumerate(new_circuit):
+    for inst, _, _ in new_circuit:
         if inst.name in qiskit_gates or id(inst) in unique_inst_ids:
             continue
 
