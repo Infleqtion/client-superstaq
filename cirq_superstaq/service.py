@@ -140,7 +140,6 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         self,
         circuit: cirq.Circuit,
         repetitions: int,
-        name: Optional[str] = None,
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
     ) -> collections.Counter:
@@ -150,7 +149,6 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Args:
             circuit: The circuit to run.
             repetitions: The number of times to run the circuit.
-            name: An optional name for the created job. Different from the `job_id`.
             target: Where to run the job. Can be 'qpu' or 'simulator'.
             param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
 
@@ -158,7 +156,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             A `collection.Counter` for running the circuit.
         """
         resolved_circuit = cirq.protocols.resolve_parameters(circuit, param_resolver)
-        counts = self.create_job(resolved_circuit, repetitions, name, target).counts()
+        counts = self.create_job(resolved_circuit, repetitions, target).counts()
 
         return counts
 
@@ -166,7 +164,6 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         self,
         circuit: cirq.Circuit,
         repetitions: int,
-        name: Optional[str] = None,
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
     ) -> cirq.Result:
@@ -176,14 +173,13 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Args:
             circuit: The circuit to run.
             repetitions: The number of times to run the circuit.
-            name: An optional name for the created job. Different from the `job_id`.
             target: Where to run the job. Can be 'qpu' or 'simulator'.
             param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
 
         Returns:
             A `cirq.Result` for running the circuit.
         """
-        counts = self.get_counts(circuit, repetitions, name, target, param_resolver)
+        counts = self.get_counts(circuit, repetitions, target, param_resolver)
         return counts_to_results(counts, circuit, param_resolver)
 
     def sampler(self, target: str) -> cirq.Sampler:
@@ -201,7 +197,6 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         self,
         circuit: cirq.AbstractCircuit,
         repetitions: int = 1000,
-        name: Optional[str] = None,
         target: Optional[str] = None,
     ) -> job.Job:
         """Create a new job to run the given circuit.
@@ -209,7 +204,6 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Args:
             circuit: The circuit to run.
             repetitions: The number of times to repeat the circuit. Defaults to 100.
-            name: An optional name for the created job. Different from the `job_id`.
             target: Where to run the job. Can be 'qpu' or 'simulator'.
 
         Returns:
@@ -223,7 +217,6 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             serialized_circuits={"cirq_circuits": serialized_circuits},
             repetitions=repetitions,
             target=target,
-            name=name,
         )
         # The returned job does not have fully populated fields, so make
         # a second call and return the results of the fully filled out job.
