@@ -159,6 +159,29 @@ def test_qscout_compile(mock_post: MagicMock) -> None:
     assert out.circuits == [qc, qc]
 
 
+@patch("requests.post")
+def test_cq_compile(mock_post: MagicMock) -> None:
+    provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
+
+    qc = qiskit.QuantumCircuit(1)
+    qc.h(0)
+
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc)
+    }
+    out = provider.cq_compile(qc)
+    assert out.circuit == qc
+
+    out = provider.cq_compile([qc])
+    assert out.circuits == [qc]
+
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc])
+    }
+    out = provider.cq_compile([qc, qc])
+    assert out.circuits == [qc, qc]
+
+
 @patch(
     "applications_superstaq.superstaq_client._SuperstaQClient.neutral_atom_compile",
     return_value={"pulses": applications_superstaq.converters.serialize([mock.DEFAULT])},
