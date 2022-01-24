@@ -50,12 +50,12 @@ class CompilerOutput:
         )
 
 
-def read_json_aqt(json_dict: dict, circuits_list: bool) -> CompilerOutput:
+def read_json_aqt(json_dict: dict, circuits_is_list: bool) -> CompilerOutput:
     """Reads out returned JSON from SuperstaQ API's AQT compilation endpoint.
 
     Args:
         json_dict: a JSON dictionary matching the format returned by /aqt_compile endpoint
-        circuits_list: bool flag that controls whether the returned object has a .circuits
+        circuits_is_list: bool flag that controls whether the returned object has a .circuits
             attribute (if True) or a .circuit attribute (False)
     Returns:
         a CompilerOutput object with the compiled circuit(s). If qtrl is available locally,
@@ -79,19 +79,19 @@ def read_json_aqt(json_dict: dict, circuits_list: bool) -> CompilerOutput:
     compiled_circuits = cirq_superstaq.serialization.deserialize_circuits(
         json_dict["cirq_circuits"]
     )
-    if circuits_list:
+    if circuits_is_list:
         return CompilerOutput(circuits=compiled_circuits, seq=seq, pulse_lists=pulse_lists)
 
     pulse_list = pulse_lists[0] if pulse_lists is not None else None
     return CompilerOutput(circuits=compiled_circuits[0], seq=seq, pulse_lists=pulse_list)
 
 
-def read_json_qscout(json_dict: dict, circuits_list: bool) -> CompilerOutput:
+def read_json_qscout(json_dict: dict, circuits_is_list: bool) -> CompilerOutput:
     """Reads out returned JSON from SuperstaQ API's QSCOUT compilation endpoint.
 
     Args:
         json_dict: a JSON dictionary matching the format returned by /qscout_compile endpoint
-        circuits_list: bool flag that controls whether the returned object has a .circuits
+        circuits_is_list: bool flag that controls whether the returned object has a .circuits
             attribute (if True) or a .circuit attribute (False)
     Returns:
         a CompilerOutput object with the compiled circuit(s) and a list jaqal programs
@@ -102,7 +102,7 @@ def read_json_qscout(json_dict: dict, circuits_list: bool) -> CompilerOutput:
         json_dict["cirq_circuits"]
     )
 
-    if circuits_list:
+    if circuits_is_list:
         return CompilerOutput(
             circuits=compiled_circuits, jaqal_programs=json_dict["jaqal_programs"]
         )
@@ -110,3 +110,25 @@ def read_json_qscout(json_dict: dict, circuits_list: bool) -> CompilerOutput:
     return CompilerOutput(
         circuits=compiled_circuits[0], jaqal_programs=json_dict["jaqal_programs"][0]
     )
+
+
+def read_json_only_circuits(json_dict: dict, circuits_is_list: bool) -> CompilerOutput:
+    """Reads out returned JSON from SuperstaQ API's CQ compilation endpoint.
+
+    Args:
+        json_dict: a JSON dictionary matching the format returned by /cq_compile endpoint
+        circuits_is_list: bool flag that controls whether the returned object has a .circuits
+            attribute (if True) or a .circuit attribute (False)
+    Returns:
+        a CompilerOutput object with the compiled circuit(s) and a list jaqal programs
+        represented as strings
+    """
+
+    compiled_circuits = cirq_superstaq.serialization.deserialize_circuits(
+        json_dict["cirq_circuits"]
+    )
+
+    if circuits_is_list:
+        return CompilerOutput(circuits=compiled_circuits)
+
+    return CompilerOutput(circuits=compiled_circuits[0])

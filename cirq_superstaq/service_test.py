@@ -264,6 +264,21 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
     assert out.jaqal_programs == jaqal_program
 
 
+@mock.patch("applications_superstaq.superstaq_client._SuperstaQClient.cq_compile")
+def test_service_cq_compile_single(mock_cq_compile: mock.MagicMock) -> None:
+
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
+
+    mock_cq_compile.return_value = {
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits(circuit),
+    }
+
+    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    out = service.cq_compile(circuit)
+    assert out.circuit == circuit
+
+
 @mock.patch(
     "applications_superstaq.superstaq_client._SuperstaQClient.ibmq_compile",
     return_value={"pulses": applications_superstaq.converters.serialize([mock.DEFAULT])},

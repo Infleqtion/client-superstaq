@@ -39,11 +39,11 @@ def test_read_json() -> None:
         "pulse_lists_jp": pulse_lists_str,
     }
 
-    out = compiler_output.read_json_aqt(json_dict, circuits_list=False)
+    out = compiler_output.read_json_aqt(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
     assert not hasattr(out, "circuits")
 
-    out = compiler_output.read_json_aqt(json_dict, circuits_list=True)
+    out = compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit]
     assert not hasattr(out, "circuit")
 
@@ -54,7 +54,7 @@ def test_read_json() -> None:
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
     }
-    out = compiler_output.read_json_aqt(json_dict, circuits_list=True)
+    out = compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
     assert not hasattr(out, "circuit")
 
@@ -78,7 +78,7 @@ def test_read_json_with_qscout() -> None:
         "jaqal_programs": [jaqal_program],
     }
 
-    out = compiler_output.read_json_qscout(json_dict, circuits_list=False)
+    out = compiler_output.read_json_qscout(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
     assert out.jaqal_programs == jaqal_program
 
@@ -86,6 +86,24 @@ def test_read_json_with_qscout() -> None:
         "cirq_circuits": cirq_superstaq.serialization.serialize_circuits([circuit, circuit]),
         "jaqal_programs": [jaqal_program, jaqal_program],
     }
-    out = compiler_output.read_json_qscout(json_dict, circuits_list=True)
+    out = compiler_output.read_json_qscout(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
     assert out.jaqal_programs == json_dict["jaqal_programs"]
+
+
+def test_read_json_only_circuits() -> None:
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
+
+    json_dict = {
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits(circuit),
+    }
+
+    out = compiler_output.read_json_only_circuits(json_dict, circuits_is_list=False)
+    assert out.circuit == circuit
+
+    json_dict = {
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits([circuit, circuit]),
+    }
+    out = compiler_output.read_json_only_circuits(json_dict, circuits_is_list=True)
+    assert out.circuits == [circuit, circuit]
