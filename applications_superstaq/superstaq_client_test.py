@@ -244,7 +244,7 @@ def test_superstaq_client_create_job_not_retriable(mock_post: mock.MagicMock) ->
         api_key="to_my_heart",
         default_target="simulator",
     )
-    with pytest.raises(applications_superstaq.SuperstaQException, match="Status: 501"):
+    with pytest.raises(applications_superstaq.SuperstaQException, match="Status code: 501"):
         _ = client.create_job({"Hello": "World"})
 
 
@@ -299,6 +299,26 @@ def test_superstaq_client_create_job_timeout(mock_post: mock.MagicMock) -> None:
     )
     with pytest.raises(TimeoutError):
         _ = client.create_job({"Hello": "World"})
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_create_job_json(mock_post: mock.MagicMock) -> None:
+    mock_post.return_value.ok = False
+    mock_post.return_value.status_code = requests.codes.bad_request
+    mock_post.return_value.json.return_value = {"message": "foo bar"}
+
+    client = applications_superstaq.superstaq_client._SuperstaQClient(
+        client_name="applications-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    with pytest.raises(applications_superstaq.SuperstaQException, match="Status code: 400"):
+        _ = client.create_job(
+            serialized_circuits={"Hello": "World"},
+            repetitions=200,
+            target="qpu",
+            ibmq_pulse=True,
+        )
 
 
 @mock.patch("requests.get")
@@ -440,7 +460,7 @@ def test_superstaq_client_get_job_not_retriable(mock_get: mock.MagicMock) -> Non
         api_key="to_my_heart",
         default_target="simulator",
     )
-    with pytest.raises(applications_superstaq.SuperstaQException, match="Status: 400"):
+    with pytest.raises(applications_superstaq.SuperstaQException, match="Status code: 400"):
         _ = client.get_job("job_id")
 
 

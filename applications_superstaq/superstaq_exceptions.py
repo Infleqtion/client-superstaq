@@ -13,6 +13,7 @@ class SuperstaQException(Exception):
     def __init__(self, message: str, status_code: int = None):
         super().__init__(f"Status code: {status_code}, Message: '{message}'")
         self.status_code = status_code
+        self.message = message
 
 
 class SuperstaQModuleNotFoundException(SuperstaQException):
