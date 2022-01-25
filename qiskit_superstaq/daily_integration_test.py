@@ -73,3 +73,17 @@ def test_qscout_compile(provider: qiskit_superstaq.superstaq_provider.SuperstaQP
     assert provider.qscout_compile(circuit).circuit == expected
     assert provider.qscout_compile([circuit]).circuits == [expected]
     assert provider.qscout_compile([circuit, circuit]).circuits == [expected, expected]
+
+
+def test_cq_compile(provider: qiskit_superstaq.superstaq_provider.SuperstaQProvider) -> None:
+    from qiskit.circuit.library import GR
+
+    circuit = qiskit.QuantumCircuit(1)
+    circuit.h(0)
+    expected = qiskit.QuantumCircuit(1)
+    expected.append(GR(1, -0.25 * np.pi, 0.5 * np.pi), [0])
+    expected.z(0)
+    expected.append(GR(1, 0.25 * np.pi, 0.5 * np.pi), [0])
+    assert provider.cq_compile(circuit).circuit == expected
+    assert provider.cq_compile([circuit]).circuits == [expected]
+    assert provider.cq_compile([circuit, circuit]).circuits == [expected, expected]
