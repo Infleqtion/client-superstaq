@@ -198,6 +198,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         circuit: cirq.AbstractCircuit,
         repetitions: int = 1000,
         target: Optional[str] = None,
+        ibmq_pulse: Optional[bool] = None,
     ) -> job.Job:
         """Create a new job to run the given circuit.
 
@@ -217,6 +218,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             serialized_circuits={"cirq_circuits": serialized_circuits},
             repetitions=repetitions,
             target=target,
+            ibmq_pulse=ibmq_pulse,
         )
         # The returned job does not have fully populated fields, so make
         # a second call and return the results of the fully filled out job.
