@@ -12,7 +12,6 @@ from qiskit_superstaq import compiler_output
 
 
 def test_compiler_output_repr() -> None:
-
     circuit = qiskit.QuantumCircuit(4)
     assert (
         repr(compiler_output.CompilerOutput(circuit))
@@ -143,3 +142,10 @@ def test_read_json_with_qscout() -> None:
     out = compiler_output.read_json_qscout(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
     assert out.jaqal_programs == json_dict["jaqal_programs"]
+
+
+def test_compiler_output_eq() -> None:
+    circuit = qiskit.QuantumCircuit(1)
+    circuit.h(0)
+
+    assert compiler_output.CompilerOutput(circuit) != 1

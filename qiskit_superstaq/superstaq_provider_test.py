@@ -119,8 +119,14 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 )
 def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
     provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
-    assert provider.ibmq_compile(qiskit.QuantumCircuit()) == mock.DEFAULT
-    assert provider.ibmq_compile([qiskit.QuantumCircuit()]) == [mock.DEFAULT]
+    from qiskit_superstaq import compiler_output
+
+    assert provider.ibmq_compile(qiskit.QuantumCircuit()) == compiler_output.CompilerOutput(
+        mock.DEFAULT, None, None, None
+    )
+    assert provider.ibmq_compile([qiskit.QuantumCircuit()]) == compiler_output.CompilerOutput(
+        [mock.DEFAULT], None, None, None
+    )
 
 
 @patch("requests.post")

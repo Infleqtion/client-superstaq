@@ -1,5 +1,5 @@
 import importlib
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 
 import applications_superstaq
 import qiskit
@@ -48,6 +48,16 @@ class CompilerOutput:
         return (
             f"CompilerOutput({self.circuits!r}, {self.seq!r}, {self.jaqal_programs!r}, "
             f"{self.pulse_lists!r})"
+        )
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, CompilerOutput):
+            return False
+        return (
+            self.circuits == other.circuits
+            and self.seq == other.seq
+            and self.jaqal_programs == other.jaqal_programs
+            and self.pulse_lists == other.pulse_lists
         )
 
 
