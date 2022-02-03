@@ -9,12 +9,12 @@ import sympy
 import cirq_superstaq
 
 
-def test_fermionic_swap_gate() -> None:
+def test_zz_swap_gate() -> None:
     theta = 0.123
-    gate = cirq_superstaq.FermionicSWAPGate(theta)
+    gate = cirq_superstaq.ZZSwapGate(theta)
 
-    assert str(gate) == "FermionicSWAPGate(0.123)"
-    assert repr(gate) == "cirq_superstaq.FermionicSWAPGate(0.123)"
+    assert str(gate) == "ZZSwapGate(0.123)"
+    assert repr(gate) == "cirq_superstaq.ZZSwapGate(0.123)"
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq")
 
     expected = np.array(
@@ -37,23 +37,23 @@ def test_fermionic_swap_gate() -> None:
     cirq.testing.assert_pauli_expansion_is_consistent_with_unitary(gate)
 
     assert gate ** 1 == gate
-    assert gate ** 0 == cirq_superstaq.FermionicSWAPGate(0.0)
-    assert gate ** -1 == cirq_superstaq.FermionicSWAPGate(-0.123)
+    assert gate ** 0 == cirq_superstaq.ZZSwapGate(0.0)
+    assert gate ** -1 == cirq_superstaq.ZZSwapGate(-0.123)
 
     with pytest.raises(TypeError, match="unsupported operand type"):
         _ = gate ** 1.23
 
 
-def test_fermionic_swap_circuit() -> None:
+def test_zz_swap_circuit() -> None:
     qubits = cirq.LineQubit.range(3)
-    operation = cirq_superstaq.FermionicSWAPGate(0.456 * np.pi)(qubits[0], qubits[2])
+    operation = cirq_superstaq.ZZSwapGate(0.456 * np.pi)(qubits[0], qubits[2])
     circuit = cirq.Circuit(operation)
 
     expected_diagram = textwrap.dedent(
         """
-        0: ───FermionicSWAP(0.456π)───
+        0: ───ZZSwap(0.456π)───
               │
-        2: ───FermionicSWAP(0.456π)───
+        2: ───ZZSwap(0.456π)───
         """
     )
 
@@ -67,19 +67,19 @@ def test_fermionic_swap_circuit() -> None:
         qreg q[3];
 
 
-        fermionic_swap(pi*0.456) q[0],q[2];
+        zzswap(pi*0.456) q[0],q[2];
         """
     )
 
     cirq.testing.assert_has_diagram(circuit, expected_diagram)
     assert circuit.to_qasm(header="", qubit_order=qubits) == expected_qasm
 
-    circuit = cirq.Circuit(cirq_superstaq.FermionicSWAPGate(0.0)(qubits[0], qubits[1]))
+    circuit = cirq.Circuit(cirq_superstaq.ZZSwapGate(0.0)(qubits[0], qubits[1]))
     assert circuit.to_qasm() == cirq.Circuit(cirq.SWAP(qubits[0], qubits[1])).to_qasm()
 
 
-def test_fermionic_swap_parameterized() -> None:
-    gate = cirq_superstaq.FermionicSWAPGate(sympy.var("θ"))
+def test_zz_swap_parameterized() -> None:
+    gate = cirq_superstaq.ZZSwapGate(sympy.var("θ"))
     cirq.testing.assert_consistent_resolve_parameters(gate)
 
     with pytest.raises(TypeError, match="cirq.unitary failed. Value doesn't have"):
@@ -309,7 +309,7 @@ def test_parallel_gates_equivalence_groups() -> None:
         else:
             assert operation != gate(*permuted_qubits)
 
-    gate = cirq_superstaq.ParallelGates(cirq.X, cirq_superstaq.FermionicSWAPGate(1.23), cirq.X)
+    gate = cirq_superstaq.ParallelGates(cirq.X, cirq_superstaq.ZZSwapGate(1.23), cirq.X)
     operation = gate(*qubits[:4])
     assert [gate.qubit_index_to_equivalence_group_key(i) for i in range(4)] == [0, 1, 1, 0]
     equivalent_targets = [
@@ -436,7 +436,7 @@ def test_parallel_rgate() -> None:
 def test_custom_resolver() -> None:
     circuit = cirq.Circuit()
     qubits = cirq.LineQubit.range(4)
-    circuit += cirq_superstaq.FermionicSWAPGate(1.23).on(qubits[0], qubits[1])
+    circuit += cirq_superstaq.ZZSwapGate(1.23).on(qubits[0], qubits[1])
     circuit += cirq_superstaq.AceCRPlusMinus(qubits[0], qubits[1])
     circuit += cirq_superstaq.Barrier(2).on(qubits[0], qubits[1])
     circuit += cirq_superstaq.CR(qubits[0], qubits[1])

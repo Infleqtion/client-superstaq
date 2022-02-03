@@ -9,14 +9,14 @@ import cirq_superstaq
 
 
 @cirq.value_equality(approximate=True)
-class FermionicSWAPGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
-    r"""The Fermionic SWAP gate, which performs the ZZ-interaction followed by a SWAP.
+class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
+    r"""The ZZ-SWAP gate, which performs the ZZ-interaction followed by a SWAP.
 
-    Fermionic SWAPs are useful for applications like QAOA or Hamiltonian Simulation,
+    ZZ-SWAPs are useful for applications like QAOA or Hamiltonian Simulation,
     particularly on linear- or low- connectivity devices. See https://arxiv.org/pdf/2004.14970.pdf
-    for an application of Fermionic SWAP networks.
+    for an application of ZZ SWAP networks.
 
-    The unitary for a Fermionic SWAP gate parametrized by ZZ-interaction angle :math:`\theta` is:
+    The unitary for a ZZ-SWAP gate parametrized by ZZ-interaction angle :math:`\theta` is:
 
      .. math::
 
@@ -28,9 +28,7 @@ class FermionicSWAPGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsG
         \end{bmatrix}
 
     where '.' means '0'.
-    For :math:`\theta = 0`, the Fermionic SWAP gate is just an ordinary SWAP.
-
-    Note that this gate is NOT the same as ``cirq.FSimGate``.
+    For :math:`\theta = 0`, the ZZ-SWAP gate is just an ordinary SWAP.
     """
 
     def __init__(self, theta: float) -> None:
@@ -60,16 +58,16 @@ class FermionicSWAPGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsG
 
     def __pow__(
         self, exponent: float
-    ) -> Union["FermionicSWAPGate", cirq.type_workarounds.NotImplementedType]:
+    ) -> Union["ZZSwapGate", cirq.type_workarounds.NotImplementedType]:
         if exponent in (-1, 0, 1):
-            return FermionicSWAPGate(exponent * self.theta)
+            return ZZSwapGate(exponent * self.theta)
         return NotImplemented
 
     def __str__(self) -> str:
-        return f"FermionicSWAPGate({self.theta})"
+        return f"ZZSwapGate({self.theta})"
 
     def __repr__(self) -> str:
-        return f"cirq_superstaq.FermionicSWAPGate({self.theta})"
+        return f"cirq_superstaq.ZZSwapGate({self.theta})"
 
     def _decompose_(self, qubits: Tuple[cirq.Qid, cirq.Qid]) -> cirq.OP_TREE:
         yield cirq.CX(qubits[0], qubits[1])
@@ -79,7 +77,7 @@ class FermionicSWAPGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsG
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         t = args.format_radians(self.theta)
-        return cirq.CircuitDiagramInfo(wire_symbols=(f"FermionicSWAP({t})", f"FermionicSWAP({t})"))
+        return cirq.CircuitDiagramInfo(wire_symbols=(f"ZZSwap({t})", f"ZZSwap({t})"))
 
     def _is_parameterized_(self) -> bool:
         return cirq.is_parameterized(self.theta)
@@ -87,10 +85,8 @@ class FermionicSWAPGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsG
     def _parameter_names_(self) -> AbstractSet[str]:
         return cirq.parameter_names(self.theta)
 
-    def _resolve_parameters_(
-        self, resolver: cirq.ParamResolver, recursive: bool
-    ) -> "FermionicSWAPGate":
-        return FermionicSWAPGate(
+    def _resolve_parameters_(self, resolver: cirq.ParamResolver, recursive: bool) -> "ZZSwapGate":
+        return ZZSwapGate(
             cirq.protocols.resolve_parameters(self.theta, resolver, recursive),
         )
 
@@ -126,7 +122,7 @@ class FermionicSWAPGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsG
             return cirq.SWAP._qasm_(args, qubits)
 
         return args.format(
-            "fermionic_swap({0:half_turns}) {1},{2};\n",
+            "zzswap({0:half_turns}) {1},{2};\n",
             self.theta / np.pi,
             qubits[0],
             qubits[1],
@@ -496,8 +492,8 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
 
 
 def custom_resolver(cirq_type: str) -> Union[Callable[..., cirq.Gate], None]:
-    if cirq_type == "FermionicSWAPGate":
-        return FermionicSWAPGate
+    if cirq_type == "ZZSwapGate":
+        return ZZSwapGate
     if cirq_type == "Barrier":
         return Barrier
     if cirq_type == "ZXPowGate":

@@ -20,12 +20,12 @@ from cirq_superstaq.custom_gates import (
     AceCRPlusMinus,
     Barrier,
     CR,
-    FermionicSWAPGate,
     ParallelGates,
     ParallelRGate,
     RGate,
     ZX,
     ZXPowGate,
+    ZZSwapGate,
 )
 from cirq_superstaq.job import Job
 from cirq_superstaq.sampler import Sampler
@@ -39,7 +39,6 @@ __all__ = [
     "API_VERSION",
     "Barrier",
     "CR",
-    "FermionicSWAPGate",
     "Job",
     "ParallelGates",
     "ParallelRGate",
@@ -49,4 +48,5 @@ __all__ = [
     "Service",
     "ZX",
     "ZXPowGate",
+    "ZZSwapGate",
 ]
