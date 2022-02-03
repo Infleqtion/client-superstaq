@@ -10,9 +10,9 @@ import qiskit_superstaq
 
 
 def test_assign_unique_inst_names() -> None:
-    inst_0 = qiskit_superstaq.FermionicSWAPGate(0.1)
-    inst_1 = qiskit_superstaq.FermionicSWAPGate(0.2)
-    inst_2 = qiskit_superstaq.FermionicSWAPGate(0.1)
+    inst_0 = qiskit_superstaq.ZZSwapGate(0.1)
+    inst_1 = qiskit_superstaq.ZZSwapGate(0.2)
+    inst_2 = qiskit_superstaq.ZZSwapGate(0.1)
 
     circuit = qiskit.QuantumCircuit(4)
     circuit.append(inst_0, [0, 1])
@@ -23,10 +23,10 @@ def test_assign_unique_inst_names() -> None:
     circuit.rxx(1.2, 1, 2)
 
     expected_inst_names = [
-        "fermionic_swap",
-        "fermionic_swap_1",
-        "fermionic_swap",
-        "fermionic_swap_1",
+        "zzswap",
+        "zzswap_1",
+        "zzswap",
+        "zzswap_1",
         "rxx",
         "rxx",
     ]
@@ -43,24 +43,24 @@ def test_circuit_serialization() -> None:
     circuit_1 = qiskit.QuantumCircuit(4)
     circuit_1.append(qiskit_superstaq.AceCR("+-"), [0, 1])
     circuit_1.append(qiskit_superstaq.AceCR("-+"), [1, 2])
-    circuit_1.append(qiskit_superstaq.FermionicSWAPGate(0.75), [2, 0])
+    circuit_1.append(qiskit_superstaq.ZZSwapGate(0.75), [2, 0])
     circuit_1.append(
         qiskit_superstaq.ParallelGates(
-            qiskit_superstaq.FermionicSWAPGate(3.09),
+            qiskit_superstaq.ZZSwapGate(3.09),
             qiskit.circuit.library.RXXGate(0.1),
         ),
         [1, 2, 0, 3],
     )
     circuit_1.append(
         qiskit_superstaq.ParallelGates(
-            qiskit_superstaq.FermionicSWAPGate(3.09),
+            qiskit_superstaq.ZZSwapGate(3.09),
             qiskit.circuit.library.RXXGate(0.2),
         ),
         [0, 3, 2, 1],
     )
     circuit_1.append(
         qiskit_superstaq.ParallelGates(
-            qiskit_superstaq.FermionicSWAPGate(3.09),
+            qiskit_superstaq.ZZSwapGate(3.09),
             qiskit.circuit.library.RXXGate(0.1),
         ),
         [0, 1, 3, 2],

@@ -60,14 +60,14 @@ class AceCR(qiskit.circuit.Gate):
         return f"AceCR{self.polarity}"
 
 
-class FermionicSWAPGate(qiskit.circuit.Gate):
-    r"""The Fermionic SWAP gate, which performs the ZZ-interaction followed by a SWAP.
+class ZZSwapGate(qiskit.circuit.Gate):
+    r"""The ZZ-SWAP gate, which performs the ZZ-interaction followed by a SWAP.
 
-    Fermionic SWAPs are useful for applications like QAOA or Hamiltonian Simulation,
+    ZZ-SWAPs are useful for applications like QAOA or Hamiltonian Simulation,
     particularly on linear- or low- connectivity devices. See https://arxiv.org/pdf/2004.14970.pdf
-    for an application of Fermionic SWAP networks.
+    for an application of ZZ-SWAP networks.
 
-    The unitary for a Fermionic SWAP gate parametrized by ZZ-interaction angle :math:`\theta` is:
+    The unitary for a ZZ-SWAP gate parametrized by ZZ-interaction angle :math:`\theta` is:
 
      .. math::
 
@@ -79,7 +79,7 @@ class FermionicSWAPGate(qiskit.circuit.Gate):
         \end{bmatrix}
 
     where '.' means '0'.
-    For :math:`\theta = 0`, the Fermionic SWAP gate is just an ordinary SWAP.
+    For :math:`\theta = 0`, the ZZ-SWAP gate is just an ordinary SWAP.
     """
 
     def __init__(self, theta: float, label: Optional[str] = None) -> None:
@@ -88,13 +88,13 @@ class FermionicSWAPGate(qiskit.circuit.Gate):
             theta: ZZ-interaction angle in radians
             label: an optional label for the constructed Gate
         """
-        super().__init__("fermionic_swap", 2, [theta], label=label)
+        super().__init__("zzswap", 2, [theta], label=label)
 
-    def inverse(self) -> "FermionicSWAPGate":
-        return FermionicSWAPGate(-self.params[0])
+    def inverse(self) -> "ZZSwapGate":
+        return ZZSwapGate(-self.params[0])
 
     def _define(self) -> None:
-        qc = qiskit.QuantumCircuit(2, name="fermionic_swap")
+        qc = qiskit.QuantumCircuit(2, name="zzswap")
         qc.cx(0, 1)
         qc.cx(1, 0)
         qc.rz(self.params[0], 1)
@@ -116,11 +116,11 @@ class FermionicSWAPGate(qiskit.circuit.Gate):
         args = f"{self.params[0]}"
         if self.label:
             args += f", label='{self.label}'"
-        return f"qiskit_superstaq.FermionicSWAPGate({args})"
+        return f"qiskit_superstaq.ZZSwapGate({args})"
 
     def __str__(self) -> str:
         args = qiskit.circuit.tools.pi_check(self.params[0], ndigits=8, output="qasm")
-        return f"FermionicSWAPGate({args})"
+        return f"ZZSwapGate({args})"
 
 
 class ParallelGates(qiskit.circuit.Gate):
@@ -174,8 +174,8 @@ def custom_resolver(gate: qiskit.circuit.Gate) -> Optional[qiskit.circuit.Gate]:
         return AceCR("+-", label=gate.label)
     if gate.definition.name == "acecr_mp":
         return AceCR("-+", label=gate.label)
-    if gate.definition.name == "fermionic_swap":
-        return FermionicSWAPGate(gate.params[0], label=gate.label)
+    if gate.definition.name == "zzswap":
+        return ZZSwapGate(gate.params[0], label=gate.label)
     if gate.definition.name == "parallel_gates":
         component_gates = [custom_resolver(inst) or inst for inst, _, _ in gate.definition]
         return ParallelGates(*component_gates, label=gate.label)
