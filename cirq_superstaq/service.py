@@ -141,6 +141,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         circuit: cirq.Circuit,
         repetitions: int,
         target: Optional[str] = None,
+        ibmq_pulse: Optional[bool] = None,
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
     ) -> collections.Counter:
         """Runs the given circuit on the SuperstaQ API and returns the result
@@ -150,13 +151,14 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             circuit: The circuit to run.
             repetitions: The number of times to run the circuit.
             target: Where to run the job. Can be 'qpu' or 'simulator'.
+            ibmq_pulse: Specify whether to run the job using SuperstaQ's pulse-level optimizations.
             param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
 
         Returns:
             A `collection.Counter` for running the circuit.
         """
         resolved_circuit = cirq.protocols.resolve_parameters(circuit, param_resolver)
-        counts = self.create_job(resolved_circuit, repetitions, target).counts()
+        counts = self.create_job(resolved_circuit, repetitions, target, ibmq_pulse).counts()
 
         return counts
 
@@ -165,6 +167,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         circuit: cirq.Circuit,
         repetitions: int,
         target: Optional[str] = None,
+        ibmq_pulse: Optional[bool] = None,
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
     ) -> cirq.Result:
         """Run the given circuit on the SuperstaQ API and returns the result
@@ -174,12 +177,13 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             circuit: The circuit to run.
             repetitions: The number of times to run the circuit.
             target: Where to run the job. Can be 'qpu' or 'simulator'.
+            ibmq_pulse: Specify whether to run the job using SuperstaQ's pulse-level optimizations.
             param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
 
         Returns:
             A `cirq.Result` for running the circuit.
         """
-        counts = self.get_counts(circuit, repetitions, target, param_resolver)
+        counts = self.get_counts(circuit, repetitions, target, ibmq_pulse, param_resolver)
         return counts_to_results(counts, circuit, param_resolver)
 
     def sampler(self, target: str) -> cirq.Sampler:
@@ -206,6 +210,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             circuit: The circuit to run.
             repetitions: The number of times to repeat the circuit. Defaults to 100.
             target: Where to run the job. Can be 'qpu' or 'simulator'.
+            ibmq_pulse: Specify whether to run the job using SuperstaQ's pulse-level optimizations.
 
         Returns:
             A `cirq_superstaq.Job` which can be queried for status or results.
