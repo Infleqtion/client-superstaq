@@ -11,10 +11,9 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-from typing import Any, List, Union
+from typing import Any, List, Optional, Union
 
 import qiskit
-import requests
 
 import qiskit_superstaq as qss
 
@@ -60,38 +59,27 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         )
 
     def run(
-        self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]], **kwargs: int
+        self,
+        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        shots: int,
+        ibmq_pulse: Optional[bool] = None,
     ) -> "qss.superstaq_job.SuperstaQJob":
 
         if isinstance(circuits, qiskit.QuantumCircuit):
             circuits = [circuits]
 
-        superstaq_json = {
-            "qiskit_circuits": qss.serialization.serialize_circuits(circuits),
-            "backend": self.name(),
-            "shots": kwargs.get("shots"),
-            "ibmq_token": kwargs.get("ibmq_token"),
-            "ibmq_hub": kwargs.get("ibmq_hub"),
-            "ibmq_group": kwargs.get("ibmq_group"),
-            "ibmq_project": kwargs.get("ibmq_project"),
-            "ibmq_pulse": kwargs.get("ibmq_pulse"),
-        }
+        qiskit_circuits = qss.serialization.serialize_circuits(circuits)
 
-        res = requests.post(
-            f"{self.remote_host}/{qss.API_VERSION}/jobs",
-            json=superstaq_json,
-            headers=self._provider._http_headers(),
-            verify=(self.remote_host == qss.API_URL),
+        result = self._provider._client.create_job(
+            serialized_circuits={"qiskit_circuits": qiskit_circuits},
+            repetitions=shots,
+            target=self.name(),
+            ibmq_pulse=ibmq_pulse,
         )
-
-        res.raise_for_status()
-        response = res.json()
-        if "job_ids" not in response:
-            raise Exception
 
         #  we make a virtual job_id that aggregates all of the individual jobs
         # into a single one, that comma-separates the individual jobs:
-        job_id = ",".join(response["job_ids"])
+        job_id = ",".join(result["job_ids"])
         job = qss.superstaq_job.SuperstaQJob(self, job_id)
 
         return job

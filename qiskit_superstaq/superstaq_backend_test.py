@@ -1,9 +1,6 @@
-import json
-from typing import Any, Dict, List
+from unittest.mock import MagicMock
 
-import pytest
 import qiskit
-import requests
 
 import qiskit_superstaq as qss
 
@@ -19,28 +16,6 @@ def test_default_options() -> None:
     assert qiskit.providers.Options(shots=1000) == device._default_options()
 
 
-class MockResponse:
-    def __init__(self, job_ids: List[str]) -> None:
-        self.content = json.dumps({"job_ids": job_ids})
-
-    def json(self) -> Dict:
-        return json.loads(self.content)
-
-    def raise_for_status(self) -> None:
-        pass
-
-
-class MockBadResponse:
-    def __init__(self) -> None:
-        self.content = json.dumps({})
-
-    def json(self) -> Dict:
-        return {}
-
-    def raise_for_status(self) -> None:
-        pass
-
-
 class MockProvider(qss.superstaq_provider.SuperstaQProvider):
     def __init__(self) -> None:
         self.api_key = "super.tech"
@@ -52,24 +27,27 @@ class MockDevice(qss.superstaq_backend.SuperstaQBackend):
         self._provider = MockProvider()
 
 
-def test_run(monkeypatch: Any) -> None:
+def test_run() -> None:
     qc = qiskit.QuantumCircuit(2, 2)
     qc.h(0)
     qc.cx(0, 1)
     qc.measure([0, 0], [1, 1])
     device = MockDevice()
 
-    monkeypatch.setattr(requests, "post", lambda *_, **__: MockResponse(["123abc"]))
-    answer = device.run(circuits=qc)
-    expected = qss.superstaq_job.SuperstaQJob(device, "123abc")
+    mock_client = MagicMock()
+    mock_client.create_job.return_value = {
+        "job_ids": ["job_id"],
+        "status": "ready",
+    }
+
+    device._provider._client = mock_client
+
+    answer = device.run(circuits=qc, shots=1000)
+    expected = qss.superstaq_job.SuperstaQJob(device, "job_id")
     assert answer == expected
 
-    monkeypatch.setattr(requests, "post", lambda *_, **__: MockBadResponse())
-    with pytest.raises(Exception):
-        device.run(circuits=qc)
 
-
-def test_multi_circuit_run(monkeypatch: Any) -> None:
+def test_multi_circuit_run() -> None:
     device = MockDevice()
 
     qc1 = qiskit.QuantumCircuit(1, 1)
@@ -81,9 +59,15 @@ def test_multi_circuit_run(monkeypatch: Any) -> None:
     qc2.cx(0, 1)
     qc2.measure([0, 1], [0, 1])
 
-    monkeypatch.setattr(requests, "post", lambda *_, **__: MockResponse(["123abc", "456efg"]))
-    answer = device.run(circuits=[qc1, qc2])
-    expected = qss.superstaq_job.SuperstaQJob(device, "123abc,456efg")
+    mock_client = MagicMock()
+    mock_client.create_job.return_value = {
+        "job_ids": ["job_id"],
+        "status": "ready",
+    }
+    device._provider._client = mock_client
+
+    answer = device.run(circuits=[qc1, qc2], shots=1000)
+    expected = qss.superstaq_job.SuperstaQJob(device, "job_id")
 
     assert answer == expected
 
