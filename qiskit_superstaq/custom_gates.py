@@ -6,32 +6,41 @@ import qiskit
 
 
 class AceCR(qiskit.circuit.Gate):
-    def __init__(self, polarity: str, label: Optional[str] = None) -> None:
-        """
-        Args:
-            polarity: a str indicating the order of ZX ** ±0.25 interactions ('+-' or '-+')
-            label: an optional label for the constructed Gate
-        """
+    """Active Cancellation Echoed Cross Resonance gate, supporting polarity switches and sandwiches.
+
+    The typical AceCR in literature is a positive half-CR, then X on "Z side", then negative
+    half-CR ("Z side" and "X side" refer to the two sides of the underlying ZX interactions).
+    Args:
+        polarity: Should be either "+-" or "-+". Specifies if positive or negative half-CR is first
+        sandwich_rx_rads: Angle of rotation for an rx gate applied to the "X side" simultaneously
+            with the X gate on the "Z side".
+        label: An optional label for the constructed Gate
+    """
+
+    def __init__(self, polarity: str, sandwich_rx_rads: float = 0, label: str = None) -> None:
         if polarity not in ("+-", "-+"):
             raise ValueError("Polarity must be either '+-' or '-+'")
 
         name = "acecr_" + polarity.replace("+", "p").replace("-", "m")
-        super().__init__(name, 2, [], label=label)
+        if sandwich_rx_rads:
+            super().__init__(name + "_rx", 2, [sandwich_rx_rads], label=label)
+        else:
+            super().__init__(name, 2, [], label=label)
+
         self.polarity = polarity
+        self.sandwich_rx_rads = sandwich_rx_rads
 
     def inverse(self) -> "AceCR":
-        return self.copy()
+        return AceCR(self.polarity, sandwich_rx_rads=-self.sandwich_rx_rads, label=self.label)
 
     def _define(self) -> None:
         qc = qiskit.QuantumCircuit(2, name=self.name)
-        if self.polarity == "+-":
-            qc.rzx(np.pi / 4, 0, 1)
-            qc.x(0)
-            qc.rzx(-np.pi / 4, 0, 1)
-        else:
-            qc.rzx(-np.pi / 4, 0, 1)
-            qc.x(0)
-            qc.rzx(np.pi / 4, 0, 1)
+        first_sign = +1 if self.polarity == "+-" else -1
+        qc.rzx(first_sign * np.pi / 4, 0, 1)
+        qc.x(0)
+        if self.sandwich_rx_rads:
+            qc.rx(self.sandwich_rx_rads, 1)
+        qc.rzx(-first_sign * np.pi / 4, 0, 1)
         self.definition = qc
 
     def __array__(self, dtype: Type = None) -> np.ndarray:
@@ -41,7 +50,7 @@ class AceCR(qiskit.circuit.Gate):
         else:
             sval = -1j * cval
 
-        return np.array(
+        mat = np.array(
             [
                 [0, cval, 0, sval],
                 [cval, 0, -sval, 0],
@@ -51,13 +60,25 @@ class AceCR(qiskit.circuit.Gate):
             dtype=dtype,
         )
 
+        # sandwiched rx gate commutes and can just be multiplied with non-sandwiched part:
+        return mat @ np.kron(
+            np.asarray(qiskit.circuit.library.RXGate(self.sandwich_rx_rads), dtype=dtype),
+            np.eye(2, dtype=dtype),
+        )
+
     def __repr__(self) -> str:
+        args = f"'{self.polarity}'"
+        if self.sandwich_rx_rads:
+            args += f", sandwich_rx_rads={self.sandwich_rx_rads}"
         if self.label:
-            return f"qiskit_superstaq.AceCR('{self.polarity}', label='{self.label}')"
-        return f"qiskit_superstaq.AceCR('{self.polarity}')"
+            args += f", label='{self.label}'"
+        return f"qiskit_superstaq.AceCR({args})"
 
     def __str__(self) -> str:
-        return f"AceCR{self.polarity}"
+        if not self.sandwich_rx_rads:
+            return f"AceCR{self.polarity}"
+        arg = qiskit.circuit.tools.pi_check(self.sandwich_rx_rads, ndigits=8, output="qasm")
+        return f"AceCR{self.polarity}|RXGate({arg})|"
 
 
 class ZZSwapGate(qiskit.circuit.Gate):
