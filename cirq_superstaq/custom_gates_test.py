@@ -150,26 +150,49 @@ def test_zx_circuit() -> None:
     )
 
 
-def test_acecr() -> None:
-    qubits = cirq.LineQubit.range(2)
-    expected = "0: ───AceCR-+(Z side)───\n      │\n1: ───AceCR-+(X side)───"
-    assert str(cirq.Circuit(cirq_superstaq.AceCRMinusPlus(qubits[0], qubits[1]))) == expected
-    expected = "0: ───AceCR+-(X side)───\n      │\n1: ───AceCR+-(Z side)───"
-    assert str(cirq.Circuit(cirq_superstaq.AceCRPlusMinus(qubits[1], qubits[0]))) == expected
-    assert cirq_superstaq.AceCRPlusMinus == cirq_superstaq.AceCR("+-")
-    assert cirq_superstaq.AceCRPlusMinus != cirq_superstaq.AceCR("-+")
-    assert repr(cirq_superstaq.AceCRMinusPlus) == "cirq_superstaq.AceCR('-+')"
-    cirq.testing.assert_equivalent_repr(
-        cirq_superstaq.AceCRMinusPlus, setup_code="import cirq_superstaq"
-    )
-    cirq.testing.assert_equivalent_repr(
-        cirq_superstaq.AceCRPlusMinus, setup_code="import cirq_superstaq"
-    )
-    assert str(cirq_superstaq.AceCRMinusPlus) == "AceCR-+"
-    assert hash(cirq_superstaq.AceCRMinusPlus) == hash("-+")
-    assert cirq_superstaq.AceCRPlusMinus != cirq.CNOT
+def test_acecr_init() -> None:
+    cirq_superstaq.AceCR("+-")
+    cirq_superstaq.AceCR("-+", np.pi / 3)
+    with pytest.raises(ValueError, match="Polarity must be"):
+        cirq_superstaq.AceCR("++")
 
-    expected_qasm = textwrap.dedent(
+
+def test_acecr_circuit_diagram_info() -> None:
+    qubits = cirq.LineQubit.range(2)
+    circuit = cirq.Circuit(cirq_superstaq.AceCRMinusPlus(*qubits))
+    assert str(circuit) == textwrap.dedent(
+        """\
+        0: ───AceCR-+(Z side)───
+              │
+        1: ───AceCR-+(X side)───"""
+    )
+
+    circuit = cirq.Circuit(cirq_superstaq.AceCRPlusMinus(*reversed(qubits)))
+    assert str(circuit) == textwrap.dedent(
+        """\
+        0: ───AceCR+-(X side)───
+              │
+        1: ───AceCR+-(Z side)───"""
+    )
+
+    circuit = cirq.Circuit(cirq_superstaq.AceCR("+-", np.pi)(*qubits))
+    assert str(circuit) == textwrap.dedent(
+        """\
+        0: ───AceCR+-(Z side)──────────
+              │
+        1: ───AceCR+-(X side)|Rx(π)|───"""
+    )
+
+
+def test_acecr_qasm() -> None:
+    qubits = cirq.LineQubit.range(2)
+    circuit = cirq.Circuit(
+        cirq_superstaq.AceCR("+-").on(*qubits),
+        cirq_superstaq.AceCR("-+").on(*reversed(qubits)),
+        cirq_superstaq.AceCR("-+", np.pi / 2).on(*qubits),
+    )
+
+    assert circuit.to_qasm(header="") == textwrap.dedent(
         """\
         OPENQASM 2.0;
         include "qelib1.inc";
@@ -181,23 +204,47 @@ def test_acecr() -> None:
 
         acecr_pm q[0],q[1];
         acecr_mp q[1],q[0];
+        acecr_mp_rx(pi*0.5) q[0],q[1];
         """
     )
 
-    circuit = cirq.Circuit(
-        cirq_superstaq.AceCR("+-").on(qubits[0], qubits[1]),
-        cirq_superstaq.AceCR("-+").on(qubits[1], qubits[0]),
+
+def test_acecr_eq() -> None:
+    assert cirq_superstaq.AceCRPlusMinus == cirq_superstaq.AceCR("+-")
+    assert cirq_superstaq.AceCRPlusMinus != cirq_superstaq.AceCR("-+")
+    assert cirq_superstaq.AceCR("+-", np.pi) == cirq_superstaq.AceCR("+-", np.pi)
+    assert cirq_superstaq.AceCR("-+", np.pi) != cirq_superstaq.AceCR("+-", np.pi)
+
+    assert cirq_superstaq.AceCR("+-", np.pi) == cirq_superstaq.AceCR("+-", 5 * np.pi)
+    assert cirq_superstaq.AceCR("+-", np.pi) != cirq_superstaq.AceCR("+-", 3 * np.pi)
+
+    assert cirq.approx_eq(cirq_superstaq.AceCR("+-", np.pi), cirq_superstaq.AceCR("+-", -np.pi))
+    assert cirq.approx_eq(cirq_superstaq.AceCR("+-", np.pi), cirq_superstaq.AceCR("+-", 3 * np.pi))
+
+
+def test_acecr_repr_and_str() -> None:
+    assert repr(cirq_superstaq.AceCRMinusPlus) == "cirq_superstaq.AceCR('-+')"
+    assert (
+        repr(cirq_superstaq.AceCR("+-", np.pi)) == "cirq_superstaq.AceCR('+-', 3.141592653589793)"
     )
-    assert circuit.to_qasm(header="") == expected_qasm
+    cirq.testing.assert_equivalent_repr(
+        cirq_superstaq.AceCRMinusPlus, setup_code="import cirq_superstaq"
+    )
+    cirq.testing.assert_equivalent_repr(
+        cirq_superstaq.AceCR("+-", np.pi), setup_code="import cirq; import cirq_superstaq"
+    )
+    assert str(cirq_superstaq.AceCRMinusPlus) == "AceCR-+"
+    assert str(cirq_superstaq.AceCR("+-", np.pi)) == "AceCR+-|Rx(π)|"
 
 
 def test_acecr_decompose() -> None:
     a = cirq.LineQubit(0)
     b = cirq.LineQubit(1)
-    assert cirq.decompose_once(cirq_superstaq.AceCRMinusPlus(a, b)) is not None
-    cirq.testing.assert_decompose_is_consistent_with_unitary(
-        cirq_superstaq.AceCRMinusPlus, ignoring_global_phase=True
-    )
+    circuit = cirq.Circuit(cirq.decompose_once(cirq_superstaq.AceCRMinusPlus(a, b)))
+    assert len(circuit) == 3 and len(list(circuit.all_operations())) == 3
+
+    circuit = cirq.Circuit(cirq.decompose_once(cirq_superstaq.AceCR("+-", -np.pi / 2)(a, b)))
+    assert len(circuit) == 3 and len(list(circuit.all_operations())) == 4
 
 
 def test_barrier() -> None:
@@ -441,6 +488,7 @@ def test_custom_resolver() -> None:
     circuit += cirq_superstaq.Barrier(2).on(qubits[0], qubits[1])
     circuit += cirq_superstaq.CR(qubits[0], qubits[1])
     circuit += cirq_superstaq.AceCRMinusPlus(qubits[0], qubits[1])
+    circuit += cirq_superstaq.AceCR("+-", -np.pi / 2)(qubits[0], qubits[1])
     circuit += cirq_superstaq.ParallelGates(cirq.X, cirq_superstaq.ZX).on(
         qubits[0], qubits[2], qubits[3]
     )
