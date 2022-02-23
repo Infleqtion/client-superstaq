@@ -41,6 +41,7 @@ setup(
     license="N/A",
     description=description,
     long_description=long_description,
+    long_description_content_type="text/markdown",
     packages=supermarq_packages,
     package_data={"supermarq": ["py.typed"]},
 )
