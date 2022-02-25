@@ -45,6 +45,21 @@ def test_ibmq_compile(provider: qiskit_superstaq.superstaq_provider.SuperstaQPro
     assert len(out.circuits) == 5
 
 
+def test_acer_non_neighbor_qubits_compile(
+    provider: qiskit_superstaq.superstaq_provider.SuperstaQProvider,
+) -> None:
+    qc = qiskit.QuantumCircuit(4)
+    qc.append(qiskit_superstaq.AceCR("-+"), [0, 1])
+    qc.append(qiskit_superstaq.AceCR("-+"), [1, 2])
+    qc.append(qiskit_superstaq.AceCR("-+"), [2, 3])
+    out = provider.ibmq_compile(qc, target="ibmq_casablanca_qpu")
+    assert isinstance(out, qiskit_superstaq.compiler_output.CompilerOutput)
+    assert isinstance(out.circuits, qiskit.pulse.Schedule)
+    assert 5000 <= out.circuits.duration <= 5200  # 5184 as of 2/25/2022
+    assert out.circuits.start_time == 0
+    assert len(out.circuits) == 76
+
+
 def test_aqt_compile(provider: qiskit_superstaq.superstaq_provider.SuperstaQProvider) -> None:
     circuit = qiskit.QuantumCircuit(8)
     circuit.h(4)
