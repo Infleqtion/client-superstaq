@@ -38,7 +38,7 @@ setup(
     extras_require={
         "dev_env": dev_requirements,
     },
-    license="N/A",
+    license="Apache 2",
     description=description,
     long_description=long_description,
     long_description_content_type="text/markdown",
