@@ -35,10 +35,10 @@ def test_acer_non_neighbor_qubits_compile(service: cirq_superstaq.Service) -> No
         cirq_superstaq.AceCRMinusPlus(qubits[2], qubits[3]),
     )
 
-    out = service.ibmq_compile(circuit, target="ibmq_casablanca_qpu")
-    assert 5000 <= out.duration <= 5200  # 5184 as of 2/25/2022
+    out = service.ibmq_compile(circuit, target="ibmq_bogota_qpu")
+    assert 5700 <= out.duration <= 5900  # 5824 as of 3/3/2022
     assert out.start_time == 0
-    assert len(out) == 76
+    assert len(out) == 67
 
 
 def test_aqt_compile(service: cirq_superstaq.Service) -> None:
