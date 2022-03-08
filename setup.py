@@ -33,7 +33,7 @@ setup(
     author_email="pranav@super.tech",
     python_requires=(">=3.6.0"),
     install_requires=requirements,
-    license="N/A",
+    license="Apache 2",
     description=description,
     long_description=long_description,
     long_description_content_type="text/markdown",
