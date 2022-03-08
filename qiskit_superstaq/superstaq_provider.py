@@ -147,9 +147,7 @@ class SuperstaQProvider(
             {"qiskit_circuits": serialized_circuits, "backend": target}
         )
 
-        from qiskit_superstaq import compiler_output
-
-        return compiler_output.read_json_aqt(json_dict, circuits_is_list)
+        return qss.compiler_output.read_json_aqt(json_dict, circuits_is_list)
 
     def ibmq_compile(
         self,
@@ -162,14 +160,16 @@ class SuperstaQProvider(
         json_dict = self._client.ibmq_compile(
             {"qiskit_circuits": serialized_circuits, "backend": target}
         )
-
+        compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
         pulses = applications_superstaq.converters.deserialize(json_dict["pulses"])
 
-        from qiskit_superstaq import compiler_output
-
         if isinstance(circuits, qiskit.QuantumCircuit):
-            return compiler_output.CompilerOutput(circuits=pulses[0])
-        return compiler_output.CompilerOutput(circuits=pulses)
+            return qss.compiler_output.CompilerOutput(
+                circuits=compiled_circuits[0], pulse_sequences=pulses[0]
+            )
+        return qss.compiler_output.CompilerOutput(
+            circuits=compiled_circuits, pulse_sequences=pulses
+        )
 
     def qscout_compile(
         self,
@@ -191,10 +191,7 @@ class SuperstaQProvider(
         json_dict = self._client.qscout_compile(
             {"qiskit_circuits": serialized_circuits, "backend": target}
         )
-
-        from qiskit_superstaq import compiler_output
-
-        return compiler_output.read_json_qscout(json_dict, circuits_is_list)
+        return qss.compiler_output.read_json_qscout(json_dict, circuits_is_list)
 
     def cq_compile(
         self,
@@ -215,9 +212,7 @@ class SuperstaQProvider(
             {"qiskit_circuits": serialized_circuits, "backend": target}
         )
 
-        from qiskit_superstaq import compiler_output
-
-        return compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
+        return qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
 
     def neutral_atom_compile(
         self,

@@ -115,17 +115,21 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
 @patch(
     "applications_superstaq.superstaq_client._SuperstaQClient.ibmq_compile",
-    return_value={"pulses": applications_superstaq.converters.serialize([mock.DEFAULT])},
 )
 def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
     provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
-    from qiskit_superstaq import compiler_output
+    qc = qiskit.QuantumCircuit(8)
+    qc.cz(4, 5)
+    mock_ibmq_compile.return_value = {
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "pulses": applications_superstaq.converters.serialize([mock.DEFAULT]),
+    }
 
-    assert provider.ibmq_compile(qiskit.QuantumCircuit()) == compiler_output.CompilerOutput(
-        mock.DEFAULT, None, None, None
+    assert provider.ibmq_compile(qiskit.QuantumCircuit()) == qss.compiler_output.CompilerOutput(
+        qc, mock.DEFAULT, None, None, None
     )
-    assert provider.ibmq_compile([qiskit.QuantumCircuit()]) == compiler_output.CompilerOutput(
-        [mock.DEFAULT], None, None, None
+    assert provider.ibmq_compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
+        [qc], [mock.DEFAULT], None, None, None
     )
 
 

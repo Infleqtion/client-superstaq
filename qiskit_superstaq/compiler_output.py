@@ -15,22 +15,20 @@ except ModuleNotFoundError:
 class CompilerOutput:
     def __init__(
         self,
-        circuits: Union[
-            qiskit.QuantumCircuit,
-            qiskit.pulse.Schedule,
-            List[qiskit.QuantumCircuit],
-            List[qiskit.pulse.Schedule],
-        ],
+        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        pulse_sequences: Union[qiskit.pulse.Schedule, List[qiskit.pulse.Schedule]] = None,
         seq: Optional["qtrl.sequencer.Sequence"] = None,
         jaqal_programs: List[str] = None,
         pulse_lists: Optional[Union[List[List], List[List[List]]]] = None,
     ) -> None:
         if isinstance(circuits, qiskit.QuantumCircuit):
             self.circuit = circuits
+            self.pulse_sequence = pulse_sequences
             self.pulse_list = pulse_lists
             self.jaqal_program = jaqal_programs
         else:
             self.circuits = circuits
+            self.pulse_sequences = pulse_sequences
             self.pulse_lists = pulse_lists
             self.jaqal_programs = jaqal_programs
 
@@ -58,11 +56,24 @@ class CompilerOutput:
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, CompilerOutput):
             return False
+
+        if self.has_multiple_circuits() != other.has_multiple_circuits():
+            return False
+        elif self.has_multiple_circuits():
+            return (
+                self.circuits == other.circuits
+                and self.pulse_sequences == other.pulse_sequences
+                and self.jaqal_programs == other.jaqal_programs
+                and self.pulse_lists == other.pulse_lists
+                and self.seq == other.seq
+            )
+
         return (
-            self.circuits == other.circuits
+            self.circuit == other.circuit
+            and self.pulse_sequence == other.pulse_sequence
+            and self.jaqal_program == other.jaqal_program
+            and self.pulse_list == other.pulse_list
             and self.seq == other.seq
-            and self.jaqal_programs == other.jaqal_programs
-            and self.pulse_lists == other.pulse_lists
         )
 
 

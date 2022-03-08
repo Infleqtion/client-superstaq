@@ -147,5 +147,10 @@ def test_read_json_with_qscout() -> None:
 def test_compiler_output_eq() -> None:
     circuit = qiskit.QuantumCircuit(1)
     circuit.h(0)
+    co = compiler_output.CompilerOutput(circuit)
+    assert co != 1
 
-    assert compiler_output.CompilerOutput(circuit) != 1
+    circuit1 = qiskit.QuantumCircuit(1)
+    circuit1.h(0)
+
+    assert compiler_output.CompilerOutput([circuit, circuit1]) != co

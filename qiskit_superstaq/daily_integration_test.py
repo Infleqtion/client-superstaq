@@ -39,10 +39,11 @@ def test_ibmq_compile(provider: qiskit_superstaq.superstaq_provider.SuperstaQPro
     qc.append(qiskit_superstaq.AceCR("+-"), [0, 1])
     out = provider.ibmq_compile(qc, target="ibmq_jakarta_qpu")
     assert isinstance(out, qiskit_superstaq.compiler_output.CompilerOutput)
-    assert isinstance(out.circuits, qiskit.pulse.Schedule)
-    assert 800 <= out.circuits.duration <= 1000  # 896 as of 12/27/2021
-    assert out.circuits.start_time == 0
-    assert len(out.circuits) == 5
+    assert isinstance(out.circuit, qiskit.QuantumCircuit)
+    assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
+    assert 800 <= out.pulse_sequence.duration <= 1000  # 896 as of 12/27/2021
+    assert out.pulse_sequence.start_time == 0
+    assert len(out.pulse_sequence) == 5
 
 
 def test_acer_non_neighbor_qubits_compile(
@@ -54,10 +55,11 @@ def test_acer_non_neighbor_qubits_compile(
     qc.append(qiskit_superstaq.AceCR("-+"), [2, 3])
     out = provider.ibmq_compile(qc, target="ibmq_bogota_qpu")
     assert isinstance(out, qiskit_superstaq.compiler_output.CompilerOutput)
-    assert isinstance(out.circuits, qiskit.pulse.Schedule)
-    assert 5700 <= out.circuits.duration <= 5900  # 5824 as of 3/3/2022
-    assert out.circuits.start_time == 0
-    assert len(out.circuits) == 67
+    assert isinstance(out.circuit, qiskit.QuantumCircuit)
+    assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
+    assert 5700 <= out.pulse_sequence.duration <= 5900  # 5824 as of 3/3/2022
+    assert out.pulse_sequence.start_time == 0
+    assert len(out.pulse_sequence) == 67
 
 
 def test_aqt_compile(provider: qiskit_superstaq.superstaq_provider.SuperstaQProvider) -> None:
