@@ -1,5 +1,5 @@
 import importlib
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 
 import applications_superstaq
 import cirq
@@ -16,6 +16,7 @@ class CompilerOutput:
     def __init__(
         self,
         circuits: Union[cirq.Circuit, List[cirq.Circuit]],
+        pulse_sequences: Any = None,
         seq: Optional["qtrl.sequencer.Sequence"] = None,
         jaqal_programs: List[str] = None,
         pulse_lists: Optional[Union[List[List], List[List[List]]]] = None,
@@ -23,9 +24,11 @@ class CompilerOutput:
         if isinstance(circuits, cirq.Circuit):
             self.circuit = circuits
             self.pulse_list = pulse_lists
+            self.pulse_sequence = pulse_sequences
         else:
             self.circuits = circuits
             self.pulse_lists = pulse_lists
+            self.pulse_sequences = pulse_sequences
 
         self.seq = seq
         self.jaqal_programs = jaqal_programs

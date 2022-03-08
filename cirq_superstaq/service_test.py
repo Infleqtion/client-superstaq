@@ -281,12 +281,23 @@ def test_service_cq_compile_single(mock_cq_compile: mock.MagicMock) -> None:
 
 @mock.patch(
     "applications_superstaq.superstaq_client._SuperstaQClient.ibmq_compile",
-    return_value={"pulses": applications_superstaq.converters.serialize([mock.DEFAULT])},
 )
 def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    assert service.ibmq_compile(cirq.Circuit()) == mock.DEFAULT
-    assert service.ibmq_compile([cirq.Circuit()]) == [mock.DEFAULT]
+
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
+
+    mock_ibmq_compile.return_value = {
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits(circuit),
+        "pulses": applications_superstaq.converters.serialize([mock.DEFAULT]),
+    }
+
+    assert service.ibmq_compile(circuit).circuit == circuit
+    assert service.ibmq_compile([circuit]).circuits == [circuit]
+
+    assert service.ibmq_compile(circuit).pulse_sequence == mock.DEFAULT
+    assert service.ibmq_compile([circuit]).pulse_sequences == [mock.DEFAULT]
 
     with mock.patch.dict("sys.modules", {"unittest": None}), pytest.raises(
         applications_superstaq.SuperstaQModuleNotFoundException,
@@ -301,7 +312,6 @@ def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
 )
 def test_service_neutral_atom_compile(mock_neutral_atom_compile: mock.MagicMock) -> None:
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
-    print(service.neutral_atom_compile(cirq.Circuit()))
     assert service.neutral_atom_compile(cirq.Circuit()) == mock.DEFAULT
     assert service.neutral_atom_compile([cirq.Circuit()]) == [mock.DEFAULT]
 
