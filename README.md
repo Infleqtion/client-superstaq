@@ -6,7 +6,7 @@
 
 # SupermarQ: A Scalable Quantum Benchmark Suite
 
-[SupermarQ](https://github.com/SupertechLabs/SupermarQ/blob/main/static/SupermarQ_Paper.pdf) is a suite of application-oriented benchmarks used to measure the performance of quantum computing systems.
+[SupermarQ](https://arxiv.org/abs/2202.11045) is a suite of application-oriented benchmarks used to measure the performance of quantum computing systems.
 
 ## Installation
 
