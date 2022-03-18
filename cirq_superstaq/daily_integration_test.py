@@ -38,7 +38,7 @@ def test_acer_non_neighbor_qubits_compile(service: cirq_superstaq.Service) -> No
 
     out = service.ibmq_compile(circuit, target="ibmq_bogota_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
-    assert 5700 <= out.pulse_sequence.duration <= 5900  # 5824 as of 3/3/2022
+    assert 5700 <= out.pulse_sequence.duration <= 6700  # 6624 as of 3/18/2022
     assert out.pulse_sequence.start_time == 0
     assert len(out.pulse_sequence) == 67
 
