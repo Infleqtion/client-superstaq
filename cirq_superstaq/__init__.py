@@ -14,6 +14,7 @@
 
 from cirq_superstaq import compiler_output, serialization
 from cirq_superstaq._init_vars import API_URL, API_VERSION
+from cirq_superstaq._version import __version__
 from cirq_superstaq.custom_gates import (
     AceCR,
     AceCRMinusPlus,
@@ -32,6 +33,7 @@ from cirq_superstaq.sampler import Sampler
 from cirq_superstaq.service import Service
 
 __all__ = [
+    "__version__",
     "AceCR",
     "AceCRMinusPlus",
     "AceCRPlusMinus",
