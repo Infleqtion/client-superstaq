@@ -382,7 +382,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         return cls(*component_gates)
 
     def __pow__(self, exponent: float) -> "ParallelGates":
-        exponentiated_gates = [gate ** exponent for gate in self.component_gates]
+        exponentiated_gates = [gate**exponent for gate in self.component_gates]
         return ParallelGates(*exponentiated_gates)
 
     def __str__(self) -> str:

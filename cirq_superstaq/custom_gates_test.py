@@ -36,12 +36,12 @@ def test_zz_swap_gate() -> None:
     cirq.testing.assert_consistent_resolve_parameters(gate)
     cirq.testing.assert_pauli_expansion_is_consistent_with_unitary(gate)
 
-    assert gate ** 1 == gate
-    assert gate ** 0 == cirq_superstaq.ZZSwapGate(0.0)
-    assert gate ** -1 == cirq_superstaq.ZZSwapGate(-0.123)
+    assert gate**1 == gate
+    assert gate**0 == cirq_superstaq.ZZSwapGate(0.0)
+    assert gate**-1 == cirq_superstaq.ZZSwapGate(-0.123)
 
     with pytest.raises(TypeError, match="unsupported operand type"):
-        _ = gate ** 1.23
+        _ = gate**1.23
 
 
 def test_zz_swap_circuit() -> None:
@@ -98,7 +98,7 @@ def test_zx_matrix() -> None:
 
 def test_zx_str() -> None:
     assert str(cirq_superstaq.ZX) == "ZX"
-    assert str(cirq_superstaq.ZX ** 0.5) == "ZX**0.5"
+    assert str(cirq_superstaq.ZX**0.5) == "ZX**0.5"
     assert str(cirq_superstaq.ZXPowGate(global_shift=0.1)) == "ZX"
 
     iZZ = cirq_superstaq.ZXPowGate(global_shift=0.5)
@@ -134,7 +134,7 @@ def test_zx_circuit() -> None:
         ),
     )
 
-    assert cirq.Circuit(op, op ** 0.25).to_qasm(header="") == textwrap.dedent(
+    assert cirq.Circuit(op, op**0.25).to_qasm(header="") == textwrap.dedent(
         """\
         OPENQASM 2.0;
         include "qelib1.inc";
@@ -305,7 +305,7 @@ def test_barrier() -> None:
 
 
 def test_parallel_gates() -> None:
-    gate = cirq_superstaq.ParallelGates(cirq.CZ, cirq.CZ ** 0.5, cirq.CZ ** -0.5)
+    gate = cirq_superstaq.ParallelGates(cirq.CZ, cirq.CZ**0.5, cirq.CZ**-0.5)
     qubits = cirq.LineQubit.range(6)
     operation = gate(*qubits)
     circuit = cirq.Circuit(operation)
@@ -337,8 +337,8 @@ def test_parallel_gates() -> None:
     ]
     cirq.testing.assert_decompose_is_consistent_with_unitary(gate, ignoring_global_phase=True)
 
-    assert gate ** 0.5 == cirq_superstaq.ParallelGates(
-        cirq.CZ ** 0.5, cirq.CZ ** 0.25, cirq.CZ ** -0.25
+    assert gate**0.5 == cirq_superstaq.ParallelGates(
+        cirq.CZ**0.5, cirq.CZ**0.25, cirq.CZ**-0.25
     )
 
     with pytest.raises(ValueError, match="ParallelGates cannot contain measurements"):
@@ -384,7 +384,7 @@ def test_rgate() -> None:
     rot_gate = cirq_superstaq.RGate(4.56 * np.pi, 1.23 * np.pi)
     cirq.testing.assert_equivalent_repr(rot_gate, setup_code="import cirq_superstaq")
     assert str(rot_gate) == f"RGate({rot_gate.exponent}π, {rot_gate.phase_exponent}π)"
-    assert rot_gate ** -1 == cirq_superstaq.RGate(-rot_gate.theta, rot_gate.phi)
+    assert rot_gate**-1 == cirq_superstaq.RGate(-rot_gate.theta, rot_gate.phi)
 
     circuit = cirq.Circuit(rot_gate.on(qubit))
 
@@ -423,7 +423,7 @@ def test_parallel_rgate() -> None:
     cirq.testing.assert_equivalent_repr(rot_gate, setup_code="import cirq; import cirq_superstaq")
     text = f"RGate({rot_gate.phase_exponent}π, {rot_gate.exponent}π) x {len(qubits)}"
     assert str(rot_gate) == text
-    assert rot_gate ** -1 == cirq_superstaq.ParallelRGate(
+    assert rot_gate**-1 == cirq_superstaq.ParallelRGate(
         -rot_gate.theta, rot_gate.phi, len(qubits)
     )
 

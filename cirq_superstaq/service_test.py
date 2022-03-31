@@ -79,7 +79,7 @@ def test_service_run_and_get_counts() -> None:
 
     a = sympy.Symbol("a")
     q = cirq.LineQubit(0)
-    circuit = cirq.Circuit((cirq.X ** a)(q), cirq.measure(q, key="a"))
+    circuit = cirq.Circuit((cirq.X**a)(q), cirq.measure(q, key="a"))
     params = cirq.ParamResolver({"a": 0.5})
     counts = service.get_counts(
         circuit=circuit,
