@@ -1,3 +1,4 @@
+import os
 from typing import Dict, Union
 
 
@@ -52,3 +53,39 @@ class UserConfig:
         )
 
         return json_dict
+
+    def aqt_get_configs(self) -> Dict:
+        return self._client.aqt_get_configs()
+
+    def aqt_save_configs(self, pulses_file_path: str, variables_file_path: str) -> None:
+        """Writes AQT configs from the AQT system onto the given file paths.
+
+        Args:
+            pulses_file_path: where to write the pulse configurations
+            variables_file_path: where to write the variables configurations
+        Returns:
+            None
+        """
+        pulses_file_exists = os.path.exists(pulses_file_path)
+        variables_file_exists = os.path.exists(variables_file_path)
+
+        if pulses_file_exists and variables_file_exists:
+            raise ValueError(
+                f"{pulses_file_path} and {variables_file_path} "
+                f"exists as pulses and variable files. Please try different filenames to write to"
+            )
+        elif pulses_file_exists:
+            raise ValueError(
+                f"{pulses_file_path} exists. " f"Please try a different filename to write to"
+            )
+        elif variables_file_exists:
+            raise ValueError(
+                f"{variables_file_path} exists " f"Please try a different filename to write to"
+            )
+
+        config_dict = self.aqt_get_configs()
+        with open(pulses_file_path, "w") as text_file:
+            text_file.write(config_dict["pulses"])
+
+        with open(variables_file_path, "w") as text_file:
+            text_file.write(config_dict["variables"])

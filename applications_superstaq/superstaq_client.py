@@ -253,6 +253,10 @@ class _SuperstaQClient:
         """Makes a POST request to SuperstaQ API to upload configurations."""
         return self.post_request("/aqt_configs", aqt_configs)
 
+    def aqt_get_configs(self) -> dict:
+        """Writes AQT configs from the AQT system onto the given file paths."""
+        return self.get_request("/get_aqt_configs")
+
     def _target(self, target: Optional[str]) -> str:
         """Returns the target if not None or the default target.
 

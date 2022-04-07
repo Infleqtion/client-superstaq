@@ -694,3 +694,18 @@ def test_superstaq_client_aqt_upload_configs(mock_post: mock.MagicMock) -> None:
         json=expected_json,
         verify=False,
     )
+
+
+@mock.patch("requests.get")
+def test_superstaq_client_aqt_get_configs(mock_get: mock.MagicMock) -> None:
+    expected_json = {"pulses": "Hello", "variables": "World"}
+
+    mock_get.return_value.json.return_value = expected_json
+    client = applications_superstaq.superstaq_client._SuperstaQClient(
+        client_name="applications-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        default_target="simulator",
+    )
+
+    assert client.aqt_get_configs() == expected_json
