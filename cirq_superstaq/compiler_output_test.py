@@ -9,17 +9,17 @@ import pytest
 import cirq_superstaq
 
 
-def test_aqt_out_repr() -> None:
+def test_compiler_output_repr() -> None:
     circuit = cirq.Circuit()
     assert (
         repr(cirq_superstaq.compiler_output.CompilerOutput(circuit))
-        == f"CompilerOutput({circuit!r}, None, None, None)"
+        == f"CompilerOutput({circuit!r}, None, None, None, None)"
     )
 
     circuits = [circuit, circuit]
     assert (
         repr(cirq_superstaq.compiler_output.CompilerOutput(circuits))
-        == f"CompilerOutput({circuits!r}, None, None, None)"
+        == f"CompilerOutput({circuits!r}, None, None, None, None)"
     )
 
 
@@ -116,7 +116,8 @@ def test_read_json_qscout() -> None:
 
     out = cirq_superstaq.compiler_output.read_json_qscout(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
-    assert out.jaqal_programs == jaqal_program
+    assert out.jaqal_program == jaqal_program
+    assert not hasattr(out, "jaqal_programs")
 
     json_dict = {
         "cirq_circuits": cirq_superstaq.serialization.serialize_circuits([circuit, circuit]),
@@ -125,6 +126,7 @@ def test_read_json_qscout() -> None:
     out = cirq_superstaq.compiler_output.read_json_qscout(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
     assert out.jaqal_programs == json_dict["jaqal_programs"]
+    assert not hasattr(out, "jaqal_program")
 
 
 def test_read_json_only_circuits() -> None:

@@ -19,20 +19,21 @@ class CompilerOutput:
         circuits: Union[cirq.Circuit, List[cirq.Circuit]],
         pulse_sequences: Any = None,
         seq: Optional["qtrl.sequencer.Sequence"] = None,
-        jaqal_programs: List[str] = None,
+        jaqal_programs: Optional[Union[List[str], str]] = None,
         pulse_lists: Optional[Union[List[List], List[List[List]]]] = None,
     ) -> None:
         if isinstance(circuits, cirq.Circuit):
             self.circuit = circuits
             self.pulse_list = pulse_lists
             self.pulse_sequence = pulse_sequences
+            self.jaqal_program = jaqal_programs
         else:
             self.circuits = circuits
             self.pulse_lists = pulse_lists
             self.pulse_sequences = pulse_sequences
+            self.jaqal_programs = jaqal_programs
 
         self.seq = seq
-        self.jaqal_programs = jaqal_programs
 
     def has_multiple_circuits(self) -> bool:
         """Returns True if this object represents multiple circuits.
@@ -45,12 +46,12 @@ class CompilerOutput:
     def __repr__(self) -> str:
         if not self.has_multiple_circuits():
             return (
-                f"CompilerOutput({self.circuit!r}, {self.seq!r}, {self.jaqal_programs!r}, "
-                f"{self.pulse_list!r})"
+                f"CompilerOutput({self.circuit!r}, {self.pulse_sequence!r}, {self.seq!r}, "
+                f"{self.jaqal_program!r}, {self.pulse_list!r})"
             )
         return (
-            f"CompilerOutput({self.circuits!r}, {self.seq!r}, {self.jaqal_programs!r}, "
-            f"{self.pulse_lists!r})"
+            f"CompilerOutput({self.circuits!r}, {self.pulse_sequences!r}, {self.seq!r}, "
+            f"{self.jaqal_programs!r}, {self.pulse_lists!r})"
         )
 
 
@@ -161,8 +162,7 @@ def read_json_only_circuits(json_dict: dict, circuits_is_list: bool) -> Compiler
         circuits_is_list: bool flag that controls whether the returned object has a .circuits
             attribute (if True) or a .circuit attribute (False)
     Returns:
-        a CompilerOutput object with the compiled circuit(s) and a list jaqal programs
-        represented as strings
+        a CompilerOutput object with the compiled circuit(s)
     """
 
     compiled_circuits = cirq_superstaq.serialization.deserialize_circuits(

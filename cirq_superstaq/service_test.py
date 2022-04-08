@@ -245,12 +245,12 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
 
     jaqal_program = textwrap.dedent(
         """\
-                register allqubits[1]
-                prepare_all
-                R allqubits[0] -1.5707963267948966 1.5707963267948966
-                Rz allqubits[0] -3.141592653589793
-                measure_all
-                """
+        register allqubits[1]
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        Rz allqubits[0] -3.141592653589793
+        measure_all
+        """
     )
 
     mock_qscout_compile.return_value = {
@@ -261,7 +261,7 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
     service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
     out = service.qscout_compile(circuit)
     assert out.circuit == circuit
-    assert out.jaqal_programs == jaqal_program
+    assert out.jaqal_program == jaqal_program
 
 
 @mock.patch("applications_superstaq.superstaq_client._SuperstaQClient.cq_compile")

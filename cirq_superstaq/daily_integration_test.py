@@ -98,17 +98,17 @@ def test_qscout_compile(service: cirq_superstaq.Service) -> None:
 
     jaqal_program = textwrap.dedent(
         """\
-                register allqubits[1]
+        register allqubits[1]
 
-                prepare_all
-                R allqubits[0] -1.5707963267948966 1.5707963267948966
-                Rz allqubits[0] -3.141592653589793
-                measure_all
-                """
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        Rz allqubits[0] -3.141592653589793
+        measure_all
+        """
     )
     out = service.qscout_compile(circuit)
     assert out.circuit == compiled_circuit
-    assert out.jaqal_programs == jaqal_program
+    assert out.jaqal_program == jaqal_program
 
 
 def test_cq_compile(service: cirq_superstaq.Service) -> None:
