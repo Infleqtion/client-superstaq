@@ -130,3 +130,9 @@ def test_cq_compile(service: cirq_superstaq.Service) -> None:
 
     out = service.cq_compile(circuit)
     assert out.circuit == compiled_circuit
+
+
+def test_get_aqt_configs(service: cirq_superstaq.Service) -> None:
+    res = service.aqt_get_configs()
+    assert "pulses" in res
+    assert "variables" in res
