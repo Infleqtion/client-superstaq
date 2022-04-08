@@ -105,3 +105,9 @@ def test_cq_compile(provider: qiskit_superstaq.superstaq_provider.SuperstaQProvi
     assert provider.cq_compile(circuit).circuit == expected
     assert provider.cq_compile([circuit]).circuits == [expected]
     assert provider.cq_compile([circuit, circuit]).circuits == [expected, expected]
+
+
+def test_get_aqt_configs(provider: qiskit_superstaq.superstaq_provider.SuperstaQProvider) -> None:
+    res = provider.aqt_get_configs()
+    assert "pulses" in res
+    assert "variables" in res
