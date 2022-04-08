@@ -4,6 +4,7 @@ from unittest import mock
 
 import applications_superstaq
 import cirq
+import pytest
 
 import cirq_superstaq
 
@@ -22,8 +23,44 @@ def test_aqt_out_repr() -> None:
     )
 
 
+def test_read_json_ibmq() -> None:
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
+
+    json_dict = {
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits(circuit),
+        "pulses": applications_superstaq.converters.serialize([mock.DEFAULT]),
+    }
+
+    out = cirq_superstaq.compiler_output.read_json_ibmq(json_dict, circuits_is_list=False)
+    assert out.circuit == circuit
+    assert out.pulse_sequence == mock.DEFAULT
+    assert not hasattr(out, "circuits")
+    assert not hasattr(out, "pulse_sequences")
+
+    out = cirq_superstaq.compiler_output.read_json_ibmq(json_dict, circuits_is_list=True)
+    assert out.circuits == [circuit]
+    assert out.pulse_sequences == [mock.DEFAULT]
+    assert not hasattr(out, "circuit")
+    assert not hasattr(out, "pulse_sequence")
+
+    with mock.patch.dict("sys.modules", {"qiskit": None}), pytest.warns(
+        UserWarning, match="requires Qiskit Terra"
+    ):
+        out = cirq_superstaq.compiler_output.read_json_ibmq(json_dict, circuits_is_list=False)
+        assert out.circuit == circuit
+        assert out.pulse_sequence is None
+
+    with mock.patch("qiskit.__version__", "0.17.2"), pytest.warns(
+        UserWarning, match="you have 0.17.2"
+    ):
+        out = cirq_superstaq.compiler_output.read_json_ibmq(json_dict, circuits_is_list=True)
+        assert out.circuits == [circuit]
+        assert out.pulse_sequences is None
+
+
 @mock.patch.dict("sys.modules", {"qtrl": None})
-def test_read_json() -> None:
+def test_read_json_aqt() -> None:
     importlib.reload(cirq_superstaq.compiler_output)
 
     circuit = cirq.Circuit(cirq.H(cirq.LineQubit(4)))
@@ -58,18 +95,18 @@ def test_read_json() -> None:
     assert not hasattr(out, "circuit")
 
 
-def test_read_json_with_qscout() -> None:
+def test_read_json_qscout() -> None:
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
 
     jaqal_program = textwrap.dedent(
         """\
-                register allqubits[1]
-                prepare_all
-                R allqubits[0] -1.5707963267948966 1.5707963267948966
-                Rz allqubits[0] -3.141592653589793
-                measure_all
-                """
+        register allqubits[1]
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        Rz allqubits[0] -3.141592653589793
+        measure_all
+        """
     )
 
     json_dict = {

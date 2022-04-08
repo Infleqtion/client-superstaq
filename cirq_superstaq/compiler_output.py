@@ -1,4 +1,5 @@
 import importlib
+import warnings
 from typing import Any, List, Optional, Union
 
 import applications_superstaq
@@ -51,6 +52,43 @@ class CompilerOutput:
             f"CompilerOutput({self.circuits!r}, {self.seq!r}, {self.jaqal_programs!r}, "
             f"{self.pulse_lists!r})"
         )
+
+
+def read_json_ibmq(json_dict: dict, circuits_is_list: bool) -> CompilerOutput:
+    """Reads out returned JSON from SuperstaQ API's IBMQ compilation endpoint.
+
+    Args:
+        json_dict: a JSON dictionary matching the format returned by /ibmq_compile endpoint
+        circuits_is_list: bool flag that controls whether the returned object has a .circuits
+            attribute (if True) or a .circuit attribute (False)
+    Returns:
+        a CompilerOutput object with the compiled circuit(s). If qiskit is available locally,
+        the returned object also stores the pulse sequences in the .pulse_sequence(s) attribute.
+    """
+    compiled_circuits = cirq_superstaq.serialization.deserialize_circuits(
+        json_dict["cirq_circuits"]
+    )
+    pulses = None
+
+    if importlib.util.find_spec("qiskit"):
+        import qiskit
+
+        if qiskit.__version__ >= "0.18":
+            pulses = applications_superstaq.converters.deserialize(json_dict["pulses"])
+        else:
+            warnings.warn(
+                "ibmq_compile requires Qiskit Terra version 0.18.0 or higher to deserialize"
+                f"compiled pulse sequences (you have {qiskit.__version__})."
+            )
+    else:
+        warnings.warn(
+            "ibmq_compile requires Qiskit Terra version 0.18.0 or higher to deserialize"
+            "compiled pulse sequences."
+        )
+
+    if circuits_is_list:
+        return CompilerOutput(circuits=compiled_circuits, pulse_sequences=pulses)
+    return CompilerOutput(circuits=compiled_circuits[0], pulse_sequences=pulses and pulses[0])
 
 
 def read_json_aqt(json_dict: dict, circuits_is_list: bool) -> CompilerOutput:

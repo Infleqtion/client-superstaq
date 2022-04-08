@@ -334,29 +334,16 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
     ) -> Any:
         """Returns pulse schedule for the given circuit and target.
 
-        Qiskit must be installed for returned object to correctly deserialize to a pulse schedule.
+        Qiskit Terra must be installed to correctly deserialize the returned pulse schedule.
         """
         serialized_circuits = cirq_superstaq.serialization.serialize_circuits(circuits)
+        circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
         json_dict = self._client.ibmq_compile(
             {"cirq_circuits": serialized_circuits, "backend": target}
         )
-        try:
-            compiled_circuits = cirq_superstaq.serialization.deserialize_circuits(
-                json_dict["cirq_circuits"]
-            )
-            pulses = applications_superstaq.converters.deserialize(json_dict["pulses"])
-        except ModuleNotFoundError as e:
-            raise applications_superstaq.SuperstaQModuleNotFoundException(
-                name=str(e.name), context="ibmq_compile"
-            )
-        if isinstance(circuits, cirq.Circuit):
-            return cirq_superstaq.compiler_output.CompilerOutput(
-                circuits=compiled_circuits[0], pulse_sequences=pulses[0]
-            )
-        return cirq_superstaq.compiler_output.CompilerOutput(
-            circuits=compiled_circuits, pulse_sequences=pulses
-        )
+
+        return cirq_superstaq.compiler_output.read_json_ibmq(json_dict, circuits_is_list)
 
     def neutral_atom_compile(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "neutral_atom_qpu"

@@ -299,11 +299,9 @@ def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
     assert service.ibmq_compile(circuit).pulse_sequence == mock.DEFAULT
     assert service.ibmq_compile([circuit]).pulse_sequences == [mock.DEFAULT]
 
-    with mock.patch.dict("sys.modules", {"unittest": None}), pytest.raises(
-        applications_superstaq.SuperstaQModuleNotFoundException,
-        match="'ibmq_compile' requires module 'unittest'",
-    ):
-        _ = service.ibmq_compile(cirq.Circuit())
+    with mock.patch.dict("sys.modules", {"qiskit": None}):
+        assert service.ibmq_compile(cirq.Circuit()).pulse_sequence is None
+        assert service.ibmq_compile([cirq.Circuit()]).pulse_sequences is None
 
 
 @mock.patch(
