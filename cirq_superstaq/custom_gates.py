@@ -199,9 +199,6 @@ class ZXPowGate(cirq.EigenGate, cirq.Gate):
         )
 
 
-CR = ZX = ZXPowGate()  # standard CR is a full turn of ZX, i.e. exponent = 1
-
-
 @cirq.value_equality(approximate=True)
 class AceCR(cirq.Gate):
     """Active Cancellation Echoed Cross Resonance gate, supporting polarity switches and sandwiches.
@@ -509,6 +506,12 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
 
     def _json_dict_(self) -> Dict[str, Any]:
         return cirq.protocols.obj_to_dict_helper(self, ["theta", "phi", "num_copies"])
+
+
+CR = ZX = ZXPowGate()  # standard CR is a full turn of ZX, i.e. exponent = 1
+
+# Inverted iToffoli gate
+IICCX = IITOFFOLI = cirq.XPowGate(global_shift=0.5).controlled(2, [0, 0])
 
 
 def custom_resolver(cirq_type: str) -> Union[Callable[..., cirq.Gate], None]:

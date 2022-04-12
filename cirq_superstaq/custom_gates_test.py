@@ -480,6 +480,30 @@ def test_parallel_rgate() -> None:
     assert circuit.to_qasm(header="", qubit_order=qubits) == expected_qasm
 
 
+def test_iitoffoli() -> None:
+    qubits = cirq.LineQubit.range(3)
+
+    gate = cirq_superstaq.IITOFFOLI
+
+    assert np.allclose(
+        cirq.unitary(gate(*qubits)),
+        # yapf: disable
+        np.array(
+            [
+                [0, 1j, 0, 0, 0, 0, 0, 0],
+                [1j, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1],
+            ]
+        ),
+        # yapf: enable
+    )
+
+
 def test_custom_resolver() -> None:
     circuit = cirq.Circuit()
     qubits = cirq.LineQubit.range(4)
@@ -495,6 +519,7 @@ def test_custom_resolver() -> None:
     circuit += cirq_superstaq.custom_gates.MSGate(rads=0.5).on(qubits[0], qubits[1])
     circuit += cirq_superstaq.RGate(1.23, 4.56).on(qubits[0])
     circuit += cirq_superstaq.ParallelRGate(1.23, 4.56, len(qubits)).on(*qubits)
+    circuit += cirq_superstaq.IITOFFOLI(qubits[0], qubits[1], qubits[2])
     circuit += cirq.CX(qubits[0], qubits[1])
 
     json_text = cirq.to_json(circuit)
