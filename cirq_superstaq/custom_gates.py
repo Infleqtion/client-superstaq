@@ -284,6 +284,9 @@ class Barrier(cirq.ops.IdentityGate):
     def _decompose_(self, qubits: Sequence["cirq.Qid"]) -> cirq.type_workarounds.NotImplementedType:
         return NotImplemented
 
+    def _trace_distance_bound_(self) -> float:
+        return 1.0
+
     def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, ...]) -> str:
         indices_str = ",".join([f"{{{i}}}" for i in range(len(qubits))])
         format_str = f"barrier {indices_str};\n"

@@ -303,6 +303,11 @@ def test_barrier() -> None:
         use_unicode_characters=False,
     )
 
+    # make sure optimizations don't drop Barriers:
+    cirq.DropNegligible()(circuit)
+    assert circuit == cirq.Circuit(operation)
+    assert cirq.trace_distance_bound(gate) == 1.0
+
 
 def test_parallel_gates() -> None:
     gate = cirq_superstaq.ParallelGates(cirq.CZ, cirq.CZ**0.5, cirq.CZ**-0.5)
