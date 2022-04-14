@@ -149,7 +149,7 @@ class MerminBell(Benchmark):
 
             expect_val += numerator / sum(list(counts.values()))
 
-        return (expect_val + 2 ** (self.num_qubits - 1)) / 2 ** self.num_qubits
+        return (expect_val + 2 ** (self.num_qubits - 1)) / 2**self.num_qubits
 
     def _mermin_operator(self, num_qubits: int) -> List[Tuple[float, str]]:
         """
