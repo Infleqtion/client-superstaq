@@ -17,7 +17,9 @@ long_description = io.open("README.md", encoding="utf-8").read()
 # Read in requirements
 requirements = open(os.path.dirname(os.path.realpath(__file__)) + "/requirements.txt").readlines()
 requirements = [r.strip() for r in requirements]
-dev_requirements = open(os.path.dirname(os.path.realpath(__file__)) + "/dev-requirements.txt").readlines()
+dev_requirements = open(
+    os.path.dirname(os.path.realpath(__file__)) + "/dev-requirements.txt"
+).readlines()
 dev_requirements = [r.strip() for r in dev_requirements]
 
 supermarq_packages = ["supermarq"] + [
