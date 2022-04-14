@@ -106,7 +106,7 @@ def prepare_X_matrix(measurement_circuit: MeasurementCircuit) -> None:
     # TODO: right now, this is naively trying all possibilities. Really, should apply
     # the polytime technique described in Aaronson https://arxiv.org/pdf/quant-ph/0406196.pdf
     N = measurement_circuit.num_qubits
-    for bitstring in range(2 ** N):
+    for bitstring in range(2**N):
         measurement_circuit_copy = copy.deepcopy(measurement_circuit)
         for i, bit in enumerate("{0:b}".format(bitstring).zfill(N)):
             if bit == "1":

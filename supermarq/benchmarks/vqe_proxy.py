@@ -4,12 +4,11 @@ from typing import Counter, List, Tuple
 
 import cirq
 import numpy as np
-import scipy
+import scipy.optimize as opt
 import supermarq
-from supermarq.benchmark import Benchmark
 
 
-class VQEProxy(Benchmark):
+class VQEProxy(supermarq.benchmark.Benchmark):
     """Proxy benchmark of a full VQE application that targets a single iteration
     of the whole variational optimization.
 
@@ -126,7 +125,7 @@ class VQEProxy(Benchmark):
         init_params = [
             np.random.uniform() * 2 * np.pi for _ in range(self.num_layers * 4 * self.num_qubits)
         ]
-        out = scipy.optimize.minimize(f, init_params, method="COBYLA")
+        out = opt.minimize(f, init_params, method="COBYLA")
 
         return out["x"], out["fun"]
 
