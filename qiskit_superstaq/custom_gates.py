@@ -1,5 +1,5 @@
 import functools
-from typing import Optional, Type
+from typing import Optional, Type, Union
 
 import numpy as np
 import qiskit
@@ -183,6 +183,84 @@ class ParallelGates(qiskit.circuit.Gate):
         return f"ParallelGates({args})"
 
 
+class ICCXGate(qiskit.circuit.ControlledGate):
+    def __init__(
+        self, label: Optional[np.ndarray] = None, ctrl_state: Optional[Union[str, int]] = None
+    ) -> None:
+        super().__init__(
+            "iccx",
+            3,
+            [-np.pi],
+            num_ctrl_qubits=2,
+            label=label,
+            ctrl_state=ctrl_state,
+            base_gate=qiskit.circuit.library.RXGate(-np.pi),
+        )
+
+    def _define(self) -> None:
+        qc = qiskit.QuantumCircuit(3, name=self.name)
+        qc.ccx(0, 1, 2)
+        qc.cp(np.pi / 2, 0, 1)
+        self.definition = qc
+
+    def inverse(self) -> qiskit.circuit.ControlledGate:
+        return ICCXdgGate(ctrl_state=self.ctrl_state)
+
+    def __array__(self, dtype: Optional[np.ndarray] = None) -> np.ndarray:
+        mat = qiskit.circuit._utils._compute_control_matrix(
+            self.base_gate.to_matrix(), self.num_ctrl_qubits, ctrl_state=self.ctrl_state
+        )
+        if dtype:
+            return np.asarray(mat, dtype=dtype)
+        return mat
+
+    def __repr__(self) -> str:
+        return f"qiskit_superstaq.ICCXGate(label={self.label}, ctrl_state={self.ctrl_state})"
+
+    def __str__(self) -> str:
+        return f"ICCXGate(label={self.label}, ctrl_state={self.ctrl_state})"
+
+
+class ICCXdgGate(qiskit.circuit.ControlledGate):
+    def __init__(self, label: str = None, ctrl_state: Optional[Union[str, int]] = None) -> None:
+        super().__init__(
+            "iccxdg",
+            3,
+            [np.pi],
+            num_ctrl_qubits=2,
+            label=label,
+            ctrl_state=ctrl_state,
+            base_gate=qiskit.circuit.library.RXGate(np.pi),
+        )
+
+    def _define(self) -> None:
+        qc = qiskit.QuantumCircuit(3, name=self.name)
+        qc.ccx(0, 1, 2).inverse()
+        qc.cp(-np.pi / 2, 0, 1)
+        self.definition = qc
+
+    def inverse(self) -> qiskit.circuit.ControlledGate:
+        return ICCXGate(ctrl_state=self.ctrl_state)
+
+    def __array__(self, dtype: Optional[np.dtype] = None) -> np.ndarray:
+        mat = qiskit.circuit._utils._compute_control_matrix(
+            self.base_gate.to_matrix(), self.num_ctrl_qubits, ctrl_state=self.ctrl_state
+        )
+        if dtype:
+            return np.asarray(mat, dtype=dtype)
+        return mat
+
+    def __repr__(self) -> str:
+        return f"qiskit_superstaq.ICCXdgGate(label={self.label}, ctrl_state={self.ctrl_state})"
+
+    def __str__(self) -> str:
+        return f"ICCXdgGate(label={self.label}, ctrl_state={self.ctrl_state})"
+
+
+ITOFFOLIGate = ICCXGate
+IITOFFOLI = IICCX = ICCXGate(ctrl_state="00")
+
+
 def custom_resolver(gate: qiskit.circuit.Gate) -> Optional[qiskit.circuit.Gate]:
     """Recover a custom gate type from a generic qiskit.circuit.Gate. Resolution is done using
     gate.definition.name rather than gate.name, as the former is set by all qiskit_superstaq
@@ -200,4 +278,12 @@ def custom_resolver(gate: qiskit.circuit.Gate) -> Optional[qiskit.circuit.Gate]:
     if gate.definition.name == "parallel_gates":
         component_gates = [custom_resolver(inst) or inst for inst, _, _ in gate.definition]
         return ParallelGates(*component_gates, label=gate.label)
+    if gate.name == "iccx":
+        return ICCXGate(label=gate.label)
+    if gate.name == "iccx_o0":
+        return ICCXGate(label=gate.label, ctrl_state="00")
+    if gate.name == "iccx_o1":
+        return ICCXGate(label=gate.label, ctrl_state="01")
+    if gate.name == "iccx_o2":
+        return ICCXGate(label=gate.label, ctrl_state="10")
     return None

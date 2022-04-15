@@ -44,6 +44,11 @@ def test_circuit_serialization() -> None:
     circuit_1.append(qiskit_superstaq.AceCR("+-"), [0, 1])
     circuit_1.append(qiskit_superstaq.AceCR("-+"), [1, 2])
     circuit_1.append(qiskit_superstaq.ZZSwapGate(0.75), [2, 0])
+    circuit_1.append(qiskit_superstaq.ICCXGate(), [0, 1, 2])
+    circuit_1.append(qiskit_superstaq.ICCXGate(ctrl_state="00"), [0, 1, 2])
+    circuit_1.append(qiskit_superstaq.ICCXGate(ctrl_state="01"), [1, 0, 2])
+    circuit_1.append(qiskit_superstaq.ICCXGate(ctrl_state="10"), [2, 1, 0])
+
     circuit_1.append(
         qiskit_superstaq.ParallelGates(
             qiskit_superstaq.ZZSwapGate(3.09),
