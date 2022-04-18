@@ -36,7 +36,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
         Args:
             theta: ZZ-interaction angle in radians
         """
-        self.theta = cirq.ops.fsim_gate._canonicalize(theta)  # between -pi and +pi
+        self.theta = np.pi * cirq.chosen_angle_to_canonical_half_turns(rads=theta)
 
     def _num_qubits_(self) -> int:
         return 2
@@ -215,7 +215,9 @@ class AceCR(cirq.Gate):
         if polarity not in ("+-", "-+"):
             raise ValueError("Polarity must be either '+-' or '-+'")
         self.polarity = polarity
-        self.sandwich_rx_rads = cirq.ops.fsim_gate._canonicalize(sandwich_rx_rads)
+        self.sandwich_rx_rads = np.pi * cirq.chosen_angle_to_canonical_half_turns(
+            rads=sandwich_rx_rads
+        )
 
     def _num_qubits_(self) -> int:
         return 2
@@ -252,7 +254,7 @@ class AceCR(cirq.Gate):
         return args.format("acecr_{}_rx({:half_turns}) {},{};\n", polarity_str, exponent, *qubits)
 
     def _value_equality_values_(self) -> Tuple[str, float]:
-        return (self.polarity, self.sandwich_rx_rads)
+        return self.polarity, self.sandwich_rx_rads
 
     def _value_equality_approximate_values_(self) -> Tuple[str, cirq.PeriodicValue]:
         return self.polarity, cirq.PeriodicValue(self.sandwich_rx_rads, 2 * np.pi)

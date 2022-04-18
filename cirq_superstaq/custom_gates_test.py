@@ -216,7 +216,7 @@ def test_acecr_eq() -> None:
     assert cirq_superstaq.AceCR("-+", np.pi) != cirq_superstaq.AceCR("+-", np.pi)
 
     assert cirq_superstaq.AceCR("+-", np.pi) == cirq_superstaq.AceCR("+-", 5 * np.pi)
-    assert cirq_superstaq.AceCR("+-", np.pi) != cirq_superstaq.AceCR("+-", 3 * np.pi)
+    assert cirq_superstaq.AceCR("+-", np.pi) == cirq_superstaq.AceCR("+-", 3 * np.pi)
 
     assert cirq.approx_eq(cirq_superstaq.AceCR("+-", np.pi), cirq_superstaq.AceCR("+-", -np.pi))
     assert cirq.approx_eq(cirq_superstaq.AceCR("+-", np.pi), cirq_superstaq.AceCR("+-", 3 * np.pi))
