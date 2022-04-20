@@ -237,6 +237,21 @@ def test_service_aqt_compile_multiple(mock_aqt_compile: mock.MagicMock) -> None:
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
 
+@mock.patch(
+    "applications_superstaq.superstaq_client._SuperstaQClient.post_request",
+    return_value={
+        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits([cirq.Circuit()]),
+        "state_jp": applications_superstaq.converters.serialize({}),
+        "pulse_lists_jp": applications_superstaq.converters.serialize([[[]]]),
+    },
+)
+def test_service_aqt_compile_eca(mock_aqt_compile: mock.MagicMock) -> None:
+    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    out = service.aqt_compile_eca(cirq.Circuit(), num_equivalent_circuits=1, random_seed=1234)
+    assert out.circuits == [cirq.Circuit()]
+    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+
+
 @mock.patch("applications_superstaq.superstaq_client._SuperstaQClient.qscout_compile")
 def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> None:
 

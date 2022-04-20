@@ -272,7 +272,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         """Compiles the given circuit(s) to target AQT device, optimized to its native gate set.
 
         Args:
-            circuits: cirq Circuit(s) with operations on qubits 4 through 8.
+            circuits: cirq Circuit(s) to compile.
             target: string of target backend AQT device.
         Returns:
             object whose .circuit(s) attribute is an optimized cirq Circuit(s)
@@ -287,6 +287,42 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             {"cirq_circuits": serialized_circuits, "backend": target}
         )
         return cirq_superstaq.compiler_output.read_json_aqt(json_dict, circuits_is_list)
+
+    def aqt_compile_eca(
+        self,
+        circuit: cirq.Circuit,
+        num_equivalent_circuits: int,
+        random_seed: Optional[int] = None,
+        target: str = "keysight",
+    ) -> "cirq_superstaq.compiler_output.CompilerOutput":
+        """Compiles the given circuit to target AQT device with Equivalent Circuit Averaging (ECA).
+
+        See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
+
+        Args:
+            circuit: cirq Circuit to compile.
+            num_equivalent_circuits: number of logically equivalent random circuits to generate.
+            random_seed: optional seed for circuit randomizer.
+            target: string of target backend AQT device.
+        Returns:
+            object whose .circuits attribute is a list of logically equivalent cirq Circuit(s).
+            If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
+            pulse sequence corresponding to the cirq.Circuits and the .pulse_list(s) attribute is
+            the list(s) of cycles.
+        """
+        serialized_circuit = cirq_superstaq.serialization.serialize_circuits(circuit)
+
+        request_json = {
+            "cirq_circuits": serialized_circuit,
+            "backend": target,
+            "num_eca_circuits": num_equivalent_circuits,
+        }
+
+        if random_seed is not None:
+            request_json["random_seed"] = random_seed
+
+        json_dict = self._client.post_request("/aqt_compile", request_json)
+        return cirq_superstaq.compiler_output.read_json_aqt(json_dict, True)
 
     def qscout_compile(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "qscout"
