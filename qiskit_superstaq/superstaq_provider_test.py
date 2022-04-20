@@ -113,6 +113,24 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
 
+@patch("requests.post")
+def test_service_aqt_compile_eca(mock_post: MagicMock) -> None:
+    provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
+
+    qc = qiskit.QuantumCircuit(8)
+    qc.cz(4, 5)
+
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "state_jp": applications_superstaq.converters.serialize({}),
+        "pulse_lists_jp": applications_superstaq.converters.serialize([[[]]]),
+    }
+
+    out = provider.aqt_compile_eca(qc, num_equivalent_circuits=1, random_seed=1234)
+    assert out.circuits == [qc]
+    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+
+
 @patch(
     "applications_superstaq.superstaq_client._SuperstaQClient.ibmq_compile",
 )
