@@ -76,8 +76,12 @@ def test_service_aqt_get_configs(mock_aqt_compile: mock.MagicMock) -> None:
     with open(f"/tmp/{variables_file}.yaml", "r") as file:
         assert file.read() == "World"
 
-    with pytest.raises(ValueError, match="exists"):
+    with pytest.raises(ValueError, match="exist"):
         service.aqt_save_configs(f"/tmp/{pulses_file}.yaml", f"/tmp/{variables_file}.yaml")
+
+    service.aqt_save_configs(
+        f"/tmp/{pulses_file}.yaml", f"/tmp/{variables_file}.yaml", overwrite=True
+    )
 
     with pytest.raises(ValueError, match="exists"):
         os.remove(f"/tmp/{pulses_file}.yaml")

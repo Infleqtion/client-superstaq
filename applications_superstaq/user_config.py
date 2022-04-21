@@ -57,30 +57,37 @@ class UserConfig:
     def aqt_get_configs(self) -> Dict:
         return self._client.aqt_get_configs()
 
-    def aqt_save_configs(self, pulses_file_path: str, variables_file_path: str) -> None:
+    def aqt_save_configs(
+        self, pulses_file_path: str, variables_file_path: str, overwrite: bool = False
+    ) -> None:
         """Writes AQT configs from the AQT system onto the given file paths.
 
         Args:
-            pulses_file_path: where to write the pulse configurations
-            variables_file_path: where to write the variables configurations
+            pulses_file_path: Where to write the pulse configurations
+            variables_file_path: Where to write the variables configurations
+            overwrite: Whether or not to overwrite existing files
         Returns:
             None
+        Raises:
+            ValueError: If either file path already exists and overwrite is not True
         """
         pulses_file_exists = os.path.exists(pulses_file_path)
         variables_file_exists = os.path.exists(variables_file_path)
 
-        if pulses_file_exists and variables_file_exists:
+        if not overwrite and pulses_file_exists and variables_file_exists:
             raise ValueError(
-                f"{pulses_file_path} and {variables_file_path} "
-                f"exists as pulses and variable files. Please try different filenames to write to"
+                f"{pulses_file_path} and {variables_file_path} exist. Please try different "
+                "filenames to write to, or pass overwrite=True to overwrite the existing files."
             )
-        elif pulses_file_exists:
+        elif not overwrite and pulses_file_exists:
             raise ValueError(
-                f"{pulses_file_path} exists. " f"Please try a different filename to write to"
+                f"{pulses_file_path} exists. Please try a different filename to write to, "
+                "or pass overwrite=True to overwrite the existing file."
             )
-        elif variables_file_exists:
+        elif not overwrite and variables_file_exists:
             raise ValueError(
-                f"{variables_file_path} exists " f"Please try a different filename to write to"
+                f"{variables_file_path} exists Please try a different filename to write to, "
+                "or pass overwrite=True to overwrite the existing file."
             )
 
         config_dict = self.aqt_get_configs()
