@@ -110,15 +110,17 @@ def test_parallel_gates() -> None:
         _ = qiskit_superstaq.ParallelGates(qiskit.circuit.Measure())
 
 
-def test_iccx() -> None:
-    gate = qiskit_superstaq.ICCXGate()
+def test_aqticcx() -> None:
+    gate = qiskit_superstaq.AQTiCCXGate()
     _check_gate_definition(gate)
 
-    assert repr(gate) == "qiskit_superstaq.ICCXGate(label=None, ctrl_state=3)"
-    assert str(gate) == "ICCXGate(label=None, ctrl_state=3)"
+    assert repr(gate) == "qiskit_superstaq.ICCXGate(label=None, ctrl_state=0)"
+    assert str(gate) == "ICCXGate(label=None, ctrl_state=0)"
 
+    qc = qiskit.QuantumCircuit(3)
 
-def test_iiccx_unitary() -> None:
+    qc.append(qiskit_superstaq.AQTiCCXGate(), [0, 1, 2])
+
     correct_unitary = np.array(
         [
             [0, 0, 0, 0, 1j, 0, 0, 0],
@@ -131,11 +133,12 @@ def test_iiccx_unitary() -> None:
             [0, 0, 0, 0, 0, 0, 0, 1],
         ],
     )
-    assert np.allclose(qiskit_superstaq.IICCX.to_matrix(), correct_unitary)
+
+    np.allclose(qiskit.quantum_info.Operator(qc), correct_unitary)
 
 
 def test_iccxdg() -> None:
-    gate = qiskit_superstaq.ICCXdgGate()
+    gate = qiskit_superstaq.custom_gates.ICCXdgGate()
     _check_gate_definition(gate)
     assert repr(gate) == "qiskit_superstaq.ICCXdgGate(label=None, ctrl_state=3)"
     assert str(gate) == "ICCXdgGate(label=None, ctrl_state=3)"
@@ -145,10 +148,10 @@ def test_custom_resolver() -> None:
     gates = [
         qiskit_superstaq.AceCR("+-"),
         qiskit_superstaq.ZZSwapGate(1.23),
-        qiskit_superstaq.ICCXGate(),
-        qiskit_superstaq.ICCXGate(ctrl_state="00"),
-        qiskit_superstaq.ICCXGate(ctrl_state="01"),
-        qiskit_superstaq.ICCXGate(ctrl_state="10"),
+        qiskit_superstaq.AQTiCCXGate(),
+        qiskit_superstaq.custom_gates.ICCXGate(),
+        qiskit_superstaq.custom_gates.ICCXGate(ctrl_state="01"),
+        qiskit_superstaq.custom_gates.ICCXGate(ctrl_state="10"),
         qiskit_superstaq.ParallelGates(
             qiskit.circuit.library.RXGate(4.56),
             qiskit.circuit.library.CXGate(),

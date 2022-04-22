@@ -6,11 +6,8 @@ from . import superstaq_provider
 from ._version import __version__
 from .custom_gates import (
     AceCR,
-    ICCXdgGate,
-    ICCXGate,
-    IICCX,
-    IITOFFOLI,
-    ITOFFOLIGate,
+    AQTiCCXGate,
+    AQTiToffoliGate,
     ParallelGates,
     ZZSwapGate,
 )
@@ -19,11 +16,9 @@ __all__ = [
     "AceCR",
     "API_URL",
     "API_VERSION",
+    "AQTiCCXGate",
+    "AQTiToffoliGate",
     "compiler_output",
-    "ICCXGate",
-    "ICCXdgGate",
-    "IICCX",
-    "IITOFFOLI",
     "ITOFFOLIGate",
     "ParallelGates",
     "serialization",
