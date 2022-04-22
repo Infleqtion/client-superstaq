@@ -488,7 +488,7 @@ def test_parallel_rgate() -> None:
 def test_iitoffoli() -> None:
     qubits = cirq.LineQubit.range(3)
 
-    gate = cirq_superstaq.IITOFFOLI
+    gate = cirq_superstaq.AQTITOFFOLI
 
     assert np.allclose(
         cirq.unitary(gate(*qubits)),
@@ -524,7 +524,7 @@ def test_custom_resolver() -> None:
     circuit += cirq_superstaq.custom_gates.MSGate(rads=0.5).on(qubits[0], qubits[1])
     circuit += cirq_superstaq.RGate(1.23, 4.56).on(qubits[0])
     circuit += cirq_superstaq.ParallelRGate(1.23, 4.56, len(qubits)).on(*qubits)
-    circuit += cirq_superstaq.IITOFFOLI(qubits[0], qubits[1], qubits[2])
+    circuit += cirq_superstaq.AQTITOFFOLI(qubits[0], qubits[1], qubits[2])
     circuit += cirq.CX(qubits[0], qubits[1])
 
     json_text = cirq.to_json(circuit)
