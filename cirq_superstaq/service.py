@@ -65,8 +65,9 @@ def counts_to_results(
         # [1, 1] is appended to 'samples' 52 times
         for key in range(counts_of_key):
             samples.append(keys_as_list)
+    ResultDict = getattr(cirq, "ResultDict", getattr(cirq, "Result"))
 
-    result = cirq.Result(
+    result = ResultDict(
         params=param_resolver,
         measurements={
             combine_key_names: np.array(samples),
