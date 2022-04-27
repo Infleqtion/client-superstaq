@@ -57,7 +57,7 @@ class UserConfig:
     def aqt_get_configs(self) -> Dict:
         return self._client.aqt_get_configs()
 
-    def aqt_save_configs(
+    def aqt_download_configs(
         self, pulses_file_path: str, variables_file_path: str, overwrite: bool = False
     ) -> None:
         """Writes AQT configs from the AQT system onto the given file paths.

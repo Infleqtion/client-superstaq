@@ -68,7 +68,7 @@ def test_service_aqt_get_configs(mock_aqt_compile: mock.MagicMock) -> None:
     pulses_file = secrets.token_hex(nbytes=16)
     variables_file = secrets.token_hex(nbytes=16)
 
-    service.aqt_save_configs(f"/tmp/{pulses_file}.yaml", f"/tmp/{variables_file}.yaml")
+    service.aqt_download_configs(f"/tmp/{pulses_file}.yaml", f"/tmp/{variables_file}.yaml")
 
     with open(f"/tmp/{pulses_file}.yaml", "r") as file:
         assert file.read() == "Hello"
@@ -77,19 +77,19 @@ def test_service_aqt_get_configs(mock_aqt_compile: mock.MagicMock) -> None:
         assert file.read() == "World"
 
     with pytest.raises(ValueError, match="exist"):
-        service.aqt_save_configs(f"/tmp/{pulses_file}.yaml", f"/tmp/{variables_file}.yaml")
+        service.aqt_download_configs(f"/tmp/{pulses_file}.yaml", f"/tmp/{variables_file}.yaml")
 
-    service.aqt_save_configs(
+    service.aqt_download_configs(
         f"/tmp/{pulses_file}.yaml", f"/tmp/{variables_file}.yaml", overwrite=True
     )
 
     with pytest.raises(ValueError, match="exists"):
         os.remove(f"/tmp/{pulses_file}.yaml")
-        service.aqt_save_configs(f"/tmp/{pulses_file}.yaml", f"/tmp/{variables_file}.yaml")
+        service.aqt_download_configs(f"/tmp/{pulses_file}.yaml", f"/tmp/{variables_file}.yaml")
 
     os.remove(f"/tmp/{variables_file}.yaml")
 
     with pytest.raises(ValueError, match="exists"):
-        service.aqt_save_configs(f"/tmp/{pulses_file}.yaml", f"/tmp/{variables_file}.yaml")
+        service.aqt_download_configs(f"/tmp/{pulses_file}.yaml", f"/tmp/{variables_file}.yaml")
         os.remove(f"/tmp/{variables_file}.yaml")
-        service.aqt_save_configs(f"/tmp/{pulses_file}.yaml", f"/tmp/{variables_file}.yaml")
+        service.aqt_download_configs(f"/tmp/{pulses_file}.yaml", f"/tmp/{variables_file}.yaml")
