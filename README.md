@@ -1,3 +1,5 @@
+![qiskit-superstaq's default workflow](https://github.com/SupertechLabs/qiskit-superstaq/actions/workflows/ci.yml/badge.svg)
+
 This package is used to access SuperstaQ via a Web API through [Qiskit](https://qiskit.org/). Qiskit programmers
 can take advantage of the applications, pulse level optimizations, and write-once-target-all
 features of SuperstaQ with this package.
