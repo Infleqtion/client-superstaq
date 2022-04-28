@@ -3,6 +3,8 @@
 </p>
 
 ---
+![qiskit-superstaq's default workflow](https://github.com/SupertechLabs/qiskit-superstaq/actions/workflows/ci.yml/badge.svg)
+
 
 # SupermarQ: A Scalable Quantum Benchmark Suite
 
