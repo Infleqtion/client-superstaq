@@ -4,7 +4,6 @@ import os
 import textwrap
 
 import cirq
-import numpy as np
 import pytest
 from applications_superstaq import SuperstaQException
 
@@ -46,14 +45,24 @@ def test_acer_non_neighbor_qubits_compile(service: cirq_superstaq.Service) -> No
 def test_aqt_compile(service: cirq_superstaq.Service) -> None:
     qubits = cirq.LineQubit.range(8)
     circuit = cirq.Circuit(cirq.H(qubits[4]))
-    expected = cirq.Circuit(
-        cirq.rz(np.pi / 2)(qubits[4]),
-        cirq.rx(np.pi / 2)(qubits[4]),
-        cirq.rz(np.pi / 2)(qubits[4]),
+
+    cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
+        service.aqt_compile(circuit).circuit, circuit, atol=1e-08
     )
-    assert service.aqt_compile(circuit).circuit == expected
-    assert service.aqt_compile([circuit]).circuits == [expected]
-    assert service.aqt_compile([circuit, circuit]).circuits == [expected, expected]
+
+    compiled_circuits = service.aqt_compile([circuit]).circuits
+    assert isinstance(compiled_circuits, list)
+    for compiled_circuit in compiled_circuits:
+        cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
+            compiled_circuit, circuit, atol=1e-08
+        )
+    compiled_circuits = service.aqt_compile([circuit, circuit]).circuits
+
+    assert isinstance(compiled_circuits, list)
+    for compiled_circuit in compiled_circuits:
+        cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
+            compiled_circuit, circuit, atol=1e-08
+        )
 
 
 def test_get_balance(service: cirq_superstaq.Service) -> None:
@@ -107,7 +116,9 @@ def test_qscout_compile(service: cirq_superstaq.Service) -> None:
         """
     )
     out = service.qscout_compile(circuit)
-    assert out.circuit == compiled_circuit
+    cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
+        out.circuit, compiled_circuit, atol=1e-08
+    )
     assert out.jaqal_program == jaqal_program
 
 
@@ -116,20 +127,11 @@ def test_cq_compile(service: cirq_superstaq.Service) -> None:
     circuit = cirq.Circuit(
         cirq.H(qubits[0]), cirq.CNOT(qubits[0], qubits[1]), cirq.measure(qubits[0])
     )
-    compiled_circuit = cirq.Circuit(
-        cirq_superstaq.ParallelRGate(-0.25 * np.pi, 0.5 * np.pi, 2).on(qubits[0], qubits[1]),
-        cirq.Z(qubits[0]) ** -1.0,
-        cirq.Z(qubits[1]) ** -1.0,
-        cirq_superstaq.ParallelRGate(0.25 * np.pi, 0.5 * np.pi, 2).on(qubits[0], qubits[1]),
-        cirq.CZ(qubits[0], qubits[1]) ** -1.0,
-        cirq_superstaq.ParallelRGate(-0.25 * np.pi, 0.5 * np.pi, 2).on(qubits[0], qubits[1]),
-        cirq.Z(qubits[1]) ** -1.0,
-        cirq_superstaq.ParallelRGate(0.25 * np.pi, 0.5 * np.pi, 2).on(qubits[0], qubits[1]),
-        cirq.measure(qubits[0]),
-    )
 
     out = service.cq_compile(circuit)
-    assert out.circuit == compiled_circuit
+    cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
+        out.circuit, circuit, atol=1e-08
+    )
 
 
 def test_get_aqt_configs(service: cirq_superstaq.Service) -> None:
