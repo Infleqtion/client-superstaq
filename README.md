@@ -3,6 +3,8 @@
 </p>
 
 ---
+![Continuous Integration](https://github.com/SupertechLabs/SupermarQ/actions/workflows/ci.yml/badge.svg)
+
 
 # SupermarQ: A Scalable Quantum Benchmark Suite
 
