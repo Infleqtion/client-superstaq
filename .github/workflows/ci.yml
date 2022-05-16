@@ -133,6 +133,7 @@ jobs:
       - name: Pytest-win check
         run: |
           check/pytest
+        shell: bash
 
   coverage:
     name: Coverage check
