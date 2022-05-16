@@ -46,7 +46,7 @@ class _SuperstaQClient:
         client_name: str,
         default_target: Optional[str] = None,
         api_version: str = applications_superstaq.API_VERSION,
-        max_retry_seconds: float = 3600,  # 1 hour
+        max_retry_seconds: float = 60,  # 1 minute
         verbose: bool = False,
     ):
         """Creates the SuperstaQClient.
