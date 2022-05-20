@@ -7,7 +7,7 @@ import qiskit
 import qiskit.circuit.qpy_serialization
 from qiskit.converters.ast_to_dag import AstInterpreter
 
-import qiskit_superstaq
+import qiskit_superstaq as qss
 
 
 def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:
@@ -82,7 +82,7 @@ def deserialize_circuits(serialized_circuits: str) -> List[qiskit.QuantumCircuit
     """Deserialize serialized QuantumCircuit(s)
 
     Args:
-        serialized_circuits: str generated via qiskit_superstaq.serialization.serialize_circuit()
+        serialized_circuits: str generated via qss.serialization.serialize_circuit()
 
     Returns:
         a list of QuantumCircuits
@@ -95,7 +95,7 @@ def deserialize_circuits(serialized_circuits: str) -> List[qiskit.QuantumCircuit
 
     for circuit in circuits:
         for pc, (inst, qargs, cargs) in enumerate(circuit._data):
-            new_inst = qiskit_superstaq.custom_gates.custom_resolver(inst)
+            new_inst = qss.custom_gates.custom_resolver(inst)
             if new_inst is not None:
                 circuit._data[pc] = (new_inst, qargs, cargs)
 

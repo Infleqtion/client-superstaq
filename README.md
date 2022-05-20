@@ -22,13 +22,13 @@ pip install -r neutral-atom-requirements.txt
 ```python3
 
 import qiskit
-import qiskit_superstaq
+import qiskit_superstaq as qss
 
 token = "Insert superstaq token that you received from https://superstaq.super.tech"
 
-superstaq = qiskit_superstaq.superstaq_provider.SuperstaQProvider(
+superstaq = qss.superstaq_provider.SuperstaQProvider(
     token,
-    url=qiskit_superstaq.API_URL,
+    url=qss.API_URL,
 )
 
 backend = superstaq.get_backend("ibmq_qasm_simulator")

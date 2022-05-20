@@ -72,7 +72,7 @@ class AceCR(qiskit.circuit.Gate):
             args += f", sandwich_rx_rads={self.sandwich_rx_rads}"
         if self.label:
             args += f", label='{self.label}'"
-        return f"qiskit_superstaq.AceCR({args})"
+        return f"qss.AceCR({args})"
 
     def __str__(self) -> str:
         if not self.sandwich_rx_rads:
@@ -137,7 +137,7 @@ class ZZSwapGate(qiskit.circuit.Gate):
         args = f"{self.params[0]}"
         if self.label:
             args += f", label='{self.label}'"
-        return f"qiskit_superstaq.ZZSwapGate({args})"
+        return f"qss.ZZSwapGate({args})"
 
     def __str__(self) -> str:
         args = qiskit.circuit.tools.pi_check(self.params[0], ndigits=8, output="qasm")
@@ -215,7 +215,7 @@ class ICCXGate(qiskit.circuit.ControlledGate):
         return mat
 
     def __repr__(self) -> str:
-        return f"qiskit_superstaq.ICCXGate(label={self.label}, ctrl_state={self.ctrl_state})"
+        return f"qss.ICCXGate(label={self.label}, ctrl_state={self.ctrl_state})"
 
     def __str__(self) -> str:
         return f"ICCXGate(label={self.label}, ctrl_state={self.ctrl_state})"
@@ -256,7 +256,7 @@ class ICCXdgGate(qiskit.circuit.ControlledGate):
         return mat
 
     def __repr__(self) -> str:
-        return f"qiskit_superstaq.ICCXdgGate(label={self.label}, ctrl_state={self.ctrl_state})"
+        return f"qss.ICCXdgGate(label={self.label}, ctrl_state={self.ctrl_state})"
 
     def __str__(self) -> str:
         return f"ICCXdgGate(label={self.label}, ctrl_state={self.ctrl_state})"

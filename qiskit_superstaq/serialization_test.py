@@ -6,13 +6,13 @@ import applications_superstaq
 import pytest
 import qiskit
 
-import qiskit_superstaq
+import qiskit_superstaq as qss
 
 
 def test_assign_unique_inst_names() -> None:
-    inst_0 = qiskit_superstaq.ZZSwapGate(0.1)
-    inst_1 = qiskit_superstaq.ZZSwapGate(0.2)
-    inst_2 = qiskit_superstaq.ZZSwapGate(0.1)
+    inst_0 = qss.ZZSwapGate(0.1)
+    inst_1 = qss.ZZSwapGate(0.2)
+    inst_2 = qss.ZZSwapGate(0.1)
 
     circuit = qiskit.QuantumCircuit(4)
     circuit.append(inst_0, [0, 1])
@@ -31,7 +31,7 @@ def test_assign_unique_inst_names() -> None:
         "rxx",
     ]
 
-    new_circuit = qiskit_superstaq.serialization._assign_unique_inst_names(circuit)
+    new_circuit = qss.serialization._assign_unique_inst_names(circuit)
     assert [inst.name for inst, _, _ in new_circuit] == expected_inst_names
 
 
@@ -41,41 +41,41 @@ def test_circuit_serialization() -> None:
     circuit_0.rz(0.86, 0)
 
     circuit_1 = qiskit.QuantumCircuit(4)
-    circuit_1.append(qiskit_superstaq.AceCR("+-"), [0, 1])
-    circuit_1.append(qiskit_superstaq.AceCR("-+"), [1, 2])
-    circuit_1.append(qiskit_superstaq.ZZSwapGate(0.75), [2, 0])
-    circuit_1.append(qiskit_superstaq.AQTiCCXGate(), [0, 1, 2])
+    circuit_1.append(qss.AceCR("+-"), [0, 1])
+    circuit_1.append(qss.AceCR("-+"), [1, 2])
+    circuit_1.append(qss.ZZSwapGate(0.75), [2, 0])
+    circuit_1.append(qss.AQTiCCXGate(), [0, 1, 2])
 
     circuit_1.append(
-        qiskit_superstaq.ParallelGates(
-            qiskit_superstaq.ZZSwapGate(3.09),
+        qss.ParallelGates(
+            qss.ZZSwapGate(3.09),
             qiskit.circuit.library.RXXGate(0.1),
         ),
         [1, 2, 0, 3],
     )
     circuit_1.append(
-        qiskit_superstaq.ParallelGates(
-            qiskit_superstaq.ZZSwapGate(3.09),
+        qss.ParallelGates(
+            qss.ZZSwapGate(3.09),
             qiskit.circuit.library.RXXGate(0.2),
         ),
         [0, 3, 2, 1],
     )
     circuit_1.append(
-        qiskit_superstaq.ParallelGates(
-            qiskit_superstaq.ZZSwapGate(3.09),
+        qss.ParallelGates(
+            qss.ZZSwapGate(3.09),
             qiskit.circuit.library.RXXGate(0.1),
         ),
         [0, 1, 3, 2],
     )
 
-    serialized_circuit = qiskit_superstaq.serialization.serialize_circuits(circuit_0)
+    serialized_circuit = qss.serialization.serialize_circuits(circuit_0)
     assert isinstance(serialized_circuit, str)
-    assert qiskit_superstaq.serialization.deserialize_circuits(serialized_circuit) == [circuit_0]
+    assert qss.serialization.deserialize_circuits(serialized_circuit) == [circuit_0]
 
     circuits = [circuit_0, circuit_1]
-    serialized_circuits = qiskit_superstaq.serialization.serialize_circuits(circuits)
+    serialized_circuits = qss.serialization.serialize_circuits(circuits)
     assert isinstance(serialized_circuits, str)
-    assert qiskit_superstaq.serialization.deserialize_circuits(serialized_circuits) == circuits
+    assert qss.serialization.deserialize_circuits(serialized_circuits) == circuits
 
 
 def test_warning_suppression() -> None:
@@ -89,7 +89,7 @@ def test_warning_suppression() -> None:
     # QPY encodes qiskit.__version__ into the serialized circuit, so mocking a newer version string
     # during serialization will cause a QPY version UserWarning during deserialization
     with mock.patch("qiskit.circuit.qpy_serialization.__version__", newer_version):
-        serialized_circuit = qiskit_superstaq.serialization.serialize_circuits(circuit)
+        serialized_circuit = qss.serialization.serialize_circuits(circuit)
 
     # Check that a warning would normally be thrown
     with pytest.warns(UserWarning):
@@ -99,4 +99,4 @@ def test_warning_suppression() -> None:
     # Check that it is suppressed by deserialize_circuits
     with warnings.catch_warnings():
         warnings.filterwarnings("error")
-        _ = qiskit_superstaq.serialization.deserialize_circuits(serialized_circuit)
+        _ = qss.serialization.deserialize_circuits(serialized_circuit)
