@@ -58,7 +58,7 @@ class Job:
         """Construct a Job.
 
         Users should not call this themselves. If you only know the `job_id`, use `get_job`
-        on `cirq_superstaq.Service`.
+        on `css.Service`.
 
         Args:
             client: The client used for calling the API.
@@ -171,7 +171,7 @@ class Job:
         return f"Job with job_id={self.job_id()}"
 
     def __repr__(self) -> str:
-        return f"cirq_superstaq.Job(client={self._client!r}, job_dict={self._job!r})"
+        return f"css.Job(client={self._client!r}, job_dict={self._job!r})"
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(self, type(other)):

@@ -24,8 +24,7 @@ from applications_superstaq import logistics
 from applications_superstaq import superstaq_client
 from applications_superstaq import user_config
 
-import cirq_superstaq
-from cirq_superstaq import job
+import cirq_superstaq as css
 
 
 def counts_to_results(
@@ -91,7 +90,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         remote_host: Optional[str] = None,
         api_key: Optional[str] = None,
         default_target: str = None,
-        api_version: str = cirq_superstaq.API_VERSION,
+        api_version: str = css.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
     ):
@@ -118,9 +117,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             EnvironmentError: if the `api_key` is None and has no corresponding environment
                 variable set.
         """
-        self.remote_host = (
-            remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or cirq_superstaq.API_URL
-        )
+        self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or css.API_URL
         self.api_key = api_key or os.getenv("SUPERSTAQ_API_KEY")
         if not self.api_key:
             raise EnvironmentError(
@@ -196,7 +193,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Returns:
             A `cirq.Sampler` for the SuperstaQ API.
         """
-        return cirq_superstaq.sampler.Sampler(service=self, target=target)
+        return css.sampler.Sampler(service=self, target=target)
 
     def create_job(
         self,
@@ -204,7 +201,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         repetitions: int = 1000,
         target: Optional[str] = None,
         ibmq_pulse: Optional[bool] = None,
-    ) -> job.Job:
+    ) -> css.job.Job:
         """Create a new job to run the given circuit.
 
         Args:
@@ -214,12 +211,12 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             ibmq_pulse: Specify whether to run the job using SuperstaQ's pulse-level optimizations.
 
         Returns:
-            A `cirq_superstaq.Job` which can be queried for status or results.
+            A `css.Job` which can be queried for status or results.
 
         Raises:
             SuperstaQException: If there was an error accessing the API.
         """
-        serialized_circuits = cirq_superstaq.serialization.serialize_circuits(circuit)
+        serialized_circuits = css.serialization.serialize_circuits(circuit)
         result = self._client.create_job(
             serialized_circuits={"cirq_circuits": serialized_circuits},
             repetitions=repetitions,
@@ -230,7 +227,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         # a second call and return the results of the fully filled out job.
         return self.get_job(result["job_ids"][0])
 
-    def get_job(self, job_id: str) -> job.Job:
+    def get_job(self, job_id: str) -> css.job.Job:
         """Gets a job that has been created on the SuperstaQ API.
 
         Args:
@@ -238,14 +235,14 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             creation of the job.
 
         Returns:
-            A `cirq_superstaq.Job` which can be queried for status or results.
+            A `css.Job` which can be queried for status or results.
 
         Raises:
             SuperstaQNotFoundException: If there was no job with the given `job_id`.
             SuperstaQException: If there was an error accessing the API.
         """
         job_dict = self._client.get_job(job_id=job_id)
-        return job.Job(client=self._client, job_dict=job_dict)
+        return css.job.Job(client=self._client, job_dict=job_dict)
 
     def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
         """Get the querying user's account balance in USD.
@@ -269,7 +266,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
     def aqt_compile(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "keysight"
-    ) -> "cirq_superstaq.compiler_output.CompilerOutput":
+    ) -> "css.compiler_output.CompilerOutput":
         """Compiles the given circuit(s) to target AQT device, optimized to its native gate set.
 
         Args:
@@ -281,13 +278,13 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             pulse sequence corresponding to the optimized cirq.Circuit(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
         """
-        serialized_circuits = cirq_superstaq.serialization.serialize_circuits(circuits)
+        serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
         json_dict = self._client.aqt_compile(
             {"cirq_circuits": serialized_circuits, "backend": target}
         )
-        return cirq_superstaq.compiler_output.read_json_aqt(json_dict, circuits_is_list)
+        return css.compiler_output.read_json_aqt(json_dict, circuits_is_list)
 
     def aqt_compile_eca(
         self,
@@ -295,7 +292,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         num_equivalent_circuits: int,
         random_seed: Optional[int] = None,
         target: str = "keysight",
-    ) -> "cirq_superstaq.compiler_output.CompilerOutput":
+    ) -> "css.compiler_output.CompilerOutput":
         """Compiles the given circuit to target AQT device with Equivalent Circuit Averaging (ECA).
 
         See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
@@ -311,7 +308,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             pulse sequence corresponding to the cirq.Circuits and the .pulse_list(s) attribute is
             the list(s) of cycles.
         """
-        serialized_circuit = cirq_superstaq.serialization.serialize_circuits(circuit)
+        serialized_circuit = css.serialization.serialize_circuits(circuit)
 
         request_json = {
             "cirq_circuits": serialized_circuit,
@@ -323,11 +320,11 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             request_json["random_seed"] = random_seed
 
         json_dict = self._client.post_request("/aqt_compile", request_json)
-        return cirq_superstaq.compiler_output.read_json_aqt(json_dict, True)
+        return css.compiler_output.read_json_aqt(json_dict, True)
 
     def qscout_compile(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "qscout"
-    ) -> "cirq_superstaq.compiler_output.CompilerOutput":
+    ) -> "css.compiler_output.CompilerOutput":
         """Compiles the given circuit(s) to target QSCOUT device, optimized to its native gate set.
 
         Args:
@@ -337,17 +334,17 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             object whose .circuit(s) attribute is an optimized cirq Circuit(s)
             and a list of jaqal programs represented as strings
         """
-        serialized_circuits = cirq_superstaq.serialization.serialize_circuits(circuits)
+        serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
         json_dict = self._client.qscout_compile(
             {"cirq_circuits": serialized_circuits, "backend": target}
         )
-        return cirq_superstaq.compiler_output.read_json_qscout(json_dict, circuits_is_list)
+        return css.compiler_output.read_json_qscout(json_dict, circuits_is_list)
 
     def cq_compile(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "cq"
-    ) -> "cirq_superstaq.compiler_output.CompilerOutput":
+    ) -> "css.compiler_output.CompilerOutput":
         """Compiles the given circuit(s) to given target CQ device, optimized to its native gate
         set.
 
@@ -357,14 +354,14 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Returns:
             object whose .circuit(s) attribute is an optimized cirq Circuit(s)
         """
-        serialized_circuits = cirq_superstaq.serialization.serialize_circuits(circuits)
+        serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
         json_dict = self._client.cq_compile(
             {"cirq_circuits": serialized_circuits, "backend": target}
         )
 
-        return cirq_superstaq.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
+        return css.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
 
     def ibmq_compile(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "ibmq_qasm_simulator"
@@ -373,14 +370,14 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
         Qiskit Terra must be installed to correctly deserialize the returned pulse schedule.
         """
-        serialized_circuits = cirq_superstaq.serialization.serialize_circuits(circuits)
+        serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
         json_dict = self._client.ibmq_compile(
             {"cirq_circuits": serialized_circuits, "backend": target}
         )
 
-        return cirq_superstaq.compiler_output.read_json_ibmq(json_dict, circuits_is_list)
+        return css.compiler_output.read_json_ibmq(json_dict, circuits_is_list)
 
     def neutral_atom_compile(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "neutral_atom_qpu"
@@ -389,7 +386,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
         Pulse must be installed for returned object to correctly deserialize to a pulse schedule.
         """
-        serialized_circuits = cirq_superstaq.serialization.serialize_circuits(circuits)
+        serialized_circuits = css.serialization.serialize_circuits(circuits)
 
         json_dict = self._client.neutral_atom_compile(
             {"cirq_circuits": serialized_circuits, "backend": target}

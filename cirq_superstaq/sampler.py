@@ -16,17 +16,16 @@ from typing import List
 
 import cirq
 
-import cirq_superstaq
-from cirq_superstaq.service import counts_to_results
+import cirq_superstaq as css
 
 
 class Sampler(cirq.Sampler):
     """A sampler that works against the SuperstaQ API. Users should get a sampler from the `sampler`
-    method on `cirq_superstaq.Service`.
+    method on `css.Service`.
 
     Example:
 
-        >> service = cirq_superstaq.Service(...)
+        >> service = css.Service(...)
         >> q0, q1 = cirq.LineQubit.range(2)
         >> sampler = service.sampler()
         >> circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1), cirq.measure(q0))
@@ -42,11 +41,11 @@ class Sampler(cirq.Sampler):
 
     def __init__(
         self,
-        service: cirq_superstaq.service.Service,
+        service: "css.service.Service",
         target: str,
     ):
         """Constructs the sampler. Uers should get a sampler from the `sampler` method on
-        `cirq_superstaq.Service`.
+        `css.Service`.
 
         Args:
             service: The service used to create this sample.
@@ -87,5 +86,5 @@ class Sampler(cirq.Sampler):
         job_counters = [job.counts() for job in jobs]
         cirq_results = []
         for counts, resolver in zip(job_counters, resolvers):
-            cirq_results.append(counts_to_results(counts, program, resolver))
+            cirq_results.append(css.service.counts_to_results(counts, program, resolver))
         return cirq_results

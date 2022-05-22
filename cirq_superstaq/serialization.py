@@ -3,7 +3,7 @@ from typing import List, Sequence, Union
 
 import cirq
 
-import cirq_superstaq
+import cirq_superstaq as css
 
 
 def serialize_circuits(
@@ -38,7 +38,7 @@ def deserialize_circuits(serialized_circuits: str) -> List[cirq.Circuit]:
     Returns:
         the Circuit or list of Circuits that was serialized
     """
-    resolvers = [cirq_superstaq.custom_gates.custom_resolver, *cirq.DEFAULT_RESOLVERS]
+    resolvers = [css.custom_gates.custom_resolver, *cirq.DEFAULT_RESOLVERS]
     circuits = cirq.read_json(json_text=serialized_circuits, resolvers=resolvers)
     if isinstance(circuits, cirq.Circuit):
         return [circuits]

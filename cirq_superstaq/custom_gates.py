@@ -5,7 +5,7 @@ from typing import AbstractSet, Any, Callable, Dict, List, Optional, Sequence, T
 import cirq
 import numpy as np
 
-import cirq_superstaq
+import cirq_superstaq as css
 
 
 @cirq.value_equality(approximate=True)
@@ -67,7 +67,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
         return f"ZZSwapGate({self.theta})"
 
     def __repr__(self) -> str:
-        return f"cirq_superstaq.ZZSwapGate({self.theta})"
+        return f"css.ZZSwapGate({self.theta})"
 
     def _decompose_(self, qubits: Tuple[cirq.Qid, cirq.Qid]) -> cirq.OP_TREE:
         yield cirq.CX(qubits[0], qubits[1])
@@ -191,10 +191,10 @@ class ZXPowGate(cirq.EigenGate, cirq.Gate):
     def __repr__(self) -> str:
         if self._global_shift == 0:
             if self._exponent == 1:
-                return "cirq_superstaq.ZX"
-            return f"(cirq_superstaq.ZX**{cirq._compat.proper_repr(self._exponent)})"
+                return "css.ZX"
+            return f"(css.ZX**{cirq._compat.proper_repr(self._exponent)})"
         return (
-            f"cirq_superstaq.ZXPowGate(exponent={cirq._compat.proper_repr(self._exponent)},"
+            f"css.ZXPowGate(exponent={cirq._compat.proper_repr(self._exponent)},"
             f" global_shift={self._global_shift!r})"
         )
 
@@ -223,15 +223,11 @@ class AceCR(cirq.Gate):
         return 2
 
     def _decompose_(self, qubits: Tuple[cirq.LineQubit, cirq.LineQubit]) -> cirq.OP_TREE:
-        yield cirq_superstaq.CR(*qubits) ** 0.25 if self.polarity == "+-" else cirq_superstaq.CR(
-            *qubits
-        ) ** -0.25
+        yield css.CR(*qubits) ** 0.25 if self.polarity == "+-" else css.CR(*qubits) ** -0.25
         yield cirq.X(qubits[0])
         if self.sandwich_rx_rads:
             yield cirq.rx(self.sandwich_rx_rads)(qubits[1])
-        yield cirq_superstaq.CR(*qubits) ** -0.25 if self.polarity == "+-" else cirq_superstaq.CR(
-            *qubits
-        ) ** 0.25
+        yield css.CR(*qubits) ** -0.25 if self.polarity == "+-" else css.CR(*qubits) ** 0.25
 
     def _circuit_diagram_info_(
         self, args: cirq.CircuitDiagramInfoArgs
@@ -261,8 +257,8 @@ class AceCR(cirq.Gate):
 
     def __repr__(self) -> str:
         if not self.sandwich_rx_rads:
-            return f"cirq_superstaq.AceCR({self.polarity!r})"
-        return f"cirq_superstaq.AceCR({self.polarity!r}, {self.sandwich_rx_rads!r})"
+            return f"css.AceCR({self.polarity!r})"
+        return f"css.AceCR({self.polarity!r}, {self.sandwich_rx_rads!r})"
 
     def __str__(self) -> str:
         if not self.sandwich_rx_rads:
@@ -298,7 +294,7 @@ class Barrier(cirq.ops.IdentityGate):
         return f"Barrier({self.num_qubits()})"
 
     def __repr__(self) -> str:
-        return f"cirq_superstaq.Barrier({self.num_qubits()})"
+        return f"css.Barrier({self.num_qubits()})"
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> Tuple[str, ...]:
         if args.use_unicode_characters:
@@ -410,7 +406,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
 
     def __repr__(self) -> str:
         component_gates_repr = ", ".join(repr(gate) for gate in self.component_gates)
-        return f"cirq_superstaq.ParallelGates({component_gates_repr})"
+        return f"css.ParallelGates({component_gates_repr})"
 
 
 class MSGate(cirq.ion.ion_gates.MSGate):
@@ -469,7 +465,7 @@ class RGate(cirq.PhasedXPowGate):
         return f"RGate({self.exponent}π, {self.phase_exponent}π)"
 
     def __repr__(self) -> str:
-        return f"cirq_superstaq.RGate({self.theta}, {self.phi})"
+        return f"css.RGate({self.theta}, {self.phi})"
 
     def _json_dict_(self) -> Dict[str, Any]:
         return cirq.protocols.obj_to_dict_helper(self, ["theta", "phi"])
@@ -480,7 +476,7 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
     """Wrapper class to define a ParallelGate of identical RGate gates."""
 
     def __init__(self, theta: float, phi: float, num_copies: int) -> None:
-        super().__init__(cirq_superstaq.RGate(theta, phi), num_copies)
+        super().__init__(css.RGate(theta, phi), num_copies)
         self._sub_gate: RGate
 
     @property
@@ -524,7 +520,7 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
         return f"RGate({self.phase_exponent}π, {self.exponent}π) x {self.num_copies}"
 
     def __repr__(self) -> str:
-        return f"cirq_superstaq.ParallelRGate({self.theta}, {self.phi}, {self.num_copies})"
+        return f"css.ParallelRGate({self.theta}, {self.phi}, {self.num_copies})"
 
     def _json_dict_(self) -> Dict[str, Any]:
         return cirq.protocols.obj_to_dict_helper(self, ["theta", "phi", "num_copies"])

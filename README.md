@@ -19,14 +19,14 @@ pip install -r neutral-atom-requirements.txt
 ### Creating and submitting a circuit through cirq-superstaq
 ```python
 import cirq
-import cirq_superstaq
+import cirq_superstaq as css
 
 q0 = cirq.LineQubit(0)
 q1 = cirq.LineQubit(1)
 
 circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1), cirq.measure(q0))
 
-service = cirq_superstaq.Service(
+service = css.Service(
     api_key="""Insert superstaq token that you received from https://superstaq.super.tech""",
     verbose=True,
 )

@@ -22,7 +22,7 @@ import pandas as pd
 import pytest
 import sympy
 
-import cirq_superstaq
+import cirq_superstaq as css
 
 
 def test_counts_to_results() -> None:
@@ -34,7 +34,7 @@ def test_counts_to_results() -> None:
         cirq.measure(qubits[0]),
         cirq.measure(qubits[1]),
     )
-    result = cirq_superstaq.service.counts_to_results(
+    result = css.service.counts_to_results(
         collections.Counter({"01": 1, "11": 2}), circuit, cirq.ParamResolver({})
     )
     assert result.histogram(key="01") == collections.Counter({3: 2, 1: 1})
@@ -45,14 +45,14 @@ def test_counts_to_results() -> None:
         cirq.measure(qubits[0]),
         cirq.measure(qubits[1]),
     )
-    result = cirq_superstaq.service.counts_to_results(
+    result = css.service.counts_to_results(
         collections.Counter({"00": 50, "11": 50}), circuit, cirq.ParamResolver({})
     )
     assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
 
 
 def test_service_run_and_get_counts() -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    service = css.Service(remote_host="http://example.com", api_key="key")
     mock_client = mock.MagicMock()
     mock_client.create_job.return_value = {
         "job_ids": ["job_id"],
@@ -99,7 +99,7 @@ def test_service_run_and_get_counts() -> None:
 
 
 def test_service_sampler() -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    service = css.Service(remote_host="http://example.com", api_key="key")
     mock_client = mock.MagicMock()
     service._client = mock_client
     mock_client.create_job.return_value = {
@@ -132,7 +132,7 @@ def test_service_sampler() -> None:
 
 
 def test_service_get_job() -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    service = css.Service(remote_host="http://example.com", api_key="key")
     mock_client = mock.MagicMock()
     job_dict = {"job_id": "job_id", "status": "ready"}
     mock_client.get_job.return_value = job_dict
@@ -144,7 +144,7 @@ def test_service_get_job() -> None:
 
 
 def test_service_create_job() -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    service = css.Service(remote_host="http://example.com", api_key="key")
     mock_client = mock.MagicMock()
     mock_client.create_job.return_value = {"job_ids": ["job_id"], "status": "ready"}
     mock_client.get_job.return_value = {"job_id": "job_id", "status": "completed"}
@@ -160,7 +160,7 @@ def test_service_create_job() -> None:
 
 
 def test_service_get_balance() -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    service = css.Service(remote_host="http://example.com", api_key="key")
     mock_client = mock.MagicMock()
     mock_client.get_balance.return_value = {"balance": 12345.6789}
     service._client = mock_client
@@ -170,7 +170,7 @@ def test_service_get_balance() -> None:
 
 
 def test_service_get_backends() -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    service = css.Service(remote_host="http://example.com", api_key="key")
     mock_client = mock.MagicMock()
     backends = {
         "superstaq_backends": {
@@ -208,13 +208,13 @@ def test_service_get_backends() -> None:
 @mock.patch(
     "applications_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={
-        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits(cirq.Circuit()),
+        "cirq_circuits": css.serialization.serialize_circuits(cirq.Circuit()),
         "state_jp": applications_superstaq.converters.serialize({}),
         "pulse_lists_jp": applications_superstaq.converters.serialize([[[]]]),
     },
 )
 def test_service_aqt_compile_single(mock_aqt_compile: mock.MagicMock) -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    service = css.Service(remote_host="http://example.com", api_key="key")
     out = service.aqt_compile(cirq.Circuit())
     assert out.circuit == cirq.Circuit()
     assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
@@ -223,15 +223,13 @@ def test_service_aqt_compile_single(mock_aqt_compile: mock.MagicMock) -> None:
 @mock.patch(
     "applications_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={
-        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits(
-            [cirq.Circuit(), cirq.Circuit()]
-        ),
+        "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit(), cirq.Circuit()]),
         "state_jp": applications_superstaq.converters.serialize({}),
         "pulse_lists_jp": applications_superstaq.converters.serialize([[[]], [[]]]),
     },
 )
 def test_service_aqt_compile_multiple(mock_aqt_compile: mock.MagicMock) -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    service = css.Service(remote_host="http://example.com", api_key="key")
     out = service.aqt_compile([cirq.Circuit(), cirq.Circuit()])
     assert out.circuits == [cirq.Circuit(), cirq.Circuit()]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
@@ -240,13 +238,13 @@ def test_service_aqt_compile_multiple(mock_aqt_compile: mock.MagicMock) -> None:
 @mock.patch(
     "applications_superstaq.superstaq_client._SuperstaQClient.post_request",
     return_value={
-        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits([cirq.Circuit()]),
+        "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit()]),
         "state_jp": applications_superstaq.converters.serialize({}),
         "pulse_lists_jp": applications_superstaq.converters.serialize([[[]]]),
     },
 )
 def test_service_aqt_compile_eca(mock_aqt_compile: mock.MagicMock) -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    service = css.Service(remote_host="http://example.com", api_key="key")
     out = service.aqt_compile_eca(cirq.Circuit(), num_equivalent_circuits=1, random_seed=1234)
     assert out.circuits == [cirq.Circuit()]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
@@ -269,11 +267,11 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
     )
 
     mock_qscout_compile.return_value = {
-        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits(circuit),
+        "cirq_circuits": css.serialization.serialize_circuits(circuit),
         "jaqal_programs": [jaqal_program],
     }
 
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    service = css.Service(remote_host="http://example.com", api_key="key")
     out = service.qscout_compile(circuit)
     assert out.circuit == circuit
     assert out.jaqal_program == jaqal_program
@@ -286,10 +284,10 @@ def test_service_cq_compile_single(mock_cq_compile: mock.MagicMock) -> None:
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
 
     mock_cq_compile.return_value = {
-        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits(circuit),
+        "cirq_circuits": css.serialization.serialize_circuits(circuit),
     }
 
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    service = css.Service(remote_host="http://example.com", api_key="key")
     out = service.cq_compile(circuit)
     assert out.circuit == circuit
 
@@ -298,13 +296,13 @@ def test_service_cq_compile_single(mock_cq_compile: mock.MagicMock) -> None:
     "applications_superstaq.superstaq_client._SuperstaQClient.ibmq_compile",
 )
 def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    service = css.Service(remote_host="http://example.com", api_key="key")
 
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
 
     mock_ibmq_compile.return_value = {
-        "cirq_circuits": cirq_superstaq.serialization.serialize_circuits(circuit),
+        "cirq_circuits": css.serialization.serialize_circuits(circuit),
         "pulses": applications_superstaq.converters.serialize([mock.DEFAULT]),
     }
 
@@ -324,7 +322,7 @@ def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
     return_value={"pulses": applications_superstaq.converters.serialize([mock.DEFAULT])},
 )
 def test_service_neutral_atom_compile(mock_neutral_atom_compile: mock.MagicMock) -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com", api_key="key")
+    service = css.Service(remote_host="http://example.com", api_key="key")
     assert service.neutral_atom_compile(cirq.Circuit()) == mock.DEFAULT
     assert service.neutral_atom_compile([cirq.Circuit()]) == [mock.DEFAULT]
 
@@ -337,22 +335,22 @@ def test_service_neutral_atom_compile(mock_neutral_atom_compile: mock.MagicMock)
 
 @mock.patch.dict(os.environ, {"SUPERSTAQ_API_KEY": "tomyheart"})
 def test_service_api_key_via_env() -> None:
-    service = cirq_superstaq.Service(remote_host="http://example.com")
+    service = css.Service(remote_host="http://example.com")
     assert service.api_key == "tomyheart"
 
 
 @mock.patch.dict(os.environ, {"SUPERSTAQ_REMOTE_HOST": "http://example.com"})
 def test_service_remote_host_via_env() -> None:
-    service = cirq_superstaq.Service(api_key="tomyheart")
+    service = css.Service(api_key="tomyheart")
     assert service.remote_host == "http://example.com"
 
 
 @mock.patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
 def test_service_no_param_or_env_variable() -> None:
     with pytest.raises(EnvironmentError):
-        _ = cirq_superstaq.Service(remote_host="http://example.com")
+        _ = css.Service(remote_host="http://example.com")
 
 
 def test_service_no_url_default() -> None:
-    service = cirq_superstaq.Service(api_key="tomyheart")
-    assert service.remote_host == cirq_superstaq.API_URL
+    service = css.Service(api_key="tomyheart")
+    assert service.remote_host == css.API_URL

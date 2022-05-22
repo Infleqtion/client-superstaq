@@ -18,7 +18,7 @@ import applications_superstaq
 import cirq
 import pytest
 
-import cirq_superstaq
+import cirq_superstaq as css
 
 
 def test_job_fields() -> None:
@@ -38,7 +38,7 @@ def test_job_fields() -> None:
     }
 
     mock_client = mock.MagicMock()
-    job = cirq_superstaq.Job(mock_client, job_dict)
+    job = css.Job(mock_client, job_dict)
     assert job.job_id() == "my_id"
     assert job.target() == "simulator"
     assert job.num_qubits() == 2
@@ -46,15 +46,15 @@ def test_job_fields() -> None:
 
 
 def test_job_status_refresh() -> None:
-    for status in cirq_superstaq.Job.NON_TERMINAL_STATES:
+    for status in css.Job.NON_TERMINAL_STATES:
         mock_client = mock.MagicMock()
         mock_client.get_job.return_value = {"job_id": "my_id", "status": "completed"}
-        job = cirq_superstaq.Job(mock_client, {"job_id": "my_id", "status": status})
+        job = css.Job(mock_client, {"job_id": "my_id", "status": status})
         assert job.status() == "completed"
         mock_client.get_job.assert_called_with("my_id")
-    for status in cirq_superstaq.Job.TERMINAL_STATES:
+    for status in css.Job.TERMINAL_STATES:
         mock_client = mock.MagicMock()
-        job = cirq_superstaq.Job(mock_client, {"job_id": "my_id", "status": status})
+        job = css.Job(mock_client, {"job_id": "my_id", "status": status})
         assert job.status() == status
         mock_client.get_job.assert_not_called()
 
@@ -65,10 +65,10 @@ def test_job_str_repr_eq() -> None:
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
-    job = cirq_superstaq.Job(client, {"job_id": "my_id"})
+    job = css.Job(client, {"job_id": "my_id"})
     assert str(job) == "Job with job_id=my_id"
     cirq.testing.assert_equivalent_repr(
-        job, setup_code="import cirq_superstaq\nimport applications_superstaq"
+        job, setup_code="import cirq_superstaq as css\nimport applications_superstaq"
     )
 
     assert not job == 1
@@ -90,7 +90,7 @@ def test_job_counts() -> None:
         "target": "simulator",
     }
     mock_client = mock.MagicMock()
-    job = cirq_superstaq.Job(mock_client, job_dict)
+    job = css.Job(mock_client, job_dict)
     results = job.counts()
     assert results == {"11": 1}
 
@@ -112,7 +112,7 @@ def test_job_counts_failed() -> None:
         "target": "simulator",
     }
     mock_client = mock.MagicMock()
-    job = cirq_superstaq.Job(mock_client, job_dict)
+    job = css.Job(mock_client, job_dict)
     with pytest.raises(RuntimeError, match="too many qubits"):
         _ = job.counts()
     assert job.status() == "Failed"
@@ -140,7 +140,7 @@ def test_job_counts_poll(mock_sleep: mock.MagicMock) -> None:
     }
     mock_client = mock.MagicMock()
     mock_client.get_job.side_effect = [ready_job, completed_job]
-    job = cirq_superstaq.Job(mock_client, ready_job)
+    job = css.Job(mock_client, ready_job)
     results = job.counts(polling_seconds=0)
     assert results == {"11": 1}
     mock_sleep.assert_called_once()
@@ -154,7 +154,7 @@ def test_job_counts_poll_timeout(mock_sleep: mock.MagicMock) -> None:
     }
     mock_client = mock.MagicMock()
     mock_client.get_job.return_value = ready_job
-    job = cirq_superstaq.Job(mock_client, ready_job)
+    job = css.Job(mock_client, ready_job)
     with pytest.raises(RuntimeError, match="ready"):
         _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
     assert mock_sleep.call_count == 11
@@ -165,7 +165,7 @@ def test_job_results_poll_timeout_with_error_message(mock_sleep: mock.MagicMock)
     ready_job = {"job_id": "my_id", "status": "failure", "failure": {"error": "too many qubits"}}
     mock_client = mock.MagicMock()
     mock_client.get_job.return_value = ready_job
-    job = cirq_superstaq.Job(mock_client, ready_job)
+    job = css.Job(mock_client, ready_job)
     with pytest.raises(RuntimeError, match="too many qubits"):
         _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
     assert mock_sleep.call_count == 11
@@ -187,7 +187,7 @@ def test_job_fields_unsuccessful() -> None:
         "target": "simulator",
     }
     mock_client = mock.MagicMock()
-    job = cirq_superstaq.Job(mock_client, job_dict)
+    job = css.Job(mock_client, job_dict)
     with pytest.raises(applications_superstaq.SuperstaQUnsuccessfulJobException, match="Deleted"):
         _ = job.target()
     with pytest.raises(applications_superstaq.SuperstaQUnsuccessfulJobException, match="Deleted"):
