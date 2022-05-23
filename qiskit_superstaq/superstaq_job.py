@@ -24,7 +24,7 @@ import qiskit_superstaq as qss
 class SuperstaQJob(qiskit.providers.JobV1):
     def __init__(
         self,
-        backend: qss.superstaq_backend.SuperstaQBackend,
+        backend: qss.SuperstaQBackend,
         job_id: str,
     ) -> None:
 

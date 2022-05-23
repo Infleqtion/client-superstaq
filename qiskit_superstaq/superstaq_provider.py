@@ -36,7 +36,7 @@ class SuperstaQProvider(
 
         import qiskit_superstaq as qss
 
-        ss_provider = qss.superstaq_provider.SuperstaQProvider('MY_TOKEN')
+        ss_provider = qss.SuperstaQProvider('MY_TOKEN')
 
         backend = ss_provider.get_backend('my_backend')
 
@@ -45,14 +45,14 @@ class SuperstaQProvider(
 
     Args:
          Args:
+            api_key: A string key which allows access to the API. If this is None,
+                then this instance will use the environment variable  `SUPERSTAQ_API_KEY`. If that
+                variable is not set, then this will raise an `EnvironmentError`.
             remote_host: The location of the API in the form of a URL. If this is None,
                 then this instance will use the environment variable `SUPERSTAQ_REMOTE_HOST`.
                 If that variable is not set, then this uses
                 `https://superstaq.super.tech/{api_version}`,
                 where `{api_version}` is the `api_version` specified below.
-            api_key: A string key which allows access to the API. If this is None,
-                then this instance will use the environment variable  `SUPERSTAQ_API_KEY`. If that
-                variable is not set, then this will raise an `EnvironmentError`.
             default_target: Which target to default to using. If set to None, no default is set
                 and target must always be specified in calls. If set, then this default is used,
                 unless a target is specified for a given call. Supports either 'qpu' or
@@ -67,8 +67,8 @@ class SuperstaQProvider(
 
     def __init__(
         self,
-        remote_host: Optional[str] = None,
         api_key: Optional[str] = None,
+        remote_host: Optional[str] = None,
         default_target: str = None,
         api_version: str = applications_superstaq.API_VERSION,
         max_retry_seconds: int = 3600,
@@ -96,21 +96,19 @@ class SuperstaQProvider(
         )
 
     def __str__(self) -> str:
-        return f"<SuperstaQProvider(name={self._name})>"
+        return f"<SuperstaQProvider {self._name}>"
 
     def __repr__(self) -> str:
-        repr1 = f"<SuperstaQProvider(name={self._name}, "
-        return repr1 + f"api_key={self.api_key})>"
+        repr1 = f"<SuperstaQProvider(api_key={self.api_key}, "
+        return repr1 + f"name={self._name})>"
 
-    def get_backend(self, backend: str) -> "qss.superstaq_backend.SuperstaQBackend":
-        return qss.superstaq_backend.SuperstaQBackend(
-            provider=self, remote_host=self.remote_host, backend=backend
-        )
+    def get_backend(self, backend: str) -> "qss.SuperstaQBackend":
+        return qss.SuperstaQBackend(provider=self, remote_host=self.remote_host, backend=backend)
 
     def get_access_token(self) -> Optional[str]:
         return self.api_key
 
-    def backends(self) -> List[qss.superstaq_backend.SuperstaQBackend]:
+    def backends(self) -> List[qss.SuperstaQBackend]:
         ss_backends = self._client.get_backends()["superstaq_backends"]
         backends = []
         for backend_str in ss_backends["compile-and-run"]:

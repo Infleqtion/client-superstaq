@@ -10,15 +10,15 @@ import qiskit_superstaq as qss
 
 
 @pytest.fixture
-def provider() -> qss.superstaq_provider.SuperstaQProvider:
+def provider() -> qss.SuperstaQProvider:
     token = os.environ["TEST_USER_TOKEN"]
-    provider = qss.superstaq_provider.SuperstaQProvider(api_key=token)
+    provider = qss.SuperstaQProvider(api_key=token)
     return provider
 
 
 def test_backends() -> None:
     token = os.environ["TEST_USER_TOKEN"]
-    provider = qss.superstaq_provider.SuperstaQProvider(api_key=token)
+    provider = qss.SuperstaQProvider(api_key=token)
     result = provider.backends()
     assert provider.get_backend("ibmq_qasm_simulator") in result
     assert provider.get_backend("aqt_keysight_qpu") in result
@@ -27,14 +27,14 @@ def test_backends() -> None:
 def test_ibmq_set_token() -> None:
     api_token = os.environ["TEST_USER_TOKEN"]
     ibmq_token = os.environ["TEST_USER_IBMQ_TOKEN"]
-    provider = qss.superstaq_provider.SuperstaQProvider(api_key=api_token)
+    provider = qss.SuperstaQProvider(api_key=api_token)
     assert provider.ibmq_set_token(ibmq_token) == "Your IBMQ account token has been updated"
 
     with pytest.raises(SuperstaQException, match="IBMQ token is invalid."):
         assert provider.ibmq_set_token("INVALID_TOKEN")
 
 
-def test_ibmq_compile(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
+def test_ibmq_compile(provider: qss.SuperstaQProvider) -> None:
     qc = qiskit.QuantumCircuit(2)
     qc.append(qss.AceCR("+-"), [0, 1])
     out = provider.ibmq_compile(qc, target="ibmq_jakarta_qpu")
@@ -46,9 +46,7 @@ def test_ibmq_compile(provider: qss.superstaq_provider.SuperstaQProvider) -> Non
     assert len(out.pulse_sequence) == 5
 
 
-def test_acer_non_neighbor_qubits_compile(
-    provider: qss.superstaq_provider.SuperstaQProvider,
-) -> None:
+def test_acer_non_neighbor_qubits_compile(provider: qss.SuperstaQProvider) -> None:
     qc = qiskit.QuantumCircuit(4)
     qc.append(qss.AceCR("-+"), [0, 1])
     qc.append(qss.AceCR("-+"), [1, 2])
@@ -62,7 +60,7 @@ def test_acer_non_neighbor_qubits_compile(
     assert len(out.pulse_sequence) == 67
 
 
-def test_aqt_compile(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
+def test_aqt_compile(provider: qss.SuperstaQProvider) -> None:
     circuit = qiskit.QuantumCircuit(8)
     circuit.h(4)
     expected = qiskit.QuantumCircuit(5)
@@ -74,7 +72,7 @@ def test_aqt_compile(provider: qss.superstaq_provider.SuperstaQProvider) -> None
     assert provider.aqt_compile([circuit, circuit]).circuits == [expected, expected]
 
 
-def test_get_balance(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
+def test_get_balance(provider: qss.SuperstaQProvider) -> None:
     balance_str = provider.get_balance()
     assert isinstance(balance_str, str)
     assert balance_str.startswith("$")
@@ -82,7 +80,7 @@ def test_get_balance(provider: qss.superstaq_provider.SuperstaQProvider) -> None
     assert isinstance(provider.get_balance(pretty_output=False), float)
 
 
-def test_qscout_compile(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
+def test_qscout_compile(provider: qss.SuperstaQProvider) -> None:
     circuit = qiskit.QuantumCircuit(1)
     circuit.h(0)
     expected = qiskit.QuantumCircuit(1)
@@ -93,7 +91,7 @@ def test_qscout_compile(provider: qss.superstaq_provider.SuperstaQProvider) -> N
     assert provider.qscout_compile([circuit, circuit]).circuits == [expected, expected]
 
 
-def test_cq_compile(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
+def test_cq_compile(provider: qss.SuperstaQProvider) -> None:
     from qiskit.circuit.library import GR
 
     circuit = qiskit.QuantumCircuit(1)

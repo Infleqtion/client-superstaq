@@ -6,8 +6,8 @@ import qiskit_superstaq as qss
 
 
 def test_default_options() -> None:
-    ss_provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
-    device = qss.superstaq_backend.SuperstaQBackend(
+    ss_provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    device = qss.SuperstaQBackend(
         provider=ss_provider,
         remote_host=qss.API_URL,
         backend="ibmq_qasm_simulator",
@@ -16,12 +16,12 @@ def test_default_options() -> None:
     assert qiskit.providers.Options(shots=1000) == device._default_options()
 
 
-class MockProvider(qss.superstaq_provider.SuperstaQProvider):
+class MockProvider(qss.SuperstaQProvider):
     def __init__(self) -> None:
         self.api_key = "super.tech"
 
 
-class MockDevice(qss.superstaq_backend.SuperstaQBackend):
+class MockDevice(qss.SuperstaQBackend):
     def __init__(self) -> None:
         super().__init__(MockProvider(), "super.tech", "mock_backend")
         self._provider = MockProvider()
@@ -43,7 +43,7 @@ def test_run() -> None:
     device._provider._client = mock_client
 
     answer = device.run(circuits=qc, shots=1000)
-    expected = qss.superstaq_job.SuperstaQJob(device, "job_id")
+    expected = qss.SuperstaQJob(device, "job_id")
     assert answer == expected
 
 
@@ -67,7 +67,7 @@ def test_multi_circuit_run() -> None:
     device._provider._client = mock_client
 
     answer = device.run(circuits=[qc1, qc2], shots=1000)
-    expected = qss.superstaq_job.SuperstaQJob(device, "job_id")
+    expected = qss.SuperstaQJob(device, "job_id")
 
     assert answer == expected
 
@@ -76,17 +76,17 @@ def test_eq() -> None:
 
     assert MockDevice() != 3
 
-    provider = qss.superstaq_provider.SuperstaQProvider(api_key="123")
+    provider = qss.SuperstaQProvider(api_key="123")
 
-    backend1 = qss.superstaq_backend.SuperstaQBackend(
+    backend1 = qss.SuperstaQBackend(
         provider=provider, backend="ibmq_qasm_simulator", remote_host=qss.API_URL
     )
-    backend2 = qss.superstaq_backend.SuperstaQBackend(
+    backend2 = qss.SuperstaQBackend(
         provider=provider, backend="ibmq_athens", remote_host=qss.API_URL
     )
     assert backend1 != backend2
 
-    backend3 = qss.superstaq_backend.SuperstaQBackend(
+    backend3 = qss.SuperstaQBackend(
         provider=provider, backend="ibmq_qasm_simulator", remote_host=qss.API_URL
     )
     assert backend1 == backend3

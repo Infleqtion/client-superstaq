@@ -13,12 +13,12 @@ class MockConfiguration:
     backend_version = qss.API_VERSION
 
 
-class MockProvider(qss.superstaq_provider.SuperstaQProvider):
+class MockProvider(qss.SuperstaQProvider):
     def __init__(self) -> None:
         self.api_key = "very.tech"
 
 
-class MockDevice(qss.superstaq_backend.SuperstaQBackend):
+class MockDevice(qss.SuperstaQBackend):
     def __init__(self) -> None:
         self._provider = MockProvider()
         self.diff = ""
@@ -28,14 +28,14 @@ class MockDevice(qss.superstaq_backend.SuperstaQBackend):
     remote_host = "super.tech"
 
 
-class MockJob(qss.superstaq_job.SuperstaQJob):
+class MockJob(qss.SuperstaQJob):
     def __init__(self) -> None:
         self._backend = MockDevice()
         self._job_id = "123abc"
         self.qobj = None
 
 
-class MockJobs(qss.superstaq_job.SuperstaQJob):
+class MockJobs(qss.SuperstaQJob):
     def __init__(self) -> None:
         self._backend = MockDevice()
         self._job_id = "123abc,456def"
@@ -109,17 +109,17 @@ def test_status(monkeypatch: Any) -> None:
 
 
 def test_submit() -> None:
-    job = qss.superstaq_job.SuperstaQJob(backend=MockDevice(), job_id="12345")
+    job = qss.SuperstaQJob(backend=MockDevice(), job_id="12345")
     with pytest.raises(NotImplementedError, match="Submit through SuperstaQBackend"):
         job.submit()
 
 
 def test_eq() -> None:
-    job = qss.superstaq_job.SuperstaQJob(backend=MockDevice(), job_id="12345")
+    job = qss.SuperstaQJob(backend=MockDevice(), job_id="12345")
     assert job != "super.tech"
 
-    job2 = qss.superstaq_job.SuperstaQJob(backend=MockDevice(), job_id="123456")
+    job2 = qss.SuperstaQJob(backend=MockDevice(), job_id="123456")
     assert job != job2
 
-    job3 = qss.superstaq_job.SuperstaQJob(backend=MockDevice(), job_id="12345")
+    job3 = qss.SuperstaQJob(backend=MockDevice(), job_id="12345")
     assert job == job3

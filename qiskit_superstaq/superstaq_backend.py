@@ -19,9 +19,7 @@ import qiskit_superstaq as qss
 
 
 class SuperstaQBackend(qiskit.providers.BackendV1):
-    def __init__(
-        self, provider: "qss.superstaq_provider.SuperstaQProvider", remote_host: str, backend: str
-    ) -> None:
+    def __init__(self, provider: "qss.SuperstaQProvider", remote_host: str, backend: str) -> None:
         self.remote_host = remote_host
         self._provider = provider
         self.configuration_dict = {
@@ -50,7 +48,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         return qiskit.providers.Options(shots=1000)
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, qss.superstaq_backend.SuperstaQBackend):
+        if not isinstance(other, qss.SuperstaQBackend):
             return False
 
         return (
@@ -63,7 +61,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         shots: int,
         ibmq_pulse: Optional[bool] = None,
-    ) -> "qss.superstaq_job.SuperstaQJob":
+    ) -> "qss.SuperstaQJob":
 
         if isinstance(circuits, qiskit.QuantumCircuit):
             circuits = [circuits]
@@ -80,6 +78,6 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         #  we make a virtual job_id that aggregates all of the individual jobs
         # into a single one, that comma-separates the individual jobs:
         job_id = ",".join(result["job_ids"])
-        job = qss.superstaq_job.SuperstaQJob(self, job_id)
+        job = qss.SuperstaQJob(self, job_id)
 
         return job

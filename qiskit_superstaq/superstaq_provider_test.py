@@ -12,22 +12,22 @@ import qiskit_superstaq as qss
 
 @patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
 def test_provider() -> None:
-    ss_provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
+    ss_provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
 
     with pytest.raises(EnvironmentError, match="api_key was not "):
-        qss.superstaq_provider.SuperstaQProvider()
+        qss.SuperstaQProvider()
 
     assert str(ss_provider.get_backend("ibmq_qasm_simulator")) == str(
-        qss.superstaq_backend.SuperstaQBackend(
+        qss.SuperstaQBackend(
             provider=ss_provider,
             remote_host=qss.API_URL,
             backend="ibmq_qasm_simulator",
         )
     )
 
-    assert str(ss_provider) == "<SuperstaQProvider(name=superstaq_provider)>"
+    assert str(ss_provider) == "<SuperstaQProvider superstaq_provider>"
 
-    assert repr(ss_provider) == "<SuperstaQProvider(name=superstaq_provider, api_key=MY_TOKEN)>"
+    assert repr(ss_provider) == "<SuperstaQProvider(api_key=MY_TOKEN, name=superstaq_provider)>"
 
     backends = {
         "superstaq_backends": {
@@ -61,9 +61,7 @@ def test_provider() -> None:
     expected_backends = []
     for name in backend_names:
         expected_backends.append(
-            qss.superstaq_backend.SuperstaQBackend(
-                provider=ss_provider, remote_host=qss.API_URL, backend=name
-            )
+            qss.SuperstaQBackend(provider=ss_provider, remote_host=qss.API_URL, backend=name)
         )
 
     mock_client = MagicMock()
@@ -74,7 +72,7 @@ def test_provider() -> None:
 
 @patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
 def test_get_balance() -> None:
-    ss_provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
+    ss_provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     mock_client = MagicMock()
     mock_client.get_balance.return_value = {"balance": 12345.6789}
     ss_provider._client = mock_client
@@ -85,7 +83,7 @@ def test_get_balance() -> None:
 
 @patch("requests.post")
 def test_aqt_compile(mock_post: MagicMock) -> None:
-    provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
 
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
@@ -135,7 +133,7 @@ def test_service_aqt_compile_eca(mock_post: MagicMock) -> None:
     "applications_superstaq.superstaq_client._SuperstaQClient.ibmq_compile",
 )
 def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
-    provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
     mock_ibmq_compile.return_value = {
@@ -153,7 +151,7 @@ def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
 
 @patch("requests.post")
 def test_qscout_compile(mock_post: MagicMock) -> None:
-    provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
 
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)
@@ -189,7 +187,7 @@ def test_qscout_compile(mock_post: MagicMock) -> None:
 
 @patch("requests.post")
 def test_cq_compile(mock_post: MagicMock) -> None:
-    provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
 
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)
@@ -215,7 +213,7 @@ def test_cq_compile(mock_post: MagicMock) -> None:
     return_value={"pulses": applications_superstaq.converters.serialize([mock.DEFAULT])},
 )
 def test_neutral_atom_compile(mock_ibmq_compile: MagicMock) -> None:
-    provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     assert provider.neutral_atom_compile(qiskit.QuantumCircuit()) == mock.DEFAULT
     assert provider.neutral_atom_compile([qiskit.QuantumCircuit()]) == [mock.DEFAULT]
 
