@@ -1,5 +1,5 @@
 import functools
-from typing import Optional, Type, Union
+from typing import Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
 import qiskit
@@ -22,6 +22,7 @@ class AceCR(qiskit.circuit.Gate):
             raise ValueError("Polarity must be either '+-' or '-+'")
 
         name = "acecr_" + polarity.replace("+", "p").replace("-", "m")
+
         if sandwich_rx_rads:
             super().__init__(name + "_rx", 2, [sandwich_rx_rads], label=label)
         else:
@@ -43,7 +44,7 @@ class AceCR(qiskit.circuit.Gate):
         qc.rzx(-first_sign * np.pi / 4, 0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: Type = None) -> np.ndarray:
+    def __array__(self, dtype: Optional[type] = None) -> np.ndarray:
         cval = 1 / np.sqrt(2)
         if self.polarity == "+-":
             sval = 1j * cval
@@ -118,11 +119,11 @@ class ZZSwapGate(qiskit.circuit.Gate):
         qc = qiskit.QuantumCircuit(2, name="zzswap")
         qc.cx(0, 1)
         qc.cx(1, 0)
-        qc.rz(self.params[0], 1)
+        qc.p(self.params[0], 1)
         qc.cx(0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: Type = None) -> np.ndarray:
+    def __array__(self, dtype: Optional[type] = None) -> np.ndarray:
         return np.array(
             [
                 [1, 0, 0, 0],
@@ -153,14 +154,21 @@ class ParallelGates(qiskit.circuit.Gate):
             component_gates: Gate(s) to be collected into single gate
             label: an optional label for the constructed Gate
         """
-        if not all(isinstance(gate, qiskit.circuit.Gate) for gate in component_gates):
-            raise ValueError("Component gates must be instances of qiskit.circuit.Gate")
+        self.component_gates: Tuple[qiskit.circuit.Gate, ...] = ()
+        num_qubits = 0
 
-        num_qubits = sum(gate.num_qubits for gate in component_gates)
-        name = "parallel_" + "_".join(gate.name for gate in component_gates)
+        for gate in component_gates:
+            num_qubits += gate.num_qubits
 
+            if not isinstance(gate, qiskit.circuit.Gate):
+                raise ValueError("Component gates must be instances of qiskit.circuit.Gate")
+            elif isinstance(gate, ParallelGates):
+                self.component_gates += gate.component_gates
+            else:
+                self.component_gates += (gate,)
+
+        name = "parallel_" + "_".join(gate.name for gate in self.component_gates)
         super().__init__(name, num_qubits, [], label=label)
-        self.component_gates = component_gates
 
     def inverse(self) -> "ParallelGates":
         return ParallelGates(*[gate.inverse() for gate in self.component_gates])
@@ -174,7 +182,7 @@ class ParallelGates(qiskit.circuit.Gate):
             qubits = qubits[num_qubits:]
         self.definition = qc
 
-    def __array__(self, dtype: Type = None) -> np.ndarray:
+    def __array__(self, dtype: Optional[type] = None) -> np.ndarray:
         mat = functools.reduce(np.kron, (gate.to_matrix() for gate in self.component_gates[::-1]))
         return np.asarray(mat, dtype=dtype)
 
@@ -183,18 +191,80 @@ class ParallelGates(qiskit.circuit.Gate):
         return f"ParallelGates({args})"
 
 
-class ICCXGate(qiskit.circuit.ControlledGate):
+class iXGate(qiskit.circuit.Gate):
+    def __init__(self, label: Optional[str] = None) -> None:
+        super().__init__("ix", 1, [], label=label)
+
+    def _define(self) -> None:
+        qc = qiskit.QuantumCircuit(1, name=self.name)
+        qc.rx(-np.pi, 0)
+        self.definition = qc
+
+    def __array__(self, dtype: Optional[type] = None) -> np.ndarray:
+        return np.array([[0, 1j], [1j, 0]])
+
+    def inverse(self) -> "iXdgGate":
+        return iXdgGate()
+
+    def control(
+        self,
+        num_ctrl_qubits: int = 1,
+        label: Optional[str] = None,
+        ctrl_state: Optional[Union[str, int]] = None,
+    ) -> qiskit.circuit.ControlledGate:
+        if num_ctrl_qubits == 2:
+            gate = iCCXGate(ctrl_state=ctrl_state)
+            gate.base_gate.label = self.label
+            return gate
+        return super().control(num_ctrl_qubits, label, ctrl_state)
+
+    def __repr__(self) -> str:
+        return f"qss.custom_gates.{str(self)}"
+
+    def __str__(self) -> str:
+        return f"iXGate(label={self.label})"
+
+
+class iXdgGate(qiskit.circuit.Gate):
+    def __init__(self, label: Optional[str] = None) -> None:
+        super().__init__("ixdg", 1, [], label=label)
+
+    def _define(self) -> None:
+        qc = qiskit.QuantumCircuit(1, name=self.name)
+        qc.rx(np.pi, 0)
+        self.definition = qc
+
+    def __array__(self, dtype: Optional[type] = None) -> np.ndarray:
+        return np.array([[0, -1j], [-1j, 0]])
+
+    def inverse(self) -> iXGate:
+        return iXGate()
+
+    def control(
+        self,
+        num_ctrl_qubits: int = 1,
+        label: Optional[str] = None,
+        ctrl_state: Optional[Union[str, int]] = None,
+    ) -> qiskit.circuit.ControlledGate:
+        if num_ctrl_qubits == 2:
+            gate = iCCXdgGate(ctrl_state=ctrl_state)
+            gate.base_gate.label = self.label
+            return gate
+        return super().control(num_ctrl_qubits, label, ctrl_state)
+
+    def __repr__(self) -> str:
+        return f"qss.custom_gates.{str(self)}"
+
+    def __str__(self) -> str:
+        return f"iXdgGate(label={self.label})"
+
+
+class iCCXGate(qiskit.circuit.ControlledGate):
     def __init__(
         self, label: Optional[str] = None, ctrl_state: Optional[Union[str, int]] = None
     ) -> None:
         super().__init__(
-            "iccx",
-            3,
-            [-np.pi],
-            num_ctrl_qubits=2,
-            label=label,
-            ctrl_state=ctrl_state,
-            base_gate=qiskit.circuit.library.RXGate(-np.pi),
+            "iccx", 3, [], label, num_ctrl_qubits=2, ctrl_state=ctrl_state, base_gate=iXGate()
         )
 
     def _define(self) -> None:
@@ -203,39 +273,23 @@ class ICCXGate(qiskit.circuit.ControlledGate):
         qc.cp(np.pi / 2, 0, 1)
         self.definition = qc
 
-    def inverse(self) -> qiskit.circuit.ControlledGate:
-        return ICCXdgGate(ctrl_state=self.ctrl_state)
-
-    def __array__(self, dtype: Optional[np.ndarray] = None) -> np.ndarray:
+    def __array__(self, dtype: Optional[type] = None) -> np.ndarray:
         mat = qiskit.circuit._utils._compute_control_matrix(
             self.base_gate.to_matrix(), self.num_ctrl_qubits, ctrl_state=self.ctrl_state
         )
-        if dtype:
-            return np.asarray(mat, dtype=dtype)
-        return mat
+        return np.asarray(mat, dtype=dtype)
 
     def __repr__(self) -> str:
-        return f"qss.ICCXGate(label={self.label}, ctrl_state={self.ctrl_state})"
+        return f"qss.custom_gates.{str(self)}"
 
     def __str__(self) -> str:
-        return f"ICCXGate(label={self.label}, ctrl_state={self.ctrl_state})"
+        return f"iCCXGate(label={self.label}, ctrl_state={self.ctrl_state})"
 
 
-class AQTiCCXGate(ICCXGate):
-    def __init__(self, label: Optional[str] = None) -> None:
-        super().__init__(label=label, ctrl_state="00")
-
-
-class ICCXdgGate(qiskit.circuit.ControlledGate):
+class iCCXdgGate(qiskit.circuit.ControlledGate):
     def __init__(self, label: str = None, ctrl_state: Optional[Union[str, int]] = None) -> None:
         super().__init__(
-            "iccxdg",
-            3,
-            [np.pi],
-            num_ctrl_qubits=2,
-            label=label,
-            ctrl_state=ctrl_state,
-            base_gate=qiskit.circuit.library.RXGate(np.pi),
+            "iccxdg", 3, [], label, num_ctrl_qubits=2, ctrl_state=ctrl_state, base_gate=iXdgGate()
         )
 
     def _define(self) -> None:
@@ -244,50 +298,62 @@ class ICCXdgGate(qiskit.circuit.ControlledGate):
         qc.cp(-np.pi / 2, 0, 1)
         self.definition = qc
 
-    def inverse(self) -> qiskit.circuit.ControlledGate:
-        return ICCXGate(ctrl_state=self.ctrl_state)
-
-    def __array__(self, dtype: Optional[np.dtype] = None) -> np.ndarray:
+    def __array__(self, dtype: Optional[type] = None) -> np.ndarray:
         mat = qiskit.circuit._utils._compute_control_matrix(
             self.base_gate.to_matrix(), self.num_ctrl_qubits, ctrl_state=self.ctrl_state
         )
-        if dtype:
-            return np.asarray(mat, dtype=dtype)
-        return mat
+        return np.asarray(mat, dtype=dtype)
 
     def __repr__(self) -> str:
-        return f"qss.ICCXdgGate(label={self.label}, ctrl_state={self.ctrl_state})"
+        return f"qss.custom_gates.{str(self)}"
 
     def __str__(self) -> str:
-        return f"ICCXdgGate(label={self.label}, ctrl_state={self.ctrl_state})"
+        return f"iCCXdgGate(label={self.label}, ctrl_state={self.ctrl_state})"
+
+
+class AQTiCCXGate(iCCXGate):
+    def __init__(self, label: Optional[str] = None) -> None:
+        super().__init__(label=label, ctrl_state="00")
 
 
 AQTiToffoliGate = AQTiCCXGate
 
 
-def custom_resolver(gate: qiskit.circuit.Gate) -> Optional[qiskit.circuit.Gate]:
+_custom_gate_resolvers: Dict[str, Callable[..., qiskit.circuit.Gate]] = {
+    "acecr_pm": lambda: AceCR("+-"),
+    "acecr_mp": lambda: AceCR("-+"),
+    "acecr_pm_rx": lambda rads: AceCR("+-", rads),
+    "acecr_mp_rx": lambda rads: AceCR("-+", rads),
+    "zzswap": ZZSwapGate,
+    "ix": iXGate,
+    "ixdg": iXdgGate,
+    "iccx": iCCXGate,
+    "iccx_o0": AQTiCCXGate,
+    "iccx_o1": lambda: iCCXGate(ctrl_state="01"),
+    "iccx_o2": lambda: iCCXGate(ctrl_state="10"),
+    "iccxdg": iCCXdgGate,
+    "iccxdg_o0": lambda: iCCXdgGate(ctrl_state="00"),
+    "iccxdg_o1": lambda: iCCXdgGate(ctrl_state="01"),
+    "iccxdg_o2": lambda: iCCXdgGate(ctrl_state="10"),
+}
+
+
+def custom_resolver(gate: qiskit.circuit.Instruction) -> Optional[qiskit.circuit.Gate]:
     """Recover a custom gate type from a generic qiskit.circuit.Gate. Resolution is done using
-    gate.definition.name rather than gate.name, as the former is set by all qiskit_superstaq
+    gate.definition.name rather than gate.name, as the former is set by all qiskit-superstaq
     custom gates and the latter may be modified by calls such as QuantumCircuit.qasm()
     """
 
-    if gate.definition is None:
-        return None
-    if gate.definition.name == "acecr_pm":
-        return AceCR("+-", label=gate.label)
-    if gate.definition.name == "acecr_mp":
-        return AceCR("-+", label=gate.label)
-    if gate.definition.name == "zzswap":
-        return ZZSwapGate(gate.params[0], label=gate.label)
-    if gate.definition.name == "parallel_gates":
+    if gate.definition and gate.definition.name == "parallel_gates":
         component_gates = [custom_resolver(inst) or inst for inst, _, _ in gate.definition]
         return ParallelGates(*component_gates, label=gate.label)
-    if gate.name == "iccx":
-        return ICCXGate(label=gate.label)
-    if gate.name == "iccx_o0":
-        return AQTiCCXGate(label=gate.label)
-    if gate.name == "iccx_o1":
-        return ICCXGate(label=gate.label, ctrl_state="01")
-    if gate.name == "iccx_o2":
-        return ICCXGate(label=gate.label, ctrl_state="10")
-    return None
+
+    if gate.definition and gate.definition.name in _custom_gate_resolvers:
+        new_gate = _custom_gate_resolvers[gate.definition.name](*gate.params)
+    elif gate.name in _custom_gate_resolvers:
+        new_gate = _custom_gate_resolvers[gate.name](*gate.params)
+    else:
+        return None
+
+    new_gate.label = gate.label
+    return new_gate

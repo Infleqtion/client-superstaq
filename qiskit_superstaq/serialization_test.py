@@ -43,8 +43,18 @@ def test_circuit_serialization() -> None:
     circuit_1 = qiskit.QuantumCircuit(4)
     circuit_1.append(qss.AceCR("+-"), [0, 1])
     circuit_1.append(qss.AceCR("-+"), [1, 2])
+    circuit_1.append(qss.AceCR("+-", 1.23), [0, 1])
     circuit_1.append(qss.ZZSwapGate(0.75), [2, 0])
     circuit_1.append(qss.AQTiCCXGate(), [0, 1, 2])
+    circuit_1.append(qss.custom_gates.iCCXGate(), [0, 1, 2])
+    circuit_1.append(qss.custom_gates.iCCXGate(ctrl_state="10"), [0, 1, 2])
+    circuit_1.append(qss.custom_gates.iCCXGate(ctrl_state="01"), [0, 1, 2])
+    circuit_1.append(qss.custom_gates.iCCXdgGate(), [0, 1, 2])
+    circuit_1.append(qss.custom_gates.iCCXdgGate(ctrl_state="10"), [0, 1, 2])
+    circuit_1.append(qss.custom_gates.iCCXdgGate(ctrl_state="01"), [0, 1, 2])
+    circuit_1.append(qss.custom_gates.iCCXdgGate(ctrl_state="00"), [0, 1, 2])
+    circuit_1.append(qss.custom_gates.iXGate(), [2])
+    circuit_1.append(qss.custom_gates.iXdgGate(), [2])
 
     circuit_1.append(
         qss.ParallelGates(

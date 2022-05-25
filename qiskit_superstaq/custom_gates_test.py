@@ -1,4 +1,4 @@
-from typing import Set
+from typing import List, Set
 
 import numpy as np
 import pytest
@@ -103,16 +103,69 @@ def test_parallel_gates() -> None:
         all_qargs.update(qargs)
     assert len(all_qargs) == gate.num_qubits
 
+    gate = qss.ParallelGates(
+        qiskit.circuit.library.XGate(),
+        qss.ParallelGates(
+            qiskit.circuit.library.YGate(),
+            qiskit.circuit.library.ZGate(),
+        ),
+    )
+    gate2 = qss.ParallelGates(
+        qiskit.circuit.library.XGate(),
+        qiskit.circuit.library.YGate(),
+        qiskit.circuit.library.ZGate(),
+    )
+    assert gate.component_gates == gate2.component_gates
+    assert gate == gate2
+
     with pytest.raises(ValueError, match="Component gates must be"):
         _ = qss.ParallelGates(qiskit.circuit.Measure())
+
+
+def test_ix_gate() -> None:
+    gate = qss.custom_gates.iXGate()
+    _check_gate_definition(gate)
+    assert repr(gate) == "qss.custom_gates.iXGate(label=None)"
+    assert str(gate) == "iXGate(label=None)"
+
+    assert gate.inverse() == qss.custom_gates.iXdgGate()
+    assert gate.control(2) == qss.custom_gates.iCCXGate()
+    assert type(gate.control(1)) is qiskit.circuit.ControlledGate
+    assert np.all(gate.to_matrix() == [[0, 1j], [1j, 0]])
+
+
+def test_ixdg_gate() -> None:
+    gate = qss.custom_gates.iXdgGate()
+    _check_gate_definition(gate)
+    assert repr(gate) == "qss.custom_gates.iXdgGate(label=None)"
+    assert str(gate) == "iXdgGate(label=None)"
+
+    assert gate.inverse() == qss.custom_gates.iXGate()
+    assert gate.control(2) == qss.custom_gates.iCCXdgGate()
+    assert type(gate.control(1)) is qiskit.circuit.ControlledGate
+    assert np.all(gate.to_matrix() == [[0, -1j], [-1j, 0]])
+
+
+def test_iccx() -> None:
+    gate = qss.custom_gates.iCCXGate()
+    _check_gate_definition(gate)
+    assert repr(gate) == "qss.custom_gates.iCCXGate(label=None, ctrl_state=3)"
+    assert str(gate) == "iCCXGate(label=None, ctrl_state=3)"
+
+
+def test_iccxdg() -> None:
+    gate = qss.custom_gates.iCCXdgGate()
+    _check_gate_definition(gate)
+    assert repr(gate) == "qss.custom_gates.iCCXdgGate(label=None, ctrl_state=3)"
+    assert str(gate) == "iCCXdgGate(label=None, ctrl_state=3)"
 
 
 def test_aqticcx() -> None:
     gate = qss.AQTiCCXGate()
     _check_gate_definition(gate)
 
-    assert repr(gate) == "qss.ICCXGate(label=None, ctrl_state=0)"
-    assert str(gate) == "ICCXGate(label=None, ctrl_state=0)"
+    assert repr(gate) == "qss.custom_gates.iCCXGate(label=None, ctrl_state=0)"
+    assert str(gate) == "iCCXGate(label=None, ctrl_state=0)"
 
     qc = qiskit.QuantumCircuit(3)
 
@@ -134,33 +187,64 @@ def test_aqticcx() -> None:
     np.allclose(qiskit.quantum_info.Operator(qc), correct_unitary)
 
 
-def test_iccxdg() -> None:
-    gate = qss.custom_gates.ICCXdgGate()
-    _check_gate_definition(gate)
-    assert repr(gate) == "qss.ICCXdgGate(label=None, ctrl_state=3)"
-    assert str(gate) == "ICCXdgGate(label=None, ctrl_state=3)"
-
-
 def test_custom_resolver() -> None:
-    gates = [
+    custom_gates: List[qiskit.circuit.Gate] = [
         qss.AceCR("+-"),
+        qss.AceCR("-+"),
+        qss.AceCR("+-", 1.23),
         qss.ZZSwapGate(1.23),
         qss.AQTiCCXGate(),
-        qss.custom_gates.ICCXGate(),
-        qss.custom_gates.ICCXGate(ctrl_state="01"),
-        qss.custom_gates.ICCXGate(ctrl_state="10"),
-        qss.ParallelGates(
-            qiskit.circuit.library.RXGate(4.56),
-            qiskit.circuit.library.CXGate(),
-            qiskit.circuit.library.XGate(),
-            qss.AceCR("-+"),
-        ),
+        qss.custom_gates.iXGate(),
+        qss.custom_gates.iXdgGate(),
+        qss.custom_gates.iCCXGate(),
+        qss.custom_gates.iCCXGate(ctrl_state="01"),
+        qss.custom_gates.iCCXGate(ctrl_state="10"),
+        qss.custom_gates.iCCXdgGate(ctrl_state="00"),
+        qss.custom_gates.iCCXdgGate(),
+        qss.custom_gates.iCCXdgGate(ctrl_state="01"),
+        qss.custom_gates.iCCXdgGate(ctrl_state="10"),
     ]
 
-    for gate in gates:
-        resolved_gate = qss.custom_gates.custom_resolver(gate)
-        assert resolved_gate is not gate
-        assert resolved_gate == gate
+    generic_gates = []
+
+    for custom_gate in custom_gates:
+        generic_gate = qiskit.circuit.Gate(
+            custom_gate.name,
+            custom_gate.num_qubits,
+            custom_gate.params,
+            label=str(id(custom_gate)),
+        )
+        generic_gate.definition = custom_gate.definition
+        generic_gates.append(generic_gate)
+        assert generic_gate != custom_gate
+
+        resolved_gate = qss.custom_gates.custom_resolver(generic_gate)
+        assert resolved_gate == custom_gate
+        assert resolved_gate.label == str(id(custom_gate))  # (labels aren't included in __eq__)
+
+    parallel_gates = qss.ParallelGates(
+        qiskit.circuit.library.RXGate(4.56), qiskit.circuit.library.CXGate(), *custom_gates
+    )
+    parallel_generic_gates = qss.ParallelGates(
+        qiskit.circuit.library.RXGate(4.56),
+        qiskit.circuit.library.CXGate(),
+        *generic_gates,
+        label="label-1"
+    )
+    resolved_gate = qss.custom_gates.custom_resolver(parallel_generic_gates)
+    assert parallel_generic_gates != parallel_gates
+    assert resolved_gate == parallel_gates
+    assert resolved_gate.label == "label-1"
+
+    generic_parallel_gates = qiskit.circuit.Gate(
+        parallel_gates.name, parallel_gates.num_qubits, [], label="label-2"
+    )
+    generic_parallel_gates.definition = parallel_generic_gates.definition
+    resolved_gate = qss.custom_gates.custom_resolver(generic_parallel_gates)
+    assert generic_parallel_gates != parallel_gates
+    assert resolved_gate == parallel_gates
+    assert resolved_gate.label == "label-2"
 
     assert qss.custom_gates.custom_resolver(qiskit.circuit.library.CXGate()) is None
     assert qss.custom_gates.custom_resolver(qiskit.circuit.library.RXGate(2)) is None
+    assert qss.custom_gates.custom_resolver(qiskit.circuit.Gate("??", 1, [])) is None
