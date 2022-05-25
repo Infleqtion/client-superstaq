@@ -98,13 +98,13 @@ def test_warning_suppression() -> None:
 
     # QPY encodes qiskit.__version__ into the serialized circuit, so mocking a newer version string
     # during serialization will cause a QPY version UserWarning during deserialization
-    with mock.patch("qiskit.circuit.qpy_serialization.__version__", newer_version):
+    with mock.patch("qiskit.qpy.interface.__version__", newer_version):
         serialized_circuit = qss.serialization.serialize_circuits(circuit)
 
     # Check that a warning would normally be thrown
     with pytest.warns(UserWarning):
         buf = io.BytesIO(applications_superstaq.converters._str_to_bytes(serialized_circuit))
-        _ = qiskit.circuit.qpy_serialization.load(buf)
+        _ = qiskit.qpy.load(buf)
 
     # Check that it is suppressed by deserialize_circuits
     with warnings.catch_warnings():

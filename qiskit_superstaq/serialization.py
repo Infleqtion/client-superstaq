@@ -4,7 +4,7 @@ from typing import Dict, List, Set, Tuple, Union
 
 import applications_superstaq
 import qiskit
-import qiskit.circuit.qpy_serialization
+import qiskit.qpy
 from qiskit.converters.ast_to_dag import AstInterpreter
 
 import qiskit_superstaq as qss
@@ -74,7 +74,7 @@ def serialize_circuits(circuits: Union[qiskit.QuantumCircuit, List[qiskit.Quantu
         circuits = [_assign_unique_inst_names(circuit) for circuit in circuits]
 
     buf = io.BytesIO()
-    qiskit.circuit.qpy_serialization.dump(circuits, buf)
+    qiskit.qpy.dump(circuits, buf)
     return applications_superstaq.converters._bytes_to_str(buf.getvalue())
 
 
@@ -91,7 +91,7 @@ def deserialize_circuits(serialized_circuits: str) -> List[qiskit.QuantumCircuit
 
     with warnings.catch_warnings(record=False):
         warnings.filterwarnings("ignore", "The qiskit version", UserWarning, "qiskit")
-        circuits = qiskit.circuit.qpy_serialization.load(buf)
+        circuits = qiskit.qpy.load(buf)
 
     for circuit in circuits:
         for pc, (inst, qargs, cargs) in enumerate(circuit._data):
