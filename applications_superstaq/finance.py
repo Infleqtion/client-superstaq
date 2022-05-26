@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import qubovert as qv
@@ -107,7 +107,7 @@ class Finance:
         self,
         stock_symbols: List[str],
         k: float,
-        num_assets_in_portfolio: int = None,
+        num_assets_in_portfolio: Optional[int] = None,
         years_window: float = 5.0,
         solver: str = "anneal",
     ) -> MaxSharpeOutput:
