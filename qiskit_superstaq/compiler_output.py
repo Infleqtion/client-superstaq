@@ -18,7 +18,7 @@ class CompilerOutput:
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         pulse_sequences: Union[qiskit.pulse.Schedule, List[qiskit.pulse.Schedule]] = None,
         seq: Optional["qtrl.sequencer.Sequence"] = None,
-        jaqal_programs: List[str] = None,
+        jaqal_programs: Optional[List[str]] = None,
         pulse_lists: Optional[Union[List[List], List[List[List]]]] = None,
     ) -> None:
         if isinstance(circuits, qiskit.QuantumCircuit):

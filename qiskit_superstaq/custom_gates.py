@@ -17,7 +17,9 @@ class AceCR(qiskit.circuit.Gate):
         label: An optional label for the constructed Gate
     """
 
-    def __init__(self, polarity: str, sandwich_rx_rads: float = 0, label: str = None) -> None:
+    def __init__(
+        self, polarity: str, sandwich_rx_rads: float = 0, label: Optional[str] = None
+    ) -> None:
         if polarity not in ("+-", "-+"):
             raise ValueError("Polarity must be either '+-' or '-+'")
 
@@ -287,7 +289,9 @@ class iCCXGate(qiskit.circuit.ControlledGate):
 
 
 class iCCXdgGate(qiskit.circuit.ControlledGate):
-    def __init__(self, label: str = None, ctrl_state: Optional[Union[str, int]] = None) -> None:
+    def __init__(
+        self, label: Optional[str] = None, ctrl_state: Optional[Union[str, int]] = None
+    ) -> None:
         super().__init__(
             "iccxdg", 3, [], label, num_ctrl_qubits=2, ctrl_state=ctrl_state, base_gate=iXdgGate()
         )

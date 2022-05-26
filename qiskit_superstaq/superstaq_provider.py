@@ -69,7 +69,7 @@ class SuperstaQProvider(
         self,
         api_key: Optional[str] = None,
         remote_host: Optional[str] = None,
-        default_target: str = None,
+        default_target: Optional[str] = None,
         api_version: str = applications_superstaq.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,

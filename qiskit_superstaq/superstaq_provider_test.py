@@ -142,10 +142,10 @@ def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
     }
 
     assert provider.ibmq_compile(qiskit.QuantumCircuit()) == qss.compiler_output.CompilerOutput(
-        qc, mock.DEFAULT, None, None, None
+        qc, mock.DEFAULT
     )
     assert provider.ibmq_compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
-        [qc], [mock.DEFAULT], None, None, None
+        [qc], [mock.DEFAULT]
     )
 
 

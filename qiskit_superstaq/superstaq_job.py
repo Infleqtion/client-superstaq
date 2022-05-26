@@ -13,7 +13,7 @@
 # that they have been altered from the originals.
 
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import qiskit
 import requests
@@ -45,7 +45,7 @@ class SuperstaQJob(qiskit.providers.JobV1):
 
         return self._job_id == other._job_id
 
-    def _wait_for_results(self, timeout: float = None, wait: float = 5) -> List[Dict]:
+    def _wait_for_results(self, timeout: Optional[float] = None, wait: float = 5) -> List[Dict]:
 
         result_list: List[Dict] = []
         job_ids = self._job_id.split(",")  # separate aggregated job_ids
@@ -79,7 +79,7 @@ class SuperstaQJob(qiskit.providers.JobV1):
 
         return result_list
 
-    def result(self, timeout: float = None, wait: float = 5) -> qiskit.result.Result:
+    def result(self, timeout: Optional[float] = None, wait: float = 5) -> qiskit.result.Result:
         # Get the result data of a circuit.
         results = self._wait_for_results(timeout, wait)
 
