@@ -27,12 +27,7 @@ def test_job_fields() -> None:
         "num_qubits": 2,
         "job_id": "my_id",
         "samples": {"11": 1},
-        "shots": [
-            {
-                "shots": 1,
-                "status": "DONE",
-            }
-        ],
+        "shots": 1,
         "status": "Done",
         "target": "simulator",
     }
@@ -80,12 +75,7 @@ def test_job_counts() -> None:
         "num_qubits": 2,
         "job_id": "my_id",
         "samples": {"11": 1},
-        "shots": [
-            {
-                "shots": 1,
-                "status": "DONE",
-            }
-        ],
+        "shots": 1,
         "status": "Done",
         "target": "simulator",
     }
@@ -101,12 +91,7 @@ def test_job_counts_failed() -> None:
         "num_qubits": 2,
         "job_id": "my_id",
         "samples": {"11": 1},
-        "shots": [
-            {
-                "shots": 1,
-                "status": "DONE",
-            }
-        ],
+        "shots": 1,
         "status": "Failed",
         "failure": {"error": "too many qubits"},
         "target": "simulator",
@@ -129,12 +114,7 @@ def test_job_counts_poll(mock_sleep: mock.MagicMock) -> None:
         "num_qubits": 2,
         "job_id": "my_id",
         "samples": {"11": 1},
-        "shots": [
-            {
-                "shots": 1,
-                "status": "DONE",
-            }
-        ],
+        "shots": 1,
         "status": "Done",
         "target": "simulator",
     }
@@ -177,12 +157,7 @@ def test_job_fields_unsuccessful() -> None:
         "job_id": "my_id",
         "num_qubits": 2,
         "samples": {"11": 1},
-        "shots": [
-            {
-                "shots": 1,
-                "status": "Deleted",
-            }
-        ],
+        "shots": 1,
         "status": "Deleted",
         "target": "simulator",
     }

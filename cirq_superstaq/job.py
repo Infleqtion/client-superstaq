@@ -133,7 +133,7 @@ class Job:
             SuperstaQException: If unable to get the status of the job from the API.
         """
         self._check_if_unsuccessful()
-        return int(self._job["shots"][0]["shots"])
+        return self._job["shots"]
 
     def counts(
         self, timeout_seconds: int = 7200, polling_seconds: float = 1.0
