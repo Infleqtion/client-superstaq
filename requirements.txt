@@ -1,2 +1,2 @@
-cirq==0.15.0.dev20220420201205
-qiskit==0.36.2
+cirq-superstaq~=0.1.25
+qiskit-superstaq~=0.21.0
