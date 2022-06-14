@@ -11,6 +11,7 @@ from .benchmarks import mermin_bell
 from .benchmarks import phase_code
 from .benchmarks import qaoa_fermionic_swap_proxy
 from .benchmarks import qaoa_vanilla_proxy
+from .benchmarks import vqe_proxy
 
 __all__ = [
     "benchmark",
@@ -26,4 +27,5 @@ __all__ = [
     "qaoa_vanilla_proxy",
     "simulation",
     "stabilizers",
+    "vqe_proxy",
 ]
