@@ -5,10 +5,7 @@ import networkx as nx
 import numpy as np
 import qiskit
 
-
-def cirq_to_qiskit(circuit: cirq.Circuit) -> qiskit.circuit.QuantumCircuit:
-    qasm = cirq.circuits.QasmOutput(circuit, sorted(circuit.all_qubits()))
-    return qiskit.circuit.QuantumCircuit().from_qasm_str(str(qasm))
+import supermarq as sm
 
 
 def compute_communication(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircuit]) -> float:
@@ -21,7 +18,7 @@ def compute_communication(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCir
     """
 
     if isinstance(circuit, cirq.Circuit):
-        circ = cirq_to_qiskit(circuit)
+        circ = sm.converters.cirq_to_qiskit(circuit)
     else:
         circ = circuit
 
@@ -49,7 +46,7 @@ def compute_liveness(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircuit]
     """
 
     if isinstance(circuit, cirq.Circuit):
-        circ = cirq_to_qiskit(circuit)
+        circ = sm.converters.cirq_to_qiskit(circuit)
     else:
         circ = circuit
 
@@ -77,7 +74,7 @@ def compute_parallelism(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircu
     """
 
     if isinstance(circuit, cirq.Circuit):
-        circ = cirq_to_qiskit(circuit)
+        circ = sm.converters.cirq_to_qiskit(circuit)
     else:
         circ = circuit
 
@@ -95,7 +92,7 @@ def compute_measurement(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircu
     circ : A cirq or qiskit quantum circuit
     """
     if isinstance(circuit, cirq.Circuit):
-        circ = cirq_to_qiskit(circuit)
+        circ = sm.converters.cirq_to_qiskit(circuit)
     else:
         circ = circuit
 
@@ -126,7 +123,7 @@ def compute_entanglement(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCirc
     """
 
     if isinstance(circuit, cirq.Circuit):
-        circ = cirq_to_qiskit(circuit)
+        circ = sm.converters.cirq_to_qiskit(circuit)
     else:
         circ = circuit
 
@@ -146,7 +143,7 @@ def compute_depth(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircuit]) -
     """
 
     if isinstance(circuit, cirq.Circuit):
-        circ = cirq_to_qiskit(circuit)
+        circ = sm.converters.cirq_to_qiskit(circuit)
     else:
         circ = circuit
 
