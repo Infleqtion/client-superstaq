@@ -8,6 +8,48 @@ from matplotlib.spines import Spine
 from matplotlib.transforms import Affine2D
 
 
+def plot_benchmark(data, show=True, savefn=None, spoke_labels=None, legend_loc=(0.75, 0.85)):
+    """
+    Create a radar plot of the given benchmarks.
+
+    Input
+    -----
+    data : List[str, List[str], List[float]]
+        Contains the title, feature data, and labels in the format:
+        [title, [labels], [feature vecs: [con, liv, par, mea, ent] ]]
+    """
+    plt.rcParams["font.family"] = "Times New Roman"
+
+    if spoke_labels is None:
+        spoke_labels = ["Connectivity", "Liveness", "Parallelism", "Measurement", "Entanglement"]
+
+    N = len(spoke_labels)
+    theta = radar_factory(N, frame="circle")
+
+    fig, ax = plt.subplots(dpi=150, subplot_kw=dict(projection="radar"))
+    # fig.subplots_adjust(wspace=0.25, hspace=0.20, top=0.85, bottom=0.05)
+
+    title, labels, case_data = data
+    # ax.set_rgrids([0.2, 0.4, 0.6, 0.8])
+    ax.set_rgrids([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    # ax.set_title(title, weight='bold', size='medium', position=(0.5, 1.1),
+    #             horizontalalignment='center', verticalalignment='center')
+    for d, label in zip(case_data, labels):
+        ax.plot(theta, d, label=label)
+        ax.fill(theta, d, alpha=0.25)
+    ax.set_varlabels(spoke_labels)
+
+    ax.legend(loc=legend_loc, labelspacing=0.1, fontsize=11)
+    plt.tight_layout()
+
+    if savefn is not None:
+        plt.savefig(savefn)
+
+    if show:
+        plt.show()
+
+    plt.close()
+
 def radar_factory(num_vars, frame="circle"):
     """
     (https://matplotlib.org/stable/gallery/specialty_plots/radar_chart.html)
@@ -26,7 +68,6 @@ def radar_factory(num_vars, frame="circle"):
     """
     # calculate evenly-spaced axis angles
     theta = np.linspace(0, 2 * np.pi, num_vars, endpoint=False)
-
     class RadarAxes(PolarAxes):
 
         name = "radar"
@@ -35,6 +76,8 @@ def radar_factory(num_vars, frame="circle"):
 
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
+            #self.theta = theta
+            #self.num_vars = num_vars
             # rotate plot such that the first axis is at the top
             self.set_theta_zero_location("N")
 
@@ -88,45 +131,3 @@ def radar_factory(num_vars, frame="circle"):
     register_projection(RadarAxes)
     return theta
 
-
-def plot_benchmark(data, show=True, savefn=None, spoke_labels=None, legend_loc=(0.75, 0.85)):
-    """
-    Create a radar plot of the given benchmarks.
-
-    Input
-    -----
-    data : List
-        Contains the title, feature data, and labels in the format:
-        [title, [labels], [feature vecs: [con, liv, par, mea, ent] ]]
-    """
-    plt.rcParams["font.family"] = "Times New Roman"
-
-    if spoke_labels is None:
-        spoke_labels = ["Connectivity", "Liveness", "Parallelism", "Measurement", "Entanglement"]
-
-    N = len(spoke_labels)
-    theta = radar_factory(N, frame="circle")
-
-    fig, ax = plt.subplots(dpi=150, subplot_kw=dict(projection="radar"))
-    # fig.subplots_adjust(wspace=0.25, hspace=0.20, top=0.85, bottom=0.05)
-
-    title, labels, case_data = data
-    # ax.set_rgrids([0.2, 0.4, 0.6, 0.8])
-    ax.set_rgrids([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
-    # ax.set_title(title, weight='bold', size='medium', position=(0.5, 1.1),
-    #             horizontalalignment='center', verticalalignment='center')
-    for d, label in zip(case_data, labels):
-        ax.plot(theta, d, label=label)
-        ax.fill(theta, d, alpha=0.25)
-    ax.set_varlabels(spoke_labels)
-
-    ax.legend(loc=legend_loc, labelspacing=0.1, fontsize=11)
-    plt.tight_layout()
-
-    if savefn is not None:
-        plt.savefig(savefn)
-
-    if show:
-        plt.show()
-
-    plt.close()
