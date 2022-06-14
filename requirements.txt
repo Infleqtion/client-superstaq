@@ -1,2 +1,2 @@
 cirq-superstaq~=0.1.25
-qiskit-superstaq~=0.21.0
+qiskit-superstaq~=0.1.21
