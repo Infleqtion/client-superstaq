@@ -22,18 +22,18 @@ def compute_communication(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCir
     else:
         circ = circuit
 
-    N = circ.num_qubits
+    num_qubits = circ.num_qubits
     dag = qiskit.converters.circuit_to_dag(circ)
     dag.remove_all_ops_named("barrier")
 
-    G = nx.Graph()
+    graph = nx.Graph()
     for op in dag.two_qubit_ops():
         q1, q2 = op.qargs
-        G.add_edge(q1.index, q2.index)
+        graph.add_edge(q1.index, q2.index)
 
-    degree_sum = sum([G.degree(n) for n in G.nodes])
+    degree_sum = sum([graph.degree(n) for n in graph.nodes])
 
-    return degree_sum / (N * (N - 1))
+    return degree_sum / (num_qubits * (num_qubits - 1))
 
 
 def compute_liveness(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircuit]) -> float:
@@ -51,18 +51,18 @@ def compute_liveness(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircuit]
     else:
         circ = circuit
 
-    N = circ.num_qubits
+    num_qubits = circ.num_qubits
     dag = qiskit.converters.circuit_to_dag(circ)
     dag.remove_all_ops_named("barrier")
 
-    activity_matrix = np.zeros((N, dag.depth()))
+    activity_matrix = np.zeros((num_qubits, dag.depth()))
 
     for i, layer in enumerate(dag.layers()):
         for op in layer["partition"]:
             for qubit in op:
                 activity_matrix[qubit.index, i] = 1
 
-    return np.sum(activity_matrix) / (N * dag.depth())
+    return np.sum(activity_matrix) / (num_qubits * dag.depth())
 
 
 def compute_parallelism(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircuit]) -> float:
