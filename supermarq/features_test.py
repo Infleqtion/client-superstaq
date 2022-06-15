@@ -3,11 +3,16 @@ import qiskit
 import supermarq as sm
 
 
-qiskit_circuit = qiskit.QuantumCircuit(2)
+qiskit_circuit = qiskit.QuantumCircuit(2, 1)
 qiskit_circuit.swap(0, 1)
+qiskit_circuit.measure(0, 0)
+qiskit_circuit.reset(0)
 qiskit_circuit.measure_all()
 cirq_circuit = cirq.Circuit(
-    cirq.SWAP(*cirq.LineQubit.range(2)), cirq.measure(*cirq.LineQubit.range(2))
+    cirq.SWAP(*cirq.LineQubit.range(2)),
+    cirq.measure(cirq.LineQubit(0)),
+    cirq.reset(cirq.LineQubit(0)),
+    cirq.measure(*cirq.LineQubit.range(2)),
 )
 
 
