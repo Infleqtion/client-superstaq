@@ -4,7 +4,6 @@ import cirq
 import networkx as nx
 import numpy as np
 import qiskit
-
 import supermarq as sm
 
 
@@ -100,7 +99,7 @@ def compute_measurement(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircu
     dag.remove_all_ops_named("barrier")
 
     reset_moments = 0
-    gate_depth = dag.depth() - 1
+    gate_depth = dag.depth() - 1  # assumes that circuit measures all qubits at the end
 
     for layer in dag.layers():
         reset_present = False
