@@ -8,8 +8,9 @@ import supermarq as sm
 
 
 def compute_communication(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircuit]) -> float:
-    """
-    communication feature = circuit's average qubit degree / degree of a complete graph
+    """Compute the program communication of the given quantum circuit.
+
+    Program communication = circuit's average qubit degree / degree of a complete graph.
 
     Input
     -----
@@ -36,12 +37,13 @@ def compute_communication(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCir
 
 
 def compute_liveness(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircuit]) -> float:
-    """
-    liveness feature = sum of all entries in the liveness matrix / (num_qubits * depth)
+    """Compute the liveness of the given quantum circuit.
+
+    Liveness feature = sum of all entries in the liveness matrix / (num_qubits * depth).
 
     Input
     -----
-    circ : A cirq or qiskit quantum circuit
+    circuit : A cirq or qiskit quantum circuit
     """
 
     if isinstance(circuit, cirq.Circuit):
@@ -64,12 +66,13 @@ def compute_liveness(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircuit]
 
 
 def compute_parallelism(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircuit]) -> float:
-    """
-    parallelism feature = max(1 - depth / # of gates, 0)
+    """Compute the parallelism of the given quantum circuit.
+
+    Parallelism feature = max(1 - depth / # of gates, 0)
 
     Input
     -----
-    circ : A cirq or qiskit quantum circuit
+    circuit : A cirq or qiskit quantum circuit
     """
 
     if isinstance(circuit, cirq.Circuit):
@@ -83,12 +86,13 @@ def compute_parallelism(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircu
 
 
 def compute_measurement(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircuit]) -> float:
-    """
-    measurement feature = # of layers of mid-circuit measurement / circuit depth
+    """Compute the measurement feature of the given quantum circuit.
+
+    Measurement feature = # of layers of mid-circuit measurement / circuit depth.
 
     Input
     -----
-    circ : A cirq or qiskit quantum circuit
+    circuit : A cirq or qiskit quantum circuit
     """
     if isinstance(circuit, cirq.Circuit):
         circ = sm.converters.cirq_to_qiskit(circuit)
@@ -113,12 +117,13 @@ def compute_measurement(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircu
 
 
 def compute_entanglement(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircuit]) -> float:
-    """
-    entanglement feature = ratio between # of 2-qubit gates and total number of gates in the circuit
+    """Compute the entanglement-ratio of the given quantum circuit.
+
+    Entanglement-ratio = ratio between # of 2-qubit gates and total number of gates in the circuit.
 
     Input
     -----
-    circ : A cirq or qiskit quantum circuit
+    circuit : A cirq or qiskit quantum circuit
     """
 
     if isinstance(circuit, cirq.Circuit):
@@ -133,12 +138,13 @@ def compute_entanglement(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCirc
 
 
 def compute_depth(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircuit]) -> float:
-    """
-    depth feature = # of 2-qubit gates along the critical path / total # of 2-qubit gates
+    """Compute the critical depth of the given quantum circuit.
+
+    Critical depth = # of 2-qubit gates along the critical path / total # of 2-qubit gates.
 
     Input
     -----
-    circ : A cirq or qiskit quantum circuit
+    circuit : A cirq or qiskit quantum circuit
     """
 
     if isinstance(circuit, cirq.Circuit):
