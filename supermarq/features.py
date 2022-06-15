@@ -99,11 +99,12 @@ def compute_measurement(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircu
     else:
         circ = circuit
 
+    circ.remove_final_measurements()
     dag = qiskit.converters.circuit_to_dag(circ)
     dag.remove_all_ops_named("barrier")
 
     reset_moments = 0
-    gate_depth = dag.depth() - 1  # assumes that circuit measures all qubits at the end
+    gate_depth = dag.depth()
 
     for layer in dag.layers():
         reset_present = False
