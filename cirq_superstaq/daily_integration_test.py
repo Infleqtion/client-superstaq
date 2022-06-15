@@ -13,7 +13,7 @@ import cirq_superstaq as css
 @pytest.fixture
 def service() -> css.Service:
     token = os.getenv("TEST_USER_TOKEN")
-    service = css.Service(api_key=token)
+    service = css.Service(token)
     return service
 
 
@@ -76,7 +76,7 @@ def test_get_balance(service: css.Service) -> None:
 def test_ibmq_set_token() -> None:
     api_token = os.environ["TEST_USER_TOKEN"]
     ibmq_token = os.environ["TEST_USER_IBMQ_TOKEN"]
-    service = css.Service(api_key=api_token)
+    service = css.Service(api_token)
     assert service.ibmq_set_token(ibmq_token) == "Your IBMQ account token has been updated"
 
     with pytest.raises(SuperstaQException, match="IBMQ token is invalid."):

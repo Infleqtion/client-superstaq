@@ -17,7 +17,7 @@ import cirq_superstaq as css
 # Creates Service class (used to create and run jobs) with api_key. Use API-generated superstaq
 # token for api_key.
 service = css.Service(
-    api_key="""Insert superstaq token that you received from https://superstaq.super.tech""",
+    """Insert superstaq token that you received from https://superstaq.super.tech""",
     verbose=True,
 )
 

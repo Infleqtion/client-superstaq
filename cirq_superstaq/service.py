@@ -87,8 +87,8 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
     def __init__(
         self,
-        remote_host: Optional[str] = None,
         api_key: Optional[str] = None,
+        remote_host: Optional[str] = None,
         default_target: Optional[str] = None,
         api_version: str = css.API_VERSION,
         max_retry_seconds: int = 3600,
