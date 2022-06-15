@@ -56,3 +56,15 @@ def test_compute_depth() -> None:
     cirq_feature = sm.features.compute_depth(cirq_circuit)
     assert qiskit_feature >= 0 and qiskit_feature <= 1
     assert cirq_feature >= 0 and cirq_feature <= 1
+
+    qubits = cirq.LineQubit.range(4)
+    test_circuit = cirq.Circuit(
+        cirq.CX(qubits[0], qubits[1]),
+        cirq.CZ(qubits[2], qubits[3]),
+        cirq.CX(qubits[1], qubits[2]),
+        cirq.CX(qubits[2], qubits[3]),
+    )
+    test_feature = sm.features.compute_depth(test_circuit)
+    assert test_feature >= 0 and test_feature <= 1
+
+    assert sm.features.compute_depth(cirq.Circuit()) == 0

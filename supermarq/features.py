@@ -153,11 +153,11 @@ def compute_depth(circuit: Union[cirq.Circuit, qiskit.circuit.QuantumCircuit]) -
     for name in two_q_gates:
         try:
             n_ed += dag.count_ops_longest_path()[name]
-        except KeyError:  # pragma: no cover
-            continue  # pragma: no cover
+        except KeyError:
+            continue
     n_e = len(dag.two_qubit_ops())
 
     if n_ed == 0:
-        return 0  # pragma: no cover
+        return 0
 
     return n_ed / n_e

@@ -29,7 +29,7 @@ def plot_benchmark(
         spoke_labels = ["Connectivity", "Liveness", "Parallelism", "Measurement", "Entanglement"]
 
     N = len(spoke_labels)
-    theta = radar_factory(N, frame="circle")
+    theta = radar_factory(N)
 
     _, ax = plt.subplots(dpi=150, subplot_kw=dict(projection="radar"))
     # fig.subplots_adjust(wspace=0.25, hspace=0.20, top=0.85, bottom=0.05)
@@ -48,15 +48,17 @@ def plot_benchmark(
     plt.tight_layout()
 
     if savefn is not None:
+        # Don't want to save figures when running tests
         plt.savefig(savefn)  # pragma: no cover
 
     if show:
+        # Tests will hang if we show figures during tests
         plt.show()  # pragma: no cover
 
     plt.close()
 
 
-def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:
+def radar_factory(num_vars: int) -> np.ndarray:
     """
     (https://matplotlib.org/stable/gallery/specialty_plots/radar_chart.html)
 
@@ -68,16 +70,13 @@ def radar_factory(num_vars: int, frame: str = "circle") -> np.ndarray:
     ----------
     num_vars : int
         Number of variables for radar chart.
-    frame : {'circle', 'polygon'}
-        Shape of frame surrounding axes.
-
     """
     # calculate evenly-spaced axis angles
     theta = np.linspace(0, 2 * np.pi, num_vars, endpoint=False)
 
     class RadarAxes(RadarAxesMeta):
         def __init__(self, *args: Any, **kwargs: Any) -> None:
-            self.frame = frame
+            self.frame = "circle"
             self.theta = theta
             self.num_vars = num_vars
             super().__init__(*args, **kwargs)
@@ -123,13 +122,7 @@ class RadarAxesMeta(PolarAxes):
     def _gen_axes_patch(self) -> matplotlib.patches.Circle:
         # The Axes patch must be centered at (0.5, 0.5) and of radius 0.5
         # in axes coordinates.
-        if self.frame == "circle":
-            return Circle((0.5, 0.5), 0.5)
-        else:
-            raise ValueError("Unknown value for 'frame': %s" % self.frame)  # pragma: no cover
+        return Circle((0.5, 0.5), 0.5)
 
     def _gen_axes_spines(self) -> matplotlib.spines.Spine:
-        if self.frame == "circle":
-            return super()._gen_axes_spines()
-        else:
-            raise ValueError("Unknown value for 'frame': %s" % self.frame)  # pragma: no cover
+        return super()._gen_axes_spines()
