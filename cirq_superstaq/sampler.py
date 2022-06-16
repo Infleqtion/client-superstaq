@@ -43,7 +43,7 @@ class Sampler(cirq.Sampler):
         self,
         service: "css.service.Service",
         target: str,
-    ):
+    ) -> None:
         """Constructs the sampler. Uers should get a sampler from the `sampler` method on
         `css.Service`.
 

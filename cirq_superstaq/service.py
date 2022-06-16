@@ -93,7 +93,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         api_version: str = css.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
-    ):
+    ) -> None:
         """Creates the Service to access SuperstaQ's API.
 
         Args:
@@ -266,7 +266,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
     def aqt_compile(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "keysight"
-    ) -> "css.compiler_output.CompilerOutput":
+    ) -> css.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to target AQT device, optimized to its native gate set.
 
         Args:
@@ -292,7 +292,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         num_equivalent_circuits: int,
         random_seed: Optional[int] = None,
         target: str = "keysight",
-    ) -> "css.compiler_output.CompilerOutput":
+    ) -> css.compiler_output.CompilerOutput:
         """Compiles the given circuit to target AQT device with Equivalent Circuit Averaging (ECA).
 
         See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
@@ -324,7 +324,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
     def qscout_compile(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "qscout"
-    ) -> "css.compiler_output.CompilerOutput":
+    ) -> css.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to target QSCOUT device, optimized to its native gate set.
 
         Args:
@@ -344,7 +344,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
     def cq_compile(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "cq"
-    ) -> "css.compiler_output.CompilerOutput":
+    ) -> css.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to given target CQ device, optimized to its native gate
         set.
 
@@ -365,7 +365,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
     def ibmq_compile(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "ibmq_qasm_simulator"
-    ) -> Any:
+    ) -> css.compiler_output.CompilerOutput:
         """Returns pulse schedule for the given circuit and target.
 
         Qiskit Terra must be installed to correctly deserialize the returned pulse schedule.

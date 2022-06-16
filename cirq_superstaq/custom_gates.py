@@ -420,7 +420,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
 
 
 class MSGate(cirq.ion.ion_gates.MSGate):
-    def __init__(self, *, rads: float):  # Forces keyword args.
+    def __init__(self, *, rads: float) -> None:  # Forces keyword args.
         super().__init__(rads=rads)
         self.rads = rads
 
