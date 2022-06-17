@@ -206,7 +206,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
         Args:
             circuit: The circuit to run.
-            repetitions: The number of times to repeat the circuit. Defaults to 100.
+            repetitions: The number of times to repeat the circuit. Defaults to 1000.
             target: Where to run the job. Can be 'qpu' or 'simulator'.
             ibmq_pulse: Specify whether to run the job using SuperstaQ's pulse-level optimizations.
 
