@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import time
 
-import supermarq as sm
-
 import cirq_superstaq
+
+import supermarq as sm
 
 
 def main():
