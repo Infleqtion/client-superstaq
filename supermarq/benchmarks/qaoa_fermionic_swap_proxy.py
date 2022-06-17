@@ -149,7 +149,7 @@ class QAOAFermionicSwapProxy(Benchmark):
                 best_cost = cost
         return best_params
 
-    def circuit(self) -> Union[cirq.Circuit, qiskit.QuantumCircuit]:
+    def circuit(self, override: bool = False) -> Union[cirq.Circuit, qiskit.QuantumCircuit]:
         """Generate a QAOA circuit for the Sherrington-Kirkpatrick model.
 
         This particular benchmark utilizes a quantum circuit structure called
@@ -159,7 +159,7 @@ class QAOAFermionicSwapProxy(Benchmark):
         gamma, beta = self.params
         circuit = self._gen_swap_network(gamma, beta)
 
-        if self.sdk == "qiskit":
+        if self.sdk == "qiskit" and not override:
             return sm.converters.cirq_to_qiskit(circuit)
 
         return circuit
@@ -172,7 +172,7 @@ class QAOAFermionicSwapProxy(Benchmark):
         https://arxiv.org/abs/1706.02998, so we're good.
         """
         # Reverse bitstring ordering due to SWAP network
-        raw_probs = sm.simulation.get_ideal_counts(self.circuit())
+        raw_probs = sm.simulation.get_ideal_counts(self.circuit(override=True))
         ideal_counts = collections.Counter(
             {bitstring[::-1]: probability for bitstring, probability in raw_probs.items()}
         )

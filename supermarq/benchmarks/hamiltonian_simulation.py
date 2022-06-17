@@ -40,7 +40,7 @@ class HamiltonianSimulation(Benchmark):
 
         self.sdk = sdk
 
-    def circuit(self) -> Union[cirq.Circuit, qiskit.QuantumCircuit]:
+    def circuit(self, override: bool = False) -> Union[cirq.Circuit, qiskit.QuantumCircuit]:
         """Generate a circuit to simulate the evolution of an n-qubit TFIM
         chain under the Hamiltonian:
 
@@ -85,7 +85,7 @@ class HamiltonianSimulation(Benchmark):
         # End the circuit with measurements of every qubit in the Z-basis
         circuit.append(cirq.measure(*qubits))
 
-        if self.sdk == "qiskit":
+        if self.sdk == "qiskit" and not override:
             return sm.converters.cirq_to_qiskit(circuit)
 
         return circuit
@@ -109,7 +109,7 @@ class HamiltonianSimulation(Benchmark):
                 represented the measured qubit state, and the values are the number
                 of times that state of observed.
         """
-        ideal_counts = sm.simulation.get_ideal_counts(self.circuit())
+        ideal_counts = sm.simulation.get_ideal_counts(self.circuit(override=True))
 
         total_shots = sum(counts.values())
 

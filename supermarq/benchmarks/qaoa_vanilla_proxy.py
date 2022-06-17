@@ -123,7 +123,7 @@ class QAOAVanillaProxy(Benchmark):
                 best_cost = cost
         return best_params
 
-    def circuit(self) -> Union[cirq.Circuit, qiskit.QuantumCircuit]:
+    def circuit(self, override: bool = False) -> Union[cirq.Circuit, qiskit.QuantumCircuit]:
         """Generate a QAOA circuit for the Sherrington-Kirkpatrick model.
 
         The ansatz structure is given by the form of the Hamiltonian and requires
@@ -133,7 +133,7 @@ class QAOAVanillaProxy(Benchmark):
         gamma, beta = self.params
         circuit = self._gen_ansatz(gamma, beta)
 
-        if self.sdk == "qiskit":
+        if self.sdk == "qiskit" and not override:
             return sm.converters.cirq_to_qiskit(circuit)
 
         return circuit
@@ -145,7 +145,7 @@ class QAOAVanillaProxy(Benchmark):
         However, it could in principle be done efficiently via
         https://arxiv.org/abs/1706.02998, so we're good.
         """
-        ideal_counts = sm.simulation.get_ideal_counts(self.circuit())
+        ideal_counts = sm.simulation.get_ideal_counts(self.circuit(override=True))
         total_shots = sum(counts.values())
         experimental_counts = collections.Counter({k: v / total_shots for k, v in counts.items()})
 

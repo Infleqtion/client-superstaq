@@ -143,7 +143,9 @@ class VQEProxy(sm.benchmark.Benchmark):
         params, _ = self._get_opt_angles()
         return params
 
-    def circuit(self) -> Union[List[cirq.Circuit], List[qiskit.QuantumCircuit]]:
+    def circuit(
+        self, override: bool = False
+    ) -> Union[List[cirq.Circuit], List[qiskit.QuantumCircuit]]:
         """Construct a parameterized ansatz.
 
         Returns a list of circuits: the ansatz measured in the Z basis, and the
@@ -153,7 +155,7 @@ class VQEProxy(sm.benchmark.Benchmark):
         """
         circuits = self._gen_ansatz(self._params)
 
-        if self.sdk == "qiskit":
+        if self.sdk == "qiskit" and not override:
             return [sm.converters.cirq_to_qiskit(circuit) for circuit in circuits]
 
         return circuits
@@ -174,7 +176,7 @@ class VQEProxy(sm.benchmark.Benchmark):
             collections.Counter(probs_x),
         )
 
-        circuit_z, circuit_x = self.circuit()
+        circuit_z, circuit_x = self.circuit(override=True)
         ideal_expectation = self._get_expectation_value_from_probs(
             sm.simulation.get_ideal_counts(circuit_z),
             sm.simulation.get_ideal_counts(circuit_x),
