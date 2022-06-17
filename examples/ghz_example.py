@@ -9,11 +9,6 @@ import supermarq as sm
 def main():
     service = cirq_superstaq.Service(
         api_key="""Insert superstaq token that you received from https://superstaq.super.tech""",
-        ibmq_token="Paste your IBMQ token here",
-        ibmq_hub="ibm-q-startup",
-        ibmq_group="super-tech-labs",
-        ibmq_project="default",
-        verbose=True,
     )
 
     nq = 3
