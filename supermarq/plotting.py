@@ -8,6 +8,7 @@ from matplotlib.projections import register_projection
 from matplotlib.projections.polar import PolarAxes
 
 
+
 def plot_benchmark(
     data: List[Union[str, List[str], List[List[float]]]],
     show: bool = True,
