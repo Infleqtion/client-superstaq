@@ -168,14 +168,14 @@ def heatmap(
     """
 
     if not ax:
-        ax = plt.gca()
+        ax = plt.gca()  # pragma: no cover
 
     # Plot the heatmap
     im = ax.imshow(data, **kwargs)
 
     # Create colorbar
     if cbar_kw is None:
-        cbar_kw = {}
+        cbar_kw = {}  # pragma: no cover
     cbar = ax.figure.colorbar(im, ax=ax, orientation="horizontal", **cbar_kw)
     cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom", fontsize=8)
     cbar.ax.tick_params(labelsize=10)
@@ -247,7 +247,7 @@ def annotate_heatmap(
 
     # Normalize the threshold to the images color range.
     if threshold is not None:
-        threshold = im.norm(threshold)
+        threshold = im.norm(threshold)  # pragma: no cover
     else:
         threshold = im.norm(data.max()) / 2.0
 
