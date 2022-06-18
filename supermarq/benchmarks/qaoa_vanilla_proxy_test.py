@@ -1,4 +1,5 @@
 import cirq
+
 import supermarq
 from supermarq.benchmarks.qaoa_vanilla_proxy import QAOAVanillaProxy
 

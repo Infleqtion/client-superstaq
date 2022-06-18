@@ -2,6 +2,7 @@ import collections
 
 import cirq
 import numpy as np
+
 import supermarq
 from supermarq.benchmark import Benchmark
 

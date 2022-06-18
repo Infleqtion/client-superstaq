@@ -1,6 +1,7 @@
 import collections
 
 import pytest
+
 from supermarq.benchmarks.bit_code import BitCode
 
 
