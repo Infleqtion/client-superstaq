@@ -141,3 +141,10 @@ cython_debug/
 
 # IntelliJ
 .idea
+
+# Docs
+_site
+.sass-cache
+.jekyll-cache
+.jekyll-metadata
+vendor
