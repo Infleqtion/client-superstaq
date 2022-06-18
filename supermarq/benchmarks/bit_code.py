@@ -72,7 +72,7 @@ class BitCode(Benchmark):
             final_state += str(self.bit_state[-1])
 
         ideal_bitstring = [ancilla_state] * self.num_rounds + [final_state]
-        return collections.Counter({" ".join(ideal_bitstring): 1.0})
+        return collections.Counter({"".join(ideal_bitstring): 1.0})
 
     def score(self, counts: collections.Counter) -> float:
         """Device performance is given by the Hellinger fidelity between
