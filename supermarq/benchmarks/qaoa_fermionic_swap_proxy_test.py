@@ -1,6 +1,7 @@
 import collections
 
 import cirq
+
 import supermarq
 from supermarq.benchmarks.qaoa_fermionic_swap_proxy import QAOAFermionicSwapProxy
 

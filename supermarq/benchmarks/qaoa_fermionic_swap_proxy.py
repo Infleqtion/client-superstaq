@@ -5,6 +5,7 @@ from typing import List, Tuple
 import cirq
 import numpy as np
 import scipy
+
 import supermarq
 from supermarq.benchmark import Benchmark
 

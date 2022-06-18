@@ -4,6 +4,7 @@ from typing import cast, Dict, List, Optional, Tuple
 import cirq
 import numpy as np
 import sympy
+
 from supermarq import stabilizers
 from supermarq.benchmark import Benchmark
 
