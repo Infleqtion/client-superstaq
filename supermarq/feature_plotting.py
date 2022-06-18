@@ -28,17 +28,15 @@ def plot_benchmark(
     if spoke_labels is None:
         spoke_labels = ["Connectivity", "Liveness", "Parallelism", "Measurement", "Entanglement"]
 
-    N = len(spoke_labels)
-    theta = radar_factory(N)
+    num_spokes = len(spoke_labels)
+    theta = radar_factory(num_spokes)
 
     _, ax = plt.subplots(dpi=150, subplot_kw=dict(projection="radar"))
-    # fig.subplots_adjust(wspace=0.25, hspace=0.20, top=0.85, bottom=0.05)
 
     _, labels, case_data = data
-    # ax.set_rgrids([0.2, 0.4, 0.6, 0.8])
     ax.set_rgrids([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
-    # ax.set_title(title, weight='bold', size='medium', position=(0.5, 1.1),
-    #             horizontalalignment='center', verticalalignment='center')
+    ax.set_title(title, weight='bold', size='medium', position=(0.5, 1.1),
+                 horizontalalignment='center', verticalalignment='center')
     for d, label in zip(case_data, labels):
         ax.plot(theta, d, label=label)
         ax.fill(theta, d, alpha=0.25)
@@ -110,7 +108,7 @@ class RadarAxesMeta(PolarAxes):
 
     def _close_line(self, line: matplotlib.lines.Line2D) -> None:
         x, y = line.get_data()
-        # FIXME: markers at x[0], y[0] get doubled-up
+        # FIXME: markers at x[0], y[0] get doubled-up. See issue https://github.com/SupertechLabs/SupermarQ/issues/27
         if x[0] != x[-1]:
             x = np.append(x, x[0])
             y = np.append(y, y[0])
