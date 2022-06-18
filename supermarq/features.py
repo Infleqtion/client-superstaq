@@ -1,6 +1,5 @@
 import cirq
 
-
 import supermarq as sm
 
 
