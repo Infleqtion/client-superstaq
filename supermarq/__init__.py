@@ -1,7 +1,7 @@
 from . import benchmark
 from . import converters
-from . import feature_plotting
 from . import features
+from . import plotting
 from . import simulation
 from . import stabilizers
 from .benchmarks import bit_code
@@ -17,8 +17,8 @@ __all__ = [
     "benchmark",
     "bit_code",
     "converters",
-    "feature_plotting",
     "features",
+    "plotting",
     "ghz",
     "hamiltonian_simulation",
     "mermin_bell",
