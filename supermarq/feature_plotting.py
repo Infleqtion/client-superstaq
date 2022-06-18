@@ -33,10 +33,16 @@ def plot_benchmark(
 
     _, ax = plt.subplots(dpi=150, subplot_kw=dict(projection="radar"))
 
-    _, labels, case_data = data
+    title, labels, case_data = data
     ax.set_rgrids([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
-    ax.set_title(title, weight='bold', size='medium', position=(0.5, 1.1),
-                 horizontalalignment='center', verticalalignment='center')
+    ax.set_title(
+        title,
+        weight="bold",
+        size="medium",
+        position=(0.5, 1.1),
+        horizontalalignment="center",
+        verticalalignment="center",
+    )
     for d, label in zip(case_data, labels):
         ax.plot(theta, d, label=label)
         ax.fill(theta, d, alpha=0.25)
@@ -108,7 +114,8 @@ class RadarAxesMeta(PolarAxes):
 
     def _close_line(self, line: matplotlib.lines.Line2D) -> None:
         x, y = line.get_data()
-        # FIXME: markers at x[0], y[0] get doubled-up. See issue https://github.com/SupertechLabs/SupermarQ/issues/27
+        # FIXME: markers at x[0], y[0] get doubled-up.
+        # See issue https://github.com/SupertechLabs/SupermarQ/issues/27
         if x[0] != x[-1]:
             x = np.append(x, x[0])
             y = np.append(y, y[0])
