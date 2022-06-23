@@ -302,6 +302,10 @@ class Barrier(cirq.ops.IdentityGate):
         return ("|",) * self.num_qubits()
 
 
+def barrier(qubits: Sequence[cirq.Qid]) -> cirq.Operation:
+    return css.Barrier(len(qubits)).on(*qubits)
+
+
 @cirq.value_equality(approximate=True)
 class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
     """A single Gate combining a collection of concurrent Gate(s) acting on different qubits.

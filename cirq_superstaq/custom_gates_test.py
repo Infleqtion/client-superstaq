@@ -305,6 +305,10 @@ def test_barrier() -> None:
     assert circuit == cirq.Circuit(operation)
     assert cirq.trace_distance_bound(gate) == 1.0
 
+    qubits = cirq.LineQubit.range(n)
+    barrier = css.barrier(qubits)
+    assert barrier == css.Barrier(n).on(*cirq.LineQubit.range(n))
+
 
 def test_parallel_gates() -> None:
     gate = css.ParallelGates(cirq.CZ, cirq.CZ**0.5, cirq.CZ**-0.5)
