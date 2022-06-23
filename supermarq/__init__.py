@@ -4,7 +4,7 @@ from . import features
 from . import plotting
 from . import simulation
 from . import stabilizers
-from . import _version as __version__
+from _version import __version__
 from .benchmarks import bit_code
 from .benchmarks import ghz
 from .benchmarks import hamiltonian_simulation
