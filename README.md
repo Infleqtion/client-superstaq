@@ -28,7 +28,7 @@ token = "Insert superstaq token that you received from https://superstaq.super.t
 
 superstaq = qss.superstaq_provider.SuperstaQProvider(
     token,
-    url=qss.API_URL,
+    remote_host=qss.API_URL,
 )
 
 backend = superstaq.get_backend("ibmq_qasm_simulator")
