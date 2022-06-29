@@ -3,7 +3,7 @@
 import argparse
 import sys
 import textwrap
-from typing import Iterable
+from typing import Iterable, Optional
 
 from applications_superstaq.check import (
     build_docs,
@@ -20,7 +20,7 @@ from applications_superstaq.check import (
 @check_utils.extract_file_args
 def run(
     *args: str,
-    files: Iterable[str] = (),
+    files: Optional[Iterable[str]] = None,
     parser: argparse.ArgumentParser = check_utils.get_file_parser()
 ) -> int:
 

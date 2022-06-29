@@ -21,7 +21,7 @@ from applications_superstaq.check import check_utils
 @check_utils.extract_file_args
 def run(
     *args: str,
-    files: Iterable[str] = (),
+    files: Optional[Iterable[str]] = None,
     parser: argparse.ArgumentParser = check_utils.get_file_parser(add_files=False),
     exclude: Optional[Union[str, Iterable[str]]] = None,
     upstream_match: str = ".*superstaq",
@@ -52,7 +52,7 @@ def run(
     parsed_args = parser.parse_args(args)
     only_sort |= parsed_args.only_sort
 
-    if not files:
+    if files is None:
         req_file_match = os.path.join(check_utils.root_dir, "**", "*requirements.txt")
         files = [
             os.path.relpath(file, check_utils.root_dir)

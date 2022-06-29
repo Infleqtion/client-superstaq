@@ -202,7 +202,7 @@ def enable_incremental(
 
         def incremental_func(
             *args: Any,
-            files: Iterable[str] = (),
+            files: Optional[Iterable[str]] = None,
             revisions: Optional[Iterable[str]] = None,
             **kwargs: Any,
         ) -> int:
@@ -237,9 +237,11 @@ def enable_incremental(
 
             if revisions is not None:
                 # add files that have changed since the most recent common ancestor of the revisions
-                files = list(files) + get_changed_files(
+                changed_files = get_changed_files(
                     match_patterns, revisions, silent=silent, exclude=exclude
                 )
+                if changed_files:
+                    files = list(files) + changed_files if files else changed_files
 
             return func(*args, files=files, **kwargs)
 
@@ -265,7 +267,7 @@ def enable_exit_on_failure(func: Callable[..., int]) -> Callable[..., int]:
 def extract_file_args(func: Callable[..., int]) -> Callable[..., int]:
     """Decorator to extract files from the arguments to a function."""
 
-    def func_with_files(*args: Any, files: Iterable[str] = (), **kwargs: Any) -> int:
+    def func_with_files(*args: Any, files: Optional[Iterable[str]] = None, **kwargs: Any) -> int:
         file_args = []
         othr_args = []
         for arg in args:
@@ -274,7 +276,8 @@ def extract_file_args(func: Callable[..., int]) -> Callable[..., int]:
             else:
                 othr_args.append(arg)
 
-        files = list(files) + file_args
+        if file_args:
+            files = list(files) + file_args if files else file_args
         return func(*othr_args, files=files, **kwargs)
 
     return func_with_files

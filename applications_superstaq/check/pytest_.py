@@ -17,7 +17,7 @@ default_exclude = ("*_integration_test.py",)
 @check_utils.enable_incremental(*default_files_to_check, exclude=default_exclude)
 def run(
     *args: str,
-    files: Iterable[str] = (),
+    files: Optional[Iterable[str]] = None,
     parser: argparse.ArgumentParser = check_utils.get_file_parser(),
     exclude: Optional[Union[str, Iterable[str]]] = default_exclude,
     integration_exclude: Optional[Union[str, Iterable[str]]] = "dev_tools/*",
@@ -66,12 +66,12 @@ def run(
             "*_integration_test.py",
             exclude=integration_exclude,
         )
-        files = list(files) + list(files_to_add)
+        files = list(files) + files_to_add if files else files_to_add
 
     elif not parsed_args.enable_socket:
         args += ("--disable-socket",)
 
-    if not files:
+    if files is None:
         files = check_utils.get_tracked_files(*default_files_to_check, exclude=exclude)
 
     return subprocess.call(["pytest", *args, *files], cwd=check_utils.root_dir)

@@ -19,7 +19,7 @@ default_exclude = ("examples/*", "*_integration_test.py")
 @check_utils.enable_incremental(*default_files_to_check, exclude=default_exclude)
 def run(
     *args: str,
-    files: Iterable[str] = (),
+    files: Optional[Iterable[str]] = None,
     parser: argparse.ArgumentParser = check_utils.get_file_parser(),
     suppress_warnings: bool = False,
     exclude: Optional[Union[str, Iterable[str]]] = default_exclude,
@@ -34,7 +34,7 @@ def run(
     )
     parser.parse_args(args)
 
-    if not files:
+    if files is None:
         files = check_utils.get_tracked_files(*default_files_to_check, exclude=exclude)
         suppress_warnings = True
 
