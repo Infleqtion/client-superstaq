@@ -22,11 +22,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install .
           if [ -f dev-requirements.txt ]; then pip install -r dev-requirements.txt; fi
       - name: Format
         run: |
-          check/format
+          check/format_.py
+
   lint:
     name: Lint check
     runs-on: ubuntu-latest
@@ -39,11 +40,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install .
           if [ -f dev-requirements.txt ]; then pip install -r dev-requirements.txt; fi
       - name: Pylint
         run: |
-          check/pylint
+          check/pylint_.py
 
   flake8:
     name: Flake8 check
@@ -57,11 +58,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install .
           if [ -f dev-requirements.txt ]; then pip install -r dev-requirements.txt; fi
       - name: Flake8
         run: |
-          check/flake8
+          check/flake8_.py
 
   mypy:
     name: Type check
@@ -75,11 +76,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install .
           if [ -f dev-requirements.txt ]; then pip install -r dev-requirements.txt; fi
       - name: Type check
         run: |
-          check/mypy
+          check/mypy_.py
+
   pytest:
     name: Pytest Ubuntu
     runs-on: ubuntu-latest
@@ -92,11 +94,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install .
           if [ -f dev-requirements.txt ]; then pip install -r dev-requirements.txt; fi
       - name: Pytest check
         run: |
-          check/pytest
+          check/pytest_.py
 
   pytest-mac:
     name: Pytest macOS
@@ -110,11 +112,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install .
           if [ -f dev-requirements.txt ]; then pip install -r dev-requirements.txt; fi
       - name: Pytest-mac check
         run: |
-          check/pytest
+          check/pytest_.py
 
   pytest-win:
     name: Pytest Windows
@@ -128,11 +130,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if (Test-Path "requirements.txt") {pip install -r requirements.txt}
+          pip install .
           if (Test-Path "dev-requirements.txt") {pip install -r dev-requirements.txt}
       - name: Pytest-win check
         run: |
-          check/pytest
+          check/pytest_.py
         shell: bash
 
   coverage:
@@ -147,8 +149,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install .
           if [ -f dev-requirements.txt ]; then pip install -r dev-requirements.txt; fi
       - name: Coverage check
         run: |
-          check/coverage
+          check/coverage_.py
