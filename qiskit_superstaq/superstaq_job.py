@@ -101,7 +101,7 @@ class SuperstaQJob(qiskit.providers.JobV1):
             }
         )
 
-    def status(self) -> str:
+    def status(self) -> qiskit.providers.jobstatus.JobStatus:
         """Query for the job status."""
 
         job_id_list = self._job_id.split(",")  # separate aggregated job ids

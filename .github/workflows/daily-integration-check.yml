@@ -26,7 +26,7 @@ jobs:
           if [ -f dev-requirements.txt ]; then pip install -r dev-requirements.txt; fi
       - name: Pytest integration check
         run: |
-          check/pytest-daily-integration
+          check/pytest_.py --integration
       - name: Create issue if integration check failed
         if: ${{ failure() }}
         uses: JasonEtco/create-an-issue@v2
