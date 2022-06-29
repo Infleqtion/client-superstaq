@@ -1,6 +1,7 @@
 import io
-from setuptools import find_packages, setup
 import os
+
+from setuptools import find_packages, setup
 
 # This reads the __version__ variable from supermarq/_version.py
 __version__ = ""
