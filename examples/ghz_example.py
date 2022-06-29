@@ -6,7 +6,7 @@ import cirq_superstaq
 import supermarq as sm
 
 
-def main():
+def main() -> None:
     service = cirq_superstaq.Service(
         api_key="""Insert superstaq token that you received from https://superstaq.super.tech""",
     )
