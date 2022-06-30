@@ -17,6 +17,10 @@ long_description = io.open("README.md", encoding="utf-8").read()
 requirements = open("requirements.txt").readlines()
 requirements = [r.strip() for r in requirements]
 
+# Read in dev requirements, installed with 'pip install applications-superstaq[dev]'
+dev_requirements = open("dev-requirements.txt").readlines()
+dev_requirements = [r.strip() for r in dev_requirements]
+
 # Sanity check
 assert __version__, "Version string cannot be empty"
 
@@ -33,6 +37,7 @@ setup(
     author_email="pranav@super.tech",
     python_requires=(">=3.6.0"),
     install_requires=requirements,
+    extras_require={"dev": dev_requirements},
     license="Apache 2",
     description=description,
     long_description=long_description,
