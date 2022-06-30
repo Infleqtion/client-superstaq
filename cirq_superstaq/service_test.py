@@ -37,13 +37,13 @@ def test_counts_to_results() -> None:
     result = css.service.counts_to_results(
         collections.Counter({"01": 1, "11": 2}), circuit, cirq.ParamResolver({})
     )
-    assert result.histogram(key="01") == collections.Counter({3: 2, 1: 1})
+    assert result.histogram(key="q(0)q(1)") == collections.Counter({3: 2, 1: 1})
 
     circuit = cirq.Circuit(
         cirq.H(qubits[0]),
         cirq.CNOT(qubits[0], qubits[1]),
-        cirq.measure(qubits[0]),
-        cirq.measure(qubits[1]),
+        cirq.measure(qubits[0], key="0"),
+        cirq.measure(qubits[1], key="1"),
     )
     result = css.service.counts_to_results(
         collections.Counter({"00": 50, "11": 50}), circuit, cirq.ParamResolver({})

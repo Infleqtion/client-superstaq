@@ -64,7 +64,7 @@ def test_zz_swap_circuit() -> None:
         include "qelib1.inc";
 
 
-        // Qubits: [0, 1, 2]
+        // Qubits: [q(0), q(1), q(2)]
         qreg q[3];
 
 
@@ -139,7 +139,7 @@ def test_zx_circuit() -> None:
         include "qelib1.inc";
 
 
-        // Qubits: [0, 1]
+        // Qubits: [q(0), q(1)]
         qreg q[2];
 
 
@@ -197,7 +197,7 @@ def test_acecr_qasm() -> None:
         include "qelib1.inc";
 
 
-        // Qubits: [0, 1]
+        // Qubits: [q(0), q(1)]
         qreg q[2];
 
 
@@ -263,7 +263,7 @@ def test_barrier() -> None:
         include "qelib1.inc";
 
 
-        // Qubits: [0, 1, 2]
+        // Qubits: [q(0), q(1), q(2)]
         qreg q[3];
 
 
@@ -442,7 +442,7 @@ def test_rgate() -> None:
         include "qelib1.inc";
 
 
-        // Qubits: [0]
+        // Qubits: [q(0)]
         qreg q[1];
 
 
@@ -481,7 +481,7 @@ def test_parallel_rgate() -> None:
         include "qelib1.inc";
 
 
-        // Qubits: [0, 1]
+        // Qubits: [q(0), q(1)]
         qreg q[2];
 
 
@@ -505,7 +505,7 @@ def test_parallel_rgate() -> None:
         include "qelib1.inc";
 
 
-        // Qubits: [0, 1]
+        // Qubits: [q(0), q(1)]
         qreg q[2];
 
 
@@ -595,7 +595,6 @@ def test_custom_resolver() -> None:
     circuit += css.AceCRMinusPlus(qubits[0], qubits[1])
     circuit += css.AceCR("+-", -np.pi / 2)(qubits[0], qubits[1])
     circuit += css.ParallelGates(cirq.X, css.ZX).on(qubits[0], qubits[2], qubits[3])
-    circuit += css.custom_gates.MSGate(rads=0.5).on(qubits[0], qubits[1])
     circuit += css.RGate(1.23, 4.56).on(qubits[0])
     circuit += css.ParallelRGate(1.23, 4.56, len(qubits)).on(*qubits)
     circuit += css.AQTITOFFOLI(qubits[0], qubits[1], qubits[2])

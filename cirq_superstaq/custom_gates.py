@@ -423,19 +423,6 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         return f"css.ParallelGates({component_gates_repr})"
 
 
-class MSGate(cirq.ion.ion_gates.MSGate):
-    def __init__(self, *, rads: float) -> None:  # Forces keyword args.
-        super().__init__(rads=rads)
-        self.rads = rads
-
-    def _json_dict_(self) -> Dict[str, Any]:
-        return cirq.protocols.obj_to_dict_helper(self, ["rads"])
-
-    @classmethod
-    def _from_json_dict_(cls, rads: float, **kwargs: Any) -> "MSGate":
-        return cls(rads=rads)
-
-
 @cirq.value_equality(approximate=True)
 class RGate(cirq.PhasedXPowGate):
     """A single-qubit gate that rotates about an axis in the X-Y plane."""
@@ -588,8 +575,6 @@ def custom_resolver(cirq_type: str) -> Union[Callable[..., cirq.Gate], None]:
         return AceCR
     if cirq_type == "ParallelGates":
         return ParallelGates
-    if cirq_type == "MSGate":
-        return MSGate
     if cirq_type == "RGate":
         return RGate
     if cirq_type == "IXGate":
