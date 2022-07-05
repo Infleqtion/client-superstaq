@@ -36,12 +36,12 @@ def test_acer_non_neighbor_qubits_compile(service: css.Service) -> None:
         css.AceCRMinusPlus(qubits[2], qubits[3]),
     )
 
-    out = service.ibmq_compile(circuit, target="ibmq_bogota_qpu")
+    out = service.ibmq_compile(circuit, target="ibmq_jakarta_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
     assert out.pulse_sequence is not None
-    assert 5700 <= out.pulse_sequence.duration <= 7500  # 7424 as of 4/06/2022
+    assert 3000 <= out.pulse_sequence.duration <= 4000  # 3616 as of 6/30/2022
     assert out.pulse_sequence.start_time == 0
-    assert len(out.pulse_sequence) == 67
+    assert len(out.pulse_sequence) == 15
 
 
 def test_aqt_compile(service: css.Service) -> None:
