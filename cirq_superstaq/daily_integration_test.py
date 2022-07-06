@@ -99,7 +99,7 @@ def test_get_backends(service: css.Service) -> None:
 
 
 def test_qscout_compile(service: css.Service) -> None:
-    q0 = cirq.LineQubit(0)
+    q0, q1 = cirq.LineQubit.range(2)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
     compiled_circuit = cirq.Circuit(
         cirq.PhasedXPowGate(phase_exponent=-0.5, exponent=0.5).on(q0),
@@ -122,6 +122,15 @@ def test_qscout_compile(service: css.Service) -> None:
         out.circuit, compiled_circuit, atol=1e-08
     )
     assert out.jaqal_program == jaqal_program
+
+    cx_circuit = cirq.Circuit(cirq.H(q0), cirq.CX(q0, q1), cirq.measure(q0, q1))
+    out = service.qscout_compile([cx_circuit])
+    cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
+        out.circuits[0], cx_circuit, atol=1e-08
+    )
+    assert isinstance(out.jaqal_programs, list)
+    assert isinstance(out.jaqal_programs[0], str)
+    assert "MS allqubits[0] allqubits[1]" in out.jaqal_programs[0]
 
 
 def test_cq_compile(service: css.Service) -> None:

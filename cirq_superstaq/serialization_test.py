@@ -7,7 +7,7 @@ import cirq_superstaq as css
 
 def test_serialization() -> None:
     qubits = cirq.LineQubit.range(2)
-    circuit = cirq.Circuit(cirq.CX(*qubits), css.ZX(*qubits))
+    circuit = cirq.Circuit(cirq.CX(*qubits), css.ZX(*qubits), cirq.ms(1.23).on(*qubits))
 
     serialized_circuit = css.serialization.serialize_circuits(circuit)
     assert isinstance(serialized_circuit, str)
