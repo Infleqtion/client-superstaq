@@ -1,5 +1,6 @@
 from applications_superstaq._init_vars import API_URL, API_VERSION
 from applications_superstaq._version import __version__
+from applications_superstaq.resource_estimate import ResourceEstimate
 from applications_superstaq.superstaq_exceptions import (
     SuperstaQException,
     SuperstaQModuleNotFoundException,
@@ -26,6 +27,7 @@ __all__ = [
     "finance",
     "logistics",
     "qubo",
+    "ResourceEstimate",
     "superstaq_client",
     "superstaq_exceptions",
     "user_config",

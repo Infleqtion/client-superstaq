@@ -375,6 +375,21 @@ def test_superstaq_client_ibmq_set_token(mock_post: mock.MagicMock) -> None:
     )
 
 
+@mock.patch("requests.post")
+def test_superstaq_client_resource_estimate(mock_post: mock.MagicMock) -> None:
+    client = applications_superstaq.superstaq_client._SuperstaQClient(
+        client_name="applications-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        default_target="simulator",
+    )
+
+    client.resource_estimate({"Hello": 1, "World": 2})
+
+    mock_post.assert_called_once()
+    assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/resource_estimate"
+
+
 @mock.patch("requests.get")
 def test_superstaq_client_get_backends(mock_get: mock.MagicMock) -> None:
     mock_get.return_value.ok = True

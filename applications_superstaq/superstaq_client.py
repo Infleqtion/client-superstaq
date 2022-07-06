@@ -203,6 +203,9 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
+    def resource_estimate(self, json_dict: Dict[str, int]) -> dict:
+        return self.post_request("/resource_estimate", json_dict)
+
     def aqt_compile(self, json_dict: Dict[str, Union[int, str, List[str]]]) -> dict:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
         return self.post_request("/aqt_compile", json_dict)
