@@ -1,4 +1,5 @@
 applications-superstaq==0.1.10
 cirq>=0.14.0
+python-rapidjson<=1.6
 qubovert>=1.2.3
 sympy<1.10
