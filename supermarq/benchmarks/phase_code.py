@@ -33,7 +33,7 @@ class PhaseCode(Benchmark):
         """
         Generates cirq ops for a single measurement round
 
-        Args:
+        Args
         - qubits: Circuit qubits - assumed data on even indices and
                   measurement on odd indices
         """
@@ -89,8 +89,19 @@ class PhaseCode(Benchmark):
 
     def score(self, counts: collections.Counter) -> float:
         """Device performance is given by the Hellinger fidelity between
-        the experimental results and the ideal distribution. The ideal
-        is known based on the phase_state parameter.
+        the experimental results and the ideal distribution.
+
+        The ideal is known based on the phase_state parameter.
+
+        Args:
+          counts:
+            Dictionary of the experimental results. The keys are bitstrings
+            represented the measured qubit state, and the values are the number
+            of times that state of observed.
+
+        Returns:
+          The score of the simulation (this case the Hellinger fidelity).
+                                                                                      
         """
         ideal_dist = self._get_ideal_dist()
         total_shots = sum(counts.values())
