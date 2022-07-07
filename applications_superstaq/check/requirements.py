@@ -60,6 +60,10 @@ def run(
         ]
     files = filter(check_utils.inclusion_filter(exclude), files)
 
+    # check that we can connect to PyPI
+    can_connect_to_pypi = _check_pypy_connection(silent)
+
+    # check all requirements files
     requirements_to_fix = {}
     for req_file in files:
 
@@ -78,7 +82,7 @@ def run(
         if not is_tidy and not silent:
             print(check_utils.failure(f"{req_file} is not sorted."))
 
-        if not only_sort:
+        if not only_sort and can_connect_to_pypi:
             is_tidy &= _pin_upstream_packages(requirements, upstream_match, silent)
 
         if not is_tidy:
@@ -93,6 +97,17 @@ def run(
 
     success = not requirements_to_fix or parsed_args.apply
     return 0 if success else 1
+
+
+def _check_pypy_connection(silent: bool) -> bool:
+    try:
+        urllib.request.urlopen("https://pypi.org/", timeout=1)
+        return True
+    except urllib.error.URLError:
+        if not silent:
+            warning = "Cannot connect to PiPI to identify package versions to pin."
+            print(check_utils.warning(warning))
+        return False
 
 
 def _are_pip_requirements(requirements: List[str]) -> bool:
@@ -163,7 +178,9 @@ def _pin_upstream_packages(requirements: List[str], upstream_match: str, silent:
 
 @functools.lru_cache
 def _get_latest_version(package: str) -> str:
-    pypi_url = f"https://pypi.org/pypi/{package}/json"
+    # remove options from package string, if present: package_name[options] --> package_name
+    base_package = package.split("[")[0]
+    pypi_url = f"https://pypi.org/pypi/{base_package}/json"
     return json.loads(urllib.request.urlopen(pypi_url).read().decode())["info"]["version"]
 
 
