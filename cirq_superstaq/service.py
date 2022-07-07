@@ -21,6 +21,7 @@ import cirq
 import numpy as np
 from applications_superstaq import finance
 from applications_superstaq import logistics
+from applications_superstaq import ResourceEstimate
 from applications_superstaq import superstaq_client
 from applications_superstaq import user_config
 
@@ -263,6 +264,36 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
     def get_backends(self) -> dict:
         """Get list of available backends."""
         return self._client.get_backends()["superstaq_backends"]
+
+    def resource_estimate(
+        self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str
+    ) -> Union[ResourceEstimate, List[ResourceEstimate]]:
+        """Generates resource estimates for circuit(s).
+
+        Args:
+            circuits: cirq Circuit(s).
+            target: string of target representing backend device
+        Returns:
+            ResourceEstimate(s) containing resource costs (after compilation)
+        """
+        circuit_is_list = isinstance(circuits, List)
+        serialized_circuit = css.serialization.serialize_circuits(circuits)
+
+        request_json = {
+            "cirq_circuits": serialized_circuit,
+            "backend": target,
+        }
+
+        json_dict = self._client.resource_estimate(request_json)
+
+        resource_estimates = [
+            ResourceEstimate(json_data=resource_estimate)
+            for resource_estimate in json_dict["resource_estimates"]
+        ]
+
+        if circuit_is_list:
+            return resource_estimates
+        return resource_estimates[0]
 
     def aqt_compile(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "keysight"

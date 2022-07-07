@@ -21,6 +21,7 @@ import cirq
 import pandas as pd
 import pytest
 import sympy
+from applications_superstaq import ResourceEstimate
 
 import cirq_superstaq as css
 
@@ -248,6 +249,39 @@ def test_service_aqt_compile_eca(mock_aqt_compile: mock.MagicMock) -> None:
     out = service.aqt_compile_eca(cirq.Circuit(), num_equivalent_circuits=1, random_seed=1234)
     assert out.circuits == [cirq.Circuit()]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+
+
+@mock.patch(
+    "applications_superstaq.superstaq_client._SuperstaQClient.resource_estimate",
+)
+def test_service_resource_estimate(mock_resource_estimate: mock.MagicMock) -> None:
+    service = css.Service(remote_host="http://example.com", api_key="key")
+
+    resource_estimate = ResourceEstimate(0, 1, 2)
+
+    mock_resource_estimate.return_value = {
+        "resource_estimates": [{"num_single_qubit_gates": 0, "num_two_qubit_gates": 1, "depth": 2}]
+    }
+
+    assert service.resource_estimate(cirq.Circuit(), "qasm_simulator") == resource_estimate
+
+
+@mock.patch(
+    "applications_superstaq.superstaq_client._SuperstaQClient.resource_estimate",
+)
+def test_service_resource_estimate_list(mock_resource_estimate: mock.MagicMock) -> None:
+    service = css.Service(remote_host="http://example.com", api_key="key")
+
+    resource_estimates = [ResourceEstimate(0, 1, 2), ResourceEstimate(3, 4, 5)]
+
+    mock_resource_estimate.return_value = {
+        "resource_estimates": [
+            {"num_single_qubit_gates": 0, "num_two_qubit_gates": 1, "depth": 2},
+            {"num_single_qubit_gates": 3, "num_two_qubit_gates": 4, "depth": 5},
+        ]
+    }
+
+    assert service.resource_estimate([cirq.Circuit()], "qasm_simulator") == resource_estimates
 
 
 @mock.patch("applications_superstaq.superstaq_client._SuperstaQClient.qscout_compile")
