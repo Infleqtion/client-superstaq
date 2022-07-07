@@ -19,6 +19,7 @@ import applications_superstaq
 import qiskit
 from applications_superstaq import finance
 from applications_superstaq import logistics
+from applications_superstaq import ResourceEstimate
 from applications_superstaq import superstaq_client
 from applications_superstaq import user_config
 
@@ -122,6 +123,36 @@ class SuperstaQProvider(
             "X-Client-Name": "qiskit-superstaq",
             "X-Client-Version": qss.API_VERSION,
         }
+
+    def resource_estimate(
+        self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]], target: str
+    ) -> Union[ResourceEstimate, List[ResourceEstimate]]:
+        """Generates resource estimates for circuit(s).
+
+        Args:
+            circuits: qiskit QuantumCircuit(s).
+            target: string of target representing backend device
+        Returns:
+            ResourceEstimate(s) containing resource costs (after compilation)
+            for running circuit(s) on target.
+        """
+        serialized_circuits = qss.serialization.serialize_circuits(circuits)
+        circuit_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
+
+        request_json = {
+            "qiskit_circuits": serialized_circuits,
+            "backend": target,
+        }
+
+        json_dict = self._client.resource_estimate(request_json)
+
+        resource_estimates = [
+            ResourceEstimate(json_data=resource_estimate)
+            for resource_estimate in json_dict["resource_estimates"]
+        ]
+        if circuit_is_list:
+            return resource_estimates
+        return resource_estimates[0]
 
     def aqt_compile(
         self,
