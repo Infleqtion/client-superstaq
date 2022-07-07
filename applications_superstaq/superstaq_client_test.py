@@ -384,7 +384,7 @@ def test_superstaq_client_resource_estimate(mock_post: mock.MagicMock) -> None:
         default_target="simulator",
     )
 
-    client.resource_estimate({"Hello": 1, "World": 2})
+    client.resource_estimate({"Hello": "1", "World": "2"})
 
     mock_post.assert_called_once()
     assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/resource_estimate"

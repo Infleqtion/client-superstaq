@@ -203,7 +203,7 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def resource_estimate(self, json_dict: Dict[str, int]) -> dict:
+    def resource_estimate(self, json_dict: Dict[str, str]) -> dict:
         return self.post_request("/resource_estimate", json_dict)
 
     def aqt_compile(self, json_dict: Dict[str, Union[int, str, List[str]]]) -> dict:
