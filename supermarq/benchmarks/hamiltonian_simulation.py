@@ -19,7 +19,7 @@ class HamiltonianSimulation(Benchmark):
     """
 
     def __init__(self, num_qubits: int, time_step: int = 1, total_time: int = 1) -> None:
-        """The constructor for the Hamiltonian Simulation
+        """The constructor for the Hamiltonian Simulation.
 
         Args:
           num_qubits:

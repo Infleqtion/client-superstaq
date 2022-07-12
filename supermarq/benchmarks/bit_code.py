@@ -83,7 +83,7 @@ class BitCode(Benchmark):
           None.
 
         Returns:
-          The ideal probably distribution of the circuit.
+          The ideal probability distribution of the circuit.
         """
         ancilla_state, final_state = "", ""
         for i in range(self.num_data_qubits - 1):
