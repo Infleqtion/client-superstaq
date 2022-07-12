@@ -302,7 +302,7 @@ class Barrier(cirq.ops.IdentityGate):
         return ("|",) * self.num_qubits()
 
 
-def barrier(qubits: Sequence[cirq.Qid]) -> cirq.Operation:
+def barrier(*qubits: cirq.Qid) -> cirq.Operation:
     return css.Barrier(len(qubits)).on(*qubits)
 
 
