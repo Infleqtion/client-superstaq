@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-import argparse
+import fnmatch
 import functools
-import glob
 import json
 import os
 import re
@@ -10,7 +9,7 @@ import subprocess
 import sys
 import textwrap
 import urllib.request
-from typing import Dict, Iterable, List, Optional, Union
+from typing import Dict, Iterable, List, Tuple, Union
 
 import pkg_resources
 
@@ -18,17 +17,15 @@ from applications_superstaq.check import check_utils
 
 
 @check_utils.enable_exit_on_failure
-@check_utils.extract_file_args
 def run(
     *args: str,
-    files: Optional[Iterable[str]] = None,
-    parser: argparse.ArgumentParser = check_utils.get_file_parser(add_files=False),
-    exclude: Optional[Union[str, Iterable[str]]] = None,
-    upstream_match: str = ".*superstaq",
+    include: Union[str, Iterable[str]] = "*requirements.txt",
+    exclude: Union[str, Iterable[str]] = "",
+    upstream_match: str = "*superstaq",
     silent: bool = False,
-    only_sort: bool = False,
 ) -> int:
 
+    parser = check_utils.get_file_parser()
     parser.description = textwrap.dedent(
         """
         Checks that:
@@ -49,16 +46,8 @@ def run(
         action="store_true",
         help="Only sort requirements files.  Do not check upstream package versions.",
     )
-    parsed_args = parser.parse_args(args)
-    only_sort |= parsed_args.only_sort
-
-    if files is None:
-        req_file_match = os.path.join(check_utils.root_dir, "**", "*requirements.txt")
-        files = [
-            os.path.relpath(file, check_utils.root_dir)
-            for file in glob.iglob(req_file_match, recursive=True)
-        ]
-    files = filter(check_utils.inclusion_filter(exclude), files)
+    parsed_args = parser.parse_intermixed_args(args)
+    files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     # check that we can connect to PyPI
     can_connect_to_pypi = _check_pypy_connection(silent)
@@ -66,31 +55,11 @@ def run(
     # check all requirements files
     requirements_to_fix = {}
     for req_file in files:
-
-        with open(os.path.join(check_utils.root_dir, req_file), "r") as file:
-            requirements = file.read().strip().split("\n")
-
-        if not _are_pip_requirements(requirements):
-            error = f"{req_file} not recognized as a pip requirements file."
-            if req_file == "requirements.txt":
-                raise SyntaxError(check_utils.failure(error))
-            elif not silent:
-                print(check_utils.warning(error))
-            continue
-
-        is_tidy = _sort_requirements(requirements)
-        if not is_tidy and not silent:
-            print(check_utils.failure(f"{req_file} is not sorted."))
-
-        if not only_sort and can_connect_to_pypi:
-            is_tidy &= _pin_upstream_packages(requirements, upstream_match, silent)
-
-        if not is_tidy:
+        needs_cleanup, requirements = _inspect_req_file(
+            req_file, parsed_args.only_sort, can_connect_to_pypi, upstream_match, silent
+        )
+        if needs_cleanup:
             requirements_to_fix[req_file] = requirements
-
-        # check whether all requirements for this repo are satisfied
-        if req_file == "requirements.txt" and not silent:
-            _check_requirements(requirements)
 
     # print some helpful text and maybe apply fixes
     _cleanup(requirements_to_fix, parsed_args.apply, silent)
@@ -108,6 +77,31 @@ def _check_pypy_connection(silent: bool) -> bool:
             warning = "Cannot connect to PiPI to identify package versions to pin."
             print(check_utils.warning(warning))
         return False
+
+
+def _inspect_req_file(
+    req_file: str, only_sort: bool, can_connect_to_pypi: bool, upstream_match: str, silent: bool
+) -> Tuple[bool, List[str]]:
+    # read in requirements line-by-line
+    with open(os.path.join(check_utils.root_dir, req_file), "r") as file:
+        requirements = file.read().strip().split("\n")
+
+    if not _are_pip_requirements(requirements):
+        error = f"{req_file} not recognized as a pip requirements file."
+        if req_file == "requirements.txt":
+            raise SyntaxError(check_utils.failure(error))
+        elif not silent:
+            print(check_utils.warning(error))
+        return False, []  # file cannot be cleaned up, and there are no requirements to track
+
+    needs_cleanup, requirements = _sort_requirements(requirements)
+    if needs_cleanup and not silent:
+        print(check_utils.failure(f"{req_file} is not sorted."))
+
+    if not only_sort and can_connect_to_pypi:
+        needs_cleanup |= _pin_upstream_packages(requirements, upstream_match, silent)
+
+    return needs_cleanup, requirements
 
 
 def _are_pip_requirements(requirements: List[str]) -> bool:
@@ -136,12 +130,10 @@ def _are_pip_requirements(requirements: List[str]) -> bool:
     return all(pip_req_format.match(requirement) for requirement in requirements)
 
 
-def _sort_requirements(requirements: List[str]) -> bool:
+def _sort_requirements(requirements: List[str]) -> Tuple[bool, List[str]]:
     sorted_requirements = sorted(requirements, key=str.casefold)
-    is_sorted = requirements == sorted_requirements
-    if not is_sorted:
-        requirements[:] = sorted_requirements
-    return is_sorted
+    needs_cleanup = requirements != sorted_requirements
+    return needs_cleanup, sorted_requirements
 
 
 def _pin_upstream_packages(requirements: List[str], upstream_match: str, silent: bool) -> bool:
@@ -149,7 +141,7 @@ def _pin_upstream_packages(requirements: List[str], upstream_match: str, silent:
     upstream_versions = {
         package: _get_latest_version(package)
         for requirement in requirements
-        if re.match(upstream_match, package := re.split(">|<|~|=", requirement)[0])
+        if fnmatch.fnmatch(package := re.split(">|<|~|=", requirement)[0], upstream_match)
     }
 
     # pin upstream packages to their latest versions
@@ -173,7 +165,7 @@ def _pin_upstream_packages(requirements: List[str], upstream_match: str, silent:
                 # print warning if the wrong version of an upstream package is installed locally
                 _inspect_local_version(package, latest_version)
 
-    return up_to_date
+    return not up_to_date
 
 
 @functools.lru_cache

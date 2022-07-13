@@ -7,8 +7,8 @@ Dumping ground for check script utilities.
 import argparse
 import dataclasses
 import fnmatch
-import inspect
 import os
+import re
 import subprocess
 import sys
 from typing import Any, Callable, Iterable, List, Optional, Union
@@ -62,7 +62,8 @@ default_branches = ("upstream/main", "origin/main", "main")
 
 
 def get_tracked_files(
-    *match_patterns: str, exclude: Optional[Union[str, Iterable[str]]] = None
+    include: Union[str, Iterable[str]],
+    exclude: Union[str, Iterable[str]] = "",
 ) -> List[str]:
     """
     Identify all files matching the given match_patterns that are tracked by git in this repo.
@@ -71,12 +72,13 @@ def get_tracked_files(
     Optionally excludes anything that matches [root_dir]/exclusion for each given exclusion (passed
     either as a single string or a list of strings).
     """
+    match_patterns = [include] if isinstance(include, str) else list(include)
     matching_files = _check_output("git", "ls-files", *match_patterns).splitlines()
     should_include = inclusion_filter(exclude)
     return [file for file in matching_files if should_include(file)]
 
 
-def inclusion_filter(exclude: Optional[Union[str, Iterable[str]]]) -> Callable[[str], bool]:
+def inclusion_filter(exclude: Union[str, Iterable[str]]) -> Callable[[str], bool]:
     """Construct filter that decides whether a file should be included."""
     if not exclude:
         return lambda _: True
@@ -90,22 +92,27 @@ def inclusion_filter(exclude: Optional[Union[str, Iterable[str]]]) -> Callable[[
 
 
 def get_changed_files(
-    match_patterns: Iterable[str],
-    revisions: Iterable[str],
+    include: Union[str, Iterable[str]],
+    exclude: Union[str, Iterable[str]],
+    revisions: Optional[Iterable[str]] = None,
     silent: bool = False,
-    exclude: Optional[Union[str, Iterable[str]]] = None,
 ) -> List[str]:
     """
     Get the files of interest that have been changed in the current branch.
     Here "files of interest" means all files identified by get_tracked_files (see above).
 
-    You can optionally specify a git revisions to compare against when determining whether a file is
-    considered to have "changed".  If multiple revisions are provided, this script compares against
-    their most recent common ancestor.  If no revisions are specified, this script will default to
-    the first of the default_branches (specified above) that it finds.  If none of these branches
-    exists, this method raises a ValueError.
+    You can specify git revisions to compare against when determining whether a file is considered
+    to have "changed".  If multiple revisions are provided, this script compares against their most
+    recent common ancestor.
+
+    If an empty list of revisions is specified, this script will default to the first of the
+    default_branches (specified above) that it finds.  If none of these branches exists, this method
+    raises a ValueError.
     """
-    revisions = list(revisions)
+    if revisions is None:
+        return []
+    else:
+        revisions = list(revisions)
 
     # verify that all arguments are valid revisions
     invalid_revisions = [revision for revision in revisions if not _revision_exists(revision)]
@@ -126,9 +133,8 @@ def get_changed_files(
             print(f"Comparing against revision '{base_revision}' (merge base '{common_ancestor}')")
 
     changed_files = _check_output("git", "diff", "--name-only", common_ancestor).splitlines()
-    changed_and_included_files = list(filter(inclusion_filter(exclude), changed_files))
     files_to_examine = [
-        file for file in get_tracked_files(*match_patterns) if file in changed_and_included_files
+        file for file in get_tracked_files(include, exclude) if file in changed_files
     ]
 
     if not silent:
@@ -155,8 +161,7 @@ def _get_ancestor(*revisions: str, silent: bool = False) -> str:
         for branch in default_branches:
             if _revision_exists(branch):
                 return branch
-
-        error = f"No default git revision found to compare against {default_branches}"
+        error = f"Default git revisions not found: {default_branches}"
         raise RuntimeError(failure(error))
 
 
@@ -170,114 +175,73 @@ def _revision_exists(revision: str) -> bool:
     )
 
 
+def get_test_files(*files: str, exclude: Union[str, Iterable[str]] = "", silent: bool) -> List[str]:
+    """
+    For the given files, identify all associated test files (i.e. files with the same name, but
+    with a "_test.py" suffix).
+    """
+    should_include = inclusion_filter(exclude)
+
+    test_files = set()
+    for file in files:
+        if file.endswith("_test.py"):
+            test_files.add(file)
+
+        else:
+            test_file = re.sub(r"\.py$", "_test.py", file)
+            test_file_exists = os.path.isfile(os.path.join(root_dir, test_file))
+            if test_file_exists and should_include(test_file):
+                test_files.add(test_file)
+            elif not silent:
+                print(warning(f"WARNING: no test file found for {file}"))
+
+    return list(test_files)
+
+
 ####################################################################################################
-# decorators to add features to checks
+# file parsing, incremental checks, and decorator to exit instead of returning a failing exit code
 
 
-def get_file_parser(add_files: bool = True, add_help: bool = True) -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        add_help=add_help, formatter_class=argparse.RawDescriptionHelpFormatter
+def get_file_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    help_text = "The files to check. If not passed any files, inspects the entire repo."
+    parser.add_argument("files", nargs="*", help=help_text)
+
+    help_text = (
+        "Run an incremental check on files that have changed since a specified revision.  "
+        + f"If no revisions are specified, compare against the first of {default_branches} "
+        + "that exists.  If multiple revisions are provided, this script compares against "
+        + "their most recent common ancestor.  Incremental checks ignore integration tests."
     )
-    if add_files:
-        files_help_text = "The files to check. If not passed any files, inspects the entire repo."
-        parser.add_argument("files", nargs="*", help=files_help_text)
+    parser.add_argument(
+        "-i", "--incremental", dest="revisions", nargs="*", action="extend", help=help_text
+    )
+
     return parser
 
 
-def enable_incremental(
-    *match_patterns: str, exclude: Optional[Union[str, Iterable[str]]] = None
-) -> Callable[[Callable[..., int]], Callable[..., int]]:
-    """
-    Decorator enabling an incremental version of a check.
-
-    If a script is normally called by check/[script].py, this decorator allows it to be run with the
-    arguments [-i|--incremental rev1 rev2 ...] to run the script on the changes between HEAD and the
-    most recent common ancestor of rev1 rev2 ...
-
-    Excludes integration tests by default.
-    """
-
-    def incremental_decorator(func: Callable[..., int]) -> Callable[..., int]:
-        """Inner decorator that uses match_patterns."""
-
-        def incremental_func(
-            *args: Any,
-            files: Optional[Iterable[str]] = None,
-            revisions: Optional[Iterable[str]] = None,
-            **kwargs: Any,
-        ) -> int:
-            silent = revisions is not None  # if passed revisions explicitly, run in silent mode
-
-            _help = (
-                "Run an incremental check on files that have changed since a specified revision.  "
-                + f"If no revisions are specified, compare against the first of {default_branches} "
-                + "that exists.  If multiple revisions are provided, this script compares against "
-                + "their most recent common ancestor.  Incremental checks ignore integration tests."
-            )
-
-            def _add_incremental_arg(parser: argparse.ArgumentParser) -> None:
-                parser.add_argument(
-                    "-i", "--incremental", dest="revisions", nargs="*", action="extend", help=_help
-                )
-
-            # add incremental flags to the parser of func (so that they appear in the help text)
-            func_has_parser = "parser" in inspect.signature(func).parameters
-            if func_has_parser:
-                parser = kwargs.get("parser", get_file_parser())
-                _add_incremental_arg(parser)
-                kwargs["parser"] = parser
-
-            if revisions is None:
-                # parse arguments to identify revisions to compare against
-                inc_parser = argparse.ArgumentParser(add_help=not func_has_parser)
-                _add_incremental_arg(inc_parser)
-                inc_parsed_args, unknown_args = inc_parser.parse_known_intermixed_args(args)
-                args = tuple(unknown_args)
-                revisions = inc_parsed_args.revisions
-
-            if revisions is not None:
-                # add files that have changed since the most recent common ancestor of the revisions
-                changed_files = get_changed_files(
-                    match_patterns, revisions, silent=silent, exclude=exclude
-                )
-                if changed_files:
-                    files = list(files) + changed_files if files else changed_files
-
-            return func(*args, files=files, **kwargs)
-
-        return incremental_func
-
-    return incremental_decorator
+def extract_files(
+    parsed_args: argparse.Namespace,
+    include: Union[str, Iterable[str]],
+    exclude: Union[str, Iterable[str]] = "",
+    silent: bool = False,
+) -> List[str]:
+    files = parsed_args.files if "files" in parsed_args else []
+    if "revisions" in parsed_args:
+        files += get_changed_files(include, exclude, parsed_args.revisions, silent=silent)
+    return files if files else get_tracked_files(include, exclude)
 
 
-def enable_exit_on_failure(func: Callable[..., int]) -> Callable[..., int]:
+def enable_exit_on_failure(func_with_returncode: Callable[..., int]) -> Callable[..., int]:
     """
     Decorator optionally allowing a function to exit instead of returning a failing return code.
     """
 
     def func_with_exit(*args: Any, exit_on_failure: bool = False, **kwargs: Any) -> int:
-        returncode = func(*args, **kwargs)
+        returncode = func_with_returncode(*args, **kwargs)
         if exit_on_failure and returncode:
             exit(returncode)
         return returncode
 
     return func_with_exit
-
-
-def extract_file_args(func: Callable[..., int]) -> Callable[..., int]:
-    """Decorator to extract files from the arguments to a function."""
-
-    def func_with_files(*args: Any, files: Optional[Iterable[str]] = None, **kwargs: Any) -> int:
-        file_args = []
-        othr_args = []
-        for arg in args:
-            if os.path.isfile(arg):
-                file_args.append(os.path.relpath(arg, root_dir))
-            else:
-                othr_args.append(arg)
-
-        if file_args:
-            files = list(files) + file_args if files else file_args
-        return func(*othr_args, files=files, **kwargs)
-
-    return func_with_files

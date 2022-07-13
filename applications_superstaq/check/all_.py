@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 
-import argparse
 import sys
 import textwrap
-from typing import Iterable, Optional
 
 from applications_superstaq.check import (
     build_docs,
@@ -17,13 +15,9 @@ from applications_superstaq.check import (
 )
 
 
-@check_utils.extract_file_args
-def run(
-    *args: str,
-    files: Optional[Iterable[str]] = None,
-    parser: argparse.ArgumentParser = check_utils.get_file_parser()
-) -> int:
+def run(*args: str) -> int:
 
+    parser = check_utils.get_file_parser()
     parser.description = textwrap.dedent(
         """
         Runs all checks on the repository.
@@ -45,40 +39,28 @@ def run(
         dest="force_all",
         help="'Hard force' ~ continue past (i.e. do not exit after) all failing checks.",
     )
-    parser.add_argument(
-        "-i",
-        "--incremental",
-        dest="revisions",
-        nargs="*",
-        action="extend",
-        help="Run checks in incremental mode.",
-    )
-    parsed_args = parser.parse_intermixed_args(args)
-    revisions = parsed_args.revisions
 
-    default_mode = not files and revisions is None
+    parsed_args = parser.parse_intermixed_args(args)
+    args_to_pass = parsed_args.files
+    if parsed_args.revisions is not None:
+        args_to_pass += ["-i", *parsed_args.revisions]
+
+    default_mode = not parsed_args.files and parsed_args.revisions is None
     checks_failed = 0
 
     # run formatting checks
+    # silence all but the first check to avoid printing duplicate info about incrmental files
+    # silencing does not affect warnings and errors
     exit_on_failure = not (parsed_args.force_formats or parsed_args.force_all)
-    checks_failed |= format_.run(files=files, revisions=revisions, exit_on_failure=exit_on_failure)
-    checks_failed |= flake8_.run(files=files, revisions=revisions, exit_on_failure=exit_on_failure)
-    # pylint is slow, so always run pylint in incremental mode
-    checks_failed |= pylint_.run(
-        files=files,
-        revisions=[] if default_mode else revisions,
-        exit_on_failure=exit_on_failure,
-    )
+    checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure)
+    checks_failed |= flake8_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+    checks_failed |= pylint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 
     # run typing and coverage checks
     exit_on_failure = not parsed_args.force_all
-    # typing changes are likely to have side effects, so always run mypy on the entire repo
-    checks_failed |= mypy_.run(revisions=revisions, exit_on_failure=exit_on_failure)
+    checks_failed |= mypy_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
     checks_failed |= coverage_.run(
-        files=files,
-        revisions=revisions,
-        exit_on_failure=exit_on_failure,
-        suppress_warnings=default_mode,
+        *args_to_pass, exit_on_failure=exit_on_failure, silent=default_mode
     )
 
     # check that all pip requirements files are in order

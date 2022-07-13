@@ -42,7 +42,7 @@ jobs:
           pip install .[dev]
       - name: Pylint
         run: |
-          check/pylint_.py
+          check/pylint_.py --all
 
   flake8:
     name: Flake8 check
@@ -78,8 +78,8 @@ jobs:
         run: |
           check/mypy_.py
 
-  pytest:
-    name: Pytest Ubuntu
+  coverage:
+    name: Pytest and Coverage check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -91,9 +91,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install .[dev]
-      - name: Pytest check
+      - name: Coverage check
         run: |
-          check/pytest_.py
+          check/coverage_.py
 
   pytest-mac:
     name: Pytest macOS
@@ -129,20 +129,3 @@ jobs:
         run: |
           check/pytest_.py
         shell: bash
-
-  coverage:
-    name: Coverage check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install .[dev]
-      - name: Coverage check
-        run: |
-          check/coverage_.py
