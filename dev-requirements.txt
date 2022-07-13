@@ -1,2 +1,1 @@
-cirq-superstaq[dev]==0.1.29
-qiskit-superstaq[dev]==0.1.23
+applications-superstaq[dev]==0.1.14
