@@ -24,8 +24,7 @@ jobs:
           PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
         run: |
           python -m pip install --upgrade pip
-          pip install .
-          if [ -f dev-requirements.txt ]; then pip install -r dev-requirements.txt; fi
+          pip install .[dev_env]
       - name: Format
         run: |
           check/format_.py
@@ -44,11 +43,10 @@ jobs:
           PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
         run: |
           python -m pip install --upgrade pip
-          pip install .
-          if [ -f dev-requirements.txt ]; then pip install -r dev-requirements.txt; fi
+          pip install .[dev_env]
       - name: Pylint
         run: |
-          check/pylint_.py
+          check/pylint_.py --all
 
   flake8:
     name: Flake8 check
@@ -64,8 +62,7 @@ jobs:
           PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
         run: |
           python -m pip install --upgrade pip
-          pip install .
-          if [ -f dev-requirements.txt ]; then pip install -r dev-requirements.txt; fi
+          pip install .[dev_env]
       - name: Flake8
         run: |
           check/flake8_.py
@@ -84,11 +81,29 @@ jobs:
           PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
         run: |
           python -m pip install --upgrade pip
-          pip install .
-          if [ -f dev-requirements.txt ]; then pip install -r dev-requirements.txt; fi
+          pip install .[dev_env]
       - name: Type check
         run: |
           check/mypy_.py
+
+  coverage:
+    name: Pytest and Coverage check
+    env:
+      PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev_env]
+      - name: Coverage check
+        run: |
+          check/coverage_.py
 
   pytest-mac:
     name: Pytest macOS
@@ -104,8 +119,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .
-          if [ -f dev-requirements.txt ]; then pip install -r dev-requirements.txt; fi
+          pip install .[dev_env]
       - name: Pytest-mac check
         run: |
           check/pytest_.py
@@ -124,32 +138,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .
-          if (Test-Path "dev-requirements.txt") {pip install -r dev-requirements.txt}
+          pip install .[dev_env]
       - name: Pytest-win check
         run: |
           check/pytest_.py
         shell: bash
-
-  coverage:
-    name: Coverage check
-    env:
-      PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install .
-          if [ -f dev-requirements.txt ]; then pip install -r dev-requirements.txt; fi
-      - name: Coverage check
-        run: |
-          check/coverage_.py
 
   requirements:
     name: Requirements check
@@ -166,9 +159,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .
-          if [ -f dev-requirements.txt ]; then pip install -r dev-requirements.txt; fi
-      - name: Coverage check
+          pip install .[dev_env]
+      - name: Requirements check
         run: |
           check/requirements.py
 
