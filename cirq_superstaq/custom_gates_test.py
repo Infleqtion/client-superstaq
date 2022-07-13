@@ -246,6 +246,7 @@ def test_acecr_decompose() -> None:
 
 def test_barrier() -> None:
     n = 3
+    qubits = cirq.LineQubit.range(n)
     gate = css.Barrier(n)
 
     assert str(gate) == "Barrier(3)"
@@ -253,8 +254,12 @@ def test_barrier() -> None:
 
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq as css")
 
-    operation = gate.on(*cirq.LineQubit.range(3))
+    operation = gate.on(*qubits)
     assert cirq.decompose(operation) == [operation]
+
+    # confirm Barrier is as an InterchangeableQubitsGate
+    for permuted_qubits in itertools.permutations(qubits):
+        assert operation == gate.on(*permuted_qubits)
 
     circuit = cirq.Circuit(operation)
     expected_qasm = textwrap.dedent(
@@ -305,7 +310,6 @@ def test_barrier() -> None:
     assert circuit == cirq.Circuit(operation)
     assert cirq.trace_distance_bound(gate) == 1.0
 
-    qubits = cirq.LineQubit.range(n)
     barrier = css.barrier(*qubits)
     assert barrier == css.Barrier(n).on(*qubits)
 
