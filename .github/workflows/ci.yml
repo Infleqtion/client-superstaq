@@ -46,7 +46,7 @@ jobs:
           pip install .[dev]
       - name: Pylint
         run: |
-          check/pylint_.py
+          check/pylint_.py --all
 
   flake8:
     name: Flake8 check

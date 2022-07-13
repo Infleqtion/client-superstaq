@@ -1,4 +1,4 @@
-applications-superstaq==0.1.13
+applications-superstaq==0.1.14
 cirq>=0.14.0
 qubovert>=1.2.3
 sympy<1.10
