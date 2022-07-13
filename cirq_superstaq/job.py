@@ -163,7 +163,7 @@ class Job:
                 error = self._job["failure"]["error"]
                 raise RuntimeError(f"Job failed. Error message: {error}")
             raise RuntimeError(
-                f"Job was not completed successful. Instead had status: {self.status()}"
+                f"Job was not completed successfully. Instead had status: {self.status()}"
             )
         return self._job["samples"]
 

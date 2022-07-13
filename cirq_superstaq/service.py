@@ -30,8 +30,8 @@ import cirq_superstaq as css
 
 def counts_to_results(
     counter: collections.Counter, circuit: cirq.AbstractCircuit, param_resolver: cirq.ParamResolver
-) -> cirq.Result:
-    """Converts a collections.Counter to a cirq.Result.
+) -> cirq.ResultDict:
+    """Converts a collections.Counter to a cirq.ResultDict.
 
     Args:
             counter: The collections.Counter of counts for the run.
@@ -39,7 +39,7 @@ def counts_to_results(
             param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuit`.
 
         Returns:
-            A `cirq.Result` for the given circuit and counter.
+            A `cirq.ResultDict` for the given circuit and counter.
 
     """
 
@@ -65,9 +65,8 @@ def counts_to_results(
         # [1, 1] is appended to 'samples' 52 times
         for key in range(counts_of_key):
             samples.append(keys_as_list)
-    ResultDict = getattr(cirq, "ResultDict", getattr(cirq, "Result"))
 
-    result = ResultDict(
+    result = cirq.ResultDict(
         params=param_resolver,
         measurements={
             combine_key_names: np.array(samples),
@@ -168,9 +167,9 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         target: Optional[str] = None,
         ibmq_pulse: Optional[bool] = None,
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
-    ) -> cirq.Result:
+    ) -> cirq.ResultDict:
         """Run the given circuit on the SuperstaQ API and returns the result
-        of the ran circut as a cirq.Result.
+        of the ran circut as a cirq.ResultDict.
 
         Args:
             circuit: The circuit to run.
@@ -180,7 +179,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
 
         Returns:
-            A `cirq.Result` for running the circuit.
+            A `cirq.ResultDict` for running the circuit.
         """
         counts = self.get_counts(circuit, repetitions, target, ibmq_pulse, param_resolver)
         return counts_to_results(counts, circuit, param_resolver)

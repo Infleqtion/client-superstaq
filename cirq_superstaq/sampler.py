@@ -62,7 +62,7 @@ class Sampler(cirq.Sampler):
         program: cirq.AbstractCircuit,
         params: cirq.Sweepable,
         repetitions: int = 1,
-    ) -> List[cirq.Result]:
+    ) -> List[cirq.ResultDict]:
         """Runs a sweep for the given Circuit. Note that this creates jobs for each of the sweeps in
         the given sweepable, and then blocks until all of jobs are complete.
 
