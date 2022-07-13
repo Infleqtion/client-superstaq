@@ -21,7 +21,7 @@ def run(
     *args: str,
     include: Union[str, Iterable[str]] = "*requirements.txt",
     exclude: Union[str, Iterable[str]] = "",
-    upstream_match: str = "*superstaq",
+    upstream_match: str = "*superstaq*",
     silent: bool = False,
 ) -> int:
 
@@ -217,8 +217,7 @@ def _cleanup(
                 print("Requirements files fixed.")
 
         elif not silent:
-            this_file = os.path.relpath(__file__)
-            print(f"Run '{this_file} --apply' to fix requirements files.")
+            print("Run 'check/requirements.py --apply' to fix requirements files.")
 
 
 if __name__ == "__main__":
