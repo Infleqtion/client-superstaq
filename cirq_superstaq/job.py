@@ -54,7 +54,7 @@ class Job:
         "data associated with it beyond an id and a status.",
     )
 
-    def __init__(self, client: superstaq_client._SuperstaQClient, job_dict: Dict[str, Any]) -> None:
+    def __init__(self, client: superstaq_client._SuperstaQClient, job_id: str) -> None:
         """Construct a Job.
 
         Users should not call this themselves. If you only know the `job_id`, use `get_job`
@@ -62,10 +62,10 @@ class Job:
 
         Args:
             client: The client used for calling the API.
-            job_dict: A dict representing the response from a call to get_job on the client.
+            job_id: unique identifier for the job.
         """
         self._client = client
-        self._job = job_dict
+        self._job: Dict[str, Any] = {"job_id": job_id, "status": "Submitted"}
 
     def _refresh_job(self) -> None:
         """If the last fetched job is not terminal, gets the job from the API."""
@@ -171,7 +171,7 @@ class Job:
         return f"Job with job_id={self.job_id()}"
 
     def __repr__(self) -> str:
-        return f"css.Job(client={self._client!r}, job_dict={self._job!r})"
+        return f"css.Job(client={self._client!r}, job_id={self.job_id()!r})"
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(self, type(other)):

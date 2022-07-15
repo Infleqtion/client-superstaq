@@ -223,8 +223,8 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             target=target,
             ibmq_pulse=ibmq_pulse,
         )
-        # The returned job does not have fully populated fields, so make
-        # a second call and return the results of the fully filled out job.
+        # The returned job does not have fully populated fields; they will be filled out by
+        # when the new job's status is first queried
         return self.get_job(result["job_ids"][0])
 
     def get_job(self, job_id: str) -> css.job.Job:
@@ -241,8 +241,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             SuperstaQNotFoundException: If there was no job with the given `job_id`.
             SuperstaQException: If there was an error accessing the API.
         """
-        job_dict = self._client.get_job(job_id=job_id)
-        return css.job.Job(client=self._client, job_dict=job_dict)
+        return css.job.Job(client=self._client, job_id=job_id)
 
     def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
         """Get the querying user's account balance in USD.

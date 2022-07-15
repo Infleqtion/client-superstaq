@@ -140,8 +140,14 @@ def test_service_get_job() -> None:
     service._client = mock_client
 
     job = service.get_job("job_id")
+
+    # get_job() should not be called upon construction
     assert job.job_id() == "job_id"
-    mock_client.get_job.assert_called_with(job_id="job_id")
+    mock_client.get_job.assert_not_called()
+
+    # ...but it will be called with the initial query of status()
+    assert job.status() == "ready"
+    mock_client.get_job.assert_called_once_with("job_id")
 
 
 def test_service_create_job() -> None:
