@@ -24,7 +24,7 @@ jobs:
           PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev_env]
+          pip install .[dev]
       - name: Format
         run: |
           check/format_.py
@@ -43,7 +43,7 @@ jobs:
           PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev_env]
+          pip install .[dev]
       - name: Pylint
         run: |
           check/pylint_.py --all
@@ -62,7 +62,7 @@ jobs:
           PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev_env]
+          pip install .[dev]
       - name: Flake8
         run: |
           check/flake8_.py
@@ -81,7 +81,7 @@ jobs:
           PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev_env]
+          pip install .[dev]
       - name: Type check
         run: |
           check/mypy_.py
@@ -100,7 +100,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev_env]
+          pip install .[dev]
       - name: Coverage check
         run: |
           check/coverage_.py
@@ -119,7 +119,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev_env]
+          pip install .[dev]
       - name: Pytest-mac check
         run: |
           check/pytest_.py
@@ -138,7 +138,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev_env]
+          pip install .[dev]
       - name: Pytest-win check
         run: |
           check/pytest_.py
@@ -159,7 +159,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev_env]
+          pip install .[dev]
       - name: Requirements check
         run: |
           check/requirements.py
