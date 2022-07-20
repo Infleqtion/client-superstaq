@@ -4,7 +4,7 @@ import os
 import numpy as np
 import pytest
 import qiskit
-from applications_superstaq import SuperstaQException
+from applications_superstaq import ResourceEstimate, SuperstaQException
 
 import qiskit_superstaq as qss
 
@@ -78,6 +78,26 @@ def test_get_balance(provider: qss.SuperstaQProvider) -> None:
     assert balance_str.startswith("$")
 
     assert isinstance(provider.get_balance(pretty_output=False), float)
+
+
+def test_get_resource_estimate(provider: qss.SuperstaQProvider) -> None:
+    circuit1 = qiskit.QuantumCircuit(2)
+    circuit1.cnot(0, 1)
+    circuit1.h(1)
+
+    resource_estimate = provider.resource_estimate(circuit1, "neutral_atom_qpu")
+
+    assert resource_estimate == ResourceEstimate(1, 1, 2)
+
+    circuit2 = qiskit.QuantumCircuit(3)
+    circuit2.h(1)
+    circuit2.cnot(0, 1)
+    circuit2.cz(1, 0)
+    circuit2.measure(1, 1)
+
+    resource_estimates = provider.resource_estimate([circuit1, circuit2], "neutral_atom_qpu")
+
+    assert resource_estimates == [resource_estimate, ResourceEstimate(2, 2, 4)]
 
 
 def test_qscout_compile(provider: qss.SuperstaQProvider) -> None:
