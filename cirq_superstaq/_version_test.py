@@ -2,4 +2,4 @@ import cirq_superstaq as css
 
 
 def test_version() -> None:
-    assert css.__version__ == "0.1.30"
+    assert css.__version__ == "0.1.31"
