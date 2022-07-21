@@ -306,7 +306,7 @@ def test_barrier() -> None:
     )
 
     # make sure optimizations don't drop Barriers:
-    cirq.DropNegligible()(circuit)
+    circuit = cirq.drop_negligible_operations(circuit)
     assert circuit == cirq.Circuit(operation)
     assert cirq.trace_distance_bound(gate) == 1.0
 
