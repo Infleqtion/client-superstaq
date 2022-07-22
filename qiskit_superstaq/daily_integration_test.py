@@ -63,7 +63,7 @@ def test_acer_non_neighbor_qubits_compile(provider: qss.SuperstaQProvider) -> No
 def test_aqt_compile(provider: qss.SuperstaQProvider) -> None:
     circuit = qiskit.QuantumCircuit(8)
     circuit.h(4)
-    expected = qiskit.QuantumCircuit(5)
+    expected = qiskit.QuantumCircuit(8)
     expected.rz(np.pi / 2, 4)
     expected.rx(np.pi / 2, 4)
     expected.rz(np.pi / 2, 4)
@@ -103,7 +103,7 @@ def test_get_resource_estimate(provider: qss.SuperstaQProvider) -> None:
 def test_qscout_compile(provider: qss.SuperstaQProvider) -> None:
     circuit = qiskit.QuantumCircuit(1)
     circuit.h(0)
-    expected = qiskit.QuantumCircuit(1)
+    expected = qiskit.QuantumCircuit(2)
     expected.u(-np.pi / 2, 0, 0, 0)
     expected.z(0)
     assert provider.qscout_compile(circuit).circuit == expected
@@ -116,7 +116,7 @@ def test_cq_compile(provider: qss.SuperstaQProvider) -> None:
 
     circuit = qiskit.QuantumCircuit(1)
     circuit.h(0)
-    expected = qiskit.QuantumCircuit(1)
+    expected = qiskit.QuantumCircuit(6)
     expected.append(GR(1, -0.25 * np.pi, 0.5 * np.pi), [0])
     expected.rz(np.pi, 0)
     expected.append(GR(1, 0.25 * np.pi, 0.5 * np.pi), [0])
