@@ -1,7 +1,6 @@
 """Integration checks that run daily (via Github action) between client and prod server."""
 
 import os
-import textwrap
 
 import cirq
 import pytest
@@ -107,21 +106,12 @@ def test_qscout_compile(service: css.Service) -> None:
         cirq.measure(q0),
     )
 
-    jaqal_program = textwrap.dedent(
-        """\
-        register allqubits[1]
-
-        prepare_all
-        R allqubits[0] -1.5707963267948966 1.5707963267948966
-        Rz allqubits[0] -3.141592653589793
-        measure_all
-        """
-    )
     out = service.qscout_compile(circuit)
     cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
         out.circuit, compiled_circuit, atol=1e-08
     )
-    assert out.jaqal_program == jaqal_program
+    assert isinstance(out.jaqal_program, str)
+    assert "measure_all" in out.jaqal_program
 
     cx_circuit = cirq.Circuit(cirq.H(q0), cirq.CX(q0, q1), cirq.measure(q0, q1))
     out = service.qscout_compile([cx_circuit])
@@ -134,7 +124,8 @@ def test_qscout_compile(service: css.Service) -> None:
 
 
 def test_cq_compile(service: css.Service) -> None:
-    qubits = cirq.LineQubit.range(2)
+    # We use GridQubits cause CQ's qubits are laid in a grid
+    qubits = cirq.GridQubit.rect(2, 2)
     circuit = cirq.Circuit(
         cirq.H(qubits[0]), cirq.CNOT(qubits[0], qubits[1]), cirq.measure(qubits[0])
     )
