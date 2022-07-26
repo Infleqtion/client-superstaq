@@ -226,11 +226,15 @@ def extract_files(
     include: Union[str, Iterable[str]],
     exclude: Union[str, Iterable[str]] = "",
     silent: bool = False,
+    search_if_empty: bool = True,
 ) -> List[str]:
     files = parsed_args.files if "files" in parsed_args else []
     if "revisions" in parsed_args:
         files += get_changed_files(include, exclude, parsed_args.revisions, silent=silent)
-    return files if files else get_tracked_files(include, exclude)
+    if not files and search_if_empty:
+        return get_tracked_files(include, exclude)
+    else:
+        return files
 
 
 def enable_exit_on_failure(func_with_returncode: Callable[..., int]) -> Callable[..., int]:

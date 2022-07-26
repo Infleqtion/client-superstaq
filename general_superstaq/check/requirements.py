@@ -214,7 +214,7 @@ def _cleanup(
                 with open(os.path.join(check_utils.root_dir, req_file), "w") as file:
                     file.write("\n".join(requirements) + "\n")
             if not silent:
-                print("Requirements files fixed.")
+                print(check_utils.success("Requirements files fixed."))
 
         elif not silent:
             print("Run 'check/requirements.py --apply' to fix requirements files.")

@@ -27,10 +27,13 @@ def run(
     parser.add_argument("-a", "--all", action="store_true", help="Run pylint on the entire repo.")
 
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
-    files = check_utils.extract_files(parsed_args, include, exclude, silent)
+    files = check_utils.extract_files(parsed_args, include, exclude, silent, search_if_empty=False)
 
     if parsed_args.all:
         files += check_utils.get_tracked_files(include, exclude)
+    elif not files:
+        parsed_args.revisions = []  # perform a default incremental check
+        files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     return subprocess.call(["pylint", *files, *args_to_pass], cwd=check_utils.root_dir)
 
