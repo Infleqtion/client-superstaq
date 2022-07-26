@@ -1,7 +1,7 @@
 import importlib
 from typing import Any, List, Optional, Union
 
-import applications_superstaq
+import general_superstaq as gss
 import qiskit
 
 import qiskit_superstaq as qss
@@ -96,14 +96,14 @@ def read_json_aqt(json_dict: dict, circuits_is_list: bool) -> CompilerOutput:
         "qtrl"
     ):  # pragma: no cover, b/c qtrl is not open source so it is not in qiskit-superstaq reqs
         state_str = json_dict["state_jp"]
-        state = applications_superstaq.converters.deserialize(state_str)
+        state = gss.converters.deserialize(state_str)
 
         seq = qtrl.sequencer.Sequence(n_elements=1)
         seq.__setstate__(state)
         seq.compile()
 
         pulse_lists_str = json_dict["pulse_lists_jp"]
-        pulse_lists = applications_superstaq.converters.deserialize(pulse_lists_str)
+        pulse_lists = gss.converters.deserialize(pulse_lists_str)
 
     compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
     if circuits_is_list:

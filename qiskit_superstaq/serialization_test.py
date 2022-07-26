@@ -2,7 +2,7 @@ import io
 import warnings
 from unittest import mock
 
-import applications_superstaq
+import general_superstaq as gss
 import pytest
 import qiskit
 
@@ -103,7 +103,7 @@ def test_warning_suppression() -> None:
 
     # Check that a warning would normally be thrown
     with pytest.warns(UserWarning):
-        buf = io.BytesIO(applications_superstaq.converters._str_to_bytes(serialized_circuit))
+        buf = io.BytesIO(gss.converters._str_to_bytes(serialized_circuit))
         _ = qiskit.qpy.load(buf)
 
     # Check that it is suppressed by deserialize_circuits

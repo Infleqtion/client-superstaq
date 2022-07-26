@@ -3,10 +3,10 @@ import textwrap
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
-import applications_superstaq
+import general_superstaq as gss
 import pytest
 import qiskit
-from applications_superstaq import ResourceEstimate
+from general_superstaq import ResourceEstimate
 
 import qiskit_superstaq as qss
 
@@ -91,8 +91,8 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
-        "state_jp": applications_superstaq.converters.serialize({}),
-        "pulse_lists_jp": applications_superstaq.converters.serialize([[[]]]),
+        "state_jp": gss.converters.serialize({}),
+        "pulse_lists_jp": gss.converters.serialize([[[]]]),
     }
     out = provider.aqt_compile(qc)
     assert out.circuit == qc
@@ -104,8 +104,8 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
-        "state_jp": applications_superstaq.converters.serialize({}),
-        "pulse_lists_jp": applications_superstaq.converters.serialize([[[]], [[]]]),
+        "state_jp": gss.converters.serialize({}),
+        "pulse_lists_jp": gss.converters.serialize([[[]], [[]]]),
     }
     out = provider.aqt_compile([qc, qc])
     assert out.circuits == [qc, qc]
@@ -121,8 +121,8 @@ def test_service_aqt_compile_eca(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
-        "state_jp": applications_superstaq.converters.serialize({}),
-        "pulse_lists_jp": applications_superstaq.converters.serialize([[[]]]),
+        "state_jp": gss.converters.serialize({}),
+        "pulse_lists_jp": gss.converters.serialize([[[]]]),
     }
 
     out = provider.aqt_compile_eca(qc, num_equivalent_circuits=1, random_seed=1234)
@@ -131,7 +131,7 @@ def test_service_aqt_compile_eca(mock_post: MagicMock) -> None:
 
 
 @patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.ibmq_compile",
+    "general_superstaq.superstaq_client._SuperstaQClient.ibmq_compile",
 )
 def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
@@ -139,7 +139,7 @@ def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
     qc.cz(4, 5)
     mock_ibmq_compile.return_value = {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
-        "pulses": applications_superstaq.converters.serialize([mock.DEFAULT]),
+        "pulses": gss.converters.serialize([mock.DEFAULT]),
     }
 
     assert provider.ibmq_compile(qiskit.QuantumCircuit()) == qss.compiler_output.CompilerOutput(
@@ -151,7 +151,7 @@ def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
 
 
 @patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.resource_estimate",
+    "general_superstaq.superstaq_client._SuperstaQClient.resource_estimate",
 )
 def test_service_resource_estimate(mock_resource_estimate: MagicMock) -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
@@ -168,7 +168,7 @@ def test_service_resource_estimate(mock_resource_estimate: MagicMock) -> None:
 
 
 @patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.resource_estimate",
+    "general_superstaq.superstaq_client._SuperstaQClient.resource_estimate",
 )
 def test_service_resource_estimate_list(mock_resource_estimate: MagicMock) -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
@@ -248,8 +248,8 @@ def test_cq_compile(mock_post: MagicMock) -> None:
 
 
 @patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.neutral_atom_compile",
-    return_value={"pulses": applications_superstaq.converters.serialize([mock.DEFAULT])},
+    "general_superstaq.superstaq_client._SuperstaQClient.neutral_atom_compile",
+    return_value={"pulses": gss.converters.serialize([mock.DEFAULT])},
 )
 def test_neutral_atom_compile(mock_ibmq_compile: MagicMock) -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
@@ -257,7 +257,7 @@ def test_neutral_atom_compile(mock_ibmq_compile: MagicMock) -> None:
     assert provider.neutral_atom_compile([qiskit.QuantumCircuit()]) == [mock.DEFAULT]
 
     with mock.patch.dict("sys.modules", {"unittest": None}), pytest.raises(
-        applications_superstaq.SuperstaQModuleNotFoundException,
+        gss.SuperstaQModuleNotFoundException,
         match="'neutral_atom_compile' requires module 'unittest'",
     ):
         _ = provider.neutral_atom_compile(qiskit.QuantumCircuit())

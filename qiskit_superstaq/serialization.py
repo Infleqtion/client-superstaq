@@ -2,7 +2,7 @@ import io
 import warnings
 from typing import Dict, List, Set, Tuple, Union
 
-import applications_superstaq
+import general_superstaq as gss
 import qiskit
 import qiskit.qpy
 from qiskit.converters.ast_to_dag import AstInterpreter
@@ -75,7 +75,7 @@ def serialize_circuits(circuits: Union[qiskit.QuantumCircuit, List[qiskit.Quantu
 
     buf = io.BytesIO()
     qiskit.qpy.dump(circuits, buf)
-    return applications_superstaq.converters._bytes_to_str(buf.getvalue())
+    return gss.converters._bytes_to_str(buf.getvalue())
 
 
 def deserialize_circuits(serialized_circuits: str) -> List[qiskit.QuantumCircuit]:
@@ -87,7 +87,7 @@ def deserialize_circuits(serialized_circuits: str) -> List[qiskit.QuantumCircuit
     Returns:
         a list of QuantumCircuits
     """
-    buf = io.BytesIO(applications_superstaq.converters._str_to_bytes(serialized_circuits))
+    buf = io.BytesIO(gss.converters._str_to_bytes(serialized_circuits))
 
     with warnings.catch_warnings(record=False):
         warnings.filterwarnings("ignore", "The qiskit version", UserWarning, "qiskit")

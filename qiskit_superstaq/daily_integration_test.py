@@ -4,7 +4,7 @@ import os
 import numpy as np
 import pytest
 import qiskit
-from applications_superstaq import ResourceEstimate, SuperstaQException
+from general_superstaq import ResourceEstimate, SuperstaQException
 
 import qiskit_superstaq as qss
 

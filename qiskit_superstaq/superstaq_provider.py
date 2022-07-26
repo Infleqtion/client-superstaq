@@ -15,13 +15,13 @@
 import os
 from typing import List, Optional, Union
 
-import applications_superstaq
+import general_superstaq as gss
 import qiskit
-from applications_superstaq import finance
-from applications_superstaq import logistics
-from applications_superstaq import ResourceEstimate
-from applications_superstaq import superstaq_client
-from applications_superstaq import user_config
+from general_superstaq import finance
+from general_superstaq import logistics
+from general_superstaq import ResourceEstimate
+from general_superstaq import superstaq_client
+from general_superstaq import user_config
 
 import qiskit_superstaq as qss
 
@@ -71,14 +71,12 @@ class SuperstaQProvider(
         api_key: Optional[str] = None,
         remote_host: Optional[str] = None,
         default_target: Optional[str] = None,
-        api_version: str = applications_superstaq.API_VERSION,
+        api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
     ) -> None:
         self._name = "superstaq_provider"
-        self.remote_host = (
-            remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or applications_superstaq.API_URL
-        )
+        self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
         self.api_key = api_key or os.getenv("SUPERSTAQ_API_KEY")
         if not self.api_key:
             raise EnvironmentError(
@@ -226,7 +224,7 @@ class SuperstaQProvider(
             {"qiskit_circuits": serialized_circuits, "backend": target}
         )
         compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
-        pulses = applications_superstaq.converters.deserialize(json_dict["pulses"])
+        pulses = gss.converters.deserialize(json_dict["pulses"])
 
         if isinstance(circuits, qiskit.QuantumCircuit):
             return qss.compiler_output.CompilerOutput(
@@ -294,9 +292,9 @@ class SuperstaQProvider(
             {"qiskit_circuits": serialized_circuits, "backend": target}
         )
         try:
-            pulses = applications_superstaq.converters.deserialize(json_dict["pulses"])
+            pulses = gss.converters.deserialize(json_dict["pulses"])
         except ModuleNotFoundError as e:
-            raise applications_superstaq.SuperstaQModuleNotFoundException(
+            raise gss.SuperstaQModuleNotFoundException(
                 name=str(e.name), context="neutral_atom_compile"
             )
 

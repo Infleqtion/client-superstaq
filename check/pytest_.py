@@ -2,7 +2,7 @@
 
 import sys
 
-import applications_superstaq.check
+import general_superstaq.check
 
 if __name__ == "__main__":
-    exit(applications_superstaq.check.pytest_.run(*sys.argv[1:]))
+    exit(general_superstaq.check.pytest_.run(*sys.argv[1:]))
