@@ -3,7 +3,7 @@
 import sys
 import textwrap
 
-from applications_superstaq.check import (
+from general_superstaq.check import (
     build_docs,
     check_utils,
     coverage_,

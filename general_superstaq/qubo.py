@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 import numpy as np
 import qubovert as qv
 
-import applications_superstaq
+import general_superstaq as gss
 
 
 def read_json_qubo_result(json_dict: dict) -> np.recarray:
@@ -13,7 +13,7 @@ def read_json_qubo_result(json_dict: dict) -> np.recarray:
     Returns:
         a numpy.recarray containing the results of the optimization.
     """
-    return applications_superstaq.converters.deserialize(json_dict["solution"])
+    return gss.converters.deserialize(json_dict["solution"])
 
 
 def convert_qubo_to_model(qubo: qv.QUBO) -> List[Dict[str, Any]]:

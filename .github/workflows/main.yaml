@@ -1,5 +1,5 @@
 # This publishes to PyPI.
-name: Publish applications-superstaq to PyPI
+name: Publish general-superstaq to PyPI
 on:
   workflow_dispatch: null
 jobs:

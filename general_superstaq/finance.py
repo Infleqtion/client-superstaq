@@ -4,8 +4,8 @@ from typing import List, Optional
 import numpy as np
 import qubovert as qv
 
-import applications_superstaq
-from applications_superstaq import superstaq_client
+import general_superstaq as gss
+from general_superstaq import superstaq_client
 
 
 @dataclass
@@ -27,7 +27,7 @@ def read_json_minvol(json_dict: dict) -> MinVolOutput:
     best_portfolio = json_dict["best_portfolio"]
     best_ret = json_dict["best_ret"]
     best_std_dev = json_dict["best_std_dev"]
-    qubo = applications_superstaq.qubo.convert_model_to_qubo(json_dict["qubo"])
+    qubo = gss.qubo.convert_model_to_qubo(json_dict["qubo"])
     return MinVolOutput(best_portfolio, best_ret, best_std_dev, qubo)
 
 
@@ -52,7 +52,7 @@ def read_json_maxsharpe(json_dict: dict) -> MaxSharpeOutput:
     best_ret = json_dict["best_ret"]
     best_std_dev = json_dict["best_std_dev"]
     best_sharpe_ratio = json_dict["best_sharpe_ratio"]
-    qubo = applications_superstaq.qubo.convert_model_to_qubo(json_dict["qubo"])
+    qubo = gss.qubo.convert_model_to_qubo(json_dict["qubo"])
     return MaxSharpeOutput(best_portfolio, best_ret, best_std_dev, best_sharpe_ratio, qubo)
 
 
@@ -72,7 +72,7 @@ class Finance:
             different solutions, and the number of times each solution was found.
         """
         json_dict = self._client.submit_qubo(qubo, target, repetitions=repetitions)
-        return applications_superstaq.qubo.read_json_qubo_result(json_dict)
+        return gss.qubo.read_json_qubo_result(json_dict)
 
     def find_min_vol_portfolio(
         self,

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This publishes applications-superstaq to PyPI.
+# This publishes general-superstaq to PyPI.
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$(git rev-parse --show-toplevel)"
 python setup.py bdist_wheel

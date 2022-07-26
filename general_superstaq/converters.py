@@ -28,7 +28,7 @@ def deserialize(serialized_obj: str) -> Any:
     """Deserialize serialized objects
 
     Args:
-        serialized_obj: a str generated via applications_superstaq.converters.serialize()
+        serialized_obj: a str generated via general_superstaq.converters.serialize()
 
     Returns:
         the serialized object

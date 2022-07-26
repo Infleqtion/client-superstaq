@@ -21,7 +21,7 @@ from typing import Any, Callable, cast, Dict, List, Optional, Union
 import qubovert as qv
 import requests
 
-import applications_superstaq
+import general_superstaq as gss
 
 
 class _SuperstaQClient:
@@ -36,7 +36,7 @@ class _SuperstaQClient:
     }
     SUPPORTED_TARGETS = {"qpu", "simulator"}
     SUPPORTED_VERSIONS = {
-        applications_superstaq.API_VERSION,
+        gss.API_VERSION,
     }
 
     def __init__(
@@ -45,7 +45,7 @@ class _SuperstaQClient:
         api_key: str,
         client_name: str,
         default_target: Optional[str] = None,
-        api_version: str = applications_superstaq.API_VERSION,
+        api_version: str = gss.API_VERSION,
         max_retry_seconds: float = 60,  # 1 minute
         verbose: bool = False,
     ):
@@ -90,7 +90,7 @@ class _SuperstaQClient:
         assert max_retry_seconds >= 0, "Negative retry not possible without time machine."
 
         self.url = f"{url.scheme}://{url.netloc}/{api_version}"
-        self.verify_https: bool = f"{applications_superstaq.API_URL}/{self.api_version}" == self.url
+        self.verify_https: bool = f"{gss.API_URL}/{self.api_version}" == self.url
         self.headers = {
             "Authorization": self.api_key,
             "Content-Type": "application/json",
@@ -229,7 +229,7 @@ class _SuperstaQClient:
     def submit_qubo(self, qubo: qv.QUBO, target: str, repetitions: int = 1000) -> dict:
         """Makes a POST request to SuperstaQ API to submit a QUBO problem to the given target."""
         json_dict = {
-            "qubo": applications_superstaq.qubo.convert_qubo_to_model(qubo),
+            "qubo": gss.qubo.convert_qubo_to_model(qubo),
             "backend": target,
             "shots": repetitions,
         }
@@ -274,22 +274,20 @@ class _SuperstaQClient:
 
     def _handle_status_codes(self, response: requests.Response) -> None:
         if response.status_code == requests.codes.unauthorized:
-            raise applications_superstaq.SuperstaQException(
+            raise gss.SuperstaQException(
                 '"Not authorized" returned by SuperstaQ API.  '
                 "Check to ensure you have supplied the correct API key.",
                 response.status_code,
             )
         if response.status_code == requests.codes.not_found:
-            raise applications_superstaq.SuperstaQNotFoundException(
-                "SuperstaQ could not find requested resource."
-            )
+            raise gss.SuperstaQNotFoundException("SuperstaQ could not find requested resource.")
 
         if response.status_code not in self.RETRIABLE_STATUS_CODES:
             if "message" in response.json():
                 message = response.json()["message"]
             else:
                 message = str(response.text)
-            raise applications_superstaq.SuperstaQException(
+            raise gss.SuperstaQException(
                 f"Non-retriable error making request to SuperstaQ API, {message}",
                 response.status_code,
             )
@@ -337,7 +335,7 @@ class _SuperstaQClient:
     def __repr__(self) -> str:
         return textwrap.dedent(
             f"""\
-            applications_superstaq.superstaq_client._SuperstaQClient(
+            gss.superstaq_client._SuperstaQClient(
                 remote_host={self.url!r},
                 api_key={self.api_key!r},
                 client_name={self.client_name!r},

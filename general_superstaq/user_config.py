@@ -2,7 +2,7 @@ import os
 from typing import Dict, Union
 
 
-from applications_superstaq import superstaq_client
+from general_superstaq import superstaq_client
 
 
 class UserConfig:

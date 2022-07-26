@@ -13,7 +13,7 @@ from typing import Dict, Iterable, List, Tuple, Union
 
 import pkg_resources
 
-from applications_superstaq.check import check_utils
+from general_superstaq.check import check_utils
 
 
 @check_utils.enable_exit_on_failure

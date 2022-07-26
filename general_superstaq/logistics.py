@@ -3,7 +3,7 @@ from typing import List
 
 import qubovert as qv
 
-import applications_superstaq
+import general_superstaq as gss
 
 
 @dataclass
@@ -27,7 +27,7 @@ def read_json_tsp(json_dict: dict) -> TSPOutput:
     route_list_numbers = json_dict["route_list_numbers"]
     total_distance = json_dict["total_distance"]
     map_links = json_dict["map_link"]
-    qubo = applications_superstaq.qubo.convert_model_to_qubo(json_dict["qubo"])
+    qubo = gss.qubo.convert_model_to_qubo(json_dict["qubo"])
     return TSPOutput(route, route_list_numbers, total_distance, map_links, qubo)
 
 
@@ -53,14 +53,14 @@ def read_json_warehouse(json_dict: dict) -> WarehouseOutput:
     total_distance = json_dict["total_distance"]
     map_link = json_dict["map_link"]
     open_warehouses = json_dict["open_warehouses"]
-    qubo = applications_superstaq.qubo.convert_model_to_qubo(json_dict["qubo"])
+    qubo = gss.qubo.convert_model_to_qubo(json_dict["qubo"])
     return WarehouseOutput(
         warehouse_to_destination, total_distance, map_link, open_warehouses, qubo
     )
 
 
 class Logistics:
-    def __init__(self, client: applications_superstaq.superstaq_client._SuperstaQClient):
+    def __init__(self, client: gss.superstaq_client._SuperstaQClient):
         self._client = client
 
     def tsp(self, locs: List[str], solver: str = "anneal") -> TSPOutput:

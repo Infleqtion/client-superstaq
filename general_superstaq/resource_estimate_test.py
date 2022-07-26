@@ -1,4 +1,4 @@
-from applications_superstaq import ResourceEstimate
+from general_superstaq import ResourceEstimate
 
 
 def test_resource_estimate() -> None:

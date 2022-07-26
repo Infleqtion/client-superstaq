@@ -5,7 +5,7 @@ import sys
 import textwrap
 from typing import Callable, Iterable, Optional, Tuple, Union
 
-from applications_superstaq.check import check_utils
+from general_superstaq.check import check_utils
 
 
 @check_utils.enable_exit_on_failure

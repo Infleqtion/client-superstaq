@@ -2,13 +2,13 @@ import io
 
 from setuptools import find_packages, setup
 
-# This reads the __version__ variable from applications/_version.py
+# This reads the __version__ variable from general/_version.py
 __version__ = ""
-exec(open("applications_superstaq/_version.py").read())
+exec(open("general_superstaq/_version.py").read())
 
-name = "applications-superstaq"
+name = "general-superstaq"
 
-description = "The applications module that provides tools and access to SuperstaQ"
+description = "The general module that provides tools and access to SuperstaQ"
 
 # README file as long_description.
 long_description = io.open("README.md", encoding="utf-8").read()
@@ -17,7 +17,7 @@ long_description = io.open("README.md", encoding="utf-8").read()
 requirements = open("requirements.txt").readlines()
 requirements = [r.strip() for r in requirements]
 
-# Read in dev requirements, installed with 'pip install applications-superstaq[dev]'
+# Read in dev requirements, installed with 'pip install general-superstaq[dev]'
 dev_requirements = open("dev-requirements.txt").readlines()
 dev_requirements = [r.strip() for r in dev_requirements]
 
@@ -25,14 +25,14 @@ dev_requirements = [r.strip() for r in dev_requirements]
 assert __version__, "Version string cannot be empty"
 
 
-applications_superstaq_packages = ["applications_superstaq"] + [
-    "applications_superstaq." + package for package in find_packages(where="applications_superstaq")
+general_superstaq_packages = ["general_superstaq"] + [
+    "general_superstaq." + package for package in find_packages(where="general_superstaq")
 ]
 
 setup(
     name=name,
     version=__version__,
-    url="https://github.com/SupertechLabs/applications-superstaq",
+    url="https://github.com/SupertechLabs/general-superstaq",
     author="Super.tech",
     author_email="pranav@super.tech",
     python_requires=(">=3.6.0"),
@@ -42,6 +42,6 @@ setup(
     description=description,
     long_description=long_description,
     long_description_content_type="text/markdown",
-    packages=applications_superstaq_packages,
-    package_data={"applications_superstaq": ["py.typed"]},
+    packages=general_superstaq_packages,
+    package_data={"general_superstaq": ["py.typed"]},
 )

@@ -5,14 +5,14 @@ from unittest import mock
 
 import pytest
 
-import applications_superstaq
+import general_superstaq as gss
 
 
 def test_service_get_balance() -> None:
-    client = applications_superstaq.superstaq_client._SuperstaQClient(
-        remote_host="http://example.com", api_key="key", client_name="applications_superstaq"
+    client = gss.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
-    service = applications_superstaq.user_config.UserConfig(client)
+    service = gss.user_config.UserConfig(client)
     mock_client = mock.MagicMock()
     mock_client.get_balance.return_value = {"balance": 12345.6789}
     service._client = mock_client
@@ -22,28 +22,28 @@ def test_service_get_balance() -> None:
 
 
 @mock.patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.ibmq_set_token",
+    "general_superstaq.superstaq_client._SuperstaQClient.ibmq_set_token",
     return_value={"status": "Your IBMQ account token has been updated"},
 )
 def test_ibmq_set_token(mock_ibmq: mock.MagicMock) -> None:
-    client = applications_superstaq.superstaq_client._SuperstaQClient(
-        remote_host="http://example.com", api_key="key", client_name="applications_superstaq"
+    client = gss.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
-    service = applications_superstaq.user_config.UserConfig(client)
+    service = gss.user_config.UserConfig(client)
     assert service.ibmq_set_token("valid token") == {
         "status": "Your IBMQ account token has been updated"
     }
 
 
 @mock.patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.aqt_upload_configs",
+    "general_superstaq.superstaq_client._SuperstaQClient.aqt_upload_configs",
     return_value={"status": "Your AQT configuration has been updated"},
 )
 def test_service_aqt_upload_configs(mock_aqt_compile: mock.MagicMock) -> None:
-    client = applications_superstaq.superstaq_client._SuperstaQClient(
-        remote_host="http://example.com", api_key="key", client_name="applications_superstaq"
+    client = gss.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
-    service = applications_superstaq.user_config.UserConfig(client)
+    service = gss.user_config.UserConfig(client)
     tempdir = tempfile.gettempdir()
     pulse = secrets.token_hex(nbytes=16)
     variable = secrets.token_hex(nbytes=16)
@@ -60,14 +60,14 @@ def test_service_aqt_upload_configs(mock_aqt_compile: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.aqt_get_configs",
+    "general_superstaq.superstaq_client._SuperstaQClient.aqt_get_configs",
     return_value={"pulses": "Hello", "variables": "World"},
 )
 def test_service_aqt_get_configs(mock_aqt_compile: mock.MagicMock) -> None:
-    client = applications_superstaq.superstaq_client._SuperstaQClient(
-        remote_host="http://example.com", api_key="key", client_name="applications_superstaq"
+    client = gss.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
-    service = applications_superstaq.user_config.UserConfig(client)
+    service = gss.user_config.UserConfig(client)
     tempdir = tempfile.gettempdir()
     pulses_file = secrets.token_hex(nbytes=16)
     variables_file = secrets.token_hex(nbytes=16)
