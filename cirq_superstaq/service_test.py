@@ -16,12 +16,13 @@ import os
 import textwrap
 from unittest import mock
 
-import applications_superstaq
+
 import cirq
+import general_superstaq as gss
 import pandas as pd
 import pytest
 import sympy
-from applications_superstaq import ResourceEstimate
+from general_superstaq import ResourceEstimate
 
 import cirq_superstaq as css
 
@@ -213,11 +214,11 @@ def test_service_get_backends() -> None:
 
 
 @mock.patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
+    "general_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits(cirq.Circuit()),
-        "state_jp": applications_superstaq.converters.serialize({}),
-        "pulse_lists_jp": applications_superstaq.converters.serialize([[[]]]),
+        "state_jp": gss.converters.serialize({}),
+        "pulse_lists_jp": gss.converters.serialize([[[]]]),
     },
 )
 def test_service_aqt_compile_single(mock_aqt_compile: mock.MagicMock) -> None:
@@ -228,11 +229,11 @@ def test_service_aqt_compile_single(mock_aqt_compile: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
+    "general_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit(), cirq.Circuit()]),
-        "state_jp": applications_superstaq.converters.serialize({}),
-        "pulse_lists_jp": applications_superstaq.converters.serialize([[[]], [[]]]),
+        "state_jp": gss.converters.serialize({}),
+        "pulse_lists_jp": gss.converters.serialize([[[]], [[]]]),
     },
 )
 def test_service_aqt_compile_multiple(mock_aqt_compile: mock.MagicMock) -> None:
@@ -243,11 +244,11 @@ def test_service_aqt_compile_multiple(mock_aqt_compile: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.post_request",
+    "general_superstaq.superstaq_client._SuperstaQClient.post_request",
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit()]),
-        "state_jp": applications_superstaq.converters.serialize({}),
-        "pulse_lists_jp": applications_superstaq.converters.serialize([[[]]]),
+        "state_jp": gss.converters.serialize({}),
+        "pulse_lists_jp": gss.converters.serialize([[[]]]),
     },
 )
 def test_service_aqt_compile_eca(mock_aqt_compile: mock.MagicMock) -> None:
@@ -258,7 +259,7 @@ def test_service_aqt_compile_eca(mock_aqt_compile: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.resource_estimate",
+    "general_superstaq.superstaq_client._SuperstaQClient.resource_estimate",
 )
 def test_service_resource_estimate(mock_resource_estimate: mock.MagicMock) -> None:
     service = css.Service(remote_host="http://example.com", api_key="key")
@@ -273,7 +274,7 @@ def test_service_resource_estimate(mock_resource_estimate: mock.MagicMock) -> No
 
 
 @mock.patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.resource_estimate",
+    "general_superstaq.superstaq_client._SuperstaQClient.resource_estimate",
 )
 def test_service_resource_estimate_list(mock_resource_estimate: mock.MagicMock) -> None:
     service = css.Service(remote_host="http://example.com", api_key="key")
@@ -290,7 +291,7 @@ def test_service_resource_estimate_list(mock_resource_estimate: mock.MagicMock) 
     assert service.resource_estimate([cirq.Circuit()], "qasm_simulator") == resource_estimates
 
 
-@mock.patch("applications_superstaq.superstaq_client._SuperstaQClient.qscout_compile")
+@mock.patch("general_superstaq.superstaq_client._SuperstaQClient.qscout_compile")
 def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> None:
 
     q0 = cirq.LineQubit(0)
@@ -317,7 +318,7 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
     assert out.jaqal_program == jaqal_program
 
 
-@mock.patch("applications_superstaq.superstaq_client._SuperstaQClient.cq_compile")
+@mock.patch("general_superstaq.superstaq_client._SuperstaQClient.cq_compile")
 def test_service_cq_compile_single(mock_cq_compile: mock.MagicMock) -> None:
 
     q0 = cirq.LineQubit(0)
@@ -333,7 +334,7 @@ def test_service_cq_compile_single(mock_cq_compile: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.ibmq_compile",
+    "general_superstaq.superstaq_client._SuperstaQClient.ibmq_compile",
 )
 def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
@@ -343,7 +344,7 @@ def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
 
     mock_ibmq_compile.return_value = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
-        "pulses": applications_superstaq.converters.serialize([mock.DEFAULT]),
+        "pulses": gss.converters.serialize([mock.DEFAULT]),
     }
 
     assert service.ibmq_compile(circuit).circuit == circuit
@@ -358,8 +359,8 @@ def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "applications_superstaq.superstaq_client._SuperstaQClient.neutral_atom_compile",
-    return_value={"pulses": applications_superstaq.converters.serialize([mock.DEFAULT])},
+    "general_superstaq.superstaq_client._SuperstaQClient.neutral_atom_compile",
+    return_value={"pulses": gss.converters.serialize([mock.DEFAULT])},
 )
 def test_service_neutral_atom_compile(mock_neutral_atom_compile: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
@@ -367,7 +368,7 @@ def test_service_neutral_atom_compile(mock_neutral_atom_compile: mock.MagicMock)
     assert service.neutral_atom_compile([cirq.Circuit()]) == [mock.DEFAULT]
 
     with mock.patch.dict("sys.modules", {"unittest": None}), pytest.raises(
-        applications_superstaq.SuperstaQModuleNotFoundException,
+        gss.SuperstaQModuleNotFoundException,
         match="'neutral_atom_compile' requires module 'unittest'",
     ):
         _ = service.neutral_atom_compile(cirq.Circuit())

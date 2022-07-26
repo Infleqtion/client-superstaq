@@ -4,7 +4,7 @@ import os
 
 import cirq
 import pytest
-from applications_superstaq import SuperstaQException
+from general_superstaq import SuperstaQException
 
 import cirq_superstaq as css
 

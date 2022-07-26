@@ -16,14 +16,15 @@ import collections
 import os
 from typing import Any, List, Optional, Union
 
-import applications_superstaq
+
 import cirq
+import general_superstaq as gss
 import numpy as np
-from applications_superstaq import finance
-from applications_superstaq import logistics
-from applications_superstaq import ResourceEstimate
-from applications_superstaq import superstaq_client
-from applications_superstaq import user_config
+from general_superstaq import finance
+from general_superstaq import logistics
+from general_superstaq import ResourceEstimate
+from general_superstaq import superstaq_client
+from general_superstaq import user_config
 
 import cirq_superstaq as css
 
@@ -421,9 +422,9 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             {"cirq_circuits": serialized_circuits, "backend": target}
         )
         try:
-            pulses = applications_superstaq.converters.deserialize(json_dict["pulses"])
+            pulses = gss.converters.deserialize(json_dict["pulses"])
         except ModuleNotFoundError as e:
-            raise applications_superstaq.SuperstaQModuleNotFoundException(
+            raise gss.SuperstaQModuleNotFoundException(
                 name=str(e.name), context="neutral_atom_compile"
             )
 

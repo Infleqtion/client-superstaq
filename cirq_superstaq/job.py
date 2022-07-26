@@ -16,9 +16,9 @@ import collections
 import time
 from typing import Any, Dict
 
-import applications_superstaq
-from applications_superstaq import superstaq_client
+import general_superstaq as gss
 from cirq._doc import document
+from general_superstaq import superstaq_client
 
 
 class Job:
@@ -74,7 +74,7 @@ class Job:
 
     def _check_if_unsuccessful(self) -> None:
         if self.status() in self.UNSUCCESSFUL_STATES:
-            raise applications_superstaq.superstaq_exceptions.SuperstaQUnsuccessfulJobException(
+            raise gss.superstaq_exceptions.SuperstaQUnsuccessfulJobException(
                 self.job_id(), self.status()
             )
 

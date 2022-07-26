@@ -15,15 +15,15 @@
 from typing import Any, Dict
 from unittest import mock
 
-import applications_superstaq
 import cirq
+import general_superstaq as gss
 import pytest
 
 import cirq_superstaq as css
 
 
 def new_job() -> css.Job:
-    client = applications_superstaq.superstaq_client._SuperstaQClient(
+    client = gss.superstaq_client._SuperstaQClient(
         client_name="cirq-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -34,7 +34,7 @@ def new_job() -> css.Job:
 def mocked_get_job_requests(*job_dicts: Dict[str, Any]) -> mock._patch:
     """Mocks the server's response to `get_job` requests using the given sequence of job_dicts."""
     return mock.patch(
-        "applications_superstaq.superstaq_client._SuperstaQClient.get_job", side_effect=job_dicts
+        "general_superstaq.superstaq_client._SuperstaQClient.get_job", side_effect=job_dicts
     )
 
 
@@ -84,7 +84,7 @@ def test_job_str_repr_eq() -> None:
     job = new_job()
     assert str(job) == "Job with job_id=my_id"
     cirq.testing.assert_equivalent_repr(
-        job, setup_code="import cirq_superstaq as css\nimport applications_superstaq"
+        job, setup_code="import cirq_superstaq as css\nimport general_superstaq as gss"
     )
 
     assert not job == 1
@@ -183,15 +183,9 @@ def test_job_fields_unsuccessful() -> None:
     with mocked_get_job_requests(job_dict):
         job = new_job()
 
-        with pytest.raises(
-            applications_superstaq.SuperstaQUnsuccessfulJobException, match="Deleted"
-        ):
+        with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match="Deleted"):
             _ = job.target()
-        with pytest.raises(
-            applications_superstaq.SuperstaQUnsuccessfulJobException, match="Deleted"
-        ):
+        with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match="Deleted"):
             _ = job.num_qubits()
-        with pytest.raises(
-            applications_superstaq.SuperstaQUnsuccessfulJobException, match="Deleted"
-        ):
+        with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match="Deleted"):
             _ = job.repetitions()
