@@ -98,8 +98,9 @@ def _inspect_req_file(
     if needs_cleanup and not silent:
         print(check_utils.failure(f"{req_file} is not sorted."))
 
-    if not only_sort and can_connect_to_pypi:
-        needs_cleanup |= _pin_upstream_packages(requirements, upstream_match, silent)
+    is_repo_req = not os.path.dirname(req_file)  # repo requirements are in the root directory
+    if is_repo_req and not only_sort and can_connect_to_pypi:
+        needs_cleanup |= _pin_upstream_packages(req_file, requirements, upstream_match, silent)
 
     return needs_cleanup, requirements
 
@@ -136,60 +137,67 @@ def _sort_requirements(requirements: List[str]) -> Tuple[bool, List[str]]:
     return needs_cleanup, sorted_requirements
 
 
-def _pin_upstream_packages(requirements: List[str], upstream_match: str, silent: bool) -> bool:
-    # identify upstream package versions
-    upstream_versions = {
-        package: _get_latest_version(package)
-        for requirement in requirements
-        if fnmatch.fnmatch(package := re.split(">|<|~|=", requirement)[0], upstream_match)
-    }
-
-    # pin upstream packages to their latest versions
+def _pin_upstream_packages(
+    req_file: str, requirements: List[str], upstream_match: str, silent: bool
+) -> bool:
+    """
+    Pin upstream packages to their latest versions (modifying 'requirements' in-place).
+    Return 'True' iff upsteam package requirements are up to date with the latest minor versions.
+    """
     up_to_date = True
-    for package, latest_version in upstream_versions.items():
-        requirement = f"{package}=={latest_version}"
-        package_pinned = requirement in requirements
-        up_to_date &= package_pinned
+    for idx, req in enumerate(requirements):
+        package = re.split(">|<|~|=", req)[0]
+        if not fnmatch.fnmatch(package, upstream_match):
+            # this is not an upstream package
+            continue
 
-        if not package_pinned:
+        latest_version = _get_latest_version(package)
+        asserted_req = f"{package}~={latest_version}"
+        latest_version_is_required = asserted_req == req
+        up_to_date &= bool(latest_version_is_required)
+
+        if not latest_version_is_required:
+            # update requirements
+            requirements[idx] = asserted_req
+
             if not silent:
-                print(check_utils.failure(f"{requirement} not pinned in requirements.txt."))
+                should_require = asserted_req.lstrip(package)
+                pin_text = f"{req_file} requires {req}, but should require {should_require}"
+                print(check_utils.failure(pin_text))
 
-            # update requirements file contents
-            for idx, old_req in enumerate(requirements):
-                if package == re.split(">|<|~|=", old_req)[0]:
-                    requirements[idx] = requirement
-                    break
-
-            if not silent:
-                # print warning if the wrong version of an upstream package is installed locally
-                _inspect_local_version(package, latest_version)
+        if not silent:
+            # check that a compatible version of this upstream package is installed locally
+            _inspect_local_version(package, latest_version)
 
     return not up_to_date
 
 
 @functools.lru_cache
 def _get_latest_version(package: str) -> str:
-    # remove options from package string, if present: package_name[options] --> package_name
-    base_package = package.split("[")[0]
+    base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
     pypi_url = f"https://pypi.org/pypi/{base_package}/json"
     return json.loads(urllib.request.urlopen(pypi_url).read().decode())["info"]["version"]
 
 
 def _inspect_local_version(package: str, latest_version: str) -> None:
+    base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
     try:
         installed_info = subprocess.check_output(
-            [sys.executable, "-m", "pip", "show", package],
+            [sys.executable, "-m", "pip", "show", base_package],
             cwd=check_utils.root_dir,
             text=True,
         ).split()
         installed_version = installed_info[installed_info.index("Version:") + 1]
-        assert installed_version == latest_version
-    except (subprocess.CalledProcessError, ValueError, AssertionError):
+        # check that installed_version and latest_version have the same minor version: X.Y.*
+        assert installed_version.split(".")[:2] == latest_version.split(".")[:2]
+    except AssertionError:
         warning = f"WARNING: {package} is not up to date."
         suggestion = f"Try calling 'python -m pip install --upgrade {package}'."
         print(check_utils.warning(warning))
         print(check_utils.warning(suggestion))
+    except subprocess.CalledProcessError:
+        # pip returned a non-zero exit status; let pip print its own error message
+        pass
 
 
 def _check_requirements(requirements: List[str]) -> None:
