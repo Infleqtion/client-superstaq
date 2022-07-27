@@ -1,1 +1,1 @@
-applications-superstaq[dev]==0.1.15
+general-superstaq[dev]==0.2.0
