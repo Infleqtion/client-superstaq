@@ -13,6 +13,7 @@ from . import logistics
 from . import qubo
 from . import superstaq_client
 from . import superstaq_exceptions
+from . import typing
 from . import user_config
 
 __all__ = [
@@ -30,5 +31,6 @@ __all__ = [
     "ResourceEstimate",
     "superstaq_client",
     "superstaq_exceptions",
+    "typing",
     "user_config",
 ]
