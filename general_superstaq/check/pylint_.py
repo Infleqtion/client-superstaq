@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import multiprocessing
 import subprocess
 import sys
 import textwrap
@@ -24,10 +25,21 @@ def run(
         """
     )
 
+    num_cores = max(multiprocessing.cpu_count() // 2, 1)
+
     parser.add_argument("-a", "--all", action="store_true", help="Run pylint on the entire repo.")
+    parser.add_argument(
+        "-j",
+        "--cores",
+        type=int,
+        default=num_cores,
+        help="Number of cores to use for this test.",
+    )
 
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
     files = check_utils.extract_files(parsed_args, include, exclude, silent, search_if_empty=False)
+
+    args_to_pass.append(f"-j{parsed_args.cores}")
 
     if parsed_args.all:
         files += check_utils.get_tracked_files(include, exclude)
