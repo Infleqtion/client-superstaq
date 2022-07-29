@@ -4,6 +4,7 @@ import os
 
 import cirq
 import pytest
+from general_superstaq import ResourceEstimate, SuperstaQException
 from general_superstaq import SuperstaQException
 
 import cirq_superstaq as css
@@ -72,6 +73,25 @@ def test_get_balance(service: css.Service) -> None:
     assert balance_str.startswith("$")
 
     assert isinstance(service.get_balance(pretty_output=False), float)
+
+
+def test_get_resource_estimate(service: css.Service) -> None:
+    q0 = cirq.LineQubit(0)
+    q1 = cirq.LineQubit(1)
+
+    circuit1 = cirq.Circuit(cirq.CNOT(q0, q1), cirq.H(q0), cirq.measure(q0))
+
+    resource_estimate = service.resource_estimate(circuit1, "neutral_atom_qpu")
+
+    assert resource_estimate == ResourceEstimate(2, 1, 3)
+
+    circuit2 = cirq.Circuit(cirq.H(q1), cirq.CNOT(q0, q1), cirq.CZ(q0, q1), cirq.measure(q1))
+
+    circuits = [circuit1, circuit2]
+
+    resource_estimates = service.resource_estimate(circuits, "neutral_atom_qpu")
+
+    assert resource_estimates == [ResourceEstimate(2, 1, 3), ResourceEstimate(2, 2, 4)]
 
 
 def test_ibmq_set_token() -> None:
