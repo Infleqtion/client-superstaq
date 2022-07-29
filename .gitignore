@@ -148,3 +148,6 @@ _site
 .jekyll-cache
 .jekyll-metadata
 vendor
+
+# MacOS
+.DS_Store
