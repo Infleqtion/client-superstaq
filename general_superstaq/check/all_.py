@@ -2,6 +2,7 @@
 
 import sys
 import textwrap
+from typing import List, Optional
 
 from general_superstaq.check import (
     build_docs,
@@ -15,7 +16,7 @@ from general_superstaq.check import (
 )
 
 
-def run(*args: str) -> int:
+def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
 
     parser = check_utils.get_file_parser()
     parser.description = textwrap.dedent(
@@ -68,7 +69,7 @@ def run(*args: str) -> int:
 
     if default_mode:
         # checks that the docs build
-        checks_failed |= build_docs.run(exit_on_failure=exit_on_failure)
+        checks_failed |= build_docs.run(exit_on_failure=exit_on_failure, sphinx_paths=sphinx_paths)
 
     return checks_failed
 
