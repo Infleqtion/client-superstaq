@@ -5,12 +5,13 @@ import os
 import subprocess
 import sys
 import textwrap
+from typing import List, Optional
 
 from general_superstaq.check import check_utils
 
 
 @check_utils.enable_exit_on_failure
-def run(*args: str) -> int:
+def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.description = textwrap.dedent(
@@ -22,6 +23,11 @@ def run(*args: str) -> int:
 
     docs_dir = os.path.join(check_utils.root_dir, "docs")
     if os.path.isdir(docs_dir):
+        if sphinx_paths:
+            for path in sphinx_paths:
+                subprocess.run(
+                    f"sphinx-apidoc -f -o source {path} {path}/*_test.py", shell=True, cwd=docs_dir
+                )
         return subprocess.call(["make", *args, "html"], cwd=docs_dir)
     else:
         print(check_utils.warning("No docs to build."))
