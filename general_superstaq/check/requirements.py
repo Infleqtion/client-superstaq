@@ -100,7 +100,14 @@ def _inspect_req_file(
 
     is_repo_req = not os.path.dirname(req_file)  # repo requirements are in the root directory
     if is_repo_req and not only_sort and can_connect_to_pypi:
-        needs_cleanup |= _pin_upstream_packages(req_file, requirements, upstream_match, silent)
+        needs_cleanup |= _check_package_versions(
+            req_file, requirements, upstream_match, silent, strict=True
+        )
+
+    # check whether cirq and qiskit are up to date
+    if req_file == "requirements.txt":
+        _check_package_versions(req_file, requirements, "cirq", silent, strict=False)
+        _check_package_versions(req_file, requirements, "qiskit", silent, strict=False)
 
     return needs_cleanup, requirements
 
@@ -131,45 +138,51 @@ def _are_pip_requirements(requirements: List[str]) -> bool:
     return all(pip_req_format.match(requirement) for requirement in requirements)
 
 
+def _get_package_name(requirement: str) -> str:
+    return re.split(">|<|~|=", requirement)[0]
+
+
 def _sort_requirements(requirements: List[str]) -> Tuple[bool, List[str]]:
-    sorted_requirements = sorted(requirements, key=str.casefold)
+    sorted_requirements = sorted(requirements, key=lambda req: _get_package_name(req).lower())
     needs_cleanup = requirements != sorted_requirements
     return needs_cleanup, sorted_requirements
 
 
-def _pin_upstream_packages(
-    req_file: str, requirements: List[str], upstream_match: str, silent: bool
+def _check_package_versions(
+    req_file: str, requirements: List[str], match: str, silent: bool, strict: bool
 ) -> bool:
     """
-    Pin upstream packages to their latest versions (modifying 'requirements' in-place).
-    Return 'True' iff upsteam package requirements are up to date with the latest minor versions.
+    Check whether package requirements matching 'match' are up-to-date with their latest versions.
+    Print warnings if matching requirements are out of date.  Return whether the requirements file
+    *must* be updated, i.e., return 'True' iff packages are out of date and 'strict == True'.
     """
+    text_format = check_utils.failure if strict else check_utils.warning
+
     up_to_date = True
     for idx, req in enumerate(requirements):
-        package = re.split(">|<|~|=", req)[0]
-        if not fnmatch.fnmatch(package, upstream_match):
+        package = _get_package_name(req)
+        if not fnmatch.fnmatch(package, match):
             # this is not an upstream package
             continue
 
         latest_version = _get_latest_version(package)
-        asserted_req = f"{package}~={latest_version}"
-        latest_version_is_required = asserted_req == req
+        desired_req = f"{package}~={latest_version}"
+        latest_version_is_required = desired_req == req
         up_to_date &= bool(latest_version_is_required)
 
-        if not latest_version_is_required:
-            # update requirements
-            requirements[idx] = asserted_req
-
-            if not silent:
-                should_require = asserted_req.lstrip(package)
-                pin_text = f"{req_file} requires {req}, but should require {should_require}"
-                print(check_utils.failure(pin_text))
+        if strict and not latest_version_is_required:
+            requirements[idx] = desired_req
 
         if not silent:
+            if not latest_version_is_required:
+                should_require = desired_req.lstrip(package)
+                pin_text = f"{req_file} requires {req}, but should require {should_require}"
+                print(text_format(pin_text))
+
             # check that a compatible version of this upstream package is installed locally
             _inspect_local_version(package, latest_version)
 
-    return not up_to_date
+    return strict and not up_to_date  # True iff we are *requiring* changes to the requirements file
 
 
 @functools.lru_cache
@@ -191,7 +204,7 @@ def _inspect_local_version(package: str, latest_version: str) -> None:
         # check that installed_version and latest_version have the same minor version: X.Y.*
         assert installed_version.split(".")[:2] == latest_version.split(".")[:2]
     except AssertionError:
-        warning = f"WARNING: {package} is not up to date."
+        warning = f"WARNING: locally installed {package} version is not up to date."
         suggestion = f"Try calling 'python -m pip install --upgrade {package}'."
         print(check_utils.warning(warning))
         print(check_utils.warning(suggestion))
