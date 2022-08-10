@@ -74,7 +74,7 @@ def _check_pypy_connection(silent: bool) -> bool:
         return True
     except urllib.error.URLError:
         if not silent:
-            warning = "Cannot connect to PiPI to identify package versions to pin."
+            warning = "Cannot connect to PyPI to identify package versions to pin."
             print(check_utils.warning(warning))
         return False
 
