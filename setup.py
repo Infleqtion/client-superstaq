@@ -34,7 +34,7 @@ setup(
     url="https://github.com/SupertechLabs/SupermarQ",
     author="Super.tech",
     author_email="pranav@super.tech",
-    python_requires=(">=3.8.0"),
+    python_requires=(">=3.7.0"),
     install_requires=requirements,
     extras_require={"dev": dev_requirements},
     license="Apache 2",
