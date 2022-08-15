@@ -73,7 +73,7 @@ def _get_file_search_options(
 
     elif integration_mode:
         default_include = "*_integration_test.py"
-        default_exclude = "dev_tools/*"
+        default_exclude = ""
 
     else:
         default_include = "*_test.py"
