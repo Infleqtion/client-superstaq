@@ -111,17 +111,17 @@ def test_qscout_compile(provider: qss.SuperstaQProvider) -> None:
 
 
 def test_cq_compile(provider: qss.SuperstaQProvider) -> None:
-    from qiskit.circuit.library import GR
-
     circuit = qiskit.QuantumCircuit(1)
     circuit.h(0)
-    expected = qiskit.QuantumCircuit(6)
-    expected.append(GR(1, -0.25 * np.pi, 0.5 * np.pi), [0])
-    expected.rz(np.pi, 0)
-    expected.append(GR(1, 0.25 * np.pi, 0.5 * np.pi), [0])
-    assert provider.cq_compile(circuit).circuit == expected
-    assert provider.cq_compile([circuit]).circuits == [expected]
-    assert provider.cq_compile([circuit, circuit]).circuits == [expected, expected]
+    assert isinstance(provider.cq_compile(circuit).circuit, qiskit.QuantumCircuit)
+    circuits = provider.cq_compile([circuit]).circuits
+    assert len(circuits) == 1 and isinstance(circuits[0], qiskit.QuantumCircuit)
+    circuits = provider.cq_compile([circuit, circuit]).circuits
+    assert (
+        len(circuits) == 2
+        and isinstance(circuits[0], qiskit.QuantumCircuit)
+        and isinstance(circuits[1], qiskit.QuantumCircuit)
+    )
 
 
 def test_get_aqt_configs(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
