@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import collections
+import json
 import os
 import textwrap
 from unittest import mock
@@ -316,6 +317,31 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
     out = service.qscout_compile(circuit)
     assert out.circuit == circuit
     assert out.jaqal_program == jaqal_program
+
+
+@mock.patch("general_superstaq.superstaq_client._SuperstaQClient.qscout_compile")
+@pytest.mark.parametrize("mirror_swaps", (True, False))
+def test_qscout_compile_swap_mirror(
+    mock_qscout_compile: mock.MagicMock, mirror_swaps: bool
+) -> None:
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.measure(q0))
+
+    jaqal_program = ""
+
+    mock_qscout_compile.return_value = {
+        "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "jaqal_programs": [jaqal_program],
+    }
+
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    out = service.qscout_compile(circuit, mirror_swaps=mirror_swaps)
+    assert out.circuit == circuit
+    assert out.jaqal_program == jaqal_program
+    mock_qscout_compile.assert_called_once()
+    assert json.loads(mock_qscout_compile.call_args[0][0]["options"]) == {
+        "mirror_swaps": mirror_swaps
+    }
 
 
 @mock.patch("general_superstaq.superstaq_client._SuperstaQClient.cq_compile")

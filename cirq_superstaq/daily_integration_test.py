@@ -143,6 +143,26 @@ def test_qscout_compile(service: css.Service) -> None:
     assert "MS allqubits[0] allqubits[1]" in out.jaqal_programs[0]
 
 
+def test_qscout_compile_swap_mirror(service: css.Service) -> None:
+    q0, q1 = cirq.LineQubit.range(2)
+    circuit = cirq.Circuit(cirq.SWAP(q0, q1))
+
+    out_qc_swap = cirq.Circuit()
+
+    out = service.qscout_compile(circuit, mirror_swaps=True)
+    assert out.circuit == out_qc_swap
+
+    out = service.qscout_compile(circuit, mirror_swaps=False)
+    assert cirq.allclose_up_to_global_phase(cirq.unitary(out.circuit), cirq.unitary(circuit))
+
+    num_two_qubit_gates = 0
+    for m in out.circuit:
+        for op in m:
+            if len(op.qubits) > 1:
+                num_two_qubit_gates += 1
+    assert num_two_qubit_gates == 3
+
+
 def test_cq_compile(service: css.Service) -> None:
     # We use GridQubits cause CQ's qubits are laid in a grid
     qubits = cirq.GridQubit.rect(2, 2)

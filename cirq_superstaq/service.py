@@ -13,6 +13,7 @@
 """Service to access SuperstaQs API."""
 
 import collections
+import json
 import os
 from typing import Any, List, Optional, Union
 
@@ -353,7 +354,10 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         return css.compiler_output.read_json_aqt(json_dict, True)
 
     def qscout_compile(
-        self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "qscout"
+        self,
+        circuits: Union[cirq.Circuit, List[cirq.Circuit]],
+        mirror_swaps: bool = True,
+        target: str = "qscout",
     ) -> css.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to target QSCOUT device, optimized to its native gate set.
 
@@ -367,9 +371,15 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
+        options_dict = {"mirror_swaps": mirror_swaps}
         json_dict = self._client.qscout_compile(
-            {"cirq_circuits": serialized_circuits, "backend": target}
+            {
+                "cirq_circuits": serialized_circuits,
+                "options": json.dumps(options_dict),
+                "backend": target,
+            }
         )
+
         return css.compiler_output.read_json_qscout(json_dict, circuits_is_list)
 
     def cq_compile(
