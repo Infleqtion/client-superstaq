@@ -110,6 +110,26 @@ def test_qscout_compile(provider: qss.SuperstaQProvider) -> None:
     assert provider.qscout_compile([circuit, circuit]).circuits == [expected, expected]
 
 
+def test_qscout_compile_swap_mirror(provider: qss.SuperstaQProvider) -> None:
+    qc = qiskit.QuantumCircuit(2)
+    qc.swap(0, 1)
+
+    out_qc_swap = qiskit.QuantumCircuit(2)
+
+    out = provider.qscout_compile(qc, mirror_swaps=True)
+    assert out.circuit == out_qc_swap
+
+    op = qiskit.quantum_info.Operator(out.circuit)
+    expected_op = qiskit.quantum_info.Operator(qc)
+    assert op.equiv(expected_op)
+
+    num_two_qubit_gates = 0
+    for op in qc:
+        if len(op.qubits) > 1:
+            num_two_qubit_gates += 1
+    assert num_two_qubit_gates == 3
+
+
 def test_cq_compile(provider: qss.SuperstaQProvider) -> None:
     circuit = qiskit.QuantumCircuit(1)
     circuit.h(0)

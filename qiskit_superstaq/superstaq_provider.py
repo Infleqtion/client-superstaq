@@ -12,6 +12,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import json
 import os
 from typing import List, Optional, Union
 
@@ -237,6 +238,7 @@ class SuperstaQProvider(
     def qscout_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        mirror_swaps: bool = True,
         target: str = "qscout",
     ) -> "qss.compiler_output.CompilerOutput":
         """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
@@ -251,8 +253,13 @@ class SuperstaQProvider(
         """
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
+        options_dict = {"mirror_swaps": mirror_swaps}
         json_dict = self._client.qscout_compile(
-            {"qiskit_circuits": serialized_circuits, "backend": target}
+            {
+                "qiskit_circuits": serialized_circuits,
+                "backend": target,
+                "options": json.dumps(options_dict),
+            }
         )
         return qss.compiler_output.read_json_qscout(json_dict, circuits_is_list)
 

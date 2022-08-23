@@ -1,3 +1,4 @@
+import json
 import os
 import textwrap
 from unittest import mock
@@ -222,6 +223,24 @@ def test_qscout_compile(mock_post: MagicMock) -> None:
     }
     out = provider.qscout_compile([qc, qc])
     assert out.circuits == [qc, qc]
+
+
+@patch("requests.post")
+@pytest.mark.parametrize("mirror_swaps", (True, False))
+def test_qscout_compile_swap_mirror(mock_post: MagicMock, mirror_swaps: bool) -> None:
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+
+    qc = qiskit.QuantumCircuit()
+
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "jaqal_programs": [""],
+    }
+    _ = provider.qscout_compile(qc, mirror_swaps=mirror_swaps)
+    mock_post.assert_called_once()
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "mirror_swaps": mirror_swaps
+    }
 
 
 @patch("requests.post")
