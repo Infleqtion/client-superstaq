@@ -66,6 +66,11 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         if isinstance(circuits, qiskit.QuantumCircuit):
             circuits = [circuits]
 
+        if not all(circuit.count_ops().get("measure") for circuit in circuits):
+            # TODO: only raise if the run method actually requires samples (and not for e.g. a
+            # statevector simulation)
+            raise ValueError("Circuit has no measurements to sample.")
+
         qiskit_circuits = qss.serialization.serialize_circuits(circuits)
 
         result = self._provider._client.create_job(

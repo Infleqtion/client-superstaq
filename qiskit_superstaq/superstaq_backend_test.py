@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock
 
+import pytest
 import qiskit
 
 import qiskit_superstaq as qss
@@ -45,6 +46,10 @@ def test_run() -> None:
     answer = device.run(circuits=qc, shots=1000)
     expected = qss.SuperstaQJob(device, "job_id")
     assert answer == expected
+
+    with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
+        qc.remove_final_measurements()
+        device.run(qc, shots=1000)
 
 
 def test_multi_circuit_run() -> None:
