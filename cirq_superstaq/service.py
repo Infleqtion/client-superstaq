@@ -216,8 +216,14 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             A `css.Job` which can be queried for status or results.
 
         Raises:
+            ValueError: If the circuit has no measurements to sample.
             SuperstaQException: If there was an error accessing the API.
         """
+        if not circuit.has_measurements():
+            # TODO: only raise if the run method actually requires samples (and not for e.g. a
+            # statevector simulation)
+            raise ValueError("Circuit has no measurements to sample.")
+
         serialized_circuits = css.serialization.serialize_circuits(circuit)
         result = self._client.create_job(
             serialized_circuits={"cirq_circuits": serialized_circuits},

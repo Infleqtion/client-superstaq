@@ -159,13 +159,16 @@ def test_service_create_job() -> None:
     mock_client.get_job.return_value = {"job_id": "job_id", "status": "completed"}
     service._client = mock_client
 
-    circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)))
+    circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)), cirq.measure(cirq.LineQubit(0)))
     job = service.create_job(circuit=circuit, repetitions=100, target="qpu")
     assert job.status() == "completed"
     create_job_kwargs = mock_client.create_job.call_args[1]
     # Serialization induces a float, so we don't validate full circuit.
     assert create_job_kwargs["repetitions"] == 100
     assert create_job_kwargs["target"] == "qpu"
+
+    with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
+        service.create_job(cirq.Circuit())
 
 
 def test_service_get_balance() -> None:
