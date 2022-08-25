@@ -160,12 +160,20 @@ def test_service_create_job() -> None:
     service._client = mock_client
 
     circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)), cirq.measure(cirq.LineQubit(0)))
-    job = service.create_job(circuit=circuit, repetitions=100, target="qpu")
+    job = service.create_job(
+        circuit=circuit,
+        repetitions=100,
+        target="qpu",
+        method="fake_method",
+        options={"fake_data": ""},
+    )
     assert job.status() == "completed"
     create_job_kwargs = mock_client.create_job.call_args[1]
     # Serialization induces a float, so we don't validate full circuit.
     assert create_job_kwargs["repetitions"] == 100
     assert create_job_kwargs["target"] == "qpu"
+    assert create_job_kwargs["method"] == "fake_method"
+    assert create_job_kwargs["options"] == '{"fake_data": ""}'
 
     with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
         service.create_job(cirq.Circuit())

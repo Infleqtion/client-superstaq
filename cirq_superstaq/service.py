@@ -15,7 +15,7 @@
 import collections
 import json
 import os
-from typing import Any, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 
 import cirq
@@ -158,7 +158,9 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             A `collection.Counter` for running the circuit.
         """
         resolved_circuit = cirq.protocols.resolve_parameters(circuit, param_resolver)
-        counts = self.create_job(resolved_circuit, repetitions, target, ibmq_pulse).counts()
+        counts = self.create_job(
+            resolved_circuit, repetitions, target, ibmq_pulse=ibmq_pulse
+        ).counts()
 
         return counts
 
@@ -202,7 +204,9 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         circuit: cirq.AbstractCircuit,
         repetitions: int = 1000,
         target: Optional[str] = None,
+        method: Optional[str] = None,
         ibmq_pulse: Optional[bool] = None,
+        options: Optional[Dict[str, str]] = None,
     ) -> css.job.Job:
         """Create a new job to run the given circuit.
 
@@ -225,11 +229,15 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             raise ValueError("Circuit has no measurements to sample.")
 
         serialized_circuits = css.serialization.serialize_circuits(circuit)
+        serialized_options = json.dumps(options) if options else None
+
         result = self._client.create_job(
             serialized_circuits={"cirq_circuits": serialized_circuits},
             repetitions=repetitions,
             target=target,
+            method=method,
             ibmq_pulse=ibmq_pulse,
+            options=serialized_options,
         )
         # The returned job does not have fully populated fields; they will be filled out by
         # when the new job's status is first queried
