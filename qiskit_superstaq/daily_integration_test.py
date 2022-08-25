@@ -119,13 +119,14 @@ def test_qscout_compile_swap_mirror(provider: qss.SuperstaQProvider) -> None:
     out = provider.qscout_compile(qc, mirror_swaps=True)
     assert out.circuit == out_qc_swap
 
+    out = provider.qscout_compile(qc, mirror_swaps=False)
     op = qiskit.quantum_info.Operator(out.circuit)
     expected_op = qiskit.quantum_info.Operator(qc)
     assert op.equiv(expected_op)
 
     num_two_qubit_gates = 0
-    for op in qc:
-        if len(op.qubits) > 1:
+    for _, qbs, _ in out.circuit:
+        if len(qbs) > 1:
             num_two_qubit_gates += 1
     assert num_two_qubit_gates == 3
 
