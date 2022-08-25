@@ -124,7 +124,9 @@ class _SuperstaQClient:
         serialized_circuits: Dict[str, str],
         repetitions: Optional[int] = None,
         target: Optional[str] = None,
+        method: Optional[str] = None,
         ibmq_pulse: Optional[bool] = None,
+        options: Optional[str] = None,
     ) -> dict:
         """Create a job.
 
@@ -145,10 +147,13 @@ class _SuperstaQClient:
             An SuperstaQException if the request fails.
         """
         actual_target = self._target(target)
+
         json_dict: Dict[str, Any] = {
             **serialized_circuits,
             "backend": actual_target,
             "shots": repetitions,
+            "method": method,
+            "options": options,
         }
 
         if ibmq_pulse:
