@@ -77,6 +77,26 @@ def test_multi_circuit_run() -> None:
     assert answer == expected
 
 
+def test_multi_arg_run() -> None:
+    qc = qiskit.QuantumCircuit(2, 2)
+    qc.h(0)
+    qc.cx(0, 1)
+    qc.measure([0, 0], [1, 1])
+    device = MockDevice()
+
+    mock_client = MagicMock()
+    mock_client.create_job.return_value = {
+        "job_ids": ["job_id"],
+        "status": "ready",
+    }
+
+    device._provider._client = mock_client
+
+    answer = device.run(circuits=qc, shots=1000, method="fake_method", options={"test": "123"})
+    expected = qss.SuperstaQJob(device, "job_id")
+    assert answer == expected
+
+
 def test_eq() -> None:
 
     assert MockDevice() != 3
