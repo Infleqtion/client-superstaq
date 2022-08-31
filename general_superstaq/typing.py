@@ -53,6 +53,7 @@ Job = TypedDict(
         "num_qubits": int,
         "status": str,
         "target": str,
+        "compiled_circuit": str,
         "data": Optional[Dict[str, Any]],
         "samples": Optional[Counter],
         "shots": Optional[int],
