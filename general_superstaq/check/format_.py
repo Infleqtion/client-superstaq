@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import os
 import subprocess
 import sys
 import textwrap
@@ -37,8 +36,9 @@ def run(
 
     if returncode == 1:
         # some files should be reformatted, but there don't seem to be any bona fide errors
-        this_file = os.path.relpath(__file__)
-        print(f"Run '{this_file} --apply' to format the files.")
+        command = "./check/format_.py --apply"
+        text = f"Run '{command}' (from the repo root directory) to format files."
+        print(check_utils.warning(text))
 
     return returncode
 
