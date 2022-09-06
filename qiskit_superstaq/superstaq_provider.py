@@ -55,10 +55,6 @@ class SuperstaQProvider(
                 If that variable is not set, then this uses
                 `https://superstaq.super.tech/{api_version}`,
                 where `{api_version}` is the `api_version` specified below.
-            default_target: Which target to default to using. If set to None, no default is set
-                and target must always be specified in calls. If set, then this default is used,
-                unless a target is specified for a given call. Supports either 'qpu' or
-                'simulator'.
             api_version: Version of the API.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
             verbose: Whether to print to stdio and stderr on retriable errors.
@@ -71,7 +67,6 @@ class SuperstaQProvider(
         self,
         api_key: Optional[str] = None,
         remote_host: Optional[str] = None,
-        default_target: Optional[str] = None,
         api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
@@ -89,7 +84,6 @@ class SuperstaQProvider(
             client_name="qiskit-superstaq",
             remote_host=self.remote_host,
             api_key=self.api_key,
-            default_target=default_target,
             api_version=api_version,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
