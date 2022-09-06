@@ -16,7 +16,7 @@ import sys
 import textwrap
 import time
 import urllib
-from typing import Any, Callable, cast, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import qubovert as qv
 import requests
@@ -34,7 +34,6 @@ class _SuperstaQClient:
     RETRIABLE_STATUS_CODES = {
         requests.codes.service_unavailable,
     }
-    SUPPORTED_TARGETS = {"qpu", "simulator"}
     SUPPORTED_VERSIONS = {
         gss.API_VERSION,
     }
@@ -44,7 +43,6 @@ class _SuperstaQClient:
         remote_host: str,
         api_key: str,
         client_name: str,
-        default_target: Optional[str] = None,
         api_version: str = gss.API_VERSION,
         max_retry_seconds: float = 60,  # 1 minute
         verbose: bool = False,
@@ -61,8 +59,6 @@ class _SuperstaQClient:
                 besides the base scheme and netloc, i.e. it only takes the part of the host of
                 the form `http://example.com` of `http://example.com/test`.
             api_key: The key used for authenticating against the SuperstaQ API.
-            default_target: The default target to run against. Supports one of 'qpu' and
-                'simulator'. Can be overridden by calls with target in their signature.
             api_version: Which version fo the api to use, defaults to client_superstaq.API_VERSION,
                 which is the most recent version when this client was downloaded.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
@@ -72,7 +68,6 @@ class _SuperstaQClient:
         self.api_key = api_key
         self.client_name = client_name
         self.api_version = api_version
-        self.default_target = default_target
         self.max_retry_seconds = max_retry_seconds
         self.verbose = verbose
         url = urllib.parse.urlparse(remote_host)
@@ -84,9 +79,6 @@ class _SuperstaQClient:
         assert (
             self.api_version in self.SUPPORTED_VERSIONS
         ), f"Only API versions {self.SUPPORTED_VERSIONS} are accepted but got {self.api_version}"
-        assert (
-            default_target is None or default_target in self.SUPPORTED_TARGETS
-        ), f"Target can only be one of {self.SUPPORTED_TARGETS} but was {default_target}."
         assert max_retry_seconds >= 0, "Negative retry not possible without time machine."
 
         self.url = f"{url.scheme}://{url.netloc}/{api_version}"
@@ -122,8 +114,8 @@ class _SuperstaQClient:
     def create_job(
         self,
         serialized_circuits: Dict[str, str],
-        repetitions: Optional[int] = None,
-        target: Optional[str] = None,
+        repetitions: int = 1,
+        target: str = "ss_unconstrained_simulator",
         method: Optional[str] = None,
         ibmq_pulse: Optional[bool] = None,
         options: Optional[str] = None,
@@ -135,8 +127,7 @@ class _SuperstaQClient:
             repetitions: The number of times to repeat the circuit. For simulation the repeated
                 sampling is not done on the server, but is passed as metadata to be recovered
                 from the returned job.
-            target: If supplied the target to run on. Supports one of `qpu` or `simulator`. If not
-                set, uses `default_target`.
+            target: Target to run on.
             ibmq_pulse: Specify whether to run the job using SuperstaQ's pulse-level optimizations
 
         Returns:
@@ -146,11 +137,9 @@ class _SuperstaQClient:
         Raises:
             An SuperstaQException if the request fails.
         """
-        actual_target = self._target(target)
-
         json_dict: Dict[str, Any] = {
             **serialized_circuits,
-            "backend": actual_target,
+            "backend": target,
             "shots": repetitions,
             "method": method,
             "options": options,
@@ -265,18 +254,6 @@ class _SuperstaQClient:
         """Writes AQT configs from the AQT system onto the given file paths."""
         return self.get_request("/get_aqt_configs")
 
-    def _target(self, target: Optional[str]) -> str:
-        """Returns the target if not None or the default target.
-
-        Raises:
-            AssertionError: if both `target` and `default_target` are not set.
-        """
-        assert target is not None or self.default_target is not None, (
-            "One must specify a target on this call, or a default_target on the service/client, "
-            "but neither were set."
-        )
-        return cast(str, target or self.default_target)
-
     def _handle_status_codes(self, response: requests.Response) -> None:
         if response.status_code == requests.codes.unauthorized:
             raise gss.SuperstaQException(
@@ -344,7 +321,6 @@ class _SuperstaQClient:
                 remote_host={self.url!r},
                 api_key={self.api_key!r},
                 client_name={self.client_name!r},
-                default_target={self.default_target!r},
                 api_version={self.api_version!r},
                 max_retry_seconds={self.max_retry_seconds!r},
                 verbose={self.verbose!r},
