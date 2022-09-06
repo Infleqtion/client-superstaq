@@ -164,7 +164,8 @@ def test_service_resource_estimate(mock_resource_estimate: MagicMock) -> None:
     }
 
     assert (
-        provider.resource_estimate(qiskit.QuantumCircuit(), "qasm_simulator") == resource_estimate
+        provider.resource_estimate(qiskit.QuantumCircuit(), "ibmq_qasm_simulator")
+        == resource_estimate
     )
 
 
@@ -184,7 +185,7 @@ def test_service_resource_estimate_list(mock_resource_estimate: MagicMock) -> No
     }
 
     assert (
-        provider.resource_estimate([qiskit.QuantumCircuit()], "qasm_simulator")
+        provider.resource_estimate([qiskit.QuantumCircuit()], "ibmq_qasm_simulator")
         == resource_estimates
     )
 

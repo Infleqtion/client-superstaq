@@ -150,7 +150,7 @@ class SuperstaQProvider(
     def aqt_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
-        target: str = "keysight",
+        target: str = "aqt_keysight_qpu",
     ) -> "qss.compiler_output.CompilerOutput":
         """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
 
@@ -176,7 +176,7 @@ class SuperstaQProvider(
         circuit: qiskit.QuantumCircuit,
         num_equivalent_circuits: int,
         random_seed: Optional[int] = None,
-        target: str = "keysight",
+        target: str = "aqt_keysight_qpu",
     ) -> "qss.compiler_output.CompilerOutput":
         """Compiles the given circuit to target AQT device with Equivalent Circuit Averaging (ECA).
 
@@ -233,7 +233,7 @@ class SuperstaQProvider(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         mirror_swaps: bool = True,
-        target: str = "qscout",
+        target: str = "sandia_qscout_qpu",
     ) -> "qss.compiler_output.CompilerOutput":
         """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
 
@@ -260,7 +260,7 @@ class SuperstaQProvider(
     def cq_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
-        target: str = "cq",
+        target: str = "cq_hilbert_qpu",
     ) -> "qss.compiler_output.CompilerOutput":
         """Compiles the given circuit(s) to CQ device, optimized to its native gate set.
 
