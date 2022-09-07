@@ -109,8 +109,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
                 variable is not set, then this will raise an `EnvironmentError`.
             default_target: Which target to default to using. If set to None, no default is set
                 and target must always be specified in calls. If set, then this default is used,
-                unless a target is specified for a given call. Supports either 'qpu' or
-                'simulator'.
+                unless a target is specified for a given call
             api_version: Version of the api.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
             verbose: Whether to print to stdio and stderr on retriable errors.
@@ -119,22 +118,33 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             EnvironmentError: if the `api_key` is None and has no corresponding environment
                 variable set.
         """
-        self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or css.API_URL
         self.api_key = api_key or os.getenv("SUPERSTAQ_API_KEY")
+        self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or css.API_URL
+        self.default_target = default_target
+
         if not self.api_key:
             raise EnvironmentError(
                 "Parameter api_key was not specified and the environment variable "
                 "SUPERSTAQ_API_KEY was also not set."
             )
+
         self._client = superstaq_client._SuperstaQClient(
             client_name="cirq-superstaq",
             remote_host=self.remote_host,
             api_key=self.api_key,
-            default_target=default_target,
             api_version=api_version,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
         )
+
+    def _resolve_target(self, target: Union[str, None]) -> str:
+        target = target or self.default_target
+        if not target:
+            raise ValueError(
+                "This call requires a target, but none was provided and default_target is not set."
+            )
+
+        return target
 
     def get_counts(
         self,
@@ -150,7 +160,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Args:
             circuit: The circuit to run.
             repetitions: The number of times to run the circuit.
-            target: Where to run the job. Can be 'qpu' or 'simulator'.
+            target: Where to run the job.
             param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
             ibmq_pulse: Specify whether to run the job using SuperstaQ's pulse-level optimizations.
 
@@ -178,7 +188,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Args:
             circuit: The circuit to run.
             repetitions: The number of times to run the circuit.
-            target: Where to run the job. Can be 'qpu' or 'simulator'.
+            target: Where to run the job.
             ibmq_pulse: Specify whether to run the job using SuperstaQ's pulse-level optimizations.
             param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
 
@@ -188,7 +198,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         counts = self.get_counts(circuit, repetitions, target, ibmq_pulse, param_resolver)
         return counts_to_results(counts, circuit, param_resolver)
 
-    def sampler(self, target: str) -> cirq.Sampler:
+    def sampler(self, target: Optional[str] = None) -> cirq.Sampler:
         """Returns a `cirq.Sampler` object for accessing sampler interface.
 
         Args:
@@ -197,6 +207,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Returns:
             A `cirq.Sampler` for the SuperstaQ API.
         """
+        target = self._resolve_target(target)
         return css.sampler.Sampler(service=self, target=target)
 
     def create_job(
@@ -213,7 +224,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Args:
             circuit: The circuit to run.
             repetitions: The number of times to repeat the circuit. Defaults to 1000.
-            target: Where to run the job. Can be 'qpu' or 'simulator'.
+            target: Where to run the job.
             ibmq_pulse: Specify whether to run the job using SuperstaQ's pulse-level optimizations.
 
         Returns:
@@ -230,6 +241,8 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
         serialized_circuits = css.serialization.serialize_circuits(circuit)
         serialized_options = json.dumps(options) if options else None
+
+        target = self._resolve_target(target)
 
         result = self._client.create_job(
             serialized_circuits={"cirq_circuits": serialized_circuits},
@@ -280,7 +293,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         return self._client.get_backends()["superstaq_backends"]
 
     def resource_estimate(
-        self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str
+        self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: Optional[str] = None
     ) -> Union[ResourceEstimate, List[ResourceEstimate]]:
         """Generates resource estimates for circuit(s).
 
@@ -292,6 +305,8 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         """
         circuit_is_list = isinstance(circuits, List)
         serialized_circuit = css.serialization.serialize_circuits(circuits)
+
+        target = self._resolve_target(target)
 
         request_json = {
             "cirq_circuits": serialized_circuit,
@@ -426,6 +441,10 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         """
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
+
+        target = self._resolve_target(target)
+        if not target.startswith("ibmq_"):
+            raise ValueError(f"{target} is not an IBMQ target")
 
         json_dict = self._client.ibmq_compile(
             {"cirq_circuits": serialized_circuits, "backend": target}

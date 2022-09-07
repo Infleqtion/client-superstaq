@@ -54,6 +54,17 @@ def test_counts_to_results() -> None:
     assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
 
 
+def test_service_resolve_target() -> None:
+    service = css.Service(api_key="key", default_target="ss_bar_qpu")
+    assert service._resolve_target("ss_foo_qpu") == "ss_foo_qpu"
+    assert service._resolve_target(None) == "ss_bar_qpu"
+
+    service = css.Service(api_key="key")
+    assert service._resolve_target("ss_foo_qpu") == "ss_foo_qpu"
+    with pytest.raises(ValueError, match="requires a target"):
+        _ = service._resolve_target(None)
+
+
 def test_service_run_and_get_counts() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
     mock_client = mock.MagicMock()
@@ -393,6 +404,9 @@ def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
     with mock.patch.dict("sys.modules", {"qiskit": None}):
         assert service.ibmq_compile(cirq.Circuit()).pulse_sequence is None
         assert service.ibmq_compile([cirq.Circuit()]).pulse_sequences is None
+
+    with pytest.raises(ValueError, match="not an IBMQ target"):
+        _ = service.ibmq_compile(cirq.Circuit(), target="aqt_keysight_qpu")
 
 
 @mock.patch(
