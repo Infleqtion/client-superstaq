@@ -86,7 +86,7 @@ def test_service_run_and_get_counts() -> None:
             }
         ],
         "status": "Done",
-        "target": "simulator",
+        "target": "ss_unconstrained_simulator",
     }
 
     service._client = mock_client
@@ -174,7 +174,7 @@ def test_service_create_job() -> None:
     job = service.create_job(
         circuit=circuit,
         repetitions=100,
-        target="qpu",
+        target="ss_fake_qpu",
         method="fake_method",
         options={"fake_data": ""},
     )
@@ -182,7 +182,7 @@ def test_service_create_job() -> None:
     create_job_kwargs = mock_client.create_job.call_args[1]
     # Serialization induces a float, so we don't validate full circuit.
     assert create_job_kwargs["repetitions"] == 100
-    assert create_job_kwargs["target"] == "qpu"
+    assert create_job_kwargs["target"] == "ss_fake_qpu"
     assert create_job_kwargs["method"] == "fake_method"
     assert create_job_kwargs["options"] == '{"fake_data": ""}'
 

@@ -325,7 +325,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         return resource_estimates[0]
 
     def aqt_compile(
-        self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "keysight"
+        self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "aqt_keysight_qpu"
     ) -> css.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to target AQT device, optimized to its native gate set.
 
@@ -351,7 +351,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         circuit: cirq.Circuit,
         num_equivalent_circuits: int,
         random_seed: Optional[int] = None,
-        target: str = "keysight",
+        target: str = "aqt_keysight_qpu",
     ) -> css.compiler_output.CompilerOutput:
         """Compiles the given circuit to target AQT device with Equivalent Circuit Averaging (ECA).
 
@@ -386,7 +386,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         self,
         circuits: Union[cirq.Circuit, List[cirq.Circuit]],
         mirror_swaps: bool = True,
-        target: str = "qscout",
+        target: str = "sandia_qscout_qpu",
     ) -> css.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to target QSCOUT device, optimized to its native gate set.
 
@@ -412,7 +412,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         return css.compiler_output.read_json_qscout(json_dict, circuits_is_list)
 
     def cq_compile(
-        self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "cq"
+        self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "cq_hilbert_qpu"
     ) -> css.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to given target CQ device, optimized to its native gate
         set.

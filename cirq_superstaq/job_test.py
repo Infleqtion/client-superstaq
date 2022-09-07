@@ -46,13 +46,13 @@ def test_job_fields() -> None:
         "samples": {"11": 1},
         "shots": 1,
         "status": "Done",
-        "target": "simulator",
+        "target": "ss_unconstrained_simulator",
     }
 
     with mocked_get_job_requests(job_dict):
         job = new_job()
         assert job.job_id() == "my_id"
-        assert job.target() == "simulator"
+        assert job.target() == "ss_unconstrained_simulator"
         assert job.num_qubits() == 2
         assert job.repetitions() == 1
 
@@ -98,7 +98,7 @@ def test_job_counts() -> None:
         "samples": {"11": 1},
         "shots": 1,
         "status": "Done",
-        "target": "simulator",
+        "target": "ss_unconstrained_simulator",
     }
     with mocked_get_job_requests(job_dict):
         job = new_job()
@@ -114,7 +114,7 @@ def test_job_counts_failed() -> None:
         "shots": 1,
         "status": "Failed",
         "failure": {"error": "too many qubits"},
-        "target": "simulator",
+        "target": "ss_unconstrained_simulator",
     }
     with mocked_get_job_requests(job_dict):
         job = new_job()
@@ -136,7 +136,7 @@ def test_job_counts_poll(mock_sleep: mock.MagicMock) -> None:
         "samples": {"11": 1},
         "shots": 1,
         "status": "Done",
-        "target": "simulator",
+        "target": "ss_unconstrained_simulator",
     }
 
     with mocked_get_job_requests(ready_job, completed_job) as mocked_requests:
@@ -178,7 +178,7 @@ def test_job_fields_unsuccessful() -> None:
         "samples": {"11": 1},
         "shots": 1,
         "status": "Deleted",
-        "target": "simulator",
+        "target": "ss_unconstrained_simulator",
     }
     with mocked_get_job_requests(job_dict):
         job = new_job()
