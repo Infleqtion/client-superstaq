@@ -2,7 +2,6 @@ from typing import Any, Counter, Dict, List, Optional, Sized
 
 from typing_extensions import TypedDict  # compatible with both python 3.7 and 3.8
 
-
 MaxSharpe = TypedDict(
     "MaxSharpe",
     {

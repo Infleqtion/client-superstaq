@@ -1,5 +1,4 @@
-from dataclasses import dataclass
-from dataclasses import InitVar
+from dataclasses import InitVar, dataclass
 from typing import Dict, Optional
 
 

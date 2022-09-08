@@ -1,7 +1,6 @@
 import os
 from typing import Dict, Union
 
-
 from general_superstaq import superstaq_client
 
 

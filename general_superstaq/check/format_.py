@@ -19,28 +19,36 @@ def run(
     parser = check_utils.get_file_parser()
     parser.description = textwrap.dedent(
         """
-        Runs black on the repository (formatting check).
+        Runs black and isort on the repository (formatting check).
         """
     )
 
     parser.add_argument("--apply", action="store_true", help="Apply changes to files.")
 
-    parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
+    parsed_args, args_to_pass_black = parser.parse_known_intermixed_args(args)
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
-    args_to_pass = ["--color", "--line-length=100"] + args_to_pass
-    if not parsed_args.apply:
-        args_to_pass = ["--diff", "--check"] + args_to_pass
+    diff_check_args = ["--diff", "--check"] if not parsed_args.apply else []
+    returncode_black = subprocess.call(
+        ["black", *files, *diff_check_args, *args_to_pass_black], cwd=check_utils.root_dir
+    )
 
-    returncode = subprocess.call(["black", *files, *args_to_pass], cwd=check_utils.root_dir)
+    if returncode_black > 1:
+        # this only occurs if black could not parse a file (for example due to a syntax error)
+        return returncode_black
 
-    if returncode == 1:
+    returncode_isort = subprocess.call(
+        ["isort", *files, *diff_check_args], cwd=check_utils.root_dir
+    )
+
+    if returncode_black == 1 or returncode_isort == 1:
         # some files should be reformatted, but there don't seem to be any bona fide errors
         command = "./check/format_.py --apply"
         text = f"Run '{command}' (from the repo root directory) to format files."
         print(check_utils.warning(text))
+        return 1
 
-    return returncode
+    return returncode_isort
 
 
 if __name__ == "__main__":
