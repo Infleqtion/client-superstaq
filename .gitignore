@@ -1,14 +1,22 @@
+# nbsphinx
 *.pyc
 *.egg-info
+
+# Sphinx documentation
 _build
 *build/
 _readthedocs_build
 autoapi
 _build_rtd
+docs/source/*.rst
+
+# MacOS
+*.DS_Store
+
+# Misc.
 .idea/
 .tox
 .cache
 .python-version
 dist
 tags
-*.DS_Store
