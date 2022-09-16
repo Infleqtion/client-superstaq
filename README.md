@@ -1,6 +1,6 @@
 docs-superstaq: Home of documentation for SuperstaQ
 ===================================================
-This repository contains materials that support the [SuperstaQ documentation site]().
+This repository contains materials that support the [SuperstaQ documentation site](https://docs-superstaq.readthedocs.io/).
 
 ## How to update docs-superstaq
 TBC

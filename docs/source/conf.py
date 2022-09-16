@@ -42,7 +42,10 @@ templates_path = ['_templates']
 # Using `modules` in index.rst gets the first package and ignores additional included packages.
 # Listing out modules explicitly causes building docs to throw error looking for `modules.rst`,
 # so add to excluded search patterns as per suggestion here: https://stackoverflow.com/a/15438962
-exclude_patterns: List[str] = ["modules.rst"]
+exclude_patterns: List[str] = [
+    "modules.rst",
+    "setup.rst",
+]
 
 
 # -- Options for HTML output -------------------------------------------------
