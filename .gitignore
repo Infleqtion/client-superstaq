@@ -8,7 +8,8 @@ _build
 _readthedocs_build
 autoapi
 _build_rtd
-docs/source/*.rst
+docs/source/modules.rst
+docs/source/setup.rst
 
 # MacOS
 *.DS_Store
