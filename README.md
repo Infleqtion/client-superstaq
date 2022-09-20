@@ -16,7 +16,6 @@ Clone the repository, set up your virtual environment, install requirements, and
     git submodule update --init --recursive
     ```
 
-
 ### Build the docs
 1. `cd` into the `docs` folder
 0. `make clean`
