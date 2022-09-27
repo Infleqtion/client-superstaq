@@ -104,11 +104,6 @@ def _inspect_req_file(
             req_file, requirements, upstream_match, silent, strict=True
         )
 
-    # check whether cirq and qiskit are up to date
-    if req_file == "requirements.txt":
-        _check_package_versions(req_file, requirements, "cirq", silent, strict=False)
-        _check_package_versions(req_file, requirements, "qiskit", silent, strict=False)
-
     return needs_cleanup, requirements
 
 
