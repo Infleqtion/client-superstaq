@@ -21,7 +21,8 @@ def test_backends() -> None:
     provider = qss.SuperstaQProvider(api_key=token)
     result = provider.backends()
     assert provider.get_backend("ibmq_qasm_simulator") in result
-    assert provider.get_backend("aqt_keysight_qpu") in result
+    assert provider.get_backend("d-wave_advantage-system4.1_qpu") in result
+    assert provider.get_backend("ionq_ion_qpu") in result
 
 
 def test_ibmq_set_token() -> None:
