@@ -7,6 +7,7 @@ from typing import List, Optional
 from general_superstaq.check import (
     build_docs,
     check_utils,
+    configs,
     coverage_,
     flake8_,
     format_,
@@ -50,10 +51,11 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
     checks_failed = 0
 
     # run formatting checks
-    # silence all but the first check to avoid printing duplicate info about incrmental files
+    # silence most checks to avoid printing duplicate info about incrmental files
     # silencing does not affect warnings and errors
     exit_on_failure = not (parsed_args.force_formats or parsed_args.force_all)
-    checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure)
+    checks_failed |= configs.run(exit_on_failure=exit_on_failure, silent=True)
+    checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=False)
     checks_failed |= flake8_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
     checks_failed |= pylint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 

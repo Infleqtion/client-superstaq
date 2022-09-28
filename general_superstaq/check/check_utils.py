@@ -13,11 +13,17 @@ import subprocess
 import sys
 from typing import Any, Callable, Iterable, List, Optional, Union
 
-# identify the root directory of the git repository containing sys.argv[0]
-_main_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-root_dir = subprocess.check_output(
-    ["git", "rev-parse", "--show-toplevel"], cwd=_main_dir, text=True
-).strip()
+
+def get_root_dir(file_path: str) -> str:
+    """Identify the root directory of the git repository containing the given file."""
+    file_dir = os.path.dirname(os.path.abspath(file_path))
+    return subprocess.check_output(
+        ["git", "rev-parse", "--show-toplevel"], cwd=file_dir, text=True
+    ).strip()
+
+
+# identify the root directory of the "main" script that called this module
+root_dir = get_root_dir(sys.argv[0])
 
 
 def _check_output(*commands: str) -> str:
@@ -41,16 +47,20 @@ class Style:
     RESET = "\033[0m"
 
 
+def styled(text: str, style_code: str) -> str:
+    return style_code + text + Style.RESET
+
+
 def warning(text: str) -> str:
-    return Style.RED + text + Style.RESET
+    return styled(text, Style.RED)
 
 
 def failure(text: str) -> str:
-    return Style.BOLD + Style.RED + text + Style.RESET
+    return styled(text, Style.BOLD + Style.RED)
 
 
 def success(text: str) -> str:
-    return Style.BOLD + Style.GREEN + text + Style.RESET
+    return styled(text, Style.BOLD + Style.GREEN)
 
 
 # default branches to compare against when performing incremental checks
