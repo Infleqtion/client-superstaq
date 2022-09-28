@@ -87,7 +87,7 @@ def _inspect_req_file(
         requirements = file.read().strip().split("\n")
 
     if not _are_pip_requirements(requirements):
-        error = f"{req_file} not recognized as a pip requirements file."
+        error = f"{req_file} appears to contain lines that are not valid pip requirements"
         if req_file == "requirements.txt":
             raise SyntaxError(check_utils.failure(error))
         elif not silent:
