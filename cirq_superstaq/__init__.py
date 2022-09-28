@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from cirq_superstaq import compiler_output, serialization
-from cirq_superstaq._init_vars import API_URL, API_VERSION
 from cirq_superstaq._version import __version__
 from cirq_superstaq.custom_gates import (
     AceCR,
@@ -40,8 +39,6 @@ __all__ = [
     "AceCR",
     "AceCRMinusPlus",
     "AceCRPlusMinus",
-    "API_URL",
-    "API_VERSION",
     "barrier",
     "Barrier",
     "compiler_output",

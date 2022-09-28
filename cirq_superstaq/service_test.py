@@ -445,4 +445,4 @@ def test_service_no_param_or_env_variable() -> None:
 
 def test_service_no_url_default() -> None:
     service = css.Service("tomyheart")
-    assert service.remote_host == css.API_URL
+    assert service.remote_host == gss.API_URL

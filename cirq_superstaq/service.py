@@ -92,7 +92,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         api_key: Optional[str] = None,
         remote_host: Optional[str] = None,
         default_target: Optional[str] = None,
-        api_version: str = css.API_VERSION,
+        api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
     ) -> None:
@@ -119,7 +119,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
                 variable set.
         """
         self.api_key = api_key or os.getenv("SUPERSTAQ_API_KEY")
-        self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or css.API_URL
+        self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
         self.default_target = default_target
 
         if not self.api_key:
