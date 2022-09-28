@@ -15,20 +15,20 @@
 from cirq_superstaq import compiler_output, serialization
 from cirq_superstaq._version import __version__
 from cirq_superstaq.custom_gates import (
+    AQTICCX,
+    AQTITOFFOLI,
+    CR,
+    ZX,
     AceCR,
     AceCRMinusPlus,
     AceCRPlusMinus,
-    AQTICCX,
-    AQTITOFFOLI,
     Barrier,
-    barrier,
-    CR,
     ParallelGates,
     ParallelRGate,
     RGate,
-    ZX,
     ZXPowGate,
     ZZSwapGate,
+    barrier,
 )
 from cirq_superstaq.job import Job
 from cirq_superstaq.sampler import Sampler

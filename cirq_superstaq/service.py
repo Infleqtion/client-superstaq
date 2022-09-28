@@ -17,15 +17,10 @@ import json
 import os
 from typing import Any, Dict, List, Optional, Union
 
-
 import cirq
 import general_superstaq as gss
 import numpy as np
-from general_superstaq import finance
-from general_superstaq import logistics
-from general_superstaq import ResourceEstimate
-from general_superstaq import superstaq_client
-from general_superstaq import user_config
+from general_superstaq import ResourceEstimate, finance, logistics, superstaq_client, user_config
 
 import cirq_superstaq as css
 
@@ -151,8 +146,9 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         circuit: cirq.Circuit,
         repetitions: int,
         target: Optional[str] = None,
-        ibmq_pulse: Optional[bool] = None,
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
+        method: Optional[str] = None,
+        options: Optional[Dict[str, Any]] = None,
     ) -> collections.Counter:
         """Runs the given circuit on the SuperstaQ API and returns the result
         of the ran circuit as a collections.Counter
@@ -162,15 +158,15 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             repetitions: The number of times to run the circuit.
             target: Where to run the job.
             param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
-            ibmq_pulse: Specify whether to run the job using SuperstaQ's pulse-level optimizations.
+            method: Optional execution method.
+            options: Optional dictionary of optimization and execution parameters
 
         Returns:
             A `collection.Counter` for running the circuit.
         """
         resolved_circuit = cirq.protocols.resolve_parameters(circuit, param_resolver)
-        counts = self.create_job(
-            resolved_circuit, repetitions, target, ibmq_pulse=ibmq_pulse
-        ).counts()
+        job = self.create_job(resolved_circuit, repetitions, target, method, options)
+        counts = job.counts()
 
         return counts
 
@@ -179,8 +175,9 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         circuit: cirq.Circuit,
         repetitions: int,
         target: Optional[str] = None,
-        ibmq_pulse: Optional[bool] = None,
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
+        method: Optional[str] = None,
+        options: Optional[Dict[str, Any]] = None,
     ) -> cirq.ResultDict:
         """Run the given circuit on the SuperstaQ API and returns the result
         of the ran circut as a cirq.ResultDict.
@@ -189,13 +186,14 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             circuit: The circuit to run.
             repetitions: The number of times to run the circuit.
             target: Where to run the job.
-            ibmq_pulse: Specify whether to run the job using SuperstaQ's pulse-level optimizations.
+            method: Execution method.
+            options: Optional dictionary of optimization and execution parameters
             param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
 
         Returns:
             A `cirq.ResultDict` for running the circuit.
         """
-        counts = self.get_counts(circuit, repetitions, target, ibmq_pulse, param_resolver)
+        counts = self.get_counts(circuit, repetitions, target, param_resolver, method, options)
         return counts_to_results(counts, circuit, param_resolver)
 
     def sampler(self, target: Optional[str] = None) -> cirq.Sampler:
@@ -216,8 +214,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         repetitions: int = 1000,
         target: Optional[str] = None,
         method: Optional[str] = None,
-        ibmq_pulse: Optional[bool] = None,
-        options: Optional[Dict[str, str]] = None,
+        options: Optional[Dict[str, Any]] = None,
     ) -> css.job.Job:
         """Create a new job to run the given circuit.
 
@@ -225,7 +222,8 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             circuit: The circuit to run.
             repetitions: The number of times to repeat the circuit. Defaults to 1000.
             target: Where to run the job.
-            ibmq_pulse: Specify whether to run the job using SuperstaQ's pulse-level optimizations.
+            method: Execution method.
+            options: Optional dictionary of optimization and execution parameters
 
         Returns:
             A `css.Job` which can be queried for status or results.
@@ -240,7 +238,6 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             raise ValueError("Circuit has no measurements to sample.")
 
         serialized_circuits = css.serialization.serialize_circuits(circuit)
-        serialized_options = json.dumps(options) if options else None
 
         target = self._resolve_target(target)
 
@@ -249,8 +246,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             repetitions=repetitions,
             target=target,
             method=method,
-            ibmq_pulse=ibmq_pulse,
-            options=serialized_options,
+            options=options,
         )
         # The returned job does not have fully populated fields; they will be filled out by
         # when the new job's status is first queried

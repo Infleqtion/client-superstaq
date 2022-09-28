@@ -2,7 +2,6 @@ import importlib
 import textwrap
 from unittest import mock
 
-
 import cirq
 import general_superstaq as gss
 import pytest

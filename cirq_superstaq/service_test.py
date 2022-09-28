@@ -17,7 +17,6 @@ import os
 import textwrap
 from unittest import mock
 
-
 import cirq
 import general_superstaq as gss
 import pandas as pd
@@ -184,7 +183,7 @@ def test_service_create_job() -> None:
     assert create_job_kwargs["repetitions"] == 100
     assert create_job_kwargs["target"] == "ss_fake_qpu"
     assert create_job_kwargs["method"] == "fake_method"
-    assert create_job_kwargs["options"] == '{"fake_data": ""}'
+    assert create_job_kwargs["options"] == {"fake_data": ""}
 
     with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
         service.create_job(cirq.Circuit())
