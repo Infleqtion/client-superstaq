@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock
 
+import general_superstaq as gss
 import pytest
 import qiskit
 
@@ -10,7 +11,7 @@ def test_default_options() -> None:
     ss_provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     device = qss.SuperstaQBackend(
         provider=ss_provider,
-        remote_host=qss.API_URL,
+        remote_host=gss.API_URL,
         backend="ibmq_qasm_simulator",
     )
 
@@ -104,14 +105,14 @@ def test_eq() -> None:
     provider = qss.SuperstaQProvider(api_key="123")
 
     backend1 = qss.SuperstaQBackend(
-        provider=provider, backend="ibmq_qasm_simulator", remote_host=qss.API_URL
+        provider=provider, backend="ibmq_qasm_simulator", remote_host=gss.API_URL
     )
     backend2 = qss.SuperstaQBackend(
-        provider=provider, backend="ibmq_athens", remote_host=qss.API_URL
+        provider=provider, backend="ibmq_athens", remote_host=gss.API_URL
     )
     assert backend1 != backend2
 
     backend3 = qss.SuperstaQBackend(
-        provider=provider, backend="ibmq_qasm_simulator", remote_host=qss.API_URL
+        provider=provider, backend="ibmq_qasm_simulator", remote_host=gss.API_URL
     )
     assert backend1 == backend3

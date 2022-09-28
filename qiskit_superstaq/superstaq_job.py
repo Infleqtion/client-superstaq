@@ -15,6 +15,7 @@
 import time
 from typing import Any, Dict, List, Optional
 
+import general_superstaq as gss
 import qiskit
 import requests
 
@@ -62,11 +63,11 @@ class SuperstaQJob(qiskit.providers.JobV1):
                         "Timed out waiting for result"
                     )  # pragma: no cover b/c don't want slow test or mocking time
 
-                getstr = f"{self._backend.remote_host}/{qss.API_VERSION}/job/{jid}"
+                getstr = f"{self._backend.remote_host}/{gss.API_VERSION}/job/{jid}"
                 result = requests.get(
                     getstr,
                     headers=self._backend._provider._http_headers(),
-                    verify=(self._backend.remote_host == qss.API_URL),
+                    verify=(self._backend.remote_host == gss.API_URL),
                 ).json()
 
                 if result["status"] == "Done":
@@ -112,11 +113,11 @@ class SuperstaQJob(qiskit.providers.JobV1):
         # For example, if any of the jobs are still queued, we report Queued as the status
         # for the entire batch.
         for job_id in job_id_list:
-            get_url = f"{self._backend.remote_host}/{qss.API_VERSION}/job/{job_id}"
+            get_url = f"{self._backend.remote_host}/{gss.API_VERSION}/job/{job_id}"
             result = requests.get(
                 get_url,
                 headers=self._backend._provider._http_headers(),
-                verify=(self._backend.remote_host == qss.API_URL),
+                verify=(self._backend.remote_host == gss.API_URL),
             )
 
             temp_status = result.json()["status"]

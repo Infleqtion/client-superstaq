@@ -1,6 +1,7 @@
 import json
 from typing import Any, Dict
 
+import general_superstaq as gss
 import pytest
 import qiskit
 import requests
@@ -10,7 +11,7 @@ import qiskit_superstaq as qss
 
 class MockConfiguration:
     backend_name = "superstaq_backend"
-    backend_version = qss.API_VERSION
+    backend_version = gss.API_VERSION
 
 
 class MockProvider(qss.SuperstaQProvider):
@@ -83,7 +84,7 @@ def test_result(monkeypatch: Any) -> None:
             "results": expected_results,
             "qobj_id": -1,
             "backend_name": "superstaq_backend",
-            "backend_version": qss.API_VERSION,
+            "backend_version": gss.API_VERSION,
             "success": True,
             "job_id": "123abc",
         }

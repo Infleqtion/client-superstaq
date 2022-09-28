@@ -22,7 +22,7 @@ def test_provider() -> None:
     assert str(ss_provider.get_backend("ibmq_qasm_simulator")) == str(
         qss.SuperstaQBackend(
             provider=ss_provider,
-            remote_host=qss.API_URL,
+            remote_host=gss.API_URL,
             backend="ibmq_qasm_simulator",
         )
     )
@@ -63,7 +63,7 @@ def test_provider() -> None:
     expected_backends = []
     for name in backend_names:
         expected_backends.append(
-            qss.SuperstaQBackend(provider=ss_provider, remote_host=qss.API_URL, backend=name)
+            qss.SuperstaQBackend(provider=ss_provider, remote_host=gss.API_URL, backend=name)
         )
 
     mock_client = MagicMock()

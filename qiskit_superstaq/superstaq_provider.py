@@ -114,7 +114,7 @@ class SuperstaQProvider(
             "Authorization": self.get_access_token(),
             "Content-Type": "application/json",
             "X-Client-Name": "qiskit-superstaq",
-            "X-Client-Version": qss.API_VERSION,
+            "X-Client-Version": gss.API_VERSION,
         }
 
     def resource_estimate(
