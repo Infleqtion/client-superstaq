@@ -18,11 +18,7 @@ from typing import List, Optional, Union
 
 import general_superstaq as gss
 import qiskit
-from general_superstaq import finance
-from general_superstaq import logistics
-from general_superstaq import ResourceEstimate
-from general_superstaq import superstaq_client
-from general_superstaq import user_config
+from general_superstaq import ResourceEstimate, finance, logistics, superstaq_client, user_config
 
 import qiskit_superstaq as qss
 

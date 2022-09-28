@@ -11,7 +11,6 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-import json
 from typing import Any, Dict, List, Optional, Union
 
 import qiskit
@@ -62,8 +61,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         shots: int,
         method: Optional[str] = None,
-        ibmq_pulse: Optional[bool] = None,
-        options: Optional[Dict[str, str]] = None,
+        options: Optional[Dict[str, Any]] = None,
     ) -> "qss.SuperstaQJob":
 
         if isinstance(circuits, qiskit.QuantumCircuit):
@@ -75,15 +73,13 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             raise ValueError("Circuit has no measurements to sample.")
 
         qiskit_circuits = qss.serialization.serialize_circuits(circuits)
-        serialized_options = json.dumps(options) if options else None
 
         result = self._provider._client.create_job(
             serialized_circuits={"qiskit_circuits": qiskit_circuits},
             repetitions=shots,
             target=self.name(),
             method=method,
-            ibmq_pulse=ibmq_pulse,
-            options=serialized_options,
+            options=options,
         )
 
         #  we make a virtual job_id that aggregates all of the individual jobs
