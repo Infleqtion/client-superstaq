@@ -12,6 +12,7 @@
 # limitations under the License.
 """Client for making requests to SuperstaQ's API."""
 
+import json
 import sys
 import textwrap
 import time
@@ -117,8 +118,7 @@ class _SuperstaQClient:
         repetitions: int = 1,
         target: str = "ss_unconstrained_simulator",
         method: Optional[str] = None,
-        ibmq_pulse: Optional[bool] = None,
-        options: Optional[str] = None,
+        options: Optional[Dict[str, Any]] = None,
     ) -> dict:
         """Create a job.
 
@@ -141,12 +141,13 @@ class _SuperstaQClient:
             **serialized_circuits,
             "backend": target,
             "shots": repetitions,
-            "method": method,
-            "options": options,
         }
 
-        if ibmq_pulse:
-            json_dict["ibmq_pulse"] = ibmq_pulse
+        if method is not None:
+            json_dict["method"] = method
+
+        if options is not None:
+            json_dict["options"] = json.dumps(options)
 
         return self.post_request("/jobs", json_dict)
 

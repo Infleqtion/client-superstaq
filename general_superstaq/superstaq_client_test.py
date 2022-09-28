@@ -12,6 +12,7 @@
 # limitations under the License.
 import contextlib
 import io
+import json
 from unittest import mock
 
 import pytest
@@ -117,7 +118,8 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         serialized_circuits={"Hello": "World"},
         repetitions=200,
         target="ss_example_qpu",
-        ibmq_pulse=True,
+        method="dry-run",
+        options={"ibmq_pulse": True},
     )
     assert response == {"foo": "bar"}
 
@@ -125,9 +127,8 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         "Hello": "World",
         "backend": "ss_example_qpu",
         "shots": 200,
-        "ibmq_pulse": True,
-        "method": None,
-        "options": None,
+        "method": "dry-run",
+        "options": json.dumps({"ibmq_pulse": True}),
     }
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/jobs",
@@ -245,7 +246,6 @@ def test_superstaq_client_create_job_json(mock_post: mock.MagicMock) -> None:
             serialized_circuits={"Hello": "World"},
             repetitions=200,
             target="ss_example_qpu",
-            ibmq_pulse=True,
         )
 
 
