@@ -1,9 +1,10 @@
-from typing import Dict, Iterable, List
+from typing import Dict
 
 import numpy as np
 import qubovert as qv
 
 import general_superstaq as gss
+from general_superstaq.typing import QuboModel
 
 
 def read_json_qubo_result(json_dict: Dict[str, str]) -> np.recarray:
@@ -16,20 +17,20 @@ def read_json_qubo_result(json_dict: Dict[str, str]) -> np.recarray:
     return gss.converters.deserialize(json_dict["solution"])
 
 
-def convert_qubo_to_model(qubo: qv.QUBO) -> List[Dict[str, Iterable[str]]]:
+def convert_qubo_to_model(qubo: qv.QUBO) -> QuboModel:
     """Takes in a qubovert QUBO and converts it to the format required by the /qubo endpoint API.
     Args:
         qubo: a qubovert QUBO object.
     Returns:
         An equivalent qubo represent as a nested list of dictionaries.
     """
-    model = []
+    model: QuboModel = []
     for key, value in qubo.items():
         model.append({"keys": [str(variable) for variable in key], "value": value})
     return model
 
 
-def convert_model_to_qubo(model: List[Dict[str, Iterable[str]]]) -> qv.QUBO:
+def convert_model_to_qubo(model: QuboModel) -> qv.QUBO:
     """Takes in qubo model transferred over the wire and converts it to the qubovert format.
     Args:
         model: The qubo model as specified in superstaq.web.server.

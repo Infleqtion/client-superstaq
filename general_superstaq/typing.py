@@ -2,6 +2,16 @@ from typing import Any, Counter, Dict, List, Optional, Sized
 
 from typing_extensions import TypedDict  # compatible with both python 3.7 and 3.8
 
+QuboDict = TypedDict(
+    "QuboDict",
+    {
+        "keys": List[str],
+        "value": float,
+    },
+)
+
+QuboModel = List[QuboDict]
+
 MaxSharpe = TypedDict(
     "MaxSharpe",
     {
@@ -9,7 +19,7 @@ MaxSharpe = TypedDict(
         "best_ret": float,
         "best_std_dev": float,
         "best_sharpe_ratio": float,
-        "qubo": Optional[List[float]],
+        "qubo": QuboModel,
     },
 )
 
@@ -19,7 +29,7 @@ MinVol = TypedDict(
         "best_portfolio": List[str],
         "best_ret": float,
         "best_std_dev": float,
-        "qubo": Optional[List[float]],
+        "qubo": QuboModel,
     },
 )
 
@@ -30,7 +40,7 @@ Warehouse = TypedDict(
         "total_distance": float,
         "map_link": str,
         "open_warehouses": Sized,
-        "qubo": List[Dict[str, Any]],
+        "qubo": QuboModel,
     },
 )
 
@@ -41,7 +51,7 @@ TSP = TypedDict(
         "total_distance": List[float],
         "map_link": List[str],
         "route": List,
-        "qubo": List[Dict[str, Any]],
+        "qubo": QuboModel,
     },
 )
 
