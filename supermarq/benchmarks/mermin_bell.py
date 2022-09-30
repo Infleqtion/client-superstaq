@@ -1,5 +1,5 @@
 import collections
-from typing import cast, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, cast
 
 import cirq
 import numpy as np
