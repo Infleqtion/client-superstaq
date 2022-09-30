@@ -1,2 +1,1 @@
-numpy==1.21.*
-pulser~=0.1.1
+pulser~=0.7.0
