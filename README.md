@@ -10,7 +10,6 @@ dependencies can be installed via:
 python3 -m venv venv_cirq_superstaq
 source venv_cirq_superstaq/bin/activate
 pip install cirq-superstaq
-pip install -e .
 
 # Run the following to install neutral atom device dependencies.
 pip install -r neutral-atom-requirements.txt
