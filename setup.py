@@ -43,5 +43,5 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     packages=general_superstaq_packages,
-    package_data={"general_superstaq": ["py.typed"]},
+    package_data={"general_superstaq": ["py.typed", "check/setup.cfg"]},
 )

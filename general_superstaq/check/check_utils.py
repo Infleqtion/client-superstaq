@@ -13,17 +13,11 @@ import subprocess
 import sys
 from typing import Any, Callable, Iterable, List, Optional, Union
 
-
-def get_root_dir(file_path: str) -> str:
-    """Identify the root directory of the git repository containing the given file."""
-    file_dir = os.path.dirname(os.path.abspath(file_path))
-    return subprocess.check_output(
-        ["git", "rev-parse", "--show-toplevel"], cwd=file_dir, text=True
-    ).strip()
-
-
 # identify the root directory of the "main" script that called this module
-root_dir = get_root_dir(sys.argv[0])
+main_file_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+root_dir = subprocess.check_output(
+    ["git", "rev-parse", "--show-toplevel"], cwd=main_file_dir, text=True
+).strip()
 
 
 def _check_output(*commands: str) -> str:
