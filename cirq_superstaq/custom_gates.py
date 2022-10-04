@@ -385,22 +385,39 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         Symbols belonging to separate gates are differentiated via subscripts, with groups of
         symbols sharing the same subscript indicating multi-qubit operations.
         """
-        wire_symbols_with_subscripts = []
+        wire_symbols_with_subscripts: List[str] = []
         for i, gate in enumerate(self.component_gates):
-            diagram_info = cirq.circuit_diagram_info(gate, args)
-            full_wire_symbols = diagram_info._wire_symbols_including_formatted_exponent(
-                args,
-                preferred_exponent_index=cirq.num_qubits(gate) - 1,
+            qubit_index = len(wire_symbols_with_subscripts)
+            num_qubits = gate.num_qubits()
+            sub_args = cirq.CircuitDiagramInfoArgs(
+                known_qubit_count=(num_qubits if args.known_qubit_count is not None else None),
+                known_qubits=(
+                    args.known_qubits[qubit_index:][:num_qubits]
+                    if args.known_qubits is not None
+                    else None
+                ),
+                use_unicode_characters=args.use_unicode_characters,
+                precision=args.precision,
+                label_map=args.label_map,
+            )
+
+            sub_info = cirq.circuit_diagram_info(gate, sub_args, None)
+            if sub_info is None:
+                return NotImplemented
+
+            full_wire_symbols = sub_info._wire_symbols_including_formatted_exponent(
+                sub_args, preferred_exponent_index=num_qubits - 1
             )
 
             index_str = f"_{i+1}"
             if args.use_unicode_characters:
                 index_str = "".join(chr(ord("₁") + int(c)) for c in str(i))
 
-            for base_symbol, full_symbol in zip(diagram_info.wire_symbols, full_wire_symbols):
+            for base_symbol, full_symbol in zip(sub_info.wire_symbols, full_wire_symbols):
                 wire_symbols_with_subscripts.append(
                     full_symbol.replace(base_symbol, base_symbol + index_str)
                 )
+
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols_with_subscripts)
 
     def _json_dict_(self) -> Dict[str, Any]:

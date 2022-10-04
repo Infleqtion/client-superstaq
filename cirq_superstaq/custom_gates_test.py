@@ -361,6 +361,16 @@ def test_parallel_gates() -> None:
         _ = css.ParallelGates(cirq.X, cirq.MeasurementGate(1, key="1"))
 
 
+def test_parallel_gates_circuit_diagram_fallback() -> None:
+    gate = cirq.circuits.qasm_output.QasmUGate(0.1, 0.2, 0.3)
+    assert not hasattr(gate, "_circuit_diagram_info_")
+
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(css.ParallelGates(gate).on(cirq.LineQubit(1))),
+        f"1: ───ParallelGates({gate})───",
+    )
+
+
 def test_parallel_gates_equivalence_groups() -> None:
     qubits = cirq.LineQubit.range(4)
     gate = css.ParallelGates(cirq.X, css.ZX, cirq.Y)
