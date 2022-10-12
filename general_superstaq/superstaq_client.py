@@ -262,8 +262,6 @@ class _SuperstaQClient:
                 "Check to ensure you have supplied the correct API key.",
                 response.status_code,
             )
-        if response.status_code == requests.codes.not_found:
-            raise gss.SuperstaQNotFoundException("SuperstaQ could not find requested resource.")
 
         if response.status_code not in self.RETRIABLE_STATUS_CODES:
             if "message" in response.json():

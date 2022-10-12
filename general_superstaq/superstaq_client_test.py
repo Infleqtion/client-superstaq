@@ -162,7 +162,7 @@ def test_superstaq_client_create_job_not_found(mock_post: mock.MagicMock) -> Non
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
-    with pytest.raises(gss.SuperstaQNotFoundException, match="not find"):
+    with pytest.raises(gss.SuperstaQException):
         _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
 
 
@@ -384,7 +384,7 @@ def test_superstaq_client_get_job_not_found(mock_get: mock.MagicMock) -> None:
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
-    with pytest.raises(gss.SuperstaQNotFoundException, match="not find"):
+    with pytest.raises(gss.SuperstaQException):
         _ = client.get_job("job_id")
 
 
