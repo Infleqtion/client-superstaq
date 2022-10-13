@@ -89,9 +89,9 @@ class PulseManipulator:
         if start_time == 0:
             schedule = self.shift(
                 shift_amount=instruction.duration, channel=instruction.channel, inplace=False
-            ).insert(start_time, instruction)
+            )._schedule.insert(start_time, instruction, inplace=inplace)
         elif start_time >= self.duration or instruction.channel not in self._schedule.channels:
-            schedule = self._schedule.insert(start_time, instruction)
+            schedule = self._schedule.insert(start_time, instruction, inplace=inplace)
         else:
             assert (
                 isinstance(instruction.channel, qiskit.pulse.DriveChannel)
@@ -118,7 +118,7 @@ class PulseManipulator:
                 instruction.channel,
                 coinciding_channels,
             )
-        return self._update(schedule, inplace)
+        return self._update(schedule=schedule, inplace=inplace)
         
 
     def replace(self, inst_id=None, instruction=None, flip_amp=False, inplace=False):
@@ -157,17 +157,24 @@ class PulseManipulator:
 
     def flip_amp(self, inst_id=None, inplace=False):
         """Flips amplitude of specified instruction pulse."""
-        # TODO: don't want to access private variable, so instead make a new pulse with amp
-        # parameter set to -amp
-        start_time, instruction = self._extract_instruction(inst_id=inst_id)
-        instruction.pulse._amp *= -1
-        instruction._name = old_instruction.name.replace(
-            "m", "%"
-        ).replace("p", "m").replace("%", "p")
-        # TODO: update using _set_id_to_inst_map, but also provide inplace=T/F functionality
+        if inplace:
+            # TODO: don't want to access private variable, so instead make a new pulse with amp
+            # parameter set to -amp
+            start_time, instruction = self._extract_instruction(inst_id=inst_id)
+            instruction.pulse._amp *= -1
+            instruction._name = instruction.name.replace(
+                "m", "%"
+            ).replace("p", "m").replace("%", "p")
+            return self
+        else:
+            # TODO: update using _set_id_to_inst_map?
+            # TODO: provide inplace functionality, return self._update(schedule, inplace)
+            return self._update(
+                schedule=deepcopy(self._schedule), inplace=inplace
+            ).flip_amp(inst_id=inst_id, inplace=True)
 
 
-    def shift(shift_amount=None, channel=None, inplace=True):
+    def shift(self, shift_amount=None, channel=None, inplace=True):
         """Shifts instructions on any or all channels.
 
         This defaults to qiskit's version with a single parameter. Otherwise, allows shifting
@@ -191,7 +198,7 @@ class PulseManipulator:
             return
 
         assert(
-            isinstance(channel, qiskit.pulse.Channel)
+            isinstance(channel, qiskit.pulse.channels.PulseChannel)
         ), "You need to provide a valid pulse channel."
         coinciding_channels = self._coinciding_channels[channel]
         schedule = (
@@ -244,14 +251,14 @@ class PulseManipulator:
         return self._update(deepcopy(self._init_schedule), inplace)
 
 
-    def _update(schedule=None, inplace=False):
+    def _update(self, schedule=None, inplace=False):
         """Updates PulseManipulator schedule inplace or out-of-place."""
         if inplace:
             self._schedule = schedule
             self._set_id_to_instruction_map()
             return self
         else:
-            return PulseManipulator(schedule=schedule, backend=self.backend)
+            return PulseManipulator(schedule=schedule, backend=self._backend)
         
 
     def copy(self):
@@ -418,7 +425,7 @@ class PulseManipulator:
             coinciding_channels_map[control_channel].add(drive_channel)
         for channel, collisions in coinciding_channels_map.items():
             for collision in collisions:
-                coinciding_channels_map[channel] = coinciding_channels_map.union(
+                coinciding_channels_map[channel] = coinciding_channels_map[channel].union(
                     coinciding_channels_map[collision]
                 )
         return coinciding_channels_map
@@ -462,6 +469,49 @@ class PulseManipulator:
         shift_amount = max(0, left_start + left_half.duration - right_start)
         right_half.shift(shift_amount, inplace=True)
         return left_half | right_half | remainder
+
+####################################################################################################
+
+    def flip_amplitude(self, inst_id=None, inplace=True):
+        """Flips amplitude of specified instruction pulse."""
+        #TODO: make a stretch_pulse method following this design
+        assert (
+            self._id_to_scheduled_inst_map.get(instruction_id) is not None
+        ), (
+            f"You need to supply a valid instruction ID. Choose one of "
+            f"{list(self._id_to_scheduled_inst_map.keys())}."
+        )
+        old_scheduled_instruction = self._id_to_inst_map.get(inst_id)
+        start_time, old_instruction = self.get_instruction_and_start_time(inst_id=inst_id)
+        new_instruction = self._get_new_instruction(old_instruction, flip_sign=True)
+        new_scheduled_instruction = self._schedule_instruction(
+            new_instruction,
+            start_time,
+            instruction_id=instruction_id,
+        )
+        printv("=" * 80)
+        printv(f"Start time: {start_time}")
+        printv(f"old instruction: {old_instruction.name}")
+        printv(f"new instruction: {new_scheduled_instruction.instructions[0][1].name}")
+        filtered_copy = self._schedule.filter(
+            lambda inst: not isinstance(inst[1], qiskit.pulse.ShiftPhase),
+            channels=[old_instruction.channel],
+            time_ranges=[(start_time, start_time + old_instruction.duration)]
+        )
+        replaced_copy = filtered_copy.replace(
+            old_instruction,
+            new_scheduled_instruction.instructions[0][1],
+        )
+        remainder = self._schedule.exclude(
+            lambda inst: inst[0] == start_time and inst[1] == old_instruction
+        )
+        schedule = replaced_copy | remainder
+        if inplace:
+            self._schedule = schedule
+            self._id_to_scheduled_inst_map[instruction_id] = new_scheduled_instruction
+            return self
+        else:
+            return PulseVisualization(schedule, backend=self._backend)
 
 
     ############################################### TODO: Perhaps sort these

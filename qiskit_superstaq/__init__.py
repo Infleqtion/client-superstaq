@@ -4,6 +4,7 @@ from .custom_gates import AceCR, AQTiCCXGate, AQTiToffoliGate, ParallelGates, ZZ
 from .superstaq_backend import SuperstaQBackend
 from .superstaq_job import SuperstaQJob
 from .superstaq_provider import SuperstaQProvider
+from .pulse_manipulator import *
 
 __all__ = [
     "AceCR",
@@ -12,6 +13,7 @@ __all__ = [
     "compiler_output",
     "ITOFFOLIGate",
     "ParallelGates",
+    "pulse_manipulator",
     "serialization",
     "SuperstaQBackend",
     "SuperstaQJob",
