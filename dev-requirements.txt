@@ -1,2 +1,2 @@
-general-superstaq[dev]~=0.2.8
+general-superstaq[dev]~=0.2.9
 qiskit-terra~=0.20.2
