@@ -135,9 +135,8 @@ def read_json_aqt(
     if circuits_is_list:
         return CompilerOutput(circuits=compiled_circuits, seq=seq, pulse_lists=pulse_lists)
 
-    return CompilerOutput(
-        circuits=compiled_circuits[0], seq=seq, pulse_lists=pulse_lists and pulse_lists[0]
-    )
+    pulse_lists = pulse_lists[0] if pulse_lists is not None else None
+    return CompilerOutput(circuits=compiled_circuits[0], seq=seq, pulse_lists=pulse_lists)
 
 
 def read_json_qscout(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
