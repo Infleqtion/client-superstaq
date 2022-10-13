@@ -54,6 +54,7 @@ def test_aqt_compile(service: css.Service) -> None:
     compiled_circuits = service.aqt_compile([circuit]).circuits
     assert isinstance(compiled_circuits, list)
     for compiled_circuit in compiled_circuits:
+        assert isinstance(compiled_circuit, cirq.Circuit)
         cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
             compiled_circuit, circuit, atol=1e-08
         )
@@ -61,6 +62,7 @@ def test_aqt_compile(service: css.Service) -> None:
 
     assert isinstance(compiled_circuits, list)
     for compiled_circuit in compiled_circuits:
+        assert isinstance(compiled_circuit, cirq.Circuit)
         cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
             compiled_circuit, circuit, atol=1e-08
         )
@@ -134,6 +136,7 @@ def test_qscout_compile(service: css.Service) -> None:
 
     cx_circuit = cirq.Circuit(cirq.H(q0), cirq.CX(q0, q1), cirq.measure(q0, q1))
     out = service.qscout_compile([cx_circuit])
+    assert isinstance(out.circuits[0], cirq.Circuit)
     cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
         out.circuits[0], cx_circuit, atol=1e-08
     )

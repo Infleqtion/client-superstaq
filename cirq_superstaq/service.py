@@ -15,7 +15,7 @@
 import collections
 import json
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import cirq
 import general_superstaq as gss
@@ -344,7 +344,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
     def aqt_compile_eca(
         self,
-        circuit: cirq.Circuit,
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
         num_equivalent_circuits: int,
         random_seed: Optional[int] = None,
         target: str = "aqt_keysight_qpu",
@@ -354,20 +354,23 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
 
         Args:
-            circuit: cirq Circuit to compile.
-            num_equivalent_circuits: number of logically equivalent random circuits to generate.
+            circuits: cirq Circuit(s) to compile.
+            num_equivalent_circuits: number of logically equivalent random circuits to generate for
+                each input circuit.
             random_seed: optional seed for circuit randomizer.
             target: string of target backend AQT device.
         Returns:
-            object whose .circuits attribute is a list of logically equivalent cirq Circuit(s).
+            object whose .circuits attribute is a list (or list of lists) of logically equivalent
+                cirq Circuit(s).
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the cirq.Circuits and the .pulse_list(s) attribute is
+            pulse sequence corresponding to the cirq.Circuits and the .pulse_lists attribute is
             the list(s) of cycles.
         """
-        serialized_circuit = css.serialization.serialize_circuits(circuit)
+        serialized_circuits = css.serialization.serialize_circuits(circuits)
+        circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
         request_json = {
-            "cirq_circuits": serialized_circuit,
+            "cirq_circuits": serialized_circuits,
             "backend": target,
             "num_eca_circuits": num_equivalent_circuits,
         }
@@ -376,7 +379,9 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             request_json["random_seed"] = random_seed
 
         json_dict = self._client.post_request("/aqt_compile", request_json)
-        return css.compiler_output.read_json_aqt(json_dict, True)
+        return css.compiler_output.read_json_aqt(
+            json_dict, circuits_is_list, num_equivalent_circuits
+        )
 
     def qscout_compile(
         self,
