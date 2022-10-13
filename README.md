@@ -21,8 +21,8 @@ Clone the repository, set up your virtual environment, install requirements, and
 0. `open build/html/index.html`
 
 ## How to update docs-superstaq
-1. Make sure you are on the `main` branch.
-0. Make sure submodules are updated with `git pull --recurse-submodules`.
+1. Make sure you are on the `main` branch in `docs-superstaq` as well as the client submodules.
+0. Make sure submodules are updated with `git pull --recurse-submodules`. Additionally, update relevant dependencies within the submodules (`pip install -e .`, `pip install general-superstaq --upgrade`).
 0. Create a new branch off of `main` in which to make your updates.
 0. Make any relevant updates.
 0. If any updates were made in the client submodules (e.g., `qiskit-superstaq`), run `build_docs.py`.
