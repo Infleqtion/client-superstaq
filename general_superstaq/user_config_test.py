@@ -45,18 +45,35 @@ def test_service_aqt_upload_configs(mock_aqt_compile: mock.MagicMock) -> None:
     )
     service = gss.user_config.UserConfig(client)
     tempdir = tempfile.gettempdir()
-    pulse = secrets.token_hex(nbytes=16)
-    variable = secrets.token_hex(nbytes=16)
-    with open(f"{tempdir}/{pulse}.yaml", "w") as pulses_file:
-        pulses_file.write("Hello")
-    with open(f"{tempdir}/{variable}.yaml", "w") as variables_file:
-        variables_file.write("World")
+    pulses_file = os.path.join(tempdir, f"{secrets.token_hex(nbytes=16)}.yaml")
+    variables_file = os.path.join(tempdir, f"{secrets.token_hex(nbytes=16)}.yaml")
 
-    assert service.aqt_upload_configs(f"{tempdir}/{pulse}.yaml", f"{tempdir}/{variable}.yaml") == {
+    with open(pulses_file, "w") as pulses:
+        pulses.write("Hello")
+    with open(variables_file, "w") as variables:
+        variables.write("World")
+
+    assert service.aqt_upload_configs(pulses_file, variables_file) == {
         "status": "Your AQT configuration has been updated"
     }
-    os.remove(f"{tempdir}/{pulse}.yaml")
-    os.remove(f"{tempdir}/{variable}.yaml")
+    mock_aqt_compile.assert_called_with({"pulses": "Hello", "variables": "World"})
+
+    assert service.aqt_upload_configs(pulses={"abc": 123}, variables={"xyz": "four"}) == {
+        "status": "Your AQT configuration has been updated"
+    }
+    mock_aqt_compile.assert_called_with({"pulses": "abc: 123\n", "variables": "xyz: four\n"})
+
+    os.remove(variables_file)
+    with pytest.raises(ValueError, match="is not a dictionary or valid file path"):
+        _ = service.aqt_upload_configs(pulses_file, variables_file)
+
+    os.remove(pulses_file)
+    with pytest.raises(ValueError, match="is not a dictionary or valid file path"):
+        _ = service.aqt_upload_configs(pulses_file, variables_file)
+
+    with mock.patch.dict("sys.modules", {"yaml": None}):
+        with pytest.raises(ModuleNotFoundError, match="PyYAML"):
+            _ = service.aqt_upload_configs({}, {})
 
 
 @mock.patch(
@@ -82,7 +99,7 @@ def test_service_aqt_get_configs(mock_aqt_compile: mock.MagicMock) -> None:
     with open(f"{tempdir}/{variables_file}.yaml", "r") as file:
         assert file.read() == "World"
 
-    with pytest.raises(ValueError, match="exist"):
+    with pytest.raises(ValueError, match="exist."):
         service.aqt_download_configs(
             f"{tempdir}/{pulses_file}.yaml", f"{tempdir}/{variables_file}.yaml"
         )
@@ -107,3 +124,12 @@ def test_service_aqt_get_configs(mock_aqt_compile: mock.MagicMock) -> None:
         service.aqt_download_configs(
             f"{tempdir}/{pulses_file}.yaml", f"{tempdir}/{variables_file}.yaml"
         )
+
+    with pytest.raises(ValueError, match="Please provide both pulses and variables"):
+        service.aqt_download_configs(variables_file_path="foo/bar.yaml")
+
+    assert service.aqt_download_configs() == ("Hello", "World")
+
+    with mock.patch.dict("sys.modules", {"yaml": None}):
+        with pytest.raises(ModuleNotFoundError, match="PyYAML"):
+            _ = service.aqt_download_configs()
