@@ -15,7 +15,9 @@ except ModuleNotFoundError:
 class CompilerOutput:
     def __init__(
         self,
-        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        circuits: Union[
+            qiskit.QuantumCircuit, List[qiskit.QuantumCircuit], List[List[qiskit.QuantumCircuit]]
+        ],
         pulse_sequences: Union[qiskit.pulse.Schedule, List[qiskit.pulse.Schedule]] = None,
         seq: Optional["qtrl.sequencer.Sequence"] = None,
         jaqal_programs: Optional[List[str]] = None,
@@ -77,7 +79,9 @@ class CompilerOutput:
         )
 
 
-def read_json_aqt(json_dict: dict, circuits_is_list: bool) -> CompilerOutput:
+def read_json_aqt(
+    json_dict: dict, circuits_is_list: bool, num_eca_circuits: int = 0
+) -> CompilerOutput:
     """Reads out returned JSON from SuperstaQ API's AQT compilation endpoint.
 
     Args:
@@ -105,12 +109,25 @@ def read_json_aqt(json_dict: dict, circuits_is_list: bool) -> CompilerOutput:
         pulse_lists_str = json_dict["pulse_lists_jp"]
         pulse_lists = gss.converters.deserialize(pulse_lists_str)
 
+    compiled_circuits: Union[List[qiskit.QuantumCircuit], List[List[qiskit.QuantumCircuit]]]
     compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
+
+    if num_eca_circuits:
+        compiled_circuits = [
+            compiled_circuits[i : i + num_eca_circuits]
+            for i in range(0, len(compiled_circuits), num_eca_circuits)
+        ]
+
+        pulse_lists = pulse_lists and [
+            pulse_lists[i : i + num_eca_circuits]
+            for i in range(0, len(pulse_lists), num_eca_circuits)
+        ]
+
     if circuits_is_list:
         return CompilerOutput(circuits=compiled_circuits, seq=seq, pulse_lists=pulse_lists)
 
-    pulse_list = pulse_lists[0] if pulse_lists is not None else None
-    return CompilerOutput(circuits=compiled_circuits[0], seq=seq, pulse_lists=pulse_list)
+    pulse_lists = pulse_lists[0] if pulse_lists is not None else None
+    return CompilerOutput(circuits=compiled_circuits[0], seq=seq, pulse_lists=pulse_lists)
 
 
 def read_json_qscout(json_dict: dict, circuits_is_list: bool) -> CompilerOutput:
