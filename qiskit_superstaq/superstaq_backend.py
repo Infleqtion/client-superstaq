@@ -19,11 +19,11 @@ import qiskit_superstaq as qss
 
 
 class SuperstaQBackend(qiskit.providers.BackendV1):
-    def __init__(self, provider: "qss.SuperstaQProvider", remote_host: str, backend: str) -> None:
+    def __init__(self, provider: "qss.SuperstaQProvider", remote_host: str, target: str) -> None:
         self.remote_host = remote_host
         self._provider = provider
         self.configuration_dict = {
-            "backend_name": backend,
+            "backend_name": target,
             "backend_version": "n/a",
             "n_qubits": -1,
             "basis_gates": None,

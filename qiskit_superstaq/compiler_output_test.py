@@ -31,8 +31,8 @@ def test_read_json() -> None:
     circuit = qiskit.QuantumCircuit(4)
     for i in range(4):
         circuit.h(i)
-    state_str = gss.converters.serialize({})
-    pulse_lists_str = gss.converters.serialize([[[]]])
+    state_str = gss.serialization.serialize({})
+    pulse_lists_str = gss.serialization.serialize([[[]]])
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
@@ -48,7 +48,7 @@ def test_read_json() -> None:
     assert out.circuits == [circuit]
     assert not hasattr(out, "circuit")
 
-    pulse_lists_str = gss.converters.serialize([[[]], [[]]])
+    pulse_lists_str = gss.serialization.serialize([[[]], [[]]])
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
         "state_jp": state_str,
@@ -75,8 +75,8 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     circuit = qiskit.QuantumCircuit(4)
     for i in range(4):
         circuit.h(i)
-    state_str = gss.converters.serialize(seq.__getstate__())
-    pulse_lists_str = gss.converters.serialize([[[]]])
+    state_str = gss.serialization.serialize(seq.__getstate__())
+    pulse_lists_str = gss.serialization.serialize([[[]]])
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
         "state_jp": state_str,
@@ -95,7 +95,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     assert out.pulse_lists == [[[]]]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
-    pulse_lists_str = gss.converters.serialize([[[]], [[]]])
+    pulse_lists_str = gss.serialization.serialize([[[]], [[]]])
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
         "state_jp": state_str,

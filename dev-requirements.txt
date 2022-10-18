@@ -1,1 +1,1 @@
-general-superstaq[dev]~=0.2.9
+general-superstaq[dev]~=0.3.0

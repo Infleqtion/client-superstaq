@@ -36,10 +36,10 @@ class SuperstaQProvider(
 
         ss_provider = qss.SuperstaQProvider('MY_TOKEN')
 
-        backend = ss_provider.get_backend('my_backend')
+        backend = ss_provider.get_backend('target')
 
     where `'MY_TOKEN'` is the access token provided by SuperstaQ,
-    and 'my_backend' is the name of the desired backend.
+    and 'target' is the name of the desired backend.
 
     Args:
          Args:
@@ -92,17 +92,17 @@ class SuperstaQProvider(
         repr1 = f"<SuperstaQProvider(api_key={self.api_key}, "
         return repr1 + f"name={self._name})>"
 
-    def get_backend(self, backend: str) -> "qss.SuperstaQBackend":
-        return qss.SuperstaQBackend(provider=self, remote_host=self.remote_host, backend=backend)
+    def get_backend(self, target: str) -> "qss.SuperstaQBackend":
+        return qss.SuperstaQBackend(provider=self, remote_host=self.remote_host, target=target)
 
     def get_access_token(self) -> Optional[str]:
         return self.api_key
 
     def backends(self) -> List[qss.SuperstaQBackend]:
-        ss_backends = self._client.get_backends()["superstaq_backends"]
+        targets = self._client.get_targets()["superstaq_targets"]
         backends = []
-        for backend_str in ss_backends["compile-and-run"]:
-            backends.append(self.get_backend(backend_str))
+        for target in targets["compile-and-run"]:
+            backends.append(self.get_backend(target))
         return backends
 
     def _http_headers(self) -> dict:
@@ -120,7 +120,7 @@ class SuperstaQProvider(
 
         Args:
             circuits: qiskit QuantumCircuit(s).
-            target: string of target representing backend device
+            target: string of target representing target device
         Returns:
             ResourceEstimate(s) containing resource costs (after compilation)
             for running circuit(s) on target.
@@ -130,7 +130,7 @@ class SuperstaQProvider(
 
         request_json = {
             "qiskit_circuits": serialized_circuits,
-            "backend": target,
+            "target": target,
         }
 
         json_dict = self._client.resource_estimate(request_json)
@@ -162,7 +162,7 @@ class SuperstaQProvider(
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
         json_dict = self._client.aqt_compile(
-            {"qiskit_circuits": serialized_circuits, "backend": target}
+            {"qiskit_circuits": serialized_circuits, "target": target}
         )
 
         return qss.compiler_output.read_json_aqt(json_dict, circuits_is_list)
@@ -184,7 +184,7 @@ class SuperstaQProvider(
             num_equivalent_circuits: number of logically equivalent random circuits to generate for
                 each input circuit.
             random_seed: optional seed for circuit randomizer.
-            target: string of target backend AQT device.
+            target: string of target AQT device.
         Returns:
             object whose .circuits attribute is a list (or list of lists) of logically equivalent
                 QuantumCircuit(s).
@@ -197,7 +197,7 @@ class SuperstaQProvider(
 
         request_json = {
             "qiskit_circuits": serialized_circuits,
-            "backend": target,
+            "target": target,
             "num_eca_circuits": num_equivalent_circuits,
         }
 
@@ -218,10 +218,10 @@ class SuperstaQProvider(
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
 
         json_dict = self._client.ibmq_compile(
-            {"qiskit_circuits": serialized_circuits, "backend": target}
+            {"qiskit_circuits": serialized_circuits, "target": target}
         )
         compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
-        pulses = gss.converters.deserialize(json_dict["pulses"])
+        pulses = gss.serialization.deserialize(json_dict["pulses"])
 
         if isinstance(circuits, qiskit.QuantumCircuit):
             return qss.compiler_output.CompilerOutput(
@@ -253,7 +253,7 @@ class SuperstaQProvider(
         json_dict = self._client.qscout_compile(
             {
                 "qiskit_circuits": serialized_circuits,
-                "backend": target,
+                "target": target,
                 "options": json.dumps(options_dict),
             }
         )
@@ -275,7 +275,7 @@ class SuperstaQProvider(
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._client.cq_compile(
-            {"qiskit_circuits": serialized_circuits, "backend": target}
+            {"qiskit_circuits": serialized_circuits, "target": target}
         )
 
         return qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
@@ -292,10 +292,10 @@ class SuperstaQProvider(
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
 
         json_dict = self._client.neutral_atom_compile(
-            {"qiskit_circuits": serialized_circuits, "backend": target}
+            {"qiskit_circuits": serialized_circuits, "target": target}
         )
         try:
-            pulses = gss.converters.deserialize(json_dict["pulses"])
+            pulses = gss.serialization.deserialize(json_dict["pulses"])
         except ModuleNotFoundError as e:
             raise gss.SuperstaQModuleNotFoundException(
                 name=str(e.name), context="neutral_atom_compile"

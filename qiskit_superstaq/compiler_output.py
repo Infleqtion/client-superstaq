@@ -100,14 +100,14 @@ def read_json_aqt(
         "qtrl"
     ):  # pragma: no cover, b/c qtrl is not open source so it is not in qiskit-superstaq reqs
         state_str = json_dict["state_jp"]
-        state = gss.converters.deserialize(state_str)
+        state = gss.serialization.deserialize(state_str)
 
         seq = qtrl.sequencer.Sequence(n_elements=1)
         seq.__setstate__(state)
         seq.compile()
 
         pulse_lists_str = json_dict["pulse_lists_jp"]
-        pulse_lists = gss.converters.deserialize(pulse_lists_str)
+        pulse_lists = gss.serialization.deserialize(pulse_lists_str)
 
     compiled_circuits: Union[List[qiskit.QuantumCircuit], List[List[qiskit.QuantumCircuit]]]
     compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])

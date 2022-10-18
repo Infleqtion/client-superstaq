@@ -23,7 +23,7 @@ def test_provider() -> None:
         qss.SuperstaQBackend(
             provider=ss_provider,
             remote_host=gss.API_URL,
-            backend="ibmq_qasm_simulator",
+            target="ibmq_qasm_simulator",
         )
     )
 
@@ -31,8 +31,8 @@ def test_provider() -> None:
 
     assert repr(ss_provider) == "<SuperstaQProvider(api_key=MY_TOKEN, name=superstaq_provider)>"
 
-    backends = {
-        "superstaq_backends": {
+    targets = {
+        "superstaq_targets": {
             "compile-and-run": [
                 "ibmq_qasm_simulator",
                 "ibmq_armonk_qpu",
@@ -58,16 +58,15 @@ def test_provider() -> None:
             "compile-only": ["aqt_keysight_qpu", "sandia_qscout_qpu"],
         }
     }
-    backend_names = backends["superstaq_backends"]["compile-and-run"]
 
     expected_backends = []
-    for name in backend_names:
+    for target in targets["superstaq_targets"]["compile-and-run"]:
         expected_backends.append(
-            qss.SuperstaQBackend(provider=ss_provider, remote_host=gss.API_URL, backend=name)
+            qss.SuperstaQBackend(provider=ss_provider, remote_host=gss.API_URL, target=target)
         )
 
     mock_client = MagicMock()
-    mock_client.get_backends.return_value = backends
+    mock_client.get_targets.return_value = targets
     ss_provider._client = mock_client
     assert ss_provider.backends() == expected_backends
 
@@ -92,8 +91,8 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
-        "state_jp": gss.converters.serialize({}),
-        "pulse_lists_jp": gss.converters.serialize([[[]]]),
+        "state_jp": gss.serialization.serialize({}),
+        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     }
     out = provider.aqt_compile(qc)
     assert out.circuit == qc
@@ -105,8 +104,8 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
-        "state_jp": gss.converters.serialize({}),
-        "pulse_lists_jp": gss.converters.serialize([[[]], [[]]]),
+        "state_jp": gss.serialization.serialize({}),
+        "pulse_lists_jp": gss.serialization.serialize([[[]], [[]]]),
     }
     out = provider.aqt_compile([qc, qc])
     assert out.circuits == [qc, qc]
@@ -122,8 +121,8 @@ def test_service_aqt_compile_eca(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
-        "state_jp": gss.converters.serialize({}),
-        "pulse_lists_jp": gss.converters.serialize([[[]]]),
+        "state_jp": gss.serialization.serialize({}),
+        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     }
 
     out = provider.aqt_compile_eca(qc, num_equivalent_circuits=1, random_seed=1234)
@@ -140,7 +139,7 @@ def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
     qc.cz(4, 5)
     mock_ibmq_compile.return_value = {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
-        "pulses": gss.converters.serialize([mock.DEFAULT]),
+        "pulses": gss.serialization.serialize([mock.DEFAULT]),
     }
 
     assert provider.ibmq_compile(qiskit.QuantumCircuit()) == qss.compiler_output.CompilerOutput(
@@ -269,7 +268,7 @@ def test_cq_compile(mock_post: MagicMock) -> None:
 
 @patch(
     "general_superstaq.superstaq_client._SuperstaQClient.neutral_atom_compile",
-    return_value={"pulses": gss.converters.serialize([mock.DEFAULT])},
+    return_value={"pulses": gss.serialization.serialize([mock.DEFAULT])},
 )
 def test_neutral_atom_compile(mock_ibmq_compile: MagicMock) -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")

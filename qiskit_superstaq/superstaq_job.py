@@ -33,7 +33,7 @@ class SuperstaQJob(qiskit.providers.JobV1):
         """Initialize a job instance.
 
         Parameters:
-            backend (BaseBackend): Backend that job was executed on.
+            backend (SuperstaQBackend): Backend that job was executed on.
             job_id (str): The unique job ID from SuperstaQ.
             access_token (str): The access token.
         """
