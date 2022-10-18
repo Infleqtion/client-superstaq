@@ -73,7 +73,7 @@ def read_json_ibmq(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compile
         import qiskit
 
         if "0.20" < qiskit.__version__ < "0.21":
-            pulses = gss.converters.deserialize(json_dict["pulses"])
+            pulses = gss.serialization.deserialize(json_dict["pulses"])
         else:
             warnings.warn(
                 "ibmq_compile requires Qiskit Terra version 0.20.* to deserialize compiled pulse "
@@ -110,13 +110,13 @@ def read_json_aqt(
     if importlib.util.find_spec(
         "qtrl"
     ):  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
-        state = gss.converters.deserialize(json_dict["state_jp"])
+        state = gss.serialization.deserialize(json_dict["state_jp"])
 
         seq = qtrl.sequencer.Sequence(n_elements=1)
         seq.__setstate__(state)
         seq.compile()
 
-        pulse_lists = gss.converters.deserialize(json_dict["pulse_lists_jp"])
+        pulse_lists = gss.serialization.deserialize(json_dict["pulse_lists_jp"])
 
     compiled_circuits: Union[List[cirq.Circuit], List[List[cirq.Circuit]]]
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])

@@ -200,7 +200,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         """Returns a `cirq.Sampler` object for accessing sampler interface.
 
         Args:
-            target: Backend to sample against.
+            target: target to sample against.
 
         Returns:
             A `cirq.Sampler` for the SuperstaQ API.
@@ -284,9 +284,9 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             return f"${balance:,.2f}"
         return balance
 
-    def get_backends(self) -> dict:
-        """Get list of available backends."""
-        return self._client.get_backends()["superstaq_backends"]
+    def get_targets(self) -> dict:
+        """Get list of available targets."""
+        return self._client.get_targets()["superstaq_targets"]
 
     def resource_estimate(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: Optional[str] = None
@@ -295,7 +295,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
         Args:
             circuits: cirq Circuit(s).
-            target: string of target representing backend device
+            target: string of target representing target device
         Returns:
             ResourceEstimate(s) containing resource costs (after compilation)
         """
@@ -306,7 +306,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
         request_json = {
             "cirq_circuits": serialized_circuit,
-            "backend": target,
+            "target": target,
         }
 
         json_dict = self._client.resource_estimate(request_json)
@@ -327,7 +327,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
         Args:
             circuits: cirq Circuit(s) to compile.
-            target: string of target backend AQT device.
+            target: string of target target AQT device.
         Returns:
             object whose .circuit(s) attribute is an optimized cirq Circuit(s)
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
@@ -338,7 +338,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
         json_dict = self._client.aqt_compile(
-            {"cirq_circuits": serialized_circuits, "backend": target}
+            {"cirq_circuits": serialized_circuits, "target": target}
         )
         return css.compiler_output.read_json_aqt(json_dict, circuits_is_list)
 
@@ -358,7 +358,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             num_equivalent_circuits: number of logically equivalent random circuits to generate for
                 each input circuit.
             random_seed: optional seed for circuit randomizer.
-            target: string of target backend AQT device.
+            target: string of target target AQT device.
         Returns:
             object whose .circuits attribute is a list (or list of lists) of logically equivalent
                 cirq Circuit(s).
@@ -371,7 +371,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
         request_json = {
             "cirq_circuits": serialized_circuits,
-            "backend": target,
+            "target": target,
             "num_eca_circuits": num_equivalent_circuits,
         }
 
@@ -393,7 +393,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
         Args:
             circuits: cirq Circuit(s) with operations on qubits 0 and 1.
-            target: string of target backend QSCOUT device.
+            target: string of target target QSCOUT device.
         Returns:
             object whose .circuit(s) attribute is an optimized cirq Circuit(s)
             and a list of jaqal programs represented as strings
@@ -406,7 +406,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             {
                 "cirq_circuits": serialized_circuits,
                 "options": json.dumps(options_dict),
-                "backend": target,
+                "target": target,
             }
         )
 
@@ -420,7 +420,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
         Args:
             circuits: cirq Circuit(s) with operations on qubits 0 and 1.
-            target: string of target backend CQ device.
+            target: string of target target CQ device.
         Returns:
             object whose .circuit(s) attribute is an optimized cirq Circuit(s)
         """
@@ -428,7 +428,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
         json_dict = self._client.cq_compile(
-            {"cirq_circuits": serialized_circuits, "backend": target}
+            {"cirq_circuits": serialized_circuits, "target": target}
         )
 
         return css.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
@@ -448,7 +448,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             raise ValueError(f"{target} is not an IBMQ target")
 
         json_dict = self._client.ibmq_compile(
-            {"cirq_circuits": serialized_circuits, "backend": target}
+            {"cirq_circuits": serialized_circuits, "target": target}
         )
 
         return css.compiler_output.read_json_ibmq(json_dict, circuits_is_list)
@@ -463,10 +463,10 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         serialized_circuits = css.serialization.serialize_circuits(circuits)
 
         json_dict = self._client.neutral_atom_compile(
-            {"cirq_circuits": serialized_circuits, "backend": target}
+            {"cirq_circuits": serialized_circuits, "target": target}
         )
         try:
-            pulses = gss.converters.deserialize(json_dict["pulses"])
+            pulses = gss.serialization.deserialize(json_dict["pulses"])
         except ModuleNotFoundError as e:
             raise gss.SuperstaQModuleNotFoundException(
                 name=str(e.name), context="neutral_atom_compile"

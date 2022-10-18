@@ -112,8 +112,8 @@ def test_tsp(service: css.Service) -> None:
         assert city.replace(" ", "+") in out.map_link[0]
 
 
-def test_get_backends(service: css.Service) -> None:
-    result = service.get_backends()
+def test_get_targets(service: css.Service) -> None:
+    result = service.get_targets()
     assert "ibmq_qasm_simulator" in result["compile-and-run"]
     assert "aqt_keysight_qpu" in result["compile-only"]
 

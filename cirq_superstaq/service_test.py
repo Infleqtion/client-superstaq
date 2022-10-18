@@ -199,11 +199,11 @@ def test_service_get_balance() -> None:
     assert service.get_balance(pretty_output=False) == 12345.6789
 
 
-def test_service_get_backends() -> None:
+def test_service_get_targets() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
     mock_client = mock.MagicMock()
-    backends = {
-        "superstaq_backends": {
+    targets = {
+        "superstaq_targets": {
             "compile-and-run": [
                 "ibmq_qasm_simulator",
                 "ibmq_armonk_qpu",
@@ -229,18 +229,18 @@ def test_service_get_backends() -> None:
             "compile-only": ["aqt_keysight_qpu", "sandia_qscout_qpu"],
         }
     }
-    mock_client.get_backends.return_value = backends
+    mock_client.get_targets.return_value = targets
     service._client = mock_client
 
-    assert service.get_backends() == backends["superstaq_backends"]
+    assert service.get_targets() == targets["superstaq_targets"]
 
 
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits(cirq.Circuit()),
-        "state_jp": gss.converters.serialize({}),
-        "pulse_lists_jp": gss.converters.serialize([[[]]]),
+        "state_jp": gss.serialization.serialize({}),
+        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     },
 )
 def test_service_aqt_compile_single(mock_aqt_compile: mock.MagicMock) -> None:
@@ -254,8 +254,8 @@ def test_service_aqt_compile_single(mock_aqt_compile: mock.MagicMock) -> None:
     "general_superstaq.superstaq_client._SuperstaQClient.aqt_compile",
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit(), cirq.Circuit()]),
-        "state_jp": gss.converters.serialize({}),
-        "pulse_lists_jp": gss.converters.serialize([[[]], [[]]]),
+        "state_jp": gss.serialization.serialize({}),
+        "pulse_lists_jp": gss.serialization.serialize([[[]], [[]]]),
     },
 )
 def test_service_aqt_compile_multiple(mock_aqt_compile: mock.MagicMock) -> None:
@@ -269,8 +269,8 @@ def test_service_aqt_compile_multiple(mock_aqt_compile: mock.MagicMock) -> None:
     "general_superstaq.superstaq_client._SuperstaQClient.post_request",
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit()]),
-        "state_jp": gss.converters.serialize({}),
-        "pulse_lists_jp": gss.converters.serialize([[[]]]),
+        "state_jp": gss.serialization.serialize({}),
+        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     },
 )
 def test_service_aqt_compile_eca(mock_aqt_compile: mock.MagicMock) -> None:
@@ -391,7 +391,7 @@ def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
 
     mock_ibmq_compile.return_value = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
-        "pulses": gss.converters.serialize([mock.DEFAULT]),
+        "pulses": gss.serialization.serialize([mock.DEFAULT]),
     }
 
     assert service.ibmq_compile(circuit).circuit == circuit
@@ -410,7 +410,7 @@ def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
 
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaQClient.neutral_atom_compile",
-    return_value={"pulses": gss.converters.serialize([mock.DEFAULT])},
+    return_value={"pulses": gss.serialization.serialize([mock.DEFAULT])},
 )
 def test_service_neutral_atom_compile(mock_neutral_atom_compile: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")

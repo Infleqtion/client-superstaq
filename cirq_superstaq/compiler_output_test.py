@@ -29,7 +29,7 @@ def test_read_json_ibmq() -> None:
 
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
-        "pulses": gss.converters.serialize([mock.DEFAULT]),
+        "pulses": gss.serialization.serialize([mock.DEFAULT]),
     }
 
     out = css.compiler_output.read_json_ibmq(json_dict, circuits_is_list=False)
@@ -64,8 +64,8 @@ def test_read_json_aqt() -> None:
     importlib.reload(css.compiler_output)
 
     circuit = cirq.Circuit(cirq.H(cirq.LineQubit(4)))
-    state_str = gss.converters.serialize({})
-    pulse_lists_str = gss.converters.serialize([[[]]])
+    state_str = gss.serialization.serialize({})
+    pulse_lists_str = gss.serialization.serialize([[[]]])
 
     json_dict: dict
 
@@ -84,7 +84,7 @@ def test_read_json_aqt() -> None:
     assert not hasattr(out, "circuit")
 
     # multiple circuits
-    pulse_lists_str = gss.converters.serialize([[[]], [[]]])
+    pulse_lists_str = gss.serialization.serialize([[[]], [[]]])
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits([circuit, circuit]),
         "state_jp": state_str,

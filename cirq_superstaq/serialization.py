@@ -33,7 +33,7 @@ def deserialize_circuits(serialized_circuits: str) -> List[cirq.Circuit]:
     """Deserialize serialized Circuit(s)
 
     Args:
-        serialized_circuits: json str generated via converters.serialize_circuit()
+        serialized_circuits: json str generated via serialization.serialize_circuit()
 
     Returns:
         the Circuit or list of Circuits that was serialized
