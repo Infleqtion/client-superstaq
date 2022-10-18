@@ -61,11 +61,11 @@ class Finance:
         self._client = client
 
     def submit_qubo(self, qubo: qv.QUBO, target: str, repetitions: int = 1000) -> np.recarray:
-        """Submits the given QUBO to the target backend. The result of the optimization
-        is returned to the user as a numpy.recarray.
+        """Submits the given QUBO to the target. The result of the optimization is returned to the
+        user as a numpy.recarray.
         Args:
             qubo: Qubovert QUBO object representing the optimization problem.
-            target: A string indicating which backend to use.
+            target: A string indicating which target to use.
             repetitions: Number of shots to execute on the device.
         Returns:
             Numpy.recarray containing the solution to the QUBO, the energy of the

@@ -139,7 +139,7 @@ class _SuperstaQClient:
         """
         json_dict: Dict[str, Any] = {
             **serialized_circuits,
-            "backend": target,
+            "target": target,
             "shots": repetitions,
         }
 
@@ -174,9 +174,9 @@ class _SuperstaQClient:
         """
         return self.get_request("/balance")
 
-    def get_backends(self) -> dict:
-        """Makes a GET request to SuperstaQ API to get a list of available backends."""
-        return self.get_request("/backends")
+    def get_targets(self) -> dict:
+        """Makes a GET request to SuperstaQ API to get a list of available targets."""
+        return self.get_request("/targets")
 
     def ibmq_set_token(self, ibmq_token: Dict[str, str]) -> dict:
         """Makes a POST request to SuperstaQ API to set IBMQ token field in database.
@@ -225,7 +225,7 @@ class _SuperstaQClient:
         """Makes a POST request to SuperstaQ API to submit a QUBO problem to the given target."""
         json_dict = {
             "qubo": gss.qubo.convert_qubo_to_model(qubo),
-            "backend": target,
+            "target": target,
             "shots": repetitions,
         }
         return self.post_request("/qubo", json_dict)

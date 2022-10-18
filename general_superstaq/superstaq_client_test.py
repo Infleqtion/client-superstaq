@@ -37,7 +37,10 @@ def test_superstaq_client_str_and_repr() -> None:
         api_key="to_my_heart",
     )
 
-    assert str(client) == "Client with host=http://example.com/v0.1.0 and name=general-superstaq"
+    assert (
+        str(client)
+        == f"Client with host=http://example.com/{API_VERSION} and name=general-superstaq"
+    )
     assert str(eval(repr(client))) == str(client)
 
 
@@ -125,7 +128,7 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
 
     expected_json = {
         "Hello": "World",
-        "backend": "ss_example_qpu",
+        "target": "ss_example_qpu",
         "shots": 200,
         "method": "dry-run",
         "options": json.dumps({"ibmq_pulse": True}),
@@ -317,10 +320,10 @@ def test_superstaq_client_resource_estimate(mock_post: mock.MagicMock) -> None:
 
 
 @mock.patch("requests.get")
-def test_superstaq_client_get_backends(mock_get: mock.MagicMock) -> None:
+def test_superstaq_client_get_targets(mock_get: mock.MagicMock) -> None:
     mock_get.return_value.ok = True
-    backends = {
-        "superstaq_backends:": {
+    targets = {
+        "superstaq_targets:": {
             "compile-and-run": [
                 "ibmq_qasm_simulator",
                 "ibmq_armonk_qpu",
@@ -346,17 +349,17 @@ def test_superstaq_client_get_backends(mock_get: mock.MagicMock) -> None:
             "compile-only": ["aqt_keysight_qpu", "sandia_qscout_qpu"],
         }
     }
-    mock_get.return_value.json.return_value = backends
+    mock_get.return_value.json.return_value = targets
     client = gss.superstaq_client._SuperstaQClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
-    response = client.get_backends()
-    assert response == backends
+    response = client.get_targets()
+    assert response == targets
 
     mock_get.assert_called_with(
-        f"http://example.com/{API_VERSION}/backends", headers=EXPECTED_HEADERS, verify=False
+        f"http://example.com/{API_VERSION}/targets", headers=EXPECTED_HEADERS, verify=False
     )
 
 
@@ -507,7 +510,7 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
             {"keys": ["1"], "value": 1.0},
             {"keys": ["0", "1"], "value": -2.0},
         ],
-        "backend": target,
+        "target": target,
         "shots": repetitions,
     }
 
