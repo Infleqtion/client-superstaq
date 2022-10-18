@@ -43,7 +43,7 @@ def test_read_json_maxsharpe() -> None:
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaQClient.submit_qubo",
     return_value={
-        "solution": gss.converters.serialize(
+        "solution": gss.serialization.serialize(
             np.rec.fromrecords(
                 [({0: 0, 1: 1, 3: 1}, -1, 6), ({0: 1, 1: 1, 3: 1}, -1, 4)],
                 dtype=[("solution", "O"), ("energy", "<f8"), ("num_occurrences", "<i8")],

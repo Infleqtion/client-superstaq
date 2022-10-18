@@ -14,7 +14,7 @@ def read_json_qubo_result(json_dict: Dict[str, str]) -> np.recarray:
     Returns:
         a numpy.recarray containing the results of the optimization.
     """
-    return gss.converters.deserialize(json_dict["solution"])
+    return gss.serialization.deserialize(json_dict["solution"])
 
 
 def convert_qubo_to_model(qubo: qv.QUBO) -> QuboModel:

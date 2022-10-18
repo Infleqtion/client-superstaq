@@ -10,7 +10,7 @@ def test_read_json_qubo_result() -> None:
         dtype=[("solution", "O"), ("energy", "<f8"), ("num_occurrences", "<i8")],
     )
     json_dict = {
-        "solution": gss.converters.serialize(example_solution),
+        "solution": gss.serialization.serialize(example_solution),
     }
     assert repr(gss.qubo.read_json_qubo_result(json_dict)) == repr(example_solution)
 

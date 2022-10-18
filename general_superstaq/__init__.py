@@ -9,10 +9,10 @@ from general_superstaq.superstaq_exceptions import (
 )
 
 from . import (
-    converters,
     finance,
     logistics,
     qubo,
+    serialization,
     superstaq_client,
     superstaq_exceptions,
     typing,
@@ -27,11 +27,11 @@ __all__ = [
     "SuperstaQModuleNotFoundException",
     "SuperstaQNotFoundException",
     "SuperstaQUnsuccessfulJobException",
-    "converters",
     "finance",
     "logistics",
     "qubo",
     "ResourceEstimate",
+    "serialization",
     "superstaq_client",
     "superstaq_exceptions",
     "typing",
