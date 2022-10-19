@@ -29,7 +29,9 @@ service = css.Service(
     api_key="""Insert superstaq token that you received from https://superstaq.super.tech""",
     verbose=True,
 )
-job = service.create_job(circuit=circuit, repetitions=1, target="ibmq_qasm_simulator")
+
+# Submitting a circuit to "ibmq_qasm_simulator". Providing the "dry-run" method parameter instructs SuperstaQ to simulate the circuit, and is available to free trial users.
+job = service.create_job(circuit=circuit, repetitions=1, target="ibmq_qasm_simulator", method="dry-run")
 print("This is the job that's created ", job.status())
 print(job.counts())
 ```
