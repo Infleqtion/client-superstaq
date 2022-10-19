@@ -38,6 +38,8 @@ qc.measure(0, 0)
 qc.measure(1, 1)
 
 print(qc)
-job = backend.run(qc, shots=100)
+
+# Submitting a circuit to "ibmq_qasm_simulator". Providing the "dry-run" method parameter instructs SuperstaQ to simulate the circuit, and is available to free trial users.
+job = backend.run(qc, shots=100, method="dry-run")
 print(job.result().get_counts())
 ```
