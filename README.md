@@ -11,6 +11,9 @@ python3 -m venv venv_cirq_superstaq
 source venv_cirq_superstaq/bin/activate
 pip install cirq-superstaq
 
+# Run the following to install dev requirements (required if you intend to run checks locally)
+pip install .[dev]
+
 # Run the following to install neutral atom device dependencies.
 pip install -r neutral-atom-requirements.txt
 ```
