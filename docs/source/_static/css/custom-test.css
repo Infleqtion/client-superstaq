@@ -4125,7 +4125,7 @@ footer p{
     left:0;
     width:300px;
     color:#303030;
-    background:none;
+    background:#F7F7F7;
     font-family:Helvetica Neue,Arial,sans-serif;
     z-index:400
 }
@@ -4187,16 +4187,17 @@ footer p{
     border:0;
     margin:20px 0;
     padding:0;
-    border-top:1px solid #413d3d
+    border-top:1px solid grey
 }
 .rst-versions .rst-other-versions dd{
     display:inline-block;
     margin:0
 }
+/* versions sidebar links */
 .rst-versions .rst-other-versions dd a{
     display:inline-block;
     padding:6px;
-    color:#fcfcfc
+    color:#70C8A0
 }
 .rst-versions.rst-badge{
     width:auto;
