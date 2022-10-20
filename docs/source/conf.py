@@ -53,3 +53,14 @@ exclude_patterns: List[str] = [
 
 html_theme = "sphinx_rtd_theme"
 html_static_path = ['_static']
+html_theme_options = {
+    "logo_only": True,
+}
+html_logo = "_static/logos/superstaq-logo-v3.png"
+html_css_files = [
+    # 'css/theme-dss.css',
+    # 'css/dss-colors.css',
+    'css/custom-test.css',
+    # 'css/custom-pygments.css',
+]
+html_favicon = "_static/logos/superstaq-favicon.png"
