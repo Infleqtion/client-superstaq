@@ -3884,6 +3884,7 @@ html{
     margin-top:.85em
 }
 .wy-side-nav-search>div.version{
+    display:none;
     margin-top:-1em;
     margin-bottom:.809em;
     font-weight:400;
