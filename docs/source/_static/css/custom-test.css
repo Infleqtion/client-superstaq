@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300&display=swap');
 html{
     box-sizing:border-box
 }
@@ -3457,8 +3458,8 @@ a.wy-text-neutral:hover{
 }
 .rst-content .toctree-wrapper>p.caption,h1,h2,h3,h4,h5,h6,legend{
     margin-top:0;
-    font-weight:700;
-    font-family:Roboto Mono,Helvetica Neue,Arial,sans-serif
+    font-weight:300;
+    font-family:'Roboto Mono',Helvetica Neue,Arial,sans-serif
 }
 p{
     line-height:24px;
@@ -3638,9 +3639,11 @@ html{
     margin:12px 0 0;
     display:block;
     font-weight:700;
-    text-transform:uppercase;
+    text-transform:capitalize;
     font-size:100%;
+    font-family:'Roboto Mono',Helvetica Neue,Arial,sans-serif;
     white-space:nowrap
+    
 }
 .wy-menu-vertical ul{
     margin-bottom:0
@@ -3881,7 +3884,7 @@ html{
     margin-top:.85em
 }
 .wy-side-nav-search>div.version{
-    margin-top:-.4045em;
+    margin-top:-1em;
     margin-bottom:.809em;
     font-weight:400;
     color:hsla(0,0%,100%,.3)
@@ -4453,7 +4456,7 @@ footer p{
 .rst-content .sidebar .sidebar-title{
     display:block;
     font-family:'Roboto Mono',Helvetica Neue,Arial,sans-serif;
-    font-weight:700;
+    font-weight:300;
     background:#e1e4e5;
     padding:6px 12px;
     margin:-24px -24px 24px;
@@ -4777,13 +4780,6 @@ span[id*=MathJax-Span]{
     font-style:normal;
     font-weight:700;
     src:url(fonts/Roboto-Slab-Bold.woff2?9984f4a9bda09be08e83f2506954adbe) format("woff2"),url(fonts/Roboto-Slab-Bold.woff?bed5564a116b05148e3b3bea6fb1162a) format("woff");
-    font-display:block
-}
-@font-face{
-    font-family:Roboto Mono;
-    font-style:normal;
-    font-weight:700;
-    src:url(https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@700&display=swap);
     font-display:block
 }
 pre { line-height: 125%; }
