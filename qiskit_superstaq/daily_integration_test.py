@@ -73,6 +73,21 @@ def test_aqt_compile(provider: qss.SuperstaQProvider) -> None:
     assert provider.aqt_compile([circuit, circuit]).circuits == [expected, expected]
 
 
+def test_aqt_compile_eca(provider: qss.SuperstaQProvider) -> None:
+    circuit = qiskit.QuantumCircuit(8)
+    circuit.h(4)
+
+    eca_circuits = provider.aqt_compile_eca(circuit, num_equivalent_circuits=3).circuits
+    assert len(eca_circuits) == 3
+    assert all(isinstance(circuit, qiskit.QuantumCircuit) for circuit in eca_circuits)
+
+    eca_circuits = provider.aqt_compile_eca([circuit, circuit], num_equivalent_circuits=3).circuits
+    assert len(eca_circuits) == 2
+    for circuits in eca_circuits:
+        assert len(circuits) == 3
+        assert all(isinstance(circuit, qiskit.QuantumCircuit) for circuit in circuits)
+
+
 def test_get_balance(provider: qss.SuperstaQProvider) -> None:
     balance_str = provider.get_balance()
     assert isinstance(balance_str, str)

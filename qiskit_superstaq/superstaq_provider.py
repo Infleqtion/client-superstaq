@@ -195,14 +195,15 @@ class SuperstaQProvider(
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
+        options_dict = {"num_eca_circuits": num_equivalent_circuits}
+        if random_seed is not None:
+            options_dict["random_seed"] = random_seed
+
         request_json = {
             "qiskit_circuits": serialized_circuits,
             "target": target,
-            "num_eca_circuits": num_equivalent_circuits,
+            "options": json.dumps(options_dict),
         }
-
-        if random_seed is not None:
-            request_json["random_seed"] = random_seed
 
         json_dict = self._client.post_request("/aqt_compile", request_json)
         return qss.compiler_output.read_json_aqt(
