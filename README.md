@@ -18,6 +18,15 @@ The SupermarQ package is available via `pip` and can be installed in your curren
 pip install supermarq
 ```
 
+## Install Dev Requirements 
+
+This is required if you intend to run checks locally
+
+```
+pip install .[dev]
+```
+
+
 ## Using SupermarQ
 
 The benchmarks are defined as classes within `supermarq/benchmarks/`. Each application
