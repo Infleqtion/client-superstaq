@@ -369,14 +369,15 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
+        options_dict = {"num_eca_circuits": num_equivalent_circuits}
+        if random_seed is not None:
+            options_dict["random_seed"] = random_seed
+
         request_json = {
             "cirq_circuits": serialized_circuits,
             "target": target,
-            "num_eca_circuits": num_equivalent_circuits,
+            "options": json.dumps(options_dict),
         }
-
-        if random_seed is not None:
-            request_json["random_seed"] = random_seed
 
         json_dict = self._client.post_request("/aqt_compile", request_json)
         return css.compiler_output.read_json_aqt(

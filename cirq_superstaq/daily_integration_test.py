@@ -68,6 +68,20 @@ def test_aqt_compile(service: css.Service) -> None:
         )
 
 
+def test_aqt_compile_eca(service: css.Service) -> None:
+    circuit = cirq.Circuit(cirq.H(cirq.LineQubit(4)))
+
+    eca_circuits = service.aqt_compile_eca(circuit, num_equivalent_circuits=3).circuits
+    assert len(eca_circuits) == 3
+    assert all(isinstance(circuit, cirq.Circuit) for circuit in eca_circuits)
+
+    eca_circuits = service.aqt_compile_eca([circuit, circuit], num_equivalent_circuits=3).circuits
+    assert len(eca_circuits) == 2
+    for circuits in eca_circuits:
+        assert len(circuits) == 3
+        assert all(isinstance(circuit, cirq.Circuit) for circuit in circuits)
+
+
 def test_get_balance(service: css.Service) -> None:
     balance_str = service.get_balance()
     assert isinstance(balance_str, str)
