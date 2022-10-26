@@ -9,6 +9,21 @@ import pytest
 import cirq_superstaq as css
 
 
+def test_active_qubit_indices() -> None:
+    qubits = cirq.LineQubit.range(6)
+
+    circuit = cirq.Circuit(
+        cirq.X(qubits[5]),
+        cirq.CZ(qubits[3], qubits[1]),
+        cirq.H(qubits[1]),
+    )
+
+    assert css.active_qubit_indices(circuit) == [1, 3, 5]
+
+    with pytest.raises(ValueError, match="line qubits"):
+        _ = css.active_qubit_indices(cirq.Circuit(cirq.X(cirq.GridQubit(1, 2))))
+
+
 def test_compiler_output_repr() -> None:
     circuit = cirq.Circuit()
     assert (

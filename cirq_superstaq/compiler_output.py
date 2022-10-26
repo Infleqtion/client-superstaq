@@ -13,6 +13,18 @@ except ModuleNotFoundError:
     pass
 
 
+def active_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
+    """Returns the indices of the non-idle qubits in a quantum circuit."""
+
+    qubit_indices = []
+    for q in circuit.all_qubits():
+        if not isinstance(q, (cirq.LineQubit, cirq.LineQid)):
+            raise ValueError("Qubit indices can only be determined for line qubits")
+        qubit_indices.append(int(q))
+
+    return sorted(qubit_indices)
+
+
 class CompilerOutput:
     def __init__(
         self,

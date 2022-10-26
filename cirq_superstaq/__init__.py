@@ -14,6 +14,7 @@
 
 from cirq_superstaq import compiler_output, serialization
 from cirq_superstaq._version import __version__
+from cirq_superstaq.compiler_output import active_qubit_indices
 from cirq_superstaq.custom_gates import (
     AQTICCX,
     AQTITOFFOLI,
@@ -36,6 +37,7 @@ from cirq_superstaq.service import Service
 
 __all__ = [
     "__version__",
+    "active_qubit_indices",
     "AceCR",
     "AceCRMinusPlus",
     "AceCRPlusMinus",
