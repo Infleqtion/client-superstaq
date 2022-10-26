@@ -1,0 +1,52 @@
+name: Bug report
+description: Create a report to help us improve 🦧
+
+body:
+  - type: markdown
+    attributes:
+      value: Please make sure to browse the opened and closed issues to make sure that this idea has not previously been discussed.
+
+  - type: textarea
+    attributes:
+      label: What is happening?
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: How can we reproduce the issue?
+      description: Steps and/or relevant code to reproduce the behavior.  A [minimal working example](https://stackoverflow.com/help/minimal-reproducible-example) of code with output is best.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: What should happen?
+      description: A short description, including the expected output of any code in the previous section.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Environment
+      value: |
+        - **SuperstaQ version**: 
+        - **general-superstaq version**: 
+        - **cirq-superstaq version**: 
+        - **Operating system**: 
+        - **Python version**: 
+        - **Any other relevant dependencies**: 
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Any additional context?
+      description: Additional context for the issue, such as screenshots or suggestions for how a contributor should fix this.
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: "### Please add the appropriate labels for this issue."
