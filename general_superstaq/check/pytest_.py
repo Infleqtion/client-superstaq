@@ -13,7 +13,7 @@ def run(
     *args: str,
     include: Optional[Union[str, Iterable[str]]] = None,
     exclude: Optional[Union[str, Iterable[str]]] = None,
-    integration_setup: Optional[Callable] = None,
+    integration_setup: Optional[Callable[[], None]] = None,
     silent: bool = False,
 ) -> int:
 

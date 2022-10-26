@@ -1,11 +1,13 @@
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Dict, List, Optional, Union
 
 import numpy as np
+import numpy.typing as npt
 import qubovert as qv
 
 import general_superstaq as gss
 from general_superstaq import superstaq_client
+from general_superstaq.typing import MaxSharpeJson, MinVolJson
 
 
 @dataclass
@@ -16,14 +18,13 @@ class MinVolOutput:
     qubo: qv.QUBO
 
 
-def read_json_minvol(json_dict: dict) -> MinVolOutput:
+def read_json_minvol(json_dict: MinVolJson) -> MinVolOutput:
     """Reads out returned JSON from SuperstaQ API's minvol endpoint.
     Args:
         json_dict: a JSON dictionary matching the format returned by /minvol endpoint
     Returns:
         a MinVolOutput object with the optimal portfolio.
     """
-
     best_portfolio = json_dict["best_portfolio"]
     best_ret = json_dict["best_ret"]
     best_std_dev = json_dict["best_std_dev"]
@@ -40,14 +41,13 @@ class MaxSharpeOutput:
     qubo: qv.QUBO
 
 
-def read_json_maxsharpe(json_dict: dict) -> MaxSharpeOutput:
+def read_json_maxsharpe(json_dict: MaxSharpeJson) -> MaxSharpeOutput:
     """Reads out returned JSON from SuperstaQ API's minvol endpoint.
     Args:
         json_dict: a JSON dictionary matching the format returned by /maxsharpe endpoint
     Returns:
         a MaxSharpeOutput object with the optimal portfolio.
     """
-
     best_portfolio = json_dict["best_portfolio"]
     best_ret = json_dict["best_ret"]
     best_std_dev = json_dict["best_std_dev"]
@@ -60,9 +60,11 @@ class Finance:
     def __init__(self, client: superstaq_client._SuperstaQClient):
         self._client = client
 
-    def submit_qubo(self, qubo: qv.QUBO, target: str, repetitions: int = 1000) -> np.recarray:
-        """Submits the given QUBO to the target. The result of the optimization is returned to the
-        user as a numpy.recarray.
+    def submit_qubo(
+        self, qubo: qv.QUBO, target: str, repetitions: int = 1000
+    ) -> npt.NDArray[np.int_]:
+        """Submits the given QUBO to the target backend. The result of the optimization
+        is returned to the user as a numpy.recarray.
         Args:
             qubo: Qubovert QUBO object representing the optimization problem.
             target: A string indicating which target to use.
@@ -94,7 +96,7 @@ class Finance:
             .best_ret: The return of the optimal portfolio.
             .best_std_dev: The volatility of the optimal portfolio.
         """
-        input_dict = {
+        input_dict: Dict[str, Union[List[str], int, float, str]] = {
             "stock_symbols": stock_symbols,
             "desired_return": desired_return,
             "years_window": years_window,
@@ -147,7 +149,7 @@ class Finance:
             .best_std_dev: The volatility of the optimal portfolio.
             .best_sharpe_ratio: The Sharpe ratio of the optimal portfolio.
         """
-        input_dict = {
+        input_dict: Dict[str, Union[List[str], float, str, int, None]] = {
             "stock_symbols": stock_symbols,
             "k": k,
             "num_assets_in_portfolio": num_assets_in_portfolio,

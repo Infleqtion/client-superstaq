@@ -3,6 +3,7 @@ from unittest import mock
 import qubovert as qv
 
 import general_superstaq as gss
+from general_superstaq.typing import TSPJson, WareHouseJson
 
 
 def test_read_json_tsp() -> None:
@@ -11,7 +12,7 @@ def test_read_json_tsp() -> None:
     total_distance = 100.0
     map_link = ["maps.google.com"]
     qubo_obj = qv.QUBO({("0", "1"): -1.0})
-    json_dict = {
+    json_dict: TSPJson = {
         "route": route,
         "route_list_numbers": route_list_numbers,
         "total_distance": total_distance,
@@ -29,7 +30,7 @@ def test_read_json_warehouse() -> None:
     map_link = "map.html"
     open_warehouses = ["Chicago"]
     qubo_obj = qv.QUBO({("0", "1"): -1.0})
-    json_dict = {
+    json_dict: WareHouseJson = {
         "warehouse_to_destination": warehouse_to_destination,
         "total_distance": total_distance,
         "map_link": map_link,
@@ -84,6 +85,10 @@ def test_service_warehouse(mock_warehouse: mock.MagicMock) -> None:
     service = gss.logistics.Logistics(client)
     qubo = {("0",): 123}
     expected = gss.logistics.WarehouseOutput(
-        [("Chicago", "Rockford"), ("Chicago", "Aurora")], 100.0, "map.html", ["Chicago"], qubo
+        [("Chicago", "Rockford"), ("Chicago", "Aurora")],
+        100.0,
+        "map.html",
+        ["Chicago"],
+        qubo,
     )
     assert service.warehouse(1, ["Chicago", "San Francisco"], ["Rockford", "Aurora"]) == expected

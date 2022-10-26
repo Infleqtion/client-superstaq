@@ -22,7 +22,7 @@ class UserConfig:
             return f"${balance:,.2f}"
         return balance
 
-    def ibmq_set_token(self, token: str) -> Dict[str, str]:
+    def ibmq_set_token(self, token: str) -> str:
         """Sets IBMQ token field in database.
 
         Args:
@@ -37,7 +37,7 @@ class UserConfig:
         self,
         pulses: Union[str, Dict[str, Any]],
         variables: Union[str, Dict[str, Any]],
-    ) -> Dict[str, str]:
+    ) -> str:
         """Uploads configs for AQT. Arguments can either be dictionaries or paths to valid
         .yaml files. If neither is provided, the existing configuration is preserved.
 
@@ -45,7 +45,7 @@ class UserConfig:
             pulses (optional): dictionary or file path for Pulses calibration data
             variables (optional): dictionary or file path for Variables calibration data
         Returns:
-            A dictionary of the status of the update (whether or not it failed)
+            A status of the update (whether or not it failed)
         """
 
         if isinstance(pulses, dict) or isinstance(variables, dict):
@@ -75,7 +75,7 @@ class UserConfig:
 
         return self._client.aqt_upload_configs({"pulses": pulses_yaml, "variables": variables_yaml})
 
-    def aqt_get_configs(self) -> Dict:
+    def aqt_get_configs(self) -> Dict[str, str]:
         return self._client.aqt_get_configs()
 
     def aqt_download_configs(

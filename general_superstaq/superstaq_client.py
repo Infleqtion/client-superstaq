@@ -23,6 +23,7 @@ import qubovert as qv
 import requests
 
 import general_superstaq as gss
+from general_superstaq.typing import MaxSharpeJson, MinVolJson, TSPJson, WareHouseJson
 
 
 class _SuperstaQClient:
@@ -91,7 +92,7 @@ class _SuperstaQClient:
             "X-Client-Version": self.api_version,
         }
 
-    def get_request(self, endpoint: str) -> dict:
+    def get_request(self, endpoint: str) -> Any:
         def request() -> requests.Response:
             return requests.get(
                 f"{self.url}{endpoint}",
@@ -101,7 +102,7 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def post_request(self, endpoint: str, json_dict: Dict[str, Any]) -> dict:
+    def post_request(self, endpoint: str, json_dict: Dict[str, Any]) -> Any:
         def request() -> requests.Response:
             return requests.post(
                 f"{self.url}{endpoint}",
@@ -119,7 +120,7 @@ class _SuperstaQClient:
         target: str = "ss_unconstrained_simulator",
         method: Optional[str] = None,
         options: Optional[Dict[str, Any]] = None,
-    ) -> dict:
+    ) -> Dict[str, List[str]]:
         """Create a job.
 
         Args:
@@ -148,10 +149,9 @@ class _SuperstaQClient:
 
         if options is not None:
             json_dict["options"] = json.dumps(options)
-
         return self.post_request("/jobs", json_dict)
 
-    def get_job(self, job_id: str) -> dict:
+    def get_job(self, job_id: str) -> Dict[str, str]:
         """Get the job from the SuperstaQ API.
 
         Args:
@@ -166,7 +166,7 @@ class _SuperstaQClient:
         """
         return self.get_request(f"/job/{job_id}")
 
-    def get_balance(self) -> dict:
+    def get_balance(self) -> Dict[str, float]:
         """Get the querying user's account balance in USD.
 
         Returns:
@@ -174,11 +174,11 @@ class _SuperstaQClient:
         """
         return self.get_request("/balance")
 
-    def get_targets(self) -> dict:
+    def get_targets(self) -> Dict[str, Dict[str, List[str]]]:
         """Makes a GET request to SuperstaQ API to get a list of available targets."""
         return self.get_request("/targets")
 
-    def ibmq_set_token(self, ibmq_token: Dict[str, str]) -> dict:
+    def ibmq_set_token(self, ibmq_token: Dict[str, str]) -> str:
         """Makes a POST request to SuperstaQ API to set IBMQ token field in database.
 
         Args:
@@ -198,30 +198,32 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def resource_estimate(self, json_dict: Dict[str, str]) -> dict:
+    def resource_estimate(self, json_dict: Dict[str, str]) -> Dict[str, List[Dict[str, int]]]:
         return self.post_request("/resource_estimate", json_dict)
 
-    def aqt_compile(self, json_dict: Dict[str, Union[int, str, List[str]]]) -> dict:
+    def aqt_compile(self, json_dict: Dict[str, Union[int, str, List[str]]]) -> Dict[str, str]:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
         return self.post_request("/aqt_compile", json_dict)
 
-    def qscout_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> dict:
+    def qscout_compile(
+        self, json_dict: Dict[str, Union[str, List[str]]]
+    ) -> Dict[str, Union[str, List[str]]]:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for QSCOUT."""
         return self.post_request("/qscout_compile", json_dict)
 
-    def cq_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> dict:
+    def cq_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> Dict[str, str]:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for CQ."""
         return self.post_request("/cq_compile", json_dict)
 
-    def ibmq_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> dict:
+    def ibmq_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> Dict[str, str]:
         """Makes a POST request to SuperstaQ API to compile a circuits for IBM devices."""
         return self.post_request("/ibmq_compile", json_dict)
 
-    def neutral_atom_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> dict:
+    def neutral_atom_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> Dict[str, str]:
         """Makes a POST request to SuperstaQ API to compile a circuits for neutral atom devices."""
         return self.post_request("/neutral_atom_compile", json_dict)
 
-    def submit_qubo(self, qubo: qv.QUBO, target: str, repetitions: int = 1000) -> dict:
+    def submit_qubo(self, qubo: qv.QUBO, target: str, repetitions: int = 1000) -> Dict[str, str]:
         """Makes a POST request to SuperstaQ API to submit a QUBO problem to the given target."""
         json_dict = {
             "qubo": gss.qubo.convert_qubo_to_model(qubo),
@@ -230,28 +232,32 @@ class _SuperstaQClient:
         }
         return self.post_request("/qubo", json_dict)
 
-    def find_min_vol_portfolio(self, json_dict: dict) -> dict:
+    def find_min_vol_portfolio(
+        self, json_dict: Dict[str, Union[List[str], int, float, str]]
+    ) -> MinVolJson:
         """Makes a POST request to SuperstaQ API to find a minimum volatility portfolio
         that exceeds a certain specified return."""
         return self.post_request("/minvol", json_dict)
 
-    def find_max_pseudo_sharpe_ratio(self, json_dict: dict) -> dict:
+    def find_max_pseudo_sharpe_ratio(
+        self, json_dict: Dict[str, Union[List[str], float, str, Optional[int]]]
+    ) -> MaxSharpeJson:
         """Makes a POST request to SuperstaQ API to find a max Sharpe ratio portfolio."""
         return self.post_request("/maxsharpe", json_dict)
 
-    def tsp(self, json_dict: dict) -> dict:
+    def tsp(self, json_dict: Dict[str, List[str]]) -> TSPJson:
         """Makes a POST request to SuperstaQ API to find a optimal TSP tour."""
         return self.post_request("/tsp", json_dict)
 
-    def warehouse(self, json_dict: dict) -> dict:
+    def warehouse(self, json_dict: Dict[str, Union[int, List[str], str]]) -> WareHouseJson:
         """Makes a POST request to SuperstaQ API to find optimal warehouse assignment."""
         return self.post_request("/warehouse", json_dict)
 
-    def aqt_upload_configs(self, aqt_configs: Dict[str, str]) -> dict:
+    def aqt_upload_configs(self, aqt_configs: Dict[str, str]) -> str:
         """Makes a POST request to SuperstaQ API to upload configurations."""
         return self.post_request("/aqt_configs", aqt_configs)
 
-    def aqt_get_configs(self) -> dict:
+    def aqt_get_configs(self) -> Dict[str, str]:
         """Writes AQT configs from the AQT system onto the given file paths."""
         return self.get_request("/get_aqt_configs")
 

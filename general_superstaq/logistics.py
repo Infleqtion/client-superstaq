@@ -1,28 +1,28 @@
 from dataclasses import dataclass
-from typing import List
+from typing import Dict, List, Tuple, Union
 
 import qubovert as qv
 
 import general_superstaq as gss
+from general_superstaq.typing import TSPJson, WareHouseJson
 
 
 @dataclass
 class TSPOutput:
     route: List[str]
-    route_list_numbers: List
+    route_list_numbers: List[int]
     total_distance: float
     map_link: List[str]
     qubo: qv.QUBO
 
 
-def read_json_tsp(json_dict: dict) -> TSPOutput:
+def read_json_tsp(json_dict: TSPJson) -> TSPOutput:
     """Reads out returned JSON from SuperstaQ API's tsp endpoint.
     Args:
         json_dict: a JSON dictionary matching the format returned by /tsp endpoint
     Returns:
         a TSPOutput object with the optimal route.
     """
-
     route = json_dict["route"]
     route_list_numbers = json_dict["route_list_numbers"]
     total_distance = json_dict["total_distance"]
@@ -33,14 +33,14 @@ def read_json_tsp(json_dict: dict) -> TSPOutput:
 
 @dataclass
 class WarehouseOutput:
-    warehouse_to_destination: List
+    warehouse_to_destination: List[Tuple[str, str]]
     total_distance: float
     map_link: str
-    open_warehouses: List
+    open_warehouses: List[str]
     qubo: qv.QUBO
 
 
-def read_json_warehouse(json_dict: dict) -> WarehouseOutput:
+def read_json_warehouse(json_dict: WareHouseJson) -> WarehouseOutput:
     """
     Reads out returned JSON from SuperstaQ API's warehouse endpoint.
     Args:
@@ -48,7 +48,6 @@ def read_json_warehouse(json_dict: dict) -> WarehouseOutput:
     Returns:
         a WarehouseOutput object with the optimal assignment.
     """
-
     warehouse_to_destination = json_dict["warehouse_to_destination"]
     total_distance = json_dict["total_distance"]
     map_link = json_dict["map_link"]
@@ -111,7 +110,7 @@ class Logistics:
             .open_warehouses: A list of all warehouses that are open.
             .qubo: The qubo representation of the warehouse problem
         """
-        input_dict = {
+        input_dict: Dict[str, Union[int, List[str], str]] = {
             "k": k,
             "possible_warehouses": possible_warehouses,
             "customers": customers,

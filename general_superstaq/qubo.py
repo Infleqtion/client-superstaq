@@ -1,13 +1,14 @@
 from typing import Dict
 
 import numpy as np
+import numpy.typing as npt
 import qubovert as qv
 
 import general_superstaq as gss
 from general_superstaq.typing import QuboModel
 
 
-def read_json_qubo_result(json_dict: Dict[str, str]) -> np.recarray:
+def read_json_qubo_result(json_dict: Dict[str, str]) -> npt.NDArray[np.int_]:
     """Reads out returned JSON from SuperstaQ API's QUBO endpoint.
     Args:
         json_dict: a JSON dictionary matching the format returned by /qubo endpoint
