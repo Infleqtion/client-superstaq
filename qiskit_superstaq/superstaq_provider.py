@@ -158,6 +158,9 @@ class SuperstaQProvider(
             pulse sequence corresponding to the optimized qiskit.QuantumCircuit(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
         """
+        if not target.startswith("aqt_"):
+            raise ValueError(f"{target} is not an AQT target")
+
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
@@ -192,6 +195,9 @@ class SuperstaQProvider(
             pulse sequence corresponding to the QuantumCircuits and the .pulse_lists attribute is
             the list(s) of cycles.
         """
+        if not target.startswith("aqt_"):
+            raise ValueError(f"{target} is not an AQT target")
+
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
@@ -216,6 +222,10 @@ class SuperstaQProvider(
         target: str = "ibmq_qasm_simulator",
     ) -> "qss.compiler_output.CompilerOutput":
         """Returns pulse schedule(s) for the given circuit(s) and target."""
+
+        if not target.startswith("ibmq_"):
+            raise ValueError(f"{target} is not an IBMQ target")
+
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
 
         json_dict = self._client.ibmq_compile(
@@ -248,6 +258,11 @@ class SuperstaQProvider(
             pulse sequence corresponding to the optimized qiskit.QuantumCircuit(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
         """
+        if not target.startswith("sandia_"):
+            raise ValueError(f"{target} is not a QSCOUT target")
+
+        qss.superstaq_backend.validate_target(target)
+
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         options_dict = {"mirror_swaps": mirror_swaps}
@@ -273,6 +288,11 @@ class SuperstaQProvider(
         Returns:
             object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
         """
+        if not target.startswith("cq_"):
+            raise ValueError(f"{target} is not a CQ target")
+
+        qss.superstaq_backend.validate_target(target)
+
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._client.cq_compile(
@@ -290,6 +310,11 @@ class SuperstaQProvider(
 
         Pulser must be installed for returned object to correctly deserialize to a pulse schedule.
         """
+        if not (target.startswith("neutral_") or target.startswith("cq_")):
+            raise ValueError(f"{target} is not a Neutral Atom Compiler target")
+
+        qss.superstaq_backend.validate_target(target)
+
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
 
         json_dict = self._client.neutral_atom_compile(

@@ -11,11 +11,55 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+import re
 from typing import Any, Dict, List, Optional, Union
 
 import qiskit
 
 import qiskit_superstaq as qss
+
+
+def validate_target(target: str) -> None:
+    vendor_prefixes = [
+        "aqt",
+        "aws",
+        "cq",
+        "d-wave",
+        "hqs",
+        "ibmq",
+        "ionq",
+        "neutral",
+        "rigetti",
+        "sandia",
+        "ss",
+    ]
+
+    target_device_types = ["qpu", "simulator"]
+
+    # Check valid format
+    match = re.fullmatch("^([A-Za-z0-9-]+)_([A-Za-z0-9-.]+)_([a-z]+)", target)
+    if not match:
+        raise ValueError(
+            f"{target} does not have a valid string format. "
+            "Valid target strings should be in the form: "
+            "<provider>_<device>_<type>, e.g. ibmq_lagos_qpu."
+        )
+
+    prefix, _, device_type = match.groups()
+
+    # Check valid prefix
+    if prefix not in vendor_prefixes:
+        raise ValueError(
+            f"{target} does not have a valid target prefix. "
+            f"Valid target prefixes are: {vendor_prefixes}."
+        )
+
+    # Check for valid device type
+    if device_type not in target_device_types:
+        raise ValueError(
+            f"{target} does not have a valid target device type. "
+            f"Valid target device types are: {target_device_types}."
+        )
 
 
 class SuperstaQBackend(qiskit.providers.BackendV1):
@@ -36,6 +80,9 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             "max_shots": -1,
             "coupling_map": None,
         }
+
+        validate_target(target)
+
         super().__init__(
             configuration=qiskit.providers.models.BackendConfiguration.from_dict(
                 self.configuration_dict

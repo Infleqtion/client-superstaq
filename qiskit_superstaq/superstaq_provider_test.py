@@ -112,6 +112,12 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
 
+def test_invalid_target_service_aqt_compile() -> None:
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    with pytest.raises(ValueError, match="not an AQT target"):
+        provider.aqt_compile(qiskit.QuantumCircuit(), target="invalid_target")
+
+
 @patch("requests.post")
 def test_service_aqt_compile_eca(mock_post: MagicMock) -> None:
     provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
@@ -128,6 +134,14 @@ def test_service_aqt_compile_eca(mock_post: MagicMock) -> None:
     out = provider.aqt_compile_eca(qc, num_equivalent_circuits=1, random_seed=1234)
     assert out.circuits == [qc]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+
+
+def test_invalid_target_service_aqt_compile_eca() -> None:
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    with pytest.raises(ValueError, match="not an AQT target"):
+        provider.aqt_compile_eca(
+            qiskit.QuantumCircuit(), num_equivalent_circuits=1, target="invalid_target"
+        )
 
 
 @patch(
@@ -148,6 +162,12 @@ def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
     assert provider.ibmq_compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
         [qc], [mock.DEFAULT]
     )
+
+
+def test_invalid_target_service_ibmq_compile() -> None:
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    with pytest.raises(ValueError, match="not an IBMQ target"):
+        provider.ibmq_compile(qiskit.QuantumCircuit(), target="invalid_target")
 
 
 @patch(
@@ -225,6 +245,12 @@ def test_qscout_compile(mock_post: MagicMock) -> None:
     assert out.circuits == [qc, qc]
 
 
+def test_invalid_target_service_qscout_compile() -> None:
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    with pytest.raises(ValueError, match="not a QSCOUT target"):
+        provider.qscout_compile(qiskit.QuantumCircuit(), target="invalid_target")
+
+
 @patch("requests.post")
 @pytest.mark.parametrize("mirror_swaps", (True, False))
 def test_qscout_compile_swap_mirror(mock_post: MagicMock, mirror_swaps: bool) -> None:
@@ -266,6 +292,12 @@ def test_cq_compile(mock_post: MagicMock) -> None:
     assert out.circuits == [qc, qc]
 
 
+def test_invalid_target_service_cq_compile() -> None:
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    with pytest.raises(ValueError, match="not a CQ target"):
+        provider.cq_compile(qiskit.QuantumCircuit(), target="invalid_target")
+
+
 @patch(
     "general_superstaq.superstaq_client._SuperstaQClient.neutral_atom_compile",
     return_value={"pulses": gss.serialization.serialize([mock.DEFAULT])},
@@ -280,3 +312,9 @@ def test_neutral_atom_compile(mock_ibmq_compile: MagicMock) -> None:
         match="'neutral_atom_compile' requires module 'unittest'",
     ):
         _ = provider.neutral_atom_compile(qiskit.QuantumCircuit())
+
+
+def test_invalid_target_service_neutral_atom_compile() -> None:
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    with pytest.raises(ValueError, match="not a Neutral Atom Compiler target"):
+        provider.neutral_atom_compile(qiskit.QuantumCircuit(), target="invalid_target")
