@@ -10,6 +10,17 @@ import qiskit
 import qiskit_superstaq as qss
 
 
+def test_active_qubit_indices() -> None:
+    circuit = qiskit.QuantumCircuit(4)
+    circuit.add_register(qiskit.QuantumRegister(2, "foo"))
+
+    circuit.x(3)
+    circuit.cz(3, 5)
+    circuit.h(circuit.qubits[1])
+
+    assert qss.active_qubit_indices(circuit) == [1, 3, 5]
+
+
 def test_compiler_output_repr() -> None:
     circuit = qiskit.QuantumCircuit(4)
     assert (

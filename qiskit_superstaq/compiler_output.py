@@ -12,6 +12,17 @@ except ModuleNotFoundError:
     pass
 
 
+def active_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
+    """Returns the indices of the non-idle qubits in a quantum circuit."""
+
+    # Determine idle qubits via DAG (as done in `QuantumCircuit.measure_active()`)
+    idle_wires = set(qiskit.converters.circuit_to_dag(circuit).idle_wires())
+    qubits = [q for q in circuit.qubits if q not in idle_wires]
+
+    # Convert to indices
+    return [circuit.find_bit(q).index for q in qubits]
+
+
 class CompilerOutput:
     def __init__(
         self,
