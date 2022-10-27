@@ -37,7 +37,7 @@ def test_ibmq_set_token(mock_ibmq: mock.MagicMock) -> None:
 
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaQClient.aqt_upload_configs",
-    return_value={"status": "Your AQT configuration has been updated"},
+    return_value="Your AQT configuration has been updated",
 )
 def test_service_aqt_upload_configs(mock_aqt_compile: mock.MagicMock) -> None:
     client = gss.superstaq_client._SuperstaQClient(
@@ -45,31 +45,39 @@ def test_service_aqt_upload_configs(mock_aqt_compile: mock.MagicMock) -> None:
     )
     service = gss.user_config.UserConfig(client)
     tempdir = tempfile.gettempdir()
-    pulses_file = os.path.join(tempdir, f"{secrets.token_hex(nbytes=16)}.yaml")
-    variables_file = os.path.join(tempdir, f"{secrets.token_hex(nbytes=16)}.yaml")
+    pulses_file = os.path.join(tempdir, f"pulses-{secrets.token_hex(nbytes=16)}.yaml")
+    variables_file = os.path.join(tempdir, f"variables-{secrets.token_hex(nbytes=16)}.yaml")
 
     with open(pulses_file, "w") as pulses:
         pulses.write("Hello")
     with open(variables_file, "w") as variables:
         variables.write("World")
 
-    assert service.aqt_upload_configs(pulses_file, variables_file) == {
-        "status": "Your AQT configuration has been updated"
-    }
+    assert service.aqt_upload_configs(pulses_file, variables_file) == (
+        "Your AQT configuration has been updated"
+    )
     mock_aqt_compile.assert_called_with({"pulses": "Hello", "variables": "World"})
 
-    assert service.aqt_upload_configs(pulses={"abc": 123}, variables={"xyz": "four"}) == {
-        "status": "Your AQT configuration has been updated"
-    }
+    assert service.aqt_upload_configs(pulses={"abc": 123}, variables={"xyz": "four"}) == (
+        "Your AQT configuration has been updated"
+    )
     mock_aqt_compile.assert_called_with({"pulses": "abc: 123\n", "variables": "xyz: four\n"})
 
     os.remove(variables_file)
-    with pytest.raises(ValueError, match="is not a dictionary or valid file path"):
+    with pytest.raises(ValueError, match=r"variables-.*\.yaml' is not a valid file path"):
         _ = service.aqt_upload_configs(pulses_file, variables_file)
 
     os.remove(pulses_file)
-    with pytest.raises(ValueError, match="is not a dictionary or valid file path"):
+    with pytest.raises(ValueError, match=r"pulses-.*\.yaml' is not a valid file path"):
         _ = service.aqt_upload_configs(pulses_file, variables_file)
+
+    with pytest.raises(ValueError, match="AQT configs should be"):
+        # Invalid input types:
+        _ = service.aqt_upload_configs([], [])
+
+    with pytest.raises(ValueError, match="AQT configs should be"):
+        # Input type that can't be serialized with yaml.SafeDumper:
+        _ = service.aqt_upload_configs({"foo": mock.DEFAULT}, {})
 
     with mock.patch.dict("sys.modules", {"yaml": None}):
         with pytest.raises(ModuleNotFoundError, match="PyYAML"):

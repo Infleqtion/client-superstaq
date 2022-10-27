@@ -33,45 +33,46 @@ class UserConfig:
         """
         return self._client.ibmq_set_token({"ibmq_token": token})
 
-    def aqt_upload_configs(
-        self,
-        pulses: Union[str, Dict[str, Any]],
-        variables: Union[str, Dict[str, Any]],
-    ) -> str:
-        """Uploads configs for AQT. Arguments can either be dictionaries or paths to valid
-        .yaml files. If neither is provided, the existing configuration is preserved.
+    def aqt_upload_configs(self, pulses: Any, variables: Any) -> str:
+        """Uploads configs for AQT. Arguments can be either file paths (in .yaml format) or qtrl
+        Manager instances.
 
         Args:
-            pulses (optional): dictionary or file path for Pulses calibration data
-            variables (optional): dictionary or file path for Variables calibration data
+            pulses: PulseManager or file path for Pulses calibration data
+            variables: VariableManager or file path for Variables calibration data
         Returns:
             A status of the update (whether or not it failed)
         """
 
-        if isinstance(pulses, dict) or isinstance(variables, dict):
-            try:
-                import yaml
-            except ImportError:
-                raise ModuleNotFoundError(
-                    "The PyYAML package is required to upload AQT configurations from dicts. "
-                    "You can install it using 'pip install pyyaml'."
-                )
+        def _config_to_yaml_str(config: Any) -> str:
+            if isinstance(config, str):
+                if not os.path.isfile(config):
+                    raise ValueError(f"{config!r} is not a valid file path.")
 
-        if isinstance(pulses, dict):
-            pulses_yaml = yaml.safe_dump(pulses)
-        elif isinstance(pulses, str) and os.path.isfile(pulses):
-            with open(pulses) as pulses_file:
-                pulses_yaml = pulses_file.read()
-        else:
-            raise ValueError(f"{pulses} is not a dictionary or valid file path")
+                with open(config) as config_file:
+                    return config_file.read()
 
-        if isinstance(variables, dict):
-            variables_yaml = yaml.safe_dump(variables)
-        elif isinstance(variables, str) and os.path.isfile(variables):
-            with open(variables) as variables_file:
-                variables_yaml = variables_file.read()
-        else:
-            raise ValueError(f"{variables} is not a dictionary or valid file path")
+            config = getattr(config, "_config_raw", config)  # required to serialize qtrl Managers
+            if isinstance(config, dict):
+                try:
+                    import yaml
+
+                    return yaml.safe_dump(config)
+                except ImportError:
+                    raise ModuleNotFoundError(
+                        "The PyYAML package is required to upload AQT configurations from dicts. "
+                        "You can install it using 'pip install pyyaml'."
+                    )
+                except yaml.YAMLError:
+                    pass
+
+            raise ValueError(
+                "Unable to serialize configuration. AQT configs should be qtrl Manager instances "
+                "or valid file paths."
+            )
+
+        pulses_yaml = _config_to_yaml_str(pulses)
+        variables_yaml = _config_to_yaml_str(variables)
 
         return self._client.aqt_upload_configs({"pulses": pulses_yaml, "variables": variables_yaml})
 
