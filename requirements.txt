@@ -1,4 +1,4 @@
 cirq>=0.14.0
-general-superstaq~=0.3.0
+general-superstaq~=0.3.1
 qubovert>=1.2.3
 sympy<1.10
