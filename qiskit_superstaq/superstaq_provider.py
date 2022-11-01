@@ -14,7 +14,7 @@
 
 import json
 import os
-from typing import List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 import general_superstaq as gss
 import qiskit
@@ -69,12 +69,13 @@ class SuperstaQProvider(
     ) -> None:
         self._name = "superstaq_provider"
         self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
-        self.api_key = api_key or os.getenv("SUPERSTAQ_API_KEY")
-        if not self.api_key:
+        api_key = api_key or os.getenv("SUPERSTAQ_API_KEY")
+        if not api_key:
             raise EnvironmentError(
                 "Parameter api_key was not specified and the environment variable "
                 "SUPERSTAQ_API_KEY was also not set."
             )
+        self.api_key: str = api_key
 
         self._client = superstaq_client._SuperstaQClient(
             client_name="qiskit-superstaq",
@@ -95,7 +96,7 @@ class SuperstaQProvider(
     def get_backend(self, target: str) -> "qss.SuperstaQBackend":
         return qss.SuperstaQBackend(provider=self, remote_host=self.remote_host, target=target)
 
-    def get_access_token(self) -> Optional[str]:
+    def get_access_token(self) -> str:
         return self.api_key
 
     def backends(self) -> List[qss.SuperstaQBackend]:
@@ -105,7 +106,7 @@ class SuperstaQProvider(
             backends.append(self.get_backend(target))
         return backends
 
-    def _http_headers(self) -> dict:
+    def _http_headers(self) -> Dict[str, str]:
         return {
             "Authorization": self.get_access_token(),
             "Content-Type": "application/json",

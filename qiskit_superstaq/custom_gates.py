@@ -2,6 +2,7 @@ import functools
 from typing import Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
+import numpy.typing as npt
 import qiskit
 
 
@@ -46,7 +47,7 @@ class AceCR(qiskit.circuit.Gate):
         qc.rzx(-first_sign * np.pi / 4, 0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: Optional[type] = None) -> np.ndarray:
+    def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.bool_]:
         cval = 1 / np.sqrt(2)
         if self.polarity == "+-":
             sval = 1j * cval
@@ -125,7 +126,7 @@ class ZZSwapGate(qiskit.circuit.Gate):
         qc.cx(0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: Optional[type] = None) -> np.ndarray:
+    def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.bool_]:
         return np.array(
             [
                 [1, 0, 0, 0],
@@ -184,7 +185,7 @@ class ParallelGates(qiskit.circuit.Gate):
             qubits = qubits[num_qubits:]
         self.definition = qc
 
-    def __array__(self, dtype: Optional[type] = None) -> np.ndarray:
+    def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.bool_]:
         mat = functools.reduce(np.kron, (gate.to_matrix() for gate in self.component_gates[::-1]))
         return np.asarray(mat, dtype=dtype)
 
@@ -202,7 +203,7 @@ class iXGate(qiskit.circuit.Gate):
         qc.rx(-np.pi, 0)
         self.definition = qc
 
-    def __array__(self, dtype: Optional[type] = None) -> np.ndarray:
+    def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.bool_]:
         return np.array([[0, 1j], [1j, 0]])
 
     def inverse(self) -> "iXdgGate":
@@ -236,7 +237,7 @@ class iXdgGate(qiskit.circuit.Gate):
         qc.rx(np.pi, 0)
         self.definition = qc
 
-    def __array__(self, dtype: Optional[type] = None) -> np.ndarray:
+    def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.complex_]:
         return np.array([[0, -1j], [-1j, 0]])
 
     def inverse(self) -> iXGate:
@@ -275,7 +276,7 @@ class iCCXGate(qiskit.circuit.ControlledGate):
         qc.cp(np.pi / 2, 0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: Optional[type] = None) -> np.ndarray:
+    def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.complex_]:
         mat = qiskit.circuit._utils._compute_control_matrix(
             self.base_gate.to_matrix(), self.num_ctrl_qubits, ctrl_state=self.ctrl_state
         )
@@ -302,7 +303,7 @@ class iCCXdgGate(qiskit.circuit.ControlledGate):
         qc.cp(-np.pi / 2, 0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: Optional[type] = None) -> np.ndarray:
+    def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.complex_]:
         mat = qiskit.circuit._utils._compute_control_matrix(
             self.base_gate.to_matrix(), self.num_ctrl_qubits, ctrl_state=self.ctrl_state
         )

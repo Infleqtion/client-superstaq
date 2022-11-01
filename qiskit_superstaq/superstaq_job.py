@@ -46,15 +46,15 @@ class SuperstaQJob(qiskit.providers.JobV1):
 
         return self._job_id == other._job_id
 
-    def _wait_for_results(self, timeout: Optional[float] = None, wait: float = 5) -> List[Dict]:
+    def _wait_for_results(
+        self, timeout: Optional[float] = None, wait: float = 5
+    ) -> List[Dict[str, Optional[int]]]:
 
-        result_list: List[Dict] = []
+        result_list: List[Dict[str, Optional[int]]] = []
         job_ids = self._job_id.split(",")  # separate aggregated job_ids
 
         for jid in job_ids:
             start_time = time.time()
-            result = None
-
             while True:
                 elapsed = time.time() - start_time
 
@@ -69,15 +69,12 @@ class SuperstaQJob(qiskit.providers.JobV1):
                     headers=self._backend._provider._http_headers(),
                     verify=(self._backend.remote_host == gss.API_URL),
                 ).json()
-
                 if result["status"] == "Done":
                     break
                 if result["status"] == "Error":
                     raise qiskit.providers.JobError("API returned error:\n" + str(result))
                 time.sleep(wait)  # pragma: no cover b/c don't want slow test or mocking time
-
             result_list.append(result)
-
         return result_list
 
     def result(self, timeout: Optional[float] = None, wait: float = 5) -> qiskit.result.Result:

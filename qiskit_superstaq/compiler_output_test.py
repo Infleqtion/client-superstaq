@@ -1,6 +1,7 @@
 import importlib
 import pickle
 import textwrap
+from typing import Dict, List, Union
 from unittest import mock
 
 import general_superstaq as gss
@@ -134,7 +135,7 @@ def test_read_json_with_qscout() -> None:
                 """
     )
 
-    json_dict = {
+    json_dict: Dict[str, Union[str, List[str]]] = {
         "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
         "jaqal_programs": [jaqal_program],
     }
