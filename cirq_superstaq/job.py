@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Represents a job created via the SuperstaQ API."""
-import collections
 import time
 from typing import Any, Dict
 
@@ -135,9 +134,7 @@ class Job:
         self._check_if_unsuccessful()
         return self._job["shots"]
 
-    def counts(
-        self, timeout_seconds: int = 7200, polling_seconds: float = 1.0
-    ) -> collections.Counter:
+    def counts(self, timeout_seconds: int = 7200, polling_seconds: float = 1.0) -> Dict[str, int]:
         """Polls the SuperstaQ API for results.
 
         Args:

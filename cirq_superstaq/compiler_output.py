@@ -32,7 +32,7 @@ class CompilerOutput:
         pulse_sequences: Optional[Any] = None,
         seq: Optional["qtrl.sequencer.Sequence"] = None,
         jaqal_programs: Optional[Union[List[str], str]] = None,
-        pulse_lists: Optional[Union[List[List], List[List[List]]]] = None,
+        pulse_lists: Optional[Union[List[List[List[Any]]], List[List[List[List[Any]]]]]] = None,
     ) -> None:
         if isinstance(circuits, cirq.Circuit):
             self.circuit = circuits
@@ -116,6 +116,7 @@ def read_json_aqt(
         the returned object also stores the pulse sequence in the .seq attribute and the
         list(s) of cycles in the .pulse_list(s) attribute.
     """
+
     seq = None
     pulse_lists = None
 

@@ -36,9 +36,7 @@ def test_counts_to_results() -> None:
         cirq.measure(qubits[0]),
         cirq.measure(qubits[1]),
     )
-    result = css.service.counts_to_results(
-        collections.Counter({"01": 1, "11": 2}), circuit, cirq.ParamResolver({})
-    )
+    result = css.service.counts_to_results({"01": 1, "11": 2}, circuit, cirq.ParamResolver({}))
     assert result.histogram(key="q(0)q(1)") == collections.Counter({3: 2, 1: 1})
 
     circuit = cirq.Circuit(
@@ -47,9 +45,7 @@ def test_counts_to_results() -> None:
         cirq.measure(qubits[0], key="0"),
         cirq.measure(qubits[1], key="1"),
     )
-    result = css.service.counts_to_results(
-        collections.Counter({"00": 50, "11": 50}), circuit, cirq.ParamResolver({})
-    )
+    result = css.service.counts_to_results({"00": 50, "11": 50}, circuit, cirq.ParamResolver({}))
     assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
 
 
@@ -396,7 +392,6 @@ def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
 
     assert service.ibmq_compile(circuit).circuit == circuit
     assert service.ibmq_compile([circuit]).circuits == [circuit]
-
     assert service.ibmq_compile(circuit).pulse_sequence == mock.DEFAULT
     assert service.ibmq_compile([circuit]).pulse_sequences == [mock.DEFAULT]
 

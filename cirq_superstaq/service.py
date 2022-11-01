@@ -12,7 +12,6 @@
 # limitations under the License.
 """Service to access SuperstaQs API."""
 
-import collections
 import json
 import os
 from typing import Any, Dict, List, Optional, Sequence, Union
@@ -26,7 +25,7 @@ import cirq_superstaq as css
 
 
 def counts_to_results(
-    counter: collections.Counter, circuit: cirq.AbstractCircuit, param_resolver: cirq.ParamResolver
+    counter: Dict[str, int], circuit: cirq.AbstractCircuit, param_resolver: cirq.ParamResolver
 ) -> cirq.ResultDict:
     """Converts a collections.Counter to a cirq.ResultDict.
 
@@ -39,7 +38,6 @@ def counts_to_results(
             A `cirq.ResultDict` for the given circuit and counter.
 
     """
-
     measurement_key_names = list(circuit.all_measurement_key_names())
     measurement_key_names.sort()
     # Combines all the measurement key names into a string: {'0', '1'} -> "01"
@@ -60,7 +58,7 @@ def counts_to_results(
         # Appends all the keys onto 'samples' list number-of-counts-in-the-key times
         # If collections.Counter({"01": 48, "11": 52}), [0, 1] is appended to 'samples` 48 times and
         # [1, 1] is appended to 'samples' 52 times
-        for key in range(counts_of_key):
+        for _ in range(counts_of_key):
             samples.append(keys_as_list)
 
     result = cirq.ResultDict(
@@ -149,7 +147,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: Optional[str] = None,
         options: Optional[Dict[str, Any]] = None,
-    ) -> collections.Counter:
+    ) -> Dict[str, int]:
         """Runs the given circuit on the SuperstaQ API and returns the result
         of the ran circuit as a collections.Counter
 
@@ -284,7 +282,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             return f"${balance:,.2f}"
         return balance
 
-    def get_targets(self) -> dict:
+    def get_targets(self) -> Dict[str, List[str]]:
         """Get list of available targets."""
         return self._client.get_targets()["superstaq_targets"]
 

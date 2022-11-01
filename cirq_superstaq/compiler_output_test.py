@@ -82,8 +82,6 @@ def test_read_json_aqt() -> None:
     state_str = gss.serialization.serialize({})
     pulse_lists_str = gss.serialization.serialize([[[]]])
 
-    json_dict: dict
-
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
         "state_jp": state_str,

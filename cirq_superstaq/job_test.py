@@ -31,8 +31,11 @@ def new_job() -> css.Job:
     return css.Job(client, "my_id")
 
 
-def mocked_get_job_requests(*job_dicts: Dict[str, Any]) -> mock._patch:
-    """Mocks the server's response to `get_job` requests using the given sequence of job_dicts."""
+def mocked_get_job_requests(*job_dicts: Dict[str, Any]) -> "mock._patch[mock.Mock]":
+    """Mocks the server's response to `get_job` requests using the given sequence of job_dicts.
+    Return type is wrapped in a string because "'type' object is not subscriptable"
+    is thrown at runtime
+    """
     return mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.get_job", side_effect=job_dicts
     )

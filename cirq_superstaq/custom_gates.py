@@ -4,6 +4,7 @@ from typing import AbstractSet, Any, Callable, Dict, List, Optional, Sequence, T
 
 import cirq
 import numpy as np
+import numpy.typing as npt
 
 import cirq_superstaq as css
 
@@ -41,7 +42,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     def _num_qubits_(self) -> int:
         return 2
 
-    def _unitary_(self) -> Optional[np.ndarray]:
+    def _unitary_(self) -> Optional[npt.NDArray[np.complex_]]:
         if self._is_parameterized_():
             return None
         return np.array(
@@ -93,7 +94,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     def _has_unitary_(self) -> bool:
         return not self._is_parameterized_()
 
-    def _apply_unitary_(self, args: cirq.protocols.ApplyUnitaryArgs) -> Optional[np.ndarray]:
+    def _apply_unitary_(self, args: cirq.protocols.ApplyUnitaryArgs) -> npt.NDArray[np.complex_]:
         zo = args.subspace_index(0b01)
         oz = args.subspace_index(0b10)
         args.available_buffer[zo] = args.target_tensor[zo]
@@ -146,7 +147,7 @@ class ZXPowGate(cirq.EigenGate, cirq.Gate):
     and :math:`s = i \sin(\frac{\pi t}{2})`.
     """
 
-    def _eigen_components(self) -> List[Tuple[float, np.ndarray]]:
+    def _eigen_components(self) -> List[Tuple[float, npt.NDArray[np.float_]]]:
         return [
             (
                 0.0,
@@ -409,7 +410,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
                 sub_args, preferred_exponent_index=num_qubits - 1
             )
 
-            index_str = f"_{i+1}"
+            index_str = f"_{i + 1}"
             if args.use_unicode_characters:
                 index_str = "".join(chr(ord("₁") + int(c)) for c in str(i))
 
@@ -529,7 +530,7 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
 
     def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, ...]) -> str:
         gate_str = "gate_GR({0:half_turns},{1:half_turns})"
-        qubits_str = ",".join([f"{{{idx+2}}}" for idx in range(len(qubits))])
+        qubits_str = ",".join([f"{{{idx + 2}}}" for idx in range(len(qubits))])
         return args.format(
             f"{gate_str} {qubits_str};\n", self.exponent, self.phase_exponent, *qubits
         )
@@ -570,7 +571,6 @@ class IXGate(cirq.XPowGate):
 
 
 CR = ZX = ZXPowGate()  # standard CR is a full turn of ZX, i.e. exponent = 1
-
 
 IX = IXGate()
 
