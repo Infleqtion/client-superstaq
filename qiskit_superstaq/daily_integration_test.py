@@ -16,19 +16,15 @@ def provider() -> qss.SuperstaQProvider:
     return provider
 
 
-def test_backends() -> None:
-    token = os.environ["TEST_USER_TOKEN"]
-    provider = qss.SuperstaQProvider(api_key=token)
+def test_backends(provider: qss.SuperstaQProvider) -> None:
     result = provider.backends()
     assert provider.get_backend("ibmq_qasm_simulator") in result
     assert provider.get_backend("d-wave_advantage-system4.1_qpu") in result
     assert provider.get_backend("ionq_ion_qpu") in result
 
 
-def test_ibmq_set_token() -> None:
-    api_token = os.environ["TEST_USER_TOKEN"]
+def test_ibmq_set_token(provider: qss.SuperstaQProvider) -> None:
     ibmq_token = os.environ["TEST_USER_IBMQ_TOKEN"]
-    provider = qss.SuperstaQProvider(api_key=api_token)
     assert provider.ibmq_set_token(ibmq_token) == "Your IBMQ account token has been updated"
 
     with pytest.raises(SuperstaQException, match="IBMQ token is invalid."):
