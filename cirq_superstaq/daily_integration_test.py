@@ -109,10 +109,8 @@ def test_get_resource_estimate(service: css.Service) -> None:
     assert resource_estimates == [ResourceEstimate(2, 1, 3), ResourceEstimate(2, 2, 4)]
 
 
-def test_ibmq_set_token() -> None:
-    api_token = os.environ["TEST_USER_TOKEN"]
+def test_ibmq_set_token(service: css.Service) -> None:
     ibmq_token = os.environ["TEST_USER_IBMQ_TOKEN"]
-    service = css.Service(api_token)
     assert service.ibmq_set_token(ibmq_token) == "Your IBMQ account token has been updated"
 
     with pytest.raises(SuperstaQException, match="IBMQ token is invalid."):
