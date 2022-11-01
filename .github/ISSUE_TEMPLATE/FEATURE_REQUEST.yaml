@@ -1,5 +1,6 @@
 name: Feature request
 about: Suggest an idea for this project 🦅🐆
+labels: ["enhancement"]
 
 body:
   - type: markdown
@@ -13,20 +14,20 @@ body:
     validations:
       required: true
 
-    - type: textarea
-      attributes:
-        label: What are the current alternatives?
-        description: A clear and concise description of any alternative solutions or features you've considered.
-      validations:
-        required: false
+  - type: textarea
+    attributes:
+      label: What are the current alternatives?
+      description: A clear and concise description of any alternative solutions or features you've considered.
+    validations:
+      required: false
 
-    - type: textarea
-      attributes:
-        label: Any additional context?
-        description: Additional context for the issue, such as screenshots or suggestions for how a contributor should implement this.
-      validations:
-        required: false
+  - type: textarea
+    attributes:
+      label: Any additional context?
+      description: Additional context for the issue, such as screenshots or suggestions for how a contributor should implement this.
+    validations:
+      required: false
 
-    - type: markdown
-      attributes:
-        value: "### Please add the appropriate labels for this issue."
+  - type: markdown
+    attributes:
+      value: "### Please add the appropriate labels for this issue."
