@@ -360,6 +360,24 @@ def test_parallel_gates() -> None:
     with pytest.raises(ValueError, match="ParallelGates cannot contain measurements"):
         _ = css.ParallelGates(cirq.X, cirq.MeasurementGate(1, key="1"))
 
+    with pytest.raises(ValueError, match="is not a cirq Gate"):
+        _ = css.ParallelGates(cirq.X(qubits[1]))
+
+
+def test_parallel_gates_operation() -> None:
+    q0, _, q2, q3 = cirq.LineQubit.range(4)
+    op = css.parallel_gates_operation(cirq.CX(q2, q0), cirq.Y(q3))
+    assert op == css.ParallelGates(cirq.CX, cirq.Y).on(q2, q0, q3)
+
+    with pytest.raises(ValueError, match="no .gate attribute"):
+        _ = css.parallel_gates_operation(cirq.X(q0).with_classical_controls("1"))
+
+    with pytest.raises(ValueError, match="tagged operations not permitted"):
+        _ = css.parallel_gates_operation(cirq.X(q0).with_tags("foo"))
+
+    with pytest.raises(ValueError):  # Overlapping qubits should be caught by cirq
+        _ = css.parallel_gates_operation(cirq.CX(q2, q0), cirq.Y(q2))
+
 
 def test_parallel_gates_circuit_diagram_fallback() -> None:
     gate = cirq.circuits.qasm_output.QasmUGate(0.1, 0.2, 0.3)

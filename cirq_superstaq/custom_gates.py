@@ -338,7 +338,9 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
 
         # unroll any ParallelGate(s) instances in component_gates
         for gate in component_gates:
-            if cirq.is_measurement(gate):
+            if not isinstance(gate, cirq.Gate):
+                raise ValueError(f"{gate} is not a cirq Gate")
+            elif cirq.is_measurement(gate):
                 raise ValueError("ParallelGates cannot contain measurements")
             elif isinstance(gate, ParallelGates):
                 self.component_gates += gate.component_gates
@@ -439,6 +441,30 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
     def __repr__(self) -> str:
         component_gates_repr = ", ".join(repr(gate) for gate in self.component_gates)
         return f"css.ParallelGates({component_gates_repr})"
+
+
+def parallel_gates_operation(*ops: cirq.Operation) -> cirq.Operation:
+    """Given operations acting on disjoint qubits, constructs a single css.ParallelGates instance
+    and applies it such that each operation's .gate is applied to its .qubits.
+
+    Args:
+        ops: operations to pack into a single ParallelGates operation
+
+    Returns:
+        ParallelGates(op.gate, op2.gate, ...).on(*op.qubits, *op2.qubits, ...)
+    """
+    gates: List[cirq.Gate] = []
+    qubits: List[cirq.Qid] = []
+    for op in ops:
+        if not op.gate:
+            raise ValueError(f"Invalid operation: {op} has no .gate attribute")
+        if op.tags:
+            raise ValueError("Invalid operation: tagged operations not permitted")
+
+        gates.append(op.gate)
+        qubits.extend(op.qubits)
+
+    return ParallelGates(*gates).on(*qubits)
 
 
 @cirq.value_equality(approximate=True)

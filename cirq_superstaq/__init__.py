@@ -30,6 +30,7 @@ from cirq_superstaq.custom_gates import (
     ZXPowGate,
     ZZSwapGate,
     barrier,
+    parallel_gates_operation,
 )
 from cirq_superstaq.job import Job
 from cirq_superstaq.sampler import Sampler
@@ -50,6 +51,7 @@ __all__ = [
     "Job",
     "ParallelGates",
     "ParallelRGate",
+    "parallel_gates_operation",
     "serialization",
     "RGate",
     "Sampler",
