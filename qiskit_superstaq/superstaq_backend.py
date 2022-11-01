@@ -29,6 +29,7 @@ def validate_target(target: str) -> None:
         "ibmq",
         "ionq",
         "neutral",
+        "quera",
         "rigetti",
         "sandia",
         "ss",
