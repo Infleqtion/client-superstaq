@@ -43,7 +43,12 @@ def test_ibmq_compile(provider: qss.SuperstaQProvider) -> None:
     assert len(out.pulse_sequence) == 5
 
 
-def test_acer_non_neighbor_qubits_compile(provider: qss.SuperstaQProvider) -> None:
+def test_acecr_ibmq_compile(provider: qss.SuperstaQProvider) -> None:
+    """Tests ibmq_compile method running without error.
+
+    This test was originally written to make sure compilation to ibmq_casablanca would not fail, but
+    IBM has since taken casablanca down.
+    """
     qc = qiskit.QuantumCircuit(4)
     qc.append(qss.AceCR("-+"), [0, 1])
     qc.append(qss.AceCR("-+"), [1, 2])
@@ -52,9 +57,22 @@ def test_acer_non_neighbor_qubits_compile(provider: qss.SuperstaQProvider) -> No
     assert isinstance(out, qss.compiler_output.CompilerOutput)
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
     assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
-    assert 3000 <= out.pulse_sequence.duration <= 4000  # 3616 as of 6/30/2022
     assert out.pulse_sequence.start_time == 0
-    assert len(out.pulse_sequence) == 15
+    assert len(out.pulse_sequence) == 51
+
+    out = provider.ibmq_compile(qc, target="ibmq_perth_qpu")
+    assert isinstance(out, qss.compiler_output.CompilerOutput)
+    assert isinstance(out.circuit, qiskit.QuantumCircuit)
+    assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
+    assert out.pulse_sequence.start_time == 0
+    assert len(out.pulse_sequence) == 54
+
+    out = provider.ibmq_compile(qc, target="ibmq_lagos_qpu")
+    assert isinstance(out, qss.compiler_output.CompilerOutput)
+    assert isinstance(out.circuit, qiskit.QuantumCircuit)
+    assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
+    assert out.pulse_sequence.start_time == 0
+    assert len(out.pulse_sequence) == 61
 
 
 def test_aqt_compile(provider: qss.SuperstaQProvider) -> None:
