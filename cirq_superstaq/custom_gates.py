@@ -135,16 +135,21 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
 
 class ZXPowGate(cirq.EigenGate, cirq.Gate):
     r"""The ZX-parity gate, possibly raised to a power.
+
     Per arxiv.org/pdf/1904.06560v3 eq. 135, the ZX**t gate implements the following unitary:
-     .. math::
+
+    .. math::
+
         e^{-\frac{i\pi}{2} t Z \otimes X} = \begin{bmatrix}
                                         c & -s & . & . \\
                                         -s & c & . & . \\
                                         . & . & c & s \\
                                         . & . & s & c \\
                                         \end{bmatrix}
+
     where '.' means '0' and :math:`c = \cos(\frac{\pi t}{2})`
     and :math:`s = i \sin(\frac{\pi t}{2})`.
+
     """
 
     def _eigen_components(self) -> List[Tuple[float, npt.NDArray[np.float_]]]:
@@ -206,6 +211,7 @@ class AceCR(cirq.Gate):
 
     The typical AceCR in literature is a positive half-CR, then X on "Z side", then negative
     half-CR ("Z side" and "X side" refer to the two sides of the underlying ZX interactions).
+
     Args:
         polarity: Should be either "+-" or "-+". Specifies if positive or negative half-CR is first
         sandwich_rx_rads: Angle of rotation for an rx gate applied to the "X side" simultaneously
@@ -312,7 +318,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
     """A single Gate combining a collection of concurrent Gate(s) acting on different qubits.
 
     WARNING: for cirq versions 0.14.*, equality check will return False after permutations of
-        qubits between identical but nonadjacent gates, e.g.:
+        qubits between identical but nonadjacent gates, e.g.::
 
             gate = ParallelGates(cirq.X, cirq.Y, cirq.X)
             gate.on(q0, q1, q2) == gate.on(q2, q1, q0)  # True for cirq < 0.14.0
@@ -320,7 +326,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
                                                         # True for cirq >= 0.15.0
 
         This does not affect permutations of qubits between adjacent gates, or those within the
-        same InterchangeableQubitsGate:
+        same InterchangeableQubitsGate::
 
             gate = ParallelGates(cirq.X, cirq.X, cirq.CZ)
             gate.on(q0, q1, q2, q3) == gate.on(q1, q0, q3, q2)  # always True

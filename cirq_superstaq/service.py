@@ -361,8 +361,8 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             object whose .circuits attribute is a list (or list of lists) of logically equivalent
                 cirq Circuit(s).
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the cirq.Circuits and the .pulse_lists attribute is
-            the list(s) of cycles.
+                pulse sequence corresponding to the cirq.Circuits and the .pulse_lists attribute is
+                the list(s) of cycles.
         """
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)

@@ -25,14 +25,17 @@ class Sampler(cirq.Sampler):
 
     Example:
 
-        >> service = css.Service(
-        "Insert superstaq token that you received from https://superstaq.super.tech"
-        )
-        >> q0, q1 = cirq.LineQubit.range(2)
-        >> sampler = service.sampler("ibmq_qasm_simulator")
-        >> circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1), cirq.measure(q0))
-        >> print(sampler.sample(circuit, repetitions=5))
-            0
+    .. code-block:: python
+
+        service = css.Service(
+            "Insert superstaq token that you received from https://superstaq.super.tech"
+            )
+        q0, q1 = cirq.LineQubit.range(2)
+        sampler = service.sampler("ibmq_qasm_simulator")
+        circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1), cirq.measure(q0))
+        print(sampler.sample(circuit, repetitions=5))
+
+            q(0)
         0   0
         1   0
         2   0
