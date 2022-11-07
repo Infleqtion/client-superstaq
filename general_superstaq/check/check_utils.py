@@ -218,9 +218,7 @@ def get_file_parser() -> argparse.ArgumentParser:
         + "that exists.  If multiple revisions are provided, this script compares against "
         + "their most recent common ancestor.  Incremental checks ignore integration tests."
     )
-    parser.add_argument(
-        "-i", "--incremental", dest="revisions", nargs="*", action="extend", help=help_text
-    )
+    parser.add_argument("-i", "--incremental", dest="revisions", nargs="*", help=help_text)
 
     return parser
 

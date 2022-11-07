@@ -180,7 +180,7 @@ def _check_package_versions(
     return strict and not up_to_date  # True iff we are *requiring* changes to the requirements file
 
 
-@functools.lru_cache
+@functools.lru_cache()
 def _get_latest_version(package: str) -> str:
     base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
     pypi_url = f"https://pypi.org/pypi/{base_package}/json"
