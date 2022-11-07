@@ -222,9 +222,7 @@ class AceCR(cirq.Gate):
         if polarity not in ("+-", "-+"):
             raise ValueError("Polarity must be either '+-' or '-+'")
         self.polarity = polarity
-        self.sandwich_rx_rads = np.pi * cirq.chosen_angle_to_canonical_half_turns(
-            rads=sandwich_rx_rads
-        )
+        self.sandwich_rx_rads = sandwich_rx_rads
 
     def _num_qubits_(self) -> int:
         return 2
@@ -257,10 +255,21 @@ class AceCR(cirq.Gate):
         return args.format("acecr_{}_rx({:half_turns}) {},{};\n", polarity_str, exponent, *qubits)
 
     def _value_equality_values_(self) -> Tuple[str, float]:
-        return self.polarity, self.sandwich_rx_rads
+        return self.polarity, self.sandwich_rx_rads % (4 * np.pi)
 
     def _value_equality_approximate_values_(self) -> Tuple[str, cirq.PeriodicValue]:
-        return self.polarity, cirq.PeriodicValue(self.sandwich_rx_rads, 2 * np.pi)
+        return self.polarity, cirq.PeriodicValue(self.sandwich_rx_rads, 4 * np.pi)
+
+    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
+        if not isinstance(other, AceCR):
+            return NotImplemented
+
+        if other.polarity != self.polarity:
+            return False
+
+        return cirq.all_near_zero_mod(
+            self.sandwich_rx_rads - other.sandwich_rx_rads, 2 * np.pi, atol=atol
+        )
 
     def __repr__(self) -> str:
         if not self.sandwich_rx_rads:
@@ -378,6 +387,21 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
     def _value_equality_values_(self) -> Tuple[cirq.Gate, ...]:
         return self.component_gates
 
+    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
+        if not isinstance(other, ParallelGates):
+            return NotImplemented
+
+        if len(other.component_gates) != len(self.component_gates):
+            return False
+
+        if other.num_qubits() != self.num_qubits():
+            return False
+
+        return all(
+            cirq.equal_up_to_global_phase(gate, other_gate, atol=atol)
+            for gate, other_gate in zip(self.component_gates, other.component_gates)
+        )
+
     def _num_qubits_(self) -> int:
         return sum(map(cirq.num_qubits, self.component_gates))
 
@@ -473,7 +497,6 @@ def parallel_gates_operation(*ops: cirq.Operation) -> cirq.Operation:
     return ParallelGates(*gates).on(*qubits)
 
 
-@cirq.value_equality(approximate=True)
 class RGate(cirq.PhasedXPowGate):
     """A single-qubit gate that rotates about an axis in the X-Y plane."""
 
@@ -497,6 +520,25 @@ class RGate(cirq.PhasedXPowGate):
 
     def __pow__(self, power: float) -> "RGate":
         return RGate(power * self.theta, self.phi)
+
+    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
+        """Implemented here because it isn't in cirq.PhasedXPowGate"""
+        if not isinstance(other, cirq.PhasedXPowGate):
+            return NotImplemented
+
+        # equal_up_to_global_phase(RGate(x, y), RGate(-x, y + pi)) should be True:
+        if cirq.all_near_zero_mod(
+            [self.exponent + other.exponent, self.phase_exponent - other.phase_exponent - 1],
+            period=2,
+            atol=atol,
+        ):
+            return True
+
+        return cirq.all_near_zero_mod(
+            [self.exponent - other.exponent, self.phase_exponent - other.phase_exponent],
+            period=2,
+            atol=atol,
+        )
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         theta_str = args.format_radians(self.theta)
@@ -522,7 +564,6 @@ class RGate(cirq.PhasedXPowGate):
         return cirq.protocols.obj_to_dict_helper(self, ["theta", "phi"])
 
 
-@cirq.value_equality(approximate=True)
 class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
     """Wrapper class to define a ParallelGate of identical RGate gates."""
 
@@ -552,6 +593,16 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
 
     def __pow__(self, power: float) -> "ParallelRGate":
         return ParallelRGate(power * self.theta, self.phi, self.num_copies)
+
+    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
+        """Implemented here because it isn't in cirq.ParallelGate"""
+        if not isinstance(other, cirq.ParallelGate):
+            return NotImplemented
+
+        if self.num_copies != other.num_copies:
+            return False
+
+        return cirq.equal_up_to_global_phase(self.sub_gate, other.sub_gate)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         diagram_info = cirq.circuit_diagram_info(self.sub_gate, args)

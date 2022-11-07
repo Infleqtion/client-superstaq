@@ -211,14 +211,23 @@ def test_acecr_qasm() -> None:
 def test_acecr_eq() -> None:
     assert css.AceCRPlusMinus == css.AceCR("+-")
     assert css.AceCRPlusMinus != css.AceCR("-+")
+
     assert css.AceCR("+-", np.pi) == css.AceCR("+-", np.pi)
     assert css.AceCR("-+", np.pi) != css.AceCR("+-", np.pi)
-
+    assert css.AceCR("+-", np.pi) != css.AceCR("+-", 3 * np.pi)
     assert css.AceCR("+-", np.pi) == css.AceCR("+-", 5 * np.pi)
-    assert css.AceCR("+-", np.pi) == css.AceCR("+-", 3 * np.pi)
 
-    assert cirq.approx_eq(css.AceCR("+-", np.pi), css.AceCR("+-", -np.pi))
-    assert cirq.approx_eq(css.AceCR("+-", np.pi), css.AceCR("+-", 3 * np.pi))
+    assert cirq.approx_eq(css.AceCR("+-", np.pi), css.AceCR("+-", np.pi))
+    assert not cirq.approx_eq(css.AceCR("+-", np.pi), css.AceCR("-+", np.pi))
+    assert not cirq.approx_eq(css.AceCR("+-", np.pi), css.AceCR("+-", 3 * np.pi))
+    assert cirq.approx_eq(css.AceCR("+-", np.pi), css.AceCR("+-", 5 * np.pi))
+
+    assert cirq.equal_up_to_global_phase(css.AceCR("+-", np.pi), css.AceCR("+-", np.pi))
+    assert not cirq.equal_up_to_global_phase(css.AceCR("+-", np.pi), css.AceCR("-+", np.pi))
+    assert cirq.equal_up_to_global_phase(css.AceCR("+-", np.pi), css.AceCR("+-", 3 * np.pi))
+    assert cirq.equal_up_to_global_phase(css.AceCR("+-", np.pi), css.AceCR("+-", 5 * np.pi))
+
+    assert not cirq.equal_up_to_global_phase(css.AceCR("+-"), cirq.CX)
 
 
 def test_acecr_repr_and_str() -> None:
@@ -389,6 +398,32 @@ def test_parallel_gates_circuit_diagram_fallback() -> None:
     )
 
 
+def test_parallel_gates_eq() -> None:
+    gate = css.ParallelGates(cirq.X, cirq.ry(2.1))
+
+    assert gate == css.ParallelGates(cirq.X, cirq.ry(2.1))
+    assert gate != css.ParallelGates(cirq.X, cirq.ry(2.1 + 2 * np.pi))
+    assert gate == css.ParallelGates(cirq.X, cirq.ry(2.1 + 4 * np.pi))
+    assert gate != css.ParallelGates(cirq.X, cirq.ry(2.1 + 4 * np.pi + 1e-10))
+    assert gate != css.ParallelGates(cirq.rx(np.pi), cirq.ry(2.1))
+
+    assert cirq.approx_eq(gate, css.ParallelGates(cirq.X, cirq.ry(2.1)))
+    assert not cirq.approx_eq(gate, css.ParallelGates(cirq.X, cirq.ry(2.1 + 2 * np.pi)))
+    assert cirq.approx_eq(gate, css.ParallelGates(cirq.X, cirq.ry(2.1 + 4 * np.pi)))
+    assert cirq.approx_eq(gate, css.ParallelGates(cirq.X, cirq.ry(2.1 + 4 * np.pi + 1e-10)))
+    assert not cirq.approx_eq(gate, css.ParallelGates(cirq.rx(np.pi), cirq.ry(2.1)))
+
+    assert cirq.equal_up_to_global_phase(gate, css.ParallelGates(cirq.X, cirq.ry(2.1)))
+    assert cirq.equal_up_to_global_phase(gate, css.ParallelGates(cirq.X, cirq.ry(2.1 + 2 * np.pi)))
+    assert cirq.equal_up_to_global_phase(gate, css.ParallelGates(cirq.X, cirq.ry(2.1 + 4 * np.pi)))
+    assert cirq.equal_up_to_global_phase(gate, css.ParallelGates(cirq.X, cirq.ry(2.1 + 4 * np.pi)))
+    assert cirq.equal_up_to_global_phase(gate, css.ParallelGates(cirq.rx(np.pi), cirq.ry(2.1)))
+
+    assert not cirq.equal_up_to_global_phase(css.ParallelGates(), cirq.X)
+    assert not cirq.equal_up_to_global_phase(css.ParallelGates(), css.ParallelGates(cirq.X))
+    assert not cirq.equal_up_to_global_phase(css.ParallelGates(cirq.CX), css.ParallelGates(cirq.X))
+
+
 def test_parallel_gates_equivalence_groups() -> None:
     qubits = cirq.LineQubit.range(4)
     gate = css.ParallelGates(cirq.X, css.ZX, cirq.Y)
@@ -413,8 +448,12 @@ def test_parallel_gates_equivalence_groups() -> None:
     for permuted_qubits in itertools.permutations(operation.qubits):
         if permuted_qubits in equivalent_targets:
             assert operation == gate(*permuted_qubits)
+            assert cirq.approx_eq(operation, gate(*permuted_qubits))
+            assert cirq.equal_up_to_global_phase(operation, gate(*permuted_qubits))
         else:
             assert operation != gate(*permuted_qubits)
+            assert not cirq.approx_eq(operation, gate(*permuted_qubits))
+            assert not cirq.equal_up_to_global_phase(operation, gate(*permuted_qubits))
 
     with pytest.raises(ValueError, match="index out of range"):
         _ = gate.qubit_index_to_equivalence_group_key(4)
@@ -445,8 +484,12 @@ def test_parallel_gates_equivalence_groups_nonadjacent() -> None:  # pragma: no 
     for permuted_qubits in itertools.permutations(operation.qubits):
         if permuted_qubits in equivalent_targets:
             assert operation == gate(*permuted_qubits)
+            assert cirq.approx_eq(operation, gate(*permuted_qubits))
+            assert cirq.equal_up_to_global_phase(operation, gate(*permuted_qubits))
         else:
             assert operation != gate(*permuted_qubits)
+            assert not cirq.approx_eq(operation, gate(*permuted_qubits))
+            assert not cirq.equal_up_to_global_phase(operation, gate(*permuted_qubits))
 
 
 def test_rgate() -> None:
@@ -485,6 +528,31 @@ def test_rgate() -> None:
 
     circuit = cirq.Circuit(css.RGate(np.pi, 0.5 * np.pi).on(qubit))
     cirq.testing.assert_has_diagram(circuit, "0: ───RGate(π, 0.5π)───")
+
+
+def test_rgate_eq() -> None:
+    gate = css.RGate(5 * np.pi / 8, 1.23)
+
+    assert gate == css.RGate(gate.theta, gate.phi)
+    assert gate != css.RGate(gate.theta + 2 * np.pi, gate.phi)
+    assert gate == css.RGate(gate.theta + 4 * np.pi, gate.phi)
+    assert gate != cirq.PhasedXPowGate(exponent=gate.exponent, phase_exponent=gate.phase_exponent)
+    assert gate == cirq.PhasedXPowGate(
+        exponent=gate.exponent, phase_exponent=gate.phase_exponent, global_shift=-0.5
+    )
+
+    assert cirq.equal_up_to_global_phase(gate, css.RGate(gate.theta + 2 * np.pi, gate.phi))
+    assert cirq.equal_up_to_global_phase(gate, css.RGate(-gate.theta, gate.phi + np.pi))
+    assert cirq.equal_up_to_global_phase(
+        gate, cirq.PhasedXPowGate(exponent=gate.exponent, phase_exponent=gate.phase_exponent)
+    )
+    assert cirq.equal_up_to_global_phase(
+        gate, cirq.PhasedXPowGate(exponent=gate.exponent + 2, phase_exponent=gate.phase_exponent)
+    )
+
+    assert not cirq.equal_up_to_global_phase(gate, css.RGate(gate.theta, gate.phi + np.pi))
+    assert not cirq.equal_up_to_global_phase(gate, css.RGate(-gate.theta, gate.phi))
+    assert not cirq.equal_up_to_global_phase(gate, cirq.CX)
 
 
 def test_parallel_rgate() -> None:
@@ -547,6 +615,26 @@ def test_parallel_rgate() -> None:
 
     cirq.testing.assert_has_diagram(circuit, expected_diagram)
     assert circuit.to_qasm(header="", qubit_order=qubits) == expected_qasm
+
+
+def test_parallel_rgate_eq() -> None:
+    theta, phi = 4.2, 1.7
+    gate = css.ParallelRGate(theta, phi, 3)
+
+    assert gate == css.ParallelRGate(theta, phi, 3)
+    assert gate != css.ParallelRGate(theta + 2 * np.pi, phi, 3)
+    assert gate == css.ParallelRGate(theta + 4 * np.pi, phi, 3)
+    assert gate == cirq.ParallelGate(gate.sub_gate, 3)
+
+    assert cirq.equal_up_to_global_phase(gate, css.ParallelRGate(theta, phi, 3))
+    assert cirq.equal_up_to_global_phase(gate, css.ParallelRGate(theta + 2 * np.pi, phi, 3))
+    assert cirq.equal_up_to_global_phase(gate, css.ParallelRGate(theta + 4 * np.pi, phi, 3))
+    assert cirq.equal_up_to_global_phase(gate, cirq.ParallelGate(gate.sub_gate, 3))
+
+    assert not cirq.equal_up_to_global_phase(gate, css.ParallelRGate(theta + 1, phi, 3))
+    assert not cirq.equal_up_to_global_phase(gate, css.ParallelRGate(theta, phi + 1, 3))
+    assert not cirq.equal_up_to_global_phase(gate, css.ParallelRGate(theta, phi, 2))
+    assert not cirq.equal_up_to_global_phase(gate, cirq.CX)
 
 
 def test_ixgate() -> None:
