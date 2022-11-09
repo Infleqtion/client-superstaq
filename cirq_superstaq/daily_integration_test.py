@@ -27,7 +27,12 @@ def test_ibmq_compile(service: css.Service) -> None:
     assert len(out.pulse_sequence) == 5
 
 
-def test_acer_non_neighbor_qubits_compile(service: css.Service) -> None:
+def test_acecr_ibmq_compile(service: css.Service) -> None:
+    """Tests ibmq_compile method running without error.
+
+    This test was originally written to make sure compilation to ibmq_casablanca would not fail, but
+    IBM has since taken casablanca down.
+    """
     qubits = cirq.LineQubit.range(4)
     circuit = cirq.Circuit(
         css.AceCRMinusPlus(qubits[0], qubits[1]),
@@ -38,9 +43,20 @@ def test_acer_non_neighbor_qubits_compile(service: css.Service) -> None:
     out = service.ibmq_compile(circuit, target="ibmq_jakarta_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
     assert out.pulse_sequence is not None
-    assert 3000 <= out.pulse_sequence.duration <= 4000  # 3616 as of 6/30/2022
     assert out.pulse_sequence.start_time == 0
-    assert len(out.pulse_sequence) == 15
+    assert len(out.pulse_sequence) == 51
+
+    out = service.ibmq_compile(circuit, target="ibmq_perth_qpu")
+    assert isinstance(out.circuit, cirq.Circuit)
+    assert out.pulse_sequence is not None
+    assert out.pulse_sequence.start_time == 0
+    assert len(out.pulse_sequence) == 54
+
+    out = service.ibmq_compile(circuit, target="ibmq_lagos_qpu")
+    assert isinstance(out.circuit, cirq.Circuit)
+    assert out.pulse_sequence is not None
+    assert out.pulse_sequence.start_time == 0
+    assert len(out.pulse_sequence) == 61
 
 
 def test_aqt_compile(service: css.Service) -> None:
