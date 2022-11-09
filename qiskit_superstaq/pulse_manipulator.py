@@ -279,13 +279,14 @@ class PulseManipulator:
         self._coinciding_channels_map = self._get_coinciding_channels_map()
 
 
-    def get_instruction_pulse(self):
+    def get_instruction_pulse(self, inst_id=None):
         """Gets pulse waveform for an instruction.
 
         E.g., this is particularly useful for instructions on a phase-shifted channel (i.e., those
         that follow a virtual Z), to see what the un-shifted pulse is.
         """
-        pass
+        _, instruction = self._extract_instruction(inst_id=inst_id)
+        return instruction.pulse
 
 
     def get_instruction_samples(self):
@@ -336,6 +337,9 @@ class PulseManipulator:
 
     def _get_waveform_label(self, instruction, inst_id=None):
         """Gets LaTeX name corresponding to instruction, with an optional unique ID."""
+        # TODO: how should the instruction.name is None case be handled? No integer index is added.
+        if instruction.name is None:
+            return ""
         pulse_name, sign, channels = re.split("(m|p)+", instruction.name)
         sign = sign.replace("m", "-").replace("p", "")
         symbol, angle, _ = pulse_name.partition("90")
