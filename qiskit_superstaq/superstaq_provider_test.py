@@ -264,9 +264,8 @@ def test_qscout_compile_swap_mirror(mock_post: MagicMock, mirror_swaps: bool) ->
     }
     _ = provider.qscout_compile(qc, mirror_swaps=mirror_swaps)
     mock_post.assert_called_once()
-    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
-        "mirror_swaps": mirror_swaps
-    }
+    _, kwargs = mock_post.call_args
+    assert json.loads(kwargs["json"]["options"]) == {"mirror_swaps": mirror_swaps}
 
 
 @patch("requests.post")
