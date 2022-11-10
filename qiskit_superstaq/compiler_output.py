@@ -1,5 +1,5 @@
 import importlib
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 import general_superstaq as gss
 import qiskit
@@ -15,12 +15,14 @@ except ModuleNotFoundError:
 def active_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
     """Returns the indices of the non-idle qubits in a quantum circuit."""
 
-    # Determine idle qubits via DAG (as done in `QuantumCircuit.measure_active()`)
-    idle_wires = set(qiskit.converters.circuit_to_dag(circuit).idle_wires())
-    qubits = [q for q in circuit.qubits if q not in idle_wires]
+    qubit_indices: Set[int] = set()
 
-    # Convert to indices
-    return [circuit.find_bit(q).index for q in qubits]
+    for inst, qubits, _ in circuit:
+        if inst.name != "barrier":
+            indices = [circuit.find_bit(q).index for q in qubits]
+            qubit_indices.update(indices)
+
+    return sorted(qubit_indices)
 
 
 class CompilerOutput:

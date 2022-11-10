@@ -17,6 +17,7 @@ def test_active_qubit_indices() -> None:
 
     circuit.x(3)
     circuit.cz(3, 5)
+    circuit.barrier(0, 1, 2, 3, 4, 5)
     circuit.h(circuit.qubits[1])
 
     assert qss.active_qubit_indices(circuit) == [1, 3, 5]
