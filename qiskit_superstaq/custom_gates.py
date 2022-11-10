@@ -11,6 +11,7 @@ class AceCR(qiskit.circuit.Gate):
 
     The typical AceCR in literature is a positive half-CR, then X on "Z side", then negative
     half-CR ("Z side" and "X side" refer to the two sides of the underlying ZX interactions).
+
     Args:
         polarity: Should be either "+-" or "-+". Specifies if positive or negative half-CR is first
         sandwich_rx_rads: Angle of rotation for an rx gate applied to the "X side" simultaneously

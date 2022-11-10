@@ -42,21 +42,20 @@ class SuperstaQProvider(
     and 'target' is the name of the desired backend.
 
     Args:
-         Args:
-            api_key: A string key which allows access to the API. If this is None,
-                then this instance will use the environment variable  `SUPERSTAQ_API_KEY`. If that
-                variable is not set, then this will raise an `EnvironmentError`.
-            remote_host: The location of the API in the form of a URL. If this is None,
-                then this instance will use the environment variable `SUPERSTAQ_REMOTE_HOST`.
-                If that variable is not set, then this uses
-                `https://superstaq.super.tech/{api_version}`,
-                where `{api_version}` is the `api_version` specified below.
-            api_version: Version of the API.
-            max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
-            verbose: Whether to print to stdio and stderr on retriable errors.
-        Raises:
-            EnvironmentError: if the `api_key` is None and has no corresponding environment
-                variable set.
+        api_key: A string key which allows access to the API. If this is None,
+            then this instance will use the environment variable  `SUPERSTAQ_API_KEY`. If that
+            variable is not set, then this will raise an `EnvironmentError`.
+        remote_host: The location of the API in the form of a URL. If this is None,
+            then this instance will use the environment variable `SUPERSTAQ_REMOTE_HOST`.
+            If that variable is not set, then this uses
+            `https://superstaq.super.tech/{api_version}`,
+            where `{api_version}` is the `api_version` specified below.
+        api_version: Version of the API.
+        max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
+        verbose: Whether to print to stdio and stderr on retriable errors.
+    Raises:
+        EnvironmentError: if the `api_key` is None and has no corresponding environment
+            variable set.
     """
 
     def __init__(
@@ -192,6 +191,7 @@ class SuperstaQProvider(
         Returns:
             object whose .circuits attribute is a list (or list of lists) of logically equivalent
                 QuantumCircuit(s).
+
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
             pulse sequence corresponding to the QuantumCircuits and the .pulse_lists attribute is
             the list(s) of cycles.
