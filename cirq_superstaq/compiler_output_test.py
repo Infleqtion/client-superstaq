@@ -15,6 +15,7 @@ def test_active_qubit_indices() -> None:
     circuit = cirq.Circuit(
         cirq.X(qubits[5]),
         cirq.CZ(qubits[3], qubits[1]),
+        css.barrier(*qubits),
         cirq.H(qubits[1]),
     )
 

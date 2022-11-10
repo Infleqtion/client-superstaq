@@ -1,6 +1,6 @@
 import importlib
 import warnings
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 import cirq
 import general_superstaq as gss
@@ -16,13 +16,18 @@ except ModuleNotFoundError:
 def active_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
     """Returns the indices of the non-idle qubits in a quantum circuit."""
 
-    qubit_indices = []
-    for q in circuit.all_qubits():
+    all_qubits: Set[cirq.Qid] = set()
+    for op in circuit.all_operations():
+        if not isinstance(op.gate, css.Barrier):
+            all_qubits.update(op.qubits)
+
+    qubit_indices: List[int] = []
+    for q in sorted(all_qubits):
         if not isinstance(q, (cirq.LineQubit, cirq.LineQid)):
             raise ValueError("Qubit indices can only be determined for line qubits")
         qubit_indices.append(int(q))
 
-    return sorted(qubit_indices)
+    return qubit_indices
 
 
 class CompilerOutput:
