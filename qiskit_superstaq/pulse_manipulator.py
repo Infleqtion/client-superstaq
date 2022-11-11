@@ -8,7 +8,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import re
-from typing import Dict
+from typing import Dict, Optional
 from collections import defaultdict
 from copy import deepcopy
 
@@ -279,7 +279,7 @@ class PulseManipulator:
         self._coinciding_channels_map = self._get_coinciding_channels_map()
 
 
-    def get_instruction_pulse(self, inst_id=None):
+    def get_instruction_pulse(self, inst_id: int = None) -> qiskit.pulse.ParametricPulse:
         """Gets pulse waveform for an instruction.
 
         E.g., this is particularly useful for instructions on a phase-shifted channel (i.e., those
@@ -289,17 +289,23 @@ class PulseManipulator:
         return instruction.pulse
 
 
-    def get_instruction_samples(self):
+    def get_instruction_samples(self, inst_id: int = None) -> np.ndarray:
         """Gets samples for instruction's pulse waveform."""
-        pass
+        _, instruction = self._extract_instruction(inst_id=inst_id)
+        return instruction.pulse.get_waveform().samples
 
 
-    def get_qiskit_schedule(self):
+    def get_qiskit_schedule(self) -> qiskit.pulse.Schedule:
         """Returns a copy of underlying qiskit pulse schedule (without unique IDs)."""
         return deepcopy(self._schedule)
 
 
-    def _set_id_to_instruction_map(self, schedule=None, with_labels=True, inplace=True):
+    def _set_id_to_instruction_map(
+        self,
+        schedule: qiskit.pulse.Schedule = None,
+        with_label_indexing: bool = True,
+        inplace: bool = True,
+    ):
         """Sets map from unique instruction ID to instruction, for schedule manipulation methods."""
         if schedule is None:
             schedule = deepcopy(self._schedule)
@@ -310,14 +316,10 @@ class PulseManipulator:
                 instruction, qiskit.pulse.Play
             ) or isinstance(instruction.channel, qiskit.pulse.MeasureChannel):
                 continue
-            if with_labels:
-                new_instruction = self._extract_instruction(
-                    instruction, waveform_label=self._get_waveform_label(instruction, inst_id=idx)
-                )
+            if with_label_indexing:
+                new_instruction = self._extract_instruction(instruction, inst_id=idx)
             else:
-                new_instruction = self._extract_instruction(
-                    instruction, waveform_label=self._get_waveform_label(instruction)
-                )
+                new_instruction = self._extract_instruction(instruction)
             assert(
                 instruction.duration == new_instruction.duration
             ), "Instructions should only differ by waveform label."
@@ -335,32 +337,41 @@ class PulseManipulator:
             return new_schedule
 
 
-    def _get_waveform_label(self, instruction, inst_id=None):
+    def _get_waveform_label(self, instruction, new_inst_id=None, flip_amp=False):
         """Gets LaTeX name corresponding to instruction, with an optional unique ID."""
         # TODO: how should the instruction.name is None case be handled? No integer index is added.
-        if instruction.name is None:
+        if waveform.name is None:
             return ""
         pulse_name, sign, channels = re.split("(m|p)+", instruction.name)
-        sign = sign.replace("m", "-").replace("p", "")
+        if flip_amp:
+            sign = sign.replace("m", "").replace("p", "-")
+        else:
+            sign = sign.replace("m", "-").replace("p", "")
         symbol, angle, _ = pulse_name.partition("90")
         angle = sign + "\pi" + ("/2" if angle == "90" else "")
         if len(channels.split("_")) > 2:
             latex = f"$\overline{{{symbol}}}({angle})$"
         else:
             latex = f"${symbol}({angle})$"
-        if inst_id is None:
+        if new_inst_id is None:
             return latex
-        return f"{latex}\n{inst_id}"
+        return f"{latex}\n{new_inst_id}"
 
 
-    def _extract_instruction(self, pulse_obj=None, inst_id=None, channel=None, waveform_label=None):
+    def _extract_instruction(
+        self,
+        pulse_obj=None,
+        inst_id=None,
+        channel=None,
+        flip_amp=False,
+    ):
         """Gets instruction from a qiskit pulse object.
 
         This allows users to pass in either (a) an instruction (e.g., qiskit.pulse.Play), (b) a
         pulse waveform (qiskit.pulse.Waveform), or (c) an array of samples for a pulse waveform
         """
         # TODO: handle an input schedule (perhaps containing multiple instructions)
-        if inst_id is not None:
+        if inst_id is not None and (pulse_obj is None and channel is None and flip_amp is None):
             assert(
                 self._id_to_inst_map.get(inst_id, None) is not None
             ), (
@@ -370,6 +381,7 @@ class PulseManipulator:
             return self._id_to_inst_map[inst_id]
 
         if isinstance(pulse_obj, qiskit.pulse.Play):
+            waveform_label = self._get_waveform_label(pulse_obj, inst_id=inst_id)
             if waveform_label is not None:
                 return qiskit.pulse.Play(
                     type(pulse_obj.pulse)(**pulse_obj.pulse.parameters, name=waveform_label),
@@ -390,13 +402,39 @@ class PulseManipulator:
         if isinstance(pulse_obj, np.array) and (pulse_obj.ndim == 1):
             assert channel is not None, "You need to provide a channel for a pulse waveform."
             assert name is not None, "Provide a name for the pulse waveform"
+            waveform_label = self._get_waveform_label(pulse_obj, inst_id=inst_id)
             return qiskit.pulse.Play(
                 qiskit.pulse.Waveform(samples=pulse_obj, name=waveform_label),
                 channel=channel,
                 name=f"{waveform_label}_instruction",
             )
 
-        raise ValueError(f"Input format of type {type(inst)} unrecognized.")
+        """ A slightly more compact way to extract instructions...
+        if isinstance(pulse_obj, qiskit.pulse.Play):
+            parameters = pulse_obj.pulse.parameters
+            if flip_amp:
+                parameters["amp"] *= -1
+            waveform_label = self._get_waveform_label(pulse_obj, inst_id=inst_id, flip_amp=flip_amp)
+            waveform = type(pulse_obj.pulse)(**parameters, name=waveform_label)
+        elif isinstance(pulse_obj, qiskit.pulse.Waveform):
+            assert channel is not None, "You need to provide a channel for a pulse waveform."
+            assert name is not None, "Provide a name for the pulse waveform."
+            waveform = pulse_obj
+        elif isinstance(pulse_obj, np.array) and (pulse_obj.ndim == 1):
+            assert channel is not None, "You need to provide a channel for a pulse waveform."
+            assert name is not None, "Provide a name for the pulse waveform"
+            waveform_label = self._get_waveform_label(pulse_obj, inst_id=inst_id, flip_amp=flip_amp)
+            waveform = qiskit.pulse.Waveform(samples=pulse_obj, name=waveform_label),
+        else:
+            raise ValueError(f"Input format of type {type(inst)} unrecognized.")
+
+        return qiskit.pulse.Play(
+            waveform,
+            channel=channel,
+            name=f"{waveform_label}_instruction",
+        )
+        """
+
 
 
     # TODO: add this everywhere _coinciding_channels is used
