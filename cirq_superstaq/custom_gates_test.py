@@ -624,7 +624,6 @@ def test_parallel_rgate_eq() -> None:
     assert gate == css.ParallelRGate(theta, phi, 3)
     assert gate != css.ParallelRGate(theta + 2 * np.pi, phi, 3)
     assert gate == css.ParallelRGate(theta + 4 * np.pi, phi, 3)
-    assert gate == cirq.ParallelGate(gate.sub_gate, 3)
 
     assert cirq.equal_up_to_global_phase(gate, css.ParallelRGate(theta, phi, 3))
     assert cirq.equal_up_to_global_phase(gate, css.ParallelRGate(theta + 2 * np.pi, phi, 3))

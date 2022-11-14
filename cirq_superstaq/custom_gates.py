@@ -564,6 +564,7 @@ class RGate(cirq.PhasedXPowGate):
         return cirq.protocols.obj_to_dict_helper(self, ["theta", "phi"])
 
 
+@cirq.value_equality(approximate=True)
 class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
     """Wrapper class to define a ParallelGate of identical RGate gates."""
 
