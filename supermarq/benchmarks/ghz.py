@@ -1,4 +1,4 @@
-import collections
+from typing import Dict
 
 import cirq
 from qiskit.quantum_info import hellinger_fidelity
