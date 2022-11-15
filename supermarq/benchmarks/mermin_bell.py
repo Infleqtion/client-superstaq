@@ -1,9 +1,10 @@
 import collections
-from typing import cast, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, cast
 
 import cirq
 import numpy as np
 import sympy
+
 from supermarq import stabilizers
 from supermarq.benchmark import Benchmark
 
@@ -149,7 +150,7 @@ class MerminBell(Benchmark):
 
             expect_val += numerator / sum(list(counts.values()))
 
-        return (expect_val + 2 ** (self.num_qubits - 1)) / 2 ** self.num_qubits
+        return (expect_val + 2 ** (self.num_qubits - 1)) / 2**self.num_qubits
 
     def _mermin_operator(self, num_qubits: int) -> List[Tuple[float, str]]:
         """

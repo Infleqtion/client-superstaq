@@ -1,0 +1,166 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: supermarq
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  format:
+    name: Format check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        env:
+          PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev]
+      - name: Format
+        run: |
+          check/format_.py
+
+  lint:
+    name: Lint check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        env:
+          PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev]
+      - name: Pylint
+        run: |
+          check/pylint_.py --all
+
+  flake8:
+    name: Flake8 check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        env:
+          PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev]
+      - name: Flake8
+        run: |
+          check/flake8_.py
+
+  mypy:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        env:
+          PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev]
+      - name: Type check
+        run: |
+          check/mypy_.py
+
+  coverage:
+    name: Pytest and Coverage check
+    env:
+      PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev]
+      - name: Coverage check
+        run: |
+          check/coverage_.py
+
+  pytest-mac:
+    name: Pytest macOS
+    env:
+      PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev]
+      - name: Pytest-mac check
+        run: |
+          check/pytest_.py
+
+  pytest-win:
+    name: Pytest Windows
+    env:
+      PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev]
+      - name: Pytest-win check
+        run: |
+          check/pytest_.py
+        shell: bash
+
+  requirements:
+    name: Requirements check
+    env:
+      PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev]
+      - name: Requirements check
+        run: |
+          check/requirements.py
+

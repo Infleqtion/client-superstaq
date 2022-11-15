@@ -1,12 +1,14 @@
 <p align="center">
-  <img width="300" src="static/SupermarQ_Logo.png">
+  <img width="300" src="https://raw.githubusercontent.com/SupertechLabs/SupermarQ/main/static/SupermarQ_Logo.png">
 </p>
 
 ---
+![Continuous Integration](https://github.com/SupertechLabs/SupermarQ/actions/workflows/ci.yml/badge.svg)
+
 
 # SupermarQ: A Scalable Quantum Benchmark Suite
 
-[SupermarQ](https://github.com/SupertechLabs/SupermarQ/blob/main/static/SupermarQ_Paper.pdf) is a suite of application-oriented benchmarks used to measure the performance of quantum computing systems.
+[SupermarQ](https://arxiv.org/abs/2202.11045) is a suite of application-oriented benchmarks used to measure the performance of quantum computing systems.
 
 ## Installation
 
@@ -15,6 +17,15 @@ The SupermarQ package is available via `pip` and can be installed in your curren
 ```
 pip install supermarq
 ```
+
+## Install Dev Requirements 
+
+This is required if you intend to run checks locally
+
+```
+pip install .[dev]
+```
+
 
 ## Using SupermarQ
 

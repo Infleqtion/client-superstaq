@@ -1,6 +1,7 @@
 import collections
 
 import pytest
+
 from supermarq.benchmarks.phase_code import PhaseCode
 
 
@@ -11,7 +12,7 @@ def test_phase_code_circuit() -> None:
 
 def test_phase_code_score() -> None:
     pc = PhaseCode(4, 2, [0, 1, 1, 0])
-    assert pc.score(collections.Counter({"101 101 0010100": 100})) == 1
+    assert pc.score(collections.Counter({"1011010010100": 100})) == 1
 
 
 def test_invalid_size() -> None:
