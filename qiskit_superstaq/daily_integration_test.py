@@ -20,7 +20,6 @@ def provider() -> qss.SuperstaQProvider:
 def test_backends(provider: qss.SuperstaQProvider) -> None:
     result = provider.backends()
     assert provider.get_backend("ibmq_qasm_simulator") in result
-    assert provider.get_backend("d-wave_advantage-system4.1_qpu") in result
     if datetime.now().isoweekday() < 6:  # IonQ device is only available on weekdays
         assert provider.get_backend("ionq_ion_qpu") in result
 
