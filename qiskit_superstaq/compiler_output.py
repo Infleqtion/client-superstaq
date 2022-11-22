@@ -119,6 +119,12 @@ def read_json_aqt(
         seq.__setstate__(state)
         seq.compile()
 
+        if "readout_jp" in json_dict:
+            state = gss.serialization.deserialize(json_dict["readout_jp"])
+            seq._readout = qtrl.sequencer.Sequence(n_elements=1)
+            seq._readout.__setstate__(state)
+            seq._readout.compile()
+
         pulse_lists_str = json_dict["pulse_lists_jp"]
         pulse_lists = gss.serialization.deserialize(pulse_lists_str)
 
