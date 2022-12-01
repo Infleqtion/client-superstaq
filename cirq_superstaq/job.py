@@ -15,11 +15,13 @@
 import time
 from typing import Any, Dict
 
+import cirq
 import general_superstaq as gss
 from cirq._doc import document
 from general_superstaq import superstaq_client
 
 
+@cirq.value_equality(unhashable=True)
 class Job:
     """A job created on the SuperstaQ API.
 
@@ -170,7 +172,5 @@ class Job:
     def __repr__(self) -> str:
         return f"css.Job(client={self._client!r}, job_id={self.job_id()!r})"
 
-    def __eq__(self, other: Any) -> bool:
-        if not isinstance(self, type(other)):
-            return False
-        return self._job == other._job
+    def _value_equality_values_(self) -> Dict[str, Any]:
+        return self._job
