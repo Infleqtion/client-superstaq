@@ -110,5 +110,6 @@ Job = TypedDict(
         "data": Optional[Dict[str, Any]],
         "samples": Optional[Dict[str, int]],
         "shots": Optional[int],
+        "state_vector": Optional[str],
     },
 )
