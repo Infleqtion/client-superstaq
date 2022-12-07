@@ -232,6 +232,21 @@ class _SuperstaQClient:
         }
         return self.post_request("/qubo", json_dict)
 
+    def supercheq(
+        self,
+        files: List[List[int]],
+        num_qubits: int,
+        depth: int,
+        circuit_return_type: str,
+    ) -> Any:
+        json_dict = {
+            "files": files,
+            "num_qubits": num_qubits,
+            "depth": depth,
+            "circuit_return_type": circuit_return_type,
+        }
+        return self.post_request("/supercheq", json_dict)
+
     def find_min_vol_portfolio(
         self, json_dict: Dict[str, Union[List[str], int, float, str]]
     ) -> MinVolJson:

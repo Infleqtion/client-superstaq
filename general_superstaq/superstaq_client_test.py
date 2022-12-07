@@ -523,6 +523,29 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
 
 
 @mock.patch("requests.post")
+def test_superstaq_client_supercheq(mock_post: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaQClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    client.supercheq([[0]], 1, 1, "cirq_circuits")
+
+    expected_json = {
+        "files": [[0]],
+        "num_qubits": 1,
+        "depth": 1,
+        "circuit_return_type": "cirq_circuits",
+    }
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/supercheq",
+        headers=EXPECTED_HEADERS,
+        json=expected_json,
+        verify=False,
+    )
+
+
+@mock.patch("requests.post")
 def test_superstaq_client_find_min_vol_portfolio(mock_post: mock.MagicMock) -> None:
     client = gss.superstaq_client._SuperstaQClient(
         client_name="general-superstaq",
