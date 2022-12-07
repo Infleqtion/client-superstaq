@@ -14,11 +14,12 @@
 
 import json
 import os
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import cirq
 import general_superstaq as gss
 import numpy as np
+import numpy.typing as npt
 from general_superstaq import ResourceEstimate, finance, logistics, superstaq_client, user_config
 
 import cirq_superstaq as css
@@ -474,3 +475,12 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         if isinstance(circuits, cirq.Circuit):
             return pulses[0]
         return pulses
+
+    def supercheq(
+        self, files: List[List[int]], num_qubits: int, depth: int
+    ) -> Tuple[List[cirq.Circuit], npt.NDArray[np.float_]]:
+        """Returns the randomly generated circuits and the fidelity matrix for inputted files"""
+        json_dict = self._client.supercheq(files, num_qubits, depth, "cirq_circuits")
+        circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
+        fidelities = gss.serialization.deserialize(json_dict["fidelities"])
+        return circuits, fidelities

@@ -19,6 +19,7 @@ from unittest import mock
 
 import cirq
 import general_superstaq as gss
+import numpy as np
 import pandas as pd
 import pytest
 import sympy
@@ -417,6 +418,20 @@ def test_service_neutral_atom_compile(mock_neutral_atom_compile: mock.MagicMock)
         match="'neutral_atom_compile' requires module 'unittest'",
     ):
         _ = service.neutral_atom_compile(cirq.Circuit())
+
+
+@mock.patch(
+    "general_superstaq.superstaq_client._SuperstaQClient.supercheq",
+)
+def test_service_supercheq(mock_supercheq: mock.MagicMock) -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    circuits = [cirq.Circuit()]
+    fidelities = np.array([1])
+    mock_supercheq.return_value = {
+        "cirq_circuits": css.serialization.serialize_circuits(circuits),
+        "fidelities": gss.serialization.serialize(fidelities),
+    }
+    assert service.supercheq([[0]], 1, 1) == (circuits, fidelities)
 
 
 @mock.patch.dict(os.environ, {"SUPERSTAQ_API_KEY": "tomyheart"})
