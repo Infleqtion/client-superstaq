@@ -5,6 +5,7 @@ from unittest import mock
 from unittest.mock import MagicMock, patch
 
 import general_superstaq as gss
+import numpy as np
 import pytest
 import qiskit
 from general_superstaq import ResourceEstimate
@@ -314,3 +315,17 @@ def test_invalid_target_service_neutral_atom_compile() -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     with pytest.raises(ValueError, match="not a Neutral Atom Compiler target"):
         provider.neutral_atom_compile(qiskit.QuantumCircuit(), target="invalid_target")
+
+
+@mock.patch(
+    "general_superstaq.superstaq_client._SuperstaQClient.supercheq",
+)
+def test_service_supercheq(mock_supercheq: mock.MagicMock) -> None:
+    service = qss.SuperstaQProvider(api_key="key")
+    circuits = [qiskit.QuantumCircuit()]
+    fidelities = np.array([1])
+    mock_supercheq.return_value = {
+        "qiskit_circuits": qss.serialization.serialize_circuits(circuits),
+        "fidelities": gss.serialization.serialize(fidelities),
+    }
+    assert service.supercheq([[0]], 1, 1) == (circuits, fidelities)

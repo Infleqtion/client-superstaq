@@ -14,9 +14,11 @@
 
 import json
 import os
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import general_superstaq as gss
+import numpy as np
+import numpy.typing as npt
 import qiskit
 from general_superstaq import ResourceEstimate, finance, logistics, superstaq_client, user_config
 
@@ -331,3 +333,12 @@ class SuperstaQProvider(
         if isinstance(circuits, qiskit.QuantumCircuit):
             return pulses[0]
         return pulses
+
+    def supercheq(
+        self, files: List[List[int]], num_qubits: int, depth: int
+    ) -> Tuple[List[qiskit.QuantumCircuit], npt.NDArray[np.float_]]:
+        """Docstring."""
+        json_dict = self._client.supercheq(files, num_qubits, depth, "qiskit_circuits")
+        circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
+        fidelities = gss.serialization.deserialize(json_dict["fidelities"])
+        return circuits, fidelities
