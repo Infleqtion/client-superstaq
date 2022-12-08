@@ -309,10 +309,12 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
         return args.format(format_str, *qubits)
 
     def __str__(self) -> str:
-        return f"Barrier({self.num_qubits()})"
+        if all(d == 2 for d in self._qid_shape):
+            return f"Barrier({self.num_qubits()})"
+        return f"Barrier(qid_shape={cirq.qid_shape(self)})"
 
     def __repr__(self) -> str:
-        return f"css.Barrier({self.num_qubits()})"
+        return f"css.{self}"
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> Tuple[str, ...]:
         if args.use_unicode_characters:
@@ -321,7 +323,8 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
 
 
 def barrier(*qubits: cirq.Qid) -> cirq.Operation:
-    return css.Barrier(len(qubits)).on(*qubits)
+    qid_shape = tuple(q.dimension for q in qubits)
+    return css.Barrier(qid_shape=qid_shape).on(*qubits)
 
 
 @cirq.value_equality(approximate=True)
@@ -404,8 +407,11 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             for gate, other_gate in zip(self.component_gates, other.component_gates)
         )
 
-    def _num_qubits_(self) -> int:
-        return sum(map(cirq.num_qubits, self.component_gates))
+    def _qid_shape_(self) -> Tuple[int, ...]:
+        qid_shape: Tuple[int, ...] = ()
+        for gate in self.component_gates:
+            qid_shape += cirq.qid_shape(gate)
+        return qid_shape
 
     def _decompose_(self, qubits: Tuple[cirq.Qid, ...]) -> Iterator[cirq.Operation]:
         """Decompose into each component gate"""

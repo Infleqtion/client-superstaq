@@ -266,7 +266,7 @@ def test_barrier() -> None:
     operation = gate.on(*qubits)
     assert cirq.decompose(operation) == [operation]
 
-    # confirm Barrier is as an InterchangeableQubitsGate
+    # confirm Barrier is an InterchangeableQubitsGate
     for permuted_qubits in itertools.permutations(qubits):
         assert operation == gate.on(*permuted_qubits)
 
@@ -321,6 +321,40 @@ def test_barrier() -> None:
 
     barrier = css.barrier(*qubits)
     assert barrier == css.Barrier(n).on(*qubits)
+
+
+def test_barrier_on_qids() -> None:
+    qudits = [
+        cirq.LineQubit(0),
+        cirq.LineQid(1, 3),
+        cirq.GridQid(2, 3, dimension=4),
+        cirq.NamedQid("foo", dimension=5),
+    ]
+
+    gate = css.Barrier(qid_shape=(2, 3, 4, 5))
+
+    assert str(gate) == "Barrier(qid_shape=(2, 3, 4, 5))"
+    assert repr(gate) == "css.Barrier(qid_shape=(2, 3, 4, 5))"
+
+    cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq as css")
+    assert gate != css.Barrier(4)
+
+    operation = gate.on(*qudits)
+    assert cirq.decompose(operation) == [operation]
+
+    # make sure optimizations don't drop Barriers:
+    circuit = cirq.drop_negligible_operations(cirq.Circuit(operation))
+    assert circuit == cirq.Circuit(operation)
+    assert cirq.trace_distance_bound(operation) == 1.0
+
+    # check css.barrier() function and confirm Barrier is an InterchangeableQubitsGate
+    # (only works if all qudits have the same dimension)
+    qudits = [q.with_dimension(3) for q in qudits]
+    operation = css.barrier(*qudits)
+    for permuted_qubits in itertools.permutations(qudits):
+        qid_shape = tuple(q.dimension for q in permuted_qubits)
+        assert operation == css.Barrier(qid_shape=qid_shape).on(*permuted_qubits)
+        assert operation == css.barrier(*permuted_qubits)
 
 
 def test_parallel_gates() -> None:
@@ -386,6 +420,24 @@ def test_parallel_gates_operation() -> None:
 
     with pytest.raises(ValueError):  # Overlapping qubits should be caught by cirq
         _ = css.parallel_gates_operation(cirq.CX(q2, q0), cirq.Y(q2))
+
+
+def test_parallel_gates_on_qids() -> None:
+    gate = css.ParallelGates(cirq.X, cirq.MatrixGate(np.eye(9), qid_shape=(3, 3)))
+    qudits = [cirq.LineQubit(2), cirq.LineQid(1, 3), cirq.GridQid(2, 3, dimension=3)]
+    operation = gate(*qudits)
+
+    cirq.testing.assert_equivalent_repr(
+        gate, setup_code="import cirq, cirq_superstaq as css, numpy as np"
+    )
+
+    assert cirq.decompose(operation) == [
+        cirq.X(qudits[0]),
+        cirq.MatrixGate(np.eye(9), qid_shape=(3, 3)).on(qudits[1], qudits[2]),
+    ]
+    cirq.testing.assert_decompose_is_consistent_with_unitary(gate, ignoring_global_phase=False)
+
+    assert operation == css.parallel_gates_operation(*cirq.decompose(operation))
 
 
 def test_parallel_gates_circuit_diagram_fallback() -> None:
