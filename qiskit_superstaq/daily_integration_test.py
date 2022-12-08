@@ -180,3 +180,24 @@ def test_get_aqt_configs(provider: qss.superstaq_provider.SuperstaQProvider) -> 
     res = provider.aqt_get_configs()
     assert "pulses" in res
     assert "variables" in res
+
+
+def test_supercheq(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
+    # fmt: off
+    files = [
+        [0, 0, 0, 0, 0], [0, 0, 0, 0, 1], [0, 0, 0, 1, 0], [0, 0, 0, 1, 1],
+        [0, 0, 1, 0, 0], [0, 0, 1, 0, 1], [0, 0, 1, 1, 0], [0, 0, 1, 1, 1],
+        [0, 1, 0, 0, 0], [0, 1, 0, 0, 1], [0, 1, 0, 1, 0], [0, 1, 0, 1, 1],
+        [0, 1, 1, 0, 0], [0, 1, 1, 0, 1], [0, 1, 1, 1, 0], [0, 1, 1, 1, 1],
+        [1, 0, 0, 0, 0], [1, 0, 0, 0, 1], [1, 0, 0, 1, 0], [1, 0, 0, 1, 1],
+        [1, 0, 1, 0, 0], [1, 0, 1, 0, 1], [1, 0, 1, 1, 0], [1, 0, 1, 1, 1],
+        [1, 1, 0, 0, 0], [1, 1, 0, 0, 1], [1, 1, 0, 1, 0], [1, 1, 0, 1, 1],
+        [1, 1, 1, 0, 0], [1, 1, 1, 0, 1], [1, 1, 1, 1, 0], [1, 1, 1, 1, 1],
+    ]
+    # fmt: on
+
+    num_qubits = 3
+    depth = 1
+    circuits, fidelities = provider.supercheq(files, num_qubits, depth)
+    assert len(circuits) == 32
+    assert fidelities.shape == (32, 32)
