@@ -1,4 +1,5 @@
 import importlib
+import json
 from typing import Any, Dict, List, Optional, Set, Union
 
 import general_superstaq as gss
@@ -7,7 +8,7 @@ import qiskit
 import qiskit_superstaq as qss
 
 try:
-    import qtrl.sequencer
+    import qtrl.sequence_utils.readout
 except ModuleNotFoundError:
     pass
 
@@ -106,30 +107,39 @@ def read_json_aqt(
         the returned object also stores the pulse sequence in the .seq attribute and the
         list(s) of cycles in the .pulse_list(s) attribute.
     """
+
+    compiled_circuits: Union[List[qiskit.QuantumCircuit], List[List[qiskit.QuantumCircuit]]]
+    compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
+
     seq = None
     pulse_lists = None
 
     if importlib.util.find_spec(
         "qtrl"
     ):  # pragma: no cover, b/c qtrl is not open source so it is not in qiskit-superstaq reqs
-        state_str = json_dict["state_jp"]
-        state = gss.serialization.deserialize(state_str)
 
-        seq = qtrl.sequencer.Sequence(n_elements=1)
-        seq.__setstate__(state)
-        seq.compile()
+        def _sequencer_from_state(state: Dict[str, Any]) -> "qtrl.sequencer.Sequence":
+            seq = qtrl.sequencer.Sequence(n_elements=1)
+            seq.__setstate__(state)
+            seq.compile()
+            return seq
+
+        pulse_lists = gss.serialization.deserialize(json_dict["pulse_lists_jp"])
+        state = gss.serialization.deserialize(json_dict["state_jp"])
 
         if "readout_jp" in json_dict:
-            state = gss.serialization.deserialize(json_dict["readout_jp"])
-            seq._readout = qtrl.sequencer.Sequence(n_elements=1)
-            seq._readout.__setstate__(state)
-            seq._readout.compile()
+            readout_state = gss.serialization.deserialize(json_dict["readout_jp"])
+            readout_seq = _sequencer_from_state(readout_state)
 
-        pulse_lists_str = json_dict["pulse_lists_jp"]
-        pulse_lists = gss.serialization.deserialize(pulse_lists_str)
+            if "readout_qubits" in json_dict:
+                readout_qubits = json.loads(json_dict["readout_qubits"])
+                readout_seq._readout = qtrl.sequence_utils.readout._ReadoutInfo(
+                    readout_seq, readout_qubits, n_readouts=len(compiled_circuits)
+                )
 
-    compiled_circuits: Union[List[qiskit.QuantumCircuit], List[List[qiskit.QuantumCircuit]]]
-    compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
+            state["_readout"] = readout_seq
+
+        seq = _sequencer_from_state(state)
 
     if num_eca_circuits:
         compiled_circuits = [
