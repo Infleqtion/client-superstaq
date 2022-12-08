@@ -1,6 +1,6 @@
 """Miscellaneous custom gates that we encounter and want to explicitly define."""
 
-from typing import AbstractSet, Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import AbstractSet, Any, Dict, Iterator, List, Optional, Sequence, Tuple, Type, Union
 
 import cirq
 import numpy as np
@@ -70,7 +70,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     def __repr__(self) -> str:
         return f"css.ZZSwapGate({self.theta})"
 
-    def _decompose_(self, qubits: Tuple[cirq.Qid, cirq.Qid]) -> cirq.OP_TREE:
+    def _decompose_(self, qubits: Tuple[cirq.Qid, cirq.Qid]) -> Iterator[cirq.Operation]:
         yield cirq.CX(qubits[0], qubits[1])
         yield cirq.CX(qubits[1], qubits[0])
         yield cirq.Z(qubits[1]) ** (self.theta / np.pi)
@@ -227,7 +227,9 @@ class AceCR(cirq.Gate):
     def _num_qubits_(self) -> int:
         return 2
 
-    def _decompose_(self, qubits: Tuple[cirq.LineQubit, cirq.LineQubit]) -> cirq.OP_TREE:
+    def _decompose_(
+        self, qubits: Tuple[cirq.LineQubit, cirq.LineQubit]
+    ) -> Iterator[cirq.Operation]:
         yield css.CR(*qubits) ** 0.25 if self.polarity == "+-" else css.CR(*qubits) ** -0.25
         yield cirq.X(qubits[0])
         if self.sandwich_rx_rads:
@@ -405,7 +407,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
     def _num_qubits_(self) -> int:
         return sum(map(cirq.num_qubits, self.component_gates))
 
-    def _decompose_(self, qubits: Tuple[cirq.Qid, ...]) -> cirq.OP_TREE:
+    def _decompose_(self, qubits: Tuple[cirq.Qid, ...]) -> Iterator[cirq.Operation]:
         """Decompose into each component gate"""
         for gate in self.component_gates:
             num_qubits = gate.num_qubits()
@@ -665,7 +667,7 @@ ICCX = IX.controlled(2, [1, 1])
 AQTICCX = AQTITOFFOLI = IX.controlled(2, [0, 0])
 
 
-def custom_resolver(cirq_type: str) -> Union[Callable[..., cirq.Gate], None]:
+def custom_resolver(cirq_type: str) -> Union[Type[cirq.Gate], None]:
     if cirq_type == "ZZSwapGate":
         return ZZSwapGate
     if cirq_type == "Barrier":
