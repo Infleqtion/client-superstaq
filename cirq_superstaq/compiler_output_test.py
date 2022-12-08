@@ -134,11 +134,18 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
 
     # Serialized readout attribute for aqt_zurich_qpu:
     json_dict["readout_jp"] = state_str
+    json_dict["readout_qubits"] = "[4, 5, 6, 7]"
     out = css.compiler_output.read_json_aqt(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
     assert out.pulse_list == [[]]
     assert isinstance(out.seq, qtrl.sequencer.Sequence)
+    assert isinstance(out.seq._readout, qtrl.sequencer.Sequence)
+    assert isinstance(out.seq._readout._readout, qtrl.sequence_utils.readout._ReadoutInfo)
+    assert out.seq._readout._readout.sequence is out.seq._readout
+    assert out.seq._readout._readout.qubits == [4, 5, 6, 7]
+    assert out.seq._readout._readout.n_readouts == 1
     assert pickle.dumps(out.seq._readout) == pickle.dumps(out.seq) == pickle.dumps(seq)
+    assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
 
     # Multiple circuits:
     out = css.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
@@ -152,11 +159,19 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
         "cirq_circuits": css.serialization.serialize_circuits([circuit, circuit]),
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
+        "readout_jp": state_str,
+        "readout_qubits": "[4, 5, 6, 7]",
     }
     out = css.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
     assert pickle.dumps(out.seq) == pickle.dumps(seq)
     assert out.pulse_lists == [[[]], [[]]]
+    assert isinstance(out.seq, qtrl.sequencer.Sequence)
+    assert isinstance(out.seq._readout, qtrl.sequencer.Sequence)
+    assert isinstance(out.seq._readout._readout, qtrl.sequence_utils.readout._ReadoutInfo)
+    assert out.seq._readout._readout.sequence is out.seq._readout
+    assert out.seq._readout._readout.qubits == [4, 5, 6, 7]
+    assert out.seq._readout._readout.n_readouts == 2
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
 
