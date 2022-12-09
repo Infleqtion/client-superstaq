@@ -215,3 +215,20 @@ def read_json_only_circuits(json_dict: Dict[str, Any], circuits_is_list: bool) -
         return CompilerOutput(circuits=compiled_circuits)
 
     return CompilerOutput(circuits=compiled_circuits[0])
+
+
+def read_json_neutral_atom(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
+    try:
+        pulses = gss.serialization.deserialize(json_dict["pulses"])
+    except ModuleNotFoundError as e:
+        warnings.warn(
+            f"neutral_atom_compile requires {e.name} to deserialize compiled pulse sequences."
+        )
+        pulses = None
+
+    compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
+
+    if circuits_is_list:
+        return CompilerOutput(circuits=compiled_circuits, pulse_sequences=pulses)
+
+    return CompilerOutput(circuits=compiled_circuits[0], pulse_sequences=pulses and pulses[0])

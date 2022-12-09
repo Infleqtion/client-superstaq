@@ -406,18 +406,17 @@ def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
 
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaQClient.neutral_atom_compile",
-    return_value={"pulses": gss.serialization.serialize([mock.DEFAULT])},
+    return_value={
+        "pulses": gss.serialization.serialize([mock.DEFAULT]),
+        "cirq_circuits": css.serialization.serialize_circuits(cirq.Circuit()),
+    },
 )
 def test_service_neutral_atom_compile(mock_neutral_atom_compile: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    assert service.neutral_atom_compile(cirq.Circuit()) == mock.DEFAULT
-    assert service.neutral_atom_compile([cirq.Circuit()]) == [mock.DEFAULT]
-
-    with mock.patch.dict("sys.modules", {"unittest": None}), pytest.raises(
-        gss.SuperstaQModuleNotFoundException,
-        match="'neutral_atom_compile' requires module 'unittest'",
-    ):
-        _ = service.neutral_atom_compile(cirq.Circuit())
+    assert service.neutral_atom_compile(cirq.Circuit()).circuit == cirq.Circuit()
+    assert service.neutral_atom_compile([cirq.Circuit()]).circuits == [cirq.Circuit()]
+    assert service.neutral_atom_compile(cirq.Circuit()).pulse_sequence == mock.DEFAULT
+    assert service.neutral_atom_compile([cirq.Circuit()]).pulse_sequences == [mock.DEFAULT]
 
 
 @mock.patch(

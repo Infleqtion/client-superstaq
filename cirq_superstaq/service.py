@@ -393,7 +393,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
         Args:
             circuits: cirq Circuit(s) with operations on qubits 0 and 1.
-            target: string of target target QSCOUT device.
+            target: string of target QSCOUT device.
         Returns:
             object whose .circuit(s) attribute is an optimized cirq Circuit(s)
             and a list of jaqal programs represented as strings
@@ -455,26 +455,19 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
     def neutral_atom_compile(
         self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "neutral_atom_qpu"
-    ) -> Any:
+    ) -> css.compiler_output.CompilerOutput:
         """Returns pulse schedule for the given circuit and target.
 
-        Pulse must be installed for returned object to correctly deserialize to a pulse schedule.
+        Pulser must be installed for returned object to correctly deserialize to a pulse schedule.
         """
         serialized_circuits = css.serialization.serialize_circuits(circuits)
+        circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
+        target = self._resolve_target(target)
         json_dict = self._client.neutral_atom_compile(
             {"cirq_circuits": serialized_circuits, "target": target}
         )
-        try:
-            pulses = gss.serialization.deserialize(json_dict["pulses"])
-        except ModuleNotFoundError as e:
-            raise gss.SuperstaQModuleNotFoundException(
-                name=str(e.name), context="neutral_atom_compile"
-            )
-
-        if isinstance(circuits, cirq.Circuit):
-            return pulses[0]
-        return pulses
+        return css.compiler_output.read_json_neutral_atom(json_dict, circuits_is_list)
 
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int
