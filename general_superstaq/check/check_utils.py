@@ -5,7 +5,7 @@ Dumping ground for check script utilities.
 """
 
 import argparse
-import dataclasses
+import enum
 import fnmatch
 import os
 import re
@@ -26,8 +26,7 @@ def _check_output(*commands: str) -> str:
 
 
 # container for string formatting console codes
-@dataclasses.dataclass
-class Style:
+class Style(str, enum.Enum):
     BLACK = "\033[30m"
     RED = "\033[31m"
     GREEN = "\033[32m"
@@ -46,7 +45,7 @@ def styled(text: str, style_code: str) -> str:
 
 
 def warning(text: str) -> str:
-    return styled(text, Style.RED)
+    return styled(text, Style.BOLD + Style.YELLOW)
 
 
 def failure(text: str) -> str:

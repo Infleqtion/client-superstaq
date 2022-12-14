@@ -49,7 +49,8 @@ def run(
         return 0
 
     # print diffs
-    print(check_utils.failure(f"Found {len(deltas)} differences between config files:"))
+    num_differences = f"{len(deltas)} differences" if len(deltas) > 1 else "one difference"
+    print(check_utils.warning(f"WARNING: found {num_differences} between config files:"))
     print(check_utils.styled(f"< {file_orig} (original)", check_utils.Style.RED))
     print(check_utils.styled(f"> {file_copy} (copy)", check_utils.Style.GREEN))
     print(check_utils.styled("-" * 70, check_utils.Style.CYAN))
@@ -61,8 +62,10 @@ def run(
         if copy_start != copy_end:
             text = "\n".join(f"> {line}" for line in lines_copy[copy_start:copy_end])
             print(check_utils.styled(text, check_utils.Style.GREEN))
-    print(check_utils.failure(f"{os.path.relpath(file_copy)} must be fixed manually!"))
-    return 1
+
+    file_path = os.path.relpath(file_copy)
+    print(check_utils.warning(f"{file_path} can be fixed manually to prevent this message."))
+    return 0
 
 
 def _announce_diff(
