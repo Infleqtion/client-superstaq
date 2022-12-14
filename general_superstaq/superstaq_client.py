@@ -129,7 +129,9 @@ class _SuperstaQClient:
                 sampling is not done on the server, but is passed as metadata to be recovered
                 from the returned job.
             target: Target to run on.
-            ibmq_pulse: Specify whether to run the job using SuperstaQ's pulse-level optimizations
+            options: The different available options for creating a job.
+                - qiskit_pulse: Whether to use SuperstaQ's pulse-level optimizations for IBMQ
+                devices.
 
         Returns:
             The json body of the response as a dict. This does not contain populated information

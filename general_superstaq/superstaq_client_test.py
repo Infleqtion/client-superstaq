@@ -122,7 +122,7 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         repetitions=200,
         target="ss_example_qpu",
         method="dry-run",
-        options={"ibmq_pulse": True},
+        options={"qiskit_pulse": True},
     )
     assert response == {"foo": "bar"}
 
@@ -131,7 +131,7 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         "target": "ss_example_qpu",
         "shots": 200,
         "method": "dry-run",
-        "options": json.dumps({"ibmq_pulse": True}),
+        "options": json.dumps({"qiskit_pulse": True}),
     }
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/jobs",
