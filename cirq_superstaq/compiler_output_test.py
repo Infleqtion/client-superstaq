@@ -99,6 +99,13 @@ def test_read_json_aqt() -> None:
     assert out.circuits == [circuit]
     assert not hasattr(out, "circuit")
 
+    with mock.patch.dict("sys.modules", {"qtrl": None}), pytest.warns(
+        UserWarning, match="deserialize compiled pulse sequences"
+    ):
+        out = css.compiler_output.read_json_aqt(json_dict, circuits_is_list=False)
+        assert out.circuit == circuit
+        assert out.seq is None
+
     # multiple circuits
     pulse_lists_str = gss.serialization.serialize([[[]], [[]]])
     json_dict = {

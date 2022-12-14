@@ -155,6 +155,11 @@ def read_json_aqt(
             state["_readout"] = readout_seq
 
         seq = _sequencer_from_state(state)
+    else:
+        warnings.warn(
+            "Your sequence for this output is None. Please make sure you have the qtrl package "
+            "installed in order to deserialize compiled pulse sequences."
+        )
 
     if num_eca_circuits:
         compiled_circuits = [
