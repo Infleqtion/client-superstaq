@@ -1,6 +1,6 @@
 Installation Guide
 ==================
-Below are instructions for installing ``cirq-superstaq`` and ``qiskit-superstaq``. Please note that Python version 3.7 or higher is required
+Below are instructions for installing ``cirq-superstaq`` and ``qiskit-superstaq``. Please note that Python version 3.7 or higher is required.
 
 
 Installing cirq-superstaq
@@ -17,7 +17,12 @@ Then, install ``cirq-superstaq``:
 .. code-block:: bash
 
     pip install cirq-superstaq
-    pip install -e .
+
+Run the following to install developer requirements, which is required if you intend to run checks locally.
+
+.. code-block:: bash
+
+    pip install .[dev]
 
 Run the following to install neutral atom device dependencies.
 
@@ -40,7 +45,12 @@ Then, install ``qiskit-superstaq``:
 .. code-block:: bash
     
     pip install qiskit-superstaq
-    pip install -e .
+
+Run the following to install developer requirements, which is required if you intend to run checks locally.
+
+.. code-block:: bash
+
+    pip install .[dev]
 
 Run the following to install neutral atom device dependencies.
 
