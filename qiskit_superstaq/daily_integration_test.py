@@ -1,6 +1,5 @@
 """Integration checks that run daily (via Github action) between client and prod server."""
 import os
-from datetime import datetime, timezone
 
 import numpy as np
 import pytest
@@ -20,10 +19,6 @@ def provider() -> qss.SuperstaQProvider:
 def test_backends(provider: qss.SuperstaQProvider) -> None:
     result = provider.backends()
     assert provider.get_backend("ibmq_qasm_simulator") in result
-    # IonQ device is only available on weekdays from 13:00 UTC to 2:00 UTC
-    utc_now = datetime.now().replace(tzinfo=timezone.utc).astimezone(tz=None)
-    if utc_now.isoweekday() < 6 and not (2 >= utc_now.hour < 13):
-        assert provider.get_backend("ionq_ion_qpu") in result
 
 
 def test_ibmq_set_token(provider: qss.SuperstaQProvider) -> None:
