@@ -180,7 +180,7 @@ class _SuperstaQClient:
         """Makes a GET request to SuperstaQ API to get a list of available targets."""
         return self.get_request("/targets")
 
-    def ibmq_set_token(self, ibmq_token: Dict[str, str]) -> str:
+    def ibmq_set_token(self, json_dict: Dict[str, str]) -> str:
         """Makes a POST request to SuperstaQ API to set IBMQ token field in database.
 
         Args:
@@ -190,15 +190,7 @@ class _SuperstaQClient:
             The json body of the response as a dict.
         """
 
-        def request() -> requests.Response:
-            return requests.post(
-                f"{self.url}/ibmq_token",
-                headers=self.headers,
-                json=ibmq_token,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
+        return self.post_request("/ibmq_token", json_dict)
 
     def resource_estimate(self, json_dict: Dict[str, str]) -> Dict[str, List[Dict[str, int]]]:
         return self.post_request("/resource_estimate", json_dict)
