@@ -15,6 +15,7 @@ Learn more about SuperstaQ `here <https://www.super.tech/about-superstaq/>`_.
    :hidden:
    :caption: Get Started
 
+   credentials
    installation
    example_code
 

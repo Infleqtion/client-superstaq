@@ -6,7 +6,7 @@ An Example in Cirq
 ------------------
 Here we show an example to create and submit a circuit through ``cirq-superstaq``.
 
-First, have your API token from https://superstaq.super.tech ready. Then, import the required packages
+First, have your API token from https://superstaq.super.tech ready (see `Accessing Credentials <credentials.html>`_ for more info). Then, import the required packages
 
 .. code-block:: python
 
@@ -36,7 +36,7 @@ An Example in Qiskit
 --------------------
 Here we show an example to create and submit a circuit through ``qiskit-superstaq``.
 
-First, have your API token from https://superstaq.super.tech ready. Then, import the required packages and set your token.
+First, have your API token from https://superstaq.super.tech ready (see `Accessing Credentials <credentials.html>`_ for more info). Then, import the required packages and set your token.
 
 .. code-block:: python
 
