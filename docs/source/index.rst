@@ -13,15 +13,15 @@ Check out some of our demos to see how SuperstaQ can help you:
 
    <div class="index-demos">
       <div class="index-demos-box">
-         <div class="index-demos-headers"><a href="demos/community_detection_football.html">Community Detection</a></div>
+         <div class="index-demos-headers"><a href="apps/community_detection_football.html">Community Detection</a></div>
          <div class="index-demos-desc">A general form of a network problem that can be used to detect fraud rings in transaction networks.</div>
       </div>
       <div class="index-demos-box">
-         <div class="index-demos-headers"><a href="demos/transaction_settlement.html">Transaction Settlement</a></div>
+         <div class="index-demos-headers"><a href="apps/transaction_settlement.html">Transaction Settlement</a></div>
          <div class="index-demos-desc">Walk through a formulaton of the transaction settlement problem that maximizes the number of settled equity trades.</div>
       </div>
       <div class="index-demos-box">
-         <div class="index-demos-headers"><a href="demos/insurance_pricing.html">Optimizing Insurance Prices</a></div>
+         <div class="index-demos-headers"><a href="apps/insurance_pricing.html">Optimizing Insurance Prices</a></div>
          <div class="index-demos-desc">An example of how to calculate insurance premiums that balance profitability with market growth.</div>
       </div>
    </div>
