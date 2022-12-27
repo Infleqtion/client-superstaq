@@ -32,11 +32,11 @@ class BitCode(Benchmark):
         Args:
         - qubits: Circuit qubits - assumed data on even indices and measurement on odd indices
         """
-        ancilla_qubits = []
-        for i in range(1, len(qubits), 2):
-            yield cirq.CX(qubits[i - 1], qubits[i])
-            yield cirq.CX(qubits[i + 1], qubits[i])
-            ancilla_qubits.append(qubits[i])
+        for qq in range(1, len(qubits), 2):
+            yield cirq.CX(qubits[qq - 1], qubits[qq])
+        for qq in range(1, len(qubits), 2):
+            yield cirq.CX(qubits[qq + 1], qubits[qq])
+        ancilla_qubits = qubits[1::2]
         yield cirq.measure(*ancilla_qubits, key=f"mcm{round_idx}")
         yield [cirq.ops.reset(qubit) for qubit in ancilla_qubits]
 
