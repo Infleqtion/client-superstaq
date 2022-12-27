@@ -37,12 +37,12 @@ class PhaseCode(Benchmark):
         - qubits: Circuit qubits - assumed data on even indices and
                   measurement on odd indices
         """
-        ancilla_qubits = []
+        ancilla_qubits = qubits[1::2]
         yield [cirq.H(q) for q in qubits]
-        for i in range(1, len(qubits), 2):
-            yield cirq.CZ(qubits[i - 1], qubits[i])
-            yield cirq.CZ(qubits[i + 1], qubits[i])
-            ancilla_qubits.append(qubits[i])
+        for qq in range(1, len(qubits), 2):
+            yield cirq.CZ(qubits[qq - 1], qubits[qq])
+        for qq in range(1, len(qubits), 2):
+            yield cirq.CZ(qubits[qq + 1], qubits[qq])
         yield [cirq.H(q) for q in qubits]
         yield cirq.measure(*ancilla_qubits, key=f"mcm{round_idx}")
         yield [cirq.ops.reset(qubit) for qubit in ancilla_qubits]
