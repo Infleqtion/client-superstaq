@@ -61,7 +61,7 @@ class Finance:
         self._client = client
 
     def submit_qubo(
-        self, qubo: qv.QUBO, target: str, repetitions: int = 1000
+        self, qubo: qv.QUBO, target: str, repetitions: int = 1000, method: Optional[str] = None
     ) -> npt.NDArray[np.int_]:
         """Submits the given QUBO to the target backend. The result of the optimization
         is returned to the user as a numpy.recarray.
@@ -73,7 +73,7 @@ class Finance:
             Numpy.recarray containing the solution to the QUBO, the energy of the
             different solutions, and the number of times each solution was found.
         """
-        json_dict = self._client.submit_qubo(qubo, target, repetitions=repetitions)
+        json_dict = self._client.submit_qubo(qubo, target, repetitions=repetitions, method=method)
         return gss.qubo.read_json_qubo_result(json_dict)
 
     def find_min_vol_portfolio(

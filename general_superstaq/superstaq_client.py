@@ -217,12 +217,19 @@ class _SuperstaQClient:
         """Makes a POST request to SuperstaQ API to compile a circuits for neutral atom devices."""
         return self.post_request("/neutral_atom_compile", json_dict)
 
-    def submit_qubo(self, qubo: qv.QUBO, target: str, repetitions: int = 1000) -> Dict[str, str]:
+    def submit_qubo(
+        self,
+        qubo: qv.QUBO,
+        target: str,
+        repetitions: int = 1000,
+        method: Optional[str] = None,
+    ) -> Dict[str, str]:
         """Makes a POST request to SuperstaQ API to submit a QUBO problem to the given target."""
         json_dict = {
             "qubo": gss.qubo.convert_qubo_to_model(qubo),
             "target": target,
             "shots": repetitions,
+            "method": method,
         }
         return self.post_request("/qubo", json_dict)
 
