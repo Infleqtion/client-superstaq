@@ -88,11 +88,25 @@ def test_aqt_compile(provider: qss.SuperstaQProvider) -> None:
 def test_aqt_compile_eca(provider: qss.SuperstaQProvider) -> None:
     circuit = qiskit.QuantumCircuit(8)
     circuit.h(4)
+    circuit.crx(0.7 * np.pi, 4, 5)
 
-    eca_circuits = provider.aqt_compile_eca(circuit, num_equivalent_circuits=3).circuits
+    eca_circuits = provider.aqt_compile_eca(
+        circuit, num_equivalent_circuits=3, random_seed=123
+    ).circuits
     assert len(eca_circuits) == 3
     assert all(isinstance(circuit, qiskit.QuantumCircuit) for circuit in eca_circuits)
 
+    # test with same and different seed
+    assert (
+        eca_circuits
+        == provider.aqt_compile_eca(circuit, num_equivalent_circuits=3, random_seed=123).circuits
+    )
+    assert (
+        eca_circuits
+        != provider.aqt_compile_eca(circuit, num_equivalent_circuits=3, random_seed=456).circuits
+    )
+
+    # multiple circuits:
     eca_circuits = provider.aqt_compile_eca([circuit, circuit], num_equivalent_circuits=3).circuits
     assert len(eca_circuits) == 2
     for circuits in eca_circuits:
