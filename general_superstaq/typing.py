@@ -58,7 +58,7 @@ MinVolJson = TypedDict(
 Warehouse = TypedDict(
     "Warehouse",
     {
-        "warehouse_to_destination": List[str],
+        "warehouse_to_destination": List[Tuple[str, str]],
         "total_distance": float,
         "map_link": str,
         "open_warehouses": Sized,
@@ -80,7 +80,7 @@ WareHouseJson = TypedDict(
 TSP = TypedDict(
     "TSP",
     {
-        "route_list_numbers": List[str],
+        "route_list_numbers": List[int],
         "total_distance": List[float],
         "map_link": List[str],
         "route": List[str],
