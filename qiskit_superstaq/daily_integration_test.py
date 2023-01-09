@@ -11,7 +11,14 @@ import qiskit_superstaq as qss
 
 @pytest.fixture
 def provider() -> qss.SuperstaQProvider:
-    token = os.environ["TEST_USER_TOKEN"]
+    try:
+        token = os.environ["TEST_USER_TOKEN"]
+    except KeyError as key:
+        raise KeyError(
+            f"To run the integration tests, please export to {key} your SuperstaQ API key which you"
+            " can get at superstaq.super.tech"
+        )
+
     provider = qss.SuperstaQProvider(api_key=token)
     return provider
 
@@ -22,7 +29,11 @@ def test_backends(provider: qss.SuperstaQProvider) -> None:
 
 
 def test_ibmq_set_token(provider: qss.SuperstaQProvider) -> None:
-    ibmq_token = os.environ["TEST_USER_IBMQ_TOKEN"]
+    try:
+        ibmq_token = os.environ["TEST_USER_IBMQ_TOKEN"]
+    except KeyError as key:
+        raise KeyError(f"To run the integration tests, please export to {key} a valid IBMQ token")
+
     assert provider.ibmq_set_token(ibmq_token) == "Your IBMQ account token has been updated"
 
     with pytest.raises(SuperstaQException, match="IBMQ token is invalid."):
