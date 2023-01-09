@@ -11,7 +11,14 @@ import cirq_superstaq as css
 
 @pytest.fixture
 def service() -> css.Service:
-    token = os.getenv("TEST_USER_TOKEN")
+    try:
+        token = os.getenv("TEST_USER_TOKEN")
+    except KeyError as key:
+        raise KeyError(
+            f"To run the integration tests, please export to {key} your SuperstaQ API key which you"
+            " can get at superstaq.super.tech"
+        )
+
     service = css.Service(token)
     return service
 
@@ -142,7 +149,11 @@ def test_get_resource_estimate(service: css.Service) -> None:
 
 
 def test_ibmq_set_token(service: css.Service) -> None:
-    ibmq_token = os.environ["TEST_USER_IBMQ_TOKEN"]
+    try:
+        ibmq_token = os.environ["TEST_USER_IBMQ_TOKEN"]
+    except KeyError as key:
+        raise KeyError(f"To run the integration tests, please export to {key} a valid IBMQ token")
+
     assert service.ibmq_set_token(ibmq_token) == "Your IBMQ account token has been updated"
 
     with pytest.raises(SuperstaQException, match="IBMQ token is invalid."):
