@@ -37,9 +37,22 @@ def test_zz_swap_gate() -> None:
     cirq.testing.assert_consistent_resolve_parameters(gate)
     cirq.testing.assert_pauli_expansion_is_consistent_with_unitary(gate)
 
+    assert cirq.approx_eq(css.ZZSwapGate(1.23), css.ZZSwapGate(1.23 + 2 * np.pi))
+    assert cirq.approx_eq(css.ZZSwapGate(np.pi + 1e-10), css.ZZSwapGate(np.pi - 1e-10))
+
     assert gate**1 == gate
-    assert gate**0 == css.ZZSwapGate(0.0)
     assert gate**-1 == css.ZZSwapGate(-0.123)
+
+    for exponent in range(-4, 5):
+        assert np.allclose(
+            cirq.unitary(gate**exponent), np.linalg.matrix_power(expected, exponent)
+        )
+        if exponent % 2:
+            assert isinstance(gate**exponent, css.ZZSwapGate)
+        else:
+            assert isinstance(gate**exponent, cirq.ZZPowGate)
+
+    assert gate.__pow__(sympy.var("exponent")) is NotImplemented
 
     with pytest.raises(TypeError, match="unsupported operand type"):
         _ = gate**1.23
@@ -82,6 +95,10 @@ def test_zz_swap_circuit() -> None:
 def test_zz_swap_parameterized() -> None:
     gate = css.ZZSwapGate(sympy.var("θ"))
     cirq.testing.assert_consistent_resolve_parameters(gate)
+
+    assert gate == css.ZZSwapGate(sympy.var("θ"))
+    assert cirq.approx_eq(gate, css.ZZSwapGate(sympy.var("θ")))
+    assert cirq.equal_up_to_global_phase(gate, css.ZZSwapGate(sympy.var("θ")))
 
     with pytest.raises(TypeError, match="cirq.unitary failed. Value doesn't have"):
         _ = cirq.unitary(gate)
@@ -228,6 +245,28 @@ def test_acecr_eq() -> None:
     assert cirq.equal_up_to_global_phase(css.AceCR("+-", np.pi), css.AceCR("+-", 5 * np.pi))
 
     assert not cirq.equal_up_to_global_phase(css.AceCR("+-"), cirq.CX)
+
+
+def test_acecr_parameterized() -> None:
+    x = sympy.var("x")
+
+    assert cirq.is_parameterized(css.AceCR("+-", x))
+    assert cirq.parameter_names(css.AceCR("+-", x)) == {"x"}
+
+    assert css.AceCR("+-", x) == css.AceCR("+-", x)
+    assert css.AceCR("+-", x) != css.AceCR("-+", x)
+    assert css.AceCR("+-", x) != css.AceCR("-+")
+
+    assert cirq.approx_eq(css.AceCR("+-", x), css.AceCR("+-", x))
+    assert not cirq.approx_eq(css.AceCR("+-", x), css.AceCR("-+", x))
+    assert not cirq.approx_eq(css.AceCR("+-", x), css.AceCR("-+"))
+
+    assert cirq.equal_up_to_global_phase(css.AceCR("+-", x), css.AceCR("+-", x))
+    assert not cirq.equal_up_to_global_phase(css.AceCR("+-", x), css.AceCR("-+", x))
+    assert not cirq.equal_up_to_global_phase(css.AceCR("+-", x), css.AceCR("-+"))
+
+    cirq.testing.assert_consistent_resolve_parameters(css.AceCR("+-", x))
+    cirq.testing.assert_consistent_resolve_parameters(css.AceCR("-+", x))
 
 
 def test_acecr_repr_and_str() -> None:
@@ -476,6 +515,22 @@ def test_parallel_gates_eq() -> None:
     assert not cirq.equal_up_to_global_phase(css.ParallelGates(cirq.CX), css.ParallelGates(cirq.X))
 
 
+def test_parallel_gates_parameterized() -> None:
+    x = sympy.var("x")
+    y = sympy.var("y")
+    gate = css.ParallelGates(cirq.X**x, cirq.ry(y))
+
+    assert cirq.is_parameterized(gate)
+    assert cirq.parameter_names(gate) == {"x", "y"}
+
+    assert gate == css.ParallelGates(cirq.X**x, cirq.ry(y))
+    assert gate != css.ParallelGates(cirq.X**y, cirq.ry(x))
+    assert cirq.approx_eq(gate, css.ParallelGates(cirq.X**x, cirq.ry(y)))
+
+    cirq.testing.assert_consistent_resolve_parameters(css.ParallelGates(cirq.X**x, cirq.ry(y)))
+    cirq.testing.assert_consistent_resolve_parameters(css.ParallelGates(cirq.X**x, cirq.ry(x)))
+
+
 def test_parallel_gates_equivalence_groups() -> None:
     qubits = cirq.LineQubit.range(4)
     gate = css.ParallelGates(cirq.X, css.ZX, cirq.Y)
@@ -605,6 +660,27 @@ def test_rgate_eq() -> None:
     assert not cirq.equal_up_to_global_phase(gate, css.RGate(gate.theta, gate.phi + np.pi))
     assert not cirq.equal_up_to_global_phase(gate, css.RGate(-gate.theta, gate.phi))
     assert not cirq.equal_up_to_global_phase(gate, cirq.CX)
+
+
+def test_rgate_parameterized() -> None:
+    x = sympy.var("x")
+    y = sympy.var("y")
+    gate = css.RGate(x, y)
+
+    assert cirq.is_parameterized(gate)
+    assert cirq.parameter_names(gate) == {"x", "y"}
+
+    assert gate == css.RGate(x, y)
+    assert gate != css.RGate(x, x)
+    assert gate != css.RGate(y, x)
+
+    assert cirq.approx_eq(gate, css.RGate(x, y))
+    assert cirq.equal_up_to_global_phase(gate, css.RGate(x, y))
+    assert not cirq.equal_up_to_global_phase(gate, css.RGate(x, x))
+    assert not cirq.equal_up_to_global_phase(gate, css.RGate(y, x))
+
+    cirq.testing.assert_consistent_resolve_parameters(css.RGate(x, y))
+    cirq.testing.assert_consistent_resolve_parameters(css.RGate(x, x))
 
 
 def test_parallel_rgate() -> None:
