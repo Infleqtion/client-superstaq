@@ -32,6 +32,7 @@ def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumC
 
     new_circuit = circuit.copy()
     for inst, _, _ in new_circuit:
+        inst._define()
         if inst.name in qiskit_gates or id(inst) in unique_inst_ids:
             continue
 
@@ -97,6 +98,6 @@ def deserialize_circuits(serialized_circuits: str) -> List[qiskit.QuantumCircuit
         for pc, (inst, qargs, cargs) in enumerate(circuit._data):
             new_inst = qss.custom_gates.custom_resolver(inst)
             if new_inst is not None:
-                circuit._data[pc] = (new_inst, qargs, cargs)
+                circuit._data[pc] = qiskit.circuit.CircuitInstruction(new_inst, qargs, cargs)
 
     return circuits
