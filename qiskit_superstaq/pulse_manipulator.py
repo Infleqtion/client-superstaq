@@ -17,9 +17,14 @@ VERBOSE = False
 printv = lambda text: print(text) if VERBOSE else None
 
 
+# TODO: Use the following to clean up code
+# qiskit.pulse.transforms.flatten(schedule) <- do this before using schedule.replace
+# instead of type(insta.pulse), use a map from inst.pulse_type (a str) to function (qiskit.pulse.G...)
+
 class PulseManipulator:
     """
-    This class is a pulse schedule wrapper that allows more precise manipulation.
+    PulseManipulator is an abstraction layer that wraps around Qiskit pulse schedules for more precise
+    manipulation.
     """
 
     def __init__(self, schedule=None, backend=None):
@@ -27,7 +32,7 @@ class PulseManipulator:
         if not isinstance(schedule, qiskit.pulse.Schedule):
             raise ValueError("Input schedule must be of type qiskit.pulse.Schedule.")
 
-        if not isinstance(backend, qiskit.providers.Backend):
+        if backend is not None and not isinstance(backend, qiskit.providers.Backend):
             raise ValueError("Input backend must be of type qiskit.providers.Backend")
 
         self._init_schedule = deepcopy(schedule)
@@ -70,8 +75,7 @@ class PulseManipulator:
     def insert(self, start_time=None, instruction=None, inplace=False):
         """Inserts instruction at requested start time, unless it overlaps with other instructions.
 
-        If the full duration of the instruction will fit, defaults to qiskit's insert. However,
-        unlike qiskit's version, this allows inserting between two directly adjacent instructions.
+        If the full duration of the instruction will fit, defaults to qiskit's insert.
         """
         assert start_time >= 0, "You must provide a nonnegative start time."
         assert self._backend is not None, (
@@ -86,6 +90,9 @@ class PulseManipulator:
         elif start_time >= self.duration or instruction.channel not in self._schedule.channels:
             schedule = self._schedule.insert(start_time, instruction, inplace=inplace)
         else:
+        # TODO: Unlike qiskit's version, allow inserting between two directly adjacent instructions.
+        # Probably easier to just take a tuple of inst IDs to insert between (and shift all other
+        # insts accordingly.
             assert isinstance(instruction.channel, qiskit.pulse.DriveChannel) or isinstance(
                 instruction.channel, qiskit.pulse.ControlChannel
             ), (
@@ -121,6 +128,8 @@ class PulseManipulator:
         distance away from the old instruction. 2) "tight"=False: remain in their original positions
         in time.
         """
+        # TODO: After flattening, may be able to just inherit from qiskit (although I think qiskit
+        # still requies insts to be the exact same length...
         # TODO: Include "flip_amp" parameter to flip amplitude of instruction indicated by ID.
         # TODO: reimplement coinciding_channels so that passing in a channel input gives *every*
         # channel (including itself) it coincides with
@@ -142,6 +151,7 @@ class PulseManipulator:
         else:
             pass
 
+    # TODO: Consider replacing this with creating a whole new pulse with flipped amp parameter
     def flip_amp(self, inst_id=None, inplace=False):
         """Flips amplitude of specified instruction pulse."""
         if inplace:
@@ -164,7 +174,7 @@ class PulseManipulator:
         """Shifts instructions on any or all channels.
 
         This defaults to qiskit's version with a single parameter. Otherwise, allows shifting
-        individual instructions or shifting one or more channels individually.
+        individual instructions or shifting one (or more?) channels individually.
         """
         # TODO: try an "after" keyword to allow shifting instructions after a certain point in time
         # or after / before a certain instruction indicated by unique instruction ID
@@ -198,6 +208,7 @@ class PulseManipulator:
         """
         # TODO: This should include the ability to perform mid-circuit measurement, taking a time
         # parameter for where to insert it.
+        pass
 
     def remove_measure(self):
         """Removes measurement pulses.
@@ -207,11 +218,11 @@ class PulseManipulator:
         """
         pass
 
-    def get_parameters(self):
+    def get_parameters(self, inst_id=None):
         """Prints instruction pulse parameters (e.g., amplitude, sigma, beta, width)."""
         pass
 
-    def set_parameters(self):
+    def set_parameters(self, inst_id=None):
         """Sets instruction pulse parameters.
 
         All instruction pulses will have "amp" and "sigma"; only Drag pulses have "beta"; only
@@ -277,7 +288,11 @@ class PulseManipulator:
         with_label_indexing: bool = True,
         inplace: bool = True,
     ):
-        """Sets map from unique instruction ID to instruction, for schedule manipulation methods."""
+        """Sets map from unique instruction ID to instruction, for schedule manipulation methods.
+
+        Args:
+            with_label_indexing (bool): Toggle use of index for instruction ID label.
+        """
         if schedule is None:
             schedule = deepcopy(self._schedule)
         new_schedule = deepcopy(schedule)
@@ -310,6 +325,7 @@ class PulseManipulator:
     def _get_waveform_label(self, instruction, new_inst_id=None, flip_amp=False):
         """Gets LaTeX name corresponding to instruction, with an optional unique ID."""
         # TODO: how should the instruction.name is None case be handled? No integer index is added.
+        waveform = instruction.pulse.get_waveform()
         if waveform.name is None:
             return ""
         pulse_name, sign, channels = re.split("(m|p)+", instruction.name)
@@ -332,7 +348,7 @@ class PulseManipulator:
         pulse_obj=None,
         inst_id=None,
         channel=None,
-        flip_amp=False,
+        # flip_amp=False,  # used in "slightly more compact" extraction, below...
     ):
         """Gets instruction from a qiskit pulse object.
 
@@ -340,7 +356,9 @@ class PulseManipulator:
         pulse waveform (qiskit.pulse.Waveform), or (c) an array of samples for a pulse waveform
         """
         # TODO: handle an input schedule (perhaps containing multiple instructions)
-        if inst_id is not None and (pulse_obj is None and channel is None and flip_amp is None):
+        # TODO: also handle if no arguments are given (perhaps just return the schedule?) e.g., see
+        # the name method
+        if inst_id is not None and (pulse_obj is None and channel is None):  # and flip_amp is None):
             assert self._id_to_inst_map.get(inst_id, None) is not None, (
                 "You need to provide a valid instruction ID."
                 f"Select one of {list(self._id_to_inst_map.keys())}."
