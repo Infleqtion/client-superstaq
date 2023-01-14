@@ -5,6 +5,7 @@ from unittest import mock
 from unittest.mock import MagicMock, patch
 
 import general_superstaq as gss
+import numpy as np
 import pytest
 import qiskit
 from general_superstaq import ResourceEstimate
@@ -23,7 +24,7 @@ def test_provider() -> None:
         qss.SuperstaQBackend(
             provider=ss_provider,
             remote_host=gss.API_URL,
-            backend="ibmq_qasm_simulator",
+            target="ibmq_qasm_simulator",
         )
     )
 
@@ -31,8 +32,8 @@ def test_provider() -> None:
 
     assert repr(ss_provider) == "<SuperstaQProvider(api_key=MY_TOKEN, name=superstaq_provider)>"
 
-    backends = {
-        "superstaq_backends": {
+    targets = {
+        "superstaq_targets": {
             "compile-and-run": [
                 "ibmq_qasm_simulator",
                 "ibmq_armonk_qpu",
@@ -46,28 +47,24 @@ def test_provider() -> None:
                 "ibmq_extended-stabilizer_simulator",
                 "ibmq_stabilizer_simulator",
                 "ibmq_manila_qpu",
-                "d-wave_advantage-system1.1_qpu",
                 "aws_dm1_simulator",
                 "aws_tn1_simulator",
                 "ionq_ion_qpu",
-                "d-wave_dw-2000q-6_qpu",
-                "d-wave_advantage-system4.1_qpu",
                 "aws_sv1_simulator",
                 "rigetti_aspen-9_qpu",
             ],
             "compile-only": ["aqt_keysight_qpu", "sandia_qscout_qpu"],
         }
     }
-    backend_names = backends["superstaq_backends"]["compile-and-run"]
 
     expected_backends = []
-    for name in backend_names:
+    for target in targets["superstaq_targets"]["compile-and-run"]:
         expected_backends.append(
-            qss.SuperstaQBackend(provider=ss_provider, remote_host=gss.API_URL, backend=name)
+            qss.SuperstaQBackend(provider=ss_provider, remote_host=gss.API_URL, target=target)
         )
 
     mock_client = MagicMock()
-    mock_client.get_backends.return_value = backends
+    mock_client.get_targets.return_value = targets
     ss_provider._client = mock_client
     assert ss_provider.backends() == expected_backends
 
@@ -92,8 +89,8 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
-        "state_jp": gss.converters.serialize({}),
-        "pulse_lists_jp": gss.converters.serialize([[[]]]),
+        "state_jp": gss.serialization.serialize({}),
+        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     }
     out = provider.aqt_compile(qc)
     assert out.circuit == qc
@@ -105,12 +102,18 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
-        "state_jp": gss.converters.serialize({}),
-        "pulse_lists_jp": gss.converters.serialize([[[]], [[]]]),
+        "state_jp": gss.serialization.serialize({}),
+        "pulse_lists_jp": gss.serialization.serialize([[[]], [[]]]),
     }
     out = provider.aqt_compile([qc, qc])
     assert out.circuits == [qc, qc]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+
+
+def test_invalid_target_service_aqt_compile() -> None:
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    with pytest.raises(ValueError, match="not an AQT target"):
+        provider.aqt_compile(qiskit.QuantumCircuit(), target="invalid_target")
 
 
 @patch("requests.post")
@@ -122,13 +125,21 @@ def test_service_aqt_compile_eca(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
-        "state_jp": gss.converters.serialize({}),
-        "pulse_lists_jp": gss.converters.serialize([[[]]]),
+        "state_jp": gss.serialization.serialize({}),
+        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     }
 
     out = provider.aqt_compile_eca(qc, num_equivalent_circuits=1, random_seed=1234)
     assert out.circuits == [qc]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+
+
+def test_invalid_target_service_aqt_compile_eca() -> None:
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    with pytest.raises(ValueError, match="not an AQT target"):
+        provider.aqt_compile_eca(
+            qiskit.QuantumCircuit(), num_equivalent_circuits=1, target="invalid_target"
+        )
 
 
 @patch(
@@ -140,7 +151,7 @@ def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
     qc.cz(4, 5)
     mock_ibmq_compile.return_value = {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
-        "pulses": gss.converters.serialize([mock.DEFAULT]),
+        "pulses": gss.serialization.serialize([mock.DEFAULT]),
     }
 
     assert provider.ibmq_compile(qiskit.QuantumCircuit()) == qss.compiler_output.CompilerOutput(
@@ -149,6 +160,12 @@ def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
     assert provider.ibmq_compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
         [qc], [mock.DEFAULT]
     )
+
+
+def test_invalid_target_service_ibmq_compile() -> None:
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    with pytest.raises(ValueError, match="not an IBMQ target"):
+        provider.ibmq_compile(qiskit.QuantumCircuit(), target="invalid_target")
 
 
 @patch(
@@ -226,6 +243,12 @@ def test_qscout_compile(mock_post: MagicMock) -> None:
     assert out.circuits == [qc, qc]
 
 
+def test_invalid_target_service_qscout_compile() -> None:
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    with pytest.raises(ValueError, match="not a QSCOUT target"):
+        provider.qscout_compile(qiskit.QuantumCircuit(), target="invalid_target")
+
+
 @patch("requests.post")
 @pytest.mark.parametrize("mirror_swaps", (True, False))
 def test_qscout_compile_swap_mirror(mock_post: MagicMock, mirror_swaps: bool) -> None:
@@ -239,9 +262,8 @@ def test_qscout_compile_swap_mirror(mock_post: MagicMock, mirror_swaps: bool) ->
     }
     _ = provider.qscout_compile(qc, mirror_swaps=mirror_swaps)
     mock_post.assert_called_once()
-    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
-        "mirror_swaps": mirror_swaps
-    }
+    _, kwargs = mock_post.call_args
+    assert json.loads(kwargs["json"]["options"]) == {"mirror_swaps": mirror_swaps}
 
 
 @patch("requests.post")
@@ -267,9 +289,15 @@ def test_cq_compile(mock_post: MagicMock) -> None:
     assert out.circuits == [qc, qc]
 
 
+def test_invalid_target_service_cq_compile() -> None:
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    with pytest.raises(ValueError, match="not a CQ target"):
+        provider.cq_compile(qiskit.QuantumCircuit(), target="invalid_target")
+
+
 @patch(
     "general_superstaq.superstaq_client._SuperstaQClient.neutral_atom_compile",
-    return_value={"pulses": gss.converters.serialize([mock.DEFAULT])},
+    return_value={"pulses": gss.serialization.serialize([mock.DEFAULT])},
 )
 def test_neutral_atom_compile(mock_ibmq_compile: MagicMock) -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
@@ -281,3 +309,23 @@ def test_neutral_atom_compile(mock_ibmq_compile: MagicMock) -> None:
         match="'neutral_atom_compile' requires module 'unittest'",
     ):
         _ = provider.neutral_atom_compile(qiskit.QuantumCircuit())
+
+
+def test_invalid_target_service_neutral_atom_compile() -> None:
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    with pytest.raises(ValueError, match="not a Neutral Atom Compiler target"):
+        provider.neutral_atom_compile(qiskit.QuantumCircuit(), target="invalid_target")
+
+
+@mock.patch(
+    "general_superstaq.superstaq_client._SuperstaQClient.supercheq",
+)
+def test_service_supercheq(mock_supercheq: mock.MagicMock) -> None:
+    service = qss.SuperstaQProvider(api_key="key")
+    circuits = [qiskit.QuantumCircuit()]
+    fidelities = np.array([1])
+    mock_supercheq.return_value = {
+        "qiskit_circuits": qss.serialization.serialize_circuits(circuits),
+        "fidelities": gss.serialization.serialize(fidelities),
+    }
+    assert service.supercheq([[0]], 1, 1) == (circuits, fidelities)

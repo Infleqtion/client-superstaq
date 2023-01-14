@@ -47,7 +47,7 @@ class MockResponse:
     def __init__(self, status_str: str) -> None:
         self.content = json.dumps({"status": status_str, "samples": None, "shots": 100})
 
-    def json(self) -> Dict:
+    def json(self) -> Dict[str, str]:
         return json.loads(self.content)
 
 

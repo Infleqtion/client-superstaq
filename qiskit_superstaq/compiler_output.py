@@ -1,5 +1,6 @@
 import importlib
-from typing import Any, List, Optional, Union
+import json
+from typing import Any, Dict, List, Optional, Set, Union
 
 import general_superstaq as gss
 import qiskit
@@ -7,19 +8,34 @@ import qiskit
 import qiskit_superstaq as qss
 
 try:
-    import qtrl.sequencer
+    import qtrl.sequence_utils.readout
 except ModuleNotFoundError:
     pass
+
+
+def active_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
+    """Returns the indices of the non-idle qubits in a quantum circuit."""
+
+    qubit_indices: Set[int] = set()
+
+    for inst, qubits, _ in circuit:
+        if inst.name != "barrier":
+            indices = [circuit.find_bit(q).index for q in qubits]
+            qubit_indices.update(indices)
+
+    return sorted(qubit_indices)
 
 
 class CompilerOutput:
     def __init__(
         self,
-        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        circuits: Union[
+            qiskit.QuantumCircuit, List[qiskit.QuantumCircuit], List[List[qiskit.QuantumCircuit]]
+        ],
         pulse_sequences: Union[qiskit.pulse.Schedule, List[qiskit.pulse.Schedule]] = None,
         seq: Optional["qtrl.sequencer.Sequence"] = None,
-        jaqal_programs: Optional[List[str]] = None,
-        pulse_lists: Optional[Union[List[List], List[List[List]]]] = None,
+        jaqal_programs: Optional[Union[str, List[str]]] = None,
+        pulse_lists: Optional[Union[List[List[List[Any]]], List[List[List[List[Any]]]]]] = None,
     ) -> None:
         if isinstance(circuits, qiskit.QuantumCircuit):
             self.circuit = circuits
@@ -77,7 +93,9 @@ class CompilerOutput:
         )
 
 
-def read_json_aqt(json_dict: dict, circuits_is_list: bool) -> CompilerOutput:
+def read_json_aqt(
+    json_dict: Dict[str, str], circuits_is_list: bool, num_eca_circuits: int = 0
+) -> CompilerOutput:
     """Reads out returned JSON from SuperstaQ API's AQT compilation endpoint.
 
     Args:
@@ -89,31 +107,61 @@ def read_json_aqt(json_dict: dict, circuits_is_list: bool) -> CompilerOutput:
         the returned object also stores the pulse sequence in the .seq attribute and the
         list(s) of cycles in the .pulse_list(s) attribute.
     """
+
+    compiled_circuits: Union[List[qiskit.QuantumCircuit], List[List[qiskit.QuantumCircuit]]]
+    compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
+
     seq = None
     pulse_lists = None
 
     if importlib.util.find_spec(
         "qtrl"
     ):  # pragma: no cover, b/c qtrl is not open source so it is not in qiskit-superstaq reqs
-        state_str = json_dict["state_jp"]
-        state = gss.converters.deserialize(state_str)
 
-        seq = qtrl.sequencer.Sequence(n_elements=1)
-        seq.__setstate__(state)
-        seq.compile()
+        def _sequencer_from_state(state: Dict[str, Any]) -> "qtrl.sequencer.Sequence":
+            seq = qtrl.sequencer.Sequence(n_elements=1)
+            seq.__setstate__(state)
+            seq.compile()
+            return seq
 
-        pulse_lists_str = json_dict["pulse_lists_jp"]
-        pulse_lists = gss.converters.deserialize(pulse_lists_str)
+        pulse_lists = gss.serialization.deserialize(json_dict["pulse_lists_jp"])
+        state = gss.serialization.deserialize(json_dict["state_jp"])
 
-    compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
+        if "readout_jp" in json_dict:
+            readout_state = gss.serialization.deserialize(json_dict["readout_jp"])
+            readout_seq = _sequencer_from_state(readout_state)
+
+            if "readout_qubits" in json_dict:
+                readout_qubits = json.loads(json_dict["readout_qubits"])
+                readout_seq._readout = qtrl.sequence_utils.readout._ReadoutInfo(
+                    readout_seq, readout_qubits, n_readouts=len(compiled_circuits)
+                )
+
+            state["_readout"] = readout_seq
+
+        seq = _sequencer_from_state(state)
+
+    if num_eca_circuits:
+        compiled_circuits = [
+            compiled_circuits[i : i + num_eca_circuits]
+            for i in range(0, len(compiled_circuits), num_eca_circuits)
+        ]
+
+        pulse_lists = pulse_lists and [
+            pulse_lists[i : i + num_eca_circuits]
+            for i in range(0, len(pulse_lists), num_eca_circuits)
+        ]
+
     if circuits_is_list:
         return CompilerOutput(circuits=compiled_circuits, seq=seq, pulse_lists=pulse_lists)
 
-    pulse_list = pulse_lists[0] if pulse_lists is not None else None
-    return CompilerOutput(circuits=compiled_circuits[0], seq=seq, pulse_lists=pulse_list)
+    pulse_lists = pulse_lists[0] if pulse_lists is not None else None
+    return CompilerOutput(circuits=compiled_circuits[0], seq=seq, pulse_lists=pulse_lists)
 
 
-def read_json_qscout(json_dict: dict, circuits_is_list: bool) -> CompilerOutput:
+def read_json_qscout(
+    json_dict: Dict[str, Union[str, List[str]]], circuits_is_list: bool
+) -> CompilerOutput:
     """Reads out returned JSON from SuperstaQ API's QSCOUT compilation endpoint.
 
     Args:
@@ -124,18 +172,18 @@ def read_json_qscout(json_dict: dict, circuits_is_list: bool) -> CompilerOutput:
         a CompilerOutput object with the compiled circuit(s) and a list of
         jaqal programs in a string representation.
     """
-    compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
+    qiskit_circuits = json_dict["qiskit_circuits"]
+    jaqal_programs = json_dict["jaqal_programs"]
+    assert isinstance(qiskit_circuits, str)
+    assert isinstance(jaqal_programs, list)
+    compiled_circuits = qss.serialization.deserialize_circuits(qiskit_circuits)
     if circuits_is_list:
-        return CompilerOutput(
-            circuits=compiled_circuits, jaqal_programs=json_dict["jaqal_programs"]
-        )
+        return CompilerOutput(circuits=compiled_circuits, jaqal_programs=jaqal_programs)
 
-    return CompilerOutput(
-        circuits=compiled_circuits[0], jaqal_programs=json_dict["jaqal_programs"][0]
-    )
+    return CompilerOutput(circuits=compiled_circuits[0], jaqal_programs=jaqal_programs[0])
 
 
-def read_json_only_circuits(json_dict: dict, circuits_is_list: bool) -> CompilerOutput:
+def read_json_only_circuits(json_dict: Dict[str, str], circuits_is_list: bool) -> CompilerOutput:
     """Reads JSON returned from SuperstaQ API's CQ compilation endpoint.
 
     Args:

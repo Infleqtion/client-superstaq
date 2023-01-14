@@ -21,6 +21,10 @@ requirements = [r.strip() for r in requirements]
 dev_requirements = open("dev-requirements.txt").readlines()
 dev_requirements = [r.strip() for r in dev_requirements]
 
+# Read in example requirements, installed with 'pip install qiskit-superstaq[examples]
+example_requirements = open("example-requirements.txt").readlines()
+example_requirements = [r.strip() for r in example_requirements]
+
 # Sanity check
 assert __version__, "Version string cannot be empty"
 
@@ -37,7 +41,7 @@ setup(
     author_email="pranav@super.tech",
     python_requires=(">=3.7.0"),
     install_requires=requirements,
-    extras_require={"dev": dev_requirements},
+    extras_require={"dev": dev_requirements, "examples": example_requirements},
     license="Apache 2",
     description=description,
     long_description=long_description,

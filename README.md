@@ -12,7 +12,9 @@ dependencies can be installed via:
 python3 -m venv venv_qiskit_superstaq
 source venv_qiskit_superstaq/bin/activate
 pip install qiskit-superstaq
-pip install -e .
+
+# Run the following to install dev requirements (required if you intend to run checks locally)
+pip install .[dev]
 
 # Run the following to install neutral atom device dependencies.
 pip install -r neutral-atom-requirements.txt
@@ -39,6 +41,8 @@ qc.measure(0, 0)
 qc.measure(1, 1)
 
 print(qc)
-job = backend.run(qc, shots=100)
+
+# Submitting a circuit to "ibmq_qasm_simulator". Providing the "dry-run" method parameter instructs SuperstaQ to simulate the circuit, and is available to free trial users.
+job = backend.run(qc, shots=100, method="dry-run")
 print(job.result().get_counts())
 ```

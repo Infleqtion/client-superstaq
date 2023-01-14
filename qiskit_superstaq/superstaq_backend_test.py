@@ -12,7 +12,7 @@ def test_default_options() -> None:
     device = qss.SuperstaQBackend(
         provider=ss_provider,
         remote_host=gss.API_URL,
-        backend="ibmq_qasm_simulator",
+        target="ibmq_qasm_simulator",
     )
 
     assert qiskit.providers.Options(shots=1000) == device._default_options()
@@ -25,8 +25,22 @@ class MockProvider(qss.SuperstaQProvider):
 
 class MockDevice(qss.SuperstaQBackend):
     def __init__(self) -> None:
-        super().__init__(MockProvider(), "super.tech", "mock_backend")
+        super().__init__(MockProvider(), "super.tech", "ss_example_qpu")
         self._provider = MockProvider()
+
+
+def test_validate_target() -> None:
+    provider = qss.SuperstaQProvider(api_key="123")
+    with pytest.raises(ValueError, match="does not have a valid string format"):
+        qss.SuperstaQBackend(provider=provider, remote_host=gss.API_URL, target="invalid_target")
+
+    with pytest.raises(ValueError, match="does not have a valid target device type"):
+        qss.SuperstaQBackend(
+            provider=provider, remote_host=gss.API_URL, target="ibmq_invalid_device"
+        )
+
+    with pytest.raises(ValueError, match="does not have a valid target prefix"):
+        qss.SuperstaQBackend(provider=provider, remote_host=gss.API_URL, target="invalid_test_qpu")
 
 
 def test_run() -> None:
@@ -105,14 +119,14 @@ def test_eq() -> None:
     provider = qss.SuperstaQProvider(api_key="123")
 
     backend1 = qss.SuperstaQBackend(
-        provider=provider, backend="ibmq_qasm_simulator", remote_host=gss.API_URL
+        provider=provider, remote_host=gss.API_URL, target="ibmq_qasm_simulator"
     )
     backend2 = qss.SuperstaQBackend(
-        provider=provider, backend="ibmq_athens", remote_host=gss.API_URL
+        provider=provider, remote_host=gss.API_URL, target="ibmq_athens_qpu"
     )
     assert backend1 != backend2
 
     backend3 = qss.SuperstaQBackend(
-        provider=provider, backend="ibmq_qasm_simulator", remote_host=gss.API_URL
+        provider=provider, remote_host=gss.API_URL, target="ibmq_qasm_simulator"
     )
     assert backend1 == backend3

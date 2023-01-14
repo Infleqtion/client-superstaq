@@ -1,6 +1,7 @@
 import importlib
 import pickle
 import textwrap
+from typing import Dict, List, Union
 from unittest import mock
 
 import general_superstaq as gss
@@ -8,6 +9,18 @@ import pytest
 import qiskit
 
 import qiskit_superstaq as qss
+
+
+def test_active_qubit_indices() -> None:
+    circuit = qiskit.QuantumCircuit(4)
+    circuit.add_register(qiskit.QuantumRegister(2, "foo"))
+
+    circuit.x(3)
+    circuit.cz(3, 5)
+    circuit.barrier(0, 1, 2, 3, 4, 5)
+    circuit.h(circuit.qubits[1])
+
+    assert qss.active_qubit_indices(circuit) == [1, 3, 5]
 
 
 def test_compiler_output_repr() -> None:
@@ -31,8 +44,8 @@ def test_read_json() -> None:
     circuit = qiskit.QuantumCircuit(4)
     for i in range(4):
         circuit.h(i)
-    state_str = gss.converters.serialize({})
-    pulse_lists_str = gss.converters.serialize([[[]]])
+    state_str = gss.serialization.serialize({})
+    pulse_lists_str = gss.serialization.serialize([[[]]])
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
@@ -48,7 +61,7 @@ def test_read_json() -> None:
     assert out.circuits == [circuit]
     assert not hasattr(out, "circuit")
 
-    pulse_lists_str = gss.converters.serialize([[[]], [[]]])
+    pulse_lists_str = gss.serialization.serialize([[[]], [[]]])
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
         "state_jp": state_str,
@@ -75,8 +88,10 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     circuit = qiskit.QuantumCircuit(4)
     for i in range(4):
         circuit.h(i)
-    state_str = gss.converters.serialize(seq.__getstate__())
-    pulse_lists_str = gss.converters.serialize([[[]]])
+    circuit.measure_all()
+
+    state_str = gss.serialization.serialize(seq.__getstate__())
+    pulse_lists_str = gss.serialization.serialize([[[]]])
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
         "state_jp": state_str,
@@ -85,26 +100,52 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
 
     out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
+    assert isinstance(out.seq, qtrl.sequencer.Sequence)
     assert pickle.dumps(out.seq) == pickle.dumps(seq)
     assert out.pulse_list == [[]]
+    assert not hasattr(out.seq, "_readout")
     assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
 
+    # Serialized readout attribute for aqt_zurich_qpu:
+    json_dict["readout_jp"] = state_str
+    json_dict["readout_qubits"] = "[4, 5, 6, 7]"
+    out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=False)
+    assert out.circuit == circuit
+    assert out.pulse_list == [[]]
+    assert isinstance(out.seq, qtrl.sequencer.Sequence)
+    assert isinstance(out.seq._readout, qtrl.sequencer.Sequence)
+    assert isinstance(out.seq._readout._readout, qtrl.sequence_utils.readout._ReadoutInfo)
+    assert out.seq._readout._readout.sequence is out.seq._readout
+    assert out.seq._readout._readout.qubits == [4, 5, 6, 7]
+    assert out.seq._readout._readout.n_readouts == 1
+    assert pickle.dumps(out.seq._readout) == pickle.dumps(out.seq) == pickle.dumps(seq)
+    assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
+
+    # Multiple circuits:
     out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit]
     assert pickle.dumps(out.seq) == pickle.dumps(seq)
     assert out.pulse_lists == [[[]]]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
-    pulse_lists_str = gss.converters.serialize([[[]], [[]]])
+    pulse_lists_str = gss.serialization.serialize([[[]], [[]]])
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
+        "readout_jp": state_str,
+        "readout_qubits": "[4, 5, 6, 7]",
     }
     out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
     assert pickle.dumps(out.seq) == pickle.dumps(seq)
     assert out.pulse_lists == [[[]], [[]]]
+    assert isinstance(out.seq, qtrl.sequencer.Sequence)
+    assert isinstance(out.seq._readout, qtrl.sequencer.Sequence)
+    assert isinstance(out.seq._readout._readout, qtrl.sequence_utils.readout._ReadoutInfo)
+    assert out.seq._readout._readout.sequence is out.seq._readout
+    assert out.seq._readout._readout.qubits == [4, 5, 6, 7]
+    assert out.seq._readout._readout.n_readouts == 2
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
 
@@ -123,7 +164,7 @@ def test_read_json_with_qscout() -> None:
                 """
     )
 
-    json_dict = {
+    json_dict: Dict[str, Union[str, List[str]]] = {
         "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
         "jaqal_programs": [jaqal_program],
     }
