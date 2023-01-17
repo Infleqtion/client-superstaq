@@ -23,8 +23,8 @@ printv = lambda text: print(text) if VERBOSE else None
 
 class PulseManipulator:
     """
-    PulseManipulator is an abstraction layer that wraps around Qiskit pulse schedules for more precise
-    manipulation.
+    PulseManipulator is an abstraction layer that allows more precise manipulation of Qiskit pulse
+    schedules.
     """
 
     def __init__(self, schedule=None, backend=None):
@@ -44,17 +44,17 @@ class PulseManipulator:
 
     @property
     def duration(self):
-        """Returns the duration for the instruction."""
+        """Returns the duration for the instruction or full schedule."""
         return self._schedule.duration
 
     @property
     def name(self, inst_id=None):
-        """Returns the name for the instruction."""
+        """Returns the name for the instruction or full schedule."""
         _, inst = self._extract_instruction(inst_id=inst_id)
         return inst.name
 
     def get_start_time(self, inst_id=None):
-        """Returns the start time for the instruction."""
+        """Returns the start time for the instruction or full schedule."""
         start_time, _ = self._extract_instruction(inst_id=inst_id)
         return start_time
 
@@ -65,11 +65,13 @@ class PulseManipulator:
 
     def draw(self, time_range=None):
         """Draws pulse schedule to screen, inheriting qiskit's functionality."""
-        # TODO: include a "pretty" draw
+        # TODO: inherit other notable qiskit.draw parameters
+        # TODO (long-term): include a "pretty" draw
         return self._schedule.draw(time_range=time_range)
 
     def append(self, instruction, inplace=False):
         """Appends instruction to the end of the pulse schedule."""
+        # TODO (long-term): if measured, include option to append before measurement
         return self.insert(start_time=self.duration, instruction=instruction, inplace=inplace)
 
     def insert(self, start_time=None, instruction=None, inplace=False):
@@ -77,6 +79,8 @@ class PulseManipulator:
 
         If the full duration of the instruction will fit, defaults to qiskit's insert.
         """
+        # TODO (long-term): insert in the middle of an instruction (i.e, split overlapping
+        `# instruction at desired insertion point
         assert start_time >= 0, "You must provide a nonnegative start time."
         assert self._backend is not None, (
             "This method requires knowledge about which pulse channels coincide, so you need to "
@@ -128,6 +132,8 @@ class PulseManipulator:
         distance away from the old instruction. 2) "tight"=False: remain in their original positions
         in time.
         """
+        # TODO: (long-term) include "tight" parameter for replacing with smaller instruction
+        # TODO: use "negate" instead of "flip-amp"
         # TODO: After flattening, may be able to just inherit from qiskit (although I think qiskit
         # still requies insts to be the exact same length...
         # TODO: Include "flip_amp" parameter to flip amplitude of instruction indicated by ID.
@@ -151,6 +157,7 @@ class PulseManipulator:
         else:
             pass
 
+    # TODO: just alias this to replace
     # TODO: Consider replacing this with creating a whole new pulse with flipped amp parameter
     def flip_amp(self, inst_id=None, inplace=False):
         """Flips amplitude of specified instruction pulse."""
@@ -200,41 +207,6 @@ class PulseManipulator:
         ) | self._schedule.exclude(channels=[channel, *coinciding_channels])
         return self._update(schedule, inplace)
 
-    def measure(self):
-        """Adds measurement pulses.
-
-        This also allows measuring individual qubits, as well as including or excluding the delays
-        that are inserted by default to avoid ringdown for mid-circuit measurements.
-        """
-        # TODO: This should include the ability to perform mid-circuit measurement, taking a time
-        # parameter for where to insert it.
-        pass
-
-    def remove_measure(self):
-        """Removes measurement pulses.
-
-        By default (w/ no parameters), removes all measurements. Otherwise, either removes (1)
-        measurements at the end of the pulse schedule or (2) measurments at a particular time.
-        """
-        pass
-
-    def get_parameters(self, inst_id=None):
-        """Prints instruction pulse parameters (e.g., amplitude, sigma, beta, width)."""
-        pass
-
-    def set_parameters(self, inst_id=None):
-        """Sets instruction pulse parameters.
-
-        All instruction pulses will have "amp" and "sigma"; only Drag pulses have "beta"; only
-        GaussianSquare pulses have "width".
-
-        Args:
-            parameters (dict):
-
-        E.g., pv.set_parameters({"amp": 1, "sigma": 40})
-        """
-        pass
-
     def reset(self, inplace=False):
         """Resets to the schedule used to initialize it."""
         return self._update(deepcopy(self._init_schedule), inplace)
@@ -247,10 +219,6 @@ class PulseManipulator:
             return self
         else:
             return PulseManipulator(schedule=schedule, backend=self._backend)
-
-    def copy(self):
-        """Returns a new copy of class instance."""
-        pass
 
     def set_backend(self, backend=None):
         """Sets qiskit backend object.
@@ -293,6 +261,7 @@ class PulseManipulator:
         Args:
             with_label_indexing (bool): Toggle use of index for instruction ID label.
         """
+        # TODO: (long-term) detect measured instructions (e.g., useful for appending)
         if schedule is None:
             schedule = deepcopy(self._schedule)
         new_schedule = deepcopy(schedule)
@@ -493,7 +462,7 @@ class PulseManipulator:
         right_half.shift(shift_amount, inplace=True)
         return left_half | right_half | remainder
 
-    ####################################################################################################
+    ################################################################################################
 
     def flip_amplitude(self, inst_id=None, inplace=True):
         """Flips amplitude of specified instruction pulse."""
@@ -534,7 +503,47 @@ class PulseManipulator:
         else:
             return PulseVisualization(schedule, backend=self._backend)
 
-    ############################################### TODO: Perhaps sort these
+    ############################################### TODO LONG-TERM
+    def measure(self):
+        """Adds measurement pulses.
+
+        This also allows measuring individual qubits, as well as including or excluding the delays
+        that are inserted by default to avoid ringdown for mid-circuit measurements.
+        """
+        # TODO: (long-term) This should include the ability to perform mid-circuit measurement,
+        # taking a time parameter for where to insert it.
+        pass
+
+    # TODO: (long-term) implement "remove_measurement"
+    def remove_measure(self):
+        """Removes measurement pulses.
+
+        By default (w/ no parameters), removes all measurements. Otherwise, either removes (1)
+        measurements at the end of the pulse schedule or (2) measurments at a particular time.
+        """
+        pass
+
+    def get_parameters(self, inst_id=None):
+        """Prints instruction pulse parameters (e.g., amplitude, sigma, beta, width)."""
+        pass
+
+    def set_parameters(self, inst_id=None):
+        """Sets instruction pulse parameters.
+
+        All instruction pulses will have "amp" and "sigma"; only Drag pulses have "beta"; only
+        GaussianSquare pulses have "width".
+
+        Args:
+            parameters (dict):
+
+        E.g., pv.set_parameters({"amp": 1, "sigma": 40})
+        """
+        pass
+
+    def copy(self):
+        """Returns a new copy of class instance."""
+        pass
+
     def _get_coinciding_channels(self):
         """This should return the input channel if there are no coinciding channels set. This makes
         it so that users can fully use PM without providing a backend (however as soon as a backend
