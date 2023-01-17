@@ -23,6 +23,36 @@ def test_active_qubit_indices() -> None:
     assert qss.active_qubit_indices(circuit) == [1, 3, 5]
 
 
+def test_measured_qubit_indices() -> None:
+    circuit = qiskit.QuantumCircuit(8, 2)
+    circuit.x(0)
+    circuit.measure(1, 0)
+    circuit.cx(1, 2)
+    circuit.measure([6, 5], [0, 1])
+    circuit.measure([1, 3], [0, 1])  # (qubit 1 was already measured)
+    circuit.measure([5, 1], [0, 1])  # (both were already measured)
+    assert qss.measured_qubit_indices(circuit) == [1, 3, 5, 6]
+
+    # Check that measurements in custom gates/subcircuits are handled correctly
+    circuit = qiskit.QuantumCircuit(6, 2)
+    circuit.measure(0, 0)
+    assert qss.measured_qubit_indices(circuit) == [0]
+
+    subcircuit = qiskit.QuantumCircuit(6, 2)
+    subcircuit.x(0)
+    subcircuit.measure(1, 0)
+    subcircuit.measure(2, 1)
+    assert qss.measured_qubit_indices(subcircuit) == [1, 2]
+
+    # Append subcircuit to itself (measurements should land on qubits 2 and 4)
+    subcircuit.append(subcircuit, [3, 2, 4, 0, 1, 5], [1, 0])
+    assert qss.measured_qubit_indices(subcircuit) == [1, 2, 4]
+
+    # Append subcircuit to circuit (measurements should land on qubits 4, 3, and 1 of circuit)
+    circuit.append(subcircuit, [5, 4, 3, 2, 1, 0], [0, 1])
+    assert qss.measured_qubit_indices(circuit) == [0, 1, 3, 4]
+
+
 def test_compiler_output_repr() -> None:
     circuit = qiskit.QuantumCircuit(4)
     assert (
