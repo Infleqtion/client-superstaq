@@ -249,6 +249,7 @@ class SuperstaQProvider(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         mirror_swaps: bool = True,
+        base_entangling_gate: str = "xx",
         target: str = "sandia_qscout_qpu",
     ) -> "qss.compiler_output.CompilerOutput":
         """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
@@ -268,7 +269,10 @@ class SuperstaQProvider(
 
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
-        options_dict = {"mirror_swaps": mirror_swaps}
+        if base_entangling_gate not in ("xx", "zz"):
+            raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
+
+        options_dict = {"mirror_swaps": mirror_swaps, "base_entangling_gate": base_entangling_gate}
         json_dict = self._client.qscout_compile(
             {
                 "qiskit_circuits": serialized_circuits,
