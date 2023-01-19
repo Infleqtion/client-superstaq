@@ -6,6 +6,7 @@ import cirq
 import cirq_superstaq as css
 
 SUPERSTAQ_RESOLVERS = [
+    css.ops.qudit_gates.custom_resolver,
     css.ops.qubit_gates.custom_resolver,
 ]
 

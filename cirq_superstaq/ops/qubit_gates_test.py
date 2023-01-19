@@ -768,7 +768,6 @@ def test_ixgate() -> None:
     gate = css.ops.qubit_gates.IXGate()
 
     assert str(gate) == "IX"
-    assert repr(gate) == "css.ops.qubit_gates.IX"
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq as css")
     cirq.testing.assert_consistent_resolve_parameters(gate)
     cirq.testing.assert_has_diagram(

@@ -16,6 +16,7 @@ from .qubit_gates import (
     barrier,
     parallel_gates_operation,
 )
+from .qudit_gates import BSWAP, BSWAP_INV, CZ3, CZ3_INV, BSwapPowGate, QutritCZPowGate
 
 __all__ = [
     "AQTICCX",
@@ -23,10 +24,16 @@ __all__ = [
     "AceCR",
     "AceCRMinusPlus",
     "AceCRPlusMinus",
+    "BSWAP",
+    "BSWAP_INV",
+    "BSwapPowGate",
     "Barrier",
     "CR",
+    "CZ3",
+    "CZ3_INV",
     "ParallelGates",
     "ParallelRGate",
+    "QutritCZPowGate",
     "RGate",
     "ZX",
     "ZXPowGate",
@@ -34,4 +41,6 @@ __all__ = [
     "approx_eq_mod",
     "barrier",
     "parallel_gates_operation",
+    "qubit_gates",
+    "qudit_gates",
 ]
