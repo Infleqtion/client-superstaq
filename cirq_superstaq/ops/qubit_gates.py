@@ -10,7 +10,7 @@ from cirq.ops.common_gates import _pi
 import cirq_superstaq as css
 
 
-def _approx_eq_mod(a: cirq.TParamVal, b: cirq.TParamVal, period: float, atol: float = 1e-8) -> bool:
+def approx_eq_mod(a: cirq.TParamVal, b: cirq.TParamVal, period: float, atol: float = 1e-8) -> bool:
     """Check if a ~= b (mod period). If either input is an unresolved parameter, returns a == b."""
 
     if cirq.is_parameterized(a) or cirq.is_parameterized(b):
@@ -137,7 +137,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
         )
 
     def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, cirq.Qid]) -> Optional[str]:
-        if _approx_eq_mod(self.theta, 0.0, 2 * np.pi):
+        if approx_eq_mod(self.theta, 0.0, 2 * np.pi):
             return cirq.SWAP._qasm_(args, qubits)
 
         return args.format(
@@ -297,7 +297,7 @@ class AceCR(cirq.Gate):
         if other.polarity != self.polarity:
             return False
 
-        return _approx_eq_mod(self.sandwich_rx_rads, other.sandwich_rx_rads, 2 * np.pi, atol=atol)
+        return approx_eq_mod(self.sandwich_rx_rads, other.sandwich_rx_rads, 2 * np.pi, atol=atol)
 
     def __repr__(self) -> str:
         if not self.sandwich_rx_rads:
@@ -576,12 +576,12 @@ class RGate(cirq.PhasedXPowGate):
         if not isinstance(other, cirq.PhasedXPowGate):
             return NotImplemented
 
-        if _approx_eq_mod(self.exponent, other.exponent, 2, atol=atol):
-            return _approx_eq_mod(self.phase_exponent, other.phase_exponent, 2, atol=atol)
+        if approx_eq_mod(self.exponent, other.exponent, 2, atol=atol):
+            return approx_eq_mod(self.phase_exponent, other.phase_exponent, 2, atol=atol)
 
         # equal_up_to_global_phase(RGate(x, y), RGate(-x, y + pi)) is also True:
-        if _approx_eq_mod(self.exponent, -other.exponent, 2, atol=atol):
-            return _approx_eq_mod(self.phase_exponent, 1 + other.phase_exponent, 2, atol=atol)
+        if approx_eq_mod(self.exponent, -other.exponent, 2, atol=atol):
+            return approx_eq_mod(self.phase_exponent, 1 + other.phase_exponent, 2, atol=atol)
 
         return False
 
@@ -681,7 +681,7 @@ class IXGate(cirq.XPowGate):
         super().__init__(exponent=1, global_shift=0.5)
 
     def _with_exponent(self, exponent: cirq.value.TParamVal) -> Union[cirq.Rx, "IXGate"]:
-        if _approx_eq_mod(exponent, 1.0, 4):
+        if approx_eq_mod(exponent, 1.0, 4):
             return IXGate()
         return cirq.rx(-exponent * _pi(exponent))
 
@@ -692,7 +692,7 @@ class IXGate(cirq.XPowGate):
         return "IX"
 
     def __repr__(self) -> str:
-        return f"css.custom_gates.{str(self)}"
+        return f"css.ops.qubit_gates.{str(self)}"
 
     @classmethod
     def _from_json_dict_(cls, **kwargs: Any) -> "IXGate":

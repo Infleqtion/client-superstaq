@@ -765,10 +765,10 @@ def test_parallel_rgate_eq() -> None:
 
 
 def test_ixgate() -> None:
-    gate = css.custom_gates.IXGate()
+    gate = css.ops.qubit_gates.IXGate()
 
     assert str(gate) == "IX"
-    assert repr(gate) == "css.custom_gates.IX"
+    assert repr(gate) == "css.ops.qubit_gates.IX"
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq as css")
     cirq.testing.assert_consistent_resolve_parameters(gate)
     cirq.testing.assert_has_diagram(
@@ -780,10 +780,10 @@ def test_ixgate() -> None:
         ),
     )
 
-    assert isinstance(gate**1, css.custom_gates.IXGate)
-    assert isinstance(gate**5, css.custom_gates.IXGate)
+    assert isinstance(gate**1, css.ops.qubit_gates.IXGate)
+    assert isinstance(gate**5, css.ops.qubit_gates.IXGate)
     assert isinstance(gate**1.5, cirq.XPowGate)
-    assert not isinstance(gate**1.5, css.custom_gates.IXGate)
+    assert not isinstance(gate**1.5, css.ops.qubit_gates.IXGate)
 
     assert np.allclose(
         cirq.unitary(gate),
@@ -800,7 +800,7 @@ def test_itoffoli() -> None:
     qubits = cirq.LineQubit.range(3)
 
     assert np.allclose(
-        cirq.unitary(css.custom_gates.ICCX(*qubits)),
+        cirq.unitary(css.ops.qubit_gates.ICCX(*qubits)),
         np.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
@@ -846,10 +846,10 @@ def test_custom_resolver() -> None:
     circuit += css.RGate(1.23, 4.56).on(qubits[0])
     circuit += css.ParallelRGate(1.23, 4.56, len(qubits)).on(*qubits)
     circuit += css.AQTITOFFOLI(qubits[0], qubits[1], qubits[2])
-    circuit += css.custom_gates.ICCX(qubits[0], qubits[1], qubits[2])
-    circuit += css.custom_gates.IX(qubits[0])
+    circuit += css.ops.qubit_gates.ICCX(qubits[0], qubits[1], qubits[2])
+    circuit += css.ops.qubit_gates.IX(qubits[0])
     circuit += cirq.CX(qubits[0], qubits[1])
 
     json_text = cirq.to_json(circuit)
-    resolvers = [css.custom_gates.custom_resolver, *cirq.DEFAULT_RESOLVERS]
+    resolvers = [*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
     assert cirq.read_json(json_text=json_text, resolvers=resolvers) == circuit

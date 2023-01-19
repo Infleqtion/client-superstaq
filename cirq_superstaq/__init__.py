@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cirq_superstaq import compiler_output, serialization
+from cirq_superstaq import compiler_output
 from cirq_superstaq._version import __version__
 from cirq_superstaq.compiler_output import active_qubit_indices
-from cirq_superstaq.custom_gates import (
+from cirq_superstaq.job import Job
+from cirq_superstaq.ops import (
     AQTICCX,
     AQTITOFFOLI,
     CR,
@@ -29,34 +30,44 @@ from cirq_superstaq.custom_gates import (
     RGate,
     ZXPowGate,
     ZZSwapGate,
+    approx_eq_mod,
     barrier,
     parallel_gates_operation,
 )
-from cirq_superstaq.job import Job
 from cirq_superstaq.sampler import Sampler
+from cirq_superstaq.serialization import (
+    SUPERSTAQ_RESOLVERS,
+    deserialize_circuits,
+    serialize_circuits,
+)
 from cirq_superstaq.service import Service
 
 __all__ = [
-    "__version__",
-    "active_qubit_indices",
+    "AQTICCX",
+    "AQTITOFFOLI",
     "AceCR",
     "AceCRMinusPlus",
     "AceCRPlusMinus",
-    "barrier",
     "Barrier",
-    "compiler_output",
     "CR",
-    "AQTICCX",
-    "AQTITOFFOLI",
     "Job",
     "ParallelGates",
     "ParallelRGate",
-    "parallel_gates_operation",
-    "serialization",
     "RGate",
+    "SUPERSTAQ_RESOLVERS",
     "Sampler",
     "Service",
     "ZX",
     "ZXPowGate",
     "ZZSwapGate",
+    "__version__",
+    "active_qubit_indices",
+    "approx_eq_mod",
+    "barrier",
+    "compiler_output",
+    "deserialize_circuits",
+    "ops",
+    "parallel_gates_operation",
+    "serialization",
+    "serialize_circuits",
 ]

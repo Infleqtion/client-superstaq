@@ -5,6 +5,10 @@ import cirq
 
 import cirq_superstaq as css
 
+SUPERSTAQ_RESOLVERS = [
+    css.ops.qubit_gates.custom_resolver,
+]
+
 
 def serialize_circuits(
     circuits: Union[cirq.AbstractCircuit, Sequence[cirq.AbstractCircuit]]
@@ -38,7 +42,7 @@ def deserialize_circuits(serialized_circuits: str) -> List[cirq.Circuit]:
     Returns:
         the Circuit or list of Circuits that was serialized
     """
-    resolvers = [css.custom_gates.custom_resolver, *cirq.DEFAULT_RESOLVERS]
+    resolvers = [*SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
     circuits = cirq.read_json(json_text=serialized_circuits, resolvers=resolvers)
     if isinstance(circuits, cirq.Circuit):
         return [circuits]
