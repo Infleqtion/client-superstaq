@@ -387,6 +387,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         self,
         circuits: Union[cirq.Circuit, List[cirq.Circuit]],
         mirror_swaps: bool = True,
+        base_entangling_gate: str = "xx",
         target: str = "sandia_qscout_qpu",
     ) -> css.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to target QSCOUT device, optimized to its native gate set.
@@ -398,10 +399,13 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             object whose .circuit(s) attribute is an optimized cirq Circuit(s)
             and a list of jaqal programs represented as strings
         """
+        if base_entangling_gate not in ("xx", "zz"):
+            raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
+
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
-        options_dict = {"mirror_swaps": mirror_swaps}
+        options_dict = {"mirror_swaps": mirror_swaps, "base_entangling_gate": base_entangling_gate}
         json_dict = self._client.qscout_compile(
             {
                 "cirq_circuits": serialized_circuits,

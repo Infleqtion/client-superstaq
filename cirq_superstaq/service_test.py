@@ -358,8 +358,44 @@ def test_qscout_compile_swap_mirror(
     assert out.jaqal_program == jaqal_program
     mock_qscout_compile.assert_called_once()
     assert json.loads(mock_qscout_compile.call_args[0][0]["options"]) == {
-        "mirror_swaps": mirror_swaps
+        "mirror_swaps": mirror_swaps,
+        "base_entangling_gate": "xx",
     }
+
+
+@mock.patch("general_superstaq.superstaq_client._SuperstaQClient.qscout_compile")
+@pytest.mark.parametrize("base_entangling_gate", ("xx", "zz"))
+def test_qscout_compile_base_entangling_gate(
+    mock_qscout_compile: mock.MagicMock, base_entangling_gate: str
+) -> None:
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.measure(q0))
+
+    jaqal_program = ""
+
+    mock_qscout_compile.return_value = {
+        "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "jaqal_programs": [jaqal_program],
+    }
+
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    out = service.qscout_compile(circuit, base_entangling_gate=base_entangling_gate)
+    assert out.circuit == circuit
+    assert out.jaqal_program == jaqal_program
+    mock_qscout_compile.assert_called_once()
+    assert json.loads(mock_qscout_compile.call_args[0][0]["options"]) == {
+        "mirror_swaps": True,
+        "base_entangling_gate": base_entangling_gate,
+    }
+
+
+def test_qscout_compile_wrong_base_entangling_gate() -> None:
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.measure(q0))
+
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    with pytest.raises(ValueError):
+        _ = service.qscout_compile(circuit, base_entangling_gate="yy")
 
 
 @mock.patch("general_superstaq.superstaq_client._SuperstaQClient.cq_compile")
