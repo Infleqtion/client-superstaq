@@ -15,7 +15,9 @@ except ModuleNotFoundError:
 
 
 def active_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
-    """Returns the indices of the non-idle qubits in a quantum circuit."""
+    """Returns the indices of the non-idle qubits in a quantum circuit, where "index" refers to the
+    argument of a LineQubit (so e.g. cirq.LineQubit(5) has index 5 regardless of the total number
+    of qubits in the circuit)."""
 
     all_qubits: Set[cirq.Qid] = set()
     for op in circuit.all_operations():
@@ -29,6 +31,26 @@ def active_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
         qubit_indices.append(int(q))
 
     return qubit_indices
+
+
+def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
+    """Returns the indices of the measured qubits in a quantum circuit, where "index" refers to the
+    argument of a LineQubit (so e.g. cirq.LineQubit(5) has index 5 regardless of the total number
+    of qubits in the circuit)."""
+
+    unrolled_circuit = cirq.unroll_circuit_op(circuit, deep=True, tags_to_check=None)
+
+    measured_qubits: Set[cirq.Qid] = set()
+    for _, op in unrolled_circuit.findall_operations(cirq.is_measurement):
+        measured_qubits.update(op.qubits)
+
+    qubit_indices: Set[int] = set()
+    for q in measured_qubits:
+        if not isinstance(q, (cirq.LineQubit, cirq.LineQid)):
+            raise ValueError("Qubit indices can only be determined for line qubits")
+        qubit_indices.add(int(q))
+
+    return sorted(qubit_indices)
 
 
 class CompilerOutput:

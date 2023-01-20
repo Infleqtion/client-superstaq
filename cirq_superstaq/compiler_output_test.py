@@ -26,6 +26,55 @@ def test_active_qubit_indices() -> None:
         _ = css.active_qubit_indices(cirq.Circuit(cirq.X(cirq.GridQubit(1, 2))))
 
 
+def test_measured_qubit_indices() -> None:
+
+    # Create qubits with indices [0, 1, 2, 3, 5, 6]. No q4 to ensure that indices refer to
+    # LineQubit arguments regardless of the number of qubits in the circuit
+    q0, q1, q2, q3, _, q5, q6 = cirq.LineQubit.range(7)
+
+    circuit = cirq.Circuit(
+        cirq.X(q0),
+        cirq.measure(q1),
+        cirq.CX(q1, q2),
+        cirq.measure(q6, q5),
+        cirq.measure(q1, q3),  # (q1 was already measured)
+        cirq.measure(q5, q1),  # (both were already measured)
+    )
+    assert css.measured_qubit_indices(circuit) == [1, 3, 5, 6]
+
+
+def test_measured_qubit_indices_with_circuit_operations() -> None:
+    """Check that measurements in CircuitOperations are mapped correctly."""
+
+    # Create qubits with indices [0, 1, 2, 3, 5, 6]. No q4 to ensure that indices refer to
+    # LineQubit arguments regardless of the number of qubits in the circuit
+    q0, q1, q2, q3, _, q5, q6 = cirq.LineQubit.range(7)
+
+    subcircuit = cirq.FrozenCircuit(cirq.X(q0), cirq.measure(q2, q3))
+    assert css.measured_qubit_indices(subcircuit) == [2, 3]
+
+    # Create a CircuitOperation with no qubit mapping (measurements don't move)
+    subcircuit_op_no_map = cirq.CircuitOperation(subcircuit)
+    assert css.measured_qubit_indices(subcircuit_op_no_map.mapped_circuit()) == [2, 3]
+
+    # Create a CircuitOperation with a nontrivial map. Measurements (q2, q3) should land on (q5, q3)
+    subcircuit_op_mapped = cirq.CircuitOperation(subcircuit).with_qubit_mapping({q1: q6, q2: q5})
+    assert css.measured_qubit_indices(subcircuit_op_mapped.mapped_circuit()) == [3, 5]
+
+    # Check that measured_qubit_indices() respects the qubit mapping
+    circuit = cirq.Circuit(cirq.measure(q1))
+    assert css.measured_qubit_indices(circuit) == [1]
+    assert css.measured_qubit_indices(circuit + subcircuit_op_no_map) == [1, 2, 3]  # no mapping
+    assert css.measured_qubit_indices(circuit + subcircuit_op_mapped) == [1, 3, 5]  # with mapping
+
+    # Double-check that measurement indices are the same after unrolling subcircuit's qubit mapping
+    unrolled_circuit = cirq.unroll_circuit_op(circuit + subcircuit_op_mapped, tags_to_check=None)
+    assert css.measured_qubit_indices(unrolled_circuit) == [1, 3, 5]
+
+    with pytest.raises(ValueError, match="line qubits"):
+        _ = css.measured_qubit_indices(cirq.Circuit(cirq.measure(cirq.GridQubit(1, 2))))
+
+
 def test_compiler_output_repr() -> None:
     circuit = cirq.Circuit()
     assert (
