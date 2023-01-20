@@ -1,3 +1,4 @@
+import abc
 from typing import AbstractSet, Any, Dict, List, Optional, Sequence, Tuple, Type
 
 import cirq
@@ -139,6 +140,90 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
             f"css.QutritCZPowGate(exponent={proper_repr(self.exponent)}, "
             f"global_shift={proper_repr(self.global_shift)})"
         )
+
+
+class _QutritZPowGate(cirq.EigenGate):
+    """Applies a phase rotation to a single energy level of a qutrit."""
+
+    @property
+    @abc.abstractmethod
+    def _target_state(self) -> int:
+        """The energy level onto which to apply a phase."""
+
+    def _qid_shape_(self) -> Tuple[int]:
+        return (3,)
+
+    def _eigen_components(self) -> List[Tuple[float, npt.NDArray[np.float_]]]:
+        d = self._qid_shape_()[0]
+        projector_phase = np.zeros((d, d))
+        projector_phase[self._target_state, self._target_state] = 1
+
+        projector_rest = np.eye(d) - projector_phase
+        return [(0.0, projector_rest), (1.0, projector_phase)]
+
+    def _eigen_shifts(self) -> List[float]:
+        return [0.0, 1.0]
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        if args.use_unicode_characters and self._target_state < 10:
+            wire_symbol = f"Z{ord('₀') + self._target_state:c}"
+        else:
+            wire_symbol = f"Z[{self._target_state}]"
+
+        return cirq.CircuitDiagramInfo(
+            wire_symbols=(wire_symbol,), exponent=self._diagram_exponent(args)
+        )
+
+    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
+        """Workaround for https://github.com/quantumlib/Cirq/issues/5980."""
+
+        if not isinstance(other, _QutritZPowGate):
+            return NotImplemented
+
+        if other._target_state != self._target_state:
+            return False
+
+        return css.approx_eq_mod(self.exponent, other.exponent, 2.0, atol=atol)
+
+    def __str__(self) -> str:
+        if self.exponent == 1:
+            return f"QutritZ{self._target_state}"
+        return f"QutritZ{self._target_state}**{self.exponent}"
+
+    def __repr__(self) -> str:
+        if not self.global_shift:
+            if self.exponent == 1:
+                return f"css.QutritZ{self._target_state}"
+            return f"(css.QutritZ{self._target_state}**{proper_repr(self.exponent)})"
+
+        return (
+            f"css.QutritZ{self._target_state}PowGate(exponent={proper_repr(self.exponent)}, "
+            f"global_shift={proper_repr(self.global_shift)})"
+        )
+
+
+class QutritZ0PowGate(_QutritZPowGate):
+    """Phase rotation on the ground state of a qutrit."""
+
+    @property
+    def _target_state(self) -> int:
+        return 0
+
+
+class QutritZ1PowGate(_QutritZPowGate):
+    """Phase rotation on the first excited state of a qutrit."""
+
+    @property
+    def _target_state(self) -> int:
+        return 1
+
+
+class QutritZ2PowGate(_QutritZPowGate):
+    """Phase rotation on the second excited state of a qutrit."""
+
+    @property
+    def _target_state(self) -> int:
+        return 2
 
 
 @cirq.value_equality(approximate=True)
@@ -296,12 +381,22 @@ BSWAP_INV = BSwapPowGate(exponent=-1)
 CZ3 = QutritCZPowGate()
 CZ3_INV = QutritCZPowGate(exponent=-1)
 
+QutritZ0 = QutritZ0PowGate()
+QutritZ1 = QutritZ1PowGate()
+QutritZ2 = QutritZ2PowGate()
+
 
 def custom_resolver(cirq_type: str) -> Optional[Type[cirq.Gate]]:
     if cirq_type == "BSwapPowGate":
         return BSwapPowGate
     if cirq_type == "QutritCZPowGate":
         return QutritCZPowGate
+    if cirq_type == "QutritZ0PowGate":
+        return QutritZ0PowGate
+    if cirq_type == "QutritZ1PowGate":
+        return QutritZ1PowGate
+    if cirq_type == "QutritZ2PowGate":
+        return QutritZ2PowGate
     if cirq_type == "QubitSubspaceGate":
         return QubitSubspaceGate
 

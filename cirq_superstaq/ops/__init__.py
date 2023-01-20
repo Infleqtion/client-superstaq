@@ -24,6 +24,12 @@ from .qudit_gates import (
     BSwapPowGate,
     QubitSubspaceGate,
     QutritCZPowGate,
+    QutritZ0,
+    QutritZ0PowGate,
+    QutritZ1,
+    QutritZ1PowGate,
+    QutritZ2,
+    QutritZ2PowGate,
 )
 
 __all__ = [
@@ -43,6 +49,12 @@ __all__ = [
     "ParallelRGate",
     "QubitSubspaceGate",
     "QutritCZPowGate",
+    "QutritZ0",
+    "QutritZ0PowGate",
+    "QutritZ1",
+    "QutritZ1PowGate",
+    "QutritZ2",
+    "QutritZ2PowGate",
     "RGate",
     "ZX",
     "ZXPowGate",
