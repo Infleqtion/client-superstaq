@@ -26,6 +26,22 @@ def active_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
     return sorted(qubit_indices)
 
 
+def measured_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
+    """Returns the indices of the measured qubits in a quantum circuit."""
+
+    measured_qubits: Set[qiskit.circuit.Qubit] = set()
+
+    for inst, qubits, clbits in circuit:
+        if isinstance(inst, qiskit.circuit.Measure):
+            measured_qubits.update(qubits)
+
+        # Recurse into definition if it involves classical bits
+        elif clbits and inst.definition is not None:
+            measured_qubits.update(qubits[i] for i in measured_qubit_indices(inst.definition))
+
+    return sorted(circuit.find_bit(qubit).index for qubit in measured_qubits)
+
+
 class CompilerOutput:
     def __init__(
         self,

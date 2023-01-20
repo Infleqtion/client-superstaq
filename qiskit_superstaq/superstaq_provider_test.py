@@ -263,7 +263,40 @@ def test_qscout_compile_swap_mirror(mock_post: MagicMock, mirror_swaps: bool) ->
     _ = provider.qscout_compile(qc, mirror_swaps=mirror_swaps)
     mock_post.assert_called_once()
     _, kwargs = mock_post.call_args
-    assert json.loads(kwargs["json"]["options"]) == {"mirror_swaps": mirror_swaps}
+    assert json.loads(kwargs["json"]["options"]) == {
+        "mirror_swaps": mirror_swaps,
+        "base_entangling_gate": "xx",
+    }
+
+
+@patch("requests.post")
+@pytest.mark.parametrize("base_entangling_gate", ("xx", "zz"))
+def test_qscout_compile_change_entangler(mock_post: MagicMock, base_entangling_gate: str) -> None:
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+
+    qc = qiskit.QuantumCircuit()
+
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "jaqal_programs": [""],
+    }
+    _ = provider.qscout_compile(qc, base_entangling_gate=base_entangling_gate)
+    mock_post.assert_called_once()
+    _, kwargs = mock_post.call_args
+    assert json.loads(kwargs["json"]["options"]) == {
+        "mirror_swaps": True,
+        "base_entangling_gate": base_entangling_gate,
+    }
+
+
+@patch("requests.post")
+def test_qscout_compile_wrong_entangler(mock_post: MagicMock) -> None:
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+
+    qc = qiskit.QuantumCircuit()
+
+    with pytest.raises(ValueError):
+        _ = provider.qscout_compile(qc, base_entangling_gate="yy")
 
 
 @patch("requests.post")
