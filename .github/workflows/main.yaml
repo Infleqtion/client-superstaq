@@ -1,4 +1,4 @@
-# This publishes to PyPI.
+# This publishes to PyPI. See: https://github.com/pypa/gh-action-pypi-publish
 name: Publish general-superstaq to PyPI
 on:
   workflow_dispatch: null
