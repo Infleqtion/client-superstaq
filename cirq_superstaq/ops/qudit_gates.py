@@ -10,7 +10,7 @@ import cirq_superstaq as css
 
 
 class BSwapPowGate(cirq.EigenGate):
-    """iSWAP-like qutrit entangling gate swapping the "02" and "11" states of two qutrits."""
+    """iSWAP-like qutrit entangling gate swapping the "11" and "22" states of two qutrits."""
 
     @property
     def dimension(self) -> int:
@@ -18,7 +18,7 @@ class BSwapPowGate(cirq.EigenGate):
 
     @property
     def _swapped_states(self) -> Tuple[Tuple[int, int], Tuple[int, int]]:
-        return (0, 2), (1, 1)
+        return (1, 1), (2, 2)
 
     def _qid_shape_(self) -> Tuple[int, int]:
         return self.dimension, self.dimension

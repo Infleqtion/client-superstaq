@@ -37,12 +37,12 @@ def test_bswap_pow_gate() -> None:
     assert str(css.BSWAP**-1) == str(shifted_bswap**-1) == "BSWAP_INV"
     assert str(css.BSWAP**1.23) == str(shifted_bswap**1.23) == "BSWAP**1.23"
 
-    # Should iSWAP the (0, 2) and (1, 1) states:
+    # Should iSWAP the (1, 1) and (2, 2) states:
     q0, q1 = cirq.LineQid.range(2, dimension=3)
-    assert cirq.Circuit(css.BSWAP(q0, q1)).final_state_vector(initial_state=2)[4] == 1j
-    assert cirq.Circuit(css.BSWAP(q0, q1)).final_state_vector(initial_state=4)[2] == 1j
-    assert cirq.Circuit(css.BSWAP_INV(q0, q1)).final_state_vector(initial_state=2)[4] == -1j
-    assert cirq.Circuit(css.BSWAP_INV(q0, q1)).final_state_vector(initial_state=4)[2] == -1j
+    assert cirq.Circuit(css.BSWAP(q0, q1)).final_state_vector(initial_state=8)[4] == 1j
+    assert cirq.Circuit(css.BSWAP(q0, q1)).final_state_vector(initial_state=4)[8] == 1j
+    assert cirq.Circuit(css.BSWAP_INV(q0, q1)).final_state_vector(initial_state=8)[4] == -1j
+    assert cirq.Circuit(css.BSWAP_INV(q0, q1)).final_state_vector(initial_state=4)[8] == -1j
 
     cirq.testing.assert_has_diagram(
         cirq.Circuit(css.BSWAP(q0, q1)),
