@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Tuple, Type
+from typing import AbstractSet, Any, Dict, List, Optional, Sequence, Tuple, Type
 
 import cirq
 import numpy as np
@@ -141,6 +141,155 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
         )
 
 
+@cirq.value_equality(approximate=True)
+class QubitSubspaceGate(cirq.Gate):
+    def __init__(
+        self,
+        sub_gate: cirq.Gate,
+        qid_shape: Sequence[int],
+        subspaces: Optional[Sequence[Tuple[int, int]]] = None,
+    ) -> None:
+        """
+        Embeds an n-qubit (i.e. SU(2^n)) gate into a given subspace of a higher-dimensional gate.
+
+        Args:
+            sub_gate: The qubit gate to promote to a higher dimension.
+            qid_shape: The shape of the new gate (that is, the dimension of each Qid it acts upon).
+            subspaces: If provided, the subspace (in the computational basis) of each Qid to act
+                upon. By default applies to the first two levels of each Qid.
+
+        Examples:
+            QubitSubspaceGate(cirq.X, (3,)): X gate acting on levels 0 and 1 of a dimension-3 Qid.
+            QubitSubspaceGate(cirq.X, (3,), [(0, 2)]): the same gate acting on levels 0 and 2.
+            QubitSubspaceGate(cirq.CX, (3, 3)): CX gate on the 0-1 subspace of two dimension-3 Qids.
+        """
+
+        if subspaces is None:
+            subspaces = [(0, 1)] * cirq.num_qubits(sub_gate)
+
+        if not all(d == 2 for d in cirq.qid_shape(sub_gate)):
+            raise ValueError("Only qubit gates are supported for sub_gate.")
+
+        if not all(d >= 2 for d in qid_shape):
+            raise ValueError("Invalid qid_shape (all dimensions must be at least 2).")
+
+        if cirq.num_qubits(sub_gate) != len(qid_shape):
+            raise ValueError("QubitSubspaceGate and sub_gate must have the same number of qubits.")
+
+        if len(qid_shape) != len(subspaces) or any(len(subspace) != 2 for subspace in subspaces):
+            raise ValueError("You must provide two subspace indices for every qubit.")
+
+        self._sub_gate = sub_gate
+        self._qid_shape = tuple(qid_shape)
+        self._subspaces = [
+            (subspace[0] % d, subspace[1] % d) for subspace, d in zip(subspaces, qid_shape)
+        ]
+
+    @property
+    def sub_gate(self) -> cirq.Gate:
+        return self._sub_gate
+
+    @property
+    def qid_shape(self) -> Tuple[int, ...]:
+        return self._qid_shape
+
+    @property
+    def subspaces(self) -> List[Tuple[int, int]]:
+        return self._subspaces
+
+    def _qid_shape_(self) -> Tuple[int, ...]:
+        return self._qid_shape
+
+    def _is_parameterized_(self) -> bool:
+        return cirq.is_parameterized(self._sub_gate)
+
+    def _parameter_names_(self) -> AbstractSet[str]:
+        return cirq.parameter_names(self._sub_gate)
+
+    def _resolve_parameters_(
+        self, resolver: cirq.ParamResolver, recursive: bool
+    ) -> "QubitSubspaceGate":
+        return QubitSubspaceGate(
+            cirq.resolve_parameters(self._sub_gate, resolver, recursive),
+            self._qid_shape,
+            self._subspaces,
+        )
+
+    def _has_unitary_(self) -> bool:
+        return cirq.has_unitary(self._sub_gate)
+
+    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> Optional[npt.NDArray[np.complex_]]:
+        if not cirq.has_unitary(self._sub_gate):
+            return NotImplemented
+
+        subspace_args = cirq.ApplyUnitaryArgs(
+            target_tensor=args.target_tensor,
+            available_buffer=args.available_buffer,
+            axes=args.axes,
+            subspaces=self._subspaces,
+        )
+        return cirq.apply_unitary(self._sub_gate, subspace_args)
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        sub_gate_info = cirq.circuit_diagram_info(self._sub_gate, args)
+
+        new_symbols: List[str] = []
+        for symbol, subspace in zip(sub_gate_info.wire_symbols, self.subspaces):
+            if args.use_unicode_characters and max(subspace) < 10:
+                subspace_str = f"{ord('₀') + subspace[0]:c}{ord('₀') + subspace[1]:c}"
+            else:
+                subspace_str = f"[{subspace[0]},{subspace[1]}]"
+
+            new_symbols.append(f"{symbol}{subspace_str}")
+
+        return sub_gate_info.with_wire_symbols(new_symbols)
+
+    def _value_equality_values_(
+        self,
+    ) -> Tuple[cirq.Gate, Tuple[int, ...], Tuple[Tuple[int, int], ...]]:
+        return self.sub_gate, self.qid_shape, tuple(self.subspaces)
+
+    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
+        if not isinstance(other, QubitSubspaceGate):
+            return NotImplemented
+
+        if cirq.qid_shape(other) != self._qid_shape:
+            return False
+
+        if other.subspaces != self.subspaces:
+            return False
+
+        return cirq.equal_up_to_global_phase(
+            self.sub_gate, other.sub_gate, atol=atol
+        ) or cirq.equal_up_to_global_phase(
+            other.sub_gate, self.sub_gate, atol=atol
+        )  # Test both orders as a workaround for https://github.com/quantumlib/Cirq/issues/5980
+
+    def _json_dict_(self) -> Dict[str, Any]:
+        return cirq.obj_to_dict_helper(self, ["sub_gate", "qid_shape", "subspaces"])
+
+    def __pow__(self, exponent: cirq.TParamVal) -> Optional["QubitSubspaceGate"]:
+        exp_gate = cirq.pow(self._sub_gate, exponent, None)
+        if exp_gate is None:
+            return NotImplemented
+
+        return QubitSubspaceGate(
+            sub_gate=exp_gate, qid_shape=self._qid_shape, subspaces=self._subspaces
+        )
+
+    def __str__(self) -> str:
+        if self._subspaces == [(0, 1)] * cirq.num_qubits(self):
+            return f"QubitSubspaceGate({self._sub_gate}, {self._qid_shape})"
+
+        return f"QubitSubspaceGate({self._sub_gate}, {self._qid_shape}, {self._subspaces})"
+
+    def __repr__(self) -> str:
+        if self._subspaces == [(0, 1)] * cirq.num_qubits(self):
+            return f"css.QubitSubspaceGate({self._sub_gate!r}, {self._qid_shape})"
+
+        return f"css.QubitSubspaceGate({self._sub_gate!r}, {self._qid_shape}, {self._subspaces})"
+
+
 BSWAP = BSwapPowGate()
 BSWAP_INV = BSwapPowGate(exponent=-1)
 
@@ -153,5 +302,7 @@ def custom_resolver(cirq_type: str) -> Optional[Type[cirq.Gate]]:
         return BSwapPowGate
     if cirq_type == "QutritCZPowGate":
         return QutritCZPowGate
+    if cirq_type == "QubitSubspaceGate":
+        return QubitSubspaceGate
 
     return None
