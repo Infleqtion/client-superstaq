@@ -19,12 +19,23 @@ printv = lambda text: print(text) if VERBOSE else None
 
 # TODO: Use the following to clean up code
 # qiskit.pulse.transforms.flatten(schedule) <- do this before using schedule.replace
-# instead of type(insta.pulse), use a map from inst.pulse_type (a str) to function (qiskit.pulse.G...)
+# instead of type(inst.pulse), use a map from inst.pulse_type (a str) to function (qiskit.pulse.G...)
+# TODO: remember that dt must be in multiples of 16 (i.e., start time, duration, etc...)
+
+PULSE_TYPE_TO_PULSE_MAP = {
+    "Drag": qiskit.pulse.Drag,
+    "GaussianSquare": qiskit.pulse.GaussianSquare,
+}
 
 class PulseManipulator:
     """
     PulseManipulator is an abstraction layer that allows more precise manipulation of Qiskit pulse
     schedules.
+
+    Essentially allows users to "point" to parts of a pulse schedule and manipulate them at will,
+    without dealing with unwieldy methods to replace, insert, etc.; in particular wihout needing to
+    inspect the corresponding list of instructions (e.g., it can be difficult to discern which
+    instruction object corresponds to which visual pulse).
     """
 
     def __init__(self, schedule=None, backend=None):
@@ -44,22 +55,34 @@ class PulseManipulator:
 
     @property
     def duration(self):
-        """Returns the duration for the instruction or full schedule."""
         return self._schedule.duration
+
+    def get_duration(self, inst_id=None):
+        """Returns the duration for the instruction or full schedule."""
+        if inst_id is None:
+            return self._schedule.duration
+        _, instruction = self._extract_instruction(inst_id=inst_id)
+        return instruction.duration
 
     @property
     def name(self, inst_id=None):
         """Returns the name for the instruction or full schedule."""
+        if inst_id is None:
+            return self._schedule.name
         _, inst = self._extract_instruction(inst_id=inst_id)
         return inst.name
 
     def get_start_time(self, inst_id=None):
         """Returns the start time for the instruction or full schedule."""
+        if inst_id is None:
+            return self._schedule.start_time
         start_time, _ = self._extract_instruction(inst_id=inst_id)
         return start_time
 
     def get_stop_time(self, inst_id=None):
         """Returns the stop time for the instruction."""
+        if inst_id is None:
+            return self.duration()
         _, instruction = self._extract_instruction(inst_id=inst_id)
         return self.get_start_time(inst_id=inst_id) + instruction.duration
 
@@ -72,15 +95,18 @@ class PulseManipulator:
     def append(self, instruction, inplace=False):
         """Appends instruction to the end of the pulse schedule."""
         # TODO (long-term): if measured, include option to append before measurement
-        return self.insert(start_time=self.duration, instruction=instruction, inplace=inplace)
+        schedule = self._schedule.append(instruction)
+        return self._update(schedule, inplace)
 
     def insert(self, start_time=None, instruction=None, inplace=False):
-        """Inserts instruction at requested start time, unless it overlaps with other instructions.
+        """Inserts instruction at requested start time, unless the start time overlaps with other
+        instructions. Unlike in qiskit, this allows inserting at a given start time regardless of
+        dt overlaps *after* the insertion point.
 
         If the full duration of the instruction will fit, defaults to qiskit's insert.
         """
         # TODO (long-term): insert in the middle of an instruction (i.e, split overlapping
-        `# instruction at desired insertion point
+        # instruction at desired insertion point)
         assert start_time >= 0, "You must provide a nonnegative start time."
         assert self._backend is not None, (
             "This method requires knowledge about which pulse channels coincide, so you need to "
@@ -122,7 +148,7 @@ class PulseManipulator:
             )
         return self._update(schedule=schedule, inplace=inplace)
 
-    def replace(self, inst_id=None, instruction=None, flip_amp=False, inplace=False):
+    def replace(self, inst_id=None, instruction=None, negate=False, inplace=False):
         """Replaces instruction A with instruction B, regardless of each instruction's duration.
 
         Unlike qiskit's version, this shifts other instructions in the channel as necessary to
@@ -133,10 +159,9 @@ class PulseManipulator:
         in time.
         """
         # TODO: (long-term) include "tight" parameter for replacing with smaller instruction
-        # TODO: use "negate" instead of "flip-amp"
         # TODO: After flattening, may be able to just inherit from qiskit (although I think qiskit
         # still requies insts to be the exact same length...
-        # TODO: Include "flip_amp" parameter to flip amplitude of instruction indicated by ID.
+        # TODO: Include "negate" parameter to flip amplitude of instruction indicated by ID.
         # TODO: reimplement coinciding_channels so that passing in a channel input gives *every*
         # channel (including itself) it coincides with
         assert self._backend is not None, (
@@ -153,9 +178,14 @@ class PulseManipulator:
                 channels=coinciding_channels,
                 time_ranges=[(old_start_time, old_start_time + old_instruction.duration)],
             ).insert(old_start_time, new_instruction)
-            return self._update(schedule, inplace)
         else:
-            pass
+            schedule = qiskit.pulse.transforms.flatten(self._schedule)
+            schedule = schedule.replace(old_instruction, qiskit.pulse.Schedule())
+            schedule_pm = self._update(schedule)
+            schedule_pm.insert(old_start_time, new_instruction)
+            schedule = schedule_pm._schedule
+        return self._update(schedule, inplace)
+
 
     # TODO: just alias this to replace
     # TODO: Consider replacing this with creating a whole new pulse with flipped amp parameter
@@ -317,7 +347,7 @@ class PulseManipulator:
         pulse_obj=None,
         inst_id=None,
         channel=None,
-        # flip_amp=False,  # used in "slightly more compact" extraction, below...
+        # negate=False,  # used in "slightly more compact" extraction, below...
     ):
         """Gets instruction from a qiskit pulse object.
 
@@ -327,18 +357,22 @@ class PulseManipulator:
         # TODO: handle an input schedule (perhaps containing multiple instructions)
         # TODO: also handle if no arguments are given (perhaps just return the schedule?) e.g., see
         # the name method
-        if inst_id is not None and (pulse_obj is None and channel is None):  # and flip_amp is None):
+        if inst_id is not None and (pulse_obj is None and channel is None):  # and negate is None):
             assert self._id_to_inst_map.get(inst_id, None) is not None, (
                 "You need to provide a valid instruction ID."
                 f"Select one of {list(self._id_to_inst_map.keys())}."
             )
             return self._id_to_inst_map[inst_id]
 
+        if isinstance(pulse_obj, qiskit.pulse.Schedule):
+            return deepcopy(pulse_obj)
+
         if isinstance(pulse_obj, qiskit.pulse.Play):
-            waveform_label = self._get_waveform_label(pulse_obj, inst_id=inst_id)
+            waveform_label = self._get_waveform_label(pulse_obj, new_inst_id=inst_id)
             if waveform_label is not None:
+                pulse_type = PULSE_TYPE_TO_PULSE_MAP[pulse_obj.pulse.pulse_type]
                 return qiskit.pulse.Play(
-                    type(pulse_obj.pulse)(**pulse_obj.pulse.parameters, name=waveform_label),
+                    pulse_type(**pulse_obj.pulse.parameters, name=waveform_label),
                     pulse_obj.channel,
                     pulse_obj.name,
                 )
@@ -353,7 +387,7 @@ class PulseManipulator:
                 name=f"{pulse_obj.name}_instruction",
             )
 
-        if isinstance(pulse_obj, np.array) and (pulse_obj.ndim == 1):
+        if isinstance(pulse_obj, np.ndarray) and (pulse_obj.ndim == 1):
             assert channel is not None, "You need to provide a channel for a pulse waveform."
             assert name is not None, "Provide a name for the pulse waveform"
             waveform_label = self._get_waveform_label(pulse_obj, inst_id=inst_id)
@@ -363,13 +397,16 @@ class PulseManipulator:
                 name=f"{waveform_label}_instruction",
             )
 
+        raise ValueError(f"Qiskit Pulse input format of type {type(pulse_obj)} unrecognized.")
+
         """ A slightly more compact way to extract instructions...
         if isinstance(pulse_obj, qiskit.pulse.Play):
             parameters = pulse_obj.pulse.parameters
             if flip_amp:
                 parameters["amp"] *= -1
             waveform_label = self._get_waveform_label(pulse_obj, inst_id=inst_id, flip_amp=flip_amp)
-            waveform = type(pulse_obj.pulse)(**parameters, name=waveform_label)
+            pulse_type = PULSE_TYPE_TO_PULSE_MAP[pulse_obj.pulse.pulse_type]
+            waveform = pulse_type(**pulse_obj.pulse.parameters, name=waveform_label)
         elif isinstance(pulse_obj, qiskit.pulse.Waveform):
             assert channel is not None, "You need to provide a channel for a pulse waveform."
             assert name is not None, "Provide a name for the pulse waveform."
@@ -400,7 +437,7 @@ class PulseManipulator:
         ), f"Requested channel {channel} does not exist on this backend."
         return self._coinciding_channels[channel]
 
-    def _get_coinciding_channels_map(backend):
+    def _get_coinciding_channels_map(self):
         """Get map from pulse channel to all channels that physically coincide with it (including
         itself).
 
@@ -410,11 +447,15 @@ class PulseManipulator:
         E.g., On most IBM Q devices, DriveChannel(0) and ControlChannel(0) map to the same phyysical
         channel.
         """
+        if self._backend is None:
+            print("Warning: backend not set, no knowledge of coinciding channels used.")
+            return {channel: channel for channel in self._schedule.channels}
+
         coinciding_channels_map: Dict = defaultdict(set)
         for (
             (_, target_qubit),
             (control_channel,),
-        ) in backend.configuration().control_channels.items():
+        ) in self._backend.configuration().control_channels.items():
             drive_channel = qiskit.pulse.DriveChannel(target_qubit)
             coinciding_channels_map[drive_channel].add(control_channel)
             coinciding_channels_map[control_channel].add(drive_channel)
@@ -447,6 +488,7 @@ class PulseManipulator:
         *channels,
     ):
         """Inserts instruction between two others on a single channel."""
+        schedules = []
         left_start, left_instruction = left_scheduled_instruction
         right_start, right_instruction = right_scheduled_instruction
         left_half = self._schedule.filter(
@@ -454,12 +496,17 @@ class PulseManipulator:
         )
         right_half = self._schedule.filter(
             channels=channels,
-            time_ranges=[(right_start + right_instruction.duration, self.duration)],
+            time_ranges=[(right_start, self.duration)],
         )
         remainder = self._schedule.exclude(channels=channels)
-        left_half.insert(start_time, instruction, inplace=True)
+        schedules.append(left_half)
+        schedules.append(right_half)
+        schedules.append(remainder)
+        left_half = left_half.insert(start_time, instruction)#, inplace=True)
         shift_amount = max(0, left_start + left_half.duration - right_start)
-        right_half.shift(shift_amount, inplace=True)
+        right_half = right_half.shift(shift_amount)#, inplace=True)
+        schedules.append(left_half)
+        schedules.append(right_half)
         return left_half | right_half | remainder
 
     ################################################################################################
@@ -504,6 +551,12 @@ class PulseManipulator:
             return PulseVisualization(schedule, backend=self._backend)
 
     ############################################### TODO LONG-TERM
+    def remove(self, inst_id=None):
+        """Removes instruction (replaces with empty), either 'tight'-ly or not."""
+
+    def move(self, inst_id=None, start=None):
+        """Moves instruction to a new place: basically just remove and insert"""
+
     def measure(self):
         """Adds measurement pulses.
 
