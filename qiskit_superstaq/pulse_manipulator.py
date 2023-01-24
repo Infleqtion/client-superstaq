@@ -100,7 +100,7 @@ class PulseManipulator:
         schedule = self._schedule.append(instruction)
         return self._update(schedule, inplace)
 
-    def insert(self, start_time=None, instruction=None, inplace=False):
+    def insert(self, start_time=None, instruction=None, channel=None, inplace=False):
         """Inserts instruction at requested start time, unless the start time overlaps with other
         instructions. Unlike in qiskit, this allows inserting at a given start time regardless of
         dt overlaps *after* the insertion point.
@@ -115,7 +115,7 @@ class PulseManipulator:
             "This method requires knowledge about which pulse channels coincide, so you need to "
             "provide a backend. Use PulseManipulator.set_backend."
         )
-        instruction = self._extract_instruction(pulse_obj=instruction)
+        _, instruction = self._extract_instruction(pulse_obj=instruction, channel=channel)
         if start_time == 0:
             schedule = self.shift(
                 shift_amount=instruction.duration, channel=instruction.channel, inplace=False
@@ -123,8 +123,7 @@ class PulseManipulator:
         elif start_time >= self.duration or instruction.channel not in self._schedule.channels:
             schedule = self._schedule.insert(start_time, instruction, inplace=inplace)
         else:
-        # TODO: Unlike qiskit's version, allow inserting between two directly adjacent instructions.
-        # Probably easier to just take a tuple of inst IDs to insert between (and shift all other
+        # TODO: Probably easier to take a tuple of inst IDs to insert between (and shift all other
         # insts accordingly.
             assert isinstance(instruction.channel, qiskit.pulse.DriveChannel) or isinstance(
                 instruction.channel, qiskit.pulse.ControlChannel
@@ -137,9 +136,11 @@ class PulseManipulator:
                 (left_start_time, left_instruction),
                 (right_start_time, right_instruction),
             ) = self._find_insertion_point(start_time, instruction.channel, *coinciding_channels)
+            # TODO: consider tracking instruction ID and printing it in the error message
             assert (left_start_time, left_instruction) != (right_start_time, right_instruction), (
-                f"The requested start_time {start_time} overlaps with an existing instruction from "
-                f"{left_start_time} to {left_start_time + left_instruction.duration}"
+                f"The requested start_time {start_time} overlaps with an existing instruction "
+                f"({left_instruction.name}) from {left_start_time} to "
+                f"{left_start_time + left_instruction.duration}"
             )
             schedule = self._perform_insertion(
                 start_time,
@@ -162,7 +163,6 @@ class PulseManipulator:
         in time.
         """
         # TODO: (long-term) include "tight" parameter for replacing with smaller instruction
-        # TODO: Include "negate" parameter to flip amplitude of instruction indicated by ID.
         assert self._backend is not None, (
             "This method requires knowledge about which pulse channels coincide, so you need to "
             "provide a backend. Use PulseManipulator.set_backend."
@@ -180,6 +180,7 @@ class PulseManipulator:
             coinciding_channels = self._coinciding_channels[old_instruction.channel]
             schedule = qiskit.pulse.transforms.flatten(
                 self._schedule.exclude(
+                lambda inst: inst[0] == old_start_time and inst[1] == old_instruction,
                     channels=coinciding_channels,
                     time_ranges=[(old_start_time, old_start_time + old_instruction.duration)],
                 )
@@ -195,27 +196,12 @@ class PulseManipulator:
         return self._update(schedule, inplace)
 
 
-    # TODO: just alias this to replace
-    # TODO: Consider replacing this with creating a whole new pulse with flipped amp parameter
-    def flip_amp(self, inst_id=None, inplace=False):
+    def negate(self, inst_id=None, inplace=False):
         """Flips amplitude of specified instruction pulse."""
-        if inplace:
-            # TODO: don't want to access private variable, so instead make a new pulse with amp
-            # parameter set to -amp
-            start_time, instruction = self._extract_instruction(inst_id=inst_id)
-            instruction.pulse._amp *= -1
-            instruction._name = (
-                instruction.name.replace("m", "%").replace("p", "m").replace("%", "p")
-            )
-            return self
-        else:
-            # TODO: update using _set_id_to_inst_map?
-            # TODO: provide inplace functionality, return self._update(schedule, inplace)
-            return self._update(schedule=deepcopy(self._schedule), inplace=inplace).flip_amp(
-                inst_id=inst_id, inplace=True
-            )
+        return self.replace(inst_id=inst_id, negate=True, inplace=inplace)
 
-    def shift(self, shift_amount=None, channel=None, inplace=True):
+
+    def shift(self, shift_amount=None, channel=None, inplace=False):
         """Shifts instructions on any or all channels.
 
         This defaults to qiskit's version with a single parameter. Otherwise, allows shifting
@@ -233,8 +219,8 @@ class PulseManipulator:
             raise ValueError(f"{shift_amount} is not a valid input for shift amount.")
 
         if channel is None:
-            self._schedule.shift(shift_amount)
-            return
+            schedule = self._schedule.shift(shift_amount)
+            return self._update(schedule, inplace)
 
         assert isinstance(
             channel, qiskit.pulse.channels.PulseChannel
