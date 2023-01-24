@@ -162,43 +162,37 @@ class PulseManipulator:
         in time.
         """
         # TODO: (long-term) include "tight" parameter for replacing with smaller instruction
-        # TODO: After flattening, may be able to just inherit from qiskit (although I think qiskit
-        # still requies insts to be the exact same length...
         # TODO: Include "negate" parameter to flip amplitude of instruction indicated by ID.
-        # TODO: reimplement coinciding_channels so that passing in a channel input gives *every*
-        # channel (including itself) it coincides with
         assert self._backend is not None, (
             "This method requires knowledge about which pulse channels coincide, so you need to "
             "provide a backend. Use PulseManipulator.set_backend."
         )
         old_start_time, old_instruction = self._extract_instruction(inst_id=inst_id)
-        new_instruction = self._extract_instruction(pulse_obj=instruction)
+        if instruction is None:
+            _, new_instruction = self._extract_instruction(inst_id=inst_id, negate=negate)
+        else:
+            _, new_instruction = self._extract_instruction(
+                pulse_obj=instruction, channel=old_instruction.channel, negate=negate
+            )
         if new_instruction.duration <= old_instruction.duration:
             # TODO: this is the "non-tight" version -- implement a "tight" version by splitting in
             # half, inserting on left end, shifting right end left-wards, and merging.
-            print("New instruction is not larger.")
             coinciding_channels = self._coinciding_channels[old_instruction.channel]
-            # schedule = qiskit.pulse.transforms.flatten(
-            #     self._schedule.exclude(
-            #         channels=coinciding_channels,
-            #         time_ranges=[(old_start_time, old_start_time + old_instruction.duration)],
-            #     )
-            # ).insert(old_start_time, new_instruction)
-            schedules = []
-            schedule = qiskit.pulse.transforms.flatten(self._schedule)
-            schedules.append(schedule)
-            schedule = schedule.exclude(channels=coinciding_channels, time_ranges=[(old_start_time, old_start_time + old_instruction.duration)])
-            schedules.append(schedule)
-            schedule = schedule.insert(old_start_time, new_instruction)
-            schedules.append(schedule)
+            schedule = qiskit.pulse.transforms.flatten(
+                self._schedule.exclude(
+                    channels=coinciding_channels,
+                    time_ranges=[(old_start_time, old_start_time + old_instruction.duration)],
+                )
+            ).insert(old_start_time, new_instruction)
+        # TODO: After flattening, may be able to just inherit from qiskit (although I think qiskit
+        # still requies insts to be the exact same length...
         else:
             schedule = qiskit.pulse.transforms.flatten(self._schedule)
             schedule = schedule.replace(old_instruction, qiskit.pulse.Schedule())
             schedule_pm = self._update(schedule)
             schedule_pm.insert(old_start_time, new_instruction)
             schedule = schedule_pm._schedule
-        # return self._update(schedule, inplace)
-        return schedules, coinciding_channels
+        return self._update(schedule, inplace)
 
 
     # TODO: just alias this to replace
@@ -292,7 +286,7 @@ class PulseManipulator:
 
     def get_qiskit_schedule(self) -> qiskit.pulse.Schedule:
         """Returns a copy of underlying qiskit pulse schedule (without unique IDs)."""
-        return deepcopy(self._schedule)
+        return self._set_id_to_instruction_map(with_label_indexing=False, inplace=False)
 
     def _set_id_to_instruction_map(
         self,
@@ -316,9 +310,9 @@ class PulseManipulator:
             ):
                 continue
             if with_label_indexing:
-                new_instruction = self._extract_instruction(instruction, inst_id=idx)
+                _, new_instruction = self._extract_instruction(instruction, new_inst_id=idx)
             else:
-                new_instruction = self._extract_instruction(instruction)
+                _, new_instruction = self._extract_instruction(instruction)
             assert (
                 instruction.duration == new_instruction.duration
             ), "Instructions should only differ by waveform label."
@@ -335,14 +329,15 @@ class PulseManipulator:
         else:
             return new_schedule
 
-    def _get_waveform_label(self, instruction, new_inst_id=None, flip_amp=False):
+    def _get_waveform_label(self, instruction, new_inst_id=None, negate=False):
         """Gets LaTeX name corresponding to instruction, with an optional unique ID."""
         # TODO: how should the instruction.name is None case be handled? No integer index is added.
         waveform = instruction.pulse.get_waveform()
         if waveform.name is None:
+            print("No waveform name...")
             return ""
         pulse_name, sign, channels = re.split("(m|p)+", instruction.name)
-        if flip_amp:
+        if negate:
             sign = sign.replace("m", "").replace("p", "-")
         else:
             sign = sign.replace("m", "-").replace("p", "")
@@ -356,25 +351,15 @@ class PulseManipulator:
             return latex
         return f"{latex}\n{new_inst_id}"
 
-    def _change_channel(self, inst, channel):
-        """Given an instruction, change its channel to the requested channel."""
-        start, inst = self._extract_instruction(inst)
-        pulse_type = PULSE_TYPE_TO_PULSE_MAP[inst.pulse.pulse_type]
-        waveform_label = self._get_waveform_label(inst)
-        return start, qiskit.pulse.Play(
-            pulse_type(**inst.pulse.parameters, name=waveform_label),
-            channel,
-            inst.name,
-        )
-
     def _extract_instruction(
         self,
         pulse_obj=None,
         inst_id=None,
         channel=None,
-        # negate=False,  # used in "slightly more compact" extraction, below...
+        negate=False,
+        new_inst_id=None,
     ):
-        """Gets instruction from a qiskit pulse object.
+        """Gets copy of instruction from a qiskit pulse object.
 
         This allows users to pass in either (a) an instruction (e.g., qiskit.pulse.Play), (b) a
         pulse waveform (qiskit.pulse.Waveform), or (c) an array of samples for a pulse waveform
@@ -382,78 +367,102 @@ class PulseManipulator:
         Returns: A tuple (start_time, qiskit Play instruction).
         """
         # TODO: handle an input schedule containing multiple instructions
-        # TODO: also handle if no arguments are given (perhaps just return the schedule?) e.g., see
         # the name method
-        if inst_id is not None and (pulse_obj is None and channel is None):  # and negate is None):
+        # start_time = 0
+        # if inst_id is not None and (pulse_obj is None and channel is None):
+        #     assert self._id_to_inst_map.get(inst_id, None) is not None, (
+        #         "You need to provide a valid instruction ID."
+        #         f"Select one of {list(self._id_to_inst_map.keys())}."
+        #     )
+        #     start_time, pulse_obj = self._id_to_inst_map[inst_id]
+
+        # if isinstance(pulse_obj, qiskit.pulse.Schedule):
+        #     start_time, pulse_obj = deepcopy(pulse_obj).instructions[0]
+
+        # if isinstance(pulse_obj, qiskit.pulse.Play):
+        #     waveform_label = self._get_waveform_label(pulse_obj, new_inst_id=inst_id)
+        #     pulse_type = PULSE_TYPE_TO_PULSE_MAP[pulse_obj.pulse.pulse_type]
+        #     parameters = pulse_obj.pulse.parameters
+        #     if negate:
+        #         parameters["amp"] *= -1
+        #     return start_time, qiskit.pulse.Play(
+        #         pulse_type(**parameters, name=waveform_label),
+        #         pulse_obj.channel,
+        #         pulse_obj.name,
+        #     )
+
+        # if isinstance(pulse_obj, qiskit.pulse.Waveform):
+        #     assert channel is not None, "You need to provide a channel for a pulse waveform."
+        #     assert name is not None, "Provide a name for the pulse waveform."
+        #     return start_time, qiskit.pulse.Play(
+        #         pulse_obj,
+        #         channel=channel,
+        #         name=f"{pulse_obj.name}_instruction",
+        #     )
+
+        # if isinstance(pulse_obj, np.ndarray) and (pulse_obj.ndim == 1):
+        #     assert channel is not None, "You need to provide a channel for a pulse waveform."
+        #     assert name is not None, "Provide a name for the pulse waveform"
+        #     waveform_label = self._get_waveform_label(pulse_obj, inst_id=inst_id)
+        #     return start_time, qiskit.pulse.Play(
+        #         qiskit.pulse.Waveform(samples=pulse_obj, name=waveform_label),
+        #         channel=channel,
+        #         name=f"{waveform_label}_instruction",
+        #     )
+
+        # raise ValueError(f"Qiskit Pulse input format of type {type(pulse_obj)} unrecognized.")
+
+        # A slightly more compact way to extract instructions...
+        start_time = 0
+        if inst_id is not None:
+            # TODO: consider refactoring to ignore parameters if inst_id is set (and warn user)
+            assert pulse_obj is None and channel is None, (
+                "Instruction ID must be set without a pulse object or a channel."
+            )
             assert self._id_to_inst_map.get(inst_id, None) is not None, (
                 "You need to provide a valid instruction ID."
                 f"Select one of {list(self._id_to_inst_map.keys())}."
             )
-            return self._id_to_inst_map[inst_id]
-
+            start_time, pulse_obj = self._id_to_inst_map[inst_id]
+            channel = pulse_obj.channel  # TODO: warn user that channel is overwritten (if not None)
+            new_inst_id = inst_id
         if isinstance(pulse_obj, qiskit.pulse.Schedule):
-            return deepcopy(pulse_obj).instructions[0]
-
-        start_time = 0
-
+            start_time, pulse_obj = deepcopy(pulse_obj).instructions[0]
         if isinstance(pulse_obj, qiskit.pulse.Play):
-            waveform_label = self._get_waveform_label(pulse_obj, new_inst_id=inst_id)
-            if waveform_label is not None:
-                pulse_type = PULSE_TYPE_TO_PULSE_MAP[pulse_obj.pulse.pulse_type]
-                return start_time, qiskit.pulse.Play(
-                    pulse_type(**pulse_obj.pulse.parameters, name=waveform_label),
-                    pulse_obj.channel,
-                    pulse_obj.name,
-                )
-            return start_time, deepcopy(pulse_obj)
-
-        if isinstance(pulse_obj, qiskit.pulse.Waveform):
-            assert channel is not None, "You need to provide a channel for a pulse waveform."
-            assert name is not None, "Provide a name for the pulse waveform."
-            return start_time, qiskit.pulse.Play(
-                pulse_obj,
-                channel=channel,
-                name=f"{pulse_obj.name}_instruction",
-            )
-
-        if isinstance(pulse_obj, np.ndarray) and (pulse_obj.ndim == 1):
-            assert channel is not None, "You need to provide a channel for a pulse waveform."
-            assert name is not None, "Provide a name for the pulse waveform"
-            waveform_label = self._get_waveform_label(pulse_obj, inst_id=inst_id)
-            return start_time, qiskit.pulse.Play(
-                qiskit.pulse.Waveform(samples=pulse_obj, name=waveform_label),
-                channel=channel,
-                name=f"{waveform_label}_instruction",
-            )
-
-        raise ValueError(f"Qiskit Pulse input format of type {type(pulse_obj)} unrecognized.")
-
-        """ A slightly more compact way to extract instructions...
-        if isinstance(pulse_obj, qiskit.pulse.Play):
-            parameters = pulse_obj.pulse.parameters
-            if flip_amp:
-                parameters["amp"] *= -1
-            waveform_label = self._get_waveform_label(pulse_obj, inst_id=inst_id, flip_amp=flip_amp)
             pulse_type = PULSE_TYPE_TO_PULSE_MAP[pulse_obj.pulse.pulse_type]
-            waveform = pulse_type(**pulse_obj.pulse.parameters, name=waveform_label)
+            parameters = pulse_obj.pulse.parameters
+            parameters["amp"] *= -1 if negate else 1
+            waveform_label = self._get_waveform_label(
+                pulse_obj, new_inst_id=new_inst_id, negate=negate
+            )
+            waveform = pulse_type(**parameters, name=waveform_label)
+            channel = pulse_obj.channel if channel is None else channel
+            if negate:
+                temp = pulse_obj.name.replace("m", "*").replace("p", "!")
+                inst_name = temp.replace("*", "p").replace("!", "m")
+            else:
+                inst_name = pulse_obj.name
         elif isinstance(pulse_obj, qiskit.pulse.Waveform):
             assert channel is not None, "You need to provide a channel for a pulse waveform."
             assert name is not None, "Provide a name for the pulse waveform."
             waveform = pulse_obj
+            inst_name = f"{waveform.name}_instruction"
         elif isinstance(pulse_obj, np.array) and (pulse_obj.ndim == 1):
             assert channel is not None, "You need to provide a channel for a pulse waveform."
             assert name is not None, "Provide a name for the pulse waveform"
-            waveform_label = self._get_waveform_label(pulse_obj, inst_id=inst_id, flip_amp=flip_amp)
+            waveform_label = self._get_waveform_label(
+                pulse_obj, new_inst_id=new_inst_id, negate=negate
+            )
             waveform = qiskit.pulse.Waveform(samples=pulse_obj, name=waveform_label),
+            inst_name = f"{waveform.name}_instruction"
         else:
-            raise ValueError(f"Input format of type {type(inst)} unrecognized.")
+            raise ValueError(f"Input format of type {type(pulse_obj)} unrecognized.")
 
-        return qiskit.pulse.Play(
+        return start_time, qiskit.pulse.Play(
             waveform,
             channel=channel,
-            name=f"{waveform_label}_instruction",
+            name=inst_name,
         )
-        """
 
 
     # TODO: add this everywhere _coinciding_channels is used
