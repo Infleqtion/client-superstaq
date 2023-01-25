@@ -180,6 +180,10 @@ class _SuperstaQClient:
         """Makes a GET request to SuperstaQ API to get a list of available targets."""
         return self.get_request("/targets")
 
+    def accept_terms_of_use(self) -> str:
+        """Makes a POST request to SuperstaQ API to confirm acceptance of terms of use."""
+        return self.post_request("/accept_terms_of_use", {})
+
     def ibmq_set_token(self, json_dict: Dict[str, str]) -> str:
         """Makes a POST request to SuperstaQ API to set IBMQ token field in database.
 

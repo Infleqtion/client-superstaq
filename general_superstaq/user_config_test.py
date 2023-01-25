@@ -21,6 +21,18 @@ def test_service_get_balance() -> None:
     assert service.get_balance(pretty_output=False) == 12345.6789
 
 
+def test_accept_terms_of_use() -> None:
+    client = gss.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
+    )
+    service = gss.user_config.UserConfig(client)
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaQClient.post_request"
+    ) as mock_post_request:
+        service.accept_terms_of_use()
+        mock_post_request.assert_called_once_with("/accept_terms_of_use", {})
+
+
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaQClient.ibmq_set_token",
     return_value={"status": "Your IBMQ account token has been updated"},

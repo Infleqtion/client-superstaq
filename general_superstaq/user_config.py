@@ -22,6 +22,10 @@ class UserConfig:
             return f"${balance:,.2f}"
         return balance
 
+    def accept_terms_of_use(self) -> str:
+        """Confirm acceptance of terms of use at https://superstaq.super.tech/terms_of_use."""
+        return self._client.accept_terms_of_use()
+
     def ibmq_set_token(self, token: str) -> str:
         """Sets IBMQ token field in database.
 
