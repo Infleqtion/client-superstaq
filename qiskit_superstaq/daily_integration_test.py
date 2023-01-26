@@ -156,7 +156,7 @@ def test_qscout_compile(provider: qss.SuperstaQProvider) -> None:
     circuit = qiskit.QuantumCircuit(1)
     circuit.h(0)
     expected = qiskit.QuantumCircuit(2)
-    expected.u(-np.pi / 2, 0, 0, 0)
+    expected.r(np.pi / 2, -np.pi / 2, 0)
     expected.z(0)
     assert provider.qscout_compile(circuit).circuit == expected
     assert provider.qscout_compile([circuit]).circuits == [expected]
