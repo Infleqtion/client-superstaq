@@ -223,21 +223,29 @@ class ZXPowGate(cirq.EigenGate, cirq.Gate):
 
 @cirq.value_equality(approximate=True)
 class AceCR(cirq.Gate):
-    """Active Cancellation Echoed Cross Resonance gate, supporting polarity switches and sandwiches.
+    """Active Cancellation Echoed Cross Resonance (AceCR) gate, parametrized (e.g., supporting
+    polarity switches) and supporting sandwiches.
 
     The typical AceCR in literature is a positive half-CR, then X on "Z side", then negative
     half-CR ("Z side" and "X side" refer to the two sides of the underlying ZX interactions).
 
     Args:
-        polarity: Should be either "+-" or "-+". Specifies if positive or negative half-CR is first
+        rads: Angle of rotation for CR gate (i.e., twice the angle for each echoed half-CR).
         sandwich_rx_rads: Angle of rotation for an rx gate applied to the "X side" simultaneously
             with the X gate on the "Z side".
     """
 
-    def __init__(self, polarity: str, sandwich_rx_rads: cirq.TParamVal = 0) -> None:
-        if polarity not in ("+-", "-+"):
+    def __init__(
+        self, rads: Union[str, cirq.TParamVal] = np.pi / 2, sandwich_rx_rads: cirq.TParamVal = 0
+    ) -> None:
+        # Polarity should be "+-" or "-+", specifying if positive or negative half-CR is first.
+        if rads == "+-":
+            rads = np.pi / 2
+        elif rads == "-+":
+            rads = -np.pi / 2
+        elif isinstance(rads, str):
             raise ValueError("Polarity must be either '+-' or '-+'")
-        self.polarity = polarity
+        self.rads = rads
         self.sandwich_rx_rads = sandwich_rx_rads
 
     def _num_qubits_(self) -> int:
@@ -246,71 +254,104 @@ class AceCR(cirq.Gate):
     def _decompose_(
         self, qubits: Tuple[cirq.LineQubit, cirq.LineQubit]
     ) -> Iterator[cirq.Operation]:
-        yield css.CR(*qubits) ** 0.25 if self.polarity == "+-" else css.CR(*qubits) ** -0.25
+        frac = self.rads / (2 * _pi(self.rads))
+        yield css.CR(*qubits) ** frac
         yield cirq.X(qubits[0])
         if self.sandwich_rx_rads:
             yield cirq.rx(self.sandwich_rx_rads)(qubits[1])
-        yield css.CR(*qubits) ** -0.25 if self.polarity == "+-" else css.CR(*qubits) ** 0.25
+        yield css.CR(*qubits) ** -frac
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        top, bottom = f"AceCR{self.polarity}(Z side)", f"AceCR{self.polarity}(X side)"
+        if self.rads == np.pi / 2:
+            rads_str = "+-"
+        elif self.rads == -np.pi / 2:
+            rads_str = "-+"
+        else:
+            rads_str = f"({args.format_radians(self.rads)})"
+        top, bottom = (f"AceCR{rads_str}(Z side)", f"AceCR{rads_str}(X side)")
         if self.sandwich_rx_rads:
             bottom += f"|Rx({args.format_radians(self.sandwich_rx_rads)})|"
         return cirq.CircuitDiagramInfo(wire_symbols=(top, bottom))
 
     def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, cirq.Qid]) -> Optional[str]:
-        """QASM symbol for AceCR("+-") (AceCR("-+")) is acecr_pm (acecr_mp)
+        """QASM symbol for AceCR, "acecr(rads)".
 
-        If there is a sandwich, it comes last. For example, AceCR("-+", np.pi / 2) has qasm
-        acecr_mp_rx(pi*0.5).
+        If there is a sandwich, it comes last. For example, AceCR(sandwich_rx_rads=np.pi / 2) has
+        qasm acecr_rx(pi*0.5,pi*0.5), and AceCR(rads=np.pi, sandwich_rx_rads=np.pi / 2) has qasm
+        acecr_rx(pi, pi*0.5).
         """
-        polarity_str = self.polarity.replace("+", "p").replace("-", "m")
-        if not self.sandwich_rx_rads:
-            return args.format("acecr_{} {},{};\n", polarity_str, *qubits)
-        exponent = self.sandwich_rx_rads / np.pi
-        return args.format("acecr_{}_rx({:half_turns}) {},{};\n", polarity_str, exponent, *qubits)
+        if self.sandwich_rx_rads != 0:
+            rads_exp = self.rads / np.pi
+            sandwich_exp = self.sandwich_rx_rads / np.pi
+            return args.format(
+                "acecr_rx({:half_turns},{:half_turns}) {},{};\n",
+                rads_exp,
+                sandwich_exp,
+                *qubits,
+            )
+        else:
+            exponent = self.rads / np.pi
+            return args.format("acecr({:half_turns}) {},{};\n", exponent, *qubits)
 
     def _is_parameterized_(self) -> bool:
-        return cirq.is_parameterized(self.sandwich_rx_rads)
+        return cirq.is_parameterized(self.sandwich_rx_rads) or cirq.is_parameterized(self.rads)
 
     def _parameter_names_(self) -> AbstractSet[str]:
-        return cirq.parameter_names(self.sandwich_rx_rads)
+        return cirq.parameter_names(self.sandwich_rx_rads) | cirq.parameter_names(self.rads)
 
     def _resolve_parameters_(self, resolver: cirq.ParamResolver, recursive: bool) -> "AceCR":
         return AceCR(
-            self.polarity, cirq.resolve_parameters(self.sandwich_rx_rads, resolver, recursive)
+            rads=cirq.resolve_parameters(self.rads, resolver, recursive),
+            sandwich_rx_rads=cirq.resolve_parameters(self.sandwich_rx_rads, resolver, recursive),
         )
 
-    def _value_equality_values_(self) -> Tuple[str, cirq.TParamVal]:
+    def _value_equality_values_(self) -> Tuple[cirq.TParamVal, cirq.TParamVal]:
+        if cirq.is_parameterized(self.rads):
+            rads = self.rads
+        else:
+            rads = self.rads % (4 * np.pi)
+
         if cirq.is_parameterized(self.sandwich_rx_rads):
-            return self.polarity, self.sandwich_rx_rads
+            sandwich_rx_rads = self.sandwich_rx_rads
+        else:
+            sandwich_rx_rads = self.sandwich_rx_rads % (4 * np.pi)
 
-        return self.polarity, self.sandwich_rx_rads % (4 * np.pi)
+        return rads, sandwich_rx_rads
 
-    def _value_equality_approximate_values_(self) -> Tuple[str, cirq.PeriodicValue]:
-        return self.polarity, cirq.PeriodicValue(self.sandwich_rx_rads, 4 * np.pi)
+    def _value_equality_approximate_values_(self) -> Tuple[cirq.PeriodicValue, cirq.PeriodicValue]:
+        return (
+            cirq.PeriodicValue(self.rads, 4 * np.pi),
+            cirq.PeriodicValue(self.sandwich_rx_rads, 4 * np.pi),
+        )
 
     def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
         if not isinstance(other, AceCR):
             return NotImplemented
 
-        if other.polarity != self.polarity:
-            return False
-
-        return approx_eq_mod(self.sandwich_rx_rads, other.sandwich_rx_rads, 2 * np.pi, atol=atol)
+        return approx_eq_mod(self.rads, other.rads, 2 * np.pi, atol=atol) and approx_eq_mod(
+            self.sandwich_rx_rads, other.sandwich_rx_rads, 2 * np.pi, atol=atol
+        )
 
     def __repr__(self) -> str:
-        if not self.sandwich_rx_rads:
-            return f"css.AceCR({self.polarity!r})"
-        return f"css.AceCR({self.polarity!r}, {self.sandwich_rx_rads!r})"
+        if not self.sandwich_rx_rads and self.rads == np.pi / 2:
+            return "css.AceCR()"
+        elif self.rads == np.pi / 2:
+            return f"css.AceCR(sandwich_rx_rads={self.sandwich_rx_rads!r})"
+        elif not self.sandwich_rx_rads:
+            return f"css.AceCR(rads={self.rads!r})"
+        return f"css.AceCR(rads={self.rads!r}, sandwich_rx_rads={self.sandwich_rx_rads!r})"
 
     def __str__(self) -> str:
-        if not self.sandwich_rx_rads:
-            return f"AceCR{self.polarity}"
-        return f"AceCR{self.polarity}|{cirq.rx(self.sandwich_rx_rads)}|"
+        if not self.sandwich_rx_rads and self.rads == np.pi / 2:
+            return "AceCR"
+        elif not self.sandwich_rx_rads:
+            return f"AceCR({self.rads})"
+        elif self.rads == np.pi / 2:
+            return f"AceCR|{cirq.rx(self.sandwich_rx_rads)}|"
+        return f"AceCR({self.rads})|{cirq.rx(self.sandwich_rx_rads)}|"
 
     def _json_dict_(self) -> Dict[str, Any]:
-        return cirq.obj_to_dict_helper(self, ["polarity", "sandwich_rx_rads"])
+        return cirq.obj_to_dict_helper(self, ["rads", "sandwich_rx_rads"])
 
 
 AceCRMinusPlus = AceCR("-+")
@@ -711,23 +752,15 @@ AQTICCX = AQTITOFFOLI = IX.controlled(2, [0, 0])
 
 
 def custom_resolver(cirq_type: str) -> Union[Type[cirq.Gate], None]:
-    if cirq_type == "ZZSwapGate":
-        return ZZSwapGate
-    if cirq_type == "Barrier":
-        return Barrier
-    if cirq_type == "ZXPowGate":
-        return ZXPowGate
-    if cirq_type == "AceCR":
-        return AceCR
-    if cirq_type == "ParallelGates":
-        return ParallelGates
-    if cirq_type == "MSGate":
-        return cirq.ops.MSGate
-    if cirq_type == "RGate":
-        return RGate
-    if cirq_type == "IXGate":
-        return IXGate
-    if cirq_type == "ParallelRGate":
-        return ParallelRGate
-
-    return None
+    type_to_gate_map: Dict[str, Type[cirq.Gate]] = {
+        "ZZSwapGate": ZZSwapGate,
+        "Barrier": Barrier,
+        "ZXPowGate": ZXPowGate,
+        "AceCR": AceCR,
+        "ParallelGates": ParallelGates,
+        "MSGate": cirq.ops.MSGate,
+        "RGate": RGate,
+        "IXGate": IXGate,
+        "ParallelRGate": ParallelRGate,
+    }
+    return type_to_gate_map.get(cirq_type)

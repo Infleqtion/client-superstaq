@@ -168,9 +168,13 @@ def test_zx_circuit() -> None:
 
 def test_acecr_init() -> None:
     css.AceCR("+-")
-    css.AceCR("-+", np.pi / 3)
+    css.AceCR("-+", sandwich_rx_rads=np.pi / 3)
     with pytest.raises(ValueError, match="Polarity must be"):
         css.AceCR("++")
+
+    css.AceCR(rads=np.pi / 3)
+    css.AceCR(rads=np.pi / 4)
+    css.AceCR(rads=np.pi / 3, sandwich_rx_rads=np.pi)
 
 
 def test_acecr_circuit_diagram_info() -> None:
@@ -191,12 +195,36 @@ def test_acecr_circuit_diagram_info() -> None:
         1: ───AceCR+-(Z side)───"""
     )
 
-    circuit = cirq.Circuit(css.AceCR("+-", np.pi)(*qubits))
+    circuit = cirq.Circuit(css.AceCR("+-", sandwich_rx_rads=np.pi)(*qubits))
     assert str(circuit) == textwrap.dedent(
         """\
         0: ───AceCR+-(Z side)──────────
               │
         1: ───AceCR+-(X side)|Rx(π)|───"""
+    )
+
+    circuit = cirq.Circuit(css.AceCR(rads=np.pi)(*qubits))
+    assert str(circuit) == textwrap.dedent(
+        """\
+        0: ───AceCR(π)(Z side)───
+              │
+        1: ───AceCR(π)(X side)───"""
+    )
+
+    circuit = cirq.Circuit(css.AceCR(rads=np.pi / 3)(*qubits))
+    assert str(circuit) == textwrap.dedent(
+        """\
+        0: ───AceCR(0.333π)(Z side)───
+              │
+        1: ───AceCR(0.333π)(X side)───"""
+    )
+
+    circuit = cirq.Circuit(css.AceCR(rads=np.pi, sandwich_rx_rads=np.pi)(*qubits))
+    assert str(circuit) == textwrap.dedent(
+        """\
+        0: ───AceCR(π)(Z side)──────────
+              │
+        1: ───AceCR(π)(X side)|Rx(π)|───"""
     )
 
 
@@ -205,7 +233,10 @@ def test_acecr_qasm() -> None:
     circuit = cirq.Circuit(
         css.AceCR("+-").on(*qubits),
         css.AceCR("-+").on(*reversed(qubits)),
-        css.AceCR("-+", np.pi / 2).on(*qubits),
+        css.AceCR("+-", sandwich_rx_rads=np.pi / 2).on(*qubits),
+        css.AceCR("-+", sandwich_rx_rads=np.pi / 2).on(*qubits),
+        css.AceCR(rads=np.pi / 5).on(*qubits),
+        css.AceCR(rads=np.pi / 5, sandwich_rx_rads=np.pi / 2).on(*qubits),
     )
 
     assert circuit.to_qasm(header="") == textwrap.dedent(
@@ -218,9 +249,12 @@ def test_acecr_qasm() -> None:
         qreg q[2];
 
 
-        acecr_pm q[0],q[1];
-        acecr_mp q[1],q[0];
-        acecr_mp_rx(pi*0.5) q[0],q[1];
+        acecr(pi*0.5) q[0],q[1];
+        acecr(pi*-0.5) q[1],q[0];
+        acecr_rx(pi*0.5,pi*0.5) q[0],q[1];
+        acecr_rx(pi*-0.5,pi*0.5) q[0],q[1];
+        acecr(pi*0.2) q[0],q[1];
+        acecr_rx(pi*0.2,pi*0.5) q[0],q[1];
         """
     )
 
@@ -229,57 +263,166 @@ def test_acecr_eq() -> None:
     assert css.AceCRPlusMinus == css.AceCR("+-")
     assert css.AceCRPlusMinus != css.AceCR("-+")
 
-    assert css.AceCR("+-", np.pi) == css.AceCR("+-", np.pi)
-    assert css.AceCR("-+", np.pi) != css.AceCR("+-", np.pi)
-    assert css.AceCR("+-", np.pi) != css.AceCR("+-", 3 * np.pi)
-    assert css.AceCR("+-", np.pi) == css.AceCR("+-", 5 * np.pi)
+    assert css.AceCR("+-", sandwich_rx_rads=np.pi) == css.AceCR("+-", sandwich_rx_rads=np.pi)
+    assert css.AceCR("-+", sandwich_rx_rads=np.pi) != css.AceCR("+-", sandwich_rx_rads=np.pi)
+    assert css.AceCR("+-", sandwich_rx_rads=np.pi) != css.AceCR("+-", sandwich_rx_rads=3 * np.pi)
+    assert css.AceCR("+-", sandwich_rx_rads=np.pi) == css.AceCR("+-", sandwich_rx_rads=5 * np.pi)
 
-    assert cirq.approx_eq(css.AceCR("+-", np.pi), css.AceCR("+-", np.pi))
-    assert not cirq.approx_eq(css.AceCR("+-", np.pi), css.AceCR("-+", np.pi))
-    assert not cirq.approx_eq(css.AceCR("+-", np.pi), css.AceCR("+-", 3 * np.pi))
-    assert cirq.approx_eq(css.AceCR("+-", np.pi), css.AceCR("+-", 5 * np.pi))
+    assert css.AceCR(rads=np.pi) == css.AceCR(rads=np.pi)
+    assert not css.AceCR(rads=-np.pi) == css.AceCR(rads=np.pi)
+    assert not css.AceCR(rads=np.pi) == css.AceCR(rads=3 * np.pi)
+    assert css.AceCR(rads=np.pi) == css.AceCR(rads=5 * np.pi)
+    assert css.AceCR(rads=np.pi, sandwich_rx_rads=np.pi) == css.AceCR(
+        rads=np.pi, sandwich_rx_rads=np.pi
+    )
 
-    assert cirq.equal_up_to_global_phase(css.AceCR("+-", np.pi), css.AceCR("+-", np.pi))
-    assert not cirq.equal_up_to_global_phase(css.AceCR("+-", np.pi), css.AceCR("-+", np.pi))
-    assert cirq.equal_up_to_global_phase(css.AceCR("+-", np.pi), css.AceCR("+-", 3 * np.pi))
-    assert cirq.equal_up_to_global_phase(css.AceCR("+-", np.pi), css.AceCR("+-", 5 * np.pi))
+    assert not cirq.approx_eq(css.AceCR("+-"), css.AceCR("-+"))
+    assert cirq.approx_eq(
+        css.AceCR("+-", sandwich_rx_rads=np.pi), css.AceCR("+-", sandwich_rx_rads=np.pi)
+    )
+    assert not cirq.approx_eq(
+        css.AceCR("+-", sandwich_rx_rads=np.pi), css.AceCR("-+", sandwich_rx_rads=np.pi)
+    )
+    assert not cirq.approx_eq(
+        css.AceCR("+-", sandwich_rx_rads=np.pi), css.AceCR("+-", sandwich_rx_rads=3 * np.pi)
+    )
+    assert cirq.approx_eq(
+        css.AceCR("+-", sandwich_rx_rads=np.pi), css.AceCR("+-", sandwich_rx_rads=5 * np.pi)
+    )
+
+    assert cirq.approx_eq(css.AceCR(rads=np.pi), css.AceCR(rads=np.pi))
+    assert not cirq.approx_eq(css.AceCR(rads=np.pi), css.AceCR(rads=2 * np.pi))
+    assert not cirq.approx_eq(
+        css.AceCR(rads=np.pi, sandwich_rx_rads=np.pi),
+        css.AceCR(rads=2 * np.pi, sandwich_rx_rads=3 * np.pi),
+    )
+    assert cirq.approx_eq(
+        css.AceCR(rads=np.pi, sandwich_rx_rads=np.pi),
+        css.AceCR(rads=np.pi, sandwich_rx_rads=5 * np.pi),
+    )
+
+    assert cirq.equal_up_to_global_phase(
+        css.AceCR("+-", sandwich_rx_rads=np.pi), css.AceCR("+-", sandwich_rx_rads=np.pi)
+    )
+    assert not cirq.equal_up_to_global_phase(
+        css.AceCR("+-", sandwich_rx_rads=np.pi), css.AceCR("-+", sandwich_rx_rads=np.pi)
+    )
+    assert cirq.equal_up_to_global_phase(
+        css.AceCR("+-", sandwich_rx_rads=np.pi), css.AceCR("+-", sandwich_rx_rads=3 * np.pi)
+    )
+    assert cirq.equal_up_to_global_phase(
+        css.AceCR("+-", sandwich_rx_rads=np.pi), css.AceCR("+-", sandwich_rx_rads=5 * np.pi)
+    )
+    assert cirq.equal_up_to_global_phase(css.AceCR(rads=np.pi), css.AceCR(rads=np.pi))
+    assert cirq.equal_up_to_global_phase(css.AceCR(rads=-np.pi), css.AceCR(rads=np.pi))
+    assert cirq.equal_up_to_global_phase(
+        css.AceCR(sandwich_rx_rads=np.pi), css.AceCR(sandwich_rx_rads=np.pi)
+    )
+    assert not cirq.equal_up_to_global_phase(
+        css.AceCR(sandwich_rx_rads=np.pi / 2), css.AceCR(sandwich_rx_rads=np.pi)
+    )
+    assert cirq.equal_up_to_global_phase(
+        css.AceCR(sandwich_rx_rads=np.pi), css.AceCR(sandwich_rx_rads=3 * np.pi)
+    )
 
     assert not cirq.equal_up_to_global_phase(css.AceCR("+-"), cirq.CX)
+    assert not cirq.equal_up_to_global_phase(css.AceCR(rads=np.pi), cirq.CX)
 
 
 def test_acecr_parameterized() -> None:
     x = sympy.var("x")
+    y = sympy.var("y")
 
-    assert cirq.is_parameterized(css.AceCR("+-", x))
-    assert cirq.parameter_names(css.AceCR("+-", x)) == {"x"}
+    assert cirq.is_parameterized(css.AceCR("+-", sandwich_rx_rads=x))
+    assert cirq.parameter_names(css.AceCR("+-", sandwich_rx_rads=x)) == {"x"}
 
-    assert css.AceCR("+-", x) == css.AceCR("+-", x)
-    assert css.AceCR("+-", x) != css.AceCR("-+", x)
-    assert css.AceCR("+-", x) != css.AceCR("-+")
+    assert css.AceCR("+-", sandwich_rx_rads=x) == css.AceCR("+-", sandwich_rx_rads=x)
+    assert css.AceCR("+-", sandwich_rx_rads=x) != css.AceCR("-+", sandwich_rx_rads=x)
+    assert css.AceCR("+-", sandwich_rx_rads=x) != css.AceCR("-+")
+    assert css.AceCR(rads=x) == css.AceCR(rads=x)
+    assert css.AceCR(rads=x) != css.AceCR(rads=-x)
+    assert css.AceCR(rads=x) != css.AceCR()
+    assert css.AceCR(rads=x, sandwich_rx_rads=y) == css.AceCR(rads=x, sandwich_rx_rads=y)
+    assert css.AceCR(rads=x, sandwich_rx_rads=y) != css.AceCR(rads=-x, sandwich_rx_rads=y)
 
-    assert cirq.approx_eq(css.AceCR("+-", x), css.AceCR("+-", x))
-    assert not cirq.approx_eq(css.AceCR("+-", x), css.AceCR("-+", x))
-    assert not cirq.approx_eq(css.AceCR("+-", x), css.AceCR("-+"))
+    assert cirq.approx_eq(css.AceCR("+-", sandwich_rx_rads=x), css.AceCR("+-", sandwich_rx_rads=x))
+    assert not cirq.approx_eq(
+        css.AceCR("+-", sandwich_rx_rads=x), css.AceCR("-+", sandwich_rx_rads=x)
+    )
 
-    assert cirq.equal_up_to_global_phase(css.AceCR("+-", x), css.AceCR("+-", x))
-    assert not cirq.equal_up_to_global_phase(css.AceCR("+-", x), css.AceCR("-+", x))
-    assert not cirq.equal_up_to_global_phase(css.AceCR("+-", x), css.AceCR("-+"))
+    assert cirq.equal_up_to_global_phase(
+        css.AceCR("+-", sandwich_rx_rads=x), css.AceCR("+-", sandwich_rx_rads=x)
+    )
+    assert not cirq.equal_up_to_global_phase(
+        css.AceCR("+-", sandwich_rx_rads=x), css.AceCR("-+", sandwich_rx_rads=x)
+    )
+    assert not cirq.equal_up_to_global_phase(css.AceCR("+-", sandwich_rx_rads=x), css.AceCR("-+"))
 
-    cirq.testing.assert_consistent_resolve_parameters(css.AceCR("+-", x))
-    cirq.testing.assert_consistent_resolve_parameters(css.AceCR("-+", x))
+    cirq.testing.assert_consistent_resolve_parameters(css.AceCR("+-", sandwich_rx_rads=x))
+    cirq.testing.assert_consistent_resolve_parameters(css.AceCR("-+", sandwich_rx_rads=x))
 
 
 def test_acecr_repr_and_str() -> None:
-    assert repr(css.AceCRMinusPlus) == "css.AceCR('-+')"
-    assert repr(css.AceCR("+-", np.pi)) == "css.AceCR('+-', 3.141592653589793)"
+    assert repr(css.AceCRPlusMinus) == "css.AceCR()"
+    assert repr(css.AceCRMinusPlus) == "css.AceCR(rads=-1.5707963267948966)"
+    assert repr(css.AceCR(rads=np.pi)) == "css.AceCR(rads=3.141592653589793)"
+    assert (
+        repr(css.AceCR(sandwich_rx_rads=np.pi)) == "css.AceCR(sandwich_rx_rads=3.141592653589793)"
+    )
+    assert (
+        repr(css.AceCR(rads=np.pi / 3, sandwich_rx_rads=np.pi / 2))
+        == "css.AceCR(rads=1.0471975511965976, sandwich_rx_rads=1.5707963267948966)"
+    )
+    assert (
+        repr(css.AceCR("+-", sandwich_rx_rads=np.pi))
+        == "css.AceCR(sandwich_rx_rads=3.141592653589793)"
+    )
+
+    cirq.testing.assert_equivalent_repr(
+        css.AceCRPlusMinus, setup_code="import cirq_superstaq as css"
+    )
     cirq.testing.assert_equivalent_repr(
         css.AceCRMinusPlus, setup_code="import cirq_superstaq as css"
     )
     cirq.testing.assert_equivalent_repr(
-        css.AceCR("+-", np.pi), setup_code="import cirq; import cirq_superstaq as css"
+        css.AceCR(np.pi),
+        setup_code="import cirq; import cirq_superstaq as css",
     )
-    assert str(css.AceCRMinusPlus) == "AceCR-+"
-    assert str(css.AceCR("+-", np.pi)) == "AceCR+-|Rx(π)|"
+    cirq.testing.assert_equivalent_repr(
+        css.AceCR(sandwich_rx_rads=np.pi),
+        setup_code="import cirq; import cirq_superstaq as css",
+    )
+    cirq.testing.assert_equivalent_repr(
+        css.AceCR(np.pi, np.pi / 2), setup_code="import cirq_superstaq as css"
+    )
+    cirq.testing.assert_equivalent_repr(
+        css.AceCR("+-", sandwich_rx_rads=np.pi),
+        setup_code="import cirq; import cirq_superstaq as css",
+    )
+
+    cirq.testing.assert_decompose_is_consistent_with_unitary(
+        css.AceCRPlusMinus, ignoring_global_phase=False
+    )
+    cirq.testing.assert_decompose_is_consistent_with_unitary(
+        css.AceCRMinusPlus, ignoring_global_phase=False
+    )
+    cirq.testing.assert_decompose_is_consistent_with_unitary(
+        css.AceCR(np.pi / 5), ignoring_global_phase=False
+    )
+    cirq.testing.assert_decompose_is_consistent_with_unitary(
+        css.AceCR(sandwich_rx_rads=np.pi / 2), ignoring_global_phase=False
+    )
+    cirq.testing.assert_decompose_is_consistent_with_unitary(
+        css.AceCR(np.pi, np.pi / 2), ignoring_global_phase=False
+    )
+    cirq.testing.assert_decompose_is_consistent_with_unitary(
+        css.AceCR("-+", np.pi / 2), ignoring_global_phase=False
+    )
+
+    assert str(css.AceCR()) == "AceCR"
+    assert str(css.AceCR("+-", sandwich_rx_rads=np.pi)) == "AceCR|Rx(π)|"
+    assert str(css.AceCR(rads=np.pi)) == "AceCR(3.141592653589793)"
+    assert str(css.AceCR(rads=np.pi, sandwich_rx_rads=np.pi)) == "AceCR(3.141592653589793)|Rx(π)|"
 
 
 def test_acecr_decompose() -> None:
@@ -288,7 +431,7 @@ def test_acecr_decompose() -> None:
     circuit = cirq.Circuit(cirq.decompose_once(css.AceCRMinusPlus(a, b)))
     assert len(circuit) == 3 and len(list(circuit.all_operations())) == 3
 
-    circuit = cirq.Circuit(cirq.decompose_once(css.AceCR("+-", -np.pi / 2)(a, b)))
+    circuit = cirq.Circuit(cirq.decompose_once(css.AceCR("+-", sandwich_rx_rads=-np.pi / 2)(a, b)))
     assert len(circuit) == 3 and len(list(circuit.all_operations())) == 4
 
 
@@ -839,7 +982,9 @@ def test_custom_resolver() -> None:
     circuit += css.Barrier(2).on(qubits[0], qubits[1])
     circuit += css.CR(qubits[0], qubits[1])
     circuit += css.AceCRMinusPlus(qubits[0], qubits[1])
-    circuit += css.AceCR("+-", -np.pi / 2)(qubits[0], qubits[1])
+    circuit += css.AceCR("+-", sandwich_rx_rads=np.pi / 2)(qubits[0], qubits[1])
+    circuit += css.AceCR(rads=np.pi / 3)(qubits[0], qubits[1])
+    circuit += css.AceCR(rads=np.pi, sandwich_rx_rads=np.pi)(qubits[0], qubits[1])
     circuit += css.ParallelGates(cirq.X, css.ZX).on(qubits[0], qubits[2], qubits[3])
     circuit += cirq.ms(1.23).on(qubits[0], qubits[1])
     circuit += css.RGate(1.23, 4.56).on(qubits[0])
