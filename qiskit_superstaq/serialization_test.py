@@ -3,6 +3,7 @@ import warnings
 from unittest import mock
 
 import general_superstaq as gss
+import numpy as np
 import pytest
 import qiskit
 
@@ -43,7 +44,8 @@ def test_circuit_serialization() -> None:
     circuit_1 = qiskit.QuantumCircuit(4)
     circuit_1.append(qss.AceCR("+-"), [0, 1])
     circuit_1.append(qss.AceCR("-+"), [1, 2])
-    circuit_1.append(qss.AceCR("+-", 1.23), [0, 1])
+    circuit_1.append(qss.AceCR("+-", sandwich_rx_rads=1.23), [0, 1])
+    circuit_1.append(qss.AceCR(np.pi / 3), [0, 1])
     circuit_1.append(qss.ZZSwapGate(0.75), [2, 0])
     circuit_1.append(qss.AQTiCCXGate(), [0, 1, 2])
     circuit_1.append(qss.custom_gates.iCCXGate(), [0, 1, 2])

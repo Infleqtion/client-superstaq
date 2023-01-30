@@ -24,31 +24,55 @@ def _check_gate_definition(gate: qiskit.circuit.Gate) -> None:
 
 def test_acecr() -> None:
     gate = qss.AceCR("+-")
-    _check_gate_definition(gate)
-    assert repr(gate) == "qss.AceCR('+-')"
-    assert str(gate) == "AceCR+-"
-    assert gate.qasm() == "acecr_pm"
+    assert repr(gate) == "qss.AceCR()"
+    assert str(gate) == "AceCR"
+    assert gate.qasm() == "acecr(pi/2)"
 
     gate = qss.AceCR("-+", label="label")
-    _check_gate_definition(gate)
-    assert repr(gate) == "qss.AceCR('-+', label='label')"
-    assert str(gate) == "AceCR-+"
-    assert gate.qasm() == "acecr_mp"
+    assert repr(gate) == "qss.AceCR(rads=-1.5707963267948966, label='label')"
+    assert str(gate) == "AceCR(-0.5π)"
+    assert gate.qasm() == "acecr(-pi/2)"
 
     gate = qss.AceCR("-+", sandwich_rx_rads=np.pi / 2)
-    _check_gate_definition(gate)
-    assert repr(gate) == "qss.AceCR('-+', sandwich_rx_rads=1.5707963267948966)"
-    assert str(gate) == "AceCR-+|RXGate(pi/2)|"
-    assert gate.qasm() == "acecr_mp_rx(pi/2)"
+    assert repr(gate) == "qss.AceCR(rads=-1.5707963267948966, sandwich_rx_rads=1.5707963267948966)"
+    assert str(gate) == "AceCR(-0.5π)|RXGate(pi/2)|"
+    assert gate.qasm() == "acecr_rx(-pi/2,pi/2)"
 
     gate = qss.AceCR("-+", sandwich_rx_rads=np.pi / 2, label="label")
     _check_gate_definition(gate)
-    assert repr(gate) == "qss.AceCR('-+', sandwich_rx_rads=1.5707963267948966, label='label')"
-    assert str(gate) == "AceCR-+|RXGate(pi/2)|"
-    assert gate.qasm() == "acecr_mp_rx(pi/2)"
+    assert (
+        repr(gate)
+        == "qss.AceCR(rads=-1.5707963267948966, sandwich_rx_rads=1.5707963267948966, label='label')"
+    )
+    assert str(gate) == "AceCR(-0.5π)|RXGate(pi/2)|"
+    assert gate.qasm() == "acecr_rx(-pi/2,pi/2)"
 
     with pytest.raises(ValueError, match="Polarity must be"):
         _ = qss.AceCR("++")
+
+    gate = qss.AceCR(np.pi)
+    assert repr(gate) == "qss.AceCR(rads=3.141592653589793)"
+    assert str(gate) == "AceCR(1.0π)"
+
+    gate = qss.AceCR(sandwich_rx_rads=np.pi / 2)
+    assert repr(gate) == "qss.AceCR(sandwich_rx_rads=1.5707963267948966)"
+    assert str(gate) == "AceCR|RXGate(pi/2)|"
+
+    gate = qss.AceCR(rads=np.pi / 5, sandwich_rx_rads=np.pi / 2)
+    assert repr(gate) == "qss.AceCR(rads=0.6283185307179586, sandwich_rx_rads=1.5707963267948966)"
+    assert str(gate) == "AceCR(0.2π)|RXGate(pi/2)|"
+
+    qc = qiskit.QuantumCircuit(2)
+    qc.append(gate, [0, 1])
+    correct_unitary = np.array(
+        [
+            [0, 0.891007, 0, -0.45399j],
+            [0.45399, 0j, -0.891007j, 0],
+            [0, -0.45399j, 0, 0.891007],
+            [-0.891007j, 0, 0.45399, 0],
+        ],
+    )
+    assert np.allclose(qiskit.quantum_info.Operator(qc), correct_unitary)
 
 
 def test_zz_swap() -> None:
@@ -67,7 +91,7 @@ def test_parallel_gates() -> None:
         qss.AceCR("+-"),
         qiskit.circuit.library.RXGate(1.23),
     )
-    assert str(gate) == "ParallelGates(acecr_pm, rx(1.23))"
+    assert str(gate) == "ParallelGates(acecr(pi/2), rx(1.23))"
     _check_gate_definition(gate)
 
     # confirm gates are applied to disjoint qubits
@@ -191,7 +215,10 @@ def test_custom_resolver() -> None:
     custom_gates: List[qiskit.circuit.Gate] = [
         qss.AceCR("+-"),
         qss.AceCR("-+"),
-        qss.AceCR("+-", 1.23),
+        qss.AceCR("+-", sandwich_rx_rads=1.23),
+        qss.AceCR(np.pi),
+        qss.AceCR(np.pi / 3, np.pi / 2),
+        qss.AceCR(0),
         qss.ZZSwapGate(1.23),
         qss.AQTiCCXGate(),
         qss.custom_gates.iXGate(),
