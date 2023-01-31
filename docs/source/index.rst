@@ -43,6 +43,13 @@ Learn more about SuperstaQ `here <https://www.super.tech/about-superstaq/>`_.
 .. toctree::
    :maxdepth: 1
    :hidden:
+   :caption: Optimizations
+
+   optimizations/qscout20230201
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
    :caption: Applications
 
    apps/community_detection_football
