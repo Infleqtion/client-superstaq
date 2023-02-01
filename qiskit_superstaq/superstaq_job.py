@@ -48,9 +48,9 @@ class SuperstaQJob(qiskit.providers.JobV1):
 
     def _wait_for_results(
         self, timeout: Optional[float] = None, wait: float = 5
-    ) -> List[Dict[str, Optional[int]]]:
+    ) -> List[Dict[str, Dict[str, int]]]:
 
-        result_list: List[Dict[str, Optional[int]]] = []
+        result_list: List[Dict[str, Dict[str, int]]] = []
         job_ids = self._job_id.split(",")  # separate aggregated job_ids
 
         for jid in job_ids:
@@ -84,8 +84,15 @@ class SuperstaQJob(qiskit.providers.JobV1):
         # create list of result dictionaries
         results_list = []
         for result in results:
+            counts = result["samples"]
+            if counts:  # change endianess to match Qiskit
+                counts = dict((key[::-1], value) for (key, value) in counts.items())
             results_list.append(
-                {"success": True, "shots": result["shots"], "data": {"counts": result["samples"]}}
+                {
+                    "success": True,
+                    "shots": result["shots"],
+                    "data": {"counts": counts},
+                }
             )
 
         return qiskit.result.Result.from_dict(

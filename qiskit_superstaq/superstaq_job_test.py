@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import general_superstaq as gss
 import pytest
@@ -44,8 +44,8 @@ class MockJobs(qss.SuperstaQJob):
 
 
 class MockResponse:
-    def __init__(self, status_str: str) -> None:
-        self.content = json.dumps({"status": status_str, "samples": None, "shots": 100})
+    def __init__(self, status_str: str, samples: Optional[Dict[str, int]] = None) -> None:
+        self.content = json.dumps({"status": status_str, "samples": samples, "shots": 100})
 
     def json(self) -> Dict[str, str]:
         return json.loads(self.content)
@@ -75,9 +75,9 @@ def test_wait_for_results(monkeypatch: Any) -> None:
 def test_result(monkeypatch: Any) -> None:
     job = MockJob()
 
-    monkeypatch.setattr(requests, "get", lambda *_, **__: MockResponse("Done"))
+    monkeypatch.setattr(requests, "get", lambda *_, **__: MockResponse("Done", {"10": 100}))
 
-    expected_results = [{"success": True, "shots": 100, "data": {"counts": None}}]
+    expected_results = [{"success": True, "shots": 100, "data": {"counts": {"01": 100}}}]
 
     expected = qiskit.result.Result.from_dict(
         {
