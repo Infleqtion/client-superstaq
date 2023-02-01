@@ -383,7 +383,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             json_dict, circuits_is_list, num_equivalent_circuits
         )
 
-    def qscout_compile(
+    def qscout_compile(  # pylint: disable=missing-param-doc,missing-raises-doc
         self,
         circuits: Union[cirq.Circuit, List[cirq.Circuit]],
         mirror_swaps: bool = True,

@@ -1,3 +1,4 @@
+# pylint: disable=missing-function-docstring
 import importlib
 import json
 import warnings
@@ -53,7 +54,7 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
     return sorted(qubit_indices)
 
 
-class CompilerOutput:
+class CompilerOutput:  # pylint: disable=missing-class-docstring
     def __init__(
         self,
         circuits: Union[cirq.Circuit, List[cirq.Circuit], List[List[cirq.Circuit]]],
@@ -130,7 +131,7 @@ def read_json_ibmq(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compile
     return CompilerOutput(circuits=compiled_circuits[0], pulse_sequences=pulses and pulses[0])
 
 
-def read_json_aqt(
+def read_json_aqt(  # pylint: disable=missing-param-doc
     json_dict: Dict[str, Any], circuits_is_list: bool, num_eca_circuits: int = 0
 ) -> CompilerOutput:
     """Reads out returned JSON from SuperstaQ API's AQT compilation endpoint.
@@ -244,7 +245,9 @@ def read_json_only_circuits(json_dict: Dict[str, Any], circuits_is_list: bool) -
     return CompilerOutput(circuits=compiled_circuits[0])
 
 
-def read_json_neutral_atom(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
+def read_json_neutral_atom(  # pylint: disable=missing-function-docstring
+    json_dict: Dict[str, Any], circuits_is_list: bool
+) -> CompilerOutput:
     try:
         pulses = gss.serialization.deserialize(json_dict["pulses"])
     except ModuleNotFoundError as e:

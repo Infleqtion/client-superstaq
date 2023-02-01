@@ -43,9 +43,8 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     """
 
     def __init__(self, theta: cirq.TParamVal) -> None:
-        """
-        Args:
-            theta: ZZ-interaction angle in radians
+        """Args:
+        theta: ZZ-interaction angle in radians
         """
         self.theta = theta
 
@@ -389,7 +388,7 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
         return ("|",) * self.num_qubits()
 
 
-def barrier(*qubits: cirq.Qid) -> cirq.Operation:
+def barrier(*qubits: cirq.Qid) -> cirq.Operation:  # pylint: disable=missing-function-docstring
     qid_shape = tuple(q.dimension for q in qubits)
     return css.Barrier(qid_shape=qid_shape).on(*qubits)
 
@@ -416,9 +415,8 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
     """
 
     def __init__(self, *component_gates: cirq.Gate) -> None:
-        """
-        Args:
-            component_gates: Gate(s) to be collected into single gate
+        """Args:
+        component_gates: Gate(s) to be collected into single gate
         """
 
         self.component_gates: Tuple[cirq.Gate, ...] = ()
@@ -436,7 +434,9 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             else:
                 self.component_gates += (gate,)
 
-    def qubit_index_to_gate_and_index(self, index: int) -> Tuple[cirq.Gate, int]:
+    def qubit_index_to_gate_and_index(  # pylint: disable=missing-function-docstring
+        self, index: int
+    ) -> Tuple[cirq.Gate, int]:
         for gate in self.component_gates:
             if gate.num_qubits() > index >= 0:
                 return gate, index
@@ -562,7 +562,9 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         return f"css.ParallelGates({component_gates_repr})"
 
 
-def parallel_gates_operation(*ops: cirq.Operation) -> cirq.Operation:
+def parallel_gates_operation(  # pylint: disable=missing-raises-doc
+    *ops: cirq.Operation,
+) -> cirq.Operation:
     """Given operations acting on disjoint qubits, constructs a single css.ParallelGates instance
     and applies it such that each operation's .gate is applied to its .qubits.
 
@@ -590,23 +592,22 @@ class RGate(cirq.PhasedXPowGate):
     """A single-qubit gate that rotates about an axis in the X-Y plane."""
 
     def __init__(self, theta: cirq.TParamVal, phi: cirq.TParamVal) -> None:
-        """
-        Args:
-            phi: Angle (in radians) defining the axis of rotation in the `X`-`Y` plane:
-                 `cos(phi) X + sin(phi) Y` (i.e. `phi` radians from `X` to `Y`).
+        """Args:
+        phi: Angle (in radians) defining the axis of rotation in the `X`-`Y` plane:
+             `cos(phi) X + sin(phi) Y` (i.e. `phi` radians from `X` to `Y`).
 
-            theta: Angle (in radians) by which to rotate.
+        theta: Angle (in radians) by which to rotate.
         """
         super().__init__(
             exponent=theta / _pi(theta), phase_exponent=phi / _pi(phi), global_shift=-0.5
         )
 
     @property
-    def phi(self) -> cirq.TParamVal:
+    def phi(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
         return self.phase_exponent * _pi(self.phase_exponent)
 
     @property
-    def theta(self) -> cirq.TParamVal:
+    def theta(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
         return self.exponent * _pi(self.exponent)
 
     def __pow__(self, power: cirq.TParamVal) -> "RGate":
@@ -663,19 +664,19 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
         return self._sub_gate
 
     @property
-    def phase_exponent(self) -> cirq.TParamVal:
+    def phase_exponent(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
         return self.sub_gate.phase_exponent
 
     @property
-    def exponent(self) -> cirq.TParamVal:
+    def exponent(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
         return self.sub_gate.exponent
 
     @property
-    def phi(self) -> cirq.TParamVal:
+    def phi(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
         return self.sub_gate.phi
 
     @property
-    def theta(self) -> cirq.TParamVal:
+    def theta(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
         return self.sub_gate.theta
 
     def __pow__(self, power: cirq.TParamVal) -> "ParallelRGate":
@@ -751,7 +752,9 @@ ICCX = IX.controlled(2, [1, 1])
 AQTICCX = AQTITOFFOLI = IX.controlled(2, [0, 0])
 
 
-def custom_resolver(cirq_type: str) -> Union[Type[cirq.Gate], None]:
+def custom_resolver(  # pylint: disable=missing-function-docstring
+    cirq_type: str,
+) -> Union[Type[cirq.Gate], None]:
     type_to_gate_map: Dict[str, Type[cirq.Gate]] = {
         "ZZSwapGate": ZZSwapGate,
         "Barrier": Barrier,

@@ -136,7 +136,9 @@ class Job:
         self._check_if_unsuccessful()
         return self._job["shots"]
 
-    def counts(self, timeout_seconds: int = 7200, polling_seconds: float = 1.0) -> Dict[str, int]:
+    def counts(  # pylint: disable=missing-raises-doc
+        self, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+    ) -> Dict[str, int]:
         """Polls the SuperstaQ API for results.
 
         Args:

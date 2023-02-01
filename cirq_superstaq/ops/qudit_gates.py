@@ -13,7 +13,7 @@ class BSwapPowGate(cirq.EigenGate):
     """iSWAP-like qutrit entangling gate swapping the "11" and "22" states of two qutrits."""
 
     @property
-    def dimension(self) -> int:
+    def dimension(self) -> int:  # pylint: disable=missing-function-docstring
         return 3
 
     @property
@@ -94,7 +94,7 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
     """
 
     @property
-    def dimension(self) -> int:
+    def dimension(self) -> int:  # pylint: disable=missing-function-docstring
         return 3
 
     def _qid_shape_(self) -> Tuple[int, int]:
@@ -227,15 +227,14 @@ class QutritZ2PowGate(_QutritZPowGate):
 
 
 @cirq.value_equality(approximate=True)
-class QubitSubspaceGate(cirq.Gate):
+class QubitSubspaceGate(cirq.Gate):  # pylint: disable=missing-class-docstring
     def __init__(
         self,
         sub_gate: cirq.Gate,
         qid_shape: Sequence[int],
         subspaces: Optional[Sequence[Tuple[int, int]]] = None,
     ) -> None:
-        """
-        Embeds an n-qubit (i.e. SU(2^n)) gate into a given subspace of a higher-dimensional gate.
+        """Embeds an n-qubit (i.e. SU(2^n)) gate into a given subspace of a higher-dimensional gate.
 
         Args:
             sub_gate: The qubit gate to promote to a higher dimension.
@@ -271,15 +270,15 @@ class QubitSubspaceGate(cirq.Gate):
         ]
 
     @property
-    def sub_gate(self) -> cirq.Gate:
+    def sub_gate(self) -> cirq.Gate:  # pylint: disable=missing-function-docstring
         return self._sub_gate
 
     @property
-    def qid_shape(self) -> Tuple[int, ...]:
+    def qid_shape(self) -> Tuple[int, ...]:  # pylint: disable=missing-function-docstring
         return self._qid_shape
 
     @property
-    def subspaces(self) -> List[Tuple[int, int]]:
+    def subspaces(self) -> List[Tuple[int, int]]:  # pylint: disable=missing-function-docstring
         return self._subspaces
 
     def _qid_shape_(self) -> Tuple[int, ...]:
@@ -386,7 +385,9 @@ QutritZ1 = QutritZ1PowGate()
 QutritZ2 = QutritZ2PowGate()
 
 
-def custom_resolver(cirq_type: str) -> Optional[Type[cirq.Gate]]:
+def custom_resolver(  # pylint: disable=missing-function-docstring
+    cirq_type: str,
+) -> Optional[Type[cirq.Gate]]:
     if cirq_type == "BSwapPowGate":
         return BSwapPowGate
     if cirq_type == "QutritCZPowGate":
