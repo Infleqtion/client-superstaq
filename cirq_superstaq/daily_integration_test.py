@@ -31,7 +31,7 @@ def test_ibmq_compile(service: css.Service) -> None:
     assert out.pulse_sequence is not None
     assert 800 <= out.pulse_sequence.duration <= 1000  # 896 as of 12/27/2021
     assert out.pulse_sequence.start_time == 0
-    assert len(out.pulse_sequence) == 5
+    assert len(out.pulse_sequence) == 7
 
 
 def test_acecr_ibmq_compile(service: css.Service) -> None:
