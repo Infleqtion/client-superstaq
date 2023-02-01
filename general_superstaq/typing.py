@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Sized, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from typing_extensions import TypedDict  # compatible with both python 3.7 and 3.8
 
@@ -61,7 +61,7 @@ Warehouse = TypedDict(
         "warehouse_to_destination": List[Tuple[str, str]],
         "total_distance": float,
         "map_link": str,
-        "open_warehouses": Sized,
+        "open_warehouses": List[str],
         "qubo": QuboModel,
     },
 )
