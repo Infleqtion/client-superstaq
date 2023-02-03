@@ -46,6 +46,8 @@ templates_path = ['_templates']
 exclude_patterns: List[str] = [
     "modules.rst",
     "setup.rst",
+    "general_superstaq.check.rst",
+    "cirq_superstaq.ops.rst",
 ]
 
 

@@ -1,6 +1,14 @@
 cirq\_superstaq package
 =======================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   cirq_superstaq.ops
+
 Submodules
 ----------
 
@@ -8,14 +16,6 @@ cirq\_superstaq.compiler\_output module
 ---------------------------------------
 
 .. automodule:: cirq_superstaq.compiler_output
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-cirq\_superstaq.custom\_gates module
-------------------------------------
-
-.. automodule:: cirq_superstaq.custom_gates
    :members:
    :undoc-members:
    :show-inheritance:

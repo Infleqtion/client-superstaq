@@ -1,10 +1,10 @@
 cirq~=1.0.0
-cirq-superstaq~=0.2.4
-general-superstaq~=0.2.6
+cirq-superstaq~=0.3.16
+general-superstaq~=0.3.9
 ipython
 Jinja2<=3.1.2
 nbsphinx~=0.8.9
-qiskit-superstaq~=0.2.5
+qiskit-superstaq~=0.3.16
 scipy>=1.6.1
 sphinx~=5.3.0
 sphinx-rtd-theme~=1.0.0
