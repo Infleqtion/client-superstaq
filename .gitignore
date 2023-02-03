@@ -1,6 +1,7 @@
 # nbsphinx
 *.pyc
 *.egg-info
+*.ipynb_checkpoints
 
 # Sphinx documentation
 _build
