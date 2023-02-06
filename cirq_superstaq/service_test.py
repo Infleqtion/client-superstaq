@@ -488,6 +488,7 @@ def test_service_no_param_or_env_variable() -> None:
         _ = css.Service(remote_host="http://example.com")
 
 
+@mock.patch.dict(os.environ, clear=True)
 def test_service_no_url_default() -> None:
     service = css.Service("tomyheart")
     assert service.remote_host == gss.API_URL
