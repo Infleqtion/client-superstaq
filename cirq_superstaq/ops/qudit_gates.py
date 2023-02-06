@@ -119,7 +119,9 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
         return NotImplemented
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        return cirq.circuit_diagram_info(cirq.CZ, args)
+        return cirq.CircuitDiagramInfo(
+            wire_symbols=("@", "@"), exponent=self._diagram_exponent(args)
+        )
 
     def __str__(self) -> str:
         if self.exponent == 1:

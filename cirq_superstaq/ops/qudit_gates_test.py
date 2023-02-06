@@ -109,6 +109,17 @@ def test_qutrit_cz_pow_gate() -> None:
         ),
     )
 
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(css.CZ3_INV.on(cirq.LineQid(1, 3), cirq.LineQid(2, 3))),
+        textwrap.dedent(
+            """
+            1 (d=3): ───@──────
+                        │
+            2 (d=3): ───@^-1───
+            """
+        ),
+    )
+
     cirq.testing.assert_json_roundtrip_works(
         css.CZ3,
         resolvers=css.SUPERSTAQ_RESOLVERS,
