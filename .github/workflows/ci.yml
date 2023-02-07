@@ -6,8 +6,11 @@ name: cirq-superstaq
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'cirq_superstaq/_version.py'
   pull_request:
     branches: [main]
+  workflow_call: null
 
 jobs:
   format:
