@@ -179,7 +179,14 @@ class _SuperstaQClient:
         return self.get_request("/balance")
 
     def _accept_terms_of_use(self) -> str:
-        """Makes a POST request to SuperstaQ API to confirm acceptance of terms of use."""
+        """Makes a POST request to SuperstaQ API to confirm acceptance of terms of use.
+
+        Returns:
+            A tuple.
+
+        Returns:
+            String with success message.
+        """
         return self.post_request("/accept_terms_of_use", {})
 
     def get_targets(self) -> Dict[str, Dict[str, List[str]]]:
