@@ -21,7 +21,7 @@ def test_service_get_balance() -> None:  # pylint: disable=missing-function-docs
     assert service.get_balance(pretty_output=False) == 12345.6789
 
 
-def test_accept_terms_of_use() -> None:
+def test_accept_terms_of_use() -> None:  # pylint: disable=missing-function-docstring
     client = gss.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
