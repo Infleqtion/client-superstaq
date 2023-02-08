@@ -1,6 +1,6 @@
 Installation Guide
 ==================
-Below are instructions for installing ``cirq-superstaq`` and ``qiskit-superstaq``. Please note that Python version 3.7 or higher is required.
+This easiest way to get started with SuperstaQ is to try your code out on `our hub <https://hub.super.tech/>`_, where our requirements are pre-installed, but below are instructions for installing ``cirq-superstaq`` and ``qiskit-superstaq`` if you'd like to run SuperstaQ locally. Please note that Python version 3.7 or higher is required.
 
 
 Installing cirq-superstaq
