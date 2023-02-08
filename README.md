@@ -28,10 +28,7 @@ import qiskit_superstaq as qss
 
 token = "Insert superstaq token that you received from https://superstaq.super.tech"
 
-superstaq = qss.superstaq_provider.SuperstaQProvider(
-    token,
-    remote_host=qss.API_URL,
-)
+superstaq = qss.superstaq_provider.SuperstaQProvider(token)
 
 backend = superstaq.get_backend("ibmq_qasm_simulator")
 qc = qiskit.QuantumCircuit(2, 2)
