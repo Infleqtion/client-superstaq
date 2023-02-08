@@ -9,7 +9,7 @@ from general_superstaq.check import check_utils
 
 
 @check_utils.enable_exit_on_failure
-def run(
+def run(  # pylint: disable=missing-function-docstring
     *args: str,
     include: Union[str, Iterable[str]] = "*.py",
     exclude: Union[str, Iterable[str]] = "*_integration_test.py",

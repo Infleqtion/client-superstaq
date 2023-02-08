@@ -17,7 +17,7 @@ from general_superstaq.check import check_utils
 
 
 @check_utils.enable_exit_on_failure
-def run(
+def run(  # pylint: disable=missing-function-docstring
     *args: str,
     include: Union[str, Iterable[str]] = "*requirements.txt",
     exclude: Union[str, Iterable[str]] = "",
@@ -146,8 +146,8 @@ def _sort_requirements(requirements: List[str]) -> Tuple[bool, List[str]]:
 def _check_package_versions(
     req_file: str, requirements: List[str], match: str, silent: bool, strict: bool
 ) -> bool:
-    """
-    Check whether package requirements matching 'match' are up-to-date with their latest versions.
+    """Check whether package requirements matching 'match' are up-to-date with their latest
+    versions.
     Print warnings if matching requirements are out of date.  Return whether the requirements file
     *must* be updated, i.e., return 'True' iff packages are out of date and 'strict == True'.
     """

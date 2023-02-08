@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-"""
-Dumping ground for check script utilities.
+"""Dumping ground for check script utilities.
 """
 
 import argparse
@@ -26,7 +25,7 @@ def _check_output(*commands: str) -> str:
 
 
 # container for string formatting console codes
-class Style(str, enum.Enum):
+class Style(str, enum.Enum):  # pylint: disable=missing-class-docstring
     BLACK = "\033[30m"
     RED = "\033[31m"
     GREEN = "\033[32m"
@@ -40,19 +39,19 @@ class Style(str, enum.Enum):
     RESET = "\033[0m"
 
 
-def styled(text: str, style_code: str) -> str:
+def styled(text: str, style_code: str) -> str:  # pylint: disable=missing-function-docstring
     return style_code + text + Style.RESET
 
 
-def warning(text: str) -> str:
+def warning(text: str) -> str:  # pylint: disable=missing-function-docstring
     return styled(text, Style.BOLD + Style.YELLOW)
 
 
-def failure(text: str) -> str:
+def failure(text: str) -> str:  # pylint: disable=missing-function-docstring
     return styled(text, Style.BOLD + Style.RED)
 
 
-def success(text: str) -> str:
+def success(text: str) -> str:  # pylint: disable=missing-function-docstring
     return styled(text, Style.BOLD + Style.GREEN)
 
 
@@ -68,8 +67,7 @@ def get_tracked_files(
     include: Union[str, Iterable[str]],
     exclude: Union[str, Iterable[str]] = "",
 ) -> List[str]:
-    """
-    Identify all files matching the given match_patterns that are tracked by git in this repo.
+    """Identify all files matching the given match_patterns that are tracked by git in this repo.
     If no matches are provided, return a list of all python scripts in the repo.
 
     Optionally excludes anything that matches [root_dir]/exclusion for each given exclusion (passed
@@ -100,8 +98,7 @@ def get_changed_files(
     revisions: Optional[Iterable[str]] = None,
     silent: bool = False,
 ) -> List[str]:
-    """
-    Get the files of interest that have been changed in the current branch.
+    """Get the files of interest that have been changed in the current branch.
     Here "files of interest" means all files identified by get_tracked_files (see above).
 
     You can specify git revisions to compare against when determining whether a file is considered
@@ -148,9 +145,7 @@ def get_changed_files(
 
 
 def _get_ancestor(*revisions: str, silent: bool = False) -> str:
-    """
-    Helper function to identify the most recent common ancestor of the given git revisions.
-    """
+    """Helper function to identify the most recent common ancestor of the given git revisions."""
     if len(revisions) == 1:
         return revisions[0]
 
@@ -179,8 +174,7 @@ def _revision_exists(revision: str) -> bool:
 
 
 def get_test_files(*files: str, exclude: Union[str, Iterable[str]] = "", silent: bool) -> List[str]:
-    """
-    For the given files, identify all associated test files (i.e. files with the same name, but
+    """For the given files, identify all associated test files (i.e. files with the same name, but
     with a "_test.py" suffix).
     """
     should_include = inclusion_filter(exclude)
@@ -205,7 +199,7 @@ def get_test_files(*files: str, exclude: Union[str, Iterable[str]] = "", silent:
 # file parsing, incremental checks, and decorator to exit instead of returning a failing exit code
 
 
-def get_file_parser() -> argparse.ArgumentParser:
+def get_file_parser() -> argparse.ArgumentParser:  # pylint: disable=missing-function-docstring
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
 
     help_text = "The files to check. If not passed any files, inspects the entire repo."
@@ -222,7 +216,7 @@ def get_file_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def extract_files(
+def extract_files(  # pylint: disable=missing-function-docstring
     parsed_args: argparse.Namespace,
     include: Union[str, Iterable[str]],
     exclude: Union[str, Iterable[str]] = "",
@@ -239,9 +233,8 @@ def extract_files(
 
 
 def enable_exit_on_failure(func_with_returncode: Callable[..., int]) -> Callable[..., int]:
-    """
-    Decorator optionally allowing a function to exit instead of returning a failing return code.
-    """
+    """Decorator optionally allowing a function to exit instead of returning a failing
+    return code."""
 
     def func_with_exit(*args: Any, exit_on_failure: bool = False, **kwargs: Any) -> int:
         returncode = func_with_returncode(*args, **kwargs)

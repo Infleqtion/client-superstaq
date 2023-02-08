@@ -1,3 +1,4 @@
+# pylint: disable=missing-function-docstring
 import general_superstaq as gss
 
 

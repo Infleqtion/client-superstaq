@@ -3,7 +3,7 @@ from typing import Dict, Optional
 
 
 @dataclass
-class ResourceEstimate:
+class ResourceEstimate:  # pylint: disable=missing-class-docstring
     num_single_qubit_gates: Optional[int] = None
     num_two_qubit_gates: Optional[int] = None
     depth: Optional[int] = None

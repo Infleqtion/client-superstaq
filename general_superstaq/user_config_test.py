@@ -8,7 +8,7 @@ import pytest
 import general_superstaq as gss
 
 
-def test_service_get_balance() -> None:
+def test_service_get_balance() -> None:  # pylint: disable=missing-function-docstring
     client = gss.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
@@ -37,7 +37,9 @@ def test_accept_terms_of_use() -> None:
     "general_superstaq.superstaq_client._SuperstaQClient.ibmq_set_token",
     return_value={"status": "Your IBMQ account token has been updated"},
 )
-def test_ibmq_set_token(mock_ibmq: mock.MagicMock) -> None:
+def test_ibmq_set_token(  # pylint: disable=missing-function-docstring
+    mock_ibmq: mock.MagicMock,
+) -> None:
     client = gss.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
@@ -51,7 +53,9 @@ def test_ibmq_set_token(mock_ibmq: mock.MagicMock) -> None:
     "general_superstaq.superstaq_client._SuperstaQClient.aqt_upload_configs",
     return_value="Your AQT configuration has been updated",
 )
-def test_service_aqt_upload_configs(mock_aqt_compile: mock.MagicMock) -> None:
+def test_service_aqt_upload_configs(  # pylint: disable=missing-function-docstring
+    mock_aqt_compile: mock.MagicMock,
+) -> None:
     client = gss.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
@@ -100,7 +104,9 @@ def test_service_aqt_upload_configs(mock_aqt_compile: mock.MagicMock) -> None:
     "general_superstaq.superstaq_client._SuperstaQClient.aqt_get_configs",
     return_value={"pulses": "Hello", "variables": "World"},
 )
-def test_service_aqt_get_configs(mock_aqt_compile: mock.MagicMock) -> None:
+def test_service_aqt_get_configs(  # pylint: disable=missing-function-docstring
+    mock_aqt_compile: mock.MagicMock,
+) -> None:
     client = gss.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
