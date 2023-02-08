@@ -11,7 +11,7 @@ from general_superstaq.typing import MaxSharpeJson, MinVolJson
 
 
 @dataclass
-class MinVolOutput:
+class MinVolOutput:  # pylint: disable=missing-class-docstring
     best_portfolio: List[str]
     best_ret: float
     best_std_dev: float
@@ -33,7 +33,7 @@ def read_json_minvol(json_dict: MinVolJson) -> MinVolOutput:
 
 
 @dataclass
-class MaxSharpeOutput:
+class MaxSharpeOutput:  # pylint: disable=missing-class-docstring
     best_portfolio: List[str]
     best_ret: float
     best_std_dev: float
@@ -56,11 +56,11 @@ def read_json_maxsharpe(json_dict: MaxSharpeJson) -> MaxSharpeOutput:
     return MaxSharpeOutput(best_portfolio, best_ret, best_std_dev, best_sharpe_ratio, qubo)
 
 
-class Finance:
+class Finance:  # pylint: disable=missing-class-docstring
     def __init__(self, client: superstaq_client._SuperstaQClient):
         self._client = client
 
-    def submit_qubo(
+    def submit_qubo(  # pylint: disable=missing-param-doc
         self, qubo: qv.QUBO, target: str, repetitions: int = 1000, method: Optional[str] = None
     ) -> npt.NDArray[np.int_]:
         """Submits the given QUBO to the target backend. The result of the optimization
@@ -113,8 +113,7 @@ class Finance:
         years_window: float = 5.0,
         solver: str = "anneal",
     ) -> MaxSharpeOutput:
-        """
-        Finds the optimal equal-weight portfolio from a possible pool of stocks
+        """Finds the optimal equal-weight portfolio from a possible pool of stocks
         according to the following rules:
         -All stock must come from the stock_symbols list.
         -All stocks will be equally weighted in the portfolio.

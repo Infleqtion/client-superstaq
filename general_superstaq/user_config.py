@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Tuple, Union
 from general_superstaq import superstaq_client
 
 
-class UserConfig:
+class UserConfig:  # pylint: disable=missing-class-docstring
     def __init__(self, client: superstaq_client._SuperstaQClient):
         self._client = client
 
@@ -76,7 +76,7 @@ class UserConfig:
 
         return self._client.aqt_upload_configs({"pulses": pulses_yaml, "variables": variables_yaml})
 
-    def aqt_get_configs(self) -> Dict[str, str]:
+    def aqt_get_configs(self) -> Dict[str, str]:  # pylint: disable=missing-function-docstring
         return self._client.aqt_get_configs()
 
     def aqt_download_configs(

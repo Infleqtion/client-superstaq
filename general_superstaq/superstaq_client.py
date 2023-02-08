@@ -92,7 +92,7 @@ class _SuperstaQClient:
             "X-Client-Version": self.api_version,
         }
 
-    def get_request(self, endpoint: str) -> Any:
+    def get_request(self, endpoint: str) -> Any:  # pylint: disable=missing-function-docstring
         def request() -> requests.Response:
             return requests.get(
                 f"{self.url}{endpoint}",
@@ -102,7 +102,9 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def post_request(self, endpoint: str, json_dict: Dict[str, Any]) -> Any:
+    def post_request(  # pylint: disable=missing-function-docstring
+        self, endpoint: str, json_dict: Dict[str, Any]
+    ) -> Any:
         def request() -> requests.Response:
             return requests.post(
                 f"{self.url}{endpoint}",
@@ -113,7 +115,7 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def create_job(
+    def create_job(  # pylint: disable=missing-param-doc
         self,
         serialized_circuits: Dict[str, str],
         repetitions: int = 1,
@@ -180,7 +182,9 @@ class _SuperstaQClient:
         """Makes a GET request to SuperstaQ API to get a list of available targets."""
         return self.get_request("/targets")
 
-    def ibmq_set_token(self, json_dict: Dict[str, str]) -> str:
+    def ibmq_set_token(  # pylint: disable=missing-param-doc,differing-param-doc
+        self, json_dict: Dict[str, str]
+    ) -> str:
         """Makes a POST request to SuperstaQ API to set IBMQ token field in database.
 
         Args:
@@ -192,7 +196,9 @@ class _SuperstaQClient:
 
         return self.post_request("/ibmq_token", json_dict)
 
-    def resource_estimate(self, json_dict: Dict[str, str]) -> Dict[str, List[Dict[str, int]]]:
+    def resource_estimate(  # pylint: disable=missing-function-docstring
+        self, json_dict: Dict[str, str]
+    ) -> Dict[str, List[Dict[str, int]]]:
         return self.post_request("/resource_estimate", json_dict)
 
     def aqt_compile(self, json_dict: Dict[str, Union[int, str, List[str]]]) -> Dict[str, str]:
@@ -233,7 +239,7 @@ class _SuperstaQClient:
         }
         return self.post_request("/qubo", json_dict)
 
-    def supercheq(
+    def supercheq(  # pylint: disable=missing-function-docstring
         self,
         files: List[List[int]],
         num_qubits: int,

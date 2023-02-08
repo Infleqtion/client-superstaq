@@ -8,7 +8,7 @@ from general_superstaq.typing import TSPJson, WareHouseJson
 
 
 @dataclass
-class TSPOutput:
+class TSPOutput:  # pylint: disable=missing-class-docstring
     route: List[str]
     route_list_numbers: List[int]
     total_distance: float
@@ -32,7 +32,7 @@ def read_json_tsp(json_dict: TSPJson) -> TSPOutput:
 
 
 @dataclass
-class WarehouseOutput:
+class WarehouseOutput:  # pylint: disable=missing-class-docstring
     warehouse_to_destination: List[Tuple[str, str]]
     total_distance: float
     map_link: str
@@ -41,8 +41,7 @@ class WarehouseOutput:
 
 
 def read_json_warehouse(json_dict: WareHouseJson) -> WarehouseOutput:
-    """
-    Reads out returned JSON from SuperstaQ API's warehouse endpoint.
+    """Reads out returned JSON from SuperstaQ API's warehouse endpoint.
     Args:
         json_dict: a JSON dictionary matching the format returned by /warehouse endpoint
     Returns:
@@ -58,13 +57,12 @@ def read_json_warehouse(json_dict: WareHouseJson) -> WarehouseOutput:
     )
 
 
-class Logistics:
+class Logistics:  # pylint: disable=missing-class-docstring
     def __init__(self, client: gss.superstaq_client._SuperstaQClient):
         self._client = client
 
     def tsp(self, locs: List[str], solver: str = "anneal") -> TSPOutput:
-        """
-        This function solves the traveling salesperson problem (TSP) and
+        """This function solves the traveling salesperson problem (TSP) and
         takes a list of strings as input. TSP finds the shortest tour that
         traverses all locations in a list.
         Each string should be an addresss or name of a landmark
@@ -92,8 +90,7 @@ class Logistics:
     def warehouse(
         self, k: int, possible_warehouses: List[str], customers: List[str], solver: str = "anneal"
     ) -> WarehouseOutput:
-        """
-        This function solves the warehouse location problem, which is:
+        """This function solves the warehouse location problem, which is:
         given a list of customers to be served and a list of possible warehouse
         locations, find the optimal k warehouse locations such that the sum of
         the distances to each customer from the nearest facility is minimized.
