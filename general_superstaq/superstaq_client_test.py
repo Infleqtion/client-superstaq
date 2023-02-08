@@ -114,23 +114,27 @@ def test_superstaq_client_needs_accept_terms_of_use(
     mock_accept_terms_of_use: mock.MagicMock,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    mock_get.return_value.ok = False
-    mock_get.return_value.status_code = requests.codes.unauthorized
-    mock_get.return_value.text = "terms of use"
-
     client = gss.superstaq_client._SuperstaQClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
 
-    with mock.patch("builtins.input", side_effect=["NO"]):
+    fake_response = mock.MagicMock()
+    fake_response.ok = False
+    fake_response.status_code = requests.codes.unauthorized
+    fake_response.text = "terms of use"
+    mock_get.return_value = fake_response
+
+    with mock.patch("builtins.input", return_value="NO"):
         with pytest.raises(gss.SuperstaQException, match="You'll need to accept Terms of Use"):
             client.get_balance()
 
-    with mock.patch("builtins.input", side_effect=["YES"]):
-        with pytest.raises(SystemExit):
-            client.get_balance()
+    # When user accepts, a second request will be made (which would presumably succeed). Strange
+    # mock syntax, see docs.python.org/3.11/library/unittest.mock.html#unittest.mock.PropertyMock
+    type(fake_response).ok = mock.PropertyMock(side_effect=[False, True])
+    with mock.patch("builtins.input", return_value="YES"):
+        client.get_balance()
         assert capsys.readouterr().out == "Accepted. You can now continue using SuperstaQ.\n"
 
 

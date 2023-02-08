@@ -285,7 +285,7 @@ class _SuperstaQClient:
         if response.status_code == requests.codes.unauthorized:
             if "terms of use" in str(response.text).lower():
                 self._prompt_accept_terms_of_use()
-                exit()  # return to user shell. Subsequent calls will succed if user accepted TOU.
+                return
             else:
                 raise gss.SuperstaQException(
                     '"Not authorized" returned by SuperstaQ API.  '
@@ -306,7 +306,7 @@ class _SuperstaQClient:
     def _prompt_accept_terms_of_use(self) -> None:
         message = (
             "Acceptance of the Terms of Use (superstaq.super.tech/terms_of_use)"
-            "is necessary before using SuperstaQ. Type in YES to accept: "
+            " is necessary before using SuperstaQ.\nType in YES to accept: "
         )
         user_input = input(message).upper()
         if user_input == "YES":
