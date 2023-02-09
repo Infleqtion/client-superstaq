@@ -30,6 +30,7 @@ from .qudit_gates import (
     QutritZ1PowGate,
     QutritZ2,
     QutritZ2PowGate,
+    qubit_subspace_op,
 )
 
 __all__ = [
@@ -63,5 +64,6 @@ __all__ = [
     "barrier",
     "parallel_gates_operation",
     "qubit_gates",
+    "qubit_subspace_op",
     "qudit_gates",
 ]

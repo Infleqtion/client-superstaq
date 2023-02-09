@@ -46,6 +46,7 @@ from cirq_superstaq.ops import (
     approx_eq_mod,
     barrier,
     parallel_gates_operation,
+    qubit_subspace_op,
 )
 from cirq_superstaq.sampler import Sampler
 from cirq_superstaq.serialization import (
@@ -95,6 +96,7 @@ __all__ = [
     "deserialize_circuits",
     "ops",
     "parallel_gates_operation",
+    "qubit_subspace_op",
     "serialization",
     "serialize_circuits",
 ]

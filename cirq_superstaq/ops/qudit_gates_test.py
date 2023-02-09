@@ -365,3 +365,17 @@ def test_qubit_subspace_circuit_diagram() -> None:
         ),
         use_unicode_characters=False,
     )
+
+
+def test_qubit_subspace_op() -> None:
+    assert css.qubit_subspace_op(
+        cirq.CZ(cirq.LineQubit(2), cirq.LineQid(1, 2)), (3, 4)
+    ) == css.QubitSubspaceGate(cirq.CZ, (3, 4)).on(cirq.LineQid(2, 3), cirq.LineQid(1, 4))
+    assert css.qubit_subspace_op(
+        cirq.Z(cirq.GridQubit(5, 9)) ** 1.23, (7,)
+    ) == css.QubitSubspaceGate(cirq.Z**1.23, (7,)).on(cirq.GridQid(5, 9, dimension=7))
+    assert css.qubit_subspace_op(
+        cirq.X(cirq.NamedQubit("qubit")), (4,), [(1, -1)]
+    ) == css.QubitSubspaceGate(cirq.X, (4,), [(1, 3)]).on(cirq.NamedQid("qubit", dimension=4))
+    with pytest.raises(ValueError, match="has no gate."):
+        _ = css.qubit_subspace_op(cirq.CircuitOperation(cirq.FrozenCircuit()), ())

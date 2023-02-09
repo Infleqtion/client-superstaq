@@ -9,7 +9,7 @@ from cirq.ops.common_gates import proper_repr
 import cirq_superstaq as css
 
 
-class BSwapPowGate(cirq.EigenGate):
+class BSwapPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
     """iSWAP-like qutrit entangling gate swapping the "11" and "22" states of two qutrits."""
 
     @property
@@ -374,6 +374,21 @@ class QubitSubspaceGate(cirq.Gate):  # pylint: disable=missing-class-docstring
             return f"css.QubitSubspaceGate({self._sub_gate!r}, {self._qid_shape})"
 
         return f"css.QubitSubspaceGate({self._sub_gate!r}, {self._qid_shape}, {self._subspaces})"
+
+
+def qubit_subspace_op(
+    sub_op: cirq.Operation,
+    qid_shape: Sequence[int],
+    subspaces: Optional[Sequence[Tuple[int, int]]] = None,
+) -> cirq.Operation:
+    """Embed a qubit Operation into a given subspace of a higher-dimensional Operation using
+    QubitSubspaceGate.
+    """
+    if not sub_op.gate:
+        raise ValueError(f"{sub_op} has no gate.")
+
+    qudits = [qubit.with_dimension(d) for qubit, d in zip(sub_op.qubits, qid_shape)]
+    return QubitSubspaceGate(sub_op.gate, qid_shape, subspaces=subspaces).on(*qudits)
 
 
 BSWAP = BSwapPowGate()
