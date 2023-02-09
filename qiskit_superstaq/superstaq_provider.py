@@ -149,13 +149,16 @@ class SuperstaQProvider(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         target: str = "aqt_keysight_qpu",
+        atol: Optional[float] = None,
     ) -> "qss.compiler_output.CompilerOutput":
         """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
 
         Args:
-            circuits: qiskit QuantumCircuit(s)
+            circuits: Qiskit QuantumCircuit(s) to compile.
+            target: String of target AQT device.
+            atol: Tolerance to use for approximate gate synthesis (currently just for qutrit gates).
         Returns:
-            object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
+            Object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
             pulse sequence corresponding to the optimized qiskit.QuantumCircuit(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
@@ -166,9 +169,15 @@ class SuperstaQProvider(
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
-        json_dict = self._client.aqt_compile(
-            {"qiskit_circuits": serialized_circuits, "target": target}
-        )
+        request_json = {
+            "qiskit_circuits": serialized_circuits,
+            "target": target,
+        }
+        if atol is not None:
+            options_dict = {"atol": atol}
+            request_json["options"] = json.dumps(options_dict)
+
+        json_dict = self._client.post_request("/aqt_compile", request_json)
 
         return qss.compiler_output.read_json_aqt(json_dict, circuits_is_list)
 
@@ -178,6 +187,7 @@ class SuperstaQProvider(
         num_equivalent_circuits: int,
         random_seed: Optional[int] = None,
         target: str = "aqt_keysight_qpu",
+        atol: Optional[float] = None,
     ) -> "qss.compiler_output.CompilerOutput":
         """Compiles the given circuit(s) to target AQT device with Equivalent Circuit Averaging
         (ECA).
@@ -185,13 +195,14 @@ class SuperstaQProvider(
         See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
 
         Args:
-            circuits: qiskit QuantumCircuit(s) to compile.
-            num_equivalent_circuits: number of logically equivalent random circuits to generate for
+            circuits: Qiskit QuantumCircuit(s) to compile.
+            num_equivalent_circuits: Number of logically equivalent random circuits to generate for
                 each input circuit.
-            random_seed: optional seed for circuit randomizer.
-            target: string of target AQT device.
+            random_seed: Optional seed for circuit randomizer.
+            target: String of target AQT device.
+            atol: Tolerance to use for approximate gate synthesis (currently just for qutrit gates).
         Returns:
-            object whose .circuits attribute is a list (or list of lists) of logically equivalent
+            Object whose .circuits attribute is a list (or list of lists) of logically equivalent
                 QuantumCircuit(s).
 
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
@@ -204,9 +215,11 @@ class SuperstaQProvider(
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
-        options_dict = {"num_eca_circuits": num_equivalent_circuits}
+        options_dict: Dict[str, Union[int, float]] = {"num_eca_circuits": num_equivalent_circuits}
         if random_seed is not None:
             options_dict["random_seed"] = random_seed
+        if atol is not None:
+            options_dict["atol"] = atol
 
         request_json = {
             "qiskit_circuits": serialized_circuits,

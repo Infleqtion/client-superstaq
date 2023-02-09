@@ -96,7 +96,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     assert out.circuit == qc
     assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
 
-    out = provider.aqt_compile([qc])
+    out = provider.aqt_compile([qc], atol=1e-2)
     assert out.circuits == [qc]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
@@ -129,7 +129,7 @@ def test_service_aqt_compile_eca(mock_post: MagicMock) -> None:
         "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     }
 
-    out = provider.aqt_compile_eca(qc, num_equivalent_circuits=1, random_seed=1234)
+    out = provider.aqt_compile_eca(qc, num_equivalent_circuits=1, random_seed=1234, atol=1e-2)
     assert out.circuits == [qc]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
