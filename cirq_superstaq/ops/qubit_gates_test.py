@@ -441,6 +441,9 @@ def test_barrier() -> None:
     qubits = cirq.LineQubit.range(n)
     gate = css.Barrier(n)
 
+    assert gate == css.Barrier(n)
+    assert gate != cirq.IdentityGate(n)
+
     assert str(gate) == "Barrier(3)"
     assert repr(gate) == "css.Barrier(3)"
 

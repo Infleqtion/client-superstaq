@@ -358,6 +358,7 @@ AceCRMinusPlus = AceCR("-+")
 AceCRPlusMinus = AceCR("+-")
 
 
+@cirq.value_equality
 class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
     """Barrier: temporal boundary restricting circuit compilation and pulse scheduling.
     Otherwise equivalent to the identity gate.
