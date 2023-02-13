@@ -19,7 +19,7 @@ import qiskit
 import qiskit_superstaq as qss
 
 
-def validate_target(target: str) -> None:
+def validate_target(target: str) -> None:  # pylint: disable=missing-function-docstring
     vendor_prefixes = [
         "aqt",
         "aws",
@@ -63,7 +63,7 @@ def validate_target(target: str) -> None:
         )
 
 
-class SuperstaQBackend(qiskit.providers.BackendV1):
+class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-class-docstring
     def __init__(self, provider: "qss.SuperstaQProvider", remote_host: str, target: str) -> None:
         self.remote_host = remote_host
         self._provider = provider

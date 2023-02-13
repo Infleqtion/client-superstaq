@@ -1,4 +1,5 @@
 """Integration checks that run daily (via Github action) between client and prod server."""
+# pylint: disable=missing-function-docstring
 import os
 
 import numpy as np

@@ -1,3 +1,4 @@
+# pylint: disable=missing-function-docstring,missing-class-docstring
 from unittest.mock import MagicMock
 
 import general_superstaq as gss

@@ -42,7 +42,7 @@ def measured_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
     return sorted(circuit.find_bit(qubit).index for qubit in measured_qubits)
 
 
-class CompilerOutput:
+class CompilerOutput:  # pylint: disable=missing-class-docstring
     def __init__(
         self,
         circuits: Union[
@@ -109,7 +109,7 @@ class CompilerOutput:
         )
 
 
-def read_json_aqt(
+def read_json_aqt(  # pylint: disable=missing-param-doc
     json_dict: Dict[str, str], circuits_is_list: bool, num_eca_circuits: int = 0
 ) -> CompilerOutput:
     """Reads out returned JSON from SuperstaQ API's AQT compilation endpoint.

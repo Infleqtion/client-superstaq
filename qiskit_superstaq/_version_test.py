@@ -1,3 +1,4 @@
+# pylint: disable=missing-function-docstring
 import packaging.version
 
 import qiskit_superstaq as qss

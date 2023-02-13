@@ -97,7 +97,7 @@ class SuperstaQProvider(
     def get_backend(self, target: str) -> "qss.SuperstaQBackend":
         return qss.SuperstaQBackend(provider=self, remote_host=self.remote_host, target=target)
 
-    def get_access_token(self) -> str:
+    def get_access_token(self) -> str:  # pylint: disable=missing-function-docstring
         return self.api_key
 
     def backends(self) -> List[qss.SuperstaQBackend]:
@@ -145,7 +145,7 @@ class SuperstaQProvider(
             return resource_estimates
         return resource_estimates[0]
 
-    def aqt_compile(
+    def aqt_compile(  # pylint: disable=missing-param-doc,missing-raises-doc
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         target: str = "aqt_keysight_qpu",
@@ -181,7 +181,7 @@ class SuperstaQProvider(
 
         return qss.compiler_output.read_json_aqt(json_dict, circuits_is_list)
 
-    def aqt_compile_eca(
+    def aqt_compile_eca(  # pylint: disable=missing-raises-doc
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         num_equivalent_circuits: int,
@@ -258,7 +258,7 @@ class SuperstaQProvider(
             circuits=compiled_circuits, pulse_sequences=pulses
         )
 
-    def qscout_compile(
+    def qscout_compile(  # pylint: disable=missing-param-doc,missing-raises-doc
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         mirror_swaps: bool = True,
@@ -295,7 +295,7 @@ class SuperstaQProvider(
         )
         return qss.compiler_output.read_json_qscout(json_dict, circuits_is_list)
 
-    def cq_compile(
+    def cq_compile(  # pylint: disable=missing-raises-doc
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         target: str = "cq_hilbert_qpu",

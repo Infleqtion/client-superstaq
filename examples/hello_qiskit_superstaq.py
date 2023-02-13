@@ -1,5 +1,4 @@
-"""
-Creates and simulates a bell circuit.
+"""Creates and simulates a bell circuit.
 
 Example Output:
 

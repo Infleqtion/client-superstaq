@@ -106,10 +106,9 @@ class ZZSwapGate(qiskit.circuit.Gate):
     """
 
     def __init__(self, theta: float, label: Optional[str] = None) -> None:
-        """
-        Args:
-            theta: ZZ-interaction angle in radians
-            label: an optional label for the constructed Gate
+        """Args:
+        theta: ZZ-interaction angle in radians
+        label: an optional label for the constructed Gate
         """
         super().__init__("zzswap", 2, [theta], label=label)
 
@@ -150,10 +149,9 @@ class ParallelGates(qiskit.circuit.Gate):
     """A single Gate combining a collection of concurrent Gate(s) acting on different qubits"""
 
     def __init__(self, *component_gates: qiskit.circuit.Gate, label: Optional[str] = None) -> None:
-        """
-        Args:
-            component_gates: Gate(s) to be collected into single gate
-            label: an optional label for the constructed Gate
+        """Args:
+        component_gates: Gate(s) to be collected into single gate
+        label: an optional label for the constructed Gate
         """
         self.component_gates: Tuple[qiskit.circuit.Gate, ...] = ()
         num_qubits = 0
@@ -192,7 +190,7 @@ class ParallelGates(qiskit.circuit.Gate):
         return f"ParallelGates({args})"
 
 
-class iXGate(qiskit.circuit.Gate):
+class iXGate(qiskit.circuit.Gate):  # pylint: disable=missing-class-docstring
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__("ix", 1, [], label=label)
 
@@ -226,7 +224,7 @@ class iXGate(qiskit.circuit.Gate):
         return f"iXGate(label={self.label})"
 
 
-class iXdgGate(qiskit.circuit.Gate):
+class iXdgGate(qiskit.circuit.Gate):  # pylint: disable=missing-class-docstring
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__("ixdg", 1, [], label=label)
 
@@ -260,7 +258,7 @@ class iXdgGate(qiskit.circuit.Gate):
         return f"iXdgGate(label={self.label})"
 
 
-class iCCXGate(qiskit.circuit.ControlledGate):
+class iCCXGate(qiskit.circuit.ControlledGate):  # pylint: disable=missing-class-docstring
     def __init__(
         self, label: Optional[str] = None, ctrl_state: Optional[Union[str, int]] = None
     ) -> None:
@@ -287,7 +285,7 @@ class iCCXGate(qiskit.circuit.ControlledGate):
         return f"iCCXGate(label={self.label}, ctrl_state={self.ctrl_state})"
 
 
-class iCCXdgGate(qiskit.circuit.ControlledGate):
+class iCCXdgGate(qiskit.circuit.ControlledGate):  # pylint: disable=missing-class-docstring
     def __init__(
         self, label: Optional[str] = None, ctrl_state: Optional[Union[str, int]] = None
     ) -> None:
@@ -314,7 +312,7 @@ class iCCXdgGate(qiskit.circuit.ControlledGate):
         return f"iCCXdgGate(label={self.label}, ctrl_state={self.ctrl_state})"
 
 
-class AQTiCCXGate(iCCXGate):
+class AQTiCCXGate(iCCXGate):  # pylint: disable=missing-class-docstring
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__(label=label, ctrl_state="00")
 

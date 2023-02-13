@@ -1,5 +1,4 @@
-"""
-Creates and simulates multiple circuits with batch submission.
+"""Creates and simulates multiple circuits with batch submission.
 
 Example Output:
 

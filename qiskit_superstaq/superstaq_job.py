@@ -22,7 +22,7 @@ import requests
 import qiskit_superstaq as qss
 
 
-class SuperstaQJob(qiskit.providers.JobV1):
+class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-docstring
     def __init__(
         self,
         backend: qss.SuperstaQBackend,
