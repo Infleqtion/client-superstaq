@@ -1,4 +1,4 @@
-cirq~=1.0.0
-cirq-superstaq~=0.3.16
+cirq~=1.2.0.dev2022
+cirq-superstaq~=0.3.17
 qiskit-superstaq~=0.3.16
 scikit-learn~=1.0  # supports python 3.7
