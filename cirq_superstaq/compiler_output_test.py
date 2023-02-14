@@ -282,32 +282,3 @@ def test_read_json_only_circuits() -> None:
     }
     out = css.compiler_output.read_json_only_circuits(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
-
-
-def test_read_json_neutral_atom() -> None:
-    q0 = cirq.LineQubit(0)
-    circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
-
-    json_dict = {
-        "cirq_circuits": css.serialization.serialize_circuits(circuit),
-        "pulses": gss.serialization.serialize([mock.DEFAULT]),
-    }
-
-    out = css.compiler_output.read_json_neutral_atom(json_dict, circuits_is_list=False)
-    assert out.circuit == circuit
-    assert out.pulse_sequence == mock.DEFAULT
-    assert not hasattr(out, "circuits")
-    assert not hasattr(out, "pulse_sequences")
-
-    out = css.compiler_output.read_json_neutral_atom(json_dict, circuits_is_list=True)
-    assert out.circuits == [circuit]
-    assert out.pulse_sequences == [mock.DEFAULT]
-    assert not hasattr(out, "circuit")
-    assert not hasattr(out, "pulse_sequence")
-
-    with mock.patch.dict("sys.modules", {"unittest": None}), pytest.warns(
-        UserWarning, match="unittest"
-    ):
-        out = css.compiler_output.read_json_neutral_atom(json_dict, circuits_is_list=False)
-        assert out.circuit == circuit
-        assert out.pulse_sequence is None

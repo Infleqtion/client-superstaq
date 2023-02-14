@@ -457,22 +457,6 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
         return css.compiler_output.read_json_ibmq(json_dict, circuits_is_list)
 
-    def neutral_atom_compile(
-        self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "neutral_atom_qpu"
-    ) -> css.compiler_output.CompilerOutput:
-        """Returns pulse schedule for the given circuit and target.
-
-        Pulser must be installed for returned object to correctly deserialize to a pulse schedule.
-        """
-        serialized_circuits = css.serialization.serialize_circuits(circuits)
-        circuits_is_list = not isinstance(circuits, cirq.Circuit)
-
-        target = self._resolve_target(target)
-        json_dict = self._client.neutral_atom_compile(
-            {"cirq_circuits": serialized_circuits, "target": target}
-        )
-        return css.compiler_output.read_json_neutral_atom(json_dict, circuits_is_list)
-
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int
     ) -> Tuple[List[cirq.Circuit], npt.NDArray[np.float_]]:
