@@ -27,7 +27,6 @@ def validate_target(target: str) -> None:  # pylint: disable=missing-function-do
         "hqs",
         "ibmq",
         "ionq",
-        "neutral",
         "oxford",
         "quera",
         "rigetti",

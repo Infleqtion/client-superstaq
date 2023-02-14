@@ -15,9 +15,6 @@ pip install qiskit-superstaq
 
 # Run the following to install dev requirements (required if you intend to run checks locally)
 pip install .[dev]
-
-# Run the following to install neutral atom device dependencies.
-pip install -r neutral-atom-requirements.txt
 ```
 
 ### Creating and submitting a circuit through qiskit-superstaq

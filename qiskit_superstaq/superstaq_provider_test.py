@@ -329,28 +329,6 @@ def test_invalid_target_service_cq_compile() -> None:
         provider.cq_compile(qiskit.QuantumCircuit(), target="invalid_target")
 
 
-@patch(
-    "general_superstaq.superstaq_client._SuperstaQClient.neutral_atom_compile",
-    return_value={"pulses": gss.serialization.serialize([mock.DEFAULT])},
-)
-def test_neutral_atom_compile(mock_ibmq_compile: MagicMock) -> None:
-    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
-    assert provider.neutral_atom_compile(qiskit.QuantumCircuit()) == mock.DEFAULT
-    assert provider.neutral_atom_compile([qiskit.QuantumCircuit()]) == [mock.DEFAULT]
-
-    with mock.patch.dict("sys.modules", {"unittest": None}), pytest.raises(
-        gss.SuperstaQModuleNotFoundException,
-        match="'neutral_atom_compile' requires module 'unittest'",
-    ):
-        _ = provider.neutral_atom_compile(qiskit.QuantumCircuit())
-
-
-def test_invalid_target_service_neutral_atom_compile() -> None:
-    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
-    with pytest.raises(ValueError, match="not a Neutral Atom Compiler target"):
-        provider.neutral_atom_compile(qiskit.QuantumCircuit(), target="invalid_target")
-
-
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaQClient.supercheq",
 )

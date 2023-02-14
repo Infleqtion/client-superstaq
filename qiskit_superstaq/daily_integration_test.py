@@ -139,7 +139,7 @@ def test_get_resource_estimate(provider: qss.SuperstaQProvider) -> None:
     circuit1.cnot(0, 1)
     circuit1.h(1)
 
-    resource_estimate = provider.resource_estimate(circuit1, "neutral_atom_qpu")
+    resource_estimate = provider.resource_estimate(circuit1, "ss_unconstrained_simulator")
 
     assert resource_estimate == ResourceEstimate(1, 1, 2)
 
@@ -148,7 +148,9 @@ def test_get_resource_estimate(provider: qss.SuperstaQProvider) -> None:
     circuit2.cnot(0, 1)
     circuit2.cz(1, 0)
 
-    resource_estimates = provider.resource_estimate([circuit1, circuit2], "neutral_atom_qpu")
+    resource_estimates = provider.resource_estimate(
+        [circuit1, circuit2], "ss_unconstrained_simulator"
+    )
 
     assert resource_estimates == [resource_estimate, ResourceEstimate(1, 2, 3)]
 
