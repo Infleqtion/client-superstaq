@@ -14,7 +14,7 @@
 
 import json
 import os
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import cirq
 import general_superstaq as gss
@@ -23,6 +23,33 @@ import numpy.typing as npt
 from general_superstaq import ResourceEstimate, finance, logistics, superstaq_client, user_config
 
 import cirq_superstaq as css
+
+
+def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
+    """Convert a unitary matrix into a cirq.MatrixGate acting either on qubits or on qutrits.
+
+    Args:
+        matrix: The (unitary) matrix to be converted.
+
+    Returns:
+        A cirq.MatrixGate with the given unitary.
+
+    Raises:
+        ValueError: If `matrix` could not be interpreted as a unitary gate acting on either qubits
+            or qutrits.
+    """
+
+    matrix = np.asarray(matrix, dtype=complex)
+
+    for dimension in (2, 3):
+        num_qids = int(round(np.log(matrix.size) / np.log(dimension**2)))
+        if matrix.shape == (dimension**num_qids, dimension**num_qids):
+            qid_shape = (dimension,) * num_qids
+            return cirq.MatrixGate(matrix, qid_shape=qid_shape)
+
+    raise ValueError(
+        "Could not determine qid_shape from array shape, consider using a cirq.MatrixGate instead."
+    )
 
 
 def counts_to_results(
@@ -320,26 +347,36 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         return resource_estimates[0]
 
     def aqt_compile(
-        self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "aqt_keysight_qpu"
+        self,
+        circuits: Union[cirq.Circuit, List[cirq.Circuit]],
+        target: str = "aqt_keysight_qpu",
+        gate_defs: Optional[
+            Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
+        ] = None,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to target AQT device, optimized to its native gate set.
 
         Args:
-            circuits: cirq Circuit(s) to compile.
-            target: string of target target AQT device.
+            circuits: Cirq Circuit(s) to compile.
+            target: String of target AQT device.
+            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+                operations can be numpy arrays, cirq.Gates, cirq.Operations. More specific names
+                take precedence, for example gate_defs={"CZ3": css.CZ3, "CZ3/C5T4": css.CZ3_INV}
+                implies css.CZ3 for all "CZ3/*" calibrations except "CZ3/C5T4", which will be
+                mapped to a css.CZ3_INV on qutrits (4, 5). Setting any calibration to None will
+                disable that calibration.
         Returns:
-            object whose .circuit(s) attribute is an optimized cirq Circuit(s)
+            Object whose .circuit(s) attribute is an optimized cirq Circuit(s)
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
             pulse sequence corresponding to the optimized cirq.Circuit(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
         """
-        serialized_circuits = css.serialization.serialize_circuits(circuits)
-        circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
-        json_dict = self._client.aqt_compile(
-            {"cirq_circuits": serialized_circuits, "target": target}
+        return self._aqt_compile(
+            circuits,
+            target=target,
+            gate_defs=gate_defs,
         )
-        return css.compiler_output.read_json_aqt(json_dict, circuits_is_list)
 
     def aqt_compile_eca(
         self,
@@ -347,36 +384,82 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         num_equivalent_circuits: int,
         random_seed: Optional[int] = None,
         target: str = "aqt_keysight_qpu",
+        gate_defs: Optional[
+            Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
+        ] = None,
     ) -> css.compiler_output.CompilerOutput:
-        """Compiles the given circuit to target AQT device with Equivalent Circuit Averaging (ECA).
+        """Compiles the given circuit(s) to target AQT device with Equivalent Circuit Averaging
+        (ECA).
 
         See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
 
         Args:
-            circuits: cirq Circuit(s) to compile.
-            num_equivalent_circuits: number of logically equivalent random circuits to generate for
+            circuits: Cirq Circuit(s) to compile.
+            num_equivalent_circuits: Number of logically equivalent random circuits to generate for
                 each input circuit.
-            random_seed: optional seed for circuit randomizer.
-            target: string of target target AQT device.
+            random_seed: Optional seed for circuit randomizer.
+            target: String of target AQT device.
+            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+                operations can be numpy arrays, cirq.Gates, cirq.Operations. More specific names
+                take precedence, for example gate_defs={"CZ3": css.CZ3, "CZ3/C5T4": css.CZ3_INV}
+                implies css.CZ3 for all "CZ3/*" calibrations except "CZ3/C5T4", which will be
+                mapped to a css.CZ3_INV on qutrits (4, 5). Setting any calibration to None will
+                disable that calibration.
         Returns:
-            object whose .circuits attribute is a list (or list of lists) of logically equivalent
+            Object whose .circuits attribute is a list (or list of lists) of logically equivalent
                 cirq Circuit(s).
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
                 pulse sequence corresponding to the cirq.Circuits and the .pulse_lists attribute is
                 the list(s) of cycles.
         """
+
+        return self._aqt_compile(
+            circuits,
+            target=target,
+            num_equivalent_circuits=num_equivalent_circuits,
+            random_seed=random_seed,
+            gate_defs=gate_defs,
+        )
+
+    def _aqt_compile(
+        self,
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        target: str,
+        *,
+        num_equivalent_circuits: Optional[int] = None,
+        random_seed: Optional[int] = None,
+        gate_defs: Optional[
+            Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
+        ] = None,
+    ) -> css.compiler_output.CompilerOutput:
+        """Generic API for compiling circuits for AQT devices. See `Service.aqt_compile()` and
+        `Service.aqt_compile_eca()`.
+        """
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
-
-        options_dict = {"num_eca_circuits": num_equivalent_circuits}
-        if random_seed is not None:
-            options_dict["random_seed"] = random_seed
 
         request_json = {
             "cirq_circuits": serialized_circuits,
             "target": target,
-            "options": json.dumps(options_dict),
         }
+
+        options_dict: Dict[str, Union[float, Dict[str, Union[cirq.Gate, cirq.Operation, None]]]]
+        options_dict = {}
+
+        if num_equivalent_circuits is not None:
+            options_dict["num_eca_circuits"] = num_equivalent_circuits
+        if random_seed is not None:
+            options_dict["random_seed"] = random_seed
+        if gate_defs is not None:
+            gate_defs_cirq = {}
+            for key, val in gate_defs.items():
+                if val is not None and not isinstance(val, (cirq.Gate, cirq.Operation)):
+                    val = _to_matrix_gate(val).with_name(key)
+                gate_defs_cirq[key] = val
+            options_dict["gate_defs"] = gate_defs_cirq
+
+        if options_dict:
+            request_json["options"] = cirq.to_json(options_dict)
 
         json_dict = self._client.post_request("/aqt_compile", request_json)
         return css.compiler_output.read_json_aqt(

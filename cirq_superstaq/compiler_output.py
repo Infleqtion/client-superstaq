@@ -132,7 +132,7 @@ def read_json_ibmq(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compile
 
 
 def read_json_aqt(  # pylint: disable=missing-param-doc
-    json_dict: Dict[str, Any], circuits_is_list: bool, num_eca_circuits: int = 0
+    json_dict: Dict[str, Any], circuits_is_list: bool, num_eca_circuits: Optional[int] = None
 ) -> CompilerOutput:
     """Reads out returned JSON from SuperstaQ API's AQT compilation endpoint.
 
@@ -184,7 +184,7 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
             "installed in order to deserialize compiled pulse sequences."
         )
 
-    if num_eca_circuits:
+    if num_eca_circuits is not None:
         compiled_circuits = [
             compiled_circuits[i : i + num_eca_circuits]
             for i in range(0, len(compiled_circuits), num_eca_circuits)
