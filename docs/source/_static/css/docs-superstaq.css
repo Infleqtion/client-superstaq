@@ -3458,8 +3458,9 @@ a.wy-text-neutral:hover{
 }
 .rst-content .toctree-wrapper>p.caption,h1,h2,h3,h4,h5,h6,legend{
     margin-top:0;
-    font-weight:300;
-    font-family:'Roboto Mono',Helvetica Neue,Arial,sans-serif
+    font-weight:450;
+    letter-spacing:0.5px;
+    font-family:Helvetica Neue,Arial,sans-serif
 }
 p{
     line-height:24px;
@@ -3638,10 +3639,11 @@ html{
     padding:0 1.47em;
     margin:12px 0 0;
     display:block;
-    font-weight:700;
     text-transform:capitalize;
     font-size:100%;
-    font-family:'Roboto Mono',Helvetica Neue,Arial,sans-serif;
+    font-weight:450;
+    letter-spacing:0.5px;
+    font-family:Helvetica Neue,Arial,sans-serif
     white-space:nowrap
     
 }
@@ -4456,8 +4458,9 @@ footer p{
 }
 .rst-content .sidebar .sidebar-title{
     display:block;
-    font-family:'Roboto Mono',Helvetica Neue,Arial,sans-serif;
-    font-weight:300;
+    font-weight:450;
+    letter-spacing:0.5px;
+    font-family:Helvetica Neue,Arial,sans-serif
     background:#e1e4e5;
     padding:6px 12px;
     margin:-24px -24px 24px;
@@ -4871,8 +4874,9 @@ span.linenos.special { color: #303030; background-color: #ECECEC; padding-left: 
     gap: 10px;
 }
 .index-demos-headers {
-    font-family:'Roboto Mono',Helvetica Neue,Arial,sans-serif;
-    font-weight: 700;
+    font-weight:450;
+    letter-spacing:0.5px;
+    font-family:Helvetica Neue,Arial,sans-serif
     color:#70C8A0;
     font-size: 50;
 }
