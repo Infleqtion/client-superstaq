@@ -10,7 +10,7 @@ import os
 import re
 import subprocess
 import sys
-from typing import Any, Callable, Iterable, List, Optional, Union
+from typing import Any, Callable, Iterable, List, Union
 
 # identify the root directory of the "main" script that called this module
 main_file_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -63,43 +63,38 @@ default_branches = ("upstream/main", "origin/main", "main")
 # methods for identifying files to check
 
 
-def get_tracked_files(
-    include: Union[str, Iterable[str]],
-    exclude: Union[str, Iterable[str]] = "",
-) -> List[str]:
+def get_tracked_files(include: Union[str, Iterable[str]]) -> List[str]:
     """Identify all files matching the given match_patterns that are tracked by git in this repo.
-    If no matches are provided, return a list of all python scripts in the repo.
-
-    Optionally excludes anything that matches [root_dir]/exclusion for each given exclusion (passed
-    either as a single string or a list of strings).
+    If no patterns are provided, return a list of all tracked files in the repo.
     """
-    match_patterns = [include] if isinstance(include, str) else list(include)
-    matching_files = _check_output("git", "ls-files", *match_patterns).splitlines()
-    should_include = inclusion_filter(exclude)
-    return [file for file in matching_files if should_include(file)]
+    include = [include] if isinstance(include, str) else include
+    return _check_output("git", "ls-files", "--deduplicate", *include).splitlines()
 
 
-def inclusion_filter(exclude: Union[str, Iterable[str]]) -> Callable[[str], bool]:
-    """Construct filter that decides whether a file should be included."""
-    if not exclude:
-        return lambda _: True
+def exclude_files(files: Iterable[str], exclude: Union[str, Iterable[str]]) -> List[str]:
+    """Returns the files which don't match any of the globs in exclude."""
 
-    exclusions = [exclude] if isinstance(exclude, str) else exclude
+    exclude = [exclude] if isinstance(exclude, str) else exclude
 
-    def should_include(file: str) -> bool:
-        return not any(fnmatch.fnmatch(file, exclusion) for exclusion in exclusions)
+    files = list(files)
+    for exclusion in exclude:
+        files = [file for file in files if not fnmatch.fnmatch(file, exclusion)]
 
-    return should_include
+    return files
+
+
+def select_files(files: Iterable[str], include: Union[str, Iterable[str]]) -> List[str]:
+    """Returns the files which match at least one of the globs in include."""
+
+    files = list(files)
+    excluded_files = exclude_files(files, include)
+    return [file for file in files if file not in excluded_files]
 
 
 def get_changed_files(
-    include: Union[str, Iterable[str]],
-    exclude: Union[str, Iterable[str]],
-    revisions: Optional[Iterable[str]] = None,
-    silent: bool = False,
+    files: Iterable[str], revisions: Iterable[str], silent: bool = False
 ) -> List[str]:
-    """Get the files of interest that have been changed in the current branch.
-    Here "files of interest" means all files identified by get_tracked_files (see above).
+    """Returns the files that have been changed in the current branch.
 
     You can specify git revisions to compare against when determining whether a file is considered
     to have "changed".  If multiple revisions are provided, this script compares against their most
@@ -109,10 +104,7 @@ def get_changed_files(
     default_branches (specified above) that it finds.  If none of these branches exists, this method
     raises a ValueError.
     """
-    if revisions is None:
-        return []
-    else:
-        revisions = list(revisions)
+    revisions = list(revisions)
 
     # verify that all arguments are valid revisions
     invalid_revisions = [revision for revision in revisions if not _revision_exists(revision)]
@@ -133,9 +125,8 @@ def get_changed_files(
             print(f"Comparing against revision '{base_revision}' (merge base '{common_ancestor}')")
 
     changed_files = _check_output("git", "diff", "--name-only", common_ancestor).splitlines()
-    files_to_examine = [
-        file for file in get_tracked_files(include, exclude) if file in changed_files
-    ]
+
+    files_to_examine = [file for file in files if file in changed_files]
 
     if not silent:
         print(f"Found {len(files_to_examine)} changed file(s) to examine")
@@ -173,26 +164,28 @@ def _revision_exists(revision: str) -> bool:
     )
 
 
-def get_test_files(*files: str, exclude: Union[str, Iterable[str]] = "", silent: bool) -> List[str]:
+def get_test_files(
+    files: Iterable[str], exclude: Union[str, Iterable[str]] = (), silent: bool = False
+) -> List[str]:
     """For the given files, identify all associated test files (i.e. files with the same name, but
     with a "_test.py" suffix).
     """
-    should_include = inclusion_filter(exclude)
 
-    test_files = set()
+    test_files = []
     for file in files:
-        if file.endswith("_test.py"):
-            test_files.add(file)
-
+        if file.split("::")[0].endswith("_test.py"):
+            test_files.append(file)
         else:
             test_file = re.sub(r"\.py$", "_test.py", file)
-            test_file_exists = os.path.isfile(os.path.join(root_dir, test_file))
-            if test_file_exists and should_include(test_file):
-                test_files.add(test_file)
+            if os.path.isfile(os.path.join(root_dir, test_file)):
+                test_files.append(test_file)
             elif not silent:
                 print(warning(f"WARNING: no test file found for {file}"))
 
-    return list(test_files)
+    if exclude:
+        test_files = exclude_files(test_files, exclude)
+
+    return sorted(set(test_files))
 
 
 ####################################################################################################
@@ -200,36 +193,83 @@ def get_test_files(*files: str, exclude: Union[str, Iterable[str]] = "", silent:
 
 
 def get_file_parser() -> argparse.ArgumentParser:  # pylint: disable=missing-function-docstring
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        allow_abbrev=False, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
 
     help_text = "The files to check. If not passed any files, inspects the entire repo."
     parser.add_argument("files", nargs="*", help=help_text)
 
     help_text = (
         "Run an incremental check on files that have changed since a specified revision.  "
-        + f"If no revisions are specified, compare against the first of {default_branches} "
-        + "that exists.  If multiple revisions are provided, this script compares against "
-        + "their most recent common ancestor.  Incremental checks ignore integration tests."
+        f"If no revisions are specified, compare against the first of {default_branches} "
+        "that exists. If multiple revisions are provided, this script compares against "
+        "their most recent common ancestor. Incremental checks ignore integration tests."
     )
     parser.add_argument("-i", "--incremental", dest="revisions", nargs="*", help=help_text)
+    parser.add_argument(
+        "-x", "--exclude", action="append", metavar="GLOB", help="Exclude files matchine GLOB."
+    )  # TODO: replace "append" with "extend" once we require python>=3.8
 
     return parser
 
 
-def extract_files(  # pylint: disable=missing-function-docstring
+def extract_files(
     parsed_args: argparse.Namespace,
-    include: Union[str, Iterable[str]],
-    exclude: Union[str, Iterable[str]] = "",
+    include: Union[str, Iterable[str]] = (),
+    exclude: Union[str, Iterable[str]] = (),
     silent: bool = False,
-    search_if_empty: bool = True,
 ) -> List[str]:
-    files = parsed_args.files if "files" in parsed_args else []
-    if "revisions" in parsed_args:
-        files += get_changed_files(include, exclude, parsed_args.revisions, silent=silent)
-    if not files and search_if_empty:
-        return get_tracked_files(include, exclude)
-    else:
-        return files
+    """Collect a list of files to test, according to command line arguments and `include`/`exclude`
+    values.
+
+    Args:
+        parsed_args: The namespace generated by the ArgumentParser returned by `get_file_parser()`.
+        include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
+        exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
+        silent: If True, restrict printing to warning and error messages.
+
+    Returns:
+        If `parsed_args.files` is empty (i.e. no file paths or globs have been passed to the file
+        parser), a list of tracked files in the active repo branch meeting all of the following
+        criteria:
+        1. The file's path (relative to `root_dir`) matches at least one path or glob in `include`,
+        2. The path does not match any path or glob in `exclude`,
+        3. The path does not match any path or glob in `parsed_args.exclude`,
+        4. If `parsed_args.revisions` is not None, the file additionally must have been modified in
+            the current branch (see `get_changed_files()` for details on how this is determined).
+
+        If `parsed_args.files` is nonempty, a restricted file list containing:
+        1. Paths meeting the above criteria and matching any glob in `parsed_args.files`.
+        2. Paths meeting the above criteria and located in any extant subdirectory passed to the
+            file parser directly.
+        3. Paths to extant files passed to the file parser directly, regardless of above criteria.
+    """
+
+    if parsed_args.exclude:
+        exclude = [*exclude, *parsed_args.exclude]
+
+    files = []
+    globs = []
+    for glob in parsed_args.files:
+        if os.path.isfile(glob.split("::")[0]):  # always include files passed directly as arguments
+            files.append(os.path.relpath(glob, start=root_dir))
+        elif os.path.isdir(glob):  # treat subdirectories the same as the glob "<subdir>/*"
+            globs.append(os.path.normpath(os.path.join(os.path.relpath(glob, start=root_dir), "*")))
+        else:
+            globs.append(glob)
+
+    if globs or not parsed_args.files:
+        tracked_files = get_tracked_files(include)
+        tracked_files = exclude_files(tracked_files, exclude)
+        if globs:
+            tracked_files = select_files(tracked_files, globs)
+        files += tracked_files
+
+    if parsed_args.revisions is not None:
+        files = get_changed_files(files, parsed_args.revisions, silent=silent)
+
+    return sorted(set(files))
 
 
 def enable_exit_on_failure(func_with_returncode: Callable[..., int]) -> Callable[..., int]:

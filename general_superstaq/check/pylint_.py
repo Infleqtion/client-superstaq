@@ -13,7 +13,7 @@ from general_superstaq.check import check_utils
 def run(  # pylint: disable=missing-function-docstring
     *args: str,
     include: Union[str, Iterable[str]] = "*.py",
-    exclude: Union[str, Iterable[str]] = "",
+    exclude: Union[str, Iterable[str]] = (),
     silent: bool = False,
 ) -> int:
 
@@ -27,7 +27,17 @@ def run(  # pylint: disable=missing-function-docstring
 
     num_cores = max(multiprocessing.cpu_count() // 2, 1)
 
-    parser.add_argument("-a", "--all", action="store_true", help="Run pylint on the entire repo.")
+    # perform incremental check by default
+    parser.set_defaults(revisions=[])
+    parser.add_argument(
+        "-a",
+        "--all",
+        action="store_const",
+        const=None,
+        dest="revisions",
+        help="Run pylint on the entire repo.",
+    )
+
     parser.add_argument(
         "-j",
         "--cores",
@@ -37,17 +47,14 @@ def run(  # pylint: disable=missing-function-docstring
     )
 
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
-    files = check_utils.extract_files(parsed_args, include, exclude, silent, search_if_empty=False)
+    files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     args_to_pass.append(f"-j{parsed_args.cores}")
 
-    if parsed_args.all:
-        files += check_utils.get_tracked_files(include, exclude)
-    elif not files:
-        parsed_args.revisions = []  # perform a default incremental check
-        files = check_utils.extract_files(parsed_args, include, exclude, silent)
+    if files:
+        return subprocess.call(["pylint", *files, *args_to_pass], cwd=check_utils.root_dir)
 
-    return subprocess.call(["pylint", *files, *args_to_pass], cwd=check_utils.root_dir)
+    return 0
 
 
 if __name__ == "__main__":
