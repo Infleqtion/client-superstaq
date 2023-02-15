@@ -230,10 +230,6 @@ class _SuperstaQClient:
         """Makes a POST request to SuperstaQ API to compile a circuits for IBM devices."""
         return self.post_request("/ibmq_compile", json_dict)
 
-    def neutral_atom_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> Dict[str, str]:
-        """Makes a POST request to SuperstaQ API to compile a circuits for neutral atom devices."""
-        return self.post_request("/neutral_atom_compile", json_dict)
-
     def submit_qubo(
         self,
         qubo: qv.QUBO,
