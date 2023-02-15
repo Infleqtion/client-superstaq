@@ -350,6 +350,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         self,
         circuits: Union[cirq.Circuit, List[cirq.Circuit]],
         target: str = "aqt_keysight_qpu",
+        atol: Optional[float] = None,
         gate_defs: Optional[
             Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
         ] = None,
@@ -359,6 +360,8 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Args:
             circuits: Cirq Circuit(s) to compile.
             target: String of target AQT device.
+            atol: An optional tolerance to use for approximate gate synthesis.
+                Currently only used for qutrit gate synthesis.
             gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
                 operations can be numpy arrays, cirq.Gates, cirq.Operations. More specific names
                 take precedence, for example gate_defs={"CZ3": css.CZ3, "CZ3/C5T4": css.CZ3_INV}
@@ -375,6 +378,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         return self._aqt_compile(
             circuits,
             target=target,
+            atol=atol,
             gate_defs=gate_defs,
         )
 
@@ -384,6 +388,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         num_equivalent_circuits: int,
         random_seed: Optional[int] = None,
         target: str = "aqt_keysight_qpu",
+        atol: Optional[float] = None,
         gate_defs: Optional[
             Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
         ] = None,
@@ -399,6 +404,8 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
                 each input circuit.
             random_seed: Optional seed for circuit randomizer.
             target: String of target AQT device.
+            atol: An optional tolerance to use for approximate gate synthesis.
+                Currently only used for qutrit gate synthesis.
             gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
                 operations can be numpy arrays, cirq.Gates, cirq.Operations. More specific names
                 take precedence, for example gate_defs={"CZ3": css.CZ3, "CZ3/C5T4": css.CZ3_INV}
@@ -418,6 +425,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             target=target,
             num_equivalent_circuits=num_equivalent_circuits,
             random_seed=random_seed,
+            atol=atol,
             gate_defs=gate_defs,
         )
 
@@ -428,6 +436,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         *,
         num_equivalent_circuits: Optional[int] = None,
         random_seed: Optional[int] = None,
+        atol: Optional[float] = None,
         gate_defs: Optional[
             Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
         ] = None,
@@ -450,6 +459,8 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             options_dict["num_eca_circuits"] = num_equivalent_circuits
         if random_seed is not None:
             options_dict["random_seed"] = random_seed
+        if atol is not None:
+            options_dict["atol"] = atol
         if gate_defs is not None:
             gate_defs_cirq = {}
             for key, val in gate_defs.items():

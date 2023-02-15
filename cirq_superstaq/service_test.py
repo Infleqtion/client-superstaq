@@ -274,9 +274,10 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
         "CS2": cirq.unitary(cirq.CZ**0.49),
         "CS3": cirq.unitary(css.CZ3**0.5),
     }
-    out = service.aqt_compile(cirq.Circuit(), gate_defs=gate_defs)
+    out = service.aqt_compile(cirq.Circuit(), gate_defs=gate_defs, atol=1e-3)
 
     expected_options = {
+        "atol": 1e-3,
         "gate_defs": {
             "CZ3": css.CZ3,
             "CZ3/T5C4": None,
@@ -307,7 +308,7 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
 )
 def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    out = service.aqt_compile([cirq.Circuit(), cirq.Circuit()])
+    out = service.aqt_compile([cirq.Circuit(), cirq.Circuit()], atol=1e-2)
     mock_post_request.assert_called_once()
     assert out.circuits == [cirq.Circuit(), cirq.Circuit()]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
@@ -323,7 +324,9 @@ def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None
 )
 def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    out = service.aqt_compile_eca(cirq.Circuit(), num_equivalent_circuits=1, random_seed=1234)
+    out = service.aqt_compile_eca(
+        cirq.Circuit(), num_equivalent_circuits=1, random_seed=1234, atol=1e-2
+    )
     mock_post_request.assert_called_once()
     assert out.circuits == [cirq.Circuit()]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
