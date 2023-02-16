@@ -1,0 +1,22 @@
+# This workflow automates deploys and releases.
+# Updates to _version.py that are pushed to main will trigger this workflow.
+# This workflow will run checks, publish to PyPI and publish a release on GitHub.
+# If checks fail or deploy fails, run the separate "Publish general_superstaq..." action.
+
+name: Automated Publish and Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'general_superstaq/_version.py'
+
+jobs:
+  run_checks:
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+  publish_and_release:
+    needs: run_checks
+    uses: ./.github/workflows/main.yaml
+    secrets: inherit
