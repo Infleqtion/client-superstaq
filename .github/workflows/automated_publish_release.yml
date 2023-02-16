@@ -18,5 +18,5 @@ jobs:
     secrets: inherit
   publish_and_release:
     needs: run_checks
-    uses: ./.github/workflows/main.yaml
+    uses: ./.github/workflows/main.yml
     secrets: inherit
