@@ -14,9 +14,9 @@ sys.path.insert(0, os.path.abspath("../.."))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'docs-superstaq'
-copyright = '2022, Super.tech'
-author = 'Super.tech'
+project = "docs-superstaq"
+copyright = "2022, Super.tech"  # pylint: disable=redefined-builtin
+author = "Super.tech"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -38,7 +38,7 @@ nbsphinx_execute = "never"
 mathjax_path = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
 autosummary_generate = True
 
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # Using `modules` in index.rst gets the first package and ignores additional included packages.
 # Listing out modules explicitly causes building docs to throw error looking for `modules.rst`,
@@ -55,12 +55,12 @@ exclude_patterns: List[str] = [
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
-html_static_path = ['_static']
+html_static_path = ["_static"]
 html_theme_options = {
     "logo_only": True,
 }
 html_logo = "_static/logos/superstaq-logo-v3.png"
 html_css_files = [
-    'css/docs-superstaq.css',
+    "css/docs-superstaq.css",
 ]
 html_favicon = "_static/logos/superstaq-favicon.png"
