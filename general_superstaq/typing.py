@@ -1,6 +1,11 @@
+import sys
 from typing import Any, Dict, List, Optional, Tuple
 
-from typing_extensions import TypedDict  # compatible with both python 3.7 and 3.8
+if sys.version_info >= (3, 8):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
+
 
 QuboDict = TypedDict(
     "QuboDict",
