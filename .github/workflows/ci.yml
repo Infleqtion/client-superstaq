@@ -25,7 +25,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py') }}-${{ hashFiles('dev-requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py', '*requirements.txt') }}
       - name: Install dependencies
         env:
           PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
@@ -48,7 +48,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py') }}-${{ hashFiles('dev-requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py', '*requirements.txt') }}
       - name: Install dependencies
         env:
           PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
@@ -71,7 +71,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py') }}-${{ hashFiles('dev-requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py', '*requirements.txt') }}
       - name: Install dependencies
         env:
           PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
@@ -94,7 +94,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py') }}-${{ hashFiles('dev-requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py', '*requirements.txt') }}
       - name: Install dependencies
         env:
           PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
@@ -122,7 +122,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py') }}-${{ hashFiles('dev-requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py', '*requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -145,7 +145,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py') }}-${{ hashFiles('dev-requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py', '*requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -189,12 +189,12 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py') }}-${{ hashFiles('dev-requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py', '*requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
-      - name: Coverage check
+          pip install .
+      - name: Requirements check
         run: |
           check/requirements.py
 
@@ -213,7 +213,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py') }}-${{ hashFiles('dev-requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py', '*requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip

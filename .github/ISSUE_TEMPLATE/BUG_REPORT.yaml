@@ -34,7 +34,7 @@ body:
       value: |
         - **SuperstaQ version**: 
         - **general-superstaq version**: 
-        - **cirq-superstaq version**: 
+        - **qiskit-superstaq version**: 
         - **Operating system**: 
         - **Python version**: 
         - **Any other relevant dependencies**: 

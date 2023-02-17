@@ -1,4 +1,4 @@
-# This publishes to PyPI.
+# This publishes to PyPI. See: https://github.com/pypa/gh-action-pypi-publish
 name: Publish qiskit-superstaq to PyPI and release to GitHub
 on:
   workflow_dispatch: null
