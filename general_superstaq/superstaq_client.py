@@ -178,7 +178,7 @@ class _SuperstaQClient:
         """
         return self.get_request("/balance")
 
-    def _accept_terms_of_use(self) -> str:
+    def _accept_terms_of_use(self, user_input: str) -> str:
         """Makes a POST request to SuperstaQ API to confirm acceptance of terms of use.
 
         Returns:
@@ -187,7 +187,7 @@ class _SuperstaQClient:
         Returns:
             String with success message.
         """
-        return self.post_request("/accept_terms_of_use", {})
+        return self.post_request("/accept_terms_of_use", {"user_input": user_input})
 
     def get_targets(self) -> Dict[str, Dict[str, List[str]]]:
         """Makes a GET request to SuperstaQ API to get a list of available targets."""
@@ -292,7 +292,9 @@ class _SuperstaQClient:
 
     def _handle_status_codes(self, response: requests.Response) -> None:
         if response.status_code == requests.codes.unauthorized:
-            if "terms of use" in str(response.text).lower():
+            if str(response.text) == (
+                "You must accept the Terms of Use (superstaq.super.tech/terms_of_use)."
+            ):
                 self._prompt_accept_terms_of_use()
                 return
             else:
@@ -318,10 +320,9 @@ class _SuperstaQClient:
             " is necessary before using SuperstaQ.\nType in YES to accept: "
         )
         user_input = input(message).upper()
-        if user_input == "YES":
-            self._accept_terms_of_use()
-            print("Accepted. You can now continue using SuperstaQ.")
-        else:
+        response = self._accept_terms_of_use(user_input)
+        print(response)
+        if response != "Accepted. You can now continue using SuperstaQ.":
             raise gss.SuperstaQException(
                 "You'll need to accept Terms of Use before usage of SuperstaQ.",
                 requests.codes.unauthorized,

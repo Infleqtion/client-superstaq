@@ -22,9 +22,16 @@ class UserConfig:  # pylint: disable=missing-class-docstring
             return f"${balance:,.2f}"
         return balance
 
-    def _accept_terms_of_use(self) -> str:
-        """Confirm acceptance of terms of use at https://superstaq.super.tech/terms_of_use."""
-        return self._client._accept_terms_of_use()
+    def _accept_terms_of_use(self, user_input: str) -> str:
+        """Send acceptance of terms of use at https://superstaq.super.tech/terms_of_use.
+
+        Args:
+            user_input: if "YES", server will mark user as having accepted TOU.
+
+        Returns:
+            String message indicated if user has been marked as having accepted TOU.
+        """
+        return self._client._accept_terms_of_use(user_input)
 
     def ibmq_set_token(self, token: str) -> str:
         """Sets IBMQ token field in database.
