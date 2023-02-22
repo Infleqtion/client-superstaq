@@ -12,7 +12,7 @@ from general_superstaq.check import check_utils
 def run(  # pylint: disable=missing-function-docstring
     *args: str,
     include: Union[str, Iterable[str]] = "*.py",
-    exclude: Union[str, Iterable[str]] = "*_integration_test.py",
+    exclude: Union[str, Iterable[str]] = (),
     silent: bool = False,
 ) -> int:
 
@@ -26,7 +26,10 @@ def run(  # pylint: disable=missing-function-docstring
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
-    return subprocess.call(["flake8", *files, *args_to_pass], cwd=check_utils.root_dir)
+    if files:
+        return subprocess.call(["flake8", *files, *args_to_pass], cwd=check_utils.root_dir)
+
+    return 0
 
 
 if __name__ == "__main__":

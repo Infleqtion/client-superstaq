@@ -44,29 +44,29 @@ def run(  # pylint: disable=missing-function-docstring
         help="'Hard force' ~ continue past (i.e. do not exit after) all failing checks.",
     )
 
-    parsed_args = parser.parse_intermixed_args(args)
-    args_to_pass = parsed_args.files
+    parsed_args, _ = parser.parse_known_intermixed_args(args)
     if parsed_args.revisions is not None:
-        args_to_pass += ["-i", *parsed_args.revisions]
+        # print info about incremental files once now, rather than in each check
+        _ = check_utils.extract_files(parsed_args, silent=False)
 
     default_mode = not parsed_args.files and parsed_args.revisions is None
     checks_failed = 0
 
+    args_to_pass = [arg for arg in args if arg not in ("-f", "-F", "--force")]
+
     # run formatting checks
-    # silence most checks to avoid printing duplicate info about incrmental files
+    # silence most checks to avoid printing duplicate info about incremental files
     # silencing does not affect warnings and errors
     exit_on_failure = not (parsed_args.force_formats or parsed_args.force_all)
     checks_failed |= configs.run(exit_on_failure=exit_on_failure, silent=True)
-    checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=False)
+    checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
     checks_failed |= flake8_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
     checks_failed |= pylint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 
     # run typing and coverage checks
     exit_on_failure = not parsed_args.force_all
     checks_failed |= mypy_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
-    checks_failed |= coverage_.run(
-        *args_to_pass, exit_on_failure=exit_on_failure, silent=default_mode
-    )
+    checks_failed |= coverage_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 
     # check that all pip requirements files are in order
     checks_failed |= requirements.run(exit_on_failure=exit_on_failure)

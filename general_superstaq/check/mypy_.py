@@ -12,7 +12,7 @@ from general_superstaq.check import check_utils
 def run(  # pylint: disable=missing-function-docstring
     *args: str,
     include: Union[str, Iterable[str]] = "*.py",
-    exclude: Union[str, Iterable[str]] = "",
+    exclude: Union[str, Iterable[str]] = "*setup.py",
     silent: bool = False,
 ) -> int:
 

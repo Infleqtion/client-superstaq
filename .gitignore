@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
 
 # C extensions
 *.so
@@ -26,6 +27,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+tags
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -70,6 +72,13 @@ instance/
 .scrapy
 
 # Sphinx documentation
+_build
+*build/
+_readthedocs_build
+autoapi
+_build_rtd
+docs/source/modules.rst
+docs/source/setup.rst
 docs/_build/
 
 # PyBuilder
@@ -138,6 +147,13 @@ cython_debug/
 
 # Intellij/ pycharm
 .idea/
+
+# Docs
+_site
+.sass-cache
+.jekyll-cache
+.jekyll-metadata
+vendor
 
 # MacOS
 .DS_Store

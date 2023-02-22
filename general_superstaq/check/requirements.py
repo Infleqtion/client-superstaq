@@ -11,8 +11,6 @@ import textwrap
 import urllib.request
 from typing import Dict, Iterable, List, Tuple, Union
 
-import pkg_resources
-
 from general_superstaq.check import check_utils
 
 
@@ -98,8 +96,7 @@ def _inspect_req_file(
     if needs_cleanup and not silent:
         print(check_utils.failure(f"{req_file} is not sorted."))
 
-    is_repo_req = not os.path.dirname(req_file)  # repo requirements are in the root directory
-    if is_repo_req and not only_sort and can_connect_to_pypi:
+    if not only_sort and can_connect_to_pypi:
         needs_cleanup |= _check_package_versions(
             req_file, requirements, upstream_match, silent, strict=True
         )
@@ -206,14 +203,6 @@ def _inspect_local_version(package: str, latest_version: str) -> None:
     except subprocess.CalledProcessError:
         # pip returned a non-zero exit status; let pip print its own error message
         pass
-
-
-def _check_requirements(requirements: List[str]) -> None:
-    # wrapper for "pkg_resources.require" to check that all requirements are satisfied
-    try:
-        pkg_resources.require(iter(requirements))
-    except (pkg_resources.DistributionNotFound, pkg_resources.VersionConflict) as error:
-        print(check_utils.warning("WARNING: " + error.report()))
 
 
 def _cleanup(

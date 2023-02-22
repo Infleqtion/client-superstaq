@@ -32,7 +32,7 @@ def run(  # pylint: disable=missing-function-docstring
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     silent = silent or not (parsed_args.files or parsed_args.revisions)
-    test_files = check_utils.get_test_files(*files, exclude=exclude, silent=silent)
+    test_files = check_utils.get_test_files(files, exclude=exclude, silent=silent)
 
     if not test_files:
         print("No test files to check for pytest and coverage.")

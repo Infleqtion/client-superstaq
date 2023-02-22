@@ -12,7 +12,7 @@ from general_superstaq.check import check_utils
 def run(  # pylint: disable=missing-function-docstring
     *args: str,
     include: Union[str, Iterable[str]] = ("*.py", "*.ipynb"),
-    exclude: Union[str, Iterable[str]] = "",
+    exclude: Union[str, Iterable[str]] = (),
     silent: bool = False,
 ) -> int:
 
@@ -25,20 +25,23 @@ def run(  # pylint: disable=missing-function-docstring
 
     parser.add_argument("--apply", action="store_true", help="Apply changes to files.")
 
-    parsed_args, args_to_pass_black = parser.parse_known_intermixed_args(args)
+    parsed_args, args_to_pass_isort = parser.parse_known_intermixed_args(args)
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
+    if not files:
+        return 0
 
     diff_check_args = ["--diff", "--check"] if not parsed_args.apply else []
     returncode_black = subprocess.call(
-        ["black", *files, *diff_check_args, *args_to_pass_black], cwd=check_utils.root_dir
+        ["black", *files, *diff_check_args], cwd=check_utils.root_dir
     )
 
     if returncode_black > 1:
         # this only occurs if black could not parse a file (for example due to a syntax error)
         return returncode_black
 
+    args_to_pass_isort += ["--resolve-all-configs", f"--config-root={check_utils.root_dir}"]
     returncode_isort = subprocess.call(
-        ["isort", *files, *diff_check_args], cwd=check_utils.root_dir
+        ["isort", *files, *diff_check_args, *args_to_pass_isort], cwd=check_utils.root_dir
     )
 
     if returncode_black == 1 or returncode_isort == 1:
