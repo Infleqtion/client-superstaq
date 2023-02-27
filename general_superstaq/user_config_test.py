@@ -30,7 +30,9 @@ def test_accept_terms_of_use() -> None:  # pylint: disable=missing-function-docs
         "general_superstaq.superstaq_client._SuperstaQClient.post_request"
     ) as mock_post_request:
         service._accept_terms_of_use("response")
-        mock_post_request.assert_called_once_with("/accept_terms_of_use", {"user_input": "response"})
+        mock_post_request.assert_called_once_with(
+            "/accept_terms_of_use", {"user_input": "response"}
+        )
 
 
 @mock.patch(
