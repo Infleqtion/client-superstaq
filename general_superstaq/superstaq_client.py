@@ -181,8 +181,8 @@ class _SuperstaQClient:
     def _accept_terms_of_use(self, user_input: str) -> str:
         """Makes a POST request to SuperstaQ API to confirm acceptance of terms of use.
 
-        Returns:
-            A tuple.
+        Args:
+            user_input: user's response to prompt for acceptance of TOU. Server accepts YES
 
         Returns:
             String with success message.
