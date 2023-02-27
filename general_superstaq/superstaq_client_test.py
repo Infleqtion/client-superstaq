@@ -134,9 +134,8 @@ def test_superstaq_client_needs_accept_terms_of_use(
             client.get_balance()
         assert capsys.readouterr().out == "YES response required to proceed\n"
 
-    # When user accepts, a second request will be made (which would presumably succeed). Strange
-    # mock syntax, see docs.python.org/3.11/library/unittest.mock.html#unittest.mock.PropertyMock
-    type(fake_get_response).ok = mock.PropertyMock(side_effect=[False, True])
+    fake_authorized_get_response = mock.MagicMock(ok=True)
+    mock_get.side_effect = [fake_get_response, fake_authorized_get_response]
     mock_accept_terms_of_use.return_value = "Accepted. You can now continue using SuperstaQ."
     with mock.patch("builtins.input", return_value="YES"):
         client.get_balance()
