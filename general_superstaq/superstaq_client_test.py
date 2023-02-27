@@ -129,7 +129,7 @@ def test_superstaq_client_needs_accept_terms_of_use(
 
     mock_accept_terms_of_use.return_value = "YES response required to proceed"
 
-    with mock.patch("builtins.input", return_value="NO"):
+    with mock.patch("builtins.input"):
         with pytest.raises(gss.SuperstaQException, match="You'll need to accept Terms of Use"):
             client.get_balance()
         assert capsys.readouterr().out == "YES response required to proceed\n"
