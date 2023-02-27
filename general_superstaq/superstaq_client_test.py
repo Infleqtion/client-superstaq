@@ -137,7 +137,7 @@ def test_superstaq_client_needs_accept_terms_of_use(
     fake_authorized_get_response = mock.MagicMock(ok=True)
     mock_get.side_effect = [fake_get_response, fake_authorized_get_response]
     mock_accept_terms_of_use.return_value = "Accepted. You can now continue using SuperstaQ."
-    with mock.patch("builtins.input", return_value="YES"):
+    with mock.patch("builtins.input"):
         client.get_balance()
         assert capsys.readouterr().out == "Accepted. You can now continue using SuperstaQ.\n"
 
