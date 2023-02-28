@@ -80,13 +80,13 @@ def test_compiler_output_repr() -> None:
     circuit = cirq.Circuit()
     assert (
         repr(css.compiler_output.CompilerOutput(circuit))
-        == f"CompilerOutput({circuit!r}, None, None, None, None)"
+        == f"CompilerOutput({circuit!r}, None, None, None, None, None)"
     )
 
     circuits = [circuit, circuit]
     assert (
         repr(css.compiler_output.CompilerOutput(circuits))
-        == f"CompilerOutput({circuits!r}, None, None, None, None)"
+        == f"CompilerOutput({circuits!r}, None, None, None, None, None)"
     )
 
 
@@ -235,6 +235,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
 def test_read_json_qscout() -> None:
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
+    final_logical_to_physical = {cirq.q(0): cirq.q(13)}
 
     jaqal_program = textwrap.dedent(
         """\
@@ -248,21 +249,27 @@ def test_read_json_qscout() -> None:
 
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
         "jaqal_programs": [jaqal_program],
     }
 
     out = css.compiler_output.read_json_qscout(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
+    assert out.final_logical_to_physical == final_logical_to_physical
     assert out.jaqal_program == jaqal_program
+    assert not hasattr(out, "final_logical_to_physicals")
     assert not hasattr(out, "jaqal_programs")
 
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits([circuit, circuit]),
+        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
         "jaqal_programs": [jaqal_program, jaqal_program],
     }
     out = css.compiler_output.read_json_qscout(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
+    assert out.final_logical_to_physicals == [final_logical_to_physical]
     assert out.jaqal_programs == json_dict["jaqal_programs"]
+    assert not hasattr(out, "final_logical_to_physical")
     assert not hasattr(out, "jaqal_program")
 
 

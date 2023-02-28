@@ -370,6 +370,7 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
 
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
+    final_logical_to_physical = {q0: q0}
 
     jaqal_program = textwrap.dedent(
         """\
@@ -383,12 +384,14 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
 
     mock_qscout_compile.return_value = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
         "jaqal_programs": [jaqal_program],
     }
 
     service = css.Service(api_key="key", remote_host="http://example.com")
     out = service.qscout_compile(circuit)
     assert out.circuit == circuit
+    assert out.final_logical_to_physical == final_logical_to_physical
     assert out.jaqal_program == jaqal_program
 
 
@@ -399,17 +402,20 @@ def test_qscout_compile_swap_mirror(
 ) -> None:
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.measure(q0))
+    final_logical_to_physical = {q0: q0}
 
     jaqal_program = ""
 
     mock_qscout_compile.return_value = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
         "jaqal_programs": [jaqal_program],
     }
 
     service = css.Service(api_key="key", remote_host="http://example.com")
     out = service.qscout_compile(circuit, mirror_swaps=mirror_swaps)
     assert out.circuit == circuit
+    assert out.final_logical_to_physical == final_logical_to_physical
     assert out.jaqal_program == jaqal_program
     mock_qscout_compile.assert_called_once()
     assert json.loads(mock_qscout_compile.call_args[0][0]["options"]) == {
@@ -425,17 +431,20 @@ def test_qscout_compile_base_entangling_gate(
 ) -> None:
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.measure(q0))
+    final_logical_to_physical = {q0: q0}
 
     jaqal_program = ""
 
     mock_qscout_compile.return_value = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
         "jaqal_programs": [jaqal_program],
     }
 
     service = css.Service(api_key="key", remote_host="http://example.com")
     out = service.qscout_compile(circuit, base_entangling_gate=base_entangling_gate)
     assert out.circuit == circuit
+    assert out.final_logical_to_physical == final_logical_to_physical
     assert out.jaqal_program == jaqal_program
     mock_qscout_compile.assert_called_once()
     assert json.loads(mock_qscout_compile.call_args[0][0]["options"]) == {

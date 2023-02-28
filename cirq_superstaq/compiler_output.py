@@ -58,6 +58,9 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
     def __init__(
         self,
         circuits: Union[cirq.Circuit, List[cirq.Circuit], List[List[cirq.Circuit]]],
+        final_logical_to_physicals: Optional[
+            Union[Dict[cirq.Qid, cirq.Qid], List[Dict[cirq.Qid, cirq.Qid]]]
+        ] = None,
         pulse_sequences: Optional[Any] = None,
         seq: Optional["qtrl.sequencer.Sequence"] = None,
         jaqal_programs: Optional[Union[List[str], str]] = None,
@@ -65,11 +68,13 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
     ) -> None:
         if isinstance(circuits, cirq.Circuit):
             self.circuit = circuits
+            self.final_logical_to_physical = final_logical_to_physicals
             self.pulse_list = pulse_lists
             self.pulse_sequence = pulse_sequences
             self.jaqal_program = jaqal_programs
         else:
             self.circuits = circuits
+            self.final_logical_to_physicals = final_logical_to_physicals
             self.pulse_lists = pulse_lists
             self.pulse_sequences = pulse_sequences
             self.jaqal_programs = jaqal_programs
@@ -87,12 +92,14 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
     def __repr__(self) -> str:
         if not self.has_multiple_circuits():
             return (
-                f"CompilerOutput({self.circuit!r}, {self.pulse_sequence!r}, {self.seq!r}, "
-                f"{self.jaqal_program!r}, {self.pulse_list!r})"
+                f"CompilerOutput({self.circuit!r}, {self.final_logical_to_physical!r}, "
+                f"{self.pulse_sequence!r}, {self.seq!r}, {self.jaqal_program!r}, "
+                f"{self.pulse_list!r})"
             )
         return (
-            f"CompilerOutput({self.circuits!r}, {self.pulse_sequences!r}, {self.seq!r}, "
-            f"{self.jaqal_programs!r}, {self.pulse_lists!r})"
+            f"CompilerOutput({self.circuits!r}, {self.final_logical_to_physicals!r}, "
+            f"{self.pulse_sequences!r}, {self.seq!r}, {self.jaqal_programs!r}, "
+            f"{self.pulse_lists!r})"
         )
 
 
@@ -215,14 +222,24 @@ def read_json_qscout(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compi
     """
 
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
+    final_logical_to_physicals: Optional[List[Dict[cirq.Qid, cirq.Qid]]] = None
+
+    if "final_logical_to_physicals" in json_dict:
+        final_logical_to_physicals = list(
+            map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
+        )
 
     if circuits_is_list:
         return CompilerOutput(
-            circuits=compiled_circuits, jaqal_programs=json_dict["jaqal_programs"]
+            circuits=compiled_circuits,
+            final_logical_to_physicals=final_logical_to_physicals,
+            jaqal_programs=json_dict["jaqal_programs"],
         )
 
     return CompilerOutput(
-        circuits=compiled_circuits[0], jaqal_programs=json_dict["jaqal_programs"][0]
+        circuits=compiled_circuits[0],
+        final_logical_to_physicals=final_logical_to_physicals and final_logical_to_physicals[0],
+        jaqal_programs=json_dict["jaqal_programs"][0],
     )
 
 
