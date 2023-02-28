@@ -1,5 +1,3 @@
-import collections
-
 import cirq
 
 import supermarq
@@ -23,7 +21,5 @@ def test_qaoa_score() -> None:
     qaoa = QAOAFermionicSwapProxy(4)
     # Reverse bitstring ordering due to SWAP network
     raw_counts = supermarq.simulation.get_ideal_counts(qaoa.circuit())
-    ideal_counts = collections.Counter(
-        {bitstring[::-1]: probability for bitstring, probability in raw_counts.items()}
-    )
-    assert qaoa.score(collections.Counter({k[::-1]: v for k, v in ideal_counts.items()})) > 0.99
+    ideal_counts = {bitstring[::-1]: probability for bitstring, probability in raw_counts.items()}
+    assert qaoa.score({k[::-1]: v for k, v in ideal_counts.items()}) > 0.99

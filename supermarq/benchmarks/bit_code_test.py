@@ -1,5 +1,3 @@
-import collections
-
 import pytest
 
 from supermarq.benchmarks.bit_code import BitCode
@@ -12,7 +10,7 @@ def test_bit_code_circuit() -> None:
 
 def test_bit_code_score() -> None:
     bc = BitCode(4, 2, [0, 1, 1, 0])
-    assert bc.score(collections.Counter({"1011010010100": 100})) == 1
+    assert bc.score({"1011010010100": 100}) == 1
 
 
 def test_invalid_size() -> None:

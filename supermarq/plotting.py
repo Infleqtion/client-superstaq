@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 from matplotlib.patches import Circle
 from matplotlib.projections import register_projection
 from matplotlib.projections.polar import PolarAxes
@@ -39,7 +40,7 @@ def plot_results(
 def plot_correlations(
     benchmark_features: Dict[str, List[float]],
     device_scores: Dict[str, float],
-    feature_labels: List,
+    feature_labels: List[str],
     device_name: str,
     savefn: Optional[str] = None,
     show: bool = True,
@@ -140,14 +141,14 @@ def plot_benchmark(
 
 
 def heatmap(
-    data: np.ndarray,
+    data: npt.NDArray[np.float_],
     ax: matplotlib.axes.Axes,
     row_labels: List[str],
     col_labels: List[str],
-    cbar_kw: Optional[Dict] = None,
+    cbar_kw: Optional[Dict[str, Any]] = None,
     cbarlabel: str = "",
     **kwargs: Any
-) -> Tuple[Any, Any]:
+) -> Tuple[matplotlib.image.AxesImage, Any]:
     """
     Create a heatmap from a numpy array and two lists of labels.
 
@@ -209,13 +210,13 @@ def heatmap(
 
 
 def annotate_heatmap(
-    im: matplotlib.image,
-    data: Optional[np.ndarray] = None,
+    im: matplotlib.image.AxesImage,
+    data: Optional[npt.NDArray[np.float_]] = None,
     valfmt: Any = "{x:.2f}",
     textcolors: Tuple[str, str] = ("black", "white"),
     threshold: Optional[float] = None,
     **textkw: Any
-) -> List:
+) -> List[matplotlib.text.Text]:
     """
     A function to annotate a heatmap.
 
@@ -241,7 +242,7 @@ def annotate_heatmap(
         the text labels.
     """
 
-    if not isinstance(data, (list, np.ndarray)):
+    if data is None:
         data = im.get_array()
 
     # Normalize the threshold to the images color range.
@@ -271,7 +272,7 @@ def annotate_heatmap(
     return texts
 
 
-def radar_factory(num_vars: int) -> np.ndarray:
+def radar_factory(num_vars: int) -> npt.NDArray[np.float_]:
     """
     (https://matplotlib.org/stable/gallery/specialty_plots/radar_chart.html)
 

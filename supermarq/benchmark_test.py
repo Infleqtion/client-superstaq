@@ -1,4 +1,4 @@
-import collections
+from typing import Mapping
 
 import cirq
 import pytest
@@ -16,7 +16,7 @@ def benchmark() -> Benchmark:
             qubit = cirq.LineQubit(0)
             return cirq.Circuit(cirq.H(qubit), cirq.measure(qubit))
 
-        def score(self, counts: collections.Counter) -> float:
+        def score(self, counts: Mapping[str, float]) -> float:
             dist = {b: c / sum(counts.values()) for b, c in counts.items()}
             return hellinger_fidelity({"0": 0.5, "1": 0.5}, dist)
 
@@ -29,4 +29,4 @@ def test_benchmark_circuit(benchmark: Benchmark) -> None:
 
 
 def test_benchmark_score(benchmark: Benchmark) -> None:
-    assert benchmark.score(collections.Counter({"0": 50, "1": 50})) == 1
+    assert benchmark.score({"0": 50, "1": 50}) == 1

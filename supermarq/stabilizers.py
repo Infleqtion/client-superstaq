@@ -3,13 +3,14 @@ from typing import List, Tuple
 
 import cirq
 import numpy as np
+import numpy.typing as npt
 
 
 class MeasurementCircuit:
     def __init__(
         self,
         circuit: cirq.Circuit,
-        stabilizer_matrix: np.ndarray,
+        stabilizer_matrix: npt.NDArray[np.uint8],
         num_qubits: int,
         qubits: List[cirq.LineQubit],
     ) -> None:
@@ -21,17 +22,19 @@ class MeasurementCircuit:
     def get_circuit(self) -> cirq.Circuit:
         return self.circuit
 
-    def get_stabilizer(self) -> np.ndarray:
+    def get_stabilizer(self) -> npt.NDArray[np.uint8]:
         return self.stabilizer_matrix
 
     def set_circuit(self, circuit: cirq.Circuit) -> None:
         self.circuit = circuit
 
-    def set_stabilizer(self, stabilizer_matrix: np.ndarray) -> None:
+    def set_stabilizer(self, stabilizer_matrix: npt.NDArray[np.uint8]) -> None:
         self.stabilizer_matrix = stabilizer_matrix
 
 
-def construct_stabilizer(N: int, clique: List) -> Tuple[np.ndarray, List]:
+def construct_stabilizer(
+    N: int, clique: List[Tuple[float, str]]
+) -> Tuple[npt.NDArray[np.uint8], List[str]]:
     """Construct the independent Z+X stabilizer matrix for the given clique.
 
     All of the term in the input clique can be measured simultaneously. To construct
@@ -76,7 +79,7 @@ def construct_stabilizer(N: int, clique: List) -> Tuple[np.ndarray, List]:
     return np.array(stabilizer_matrix).T, pauli_basis
 
 
-def binary_gaussian_elimination(M: np.ndarray) -> np.ndarray:
+def binary_gaussian_elimination(M: npt.NDArray[np.uint8]) -> npt.NDArray[np.uint8]:
     """Use binary Gaussian elimination to put the input matrix in row Echelon form.
 
     The input matrix should be an NxM binary matrix."""

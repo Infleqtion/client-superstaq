@@ -1,8 +1,8 @@
-import collections
-from typing import List, Tuple
+from typing import List, Mapping, Tuple
 
 import cirq
 import numpy as np
+import numpy.typing as npt
 import scipy
 
 import supermarq
@@ -39,12 +39,12 @@ class QAOAVanillaProxy(Benchmark):
         self.hamiltonian = self._gen_sk_hamiltonian()
         self.params = self._gen_angles()
 
-    def _gen_sk_hamiltonian(self) -> List:
+    def _gen_sk_hamiltonian(self) -> List[Tuple[int, int, float]]:
         """Randomly pick +1 or -1 for each edge weight."""
         hamiltonian = []
         for i in range(self.num_qubits):
             for j in range(i + 1, self.num_qubits):
-                hamiltonian.append([i, j, np.random.choice([-1, 1])])
+                hamiltonian.append((i, j, np.random.choice([-1, 1])))
 
         np.random.shuffle(hamiltonian)
 
@@ -78,7 +78,7 @@ class QAOAVanillaProxy(Benchmark):
         return circuit
 
     def _get_energy_for_bitstring(self, bitstring: str) -> float:
-        energy = 0
+        energy = 0.0
         for i, j, weight in self.hamiltonian:
             if bitstring[i] == bitstring[j]:
                 energy -= weight  # if edge is UNCUT, weight counts against objective
@@ -86,14 +86,14 @@ class QAOAVanillaProxy(Benchmark):
                 energy += weight  # if edge is CUT, weight counts towards objective
         return energy
 
-    def _get_expectation_value_from_probs(self, probabilities: collections.Counter) -> float:
+    def _get_expectation_value_from_probs(self, probabilities: Mapping[str, float]) -> float:
         expectation_value = 0.0
         for bitstring, probability in probabilities.items():
             expectation_value += probability * self._get_energy_for_bitstring(bitstring)
         return expectation_value
 
-    def _get_opt_angles(self) -> Tuple[List, float]:
-        def f(params: List) -> float:
+    def _get_opt_angles(self) -> Tuple[npt.NDArray[np.float_], float]:
+        def f(params: npt.NDArray[np.float_]) -> float:
             gamma, beta = params
             circ = self._gen_ansatz(gamma, beta)
             probs = supermarq.simulation.get_ideal_counts(circ)
@@ -106,10 +106,10 @@ class QAOAVanillaProxy(Benchmark):
 
         return out["x"], out["fun"]
 
-    def _gen_angles(self) -> List:
+    def _gen_angles(self) -> npt.NDArray[np.float_]:
         # Classically simulate the variational optimization 5 times,
         # return the parameters from the best performing simulation
-        best_params, best_cost = [], 0.0
+        best_params, best_cost = np.zeros(2), 0.0
         for _ in range(5):
             params, cost = self._get_opt_angles()
             if cost < best_cost:
@@ -127,7 +127,7 @@ class QAOAVanillaProxy(Benchmark):
         gamma, beta = self.params
         return self._gen_ansatz(gamma, beta)
 
-    def score(self, counts: collections.Counter) -> float:
+    def score(self, counts: Mapping[str, float]) -> float:
         """Compare the experimental output to the output of noiseless simulation.
 
         The implementation here has exponential runtime and would not scale.
@@ -136,7 +136,7 @@ class QAOAVanillaProxy(Benchmark):
         """
         ideal_counts = supermarq.simulation.get_ideal_counts(self.circuit())
         total_shots = sum(counts.values())
-        experimental_counts = collections.Counter({k: v / total_shots for k, v in counts.items()})
+        experimental_counts = {k: v / total_shots for k, v in counts.items()}
 
         ideal_value = self._get_expectation_value_from_probs(ideal_counts)
         experimental_value = self._get_expectation_value_from_probs(experimental_counts)

@@ -1,5 +1,4 @@
-import collections
-from typing import Generator, List
+from typing import Dict, Iterator, List
 
 import cirq
 from qiskit.quantum_info import hellinger_fidelity
@@ -25,7 +24,9 @@ class BitCode(Benchmark):
         self.num_rounds = num_rounds
         self.bit_state = bit_state
 
-    def _measurement_round_cirq(self, qubits: List[cirq.LineQubit], round_idx: int) -> Generator:
+    def _measurement_round_cirq(
+        self, qubits: List[cirq.LineQubit], round_idx: int
+    ) -> Iterator[cirq.Operation]:
         """
         Generates cirq ops for a single measurement round
 
@@ -38,7 +39,7 @@ class BitCode(Benchmark):
         for qq in range(1, len(qubits), 2):
             yield cirq.CX(qubits[qq + 1], qubits[qq])
         yield cirq.measure(*ancilla_qubits, key=f"mcm{round_idx}")
-        yield [cirq.ops.reset(qubit) for qubit in ancilla_qubits]
+        yield from cirq.reset_each(*ancilla_qubits)
 
     def circuit(self) -> cirq.Circuit:
         num_qubits = 2 * self.num_data_qubits - 1
@@ -57,7 +58,7 @@ class BitCode(Benchmark):
 
         return circuit
 
-    def _get_ideal_dist(self) -> collections.Counter:
+    def _get_ideal_dist(self) -> Dict[str, float]:
         """Return the ideal probability distribution of self.circuit().
 
         Since the only allowed initial states for this benchmark are
@@ -73,9 +74,9 @@ class BitCode(Benchmark):
             final_state += str(self.bit_state[-1])
 
         ideal_bitstring = [ancilla_state] * self.num_rounds + [final_state]
-        return collections.Counter({"".join(ideal_bitstring): 1.0})
+        return {"".join(ideal_bitstring): 1.0}
 
-    def score(self, counts: collections.Counter) -> float:
+    def score(self, counts: Dict[str, float]) -> float:
         """Device performance is given by the Hellinger fidelity between
         the experimental results and the ideal distribution. The ideal
         is known based on the bit_state parameter.
