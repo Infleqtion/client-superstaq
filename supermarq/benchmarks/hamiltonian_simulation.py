@@ -1,4 +1,4 @@
-import collections
+from typing import Mapping
 
 import cirq
 import numpy as np
@@ -78,8 +78,8 @@ class HamiltonianSimulation(Benchmark):
 
         return circuit
 
-    def _average_magnetization(self, result: dict, shots: int) -> float:
-        mag = 0
+    def _average_magnetization(self, result: Mapping[str, float], shots: int) -> float:
+        mag = 0.0
         for spin_str, count in result.items():
             spin_int = [1 - 2 * int(s) for s in spin_str]
             mag += (
@@ -88,7 +88,7 @@ class HamiltonianSimulation(Benchmark):
         average_mag = mag / shots  # normalize by the total number of shots
         return average_mag
 
-    def score(self, counts: collections.Counter) -> float:
+    def score(self, counts: Mapping[str, float]) -> float:
         """Compute the average magnetization of the TFIM chain along the Z-axis
         for the experimental results and via noiseless simulation.
 
@@ -99,7 +99,7 @@ class HamiltonianSimulation(Benchmark):
         """
         ideal_counts = supermarq.simulation.get_ideal_counts(self.circuit())
 
-        total_shots = sum(counts.values())
+        total_shots = int(sum(counts.values()))
 
         mag_ideal = self._average_magnetization(ideal_counts, 1)
         mag_experimental = self._average_magnetization(counts, total_shots)

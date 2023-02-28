@@ -1,9 +1,9 @@
-import collections
 import copy
-from typing import Counter, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import cirq
 import numpy as np
+import numpy.typing as npt
 import scipy.optimize as opt
 
 import supermarq
@@ -27,7 +27,7 @@ class VQEProxy(supermarq.benchmark.Benchmark):
         self.hamiltonian = self._gen_tfim_hamiltonian()
         self._params = self._gen_angles()
 
-    def _gen_tfim_hamiltonian(self) -> List:
+    def _gen_tfim_hamiltonian(self) -> List[Tuple[str, Union[int, Tuple[int, int]], int]]:
         r"""Generate an n-qubit Hamiltonian for a transverse-field Ising model (TFIM).
 
             $H = \sum_i^n(X_i) + \sum_i^n(Z_i Z_{i+1})$
@@ -37,15 +37,15 @@ class VQEProxy(supermarq.benchmark.Benchmark):
             $H_6 = XIIIII + IXIIII + IIXIII + IIIXII + IIIIXI + IIIIIX + ZZIIII
                   + IZZIII + IIZZII + IIIZZI + IIIIZZ + ZIIIIZ$
         """
-        hamiltonian = []
+        hamiltonian: List[Tuple[str, Union[int, Tuple[int, int]], int]] = []
         for i in range(self.num_qubits):
-            hamiltonian.append(["X", i, 1])  # [Pauli type, qubit idx, weight]
+            hamiltonian.append(("X", i, 1))  # [Pauli type, qubit idx, weight]
         for i in range(self.num_qubits - 1):
-            hamiltonian.append(["ZZ", (i, i + 1), 1])
-        hamiltonian.append(["ZZ", (self.num_qubits - 1, 0), 1])
+            hamiltonian.append(("ZZ", (i, i + 1), 1))
+        hamiltonian.append(("ZZ", (self.num_qubits - 1, 0), 1))
         return hamiltonian
 
-    def _gen_ansatz(self, params: List[float]) -> List[cirq.Circuit]:
+    def _gen_ansatz(self, params: npt.NDArray[np.float_]) -> List[cirq.Circuit]:
         qubits = cirq.LineQubit.range(self.num_qubits)
         z_circuit = cirq.Circuit()
 
@@ -87,7 +87,7 @@ class VQEProxy(supermarq.benchmark.Benchmark):
                 one_count += 1
         return one_count % 2
 
-    def _calc(self, bit_list: List[str], bitstr: str, probs: Counter) -> float:
+    def _calc(self, bit_list: List[str], bitstr: str, probs: Dict[str, float]) -> float:
         energy = 0.0
         for item in bit_list:
             if self._parity_ones(item) == 0:
@@ -96,7 +96,9 @@ class VQEProxy(supermarq.benchmark.Benchmark):
                 energy -= probs.get(bitstr, 0)
         return energy
 
-    def _get_expectation_value_from_probs(self, probs_z: Counter, probs_x: Counter) -> float:
+    def _get_expectation_value_from_probs(
+        self, probs_z: Dict[str, float], probs_x: Dict[str, float]
+    ) -> float:
         avg_energy = 0.0
 
         # Find the contribution to the energy from the X-terms: \sum_i{X_i}
@@ -114,8 +116,8 @@ class VQEProxy(supermarq.benchmark.Benchmark):
 
         return avg_energy
 
-    def _get_opt_angles(self) -> Tuple[List, float]:
-        def f(params: List) -> float:
+    def _get_opt_angles(self) -> Tuple[npt.NDArray[np.float_], float]:
+        def f(params: npt.NDArray[np.float_]) -> float:
             z_circuit, x_circuit = self._gen_ansatz(params)
             z_probs = supermarq.simulation.get_ideal_counts(z_circuit)
             x_probs = supermarq.simulation.get_ideal_counts(x_circuit)
@@ -130,7 +132,7 @@ class VQEProxy(supermarq.benchmark.Benchmark):
 
         return out["x"], out["fun"]
 
-    def _gen_angles(self) -> List:
+    def _gen_angles(self) -> npt.NDArray[np.float_]:
         """Classically simulate the variational optimization and return
         the final parameters.
         """
@@ -147,7 +149,7 @@ class VQEProxy(supermarq.benchmark.Benchmark):
         """
         return self._gen_ansatz(self._params)
 
-    def score(self, counts: List[Counter]) -> float:
+    def score(self, counts: List[Dict[str, float]]) -> float:
         """Compare the average energy measured by the experiments to the ideal
         value obtained via noiseless simulation. In principle the ideal value
         can be obtained through efficient classical means since the 1D TFIM
@@ -158,10 +160,7 @@ class VQEProxy(supermarq.benchmark.Benchmark):
         probs_z = {bitstr: count / shots_z for bitstr, count in counts_z.items()}
         shots_x = sum(counts_x.values())
         probs_x = {bitstr: count / shots_x for bitstr, count in counts_x.items()}
-        experimental_expectation = self._get_expectation_value_from_probs(
-            collections.Counter(probs_z),
-            collections.Counter(probs_x),
-        )
+        experimental_expectation = self._get_expectation_value_from_probs(probs_z, probs_x)
 
         circuit_z, circuit_x = self.circuit()
         ideal_expectation = self._get_expectation_value_from_probs(

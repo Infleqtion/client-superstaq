@@ -1,4 +1,3 @@
-import collections
 from typing import Dict, List, Optional, Tuple, cast
 
 import cirq
@@ -42,7 +41,7 @@ class MerminBell(Benchmark):
 
         return circuit
 
-    def score(self, counts: collections.Counter) -> float:
+    def score(self, counts: Dict[str, float]) -> float:
         """
         Compute the score for the N-qubit Mermin-Bell benchmark.
 
