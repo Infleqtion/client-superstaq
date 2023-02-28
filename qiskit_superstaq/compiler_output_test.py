@@ -1,5 +1,6 @@
 # pylint: disable=missing-function-docstring
 import importlib
+import json
 import pickle
 import textwrap
 from typing import Dict, List, Union
@@ -58,13 +59,13 @@ def test_compiler_output_repr() -> None:
     circuit = qiskit.QuantumCircuit(4)
     assert (
         repr(qss.compiler_output.CompilerOutput(circuit))
-        == f"""CompilerOutput({circuit!r}, None, None, None)"""
+        == f"""CompilerOutput({circuit!r}, None, None, None, None, None)"""
     )
 
     circuits = [circuit, circuit]
     assert (
         repr(qss.compiler_output.CompilerOutput(circuits))
-        == f"CompilerOutput({circuits!r}, None, None, None)"
+        == f"CompilerOutput({circuits!r}, None, None, None, None, None)"
     )
 
 
@@ -186,30 +187,34 @@ def test_read_json_with_qscout() -> None:
 
     jaqal_program = textwrap.dedent(
         """\
-                register allqubits[1]
+        register allqubits[1]
 
-                prepare_all
-                R allqubits[0] -1.5707963267948966 1.5707963267948966
-                Rz allqubits[0] -3.141592653589793
-                measure_all
-                """
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        Rz allqubits[0] -3.141592653589793
+        measure_all
+        """
     )
 
     json_dict: Dict[str, Union[str, List[str]]] = {
         "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
+        "final_logical_to_physicals": json.dumps([[(0, 13)]]),
         "jaqal_programs": [jaqal_program],
     }
 
     out = qss.compiler_output.read_json_qscout(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
+    assert out.final_logical_to_physical == {0: 13}
     assert out.jaqal_program == jaqal_program
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
+        "final_logical_to_physicals": json.dumps([[(0, 13)], [(0, 13)]]),
         "jaqal_programs": [jaqal_program, jaqal_program],
     }
     out = qss.compiler_output.read_json_qscout(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
+    assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
     assert out.jaqal_programs == json_dict["jaqal_programs"]
 
 

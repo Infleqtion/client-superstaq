@@ -48,6 +48,7 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
         circuits: Union[
             qiskit.QuantumCircuit, List[qiskit.QuantumCircuit], List[List[qiskit.QuantumCircuit]]
         ],
+        final_logical_to_physicals: Optional[Union[Dict[int, int], List[Dict[int, int]]]] = None,
         pulse_sequences: Union[qiskit.pulse.Schedule, List[qiskit.pulse.Schedule]] = None,
         seq: Optional["qtrl.sequencer.Sequence"] = None,
         jaqal_programs: Optional[Union[str, List[str]]] = None,
@@ -55,11 +56,13 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
     ) -> None:
         if isinstance(circuits, qiskit.QuantumCircuit):
             self.circuit = circuits
+            self.final_logical_to_physical = final_logical_to_physicals
             self.pulse_sequence = pulse_sequences
             self.pulse_list = pulse_lists
             self.jaqal_program = jaqal_programs
         else:
             self.circuits = circuits
+            self.final_logical_to_physicals = final_logical_to_physicals
             self.pulse_sequences = pulse_sequences
             self.pulse_lists = pulse_lists
             self.jaqal_programs = jaqal_programs
@@ -77,11 +80,13 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
     def __repr__(self) -> str:
         if not self.has_multiple_circuits():
             return (
-                f"CompilerOutput({self.circuit!r}, {self.seq!r}, {self.jaqal_program!r}, "
+                f"CompilerOutput({self.circuit!r}, {self.final_logical_to_physical!r}, "
+                f"{self.pulse_sequence!r}, {self.seq!r}, {self.jaqal_program!r}, "
                 f"{self.pulse_list!r})"
             )
         return (
-            f"CompilerOutput({self.circuits!r}, {self.seq!r}, {self.jaqal_programs!r}, "
+            f"CompilerOutput({self.circuits!r}, {self.final_logical_to_physicals!r}, "
+            f"{self.pulse_sequences!r}, {self.seq!r}, {self.jaqal_programs!r}, "
             f"{self.pulse_lists!r})"
         )
 
@@ -94,6 +99,7 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
         elif self.has_multiple_circuits():
             return (
                 self.circuits == other.circuits
+                and self.final_logical_to_physicals == other.final_logical_to_physicals
                 and self.pulse_sequences == other.pulse_sequences
                 and self.jaqal_programs == other.jaqal_programs
                 and self.pulse_lists == other.pulse_lists
@@ -102,6 +108,7 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
 
         return (
             self.circuit == other.circuit
+            and self.final_logical_to_physical == other.final_logical_to_physical
             and self.pulse_sequence == other.pulse_sequence
             and self.jaqal_program == other.jaqal_program
             and self.pulse_list == other.pulse_list
@@ -190,13 +197,29 @@ def read_json_qscout(
     """
     qiskit_circuits = json_dict["qiskit_circuits"]
     jaqal_programs = json_dict["jaqal_programs"]
+    final_logical_to_physicals: Optional[List[Dict[int, int]]] = None
+
+    if "final_logical_to_physicals" in json_dict:
+        assert isinstance(json_dict["final_logical_to_physicals"], str)
+        final_logical_to_physicals = list(
+            map(dict, json.loads(json_dict["final_logical_to_physicals"]))
+        )
+
     assert isinstance(qiskit_circuits, str)
     assert isinstance(jaqal_programs, list)
     compiled_circuits = qss.serialization.deserialize_circuits(qiskit_circuits)
     if circuits_is_list:
-        return CompilerOutput(circuits=compiled_circuits, jaqal_programs=jaqal_programs)
+        return CompilerOutput(
+            circuits=compiled_circuits,
+            final_logical_to_physicals=final_logical_to_physicals,
+            jaqal_programs=jaqal_programs,
+        )
 
-    return CompilerOutput(circuits=compiled_circuits[0], jaqal_programs=jaqal_programs[0])
+    return CompilerOutput(
+        circuits=compiled_circuits[0],
+        final_logical_to_physicals=final_logical_to_physicals and final_logical_to_physicals[0],
+        jaqal_programs=jaqal_programs[0],
+    )
 
 
 def read_json_only_circuits(json_dict: Dict[str, str], circuits_is_list: bool) -> CompilerOutput:

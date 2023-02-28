@@ -156,10 +156,10 @@ def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
     }
 
     assert provider.ibmq_compile(qiskit.QuantumCircuit()) == qss.compiler_output.CompilerOutput(
-        qc, mock.DEFAULT
+        qc, pulse_sequences=mock.DEFAULT
     )
     assert provider.ibmq_compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
-        [qc], [mock.DEFAULT]
+        [qc], pulse_sequences=[mock.DEFAULT]
     )
 
 
@@ -228,20 +228,25 @@ def test_qscout_compile(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "final_logical_to_physicals": json.dumps([[(0, 13)]]),
         "jaqal_programs": [jaqal_program],
     }
     out = provider.qscout_compile(qc)
     assert out.circuit == qc
+    assert out.final_logical_to_physical == {0: 13}
 
     out = provider.qscout_compile([qc])
     assert out.circuits == [qc]
+    assert out.final_logical_to_physicals == [{0: 13}]
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
+        "final_logical_to_physicals": json.dumps([[(0, 13)], [(0, 13)]]),
         "jaqal_programs": [jaqal_program, jaqal_program],
     }
     out = provider.qscout_compile([qc, qc])
     assert out.circuits == [qc, qc]
+    assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
 
 
 def test_invalid_target_service_qscout_compile() -> None:
@@ -259,6 +264,7 @@ def test_qscout_compile_swap_mirror(mock_post: MagicMock, mirror_swaps: bool) ->
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "final_logical_to_physicals": json.dumps([[(0, 13)]]),
         "jaqal_programs": [""],
     }
     _ = provider.qscout_compile(qc, mirror_swaps=mirror_swaps)
