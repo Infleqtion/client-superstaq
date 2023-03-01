@@ -6,7 +6,7 @@ import numpy as np
 import numpy.typing as npt
 
 
-class MeasurementCircuit:
+class MeasurementCircuit:  # pylint: disable=missing-class-docstring
     def __init__(
         self,
         circuit: cirq.Circuit,
@@ -19,16 +19,20 @@ class MeasurementCircuit:
         self.num_qubits = num_qubits
         self.qubits = qubits
 
-    def get_circuit(self) -> cirq.Circuit:
+    def get_circuit(self) -> cirq.Circuit:  # pylint: disable=missing-function-docstring
         return self.circuit
 
-    def get_stabilizer(self) -> npt.NDArray[np.uint8]:
+    def get_stabilizer(self) -> npt.NDArray[np.uint8]:  # pylint: disable=missing-function-docstring
         return self.stabilizer_matrix
 
-    def set_circuit(self, circuit: cirq.Circuit) -> None:
+    def set_circuit(  # pylint: disable=missing-function-docstring
+        self, circuit: cirq.Circuit
+    ) -> None:
         self.circuit = circuit
 
-    def set_stabilizer(self, stabilizer_matrix: npt.NDArray[np.uint8]) -> None:
+    def set_stabilizer(  # pylint: disable=missing-function-docstring
+        self, stabilizer_matrix: npt.NDArray[np.uint8]
+    ) -> None:
         self.stabilizer_matrix = stabilizer_matrix
 
 
@@ -128,7 +132,9 @@ def row_reduce_X_matrix(measurement_circuit: MeasurementCircuit) -> None:
     transform_X_matrix_to_reduced_row_echelon_form(measurement_circuit)
 
 
-def transform_X_matrix_to_row_echelon_form(measurement_circuit: MeasurementCircuit) -> None:
+def transform_X_matrix_to_row_echelon_form(  # pylint: disable=missing-function-docstring
+    measurement_circuit: MeasurementCircuit,
+) -> None:
     N = measurement_circuit.num_qubits
     for j in range(N):
         if measurement_circuit.get_stabilizer()[j + N, j] == 0:
@@ -142,7 +148,9 @@ def transform_X_matrix_to_row_echelon_form(measurement_circuit: MeasurementCircu
                 apply_CNOT(measurement_circuit, j, i - N)
 
 
-def transform_X_matrix_to_reduced_row_echelon_form(measurement_circuit: MeasurementCircuit) -> None:
+def transform_X_matrix_to_reduced_row_echelon_form(  # pylint: disable=missing-function-docstring
+    measurement_circuit: MeasurementCircuit,
+) -> None:
     N = measurement_circuit.num_qubits
     for j in range(N - 1, 0, -1):
         for i in range(N, N + j):
@@ -150,7 +158,9 @@ def transform_X_matrix_to_reduced_row_echelon_form(measurement_circuit: Measurem
                 apply_CNOT(measurement_circuit, j, i - N)
 
 
-def patch_Z_matrix(measurement_circuit: MeasurementCircuit) -> None:
+def patch_Z_matrix(  # pylint: disable=missing-function-docstring
+    measurement_circuit: MeasurementCircuit,
+) -> None:
     stabilizer_matrix, N = measurement_circuit.get_stabilizer(), measurement_circuit.num_qubits
     assert np.allclose(
         stabilizer_matrix[:N], stabilizer_matrix[:N].T
@@ -166,14 +176,18 @@ def patch_Z_matrix(measurement_circuit: MeasurementCircuit) -> None:
             apply_S(measurement_circuit, i)
 
 
-def change_X_to_Z_basis(measurement_circuit: MeasurementCircuit) -> None:
+def change_X_to_Z_basis(  # pylint: disable=missing-function-docstring
+    measurement_circuit: MeasurementCircuit,
+) -> None:
     # change each qubit from X basis to Z basis via H
     N = measurement_circuit.num_qubits
     for j in range(N):
         apply_H(measurement_circuit, j)
 
 
-def apply_H(measurement_circuit: MeasurementCircuit, i: int) -> None:
+def apply_H(  # pylint: disable=missing-function-docstring
+    measurement_circuit: MeasurementCircuit, i: int
+) -> None:
     N = measurement_circuit.num_qubits
     qubits = measurement_circuit.qubits
     measurement_circuit.get_stabilizer()[[i, i + N]] = measurement_circuit.get_stabilizer()[
@@ -182,20 +196,24 @@ def apply_H(measurement_circuit: MeasurementCircuit, i: int) -> None:
     measurement_circuit.get_circuit().append(cirq.H(qubits[i]))
 
 
-def apply_S(measurement_circuit: MeasurementCircuit, i: int) -> None:
+def apply_S(  # pylint: disable=missing-function-docstring
+    measurement_circuit: MeasurementCircuit, i: int
+) -> None:
     qubits = measurement_circuit.qubits
     measurement_circuit.get_stabilizer()[i, i] = 0
     measurement_circuit.get_circuit().append(cirq.S(qubits[i]))
 
 
-def apply_CZ(measurement_circuit: MeasurementCircuit, i: int, j: int) -> None:
+def apply_CZ(  # pylint: disable=missing-function-docstring
+    measurement_circuit: MeasurementCircuit, i: int, j: int
+) -> None:
     qubits = measurement_circuit.qubits
     measurement_circuit.get_stabilizer()[i, j] = 0
     measurement_circuit.get_stabilizer()[j, i] = 0
     measurement_circuit.get_circuit().append(cirq.CZ(qubits[i], qubits[j]))
 
 
-def apply_CNOT(
+def apply_CNOT(  # pylint: disable=missing-function-docstring
     measurement_circuit: MeasurementCircuit, control_index: int, target_index: int
 ) -> None:
     N = measurement_circuit.num_qubits
@@ -211,7 +229,9 @@ def apply_CNOT(
     measurement_circuit.get_circuit().append(cirq.CNOT(qubits[control_index], qubits[target_index]))
 
 
-def apply_SWAP(measurement_circuit: MeasurementCircuit, i: int, j: int) -> None:
+def apply_SWAP(  # pylint: disable=missing-function-docstring
+    measurement_circuit: MeasurementCircuit, i: int, j: int
+) -> None:
     N = measurement_circuit.num_qubits
     qubits = measurement_circuit.qubits
     measurement_circuit.get_stabilizer()[[i, j]] = measurement_circuit.get_stabilizer()[[j, i]]

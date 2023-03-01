@@ -7,8 +7,7 @@ from supermarq.benchmark import Benchmark
 
 
 class PhaseCode(Benchmark):
-    """
-    Creates a circuit for syndrome measurement in a phase-flip error
+    """Creates a circuit for syndrome measurement in a phase-flip error
     correcting code.
 
     Args:
@@ -31,8 +30,7 @@ class PhaseCode(Benchmark):
     def _measurement_round_cirq(
         self, qubits: List[cirq.LineQubit], round_idx: int
     ) -> Iterator[cirq.Operation]:
-        """
-        Generates cirq ops for a single measurement round
+        """Generates cirq ops for a single measurement round
 
         Args:
         - qubits: Circuit qubits - assumed data on even indices and

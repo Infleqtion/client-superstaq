@@ -1,3 +1,4 @@
+# pylint: disable=missing-function-docstring
 import pytest
 
 from supermarq.benchmarks.phase_code import PhaseCode

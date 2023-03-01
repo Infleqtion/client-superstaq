@@ -27,8 +27,7 @@ class BitCode(Benchmark):
     def _measurement_round_cirq(
         self, qubits: List[cirq.LineQubit], round_idx: int
     ) -> Iterator[cirq.Operation]:
-        """
-        Generates cirq ops for a single measurement round
+        """Generates cirq ops for a single measurement round
 
         Args:
         - qubits: Circuit qubits - assumed data on even indices and measurement on odd indices
