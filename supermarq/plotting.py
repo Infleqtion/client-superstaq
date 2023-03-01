@@ -37,7 +37,7 @@ def plot_results(
     plt.close()
 
 
-def plot_correlations(
+def plot_correlations(  # pylint: disable=missing-function-docstring
     benchmark_features: Dict[str, List[float]],
     device_scores: Dict[str, float],
     feature_labels: List[str],
@@ -93,8 +93,7 @@ def plot_benchmark(
     spoke_labels: Optional[List[str]] = None,
     legend_loc: Tuple[float, float] = (0.75, 0.85),
 ) -> None:
-    """
-    Create a radar plot of the given benchmarks.
+    """Create a radar plot of the given benchmarks.
 
     Input
     -----
@@ -149,8 +148,7 @@ def heatmap(
     cbarlabel: str = "",
     **kwargs: Any
 ) -> Tuple[matplotlib.image.AxesImage, Any]:
-    """
-    Create a heatmap from a numpy array and two lists of labels.
+    """Create a heatmap from a numpy array and two lists of labels.
 
     Parameters
     ----------
@@ -209,7 +207,7 @@ def heatmap(
     return im, cbar
 
 
-def annotate_heatmap(
+def annotate_heatmap(  # pylint: disable=missing-param-doc,differing-param-doc
     im: matplotlib.image.AxesImage,
     data: Optional[npt.NDArray[np.float_]] = None,
     valfmt: Any = "{x:.2f}",
@@ -217,8 +215,7 @@ def annotate_heatmap(
     threshold: Optional[float] = None,
     **textkw: Any
 ) -> List[matplotlib.text.Text]:
-    """
-    A function to annotate a heatmap.
+    """A function to annotate a heatmap.
 
     Parameters
     ----------
@@ -273,8 +270,7 @@ def annotate_heatmap(
 
 
 def radar_factory(num_vars: int) -> npt.NDArray[np.float_]:
-    """
-    (https://matplotlib.org/stable/gallery/specialty_plots/radar_chart.html)
+    """(https://matplotlib.org/stable/gallery/specialty_plots/radar_chart.html)
 
     Create a radar chart with `num_vars` axes.
 
@@ -288,7 +284,7 @@ def radar_factory(num_vars: int) -> npt.NDArray[np.float_]:
     # calculate evenly-spaced axis angles
     theta = np.linspace(0, 2 * np.pi, num_vars, endpoint=False)
 
-    class RadarAxes(RadarAxesMeta):
+    class RadarAxes(RadarAxesMeta):  # pylint: disable=missing-class-docstring
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             self.frame = "circle"
             self.theta = theta
@@ -299,7 +295,7 @@ def radar_factory(num_vars: int) -> npt.NDArray[np.float_]:
     return theta
 
 
-class RadarAxesMeta(PolarAxes):
+class RadarAxesMeta(PolarAxes):  # pylint: disable=missing-class-docstring
 
     name = "radar"
     # use 1 line segment to connect specified points
@@ -331,7 +327,9 @@ class RadarAxesMeta(PolarAxes):
             y = np.append(y, y[0])
             line.set_data(x, y)
 
-    def set_varlabels(self, labels: List[str]) -> None:
+    def set_varlabels(  # pylint: disable=missing-function-docstring
+        self, labels: List[str]
+    ) -> None:
         self.set_thetagrids(np.degrees(self.theta), labels, fontsize=14)
 
     def _gen_axes_patch(self) -> matplotlib.patches.Circle:

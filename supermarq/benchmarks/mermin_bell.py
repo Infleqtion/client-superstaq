@@ -42,8 +42,7 @@ class MerminBell(Benchmark):
         return circuit
 
     def score(self, counts: Dict[str, float]) -> float:
-        """
-        Compute the score for the N-qubit Mermin-Bell benchmark.
+        """Compute the score for the N-qubit Mermin-Bell benchmark.
 
         This function assumes the regular big endian ordering of bitstring results
         """
@@ -152,9 +151,9 @@ class MerminBell(Benchmark):
         return (expect_val + 2 ** (self.num_qubits - 1)) / 2**self.num_qubits
 
     def _mermin_operator(self, num_qubits: int) -> List[Tuple[float, str]]:
-        """
-        Generate the Mermin operator (https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.65.1838),
-        or M_n (Eq. 2.8) in https://arxiv.org/pdf/2005.11271.pdf
+        """Generate the Mermin operator
+        (https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.65.1838), or M_n
+        (Eq. 2.8) in https://arxiv.org/pdf/2005.11271.pdf
         """
         x = sympy.symbols("x_1:{}".format(num_qubits + 1))
         y = sympy.symbols("y_1:{}".format(num_qubits + 1))
