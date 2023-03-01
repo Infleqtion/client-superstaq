@@ -288,18 +288,56 @@ def test_superstaq_client_get_balance(mock_get: mock.MagicMock) -> None:
 
 
 @mock.patch("requests.post")
-def test_superstaq_client_ibmq_set_token(mock_post: mock.MagicMock) -> None:
+def test_add_new_user(mock_post: mock.MagicMock) -> None:
     client = gss.superstaq_client._SuperstaQClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
 
-    client.ibmq_set_token({"ibmq_token": "token"})
+    client.add_new_user({"Marie Curie": "mc@gmail.com"})
 
-    expected_json = {"ibmq_token": "token"}
+    expected_json = {"Marie Curie": "mc@gmail.com"}
     mock_post.assert_called_with(
-        f"http://example.com/{API_VERSION}/ibmq_token",
+        f"http://example.com/{API_VERSION}/add_new_user",
+        headers=EXPECTED_HEADERS,
+        json=expected_json,
+        verify=False,
+    )
+
+
+@mock.patch("requests.post")
+def test_update_user_balance(mock_post: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaQClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+
+    client.update_user_balance({"email": "mc@gmail.com", "balance": 5.00})
+
+    expected_json = {"email": "mc@gmail.com", "balance": 5.00}
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/update_user_balance",
+        headers=EXPECTED_HEADERS,
+        json=expected_json,
+        verify=False,
+    )
+
+
+@mock.patch("requests.post")
+def test_update_user_role(mock_post: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaQClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+
+    client.update_user_role({"email": "mc@gmail.com", "role": 5})
+
+    expected_json = {"email": "mc@gmail.com", "role": 5}
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/update_user_role",
         headers=EXPECTED_HEADERS,
         json=expected_json,
         verify=False,
@@ -610,6 +648,25 @@ def test_superstaq_client_warehouse(mock_post: mock.MagicMock) -> None:
     }
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/warehouse",
+        headers=EXPECTED_HEADERS,
+        json=expected_json,
+        verify=False,
+    )
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_ibmq_set_token(mock_post: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaQClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+
+    client.ibmq_set_token({"ibmq_token": "token"})
+
+    expected_json = {"ibmq_token": "token"}
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/ibmq_token",
         headers=EXPECTED_HEADERS,
         json=expected_json,
         verify=False,

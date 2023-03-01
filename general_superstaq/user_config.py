@@ -22,14 +22,66 @@ class UserConfig:  # pylint: disable=missing-class-docstring
             return f"${balance:,.2f}"
         return balance
 
+    def add_new_user(self, name: str, email: str) -> str:
+        """Adds new user.
+
+        Args:
+            name: The name to add
+            email: The new user's email
+
+        Returns:
+            String containing status of update (whether or not it failed)
+            and the new user's token.
+        """
+        return self._client.add_new_user(
+            {
+                "name": name,
+                "email": email,
+            }
+        )
+
+    def update_user_balance(self, email: str, balance: float) -> str:
+        """Updates user's balance.
+
+        Args:
+            email: The new user's email
+            balance: The new balance
+
+        Returns:
+             String containing status of update (whether or not it failed).
+        """
+        return self._client.update_user_balance(
+            {
+                "email": email,
+                "balance": balance,
+            }
+        )
+
+    def update_user_role(self, email: str, role: int) -> str:
+        """Updates user's role.
+
+        Args:
+            email: The new user's email
+            role: The new role
+
+        Returns:
+             String containing status of update (whether or not it failed).
+        """
+        return self._client.update_user_role(
+            {
+                "email": email,
+                "role": role,
+            }
+        )
+
     def ibmq_set_token(self, token: str) -> str:
-        """Sets IBMQ token field in database.
+        """Sets IBMQ token field.
 
         Args:
             token: IBMQ token string.
 
         Returns:
-            JSON dictionary containing status of update (whether or not it failed).
+            String containing status of update (whether or not it failed).
         """
         return self._client.ibmq_set_token({"ibmq_token": token})
 

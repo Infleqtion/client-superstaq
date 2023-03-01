@@ -182,19 +182,38 @@ class _SuperstaQClient:
         """Makes a GET request to SuperstaQ API to get a list of available targets."""
         return self.get_request("/targets")
 
-    def ibmq_set_token(  # pylint: disable=missing-param-doc,differing-param-doc
-        self, json_dict: Dict[str, str]
-    ) -> str:
-        """Makes a POST request to SuperstaQ API to set IBMQ token field in database.
+    def add_new_user(self, json_dict: Dict[str, str]) -> str:
+        """Makes a POST request to SuperstaQ API to add a new user.
 
         Args:
-            ibmq_token: dictionary with IBMQ token string entry.
+            json_dict: dictionary with user entry.
 
         Returns:
-            The json body of the response as a dict.
+            The response as a string.
         """
+        return self.post_request("/add_new_user", json_dict)
 
-        return self.post_request("/ibmq_token", json_dict)
+    def update_user_balance(self, json_dict: Dict[str, Union[float, str]]) -> str:
+        """Makes a POST request to SuperstaQ API to update a user's balance in the database.
+
+        Args:
+            json_dict: dictionary with user entry and new balance.
+
+        Returns:
+            The response as a string.
+        """
+        return self.post_request("/update_user_balance", json_dict)
+
+    def update_user_role(self, json_dict: Dict[str, Union[int, str]]) -> str:
+        """Makes a POST request to SuperstaQ API to update a user's role.
+
+        Args:
+            json_dict: dictionary with user entry and new role.
+
+        Returns:
+            The response as a string.
+        """
+        return self.post_request("/update_user_role", json_dict)
 
     def resource_estimate(  # pylint: disable=missing-function-docstring
         self, json_dict: Dict[str, str]
@@ -270,6 +289,20 @@ class _SuperstaQClient:
     def warehouse(self, json_dict: Dict[str, Union[int, List[str], str]]) -> WareHouseJson:
         """Makes a POST request to SuperstaQ API to find optimal warehouse assignment."""
         return self.post_request("/warehouse", json_dict)
+
+    def ibmq_set_token(  # pylint: disable=missing-param-doc,differing-param-doc
+        self, json_dict: Dict[str, str]
+    ) -> str:
+        """Makes a POST request to SuperstaQ API to set IBMQ token field in database.
+
+        Args:
+            ibmq_token: dictionary with IBMQ token string entry.
+
+        Returns:
+            The response as a string.
+        """
+
+        return self.post_request("/ibmq_token", json_dict)
 
     def aqt_upload_configs(self, aqt_configs: Dict[str, str]) -> str:
         """Makes a POST request to SuperstaQ API to upload configurations."""
