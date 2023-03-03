@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Client for making requests to SuperstaQ's API."""
-
 import json
 import sys
 import textwrap
@@ -23,7 +22,6 @@ import qubovert as qv
 import requests
 
 import general_superstaq as gss
-from general_superstaq.typing import MaxSharpeJson, MinVolJson, TSPJson, WareHouseJson
 
 
 class _SuperstaQClient:
@@ -271,22 +269,22 @@ class _SuperstaQClient:
 
     def find_min_vol_portfolio(
         self, json_dict: Dict[str, Union[List[str], int, float, str]]
-    ) -> MinVolJson:
+    ) -> gss.MinVolJson:
         """Makes a POST request to SuperstaQ API to find a minimum volatility portfolio
         that exceeds a certain specified return."""
         return self.post_request("/minvol", json_dict)
 
     def find_max_pseudo_sharpe_ratio(
         self, json_dict: Dict[str, Union[List[str], float, str, Optional[int]]]
-    ) -> MaxSharpeJson:
+    ) -> gss.MaxSharpeJson:
         """Makes a POST request to SuperstaQ API to find a max Sharpe ratio portfolio."""
         return self.post_request("/maxsharpe", json_dict)
 
-    def tsp(self, json_dict: Dict[str, List[str]]) -> TSPJson:
+    def tsp(self, json_dict: Dict[str, List[str]]) -> gss.TSPJson:
         """Makes a POST request to SuperstaQ API to find a optimal TSP tour."""
         return self.post_request("/tsp", json_dict)
 
-    def warehouse(self, json_dict: Dict[str, Union[int, List[str], str]]) -> WareHouseJson:
+    def warehouse(self, json_dict: Dict[str, Union[int, List[str], str]]) -> gss.WareHouseJson:
         """Makes a POST request to SuperstaQ API to find optimal warehouse assignment."""
         return self.post_request("/warehouse", json_dict)
 

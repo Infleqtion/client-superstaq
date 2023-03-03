@@ -5,7 +5,6 @@ import numpy as np
 import qubovert as qv
 
 import general_superstaq as gss
-from general_superstaq.typing import MaxSharpeJson, MinVolJson
 
 
 def test_read_json_minvol() -> None:
@@ -13,7 +12,7 @@ def test_read_json_minvol() -> None:
     best_ret = 8.1
     best_std_dev = 10.5
     qubo_obj = qv.QUBO({("0", "1"): -1.0})
-    json_dict: MinVolJson = {
+    json_dict: gss.MinVolJson = {
         "best_portfolio": best_portfolio,
         "best_ret": best_ret,
         "best_std_dev": best_std_dev,
@@ -30,7 +29,7 @@ def test_read_json_maxsharpe() -> None:
     best_std_dev = 10.5
     best_sharpe_ratio = 0.771
     qubo_obj = qv.QUBO({("0", "1"): -1.0})
-    json_dict: MaxSharpeJson = {
+    json_dict: gss.MaxSharpeJson = {
         "best_portfolio": best_portfolio,
         "best_ret": best_ret,
         "best_std_dev": best_std_dev,

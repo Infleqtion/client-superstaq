@@ -1,10 +1,14 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
 import qubovert as qv
 
 import general_superstaq as gss
-from general_superstaq.typing import TSPJson, WareHouseJson
+
+if TYPE_CHECKING:
+    from general_superstaq import superstaq_client
 
 
 @dataclass
@@ -16,7 +20,7 @@ class TSPOutput:  # pylint: disable=missing-class-docstring
     qubo: qv.QUBO
 
 
-def read_json_tsp(json_dict: TSPJson) -> TSPOutput:
+def read_json_tsp(json_dict: gss.TSPJson) -> TSPOutput:
     """Reads out returned JSON from SuperstaQ API's tsp endpoint.
     Args:
         json_dict: a JSON dictionary matching the format returned by /tsp endpoint
@@ -40,7 +44,7 @@ class WarehouseOutput:  # pylint: disable=missing-class-docstring
     qubo: qv.QUBO
 
 
-def read_json_warehouse(json_dict: WareHouseJson) -> WarehouseOutput:
+def read_json_warehouse(json_dict: gss.WareHouseJson) -> WarehouseOutput:
     """Reads out returned JSON from SuperstaQ API's warehouse endpoint.
     Args:
         json_dict: a JSON dictionary matching the format returned by /warehouse endpoint
@@ -58,7 +62,7 @@ def read_json_warehouse(json_dict: WareHouseJson) -> WarehouseOutput:
 
 
 class Logistics:  # pylint: disable=missing-class-docstring
-    def __init__(self, client: gss.superstaq_client._SuperstaQClient):
+    def __init__(self, client: superstaq_client._SuperstaQClient):
         self._client = client
 
     def tsp(self, locs: List[str], solver: str = "anneal") -> TSPOutput:

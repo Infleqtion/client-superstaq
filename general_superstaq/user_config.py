@@ -1,11 +1,11 @@
 import os
 from typing import Any, Dict, Optional, Tuple, Union
 
-from general_superstaq import superstaq_client
+import general_superstaq as gss
 
 
 class UserConfig:  # pylint: disable=missing-class-docstring
-    def __init__(self, client: superstaq_client._SuperstaQClient):
+    def __init__(self, client: gss.superstaq_client._SuperstaQClient):
         self._client = client
 
     def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
