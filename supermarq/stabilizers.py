@@ -34,15 +34,11 @@ class MeasurementCircuit:
         """Return the current stabilizer matrix."""
         return self.stabilizer_matrix
 
-    def set_circuit(
-        self, circuit: cirq.Circuit
-    ) -> None:
+    def set_circuit(self, circuit: cirq.Circuit) -> None:
         """Assign the class circuit to the input circuit."""
         self.circuit = circuit
 
-    def set_stabilizer(
-        self, stabilizer_matrix: npt.NDArray[np.uint8]
-    ) -> None:
+    def set_stabilizer(self, stabilizer_matrix: npt.NDArray[np.uint8]) -> None:
         """The input matrix is assigned to the class matrix."""
         self.stabilizer_matrix = stabilizer_matrix
 
@@ -261,9 +257,7 @@ def change_X_to_Z_basis(
         apply_H(measurement_circuit, j)
 
 
-def apply_H(
-    measurement_circuit: MeasurementCircuit, i: int
-) -> None:
+def apply_H(measurement_circuit: MeasurementCircuit, i: int) -> None:
     """Apply a Hadamard on the specified qubit.
 
     Args:
@@ -280,9 +274,7 @@ def apply_H(
     measurement_circuit.get_circuit().append(cirq.H(qubits[i]))
 
 
-def apply_S(
-    measurement_circuit: MeasurementCircuit, i: int
-) -> None:
+def apply_S(measurement_circuit: MeasurementCircuit, i: int) -> None:
     """Apply an S gate on the specified qubit.
 
     Args:
@@ -296,9 +288,7 @@ def apply_S(
     measurement_circuit.get_circuit().append(cirq.S(qubits[i]))
 
 
-def apply_CZ(
-    measurement_circuit: MeasurementCircuit, i: int, j: int
-) -> None:
+def apply_CZ(measurement_circuit: MeasurementCircuit, i: int, j: int) -> None:
     """Apply a CZ gate on the specified qubits.
 
     Args:
@@ -339,9 +329,7 @@ def apply_CNOT(
     measurement_circuit.get_circuit().append(cirq.CNOT(qubits[control_index], qubits[target_index]))
 
 
-def apply_SWAP(
-    measurement_circuit: MeasurementCircuit, i: int, j: int
-) -> None:
+def apply_SWAP(measurement_circuit: MeasurementCircuit, i: int, j: int) -> None:
     """Apply a SWAP gate on the specified qubits.
 
     Args:
