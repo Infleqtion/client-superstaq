@@ -252,7 +252,7 @@ def annotate_heatmap(
         threshold: Value in data units according to which the colors from textcolors are
             applied.  If None (the default) uses the middle of the colormap as
             separation.  Optional.
-        **kwargs: All other arguments are forwarded to each call to `text` used to create
+        **textkw: All other arguments are forwarded to each call to `text` used to create
             the text labels.
 
     Returns: List of the text annotations

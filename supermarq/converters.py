@@ -18,7 +18,7 @@ def compute_communication_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) ->
     Program communication = circuit's average qubit degree / degree of a complete graph.
 
     Args:
-        circ : A cirq or qiskit quantum circuit
+        circuit : A cirq or qiskit quantum circuit
     """
     num_qubits = circuit.num_qubits
     dag = qiskit.converters.circuit_to_dag(circuit)
