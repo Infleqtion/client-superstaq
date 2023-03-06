@@ -18,7 +18,6 @@ from typing import Any, Dict
 import cirq
 import general_superstaq as gss
 from cirq._doc import document
-from general_superstaq import superstaq_client
 
 
 @cirq.value_equality(unhashable=True)
@@ -55,7 +54,7 @@ class Job:
         "data associated with it beyond an id and a status.",
     )
 
-    def __init__(self, client: superstaq_client._SuperstaQClient, job_id: str) -> None:
+    def __init__(self, client: gss.superstaq_client._SuperstaQClient, job_id: str) -> None:
         """Construct a Job.
 
         Users should not call this themselves. If you only know the `job_id`, use `get_job`

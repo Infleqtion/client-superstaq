@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A `cirq.Sampler` implementation for the SuperstaQ API."""
+from __future__ import annotations
 
 from typing import List
 
@@ -46,7 +47,7 @@ class Sampler(cirq.Sampler):
 
     def __init__(
         self,
-        service: "css.service.Service",
+        service: css.service.Service,
         target: str,
     ) -> None:
         """Constructs the sampler. Uers should get a sampler from the `sampler` method on

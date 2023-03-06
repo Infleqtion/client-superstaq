@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=missing-function-docstring
+from __future__ import annotations
 
 from typing import Any, Dict
 from unittest import mock
@@ -42,7 +43,7 @@ def new_job() -> css.Job:
     return css.Job(client, "new_job_id")
 
 
-def mocked_get_job_requests(*job_dicts: Dict[str, Any]) -> "mock._patch[mock.Mock]":
+def mocked_get_job_requests(*job_dicts: Dict[str, Any]) -> mock._patch[mock.Mock]:
     """Mocks the server's response to `get_job` requests using the given sequence of job_dicts.
     Return type is wrapped in a string because "'type' object is not subscriptable"
     is thrown at runtime
