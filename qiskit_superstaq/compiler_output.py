@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import importlib
 import json
 from typing import Any, Dict, List, Optional, Set, Union
@@ -50,7 +52,7 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
         ],
         final_logical_to_physicals: Optional[Union[Dict[int, int], List[Dict[int, int]]]] = None,
         pulse_sequences: Union[qiskit.pulse.Schedule, List[qiskit.pulse.Schedule]] = None,
-        seq: Optional["qtrl.sequencer.Sequence"] = None,
+        seq: Optional[qtrl.sequencer.Sequence] = None,
         jaqal_programs: Optional[Union[str, List[str]]] = None,
         pulse_lists: Optional[Union[List[List[List[Any]]], List[List[List[List[Any]]]]]] = None,
     ) -> None:
@@ -141,7 +143,7 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
         "qtrl"
     ):  # pragma: no cover, b/c qtrl is not open source so it is not in qiskit-superstaq reqs
 
-        def _sequencer_from_state(state: Dict[str, Any]) -> "qtrl.sequencer.Sequence":
+        def _sequencer_from_state(state: Dict[str, Any]) -> qtrl.sequencer.Sequence:
             seq = qtrl.sequencer.Sequence(n_elements=1)
             seq.__setstate__(state)
             seq.compile()

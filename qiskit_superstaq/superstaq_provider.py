@@ -94,7 +94,7 @@ class SuperstaQProvider(
         repr1 = f"<SuperstaQProvider(api_key={self.api_key}, "
         return repr1 + f"name={self._name})>"
 
-    def get_backend(self, target: str) -> "qss.SuperstaQBackend":
+    def get_backend(self, target: str) -> qss.SuperstaQBackend:
         return qss.SuperstaQBackend(provider=self, remote_host=self.remote_host, target=target)
 
     def get_access_token(self) -> str:  # pylint: disable=missing-function-docstring
@@ -150,7 +150,7 @@ class SuperstaQProvider(
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         target: str = "aqt_keysight_qpu",
         atol: Optional[float] = None,
-    ) -> "qss.compiler_output.CompilerOutput":
+    ) -> qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
 
         Args:
@@ -188,7 +188,7 @@ class SuperstaQProvider(
         random_seed: Optional[int] = None,
         target: str = "aqt_keysight_qpu",
         atol: Optional[float] = None,
-    ) -> "qss.compiler_output.CompilerOutput":
+    ) -> qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to target AQT device with Equivalent Circuit Averaging
         (ECA).
 
@@ -236,7 +236,7 @@ class SuperstaQProvider(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         target: str = "ibmq_qasm_simulator",
-    ) -> "qss.compiler_output.CompilerOutput":
+    ) -> qss.compiler_output.CompilerOutput:
         """Returns pulse schedule(s) for the given circuit(s) and target."""
 
         if not target.startswith("ibmq_"):
@@ -264,7 +264,7 @@ class SuperstaQProvider(
         mirror_swaps: bool = True,
         base_entangling_gate: str = "xx",
         target: str = "sandia_qscout_qpu",
-    ) -> "qss.compiler_output.CompilerOutput":
+    ) -> qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
 
         Args:
@@ -299,7 +299,7 @@ class SuperstaQProvider(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         target: str = "cq_hilbert_qpu",
-    ) -> "qss.compiler_output.CompilerOutput":
+    ) -> qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to CQ device, optimized to its native gate set.
 
         Args:

@@ -11,6 +11,8 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+from __future__ import annotations
+
 import re
 from typing import Any, Dict, List, Optional, Union
 
@@ -63,7 +65,7 @@ def validate_target(target: str) -> None:  # pylint: disable=missing-function-do
 
 
 class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-class-docstring
-    def __init__(self, provider: "qss.SuperstaQProvider", remote_host: str, target: str) -> None:
+    def __init__(self, provider: qss.SuperstaQProvider, remote_host: str, target: str) -> None:
         self.remote_host = remote_host
         self._provider = provider
         self.configuration_dict = {
@@ -109,7 +111,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         shots: int,
         method: Optional[str] = None,
         options: Optional[Dict[str, Any]] = None,
-    ) -> "qss.SuperstaQJob":
+    ) -> qss.SuperstaQJob:
 
         if isinstance(circuits, qiskit.QuantumCircuit):
             circuits = [circuits]
