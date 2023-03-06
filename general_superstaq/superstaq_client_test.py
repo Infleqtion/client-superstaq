@@ -674,6 +674,25 @@ def test_superstaq_client_ibmq_set_token(mock_post: mock.MagicMock) -> None:
 
 
 @mock.patch("requests.post")
+def test_superstaq_client_cq_set_token(mock_post: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaQClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+
+    client.cq_set_token({"cq_token": "token"})
+
+    expected_json = {"cq_token": "token"}
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/cq_set_token",
+        headers=EXPECTED_HEADERS,
+        json=expected_json,
+        verify=False,
+    )
+
+
+@mock.patch("requests.post")
 def test_superstaq_client_aqt_upload_configs(mock_post: mock.MagicMock) -> None:
     client = gss.superstaq_client._SuperstaQClient(
         client_name="general-superstaq",

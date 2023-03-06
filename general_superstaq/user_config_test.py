@@ -67,17 +67,31 @@ def test_update_user_role(  # pylint: disable=missing-function-docstring
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaQClient.ibmq_set_token",
+    "general_superstaq.superstaq_client._SuperstaQClient.post_request",
     return_value="Your IBMQ account token has been updated",
 )
 def test_ibmq_set_token(  # pylint: disable=missing-function-docstring
-    mock_ibmq: mock.MagicMock,
+    mock_post_request: mock.MagicMock,
 ) -> None:
     client = gss.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
     service = gss.user_config.UserConfig(client)
     assert service.ibmq_set_token("valid token") == "Your IBMQ account token has been updated"
+
+
+@mock.patch(
+    "general_superstaq.superstaq_client._SuperstaQClient.post_request",
+    return_value="Your CQ account token has been updated",
+)
+def test_cq_set_token(  # pylint: disable=missing-function-docstring
+    mock_post_request: mock.MagicMock,
+) -> None:
+    client = gss.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
+    )
+    service = gss.user_config.UserConfig(client)
+    assert service.cq_set_token("valid token") == "Your CQ account token has been updated"
 
 
 @mock.patch(
