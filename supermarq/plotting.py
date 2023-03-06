@@ -13,7 +13,18 @@ from sklearn.linear_model import LinearRegression
 def plot_results(
     scores: List[float], tick_labels: List[str], savefn: Optional[str] = None, show: bool = True
 ) -> None:
-    """Plot a simple bar chart of the benchmark results."""
+    """Plot a simple bar chart of the benchmark results.
+
+    The ordering of scores and labels is assumed to be the same.
+
+    Args:
+        scores: List of benchmark results
+        tick_labels: List of quantum device names
+        savefn: Path to save the plot, if `None`, the plot is not saved
+        show: Display the plot using `plt.show`
+
+    Returns: None
+    """
     _, ax = plt.subplots(dpi=150)
 
     width = 0.4
@@ -37,7 +48,7 @@ def plot_results(
     plt.close()
 
 
-def plot_correlations(  # pylint: disable=missing-function-docstring
+def plot_correlations(
     benchmark_features: Dict[str, List[float]],
     device_scores: Dict[str, float],
     feature_labels: List[str],
@@ -45,6 +56,20 @@ def plot_correlations(  # pylint: disable=missing-function-docstring
     savefn: Optional[str] = None,
     show: bool = True,
 ) -> None:
+    """Plot a correlation heatmap of the features for a single device.
+
+    Args:
+        benchmark_features: A dictionary where the keys are benchmark names and
+            the values are the list of feature values for that benchmark
+        device_scores: A dictionary of (benchmark name, score) pairs
+        feature_labels: Feature names, should have the same length as the
+            lists of feature values in `benchmark_features`
+        device_name: The name of quantum device where the scores were obtained
+        savefn: Path to save the plot, if `None`, the plot is not saved
+        show: Display the plot using `plt.show`
+
+    Returns: None
+    """
 
     temp_correlations = []
     for i in range(len(feature_labels)):
@@ -93,12 +118,17 @@ def plot_benchmark(
     spoke_labels: Optional[List[str]] = None,
     legend_loc: Tuple[float, float] = (0.75, 0.85),
 ) -> None:
-    """Create a radar plot of the given benchmarks.
+    """Create a radar plot showing the feature vectors of the given benchmarks.
 
-    Input
-    -----
-    data : Contains the title, feature data, and labels in the format:
-        [title, [benchmark labels], [[features_1], [features_2], ...]]
+    Args:
+        data: Contains the title, feature data, and labels in the format:
+            [title, [benchmark labels], [[features_1], [features_2], ...]]
+        show: Display the plot using `plt.show`
+        savefn: Path to save the plot, if `None`, the plot is not saved
+        spoke_labels: Optional labels for the feature vector dimensions
+        legend_loc: Optional argument to fine tune the legend placement
+
+    Returns: None
     """
     plt.rcParams["font.family"] = "Times New Roman"
 
@@ -150,23 +180,17 @@ def heatmap(
 ) -> Tuple[matplotlib.image.AxesImage, Any]:
     """Create a heatmap from a numpy array and two lists of labels.
 
-    Parameters
-    ----------
-    data
-        A 2D numpy array of shape (N, M).
-    row_labels
-        A list or array of length N with the labels for the rows.
-    col_labels
-        A list or array of length M with the labels for the columns.
-    ax
-        A `matplotlib.axes.Axes` instance to which the heatmap is plotted.  If
-        not provided, use current axes or create a new one.  Optional.
-    cbar_kw
-        A dictionary with arguments to `matplotlib.Figure.colorbar`.  Optional.
-    cbarlabel
-        The label for the colorbar.  Optional.
-    **kwargs
-        All other arguments are forwarded to `imshow`.
+    Args:
+        data: A 2D numpy array of shape (N, M).
+        row_labels: A list or array of length N with the labels for the rows.
+        col_labels: A list or array of length M with the labels for the columns.
+        ax: A `matplotlib.axes.Axes` instance to which the heatmap is plotted.  If
+            not provided, use current axes or create a new one.  Optional.
+        cbar_kw: A dictionary with arguments to `matplotlib.Figure.colorbar`.  Optional.
+        cbarlabel: The label for the colorbar.  Optional.
+        **kwargs: All other arguments are forwarded to `imshow`.
+
+    Returns: The generated heatmap and the associated color bar
     """
     # Plot the heatmap
     im = ax.imshow(data, **kwargs)
@@ -207,7 +231,7 @@ def heatmap(
     return im, cbar
 
 
-def annotate_heatmap(  # pylint: disable=missing-param-doc,differing-param-doc
+def annotate_heatmap(
     im: matplotlib.image.AxesImage,
     data: Optional[npt.NDArray[np.float_]] = None,
     valfmt: Any = "{x:.2f}",
@@ -215,28 +239,23 @@ def annotate_heatmap(  # pylint: disable=missing-param-doc,differing-param-doc
     threshold: Optional[float] = None,
     **textkw: Any
 ) -> List[matplotlib.text.Text]:
-    """A function to annotate a heatmap.
+    """Annotate the given heatmap.
 
-    Parameters
-    ----------
-    im
-        The AxesImage to be labeled.
-    data
-        Data used to annotate.  If None, the image's data is used.  Optional.
-    valfmt
-        The format of the annotations inside the heatmap.  This should either
-        use the string format method, e.g. "$ {x:.2f}", or be a
-        `matplotlib.ticker.Formatter`.  Optional.
-    textcolors
-        A pair of colors.  The first is used for values below a threshold,
-        the second for those above.  Optional.
-    threshold
-        Value in data units according to which the colors from textcolors are
-        applied.  If None (the default) uses the middle of the colormap as
-        separation.  Optional.
-    **kwargs
-        All other arguments are forwarded to each call to `text` used to create
-        the text labels.
+    Args:
+        im: The AxesImage to be labeled.
+        data: Data used to annotate.  If None, the image's data is used.  Optional.
+        valfmt: The format of the annotations inside the heatmap.  This should either
+            use the string format method, e.g. "$ {x:.2f}", or be a
+            `matplotlib.ticker.Formatter`.  Optional.
+        textcolors: A pair of colors.  The first is used for values below a threshold,
+            the second for those above.  Optional.
+        threshold: Value in data units according to which the colors from textcolors are
+            applied.  If None (the default) uses the middle of the colormap as
+            separation.  Optional.
+        **kwargs: All other arguments are forwarded to each call to `text` used to create
+            the text labels.
+
+    Returns: List of the text annotations
     """
 
     if data is None:
@@ -276,10 +295,10 @@ def radar_factory(num_vars: int) -> npt.NDArray[np.float_]:
 
     This function creates a RadarAxes projection and registers it.
 
-    Parameters
-    ----------
-    num_vars : int
-        Number of variables for radar chart.
+    Args:
+        num_vars: Number of variables for radar chart.
+
+    Returns: List of evenly spaced angles
     """
     # calculate evenly-spaced axis angles
     theta = np.linspace(0, 2 * np.pi, num_vars, endpoint=False)
@@ -295,7 +314,8 @@ def radar_factory(num_vars: int) -> npt.NDArray[np.float_]:
     return theta
 
 
-class RadarAxesMeta(PolarAxes):  # pylint: disable=missing-class-docstring
+class RadarAxesMeta(PolarAxes):
+    """A helper class to generate feature-vector plots."""
 
     name = "radar"
     # use 1 line segment to connect specified points
