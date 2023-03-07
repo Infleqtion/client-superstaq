@@ -298,12 +298,13 @@ def radar_factory(num_vars: int) -> npt.NDArray[np.float_]:
     Args:
         num_vars: Number of variables for radar chart.
 
-    Returns: List of evenly spaced angles
+    Returns: A list of evenly spaced angles
     """
     # calculate evenly-spaced axis angles
     theta = np.linspace(0, 2 * np.pi, num_vars, endpoint=False)
 
-    class RadarAxes(RadarAxesMeta):  # pylint: disable=missing-class-docstring
+    class RadarAxes(RadarAxesMeta):
+        """A helper class that sets the shape of the feature plot"""
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             self.frame = "circle"
             self.theta = theta
@@ -347,9 +348,10 @@ class RadarAxesMeta(PolarAxes):
             y = np.append(y, y[0])
             line.set_data(x, y)
 
-    def set_varlabels(  # pylint: disable=missing-function-docstring
+    def set_varlabels(
         self, labels: List[str]
     ) -> None:
+        """Set the spoke labels at the appropriate points on the radar plot"""
         self.set_thetagrids(np.degrees(self.theta), labels, fontsize=14)
 
     def _gen_axes_patch(self) -> matplotlib.patches.Circle:
