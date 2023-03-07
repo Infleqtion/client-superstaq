@@ -10,6 +10,11 @@ def compute_communication(
 
     This function acts a wrapper which first converts the input `cirq.Circuit`
     into a `qiskit.QuantumCircuit` before calculating the feature value.
+
+    Args:
+        circuit: A quantum circuit
+
+    Returns: The value of the communication feature for this circuit
     """
     return sm.converters.compute_communication_with_qiskit(sm.converters.cirq_to_qiskit(circuit))
 
@@ -19,6 +24,11 @@ def compute_liveness(circuit: cirq.Circuit) -> float:
 
     This function acts a wrapper which first converts the input `cirq.Circuit`
     into a `qiskit.QuantumCircuit` before calculating the feature value.
+
+    Args:
+        circuit: A quantum circuit
+
+    Returns: The value of the liveness feature for this circuit
     """
     return sm.converters.compute_liveness_with_qiskit((sm.converters.cirq_to_qiskit(circuit)))
 
@@ -30,6 +40,11 @@ def compute_parallelism(
 
     This function acts a wrapper which first converts the input `cirq.Circuit`
     into a `qiskit.QuantumCircuit` before calculating the feature value.
+
+    Args:
+        circuit: A quantum circuit
+
+    Returns: The value of the parallelism feature for this circuit
     """
     return sm.converters.compute_parallelism_with_qiskit(sm.converters.cirq_to_qiskit(circuit))
 
@@ -41,6 +56,11 @@ def compute_measurement(
 
     This function acts a wrapper which first converts the input `cirq.Circuit`
     into a `qiskit.QuantumCircuit` before calculating the feature value.
+
+    Args:
+        circuit: A quantum circuit
+
+    Returns: The value of the measurement feature for this circuit
     """
     return sm.converters.compute_measurement_with_qiskit(sm.converters.cirq_to_qiskit(circuit))
 
@@ -52,6 +72,11 @@ def compute_entanglement(
 
     This function acts a wrapper which first converts the input `cirq.Circuit`
     into a `qiskit.QuantumCircuit` before calculating the feature value.
+
+    Args:
+        circuit: A quantum circuit
+
+    Returns: The value of the entanglement feature for this circuit
     """
     return sm.converters.compute_entanglement_with_qiskit(sm.converters.cirq_to_qiskit(circuit))
 
@@ -61,5 +86,10 @@ def compute_depth(circuit: cirq.Circuit) -> float:
 
     This function acts a wrapper which first converts the input `cirq.Circuit`
     into a `qiskit.QuantumCircuit` before calculating the feature value.
+
+    Args:
+        circuit: A quantum circuit
+
+    Returns: The value of the depth feature for this circuit
     """
     return sm.converters.compute_depth_with_qiskit(sm.converters.cirq_to_qiskit(circuit))
