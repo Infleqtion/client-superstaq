@@ -124,7 +124,7 @@ class MerminBell(Benchmark):
                 if isinstance(op.gate, cirq.ops.MeasurementGate):
                     break
 
-                substr = [measure_pauli[cast(cirq.LineQubit, qubit).x] for qubit in op.qubits]
+                substr = [measure_pauli[cast("cirq.LineQubit", qubit).x] for qubit in op.qubits]
                 conjugated_substr = conjugation_rules[op.gate]["".join(substr)]
 
                 if conjugated_substr[0] == "-":
@@ -132,7 +132,7 @@ class MerminBell(Benchmark):
                     conjugated_substr = conjugated_substr[1:]
 
                 for qubit, pauli in zip(op.qubits, conjugated_substr):
-                    measure_pauli[cast(cirq.LineQubit, qubit).x] = pauli
+                    measure_pauli[cast("cirq.LineQubit", qubit).x] = pauli
 
             measurement_qubits = [i for i, pauli in enumerate(measure_pauli) if pauli == "Z"]
             measurement_coef = parity
