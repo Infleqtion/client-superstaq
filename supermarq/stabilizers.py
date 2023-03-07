@@ -27,19 +27,52 @@ class MeasurementCircuit:
         self.qubits = qubits
 
     def get_circuit(self) -> cirq.Circuit:
-        """Return the current circuit."""
+        """Return the current circuit.
+
+        Args: None
+
+        Returns: The current quantum circuit
+        """
         return self.circuit
 
     def get_stabilizer(self) -> npt.NDArray[np.uint8]:
-        """Return the current stabilizer matrix."""
+        """Return the current stabilizer matrix.
+
+        The stabilizer matrix is in the Z+X format where M Pauli strings,
+        acting on N qubits, is represented as a (2*N, M) matrix.
+
+        For instance, YYI, XXY, IYZ would be represented by
+        [[1, 0, 0],  ========
+         [1, 0, 1],  Z matrix (top half)
+         [0, 1, 1],  ========
+         [1, 1, 0],  ========
+         [1, 1, 1],  X matrix (bottom half)
+         [0, 1, 0]   ========
+
+        Args: None
+
+        Returns: The current stabilizer matrix
+        """
         return self.stabilizer_matrix
 
     def set_circuit(self, circuit: cirq.Circuit) -> None:
-        """Assign the class circuit to the input circuit."""
+        """Assign the class circuit to the input circuit.
+
+        Args:
+            circuit: The new circuit which will override the current one
+
+        Returns: None
+        """
         self.circuit = circuit
 
     def set_stabilizer(self, stabilizer_matrix: npt.NDArray[np.uint8]) -> None:
-        """The input matrix is assigned to the class matrix."""
+        """The input matrix is assigned to the class matrix.
+
+        Args:
+            stabilizer_matrix: An input matrix in X+Z format
+
+        Returns: None
+        """
         self.stabilizer_matrix = stabilizer_matrix
 
 
