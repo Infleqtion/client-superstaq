@@ -4,7 +4,9 @@ from typing import Any, Dict, Optional, Tuple, Union
 import general_superstaq as gss
 
 
-class UserConfig:  # pylint: disable=missing-class-docstring
+class UserConfig:
+    """This class contains all the user configurations that are used to operate SuperstaQ"""
+
     def __init__(self, client: gss.superstaq_client._SuperstaQClient):
         self._client = client
 
@@ -139,7 +141,11 @@ class UserConfig:  # pylint: disable=missing-class-docstring
 
         return self._client.aqt_upload_configs({"pulses": pulses_yaml, "variables": variables_yaml})
 
-    def aqt_get_configs(self) -> Dict[str, str]:  # pylint: disable=missing-function-docstring
+    def aqt_get_configs(self) -> Dict[str, str]:
+        """Calls private client to get the configurations for AQT
+        Returns:
+            The configurations as a Dictionary
+        """
         return self._client.aqt_get_configs()
 
     def aqt_download_configs(

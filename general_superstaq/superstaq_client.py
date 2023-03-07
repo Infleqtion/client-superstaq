@@ -90,7 +90,14 @@ class _SuperstaQClient:
             "X-Client-Version": self.api_version,
         }
 
-    def get_request(self, endpoint: str) -> Any:  # pylint: disable=missing-function-docstring
+    def get_request(self, endpoint: str) -> Any:
+        """Performs a GET request on a given endpoint
+        Args:
+            endpoint: The endpoint to perform the GET request on
+        Returns:
+            The response of the GET request
+        """
+
         def request() -> requests.Response:
             return requests.get(
                 f"{self.url}{endpoint}",
@@ -100,9 +107,15 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def post_request(  # pylint: disable=missing-function-docstring
-        self, endpoint: str, json_dict: Dict[str, Any]
-    ) -> Any:
+    def post_request(self, endpoint: str, json_dict: Dict[str, Any]) -> Any:
+        """Performs a POST request on a given endpoint with a given payload
+        Args:
+            endpoint: The endpoint to perform the POST request on
+            json_dict: The payload to POST
+        Returns:
+            The response of the POST request
+        """
+
         def request() -> requests.Response:
             return requests.post(
                 f"{self.url}{endpoint}",
@@ -113,7 +126,7 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def create_job(  # pylint: disable=missing-param-doc
+    def create_job(
         self,
         serialized_circuits: Dict[str, str],
         repetitions: int = 1,
@@ -129,6 +142,8 @@ class _SuperstaQClient:
                 sampling is not done on the server, but is passed as metadata to be recovered
                 from the returned job.
             target: Target to run on.
+            method: Which type of method to execute the circuits (noisy simulator,
+            non-noisy simulator, hardware, e.t.c)
             options: The different available options for creating a job.
                 - qiskit_pulse: Whether to use SuperstaQ's pulse-level optimizations for IBMQ
                 devices.
@@ -213,9 +228,12 @@ class _SuperstaQClient:
         """
         return self.post_request("/update_user_role", json_dict)
 
-    def resource_estimate(  # pylint: disable=missing-function-docstring
-        self, json_dict: Dict[str, str]
-    ) -> Dict[str, List[Dict[str, int]]]:
+    def resource_estimate(self, json_dict: Dict[str, str]) -> Dict[str, List[Dict[str, int]]]:
+        """POSTs the given payload to the `/resource_estimate` endpoint
+        Args:
+            json_dict: The payload to POST
+        Returns: The response of the given payload
+        """
         return self.post_request("/resource_estimate", json_dict)
 
     def aqt_compile(self, json_dict: Dict[str, Union[int, str, List[str]]]) -> Dict[str, str]:
@@ -252,13 +270,24 @@ class _SuperstaQClient:
         }
         return self.post_request("/qubo", json_dict)
 
-    def supercheq(  # pylint: disable=missing-function-docstring
+    def supercheq(
         self,
         files: List[List[int]],
         num_qubits: int,
         depth: int,
         circuit_return_type: str,
     ) -> Any:
+        """Performs a POST request on the `/supercheq` endpoint
+
+        Args:
+            files: List of files specified as binary using ints. For example: [[1, 0, 1], [1, 1, 1]]
+            num_qubits: Number of qubits to run SupercheQ on
+            depth: The depth of the circuits to run SupercheQ on
+            circuit_return_type: Supports only `cirq` and `qiskit` for now
+
+        Returns: The output of SupercheQ
+
+        """
         json_dict = {
             "files": files,
             "num_qubits": num_qubits,
