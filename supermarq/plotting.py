@@ -305,6 +305,7 @@ def radar_factory(num_vars: int) -> npt.NDArray[np.float_]:
 
     class RadarAxes(RadarAxesMeta):
         """A helper class that sets the shape of the feature plot"""
+
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             self.frame = "circle"
             self.theta = theta
@@ -348,9 +349,7 @@ class RadarAxesMeta(PolarAxes):
             y = np.append(y, y[0])
             line.set_data(x, y)
 
-    def set_varlabels(
-        self, labels: List[str]
-    ) -> None:
+    def set_varlabels(self, labels: List[str]) -> None:
         """Set the spoke labels at the appropriate points on the radar plot"""
         self.set_thetagrids(np.degrees(self.theta), labels, fontsize=14)
 
