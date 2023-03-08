@@ -63,9 +63,6 @@ class MeasurementCircuit:
 
         Args:
             circuit: The new circuit which will override the current one.
-
-        Returns:
-            None.
         """
         self.circuit = circuit
 
@@ -74,9 +71,6 @@ class MeasurementCircuit:
 
         Args:
             stabilizer_matrix: An input matrix in X+Z format.
-
-        Returns:
-            None.
         """
         self.stabilizer_matrix = stabilizer_matrix
 
@@ -97,7 +91,8 @@ def construct_stabilizer(
     Families](https://arxiv.org/abs/1907.13623).
 
     Note: this implementation is tailored to the Mermin operator, and assumes that no Pauli Z
-    matrices appear in the clique terms. This function will fail if applied to general Pauli strings.
+    matrices appear in the clique terms. This function will fail if applied to general Pauli
+    strings.
 
     Args:
         N: Integer corresponding to the number of qubits.
@@ -181,9 +176,6 @@ def prepare_X_matrix(measurement_circuit: MeasurementCircuit) -> None:
 
     Args:
         measurement_circuit: The current measurement circuit to act on.
-
-    Returns:
-        None.
     """
     # TODO: right now, this is naively trying all possibilities. Really, should apply
     # the polytime technique described in Aaronson https://arxiv.org/pdf/quant-ph/0406196.pdf
@@ -206,9 +198,6 @@ def row_reduce_X_matrix(measurement_circuit: MeasurementCircuit) -> None:
 
     Args:
         measurement_circuit: The current measurement circuit to act on.
-
-    Returns:
-        None.
     """
     transform_X_matrix_to_row_echelon_form(measurement_circuit)
     transform_X_matrix_to_reduced_row_echelon_form(measurement_circuit)
@@ -221,9 +210,6 @@ def transform_X_matrix_to_row_echelon_form(
 
     Args:
         measurement_circuit: The current measurement circuit to act on.
-
-    Returns:
-        None.
     """
     N = measurement_circuit.num_qubits
     for j in range(N):
@@ -248,9 +234,6 @@ def transform_X_matrix_to_reduced_row_echelon_form(
 
     Args:
         measurement_circuit: The current measurement circuit to act on.
-
-    Returns:
-        None.
     """
     N = measurement_circuit.num_qubits
     for j in range(N - 1, 0, -1):
@@ -266,9 +249,6 @@ def patch_Z_matrix(
 
     Args:
         measurement_circuit: The current measurement circuit to act on.
-
-    Returns:
-        None.
     """
     stabilizer_matrix, N = measurement_circuit.get_stabilizer(), measurement_circuit.num_qubits
     assert np.allclose(
@@ -292,9 +272,6 @@ def change_X_to_Z_basis(
 
     Args:
         measurement_circuit: The current measurement circuit to act on.
-
-    Returns:
-        None.
     """
     # change each qubit from X basis to Z basis via H
     N = measurement_circuit.num_qubits
@@ -308,9 +285,6 @@ def apply_H(measurement_circuit: MeasurementCircuit, i: int) -> None:
     Args:
         measurement_circuit: The current measurement circuit to act on.
         i: Index of the target qubit.
-
-    Returns:
-        None.
     """
     N = measurement_circuit.num_qubits
     qubits = measurement_circuit.qubits
@@ -326,9 +300,6 @@ def apply_S(measurement_circuit: MeasurementCircuit, i: int) -> None:
     Args:
         measurement_circuit: The current measurement circuit to act on.
         i: Index of the target qubit.
-
-    Returns:
-        None.
     """
     qubits = measurement_circuit.qubits
     measurement_circuit.get_stabilizer()[i, i] = 0
@@ -342,9 +313,6 @@ def apply_CZ(measurement_circuit: MeasurementCircuit, i: int, j: int) -> None:
         measurement_circuit: The current measurement circuit to act on.
         i: Index of the control qubit.
         j: Index of the target qubit.
-
-    Returns:
-        None.
     """
     qubits = measurement_circuit.qubits
     measurement_circuit.get_stabilizer()[i, j] = 0
@@ -361,9 +329,6 @@ def apply_CNOT(
         measurement_circuit: The current measurement circuit to act on.
         control_index: Index of the control qubit.
         target_index: Index of the target qubit.
-
-    Returns:
-        None.
     """
     N = measurement_circuit.num_qubits
     qubits = measurement_circuit.qubits
@@ -385,9 +350,6 @@ def apply_SWAP(measurement_circuit: MeasurementCircuit, i: int, j: int) -> None:
         measurement_circuit: The current measurement circuit to act on.
         i: Index of the control qubit.
         j: Index of the target qubit.
-
-    Returns:
-        None.
     """
     N = measurement_circuit.num_qubits
     qubits = measurement_circuit.qubits

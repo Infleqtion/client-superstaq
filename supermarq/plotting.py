@@ -22,9 +22,6 @@ def plot_results(
         tick_labels: List of quantum device names.
         savefn: Path to save the plot, if `None`, the plot is not saved.
         show: Display the plot using `plt.show`.
-
-    Returns:
-        None.
     """
     _, ax = plt.subplots(dpi=150)
 
@@ -68,9 +65,6 @@ def plot_correlations(
         device_name: The name of quantum device where the scores were obtained.
         savefn: Path to save the plot, if `None`, the plot is not saved.
         show: Display the plot using `plt.show`.
-
-    Returns:
-        None.
     """
 
     temp_correlations = []
@@ -129,9 +123,6 @@ def plot_benchmark(
         savefn: Path to save the plot, if `None`, the plot is not saved.
         spoke_labels: Optional labels for the feature vector dimensions.
         legend_loc: Optional argument to fine tune the legend placement.
-
-    Returns:
-        None.
     """
     plt.rcParams["font.family"] = "Times New Roman"
 
