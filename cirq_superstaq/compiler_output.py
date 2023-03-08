@@ -104,6 +104,46 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
             f"{self.pulse_lists!r})"
         )
 
+    def __repr_pretty__(self) -> str:
+        def get_pretty_elems(pulse_list):
+            pretty = ""
+            for block in pulse_list:
+                pretty += "\npulse:"
+                for elems in block:
+                    pretty += "\n\tpulse block:"
+                    for pulse in elems:
+                        pretty += "\n\t\tunique:"
+                        if isinstance(pulse.envelope, qtrl.sequencer.sequencer.VirtualEnvelope):
+                            extra = f"(envelope phase) {unique_pulse.envelope.phase:.2}"
+                        else:
+                            extra = (
+                                f"(envelope phase) "
+                                f"{[round(elem, 2) for elem in pulse.envelope.kwargs['phase']]}"
+                            )
+                        pretty += f"channel: {pulse.channel}, freq: {pulse.freq:.2}, extra: {extra}"
+            return pretty
+
+        if self.has_multiple_circuits():
+            circuits = self.circuits
+            logical_to_physicals = self.final_logical_to_physicals
+            pulse_sequences = self.pulse_sequences
+            jaqal_programs = self.jaqal_programs
+            pretty = ""
+            for pulse_list in compiler_output.pulse_lists:
+                pretty += "\npulse list:\n\t"
+                pretty += get_pretty_elems(pulse_list)
+        else:
+            circuits = self.circuit
+            logical_to_physicals = self.final_logical_to_physical
+            pulse_sequences = self.pulse_sequence
+            jaqal_programs = self.jaqal_program
+            pretty = get_pretty_elems(self.pulse_list)
+        return (
+            f"CompilerOutput({circuits!r}, {logical_to_physicals!r}, "
+            f"{pulse_sequences!r}, {self.seq!r}, {jaqal_programs!r}, "
+            f"{pretty})"
+        )
+
 
 def read_json_ibmq(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
     """Reads out returned JSON from SuperstaQ API's IBMQ compilation endpoint.
