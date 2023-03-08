@@ -17,10 +17,10 @@ def get_ideal_counts(
     the bitstrings are written as `q0q1q2`.
 
     Args:
-        circuit: Input `cirq.Circuit` to be simulated
+        circuit: Input `cirq.Circuit` to be simulated.
 
     Returns:
-        A dictionary with bitstring and probability as the key, value pairs
+        A dictionary with bitstring and probability as the key, value pairs.
     """
     ideal_counts = {}
     for i, amplitude in enumerate(circuit.final_state_vector(ignore_terminal_measurements=True)):
