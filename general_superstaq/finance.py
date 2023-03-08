@@ -1,13 +1,16 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
 import qubovert as qv
 
 import general_superstaq as gss
-from general_superstaq import superstaq_client
-from general_superstaq.typing import MaxSharpeJson, MinVolJson
+
+if TYPE_CHECKING:
+    from general_superstaq import superstaq_client
 
 
 @dataclass
@@ -18,7 +21,7 @@ class MinVolOutput:  # pylint: disable=missing-class-docstring
     qubo: qv.QUBO
 
 
-def read_json_minvol(json_dict: MinVolJson) -> MinVolOutput:
+def read_json_minvol(json_dict: gss.MinVolJson) -> MinVolOutput:
     """Reads out returned JSON from SuperstaQ API's minvol endpoint.
     Args:
         json_dict: a JSON dictionary matching the format returned by /minvol endpoint
@@ -41,7 +44,7 @@ class MaxSharpeOutput:  # pylint: disable=missing-class-docstring
     qubo: qv.QUBO
 
 
-def read_json_maxsharpe(json_dict: MaxSharpeJson) -> MaxSharpeOutput:
+def read_json_maxsharpe(json_dict: gss.MaxSharpeJson) -> MaxSharpeOutput:
     """Reads out returned JSON from SuperstaQ API's minvol endpoint.
     Args:
         json_dict: a JSON dictionary matching the format returned by /maxsharpe endpoint

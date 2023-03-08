@@ -1,11 +1,13 @@
 import os
 from typing import Any, Dict, Optional, Tuple, Union
 
-from general_superstaq import superstaq_client
+import general_superstaq as gss
 
 
-class UserConfig:  # pylint: disable=missing-class-docstring
-    def __init__(self, client: superstaq_client._SuperstaQClient):
+class UserConfig:
+    """This class contains all the user configurations that are used to operate SuperstaQ"""
+
+    def __init__(self, client: gss.superstaq_client._SuperstaQClient):
         self._client = client
 
     def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
@@ -33,16 +35,79 @@ class UserConfig:  # pylint: disable=missing-class-docstring
         """
         return self._client._accept_terms_of_use(user_input)
 
+    def add_new_user(self, name: str, email: str) -> str:
+        """Adds new user.
+
+        Args:
+            name: The name to add
+            email: The new user's email
+
+        Returns:
+            String containing status of update (whether or not it failed)
+            and the new user's token.
+        """
+        return self._client.add_new_user(
+            {
+                "name": name,
+                "email": email,
+            }
+        )
+
+    def update_user_balance(self, email: str, balance: float) -> str:
+        """Updates user's balance.
+
+        Args:
+            email: The new user's email
+            balance: The new balance
+
+        Returns:
+             String containing status of update (whether or not it failed).
+        """
+        return self._client.update_user_balance(
+            {
+                "email": email,
+                "balance": balance,
+            }
+        )
+
+    def update_user_role(self, email: str, role: int) -> str:
+        """Updates user's role.
+
+        Args:
+            email: The new user's email
+            role: The new role
+
+        Returns:
+             String containing status of update (whether or not it failed).
+        """
+        return self._client.update_user_role(
+            {
+                "email": email,
+                "role": role,
+            }
+        )
+
     def ibmq_set_token(self, token: str) -> str:
-        """Sets IBMQ token field in database.
+        """Sets IBMQ token field.
 
         Args:
             token: IBMQ token string.
 
         Returns:
-            JSON dictionary containing status of update (whether or not it failed).
+            String containing status of update (whether or not it failed).
         """
         return self._client.ibmq_set_token({"ibmq_token": token})
+
+    def cq_set_token(self, token: str) -> str:
+        """Sets CQ token field.
+
+        Args:
+            token: CQ token string.
+
+        Returns:
+            String containing status of update (whether or not it failed).
+        """
+        return self._client.cq_set_token({"cq_token": token})
 
     def aqt_upload_configs(self, pulses: Any, variables: Any) -> str:
         """Uploads configs for AQT. Arguments can be either file paths (in .yaml format) or qtrl
@@ -87,7 +152,11 @@ class UserConfig:  # pylint: disable=missing-class-docstring
 
         return self._client.aqt_upload_configs({"pulses": pulses_yaml, "variables": variables_yaml})
 
-    def aqt_get_configs(self) -> Dict[str, str]:  # pylint: disable=missing-function-docstring
+    def aqt_get_configs(self) -> Dict[str, str]:
+        """Calls private client to get the configurations for AQT
+        Returns:
+            The configurations as a Dictionary
+        """
         return self._client.aqt_get_configs()
 
     def aqt_download_configs(

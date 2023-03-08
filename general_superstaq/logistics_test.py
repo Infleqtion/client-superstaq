@@ -4,7 +4,6 @@ from unittest import mock
 import qubovert as qv
 
 import general_superstaq as gss
-from general_superstaq.typing import TSPJson, WareHouseJson
 
 
 def test_read_json_tsp() -> None:
@@ -13,7 +12,7 @@ def test_read_json_tsp() -> None:
     total_distance = 100.0
     map_link = ["maps.google.com"]
     qubo_obj = qv.QUBO({("0", "1"): -1.0})
-    json_dict: TSPJson = {
+    json_dict: gss.TSPJson = {
         "route": route,
         "route_list_numbers": route_list_numbers,
         "total_distance": total_distance,
@@ -31,7 +30,7 @@ def test_read_json_warehouse() -> None:
     map_link = "map.html"
     open_warehouses = ["Chicago"]
     qubo_obj = qv.QUBO({("0", "1"): -1.0})
-    json_dict: WareHouseJson = {
+    json_dict: gss.WareHouseJson = {
         "warehouse_to_destination": warehouse_to_destination,
         "total_distance": total_distance,
         "map_link": map_link,

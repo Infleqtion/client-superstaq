@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Client for making requests to SuperstaQ's API."""
-
 import json
 import sys
 import textwrap
@@ -23,7 +22,6 @@ import qubovert as qv
 import requests
 
 import general_superstaq as gss
-from general_superstaq.typing import MaxSharpeJson, MinVolJson, TSPJson, WareHouseJson
 
 
 class _SuperstaQClient:
@@ -92,7 +90,14 @@ class _SuperstaQClient:
             "X-Client-Version": self.api_version,
         }
 
-    def get_request(self, endpoint: str) -> Any:  # pylint: disable=missing-function-docstring
+    def get_request(self, endpoint: str) -> Any:
+        """Performs a GET request on a given endpoint
+        Args:
+            endpoint: The endpoint to perform the GET request on
+        Returns:
+            The response of the GET request
+        """
+
         def request() -> requests.Response:
             return requests.get(
                 f"{self.url}{endpoint}",
@@ -102,9 +107,15 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def post_request(  # pylint: disable=missing-function-docstring
-        self, endpoint: str, json_dict: Dict[str, Any]
-    ) -> Any:
+    def post_request(self, endpoint: str, json_dict: Dict[str, Any]) -> Any:
+        """Performs a POST request on a given endpoint with a given payload
+        Args:
+            endpoint: The endpoint to perform the POST request on
+            json_dict: The payload to POST
+        Returns:
+            The response of the POST request
+        """
+
         def request() -> requests.Response:
             return requests.post(
                 f"{self.url}{endpoint}",
@@ -115,7 +126,7 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
-    def create_job(  # pylint: disable=missing-param-doc
+    def create_job(
         self,
         serialized_circuits: Dict[str, str],
         repetitions: int = 1,
@@ -131,6 +142,8 @@ class _SuperstaQClient:
                 sampling is not done on the server, but is passed as metadata to be recovered
                 from the returned job.
             target: Target to run on.
+            method: Which type of method to execute the circuits (noisy simulator,
+            non-noisy simulator, hardware, e.t.c)
             options: The different available options for creating a job.
                 - qiskit_pulse: Whether to use SuperstaQ's pulse-level optimizations for IBMQ
                 devices.
@@ -193,23 +206,45 @@ class _SuperstaQClient:
         """Makes a GET request to SuperstaQ API to get a list of available targets."""
         return self.get_request("/targets")
 
-    def ibmq_set_token(  # pylint: disable=missing-param-doc,differing-param-doc
-        self, json_dict: Dict[str, str]
-    ) -> str:
-        """Makes a POST request to SuperstaQ API to set IBMQ token field in database.
+    def add_new_user(self, json_dict: Dict[str, str]) -> str:
+        """Makes a POST request to SuperstaQ API to add a new user.
 
         Args:
-            ibmq_token: dictionary with IBMQ token string entry.
+            json_dict: dictionary with user entry.
 
         Returns:
-            The json body of the response as a dict.
+            The response as a string.
         """
+        return self.post_request("/add_new_user", json_dict)
 
-        return self.post_request("/ibmq_token", json_dict)
+    def update_user_balance(self, json_dict: Dict[str, Union[float, str]]) -> str:
+        """Makes a POST request to SuperstaQ API to update a user's balance in the database.
 
-    def resource_estimate(  # pylint: disable=missing-function-docstring
-        self, json_dict: Dict[str, str]
-    ) -> Dict[str, List[Dict[str, int]]]:
+        Args:
+            json_dict: dictionary with user entry and new balance.
+
+        Returns:
+            The response as a string.
+        """
+        return self.post_request("/update_user_balance", json_dict)
+
+    def update_user_role(self, json_dict: Dict[str, Union[int, str]]) -> str:
+        """Makes a POST request to SuperstaQ API to update a user's role.
+
+        Args:
+            json_dict: dictionary with user entry and new role.
+
+        Returns:
+            The response as a string.
+        """
+        return self.post_request("/update_user_role", json_dict)
+
+    def resource_estimate(self, json_dict: Dict[str, str]) -> Dict[str, List[Dict[str, int]]]:
+        """POSTs the given payload to the `/resource_estimate` endpoint
+        Args:
+            json_dict: The payload to POST
+        Returns: The response of the given payload
+        """
         return self.post_request("/resource_estimate", json_dict)
 
     def aqt_compile(self, json_dict: Dict[str, Union[int, str, List[str]]]) -> Dict[str, str]:
@@ -246,13 +281,24 @@ class _SuperstaQClient:
         }
         return self.post_request("/qubo", json_dict)
 
-    def supercheq(  # pylint: disable=missing-function-docstring
+    def supercheq(
         self,
         files: List[List[int]],
         num_qubits: int,
         depth: int,
         circuit_return_type: str,
     ) -> Any:
+        """Performs a POST request on the `/supercheq` endpoint
+
+        Args:
+            files: List of files specified as binary using ints. For example: [[1, 0, 1], [1, 1, 1]]
+            num_qubits: Number of qubits to run SupercheQ on
+            depth: The depth of the circuits to run SupercheQ on
+            circuit_return_type: Supports only `cirq` and `qiskit` for now
+
+        Returns: The output of SupercheQ
+
+        """
         json_dict = {
             "files": files,
             "num_qubits": num_qubits,
@@ -263,24 +309,46 @@ class _SuperstaQClient:
 
     def find_min_vol_portfolio(
         self, json_dict: Dict[str, Union[List[str], int, float, str]]
-    ) -> MinVolJson:
+    ) -> gss.MinVolJson:
         """Makes a POST request to SuperstaQ API to find a minimum volatility portfolio
         that exceeds a certain specified return."""
         return self.post_request("/minvol", json_dict)
 
     def find_max_pseudo_sharpe_ratio(
         self, json_dict: Dict[str, Union[List[str], float, str, Optional[int]]]
-    ) -> MaxSharpeJson:
+    ) -> gss.MaxSharpeJson:
         """Makes a POST request to SuperstaQ API to find a max Sharpe ratio portfolio."""
         return self.post_request("/maxsharpe", json_dict)
 
-    def tsp(self, json_dict: Dict[str, List[str]]) -> TSPJson:
+    def tsp(self, json_dict: Dict[str, List[str]]) -> gss.TSPJson:
         """Makes a POST request to SuperstaQ API to find a optimal TSP tour."""
         return self.post_request("/tsp", json_dict)
 
-    def warehouse(self, json_dict: Dict[str, Union[int, List[str], str]]) -> WareHouseJson:
+    def warehouse(self, json_dict: Dict[str, Union[int, List[str], str]]) -> gss.WareHouseJson:
         """Makes a POST request to SuperstaQ API to find optimal warehouse assignment."""
         return self.post_request("/warehouse", json_dict)
+
+    def ibmq_set_token(self, json_dict: Dict[str, str]) -> str:
+        """Makes a POST request to SuperstaQ API to set IBMQ token field in database.
+
+        Args:
+            json_dict: Dictionary with IBMQ token string entry.
+
+        Returns:
+            The response as a string.
+        """
+        return self.post_request("/ibmq_token", json_dict)
+
+    def cq_set_token(self, json_dict: Dict[str, str]) -> str:
+        """Makes a POST request to SuperstaQ API to set CQ token field in database.
+
+        Args:
+            json_dict: Dictionary with CQ token string entry.
+
+        Returns:
+            The response as a string.
+        """
+        return self.post_request("/cq_set_token", json_dict)
 
     def aqt_upload_configs(self, aqt_configs: Dict[str, str]) -> str:
         """Makes a POST request to SuperstaQ API to upload configurations."""
