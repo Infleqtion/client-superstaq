@@ -337,7 +337,7 @@ class _SuperstaQClient:
         Returns:
             The response as a string.
         """
-        return self.post_request("/cq_set_token", json_dict)
+        return self.post_request("/cq_token", json_dict)
 
     def aqt_upload_configs(self, aqt_configs: Dict[str, str]) -> str:
         """Makes a POST request to SuperstaQ API to upload configurations."""

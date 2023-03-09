@@ -685,7 +685,7 @@ def test_superstaq_client_cq_set_token(mock_post: mock.MagicMock) -> None:
 
     expected_json = {"cq_token": "token"}
     mock_post.assert_called_with(
-        f"http://example.com/{API_VERSION}/cq_set_token",
+        f"http://example.com/{API_VERSION}/cq_token",
         headers=EXPECTED_HEADERS,
         json=expected_json,
         verify=False,
