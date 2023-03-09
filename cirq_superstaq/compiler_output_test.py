@@ -89,6 +89,11 @@ def test_compiler_output_repr() -> None:
         == f"CompilerOutput({circuits!r}, None, None, None, None, None)"
     )
 
+    assert (
+        css.compiler_output.CompilerOutput(circuits).__repr_pretty__()
+        == f"CompilerOutput({circuits!r}, None, None, None, None, None)"
+    )
+
 
 def test_read_json_ibmq() -> None:
     q0 = cirq.LineQubit(0)

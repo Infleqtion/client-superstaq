@@ -105,43 +105,53 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
         )
 
     def __repr_pretty__(self) -> str:
-        def get_pretty_elems(pulse_list):
-            pretty = ""
-            for block in pulse_list:
-                pretty += "\npulse:"
-                for elems in block:
-                    pretty += "\n\tpulse block:"
-                    for pulse in elems:
-                        pretty += "\n\t\tunique:"
-                        if isinstance(pulse.envelope, qtrl.sequencer.sequencer.VirtualEnvelope):
-                            extra = f"(envelope phase) {unique_pulse.envelope.phase:.2}"
-                        else:
-                            extra = (
-                                f"(envelope phase) "
-                                f"{[round(elem, 2) for elem in pulse.envelope.kwargs['phase']]}"
-                            )
-                        pretty += f"channel: {pulse.channel}, freq: {pulse.freq:.2}, extra: {extra}"
-            return pretty
+        def get_readable_pulse(pulse: qtrl.sequencer.sequencer.UniquePulse) -> str:
+            """Gets human-readable version of pulse object."""
+            if isinstance(pulse.envelope, qtrl.sequencer.sequencer.VirtualEnvelope):
+                extra = f"(envelope phase) {pulse.envelope.phase:.2}"
+            else:
+                extra = (
+                    f"envelope phase="
+                    f"{[round(elem, 2) for elem in pulse.envelope.kwargs['phase']]}"
+                )
+            return f"UniquePulse(channel={pulse.channel}, freq={pulse.freq:.2}, extra=[{extra}])"
+
+        def pretty_print(
+            pulse_list: Union[List[Any], qtrl.sequencer.sequencer.UniquePulse, None],
+            tab: int = 0,
+        ) -> Union[str, None]:
+            """Recursively prints pulse list elements."""
+            if pulse_list is None:
+                return None
+            elems = []
+            for pulse in pulse_list:
+                if isinstance(pulse, list) and not isinstance(pulse[0], list) and len(pulse) == 1:
+                    elems.append("\n" + "\t" * tab + f"[{get_readable_pulse(pulse[0])}],")
+                elif isinstance(pulse, list):
+                    elems.append(
+                        "\n"
+                        + "\t" * tab
+                        + "["
+                        + str(pretty_print(pulse, tab + 1))
+                        + "\n"
+                        + "\t" * tab
+                        + "],"
+                    )
+                else:
+                    elems.append("\n" + "\t" * tab + get_readable_pulse(pulse) + ",")
+            return "".join(elems)
 
         if self.has_multiple_circuits():
-            circuits = self.circuits
-            logical_to_physicals = self.final_logical_to_physicals
-            pulse_sequences = self.pulse_sequences
-            jaqal_programs = self.jaqal_programs
-            pretty = ""
-            for pulse_list in compiler_output.pulse_lists:
-                pretty += "\npulse list:\n\t"
-                pretty += get_pretty_elems(pulse_list)
-        else:
-            circuits = self.circuit
-            logical_to_physicals = self.final_logical_to_physical
-            pulse_sequences = self.pulse_sequence
-            jaqal_programs = self.jaqal_program
-            pretty = get_pretty_elems(self.pulse_list)
+            return (
+                f"CompilerOutput({self.circuits!r}, {self.final_logical_to_physicals!r}, "
+                f"{self.pulse_sequences!r}, {self.seq!r}, {self.jaqal_programs!r}, "
+                f"{pretty_print(self.pulse_lists)})"
+            )
+
         return (
-            f"CompilerOutput({circuits!r}, {logical_to_physicals!r}, "
-            f"{pulse_sequences!r}, {self.seq!r}, {jaqal_programs!r}, "
-            f"{pretty})"
+            f"CompilerOutput({self.circuit!r}, {self.final_logical_to_physical!r}, "
+            f"{self.pulse_sequence!r}, {self.seq!r}, {self.jaqal_program!r}, "
+            f"{pretty_print(self.pulse_list)})"
         )
 
 
