@@ -108,6 +108,80 @@ def test_zz_swap_parameterized() -> None:
         _ = cirq.pauli_expansion(gate)
 
 
+def test_stripped_cz_gate() -> None:
+    rz_rads = 0.123
+    gate = css.StrippedCZGate(rz_rads)
+    assert cirq.has_unitary(gate)
+
+    assert str(gate) == "StrippedCZGate(0.123)"
+    assert repr(gate) == "css.StrippedCZGate(0.123)"
+    cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq as css")
+    expected = np.diag(
+        ([1.0, np.exp(1j * rz_rads), np.exp(1j * rz_rads), np.exp(1j * (2 * rz_rads - np.pi))])
+    )
+    assert np.allclose(cirq.unitary(gate), expected)
+
+    qubits = cirq.LineQubit.range(3)
+    operation = gate(qubits[0], qubits[2])
+    assert cirq.decompose_once(operation) == [
+        cirq.rz(rz_rads).on(qubits[0]),
+        cirq.rz(rz_rads).on(qubits[2]),
+        cirq.CZ(qubits[0], qubits[2]),
+    ]
+    cirq.testing.assert_has_consistent_apply_unitary(gate)
+    cirq.testing.assert_decompose_is_consistent_with_unitary(gate, ignoring_global_phase=True)
+    cirq.testing.assert_consistent_resolve_parameters(gate)
+    cirq.testing.assert_json_roundtrip_works(
+        gate, resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
+    )
+
+    assert cirq.approx_eq(css.StrippedCZGate(1.23), css.StrippedCZGate(1.23 + 2 * np.pi))
+    assert cirq.approx_eq(css.StrippedCZGate(np.pi + 1e-10), css.StrippedCZGate(np.pi - 1e-10))
+
+    phases = [
+        1,
+        np.exp(1j * 0.0615),
+        np.exp(1j * 0.0615),
+        np.exp(1j * (2 * 0.0615 - 0.5 * np.pi)),
+    ]
+    z_exp_gate = cirq.ZPowGate(exponent=0.246)
+
+    assert gate**0 == cirq.IdentityGate(2)
+    assert gate**0.5 == cirq.DiagonalGate(phases)
+    assert gate**1 == gate
+    assert gate**2 == css.ParallelGates(z_exp_gate, z_exp_gate)
+
+
+def test_stripped_cz_gate_circuit() -> None:
+    qubits = cirq.LineQubit.range(3)
+    operation = css.StrippedCZGate(0.456 * np.pi)(qubits[0], qubits[2])
+    circuit = cirq.Circuit(operation)
+
+    expected_diagram = textwrap.dedent(
+        """
+        0: ───@(0.456π)───
+              │
+        2: ───@(0.456π)───
+        """
+    )
+
+    cirq.testing.assert_has_diagram(circuit, expected_diagram)
+
+
+def test_stripped_cz_gate_parameterized() -> None:
+    gate = css.StrippedCZGate(sympy.var("φ"))
+    cirq.testing.assert_consistent_resolve_parameters(gate)
+
+    assert gate == css.StrippedCZGate(sympy.var("φ"))
+    assert cirq.approx_eq(gate, css.StrippedCZGate(sympy.var("φ")))
+    assert cirq.equal_up_to_global_phase(gate, css.StrippedCZGate(sympy.var("φ")))
+
+    with pytest.raises(TypeError, match="cirq.unitary failed. Value doesn't have"):
+        _ = cirq.unitary(gate)
+    with pytest.raises(TypeError, match="No Pauli expansion"):
+        _ = cirq.pauli_expansion(gate)
+
+
 def test_zx_matrix() -> None:
     np.testing.assert_allclose(
         cirq.unitary(css.ZX),
@@ -996,7 +1070,7 @@ def test_custom_resolver() -> None:
     circuit += css.AQTITOFFOLI(qubits[0], qubits[1], qubits[2])
     circuit += css.ops.qubit_gates.ICCX(qubits[0], qubits[1], qubits[2])
     circuit += css.ops.qubit_gates.IX(qubits[0])
-    circuit += cirq.CX(qubits[0], qubits[1])
+    circuit += css.StrippedCZGate(0.123).on(qubits[0], qubits[1])
 
     json_text = cirq.to_json(circuit)
     resolvers = [*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
