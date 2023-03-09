@@ -52,19 +52,19 @@ def test_acecr_ibmq_compile(service: css.Service) -> None:
     assert isinstance(out.circuit, cirq.Circuit)
     assert out.pulse_sequence is not None
     assert out.pulse_sequence.start_time == 0
-    assert len(out.pulse_sequence) == 51
+    assert len(out.pulse_sequence) == 57
 
     out = service.ibmq_compile(circuit, target="ibmq_perth_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
     assert out.pulse_sequence is not None
     assert out.pulse_sequence.start_time == 0
-    assert len(out.pulse_sequence) == 54
+    assert len(out.pulse_sequence) == 60
 
     out = service.ibmq_compile(circuit, target="ibmq_lagos_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
     assert out.pulse_sequence is not None
     assert out.pulse_sequence.start_time == 0
-    assert len(out.pulse_sequence) == 61
+    assert len(out.pulse_sequence) == 67
 
 
 def test_aqt_compile(service: css.Service) -> None:
