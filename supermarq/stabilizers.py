@@ -203,9 +203,7 @@ def row_reduce_X_matrix(measurement_circuit: MeasurementCircuit) -> None:
     transform_X_matrix_to_reduced_row_echelon_form(measurement_circuit)
 
 
-def transform_X_matrix_to_row_echelon_form(
-    measurement_circuit: MeasurementCircuit,
-) -> None:
+def transform_X_matrix_to_row_echelon_form(measurement_circuit: MeasurementCircuit) -> None:
     """Apply SWAPs and CNOTs until the X matrix is in row echelon form.
 
     Args:
@@ -224,9 +222,7 @@ def transform_X_matrix_to_row_echelon_form(
                 apply_CNOT(measurement_circuit, j, i - N)
 
 
-def transform_X_matrix_to_reduced_row_echelon_form(
-    measurement_circuit: MeasurementCircuit,
-) -> None:
+def transform_X_matrix_to_reduced_row_echelon_form(measurement_circuit: MeasurementCircuit) -> None:
     """Apply CNOTs to put the X matrix in reduced echelon form.
 
     The X stabilizer matrix of the input MeasurementCircuit should already be
@@ -242,9 +238,7 @@ def transform_X_matrix_to_reduced_row_echelon_form(
                 apply_CNOT(measurement_circuit, j, i - N)
 
 
-def patch_Z_matrix(
-    measurement_circuit: MeasurementCircuit,
-) -> None:
+def patch_Z_matrix(measurement_circuit: MeasurementCircuit) -> None:
     """Apply S and CZ operations to clear the Z matrix.
 
     Args:
@@ -265,9 +259,7 @@ def patch_Z_matrix(
             apply_S(measurement_circuit, i)
 
 
-def change_X_to_Z_basis(
-    measurement_circuit: MeasurementCircuit,
-) -> None:
+def change_X_to_Z_basis(measurement_circuit: MeasurementCircuit) -> None:
     """Apply Hadamards to swap the Z and X matrices.
 
     Args:

@@ -3,9 +3,7 @@ import cirq
 import supermarq as sm
 
 
-def compute_communication(
-    circuit: cirq.Circuit,
-) -> float:
+def compute_communication(circuit: cirq.Circuit) -> float:
     """Compute the *communication* feature of the input circuit.
 
     This function acts a wrapper which first converts the input `cirq.Circuit`
@@ -35,9 +33,7 @@ def compute_liveness(circuit: cirq.Circuit) -> float:
     return sm.converters.compute_liveness_with_qiskit((sm.converters.cirq_to_qiskit(circuit)))
 
 
-def compute_parallelism(
-    circuit: cirq.Circuit,
-) -> float:
+def compute_parallelism(circuit: cirq.Circuit) -> float:
     """Compute the *parallelism* feature of the input circuit.
 
     This function acts a wrapper which first converts the input `cirq.Circuit`
@@ -52,9 +48,7 @@ def compute_parallelism(
     return sm.converters.compute_parallelism_with_qiskit(sm.converters.cirq_to_qiskit(circuit))
 
 
-def compute_measurement(
-    circuit: cirq.Circuit,
-) -> float:
+def compute_measurement(circuit: cirq.Circuit) -> float:
     """Compute the *measurement* feature of the input circuit.
 
     This function acts a wrapper which first converts the input `cirq.Circuit`
@@ -69,9 +63,7 @@ def compute_measurement(
     return sm.converters.compute_measurement_with_qiskit(sm.converters.cirq_to_qiskit(circuit))
 
 
-def compute_entanglement(
-    circuit: cirq.Circuit,
-) -> float:
+def compute_entanglement(circuit: cirq.Circuit) -> float:
     """Compute the *entanglement* feature of the input circuit.
 
     This function acts a wrapper which first converts the input `cirq.Circuit`

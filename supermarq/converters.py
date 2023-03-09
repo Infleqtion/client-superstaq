@@ -4,9 +4,7 @@ import numpy as np
 import qiskit
 
 
-def cirq_to_qiskit(
-    circuit: cirq.Circuit,
-) -> qiskit.circuit.QuantumCircuit:
+def cirq_to_qiskit(circuit: cirq.Circuit) -> qiskit.circuit.QuantumCircuit:
     """Convert a circuit from cirq to qiskit.
 
     Args:
