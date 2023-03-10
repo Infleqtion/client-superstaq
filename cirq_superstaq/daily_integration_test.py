@@ -257,3 +257,23 @@ def test_supercheq(service: css.Service) -> None:
     circuits, fidelities = service.supercheq(files, num_qubits, depth)
     assert len(circuits) == 32
     assert fidelities.shape == (32, 32)
+
+
+def test_job(service: css.Service) -> None:
+    circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
+    job = service.create_job(circuit, target="ibmq_qasm_simulator", repetitions=10)
+
+    job_id = job.job_id()  # To test for https://github.com/SupertechLabs/cirq-superstaq/issues/452
+
+    assert job.counts() == {"0": 10}
+    assert job.status() == "Done"
+    assert job.job_id() == job_id
+
+    # Force job to refresh when queried:
+    job._job.clear()
+    job._job["status"] = "Running"
+
+    # State retrieved from the server should be the same:
+    assert job.counts() == {"0": 10}
+    assert job.status() == "Done"
+    assert job.job_id() == job_id

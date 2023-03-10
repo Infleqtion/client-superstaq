@@ -57,7 +57,6 @@ def test_job_fields(job: css.job.Job) -> None:
     job_dict = {
         "data": {"histogram": {"11": 1}},
         "num_qubits": 2,
-        "job_id": "job_id",
         "samples": {"11": 1},
         "shots": 1,
         "status": "Done",
@@ -72,10 +71,10 @@ def test_job_fields(job: css.job.Job) -> None:
 
 
 def test_job_status_refresh() -> None:
-    completed_job_dict = {"job_id": "new_job_id", "status": "completed"}
+    completed_job_dict = {"status": "completed"}
 
     for status in css.Job.NON_TERMINAL_STATES:
-        job_dict = {"job_id": "new_job_id", "status": status}
+        job_dict = {"status": status}
 
         with mocked_get_job_requests(job_dict, completed_job_dict) as mocked_request:
             job = new_job()
@@ -85,7 +84,7 @@ def test_job_status_refresh() -> None:
             mocked_request.assert_called_with("new_job_id")
 
     for status in css.Job.TERMINAL_STATES:
-        job_dict = {"job_id": "new_job_id", "status": status}
+        job_dict = {"status": status}
 
         with mocked_get_job_requests(job_dict, completed_job_dict) as mocked_request:
             job = new_job()
@@ -113,7 +112,6 @@ def test_job_counts(job: css.job.Job) -> None:
     job_dict = {
         "data": {"histogram": {"11": 1}},
         "num_qubits": 2,
-        "job_id": "job_id",
         "samples": {"11": 1},
         "shots": 1,
         "status": "Done",
@@ -127,7 +125,6 @@ def test_job_counts_failed(job: css.job.Job) -> None:
     job_dict = {
         "data": {"histogram": {"11": 1}},
         "num_qubits": 2,
-        "job_id": "job_id",
         "samples": {"11": 1},
         "shots": 1,
         "status": "Failed",
@@ -143,13 +140,11 @@ def test_job_counts_failed(job: css.job.Job) -> None:
 @mock.patch("time.sleep", return_value=None)
 def test_job_counts_poll(mock_sleep: mock.MagicMock, job: css.job.Job) -> None:
     ready_job = {
-        "job_id": "job_id",
         "status": "ready",
     }
     completed_job = {
         "data": {"histogram": {"11": 1}},
         "num_qubits": 2,
-        "job_id": "job_id",
         "samples": {"11": 1},
         "shots": 1,
         "status": "Done",
@@ -166,7 +161,6 @@ def test_job_counts_poll(mock_sleep: mock.MagicMock, job: css.job.Job) -> None:
 @mock.patch("time.sleep", return_value=None)
 def test_job_counts_poll_timeout(mock_sleep: mock.MagicMock, job: css.job.Job) -> None:
     ready_job = {
-        "job_id": "job_id",
         "status": "ready",
     }
     with mocked_get_job_requests(*[ready_job] * 20):
@@ -180,7 +174,6 @@ def test_job_results_poll_timeout_with_error_message(
     mock_sleep: mock.MagicMock, job: css.job.Job
 ) -> None:
     ready_job = {
-        "job_id": "job_id",
         "status": "failure",
         "failure": {"error": "too many qubits"},
     }
@@ -193,7 +186,6 @@ def test_job_results_poll_timeout_with_error_message(
 def test_job_fields_unsuccessful(job: css.job.Job) -> None:
     job_dict = {
         "data": {"histogram": {"11": 1}},
-        "job_id": "job_id",
         "num_qubits": 2,
         "samples": {"11": 1},
         "shots": 1,

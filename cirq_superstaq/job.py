@@ -13,7 +13,7 @@
 # limitations under the License.
 """Represents a job created via the SuperstaQ API."""
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import cirq
 import general_superstaq as gss
@@ -65,7 +65,8 @@ class Job:
             job_id: unique identifier for the job.
         """
         self._client = client
-        self._job: Dict[str, Any] = {"job_id": job_id, "status": "Submitted"}
+        self._job: Dict[str, Any] = {"status": "Submitted"}
+        self._job_id = job_id
 
     def _refresh_job(self) -> None:
         """If the last fetched job is not terminal, gets the job from the API."""
@@ -83,7 +84,7 @@ class Job:
 
         This is the id used for identifying the job by the API.
         """
-        return self._job["job_id"]
+        return self._job_id
 
     def status(self) -> str:
         """Gets the current status of the job.
@@ -173,5 +174,5 @@ class Job:
     def __repr__(self) -> str:
         return f"css.Job(client={self._client!r}, job_id={self.job_id()!r})"
 
-    def _value_equality_values_(self) -> Dict[str, Any]:
-        return self._job
+    def _value_equality_values_(self) -> Tuple[str, Dict[str, Any]]:
+        return self._job_id, self._job
