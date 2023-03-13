@@ -47,24 +47,24 @@ class TimeCrystalEvolution(Benchmark):
         """
         np.random.seed(seed=self.seed)
         h_angles = np.random.uniform(low=-np.pi, high=np.pi, size=self.num_qubits)
-        phi_angles = np.random.uniform(low=np.pi/8, high=3*np.pi/8, size=self.num_qubits-1)
+        phi_angles = np.random.uniform(low=np.pi / 8, high=3 * np.pi / 8, size=self.num_qubits - 1)
         g = 0.95
 
         qubits = cirq.LineQubit.range(self.num_qubits)
         circuit = cirq.Circuit()
 
-        for cycle in range(self.num_cycles):
+        for _ in range(self.num_cycles):
             # Apply single-qubit X rotations
             for qubit in qubits:
                 circuit.append(cirq.rx(np.pi * g)(qubit))
 
             # Coupling terms - CZs with random rotations
             for i, phi in enumerate(phi_angles):
-                circuit.append(cirq.ZZPowGate(exponent=phi / (2*np.pi))(qubits[i], qubits[i + 1]))
+                circuit.append(cirq.ZZPowGate(exponent=phi / (2 * np.pi))(qubits[i], qubits[i + 1]))
 
             # Apply single-qubit random Z rotations
             for angle, qubit in zip(h_angles, qubits):
-                circuit.append(cirq.rz(angle/np.pi)(qubit))
+                circuit.append(cirq.rz(angle / np.pi)(qubit))
 
         # End the circuit with measurements of every qubit in the Z-basis
         circuit.append(cirq.measure(*qubits))

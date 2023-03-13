@@ -8,6 +8,7 @@ from .benchmarks import (
     phase_code,
     qaoa_fermionic_swap_proxy,
     qaoa_vanilla_proxy,
+    time_crystal_evolution,
     vqe_proxy,
 )
 
@@ -26,5 +27,6 @@ __all__ = [
     "qaoa_vanilla_proxy",
     "simulation",
     "stabilizers",
+    "time_crystal_evolution",
     "vqe_proxy",
 ]
