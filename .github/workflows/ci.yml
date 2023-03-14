@@ -7,7 +7,7 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - 'supermarq/_version.py'
+      - 'superstaq-benchmarq/supermarq/_version.py'
   pull_request:
     branches: [main]
   workflow_call: null
@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install ./superstaq-benchmarq[dev]
       - name: Format
         run: |
           check/format_.py
@@ -50,7 +50,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install ./superstaq-benchmarq[dev]
       - name: Pylint
         run: |
           check/pylint_.py --all
@@ -71,7 +71,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install ./superstaq-benchmarq[dev]
       - name: Flake8
         run: |
           check/flake8_.py
@@ -92,7 +92,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install ./superstaq-benchmarq[dev]
       - name: Type check
         run: |
           check/mypy_.py
@@ -116,7 +116,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install ./superstaq-benchmarq[dev]
       - name: Coverage check
         run: |
           check/coverage_.py
@@ -137,7 +137,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install ./superstaq-benchmarq[dev]
       - name: Pytest-mac check
         run: |
           check/pytest_.py
@@ -154,7 +154,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install ./superstaq-benchmarq[dev]
       - name: Pytest-win check
         run: |
           check/pytest_.py
@@ -177,7 +177,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install ./superstaq-benchmarq[dev]
       - name: Requirements check
         run: |
           check/requirements.py
