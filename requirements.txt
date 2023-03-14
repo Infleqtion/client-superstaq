@@ -2,6 +2,7 @@ cirq~=1.0.0
 cirq-superstaq~=0.3.16
 general-superstaq~=0.3.9
 ipython
+ipywidgets
 Jinja2<=3.1.2
 nbsphinx~=0.8.9
 qiskit-superstaq~=0.3.16
