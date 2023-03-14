@@ -1,6 +1,6 @@
 name: Feature request
 description: Suggest an idea for this project 🦅🐆
-labels: ["enhancement"]
+labels: ["enhancement", "area/feature-request"]
 
 body:
   - type: markdown
