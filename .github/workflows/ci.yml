@@ -92,10 +92,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./general-superstaq[dev]
-          pip install ./cirq-superstaq[dev]
-          pip install ./qiskit-superstaq[dev]
-          pip install ./superstaq-benchmarq
+          pip install ./general-superstaq[dev] ./cirq-superstaq[dev] ./qiskit-superstaq[dev] ./superstaq-benchmarq
       - name: Type check
         run: |
           check/mypy_.py
@@ -119,80 +116,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./general-superstaq[dev]
-          pip install ./cirq-superstaq[dev]
-          pip install ./qiskit-superstaq[dev]
-          pip install ./superstaq-benchmarq
+          pip install ./general-superstaq[dev] ./cirq-superstaq[dev] ./qiskit-superstaq[dev] ./superstaq-benchmarq
       - name: Coverage check
         run: |
           check/coverage_.py
-
-  pytest-mac:
-    name: Pytest macOS
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-      - uses: actions/cache@v2
-        with:
-          path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install ./general-superstaq[dev]
-          pip install ./cirq-superstaq[dev]
-          pip install ./qiskit-superstaq[dev]
-          pip install ./superstaq-benchmarq
-      - name: Pytest-mac check
-        run: |
-          check/pytest_.py
-
-  pytest-win:
-    name: Pytest Windows
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install ./general-superstaq[dev]
-          pip install ./cirq-superstaq[dev]
-          pip install ./qiskit-superstaq[dev]
-          pip install ./superstaq-benchmarq
-      - name: Pytest-win check
-        run: |
-          check/pytest_.py
-        shell: bash
-
-  requirements:
-    name: Requirements check
-    runs-on: ubuntu-latest
-    timeout-minutes: 6
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-      - uses: actions/cache@v2
-        with:
-          path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install ./general-superstaq[dev]
-      - name: Requirements check
-        run: |
-          check/requirements.py
 
   coverage-gss:
     name: Standalone general-superstaq coverage check
@@ -215,6 +142,109 @@ jobs:
         run: |
           check/coverage_.py general-superstaq
 
+  coverage-css:
+    name: Standalone cirq-superstaq coverage check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ./general-superstaq[dev] ./cirq-superstaq[dev]
+      - name: Coverage check
+        run: |
+          check/coverage_.py general-superstaq
+
+  coverage-qss:
+    name: Standalone qiskit-superstaq coverage check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ./general-superstaq[dev] ./qiskit-superstaq[dev]
+      - name: Coverage check
+        run: |
+          check/coverage_.py general-superstaq
+
+  pytest-mac:
+    name: Pytest macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ./general-superstaq[dev] ./cirq-superstaq[dev] ./qiskit-superstaq[dev] ./superstaq-benchmarq
+      - name: Pytest-mac check
+        run: |
+          check/pytest_.py
+
+  pytest-win:
+    name: Pytest Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ./general-superstaq[dev] ./cirq-superstaq[dev] ./qiskit-superstaq[dev] ./superstaq-benchmarq
+      - name: Pytest-win check
+        run: |
+          check/pytest_.py
+        shell: bash
+
+  requirements:
+    name: Requirements check
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ./general-superstaq[dev] ./cirq-superstaq ./qiskit-superstaq
+      - name: Requirements check
+        run: |
+          check/requirements.py
+
   notebook:
     name: Notebook check
     env:
@@ -233,9 +263,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./general-superstaq[dev]
-          pip install ./cirq-superstaq[dev]
-          pip install ./qiskit-superstaq[dev]
+          pip install ./general-superstaq[dev] ./cirq-superstaq[dev] ./qiskit-superstaq[dev]
       - name: Notebook check
         run: |
           check/pytest_.py --notebook
