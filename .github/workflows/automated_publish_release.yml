@@ -10,7 +10,7 @@ on:
     branches:
       - main
     paths:
-      - 'general_superstaq/_version.py'
+      - 'general-superstaq/general_superstaq/_version.py'
 
 jobs:
   run_checks:
