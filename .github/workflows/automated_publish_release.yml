@@ -10,7 +10,7 @@ on:
     branches:
       - main
     paths:
-      - 'qiskit_superstaq/_version.py'
+      - 'qiskit-superstaq/qiskit_superstaq/_version.py'
 
 jobs:
   run_checks:

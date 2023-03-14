@@ -7,7 +7,7 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - 'qiskit_superstaq/_version.py'
+      - 'qiskit-superstaq/qiskit_superstaq/_version.py'
   pull_request:
     branches: [main]
   workflow_call: null
@@ -25,11 +25,11 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py', '*requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install ./qiskit-superstaq[dev]
       - name: Format
         run: |
           check/format_.py
@@ -46,11 +46,11 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py', '*requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install ./qiskit-superstaq[dev]
       - name: Pylint
         run: |
           check/pylint_.py --all
@@ -67,11 +67,11 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py', '*requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install ./qiskit-superstaq[dev]
       - name: Flake8
         run: |
           check/flake8_.py
@@ -88,11 +88,11 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py', '*requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install ./qiskit-superstaq[dev]
       - name: Type check
         run: |
           check/mypy_.py
@@ -112,11 +112,11 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py', '*requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install ./qiskit-superstaq[dev]
       - name: Coverage check
         run: |
           check/coverage_.py
@@ -133,11 +133,11 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py', '*requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install ./qiskit-superstaq[dev]
       - name: Pytest-mac check
         run: |
           check/pytest_.py
@@ -154,7 +154,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install ./qiskit-superstaq[dev]
       - name: Pytest-win check
         run: |
           check/pytest_.py
@@ -173,11 +173,11 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py', '*requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .
+          pip install ./qiskit-superstaq[dev]
       - name: Requirements check
         run: |
           check/requirements.py
@@ -196,11 +196,11 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('setup.py', '*requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install ./qiskit-superstaq[dev]
       - name: Notebook check
         run: |
           check/pytest_.py --notebook
