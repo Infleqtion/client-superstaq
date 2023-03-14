@@ -6,8 +6,11 @@ name: supermarq
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'supermarq/_version.py'
   pull_request:
     branches: [main]
+  workflow_call: null
 
 jobs:
   format:
@@ -19,6 +22,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
       - name: Install dependencies
         env:
           PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
@@ -38,6 +45,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
       - name: Install dependencies
         env:
           PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
@@ -57,6 +68,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
       - name: Install dependencies
         env:
           PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
@@ -76,6 +91,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
       - name: Install dependencies
         env:
           PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
@@ -90,13 +109,20 @@ jobs:
     name: Pytest and Coverage check
     env:
       PRIVATE_REPOS_KEY: ${{ secrets.PRIVATE_REPOS_KEY }}
+    strategy:
+      matrix:
+        python-version: ['3.7', '3.8', '3.9', '3.10']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python 3.8
+      - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -116,6 +142,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -156,6 +186,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -163,4 +197,3 @@ jobs:
       - name: Requirements check
         run: |
           check/requirements.py
-
