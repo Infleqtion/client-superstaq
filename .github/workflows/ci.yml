@@ -93,6 +93,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install ./general-superstaq[dev]
+          pip install ./cirq-superstaq[dev]
           pip install ./qiskit-superstaq[dev]
           pip install ./superstaq-benchmarq
       - name: Type check
@@ -119,6 +120,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install ./general-superstaq[dev]
+          pip install ./cirq-superstaq[dev]
           pip install ./qiskit-superstaq[dev]
           pip install ./superstaq-benchmarq
       - name: Coverage check
@@ -142,6 +144,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install ./general-superstaq[dev]
+          pip install ./cirq-superstaq[dev]
           pip install ./qiskit-superstaq[dev]
           pip install ./superstaq-benchmarq
       - name: Pytest-mac check
@@ -161,6 +164,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install ./general-superstaq[dev]
+          pip install ./cirq-superstaq[dev]
           pip install ./qiskit-superstaq[dev]
           pip install ./superstaq-benchmarq
       - name: Pytest-win check
@@ -230,6 +234,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install ./general-superstaq[dev]
+          pip install ./cirq-superstaq[dev]
           pip install ./qiskit-superstaq[dev]
       - name: Notebook check
         run: |

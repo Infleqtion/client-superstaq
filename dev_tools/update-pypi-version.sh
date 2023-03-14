@@ -8,8 +8,13 @@ cd "$toplevel/general-superstaq"
 python setup.py bdist_wheel
 twine upload dist/* -u __token__ -p "$PYPI_API_KEY"
 
-# This publishes general-superstaq to PyPI.
+# This publishes qiskit-superstaq to PyPI.
 cd "$toplevel/qiskit-superstaq"
+python setup.py bdist_wheel
+twine upload dist/* -u __token__ -p "$PYPI_API_KEY"
+
+# This publishes cirq-superstaq to PyPI.
+cd "$toplevel/cirq-superstaq"
 python setup.py bdist_wheel
 twine upload dist/* -u __token__ -p "$PYPI_API_KEY"
 
