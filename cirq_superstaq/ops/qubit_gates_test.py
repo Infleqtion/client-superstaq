@@ -911,7 +911,7 @@ def test_parallel_rgate() -> None:
     cirq.testing.assert_equivalent_repr(
         rot_gate, setup_code="import cirq; import cirq_superstaq as css"
     )
-    text = f"RGate({rot_gate.phase_exponent}π, {rot_gate.exponent}π) x {len(qubits)}"
+    text = f"RGate({rot_gate.exponent}π, {rot_gate.phase_exponent}π) x {len(qubits)}"
     assert str(rot_gate) == text
     assert rot_gate**-1 == css.ParallelRGate(-rot_gate.theta, rot_gate.phi, len(qubits))
 
