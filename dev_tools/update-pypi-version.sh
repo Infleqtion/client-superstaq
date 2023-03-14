@@ -8,6 +8,11 @@ cd "$toplevel/general-superstaq"
 python setup.py bdist_wheel
 twine upload dist/* -u __token__ -p "$PYPI_API_KEY"
 
+# This publishes general-superstaq to PyPI.
+cd "$toplevel/qiskit-superstaq"
+python setup.py bdist_wheel
+twine upload dist/* -u __token__ -p "$PYPI_API_KEY"
+
 # This publishes supermarq to PyPI.
 cd "$toplevel/superstaq-benchmarq"
 python setup.py bdist_wheel
