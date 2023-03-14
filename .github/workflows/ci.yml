@@ -6,11 +6,8 @@ name: supermarq
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - 'supermarq/_version.py'
   pull_request:
     branches: [main]
-  workflow_call: null
 
 jobs:
   format:
