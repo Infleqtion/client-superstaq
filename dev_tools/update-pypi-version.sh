@@ -19,6 +19,6 @@ python setup.py bdist_wheel
 twine upload dist/* -u __token__ -p "$PYPI_API_KEY"
 
 # This publishes supermarq to PyPI.
-cd "$toplevel/superstaq-benchmarq"
+cd "$toplevel/supermarq-benchmarks"
 python setup.py bdist_wheel
 twine upload dist/* -u __token__ -p "$PYPI_API_KEY"
