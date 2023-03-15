@@ -1,5 +1,5 @@
 # This publishes to PyPI. See: https://github.com/pypa/gh-action-pypi-publish
-name: Publish general-superstaq to PyPI and release to GitHub
+name: Publish all packages to PyPI and release to GitHub
 on:
   workflow_dispatch: null
   workflow_call: null
