@@ -1,0 +1,9 @@
+[submodule "cirq-superstaq"]
+	path = cirq-superstaq
+	url = https://github.com/SupertechLabs/cirq-superstaq
+[submodule "qiskit-superstaq"]
+	path = qiskit-superstaq
+	url = https://github.com/SupertechLabs/qiskit-superstaq
+[submodule "general-superstaq"]
+	path = general-superstaq
+	url = git@github.com:SupertechLabs/general-superstaq.git
