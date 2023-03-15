@@ -9,4 +9,5 @@ if __name__ == "__main__":
     args += ["-x", "cirq-superstaq/examples/aqt.ipynb"]
     args += ["-x", "qiskit-superstaq/examples/aqt.ipynb"]
     args += ["-x", "qiskit-superstaq/examples/uchicago_workshop.ipynb"]
+    args += ["-x", "docs/*"]
     exit(general_superstaq.check.pytest_.run(*args))

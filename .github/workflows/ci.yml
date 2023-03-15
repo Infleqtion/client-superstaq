@@ -228,7 +228,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq -e ./qiskit-superstaq
+          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq -e ./qiskit-superstaq -e ./superstaq-benchmarq
       - name: Requirements check
         run: |
           check/requirements.py
@@ -251,7 +251,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq[dev] -e ./qiskit-superstaq[dev]
+          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./superstaq-benchmarq[dev]
       - name: Notebook check
         run: |
           check/pytest_.py --notebook
