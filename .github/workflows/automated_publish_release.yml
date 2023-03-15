@@ -1,7 +1,7 @@
 # This workflow automates deploys and releases.
 # Updates to _version.py that are pushed to main will trigger this workflow.
 # This workflow will run checks, publish to PyPI and publish a release on GitHub.
-# If checks fail or deploy fails, run the separate "Publish supermarq..." action.
+# If checks fail or deploy fails, run the separate "Publish..." action.
 
 name: Automated Publish and Release
 
@@ -10,7 +10,7 @@ on:
     branches:
       - main
     paths:
-      - 'superstaq-benchmarq/supermarq/_version.py'
+      - 'general-superstaq/general_superstaq/_version.py'
 
 jobs:
   run_checks:
