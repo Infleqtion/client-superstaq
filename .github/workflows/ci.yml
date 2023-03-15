@@ -1,13 +1,13 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: supermarq
+name: superstaq-client
 
 on:
   push:
     branches: [main]
     paths-ignore:
-      - 'superstaq-benchmarq/supermarq/_version.py'
+      - 'general-superstaq/general_superstaq/_version.py'
   pull_request:
     branches: [main]
   workflow_call: null
@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./superstaq-benchmarq[dev]
+          pip install ./general-superstaq[dev]
       - name: Format
         run: |
           check/format_.py
@@ -50,7 +50,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./superstaq-benchmarq[dev]
+          pip install ./general-superstaq[dev]
       - name: Pylint
         run: |
           check/pylint_.py --all
@@ -71,7 +71,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./superstaq-benchmarq[dev]
+          pip install ./general-superstaq[dev]
       - name: Flake8
         run: |
           check/flake8_.py
@@ -92,7 +92,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./superstaq-benchmarq[dev]
+          pip install ./general-superstaq[dev]
       - name: Type check
         run: |
           check/mypy_.py
@@ -101,7 +101,7 @@ jobs:
     name: Pytest and Coverage check
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -116,7 +116,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./superstaq-benchmarq[dev]
+          pip install ./general-superstaq[dev]
       - name: Coverage check
         run: |
           check/coverage_.py
@@ -137,7 +137,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./superstaq-benchmarq[dev]
+          pip install ./general-superstaq[dev]
       - name: Pytest-mac check
         run: |
           check/pytest_.py
@@ -154,7 +154,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./superstaq-benchmarq[dev]
+          pip install ./general-superstaq[dev]
       - name: Pytest-win check
         run: |
           check/pytest_.py
@@ -177,7 +177,28 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./superstaq-benchmarq[dev]
+          pip install ./general-superstaq
       - name: Requirements check
         run: |
           check/requirements.py
+
+  coverage-gss:
+    name: Standalone general-superstaq coverage check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ./general-superstaq[dev]
+      - name: Coverage check
+        run: |
+          check/coverage_.py general-superstaq
