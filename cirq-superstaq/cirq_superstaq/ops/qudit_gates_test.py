@@ -11,6 +11,73 @@ import scipy.linalg
 import cirq_superstaq as css
 
 
+@pytest.mark.parametrize("dimension", [2, 3, 4, 5, 6])
+def test_qudit_swap_gate(dimension: int) -> None:
+    gate = css.QuditSwapGate(dimension=dimension)
+    assert gate == css.QuditSwapGate(dimension)
+    assert gate != css.QuditSwapGate(dimension + 1)
+    assert gate != cirq.SWAP
+
+    assert cirq.approx_eq(gate, css.QuditSwapGate(dimension))
+    assert not cirq.approx_eq(gate, css.QuditSwapGate(dimension + 1))
+    assert not cirq.approx_eq(gate, cirq.SWAP)
+
+    assert cirq.equal_up_to_global_phase(gate, css.QuditSwapGate(dimension))
+    assert not cirq.equal_up_to_global_phase(gate, css.QuditSwapGate(dimension + 1))
+    if dimension == 2:
+        assert cirq.equal_up_to_global_phase(gate, cirq.SWAP)
+    else:
+        assert not cirq.equal_up_to_global_phase(gate, cirq.SWAP)
+
+    for exponent in (-3, -1, 1, 5):
+        assert gate**exponent == gate
+
+    for exponent in (-2, 0, 2, 10):
+        assert gate**exponent == cirq.IdentityGate(qid_shape=(dimension, dimension))
+
+    assert cirq.pow(gate, 1.23, default=None) is None
+
+    assert str(gate) == f"SWAP{dimension}"
+
+    if hasattr(css, f"SWAP{dimension}"):
+        assert repr(gate) == f"css.SWAP{dimension}"
+    else:
+        assert repr(gate) == f"css.QuditSwapGate(dimension={dimension})"
+
+    assert cirq.has_unitary(gate)
+    assert not cirq.is_parameterized(gate)
+    assert cirq.trace_distance_bound(gate) == 1.0
+
+    cirq.testing.assert_json_roundtrip_works(gate, resolvers=css.SUPERSTAQ_RESOLVERS)
+
+    q0, q1 = cirq.LineQid.range(2, dimension=dimension)
+
+    swap_op = css.qudit_swap_op(q0, q1)
+    assert swap_op == gate.on(q0, q1)
+    assert swap_op == gate.on(q1, q0)
+    with pytest.raises(ValueError, match="do not have the same dimension"):
+        _ = css.qudit_swap_op(q0, cirq.LineQid(1, dimension + 1))
+
+    # Check the unitary by commuting through random single-qudit gates:
+    one_qb_gate0 = cirq.MatrixGate(cirq.testing.random_unitary(dimension), qid_shape=(dimension,))
+    one_qb_gate1 = cirq.MatrixGate(cirq.testing.random_unitary(dimension), qid_shape=(dimension,))
+    assert np.array_equal(
+        cirq.Circuit(one_qb_gate0(q0), one_qb_gate1(q1), swap_op).unitary(),
+        cirq.Circuit(swap_op, one_qb_gate0(q1), one_qb_gate1(q0)).unitary(),
+    )
+
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(swap_op),
+        textwrap.dedent(
+            f"""
+            0 (d={dimension}): ───×───
+                        │
+            1 (d={dimension}): ───×───
+            """
+        ),
+    )
+
+
 def test_bswap_pow_gate() -> None:
     cirq.testing.assert_eigengate_implements_consistent_protocols(
         css.BSwapPowGate,
