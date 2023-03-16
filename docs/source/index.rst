@@ -64,3 +64,4 @@ Learn more about SuperstaQ `here <https://www.super.tech/about-superstaq/>`_.
    cirq_superstaq
    qiskit_superstaq
    general_superstaq
+   supermarq
