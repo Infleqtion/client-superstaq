@@ -1,1 +1,1 @@
-__version__ = "0.1.1"
+../../general-superstaq/general_superstaq/_version.py
