@@ -1,1 +1,1 @@
-../../general-superstaq/general_superstaq/_version.py
+__version__ = "0.3.19"
