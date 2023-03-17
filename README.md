@@ -8,7 +8,12 @@ All of our packages (`qiskit-superstaq`, `cirq-superstaq`, `supermarq`) can be i
 pip install qiskit-superstaq
 ```
 
+# Documentation 
+
 For more information on getting started, check out [our documentation site](https://docs-superstaq.readthedocs.io/)!
 
+# License
+SuperstaQ is licensed under the Apache License 2.0. See our [LICENSE](https://github.com/SupertechLabs/superstaq-client/blob/main/LICENSE) file for more details.
+
 # Contact Us
-If you'd like to reach out to a member of our team, please email us at info@super.tech
+If you'd like to reach out to a member of our team, please email us at info@super.tech.
