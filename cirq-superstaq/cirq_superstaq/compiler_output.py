@@ -280,12 +280,6 @@ def read_json_only_circuits(json_dict: Dict[str, Any], circuits_is_list: bool) -
     )
 
     if circuits_is_list:
-        return CompilerOutput(
-            circuits=compiled_circuits,
-            final_logical_to_physicals=final_logical_to_physicals,
-        )
+        return CompilerOutput(compiled_circuits, final_logical_to_physicals)
 
-    return CompilerOutput(
-        circuits=compiled_circuits[0],
-        final_logical_to_physicals=final_logical_to_physicals[0],
-    )
+    return CompilerOutput(compiled_circuits[0], final_logical_to_physicals[0])
