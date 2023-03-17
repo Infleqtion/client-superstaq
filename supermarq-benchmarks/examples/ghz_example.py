@@ -3,7 +3,7 @@ import time
 
 import cirq_superstaq
 
-import supermarq as sm
+import supermarq
 
 
 def main() -> None:  # pylint: disable=missing-function-docstring
@@ -12,7 +12,7 @@ def main() -> None:  # pylint: disable=missing-function-docstring
     )
 
     nq = 3
-    ghz = sm.benchmarks.ghz.GHZ(nq)
+    ghz = supermarq.benchmarks.ghz.GHZ(nq)
 
     print(ghz.circuit())
 
