@@ -5,24 +5,23 @@
 If you'd like to contribute to SuperstaQ, below are the instructions for installation. 
 
 <details>
-<summary> <h3> `qiskit-superstaq` </h3> </summary>
+<summary> <h3> qiskit-superstaq </h3> </summary>
+  Test
+</details>
+<details>
+<summary> <h3> cirq-superstaq </h3> </summary>
+  Test
+</details>
+<details>
+<summary> <h3> supermarq </h3> </summary>
+  Test
+</details>
+<details>
+<summary> <h3> general-superstaq </h3> </summary>
   Test
 </details>
 
-<details>
-<summary> <h3> `cirq-superstaq` </h3> </summary>
-  Test
-</details>
-
-<details>
-<summary> <h3> `supermarq` </h3> </summary>
-  Test
-</details>
-
-<details>
-<summary> <h3> `general-superstaq` </h3> </summary>
-  Test
-</details>
+### `qiskit`
 
 # Documentation 
 
