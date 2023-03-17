@@ -1,2 +1,2 @@
 notebook~=6.4.12
-qiskit-terra==0.22.*
+qiskit-terra~=0.22.0
