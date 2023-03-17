@@ -1,6 +1,10 @@
 <img src="./docs/source/_static/logos/SuperstaQ_SSa-R00a_Mil.png">
 
+# Welcome to SuperstaQ!
+
 # Installation for development
+
+For installation instructions for users of SuperstaQ, check out [our documentation site](https://docs-superstaq.readthedocs.io/).
 
 If you'd like to contribute to SuperstaQ, below are the instructions for installation. 
 
@@ -19,7 +23,6 @@ If you'd like to contribute to SuperstaQ, below are the instructions for install
 
 
 # Documentation 
-
 For more information on getting started, check out [our documentation site](https://docs-superstaq.readthedocs.io/)!
 
 # License
