@@ -15,46 +15,6 @@ If you'd like to contribute to SuperstaQ, below are the instructions for install
   pip install qiskit-superstaq
   pip install .[dev]
   ```
-  
-</details>
-<details>
-<summary> <h3> <code>cirq-superstaq</code> </h3> </summary>
-  
-    ```console
-  git clone git@github.com:SupertechLabs/superstaq-client.git
-  python3 -m venv venv_cirq_superstaq
-  source venv_cirq_superstaq/bin/activate
-  cd superstaq-client/cirq-superstaq
-  pip install cirq-superstaq
-  pip install .[dev]
-  ```
-  
-</details>
-<details>
-<summary> <h3> <code>supermarq</code> </h3> </summary>
-  
-    ```console
-  git clone git@github.com:SupertechLabs/superstaq-client.git
-  python3 -m venv venv_supermarq
-  source venv_supermarq/bin/activate
-  cd superstaq-client/supermarq-benchmarks
-  pip install supermarq
-  pip install .[dev]
-  ```
-  
-</details>
-<details>
-<summary> <h3> <code>general-superstaq</code> </h3> </summary>
-  
-    ```console
-  git clone git@github.com:SupertechLabs/superstaq-client.git
-  python3 -m venv venv_general_superstaq
-  source venv_general_superstaq/bin/activate
-  cd superstaq-client/general-superstaq
-  pip install general-superstaq
-  pip install .[dev]
-  ```
-  
 </details>
 
 
