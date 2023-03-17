@@ -5,21 +5,22 @@
 If you'd like to contribute to SuperstaQ, below are the instructions for installation. 
 
 <details>
-<summary> <h3> <code> qiskit-superstaq </code> </h3> </summary>
+<summary> <h3> <code>qiskit-superstaq</code> </h3> </summary>
+  
+  ```git clone git@github.com:SupertechLabs/superstaq-client.git
   ```
-  git clone git@github.com:SupertechLabs/superstaq-client.git
-  ```
+  
 </details>
 <details>
-<summary> <h3> <code> cirq-superstaq </code> </h3> </summary>
+<summary> <h3> <code>cirq-superstaq</code> </h3> </summary>
   Test
 </details>
 <details>
-<summary> <h3> <code> supermarq </code> </h3> </summary>
+<summary> <h3> <code>supermarq</code> </h3> </summary>
   Test
 </details>
 <details>
-<summary> <h3> <code> general-superstaq </code> </h3> </summary>
+<summary> <h3> <code>general-superstaq</code> </h3> </summary>
   Test
 </details>
 
