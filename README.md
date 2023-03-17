@@ -1,12 +1,28 @@
 <img src="./docs/source/_static/logos/SuperstaQ_SSa-R00a_Mil.png">
 
-# Installation
+# Installation for development
 
-All of our packages (`qiskit-superstaq`, `cirq-superstaq`, `supermarq`) can be installed through PyPI by running `pip install <package-name>`. For example, to install `qiskit-superstaq`, run in your terminal
+If you'd like to contribute to SuperstaQ, below are the instructions for installation. 
 
-```console
-pip install qiskit-superstaq
-```
+<details>
+<summary> <h3> `qiskit-superstaq` </h3> </summary>
+  Test
+</details>
+
+<details>
+<summary> <h3> `cirq-superstaq` </h3> </summary>
+  Test
+</details>
+
+<details>
+<summary> <h3> `supermarq` </h3> </summary>
+  Test
+</details>
+
+<details>
+<summary> <h3> `general-superstaq` </h3> </summary>
+  Test
+</details>
 
 # Documentation 
 
