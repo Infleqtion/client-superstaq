@@ -1,0 +1,3 @@
+cirq>=0.14.0
+general-superstaq~=0.3.21
+qubovert>=1.2.3
