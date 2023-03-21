@@ -6,9 +6,9 @@
 
 For installation instructions for users of SuperstaQ, check out [our documentation site](https://docs-superstaq.readthedocs.io/).
 
-If you'd like to contribute to SuperstaQ, below are the instructions for installation. Note, you do not need to clone the repository multiple times if you are working on different clients (e.g., `qiskit-superstaq` and `cirq-superstaq`), but you must install the client-specific requirements in each client directory.
+If you'd like to contribute to SuperstaQ, below are the instructions for installation. Note, **if you are working on multiple clients** (e.g., `qiskit-superstaq` and `cirq-superstaq`), you do not need to clone the repository multiple times or set up multiple virtual environments, but you must install the client-specific requirements in each client directory.
 
-If you have trouble running `pip install .[dev]`, try `pip install ."[dev]"`
+If you have trouble running `pip install .[dev]`, try `pip install ."[dev]"`.
 
 <details>
 <summary> <h3> <code>qiskit-superstaq</code> </h3> </summary>
