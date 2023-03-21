@@ -6,7 +6,7 @@
 
 For installation instructions for users of SuperstaQ, check out [our documentation site](https://docs-superstaq.readthedocs.io/).
 
-If you'd like to contribute to SuperstaQ, below are the instructions for installation. 
++If you'd like to contribute to SuperstaQ, below are the instructions for installation. 
 
 <details>
 <summary> <h3> <code>qiskit-superstaq</code> </h3> </summary>
@@ -21,6 +21,18 @@ If you'd like to contribute to SuperstaQ, below are the instructions for install
   ```
 </details>
 
+<details>
+<summary> <h3> <code>cirq-superstaq</code> </h3> </summary>
+  
+  ```console
+  git clone git@github.com:SupertechLabs/superstaq-client.git
+  python3 -m venv venv_cirq_superstaq
+  source venv_cirq_superstaq/bin/activate
+  cd superstaq-client/cirq-superstaq
+  pip install qiskit-superstaq
+  pip install .[dev]
+  ```
+</details>
 
 # Documentation 
 For more information on getting started, check out [our documentation site](https://docs-superstaq.readthedocs.io/)!
