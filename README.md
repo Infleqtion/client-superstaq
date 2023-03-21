@@ -2,27 +2,24 @@
 
 # Welcome to SuperstaQ!
 This repository is the home of Super.tech's open source work, which includes:
-* [SuperstaQ](https://www.super.tech/about-superstaq/), our quantum software platform that is optimized across the quantum stack and enables users to write quantum programs in any source language and target any quantum computer
+* [SuperstaQ](https://www.super.tech/about-superstaq/), our quantum software platform that is optimized across the quantum stack and enables users to write quantum programs in Cirq or Qiskit and target a variety of quantum computers and simulators
 * [SupermarQ](https://www.super.tech/supermarq/), our quantum benchmarking suite
 
+# Installation for users
+For installation instructions for users of SuperstaQ, check out [our documentation site](https://docs-superstaq.readthedocs.io/). In short, you can install any of our packages by doing `pip install <package>` in terminal, where `<package>` is `qiskit-superstaq`, `cirq-superstaq`, `general-superstaq`, or `supermarq`
+
 # Installation for development
-
-For installation instructions for users of SuperstaQ, check out [our documentation site](https://docs-superstaq.readthedocs.io/).
-
 If you'd like to contribute to SuperstaQ, below are the instructions for installation. Note, **if you are working on multiple clients** (e.g., `qiskit-superstaq` and `cirq-superstaq`), you do not need to clone the repository multiple times or set up multiple virtual environments, but you must install the client-specific requirements in each client directory.
-
-If you have trouble running `pip install .[dev]`, try `pip install ."[dev]"`.
 
 <details>
 <summary> <h3> <code>qiskit-superstaq</code> </h3> </summary>
   
   ```console
   git clone git@github.com:SupertechLabs/superstaq-client.git
-  python3 -m venv venv_qiskit_superstaq
-  source venv_qiskit_superstaq/bin/activate
+  python3 -m venv venv_superstaq
+  source venv_superstaq/bin/activate
   cd superstaq-client/qiskit-superstaq
-  pip install qiskit-superstaq
-  pip install .[dev]
+  pip install -e ."[dev]"
   ```
 </details>
 
@@ -31,11 +28,10 @@ If you have trouble running `pip install .[dev]`, try `pip install ."[dev]"`.
   
   ```console
   git clone git@github.com:SupertechLabs/superstaq-client.git
-  python3 -m venv venv_cirq_superstaq
-  source venv_cirq_superstaq/bin/activate
+  python3 -m venv venv_superstaq
+  source venv_superstaq/bin/activate
   cd superstaq-client/cirq-superstaq
-  pip install qiskit-superstaq
-  pip install .[dev]
+  pip install -e ."[dev]"
   ```
 </details>
 
@@ -44,11 +40,10 @@ If you have trouble running `pip install .[dev]`, try `pip install ."[dev]"`.
   
   ```console
   git clone git@github.com:SupertechLabs/superstaq-client.git
-  python3 -m venv venv_general_superstaq
-  source venv_general_superstaq/bin/activate
+  python3 -m venv venv_superstaq
+  source venv_superstaq/bin/activate
   cd superstaq-client/general-superstaq
-  pip install general-superstaq
-  pip install .[dev]
+  pip install -e ."[dev]"
   ```
 </details>
 
@@ -57,11 +52,10 @@ If you have trouble running `pip install .[dev]`, try `pip install ."[dev]"`.
   
   ```console
   git clone git@github.com:SupertechLabs/superstaq-client.git
-  python3 -m venv venv_supermarq
-  source venv_supermarq/bin/activate
+  python3 -m venv venv_superstaq
+  source venv_superstaq/bin/activate
   cd superstaq-client/supermarq-benchmarks
-  pip install supermarq
-  pip install .[dev]
+  pip install -e ."[dev]"
   ```
 </details>
 
