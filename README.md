@@ -1,6 +1,9 @@
 <img src="./docs/source/_static/logos/SuperstaQ_SSa-R00a_Mil.png">
 
 # Welcome to SuperstaQ!
+This repository is the home of Super.tech's open source work, which includes:
+* [SuperstaQ](https://www.super.tech/about-superstaq/), our quantum software platform that optimized across to quantum stack and enables users to write quantum programs in any source language and target any quantum computer
+* [SupermarQ](https://www.super.tech/supermarq/), our quantum benchmarking suite
 
 # Installation for development
 
