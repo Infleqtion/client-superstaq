@@ -455,8 +455,10 @@ class _SuperstaQClient:
 def find_api_key() -> str:
     """Try to load a SuperstaQ API key from the environment or a key file."""
 
-    if os.getenv("SUPERSTAQ_API_KEY"):
-        return os.getenv("SUPERSTAQ_API_KEY")
+    # look for the key in the environment
+    env_api_key = os.getenv("SUPERSTAQ_API_KEY")
+    if env_api_key:
+        return env_api_key
 
     data_dir = pathlib.Path(os.getenv("XDG_DATA_HOME", "~/.local/share")).expanduser()
     home_dir = pathlib.Path.home()
