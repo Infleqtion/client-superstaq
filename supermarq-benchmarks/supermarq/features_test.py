@@ -1,7 +1,7 @@
 # pylint: disable=missing-function-docstring
 import cirq
 
-import supermarq as sm
+import supermarq
 
 CIRCUIT = cirq.Circuit(
     cirq.SWAP(*cirq.LineQubit.range(2)),
@@ -12,27 +12,27 @@ CIRCUIT = cirq.Circuit(
 
 
 def test_compute_communication() -> None:
-    feature = sm.features.compute_communication(CIRCUIT)
+    feature = supermarq.features.compute_communication(CIRCUIT)
     assert feature >= 0 and feature <= 1
 
 
 def test_compute_liveness() -> None:
-    feature = sm.features.compute_liveness(CIRCUIT)
+    feature = supermarq.features.compute_liveness(CIRCUIT)
     assert feature >= 0 and feature <= 1
 
 
 def test_compute_parallelism() -> None:
-    feature = sm.features.compute_parallelism(CIRCUIT)
+    feature = supermarq.features.compute_parallelism(CIRCUIT)
     assert feature >= 0 and feature <= 1
 
 
 def test_compute_measurement() -> None:
-    feature = sm.features.compute_measurement(CIRCUIT)
+    feature = supermarq.features.compute_measurement(CIRCUIT)
     assert feature >= 0 and feature <= 1
 
 
 def test_compute_entanglement() -> None:
-    feature = sm.features.compute_entanglement(CIRCUIT)
+    feature = supermarq.features.compute_entanglement(CIRCUIT)
     assert feature >= 0 and feature <= 1
 
 
@@ -44,7 +44,7 @@ def test_compute_depth() -> None:
         cirq.CX(qubits[1], qubits[2]),
         cirq.CX(qubits[2], qubits[3]),
     )
-    test_feature = sm.features.compute_depth(test_circuit)
+    test_feature = supermarq.features.compute_depth(test_circuit)
     assert test_feature >= 0 and test_feature <= 1
 
-    assert sm.features.compute_depth(cirq.Circuit()) == 0
+    assert supermarq.features.compute_depth(cirq.Circuit()) == 0

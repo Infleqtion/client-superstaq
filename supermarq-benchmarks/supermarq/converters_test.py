@@ -2,7 +2,7 @@
 import cirq
 import qiskit
 
-import supermarq as sm
+import supermarq
 
 
 def test_cirq_to_qiskit() -> None:
@@ -12,4 +12,4 @@ def test_cirq_to_qiskit() -> None:
     qiskit_circuit = qiskit.QuantumCircuit(2)
     qiskit_circuit.h(0)
     qiskit_circuit.cx(0, 1)
-    assert sm.converters.cirq_to_qiskit(cirq_circuit) == qiskit_circuit
+    assert supermarq.converters.cirq_to_qiskit(cirq_circuit) == qiskit_circuit
