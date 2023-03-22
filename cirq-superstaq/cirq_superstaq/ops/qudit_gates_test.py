@@ -48,6 +48,7 @@ def test_qudit_swap_gate(dimension: int) -> None:
     assert not cirq.is_parameterized(gate)
     assert cirq.trace_distance_bound(gate) == 1.0
 
+    cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq as css")
     cirq.testing.assert_json_roundtrip_works(gate, resolvers=css.SUPERSTAQ_RESOLVERS)
 
     q0, q1 = cirq.LineQid.range(2, dimension=dimension)
