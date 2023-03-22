@@ -249,13 +249,16 @@ class SuperstaQProvider(
         )
         compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
         pulses = gss.serialization.deserialize(json_dict["pulses"])
+        final_logical_to_physicals: List[Dict[int, int]] = list(
+            map(dict, json.loads(json_dict["final_logical_to_physicals"]))
+        )
 
         if isinstance(circuits, qiskit.QuantumCircuit):
             return qss.compiler_output.CompilerOutput(
-                circuits=compiled_circuits[0], pulse_sequences=pulses[0]
+                compiled_circuits[0], final_logical_to_physicals[0], pulse_sequences=pulses[0]
             )
         return qss.compiler_output.CompilerOutput(
-            circuits=compiled_circuits, pulse_sequences=pulses
+            compiled_circuits, final_logical_to_physicals, pulse_sequences=pulses
         )
 
     def qscout_compile(  # pylint: disable=missing-param-doc,missing-raises-doc
