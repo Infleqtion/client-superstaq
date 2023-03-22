@@ -108,9 +108,43 @@ def test_superstaq_client_attributes() -> None:
     assert client.verbose
 
 
+@mock.patch("general_superstaq.superstaq_client._SuperstaQClient._accept_terms_of_use")
+@mock.patch("requests.get")
+def test_superstaq_client_needs_accept_terms_of_use(
+    mock_get: mock.MagicMock,
+    mock_accept_terms_of_use: mock.MagicMock,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    client = gss.superstaq_client._SuperstaQClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+
+    fake_get_response = mock.MagicMock()
+    fake_get_response.ok = False
+    fake_get_response.status_code = requests.codes.unauthorized
+    fake_get_response.text = "You must accept the Terms of Use (superstaq.super.tech/terms_of_use)."
+    mock_get.return_value = fake_get_response
+
+    mock_accept_terms_of_use.return_value = "YES response required to proceed"
+
+    with mock.patch("builtins.input"):
+        with pytest.raises(gss.SuperstaQException, match="You'll need to accept Terms of Use"):
+            client.get_balance()
+        assert capsys.readouterr().out == "YES response required to proceed\n"
+
+    fake_authorized_get_response = mock.MagicMock(ok=True)
+    mock_get.side_effect = [fake_get_response, fake_authorized_get_response]
+    mock_accept_terms_of_use.return_value = "Accepted. You can now continue using SuperstaQ."
+    with mock.patch("builtins.input"):
+        client.get_balance()
+        assert capsys.readouterr().out == "Accepted. You can now continue using SuperstaQ.\n"
+
+
 @mock.patch("requests.post")
 def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
-    mock_post.return_value.status_code.return_value = requests.codes.ok
+    mock_post.return_value.status_code = requests.codes.ok
     mock_post.return_value.json.return_value = {"foo": "bar"}
 
     client = gss.superstaq_client._SuperstaQClient(
