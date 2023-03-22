@@ -771,6 +771,7 @@ def test_find_api_key() -> None:
             assert gss.superstaq_client.find_api_key() == "tomyheart"
 
     # fail to find an API key :(
-    with mock.patch.dict(os.environ, {}):
-        with mock.patch("pathlib.Path.is_file", return_value=False):
-            assert gss.superstaq_client.find_api_key() is None
+    with pytest.raises(EnvironmentError, match="SuperstaQ API key not specified and not found."):
+        with mock.patch.dict(os.environ, {}):
+            with mock.patch("pathlib.Path.is_file", return_value=False):
+                gss.superstaq_client.find_api_key()
