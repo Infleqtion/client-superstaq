@@ -145,6 +145,45 @@ class ZZSwapGate(qiskit.circuit.Gate):
         return f"ZZSwapGate({args})"
 
 
+class StrippedCZGate(qiskit.circuit.Gate):
+    """The Stripped CZ Gate is the gate that is actually being performed by Hilbert,
+    which is just a regular CZ gate when the rz angle = 0, and is corrected into a CZ
+    gate by RZ gates afterwards if the rz angle is nonzero.
+    """
+
+    def __init__(self, rz_rads: float) -> None:
+        """Args: rz_rads: RZ-rotation angle in radians"""
+        super().__init__("stripped_cz", 2, [rz_rads])
+
+    def inverse(self) -> "StrippedCZGate":
+        return StrippedCZGate(-self.params[0])
+
+    def _define(self) -> None:
+        qc = qiskit.QuantumCircuit(2, name="stripped_cz")
+        qc.p(self.params[0], 0)
+        qc.p(self.params[0], 1)
+        qc.cz(0, 1)
+        self.definition = qc
+
+    def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.complex_]:
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, np.exp(1j * self.params[0]), 0, 0],
+                [0, 0, np.exp(1j * self.params[0]), 0],
+                [0, 0, 0, np.exp(1j * (2 * self.params[0] - np.pi))],
+            ],
+            dtype=dtype,
+        )
+
+    def __repr__(self) -> str:
+        return f"qss.StrippedCZGate({self.params[0]!r})"
+
+    def __str__(self) -> str:
+        args = qiskit.circuit.tools.pi_check(self.params[0], ndigits=8, output="qasm")
+        return f"StrippedCZGate({args})"
+
+
 class ParallelGates(qiskit.circuit.Gate):
     """A single Gate combining a collection of concurrent Gate(s) acting on different qubits"""
 

@@ -87,6 +87,13 @@ def test_zz_swap() -> None:
     assert str(gate) == "ZZSwapGate(4.56)"
 
 
+def test_stripped_cz() -> None:
+    gate = qss.StrippedCZGate(1.23)
+    _check_gate_definition(gate)
+    assert repr(gate) == "qss.StrippedCZGate(1.23)"
+    assert str(gate) == "StrippedCZGate(1.23)"
+
+
 def test_parallel_gates() -> None:
     gate = qss.ParallelGates(
         qss.AceCR("+-"),
