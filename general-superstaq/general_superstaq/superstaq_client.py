@@ -12,6 +12,8 @@
 # limitations under the License.
 """Client for making requests to SuperstaQ's API."""
 import json
+import os
+import pathlib
 import sys
 import textwrap
 import time
@@ -448,3 +450,25 @@ class _SuperstaQClient:
                 verbose={self.verbose!r},
             )"""
         )
+
+
+def find_api_key() -> Optional[str]:
+    """Try to load a SuperstaQ API key from the environment or a key file."""
+
+    if os.getenv("SUPERSTAQ_API_KEY"):
+        return os.getenv("SUPERSTAQ_API_KEY")
+
+    data_dir = pathlib.Path(os.getenv("XDG_DATA_HOME", "~/.local/share")).expanduser()
+    home_dir = pathlib.Path.home()
+    for directory in [
+        data_dir.joinpath("super.tech"),
+        data_dir.joinpath("coldquanta"),
+        home_dir.joinpath(".super.tech"),
+        home_dir.joinpath(".coldquanta"),
+    ]:
+        path = directory.joinpath("superstaq_api_key")
+        if path.is_file():
+            with open(path, "r") as file:
+                return file.readline()
+
+    return None

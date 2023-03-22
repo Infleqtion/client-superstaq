@@ -105,7 +105,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
     To access the API, this class requires a remote host url and an API key. These can be
     specified in the constructor via the parameters `remote_host` and `api_key`. Alternatively
     these can be specified by setting the environment variables `SUPERSTAQ_REMOTE_HOST` and
-    `SUPERSTAQ_API_KEY`.
+    `SUPERSTAQ_API_KEY`, or setting an API key in a configuration file.
     """
 
     def __init__(
@@ -120,14 +120,22 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         """Creates the Service to access SuperstaQ's API.
 
         Args:
+            api_key: A string that allows access to the SuperstaQ API. If no key is provided, then
+                this instance tries to use the environment variable `SUPERSTAQ_API_KEY`. If
+                furthermore that environment variable is not set, then this instance checks for the
+                following files:
+                - `$XDG_DATA_HOME/super.tech/superstaq_api_key`
+                - `$XDG_DATA_HOME/coldquanta/superstaq_api_key`
+                - `~/.super.tech/superstaq_api_key`
+                - `~/.coldquanta/superstaq_api_key`
+                If one of those files exists, the it is treated as a plain text file, and the first
+                line of this file is interpreted as an API key.  Failure to find an API key raises
+                an `EnvironmentError`.
             remote_host: The location of the api in the form of an url. If this is None,
                 then this instance will use the environment variable `SUPERSTAQ_REMOTE_HOST`.
                 If that variable is not set, then this uses
                 `flask-service.cgvd1267imk10.us-east-1.cs.amazonlightsail.com/{api_version}`,
                 where `{api_version}` is the `api_version` specified below.
-            api_key: A string key which allows access to the api. If this is None,
-                then this instance will use the environment variable  `SUPERSTAQ_API_KEY`. If that
-                variable is not set, then this will raise an `EnvironmentError`.
             default_target: Which target to default to using. If set to None, no default is set
                 and target must always be specified in calls. If set, then this default is used,
                 unless a target is specified for a given call
@@ -139,14 +147,15 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             EnvironmentError: if the `api_key` is None and has no corresponding environment
                 variable set.
         """
-        self.api_key = api_key or os.getenv("SUPERSTAQ_API_KEY")
+        self.api_key = api_key or gss.superstaq_client.find_api_key()
         self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
         self.default_target = default_target
 
         if not self.api_key:
             raise EnvironmentError(
-                "Parameter api_key was not specified and the environment variable "
-                "SUPERSTAQ_API_KEY was also not set."
+                "SuperstaQ API key not specified and not found.\n"
+                "Try passing an 'api_key' variable, or setting your API key in the command line "
+                "with SUPERSTAQ_API_KEY=..."
             )
 
         self._client = superstaq_client._SuperstaQClient(

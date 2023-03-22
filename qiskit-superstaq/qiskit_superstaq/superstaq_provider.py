@@ -44,9 +44,17 @@ class SuperstaQProvider(
     and 'target' is the name of the desired backend.
 
     Args:
-        api_key: A string key which allows access to the API. If this is None,
-            then this instance will use the environment variable  `SUPERSTAQ_API_KEY`. If that
-            variable is not set, then this will raise an `EnvironmentError`.
+        api_key: A string that allows access to the SuperstaQ API. If no key is provided, then
+            this instance tries to use the environment variable `SUPERSTAQ_API_KEY`. If
+            furthermore that environment variable is not set, then this instance checks for the
+            following files:
+            - `$XDG_DATA_HOME/super.tech/superstaq_api_key`
+            - `$XDG_DATA_HOME/coldquanta/superstaq_api_key`
+            - `~/.super.tech/superstaq_api_key`
+            - `~/.coldquanta/superstaq_api_key`
+            If one of those files exists, the it is treated as a plain text file, and the first
+            line of this file is interpreted as an API key.  Failure to find an API key raises
+            an `EnvironmentError`.
         remote_host: The location of the API in the form of a URL. If this is None,
             then this instance will use the environment variable `SUPERSTAQ_REMOTE_HOST`.
             If that variable is not set, then this uses
@@ -69,14 +77,15 @@ class SuperstaQProvider(
         verbose: bool = False,
     ) -> None:
         self._name = "superstaq_provider"
+        self.api_key = api_key or gss.superstaq_client.find_api_key()
         self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
-        api_key = api_key or os.getenv("SUPERSTAQ_API_KEY")
+
         if not api_key:
             raise EnvironmentError(
-                "Parameter api_key was not specified and the environment variable "
-                "SUPERSTAQ_API_KEY was also not set."
+                "SuperstaQ API key not specified and not found.\n"
+                "Try passing an 'api_key' variable, or setting your API key in the command line "
+                "with SUPERSTAQ_API_KEY=..."
             )
-        self.api_key: str = api_key
 
         self._client = superstaq_client._SuperstaQClient(
             client_name="qiskit-superstaq",

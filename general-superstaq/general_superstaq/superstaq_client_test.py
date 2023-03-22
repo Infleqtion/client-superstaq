@@ -14,6 +14,7 @@
 import contextlib
 import io
 import json
+import os
 from unittest import mock
 
 import pytest
@@ -757,3 +758,19 @@ def test_superstaq_client_aqt_get_configs(mock_get: mock.MagicMock) -> None:
     )
 
     assert client.aqt_get_configs() == expected_json
+
+
+def test_find_api_key() -> None:
+    # find key in the environment
+    with mock.patch.dict(os.environ, {"SUPERSTAQ_API_KEY": "tomyheart"}):
+        assert gss.superstaq_client.find_api_key() == "tomyheart"
+
+    # find key in a config file
+    with mock.patch("pathlib.Path.is_file", return_value=True):
+        with mock.patch("builtins.open", mock.mock_open(read_data="tomyheart")):
+            assert gss.superstaq_client.find_api_key() == "tomyheart"
+
+    # fail to find an API key :(
+    with mock.patch.dict(os.environ, {}):
+        with mock.patch("pathlib.Path.is_file", return_value=False):
+            assert gss.superstaq_client.find_api_key() is None
