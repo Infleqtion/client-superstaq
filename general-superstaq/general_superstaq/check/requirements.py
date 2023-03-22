@@ -11,6 +11,9 @@ import textwrap
 import urllib.request
 from typing import Dict, Iterable, List, Tuple, Union
 
+import packaging.version
+
+import general_superstaq as gss
 from general_superstaq.check import check_utils
 
 
@@ -181,7 +184,10 @@ def _check_package_versions(
 def _get_latest_version(package: str) -> str:
     base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
     pypi_url = f"https://pypi.org/pypi/{base_package}/json"
-    return json.loads(urllib.request.urlopen(pypi_url).read().decode())["info"]["version"]
+    pypi_version = json.loads(urllib.request.urlopen(pypi_url).read().decode())["info"]["version"]
+
+    # If the local gss version is newer, return that instead
+    return max(pypi_version, gss.__version__, key=packaging.version.parse)
 
 
 def _inspect_local_version(package: str, latest_version: str) -> None:

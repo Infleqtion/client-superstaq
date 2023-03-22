@@ -13,10 +13,13 @@ import sys
 from typing import Any, Callable, Iterable, List, Union
 
 # identify the root directory of the "main" script that called this module
-main_file_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-root_dir = subprocess.check_output(
-    ["git", "rev-parse", "--show-toplevel"], cwd=main_file_dir, text=True
-).strip()
+try:
+    main_file_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    root_dir = subprocess.check_output(
+        ["git", "rev-parse", "--show-toplevel"], cwd=main_file_dir, text=True
+    ).strip()
+except subprocess.CalledProcessError:
+    root_dir = subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip()
 
 
 def _check_output(*commands: str) -> str:
@@ -245,6 +248,8 @@ def extract_files(
             file parser directly.
         3. Paths to extant files passed to the file parser directly, regardless of above criteria.
     """
+
+    exclude = [exclude] if isinstance(exclude, str) else exclude
 
     if parsed_args.exclude:
         exclude = [*exclude, *parsed_args.exclude]
