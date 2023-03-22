@@ -1,49 +1,69 @@
-<p align="center">
-  <img width="300" src="https://raw.githubusercontent.com/SupertechLabs/SupermarQ/main/static/SupermarQ_Logo.png">
-</p>
+<img src="./docs/source/_static/logos/SuperstaQ_SSa-R00a_Mil.png">
 
----
-![Continuous Integration](https://github.com/SupertechLabs/SupermarQ/actions/workflows/ci.yml/badge.svg)
+# Welcome to SuperstaQ!
+This repository is the home of Super.tech's open source work, which includes:
+* [SuperstaQ](https://www.super.tech/about-superstaq/), our quantum software platform that is optimized across the quantum stack and enables users to write quantum programs in Cirq or Qiskit and target a variety of quantum computers and simulators
+* [SupermarQ](https://www.super.tech/supermarq/), our quantum benchmarking suite
 
+# Installation for users
+For installation instructions for users of SuperstaQ, check out [our documentation site](https://docs-superstaq.readthedocs.io/)! In short, you can install any of our packages by doing `pip install <package>` in a terminal, where `<package>` is `qiskit-superstaq`, `cirq-superstaq`, `general-superstaq`, or `supermarq`.
 
-# SupermarQ: A Scalable Quantum Benchmark Suite
+# Installation for development
+If you'd like to contribute to SuperstaQ, below are the instructions for installation. Note, **if you are working on multiple clients** (e.g., `qiskit-superstaq` and `cirq-superstaq`), you do not need to clone the repository multiple times or set up multiple virtual environments, but you must install the client-specific requirements in each client directory.
 
-[SupermarQ](https://arxiv.org/abs/2202.11045) is a suite of application-oriented benchmarks used to measure the performance of quantum computing systems.
+<details>
+<summary> <h3> <code>qiskit-superstaq</code> </h3> </summary>
+  
+  ```console
+  git clone git@github.com:SupertechLabs/superstaq-client.git
+  python3 -m venv venv_superstaq
+  source venv_superstaq/bin/activate
+  cd superstaq-client/qiskit-superstaq
+  pip install -e ."[dev]"
+  ```
+</details>
 
-## Installation
+<details>
+<summary> <h3> <code>cirq-superstaq</code> </h3> </summary>
+  
+  ```console
+  git clone git@github.com:SupertechLabs/superstaq-client.git
+  python3 -m venv venv_superstaq
+  source venv_superstaq/bin/activate
+  cd superstaq-client/cirq-superstaq
+  pip install -e ."[dev]"
+  ```
+</details>
 
-The SupermarQ package is available via `pip` and can be installed in your current Python environment with the command:
+<details>
+<summary> <h3> <code>general-superstaq</code> </h3> </summary>
+  
+  ```console
+  git clone git@github.com:SupertechLabs/superstaq-client.git
+  python3 -m venv venv_superstaq
+  source venv_superstaq/bin/activate
+  cd superstaq-client/general-superstaq
+  pip install -e ."[dev]"
+  ```
+</details>
 
-```
-pip install supermarq
-```
+<details>
+<summary> <h3> <code>supermarq</code> </h3> </summary>
+  
+  ```console
+  git clone git@github.com:SupertechLabs/superstaq-client.git
+  python3 -m venv venv_superstaq
+  source venv_superstaq/bin/activate
+  cd superstaq-client/supermarq-benchmarks
+  pip install -e ."[dev]"
+  ```
+</details>
 
-## Install Dev Requirements 
+# Documentation 
+For more information on getting started, check out [our documentation site](https://docs-superstaq.readthedocs.io/)!
 
-This is required if you intend to run checks locally
+# License
+SuperstaQ is licensed under the Apache License 2.0. See our [LICENSE](https://github.com/SupertechLabs/superstaq-client/blob/main/LICENSE) file for more details.
 
-```
-pip install .[dev]
-```
-
-
-## Using SupermarQ
-
-The benchmarks are defined as classes within `supermarq/benchmarks/`. Each application
-defines two methods; `circuit` and `score`. These methods are used to generate the benchmarking circuit and evaluate its performance
-after execution on hardware.
-
-The quantum benchmarks within SupermarQ are designed to be scalable, meaning that the benchmarks can be
-instantiated and generated for a wide range of circuit sizes and depths.
-
-The [`examples/ghz_example.py`](examples/ghz_example.py) file contains an end-to-end example of how to execute the GHZ benchmark
-using [SuperstaQ](https://superstaq.super.tech/). The general workflow is as follows:
-
-```python
-import supermarq
-
-ghz = supermarq.benchmarks.ghz.GHZ(num_qubits=3)
-ghz_circuit = ghz.circuit()
-counts = execute_circuit_on_quantum_hardware(ghz_circuit) # For example, via AWS Braket, IBM Qiskit, or SuperstaQ
-score = ghz.score(counts)
-```
+# Contact Us
+If you'd like to reach out to a member of our team, please email us at info@super.tech.
