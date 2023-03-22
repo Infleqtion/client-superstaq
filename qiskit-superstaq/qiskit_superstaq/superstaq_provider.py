@@ -52,7 +52,7 @@ class SuperstaQProvider(
             - `$XDG_DATA_HOME/coldquanta/superstaq_api_key`
             - `~/.super.tech/superstaq_api_key`
             - `~/.coldquanta/superstaq_api_key`
-            If one of those files exists, the it is treated as a plain text file, and the first
+            If one of those files exists, then it is treated as a plain text file, and the first
             line of this file is interpreted as an API key.  Failure to find an API key raises
             an `EnvironmentError`.
         remote_host: The location of the API in the form of a URL. If this is None,
@@ -64,8 +64,7 @@ class SuperstaQProvider(
         max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
         verbose: Whether to print to stdio and stderr on retriable errors.
     Raises:
-        EnvironmentError: if the `api_key` is None and has no corresponding environment
-            variable set.
+        EnvironmentError: If an API key was not provided and could not be found.
     """
 
     def __init__(
@@ -77,16 +76,8 @@ class SuperstaQProvider(
         verbose: bool = False,
     ) -> None:
         self._name = "superstaq_provider"
+        self.api_key = api_key or gss.superstaq_client.find_api_key()
         self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
-
-        api_key = api_key or gss.superstaq_client.find_api_key()
-        if not api_key:
-            raise EnvironmentError(
-                "SuperstaQ API key not specified and not found.\n"
-                "Try passing an 'api_key' variable, or setting your API key in the command line "
-                "with SUPERSTAQ_API_KEY=..."
-            )
-        self.api_key = api_key
 
         self._client = superstaq_client._SuperstaQClient(
             client_name="qiskit-superstaq",

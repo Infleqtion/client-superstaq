@@ -452,7 +452,7 @@ class _SuperstaQClient:
         )
 
 
-def find_api_key() -> Optional[str]:
+def find_api_key() -> str:
     """Try to load a SuperstaQ API key from the environment or a key file."""
 
     if os.getenv("SUPERSTAQ_API_KEY"):
@@ -471,4 +471,8 @@ def find_api_key() -> Optional[str]:
             with open(path, "r") as file:
                 return file.readline()
 
-    return None
+    raise EnvironmentError(
+        "SuperstaQ API key not specified and not found.\n"
+        "Try passing an 'api_key' variable, or setting your API key in the command line "
+        "with SUPERSTAQ_API_KEY=..."
+    )

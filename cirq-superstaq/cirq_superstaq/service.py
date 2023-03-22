@@ -144,20 +144,11 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             verbose: Whether to print to stdio and stderr on retriable errors.
 
         Raises:
-            EnvironmentError: if the `api_key` is None and has no corresponding environment
-                variable set.
+            EnvironmentError: If an API key was not provided and could not be found.
         """
+        self.api_key = api_key or gss.superstaq_client.find_api_key()
         self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
         self.default_target = default_target
-
-        api_key = api_key or gss.superstaq_client.find_api_key()
-        if not api_key:
-            raise EnvironmentError(
-                "SuperstaQ API key not specified and not found.\n"
-                "Try passing an 'api_key' variable, or setting your API key in the command line "
-                "with SUPERSTAQ_API_KEY=..."
-            )
-        self.api_key = api_key
 
         self._client = superstaq_client._SuperstaQClient(
             client_name="cirq-superstaq",
