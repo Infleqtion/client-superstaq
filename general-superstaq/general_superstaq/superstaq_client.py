@@ -111,6 +111,7 @@ class _SuperstaQClient:
 
     def get_superstaq_version(self) -> Dict[str, Optional[str]]:
         """Gets SuperstaQ version from response header
+
         Returns:
             A dict containing the current SuperstaQ version.
         """
