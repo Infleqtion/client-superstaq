@@ -160,6 +160,17 @@ def test_ibmq_set_token(service: css.Service) -> None:
     with pytest.raises(SuperstaQException, match="IBMQ token is invalid."):
         assert service.ibmq_set_token("INVALID_TOKEN")
 
+def test_cq_set_token(service: css.Service) -> None:
+    try:
+        cq_token = os.environ["TEST_USER_CQ_TOKEN"]
+    except KeyError as key:
+        raise KeyError(f"To run the integration tests, please export to {key} a valid CQ token")
+
+    assert service.cq_set_token(cq_token) == "Your CQ account token has been updated"
+
+    with pytest.raises(SuperstaQException, match="CQ token is invalid."):
+        assert service.cq_set_token("INVALID_TOKEN")
+
 
 def test_tsp(service: css.Service) -> None:
     cities = ["Chicago", "San Francisco", "New York City", "New Orleans"]
