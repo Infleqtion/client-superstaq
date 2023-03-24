@@ -109,6 +109,17 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
+    def get_superstaq_version(self) -> Dict[str, Optional[str]]:
+        """Gets SuperstaQ version from response header
+        Returns:
+            A dict containing the current SuperstaQ version.
+        """
+
+        response = requests.get(self.url)
+        version = response.headers.get("superstaq_version")
+
+        return {"superstaq_version": version}
+
     def post_request(self, endpoint: str, json_dict: Dict[str, Any]) -> Any:
         """Performs a POST request on a given endpoint with a given payload
         Args:
