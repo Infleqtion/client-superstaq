@@ -160,6 +160,7 @@ def test_ibmq_set_token(service: css.Service) -> None:
     with pytest.raises(SuperstaQException, match="IBMQ token is invalid."):
         assert service.ibmq_set_token("INVALID_TOKEN")
 
+
 def test_cq_set_token(service: css.Service) -> None:
     try:
         cq_token = os.environ["TEST_USER_CQ_TOKEN"]
