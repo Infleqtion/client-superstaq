@@ -783,12 +783,13 @@ def test_find_api_key() -> None:
         assert gss.superstaq_client.find_api_key() == "tomyheart"
 
     # find key in a config file
-    with mock.patch("pathlib.Path.is_file", return_value=True):
-        with mock.patch("builtins.open", mock.mock_open(read_data="tomyheart")):
-            assert gss.superstaq_client.find_api_key() == "tomyheart"
+    with mock.patch.dict(os.environ, clear=True):
+        with mock.patch("pathlib.Path.is_file", return_value=True):
+            with mock.patch("builtins.open", mock.mock_open(read_data="tomyheart")):
+                assert gss.superstaq_client.find_api_key() == "tomyheart"
 
     # fail to find an API key :(
     with pytest.raises(EnvironmentError, match="SuperstaQ API key not specified and not found."):
-        with mock.patch.dict(os.environ, {}):
+        with mock.patch.dict(os.environ, clear=True):
             with mock.patch("pathlib.Path.is_file", return_value=False):
                 gss.superstaq_client.find_api_key()
