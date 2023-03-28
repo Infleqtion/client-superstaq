@@ -131,12 +131,12 @@ def read_json_ibmq(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compile
             pulses = gss.serialization.deserialize(json_dict["pulses"])
         else:
             warnings.warn(
-                "ibmq_compile requires Qiskit Terra version 0.20.* to deserialize compiled pulse "
+                "ibmq_compile requires Qiskit Terra version 0.22.* to deserialize compiled pulse "
                 f"sequences (you have {qiskit.__version__})."
             )
     else:
         warnings.warn(
-            "ibmq_compile requires Qiskit Terra version 0.20.* to deserialize compiled pulse "
+            "ibmq_compile requires Qiskit Terra version 0.22.* to deserialize compiled pulse "
             "sequences."
         )
 
