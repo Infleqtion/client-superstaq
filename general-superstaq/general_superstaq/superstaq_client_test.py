@@ -324,6 +324,21 @@ def test_superstaq_client_get_balance(mock_get: mock.MagicMock) -> None:
     )
 
 
+@mock.patch("requests.get")
+def test_superstaq_client_get_version(mock_get: mock.MagicMock) -> None:
+    mock_get.return_value.ok = True
+    mock_get.return_value.headers = {"superstaq_version": "1.2.3"}
+    client = gss.superstaq_client._SuperstaQClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    response = client.get_superstaq_version()
+    assert response == {"superstaq_version": "1.2.3"}
+
+    mock_get.assert_called_with(f"http://example.com/{API_VERSION}")
+
+
 @mock.patch("requests.post")
 def test_add_new_user(mock_post: mock.MagicMock) -> None:
     client = gss.superstaq_client._SuperstaQClient(
