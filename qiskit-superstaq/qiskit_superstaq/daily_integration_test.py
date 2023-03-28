@@ -41,6 +41,18 @@ def test_ibmq_set_token(provider: qss.SuperstaQProvider) -> None:
         assert provider.ibmq_set_token("INVALID_TOKEN")
 
 
+def test_cq_set_token(provider: qss.SuperstaQProvider) -> None:
+    try:
+        cq_token = os.environ["TEST_USER_CQ_TOKEN"]
+    except KeyError as key:
+        raise KeyError(f"To run the integration tests, please export to {key} a valid CQ token")
+
+    assert provider.cq_set_token(cq_token) == "Your CQ account token has been updated"
+
+    with pytest.raises(SuperstaQException, match="CQ token is invalid."):
+        assert provider.cq_set_token("INVALID_TOKEN")
+
+
 def test_ibmq_compile(provider: qss.SuperstaQProvider) -> None:
     qc = qiskit.QuantumCircuit(2)
     qc.append(qss.AceCR("+-"), [0, 1])
