@@ -22,8 +22,10 @@ from .qudit_gates import (
     BSWAP_INV,
     CZ3,
     CZ3_INV,
+    SWAP3,
     BSwapPowGate,
     QubitSubspaceGate,
+    QuditSwapGate,
     QutritCZPowGate,
     QutritZ0,
     QutritZ0PowGate,
@@ -32,6 +34,7 @@ from .qudit_gates import (
     QutritZ2,
     QutritZ2PowGate,
     qubit_subspace_op,
+    qudit_swap_op,
 )
 
 __all__ = [
@@ -50,6 +53,7 @@ __all__ = [
     "ParallelGates",
     "ParallelRGate",
     "QubitSubspaceGate",
+    "QuditSwapGate",
     "QutritCZPowGate",
     "QutritZ0",
     "QutritZ0PowGate",
@@ -59,6 +63,7 @@ __all__ = [
     "QutritZ2PowGate",
     "RGate",
     "StrippedCZGate",
+    "SWAP3",
     "ZX",
     "ZXPowGate",
     "ZZSwapGate",
@@ -68,4 +73,5 @@ __all__ = [
     "qubit_gates",
     "qubit_subspace_op",
     "qudit_gates",
+    "qudit_swap_op",
 ]

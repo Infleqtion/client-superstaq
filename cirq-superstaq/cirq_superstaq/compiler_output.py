@@ -60,9 +60,11 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
     def __init__(
         self,
         circuits: Union[cirq.Circuit, List[cirq.Circuit], List[List[cirq.Circuit]]],
-        final_logical_to_physicals: Optional[
-            Union[Dict[cirq.Qid, cirq.Qid], List[Dict[cirq.Qid, cirq.Qid]]]
-        ] = None,
+        final_logical_to_physicals: Union[
+            Dict[cirq.Qid, cirq.Qid],
+            List[Dict[cirq.Qid, cirq.Qid]],
+            List[List[Dict[cirq.Qid, cirq.Qid]]],
+        ],
         pulse_sequences: Optional[Any] = None,
         seq: Optional[qtrl.sequencer.Sequence] = None,
         jaqal_programs: Optional[Union[List[str], str]] = None,
@@ -167,6 +169,9 @@ def read_json_ibmq(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compile
         the returned object also stores the pulse sequences in the .pulse_sequence(s) attribute.
     """
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
+    final_logical_to_physicals: List[Dict[cirq.Qid, cirq.Qid]] = list(
+        map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
+    )
     pulses = None
 
     if importlib.util.find_spec("qiskit"):
@@ -176,18 +181,20 @@ def read_json_ibmq(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compile
             pulses = gss.serialization.deserialize(json_dict["pulses"])
         else:
             warnings.warn(
-                "ibmq_compile requires Qiskit Terra version 0.20.* to deserialize compiled pulse "
+                "ibmq_compile requires Qiskit Terra version 0.22.* to deserialize compiled pulse "
                 f"sequences (you have {qiskit.__version__})."
             )
     else:
         warnings.warn(
-            "ibmq_compile requires Qiskit Terra version 0.20.* to deserialize compiled pulse "
+            "ibmq_compile requires Qiskit Terra version 0.22.* to deserialize compiled pulse "
             "sequences."
         )
 
     if circuits_is_list:
-        return CompilerOutput(circuits=compiled_circuits, pulse_sequences=pulses)
-    return CompilerOutput(circuits=compiled_circuits[0], pulse_sequences=pulses and pulses[0])
+        return CompilerOutput(compiled_circuits, final_logical_to_physicals, pulse_sequences=pulses)
+    return CompilerOutput(
+        compiled_circuits[0], final_logical_to_physicals[0], pulse_sequences=pulses and pulses[0]
+    )
 
 
 def read_json_aqt(  # pylint: disable=missing-param-doc
@@ -207,6 +214,13 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
 
     compiled_circuits: Union[List[cirq.Circuit], List[List[cirq.Circuit]]]
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
+
+    final_logical_to_physicals_list: List[Dict[cirq.Qid, cirq.Qid]] = list(
+        map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
+    )
+    final_logical_to_physicals: Union[
+        List[Dict[cirq.Qid, cirq.Qid]], List[List[Dict[cirq.Qid, cirq.Qid]]]
+    ] = final_logical_to_physicals_list
 
     seq = None
     pulse_lists = None
@@ -248,17 +262,24 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
             compiled_circuits[i : i + num_eca_circuits]
             for i in range(0, len(compiled_circuits), num_eca_circuits)
         ]
-
+        final_logical_to_physicals = [
+            final_logical_to_physicals_list[i : i + num_eca_circuits]
+            for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
+        ]
         pulse_lists = pulse_lists and [
             pulse_lists[i : i + num_eca_circuits]
             for i in range(0, len(pulse_lists), num_eca_circuits)
         ]
 
     if circuits_is_list:
-        return CompilerOutput(circuits=compiled_circuits, seq=seq, pulse_lists=pulse_lists)
+        return CompilerOutput(
+            compiled_circuits, final_logical_to_physicals, seq=seq, pulse_lists=pulse_lists
+        )
 
     pulse_lists = pulse_lists[0] if pulse_lists is not None else None
-    return CompilerOutput(circuits=compiled_circuits[0], seq=seq, pulse_lists=pulse_lists)
+    return CompilerOutput(
+        compiled_circuits[0], final_logical_to_physicals[0], seq=seq, pulse_lists=pulse_lists
+    )
 
 
 def read_json_qscout(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
@@ -274,12 +295,9 @@ def read_json_qscout(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compi
     """
 
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
-    final_logical_to_physicals: Optional[List[Dict[cirq.Qid, cirq.Qid]]] = None
-
-    if "final_logical_to_physicals" in json_dict:
-        final_logical_to_physicals = list(
-            map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
-        )
+    final_logical_to_physicals: List[Dict[cirq.Qid, cirq.Qid]] = list(
+        map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
+    )
 
     if circuits_is_list:
         return CompilerOutput(
@@ -290,7 +308,7 @@ def read_json_qscout(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compi
 
     return CompilerOutput(
         circuits=compiled_circuits[0],
-        final_logical_to_physicals=final_logical_to_physicals and final_logical_to_physicals[0],
+        final_logical_to_physicals=final_logical_to_physicals[0],
         jaqal_programs=json_dict["jaqal_programs"][0],
     )
 
@@ -307,8 +325,11 @@ def read_json_only_circuits(json_dict: Dict[str, Any], circuits_is_list: bool) -
     """
 
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
+    final_logical_to_physicals: List[Dict[cirq.Qid, cirq.Qid]] = list(
+        map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
+    )
 
     if circuits_is_list:
-        return CompilerOutput(circuits=compiled_circuits)
+        return CompilerOutput(compiled_circuits, final_logical_to_physicals)
 
-    return CompilerOutput(circuits=compiled_circuits[0])
+    return CompilerOutput(compiled_circuits[0], final_logical_to_physicals[0])

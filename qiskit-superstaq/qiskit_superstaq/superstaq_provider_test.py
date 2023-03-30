@@ -18,7 +18,7 @@ import qiskit_superstaq as qss
 def test_provider() -> None:
     ss_provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
 
-    with pytest.raises(EnvironmentError, match="api_key was not "):
+    with pytest.raises(EnvironmentError, match="SuperstaQ API key not specified and not found."):
         qss.SuperstaQProvider()
 
     assert str(ss_provider.get_backend("ibmq_qasm_simulator")) == str(
@@ -90,24 +90,29 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "final_logical_to_physicals": "[[[1, 4]]]",
         "state_jp": gss.serialization.serialize({}),
         "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     }
     out = provider.aqt_compile(qc)
     assert out.circuit == qc
+    assert out.final_logical_to_physical == {1: 4}
     assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
 
     out = provider.aqt_compile([qc], atol=1e-2)
     assert out.circuits == [qc]
+    assert out.final_logical_to_physicals == [{1: 4}]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
+        "final_logical_to_physicals": "[[], []]",
         "state_jp": gss.serialization.serialize({}),
         "pulse_lists_jp": gss.serialization.serialize([[[]], [[]]]),
     }
     out = provider.aqt_compile([qc, qc])
     assert out.circuits == [qc, qc]
+    assert out.final_logical_to_physicals == [{}, {}]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
 
@@ -126,12 +131,14 @@ def test_service_aqt_compile_eca(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "final_logical_to_physicals": "[[]]",
         "state_jp": gss.serialization.serialize({}),
         "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     }
 
     out = provider.aqt_compile_eca(qc, num_equivalent_circuits=1, random_seed=1234, atol=1e-2)
     assert out.circuits == [qc]
+    assert out.final_logical_to_physicals == [{}]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
 
@@ -150,16 +157,18 @@ def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
+    final_logical_to_physical = {0: 4, 1: 5}
     mock_ibmq_compile.return_value = {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "final_logical_to_physicals": json.dumps([list(final_logical_to_physical.items())]),
         "pulses": gss.serialization.serialize([mock.DEFAULT]),
     }
 
     assert provider.ibmq_compile(qiskit.QuantumCircuit()) == qss.compiler_output.CompilerOutput(
-        qc, pulse_sequences=mock.DEFAULT
+        qc, final_logical_to_physical, pulse_sequences=mock.DEFAULT
     )
     assert provider.ibmq_compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
-        [qc], pulse_sequences=[mock.DEFAULT]
+        [qc], [final_logical_to_physical], pulse_sequences=[mock.DEFAULT]
     )
 
 
@@ -285,6 +294,7 @@ def test_qscout_compile_change_entangler(mock_post: MagicMock, base_entangling_g
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "final_logical_to_physicals": "[[]]",
         "jaqal_programs": [""],
     }
     _ = provider.qscout_compile(qc, base_entangling_gate=base_entangling_gate)
@@ -314,19 +324,24 @@ def test_cq_compile(mock_post: MagicMock) -> None:
     qc.h(0)
 
     mock_post.return_value.json = lambda: {
-        "qiskit_circuits": qss.serialization.serialize_circuits(qc)
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "final_logical_to_physicals": "[[[3, 0]]]",
     }
     out = provider.cq_compile(qc)
     assert out.circuit == qc
+    assert out.final_logical_to_physical == {3: 0}
 
     out = provider.cq_compile([qc])
     assert out.circuits == [qc]
+    assert out.final_logical_to_physicals == [{3: 0}]
 
     mock_post.return_value.json = lambda: {
-        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc])
+        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
+        "final_logical_to_physicals": "[[], []]",
     }
     out = provider.cq_compile([qc, qc])
     assert out.circuits == [qc, qc]
+    assert out.final_logical_to_physicals == [{}, {}]
 
 
 def test_invalid_target_service_cq_compile() -> None:
@@ -344,6 +359,7 @@ def test_service_supercheq(mock_supercheq: mock.MagicMock) -> None:
     fidelities = np.array([1])
     mock_supercheq.return_value = {
         "qiskit_circuits": qss.serialization.serialize_circuits(circuits),
+        "final_logical_to_physicals": "[[]]",
         "fidelities": gss.serialization.serialize(fidelities),
     }
     assert service.supercheq([[0]], 1, 1) == (circuits, fidelities)

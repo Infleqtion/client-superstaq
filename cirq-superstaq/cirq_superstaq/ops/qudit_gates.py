@@ -1,5 +1,5 @@
 import abc
-from typing import AbstractSet, Any, Dict, List, Optional, Sequence, Tuple, Type
+from typing import AbstractSet, Any, Dict, List, Optional, Sequence, Tuple, Type, Union
 
 import cirq
 import numpy as np
@@ -7,6 +7,83 @@ import numpy.typing as npt
 from cirq.ops.common_gates import proper_repr
 
 import cirq_superstaq as css
+
+
+@cirq.value_equality
+class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
+    """A (non-parametrized) SWAP gate on two qudits of arbitrary dimension."""
+
+    def __init__(self, dimension: int) -> None:
+        self._dimension = dimension
+
+    @property
+    def dimension(self) -> int:
+        """The qudit dimension on which this SWAP gate will act."""
+        return self._dimension
+
+    def _qid_shape_(self) -> Tuple[int, int]:
+        return self.dimension, self.dimension
+
+    def _value_equality_values_(self) -> int:
+        return self.dimension
+
+    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
+        if isinstance(other, QuditSwapGate):
+            return other.dimension == self.dimension
+
+        elif self.dimension == 2:
+            return cirq.equal_up_to_global_phase(other, cirq.SWAP) or cirq.equal_up_to_global_phase(
+                cirq.SWAP, other
+            )
+
+        return NotImplemented
+
+    def _has_unitary_(self) -> bool:
+        return True
+
+    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> Optional[npt.NDArray[np.complex_]]:
+
+        for i in range(self._dimension):
+            for j in range(i):
+                idx0 = args.subspace_index(i * self._dimension + j)
+                idx1 = args.subspace_index(j * self._dimension + i)
+                args.available_buffer[idx0] = args.target_tensor[idx0]
+                args.target_tensor[idx0] = args.target_tensor[idx1]
+                args.target_tensor[idx1] = args.available_buffer[idx0]
+
+        return args.target_tensor
+
+    def _trace_distance_bound_(self) -> float:
+        return 1.0
+
+    def _is_parameterized_(self) -> bool:
+        return False
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        return cirq.circuit_diagram_info(cirq.SWAP, args)
+
+    def _json_dict_(self) -> Dict[str, Any]:
+        return cirq.obj_to_dict_helper(self, ["dimension"])
+
+    def __pow__(
+        self, exponent: cirq.TParamVal
+    ) -> Optional[Union["QuditSwapGate", cirq.IdentityGate]]:
+        if not cirq.is_parameterized(exponent):
+            if exponent % 2 == 1:
+                return self
+            if exponent % 2 == 0:
+                return cirq.IdentityGate(qid_shape=self._qid_shape_())
+
+        return NotImplemented
+
+    def __str__(self) -> str:
+        return f"SWAP{self._dimension}"
+
+    def __repr__(self) -> str:
+        if self._dimension == 3:
+            return f"css.SWAP{self._dimension}"
+
+        return f"css.QuditSwapGate(dimension={self._dimension!r})"
 
 
 class BSwapPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
@@ -376,6 +453,26 @@ class QubitSubspaceGate(cirq.Gate):  # pylint: disable=missing-class-docstring
         return f"css.QubitSubspaceGate({self._sub_gate!r}, {self._qid_shape}, {self._subspaces})"
 
 
+def qudit_swap_op(qudit0: cirq.Qid, qudit1: cirq.Qid) -> cirq.Operation:
+    """Construct a `QuditSwapGate` and apply it to the provided qudits.
+
+    Args:
+        qudit0: The first qudit to swap.
+        qudit1: The second qudit to swap.
+
+    Returns:
+        A `QuditSwapGate` acting on the provided qudits.
+
+    Raises:
+        ValueError: If the input qudits don't have the same dimension.
+    """
+
+    if qudit0.dimension != qudit1.dimension:
+        raise ValueError(f"{qudit0} and {qudit1} do not have the same dimension.")
+
+    return QuditSwapGate(dimension=qudit0.dimension).on(qudit0, qudit1)
+
+
 def qubit_subspace_op(
     sub_op: cirq.Operation,
     qid_shape: Sequence[int],
@@ -391,6 +488,8 @@ def qubit_subspace_op(
     return QubitSubspaceGate(sub_op.gate, qid_shape, subspaces=subspaces).on(*qudits)
 
 
+SWAP3 = QuditSwapGate(dimension=3)
+
 BSWAP = BSwapPowGate()
 BSWAP_INV = BSwapPowGate(exponent=-1)
 
@@ -405,6 +504,8 @@ QutritZ2 = QutritZ2PowGate()
 def custom_resolver(  # pylint: disable=missing-function-docstring
     cirq_type: str,
 ) -> Optional[Type[cirq.Gate]]:
+    if cirq_type == "QuditSwapGate":
+        return QuditSwapGate
     if cirq_type == "BSwapPowGate":
         return BSwapPowGate
     if cirq_type == "QutritCZPowGate":

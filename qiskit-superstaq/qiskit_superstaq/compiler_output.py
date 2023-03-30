@@ -50,7 +50,9 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
         circuits: Union[
             qiskit.QuantumCircuit, List[qiskit.QuantumCircuit], List[List[qiskit.QuantumCircuit]]
         ],
-        final_logical_to_physicals: Optional[Union[Dict[int, int], List[Dict[int, int]]]] = None,
+        final_logical_to_physicals: Union[
+            Dict[int, int], List[Dict[int, int]], List[List[Dict[int, int]]]
+        ],
         pulse_sequences: Union[qiskit.pulse.Schedule, List[qiskit.pulse.Schedule]] = None,
         seq: Optional[qtrl.sequencer.Sequence] = None,
         jaqal_programs: Optional[Union[str, List[str]]] = None,
@@ -136,6 +138,13 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
     compiled_circuits: Union[List[qiskit.QuantumCircuit], List[List[qiskit.QuantumCircuit]]]
     compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
 
+    final_logical_to_physicals_list: List[Dict[int, int]] = list(
+        map(dict, json.loads(json_dict["final_logical_to_physicals"]))
+    )
+    final_logical_to_physicals: Union[
+        List[Dict[int, int]], List[List[Dict[int, int]]]
+    ] = final_logical_to_physicals_list
+
     seq = None
     pulse_lists = None
 
@@ -176,12 +185,20 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
             pulse_lists[i : i + num_eca_circuits]
             for i in range(0, len(pulse_lists), num_eca_circuits)
         ]
+        final_logical_to_physicals = [
+            final_logical_to_physicals_list[i : i + num_eca_circuits]
+            for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
+        ]
 
     if circuits_is_list:
-        return CompilerOutput(circuits=compiled_circuits, seq=seq, pulse_lists=pulse_lists)
+        return CompilerOutput(
+            compiled_circuits, final_logical_to_physicals, seq=seq, pulse_lists=pulse_lists
+        )
 
     pulse_lists = pulse_lists[0] if pulse_lists is not None else None
-    return CompilerOutput(circuits=compiled_circuits[0], seq=seq, pulse_lists=pulse_lists)
+    return CompilerOutput(
+        compiled_circuits[0], final_logical_to_physicals[0], seq=seq, pulse_lists=pulse_lists
+    )
 
 
 def read_json_qscout(
@@ -199,13 +216,12 @@ def read_json_qscout(
     """
     qiskit_circuits = json_dict["qiskit_circuits"]
     jaqal_programs = json_dict["jaqal_programs"]
-    final_logical_to_physicals: Optional[List[Dict[int, int]]] = None
 
-    if "final_logical_to_physicals" in json_dict:
-        assert isinstance(json_dict["final_logical_to_physicals"], str)
-        final_logical_to_physicals = list(
-            map(dict, json.loads(json_dict["final_logical_to_physicals"]))
-        )
+    final_logical_to_physicals_str = json_dict["final_logical_to_physicals"]
+    assert isinstance(final_logical_to_physicals_str, str)
+    final_logical_to_physicals: List[Dict[int, int]] = list(
+        map(dict, json.loads(final_logical_to_physicals_str))
+    )
 
     assert isinstance(qiskit_circuits, str)
     assert isinstance(jaqal_programs, list)
@@ -218,8 +234,8 @@ def read_json_qscout(
         )
 
     return CompilerOutput(
-        circuits=compiled_circuits[0],
-        final_logical_to_physicals=final_logical_to_physicals and final_logical_to_physicals[0],
+        compiled_circuits[0],
+        final_logical_to_physicals[0],
         jaqal_programs=jaqal_programs[0],
     )
 
@@ -235,7 +251,9 @@ def read_json_only_circuits(json_dict: Dict[str, str], circuits_is_list: bool) -
         a CompilerOutput object with the compiled circuit(s)
     """
     compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
+    final_logical_to_physicals: List[Dict[int, int]] = list(
+        map(dict, json.loads(json_dict["final_logical_to_physicals"]))
+    )
     if circuits_is_list:
-        return CompilerOutput(circuits=compiled_circuits)
-
-    return CompilerOutput(circuits=compiled_circuits[0])
+        return CompilerOutput(compiled_circuits, final_logical_to_physicals)
+    return CompilerOutput(compiled_circuits[0], final_logical_to_physicals[0])

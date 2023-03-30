@@ -44,9 +44,17 @@ class SuperstaQProvider(
     and 'target' is the name of the desired backend.
 
     Args:
-        api_key: A string key which allows access to the API. If this is None,
-            then this instance will use the environment variable  `SUPERSTAQ_API_KEY`. If that
-            variable is not set, then this will raise an `EnvironmentError`.
+        api_key: A string that allows access to the SuperstaQ API. If no key is provided, then
+            this instance tries to use the environment variable `SUPERSTAQ_API_KEY`. If
+            furthermore that environment variable is not set, then this instance checks for the
+            following files:
+            - `$XDG_DATA_HOME/super.tech/superstaq_api_key`
+            - `$XDG_DATA_HOME/coldquanta/superstaq_api_key`
+            - `~/.super.tech/superstaq_api_key`
+            - `~/.coldquanta/superstaq_api_key`
+            If one of those files exists, then it is treated as a plain text file, and the first
+            line of this file is interpreted as an API key.  Failure to find an API key raises
+            an `EnvironmentError`.
         remote_host: The location of the API in the form of a URL. If this is None,
             then this instance will use the environment variable `SUPERSTAQ_REMOTE_HOST`.
             If that variable is not set, then this uses
@@ -56,8 +64,7 @@ class SuperstaQProvider(
         max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
         verbose: Whether to print to stdio and stderr on retriable errors.
     Raises:
-        EnvironmentError: if the `api_key` is None and has no corresponding environment
-            variable set.
+        EnvironmentError: If an API key was not provided and could not be found.
     """
 
     def __init__(
@@ -69,14 +76,8 @@ class SuperstaQProvider(
         verbose: bool = False,
     ) -> None:
         self._name = "superstaq_provider"
+        self.api_key = api_key or gss.superstaq_client.find_api_key()
         self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
-        api_key = api_key or os.getenv("SUPERSTAQ_API_KEY")
-        if not api_key:
-            raise EnvironmentError(
-                "Parameter api_key was not specified and the environment variable "
-                "SUPERSTAQ_API_KEY was also not set."
-            )
-        self.api_key: str = api_key
 
         self._client = superstaq_client._SuperstaQClient(
             client_name="qiskit-superstaq",
@@ -249,13 +250,16 @@ class SuperstaQProvider(
         )
         compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
         pulses = gss.serialization.deserialize(json_dict["pulses"])
+        final_logical_to_physicals: List[Dict[int, int]] = list(
+            map(dict, json.loads(json_dict["final_logical_to_physicals"]))
+        )
 
         if isinstance(circuits, qiskit.QuantumCircuit):
             return qss.compiler_output.CompilerOutput(
-                circuits=compiled_circuits[0], pulse_sequences=pulses[0]
+                compiled_circuits[0], final_logical_to_physicals[0], pulse_sequences=pulses[0]
             )
         return qss.compiler_output.CompilerOutput(
-            circuits=compiled_circuits, pulse_sequences=pulses
+            compiled_circuits, final_logical_to_physicals, pulse_sequences=pulses
         )
 
     def qscout_compile(  # pylint: disable=missing-param-doc,missing-raises-doc

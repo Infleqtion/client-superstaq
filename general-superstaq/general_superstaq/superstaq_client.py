@@ -12,6 +12,8 @@
 # limitations under the License.
 """Client for making requests to SuperstaQ's API."""
 import json
+import os
+import pathlib
 import sys
 import textwrap
 import time
@@ -107,6 +109,18 @@ class _SuperstaQClient:
 
         return self._make_request(request).json()
 
+    def get_superstaq_version(self) -> Dict[str, Optional[str]]:
+        """Gets SuperstaQ version from response header
+
+        Returns:
+            A dict containing the current SuperstaQ version.
+        """
+
+        response = requests.get(self.url)
+        version = response.headers.get("superstaq_version")
+
+        return {"superstaq_version": version}
+
     def post_request(self, endpoint: str, json_dict: Dict[str, Any]) -> Any:
         """Performs a POST request on a given endpoint with a given payload
         Args:
@@ -190,6 +204,17 @@ class _SuperstaQClient:
             The json body of the response as a dict.
         """
         return self.get_request("/balance")
+
+    def _accept_terms_of_use(self, user_input: str) -> str:
+        """Makes a POST request to SuperstaQ API to confirm acceptance of terms of use.
+
+        Args:
+            user_input: user's response to prompt for acceptance of TOU. Server accepts YES
+
+        Returns:
+            String with success message.
+        """
+        return self.post_request("/accept_terms_of_use", {"user_input": user_input})
 
     def get_targets(self) -> Dict[str, Dict[str, List[str]]]:
         """Makes a GET request to SuperstaQ API to get a list of available targets."""
@@ -349,11 +374,17 @@ class _SuperstaQClient:
 
     def _handle_status_codes(self, response: requests.Response) -> None:
         if response.status_code == requests.codes.unauthorized:
-            raise gss.SuperstaQException(
-                '"Not authorized" returned by SuperstaQ API.  '
-                "Check to ensure you have supplied the correct API key.",
-                response.status_code,
-            )
+            if response.json() == (
+                "You must accept the Terms of Use (superstaq.super.tech/terms_of_use)."
+            ):
+                self._prompt_accept_terms_of_use()
+                return
+            else:
+                raise gss.SuperstaQException(
+                    '"Not authorized" returned by SuperstaQ API.  '
+                    "Check to ensure you have supplied the correct API key.",
+                    response.status_code,
+                )
 
         if response.status_code not in self.RETRIABLE_STATUS_CODES:
             if "message" in response.json():
@@ -363,6 +394,20 @@ class _SuperstaQClient:
             raise gss.SuperstaQException(
                 f"Non-retriable error making request to SuperstaQ API, {message}",
                 response.status_code,
+            )
+
+    def _prompt_accept_terms_of_use(self) -> None:
+        message = (
+            "Acceptance of the Terms of Use (superstaq.super.tech/terms_of_use)"
+            " is necessary before using SuperstaQ.\nType in YES to accept: "
+        )
+        user_input = input(message).upper()
+        response = self._accept_terms_of_use(user_input)
+        print(response)
+        if response != "Accepted. You can now continue using SuperstaQ.":
+            raise gss.SuperstaQException(
+                "You'll need to accept Terms of Use before usage of SuperstaQ.",
+                requests.codes.unauthorized,
             )
 
     def _make_request(self, request: Callable[[], requests.Response]) -> requests.Response:
@@ -417,3 +462,31 @@ class _SuperstaQClient:
                 verbose={self.verbose!r},
             )"""
         )
+
+
+def find_api_key() -> str:
+    """Try to load a SuperstaQ API key from the environment or a key file."""
+
+    # look for the key in the environment
+    env_api_key = os.getenv("SUPERSTAQ_API_KEY")
+    if env_api_key:
+        return env_api_key
+
+    data_dir = pathlib.Path(os.getenv("XDG_DATA_HOME", "~/.local/share")).expanduser()
+    home_dir = pathlib.Path.home()
+    for directory in [
+        data_dir.joinpath("super.tech"),
+        data_dir.joinpath("coldquanta"),
+        home_dir.joinpath(".super.tech"),
+        home_dir.joinpath(".coldquanta"),
+    ]:
+        path = directory.joinpath("superstaq_api_key")
+        if path.is_file():
+            with open(path, "r") as file:
+                return file.readline()
+
+    raise EnvironmentError(
+        "SuperstaQ API key not specified and not found.\n"
+        "Try passing an 'api_key' variable, or setting your API key in the command line "
+        "with SUPERSTAQ_API_KEY=..."
+    )

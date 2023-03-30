@@ -24,6 +24,7 @@ from cirq_superstaq.ops import (
     CR,
     CZ3,
     CZ3_INV,
+    SWAP3,
     ZX,
     AceCR,
     AceCRMinusPlus,
@@ -33,6 +34,7 @@ from cirq_superstaq.ops import (
     ParallelGates,
     ParallelRGate,
     QubitSubspaceGate,
+    QuditSwapGate,
     QutritCZPowGate,
     QutritZ0,
     QutritZ0PowGate,
@@ -48,6 +50,7 @@ from cirq_superstaq.ops import (
     barrier,
     parallel_gates_operation,
     qubit_subspace_op,
+    qudit_swap_op,
 )
 from cirq_superstaq.sampler import Sampler
 from cirq_superstaq.serialization import (
@@ -75,6 +78,7 @@ __all__ = [
     "ParallelGates",
     "ParallelRGate",
     "QubitSubspaceGate",
+    "QuditSwapGate",
     "QutritCZPowGate",
     "QutritZ0",
     "QutritZ0PowGate",
@@ -87,6 +91,7 @@ __all__ = [
     "Sampler",
     "Service",
     "StrippedCZGate",
+    "SWAP3",
     "ZX",
     "ZXPowGate",
     "ZZSwapGate",
@@ -99,6 +104,7 @@ __all__ = [
     "ops",
     "parallel_gates_operation",
     "qubit_subspace_op",
+    "qudit_swap_op",
     "serialization",
     "serialize_circuits",
 ]

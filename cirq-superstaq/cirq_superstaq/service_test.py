@@ -250,6 +250,7 @@ def test_service_get_targets() -> None:
         "cirq_circuits": css.serialization.serialize_circuits(cirq.Circuit()),
         "state_jp": gss.serialization.serialize({}),
         "pulse_lists_jp": gss.serialization.serialize([[[]]]),
+        "final_logical_to_physicals": cirq.to_json([[]]),
     },
 )
 def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
@@ -263,7 +264,9 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
         },
     )
     assert out.circuit == cirq.Circuit()
+    assert out.final_logical_to_physical == {}
     assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
+    assert not hasattr(out, "final_logical_to_physicals")
 
     gate_defs = {
         "CZ3": css.CZ3,
@@ -302,6 +305,7 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit(), cirq.Circuit()]),
         "state_jp": gss.serialization.serialize({}),
         "pulse_lists_jp": gss.serialization.serialize([[[]], [[]]]),
+        "final_logical_to_physicals": cirq.to_json([[], []]),
     },
 )
 def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None:
@@ -309,7 +313,9 @@ def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None
     out = service.aqt_compile([cirq.Circuit(), cirq.Circuit()], atol=1e-2)
     mock_post_request.assert_called_once()
     assert out.circuits == [cirq.Circuit(), cirq.Circuit()]
+    assert out.final_logical_to_physicals == [{}, {}]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    assert not hasattr(out, "final_logical_to_physical")
 
 
 @mock.patch(
@@ -318,6 +324,7 @@ def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit()]),
         "state_jp": gss.serialization.serialize({}),
         "pulse_lists_jp": gss.serialization.serialize([[[]]]),
+        "final_logical_to_physicals": cirq.to_json([[]]),
     },
 )
 def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
@@ -327,7 +334,9 @@ def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
     )
     mock_post_request.assert_called_once()
     assert out.circuits == [cirq.Circuit()]
+    assert out.final_logical_to_physicals == [{}]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    assert not hasattr(out, "final_logical_to_physical")
 
 
 @mock.patch(
@@ -465,14 +474,17 @@ def test_service_cq_compile_single(mock_cq_compile: mock.MagicMock) -> None:
 
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
+    final_logical_to_physical = {cirq.q(10): cirq.q(0)}
 
     mock_cq_compile.return_value = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
     }
 
     service = css.Service(api_key="key", remote_host="http://example.com")
     out = service.cq_compile(circuit)
     assert out.circuit == circuit
+    assert out.final_logical_to_physical == final_logical_to_physical
 
 
 @mock.patch(
@@ -483,16 +495,20 @@ def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
 
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
+    final_logical_to_physical = {cirq.q(4): cirq.q(0)}
 
     mock_ibmq_compile.return_value = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
         "pulses": gss.serialization.serialize([mock.DEFAULT]),
+        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
     }
 
     assert service.ibmq_compile(circuit).circuit == circuit
     assert service.ibmq_compile([circuit]).circuits == [circuit]
     assert service.ibmq_compile(circuit).pulse_sequence == mock.DEFAULT
     assert service.ibmq_compile([circuit]).pulse_sequences == [mock.DEFAULT]
+    assert service.ibmq_compile(circuit).final_logical_to_physical == final_logical_to_physical
+    assert service.ibmq_compile([circuit]).final_logical_to_physicals == [final_logical_to_physical]
 
     with mock.patch.dict("sys.modules", {"qiskit": None}):
         assert service.ibmq_compile(cirq.Circuit()).pulse_sequence is None

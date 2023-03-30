@@ -2,6 +2,7 @@
 import importlib
 import pickle
 import textwrap
+from typing import Dict
 from unittest import mock
 
 import cirq
@@ -78,15 +79,16 @@ def test_measured_qubit_indices_with_circuit_operations() -> None:
 
 def test_compiler_output_repr() -> None:
     circuit = cirq.Circuit()
+    qubit_map: Dict[cirq.Qid, cirq.Qid] = {}
     assert (
-        repr(css.compiler_output.CompilerOutput(circuit))
-        == f"CompilerOutput({circuit!r}, None, None, None, None, None)"
+        repr(css.compiler_output.CompilerOutput(circuit, qubit_map))
+        == f"CompilerOutput({circuit!r}, {{}}, None, None, None, None)"
     )
 
     circuits = [circuit, circuit]
     assert (
-        repr(css.compiler_output.CompilerOutput(circuits))
-        == f"CompilerOutput({circuits!r}, None, None, None, None, None)"
+        repr(css.compiler_output.CompilerOutput(circuits, [qubit_map]))
+        == f"CompilerOutput({circuits!r}, [{{}}], None, None, None, None)"
     )
 
     assert (
@@ -98,23 +100,29 @@ def test_compiler_output_repr() -> None:
 def test_read_json_ibmq() -> None:
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
+    final_logical_to_physical = {cirq.q(0): cirq.q(13)}
 
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
         "pulses": gss.serialization.serialize([mock.DEFAULT]),
+        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
     }
 
     out = css.compiler_output.read_json_ibmq(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
     assert out.pulse_sequence == mock.DEFAULT
+    assert out.final_logical_to_physical == final_logical_to_physical
     assert not hasattr(out, "circuits")
     assert not hasattr(out, "pulse_sequences")
+    assert not hasattr(out, "final_logical_to_physicals")
 
     out = css.compiler_output.read_json_ibmq(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit]
     assert out.pulse_sequences == [mock.DEFAULT]
+    assert out.final_logical_to_physicals == [final_logical_to_physical]
     assert not hasattr(out, "circuit")
     assert not hasattr(out, "pulse_sequence")
+    assert not hasattr(out, "final_logical_to_physical")
 
     with mock.patch.dict("sys.modules", {"qiskit": None}), pytest.warns(
         UserWarning, match="requires Qiskit Terra"
@@ -139,20 +147,26 @@ def test_read_json_aqt() -> None:
     circuit = cirq.Circuit(cirq.H.on_each(*qubits), cirq.measure(*qubits))
     state_str = gss.serialization.serialize({})
     pulse_lists_str = gss.serialization.serialize([[[]]])
+    final_logical_to_physical = {cirq.q(0): cirq.q(4)}
 
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
+        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
     }
 
     out = css.compiler_output.read_json_aqt(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
+    assert out.final_logical_to_physical == final_logical_to_physical
     assert not hasattr(out, "circuits")
+    assert not hasattr(out, "final_logical_to_physicals")
 
     out = css.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit]
+    assert out.final_logical_to_physicals == [final_logical_to_physical]
     assert not hasattr(out, "circuit")
+    assert not hasattr(out, "final_logical_to_physical")
 
     with mock.patch.dict("sys.modules", {"qtrl": None}), pytest.warns(
         UserWarning, match="deserialize compiled pulse sequences"
@@ -167,15 +181,19 @@ def test_read_json_aqt() -> None:
         "cirq_circuits": css.serialization.serialize_circuits([circuit, circuit]),
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
+        "final_logical_to_physicals": cirq.to_json(2 * [list(final_logical_to_physical.items())]),
     }
     out = css.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
+    assert out.final_logical_to_physicals == [final_logical_to_physical, final_logical_to_physical]
     assert not hasattr(out, "circuit")
+    assert not hasattr(out, "final_logical_to_physical")
 
 
 def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires qtrl installation
     qtrl = pytest.importorskip("qtrl", reason="qtrl not installed")
     seq = qtrl.sequencer.Sequence(n_elements=1)
+    final_logical_to_physical = {cirq.q(0): cirq.q(4)}
 
     circuit = cirq.Circuit(cirq.H(cirq.LineQubit(4)))
     state_str = gss.serialization.serialize(seq.__getstate__())
@@ -184,6 +202,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
+        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
     }
 
     out = css.compiler_output.read_json_aqt(json_dict, circuits_is_list=False)
@@ -223,6 +242,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
         "pulse_lists_jp": pulse_lists_str,
         "readout_jp": state_str,
         "readout_qubits": "[4, 5, 6, 7]",
+        "final_logical_to_physicals": cirq.to_json(2 * [list(final_logical_to_physical.items())]),
     }
     out = css.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
@@ -281,16 +301,21 @@ def test_read_json_qscout() -> None:
 def test_read_json_only_circuits() -> None:
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
+    final_logical_to_physical = {cirq.q(0): cirq.q(13)}
 
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
     }
 
     out = css.compiler_output.read_json_only_circuits(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
+    assert out.final_logical_to_physical == final_logical_to_physical
 
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits([circuit, circuit]),
+        "final_logical_to_physicals": cirq.to_json(2 * [list(final_logical_to_physical.items())]),
     }
     out = css.compiler_output.read_json_only_circuits(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
+    assert out.final_logical_to_physicals == [final_logical_to_physical, final_logical_to_physical]
