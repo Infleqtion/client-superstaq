@@ -45,7 +45,7 @@ Learn more about SuperstaQ `here <https://www.super.tech/about-superstaq/>`_.
    :hidden:
    :caption: Optimizations
 
-   optimizations/qscout20230228
+   optimizations/qscout/qscout
 
 .. toctree::
    :maxdepth: 1
