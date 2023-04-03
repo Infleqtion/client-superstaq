@@ -63,11 +63,11 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
                         "Timed out waiting for result"
                     )  # pragma: no cover b/c don't want slow test or mocking time
 
-                getstr = f"{self._backend._provider._client.url}job/{jid}"
+                getstr = f"{self._backend._provider._client.url}/job/{jid}"
                 result = requests.get(
                     getstr,
                     headers=self._backend._provider._client.headers,
-                    verify=getstr.startswith(gss.API_URL),
+                    verify=self._backend._provider._client.verify_https,
                 ).json()
                 if result["status"] == "Done":
                     break
@@ -117,11 +117,11 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
         # For example, if any of the jobs are still queued, we report Queued as the status
         # for the entire batch.
         for job_id in job_id_list:
-            get_url = f"{self._backend._provider._client.url}job/{job_id}"
+            get_url = f"{self._backend._provider._client.url}/job/{job_id}"
             result = requests.get(
                 get_url,
                 headers=self._backend._provider._client.headers,
-                verify=get_url.startswith(gss.API_URL),
+                verify=self._backend._provider._client.verify_https,
             )
 
             temp_status = result.json()["status"]
