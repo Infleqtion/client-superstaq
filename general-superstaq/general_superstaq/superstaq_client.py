@@ -42,9 +42,9 @@ class _SuperstaQClient:
 
     def __init__(
         self,
-        remote_host: str,
-        api_key: str,
         client_name: str,
+        api_key: Optional[str] = None,
+        remote_host: Optional[str] = None,
         api_version: str = gss.API_VERSION,
         max_retry_seconds: float = 60,  # 1 minute
         verbose: bool = False,
@@ -67,14 +67,15 @@ class _SuperstaQClient:
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
         """
 
-        self.api_key = api_key
+        self.api_key = api_key or gss.superstaq_client.find_api_key()
+        self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
         self.client_name = client_name
         self.api_version = api_version
         self.max_retry_seconds = max_retry_seconds
         self.verbose = verbose
-        url = urllib.parse.urlparse(remote_host)
+        url = urllib.parse.urlparse(self.remote_host)
         assert url.scheme and url.netloc, (
-            f"Specified remote_host {remote_host} is not a valid url, for example "
+            f"Specified remote_host {self.remote_host} is not a valid url, for example "
             "http://example.com"
         )
 
@@ -451,6 +452,25 @@ class _SuperstaQClient:
         return f"Client with host={self.url} and name={self.client_name}"
 
     def __repr__(self) -> str:
+        # args = {
+        #     "remote_host": self.remote_host,
+        # }
+        # if api_key != find_api_key():
+        #     args["api_key"] = api_key
+        # client_name
+        # self,
+        # remote_host: str,
+        # api_key: str,
+        # client_name: str,
+        # api_version: str = gss.API_VERSION,
+        # max_retry_seconds: float = 60,  # 1 minute
+        # verbose: bool = False,
+        #     remote_host={self.url!r},
+        #     api_key={self.api_key!r},
+        #     client_name={self.client_name!r},
+        #     api_version={self.api_version!r},
+        #     max_retry_seconds={self.max_retry_seconds!r},
+        #     verbose={self.verbose!r},
         return textwrap.dedent(
             f"""\
             gss.superstaq_client._SuperstaQClient(
