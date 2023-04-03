@@ -46,6 +46,7 @@ Learn more about SuperstaQ `here <https://www.super.tech/about-superstaq/>`_.
    :caption: Optimizations
 
    optimizations/aqt/aqt
+   optimizations/cq/cq
    optimizations/ibm/ibm
    optimizations/qscout/qscout
 
