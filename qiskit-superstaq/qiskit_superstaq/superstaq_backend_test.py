@@ -9,14 +9,14 @@ import qiskit_superstaq as qss
 
 
 def test_default_options() -> None:
-    ss_provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
-    device = qss.SuperstaQBackend(
-        provider=ss_provider,
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    backend = qss.SuperstaQBackend(
+        provider=provider,
         remote_host=gss.API_URL,
         target="ibmq_qasm_simulator",
     )
 
-    assert qiskit.providers.Options(shots=1000) == device._default_options()
+    assert qiskit.providers.Options(shots=1000) == backend._default_options()
 
 
 def test_validate_target() -> None:
