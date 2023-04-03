@@ -12,16 +12,7 @@ import qiskit_superstaq as qss
 
 @pytest.fixture
 def provider() -> qss.SuperstaQProvider:
-    try:
-        token = os.environ["TEST_USER_TOKEN"]
-    except KeyError as key:
-        raise KeyError(
-            f"To run the integration tests, please export to {key} your SuperstaQ API key which you"
-            " can get at superstaq.super.tech"
-        )
-
-    provider = qss.SuperstaQProvider(api_key=token)
-    return provider
+    return qss.SuperstaQProvider()
 
 
 def test_backends(provider: qss.SuperstaQProvider) -> None:
