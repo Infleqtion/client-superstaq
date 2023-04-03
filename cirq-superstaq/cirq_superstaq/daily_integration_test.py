@@ -103,9 +103,7 @@ def test_aqt_compile_eca(service: css.Service) -> None:
         assert all(isinstance(circuit, cirq.Circuit) for circuit in circuits)
 
 
-@pytest.mark.skip(
-    reason="Won't pass until https://github.com/SupertechLabs/server-superstaq/issues/1515 is fixed"
-)
+@pytest.mark.skip(reason="Won't pass until server issue related to this is fixed")
 def test_aqt_compile_eca_regression(service: css.Service) -> None:
     circuit = cirq.Circuit(
         cirq.H(cirq.LineQubit(4)),

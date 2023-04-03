@@ -119,9 +119,7 @@ def test_aqt_compile_eca(provider: qss.SuperstaQProvider) -> None:
         assert all(isinstance(circuit, qiskit.QuantumCircuit) for circuit in circuits)
 
 
-@pytest.mark.skip(
-    reason="Won't pass until https://github.com/SupertechLabs/server-superstaq/issues/1515 is fixed"
-)
+@pytest.mark.skip(reason="Won't pass until server issue related to this is fixed")
 def test_aqt_compile_eca_regression(provider: qss.SuperstaQProvider) -> None:
     circuit = qiskit.QuantumCircuit(8)
     circuit.h(4)
