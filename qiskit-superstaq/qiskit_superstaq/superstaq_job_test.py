@@ -15,14 +15,9 @@ class MockConfiguration:
     backend_version = gss.API_VERSION
 
 
-class MockProvider(qss.SuperstaQProvider):
-    def __init__(self) -> None:
-        self.api_key = "very.tech"
-
-
 class MockDevice(qss.SuperstaQBackend):
     def __init__(self) -> None:
-        self._provider = MockProvider()
+        self._provider = qss.SuperstaQProvider(api_key="very.tech")
         self.diff = ""
 
     _configuration = MockConfiguration()

@@ -95,9 +95,6 @@ class SuperstaQProvider(
     def get_backend(self, target: str) -> qss.SuperstaQBackend:
         return qss.SuperstaQBackend(provider=self, target=target)
 
-    def get_access_token(self) -> str:  # pylint: disable=missing-function-docstring
-        return self._client.api_key
-
     def backends(self) -> List[qss.SuperstaQBackend]:
         targets = self._client.get_targets()["superstaq_targets"]
         backends = []
