@@ -39,8 +39,7 @@ def test_run() -> None:
     qc.cx(0, 1)
     qc.measure([0, 0], [1, 1])
 
-    provider = qss.SuperstaQProvider(api_key="123")
-    backend = provider.get_backend("ss_example_qpu")
+    backend = qss.SuperstaQProvider(api_key="123").get_backend("ss_example_qpu")
 
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.create_job",
@@ -65,8 +64,7 @@ def test_multi_circuit_run() -> None:
     qc2.cx(0, 1)
     qc2.measure([0, 1], [0, 1])
 
-    provider = qss.SuperstaQProvider(api_key="123")
-    backend = provider.get_backend("ss_example_qpu")
+    backend = qss.SuperstaQProvider(api_key="123").get_backend("ss_example_qpu")
 
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.create_job",
@@ -83,8 +81,7 @@ def test_multi_arg_run() -> None:
     qc.cx(0, 1)
     qc.measure([0, 0], [1, 1])
 
-    provider = qss.SuperstaQProvider(api_key="123")
-    backend = provider.get_backend("ss_example_qpu")
+    backend = qss.SuperstaQProvider(api_key="123").get_backend("ss_example_qpu")
 
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.create_job",
