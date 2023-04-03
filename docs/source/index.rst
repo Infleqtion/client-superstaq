@@ -60,6 +60,13 @@ Learn more about SuperstaQ `here <https://www.super.tech/about-superstaq/>`_.
 .. toctree::
    :maxdepth: 1
    :hidden:
+   :caption: Other Work
+
+   supercheq/supercheq
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
    :caption: Clients
 
    cirq_superstaq
