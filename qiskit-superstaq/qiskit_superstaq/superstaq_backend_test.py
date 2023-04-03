@@ -8,10 +8,10 @@ import qiskit_superstaq as qss
 
 
 def test_default_options() -> None:
-    ss_provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
-    ss_backend = qss.SuperstaQBackend(provider=ss_provider, target="ibmq_qasm_simulator")
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    backend = qss.SuperstaQBackend(provider=provider, target="ibmq_qasm_simulator")
 
-    assert qiskit.providers.Options(shots=1000) == ss_backend._default_options()
+    assert qiskit.providers.Options(shots=1000) == backend._default_options()
 
 
 def test_validate_target() -> None:
@@ -32,8 +32,7 @@ def test_run() -> None:
     qc.cx(0, 1)
     qc.measure([0, 0], [1, 1])
 
-    provider = qss.SuperstaQProvider(api_key="123")
-    backend = provider.get_backend("ss_example_qpu")
+    backend = qss.SuperstaQProvider(api_key="123").get_backend("ss_example_qpu")
 
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.create_job",
@@ -58,8 +57,7 @@ def test_multi_circuit_run() -> None:
     qc2.cx(0, 1)
     qc2.measure([0, 1], [0, 1])
 
-    provider = qss.SuperstaQProvider(api_key="123")
-    backend = provider.get_backend("ss_example_qpu")
+    backend = qss.SuperstaQProvider(api_key="123").get_backend("ss_example_qpu")
 
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.create_job",
@@ -67,8 +65,7 @@ def test_multi_circuit_run() -> None:
     ):
         answer = backend.run(circuits=[qc1, qc2], shots=1000)
         expected = qss.SuperstaQJob(backend, "job_id")
-
-    assert answer == expected
+        assert answer == expected
 
 
 def test_multi_arg_run() -> None:
@@ -77,8 +74,7 @@ def test_multi_arg_run() -> None:
     qc.cx(0, 1)
     qc.measure([0, 0], [1, 1])
 
-    provider = qss.SuperstaQProvider(api_key="123")
-    backend = provider.get_backend("ss_example_qpu")
+    backend = qss.SuperstaQProvider(api_key="123").get_backend("ss_example_qpu")
 
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.create_job",
@@ -90,14 +86,13 @@ def test_multi_arg_run() -> None:
 
 
 def test_eq() -> None:
-
     provider = qss.SuperstaQProvider(api_key="123")
 
-    backend1 = qss.SuperstaQBackend(provider=provider, target="ibmq_qasm_simulator")
+    backend1 = provider.get_backend("ibmq_qasm_simulator")
     assert backend1 != 3
 
-    backend2 = qss.SuperstaQBackend(provider=provider, target="ibmq_athens_qpu")
+    backend2 = provider.get_backend("ibmq_athens_qpu")
     assert backend1 != backend2
 
-    backend3 = qss.SuperstaQBackend(provider=provider, target="ibmq_qasm_simulator")
+    backend3 = provider.get_backend("ibmq_qasm_simulator")
     assert backend1 == backend3
