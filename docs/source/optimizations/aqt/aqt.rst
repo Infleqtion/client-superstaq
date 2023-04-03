@@ -1,4 +1,4 @@
-SuperstaQ for QSCOUT
+SuperstaQ for AQT
 ========================
 
 
@@ -6,5 +6,5 @@ SuperstaQ for QSCOUT
 .. toctree::
     :maxdepth: 1
 
-    qscout_qss
-    qscout_css
+    aqt_qss
+    aqt_css
