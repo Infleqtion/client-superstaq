@@ -15,7 +15,6 @@
 import time
 from typing import Any, Dict, List, Optional
 
-import general_superstaq as gss
 import qiskit
 import requests
 
