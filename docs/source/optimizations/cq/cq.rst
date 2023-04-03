@@ -1,5 +1,5 @@
 SuperstaQ for ColdQuanta
-=================
+========================
 
 .. toctree::
     :maxdepth: 1
