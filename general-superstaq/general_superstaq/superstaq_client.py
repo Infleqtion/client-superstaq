@@ -452,25 +452,6 @@ class _SuperstaQClient:
         return f"Client with host={self.url} and name={self.client_name}"
 
     def __repr__(self) -> str:
-        # args = {
-        #     "remote_host": self.remote_host,
-        # }
-        # if api_key != find_api_key():
-        #     args["api_key"] = api_key
-        # client_name
-        # self,
-        # remote_host: str,
-        # api_key: str,
-        # client_name: str,
-        # api_version: str = gss.API_VERSION,
-        # max_retry_seconds: float = 60,  # 1 minute
-        # verbose: bool = False,
-        #     remote_host={self.url!r},
-        #     api_key={self.api_key!r},
-        #     client_name={self.client_name!r},
-        #     api_version={self.api_version!r},
-        #     max_retry_seconds={self.max_retry_seconds!r},
-        #     verbose={self.verbose!r},
         return textwrap.dedent(
             f"""\
             gss.superstaq_client._SuperstaQClient(
