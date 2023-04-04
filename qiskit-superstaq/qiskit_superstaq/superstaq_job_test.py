@@ -1,5 +1,6 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 from typing import Dict, Union
+from unittest import mock
 
 import pytest
 import qiskit
@@ -11,15 +12,22 @@ def mock_response(status_str: str) -> Dict[str, Union[str, int, Dict[str, int]]]
     return {"status": status_str, "samples": {"10": 100}, "shots": 100}
 
 
-def test_wait_for_results() -> None:
-    backend = qss.SuperstaQProvider(api_key="token").get_backend("ss_example_qpu")
+@pytest.fixture
+def backend() -> qss.SuperstaQBackend:
+    provider = qss.SuperstaQProvider(api_key="token")
+    return provider.get_backend("ss_example_qpu")
+
+
+def test_wait_for_results(backend: qss.SuperstaQBackend) -> None:
     job = qss.SuperstaQJob(backend=backend, job_id="123abc")
+    jobs = qss.SuperstaQJob(backend=backend, job_id="123abc,456def")
 
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.get_job",
         return_value=mock_response("Done"),
     ):
         assert job._wait_for_results() == [mock_response("Done")]
+        assert jobs._wait_for_results() == [mock_response("Done"), mock_response("Done")]
 
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.get_job",
@@ -28,16 +36,8 @@ def test_wait_for_results() -> None:
         with pytest.raises(qiskit.providers.JobError, match="API returned error"):
             _ = job._wait_for_results()
 
-    jobs = qss.SuperstaQJob(backend=backend, job_id="123abc,456def")
-    with mock.patch(
-        "general_superstaq.superstaq_client._SuperstaQClient.get_job",
-        return_value=mock_response("Done"),
-    ):
-        assert jobs._wait_for_results() == [mock_response("Done"), mock_response("Done")]
 
-
-def test_result() -> None:
-    backend = qss.SuperstaQProvider(api_key="token").get_backend("ss_example_qpu")
+def test_result(backend: qss.SuperstaQBackend) -> None:
     job = qss.SuperstaQJob(backend=backend, job_id="123abc")
 
     expected_results = [{"success": True, "shots": 100, "data": {"counts": {"01": 100}}}]
@@ -55,7 +55,7 @@ def test_result() -> None:
 
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.get_job",
-        return_value=mock_response("Done")
+        return_value=mock_response("Done"),
     ):
         ans = job.result()
 
@@ -63,39 +63,35 @@ def test_result() -> None:
         assert ans.job_id == expected.job_id
 
 
-def test_status() -> None:
-    backend = qss.SuperstaQProvider(api_key="token").get_backend("ss_example_qpu")
+def test_status(backend: qss.SuperstaQBackend) -> None:
     job = qss.SuperstaQJob(backend=backend, job_id="123abc")
 
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.get_job",
-        return_value=mock_response("Queued")
+        return_value=mock_response("Queued"),
     ):
         assert job.status() == qiskit.providers.JobStatus.QUEUED
 
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.get_job",
-        return_value=mock_response("Running")
+        return_value=mock_response("Running"),
     ):
         assert job.status() == qiskit.providers.JobStatus.RUNNING
 
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.get_job",
-        return_value=mock_response("Done")
+        return_value=mock_response("Done"),
     ):
         assert job.status() == qiskit.providers.JobStatus.DONE
 
 
-def test_submit() -> None:
-    backend = qss.SuperstaQProvider(api_key="token").get_backend("ss_example_qpu")
+def test_submit(backend: qss.SuperstaQBackend) -> None:
     job = qss.SuperstaQJob(backend=backend, job_id="12345")
     with pytest.raises(NotImplementedError, match="Submit through SuperstaQBackend"):
         job.submit()
 
 
-def test_eq() -> None:
-    backend = qss.SuperstaQProvider(api_key="token").get_backend("ss_example_qpu")
-
+def test_eq(backend: qss.SuperstaQBackend) -> None:
     job = qss.SuperstaQJob(backend=backend, job_id="12345")
     assert job != "super.tech"
 

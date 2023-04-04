@@ -111,7 +111,6 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
         # for the entire batch.
         for job_id in job_id_list:
             result = self._backend._provider._client.get_job(job_id)
-
             temp_status = result["status"]
 
             if temp_status == "Queued":
