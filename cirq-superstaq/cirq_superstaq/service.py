@@ -13,7 +13,6 @@
 """Service to access SuperstaQs API."""
 
 import json
-import os
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import cirq
@@ -146,14 +145,12 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Raises:
             EnvironmentError: If an API key was not provided and could not be found.
         """
-        self.api_key = api_key or gss.superstaq_client.find_api_key()
-        self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
         self.default_target = default_target
 
         self._client = superstaq_client._SuperstaQClient(
             client_name="cirq-superstaq",
-            remote_host=self.remote_host,
-            api_key=self.api_key,
+            remote_host=remote_host,
+            api_key=api_key,
             api_version=api_version,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,

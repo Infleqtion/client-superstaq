@@ -1,7 +1,6 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 from unittest import mock
 
-import general_superstaq as gss
 import pytest
 import qiskit
 
@@ -10,11 +9,7 @@ import qiskit_superstaq as qss
 
 def test_default_options() -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
-    backend = qss.SuperstaQBackend(
-        provider=provider,
-        remote_host=gss.API_URL,
-        target="ibmq_qasm_simulator",
-    )
+    backend = qss.SuperstaQBackend(provider=provider, target="ibmq_qasm_simulator")
 
     assert qiskit.providers.Options(shots=1000) == backend._default_options()
 
@@ -22,15 +17,13 @@ def test_default_options() -> None:
 def test_validate_target() -> None:
     provider = qss.SuperstaQProvider(api_key="123")
     with pytest.raises(ValueError, match="does not have a valid string format"):
-        qss.SuperstaQBackend(provider=provider, remote_host=gss.API_URL, target="invalid_target")
+        qss.SuperstaQBackend(provider=provider, target="invalid_target")
 
     with pytest.raises(ValueError, match="does not have a valid target device type"):
-        qss.SuperstaQBackend(
-            provider=provider, remote_host=gss.API_URL, target="ibmq_invalid_device"
-        )
+        qss.SuperstaQBackend(provider=provider, target="ibmq_invalid_device")
 
     with pytest.raises(ValueError, match="does not have a valid target prefix"):
-        qss.SuperstaQBackend(provider=provider, remote_host=gss.API_URL, target="invalid_test_qpu")
+        qss.SuperstaQBackend(provider=provider, target="invalid_test_qpu")
 
 
 def test_run() -> None:
