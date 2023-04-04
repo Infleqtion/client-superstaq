@@ -15,27 +15,18 @@
 import time
 from typing import Any, Dict, List, Optional
 
-import general_superstaq as gss
 import qiskit
-import requests
 
 import qiskit_superstaq as qss
 
 
 class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-docstring
-    def __init__(
-        self,
-        backend: qss.SuperstaQBackend,
-        job_id: str,
-    ) -> None:
-
-        # Can we stop setting qobj and access_token to None
+    def __init__(self, backend: qss.SuperstaQBackend, job_id: str) -> None:
         """Initialize a job instance.
 
-        Parameters:
-            backend (SuperstaQBackend): Backend that job was executed on.
-            job_id (str): The unique job ID from SuperstaQ.
-            access_token (str): The access token.
+        Args:
+            backend: The `qss.SuperstaQBacken` that the job was created with.
+            job_id: The unique job ID from SuperstaQ.
         """
         super().__init__(backend, job_id)
 
@@ -59,21 +50,14 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
                 elapsed = time.time() - start_time
 
                 if timeout and elapsed >= timeout:
-                    raise qiskit.providers.JobTimeoutError(
-                        "Timed out waiting for result"
-                    )  # pragma: no cover b/c don't want slow test or mocking time
+                    raise qiskit.providers.JobTimeoutError("Timed out waiting for result")
 
-                getstr = f"{self._backend.remote_host}/{gss.API_VERSION}/job/{jid}"
-                result = requests.get(
-                    getstr,
-                    headers=self._backend._provider._http_headers(),
-                    verify=(self._backend.remote_host == gss.API_URL),
-                ).json()
+                result = self._backend._provider._client.get_job(jid)
                 if result["status"] == "Done":
                     break
                 if result["status"] == "Error":
                     raise qiskit.providers.JobError("API returned error:\n" + str(result))
-                time.sleep(wait)  # pragma: no cover b/c don't want slow test or mocking time
+                time.sleep(wait)
             result_list.append(result)
         return result_list
 
@@ -117,14 +101,8 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
         # For example, if any of the jobs are still queued, we report Queued as the status
         # for the entire batch.
         for job_id in job_id_list:
-            get_url = f"{self._backend.remote_host}/{gss.API_VERSION}/job/{job_id}"
-            result = requests.get(
-                get_url,
-                headers=self._backend._provider._http_headers(),
-                verify=(self._backend.remote_host == gss.API_URL),
-            )
-
-            temp_status = result.json()["status"]
+            result = self._backend._provider._client.get_job(job_id)
+            temp_status = result["status"]
 
             if temp_status == "Queued":
                 status = "Queued"
