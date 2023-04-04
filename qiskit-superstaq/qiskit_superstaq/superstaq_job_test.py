@@ -74,8 +74,8 @@ def test_result(backend: qss.SuperstaQBackend) -> None:
     ):
         ans = job.result()
 
-        assert ans.backend_name == expected.backend_name
-        assert ans.job_id == expected.job_id
+    assert ans.backend_name == expected.backend_name
+    assert ans.job_id == expected.job_id
 
 
 def test_status(backend: qss.SuperstaQBackend) -> None:
