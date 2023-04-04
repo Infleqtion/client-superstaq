@@ -98,23 +98,12 @@ class SuperstaQProvider(
     def get_backend(self, target: str) -> qss.SuperstaQBackend:
         return qss.SuperstaQBackend(provider=self, remote_host=self.remote_host, target=target)
 
-    def get_access_token(self) -> str:  # pylint: disable=missing-function-docstring
-        return self.api_key
-
     def backends(self) -> List[qss.SuperstaQBackend]:
         targets = self._client.get_targets()["superstaq_targets"]
         backends = []
         for target in targets["compile-and-run"]:
             backends.append(self.get_backend(target))
         return backends
-
-    def _http_headers(self) -> Dict[str, str]:
-        return {
-            "Authorization": self.get_access_token(),
-            "Content-Type": "application/json",
-            "X-Client-Name": "qiskit-superstaq",
-            "X-Client-Version": gss.API_VERSION,
-        }
 
     def resource_estimate(
         self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]], target: str
