@@ -21,19 +21,12 @@ import qiskit_superstaq as qss
 
 
 class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-docstring
-    def __init__(
-        self,
-        backend: qss.SuperstaQBackend,
-        job_id: str,
-    ) -> None:
-
-        # Can we stop setting qobj and access_token to None
+    def __init__(self, backend: qss.SuperstaQBackend, job_id: str) -> None:
         """Initialize a job instance.
 
-        Parameters:
-            backend (SuperstaQBackend): Backend that job was executed on.
-            job_id (str): The unique job ID from SuperstaQ.
-            access_token (str): The access token.
+        Args:
+            backend: The `qss.SuperstaQBacken` that the job was created with.
+            job_id: The unique job ID from SuperstaQ.
         """
         super().__init__(backend, job_id)
 
@@ -57,16 +50,14 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
                 elapsed = time.time() - start_time
 
                 if timeout and elapsed >= timeout:
-                    raise qiskit.providers.JobTimeoutError(
-                        "Timed out waiting for result"
-                    )  # pragma: no cover b/c don't want slow test or mocking time
+                    raise qiskit.providers.JobTimeoutError("Timed out waiting for result")
 
                 result = self._backend._provider._client.get_job(jid)
                 if result["status"] == "Done":
                     break
                 if result["status"] == "Error":
                     raise qiskit.providers.JobError("API returned error:\n" + str(result))
-                time.sleep(wait)  # pragma: no cover b/c don't want slow test or mocking time
+                time.sleep(wait)
             result_list.append(result)
         return result_list
 

@@ -38,6 +38,20 @@ def test_wait_for_results(backend: qss.SuperstaQBackend) -> None:
             _ = job._wait_for_results()
 
 
+def test_timeout(backend: qss.SuperstaQBackend) -> None:
+    job = qss.SuperstaQJob(backend=backend, job_id="123abc")
+
+    with pytest.raises(qiskit.providers.JobTimeoutError, match="Timed out waiting for result"):
+        _ = job._wait_for_results(timeout=-1.0)
+
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaQClient.get_job",
+        side_effect=[mock_response("Queued"), mock_response("Queued"), mock_response("Done")],
+    ) as mocked_get_job:
+        assert job._wait_for_results(wait=0.0) == [mock_response("Done")]
+        assert mocked_get_job.call_count == 3
+
+
 def test_result(backend: qss.SuperstaQBackend) -> None:
     job = qss.SuperstaQJob(backend=backend, job_id="123abc")
 
