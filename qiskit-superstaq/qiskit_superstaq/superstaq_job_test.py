@@ -2,6 +2,7 @@
 from typing import Dict, Union
 from unittest import mock
 
+import general_superstaq as gss
 import pytest
 import qiskit
 
