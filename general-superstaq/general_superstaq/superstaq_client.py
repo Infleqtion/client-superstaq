@@ -85,7 +85,7 @@ class _SuperstaQClient:
         assert max_retry_seconds >= 0, "Negative retry not possible without time machine."
 
         self.url = f"{url.scheme}://{url.netloc}/{api_version}"
-        self.verify_https: bool = f"{gss.API_URL}/{api_version}" == self.url
+        self.verify_https: bool = f"{gss.API_URL}/{self.api_version}" == self.url
         self.headers = {
             "Authorization": self.api_key,
             "Content-Type": "application/json",
