@@ -35,7 +35,7 @@ def compute_communication_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) ->
     graph = nx.Graph()
     for op in dag.two_qubit_ops():
         q1, q2 = op.qargs
-        graph.add_edge(q1.index, q2.index)
+        graph.add_edge(circuit.find_bit(q1).index, circuit.find_bit(q2).index)
 
     degree_sum = sum([graph.degree(n) for n in graph.nodes])
 
@@ -63,7 +63,7 @@ def compute_liveness_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> floa
     for i, layer in enumerate(dag.layers()):
         for op in layer["partition"]:
             for qubit in op:
-                activity_matrix[qubit.index, i] = 1
+                activity_matrix[circuit.find_bit(qubit).index, i] = 1
 
     return np.sum(activity_matrix) / (num_qubits * dag.depth())
 
