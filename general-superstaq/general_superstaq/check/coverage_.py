@@ -38,7 +38,7 @@ def run(  # pylint: disable=missing-function-docstring
         print("No test files to check for pytest and coverage.")
         return 0
 
-    if parsed_args.enable_socket:
+    if not parsed_args.enable_socket:
         pytest_args.append("--disable-socket")
 
     coverage_arg = "--include=" + ",".join(files)

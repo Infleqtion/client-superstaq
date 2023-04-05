@@ -56,16 +56,16 @@ def test_general_superstaq_not_found_exception_str() -> None:
     assert str(ex) == "Status code: 404, Message: 'err'"
 
 
-def test_superstaq_client_invalid_remote_host() -> None:
-    for invalid_url in ("", "url", "http://", "ftp://", "http://"):
-        with pytest.raises(AssertionError, match="not a valid url"):
-            _ = gss.superstaq_client._SuperstaQClient(
-                client_name="general-superstaq", remote_host=invalid_url, api_key="a"
-            )
-        with pytest.raises(AssertionError, match=invalid_url):
-            _ = gss.superstaq_client._SuperstaQClient(
-                client_name="general-superstaq", remote_host=invalid_url, api_key="a"
-            )
+@pytest.mark.parametrize("invalid_url", ("url", "http://", "ftp://", "http://"))
+def test_superstaq_client_invalid_remote_host(invalid_url: str) -> None:
+    with pytest.raises(AssertionError, match="not a valid url"):
+        _ = gss.superstaq_client._SuperstaQClient(
+            client_name="general-superstaq", remote_host=invalid_url, api_key="a"
+        )
+    with pytest.raises(AssertionError, match=invalid_url):
+        _ = gss.superstaq_client._SuperstaQClient(
+            client_name="general-superstaq", remote_host=invalid_url, api_key="a"
+        )
 
 
 def test_superstaq_client_invalid_api_version() -> None:
@@ -783,12 +783,13 @@ def test_find_api_key() -> None:
         assert gss.superstaq_client.find_api_key() == "tomyheart"
 
     # find key in a config file
-    with mock.patch("pathlib.Path.is_file", return_value=True):
-        with mock.patch("builtins.open", mock.mock_open(read_data="tomyheart")):
-            assert gss.superstaq_client.find_api_key() == "tomyheart"
+    with mock.patch.dict(os.environ, SUPERSTAQ_API_KEY=""):
+        with mock.patch("pathlib.Path.is_file", return_value=True):
+            with mock.patch("builtins.open", mock.mock_open(read_data="tomyheart")):
+                assert gss.superstaq_client.find_api_key() == "tomyheart"
 
     # fail to find an API key :(
     with pytest.raises(EnvironmentError, match="SuperstaQ API key not specified and not found."):
-        with mock.patch.dict(os.environ, {}):
+        with mock.patch.dict(os.environ, SUPERSTAQ_API_KEY=""):
             with mock.patch("pathlib.Path.is_file", return_value=False):
                 gss.superstaq_client.find_api_key()

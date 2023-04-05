@@ -12,16 +12,7 @@ import cirq_superstaq as css
 
 @pytest.fixture
 def service() -> css.Service:
-    try:
-        token = os.getenv("TEST_USER_TOKEN")
-    except KeyError as key:
-        raise KeyError(
-            f"To run the integration tests, please export to {key} your SuperstaQ API key which you"
-            " can get at superstaq.super.tech"
-        )
-
-    service = css.Service(token)
-    return service
+    return css.Service()
 
 
 def test_ibmq_compile(service: css.Service) -> None:
