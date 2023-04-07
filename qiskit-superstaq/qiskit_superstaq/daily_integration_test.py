@@ -219,3 +219,15 @@ def test_supercheq(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
     circuits, fidelities = provider.supercheq(files, num_qubits, depth)
     assert len(circuits) == 32
     assert fidelities.shape == (32, 32)
+
+
+def test_submit_to_cq_hilbert_simulator(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
+    backend = provider.get_backend("cq_hilbert_simulator")
+    qc = qiskit.QuantumCircuit(2, 2)
+    qc.x(0)
+    qc.cx(0, 1)
+    qc.measure(0, 0)
+    qc.measure(1, 1)
+
+    job = backend.run(qc, shots=1)
+    assert job.result().get_counts() == {"11": 1}
