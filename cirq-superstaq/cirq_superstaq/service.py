@@ -99,12 +99,46 @@ def counts_to_results(
     return result
 
 
-class InvalidInputError(Exception):
-    """Raise an exception when an input validation fails.
+def _validate_cirq_circuit(circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]]) -> None:
+    """Validates that the input is either a single `cirq.Circuit` or a list of `cirq.Circuit`
+    instances.
 
-    This exception is for methods in the Service class to indicate that one or more
-    input parameters provided to the method are invalid.
+    Args:
+        circuit: The circuit to run.
+
+    Raises:
+        ValueError: If the input is not a `cirq.Circuit` or a list of
+        `cirq.Circuit` instances.
     """
+    if not isinstance(circuits, (cirq.Circuit, Sequence)):
+        raise ValueError(
+            "Invalid 'circuits' input. Must be a `cirq.Circuit` or a sequence of `cirq.Circuit`"
+            "instances."
+        )
+    if isinstance(circuits, Sequence) and not all(
+        isinstance(circuit, cirq.Circuit) for circuit in circuits
+    ):
+        raise ValueError(
+            "Invalid 'circuits' input. All elements in the sequence must be `cirq.Circuit`"
+            "instances."
+        )
+
+
+def _validate_get_counts(repetitions: int) -> None:
+    """Validates that the number of repetitions is postive.
+
+    Args:
+        repetitions: The number of times to run the circuit.
+
+    Raises:
+        TypeError: If input is not an integer.
+        ValueError: If input is negative.
+    """
+    if repetitions != int(repetitions):
+        raise TypeError("Repetitions must be an integer type")
+
+    if repetitions <= 0:
+        raise ValueError("Repetitions (number of times to run circuit) must be a postive integer.")
 
 
 class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
@@ -176,46 +210,6 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
         return target
 
-    def _validate_cirq_circuit(self, circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]]) -> None:
-        """Validates that the input is either a single cirq.Circuit or a list of cirq.Circuit
-        instances.
-
-        Args:
-            circuit: The circuit to run.
-
-        Raises:
-            InvalidInputError: If the 'circuits' input is not a cirq.Circuit or a list of
-            cirq.Circuit instances.
-            InvalidInputError: If the 'circuits' input is a list containing elements that
-            are not cirq.Circuit instances.
-        """
-        if not isinstance(circuits, (cirq.Circuit, Sequence)):
-            raise InvalidInputError(
-                "Invalid 'circuits' input. Must be a cirq.Circuit or a sequence of cirq.Circuit"
-                "instances."
-            )
-        if isinstance(circuits, Sequence) and not all(
-            isinstance(circuit, cirq.Circuit) for circuit in circuits
-        ):
-            raise InvalidInputError(
-                "Invalid 'circuits' input. All elements in the sequence must be cirq.Circuit"
-                "instances."
-            )
-
-    def _validate_get_counts(self, repetitions: int) -> None:
-        """Validates that the number of repetitions is non-negative.
-
-        Args:
-            repetitions: The number of times to run the circuit.
-
-        Raises:
-            InvalidInputError: If input repetitions is negative.
-        """
-        if repetitions < 0:
-            raise InvalidInputError(
-                "Repetitions (number of times to run circuit) must be a non-negative integer."
-            )
-
     def get_counts(
         self,
         circuit: cirq.Circuit,
@@ -239,7 +233,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Returns:
             A `collection.Counter` for running the circuit.
         """
-        self._validate_get_counts(repetitions)
+        _validate_get_counts(repetitions)
         resolved_circuit = cirq.protocols.resolve_parameters(circuit, param_resolver)
         job = self.create_job(resolved_circuit, repetitions, target, method, options)
         counts = job.counts()
@@ -421,10 +415,10 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Returns:
             Object whose .circuit(s) attribute is an optimized cirq Circuit(s)
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the optimized cirq.Circuit(s) and the
+            pulse sequence corresponding to the optimized `cirq.Circuit`(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
         """
-        self._validate_cirq_circuit(circuits)
+        _validate_cirq_circuit(circuits)
         return self._aqt_compile(
             circuits,
             target=target,
@@ -469,12 +463,10 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
                 pulse sequence corresponding to the cirq.Circuits and the .pulse_lists attribute is
                 the list(s) of cycles.
         """
-        self._validate_cirq_circuit(circuits)
+        _validate_cirq_circuit(circuits)
 
         if num_equivalent_circuits <= 0:
-            raise InvalidInputError(
-                "The number of equivalent circuits must be an integer greater than 0."
-            )
+            raise ValueError("The number of equivalent circuits must be an integer greater than 0.")
 
         return self._aqt_compile(
             circuits,
@@ -550,7 +542,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             and a list of jaqal programs represented as strings
         """
 
-        self._validate_cirq_circuit(circuits)
+        _validate_cirq_circuit(circuits)
 
         if base_entangling_gate not in ("xx", "zz"):
             raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
@@ -581,7 +573,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Returns:
             object whose .circuit(s) attribute is an optimized cirq Circuit(s)
         """
-        self._validate_cirq_circuit(circuits)
+        _validate_cirq_circuit(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
@@ -598,7 +590,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
         Qiskit Terra must be installed to correctly deserialize the returned pulse schedule.
         """
-        self._validate_cirq_circuit(circuits)
+        _validate_cirq_circuit(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
