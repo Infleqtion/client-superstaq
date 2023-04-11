@@ -25,12 +25,31 @@ from general_superstaq import ResourceEstimate, finance, logistics, superstaq_cl
 import qiskit_superstaq as qss
 
 
-class InvalidInputError(Exception):
-    """Raise an exception when an input validation fails.
+def _validate_qiskit_circuit(
+    circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]]
+) -> None:
+    """Validates that the input is either a single `qiskit.QuantumCircuit` or a list of
+    `qiskit.QuantumCircuit` instances.
 
-    This exception is for methods in the Service class to indicate that one or more
-    input parameters provided to the method are invalid.
+    Args:
+        circuit: The circuit to run.
+
+    Raises:
+        ValueError: If the input is not a `qiskit.QuantumCircuit` or
+        a list of `qiskit.QuantumCircuit` instances.
     """
+    if not isinstance(circuits, (qiskit.QuantumCircuit, Sequence)):
+        raise ValueError(
+            "Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a sequence "
+            "of `qiskit.QuantumCircuit` instances."
+        )
+    if isinstance(circuits, Sequence) and not all(
+        isinstance(circuit, qiskit.QuantumCircuit) for circuit in circuits
+    ):
+        raise ValueError(
+            "Invalid 'circuits' input. All elements in the sequence must be "
+            "`qiskit.QuantumCircuit` instances."
+        )
 
 
 class SuperstaQProvider(
@@ -116,42 +135,6 @@ class SuperstaQProvider(
             backends.append(self.get_backend(target))
         return backends
 
-    def _http_headers(self) -> Dict[str, str]:
-        return {
-            "Authorization": self.get_access_token(),
-            "Content-Type": "application/json",
-            "X-Client-Name": "qiskit-superstaq",
-            "X-Client-Version": gss.API_VERSION,
-        }
-
-    def _validate_qiskit_circuit(
-        self, circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]]
-    ) -> None:
-        """Validates that the input is either a single qiskit.QuantumCircuit or a list of
-        qiskit.QuantumCircuit instances.
-
-        Args:
-            circuit: The circuit to run.
-
-        Raises:
-            InvalidInputError: If the 'circuits' input is not a qiskit.QuantumCircuit or
-            a list of qiskit.QuantumCircuit instances.
-            InvalidInputError: If the 'circuits' input is a list containing elements that
-            are not qiskit.QuantumCircuit instances.
-        """
-        if not isinstance(circuits, (qiskit.QuantumCircuit, Sequence)):
-            raise InvalidInputError(
-                "Invalid 'circuits' input. Must be a qiskit.QuantumCircuit or a sequence "
-                "of qiskit.QuantumCircuit instances."
-            )
-        if isinstance(circuits, Sequence) and not all(
-            isinstance(circuit, qiskit.QuantumCircuit) for circuit in circuits
-        ):
-            raise InvalidInputError(
-                "Invalid 'circuits' input. All elements in the sequence must be "
-                "qiskit.QuantumCircuit instances."
-            )
-
     def resource_estimate(
         self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]], target: str
     ) -> Union[ResourceEstimate, List[ResourceEstimate]]:
@@ -164,7 +147,7 @@ class SuperstaQProvider(
             ResourceEstimate(s) containing resource costs (after compilation)
             for running circuit(s) on target.
         """
-        self._validate_qiskit_circuit(circuits)
+        _validate_qiskit_circuit(circuits)
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuit_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
@@ -198,10 +181,10 @@ class SuperstaQProvider(
         Returns:
             Object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the optimized qiskit.QuantumCircuit(s) and the
+            pulse sequence corresponding to the optimized `qiskit.QuantumCircuit`(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
         """
-        self._validate_qiskit_circuit(circuits)
+        _validate_qiskit_circuit(circuits)
 
         if not target.startswith("aqt_"):
             raise ValueError(f"{target} is not an AQT target")
@@ -249,7 +232,7 @@ class SuperstaQProvider(
             pulse sequence corresponding to the QuantumCircuits and the .pulse_lists attribute is
             the list(s) of cycles.
         """
-        self._validate_qiskit_circuit(circuits)
+        _validate_qiskit_circuit(circuits)
         if not target.startswith("aqt_"):
             raise ValueError(f"{target} is not an AQT target")
 
@@ -280,7 +263,7 @@ class SuperstaQProvider(
     ) -> qss.compiler_output.CompilerOutput:
         """Returns pulse schedule(s) for the given circuit(s) and target."""
 
-        self._validate_qiskit_circuit(circuits)
+        _validate_qiskit_circuit(circuits)
         if not target.startswith("ibmq_"):
             raise ValueError(f"{target} is not an IBMQ target")
 
@@ -317,10 +300,10 @@ class SuperstaQProvider(
         Returns:
             object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the optimized qiskit.QuantumCircuit(s) and the
+            pulse sequence corresponding to the optimized `qiskit.QuantumCircuit`(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
         """
-        self._validate_qiskit_circuit(circuits)
+        _validate_qiskit_circuit(circuits)
         if not target.startswith("sandia_"):
             raise ValueError(f"{target} is not a QSCOUT target")
 
@@ -354,7 +337,7 @@ class SuperstaQProvider(
         Returns:
             object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
         """
-        self._validate_qiskit_circuit(circuits)
+        _validate_qiskit_circuit(circuits)
         if not target.startswith("cq_"):
             raise ValueError(f"{target} is not a CQ target")
 
