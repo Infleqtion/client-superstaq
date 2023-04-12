@@ -14,7 +14,7 @@
 
 import json
 import os
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -25,30 +25,27 @@ from general_superstaq import ResourceEstimate, finance, logistics, superstaq_cl
 import qiskit_superstaq as qss
 
 
-def _validate_qiskit_circuit(
-    circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]]
-) -> None:
+def _validate_qiskit_circuit(circuits: Any) -> None:
     """Validates that the input is either a single `qiskit.QuantumCircuit` or a list of
     `qiskit.QuantumCircuit` instances.
 
     Args:
-        circuit: The circuit to run.
+        circuits: The circuit to run.
 
     Raises:
         ValueError: If the input is not a `qiskit.QuantumCircuit` or
         a list of `qiskit.QuantumCircuit` instances.
     """
-    if not isinstance(circuits, (qiskit.QuantumCircuit, Sequence)):
-        raise ValueError(
-            "Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a sequence "
-            "of `qiskit.QuantumCircuit` instances."
+    if not (
+        isinstance(circuits, qiskit.QuantumCircuit)
+        or (
+            isinstance(circuits, Sequence)
+            and all(isinstance(circuit, qiskit.QuantumCircuit) for circuit in circuits)
         )
-    if isinstance(circuits, Sequence) and not all(
-        isinstance(circuit, qiskit.QuantumCircuit) for circuit in circuits
     ):
         raise ValueError(
-            "Invalid 'circuits' input. All elements in the sequence must be "
-            "`qiskit.QuantumCircuit` instances."
+            "Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a "
+            "sequence of `qiskit.QuantumCircuit` instances."
         )
 
 
