@@ -64,6 +64,37 @@ def test_counts_to_results() -> None:
     assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
 
 
+def test_validate_cirq_circuit() -> None:
+    qubits = [cirq.LineQubit(i) for i in range(2)]
+    circuit = cirq.Circuit(cirq.H(qubits[0]), cirq.CNOT(qubits[0], qubits[1]))
+
+    with pytest.raises(
+        ValueError,
+        match="Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
+        "sequence of `cirq.Circuit` instances.",
+    ):
+        css.service._validate_cirq_circuit("circuit_invalid")
+
+    with pytest.raises(
+        ValueError,
+        match="Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
+        "sequence of `cirq.Circuit` instances.",
+    ):
+        css.service._validate_cirq_circuit([circuit, "circuit_invalid"])
+
+
+def test_validate_get_counts() -> None:
+
+    with pytest.raises(TypeError, match="Repetitions must be an integer."):
+        css.service._validate_get_counts("invalid_input")
+
+    with pytest.raises(
+        ValueError,
+        match=r"Repetitions \(number of times to run circuit\) must be a positive integer.",
+    ):
+        css.service._validate_get_counts(-1)
+
+
 def test_service_resolve_target() -> None:
     service = css.Service(api_key="key", default_target="ss_bar_qpu")
     assert service._resolve_target("ss_foo_qpu") == "ss_foo_qpu"
