@@ -14,6 +14,26 @@ from general_superstaq import ResourceEstimate
 import qiskit_superstaq as qss
 
 
+def test_validate_qiskit_circuit() -> None:
+    qc = qiskit.QuantumCircuit(2)
+    qc.h(0)
+    qc.cx(0, 1)
+
+    with pytest.raises(
+        ValueError,
+        match="Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a sequence "
+        "of `qiskit.QuantumCircuit` instances.",
+    ):
+        qss.superstaq_provider._validate_qiskit_circuit("invalid_qc_input")
+
+    with pytest.raises(
+        ValueError,
+        match="Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a "
+        "sequence of `qiskit.QuantumCircuit` instances.",
+    ):
+        qss.superstaq_provider._validate_qiskit_circuit([qc, "invalid_qc_input"])
+
+
 @patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
 def test_provider() -> None:
     ss_provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
