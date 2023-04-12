@@ -360,6 +360,15 @@ def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None
 )
 def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
+
+    with pytest.raises(
+        ValueError,
+        match="The number of equivalent circuits must be an integer greater than 0.",
+    ):
+        service.aqt_compile_eca(
+            cirq.Circuit(), num_equivalent_circuits=-1, random_seed=1234, atol=1e-2
+        )
+
     out = service.aqt_compile_eca(
         cirq.Circuit(), num_equivalent_circuits=1, random_seed=1234, atol=1e-2
     )
