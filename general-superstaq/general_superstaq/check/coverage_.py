@@ -28,7 +28,7 @@ def run(  # pylint: disable=missing-function-docstring
 
     parser.add_argument("--enable-socket", action="store_true", help="Force-enable socket.")
 
-    parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
+    parsed_args, pytest_args = parser.parse_known_intermixed_args(args)
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     silent = silent or not (parsed_args.files or parsed_args.revisions)
@@ -38,11 +38,12 @@ def run(  # pylint: disable=missing-function-docstring
         print("No test files to check for pytest and coverage.")
         return 0
 
-    pytest_args = ["--disable-socket"] if not parsed_args.enable_socket else []
+    if not parsed_args.enable_socket:
+        pytest_args.append("--disable-socket")
 
-    args_to_pass.append("--include=" + ",".join(files))
+    coverage_arg = "--include=" + ",".join(files)
     test_returncode = subprocess.call(
-        ["coverage", "run", *args_to_pass, "-m", "pytest", *test_files, *pytest_args],
+        ["coverage", "run", coverage_arg, "-m", "pytest", *test_files, *pytest_args],
         cwd=check_utils.root_dir,
     )
 

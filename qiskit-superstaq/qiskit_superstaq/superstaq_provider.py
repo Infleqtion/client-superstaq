@@ -100,13 +100,11 @@ class SuperstaQProvider(
         verbose: bool = False,
     ) -> None:
         self._name = "superstaq_provider"
-        self.api_key = api_key or gss.superstaq_client.find_api_key()
-        self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
 
         self._client = superstaq_client._SuperstaQClient(
             client_name="qiskit-superstaq",
-            remote_host=self.remote_host,
-            api_key=self.api_key,
+            remote_host=remote_host,
+            api_key=api_key,
             api_version=api_version,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
@@ -116,14 +114,11 @@ class SuperstaQProvider(
         return f"<SuperstaQProvider {self._name}>"
 
     def __repr__(self) -> str:
-        repr1 = f"<SuperstaQProvider(api_key={self.api_key}, "
+        repr1 = f"<SuperstaQProvider(api_key={self._client.api_key}, "
         return repr1 + f"name={self._name})>"
 
     def get_backend(self, target: str) -> qss.SuperstaQBackend:
-        return qss.SuperstaQBackend(provider=self, remote_host=self.remote_host, target=target)
-
-    def get_access_token(self) -> str:  # pylint: disable=missing-function-docstring
-        return self.api_key
+        return qss.SuperstaQBackend(provider=self, target=target)
 
     def backends(self) -> List[qss.SuperstaQBackend]:
         targets = self._client.get_targets()["superstaq_targets"]

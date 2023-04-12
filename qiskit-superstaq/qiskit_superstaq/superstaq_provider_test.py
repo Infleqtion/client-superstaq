@@ -42,11 +42,7 @@ def test_provider() -> None:
         qss.SuperstaQProvider()
 
     assert str(ss_provider.get_backend("ibmq_qasm_simulator")) == str(
-        qss.SuperstaQBackend(
-            provider=ss_provider,
-            remote_host=gss.API_URL,
-            target="ibmq_qasm_simulator",
-        )
+        qss.SuperstaQBackend(provider=ss_provider, target="ibmq_qasm_simulator")
     )
 
     assert str(ss_provider) == "<SuperstaQProvider superstaq_provider>"
@@ -80,9 +76,7 @@ def test_provider() -> None:
 
     expected_backends = []
     for target in targets["superstaq_targets"]["compile-and-run"]:
-        expected_backends.append(
-            qss.SuperstaQBackend(provider=ss_provider, remote_host=gss.API_URL, target=target)
-        )
+        expected_backends.append(qss.SuperstaQBackend(provider=ss_provider, target=target))
 
     mock_client = MagicMock()
     mock_client.get_targets.return_value = targets

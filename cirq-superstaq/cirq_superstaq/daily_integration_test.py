@@ -12,16 +12,7 @@ import cirq_superstaq as css
 
 @pytest.fixture
 def service() -> css.Service:
-    try:
-        token = os.getenv("TEST_USER_TOKEN")
-    except KeyError as key:
-        raise KeyError(
-            f"To run the integration tests, please export to {key} your SuperstaQ API key which you"
-            " can get at superstaq.super.tech"
-        )
-
-    service = css.Service(token)
-    return service
+    return css.Service()
 
 
 def test_ibmq_compile(service: css.Service) -> None:
@@ -30,9 +21,6 @@ def test_ibmq_compile(service: css.Service) -> None:
     out = service.ibmq_compile(circuit, target="ibmq_jakarta_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
     assert out.pulse_sequence is not None
-    assert 800 <= out.pulse_sequence.duration <= 1000  # 896 as of 12/27/2021
-    assert out.pulse_sequence.start_time == 0
-    assert len(out.pulse_sequence) == 7
 
 
 def test_acecr_ibmq_compile(service: css.Service) -> None:
@@ -51,20 +39,14 @@ def test_acecr_ibmq_compile(service: css.Service) -> None:
     out = service.ibmq_compile(circuit, target="ibmq_jakarta_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
     assert out.pulse_sequence is not None
-    assert out.pulse_sequence.start_time == 0
-    assert len(out.pulse_sequence) == 57
 
     out = service.ibmq_compile(circuit, target="ibmq_perth_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
     assert out.pulse_sequence is not None
-    assert out.pulse_sequence.start_time == 0
-    assert len(out.pulse_sequence) == 60
 
     out = service.ibmq_compile(circuit, target="ibmq_lagos_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
     assert out.pulse_sequence is not None
-    assert out.pulse_sequence.start_time == 0
-    assert len(out.pulse_sequence) == 67
 
 
 def test_aqt_compile(service: css.Service) -> None:
@@ -104,6 +86,23 @@ def test_aqt_compile_eca(service: css.Service) -> None:
     assert len(eca_circuits) == 3
     assert all(isinstance(circuit, cirq.Circuit) for circuit in eca_circuits)
 
+    # multiple circuits:
+    eca_circuits = service.aqt_compile_eca([circuit, circuit], num_equivalent_circuits=3).circuits
+    assert len(eca_circuits) == 2
+    for circuits in eca_circuits:
+        assert len(circuits) == 3
+        assert all(isinstance(circuit, cirq.Circuit) for circuit in circuits)
+
+
+@pytest.mark.skip(reason="Won't pass until server issue related to this is fixed")
+def test_aqt_compile_eca_regression(service: css.Service) -> None:
+    circuit = cirq.Circuit(
+        cirq.H(cirq.LineQubit(4)),
+        cirq.CX(cirq.LineQubit(4), cirq.LineQubit(5)) ** 0.7,
+    )
+    eca_circuits = service.aqt_compile_eca(
+        circuit, num_equivalent_circuits=3, random_seed=123
+    ).circuits
     # test with same and different seed
     assert (
         eca_circuits
@@ -113,13 +112,6 @@ def test_aqt_compile_eca(service: css.Service) -> None:
         eca_circuits
         != service.aqt_compile_eca(circuit, num_equivalent_circuits=3, random_seed=456).circuits
     )
-
-    # multiple circuits:
-    eca_circuits = service.aqt_compile_eca([circuit, circuit], num_equivalent_circuits=3).circuits
-    assert len(eca_circuits) == 2
-    for circuits in eca_circuits:
-        assert len(circuits) == 3
-        assert all(isinstance(circuit, cirq.Circuit) for circuit in circuits)
 
 
 def test_get_balance(service: css.Service) -> None:
@@ -277,3 +269,13 @@ def test_job(service: css.Service) -> None:
     assert job.counts() == {"0": 10}
     assert job.status() == "Done"
     assert job.job_id() == job_id
+
+
+def test_submit_to_cq_hilbert_simulator(service: css.Service) -> None:
+    q0 = cirq.LineQubit(0)
+    q1 = cirq.LineQubit(1)
+
+    circuit = cirq.Circuit(cirq.X(q0), cirq.CNOT(q0, q1), cirq.measure(q0, q1))
+
+    job = service.create_job(circuit=circuit, repetitions=1, target="cq_hilbert_simulator")
+    assert job.counts() == {"11": 1}

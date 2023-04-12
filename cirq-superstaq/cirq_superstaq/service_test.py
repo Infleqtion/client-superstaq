@@ -566,13 +566,13 @@ def test_service_supercheq(mock_supercheq: mock.MagicMock) -> None:
 @mock.patch.dict(os.environ, {"SUPERSTAQ_API_KEY": "tomyheart"})
 def test_service_api_key_via_env() -> None:
     service = css.Service(remote_host="http://example.com")
-    assert service.api_key == "tomyheart"
+    assert service._client.api_key == "tomyheart"
 
 
 @mock.patch.dict(os.environ, {"SUPERSTAQ_REMOTE_HOST": "http://example.com"})
 def test_service_remote_host_via_env() -> None:
     service = css.Service("tomyheart")
-    assert service.remote_host == "http://example.com"
+    assert service._client.remote_host == "http://example.com"
 
 
 @mock.patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
@@ -584,4 +584,4 @@ def test_service_no_param_or_env_variable() -> None:
 @mock.patch.dict(os.environ, clear=True)
 def test_service_no_url_default() -> None:
     service = css.Service("tomyheart")
-    assert service.remote_host == gss.API_URL
+    assert service._client.remote_host == gss.API_URL
