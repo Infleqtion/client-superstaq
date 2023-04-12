@@ -99,33 +99,34 @@ def counts_to_results(
     return result
 
 
-def _validate_cirq_circuit(circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]]) -> None:
+def _validate_cirq_circuit(circuits: Any) -> None:
     """Validates that the input is either a single `cirq.Circuit` or a list of `cirq.Circuit`
     instances.
 
     Args:
-        circuit: The circuit to run.
+        circuits: The circuit to run.
 
     Raises:
         ValueError: If the input is not a `cirq.Circuit` or a list of
         `cirq.Circuit` instances.
     """
-    if not isinstance(circuits, (cirq.Circuit, Sequence)):
-        raise ValueError(
-            "Invalid 'circuits' input. Must be a `cirq.Circuit` or a sequence of `cirq.Circuit`"
-            "instances."
+
+    if not (
+        isinstance(circuits, cirq.Circuit)
+        or (
+            isinstance(circuits, Sequence)
+            and all(isinstance(circuit, cirq.Circuit) for circuit in circuits)
         )
-    if isinstance(circuits, Sequence) and not all(
-        isinstance(circuit, cirq.Circuit) for circuit in circuits
     ):
         raise ValueError(
-            "Invalid 'circuits' input. All elements in the sequence must be `cirq.Circuit`"
-            "instances."
+            "Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
+            "sequence of `cirq.Circuit` instances."
         )
 
 
-def _validate_get_counts(repetitions: int) -> None:
-    """Validates that the number of repetitions is postive.
+def _validate_get_counts(repetitions: Any) -> None:
+    """Validates that the number of repetitions is positive an
+    integer.
 
     Args:
         repetitions: The number of times to run the circuit.
@@ -134,11 +135,16 @@ def _validate_get_counts(repetitions: int) -> None:
         TypeError: If input is not an integer.
         ValueError: If input is negative.
     """
-    if repetitions != int(repetitions):
-        raise TypeError("Repetitions must be an integer type")
 
-    if repetitions <= 0:
-        raise ValueError("Repetitions (number of times to run circuit) must be a postive integer.")
+    if not (
+        (isinstance(repetitions, int))
+        or (isinstance(repetitions, float) and repetitions.is_integer())
+        or (isinstance(repetitions, str) and repetitions.isdigit())
+    ):
+        raise TypeError("Repetitions must be an integer.")
+
+    if int(repetitions) <= 0:
+        raise ValueError("Repetitions (number of times to run circuit) must be a positive integer.")
 
 
 class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
@@ -234,8 +240,9 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             A `collection.Counter` for running the circuit.
         """
         _validate_get_counts(repetitions)
+        _validate_cirq_circuit(circuit)
         resolved_circuit = cirq.protocols.resolve_parameters(circuit, param_resolver)
-        job = self.create_job(resolved_circuit, repetitions, target, method, options)
+        job = self.create_job(resolved_circuit, int(repetitions), target, method, options)
         counts = job.counts()
 
         return counts
