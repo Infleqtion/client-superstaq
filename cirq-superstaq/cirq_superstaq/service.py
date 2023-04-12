@@ -236,8 +236,8 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Returns:
             A `collection.Counter` for running the circuit.
         """
-        _validate_get_counts(repetitions)
         _validate_cirq_circuit(circuit)
+        _validate_get_counts(repetitions)
         resolved_circuit = cirq.protocols.resolve_parameters(circuit, param_resolver)
         job = self.create_job(resolved_circuit, int(repetitions), target, method, options)
         counts = job.counts()
@@ -496,6 +496,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         """Generic API for compiling circuits for AQT devices. See `Service.aqt_compile()` and
         `Service.aqt_compile_eca()`.
         """
+        _validate_cirq_circuit(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
