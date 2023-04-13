@@ -75,7 +75,7 @@ def get_tracked_files(include: Union[str, Iterable[str]]) -> List[str]:
 
 
 def existing_files(files: Iterable[str]) -> List[str]:
-    """Return the subset of `files` which actually exist."""
+    """Returns the subset of `files` which actually exist."""
     return [file for file in files if os.path.isfile(os.path.join(root_dir, file))]
 
 
