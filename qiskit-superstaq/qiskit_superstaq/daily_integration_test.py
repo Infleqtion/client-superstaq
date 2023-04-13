@@ -221,7 +221,7 @@ def test_supercheq(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
     assert fidelities.shape == (32, 32)
 
 
-def test_submit_to_cq_hilbert_simulator(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
+def test_submit_to_provider_simulators(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
 
     qc = qiskit.QuantumCircuit(2, 2)
     qc.x(0)
