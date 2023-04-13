@@ -74,6 +74,11 @@ def get_tracked_files(include: Union[str, Iterable[str]]) -> List[str]:
     return _check_output("git", "ls-files", "--deduplicate", *include).splitlines()
 
 
+def existing_files(files: Iterable[str]) -> List[str]:
+    """Return the subset of files which actually exist."""
+    return [file for file in files if os.path.isfile(os.path.join(root_dir, file))]
+
+
 def exclude_files(files: Iterable[str], exclude: Union[str, Iterable[str]]) -> List[str]:
     """Returns the files which don't match any of the globs in exclude."""
 
@@ -266,6 +271,7 @@ def extract_files(
 
     if globs or not parsed_args.files:
         tracked_files = get_tracked_files(include)
+        tracked_files = existing_files(tracked_files)
         tracked_files = exclude_files(tracked_files, exclude)
         if globs:
             tracked_files = select_files(tracked_files, globs)
