@@ -229,5 +229,15 @@ def test_submit_to_cq_hilbert_simulator(provider: qss.superstaq_provider.Superst
     qc.measure(0, 0)
     qc.measure(1, 1)
 
+    result = {"11": 1}
+
     job = backend.run(qc, shots=1)
-    assert job.result().get_counts() == {"11": 1}
+    assert job.result().get_counts() == result
+
+    backend = provider.get_backend("aws_sv1_simulator")
+    job = backend.run(qc, shots=1)
+    assert job.result().get_counts() == result
+
+    backend = provider.get_backend("ibmq_qasm_simulator")
+    job = backend.run(qc, shots=1)
+    assert job.result().get_counts() == result

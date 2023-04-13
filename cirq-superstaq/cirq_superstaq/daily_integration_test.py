@@ -277,5 +277,13 @@ def test_submit_to_cq_hilbert_simulator(service: css.Service) -> None:
 
     circuit = cirq.Circuit(cirq.X(q0), cirq.CNOT(q0, q1), cirq.measure(q0, q1))
 
+    result = {"11": 1}
+
     job = service.create_job(circuit=circuit, repetitions=1, target="cq_hilbert_simulator")
-    assert job.counts() == {"11": 1}
+    assert job.counts() == result
+
+    job = service.create_job(circuit=circuit, repetitions=1, target="aws_sv1_simulator")
+    assert job.counts() == result
+
+    job = service.create_job(circuit=circuit, repetitions=1, target="ibmq_qasm_simulator")
+    assert job.counts() == result
