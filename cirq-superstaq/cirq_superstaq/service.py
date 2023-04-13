@@ -124,8 +124,8 @@ def _validate_cirq_circuit(circuits: Any) -> None:
 
 
 def _validate_get_counts(repetitions: Any) -> None:
-    """Validates that the number of repetitions is positive an
-    integer.
+    """Validates that the number of repetitions is positive and
+    an integer.
 
     Args:
         repetitions: The number of times to run the circuit.
