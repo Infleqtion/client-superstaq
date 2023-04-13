@@ -85,8 +85,11 @@ def test_validate_cirq_circuit() -> None:
 
 def test_validate_get_counts() -> None:
 
-    with pytest.raises(TypeError, match="Repetitions must be an integer."):
-        css.service._validate_get_counts("invalid_input")
+    invalid_inputs = ["reps", 1.5, "1.5", {1}, [1, 2, 3]]
+
+    for input_value in invalid_inputs:
+        with pytest.raises(TypeError, match="Repetitions must be an integer."):
+            css.service._validate_get_counts(input_value)
 
     with pytest.raises(
         ValueError,
