@@ -479,10 +479,11 @@ def test_service_cq_compile_single(mock_cq_compile: mock.MagicMock) -> None:
     mock_cq_compile.return_value = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
+        "options": {"fake": True},
     }
 
     service = css.Service(api_key="key", remote_host="http://example.com")
-    out = service.cq_compile(circuit)
+    out = service.cq_compile(circuit, options={"fake": True})
     assert out.circuit == circuit
     assert out.final_logical_to_physical == final_logical_to_physical
 

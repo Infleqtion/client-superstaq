@@ -509,22 +509,27 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         return css.compiler_output.read_json_qscout(json_dict, circuits_is_list)
 
     def cq_compile(
-        self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "cq_hilbert_qpu"
+        self,
+        circuits: Union[cirq.Circuit, List[cirq.Circuit]],
+        target: str = "cq_hilbert_qpu",
+        options: Optional[Dict[str, Any]] = None,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to given target CQ device, optimized to its native gate
         set.
 
         Args:
             circuits: cirq Circuit(s) with operations on qubits 0 and 1.
-            target: string of target target CQ device.
+            target: string of target CQ device.
+            options: dictionary of desired cq_compile options.
         Returns:
             object whose .circuit(s) attribute is an optimized cirq Circuit(s)
         """
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
+        options = {} if options is None else options
 
         json_dict = self._client.cq_compile(
-            {"cirq_circuits": serialized_circuits, "target": target}
+            {"cirq_circuits": serialized_circuits, "target": target, "options": options}
         )
 
         return css.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
