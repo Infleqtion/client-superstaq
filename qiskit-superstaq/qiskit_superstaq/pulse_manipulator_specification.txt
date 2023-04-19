@@ -1,0 +1,85 @@
+PULSE MANIPULATOR
+====================================================================================================
+An abstraction layer for qiskit.pulse.Schedule, allowing more precise manipulation.
+
+Essentially allows users to "point" to parts of a pulse schedule and manipulate them at will, without dealing with unwieldy methods to replace, insert, etc.; in particular wihout needing to inspect the corresponding list of instructions (e.g., it can be difficult to discern which instruction object corresponds to which visual pulse).
+
+
+STRUCTURE:
+----------------------------------------------------------------------------------------------------
+- store a map from instruction ID (an integer) to instruction pulse waveform in visualization
+- updates ID-to-instruction map every time schedule is altered
+
+
+METHODS: (*more or less inherited)
+----------------------------------------------------------------------------------------------------
+duration: get schedule / inst duration (in units of dt)
+
+get_start/stop_time: get schedule / inst start/stop time
+
+name: get schedule / inst name
+
+(*) draw: visualizes schedule
+
+append: adds instruction to end of scheudle (LT: option to add before measurements)
+
+(*) insert: additionally allows inserting at a given start time regardless of subsequent overlaps (i.e., *after* the insertion point -- still blocks inserting in the middle of an instruction)
+
+(*) replace: given instruction ID and instruction object (or "negate" parameter is set), replace inst corresponding to ID with given instruction (or negate it); unlike qiskit, allows replacing with larger or smaller instructions, along with a "tight" parameter for the latter ("tight" should default to True) 
+
+(*) shift: defaults to qiskit given an int param (shift entire schedule); additionally implements shifting individual insts (pushing all subsequent insts) or channels
+
+
+reset: resets to original schedule used to initialize PM object
+
+_update: updates PM schedule (inplace or out-of-place); used for all methods that change pulse schedule
+
+set_backend: necessary for inserting, which requires knowledge about which drive and control channels coincide (so as not overlap instructions)
+
+get_instruction_pulse: gets pulse waveform from instruction corresponding to given ID, e.g., particularly useful for instructions on a phase-shifted channel (i.e., following a virtual Z) to see what the actual un-shifted pulse is
+
+get_instruction_samples: gets array of waveform samples
+
+get_qiskit_schedule: returns copy of underlying qiskit pulse schedule (ideally, w/o added unique IDs, which may affect how IBMQ backends recognize the pulses?)
+
+_set_id_to_instruction_map: builds a map from instruction ID (an integer) to instruction pulse waveform in visualization
+
+_get_waveform_label: gets LaTeX name corresponding to instruction, with or without an optional unique integer ID
+
+_extract_instruction: ???
+
+_get_coinciding_channels_map: ???
+
+_get_coinciding_channels: ???; return the singleton of the given input channel if there are no coinciding channels set, so users can use PM w/o providing a backend, however print UserWarning and set some flag s.t. when a backend is provided, warn user again and include option to reorganize the schedule, LT)
+
+_find_insertion_point: ???
+
+_perform_insertion: ???
+
+
+
+LONG-TERM (i.e., not necessary before 1/17) (LT):
+---------------------------------------------------------------------------------------------------
+* figure out how to handle virtual Z; label it or ignore it? Probably nice to allow removing or adding virtual Zs, but should be careful about how pulse schedule changes...
+
+* get_instruction: return copy of requested instruction (given ID)
+
+* extract native instruction pulses for given backend (i.e., from ISM -- direct instructions and maybe even individual pulses extracted from instructions); also allow printing list of native instructions and allow passing in any of these as an argument rather than an instruction object (-> visualize these pulses all together somehow...)
+
+    - get_native_gates
+
+* store history of changes in a recoverable way (perhaps list of str of Schedule, with function to build schedule from str)
+
+Methods
+
+- get_pulse_gates_circuit:
+
+- apply_to_qubit: given instruction, qubit #, and insertion point (time in dts), insert inst
+
+- measure / remove_measurement
+
+- get/set_parameters:
+
+- copy:
+
+- reset_qubit: add a reset pulse (consider renaming reset method so I can use that name here...)
