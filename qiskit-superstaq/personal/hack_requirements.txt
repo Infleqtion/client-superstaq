@@ -1,0 +1,3 @@
+pulser~=0.11.1
+qutip~=4.7.1
+pillow~=9.5.0
