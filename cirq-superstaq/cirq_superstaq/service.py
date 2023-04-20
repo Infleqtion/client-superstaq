@@ -352,6 +352,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         gate_defs: Optional[
             Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
         ] = None,
+        options: Optional[Dict[str, Any]] = None,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to target AQT device, optimized to its native gate set.
 
@@ -366,6 +367,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
                 implies css.CZ3 for all "CZ3/*" calibrations except "CZ3/C5T4", which will be
                 mapped to a css.CZ3_INV on qutrits (4, 5). Setting any calibration to None will
                 disable that calibration.
+            options: dictionary of desired aqt_compile options.
         Returns:
             Object whose .circuit(s) attribute is an optimized cirq Circuit(s)
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
@@ -378,6 +380,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             target=target,
             atol=atol,
             gate_defs=gate_defs,
+            options=options,
         )
 
     def aqt_compile_eca(
@@ -390,6 +393,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         gate_defs: Optional[
             Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
         ] = None,
+        options: Optional[Dict[str, Any]] = None,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to target AQT device with Equivalent Circuit Averaging
         (ECA).
@@ -410,6 +414,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
                 implies css.CZ3 for all "CZ3/*" calibrations except "CZ3/C5T4", which will be
                 mapped to a css.CZ3_INV on qutrits (4, 5). Setting any calibration to None will
                 disable that calibration.
+            options: dictionary of desired aqt_compile options.
         Returns:
             Object whose .circuits attribute is a list (or list of lists) of logically equivalent
                 cirq Circuit(s).
@@ -425,6 +430,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             random_seed=random_seed,
             atol=atol,
             gate_defs=gate_defs,
+            options=options,
         )
 
     def _aqt_compile(
@@ -438,6 +444,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         gate_defs: Optional[
             Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
         ] = None,
+        options: Optional[Dict[str, Any]] = None,
     ) -> css.compiler_output.CompilerOutput:
         """Generic API for compiling circuits for AQT devices. See `Service.aqt_compile()` and
         `Service.aqt_compile_eca()`.
@@ -450,8 +457,10 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             "target": target,
         }
 
-        options_dict: Dict[str, Union[float, Dict[str, Union[cirq.Gate, cirq.Operation, None]]]]
-        options_dict = {}
+        options = {} if options is None else options
+        options_dict: Dict[str, Union[float, Dict[str, Union[cirq.Gate, cirq.Operation, None]]]] = {
+            **options
+        }
 
         if num_equivalent_circuits is not None:
             options_dict["num_eca_circuits"] = num_equivalent_circuits
@@ -466,7 +475,6 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
                     val = _to_matrix_gate(val).with_name(key)
                 gate_defs_cirq[key] = val
             options_dict["gate_defs"] = gate_defs_cirq
-
         if options_dict:
             request_json["options"] = cirq.to_json(options_dict)
 
@@ -481,12 +489,14 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         mirror_swaps: bool = True,
         base_entangling_gate: str = "xx",
         target: str = "sandia_qscout_qpu",
+        options: Optional[Dict[str, Any]] = None,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to target QSCOUT device, optimized to its native gate set.
 
         Args:
             circuits: cirq Circuit(s) with operations on qubits 0 and 1.
             target: string of target QSCOUT device.
+            options: dictionary of desired qscout_compile options.
         Returns:
             object whose .circuit(s) attribute is an optimized cirq Circuit(s)
             and a list of jaqal programs represented as strings
@@ -497,7 +507,13 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
-        options_dict = {"mirror_swaps": mirror_swaps, "base_entangling_gate": base_entangling_gate}
+        options = {} if options is None else options
+
+        options_dict = {
+            "mirror_swaps": mirror_swaps,
+            "base_entangling_gate": base_entangling_gate,
+            **options,
+        }
         json_dict = self._client.qscout_compile(
             {
                 "cirq_circuits": serialized_circuits,
@@ -535,7 +551,10 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         return css.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
 
     def ibmq_compile(
-        self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: str = "ibmq_qasm_simulator"
+        self,
+        circuits: Union[cirq.Circuit, List[cirq.Circuit]],
+        target: str = "ibmq_qasm_simulator",
+        options: Optional[Dict[str, Any]] = None,
     ) -> css.compiler_output.CompilerOutput:
         """Returns pulse schedule for the given circuit and target.
 
@@ -548,8 +567,9 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         if not target.startswith("ibmq_"):
             raise ValueError(f"{target} is not an IBMQ target")
 
+        options = {} if options is None else options
         json_dict = self._client.ibmq_compile(
-            {"cirq_circuits": serialized_circuits, "target": target}
+            {"cirq_circuits": serialized_circuits, "target": target, "options": options}
         )
 
         return css.compiler_output.read_json_ibmq(json_dict, circuits_is_list)
