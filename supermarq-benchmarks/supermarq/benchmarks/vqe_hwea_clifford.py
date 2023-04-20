@@ -141,7 +141,7 @@ class VQE_HWEA_Clifford(supermarq.benchmark.Benchmark):
 
         clifford_angles = np.array([0, 0.5, 1, 1.5])*np.pi
 
-        init_params = list(np.random.choice(clifford_angles, 4 * self.num_qubits))
+        init_params = list(np.random.choice(clifford_angles, 4 * self.num_qubits * self.num_layers))
         opt_bounds = opt.Bounds(lb=0,ub=np.pi*2)
                 
         out = opt.minimize(f, init_params,bounds=opt_bounds, method="L-BFGS-B")
