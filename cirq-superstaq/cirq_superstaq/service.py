@@ -540,7 +540,6 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         """
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
-        options = {} if options is None else options
 
         json_dict = self._client.cq_compile(
             {"cirq_circuits": serialized_circuits, "target": target, "options": options}
@@ -565,7 +564,6 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         if not target.startswith("ibmq_"):
             raise ValueError(f"{target} is not an IBMQ target")
 
-        options = {} if options is None else options
         json_dict = self._client.ibmq_compile(
             {"cirq_circuits": serialized_circuits, "target": target, "options": options}
         )
