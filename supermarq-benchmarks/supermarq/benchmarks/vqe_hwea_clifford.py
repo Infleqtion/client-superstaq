@@ -2,6 +2,7 @@ import copy
 from typing import Dict, List, Tuple, Union
 
 import cirq
+from geneticalgorithm import geneticalgorithm as ga
 import numpy as np
 import numpy.typing as npt
 import scipy.optimize as opt
@@ -59,22 +60,22 @@ class VQE_HWEA_Clifford(supermarq.benchmark.Benchmark):
         for _ in range(self.num_layers):
             # Ry rotation block
             for i in range(self.num_qubits):
-                z_circuit.append(cirq.Ry(rads=2 * params[param_counter])(qubits[i]))
+                z_circuit.append(cirq.Ry(rads=params[param_counter])(qubits[i]))
                 param_counter += 1
             # Rz rotation block
             for i in range(self.num_qubits):
-                z_circuit.append(cirq.Rz(rads=2 * params[param_counter])(qubits[i]))
+                z_circuit.append(cirq.Rz(rads=params[param_counter])(qubits[i]))
                 param_counter += 1
             # Entanglement block
             for i in range(self.num_qubits - 1):
                 z_circuit.append(cirq.CX(qubits[i], qubits[i + 1]))
             # Ry rotation block
             for i in range(self.num_qubits):
-                z_circuit.append(cirq.Ry(rads=2 * params[param_counter])(qubits[i]))
+                z_circuit.append(cirq.Ry(rads=params[param_counter])(qubits[i]))
                 param_counter += 1
             # Rz rotation block
             for i in range(self.num_qubits):
-                z_circuit.append(cirq.Rz(rads=2 * params[param_counter])(qubits[i]))
+                z_circuit.append(cirq.Rz(rads=params[param_counter])(qubits[i]))
                 param_counter += 1
 
         x_circuit = copy.deepcopy(z_circuit)
@@ -124,33 +125,42 @@ class VQE_HWEA_Clifford(supermarq.benchmark.Benchmark):
 
     def _get_opt_angles(self) -> Tuple[npt.NDArray[np.float_], float]:
         def f(params: npt.NDArray[np.float_]) -> float:
-            z_circuit, x_circuit = self._gen_ansatz(params)
+            print(params)
+            params = params * np.pi/2
+            #clifford_angles = np.array([0, 0.5, 1, 1.5, 2])*np.pi
+            new_params = np.array([find_closest(clifford_angles, i) for i in params])
+            print(new_params)
+            z_circuit, x_circuit = self._gen_ansatz(new_params)
             z_probs = supermarq.simulation.get_ideal_counts(z_circuit)
             x_probs = supermarq.simulation.get_ideal_counts(x_circuit)
             energy = self._get_expectation_value_from_probs(z_probs, x_probs)
-
+            print(-energy)
             return -energy  # because we are minimizing instead of maximizing
 
-    def find_closest(arr, val):
-        dx = np.abs(arr - val).argmin()
-        return arr[idx]
+        def find_closest(arr, val):
+            index = np.abs(arr - val).argmin()
+            return arr[index]
         
         
         def f_clifford_constraint(params: npt.NDArray[np.float_],
                           clifford_angles: npt.NDArray[np.float_]) -> bool:
                 return np.all(np.isin(params,clifford_angles),where=True)
 
-        clifford_angles = np.array([0, 0.5, 1, 1.5])*np.pi
+        clifford_angles = np.array([0, 0.5, 1, 1.5, 2])*np.pi
 
         init_params = list(np.random.choice(clifford_angles, 4 * self.num_qubits * self.num_layers))
-        opt_bounds = opt.Bounds(lb=0,ub=np.pi*2)
-                
-        out = opt.minimize(f, init_params,bounds=opt_bounds, method="L-BFGS-B")
+        opt_bounds = np.array([(0,4)]*4*self.num_qubits*self.num_layers)#opt.Bounds(lb=0,ub=np.pi*2)
+        ga_defaults = {'max_num_iteration': 10, 'population_size': 100, 'mutation_probability': 0.1, 'elit_ratio': 0.01, 'crossover_probability': 0.5, 'parents_portion': 0.3, 'crossover_type': 'uniform', 'max_iteration_without_improv': None}        
+        #out = opt.minimize(f, init_params,bounds=opt_bounds, method="L-BFGS-B")
+        #out = opt.shgo(f,bounds=opt_bounds)
+        model = ga(function=f,dimension=len(init_params),algorithm_parameters= ga_defaults,variable_type='int',variable_boundaries=opt_bounds)
+        model.run()
+        best_params = model.best_variable
+        print(best_params)
+        
+        best_params = best_params * np.pi/2
 
-        print(out['x'])
-
-        return out["x"], out["fun"]
-
+        return best_params, model.best_function
     def _gen_angles(self) -> npt.NDArray[np.float_]:
         """Classically simulate the variational optimization and return
         the final parameters.
