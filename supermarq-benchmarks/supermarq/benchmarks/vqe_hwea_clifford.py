@@ -131,9 +131,10 @@ class VQE_HWEA_Clifford(supermarq.benchmark.Benchmark):
 
             return -energy  # because we are minimizing instead of maximizing
 
-        #init_params = [
-        #    np.random.uniform() * 2 * np.pi for _ in range(self.num_layers * 4 * self.num_qubits)
-        #]
+    def find_closest(arr, val):
+        dx = np.abs(arr - val).argmin()
+        return arr[idx]
+        
         
         def f_clifford_constraint(params: npt.NDArray[np.float_],
                           clifford_angles: npt.NDArray[np.float_]) -> bool:
