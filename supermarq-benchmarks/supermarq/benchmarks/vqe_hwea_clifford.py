@@ -150,10 +150,10 @@ class VQE_HWEA_Clifford(supermarq.benchmark.Benchmark):
 
         init_params = list(np.random.choice(clifford_angles, 4 * self.num_qubits * self.num_layers))
         opt_bounds = np.array([(0,4)]*4*self.num_qubits*self.num_layers)#opt.Bounds(lb=0,ub=np.pi*2)
-        ga_defaults = {'max_num_iteration': 10, 'population_size': 100, 'mutation_probability': 0.1, 'elit_ratio': 0.01, 'crossover_probability': 0.5, 'parents_portion': 0.3, 'crossover_type': 'uniform', 'max_iteration_without_improv': None}        
+        ga_defaults = {'max_num_iteration': 30, 'population_size': 100, 'mutation_probability': 0.1, 'elit_ratio': 0.01, 'crossover_probability': 0.5, 'parents_portion': 0.3, 'crossover_type': 'uniform', 'max_iteration_without_improv': None}        
         #out = opt.minimize(f, init_params,bounds=opt_bounds, method="L-BFGS-B")
         #out = opt.shgo(f,bounds=opt_bounds)
-        model = ga(function=f,dimension=len(init_params),algorithm_parameters= ga_defaults,variable_type='int',variable_boundaries=opt_bounds)
+        model = ga(function=f,dimension=len(init_params),algorithm_parameters= ga_defaults,variable_type='int',variable_boundaries=opt_bounds,convergence_curve=False,progress_bar=False)
         model.run()
         best_params = model.best_variable
         print(best_params)
