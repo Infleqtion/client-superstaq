@@ -457,10 +457,8 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             "target": target,
         }
 
-        options = {} if options is None else options
-        options_dict: Dict[str, Union[float, Dict[str, Union[cirq.Gate, cirq.Operation, None]]]] = {
-            **options
-        }
+        options_dict: Dict[str, Union[float, Dict[str, Union[cirq.Gate, cirq.Operation, None]]]]
+        options_dict = {} if options is None else options
 
         if num_equivalent_circuits is not None:
             options_dict["num_eca_circuits"] = num_equivalent_circuits
