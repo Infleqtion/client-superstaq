@@ -52,6 +52,7 @@ def get_ideal_counts_clifford(circuit: cirq.Circuit) -> Dict[str, float]:
     sampler = stim_circuit.compile_sampler(seed=np.random.randint(2**32))
     outcome = sampler.sample(repetitions)
     outcome_counter = collections.Counter(map(tuple, np.asarray(outcome, int)))
+    
     probs = {}
     for i in outcome_counter:
         temp = ''

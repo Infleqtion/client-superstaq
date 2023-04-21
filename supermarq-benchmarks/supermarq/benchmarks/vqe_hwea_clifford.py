@@ -125,16 +125,11 @@ class VQE_HWEA_Clifford(supermarq.benchmark.Benchmark):
 
     def _get_opt_angles(self) -> Tuple[npt.NDArray[np.float_], float]:
         def f(params: npt.NDArray[np.float_]) -> float:
-            print(params)
             params = params * 1/2
-            #clifford_angles = np.array([0, 0.5, 1, 1.5, 2])*np.pi
-            new_params = np.array([find_closest(clifford_angles, i) for i in params])
-            print(new_params)
-            z_circuit, x_circuit = self._gen_ansatz(new_params)
+            z_circuit, x_circuit = self._gen_ansatz(params)
             z_probs = supermarq.simulation.get_ideal_counts_clifford(z_circuit)
             x_probs = supermarq.simulation.get_ideal_counts_clifford(x_circuit)
             energy = self._get_expectation_value_from_probs(z_probs, x_probs)
-            print(-energy)
             return -energy  # because we are minimizing instead of maximizing
 
         def find_closest(arr, val):
@@ -146,17 +141,22 @@ class VQE_HWEA_Clifford(supermarq.benchmark.Benchmark):
                           clifford_angles: npt.NDArray[np.float_]) -> bool:
                 return np.all(np.isin(params,clifford_angles),where=True)
 
-        clifford_angles = np.array([0, 1, 2, 3, 4])
+        clifford_angles = np.array([0, 1, 2, 3])
 
         init_params = list(np.random.choice(clifford_angles, 4 * self.num_qubits * self.num_layers))
         opt_bounds = np.array([(0,4)]*4*self.num_qubits*self.num_layers)#opt.Bounds(lb=0,ub=np.pi*2)
-        ga_defaults = {'max_num_iteration': 30, 'population_size': 100, 'mutation_probability': 0.1, 'elit_ratio': 0.01, 'crossover_probability': 0.5, 'parents_portion': 0.3, 'crossover_type': 'uniform', 'max_iteration_without_improv': None}        
-        #out = opt.minimize(f, init_params,bounds=opt_bounds, method="L-BFGS-B")
-        #out = opt.shgo(f,bounds=opt_bounds)
-        model = ga(function=f,dimension=len(init_params),algorithm_parameters= ga_defaults,variable_type='int',variable_boundaries=opt_bounds,convergence_curve=False,progress_bar=False)
+        ga_defaults = {'max_num_iteration': 30, 
+                       'population_size': 100, 
+                       'mutation_probability': 0.1, 
+                       'elit_ratio': 0.01, 
+                       'crossover_probability': 0.5, 
+                       'parents_portion': 0.3, 
+                       'crossover_type': 'uniform', 
+                       'max_iteration_without_improv': None}        
+        
+        model = ga(function=f,dimension=len(init_params),algorithm_parameters= ga_defaults,variable_type='int',variable_boundaries=opt_bounds,convergence_curve=False,progress_bar=True)
         model.run()
         best_params = model.best_variable
-        print(best_params)
         
         best_params = best_params * 1/2
 
