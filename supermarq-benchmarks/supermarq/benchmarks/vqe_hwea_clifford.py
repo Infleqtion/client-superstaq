@@ -60,22 +60,22 @@ class VQE_HWEA_Clifford(supermarq.benchmark.Benchmark):
         for _ in range(self.num_layers):
             # Ry rotation block
             for i in range(self.num_qubits):
-                z_circuit.append(cirq.Ry(rads=params[param_counter])(qubits[i]))
+                z_circuit.append((cirq.Y**params[param_counter])(qubits[i]))
                 param_counter += 1
             # Rz rotation block
             for i in range(self.num_qubits):
-                z_circuit.append(cirq.Rz(rads=params[param_counter])(qubits[i]))
+                z_circuit.append((cirq.Z**params[param_counter])(qubits[i]))
                 param_counter += 1
             # Entanglement block
             for i in range(self.num_qubits - 1):
                 z_circuit.append(cirq.CX(qubits[i], qubits[i + 1]))
             # Ry rotation block
             for i in range(self.num_qubits):
-                z_circuit.append(cirq.Ry(rads=params[param_counter])(qubits[i]))
+                z_circuit.append((cirq.Y**params[param_counter])(qubits[i]))
                 param_counter += 1
             # Rz rotation block
             for i in range(self.num_qubits):
-                z_circuit.append(cirq.Rz(rads=params[param_counter])(qubits[i]))
+                z_circuit.append((cirq.Z**params[param_counter])(qubits[i]))
                 param_counter += 1
 
         x_circuit = copy.deepcopy(z_circuit)
@@ -126,13 +126,13 @@ class VQE_HWEA_Clifford(supermarq.benchmark.Benchmark):
     def _get_opt_angles(self) -> Tuple[npt.NDArray[np.float_], float]:
         def f(params: npt.NDArray[np.float_]) -> float:
             print(params)
-            params = params * np.pi/2
+            params = params * 1/2
             #clifford_angles = np.array([0, 0.5, 1, 1.5, 2])*np.pi
             new_params = np.array([find_closest(clifford_angles, i) for i in params])
             print(new_params)
             z_circuit, x_circuit = self._gen_ansatz(new_params)
-            z_probs = supermarq.simulation.get_ideal_counts(z_circuit)
-            x_probs = supermarq.simulation.get_ideal_counts(x_circuit)
+            z_probs = supermarq.simulation.get_ideal_counts_clifford(z_circuit)
+            x_probs = supermarq.simulation.get_ideal_counts_clifford(x_circuit)
             energy = self._get_expectation_value_from_probs(z_probs, x_probs)
             print(-energy)
             return -energy  # because we are minimizing instead of maximizing
@@ -146,7 +146,7 @@ class VQE_HWEA_Clifford(supermarq.benchmark.Benchmark):
                           clifford_angles: npt.NDArray[np.float_]) -> bool:
                 return np.all(np.isin(params,clifford_angles),where=True)
 
-        clifford_angles = np.array([0, 0.5, 1, 1.5, 2])*np.pi
+        clifford_angles = np.array([0, 1, 2, 3, 4])
 
         init_params = list(np.random.choice(clifford_angles, 4 * self.num_qubits * self.num_layers))
         opt_bounds = np.array([(0,4)]*4*self.num_qubits*self.num_layers)#opt.Bounds(lb=0,ub=np.pi*2)
@@ -158,7 +158,7 @@ class VQE_HWEA_Clifford(supermarq.benchmark.Benchmark):
         best_params = model.best_variable
         print(best_params)
         
-        best_params = best_params * np.pi/2
+        best_params = best_params * 1/2
 
         return best_params, model.best_function
     def _gen_angles(self) -> npt.NDArray[np.float_]:
