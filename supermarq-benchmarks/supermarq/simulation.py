@@ -3,7 +3,6 @@ from typing import Dict
 import cirq
 import collections
 import numpy as np
-import stim
 import stimcirq
 
 
