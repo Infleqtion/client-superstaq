@@ -458,8 +458,10 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         }
 
         options_dict: Dict[str, Union[float, Dict[str, Union[cirq.Gate, cirq.Operation, None]]]]
-        options_dict = {} if options is None else options
-
+        options_dict = {}
+        if options:
+            options_dict.update(options)
+            
         if num_equivalent_circuits is not None:
             options_dict["num_eca_circuits"] = num_equivalent_circuits
         if random_seed is not None:
@@ -542,7 +544,11 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
         json_dict = self._client.cq_compile(
-            {"cirq_circuits": serialized_circuits, "target": target, "options": options}
+            {
+                "cirq_circuits": serialized_circuits,
+                "target": target,
+                "options": cirq.to_json(options),
+            }
         )
 
         return css.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
@@ -565,7 +571,11 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             raise ValueError(f"{target} is not an IBMQ target")
 
         json_dict = self._client.ibmq_compile(
-            {"cirq_circuits": serialized_circuits, "target": target, "options": options}
+            {
+                "cirq_circuits": serialized_circuits,
+                "target": target,
+                "options": cirq.to_json(options),
+            }
         )
 
         return css.compiler_output.read_json_ibmq(json_dict, circuits_is_list)
