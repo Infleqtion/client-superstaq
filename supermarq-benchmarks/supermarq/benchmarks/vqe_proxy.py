@@ -122,7 +122,6 @@ class VQEProxy(supermarq.benchmark.Benchmark):
             z_probs = supermarq.simulation.get_ideal_counts(z_circuit)
             x_probs = supermarq.simulation.get_ideal_counts(x_circuit)
             energy = self._get_expectation_value_from_probs(z_probs, x_probs)
-
             return -energy  # because we are minimizing instead of maximizing
 
         init_params = [

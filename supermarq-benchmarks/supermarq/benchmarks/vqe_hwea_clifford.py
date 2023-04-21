@@ -145,7 +145,7 @@ class VQE_HWEA_Clifford(supermarq.benchmark.Benchmark):
 
         init_params = list(np.random.choice(clifford_angles, 4 * self.num_qubits * self.num_layers))
         opt_bounds = np.array([(0,4)]*4*self.num_qubits*self.num_layers)#opt.Bounds(lb=0,ub=np.pi*2)
-        ga_defaults = {'max_num_iteration': 30, 
+        ga_defaults = {'max_num_iteration': 10, 
                        'population_size': 100, 
                        'mutation_probability': 0.1, 
                        'elit_ratio': 0.01, 
