@@ -461,7 +461,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         options_dict = {}
         if options:
             options_dict.update(options)
-            
+
         if num_equivalent_circuits is not None:
             options_dict["num_eca_circuits"] = num_equivalent_circuits
         if random_seed is not None:
@@ -507,13 +507,14 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
-        options = {} if options is None else options
-
         options_dict = {
             "mirror_swaps": mirror_swaps,
             "base_entangling_gate": base_entangling_gate,
-            **options,
         }
+
+        if options:
+            options_dict.update(options)
+
         json_dict = self._client.qscout_compile(
             {
                 "cirq_circuits": serialized_circuits,

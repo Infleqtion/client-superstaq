@@ -255,12 +255,13 @@ def test_service_get_targets() -> None:
 )
 def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    out = service.aqt_compile(cirq.Circuit())
+    out = service.aqt_compile(cirq.Circuit(), options={"test": "yes"})
     mock_post_request.assert_called_once_with(
         "/aqt_compile",
         {
             "cirq_circuits": css.serialization.serialize_circuits(cirq.Circuit()),
             "target": "aqt_keysight_qpu",
+            "options": '{\n  "test": "yes"\n}',
         },
     )
     assert out.circuit == cirq.Circuit()
@@ -396,7 +397,7 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
     }
 
     service = css.Service(api_key="key", remote_host="http://example.com")
-    out = service.qscout_compile(circuit)
+    out = service.qscout_compile(circuit, options={"test": "yes"})
     assert out.circuit == circuit
     assert out.final_logical_to_physical == final_logical_to_physical
     assert out.jaqal_program == jaqal_program
@@ -479,11 +480,11 @@ def test_service_cq_compile_single(mock_cq_compile: mock.MagicMock) -> None:
     mock_cq_compile.return_value = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
-        "options": {"fake": True},
+        "options": {"test": "yes"},
     }
 
     service = css.Service(api_key="key", remote_host="http://example.com")
-    out = service.cq_compile(circuit, options={"fake": True})
+    out = service.cq_compile(circuit, options={"test": "yes"})
     assert out.circuit == circuit
     assert out.final_logical_to_physical == final_logical_to_physical
 
