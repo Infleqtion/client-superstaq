@@ -505,7 +505,7 @@ def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
     }
 
-    assert service.ibmq_compile(circuit).circuit == circuit
+    assert service.ibmq_compile(circuit, options={"test": "yes"}).circuit == circuit
     assert service.ibmq_compile([circuit]).circuits == [circuit]
     assert service.ibmq_compile(circuit).pulse_sequence == mock.DEFAULT
     assert service.ibmq_compile([circuit]).pulse_sequences == [mock.DEFAULT]
