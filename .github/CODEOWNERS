@@ -1,120 +1,16 @@
-superstaq-client/LICENSE
-superstaq-client/CITATION.bib
-superstaq-client/setup.cfg
-superstaq-client/.readthedocs.yaml
-superstaq-client/README.md
-superstaq-client/.gitignore
-superstaq-client/.github/integration-check-failure-issue.md
-superstaq-client/.github/CODEOWNERS
-superstaq-client/.github/paths.ipynb
-superstaq-client/.github/workflows/daily-integration-check.yml
-superstaq-client/.github/workflows/main.yml
-superstaq-client/.github/workflows/automated_publish_release.yml
-superstaq-client/.github/workflows/ci.yml
-superstaq-client/.github/ISSUE_TEMPLATE/FEATURE_REQUEST.yaml
-superstaq-client/.github/ISSUE_TEMPLATE/BUG_REPORT.yaml
-superstaq-client/supermarq-benchmarks/setup.py
-superstaq-client/supermarq-benchmarks/requirements.txt
-superstaq-client/supermarq-benchmarks/README.md
-superstaq-client/supermarq-benchmarks/dev-requirements.txt
-superstaq-client/supermarq-benchmarks/.isort.cfg
-superstaq-client/supermarq-benchmarks/examples/ghz_example.py
-superstaq-client/supermarq-benchmarks/examples/SupermarQ_HPCA_Tutorial.ipynb
-superstaq-client/supermarq-benchmarks/supermarq/plotting.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmark.py
-superstaq-client/supermarq-benchmarks/supermarq/features_test.py
-superstaq-client/supermarq-benchmarks/supermarq/features.py
-superstaq-client/supermarq-benchmarks/supermarq/__init__.py
-superstaq-client/supermarq-benchmarks/supermarq/plotting_test.py
-superstaq-client/supermarq-benchmarks/supermarq/_version_test.py
-superstaq-client/supermarq-benchmarks/supermarq/converters.py
-superstaq-client/supermarq-benchmarks/supermarq/_version.py
-superstaq-client/supermarq-benchmarks/supermarq/converters_test.py
-superstaq-client/supermarq-benchmarks/supermarq/simulation.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmark_test.py
-superstaq-client/supermarq-benchmarks/supermarq/stabilizers.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmarks/mermin_bell.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmarks/hamiltonian_simulation.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmarks/qaoa_fermionic_swap_proxy_test.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmarks/ghz.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmarks/qaoa_fermionic_swap_proxy.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmarks/mermin_bell_test.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmarks/__init__.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmarks/hamiltonian_simulation_test.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmarks/bit_code.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmarks/bit_code_test.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmarks/qaoa_vanilla_proxy.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmarks/vqe_proxy.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmarks/ghz_test.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmarks/phase_code_test.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmarks/phase_code.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmarks/vqe_proxy_test.py
-superstaq-client/supermarq-benchmarks/supermarq/benchmarks/qaoa_vanilla_proxy_test.py
-superstaq-client/supermarq-benchmarks/docs/SupermarQ_Paper.pdf
-superstaq-client/supermarq-benchmarks/docs/SupermarQ_Logo.png
-superstaq-client/supermarq-benchmarks/docs/static/SupermarQ_Logo.png
-superstaq-client/dev_tools/update-pypi-version.sh
-superstaq-client/docs/* @stephanielee9
-superstaq-client/qiskit-superstaq/setup.py
-superstaq-client/qiskit-superstaq/requirements.txt
-superstaq-client/qiskit-superstaq/README.md
-superstaq-client/qiskit-superstaq/example-requirements.txt
-superstaq-client/qiskit-superstaq/dev-requirements.txt
-superstaq-client/qiskit-superstaq/.isort.cfg
-superstaq-client/qiskit-superstaq/examples/cq_compile.ipynb
-superstaq-client/qiskit-superstaq/examples/qscout_compile.ipynb
-superstaq-client/qiskit-superstaq/examples/myfile.txt
-superstaq-client/qiskit-superstaq/examples/ibmq_compile.ipynb
-superstaq-client/qiskit-superstaq/examples/resource_estimate.ipynb
-superstaq-client/qiskit-superstaq/examples/myfile1.txt
-superstaq-client/qiskit-superstaq/examples/SupercheQ.ipynb
-superstaq-client/qiskit-superstaq/examples/uchicago_workshop.ipynb
-superstaq-client/qiskit-superstaq/examples/aqt.ipynb
-superstaq-client/qiskit-superstaq/examples/multiple_circuits.py
-superstaq-client/qiskit-superstaq/examples/hello_qiskit_superstaq.py
-superstaq-client/qiskit-superstaq/examples/static/file8.txt
-superstaq-client/qiskit-superstaq/examples/static/file15.txt
-superstaq-client/qiskit-superstaq/examples/static/file10.txt
-superstaq-client/qiskit-superstaq/examples/static/file19.txt
-superstaq-client/qiskit-superstaq/examples/static/file5.txt
-superstaq-client/qiskit-superstaq/examples/static/file16.txt
-superstaq-client/qiskit-superstaq/examples/static/file6.txt
-superstaq-client/qiskit-superstaq/examples/static/file1.txt
-superstaq-client/qiskit-superstaq/examples/static/file4.txt
-superstaq-client/qiskit-superstaq/examples/static/file18.txt
-superstaq-client/qiskit-superstaq/examples/static/file2.txt
-superstaq-client/qiskit-superstaq/examples/static/file14.txt
-superstaq-client/qiskit-superstaq/examples/static/file12.txt
-superstaq-client/qiskit-superstaq/examples/static/file9.txt
-superstaq-client/qiskit-superstaq/examples/static/file20.txt
-superstaq-client/qiskit-superstaq/examples/static/file.txt
-superstaq-client/qiskit-superstaq/examples/static/file13.txt
-superstaq-client/qiskit-superstaq/examples/static/file17.txt
-superstaq-client/qiskit-superstaq/examples/static/file7.txt
-superstaq-client/qiskit-superstaq/examples/static/file3.txt
-superstaq-client/qiskit-superstaq/examples/static/file11.txt
-superstaq-client/qiskit-superstaq/qiskit_superstaq/daily_integration_test.py
-superstaq-client/qiskit-superstaq/qiskit_superstaq/custom_gates_test.py
-superstaq-client/qiskit-superstaq/qiskit_superstaq/superstaq_job.py
-superstaq-client/qiskit-superstaq/qiskit_superstaq/superstaq_backend.py
-superstaq-client/qiskit-superstaq/qiskit_superstaq/py.typed
-superstaq-client/qiskit-superstaq/qiskit_superstaq/compiler_output_test.py
-superstaq-client/qiskit-superstaq/qiskit_superstaq/superstaq_provider.py
-superstaq-client/qiskit-superstaq/qiskit_superstaq/__init__.py
-superstaq-client/qiskit-superstaq/qiskit_superstaq/serialization.py
-superstaq-client/qiskit-superstaq/qiskit_superstaq/_version_test.py
-superstaq-client/qiskit-superstaq/qiskit_superstaq/superstaq_backend_test.py
-superstaq-client/qiskit-superstaq/qiskit_superstaq/superstaq_job_test.py
-superstaq-client/qiskit-superstaq/qiskit_superstaq/superstaq_provider_test.py
-superstaq-client/qiskit-superstaq/qiskit_superstaq/serialization_test.py
-superstaq-client/qiskit-superstaq/qiskit_superstaq/_version.py
-superstaq-client/qiskit-superstaq/qiskit_superstaq/compiler_output.py
-superstaq-client/qiskit-superstaq/qiskit_superstaq/custom_gates.py
-superstaq-client/general-superstaq/setup.py
-superstaq-client/general-superstaq/requirements.txt
-superstaq-client/general-superstaq/README.md
-superstaq-client/general-superstaq/dev-requirements.txt
-superstaq-client/general-superstaq/.isort.cfg
+* @paaige @richrines1 @vtomole
+
+superstaq-client/.github/* @vtomole @singular-value @stephanielee9
+superstaq-client/supermarq-benchmarks/* @teaguetomesh @knsmith
+superstaq-client/dev_tools/* @vtomole @singular-value @stephanielee9
+superstaq-client/docs/* @stephanielee9 @bharat-thotakura
+superstaq-client/qiskit-superstaq/qiskit_superstaq/daily_integration_test.py @vtomole @dowusu-antwi
+superstaq-client/qiskit-superstaq/qiskit_superstaq/custom_gates* @richrines1 @dowusu-antwi
+superstaq-client/qiskit-superstaq/qiskit_superstaq/superstaq_job* @pgoiporia @bharat-thotakura
+superstaq-client/qiskit-superstaq/qiskit_superstaq/superstaq_backend* @pgoiporia @bharat-thotakura
+superstaq-client/qiskit-superstaq/qiskit_superstaq/compiler_output* @pgoiporia @bharat-thotakura
+superstaq-client/qiskit-superstaq/qiskit_superstaq/superstaq_provider* @pgoiporia @bharat-thotakura
+superstaq-client/qiskit-superstaq/qiskit_superstaq/serialization* @richrines1 @paaige
 superstaq-client/general-superstaq/general_superstaq/user_config_test.py
 superstaq-client/general-superstaq/general_superstaq/finance.py
 superstaq-client/general-superstaq/general_superstaq/superstaq_client_test.py
@@ -124,7 +20,7 @@ superstaq-client/general-superstaq/general_superstaq/qubo.py
 superstaq-client/general-superstaq/general_superstaq/__init__.py
 superstaq-client/general-superstaq/general_superstaq/resource_estimate.py
 superstaq-client/general-superstaq/general_superstaq/serialization.py
-superstaq-client/general-superstaq/general_superstaq/_version_test.py
+superstaq-client/general-superstaq/general_superstaq/_version.py @vtomole @dowusu-antwi @richrines1 @singular-value @pgoiporia @paaige @stephanielee9 @knsmith @bharat-thotakura
 superstaq-client/general-superstaq/general_superstaq/superstaq_exceptions_test.py
 superstaq-client/general-superstaq/general_superstaq/resource_estimate_test.py
 superstaq-client/general-superstaq/general_superstaq/typing.py
