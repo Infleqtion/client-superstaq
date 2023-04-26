@@ -31,7 +31,7 @@ superstaq-client/general-superstaq/general_superstaq/typing_test.py
 superstaq-client/general-superstaq/general_superstaq/finance_test.py
 superstaq-client/general-superstaq/general_superstaq/superstaq_exceptions.py
 superstaq-client/general-superstaq/general_superstaq/_init_vars.py
-superstaq-client/general-superstaq/general_superstaq/logistics.py @bharat-thotakura
+superstaq-client/general-superstaq/general_superstaq/logistics* @bharat-thotakura
 superstaq-client/general-superstaq/general_superstaq/superstaq_client.py
 superstaq-client/general-superstaq/general_superstaq/logistics_test.py
 superstaq-client/general-superstaq/general_superstaq/__pycache__/_init_vars.cpython-310.pyc
@@ -124,9 +124,9 @@ superstaq-client/cirq-superstaq/cirq_superstaq/__init__.py
 superstaq-client/cirq-superstaq/cirq_superstaq/serialization.py
 superstaq-client/cirq-superstaq/cirq_superstaq/_version_test.py
 superstaq-client/cirq-superstaq/cirq_superstaq/serialization_test.py
-superstaq-client/cirq-superstaq/cirq_superstaq/service.py @bharat-thotakura
+superstaq-client/cirq-superstaq/cirq_superstaq/service* @bharat-thotakura
 superstaq-client/cirq-superstaq/cirq_superstaq/_version.py
-superstaq-client/cirq-superstaq/cirq_superstaq/compiler_output.py @bharat-thotakura
+superstaq-client/cirq-superstaq/cirq_superstaq/compiler_output* @bharat-thotakura
 superstaq-client/cirq-superstaq/cirq_superstaq/job_test.py
 superstaq-client/cirq-superstaq/cirq_superstaq/sampler.py
 superstaq-client/cirq-superstaq/cirq_superstaq/ops/__init__.py
