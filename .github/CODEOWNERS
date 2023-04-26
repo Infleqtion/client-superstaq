@@ -12,11 +12,11 @@ superstaq-client/qiskit-superstaq/qiskit_superstaq/compiler_output* @pgoiporia @
 superstaq-client/qiskit-superstaq/qiskit_superstaq/superstaq_provider* @pgoiporia @bharat-thotakura
 superstaq-client/qiskit-superstaq/qiskit_superstaq/serialization* @richrines1 @paaige
 superstaq-client/general-superstaq/general_superstaq/user_config_test.py
-superstaq-client/general-superstaq/general_superstaq/finance.py @bharat-thotakura
+superstaq-client/general-superstaq/general_superstaq/finance* @bharat-thotakura
 superstaq-client/general-superstaq/general_superstaq/superstaq_client_test.py
 superstaq-client/general-superstaq/general_superstaq/py.typed
 superstaq-client/general-superstaq/general_superstaq/user_config.py
-superstaq-client/general-superstaq/general_superstaq/qubo.py @bharat-thotakura
+superstaq-client/general-superstaq/general_superstaq/qubo* @bharat-thotakura
 superstaq-client/general-superstaq/general_superstaq/__init__.py
 superstaq-client/general-superstaq/general_superstaq/resource_estimate.py
 superstaq-client/general-superstaq/general_superstaq/serialization.py
