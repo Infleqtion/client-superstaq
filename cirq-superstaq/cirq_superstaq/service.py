@@ -459,7 +459,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
         options_dict: Dict[str, Union[float, Dict[str, Union[cirq.Gate, cirq.Operation, None]]]]
         options_dict = {}
-        if options:
+        if options is not None:
             options_dict.update(options)
 
         if num_equivalent_circuits is not None:
@@ -512,7 +512,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             "base_entangling_gate": base_entangling_gate,
         }
 
-        if options:
+        if options is not None:
             options_dict.update(options)
 
         json_dict = self._client.qscout_compile(
@@ -548,7 +548,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             "cirq_circuits": serialized_circuits,
             "target": target,
         }
-        if options:
+        if options is not None:
             request_json["options"] = cirq.to_json(options)
 
         json_dict = self._client.cq_compile(request_json)
@@ -576,7 +576,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             "cirq_circuits": serialized_circuits,
             "target": target,
         }
-        if options:
+        if options is not None:
             request_json["options"] = cirq.to_json(options)
 
         json_dict = self._client.ibmq_compile(request_json)
