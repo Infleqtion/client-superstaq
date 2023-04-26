@@ -65,8 +65,7 @@ def validate_target(target: str) -> None:  # pylint: disable=missing-function-do
 
 
 class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-class-docstring
-    def __init__(self, provider: qss.SuperstaQProvider, remote_host: str, target: str) -> None:
-        self.remote_host = remote_host
+    def __init__(self, provider: qss.SuperstaQProvider, target: str) -> None:
         self._provider = provider
         self.configuration_dict = {
             "backend_name": target,

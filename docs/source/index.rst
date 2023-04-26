@@ -17,6 +17,10 @@ Check out some of our demos to see how SuperstaQ can help you:
          <div class="index-demos-desc">A general form of a network problem that can be used to detect fraud rings in transaction networks.</div>
       </div>
       <div class="index-demos-box">
+         <div class="index-demos-headers"><a href="apps/max_sharpe_ratio_optimization.html">Sharpe Ratio Maximization</a></div>
+         <div class="index-demos-desc">An example of portfolio optimization formulated as a QUBO and solved using simulated annealing.</div>
+      </div>
+      <div class="index-demos-box">
          <div class="index-demos-headers"><a href="apps/transaction_settlement.html">Transaction Settlement</a></div>
          <div class="index-demos-desc">Walk through a formulaton of the transaction settlement problem that maximizes the number of settled equity trades.</div>
       </div>
@@ -57,6 +61,7 @@ Learn more about SuperstaQ `here <https://www.super.tech/about-superstaq/>`_.
 
    apps/community_detection_football
    apps/insurance_pricing
+   apps/max_sharpe_ratio_optimization
    apps/transaction_settlement
 
 .. toctree::
