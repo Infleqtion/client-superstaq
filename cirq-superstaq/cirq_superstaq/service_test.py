@@ -15,6 +15,7 @@
 import collections
 import json
 import os
+import re
 import textwrap
 from unittest import mock
 
@@ -64,7 +65,7 @@ def test_counts_to_results() -> None:
     assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
 
 
-def test_validate_cirq_circuit() -> None:
+def test_validate_cirq_circuits() -> None:
     qubits = [cirq.LineQubit(i) for i in range(2)]
     circuit = cirq.Circuit(cirq.H(qubits[0]), cirq.CNOT(qubits[0], qubits[1]))
 
@@ -73,33 +74,36 @@ def test_validate_cirq_circuit() -> None:
         match="Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
         "sequence of `cirq.Circuit` instances.",
     ):
-        css.service._validate_cirq_circuit("circuit_invalid")
+        css.service._validate_cirq_circuits("circuit_invalid")
 
     with pytest.raises(
         ValueError,
         match="Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
         "sequence of `cirq.Circuit` instances.",
     ):
-        css.service._validate_cirq_circuit([circuit, "circuit_invalid"])
+        css.service._validate_cirq_circuits([circuit, "circuit_invalid"])
 
 
-def test_validate_get_counts() -> None:
+def test_validate_integer_param() -> None:
 
     invalid_inputs = [None, "reps", 1.5, "1.0", {1}, [1, 2, 3]]
-    valid_inputs = [1, 10, "10", 10.0]
+    valid_inputs = [1, 10, "10", b"10", 10.0, np.int16(10)]
 
     for input_value in valid_inputs:
-        css.service._validate_get_counts(input_value)
+        css.service._validate_integer_param(input_value)
 
     for input_value in invalid_inputs:
-        with pytest.raises(TypeError, match="Repetitions must be an integer."):
-            css.service._validate_get_counts(input_value)
+        with pytest.raises(TypeError) as msg:
+            css.service._validate_integer_param(input_value)
+        assert re.search(
+            re.escape(f"{input_value} cannot be safely cast as an integer."), str(msg.value)
+        )
 
     with pytest.raises(
         ValueError,
-        match=r"Repetitions \(number of times to run circuit\) must be a positive integer.",
+        match="Must be a positive integer.",
     ):
-        css.service._validate_get_counts(-1)
+        css.service._validate_integer_param(-1)
 
 
 def test_service_resolve_target() -> None:
@@ -367,15 +371,6 @@ def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None
 )
 def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-
-    with pytest.raises(
-        ValueError,
-        match="The number of equivalent circuits must be an integer greater than 0.",
-    ):
-        service.aqt_compile_eca(
-            cirq.Circuit(), num_equivalent_circuits=-1, random_seed=1234, atol=1e-2
-        )
-
     out = service.aqt_compile_eca(
         cirq.Circuit(), num_equivalent_circuits=1, random_seed=1234, atol=1e-2
     )
