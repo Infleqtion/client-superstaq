@@ -1,6 +1,7 @@
 # pylint: disable=missing-function-docstring
 import json
 import os
+import re
 import textwrap
 from unittest import mock
 from unittest.mock import MagicMock, patch
@@ -14,7 +15,7 @@ from general_superstaq import ResourceEstimate
 import qiskit_superstaq as qss
 
 
-def test_validate_qiskit_circuit() -> None:
+def test_validate_qiskit_circuits() -> None:
     qc = qiskit.QuantumCircuit(2)
     qc.h(0)
     qc.cx(0, 1)
@@ -24,14 +25,36 @@ def test_validate_qiskit_circuit() -> None:
         match="Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a sequence "
         "of `qiskit.QuantumCircuit` instances.",
     ):
-        qss.superstaq_provider._validate_qiskit_circuit("invalid_qc_input")
+        qss.superstaq_provider._validate_qiskit_circuits("invalid_qc_input")
 
     with pytest.raises(
         ValueError,
         match="Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a "
         "sequence of `qiskit.QuantumCircuit` instances.",
     ):
-        qss.superstaq_provider._validate_qiskit_circuit([qc, "invalid_qc_input"])
+        qss.superstaq_provider._validate_qiskit_circuits([qc, "invalid_qc_input"])
+
+
+def test_validate_integer_param() -> None:
+
+    invalid_inputs = [None, "reps", 1.5, "1.0", {1}, [1, 2, 3]]
+    valid_inputs = [b"10", 1, 10, "10", 10.0, np.int16(10)]
+
+    for input_value in valid_inputs:
+        qss.superstaq_provider._validate_integer_param(input_value)
+
+    for input_value in invalid_inputs:
+        with pytest.raises(TypeError) as msg:
+            qss.superstaq_provider._validate_integer_param(input_value)
+        assert re.search(
+            re.escape(f"{input_value} cannot be safely cast as an integer."), str(msg.value)
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="Must be a positive integer.",
+    ):
+        qss.superstaq_provider._validate_integer_param(-1)
 
 
 @patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
