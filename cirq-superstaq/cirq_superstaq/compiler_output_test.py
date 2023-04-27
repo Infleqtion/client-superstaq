@@ -3,7 +3,7 @@ import importlib
 import pickle
 import textwrap
 from typing import Dict
-from unittest import mock
+from unittest.mock import DEFAULT, MagicMock, patch
 
 import cirq
 import general_superstaq as gss
@@ -92,8 +92,63 @@ def test_compiler_output_repr() -> None:
     )
 
     assert (
-        css.compiler_output.CompilerOutput(circuits).__repr_pretty__()
-        == f"CompilerOutput({circuits!r}, None, None, None, None, None)"
+        css.compiler_output.CompilerOutput(circuits, [qubit_map]).__repr_pretty__()
+        == f"CompilerOutput({circuits!r}, [{{}}], None, None, None, None)"
+    )
+
+    # Tests more involved "pretty" repr
+    mock_pulse = MagicMock()
+    mock_pulse.envelope.kwargs = {"phase": [0, 1, 2]}
+    mock_pulse.channel = 0.0
+    mock_pulse.freq = 0.0
+
+    qtrl = pytest.importorskip("qtrl", reason="qtrl not installed")
+    mock_virtual_pulse = MagicMock()
+    mock_virtual_pulse.envelope = MagicMock(qtrl.sequencer.VirtualEnvelope)
+    mock_virtual_pulse.envelope.phase = 0.0
+    mock_virtual_pulse.channel = 0.0
+    mock_virtual_pulse.freq = 0.0
+
+    assert css.compiler_output.CompilerOutput(
+        circuit,
+        qubit_map,
+        pulse_lists=[[[mock_pulse] * (i + 1) for i in range(2)] for j in range(2)],
+    ).__repr_pretty__() == (
+        f"CompilerOutput({circuit!r}, {{}}, None, None, None, "
+        "\n[\n\t[UniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]])],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]]),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]]),"
+        "\n\t],\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]])],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]]),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]]),\n\t],\n],)"
+    )
+
+    assert css.compiler_output.CompilerOutput(
+        circuits,
+        [qubit_map],
+        pulse_lists=[[[mock_pulse] * (i + 1) for i in range(2)] for j in range(2)],
+    ).__repr_pretty__() == (
+        f"CompilerOutput({circuits!r}, [{{}}], None, None, None, "
+        "\n[\n\t[UniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]])],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]]),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]]),"
+        "\n\t],\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]])],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]]),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]]),\n\t],\n],)"
+    )
+
+    assert css.compiler_output.CompilerOutput(
+        circuits,
+        [qubit_map],
+        pulse_lists=[[[mock_virtual_pulse] * (i + 1) for i in range(2)] for j in range(2)],
+    ).__repr_pretty__() == (
+        f"CompilerOutput({circuits!r}, [{{}}], None, None, None, "
+        "\n[\n\t[UniquePulse(channel=0.0, freq=0.0, extra=[(envelope phase) 0.0])],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[(envelope phase) 0.0])"
+        ",\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[(envelope phase) 0.0]),"
+        "\n\t],\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, extra=[(envelope phase) 0.0])],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[(envelope phase) 0.0]),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[(envelope phase) 0.0]),\n\t],\n],)"
     )
 
 
@@ -104,13 +159,13 @@ def test_read_json_ibmq() -> None:
 
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
-        "pulses": gss.serialization.serialize([mock.DEFAULT]),
+        "pulses": gss.serialization.serialize([DEFAULT]),
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
     }
 
     out = css.compiler_output.read_json_ibmq(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
-    assert out.pulse_sequence == mock.DEFAULT
+    assert out.pulse_sequence == DEFAULT
     assert out.final_logical_to_physical == final_logical_to_physical
     assert not hasattr(out, "circuits")
     assert not hasattr(out, "pulse_sequences")
@@ -118,28 +173,26 @@ def test_read_json_ibmq() -> None:
 
     out = css.compiler_output.read_json_ibmq(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit]
-    assert out.pulse_sequences == [mock.DEFAULT]
+    assert out.pulse_sequences == [DEFAULT]
     assert out.final_logical_to_physicals == [final_logical_to_physical]
     assert not hasattr(out, "circuit")
     assert not hasattr(out, "pulse_sequence")
     assert not hasattr(out, "final_logical_to_physical")
 
-    with mock.patch.dict("sys.modules", {"qiskit": None}), pytest.warns(
+    with patch.dict("sys.modules", {"qiskit": None}), pytest.warns(
         UserWarning, match="requires Qiskit Terra"
     ):
         out = css.compiler_output.read_json_ibmq(json_dict, circuits_is_list=False)
         assert out.circuit == circuit
         assert out.pulse_sequence is None
 
-    with mock.patch("qiskit.__version__", "0.17.2"), pytest.warns(
-        UserWarning, match="you have 0.17.2"
-    ):
+    with patch("qiskit.__version__", "0.17.2"), pytest.warns(UserWarning, match="you have 0.17.2"):
         out = css.compiler_output.read_json_ibmq(json_dict, circuits_is_list=True)
         assert out.circuits == [circuit]
         assert out.pulse_sequences is None
 
 
-@mock.patch.dict("sys.modules", {"qtrl": None})
+@patch.dict("sys.modules", {"qtrl": None})
 def test_read_json_aqt() -> None:
     importlib.reload(css.compiler_output)
 
@@ -168,7 +221,7 @@ def test_read_json_aqt() -> None:
     assert not hasattr(out, "circuit")
     assert not hasattr(out, "final_logical_to_physical")
 
-    with mock.patch.dict("sys.modules", {"qtrl": None}), pytest.warns(
+    with patch.dict("sys.modules", {"qtrl": None}), pytest.warns(
         UserWarning, match="deserialize compiled pulse sequences"
     ):
         out = css.compiler_output.read_json_aqt(json_dict, circuits_is_list=False)

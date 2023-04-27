@@ -108,7 +108,14 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
 
     def __repr_pretty__(self) -> str:
         def get_readable_pulse(pulse: qtrl.sequencer.sequencer.UniquePulse) -> str:
-            """Gets human-readable version of pulse object."""
+            """Gets human-readable version of pulse object.
+
+            Args:
+                pulse: A qtrl UniquePulse object with waveform parameters.
+
+            Returns:
+                A string containing pulse channel, frequency, and extra info about the waveform.
+            """
             if isinstance(pulse.envelope, qtrl.sequencer.sequencer.VirtualEnvelope):
                 extra = f"(envelope phase) {pulse.envelope.phase:.2}"
             else:
@@ -122,7 +129,15 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
             pulse_list: Union[List[Any], qtrl.sequencer.sequencer.UniquePulse, None],
             tab: int = 0,
         ) -> Union[str, None]:
-            """Recursively prints pulse list elements."""
+            """Recursively prints pulse list elements.
+
+            Args:
+                pulse_list: A list of qtrl UniquePulse objects.
+                tab: The number of times to indent the current line.
+
+            Returns:
+                A string of the pulse list elements in a human-readable indented format.
+            """
             if pulse_list is None:
                 return None
             elems = []

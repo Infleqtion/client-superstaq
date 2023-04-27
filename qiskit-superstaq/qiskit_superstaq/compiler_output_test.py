@@ -4,7 +4,7 @@ import json
 import pickle
 import textwrap
 from typing import Dict, List, Union
-from unittest import mock
+from unittest.mock import MagicMock, patch
 
 import general_superstaq as gss
 import pytest
@@ -62,14 +62,66 @@ def test_compiler_output_repr() -> None:
         == f"""CompilerOutput({circuit!r}, {{0: 1}}, None, None, None, None)"""
     )
 
+    assert (
+        qss.compiler_output.CompilerOutput(circuit, {0: 1}).__repr_pretty__()
+        == f"CompilerOutput({circuit!r}, {{0: 1}}, None, None, None, None)"
+    )
+
     circuits = [circuit, circuit]
     assert (
         repr(qss.compiler_output.CompilerOutput(circuits, [{0: 1}, {1: 0}]))
         == f"CompilerOutput({circuits!r}, [{{0: 1}}, {{1: 0}}], None, None, None, None)"
     )
 
+    assert (
+        qss.compiler_output.CompilerOutput(circuits, [{0: 1}, {1: 0}]).__repr_pretty__()
+        == f"CompilerOutput({circuits!r}, [{{0: 1}}, {{1: 0}}], None, None, None, None)"
+    )
 
-@mock.patch.dict("sys.modules", {"qtrl": None})
+    # Tests more involved "pretty" repr
+    mock_pulse = MagicMock()
+    mock_pulse.envelope.kwargs = {"phase": [0, 1, 2]}
+    mock_pulse.channel = 0.0
+    mock_pulse.freq = 0.0
+
+    qtrl = pytest.importorskip("qtrl", reason="qtrl not installed")
+    mock_virtual_pulse = MagicMock()
+    mock_virtual_pulse.envelope = MagicMock(qtrl.sequencer.VirtualEnvelope)
+    mock_virtual_pulse.envelope.phase = 0.0
+    mock_virtual_pulse.channel = 0.0
+    mock_virtual_pulse.freq = 0.0
+
+    assert qss.compiler_output.CompilerOutput(
+        circuits,
+        [{0: 1}, {1: 0}],
+        pulse_lists=[[[mock_pulse] * (i + 1) for i in range(2)] for j in range(2)],
+    ).__repr_pretty__() == (
+        f"CompilerOutput({circuits!r}, [{{0: 1}}, {{1: 0}}], None, None, None, "
+        "\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2])],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2]),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2]),"
+        "\n\t],\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2])],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2]),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2]),\n\t],\n],)"
+    )
+
+    assert qss.compiler_output.CompilerOutput(
+        circuits,
+        [{0: 1}, {1: 0}],
+        pulse_lists=[[[mock_virtual_pulse] * (i + 1) for i in range(2)] for j in range(2)],
+    ).__repr_pretty__() == (
+        f"CompilerOutput({circuits!r}, [{{0: 1}}, {{1: 0}}], None, None, None, "
+        "\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0)],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0),"
+        "\n\t],\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0)],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0),"
+        "\n\t],\n],)"
+    )
+
+
+@patch.dict("sys.modules", {"qtrl": None})
 def test_read_json() -> None:
     importlib.reload(qss.compiler_output)
 
