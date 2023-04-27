@@ -13,7 +13,7 @@
 # that they have been altered from the originals.
 
 import json
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, SupportsInt, Tuple, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -24,7 +24,7 @@ from general_superstaq import ResourceEstimate, finance, logistics, superstaq_cl
 import qiskit_superstaq as qss
 
 
-def _validate_qiskit_circuit(circuits: Any) -> None:
+def _validate_qiskit_circuits(circuits: object) -> None:
     """Validates that the input is either a single `qiskit.QuantumCircuit` or a list of
     `qiskit.QuantumCircuit` instances.
 
@@ -46,6 +46,33 @@ def _validate_qiskit_circuit(circuits: Any) -> None:
             "Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a "
             "sequence of `qiskit.QuantumCircuit` instances."
         )
+
+
+def _validate_integer_param(integer_param: object) -> None:
+    """Validates that an input parameter is positive
+    and an integer.
+
+    Args:
+        integer_param: An input parameter.
+
+    Raises:
+        TypeError: If input is not an integer.
+        ValueError: If input is negative.
+    """
+
+    if not (
+        (isinstance(integer_param, SupportsInt) and int(integer_param) == integer_param)
+        or (
+            isinstance(integer_param, (bytes, str))
+            and (
+                str(integer_param, "utf-8") if isinstance(integer_param, bytes) else integer_param
+            ).isdecimal()
+        )
+    ):
+        raise TypeError(f"{integer_param} cannot be safely cast as an integer.")
+
+    if int(integer_param) <= 0:
+        raise ValueError("Must be a positive integer.")
 
 
 class SuperstaQProvider(
@@ -138,7 +165,7 @@ class SuperstaQProvider(
             ResourceEstimate(s) containing resource costs (after compilation)
             for running circuit(s) on target.
         """
-        _validate_qiskit_circuit(circuits)
+        _validate_qiskit_circuits(circuits)
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuit_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
@@ -175,7 +202,7 @@ class SuperstaQProvider(
             pulse sequence corresponding to the optimized `qiskit.QuantumCircuit`(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
         """
-        _validate_qiskit_circuit(circuits)
+        _validate_qiskit_circuits(circuits)
 
         if not target.startswith("aqt_"):
             raise ValueError(f"{target} is not an AQT target")
@@ -223,7 +250,8 @@ class SuperstaQProvider(
             pulse sequence corresponding to the QuantumCircuits and the .pulse_lists attribute is
             the list(s) of cycles.
         """
-        _validate_qiskit_circuit(circuits)
+        _validate_qiskit_circuits(circuits)
+        _validate_integer_param(num_equivalent_circuits)
         if not target.startswith("aqt_"):
             raise ValueError(f"{target} is not an AQT target")
 
@@ -254,7 +282,7 @@ class SuperstaQProvider(
     ) -> qss.compiler_output.CompilerOutput:
         """Returns pulse schedule(s) for the given circuit(s) and target."""
 
-        _validate_qiskit_circuit(circuits)
+        _validate_qiskit_circuits(circuits)
         if not target.startswith("ibmq_"):
             raise ValueError(f"{target} is not an IBMQ target")
 
@@ -294,7 +322,7 @@ class SuperstaQProvider(
             pulse sequence corresponding to the optimized `qiskit.QuantumCircuit`(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
         """
-        _validate_qiskit_circuit(circuits)
+        _validate_qiskit_circuits(circuits)
         if not target.startswith("sandia_"):
             raise ValueError(f"{target} is not a QSCOUT target")
 
@@ -328,7 +356,7 @@ class SuperstaQProvider(
         Returns:
             object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
         """
-        _validate_qiskit_circuit(circuits)
+        _validate_qiskit_circuits(circuits)
         if not target.startswith("cq_"):
             raise ValueError(f"{target} is not a CQ target")
 
@@ -346,6 +374,8 @@ class SuperstaQProvider(
         self, files: List[List[int]], num_qubits: int, depth: int
     ) -> Tuple[List[qiskit.QuantumCircuit], npt.NDArray[np.float_]]:
         """Docstring."""
+        _validate_integer_param(num_qubits)
+        _validate_integer_param(depth)
         json_dict = self._client.supercheq(files, num_qubits, depth, "qiskit_circuits")
         circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
         fidelities = gss.serialization.deserialize(json_dict["fidelities"])
