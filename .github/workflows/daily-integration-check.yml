@@ -10,7 +10,7 @@ jobs:
   daily-integration-check:
     name: Pytest integration check
     env:
-      TEST_USER_TOKEN : ${{ secrets.TEST_USER_TOKEN }}
+      SUPERSTAQ_API_KEY : ${{ secrets.SUPERSTAQ_API_KEY }}
       TEST_USER_IBMQ_TOKEN : ${{ secrets.TEST_USER_IBMQ_TOKEN }}
     runs-on: ubuntu-latest
     steps:
