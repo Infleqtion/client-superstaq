@@ -13,7 +13,7 @@
 """Service to access SuperstaQs API."""
 
 import json
-from typing import Any, Dict, List, Mapping, Optional, Sequence, SupportsInt, Tuple, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import cirq
 import general_superstaq as gss
@@ -136,7 +136,8 @@ def _validate_integer_param(integer_param: object) -> None:
     """
 
     if not (
-        (isinstance(integer_param, SupportsInt) and int(integer_param) == integer_param)
+        hasattr(integer_param, "__int__")
+        and int(integer_param) == integer_param
         or (
             isinstance(integer_param, (bytes, str))
             and (

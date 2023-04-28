@@ -13,7 +13,7 @@
 # that they have been altered from the originals.
 
 import json
-from typing import Dict, List, Optional, Sequence, SupportsInt, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -61,7 +61,7 @@ def _validate_integer_param(integer_param: object) -> None:
     """
 
     if not (
-        (isinstance(integer_param, SupportsInt) and int(integer_param) == integer_param)
+        (hasattr(integer_param, "__int__") and int(integer_param) == integer_param)
         or (
             isinstance(integer_param, (bytes, str))
             and (
