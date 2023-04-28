@@ -160,16 +160,15 @@ class SuperstaQProvider(
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
-        request_json = {
-            "qiskit_circuits": serialized_circuits,
-            "target": target,
-        }
-
         options_dict: Dict[str, Any] = {**kwargs}
         if atol is not None:
             options_dict["atol"] = atol
-        if options_dict:
-            request_json["options"] = json.dumps(options_dict)
+
+        request_json = {
+            "qiskit_circuits": serialized_circuits,
+            "target": target,
+            "options": json.dumps(options_dict),
+        }
 
         json_dict = self._client.post_request("/aqt_compile", request_json)
 
