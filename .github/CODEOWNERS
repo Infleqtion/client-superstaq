@@ -11,47 +11,22 @@ superstaq-client/qiskit-superstaq/qiskit_superstaq/superstaq_backend* @pgoiporia
 superstaq-client/qiskit-superstaq/qiskit_superstaq/compiler_output* @pgoiporia @bharat-thotakura
 superstaq-client/qiskit-superstaq/qiskit_superstaq/superstaq_provider* @pgoiporia @bharat-thotakura
 superstaq-client/qiskit-superstaq/qiskit_superstaq/serialization* @richrines1 @paaige
-superstaq-client/general-superstaq/general_superstaq/user_config_test.py
+superstaq-client/general-superstaq/general_superstaq/user_config*
 superstaq-client/general-superstaq/general_superstaq/finance* @bharat-thotakura
-superstaq-client/general-superstaq/general_superstaq/superstaq_client_test.py
-superstaq-client/general-superstaq/general_superstaq/py.typed
-superstaq-client/general-superstaq/general_superstaq/user_config.py
+superstaq-client/general-superstaq/general_superstaq/superstaq_client*
 superstaq-client/general-superstaq/general_superstaq/qubo* @bharat-thotakura
-superstaq-client/general-superstaq/general_superstaq/__init__.py
-superstaq-client/general-superstaq/general_superstaq/resource_estimate.py
-superstaq-client/general-superstaq/general_superstaq/serialization.py
+superstaq-client/general-superstaq/general_superstaq/resource_estimate*
+superstaq-client/general-superstaq/general_superstaq/serialization*
 superstaq-client/general-superstaq/general_superstaq/_version.py @vtomole @dowusu-antwi @richrines1 @singular-value @pgoiporia @paaige @stephanielee9 @knsmith @bharat-thotakura
-superstaq-client/general-superstaq/general_superstaq/superstaq_exceptions_test.py
-superstaq-client/general-superstaq/general_superstaq/resource_estimate_test.py
-superstaq-client/general-superstaq/general_superstaq/typing.py
-superstaq-client/general-superstaq/general_superstaq/serialization_test.py
-superstaq-client/general-superstaq/general_superstaq/qubo_test.py
-superstaq-client/general-superstaq/general_superstaq/_version.py
-superstaq-client/general-superstaq/general_superstaq/typing_test.py
-superstaq-client/general-superstaq/general_superstaq/finance_test.py
-superstaq-client/general-superstaq/general_superstaq/superstaq_exceptions.py
+superstaq-client/general-superstaq/general_superstaq/superstaq_exceptions*
+superstaq-client/general-superstaq/general_superstaq/typing*
 superstaq-client/general-superstaq/general_superstaq/_init_vars.py
 superstaq-client/general-superstaq/general_superstaq/logistics* @bharat-thotakura
-superstaq-client/general-superstaq/general_superstaq/superstaq_client.py
-superstaq-client/general-superstaq/general_superstaq/logistics_test.py
-superstaq-client/general-superstaq/general_superstaq/__pycache__/_init_vars.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/__pycache__/serialization.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/__pycache__/superstaq_client.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/__pycache__/logistics.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/__pycache__/typing.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/__pycache__/qubo.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/__pycache__/finance.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/__pycache__/__init__.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/__pycache__/superstaq_exceptions.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/__pycache__/resource_estimate.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/__pycache__/_version.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/__pycache__/user_config.cpython-310.pyc
 superstaq-client/general-superstaq/general_superstaq/check/configs.py
 superstaq-client/general-superstaq/general_superstaq/check/all_.py
 superstaq-client/general-superstaq/general_superstaq/check/check_utils.py
 superstaq-client/general-superstaq/general_superstaq/check/format_.py
 superstaq-client/general-superstaq/general_superstaq/check/requirements.py
-superstaq-client/general-superstaq/general_superstaq/check/__init__.py
 superstaq-client/general-superstaq/general_superstaq/check/mypy_.py
 superstaq-client/general-superstaq/general_superstaq/check/setup.cfg
 superstaq-client/general-superstaq/general_superstaq/check/pytest_.py
@@ -59,30 +34,7 @@ superstaq-client/general-superstaq/general_superstaq/check/coverage_.py
 superstaq-client/general-superstaq/general_superstaq/check/flake8_.py
 superstaq-client/general-superstaq/general_superstaq/check/pylint_.py
 superstaq-client/general-superstaq/general_superstaq/check/build_docs.py
-superstaq-client/general-superstaq/general_superstaq/check/.isort.cfg
-superstaq-client/general-superstaq/general_superstaq/check/__pycache__/configs.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/check/__pycache__/all_.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/check/__pycache__/flake8_.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/check/__pycache__/mypy_.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/check/__pycache__/coverage_.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/check/__pycache__/requirements.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/check/__pycache__/check_utils.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/check/__pycache__/pytest_.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/check/__pycache__/__init__.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/check/__pycache__/pylint_.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/check/__pycache__/build_docs.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq/check/__pycache__/format_.cpython-310.pyc
-superstaq-client/general-superstaq/general_superstaq.egg-info/PKG-INFO
-superstaq-client/general-superstaq/general_superstaq.egg-info/SOURCES.txt
-superstaq-client/general-superstaq/general_superstaq.egg-info/dependency_links.txt
-superstaq-client/general-superstaq/general_superstaq.egg-info/top_level.txt
-superstaq-client/general-superstaq/general_superstaq.egg-info/requires.txt
 superstaq-client/cirq-superstaq/setup.py
-superstaq-client/cirq-superstaq/requirements.txt
-superstaq-client/cirq-superstaq/README.md
-superstaq-client/cirq-superstaq/example-requirements.txt
-superstaq-client/cirq-superstaq/dev-requirements.txt
-superstaq-client/cirq-superstaq/.isort.cfg
 superstaq-client/cirq-superstaq/examples/cq_compile.ipynb
 superstaq-client/cirq-superstaq/examples/finance.ipynb
 superstaq-client/cirq-superstaq/examples/qscout_compile.ipynb
@@ -115,32 +67,11 @@ superstaq-client/cirq-superstaq/examples/static/file11.txt
 superstaq-client/cirq-superstaq/docs/access.md
 superstaq-client/cirq-superstaq/docs/ibm_cirq_superstaq.ipynb
 superstaq-client/cirq-superstaq/docs/getting_started_cirq_superstaq.ipynb
-superstaq-client/cirq-superstaq/cirq_superstaq/service_test.py
 superstaq-client/cirq-superstaq/cirq_superstaq/daily_integration_test.py
-superstaq-client/cirq-superstaq/cirq_superstaq/job.py 
-superstaq-client/cirq-superstaq/cirq_superstaq/py.typed
-superstaq-client/cirq-superstaq/cirq_superstaq/compiler_output_test.py
-superstaq-client/cirq-superstaq/cirq_superstaq/__init__.py
-superstaq-client/cirq-superstaq/cirq_superstaq/serialization.py
+superstaq-client/cirq-superstaq/cirq_superstaq/job* 
+superstaq-client/cirq-superstaq/cirq_superstaq/serialization*
 superstaq-client/cirq-superstaq/cirq_superstaq/_version_test.py
-superstaq-client/cirq-superstaq/cirq_superstaq/serialization_test.py
 superstaq-client/cirq-superstaq/cirq_superstaq/service* @bharat-thotakura
-superstaq-client/cirq-superstaq/cirq_superstaq/_version.py
 superstaq-client/cirq-superstaq/cirq_superstaq/compiler_output* @bharat-thotakura
-superstaq-client/cirq-superstaq/cirq_superstaq/job_test.py
 superstaq-client/cirq-superstaq/cirq_superstaq/sampler.py
-superstaq-client/cirq-superstaq/cirq_superstaq/ops/__init__.py
-superstaq-client/cirq-superstaq/cirq_superstaq/ops/qubit_gates_test.py
-superstaq-client/cirq-superstaq/cirq_superstaq/ops/qudit_gates.py
-superstaq-client/cirq-superstaq/cirq_superstaq/ops/qudit_gates_test.py
-superstaq-client/cirq-superstaq/cirq_superstaq/ops/qubit_gates.py
-superstaq-client/check/configs.py
-superstaq-client/check/all_.py
-superstaq-client/check/format_.py
-superstaq-client/check/requirements.py
-superstaq-client/check/mypy_.py
-superstaq-client/check/pytest_.py
-superstaq-client/check/coverage_.py
-superstaq-client/check/flake8_.py
-superstaq-client/check/pylint_.py
-superstaq-client/check/build_docs.py
+superstaq-client/cirq-superstaq/cirq_superstaq/ops/* @richrines1
