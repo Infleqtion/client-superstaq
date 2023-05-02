@@ -127,7 +127,7 @@ def read_json_ibmq(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compile
     if importlib.util.find_spec("qiskit"):
         import qiskit
 
-        if "0.22" < qiskit.__version__ < "0.23":
+        if "0.23" < qiskit.__version__ < "0.24":
             pulses = gss.serialization.deserialize(json_dict["pulses"])
         else:
             warnings.warn(
