@@ -257,7 +257,7 @@ class SuperstaQProvider(
         request_json = {
             "qiskit_circuits": serialized_circuits,
             "target": target,
-            "options": json.dumps({**kwargs}),
+            "options": json.dumps(kwargs),
         }
 
         json_dict = self._client.ibmq_compile(request_json)
