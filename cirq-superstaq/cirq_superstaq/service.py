@@ -407,7 +407,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
                 implies css.CZ3 for all "CZ3/*" calibrations except "CZ3/C5T4", which will be
                 mapped to a css.CZ3_INV on qutrits (4, 5). Setting any calibration to None will
                 disable that calibration.
-            kwargs: Other desired aqt_compile options.
+            kwargs: Other desired aqt_compile_eca options.
         Returns:
             Object whose .circuits attribute is a list (or list of lists) of logically equivalent
                 cirq Circuit(s).
