@@ -540,7 +540,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         request_json = {
             "cirq_circuits": serialized_circuits,
             "target": target,
-            "options": cirq.to_json({**kwargs}),
+            "options": cirq.to_json(kwargs),
         }
 
         json_dict = self._client.cq_compile(request_json)
