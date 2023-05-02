@@ -42,9 +42,9 @@ class _SuperstaQClient:
 
     def __init__(
         self,
-        remote_host: str,
-        api_key: str,
         client_name: str,
+        api_key: Optional[str] = None,
+        remote_host: Optional[str] = None,
         api_version: str = gss.API_VERSION,
         max_retry_seconds: float = 60,  # 1 minute
         verbose: bool = False,
@@ -67,14 +67,15 @@ class _SuperstaQClient:
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
         """
 
-        self.api_key = api_key
+        self.api_key = api_key or gss.superstaq_client.find_api_key()
+        self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
         self.client_name = client_name
         self.api_version = api_version
         self.max_retry_seconds = max_retry_seconds
         self.verbose = verbose
-        url = urllib.parse.urlparse(remote_host)
+        url = urllib.parse.urlparse(self.remote_host)
         assert url.scheme and url.netloc, (
-            f"Specified remote_host {remote_host} is not a valid url, for example "
+            f"Specified remote_host {self.remote_host} is not a valid url, for example "
             "http://example.com"
         )
 
@@ -261,21 +262,19 @@ class _SuperstaQClient:
         """
         return self.post_request("/resource_estimate", json_dict)
 
-    def aqt_compile(self, json_dict: Dict[str, Union[int, str, List[str]]]) -> Dict[str, str]:
+    def aqt_compile(self, json_dict: Dict[str, str]) -> Dict[str, str]:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
         return self.post_request("/aqt_compile", json_dict)
 
-    def qscout_compile(
-        self, json_dict: Dict[str, Union[str, List[str]]]
-    ) -> Dict[str, Union[str, List[str]]]:
+    def qscout_compile(self, json_dict: Dict[str, str]) -> Dict[str, Union[str, List[str]]]:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for QSCOUT."""
         return self.post_request("/qscout_compile", json_dict)
 
-    def cq_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> Dict[str, str]:
+    def cq_compile(self, json_dict: Dict[str, str]) -> Dict[str, str]:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for CQ."""
         return self.post_request("/cq_compile", json_dict)
 
-    def ibmq_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> Dict[str, str]:
+    def ibmq_compile(self, json_dict: Dict[str, str]) -> Dict[str, str]:
         """Makes a POST request to SuperstaQ API to compile a circuits for IBM devices."""
         return self.post_request("/ibmq_compile", json_dict)
 
