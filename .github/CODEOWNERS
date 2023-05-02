@@ -16,24 +16,12 @@ superstaq-client/general-superstaq/general_superstaq/finance* @bharat-thotakura
 superstaq-client/general-superstaq/general_superstaq/superstaq_client*
 superstaq-client/general-superstaq/general_superstaq/qubo* @bharat-thotakura
 superstaq-client/general-superstaq/general_superstaq/resource_estimate*
-superstaq-client/general-superstaq/general_superstaq/serialization*
+superstaq-client/general-superstaq/general_superstaq/serialization* @richrines1
 superstaq-client/general-superstaq/general_superstaq/_version.py @vtomole @dowusu-antwi @richrines1 @singular-value @pgoiporia @paaige @stephanielee9 @knsmith @bharat-thotakura
 superstaq-client/general-superstaq/general_superstaq/superstaq_exceptions*
 superstaq-client/general-superstaq/general_superstaq/typing*
-superstaq-client/general-superstaq/general_superstaq/_init_vars.py
 superstaq-client/general-superstaq/general_superstaq/logistics* @bharat-thotakura
-superstaq-client/general-superstaq/general_superstaq/check/configs.py
-superstaq-client/general-superstaq/general_superstaq/check/all_.py
-superstaq-client/general-superstaq/general_superstaq/check/check_utils.py
-superstaq-client/general-superstaq/general_superstaq/check/format_.py
-superstaq-client/general-superstaq/general_superstaq/check/requirements.py
-superstaq-client/general-superstaq/general_superstaq/check/mypy_.py
-superstaq-client/general-superstaq/general_superstaq/check/setup.cfg
-superstaq-client/general-superstaq/general_superstaq/check/pytest_.py
-superstaq-client/general-superstaq/general_superstaq/check/coverage_.py
-superstaq-client/general-superstaq/general_superstaq/check/flake8_.py
-superstaq-client/general-superstaq/general_superstaq/check/pylint_.py
-superstaq-client/general-superstaq/general_superstaq/check/build_docs.py
+superstaq-client/general-superstaq/general_superstaq/check/* @richrines1
 superstaq-client/cirq-superstaq/setup.py
 superstaq-client/cirq-superstaq/examples/cq_compile.ipynb
 superstaq-client/cirq-superstaq/examples/finance.ipynb
@@ -43,35 +31,13 @@ superstaq-client/cirq-superstaq/examples/ibmq_compile.ipynb
 superstaq-client/cirq-superstaq/examples/resource_estimate.ipynb
 superstaq-client/cirq-superstaq/examples/SupercheQ.ipynb
 superstaq-client/cirq-superstaq/examples/aqt.ipynb
-superstaq-client/cirq-superstaq/examples/static/file8.txt
-superstaq-client/cirq-superstaq/examples/static/file15.txt
-superstaq-client/cirq-superstaq/examples/static/file10.txt
-superstaq-client/cirq-superstaq/examples/static/file19.txt
-superstaq-client/cirq-superstaq/examples/static/file5.txt
-superstaq-client/cirq-superstaq/examples/static/file16.txt
-superstaq-client/cirq-superstaq/examples/static/file6.txt
-superstaq-client/cirq-superstaq/examples/static/file1.txt
-superstaq-client/cirq-superstaq/examples/static/file4.txt
-superstaq-client/cirq-superstaq/examples/static/file18.txt
-superstaq-client/cirq-superstaq/examples/static/file2.txt
-superstaq-client/cirq-superstaq/examples/static/file14.txt
-superstaq-client/cirq-superstaq/examples/static/file12.txt
-superstaq-client/cirq-superstaq/examples/static/file9.txt
-superstaq-client/cirq-superstaq/examples/static/file20.txt
-superstaq-client/cirq-superstaq/examples/static/file.txt
-superstaq-client/cirq-superstaq/examples/static/file13.txt
-superstaq-client/cirq-superstaq/examples/static/file17.txt
-superstaq-client/cirq-superstaq/examples/static/file7.txt
-superstaq-client/cirq-superstaq/examples/static/file3.txt
-superstaq-client/cirq-superstaq/examples/static/file11.txt
 superstaq-client/cirq-superstaq/docs/access.md
 superstaq-client/cirq-superstaq/docs/ibm_cirq_superstaq.ipynb
 superstaq-client/cirq-superstaq/docs/getting_started_cirq_superstaq.ipynb
 superstaq-client/cirq-superstaq/cirq_superstaq/daily_integration_test.py
 superstaq-client/cirq-superstaq/cirq_superstaq/job* 
-superstaq-client/cirq-superstaq/cirq_superstaq/serialization*
-superstaq-client/cirq-superstaq/cirq_superstaq/_version_test.py
+superstaq-client/cirq-superstaq/cirq_superstaq/serialization*  @richrines1
 superstaq-client/cirq-superstaq/cirq_superstaq/service* @bharat-thotakura
 superstaq-client/cirq-superstaq/cirq_superstaq/compiler_output* @bharat-thotakura
-superstaq-client/cirq-superstaq/cirq_superstaq/sampler.py
+superstaq-client/cirq-superstaq/cirq_superstaq/sampler*
 superstaq-client/cirq-superstaq/cirq_superstaq/ops/* @richrines1
