@@ -29,11 +29,12 @@ def _validate_qiskit_circuits(circuits: object) -> None:
     `qiskit.QuantumCircuit` instances.
 
     Args:
-        circuits: The circuit to run.
+        circuits: The circuit(s) to run.
 
     Raises:
-        ValueError: If the input is not a `qiskit.QuantumCircuit` or
-        a list of `qiskit.QuantumCircuit` instances.
+        ValueError: If the input is not a `qiskit.QuantumCircuit` or a list of
+        `qiskit.QuantumCircuit` instances.
+
     """
     if not (
         isinstance(circuits, qiskit.QuantumCircuit)
@@ -49,8 +50,7 @@ def _validate_qiskit_circuits(circuits: object) -> None:
 
 
 def _validate_integer_param(integer_param: object) -> None:
-    """Validates that an input parameter is positive
-    and an integer.
+    """Validates that an input parameter is positive and an integer.
 
     Args:
         integer_param: An input parameter.
@@ -62,12 +62,7 @@ def _validate_integer_param(integer_param: object) -> None:
 
     if not (
         (hasattr(integer_param, "__int__") and int(integer_param) == integer_param)
-        or (
-            isinstance(integer_param, (bytes, str))
-            and (
-                str(integer_param, "utf-8") if isinstance(integer_param, bytes) else integer_param
-            ).isdecimal()
-        )
+        or (isinstance(integer_param, str) and integer_param.isdecimal())
     ):
         raise TypeError(f"{integer_param} cannot be safely cast as an integer.")
 
