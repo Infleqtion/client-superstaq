@@ -97,6 +97,51 @@ def counts_to_results(
     return result
 
 
+def _validate_cirq_circuits(circuits: object) -> None:
+    """Validates that the input is either a single `cirq.Circuit` or a list of `cirq.Circuit`
+    instances.
+
+    Args:
+        circuits: The circuit(s) to run.
+
+    Raises:
+        ValueError: If the input is not a `cirq.Circuit` or a list of `cirq.Circuit` instances.
+    """
+
+    if not (
+        isinstance(circuits, cirq.Circuit)
+        or (
+            isinstance(circuits, Sequence)
+            and all(isinstance(circuit, cirq.Circuit) for circuit in circuits)
+        )
+    ):
+        raise ValueError(
+            "Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
+            "sequence of `cirq.Circuit` instances."
+        )
+
+
+def _validate_integer_param(integer_param: object) -> None:
+    """Validates that an input parameter is positive and an integer.
+
+    Args:
+        integer_param: An input parameter.
+
+    Raises:
+        TypeError: If input is not an integer.
+        ValueError: If input is negative.
+    """
+
+    if not (
+        (hasattr(integer_param, "__int__") and int(integer_param) == integer_param)
+        or (isinstance(integer_param, str) and integer_param.isdecimal())
+    ):
+        raise TypeError(f"{integer_param} cannot be safely cast as an integer.")
+
+    if int(integer_param) <= 0:
+        raise ValueError("Must be a positive integer.")
+
+
 class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
     """A class to access SuperstaQ's API.
 
@@ -187,8 +232,10 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Returns:
             A `collection.Counter` for running the circuit.
         """
+        _validate_cirq_circuits(circuit)
+        _validate_integer_param(repetitions)
         resolved_circuit = cirq.protocols.resolve_parameters(circuit, param_resolver)
-        job = self.create_job(resolved_circuit, repetitions, target, method, options)
+        job = self.create_job(resolved_circuit, int(repetitions), target, method, options)
         counts = job.counts()
 
         return counts
@@ -354,7 +401,6 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to target AQT device, optimized to its native gate set.
-
         Args:
             circuits: Cirq Circuit(s) to compile.
             target: String of target AQT device.
@@ -374,6 +420,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             .pulse_list(s) attribute is the list(s) of cycles.
         """
 
+        _validate_cirq_circuits(circuits)
         return self._aqt_compile(circuits, target=target, atol=atol, gate_defs=gate_defs, **kwargs)
 
     def aqt_compile_eca(
@@ -415,6 +462,8 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
                 pulse sequence corresponding to the cirq.Circuits and the .pulse_lists attribute is
                 the list(s) of cycles.
         """
+        _validate_cirq_circuits(circuits)
+        _validate_integer_param(num_equivalent_circuits)
 
         return self._aqt_compile(
             circuits,
@@ -442,6 +491,8 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         """Generic API for compiling circuits for AQT devices. See `Service.aqt_compile()` and
         `Service.aqt_compile_eca()`.
         """
+        _validate_cirq_circuits(circuits)
+
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
@@ -454,6 +505,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         options_dict = {**kwargs}
 
         if num_equivalent_circuits is not None:
+            _validate_integer_param(num_equivalent_circuits)
             options_dict["num_eca_circuits"] = num_equivalent_circuits
         if random_seed is not None:
             options_dict["random_seed"] = random_seed
@@ -496,6 +548,9 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Raises:
             ValueError: If `base_entangling_gate` is not a valid gate option.
         """
+
+        _validate_cirq_circuits(circuits)
+
         if base_entangling_gate not in ("xx", "zz"):
             raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
 
@@ -534,6 +589,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Returns:
             Object whose .circuit(s) attribute is an optimized cirq Circuit(s)
         """
+        _validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
@@ -564,6 +620,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Returns:
             Object whose .circuit(s) attribute is an optimized cirq Circuit(s)
         """
+        _validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
@@ -585,6 +642,9 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         self, files: List[List[int]], num_qubits: int, depth: int
     ) -> Tuple[List[cirq.Circuit], npt.NDArray[np.float_]]:
         """Returns the randomly generated circuits and the fidelity matrix for inputted files"""
+
+        _validate_integer_param(num_qubits)
+        _validate_integer_param(depth)
         json_dict = self._client.supercheq(files, num_qubits, depth, "cirq_circuits")
         circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
         fidelities = gss.serialization.deserialize(json_dict["fidelities"])
