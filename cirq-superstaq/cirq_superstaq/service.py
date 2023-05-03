@@ -369,7 +369,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Returns:
             Object whose .circuit(s) attribute is an optimized cirq Circuit(s)
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the optimized cirq.Circuit(s) and the
+            pulse sequence corresponding to the optimized `cirq.Circuit`(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
         """
 
