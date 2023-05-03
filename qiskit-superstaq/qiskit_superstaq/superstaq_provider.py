@@ -13,7 +13,7 @@
 # that they have been altered from the originals.
 
 import json
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -179,11 +179,12 @@ class SuperstaQProvider(
             return resource_estimates
         return resource_estimates[0]
 
-    def aqt_compile(  # pylint: disable=missing-param-doc,missing-raises-doc
+    def aqt_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         target: str = "aqt_keysight_qpu",
         atol: Optional[float] = None,
+        **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
 
@@ -191,11 +192,14 @@ class SuperstaQProvider(
             circuits: Qiskit QuantumCircuit(s) to compile.
             target: String of target AQT device.
             atol: Tolerance to use for approximate gate synthesis (currently just for qutrit gates).
+            kwargs: Other desired aqt_compile options.
         Returns:
             Object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
             pulse sequence corresponding to the optimized `qiskit.QuantumCircuit`(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
+        Raises:
+            ValueError: If `target` is not a valid AQT target.
         """
         _validate_qiskit_circuits(circuits)
 
@@ -205,25 +209,28 @@ class SuperstaQProvider(
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
+        options_dict: Dict[str, Any] = {**kwargs}
+        if atol is not None:
+            options_dict["atol"] = atol
+
         request_json = {
             "qiskit_circuits": serialized_circuits,
             "target": target,
+            "options": json.dumps(options_dict),
         }
-        if atol is not None:
-            options_dict = {"atol": atol}
-            request_json["options"] = json.dumps(options_dict)
 
         json_dict = self._client.post_request("/aqt_compile", request_json)
 
         return qss.compiler_output.read_json_aqt(json_dict, circuits_is_list)
 
-    def aqt_compile_eca(  # pylint: disable=missing-raises-doc
+    def aqt_compile_eca(
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         num_equivalent_circuits: int,
         random_seed: Optional[int] = None,
         target: str = "aqt_keysight_qpu",
         atol: Optional[float] = None,
+        **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to target AQT device with Equivalent Circuit Averaging
         (ECA).
@@ -237,6 +244,7 @@ class SuperstaQProvider(
             random_seed: Optional seed for circuit randomizer.
             target: String of target AQT device.
             atol: Tolerance to use for approximate gate synthesis (currently just for qutrit gates).
+            kwargs: Other desired aqt_compile_eca options.
         Returns:
             Object whose .circuits attribute is a list (or list of lists) of logically equivalent
                 QuantumCircuit(s).
@@ -244,6 +252,8 @@ class SuperstaQProvider(
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
             pulse sequence corresponding to the QuantumCircuits and the .pulse_lists attribute is
             the list(s) of cycles.
+        Raises:
+            ValueError: If `target` is not a valid AQT target.
         """
         _validate_qiskit_circuits(circuits)
         _validate_integer_param(num_equivalent_circuits)
@@ -253,7 +263,10 @@ class SuperstaQProvider(
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
-        options_dict: Dict[str, Union[int, float]] = {"num_eca_circuits": num_equivalent_circuits}
+        options_dict: Dict[str, Union[int, float]] = {
+            "num_eca_circuits": num_equivalent_circuits,
+            **kwargs,
+        }
         if random_seed is not None:
             options_dict["random_seed"] = random_seed
         if atol is not None:
@@ -274,8 +287,18 @@ class SuperstaQProvider(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         target: str = "ibmq_qasm_simulator",
+        **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
-        """Returns pulse schedule(s) for the given circuit(s) and target."""
+        """Returns pulse schedule(s) for the given circuit(s) and target.
+        Args:
+            circuits: Qiskit QuantumCircuit(s)
+            target: String of target IBMQ device.
+            kwargs: Other desired ibmq_compile options.
+        Returns:
+            object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
+        Raises:
+            ValueError: If `target` is not a valid IBMQ target.
+        """
 
         _validate_qiskit_circuits(circuits)
         if not target.startswith("ibmq_"):
@@ -283,9 +306,13 @@ class SuperstaQProvider(
 
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
 
-        json_dict = self._client.ibmq_compile(
-            {"qiskit_circuits": serialized_circuits, "target": target}
-        )
+        request_json = {
+            "qiskit_circuits": serialized_circuits,
+            "target": target,
+            "options": json.dumps(kwargs),
+        }
+
+        json_dict = self._client.ibmq_compile(request_json)
         compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
         pulses = gss.serialization.deserialize(json_dict["pulses"])
         final_logical_to_physicals: List[Dict[int, int]] = list(
@@ -300,22 +327,30 @@ class SuperstaQProvider(
             compiled_circuits, final_logical_to_physicals, pulse_sequences=pulses
         )
 
-    def qscout_compile(  # pylint: disable=missing-param-doc,missing-raises-doc
+    def qscout_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         mirror_swaps: bool = True,
         base_entangling_gate: str = "xx",
         target: str = "sandia_qscout_qpu",
+        **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
 
         Args:
             circuits: qiskit QuantumCircuit(s)
+            target: String of target representing target device
+            mirror_swaps: If mirror swaps should be used.
+            base_entangling_gate: The base entangling gate to use.
+            kwargs: Other desired qscout_compile options
         Returns:
             object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
             pulse sequence corresponding to the optimized `qiskit.QuantumCircuit`(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
+        Raises:
+            ValueError: If `target` is not a valid QSCOUT target.
+            ValueError: If `base_entangling_gate` is not a valid gate option.
         """
         _validate_qiskit_circuits(circuits)
         if not target.startswith("sandia_"):
@@ -328,7 +363,11 @@ class SuperstaQProvider(
         if base_entangling_gate not in ("xx", "zz"):
             raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
 
-        options_dict = {"mirror_swaps": mirror_swaps, "base_entangling_gate": base_entangling_gate}
+        options_dict = {
+            "mirror_swaps": mirror_swaps,
+            "base_entangling_gate": base_entangling_gate,
+            **kwargs,
+        }
         json_dict = self._client.qscout_compile(
             {
                 "qiskit_circuits": serialized_circuits,
@@ -338,18 +377,22 @@ class SuperstaQProvider(
         )
         return qss.compiler_output.read_json_qscout(json_dict, circuits_is_list)
 
-    def cq_compile(  # pylint: disable=missing-raises-doc
+    def cq_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         target: str = "cq_hilbert_qpu",
+        **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to CQ device, optimized to its native gate set.
 
         Args:
-            circuits: qiskit QuantumCircuit(s)
-            target: the hardware to compile for
+            circuits: Qiskit QuantumCircuit(s)
+            target: String of target representing target device
+            kwargs: Other desired cq_compile options.
         Returns:
             object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
+        Raises:
+            ValueError: If `target` is not a valid CQ target.
         """
         _validate_qiskit_circuits(circuits)
         if not target.startswith("cq_"):
@@ -359,9 +402,13 @@ class SuperstaQProvider(
 
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
-        json_dict = self._client.cq_compile(
-            {"qiskit_circuits": serialized_circuits, "target": target}
-        )
+
+        request_json = {
+            "qiskit_circuits": serialized_circuits,
+            "target": target,
+            "options": json.dumps(kwargs),
+        }
+        json_dict = self._client.cq_compile(request_json)
 
         return qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
 
