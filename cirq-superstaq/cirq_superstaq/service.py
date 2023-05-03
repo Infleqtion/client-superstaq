@@ -399,9 +399,9 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         gate_defs: Optional[
             Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
         ] = None,
+        **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to target AQT device, optimized to its native gate set.
-
         Args:
             circuits: Cirq Circuit(s) to compile.
             target: String of target AQT device.
@@ -413,19 +413,15 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
                 implies css.CZ3 for all "CZ3/*" calibrations except "CZ3/C5T4", which will be
                 mapped to a css.CZ3_INV on qutrits (4, 5). Setting any calibration to None will
                 disable that calibration.
+            kwargs: Other desired aqt_compile options.
         Returns:
             Object whose .circuit(s) attribute is an optimized cirq Circuit(s)
             If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the optimized `cirq.Circuit`(s) and the
+            pulse sequence corresponding to the optimized cirq.Circuit(s) and the
             .pulse_list(s) attribute is the list(s) of cycles.
         """
         _validate_cirq_circuits(circuits)
-        return self._aqt_compile(
-            circuits,
-            target=target,
-            atol=atol,
-            gate_defs=gate_defs,
-        )
+        return self._aqt_compile(circuits, target=target, atol=atol, gate_defs=gate_defs, **kwargs)
 
     def aqt_compile_eca(
         self,
