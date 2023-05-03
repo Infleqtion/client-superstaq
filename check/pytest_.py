@@ -7,6 +7,8 @@ import general_superstaq.check
 if __name__ == "__main__":
     args = sys.argv[1:]
     args += ["-x", "cirq-superstaq/examples/aqt.ipynb"]
+    args += ["-x", "cirq-superstaq/examples/resource_estimate.ipynb"]
+    args += ["-x", "cirq-superstaq/examples/ibmq_compile.ipynb"]
     args += ["-x", "qiskit-superstaq/examples/aqt.ipynb"]
     args += ["-x", "qiskit-superstaq/examples/uchicago_workshop.ipynb"]
     args += ["-x", "docs/*"]
