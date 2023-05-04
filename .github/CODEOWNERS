@@ -11,7 +11,7 @@ superstaq-client/qiskit-superstaq/qiskit_superstaq/superstaq_backend* @pgoiporia
 superstaq-client/qiskit-superstaq/qiskit_superstaq/compiler_output* @pgoiporia @bharat-thotakura
 superstaq-client/qiskit-superstaq/qiskit_superstaq/superstaq_provider* @pgoiporia @bharat-thotakura
 superstaq-client/qiskit-superstaq/qiskit_superstaq/serialization* @richrines1 @paaige
-superstaq-client/general-superstaq/general_superstaq/user_config*
+superstaq-client/general-superstaq/general_superstaq/user_config* @richrines1
 superstaq-client/general-superstaq/general_superstaq/finance* @bharat-thotakura
 superstaq-client/general-superstaq/general_superstaq/superstaq_client*
 superstaq-client/general-superstaq/general_superstaq/qubo* @bharat-thotakura
