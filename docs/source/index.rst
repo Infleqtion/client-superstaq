@@ -49,7 +49,10 @@ Learn more about SuperstaQ `here <https://www.super.tech/about-superstaq/>`_.
    :hidden:
    :caption: Optimizations
 
-   optimizations/qscout20230228
+   optimizations/aqt/aqt
+   optimizations/cq/cq
+   optimizations/ibm/ibm
+   optimizations/qscout/qscout
 
 .. toctree::
    :maxdepth: 1
@@ -60,6 +63,13 @@ Learn more about SuperstaQ `here <https://www.super.tech/about-superstaq/>`_.
    apps/insurance_pricing
    apps/max_sharpe_ratio_optimization
    apps/transaction_settlement
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Other Work
+
+   supercheq/supercheq
 
 .. toctree::
    :maxdepth: 1
