@@ -21,13 +21,13 @@ superstaq-client/general-superstaq/general_superstaq/_version.py @vtomole @dowus
 superstaq-client/general-superstaq/general_superstaq/superstaq_exceptions*
 superstaq-client/general-superstaq/general_superstaq/typing*
 superstaq-client/general-superstaq/general_superstaq/logistics* @bharat-thotakura
-superstaq-client/general-superstaq/general_superstaq/check/* @richrines1
+superstaq-client/general-superstaq/general_superstaq/check/* @richrines1 @perlinm
 superstaq-client/cirq-superstaq/setup.py
 superstaq-client/cirq-superstaq/examples/cq_compile.ipynb
 superstaq-client/cirq-superstaq/examples/finance.ipynb
 superstaq-client/cirq-superstaq/examples/qscout_compile.ipynb
 superstaq-client/cirq-superstaq/examples/cirq_superstaq_example.py
-superstaq-client/cirq-superstaq/examples/ibmq_compile.ipynb
+superstaq-client/docs/source/optimizations/ibm/* @knsmith
 superstaq-client/cirq-superstaq/examples/resource_estimate.ipynb
 superstaq-client/cirq-superstaq/examples/SupercheQ.ipynb
 superstaq-client/cirq-superstaq/examples/aqt.ipynb
