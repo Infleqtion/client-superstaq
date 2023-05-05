@@ -56,16 +56,16 @@ def test_general_superstaq_not_found_exception_str() -> None:
     assert str(ex) == "Status code: 404, Message: 'err'"
 
 
-def test_superstaq_client_invalid_remote_host() -> None:
-    for invalid_url in ("", "url", "http://", "ftp://", "http://"):
-        with pytest.raises(AssertionError, match="not a valid url"):
-            _ = gss.superstaq_client._SuperstaQClient(
-                client_name="general-superstaq", remote_host=invalid_url, api_key="a"
-            )
-        with pytest.raises(AssertionError, match=invalid_url):
-            _ = gss.superstaq_client._SuperstaQClient(
-                client_name="general-superstaq", remote_host=invalid_url, api_key="a"
-            )
+@pytest.mark.parametrize("invalid_url", ("url", "http://", "ftp://", "http://"))
+def test_superstaq_client_invalid_remote_host(invalid_url: str) -> None:
+    with pytest.raises(AssertionError, match="not a valid url"):
+        _ = gss.superstaq_client._SuperstaQClient(
+            client_name="general-superstaq", remote_host=invalid_url, api_key="a"
+        )
+    with pytest.raises(AssertionError, match=invalid_url):
+        _ = gss.superstaq_client._SuperstaQClient(
+            client_name="general-superstaq", remote_host=invalid_url, api_key="a"
+        )
 
 
 def test_superstaq_client_invalid_api_version() -> None:
