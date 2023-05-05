@@ -317,13 +317,20 @@ class SuperstaQProvider(
 
         qss.superstaq_backend.validate_target(target)
 
+        metadata_of_circuits = [
+            (circuit.metadata or {})
+            for circuit in (circuits if isinstance(circuits, list) else [circuits])
+        ]
+
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._client.cq_compile(
             {"qiskit_circuits": serialized_circuits, "target": target}
         )
 
-        return qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
+        return qss.compiler_output.read_json_only_circuits(
+            json_dict, metadata_of_circuits, circuits_is_list
+        )
 
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int
