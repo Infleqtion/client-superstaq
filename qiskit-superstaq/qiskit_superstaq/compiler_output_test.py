@@ -76,6 +76,7 @@ def test_read_json() -> None:
     circuit = qiskit.QuantumCircuit(4)
     for i in range(4):
         circuit.h(i)
+
     state_str = gss.serialization.serialize({})
     pulse_lists_str = gss.serialization.serialize([[[]]])
 
@@ -105,20 +106,29 @@ def test_read_json() -> None:
     assert out.circuits == [circuit, circuit]
     assert not hasattr(out, "circuit")
 
+    qc = qiskit.QuantumCircuit(2, metadata={"test_bell": "sample_data"})
+    qc.h(0)
+    qc.cx(0, 1)
+
     json_dict = {
-        "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "final_logical_to_physicals": "[[]]",
     }
 
-    out = qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list=False)
-    assert out.circuit == circuit
+    out = qss.compiler_output.read_json_only_circuits(
+        json_dict, [qc.metadata], circuits_is_list=False
+    )
+    assert out.circuit == qc
+    assert out.circuit.metadata == qc.metadata
 
     json_dict = {
-        "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
+        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
         "final_logical_to_physicals": "[[], []]",
     }
-    out = qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list=True)
-    assert out.circuits == [circuit, circuit]
+    out = qss.compiler_output.read_json_only_circuits(
+        json_dict, [qc.metadata, qc.metadata], circuits_is_list=True
+    )
+    assert out.circuits == [qc, qc]
 
 
 def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires qtrl installation
