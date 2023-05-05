@@ -12,4 +12,5 @@ if __name__ == "__main__":
     args += ["-x", "docs/source/optimizations/aqt/*"]
     args += ["-x", "docs/source/optimizations/ibm/ibmq_compile_css.ipynb"]
     args += ["-x", "qiskit-superstaq/examples/uchicago_workshop.ipynb"]
+    args += ["-x", "supermarq-benchmarks/examples/SupermarQ_HPCA_Tutorial.ipynb"]
     exit(general_superstaq.check.pytest_.run(*args))
