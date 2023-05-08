@@ -95,7 +95,9 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
         )
 
     def __repr_pretty__(self) -> str:
-        def get_readable_pulse(pulse: qtrl.sequencer.sequencer.UniquePulse) -> str:
+        def get_readable_pulse(
+            pulse: qtrl.sequencer.sequencer.UniquePulse,
+        ) -> str:  # pragma: no cover
             """Gets human-readable version of pulse object.
 
             Args:
@@ -116,7 +118,7 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
         def pretty_print(
             pulse_list: Union[List[Any], qtrl.sequencer.sequencer.UniquePulse, None],
             tab: int = 0,
-        ) -> Union[str, None]:
+        ) -> Union[str, None]:  # pragma: no cover
             """Recursively prints pulse list elements.
 
             Args:

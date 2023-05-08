@@ -78,13 +78,19 @@ def test_compiler_output_repr() -> None:
         == f"CompilerOutput({circuits!r}, [{{0: 1}}, {{1: 0}}], None, None, None, None)"
     )
 
+
+def test_compiler_output_pretty_repr() -> None:  # pragma: no cover, test requires qtrl installation
     # Tests more involved "pretty" repr
+    qtrl = pytest.importorskip("qtrl", reason="qtrl not installed")
+
+    circuit = qiskit.QuantumCircuit(4)
+    circuits = [circuit, circuit]
+
     mock_pulse = MagicMock()
     mock_pulse.envelope.kwargs = {"phase": [0, 1, 2]}
     mock_pulse.channel = 0.0
     mock_pulse.freq = 0.0
 
-    qtrl = pytest.importorskip("qtrl", reason="qtrl not installed")
     mock_virtual_pulse = MagicMock()
     mock_virtual_pulse.envelope = MagicMock(qtrl.sequencer.VirtualEnvelope)
     mock_virtual_pulse.envelope.phase = 0.0
