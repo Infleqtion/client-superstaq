@@ -91,11 +91,8 @@ def test_compiler_output_repr() -> None:
         == f"CompilerOutput({circuits!r}, [{{}}], None, None, None, None)"
     )
 
-    assert (
-        css.compiler_output.CompilerOutput(circuits, [qubit_map]).__repr_pretty__()
-        == f"CompilerOutput({circuits!r}, [{{}}], None, None, None, None)"
-    )
 
+def test_compiler_output_pretty_repr() -> None:  # pragma: no cover; test requires qtrl installation
     # Tests more involved "pretty" repr
     mock_pulse = MagicMock()
     mock_pulse.envelope.kwargs = {"phase": [0, 1, 2]}
@@ -109,32 +106,35 @@ def test_compiler_output_repr() -> None:
     mock_virtual_pulse.channel = 0.0
     mock_virtual_pulse.freq = 0.0
 
+    circuit = cirq.Circuit()
+    qubit_map: Dict[cirq.Qid, cirq.Qid] = {}
     assert css.compiler_output.CompilerOutput(
         circuit,
         qubit_map,
         pulse_lists=[[[mock_pulse] * (i + 1) for i in range(2)] for j in range(2)],
     ).__repr_pretty__() == (
         f"CompilerOutput({circuit!r}, {{}}, None, None, None, "
-        "\n[\n\t[UniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]])],"
-        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]]),"
-        "\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]]),"
-        "\n\t],\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]])],"
-        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]]),"
-        "\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]]),\n\t],\n],)"
+        "\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2])],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2]),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2]),\n\t],"
+        "\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2])],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2]),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2]),\n\t],\n],)"
     )
 
+    circuits = [circuit, circuit]
     assert css.compiler_output.CompilerOutput(
         circuits,
         [qubit_map],
         pulse_lists=[[[mock_pulse] * (i + 1) for i in range(2)] for j in range(2)],
     ).__repr_pretty__() == (
         f"CompilerOutput({circuits!r}, [{{}}], None, None, None, "
-        "\n[\n\t[UniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]])],"
-        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]]),"
-        "\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]]),"
-        "\n\t],\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]])],"
-        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]]),"
-        "\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[envelope phase=[0, 1, 2]]),\n\t],\n],)"
+        "\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2])],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2]),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2]),"
+        "\n\t],\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2])],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2]),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2]),\n\t],\n],)"
     )
 
     assert css.compiler_output.CompilerOutput(
@@ -143,12 +143,12 @@ def test_compiler_output_repr() -> None:
         pulse_lists=[[[mock_virtual_pulse] * (i + 1) for i in range(2)] for j in range(2)],
     ).__repr_pretty__() == (
         f"CompilerOutput({circuits!r}, [{{}}], None, None, None, "
-        "\n[\n\t[UniquePulse(channel=0.0, freq=0.0, extra=[(envelope phase) 0.0])],"
-        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[(envelope phase) 0.0])"
-        ",\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[(envelope phase) 0.0]),"
-        "\n\t],\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, extra=[(envelope phase) 0.0])],"
-        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[(envelope phase) 0.0]),"
-        "\n\t\tUniquePulse(channel=0.0, freq=0.0, extra=[(envelope phase) 0.0]),\n\t],\n],)"
+        "\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0)],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0)"
+        ",\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0),"
+        "\n\t],\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0)],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase 0.0),\n\t],\n],)"
     )
 
 
