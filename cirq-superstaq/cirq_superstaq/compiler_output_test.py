@@ -87,8 +87,13 @@ def test_compiler_output_repr() -> None:
 
     circuits = [circuit, circuit]
     assert (
-        repr(css.compiler_output.CompilerOutput(circuits, [qubit_map]))
-        == f"CompilerOutput({circuits!r}, [{{}}], None, None, None, None)"
+        repr(css.compiler_output.CompilerOutput(circuits, [qubit_map, qubit_map]))
+        == f"CompilerOutput({circuits!r}, [{{}}, {{}}], None, None, None, None)"
+    )
+
+    assert (
+        css.compiler_output.CompilerOutput(circuits, [qubit_map, qubit_map]).__repr_pretty__()
+        == f"CompilerOutput({circuits!r}, [{{}}, {{}}], None, None, None, None)"
     )
 
 
@@ -114,12 +119,12 @@ def test_compiler_output_pretty_repr() -> None:  # pragma: no cover; test requir
         pulse_lists=[[[mock_pulse] * (i + 1) for i in range(2)] for j in range(2)],
     ).__repr_pretty__() == (
         f"CompilerOutput({circuit!r}, {{}}, None, None, None, "
-        "\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2])],"
-        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2]),"
-        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2]),\n\t],"
-        "\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2])],"
-        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2]),"
-        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2]),\n\t],\n],)"
+        "\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2])],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2]),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2]),\n\t],"
+        "\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2])],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2]),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2]),\n\t],\n],)"
     )
 
     circuits = [circuit, circuit]
@@ -129,12 +134,12 @@ def test_compiler_output_pretty_repr() -> None:  # pragma: no cover; test requir
         pulse_lists=[[[mock_pulse] * (i + 1) for i in range(2)] for j in range(2)],
     ).__repr_pretty__() == (
         f"CompilerOutput({circuits!r}, [{{}}], None, None, None, "
-        "\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2])],"
-        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2]),"
-        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2]),"
-        "\n\t],\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2])],"
-        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2]),"
-        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope phase=[0, 1, 2]),\n\t],\n],)"
+        "\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2])],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2]),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2]),"
+        "\n\t],\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2])],"
+        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2]),"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2]),\n\t],\n],)"
     )
 
     assert css.compiler_output.CompilerOutput(
@@ -148,7 +153,7 @@ def test_compiler_output_pretty_repr() -> None:  # pragma: no cover; test requir
         ",\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0),"
         "\n\t],\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0)],"
         "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0),"
-        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase 0.0),\n\t],\n],)"
+        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0),\n\t],\n],)"
     )
 
 

@@ -56,28 +56,6 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
     return sorted(qubit_indices)
 
 
-if importlib.util.find_spec(
-    "qtrl"
-):  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
-
-    def get_readable_pulse(pulse: qtrl.sequencer.sequencer.UniquePulse) -> str:
-        """Gets human-readable version of pulse object.
-
-        Args:
-            pulse: A qtrl UniquePulse object with waveform parameters.
-
-        Returns:
-            A string containing pulse channel, frequency, and extra info about the waveform.
-        """
-        if isinstance(pulse.envelope, qtrl.sequencer.sequencer.VirtualEnvelope):
-            phase_info = f"envelope_phase={pulse.envelope.phase:.2}"
-        else:
-            phase_info = (
-                f"envelope phase={[round(elem, 2) for elem in pulse.envelope.kwargs['phase']]}"
-            )
-        return f"UniquePulse(channel={pulse.channel}, freq={pulse.freq:.2}, {phase_info})"
-
-
 class CompilerOutput:  # pylint: disable=missing-class-docstring
     def __init__(
         self,
@@ -128,60 +106,72 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
             f"{self.pulse_lists!r})"
         )
 
-    if importlib.util.find_spec(
-        "qtrl"
-    ):  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
+    def __repr_pretty__(self) -> str:  # pragma: no cover, b/c qtrl is not open source
+        def get_readable_pulse(
+            pulse: qtrl.sequencer.sequencer.UniquePulse,
+        ) -> str:  # pragma: no cover
+            """Gets human-readable version of pulse object.
 
-        def __repr_pretty__(self) -> str:
-            def pretty_print(
-                pulse_list: Union[List[Any], qtrl.sequencer.sequencer.UniquePulse, None],
-                tab: int = 0,
-            ) -> str:
-                """Recursively prints pulse list elements.
+            Args:
+                pulse: A qtrl UniquePulse object with waveform parameters.
 
-                Args:
-                    pulse_list: A list of qtrl UniquePulse objects.
-                    tab: The number of times to indent the current line.
-
-                Returns:
-                    A string of the pulse list elements in a human-readable indented format.
-                """
-                if pulse_list is None:
-                    return ""
-                elems = []
-                for pulse in pulse_list:
-                    if (
-                        isinstance(pulse, list)
-                        and not isinstance(pulse[0], list)
-                        and len(pulse) == 1
-                    ):
-                        elems.append("\n" + "\t" * tab + f"[{get_readable_pulse(pulse[0])}],")
-                    elif isinstance(pulse, list):
-                        elems.append(
-                            "\n"
-                            + "\t" * tab
-                            + "["
-                            + str(pretty_print(pulse, tab + 1))
-                            + "\n"
-                            + "\t" * tab
-                            + "],"
-                        )
-                    else:
-                        elems.append("\n" + "\t" * tab + get_readable_pulse(pulse) + ",")
-                return "".join(elems)
-
-            if self.has_multiple_circuits():
-                return (
-                    f"CompilerOutput({self.circuits!r}, {self.final_logical_to_physicals!r}, "
-                    f"{self.pulse_sequences!r}, {self.seq!r}, {self.jaqal_programs!r}, "
-                    f"{pretty_print(self.pulse_lists)})"
+            Returns:
+                A string containing pulse channel, frequency, and extra info about the waveform.
+            """
+            if isinstance(pulse.envelope, qtrl.sequencer.sequencer.VirtualEnvelope):
+                phase_info = f"envelope_phase={pulse.envelope.phase:.2}"
+            else:
+                phase_info = (
+                    f"envelope_phase="
+                    f"{[round(elem, 2) for elem in pulse.envelope.kwargs['phase']]}"
                 )
+            return f"UniquePulse(channel={pulse.channel}, freq={pulse.freq:.2}, {phase_info})"
 
+        def pretty_print(
+            pulse_list: Union[List[Any], qtrl.sequencer.sequencer.UniquePulse, None],
+            tab: int = 0,
+        ) -> Union[str, None]:  # pragma: no cover
+            """Recursively prints pulse list elements.
+
+            Args:
+                pulse_list: A list of qtrl UniquePulse objects.
+                tab: The number of times to indent the current line.
+
+            Returns:
+                A string of the pulse list elements in a human-readable indented format.
+            """
+            if pulse_list is None:
+                return None
+            elems = []
+            for pulse in pulse_list:
+                if isinstance(pulse, list) and not isinstance(pulse[0], list) and len(pulse) == 1:
+                    elems.append("\n" + "\t" * tab + f"[{get_readable_pulse(pulse[0])}],")
+                elif isinstance(pulse, list):
+                    elems.append(
+                        "\n"
+                        + "\t" * tab
+                        + "["
+                        + str(pretty_print(pulse, tab + 1))
+                        + "\n"
+                        + "\t" * tab
+                        + "],"
+                    )
+                else:
+                    elems.append("\n" + "\t" * tab + get_readable_pulse(pulse) + ",")
+            return "".join(elems)
+
+        if self.has_multiple_circuits():
             return (
-                f"CompilerOutput({self.circuit!r}, {self.final_logical_to_physical!r}, "
-                f"{self.pulse_sequence!r}, {self.seq!r}, {self.jaqal_program!r}, "
-                f"{pretty_print(self.pulse_list)})"
+                f"CompilerOutput({self.circuits!r}, {self.final_logical_to_physicals!r}, "
+                f"{self.pulse_sequences!r}, {self.seq!r}, {self.jaqal_programs!r}, "
+                f"{pretty_print(self.pulse_lists)})"
             )
+
+        return (
+            f"CompilerOutput({self.circuit!r}, {self.final_logical_to_physical!r}, "
+            f"{self.pulse_sequence!r}, {self.seq!r}, {self.jaqal_program!r}, "
+            f"{pretty_print(self.pulse_list)})"
+        )
 
 
 def read_json_ibmq(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
