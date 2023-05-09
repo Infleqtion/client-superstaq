@@ -148,6 +148,48 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
                     elems.append("\n" + "\t" * tab + get_readable_pulse(pulse) + ",")
             return "".join(elems)
 
+        def pretty_print_pulse_sequence(
+            pulse_sequence: qiskit.pulse.Schedule,
+        ) -> str:
+            """Recursively prints pulse sequence.
+
+            Args:
+                pulse_sequence: A qiskit pulse schedule object.
+
+            Returns:
+                A human-readable string listing start times and instructions for pulse sequence.
+            """
+            if not isinstance(pulse_sequence, qiskit.pulse.Schedule):
+                return None
+            lines = []
+            num_tabs = 0
+            tab = " " * 4
+            line = num_tabs * tab
+            for idx, elem in enumerate(repr(pulse_sequence)):
+                if elem not in [")", ",", " "]:
+                    line += elem    
+                if elem == "(":
+                    num_tabs += 1
+                    lines.append(line)
+                    line = num_tabs * tab
+                elif elem == ")":
+                    if lines[-1][-2:] != "),":
+                        line += ","
+                        lines.append(line)
+                    num_tabs -= 1
+                    line = num_tabs * tab
+                    line += elem
+                    if idx < len(repr(pulse_sequence)) - 1:
+                        line += ","
+                    lines.append(line)
+                    line = num_tabs * tab
+                elif elem == ",":
+                    if lines[-1][-2:] != "),":
+                        line += elem
+                        lines.append(line)
+                    line = num_tabs * tab
+            return "\n".join(lines)
+
         if self.has_multiple_circuits():
             return (
                 f"CompilerOutput({self.circuits!r}, {self.final_logical_to_physicals!r}, "
@@ -157,8 +199,8 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
 
         return (
             f"CompilerOutput({self.circuit!r}, {self.final_logical_to_physical!r}, "
-            f"{self.pulse_sequence!r}, {self.seq!r}, {self.jaqal_program!r}, "
-            f"{pretty_print(self.pulse_list)})"
+            f"{pretty_print_pulse_sequence(self.pulse_sequence)}, {self.seq!r}, "
+            f"{self.jaqal_program!r}, {pretty_print(self.pulse_list)})"
         )
 
     def __eq__(self, other: Any) -> bool:
