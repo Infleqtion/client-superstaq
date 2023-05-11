@@ -13,12 +13,60 @@
 # that they have been altered from the originals.
 from __future__ import annotations
 
+import json
 import re
 from typing import Any, Dict, List, Optional, Union
 
 import qiskit
 
 import qiskit_superstaq as qss
+
+
+def _validate_qiskit_circuits(circuits: object) -> None:
+    """Validates that the input is either a single `qiskit.QuantumCircuit` or a list of
+    `qiskit.QuantumCircuit` instances.
+
+    Args:
+        circuits: The circuit(s) to run.
+
+    Raises:
+        ValueError: If the input is not a `qiskit.QuantumCircuit` or a list of
+        `qiskit.QuantumCircuit` instances.
+
+    """
+    if not (
+        isinstance(circuits, qiskit.QuantumCircuit)
+        or (
+            isinstance(circuits, Sequence)
+            and all(isinstance(circuit, qiskit.QuantumCircuit) for circuit in circuits)
+        )
+    ):
+        raise ValueError(
+            "Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a "
+            "sequence of `qiskit.QuantumCircuit` instances."
+        )
+
+
+def _get_metadata_of_circuits(
+    circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]
+) -> List[Dict[Any, Any]]:
+    """Extracts metadata from the input qiskit circuit(s).
+
+    Args:
+        Circuit(s) from which to extract the metadata.
+
+    Returns:
+        A list of dictionaries containing the metadata of the input circuit(s). If a circuit has no
+        metadata, an empty dictionary is stored for that circuit.
+
+    """
+
+    metadata_of_circuits = [
+        (circuit.metadata or {})
+        for circuit in (circuits if isinstance(circuits, list) else [circuits])
+    ]
+
+    return metadata_of_circuits
 
 
 def validate_target(target: str) -> None:  # pylint: disable=missing-function-docstring
@@ -136,3 +184,88 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         job = qss.SuperstaQJob(self, job_id)
 
         return job
+
+    def compile(
+        self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]], **kwargs: Any
+    ) -> qss.compiler_output.CompilerOutput:
+        """Compiles the given circuit(s) to the backend's native gateset.
+
+        Args:
+            circuits: The qiskit QuantumCircuit(s) to compile.
+        
+        Returns:
+            A CompilerOutput object whose .circuit(s) attribute contains optimized compiled
+            circuit(s).
+
+        Raises:
+            ValueError: If `target` is not a valid AQT or IBMQ target.
+        """
+        _validate_qiskit_circuits(circuits)
+        target = self.name()
+        if target.startswith("aqt_"):
+            get_compiler_output = self.get_aqt_compiler_output
+        elif target.startswith("ibmq_"):
+            get_compiler_output = self.get_ibmq_compiler_output
+        else:
+            raise ValueError(f"{target} is not a valid target (currently supports AQT, IBMQ).")
+
+        serialized_circuits = qss.serialization.serialize_circuits(circuits)
+        request_json = {
+            "qiskit_circuits": serialized_circuits,
+            "target": target,
+            "options": json.dumps(kwargs),
+        }
+        return get_compiler_output(request_json, circuits)
+
+    def get_aqt_compiler_output(
+        self,
+        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        request_json: Dict[str, str],
+    ):
+        """Gets result of AQT compilation request.
+
+        Args:
+            circuits: The qiskit QuantumCircuit(s) to compile.
+            request_json: A dictionary storing request information.
+
+        Returns:
+            An AQT CompilerOutput object.
+        """
+        metadata_of_circuits = _get_metadata_of_circuits(circuits)
+        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
+        json_dict = self._provider._client.aqt_compile(request_json)
+        return qss.compiler_output.read_json_aqt(json_dict, metadata_of_circuits, circuits_is_list)
+
+    def get_ibmq_compiler_output(
+        self,
+        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        request_json: Dict[str, str],
+    ):
+        """Gets result of IBMQ compilation request.
+
+        Args:
+            circuits: The qiskit QuantumCircuit(s) to compile.
+            request_json: A dictionary storing request information.
+
+        Returns:
+            An IBMQ CompilerOutput object.
+        """
+        json_dict = self._provider._client.ibmq_compile(request_json)
+        compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
+        metadata_of_circuits = _get_metadata_of_circuits(circuits)
+        for circuit, metadata in zip(compiled_circuits, metadata_of_circuits):
+            circuit.metadata = metadata
+        pulses = gss.serialization.deserialize(json_dict["pulses"])
+        final_logical_to_physicals: List[Dict[int, int]] = list(
+            map(dict, json.loads(json_dict["final_logical_to_physicals"]))
+        )
+
+        if isinstance(circuits, qiskit.QuantumCircuit):
+            return qss.compiler_output.CompilerOutput(
+                compiled_circuits[0], final_logical_to_physicals[0], pulse_sequences=pulses[0]
+            )
+        return qss.compiler_output.CompilerOutput(
+            compiled_circuits,
+            final_logical_to_physicals,
+            pulse_sequences=pulses,
+        )
