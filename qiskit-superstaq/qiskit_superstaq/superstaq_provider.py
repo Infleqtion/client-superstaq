@@ -70,6 +70,28 @@ def _validate_integer_param(integer_param: object) -> None:
         raise ValueError("Must be a positive integer.")
 
 
+def _get_metadata_of_circuits(
+    circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]
+) -> List[Dict[Any, Any]]:
+    """Extracts metadata from the input qiskit circuit(s).
+
+    Args:
+        Circuit(s) from which to extract the metadata.
+
+    Returns:
+        A list of dictionaries containing the metadata of the input circuit(s). If a circuit has no
+        metadata, an empty dictionary is stored for that circuit.
+
+    """
+
+    metadata_of_circuits = [
+        (circuit.metadata or {})
+        for circuit in (circuits if isinstance(circuits, list) else [circuits])
+    ]
+
+    return metadata_of_circuits
+
+
 class SuperstaQProvider(
     qiskit.providers.ProviderV1, finance.Finance, logistics.Logistics, user_config.UserConfig
 ):
@@ -206,6 +228,7 @@ class SuperstaQProvider(
         if not target.startswith("aqt_"):
             raise ValueError(f"{target} is not an AQT target")
 
+        metadata_of_circuits = _get_metadata_of_circuits(circuits)
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
@@ -221,7 +244,7 @@ class SuperstaQProvider(
 
         json_dict = self._client.post_request("/aqt_compile", request_json)
 
-        return qss.compiler_output.read_json_aqt(json_dict, circuits_is_list)
+        return qss.compiler_output.read_json_aqt(json_dict, metadata_of_circuits, circuits_is_list)
 
     def aqt_compile_eca(
         self,
@@ -260,6 +283,7 @@ class SuperstaQProvider(
         if not target.startswith("aqt_"):
             raise ValueError(f"{target} is not an AQT target")
 
+        metadata_of_circuits = _get_metadata_of_circuits(circuits)
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
@@ -280,7 +304,7 @@ class SuperstaQProvider(
 
         json_dict = self._client.post_request("/aqt_compile", request_json)
         return qss.compiler_output.read_json_aqt(
-            json_dict, circuits_is_list, num_equivalent_circuits
+            json_dict, metadata_of_circuits, circuits_is_list, num_equivalent_circuits
         )
 
     def ibmq_compile(
@@ -304,6 +328,7 @@ class SuperstaQProvider(
         if not target.startswith("ibmq_"):
             raise ValueError(f"{target} is not an IBMQ target")
 
+        metadata_of_circuits = _get_metadata_of_circuits(circuits)
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
 
         request_json = {
@@ -314,6 +339,8 @@ class SuperstaQProvider(
 
         json_dict = self._client.ibmq_compile(request_json)
         compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
+        for circuit, metadata in zip(compiled_circuits, metadata_of_circuits):
+            circuit.metadata = metadata
         pulses = gss.serialization.deserialize(json_dict["pulses"])
         final_logical_to_physicals: List[Dict[int, int]] = list(
             map(dict, json.loads(json_dict["final_logical_to_physicals"]))
@@ -324,7 +351,9 @@ class SuperstaQProvider(
                 compiled_circuits[0], final_logical_to_physicals[0], pulse_sequences=pulses[0]
             )
         return qss.compiler_output.CompilerOutput(
-            compiled_circuits, final_logical_to_physicals, pulse_sequences=pulses
+            compiled_circuits,
+            final_logical_to_physicals,
+            pulse_sequences=pulses,
         )
 
     def qscout_compile(
@@ -358,6 +387,7 @@ class SuperstaQProvider(
 
         qss.superstaq_backend.validate_target(target)
 
+        metadata_of_circuits = _get_metadata_of_circuits(circuits)
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         if base_entangling_gate not in ("xx", "zz"):
@@ -375,7 +405,9 @@ class SuperstaQProvider(
                 "options": json.dumps(options_dict),
             }
         )
-        return qss.compiler_output.read_json_qscout(json_dict, circuits_is_list)
+        return qss.compiler_output.read_json_qscout(
+            json_dict, metadata_of_circuits, circuits_is_list
+        )
 
     def cq_compile(
         self,
@@ -400,6 +432,7 @@ class SuperstaQProvider(
 
         qss.superstaq_backend.validate_target(target)
 
+        metadata_of_circuits = _get_metadata_of_circuits(circuits)
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
@@ -410,7 +443,9 @@ class SuperstaQProvider(
         }
         json_dict = self._client.cq_compile(request_json)
 
-        return qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
+        return qss.compiler_output.read_json_only_circuits(
+            json_dict, metadata_of_circuits, circuits_is_list
+        )
 
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int
