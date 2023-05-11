@@ -1,4 +1,4 @@
-general-superstaq~=0.3.26
+general-superstaq~=0.3.27
 matplotlib~=3.0
 qiskit>=0.40.0
 qiskit-terra==0.23.*
