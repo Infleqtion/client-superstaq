@@ -20,6 +20,6 @@ client-superstaq/general-superstaq/general_superstaq/_version.py @vtomole @dowus
 client-superstaq/general-superstaq/general_superstaq/logistics* @bharat-thotakura
 client-superstaq/general-superstaq/general_superstaq/check/* @richrines1 @perlinm
 client-superstaq/cirq-superstaq/cirq_superstaq/serialization*  @richrines1 @dowusu-antwi
-client-superstaq/cirq-superstaq/cirq_superstaq/service* @bharat-thotakura
+client-superstaq/cirq-superstaq/cirq_superstaq/service* @bharat-thotakura @richrines1
 client-superstaq/cirq-superstaq/cirq_superstaq/compiler_output* @bharat-thotakura @dowusu-antwi
 client-superstaq/cirq-superstaq/cirq_superstaq/ops/* @richrines1 @dowusu-antwi
