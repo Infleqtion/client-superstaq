@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import black
 import importlib
 import json
 from typing import Any, Dict, List, Optional, Set, Union
@@ -95,113 +96,20 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
         )
 
     def __repr_pretty__(self) -> str:
-        def get_readable_pulse(
-            pulse: qtrl.sequencer.sequencer.UniquePulse,
-        ) -> str:  # pragma: no cover
-            """Gets human-readable version of pulse object.
-
-            Args:
-                pulse: A qtrl UniquePulse object with waveform parameters.
-
-            Returns:
-                A string containing pulse channel, frequency, and extra info about the waveform.
-            """
-            if isinstance(pulse.envelope, qtrl.sequencer.sequencer.VirtualEnvelope):
-                phase_info = f"envelope_phase={pulse.envelope.phase:.2}"
-            else:
-                phase_info = (
-                    f"envelope_phase="
-                    f"{[round(elem, 2) for elem in pulse.envelope.kwargs['phase']]}"
-                )
-            return f"UniquePulse(channel={pulse.channel}, freq={pulse.freq:.2}, {phase_info})"
-
-        def pretty_print(
-            pulse_list: Union[List[Any], qtrl.sequencer.sequencer.UniquePulse, None],
-            tab: int = 0,
-        ) -> Union[str, None]:  # pragma: no cover
-            """Recursively prints pulse list elements.
-
-            Args:
-                pulse_list: A list of qtrl UniquePulse objects.
-                tab: The number of times to indent the current line.
-
-            Returns:
-                A string of the pulse list elements in a human-readable indented format.
-            """
-            if pulse_list is None:
-                return None
-            elems = []
-            for pulse in pulse_list:
-                if isinstance(pulse, list) and not isinstance(pulse[0], list) and len(pulse) == 1:
-                    elems.append("\n" + "\t" * tab + f"[{get_readable_pulse(pulse[0])}],")
-                elif isinstance(pulse, list):
-                    elems.append(
-                        "\n"
-                        + "\t" * tab
-                        + "["
-                        + str(pretty_print(pulse, tab + 1))
-                        + "\n"
-                        + "\t" * tab
-                        + "],"
-                    )
-                else:
-                    elems.append("\n" + "\t" * tab + get_readable_pulse(pulse) + ",")
-            return "".join(elems)
-
-        def pretty_print_pulse_sequence(
-            pulse_sequence: qiskit.pulse.Schedule,
-        ) -> str:
-            """Recursively prints pulse sequence.
-
-            Args:
-                pulse_sequence: A qiskit pulse schedule object.
-
-            Returns:
-                A human-readable string listing start times and instructions for pulse sequence.
-            """
-            if not isinstance(pulse_sequence, qiskit.pulse.Schedule):
-                return None
-            lines = []
-            num_tabs = 0
-            tab = " " * 4
-            line = num_tabs * tab
-            for idx, elem in enumerate(repr(pulse_sequence)):
-                if elem not in [")", ",", " "]:
-                    line += elem    
-                if elem == "(":
-                    num_tabs += 1
-                    lines.append(line)
-                    line = num_tabs * tab
-                elif elem == ")":
-                    if lines[-1][-2:] != "),":
-                        line += ","
-                        lines.append(line)
-                    num_tabs -= 1
-                    line = num_tabs * tab
-                    line += elem
-                    if idx < len(repr(pulse_sequence)) - 1:
-                        line += ","
-                    lines.append(line)
-                    line = num_tabs * tab
-                elif elem == ",":
-                    if lines[-1][-2:] != "),":
-                        line += elem
-                        lines.append(line)
-                    line = num_tabs * tab
-            return "\n".join(lines)
-
-        if self.has_multiple_circuits():
-            return (
-                f"CompilerOutput({self.circuits!r}, {self.final_logical_to_physicals!r}, "
-                f"{self.pulse_sequences!r}, {self.seq!r}, {self.jaqal_programs!r}, "
-                f"{pretty_print(self.pulse_lists)})"
+        _prettify = lambda line: black.format_str(line, mode=black.FileMode(line_length=100))
+        if not self.has_multiple_circuits():
+            compiler_output = (
+                f"CompilerOutput(quantum_circuit, {self.final_logical_to_physical!r}, "
+                f"{self.pulse_sequence!r}, {self.seq!r}, {self.jaqal_program!r}, "
+                f"{self.pulse_list!r})"
             )
-
-        return (
-            f"CompilerOutput({self.circuit!r}, {self.final_logical_to_physical!r}, "
-            f"{pretty_print_pulse_sequence(self.pulse_sequence)}, {self.seq!r}, "
-            f"{self.jaqal_program!r}, {pretty_print(self.pulse_list)})"
+            return _prettify(compiler_output).replace("quantum_circuit", repr(self.circuit))
+        compiler_output = (
+            f"CompilerOutput(quantum_circuits, {self.final_logical_to_physicals!r}, "
+            f"{self.pulse_sequences!r}, {self.seq!r}, {self.jaqal_programs!r}, "
+            f"{self.pulse_lists!r})"
         )
+        return _prettify(compiler_output).replace("quantum_circuits", repr(self.circuits))
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, CompilerOutput):

@@ -78,6 +78,12 @@ def test_compiler_output_repr() -> None:
         == f"CompilerOutput({circuits!r}, [{{0: 1}}, {{1: 0}}], None, None, None, None)"
     )
 
+    circuit = qiskit.QuantumCircuit(1)
+    circuit.h(0)
+    assert (
+        qss.compiler_output.CompilerOutput(circuit, [{0: 0, 1: 1}]).__repr_pretty__()
+        == f"CompilerOutput(\n    {circuit!r},\n    {0: 0},\n    Schedule(\n        (0, ShiftPhase(-1.5707963268, DriveChannel(0))),\n        (0, ShiftPhase(-1.5707963268, ControlChannel(1))),\n        (\n            0,\n            Play(\n                Drag(\n                    duration=160,\n                    sigma=40,\n                    beta=-1.0645747900190279,\n                    amp=0.2028636239012939,\n                    angle=0.02043497300154636,\n                    name="X90p_d0",\n                ),\n                DriveChannel(0),\n                name="X90p_d0",\n            ),\n        ),\n        (160, ShiftPhase(-1.5707963268, DriveChannel(0))),\n        (160, ShiftPhase(-1.5707963268, ControlChannel(1))),\n        name=\"sched9\",\n    ),\n    None,\n    None,\n    None,\n)\n"
+
 
 def test_compiler_output_pretty_repr() -> None:  # pragma: no cover, test requires qtrl installation
     # Tests more involved "pretty" repr
