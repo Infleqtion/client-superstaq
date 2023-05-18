@@ -193,15 +193,13 @@ def test_invalid_target_service_aqt_compile_eca() -> None:
         )
 
 
-@patch(
-    "general_superstaq.superstaq_client._SuperstaQClient.ibmq_compile",
-)
-def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
+@patch("requests.post")
+def test_service_ibmq_compile(mock_post: MagicMock) -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
     final_logical_to_physical = {0: 4, 1: 5}
-    mock_ibmq_compile.return_value = {
+    mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "final_logical_to_physicals": json.dumps([list(final_logical_to_physical.items())]),
         "pulses": gss.serialization.serialize([mock.DEFAULT]),

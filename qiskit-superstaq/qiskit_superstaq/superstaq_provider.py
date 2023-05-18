@@ -337,7 +337,7 @@ class SuperstaQProvider(
             "options": json.dumps(kwargs),
         }
 
-        json_dict = self._client.ibmq_compile(request_json)
+        json_dict = self._client.compile(request_json)
         compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
         for circuit, metadata in zip(compiled_circuits, metadata_of_circuits):
             circuit.metadata = metadata
@@ -441,7 +441,7 @@ class SuperstaQProvider(
             "target": target,
             "options": json.dumps(kwargs),
         }
-        json_dict = self._client.cq_compile(request_json)
+        json_dict = self._client.compile(request_json)
 
         return qss.compiler_output.read_json_only_circuits(
             json_dict, metadata_of_circuits, circuits_is_list
