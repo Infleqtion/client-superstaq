@@ -21,11 +21,14 @@ import qiskit_superstaq as qss
 
 
 class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-docstring
+
+    TERMINAL_STATES = ("Cancelled", "Done", "Error")
+
     def __init__(self, backend: qss.SuperstaQBackend, job_id: str) -> None:
         """Initialize a job instance.
 
         Args:
-            backend: The `qss.SuperstaQBacken` that the job was created with.
+            backend: The `qss.SuperstaQBackend` that the job was created with.
             job_id: The unique job ID from SuperstaQ.
         """
         super().__init__(backend, job_id)
@@ -37,9 +40,34 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
 
         return self._job_id == other._job_id
 
+    def get_job_id(self) -> str:
+        """Returns the job id for the job."""
+        return self._job_id
+
+    def get_target(self) -> str:
+        """Returns the target where the job is to be run, or was run.
+
+        Returns:
+            'qpu' or 'simulator' depending on where the job was run or is running.
+        """
+        return self._job["target"]
+
     def _wait_for_results(
         self, timeout: Optional[float] = None, wait: float = 5
     ) -> List[Dict[str, Dict[str, int]]]:
+        """Waits for the results till either the job is done or some in the job occurs.
+
+        Args:
+            timeout: Time to wait for results. Defaults to None.
+            wait: Time to wait before checking . Defaults to 5.
+
+        Returns:
+            Results from the job.
+
+        Raises:
+            qiskit.providers.JobTimeoutError: If the elapsed time is greater than the timeout.
+            qiskit.providers.JobError: If an error occurred in the job.
+        """
 
         result_list: List[Dict[str, Dict[str, int]]] = []
         job_ids = self._job_id.split(",")  # separate aggregated job_ids
@@ -62,7 +90,15 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
         return result_list
 
     def result(self, timeout: Optional[float] = None, wait: float = 5) -> qiskit.result.Result:
-        # Get the result data of a circuit.
+        """Get the result data of a circuit.
+
+        Args:
+            timeout: Time to wait for results. Defaults to None.
+            wait: Time to wait before checking . Defaults to 5.
+
+        Returns:
+            Result details from the job
+        """
         results = self._wait_for_results(timeout, wait)
 
         # create list of result dictionaries
@@ -100,22 +136,30 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
         # when we have multiple jobs, we will take the "worst status" among the jobs
         # For example, if any of the jobs are still queued, we report Queued as the status
         # for the entire batch.
-        for job_id in job_id_list:
-            result = self._backend._provider._client.get_job(job_id)
-            temp_status = result["status"]
 
-            if temp_status == "Queued":
-                status = "Queued"
-                break
-            elif temp_status == "Running":
-                status = "Running"
+        if not all(
+            self._backend._provider._client.get_job(job_id)["status"] in self.TERMINAL_STATES
+            for job_id in job_id_list
+        ):
 
-        assert status in ["Queued", "Running", "Done"]
+            for job_id in job_id_list:
+                result = self._backend._provider._client.get_job(job_id)
+                temp_status = result["status"]
 
-        if status == "Queued":
-            status = qiskit.providers.jobstatus.JobStatus.QUEUED
-        elif status == "Running":
-            status = qiskit.providers.jobstatus.JobStatus.RUNNING
+                if temp_status == "Queued":
+                    status = "Queued"
+                    break
+                elif temp_status == "Running":
+                    status = "Running"
+
+            assert status in ["Queued", "Running", "Done"]
+
+            if status == "Queued":
+                status = qiskit.providers.jobstatus.JobStatus.QUEUED
+            elif status == "Running":
+                status = qiskit.providers.jobstatus.JobStatus.RUNNING
+            else:
+                status = qiskit.providers.jobstatus.JobStatus.DONE
         else:
             status = qiskit.providers.jobstatus.JobStatus.DONE
         return status
