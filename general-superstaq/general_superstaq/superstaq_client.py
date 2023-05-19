@@ -262,21 +262,19 @@ class _SuperstaQClient:
         """
         return self.post_request("/resource_estimate", json_dict)
 
-    def aqt_compile(self, json_dict: Dict[str, Union[int, str, List[str]]]) -> Dict[str, str]:
+    def aqt_compile(self, json_dict: Dict[str, str]) -> Dict[str, str]:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
         return self.post_request("/aqt_compile", json_dict)
 
-    def qscout_compile(
-        self, json_dict: Dict[str, Union[str, List[str]]]
-    ) -> Dict[str, Union[str, List[str]]]:
+    def qscout_compile(self, json_dict: Dict[str, str]) -> Dict[str, Union[str, List[str]]]:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for QSCOUT."""
         return self.post_request("/qscout_compile", json_dict)
 
-    def cq_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> Dict[str, str]:
+    def cq_compile(self, json_dict: Dict[str, str]) -> Dict[str, str]:
         """Makes a POST request to SuperstaQ API to compile a list of circuits for CQ."""
         return self.post_request("/cq_compile", json_dict)
 
-    def ibmq_compile(self, json_dict: Dict[str, Union[str, List[str]]]) -> Dict[str, str]:
+    def ibmq_compile(self, json_dict: Dict[str, str]) -> Dict[str, str]:
         """Makes a POST request to SuperstaQ API to compile a circuits for IBM devices."""
         return self.post_request("/ibmq_compile", json_dict)
 

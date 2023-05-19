@@ -1,5 +1,5 @@
-general-superstaq~=0.3.23
+general-superstaq~=0.3.27
 matplotlib~=3.0
-qiskit>=0.37.0
-qiskit-terra==0.22.*
+qiskit>=0.40.0
+qiskit-terra==0.23.*
 symengine<0.10.0  # see https://github.com/Qiskit/qiskit-terra/pull/9857

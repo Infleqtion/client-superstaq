@@ -15,6 +15,7 @@
 import collections
 import json
 import os
+import re
 import textwrap
 from unittest import mock
 
@@ -62,6 +63,51 @@ def test_counts_to_results() -> None:
     )
     result = css.service.counts_to_results({"00": 50, "11": 50}, circuit, cirq.ParamResolver({}))
     assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
+
+
+def test_validate_cirq_circuits() -> None:
+    qubits = [cirq.LineQubit(i) for i in range(2)]
+    circuit = cirq.Circuit(cirq.H(qubits[0]), cirq.CNOT(qubits[0], qubits[1]))
+
+    with pytest.raises(
+        ValueError,
+        match="Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
+        "sequence of `cirq.Circuit` instances.",
+    ):
+        css.service._validate_cirq_circuits("circuit_invalid")
+
+    with pytest.raises(
+        ValueError,
+        match="Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
+        "sequence of `cirq.Circuit` instances.",
+    ):
+        css.service._validate_cirq_circuits([circuit, "circuit_invalid"])
+
+
+def test_validate_integer_param() -> None:
+
+    # Tests for valid inputs -> Pass
+    valid_inputs = [1, 10, "10", 10.0, np.int16(10), 0b1010]
+    for input_value in valid_inputs:
+        css.service._validate_integer_param(input_value)
+
+    # Tests for invalid input -> TypeError
+    invalid_inputs = [None, "reps", "{!r}".format(b"invalid"), 1.5, "1.0", {1}, [1, 2, 3], "0b1010"]
+    for input_value in invalid_inputs:
+        with pytest.raises(TypeError) as msg:
+            css.service._validate_integer_param(input_value)
+        assert re.search(
+            re.escape(f"{input_value} cannot be safely cast as an integer."), str(msg.value)
+        )
+
+    # Tests for invalid input -> ValueError
+    invalid_values = [0, -1]
+    for input_value in invalid_values:
+        with pytest.raises(
+            ValueError,
+            match="Must be a positive integer.",
+        ):
+            css.service._validate_integer_param(input_value)
 
 
 def test_service_resolve_target() -> None:
@@ -255,12 +301,13 @@ def test_service_get_targets() -> None:
 )
 def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    out = service.aqt_compile(cirq.Circuit())
+    out = service.aqt_compile(cirq.Circuit(), test_options="yes")
     mock_post_request.assert_called_once_with(
         "/aqt_compile",
         {
             "cirq_circuits": css.serialization.serialize_circuits(cirq.Circuit()),
             "target": "aqt_keysight_qpu",
+            "options": '{\n  "test_options": "yes"\n}',
         },
     )
     assert out.circuit == cirq.Circuit()
@@ -396,7 +443,7 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
     }
 
     service = css.Service(api_key="key", remote_host="http://example.com")
-    out = service.qscout_compile(circuit)
+    out = service.qscout_compile(circuit, test_options="yes")
     assert out.circuit == circuit
     assert out.final_logical_to_physical == final_logical_to_physical
     assert out.jaqal_program == jaqal_program
@@ -479,10 +526,11 @@ def test_service_cq_compile_single(mock_cq_compile: mock.MagicMock) -> None:
     mock_cq_compile.return_value = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
+        "options": {"test_options": "yes"},
     }
 
     service = css.Service(api_key="key", remote_host="http://example.com")
-    out = service.cq_compile(circuit)
+    out = service.cq_compile(circuit, test_options="yes")
     assert out.circuit == circuit
     assert out.final_logical_to_physical == final_logical_to_physical
 
@@ -503,7 +551,7 @@ def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
     }
 
-    assert service.ibmq_compile(circuit).circuit == circuit
+    assert service.ibmq_compile(circuit, test_options="yes").circuit == circuit
     assert service.ibmq_compile([circuit]).circuits == [circuit]
     assert service.ibmq_compile(circuit).pulse_sequence == mock.DEFAULT
     assert service.ibmq_compile([circuit]).pulse_sequences == [mock.DEFAULT]
