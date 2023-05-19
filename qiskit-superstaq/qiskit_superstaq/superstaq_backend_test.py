@@ -1,6 +1,7 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
-from unittest import mock
+from unittest.mock import MagicMock, patch
 
+import general_superstaq as gss
 import pytest
 import qiskit
 
@@ -34,7 +35,7 @@ def test_run() -> None:
 
     backend = qss.SuperstaQProvider(api_key="123").get_backend("ss_example_qpu")
 
-    with mock.patch(
+    with patch(
         "general_superstaq.superstaq_client._SuperstaQClient.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
     ):
@@ -59,7 +60,7 @@ def test_multi_circuit_run() -> None:
 
     backend = qss.SuperstaQProvider(api_key="123").get_backend("ss_example_qpu")
 
-    with mock.patch(
+    with patch(
         "general_superstaq.superstaq_client._SuperstaQClient.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
     ):
@@ -76,7 +77,7 @@ def test_multi_arg_run() -> None:
 
     backend = qss.SuperstaQProvider(api_key="123").get_backend("ss_example_qpu")
 
-    with mock.patch(
+    with patch(
         "general_superstaq.superstaq_client._SuperstaQClient.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
     ):
@@ -96,3 +97,55 @@ def test_eq() -> None:
 
     backend3 = provider.get_backend("ibmq_qasm_simulator")
     assert backend1 == backend3
+
+
+@patch("requests.post")
+def test_compile(mock_post: MagicMock) -> None:
+    # AQT compile
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    backend = provider.get_backend("aqt_keysight_qpu")
+
+    qc = qiskit.QuantumCircuit(8)
+    qc.cz(4, 5)
+
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "final_logical_to_physicals": "[[[1, 4]]]",
+        "state_jp": gss.serialization.serialize({}),
+        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
+    }
+    out = backend.compile(qc)
+    assert out.circuit == qc
+    assert out.final_logical_to_physical == {1: 4}
+    assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
+
+    out = backend.compile([qc], atol=1e-2)
+    assert out.circuits == [qc]
+    assert out.final_logical_to_physicals == [{1: 4}]
+    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
+        "final_logical_to_physicals": "[[], []]",
+        "state_jp": gss.serialization.serialize({}),
+        "pulse_lists_jp": gss.serialization.serialize([[[]], [[]]]),
+    }
+    out = backend.compile([qc, qc], test_options="yes")
+    assert out.circuits == [qc, qc]
+    assert out.final_logical_to_physicals == [{}, {}]
+    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+
+    # AQT ECA compile
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "final_logical_to_physicals": "[[]]",
+        "state_jp": gss.serialization.serialize({}),
+        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
+    }
+
+    out = backend.compile(
+        qc, num_equivalent_circuits=1, random_seed=1234, atol=1e-2, test_options="yes"
+    )
+    assert out.circuits == [qc]
+    assert out.final_logical_to_physicals == [{}]
+    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")

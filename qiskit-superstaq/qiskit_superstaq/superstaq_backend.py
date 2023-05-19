@@ -15,8 +15,9 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
+import general_superstaq as gss
 import qiskit
 
 import qiskit_superstaq as qss
@@ -45,6 +46,27 @@ def _validate_qiskit_circuits(circuits: object) -> None:
             "Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a "
             "sequence of `qiskit.QuantumCircuit` instances."
         )
+
+
+def _validate_integer_param(integer_param: object) -> None:
+    """Validates that an input parameter is positive and an integer.
+
+    Args:
+        integer_param: An input parameter.
+
+    Raises:
+        TypeError: If input is not an integer.
+        ValueError: If input is negative.
+    """
+
+    if not (
+        (hasattr(integer_param, "__int__") and int(integer_param) == integer_param)
+        or (isinstance(integer_param, str) and integer_param.isdecimal())
+    ):
+        raise TypeError(f"{integer_param} cannot be safely cast as an integer.")
+
+    if int(integer_param) < 0:
+        raise ValueError("Must be a positive integer.")
 
 
 def _get_metadata_of_circuits(
@@ -186,13 +208,20 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         return job
 
     def compile(
-        self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]], **kwargs: Any
+        self,
+        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        num_equivalent_circuits: Optional[int] = 0,
+        random_seed: Optional[int] = None,
+        atol: Optional[float] = None,
+        mirror_swaps: bool = True,
+        base_entangling_gate: str = "xx",
+        **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to the backend's native gateset.
 
         Args:
             circuits: The qiskit QuantumCircuit(s) to compile.
-        
+
         Returns:
             A CompilerOutput object whose .circuit(s) attribute contains optimized compiled
             circuit(s).
@@ -201,26 +230,37 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
             ValueError: If `target` is not a valid AQT or IBMQ target.
         """
         _validate_qiskit_circuits(circuits)
-        target = self.name()
-        if target.startswith("aqt_"):
-            get_compiler_output = self.get_aqt_compiler_output
-        elif target.startswith("ibmq_"):
+        if self.name().startswith("ibmq_"):
             get_compiler_output = self.get_ibmq_compiler_output
+        elif self.name().startswith("aqt_"):
+            get_compiler_output = self.get_aqt_compiler_output
+        elif self.name().startswith("sandia_"):
+            get_compiler_output = self.get_qscout_compiler_output
+        elif self.name().startswith("cq_"):
+            get_compiler_output = self.get_cq_compiler_output
         else:
-            raise ValueError(f"{target} is not a valid target (currently supports AQT, IBMQ).")
+            raise ValueError(
+                f"{self.name()} is not a valid target (currently supports AQT, IBMQ, QSCOUT)."
+            )
 
-        serialized_circuits = qss.serialization.serialize_circuits(circuits)
-        request_json = {
-            "qiskit_circuits": serialized_circuits,
-            "target": target,
-            "options": json.dumps(kwargs),
-        }
-        return get_compiler_output(request_json, circuits)
+        options: Dict[str, Any] = {**kwargs}
+        if num_equivalent_circuits is not None:  # aqt eca compile
+            _validate_integer_param(num_equivalent_circuits)
+            options["num_eca_circuits"] = num_equivalent_circuits
+        if random_seed is not None:  # aqt eca compile
+            options["random_seed"] = random_seed
+        if atol is not None:  # aqt compile
+            options["atol"] = atol
+        if mirror_swaps is not None:  # qscout compile
+            options["mirror_swaps"] = mirror_swaps
+        if base_entangling_gate is not None:  # qscout compile
+            options["base_entangling_gate"] = base_entangling_gate
+        return get_compiler_output(circuits, options)
 
     def get_aqt_compiler_output(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
-        request_json: Dict[str, str],
+        options: Optional[Dict[str, Any]] = None,
     ):
         """Gets result of AQT compilation request.
 
@@ -231,15 +271,24 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         Returns:
             An AQT CompilerOutput object.
         """
+        serialized_circuits = qss.serialization.serialize_circuits(circuits)
+        request_json = {
+            "qiskit_circuits": serialized_circuits,
+            "target": self.name(),
+            "options": json.dumps(options),
+        }
         metadata_of_circuits = _get_metadata_of_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.aqt_compile(request_json)
-        return qss.compiler_output.read_json_aqt(json_dict, metadata_of_circuits, circuits_is_list)
+        num_equivalent_circuits = options["num_eca_circuits"]
+        return qss.compiler_output.read_json_aqt(
+            json_dict, metadata_of_circuits, circuits_is_list, num_equivalent_circuits
+        )
 
     def get_ibmq_compiler_output(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
-        request_json: Dict[str, str],
+        options: Optional[Dict[str, Any]] = None,
     ):
         """Gets result of IBMQ compilation request.
 
@@ -250,6 +299,12 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         Returns:
             An IBMQ CompilerOutput object.
         """
+        serialized_circuits = qss.serialization.serialize_circuits(circuits)
+        request_json = {
+            "qiskit_circuits": serialized_circuits,
+            "target": self.name(),
+            "options": json.dumps(options),
+        }
         json_dict = self._provider._client.ibmq_compile(request_json)
         compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
         metadata_of_circuits = _get_metadata_of_circuits(circuits)
@@ -259,13 +314,73 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         final_logical_to_physicals: List[Dict[int, int]] = list(
             map(dict, json.loads(json_dict["final_logical_to_physicals"]))
         )
-
         if isinstance(circuits, qiskit.QuantumCircuit):
             return qss.compiler_output.CompilerOutput(
                 compiled_circuits[0], final_logical_to_physicals[0], pulse_sequences=pulses[0]
             )
+
         return qss.compiler_output.CompilerOutput(
             compiled_circuits,
             final_logical_to_physicals,
             pulse_sequences=pulses,
+        )
+
+    def get_qscout_compiler_output(
+        self,
+        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        options: Optional[Dict[str, Any]] = None,
+    ):
+        """Gets result of QSCOUT compilation request.
+
+        Args:
+            circuits: The qiskit QuantumCircuit(s) to compile.
+            request_json: A dictionary storing request information.
+
+        Returns:
+            An QSCOUT CompilerOutput object.
+        """
+        qss.superstaq_backend.validate_target(self.name())
+        metadata_of_circuits = _get_metadata_of_circuits(circuits)
+        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
+        base_entangling_gate = options["base_entangling_gate"]
+        if base_entangling_gate not in ("xx", "zz"):
+            raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
+
+        serialized_circuits = qss.serialization.serialize_circuits(circuits)
+        request_json = {
+            "qiskit_circuits": serialized_circuits,
+            "target": self.name(),
+            "options": json.dumps(options),
+        }
+        json_dict = self._provider._client.qscout_compile(request_json)
+        return qss.compiler_output.read_json_qscout(
+            json_dict, metadata_of_circuits, circuits_is_list
+        )
+
+    def get_cq_compiler_output(
+        self,
+        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        options: Optional[Dict[str, Any]] = None,
+    ):
+        """Gets result of CQ compilation request.
+
+        Args:
+            circuits: The qiskit QuantumCircuit(s) to compile.
+            request_json: A dictionary storing request information.
+
+        Returns:
+            An CQ CompilerOutput object.
+        """
+        qss.superstaq_backend.validate_target(self.name())
+        metadata_of_circuits = _get_metadata_of_circuits(circuits)
+        serialized_circuits = qss.serialization.serialize_circuits(circuits)
+        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
+        request_json = {
+            "qiskit_circuits": serialized_circuits,
+            "target": self.name(),
+            "options": json.dumps(options),
+        }
+        json_dict = self._provider._client.cq_compile(request_json)
+        return qss.compiler_output.read_json_only_circuits(
+            json_dict, metadata_of_circuits, circuits_is_list
         )
