@@ -561,12 +561,9 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
 
         Raises:
-            ValueError: If `target` is not a valid QSCOUT target.
             ValueError: If `base_entangling_gate` is not a valid gate option.
         """
         _validate_cirq_circuits(circuits)
-        if not target.startswith("sandia_"):
-            raise ValueError(f"{target} is not a QSCOUT target")
 
         if base_entangling_gate not in ("xx", "zz"):
             raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
