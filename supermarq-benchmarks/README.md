@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="300" src="https://raw.githubusercontent.com/SupertechLabs/SupermarQ/main/static/SupermarQ_Logo.png">
+  <img width="300" src="../docs/source/_static/logos/supermarq-logo.webp">
 </p>
 
 ---

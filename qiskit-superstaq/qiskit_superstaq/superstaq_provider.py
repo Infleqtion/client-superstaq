@@ -185,18 +185,21 @@ class SuperstaQProvider(
         atol: Optional[float] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
-        """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
+        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
+        Lawrence Berkeley National Laboratory.
 
         Args:
-            circuits: Qiskit QuantumCircuit(s) to compile.
+            circuits: The circuit(s) to compile.
             target: String of target AQT device.
-            atol: Tolerance to use for approximate gate synthesis (currently just for qutrit gates).
+            atol: An optional tolerance to use for approximate gate synthesis.
             kwargs: Other desired aqt_compile options.
+
         Returns:
-            Object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
-            If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the optimized `qiskit.QuantumCircuit`(s) and the
-            .pulse_list(s) attribute is the list(s) of cycles.
+            Object whose .circuit(s) attribute contains the optimized circuits(s). If qtrl is
+            installed, the object's .seq attribute is a qtrl Sequence object containing pulse
+            sequences for each compiled circuit, and its .pulse_list(s) attribute contains the
+            corresponding list(s) of cycles.
+
         Raises:
             ValueError: If `target` is not a valid AQT target.
         """
@@ -214,26 +217,26 @@ class SuperstaQProvider(
         atol: Optional[float] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
-        """Compiles the given circuit(s) to target AQT device with Equivalent Circuit Averaging
-        (ECA).
+        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
+        Lawrence Berkeley National Laboratory using Equivalent Circuit Averaging (ECA).
 
         See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
 
         Args:
-            circuits: Qiskit QuantumCircuit(s) to compile.
+            circuits: The circuit(s) to compile.
             num_equivalent_circuits: Number of logically equivalent random circuits to generate for
                 each input circuit.
             random_seed: Optional seed for circuit randomizer.
             target: String of target AQT device.
-            atol: Tolerance to use for approximate gate synthesis (currently just for qutrit gates).
+            atol: An optional tolerance to use for approximate gate synthesis.
             kwargs: Other desired aqt_compile_eca options.
+
         Returns:
             Object whose .circuits attribute is a list (or list of lists) of logically equivalent
-                QuantumCircuit(s).
+            circuits. If qtrl is installed, the object's .seq attribute is a qtrl Sequence object
+            containing pulse sequences for each compiled circuit, and its .pulse_list(s) attribute
+            contains the corresponding list(s) of cycles.
 
-            If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the QuantumCircuits and the .pulse_lists attribute is
-            the list(s) of cycles.
         Raises:
             ValueError: If `target` is not a valid AQT target.
         """
@@ -269,24 +272,36 @@ class SuperstaQProvider(
     def qscout_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
-        mirror_swaps: bool = True,
+        mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
         target: str = "sandia_qscout_qpu",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
-        """Compiles the given circuit(s) to AQT device, optimized to its native gate set.
+        """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
+        Sandia National Laboratories [1].
+
+        Compiled circuits are returned as both `qiskit.QuantumCircuit` objects and corresponding
+        Jaqal [2] programs (strings).
+
+        References:
+            [1] S. M. Clark et al., *Engineering the Quantum Scientific Computing Open User
+                Testbed*, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
+                https://doi.org/10.1109/TQE.2021.3096480.
+            [2] B. Morrison, et al., *Just Another Quantum Assembly Language (Jaqal)*, 2020 IEEE
+                International Conference on Quantum Computing and Engineering (QCE), 402-408 (2020).
+                https://arxiv.org/abs/2008.08042.
 
         Args:
-            circuits: qiskit QuantumCircuit(s)
+            circuits: The circuit(s) to compile.
             target: String of target representing target device
-            mirror_swaps: If mirror swaps should be used.
-            base_entangling_gate: The base entangling gate to use.
-            kwargs: Other desired qscout_compile options
+            mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
+            base_entangling_gate: The base entangling gate to use (either "xx" or "zz").
+            kwargs: Other desired qscout_compile options.
+
         Returns:
-            object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
-            If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the optimized `qiskit.QuantumCircuit`(s) and the
-            .pulse_list(s) attribute is the list(s) of cycles.
+            Object whose .circuit(s) attribute contains optimized `qiskit QuantumCircuit`(s), and
+            `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
+
         Raises:
             ValueError: If `target` is not a valid QSCOUT target.
             ValueError: If `base_entangling_gate` is not a valid gate option.
