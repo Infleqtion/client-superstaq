@@ -454,14 +454,16 @@ class QubitSubspaceGate(cirq.Gate):  # pylint: disable=missing-class-docstring
 
 
 def qudit_swap_op(qudit0: cirq.Qid, qudit1: cirq.Qid) -> cirq.Operation:
-    """Construct a `QuditSwapGate` and apply it to the provided qudits.
+    """Construct a SWAP gate and apply it to the provided qudits.
+
+    If both qudits have dimension 2, uses `cirq.SWAP`; otherwise uses `QuditSwapGate`.
 
     Args:
         qudit0: The first qudit to swap.
         qudit1: The second qudit to swap.
 
     Returns:
-        A `QuditSwapGate` acting on the provided qudits.
+        A SWAP gate acting on the provided qudits.
 
     Raises:
         ValueError: If the input qudits don't have the same dimension.
@@ -469,6 +471,9 @@ def qudit_swap_op(qudit0: cirq.Qid, qudit1: cirq.Qid) -> cirq.Operation:
 
     if qudit0.dimension != qudit1.dimension:
         raise ValueError(f"{qudit0} and {qudit1} do not have the same dimension.")
+
+    if qudit0.dimension == 2:
+        return cirq.SWAP(qudit0, qudit1)
 
     return QuditSwapGate(dimension=qudit0.dimension).on(qudit0, qudit1)
 
