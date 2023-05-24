@@ -1,7 +1,11 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
-from unittest.mock import MagicMock, patch
+import json
+import re
+import textwrap
+from unittest.mock import DEFAULT, MagicMock, patch
 
 import general_superstaq as gss
+import numpy as np
 import pytest
 import qiskit
 
@@ -149,3 +153,108 @@ def test_compile(mock_post: MagicMock) -> None:
     assert out.circuits == [qc]
     assert out.final_logical_to_physicals == [{}]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+
+    # IBMQ compile
+    backend = provider.get_backend("ibmq_jakarta_qpu")
+    final_logical_to_physical = {0: 4, 1: 5}
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "final_logical_to_physicals": "[[[0, 4], [1, 5]]]",
+        "pulses": gss.serialization.serialize([DEFAULT]),
+    }
+    assert backend.compile(
+        qiskit.QuantumCircuit(), test_options="yes"
+    ) == qss.compiler_output.CompilerOutput(qc, final_logical_to_physical, pulse_sequences=DEFAULT)
+    assert backend.compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
+        [qc], [final_logical_to_physical], pulse_sequences=[DEFAULT]
+    )
+
+    # QSCOUT compile
+    backend = provider.get_backend("sandia_qscout_qpu")
+    qc = qiskit.QuantumCircuit(1)
+    qc.h(0)
+    jaqal_program = textwrap.dedent(
+        """\
+        register allqubits[1]
+
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        Rz allqubits[0] -3.141592653589793
+        measure_all
+        """
+    )
+    logical_to_physical = {0: 13}
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "final_logical_to_physicals": json.dumps([list(logical_to_physical.items())]),
+        "jaqal_programs": [jaqal_program],
+    }
+    out = backend.compile(qc, test_options="yes")
+    assert out.circuit == qc
+    assert out.final_logical_to_physical == logical_to_physical
+
+    out = backend.compile([qc])
+    assert out.circuits == [qc]
+    assert out.final_logical_to_physicals == [{0: 13}]
+
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
+        "final_logical_to_physicals": json.dumps([[(0, 13)], [(0, 13)]]),
+        "jaqal_programs": [jaqal_program, jaqal_program],
+    }
+    out = provider.qscout_compile([qc, qc])
+    assert out.circuits == [qc, qc]
+    assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
+
+    # Unavailable compile (e.g., AWS)
+    backend = provider.get_backend("aws_sv1_simulator")
+    qc = qiskit.QuantumCircuit(1)
+    qc.h(0)
+    with pytest.raises(ValueError, match="aws_sv1_simulator is not a valid target"):
+        out = backend.compile(qc)
+
+
+def test_validate_qiskit_circuits() -> None:
+    qc = qiskit.QuantumCircuit(2)
+    qc.h(0)
+    qc.cx(0, 1)
+
+    with pytest.raises(
+        ValueError,
+        match="Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a sequence "
+        "of `qiskit.QuantumCircuit` instances.",
+    ):
+        qss.superstaq_backend._validate_qiskit_circuits("invalid_qc_input")
+
+    with pytest.raises(
+        ValueError,
+        match="Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a "
+        "sequence of `qiskit.QuantumCircuit` instances.",
+    ):
+        qss.superstaq_backend._validate_qiskit_circuits([qc, "invalid_qc_input"])
+
+
+def test_validate_integer_param() -> None:
+
+    # Tests for valid inputs -> Pass
+    valid_inputs = [1, 10, "10", 10.0, np.int16(10), 0b1010]
+    for input_value in valid_inputs:
+        qss.superstaq_backend._validate_integer_param(input_value)
+
+    # Tests for invalid input -> TypeError
+    invalid_inputs = [None, "reps", "{!r}".format(b"invalid"), 1.5, "1.0", {1}, [1, 2, 3], "0b1010"]
+    for input_value in invalid_inputs:
+        with pytest.raises(TypeError) as msg:
+            qss.superstaq_backend._validate_integer_param(input_value)
+        assert re.search(
+            re.escape(f"{input_value} cannot be safely cast as an integer."), str(msg.value)
+        )
+
+    # Tests for invalid input -> ValueError
+    invalid_values = [0, -1]
+    for input_value in invalid_values:
+        with pytest.raises(
+            ValueError,
+            match="Must be a positive integer.",
+        ):
+            qss.superstaq_backend._validate_integer_param(input_value)

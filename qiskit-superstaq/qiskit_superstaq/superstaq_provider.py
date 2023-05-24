@@ -12,8 +12,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import json
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, List, Optional, Sequence, Tuple, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -68,28 +67,6 @@ def _validate_integer_param(integer_param: object) -> None:
 
     if int(integer_param) <= 0:
         raise ValueError("Must be a positive integer.")
-
-
-def _get_metadata_of_circuits(
-    circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]
-) -> List[Dict[Any, Any]]:
-    """Extracts metadata from the input qiskit circuit(s).
-
-    Args:
-        Circuit(s) from which to extract the metadata.
-
-    Returns:
-        A list of dictionaries containing the metadata of the input circuit(s). If a circuit has no
-        metadata, an empty dictionary is stored for that circuit.
-
-    """
-
-    metadata_of_circuits = [
-        (circuit.metadata or {})
-        for circuit in (circuits if isinstance(circuits, list) else [circuits])
-    ]
-
-    return metadata_of_circuits
 
 
 class SuperstaQProvider(

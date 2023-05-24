@@ -65,7 +65,7 @@ def _validate_integer_param(integer_param: object) -> None:
     ):
         raise TypeError(f"{integer_param} cannot be safely cast as an integer.")
 
-    if int(integer_param) < 0:
+    if int(integer_param) <= 0:
         raise ValueError("Must be a positive integer.")
 
 
@@ -210,7 +210,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
     def compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
-        num_equivalent_circuits: Optional[int] = 0,
+        num_equivalent_circuits: Optional[int] = None,
         random_seed: Optional[int] = None,
         atol: Optional[float] = None,
         mirror_swaps: bool = True,
@@ -221,6 +221,13 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
 
         Args:
             circuits: The qiskit QuantumCircuit(s) to compile.
+            num_equivalent_circuits: Number of logically equivalent random circuits to generate for
+                each input circuit.
+            random_seed: Optional seed for circuit randomizer.
+            atol: Tolerance to use for approximate gate synthesis (currently just for qutrit gates).
+            mirror_swaps: If mirror swaps should be used.
+            base_entangling_gate: The base entangling gate to use.
+            kwargs: Other desired compile options.
 
         Returns:
             A CompilerOutput object whose .circuit(s) attribute contains optimized compiled
@@ -260,13 +267,13 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
     def get_aqt_compiler_output(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
-        options: Optional[Dict[str, Any]] = None,
-    ):
+        options: Dict[str, Any],
+    ) -> qss.compiler_output.CompilerOutput:
         """Gets result of AQT compilation request.
 
         Args:
             circuits: The qiskit QuantumCircuit(s) to compile.
-            request_json: A dictionary storing request information.
+            options: The request options.
 
         Returns:
             An AQT CompilerOutput object.
@@ -280,7 +287,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         metadata_of_circuits = _get_metadata_of_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.aqt_compile(request_json)
-        num_equivalent_circuits = options["num_eca_circuits"]
+        num_equivalent_circuits = options.get("num_eca_circuits", None)
         return qss.compiler_output.read_json_aqt(
             json_dict, metadata_of_circuits, circuits_is_list, num_equivalent_circuits
         )
@@ -288,13 +295,13 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
     def get_ibmq_compiler_output(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
-        options: Optional[Dict[str, Any]] = None,
-    ):
+        options: Dict[str, Any],
+    ) -> qss.compiler_output.CompilerOutput:
         """Gets result of IBMQ compilation request.
 
         Args:
             circuits: The qiskit QuantumCircuit(s) to compile.
-            request_json: A dictionary storing request information.
+            options: The request options.
 
         Returns:
             An IBMQ CompilerOutput object.
@@ -328,13 +335,13 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
     def get_qscout_compiler_output(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
-        options: Optional[Dict[str, Any]] = None,
-    ):
+        options: Dict[str, Any],
+    ) -> qss.compiler_output.CompilerOutput:
         """Gets result of QSCOUT compilation request.
 
         Args:
             circuits: The qiskit QuantumCircuit(s) to compile.
-            request_json: A dictionary storing request information.
+            options: The request options.
 
         Returns:
             An QSCOUT CompilerOutput object.
@@ -360,13 +367,13 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
     def get_cq_compiler_output(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
-        options: Optional[Dict[str, Any]] = None,
-    ):
+        options: Dict[str, Any],
+    ) -> qss.compiler_output.CompilerOutput:
         """Gets result of CQ compilation request.
 
         Args:
             circuits: The qiskit QuantumCircuit(s) to compile.
-            request_json: A dictionary storing request information.
+            options: The request options.
 
         Returns:
             An CQ CompilerOutput object.
