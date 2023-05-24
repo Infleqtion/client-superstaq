@@ -148,7 +148,7 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
         # For example, if any of the jobs are still queued, we report Queued as the status
         # for the entire batch.
 
-        job_id_list = self._job_id.split(",")  # separate aggregated job ids
+        job_id_list = self._job_id.split(",")  # separate aggregated job idsS
 
         for job_id in job_id_list:
 
@@ -172,8 +172,6 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
             The equivalent `qiskit.providers.jobstatus.JobStatus` type.
         """
 
-        qiskit_status = qiskit.providers.jobstatus.JobStatus.INITIALIZING
-
         if self._job_info["status"] in self.TERMINAL_STATES:
             if self._job_info["status"] == "Done":
                 return qiskit.providers.jobstatus.JobStatus.DONE
@@ -183,22 +181,17 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
         self._refresh_job()
         status = self._job_info["status"]
 
-        assert status in self.ALL_STATES
+        assert status in ("Submitted", "Canceled", "Queued", "Running", "Done")
 
         status_match = {
             "Queued": qiskit.providers.jobstatus.JobStatus.QUEUED,
             "Running": qiskit.providers.jobstatus.JobStatus.RUNNING,
             "Submitted": qiskit.providers.jobstatus.JobStatus.INITIALIZING,
+            "Canceled": qiskit.providers.jobstatus.JobStatus.CANCELLED,
+            "Done": qiskit.providers.jobstatus.JobStatus.DONE,
         }
 
-        if status in self.PROCESSING_STATES:
-            qiskit_status = status_match.get(status)
-        elif status in self.STOPPED_STATES:
-            qiskit_status = qiskit.providers.jobstatus.JobStatus.CANCELLED
-        else:
-            qiskit_status = qiskit.providers.jobstatus.JobStatus.DONE
-
-        return qiskit_status
+        return status_match.get(status)
 
     def submit(self) -> None:
         raise NotImplementedError("Submit through SuperstaQBackend, not through SuperstaqJob")
