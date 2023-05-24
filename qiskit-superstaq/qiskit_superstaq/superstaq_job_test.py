@@ -24,6 +24,11 @@ def test_job_id(backend: qss.SuperstaQBackend) -> None:
     assert job.get_job_id() == "123abc"
 
 
+def test_get_backend(backend: qss.SuperstaQBackend) -> None:
+    job = qss.SuperstaQJob(backend=backend, job_id="123abc")
+    assert job.get_backend() == backend
+
+
 def test_wait_for_results(backend: qss.SuperstaQBackend) -> None:
     job = qss.SuperstaQJob(backend=backend, job_id="123abc")
     jobs = qss.SuperstaQJob(backend=backend, job_id="123abc,456def")
