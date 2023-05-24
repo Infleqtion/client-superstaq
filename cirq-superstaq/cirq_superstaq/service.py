@@ -400,24 +400,28 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         ] = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
-        """Compiles the given circuit(s) to target AQT device, optimized to its native gate set.
+        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
+        Lawrence Berkeley National Laboratory.
+
         Args:
-            circuits: Cirq Circuit(s) to compile.
+            circuits: The circuit(s) to compile.
             target: String of target AQT device.
             atol: An optional tolerance to use for approximate gate synthesis.
-                Currently only used for qutrit gate synthesis.
             gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
-                operations can be numpy arrays, cirq.Gates, cirq.Operations. More specific names
-                take precedence, for example gate_defs={"CZ3": css.CZ3, "CZ3/C5T4": css.CZ3_INV}
-                implies css.CZ3 for all "CZ3/*" calibrations except "CZ3/C5T4", which will be
-                mapped to a css.CZ3_INV on qutrits (4, 5). Setting any calibration to None will
-                disable that calibration.
+                each operation can be a unitary matrix, `cirq.Gate`, `cirq.Operation`, or None. More
+                specific associations take precedence, for example `{"SWAP": cirq.SQRT_ISWAP,
+                "SWAP/C5C4": cirq.SQRT_ISWAP_INV}` implies `SQRT_ISWAP` for all "SWAP" calibrations
+                except "SWAP/C5C4" (which will instead be mapped to a `SQRT_ISWAP_INV` gate on
+                qubits 4 and 5). Setting any calibration to None will disable that calibration.
             kwargs: Other desired aqt_compile options.
+
         Returns:
-            Object whose .circuit(s) attribute is an optimized cirq Circuit(s)
-            If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-            pulse sequence corresponding to the optimized `cirq.Circuit`(s) and the
-            .pulse_list(s) attribute is the list(s) of cycles.
+        
+            Object whose .circuit(s) attribute contains the optimized circuits(s). If qtrl is
+            installed, the object's .seq attribute is a qtrl Sequence object containing pulse
+            sequences for each compiled circuit, and its .pulse_list(s) attribute contains the
+            corresponding list(s) of cycles.
+            
         """
 
         _validate_cirq_circuits(circuits)
@@ -435,32 +439,31 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         ] = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
-        """Compiles the given circuit(s) to target AQT device with Equivalent Circuit Averaging
-        (ECA).
+        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
+        Lawrence Berkeley National Laboratory using Equivalent Circuit Averaging (ECA).
 
         See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
 
         Args:
-            circuits: Cirq Circuit(s) to compile.
+            circuits: The circuit(s) to compile.
             num_equivalent_circuits: Number of logically equivalent random circuits to generate for
                 each input circuit.
             random_seed: Optional seed for circuit randomizer.
             target: String of target AQT device.
             atol: An optional tolerance to use for approximate gate synthesis.
-                Currently only used for qutrit gate synthesis.
             gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
-                operations can be numpy arrays, cirq.Gates, cirq.Operations. More specific names
-                take precedence, for example gate_defs={"CZ3": css.CZ3, "CZ3/C5T4": css.CZ3_INV}
-                implies css.CZ3 for all "CZ3/*" calibrations except "CZ3/C5T4", which will be
-                mapped to a css.CZ3_INV on qutrits (4, 5). Setting any calibration to None will
-                disable that calibration.
+                each operation can be a unitary matrix, `cirq.Gate`, `cirq.Operation`, or None. More
+                specific associations take precedence, for example `{"SWAP": cirq.SQRT_ISWAP,
+                "SWAP/C5C4": cirq.SQRT_ISWAP_INV}` implies `SQRT_ISWAP` for all "SWAP" calibrations
+                except "SWAP/C5C4" (which will instead be mapped to a `SQRT_ISWAP_INV` gate on
+                qubits 4 and 5). Setting any calibration to None will disable that calibration.
             kwargs: Other desired aqt_compile_eca options.
+
         Returns:
             Object whose .circuits attribute is a list (or list of lists) of logically equivalent
-                cirq Circuit(s).
-            If qtrl is installed, the object's .seq attribute is a qtrl Sequence object of the
-                pulse sequence corresponding to the cirq.Circuits and the .pulse_lists attribute is
-                the list(s) of cycles.
+            circuits. If qtrl is installed, the object's .seq attribute is a qtrl Sequence object
+            containing pulse sequences for each compiled circuit, and its .pulse_list(s) attribute
+            contains the corresponding list(s) of cycles.
         """
         _validate_cirq_circuits(circuits)
         _validate_integer_param(num_equivalent_circuits)
@@ -529,26 +532,39 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
     def qscout_compile(
         self,
         circuits: Union[cirq.Circuit, List[cirq.Circuit]],
-        mirror_swaps: bool = True,
+        mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
         target: str = "sandia_qscout_qpu",
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
-        """Compiles the given circuit(s) to target QSCOUT device, optimized to its native gate set.
+        """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
+        Sandia National Laboratories [1].
+
+        Compiled circuits are returned as both `cirq.Circuit` objects and corresponding Jaqal [2]
+        programs (strings).
+
+        References:
+            [1] S. M. Clark et al., *Engineering the Quantum Scientific Computing Open User
+                Testbed*, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
+                https://doi.org/10.1109/TQE.2021.3096480.
+            [2] B. Morrison, et al., *Just Another Quantum Assembly Language (Jaqal)*, 2020 IEEE
+                International Conference on Quantum Computing and Engineering (QCE), 402-408 (2020).
+                https://arxiv.org/abs/2008.08042.
 
         Args:
-            circuits: Cirq Circuit(s) with operations on qubits 0 and 1.
-            target: String of target QSCOUT device.
-            mirror_swaps: If mirror swaps should be used.
-            base_entangling_gate: The base entangling gate to use.
+            circuits: The circuit(s) to compile.
+            target: String of target representing target device
+            mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
+            base_entangling_gate: The base entangling gate to use (either "xx" or "zz").
             kwargs: Other desired qscout_compile options.
+
         Returns:
-            Object whose .circuit(s) attribute is an optimized cirq Circuit(s)
-            and a list of jaqal programs represented as strings
+            Object whose .circuit(s) attribute contains optimized `cirq.Circuit`(s), and
+            `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
+
         Raises:
             ValueError: If `base_entangling_gate` is not a valid gate option.
         """
-
         _validate_cirq_circuits(circuits)
 
         if base_entangling_gate not in ("xx", "zz"):

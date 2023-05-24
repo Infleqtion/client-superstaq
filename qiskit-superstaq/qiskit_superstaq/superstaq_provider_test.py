@@ -346,7 +346,7 @@ def test_qscout_compile_change_entangler(mock_post: MagicMock, base_entangling_g
     mock_post.assert_called_once()
     _, kwargs = mock_post.call_args
     assert json.loads(kwargs["json"]["options"]) == {
-        "mirror_swaps": True,
+        "mirror_swaps": False,
         "base_entangling_gate": base_entangling_gate,
     }
 
