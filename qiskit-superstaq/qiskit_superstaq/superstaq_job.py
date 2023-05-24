@@ -158,7 +158,7 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
                 self._job_info["status"] = "Queued"
                 break
             elif temp_status in self.STOPPED_STATES:
-                self._job_info["status"] = "Cancelled"
+                self._job_info["status"] = "Canceled"
                 break
             elif temp_status == "Running":
                 self._job_info["status"] = "Running"

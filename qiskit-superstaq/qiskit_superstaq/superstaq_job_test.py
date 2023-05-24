@@ -88,6 +88,16 @@ def test_result(backend: qss.SuperstaQBackend) -> None:
         assert ans.job_id == expected.job_id
 
 
+def test_check_if_stopped(backend: qss.SuperstaQBackend) -> None:
+
+    job = qss.SuperstaQJob(backend=backend, job_id="123abc")
+
+    for status in job.STOPPED_STATES:
+        job._job_info["status"] = status
+        with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match=status):
+            _ = job.get_backend()
+
+
 def test_status(backend: qss.SuperstaQBackend) -> None:
     job = qss.SuperstaQJob(backend=backend, job_id="123abc")
 
@@ -108,6 +118,22 @@ def test_status(backend: qss.SuperstaQBackend) -> None:
         return_value=mock_response("Done"),
     ):
         assert job.status() == qiskit.providers.JobStatus.DONE
+
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaQClient.get_job",
+        return_value=mock_response("Submitted"),
+    ):
+        assert job.status() == qiskit.providers.JobStatus.INITIALIZING
+
+    for status in job.STOPPED_STATES:
+        with mock.patch(
+            "general_superstaq.superstaq_client._SuperstaQClient.get_job",
+            return_value=mock_response(status),
+        ):
+            assert job.status() == qiskit.providers.JobStatus.CANCELLED
+
+    job._job_info["status"] = "Done"
+    assert job.status() == qiskit.providers.JobStatus.DONE
 
 
 def test_submit(backend: qss.SuperstaQBackend) -> None:
