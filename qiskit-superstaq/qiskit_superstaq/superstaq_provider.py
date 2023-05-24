@@ -23,52 +23,6 @@ from general_superstaq import ResourceEstimate, finance, logistics, superstaq_cl
 import qiskit_superstaq as qss
 
 
-def _validate_qiskit_circuits(circuits: object) -> None:
-    """Validates that the input is either a single `qiskit.QuantumCircuit` or a list of
-    `qiskit.QuantumCircuit` instances.
-
-    Args:
-        circuits: The circuit(s) to run.
-
-    Raises:
-        ValueError: If the input is not a `qiskit.QuantumCircuit` or a list of
-        `qiskit.QuantumCircuit` instances.
-
-    """
-    if not (
-        isinstance(circuits, qiskit.QuantumCircuit)
-        or (
-            isinstance(circuits, Sequence)
-            and all(isinstance(circuit, qiskit.QuantumCircuit) for circuit in circuits)
-        )
-    ):
-        raise ValueError(
-            "Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a "
-            "sequence of `qiskit.QuantumCircuit` instances."
-        )
-
-
-def _validate_integer_param(integer_param: object) -> None:
-    """Validates that an input parameter is positive and an integer.
-
-    Args:
-        integer_param: An input parameter.
-
-    Raises:
-        TypeError: If input is not an integer.
-        ValueError: If input is negative.
-    """
-
-    if not (
-        (hasattr(integer_param, "__int__") and int(integer_param) == integer_param)
-        or (isinstance(integer_param, str) and integer_param.isdecimal())
-    ):
-        raise TypeError(f"{integer_param} cannot be safely cast as an integer.")
-
-    if int(integer_param) <= 0:
-        raise ValueError("Must be a positive integer.")
-
-
 class SuperstaQProvider(
     qiskit.providers.ProviderV1, finance.Finance, logistics.Logistics, user_config.UserConfig
 ):
@@ -159,7 +113,7 @@ class SuperstaQProvider(
             ResourceEstimate(s) containing resource costs (after compilation)
             for running circuit(s) on target.
         """
-        _validate_qiskit_circuits(circuits)
+        qss.superstaq_backend._validate_qiskit_circuits(circuits)
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuit_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
@@ -339,8 +293,8 @@ class SuperstaQProvider(
         self, files: List[List[int]], num_qubits: int, depth: int
     ) -> Tuple[List[qiskit.QuantumCircuit], npt.NDArray[np.float_]]:
         """Docstring."""
-        _validate_integer_param(num_qubits)
-        _validate_integer_param(depth)
+        qss.superstaq_backend._validate_integer_param(num_qubits)
+        qss.superstaq_backend._validate_integer_param(depth)
         json_dict = self._client.supercheq(files, num_qubits, depth, "qiskit_circuits")
         circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
         fidelities = gss.serialization.deserialize(json_dict["fidelities"])
