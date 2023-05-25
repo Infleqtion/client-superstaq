@@ -294,7 +294,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
-        """Gets result of IBMQ compilation request.
+        """Compiles and optimizes the given circuit(s) for IBMQ devices.
 
         Args:
             circuits: The qiskit QuantumCircuit(s) to compile.
