@@ -133,6 +133,14 @@ def test_read_json_ibmq() -> None:
         assert out.circuits == [circuit]
         assert out.pulse_sequences is None
 
+    json_dict.pop("pulses")
+
+    out = css.compiler_output.read_json_ibmq(json_dict, circuits_is_list=False)
+    assert out.pulse_sequence is None
+
+    out = css.compiler_output.read_json_ibmq(json_dict, circuits_is_list=True)
+    assert out.pulse_sequences is None
+
 
 @mock.patch.dict("sys.modules", {"qtrl": None})
 def test_read_json_aqt() -> None:

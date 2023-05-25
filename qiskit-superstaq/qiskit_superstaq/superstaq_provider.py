@@ -344,14 +344,20 @@ class SuperstaQProvider(
         compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
         for circuit, metadata in zip(compiled_circuits, metadata_of_circuits):
             circuit.metadata = metadata
-        pulses = gss.serialization.deserialize(json_dict["pulses"])
+
+        pulses = None
+
+        if "pulses" in json_dict:
+            pulses = gss.serialization.deserialize(json_dict["pulses"])
+
         final_logical_to_physicals: List[Dict[int, int]] = list(
             map(dict, json.loads(json_dict["final_logical_to_physicals"]))
         )
 
         if isinstance(circuits, qiskit.QuantumCircuit):
+            pulse_sequence = None if pulses is None else pulses[0]
             return qss.compiler_output.CompilerOutput(
-                compiled_circuits[0], final_logical_to_physicals[0], pulse_sequences=pulses[0]
+                compiled_circuits[0], final_logical_to_physicals[0], pulse_sequences=pulse_sequence
             )
         return qss.compiler_output.CompilerOutput(
             compiled_circuits,
