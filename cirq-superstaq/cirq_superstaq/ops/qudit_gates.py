@@ -422,11 +422,9 @@ class QubitSubspaceGate(cirq.Gate):  # pylint: disable=missing-class-docstring
         if other.subspaces != self.subspaces:
             return False
 
-        return cirq.equal_up_to_global_phase(
-            self.sub_gate, other.sub_gate, atol=atol
-        ) or cirq.equal_up_to_global_phase(
-            other.sub_gate, self.sub_gate, atol=atol
-        )  # Test both orders as a workaround for https://github.com/quantumlib/Cirq/issues/5980
+        # Do not ignore global phase when comparing sub gates, as it becomes physical when the gate
+        # is expanded to higher dimensions
+        return cirq.approx_eq(self.sub_gate, other.sub_gate, atol=atol)
 
     def _json_dict_(self) -> Dict[str, Any]:
         return cirq.obj_to_dict_helper(self, ["sub_gate", "qid_shape", "subspaces"])

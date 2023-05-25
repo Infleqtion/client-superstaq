@@ -385,7 +385,7 @@ def test_qubit_subspace_gate_protocols(
     assert cirq.equal_up_to_global_phase(gate, gate)
     assert cirq.equal_up_to_global_phase(gate, same_gate)
     assert cirq.equal_up_to_global_phase(gate, similar_gate)
-    assert cirq.equal_up_to_global_phase(gate, shifted_gate)
+    assert not cirq.equal_up_to_global_phase(gate, shifted_gate)
     assert not cirq.equal_up_to_global_phase(gate, flipped_gate)
     assert not cirq.equal_up_to_global_phase(gate, larger_gate)
     assert not cirq.equal_up_to_global_phase(gate, another_gate)
