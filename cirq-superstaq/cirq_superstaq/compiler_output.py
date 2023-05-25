@@ -124,21 +124,22 @@ def read_json_ibmq(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compile
     )
     pulses = None
 
-    if importlib.util.find_spec("qiskit"):
-        import qiskit
+    if "pulses" in json_dict:
+        if importlib.util.find_spec("qiskit"):
+            import qiskit
 
-        if "0.23" < qiskit.__version__ < "0.24":
-            pulses = gss.serialization.deserialize(json_dict["pulses"])
+            if "0.23" < qiskit.__version__ < "0.24":
+                pulses = gss.serialization.deserialize(json_dict["pulses"])
+            else:
+                warnings.warn(
+                    "ibmq_compile requires Qiskit Terra version 0.23.* to deserialize compiled "
+                    f"pulse sequences (you have {qiskit.__version__})."
+                )
         else:
             warnings.warn(
-                "ibmq_compile requires Qiskit Terra version 0.22.* to deserialize compiled pulse "
-                f"sequences (you have {qiskit.__version__})."
+                "ibmq_compile requires Qiskit Terra version 0.23.* to deserialize compiled pulse "
+                "sequences."
             )
-    else:
-        warnings.warn(
-            "ibmq_compile requires Qiskit Terra version 0.22.* to deserialize compiled pulse "
-            "sequences."
-        )
 
     if circuits_is_list:
         return CompilerOutput(compiled_circuits, final_logical_to_physicals, pulse_sequences=pulses)
@@ -175,9 +176,18 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
     seq = None
     pulse_lists = None
 
-    if importlib.util.find_spec(
-        "qtrl"
-    ):  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
+    if "state_jp" not in json_dict:
+        warnings.warn(
+            "This output only contains compiled circuits (using a default AQT gate set). To "
+            "get back a compiled pulse sequence, you first must upload your qtrl configs using "
+            "`service.aqt_upload_configs`."
+        )
+    elif not importlib.util.find_spec("qtrl"):
+        warnings.warn(
+            "This output only contains compiled circuits. The qtrl package must be installed in "
+            "order to deserialize compiled pulse sequences."
+        )
+    else:  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
 
         def _sequencer_from_state(state: Dict[str, Any]) -> qtrl.sequencer.Sequence:
             seq = qtrl.sequencer.Sequence(n_elements=1)
@@ -201,11 +211,6 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
             state["_readout"] = readout_seq
 
         seq = _sequencer_from_state(state)
-    else:
-        warnings.warn(
-            "Your sequence for this output is None. Please make sure you have the qtrl package "
-            "installed in order to deserialize compiled pulse sequences."
-        )
 
     if num_eca_circuits is not None:
         compiled_circuits = [
