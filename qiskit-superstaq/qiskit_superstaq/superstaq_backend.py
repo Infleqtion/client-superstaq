@@ -255,7 +255,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
             circuits: The qiskit QuantumCircuit(s) to compile.
             num_equivalent_circuits: Number of logically equivalent random circuits to generate for
                 each input circuit.
-            random_seed: Optional seed for circuit randomizer.
+            random_seed: Optional seed used for approximate synthesis and ECA.
             atol: Tolerance to use for approximate gate synthesis (currently just for qutrit gates).
             kwargs: Other desired compile options.
 
