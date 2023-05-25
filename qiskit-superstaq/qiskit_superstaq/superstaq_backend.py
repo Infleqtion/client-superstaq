@@ -210,23 +210,12 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
     def compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
-        num_equivalent_circuits: Optional[int] = None,
-        random_seed: Optional[int] = None,
-        atol: Optional[float] = None,
-        mirror_swaps: bool = True,
-        base_entangling_gate: str = "xx",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to the backend's native gateset.
 
         Args:
             circuits: The qiskit QuantumCircuit(s) to compile.
-            num_equivalent_circuits: Number of logically equivalent random circuits to generate for
-                each input circuit.
-            random_seed: Optional seed for circuit randomizer.
-            atol: Tolerance to use for approximate gate synthesis (currently just for qutrit gates).
-            mirror_swaps: If mirror swaps should be used.
-            base_entangling_gate: The base entangling gate to use.
             kwargs: Other desired compile options.
 
         Returns:
@@ -238,46 +227,59 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         """
         _validate_qiskit_circuits(circuits)
         if self.name().startswith("ibmq_"):
-            get_compiler_output = self.get_ibmq_compiler_output
+            return self.ibmq_compile(circuits, **kwargs)
         elif self.name().startswith("aqt_"):
-            get_compiler_output = self.get_aqt_compiler_output
+            return self.aqt_compile(circuits, **kwargs)
         elif self.name().startswith("sandia_"):
-            get_compiler_output = self.get_qscout_compiler_output
+            return self.qscout_compile(circuits, **kwargs)
         elif self.name().startswith("cq_"):
-            get_compiler_output = self.get_cq_compiler_output
-        else:
-            raise ValueError(
-                f"{self.name()} is not a valid target (currently supports AQT, IBMQ, QSCOUT)."
-            )
+            return self.cq_compile(circuits, **kwargs)
+        raise ValueError(
+            f"{self.name()} is not a valid target (currently supports AQT, IBMQ, QSCOUT, CQ)."
+        )
 
-        options: Dict[str, Any] = {**kwargs}
-        if num_equivalent_circuits is not None:  # aqt eca compile
-            _validate_integer_param(num_equivalent_circuits)
-            options["num_eca_circuits"] = num_equivalent_circuits
-        if random_seed is not None:  # aqt eca compile
-            options["random_seed"] = random_seed
-        if atol is not None:  # aqt compile
-            options["atol"] = atol
-        if mirror_swaps is not None:  # qscout compile
-            options["mirror_swaps"] = mirror_swaps
-        if base_entangling_gate is not None:  # qscout compile
-            options["base_entangling_gate"] = base_entangling_gate
-        return get_compiler_output(circuits, options)
-
-    def get_aqt_compiler_output(
+    def aqt_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
-        options: Dict[str, Any],
+        num_equivalent_circuits: Optional[int] = None,
+        random_seed: Optional[int] = None,
+        atol: Optional[float] = None,
+        **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
-        """Gets result of AQT compilation request.
+        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
+        Lawrence Berkeley National Laboratory. Also allows using Equivalent Circuit Averaging (ECA).
+
+        See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
 
         Args:
             circuits: The qiskit QuantumCircuit(s) to compile.
-            options: The request options.
+            num_equivalent_circuits: Number of logically equivalent random circuits to generate for
+                each input circuit.
+            random_seed: Optional seed for circuit randomizer.
+            atol: Tolerance to use for approximate gate synthesis (currently just for qutrit gates).
+            kwargs: Other desired compile options.
 
         Returns:
-            An AQT CompilerOutput object.
+            Object whose .circuit(s) attribute contains the optimized circuits(s). Alternatively for
+            ECA, an Object whose .circuits attribute is a list (or list of lists) of logically
+            equivalent circuits If qtrl is installed, the object's .seq attribute is a qtrl Sequence
+            object containing pulse sequences for each compiled circuit, and its .pulse_list(s)
+            attribute contains the corresponding list(s) of cycles.
+
+        Raises:
+            ValueError: If `target` is not a valid AQT target.
         """
+        if not self.name().startswith("aqt_"):
+            raise ValueError(f"{self.name()} is not a valid AQT target.")
+
+        options: Dict[str, Any] = {**kwargs}
+        if num_equivalent_circuits is not None:
+            options["num_equivalent_cirucits"] = num_equivalent_circuits
+        if random_seed is not None:
+            options["random_seed"] = random_seed
+        if atol is not None:
+            options["atol"] = atol
+
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         request_json = {
             "qiskit_circuits": serialized_circuits,
@@ -287,30 +289,36 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         metadata_of_circuits = _get_metadata_of_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.aqt_compile(request_json)
-        num_equivalent_circuits = options.get("num_eca_circuits", None)
         return qss.compiler_output.read_json_aqt(
             json_dict, metadata_of_circuits, circuits_is_list, num_equivalent_circuits
         )
 
-    def get_ibmq_compiler_output(
+    def ibmq_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
-        options: Dict[str, Any],
+        **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Gets result of IBMQ compilation request.
 
         Args:
             circuits: The qiskit QuantumCircuit(s) to compile.
-            options: The request options.
+            kwargs: Other desired compile options.
 
         Returns:
-            An IBMQ CompilerOutput object.
+            An IBMQ CompilerOutput object whose .circuit(s) attribute is an optimized qiskit
+            QuantumCircuit(s).
+
+        Raises:
+            ValueError: If `target` is not a valid IBMQ target.
         """
+        if not self.name().startswith("ibmq_"):
+            raise ValueError(f"{self.name()} is not a valid IBMQ target.")
+
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         request_json = {
             "qiskit_circuits": serialized_circuits,
             "target": self.name(),
-            "options": json.dumps(options),
+            "options": json.dumps(kwargs),
         }
         json_dict = self._provider._client.ibmq_compile(request_json)
         compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
@@ -335,27 +343,56 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
             pulse_sequences=pulses,
         )
 
-    def get_qscout_compiler_output(
+    def qscout_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
-        options: Dict[str, Any],
+        mirror_swaps: bool = True,
+        base_entangling_gate: str = "xx",
+        **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
-        """Gets result of QSCOUT compilation request.
+        """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at Sandia
+        National Laboratories [1].
+
+        Compiled circuits are returned as both `qiskit.QuantumCircuit` objects and corresponding
+        Jaqal [2] programs (strings).
+
+        References:
+            [1] S. M. Clark et al., *Engineering the Quantum Scientific Computing Open User
+                Testbed*, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
+                https://doi.org/10.1109/TQE.2021.3096480.
+            [2] B. Morrison, et al., *Just Another Quantum Assembly Language (Jaqal)*, 2020 IEEE
+                International Conference on Quantum Computing and Engineering (QCE), 402-408 (2020).
+                https://arxiv.org/abs/2008.08042.
 
         Args:
-            circuits: The qiskit QuantumCircuit(s) to compile.
-            options: The request options.
+            circuits: The circuit(s) to compile.
+            mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
+            base_entangling_gate: The base entangling gate to use (either "xx" or "zz").
+            kwargs: Other desired qscout_compile options.
 
         Returns:
-            An QSCOUT CompilerOutput object.
+            Object whose .circuit(s) attribute contains optimized `qiskit QuantumCircuit`(s), and
+            `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
+
+        Raises:
+            ValueError: If `target` is not a valid QSCOUT target.
+            ValueError: If `base_entangling_gate` is not a valid gate option.
         """
-        qss.superstaq_backend.validate_target(self.name())
-        metadata_of_circuits = _get_metadata_of_circuits(circuits)
-        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
-        base_entangling_gate = options["base_entangling_gate"]
+        if not self.name().startswith("sandia_"):
+            raise ValueError(f"{self.name()} is not a valid Sandia target.")
+
         if base_entangling_gate not in ("xx", "zz"):
             raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
 
+        qss.superstaq_backend.validate_target(self.name())
+        metadata_of_circuits = _get_metadata_of_circuits(circuits)
+        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
+
+        options = {
+            **kwargs,
+            "mirror_swaps": mirror_swaps,
+            "base_entangling_gate": base_entangling_gate,
+        }
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         request_json = {
             "qiskit_circuits": serialized_circuits,
@@ -367,20 +404,26 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
             json_dict, metadata_of_circuits, circuits_is_list
         )
 
-    def get_cq_compiler_output(
+    def cq_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
-        options: Dict[str, Any],
+        **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Gets result of CQ compilation request.
 
         Args:
             circuits: The qiskit QuantumCircuit(s) to compile.
-            options: The request options.
+            kwargs: Other desired compile options.
 
         Returns:
             An CQ CompilerOutput object.
+
+        Raises:
+            ValueError: If `target` is not a valid CQ target.
         """
+        if not self.name().startswith("cq_"):
+            raise ValueError(f"{self.name()} is not a valid CQ target.")
+
         qss.superstaq_backend.validate_target(self.name())
         metadata_of_circuits = _get_metadata_of_circuits(circuits)
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
@@ -388,7 +431,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         request_json = {
             "qiskit_circuits": serialized_circuits,
             "target": self.name(),
-            "options": json.dumps(options),
+            "options": json.dumps(kwargs),
         }
         json_dict = self._provider._client.cq_compile(request_json)
         return qss.compiler_output.read_json_only_circuits(

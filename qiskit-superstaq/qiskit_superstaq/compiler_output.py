@@ -124,7 +124,7 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
     json_dict: Dict[str, str],
     metadata_of_circuits: List[Dict[Any, Any]],
     circuits_is_list: bool,
-    num_eca_circuits: int = 0,
+    num_eca_circuits: Optional[int] = 0,
 ) -> CompilerOutput:
     """Reads out returned JSON from SuperstaQ API's AQT compilation endpoint.
 

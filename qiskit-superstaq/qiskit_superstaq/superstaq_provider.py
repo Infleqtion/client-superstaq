@@ -198,7 +198,11 @@ class SuperstaQProvider(
             raise ValueError(f"{target} is not an AQT target")
 
         return self.get_backend(target).compile(
-            circuits, num_equivalent_circuits, random_seed, atol, **kwargs
+            circuits,
+            num_equivalent_circuits=num_equivalent_circuits,
+            random_seed=random_seed,
+            atorl=atol,
+            **kwargs,
         )
 
     def ibmq_compile(
