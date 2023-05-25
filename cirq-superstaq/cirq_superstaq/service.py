@@ -587,36 +587,6 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
 
         return css.compiler_output.read_json_qscout(json_dict, circuits_is_list)
 
-    def compile(
-        self,
-        circuits: Union[cirq.Circuit, List[cirq.Circuit]],
-        target: str,
-        **kwargs: Any,
-    ) -> css.compiler_output.CompilerOutput:
-        """Compiles the given circuit(s) to the target device, optimized to its native gate set.
-
-        Args:
-            circuits: Cirq Circuit(s) with operations on qubits 0 and 1.
-            target: String of target CQ device.
-            kwargs: Other desired compile options.
-        Returns:
-            Object whose .circuit(s) attribute is an optimized cirq Circuit(s)
-        """
-        _validate_cirq_circuits(circuits)
-        serialized_circuits = css.serialization.serialize_circuits(circuits)
-        circuits_is_list = not isinstance(circuits, cirq.Circuit)
-        target = self._resolve_target(target)
-
-        request_json = {
-            "cirq_circuits": serialized_circuits,
-            "target": target,
-            "options": cirq.to_json(kwargs),
-        }
-
-        json_dict = self._client.compile(request_json)
-
-        return css.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
-
     def cq_compile(
         self,
         circuits: Union[cirq.Circuit, List[cirq.Circuit]],
@@ -633,7 +603,21 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Returns:
             Object whose .circuit(s) attribute is an optimized cirq Circuit(s)
         """
-        return self.compile(circuits, target, **kwargs)
+        _validate_cirq_circuits(circuits)
+        serialized_circuits = css.serialization.serialize_circuits(circuits)
+        circuits_is_list = not isinstance(circuits, cirq.Circuit)
+
+        target = self._resolve_target(target)
+
+        request_json = {
+            "cirq_circuits": serialized_circuits,
+            "target": target,
+            "options": cirq.to_json(kwargs),
+        }
+
+        json_dict = self._client.compile(request_json)
+
+        return css.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
 
     def ibmq_compile(
         self,
@@ -652,7 +636,23 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         Returns:
             Object whose .circuit(s) attribute is an optimized cirq Circuit(s)
         """
-        return self.compile(circuits, target, **kwargs)
+        _validate_cirq_circuits(circuits)
+        serialized_circuits = css.serialization.serialize_circuits(circuits)
+        circuits_is_list = not isinstance(circuits, cirq.Circuit)
+
+        target = self._resolve_target(target)
+        if not target.startswith("ibmq_"):
+            raise ValueError(f"{target} is not an IBMQ target")
+
+        request_json = {
+            "cirq_circuits": serialized_circuits,
+            "target": target,
+            "options": cirq.to_json(kwargs),
+        }
+
+        json_dict = self._client.compile(request_json)
+
+        return css.compiler_output.read_json_ibmq(json_dict, circuits_is_list)
 
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int
