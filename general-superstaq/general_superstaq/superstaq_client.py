@@ -271,7 +271,7 @@ class _SuperstaQClient:
         return self.post_request("/qscout_compile", json_dict)
 
     def compile(self, json_dict: Dict[str, str]) -> Dict[str, str]:
-        """Makes a POST request to SuperstaQ API to compile a circuits for IBM devices."""
+        """Makes a POST request to SuperstaQ API to compile a list of circuits."""
         return self.post_request("/compile", json_dict)
 
     def submit_qubo(
