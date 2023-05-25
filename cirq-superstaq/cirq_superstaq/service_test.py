@@ -502,7 +502,7 @@ def test_qscout_compile_base_entangling_gate(
     assert out.jaqal_program == jaqal_program
     mock_qscout_compile.assert_called_once()
     assert json.loads(mock_qscout_compile.call_args[0][0]["options"]) == {
-        "mirror_swaps": True,
+        "mirror_swaps": False,
         "base_entangling_gate": base_entangling_gate,
     }
 
