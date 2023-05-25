@@ -305,7 +305,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
             QuantumCircuit(s).
 
         Raises:
-            ValueError: If `target` is not a valid IBMQ target.
+            ValueError: If this is not an IBMQ backend.
         """
         if not self.name().startswith("ibmq_"):
             raise ValueError(f"{self.name()} is not a valid IBMQ target.")
@@ -371,7 +371,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
             `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
 
         Raises:
-            ValueError: If `target` is not a valid QSCOUT target.
+            ValueError: If this is not a Sandia backend.
             ValueError: If `base_entangling_gate` is not a valid gate option.
         """
         if not self.name().startswith("sandia_"):
@@ -415,7 +415,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
             An CQ CompilerOutput object.
 
         Raises:
-            ValueError: If `target` is not a valid CQ target.
+            ValueError: If this is not a CQ backend.
         """
         if not self.name().startswith("cq_"):
             raise ValueError(f"{self.name()} is not a valid CQ target.")
