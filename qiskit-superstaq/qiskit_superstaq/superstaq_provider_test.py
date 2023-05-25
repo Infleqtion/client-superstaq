@@ -216,6 +216,15 @@ def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
         [qc], [final_logical_to_physical], pulse_sequences=[mock.DEFAULT]
     )
 
+    mock_ibmq_compile.return_value.pop("pulses")
+
+    assert provider.ibmq_compile(
+        qiskit.QuantumCircuit(), test_options="yes"
+    ) == qss.compiler_output.CompilerOutput(qc, final_logical_to_physical, pulse_sequences=None)
+    assert provider.ibmq_compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
+        [qc], [final_logical_to_physical], pulse_sequences=None
+    )
+
 
 def test_invalid_target_service_ibmq_compile() -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
