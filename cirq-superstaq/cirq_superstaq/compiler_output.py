@@ -124,22 +124,21 @@ def read_json_ibmq(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compile
     )
     pulses = None
 
-    if "pulses" in json_dict:
-        if importlib.util.find_spec("qiskit"):
-            import qiskit
+    if importlib.util.find_spec("qiskit"):
+        import qiskit
 
-            if "0.23" < qiskit.__version__ < "0.24":
-                pulses = gss.serialization.deserialize(json_dict["pulses"])
-            else:
-                warnings.warn(
-                    "ibmq_compile requires Qiskit Terra version 0.23.* to deserialize compiled "
-                    f"pulse sequences (you have {qiskit.__version__})."
-                )
+        if "0.23" < qiskit.__version__ < "0.24":
+            pulses = gss.serialization.deserialize(json_dict["pulses"])
         else:
             warnings.warn(
-                "ibmq_compile requires Qiskit Terra version 0.23.* to deserialize compiled pulse "
-                "sequences."
+                "ibmq_compile requires Qiskit Terra version 0.22.* to deserialize compiled pulse "
+                f"sequences (you have {qiskit.__version__})."
             )
+    else:
+        warnings.warn(
+            "ibmq_compile requires Qiskit Terra version 0.22.* to deserialize compiled pulse "
+            "sequences."
+        )
 
     if circuits_is_list:
         return CompilerOutput(compiled_circuits, final_logical_to_physicals, pulse_sequences=pulses)
