@@ -217,7 +217,6 @@ class SuperstaQProvider(
         Raises:
             ValueError: If `target` is not a valid IBMQ target.
         """
-
         if not target.startswith("ibmq_"):
             raise ValueError(f"{target} is not an IBMQ target")
 
