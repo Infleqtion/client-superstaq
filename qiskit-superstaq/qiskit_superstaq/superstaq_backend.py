@@ -263,7 +263,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
             attribute contains the corresponding list(s) of cycles.
 
         Raises:
-            ValueError: If `target` is not a valid AQT target.
+            ValueError: If this is not an AQT backend.
         """
         if not self.name().startswith("aqt_"):
             raise ValueError(f"{self.name()} is not a valid AQT target.")
