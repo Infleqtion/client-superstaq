@@ -78,9 +78,7 @@ def _get_metadata_of_circuits(
     Returns:
         A list of dictionaries containing the metadata of the input circuit(s). If a circuit has no
         metadata, an empty dictionary is stored for that circuit.
-
     """
-
     metadata_of_circuits = [
         (circuit.metadata or {})
         for circuit in (circuits if isinstance(circuits, list) else [circuits])
