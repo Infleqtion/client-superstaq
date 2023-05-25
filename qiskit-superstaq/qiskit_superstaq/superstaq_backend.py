@@ -319,7 +319,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
             circuit.metadata = metadata
         pulses = None
         if "pulses" in json_dict:
-            pulses = gss.serialization.deserialize(json_dict["pulses"]
+            pulses = gss.serialization.deserialize(json_dict["pulses"])
         final_logical_to_physicals: List[Dict[int, int]] = list(
             map(dict, json.loads(json_dict["final_logical_to_physicals"]))
         )
