@@ -57,7 +57,6 @@ def _validate_integer_param(integer_param: object) -> None:
         TypeError: If input is not an integer.
         ValueError: If input is negative.
     """
-
     if not (
         (hasattr(integer_param, "__int__") and int(integer_param) == integer_param)
         or (isinstance(integer_param, str) and integer_param.isdecimal())
