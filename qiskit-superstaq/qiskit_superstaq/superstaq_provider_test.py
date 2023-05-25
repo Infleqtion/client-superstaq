@@ -214,7 +214,7 @@ def test_service_ibmq_compile(mock_post: MagicMock) -> None:
         [qc], [final_logical_to_physical], pulse_sequences=[mock.DEFAULT]
     )
 
-    mock_ibmq_compile.return_value.pop("pulses")
+    mock_post.return_value.pop("pulses")
 
     assert provider.ibmq_compile(
         qiskit.QuantumCircuit(), test_options="yes"
