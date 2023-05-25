@@ -219,7 +219,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
             circuit(s).
 
         Raises:
-            ValueError: If `target` is not a valid AQT or IBMQ target.
+            ValueError: If this backend does not support compilation.
         """
         _validate_qiskit_circuits(circuits)
         if self.name().startswith("ibmq_"):
