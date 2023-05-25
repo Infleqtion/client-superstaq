@@ -52,12 +52,7 @@ def test_qudit_swap_gate(dimension: int) -> None:
     cirq.testing.assert_json_roundtrip_works(gate, resolvers=css.SUPERSTAQ_RESOLVERS)
 
     q0, q1 = cirq.LineQid.range(2, dimension=dimension)
-
-    swap_op = css.qudit_swap_op(q0, q1)
-    assert swap_op == gate.on(q0, q1)
-    assert swap_op == gate.on(q1, q0)
-    with pytest.raises(ValueError, match="do not have the same dimension"):
-        _ = css.qudit_swap_op(q0, cirq.LineQid(1, dimension + 1))
+    swap_op = gate.on(q0, q1)
 
     # Check the unitary by commuting through random single-qudit gates:
     one_qb_gate0 = cirq.MatrixGate(cirq.testing.random_unitary(dimension), qid_shape=(dimension,))
@@ -77,6 +72,18 @@ def test_qudit_swap_gate(dimension: int) -> None:
             """
         ),
     )
+
+
+def test_qudit_swap_op() -> None:
+    qubit0 = cirq.LineQubit(0)
+    qubit1 = cirq.GridQubit(1, 2)
+    qudit0 = cirq.LineQid(0, dimension=7)
+    qudit1 = cirq.GridQid(1, 2, dimension=7)
+
+    assert css.qudit_swap_op(qubit0, qubit1) == cirq.SWAP(qubit0, qubit1)
+    assert css.qudit_swap_op(qudit0, qudit1) == css.QuditSwapGate(7).on(qudit0, qudit1)
+    with pytest.raises(ValueError, match="do not have the same dimension"):
+        _ = css.qudit_swap_op(qubit0, qudit1)
 
 
 def test_bswap_pow_gate() -> None:
