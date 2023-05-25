@@ -33,7 +33,6 @@ def _validate_qiskit_circuits(circuits: object) -> None:
     Raises:
         ValueError: If the input is not a `qiskit.QuantumCircuit` or a list of
         `qiskit.QuantumCircuit` instances.
-
     """
     if not (
         isinstance(circuits, qiskit.QuantumCircuit)
