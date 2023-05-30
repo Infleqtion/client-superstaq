@@ -160,8 +160,8 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
     if "state_jp" not in json_dict:
         warnings.warn(
             "This output only contains compiled circuits (using a default AQT gate set). To "
-            "get back a compiled pulse sequence, you first must upload your qtrl configs using "
-            "`service.aqt_upload_configs`."
+            "get back the corresponding pulse sequence, you must first upload your qtrl configs "
+            "using `service.aqt_upload_configs`."
         )
     elif not importlib.util.find_spec("qtrl"):
         warnings.warn(
