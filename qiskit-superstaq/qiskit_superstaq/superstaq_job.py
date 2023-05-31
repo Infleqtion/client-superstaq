@@ -13,7 +13,7 @@
 # that they have been altered from the originals.
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import general_superstaq as gss
 import qiskit
@@ -24,7 +24,6 @@ import qiskit_superstaq as qss
 class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-docstring
 
     TERMINAL_STATES = ("Done", "Canceled", "Failed", "Deleted")
-    STOPPED_STATES = ("Canceled", "Failed", "Deleted")
     PROCESSING_STATES = ("Queued", "Submitted", "Running")
     ALL_STATES = TERMINAL_STATES + PROCESSING_STATES
 
@@ -36,28 +35,20 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
             job_id: The unique job ID from SuperstaQ.
         """
         super().__init__(backend, job_id)
-        self._job_info: Dict[str, Any] = {"status": "Submitted"}
+        self._overall_status = "Submitted"
+        self._job_info: Dict[str, object] = {}
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
 
         if not (isinstance(other, SuperstaQJob)):
             return False
 
         return self._job_id == other._job_id
 
-    def get_job_id(self) -> str:
-        """Returns the virtual job id for the job."""
-        return self._job_id
-
-    def get_backend(self) -> str:
-        """Returns the job backend used as a string."""
-        self._check_if_stopped()
-        return self._backend
-
     def _wait_for_results(
         self, timeout: Optional[float] = None, wait: float = 5
     ) -> List[Dict[str, Dict[str, int]]]:
-        """Waits for the results till either the job is done or some in the job occurs.
+        """Waits for the results till either the job is done or some error in the job occurs.
 
         Args:
             timeout: Time to wait for results. Defaults to None.
@@ -129,57 +120,69 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
         )
 
     def _check_if_stopped(self) -> None:
-        """Verifies that the job status is not in a stopped state and raises an
+        """Verifies that the job status is not in a canceled state and raises an
         exception if it is.
 
         Raises:
-            SuperstaQUnsuccessfulJob: If the job has failed, been canceled, or deleted.
+            SuperstaQUnsuccessfulJob: If the job been canceled.
             SuperstaQException: If unable to get the status of the job from the API.
         """
-        if self._job_info["status"] in self.STOPPED_STATES:
+        if self._overall_status == "Canceled":
             raise gss.superstaq_exceptions.SuperstaQUnsuccessfulJobException(
-                self.get_job_id(), self._job_info["status"]
+                self._job_id, self._overall_status
             )
 
     def _refresh_job(self) -> None:
         """Queries the server for the current job status"""
 
-        # when we have multiple jobs, we will take the "worst status" among the jobs
-        # For example, if any of the jobs are still queued, we report Queued as the status
-        # for the entire batch.
+        # When we have multiple jobs, we will take the "worst status" among the jobs
+        # For example, if object of the jobs are still queued/canceled, we report Queued/Cancelled
+        # as the status for the entire batch.
+        # The overall status will only be reported as Done if all jobs are done
+        # following the "worst status" rule.
 
-        job_id_list = self._job_id.split(",")  # separate aggregated job idsS
+        job_id_list = self._job_id.split(",")  # separate aggregated job ids
 
         for job_id in job_id_list:
 
-            result = self._backend._provider._client.get_job(job_id)
-            temp_status = result["status"]
+            if job_id in self._job_info and self._job_info[job_id] not in self.TERMINAL_STATES:
+                result = self._backend._provider._client.get_job(job_id)
+                self._job_info[job_id] = result["status"]
+
+            if job_id not in self._job_info:
+                result = self._backend._provider._client.get_job(job_id)
+                self._job_info[job_id] = result["status"]
+
+            temp_status = self._job_info[job_id]
             if temp_status == "Queued":
-                self._job_info["status"] = "Queued"
+                self._overall_status = "Queued"
                 break
-            elif temp_status in self.STOPPED_STATES:
-                self._job_info["status"] = "Canceled"
+            elif temp_status == "Canceled":
+                self._overall_status = "Canceled"
                 break
             elif temp_status == "Running":
-                self._job_info["status"] = "Running"
-            else:
-                self._job_info["status"] = "Done"
+                self._overall_status = "Running"
+
+        if (len(self._job_info) == len(job_id_list)) and all(
+            self._job_info[job_id] == "Done" for job_id in job_id_list
+        ):
+            self._overall_status = "Done"
 
     def status(self) -> qiskit.providers.jobstatus.JobStatus:
-        """Query for the job status.
+        """Query for the overall job status.
 
         Returns:
             The equivalent `qiskit.providers.jobstatus.JobStatus` type.
         """
 
-        if self._job_info["status"] in self.TERMINAL_STATES:
-            if self._job_info["status"] == "Done":
+        if self._overall_status in self.TERMINAL_STATES:
+            if self._overall_status == "Done":
                 return qiskit.providers.jobstatus.JobStatus.DONE
             else:
                 return qiskit.providers.jobstatus.JobStatus.CANCELLED
 
         self._refresh_job()
-        status = self._job_info["status"]
+        status = self._overall_status
 
         assert status in ("Submitted", "Canceled", "Queued", "Running", "Done")
 
