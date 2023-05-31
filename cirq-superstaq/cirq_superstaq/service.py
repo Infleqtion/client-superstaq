@@ -416,12 +416,10 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             kwargs: Other desired aqt_compile options.
 
         Returns:
-
             Object whose .circuit(s) attribute contains the optimized circuits(s). If qtrl is
             installed, the object's .seq attribute is a qtrl Sequence object containing pulse
             sequences for each compiled circuit, and its .pulse_list(s) attribute contains the
             corresponding list(s) of cycles.
-
         """
 
         _validate_cirq_circuits(circuits)
