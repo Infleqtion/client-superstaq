@@ -19,16 +19,6 @@ def backend() -> qss.SuperstaQBackend:
     return provider.get_backend("ss_example_qpu")
 
 
-def test_job_id(backend: qss.SuperstaQBackend) -> None:
-    job = qss.SuperstaQJob(backend=backend, job_id="123abc")
-    assert job.get_job_id() == "123abc"
-
-
-def test_get_backend(backend: qss.SuperstaQBackend) -> None:
-    job = qss.SuperstaQJob(backend=backend, job_id="123abc")
-    assert job.get_backend() == backend
-
-
 def test_wait_for_results(backend: qss.SuperstaQBackend) -> None:
     job = qss.SuperstaQJob(backend=backend, job_id="123abc")
     jobs = qss.SuperstaQJob(backend=backend, job_id="123abc,456def")
@@ -92,10 +82,9 @@ def test_check_if_stopped(backend: qss.SuperstaQBackend) -> None:
 
     job = qss.SuperstaQJob(backend=backend, job_id="123abc")
 
-    for status in job.STOPPED_STATES:
-        job._job_info["status"] = status
-        with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match=status):
-            _ = job.get_backend()
+    job._overall_status = "Canceled"
+    with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match="Canceled"):
+        job._check_if_stopped()
 
 
 def test_refresh_job(backend: qss.SuperstaQBackend) -> None:
@@ -106,29 +95,29 @@ def test_refresh_job(backend: qss.SuperstaQBackend) -> None:
         return_value=mock_response("Queued"),
     ):
         job._refresh_job()
-        assert job._job_info["status"] == "Queued"
-
-    for status_msg in job.STOPPED_STATES:
-        with mock.patch(
-            "general_superstaq.superstaq_client._SuperstaQClient.get_job",
-            return_value=mock_response(status_msg),
-        ):
-            job._refresh_job()
-            assert job._job_info["status"] == "Canceled"
+        assert job._overall_status == "Queued"
 
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.get_job",
         return_value=mock_response("Running"),
     ):
         job._refresh_job()
-        assert job._job_info["status"] == "Running"
+        assert job._overall_status == "Running"
 
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.get_job",
         return_value=mock_response("Done"),
     ):
         job._refresh_job()
-        assert job._job_info["status"] == "Done"
+        assert job._overall_status == "Done"
+
+    job = qss.SuperstaQJob(backend=backend, job_id="321cba")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaQClient.get_job",
+        return_value=mock_response("Canceled"),
+    ):
+        job._refresh_job()
+        assert job._overall_status == "Canceled"
 
 
 def test_status(backend: qss.SuperstaQBackend) -> None:
@@ -156,10 +145,10 @@ def test_status(backend: qss.SuperstaQBackend) -> None:
     job = qss.SuperstaQJob(backend=backend, job_id="123done")
     for status_msg in job.TERMINAL_STATES:
         if status_msg == "Done":
-            job._job_info["status"] = "Done"
+            job._overall_status = "Done"
             assert job.status() == qiskit.providers.JobStatus.DONE
         else:
-            job._job_info["status"] = "Canceled"
+            job._overall_status = "Canceled"
             assert job.status() == qiskit.providers.JobStatus.CANCELLED
 
 
