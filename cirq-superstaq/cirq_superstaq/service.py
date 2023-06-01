@@ -607,13 +607,15 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
+        target = self._resolve_target(target)
+
         request_json = {
             "cirq_circuits": serialized_circuits,
             "target": target,
             "options": cirq.to_json(kwargs),
         }
 
-        json_dict = self._client.cq_compile(request_json)
+        json_dict = self._client.compile(request_json)
 
         return css.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
 
@@ -648,7 +650,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
             "options": cirq.to_json(kwargs),
         }
 
-        json_dict = self._client.ibmq_compile(request_json)
+        json_dict = self._client.compile(request_json)
 
         return css.compiler_output.read_json_ibmq(json_dict, circuits_is_list)
 

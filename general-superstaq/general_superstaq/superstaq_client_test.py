@@ -540,31 +540,18 @@ def test_superstaq_client_qscout_compile(mock_post: mock.MagicMock) -> None:
 
 
 @mock.patch("requests.post")
-def test_superstaq_client_cq_compile(mock_post: mock.MagicMock) -> None:
+def test_superstaq_client_compile(mock_post: mock.MagicMock) -> None:
     client = gss.superstaq_client._SuperstaQClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
-    client.cq_compile({"Hello": "1", "World": "2"})
-
-    mock_post.assert_called_once()
-    assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/cq_compile"
-
-
-@mock.patch("requests.post")
-def test_superstaq_client_ibmq_compile(mock_post: mock.MagicMock) -> None:
-    client = gss.superstaq_client._SuperstaQClient(
-        client_name="general-superstaq",
-        remote_host="http://example.com",
-        api_key="to_my_heart",
-    )
-    client.ibmq_compile(
+    client.compile(
         {"Hello": "1", "World": "2"},
     )
 
     mock_post.assert_called_once()
-    assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/ibmq_compile"
+    assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/compile"
 
 
 @mock.patch("requests.post")
