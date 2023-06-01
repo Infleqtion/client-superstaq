@@ -502,7 +502,7 @@ def test_qscout_compile_base_entangling_gate(
     assert out.jaqal_program == jaqal_program
     mock_qscout_compile.assert_called_once()
     assert json.loads(mock_qscout_compile.call_args[0][0]["options"]) == {
-        "mirror_swaps": True,
+        "mirror_swaps": False,
         "base_entangling_gate": base_entangling_gate,
     }
 
@@ -516,17 +516,16 @@ def test_qscout_compile_wrong_base_entangling_gate() -> None:
         _ = service.qscout_compile(circuit, base_entangling_gate="yy")
 
 
-@mock.patch("general_superstaq.superstaq_client._SuperstaQClient.cq_compile")
-def test_service_cq_compile_single(mock_cq_compile: mock.MagicMock) -> None:
+@mock.patch("requests.post")
+def test_service_cq_compile_single(mock_post: mock.MagicMock) -> None:
 
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
     final_logical_to_physical = {cirq.q(10): cirq.q(0)}
 
-    mock_cq_compile.return_value = {
+    mock_post.return_value.json = lambda: {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
-        "options": {"test_options": "yes"},
     }
 
     service = css.Service(api_key="key", remote_host="http://example.com")
@@ -535,17 +534,15 @@ def test_service_cq_compile_single(mock_cq_compile: mock.MagicMock) -> None:
     assert out.final_logical_to_physical == final_logical_to_physical
 
 
-@mock.patch(
-    "general_superstaq.superstaq_client._SuperstaQClient.ibmq_compile",
-)
-def test_service_ibmq_compile(mock_ibmq_compile: mock.MagicMock) -> None:
+@mock.patch("requests.post")
+def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
 
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
     final_logical_to_physical = {cirq.q(4): cirq.q(0)}
 
-    mock_ibmq_compile.return_value = {
+    mock_post.return_value.json = lambda: {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
         "pulses": gss.serialization.serialize([mock.DEFAULT]),
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
