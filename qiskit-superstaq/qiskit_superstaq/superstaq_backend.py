@@ -249,18 +249,19 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
 
         Args:
             circuits: The qiskit QuantumCircuit(s) to compile.
-            num_equivalent_circuits: Optional number of logically equivalent random circuits to generate for
-                each input circuit.
+            num_equivalent_circuits: Optional number of logically equivalent random circuits to
+                generate for each input circuit.
             random_seed: Optional seed used for approximate synthesis and ECA.
-            atol: Optional tolerance to use for approximate gate synthesis (currently just for qutrit gates).
+            atol: Optional tolerance to use for approximate gate synthesis (currently just for
+                qutrit gates).
             kwargs: Other desired compile options.
 
         Returns:
             Object whose .circuit(s) attribute contains the optimized circuits(s). Alternatively for
             ECA, an Object whose .circuits attribute is a list (or list of lists) of logically
-            equivalent circuits. If qtrl is installed, the object's .seq attribute is a qtrl Sequence
-            object containing pulse sequences for each compiled circuit, and its .pulse_list(s)
-            attribute contains the corresponding list(s) of cycles.
+            equivalent circuits. If qtrl is installed, the object's .seq attribute is a qtrl
+            Sequence object containing pulse sequences for each compiled circuit, and its
+            .pulse_list(s) attribute contains the corresponding list(s) of cycles.
 
         Raises:
             ValueError: If this is not an AQT backend.
