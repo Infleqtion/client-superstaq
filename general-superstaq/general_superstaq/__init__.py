@@ -1,4 +1,9 @@
-from general_superstaq._init_vars import API_URL, API_VERSION
+from general_superstaq._init_vars import (
+    API_URL,
+    API_VERSION,
+    TOKEN_PUBLIC_KEY_E,
+    TOKEN_PUBLIC_KEY_N,
+)
 from general_superstaq._version import __version__
 from general_superstaq.resource_estimate import ResourceEstimate
 from general_superstaq.superstaq_exceptions import (
@@ -39,6 +44,8 @@ __all__ = [
     "serialization",
     "superstaq_client",
     "superstaq_exceptions",
+    "TOKEN_PUBLIC_KEY_E",
+    "TOKEN_PUBLIC_KEY_N",
     "typing",
     "user_config",
 ]
