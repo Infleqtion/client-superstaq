@@ -100,13 +100,8 @@ class UserConfig:
         """
         public_key = rsa.key.PublicKey(int(gss.TOKEN_PUBLIC_KEY_N), gss.TOKEN_PUBLIC_KEY_E)
         token = rsa.encrypt(token.encode(), public_key)
-        print(str(token).encode())
-        print()
-        print(str(token))
-        print()
-        print(token)
-        print(token.decode())
-        return self._client.ibmq_set_token({"ibmq_token": str(token)})
+        token = str(rsa.transform.bytes2int(token))
+        return self._client.ibmq_set_token({"ibmq_token": token})
 
     def cq_set_token(self, token: str) -> str:
         """Sets CQ token field.
