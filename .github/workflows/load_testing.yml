@@ -1,6 +1,9 @@
 name: Load Testing Check
 
 on:
+  push:
+    branches:
+      - load_testing
   workflow_dispatch:  # so that we can also run manually, e.g. for testing
 
 
