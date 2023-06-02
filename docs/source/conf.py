@@ -15,8 +15,8 @@ sys.path.insert(0, os.path.abspath("../.."))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "docs-superstaq"
-copyright = "2022, Super.tech"  # pylint: disable=redefined-builtin
-author = "Super.tech"
+copyright = "2023, ColdQuanta, Inc., DBA Infleqtion"  # pylint: disable=redefined-builtin
+author = "ColdQuanta, Inc., DBA Infleqtion"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
