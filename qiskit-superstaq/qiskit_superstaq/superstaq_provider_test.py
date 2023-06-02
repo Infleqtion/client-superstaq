@@ -157,14 +157,14 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
 
-def test_invalid_target_service_aqt_compile() -> None:
+def test_invalid_target_aqt_compile() -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     with pytest.raises(ValueError, match="not an AQT target"):
         provider.aqt_compile(qiskit.QuantumCircuit(), target="invalid_target")
 
 
 @patch("requests.post")
-def test_service_aqt_compile_eca(mock_post: MagicMock) -> None:
+def test_aqt_compile_eca(mock_post: MagicMock) -> None:
     provider = qss.superstaq_provider.SuperstaQProvider(api_key="MY_TOKEN")
 
     qc = qiskit.QuantumCircuit(8)
@@ -185,7 +185,7 @@ def test_service_aqt_compile_eca(mock_post: MagicMock) -> None:
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
 
-def test_invalid_target_service_aqt_compile_eca() -> None:
+def test_invalid_target_aqt_compile_eca() -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     with pytest.raises(ValueError, match="not an AQT target"):
         provider.aqt_compile_eca(
@@ -193,15 +193,13 @@ def test_invalid_target_service_aqt_compile_eca() -> None:
         )
 
 
-@patch(
-    "general_superstaq.superstaq_client._SuperstaQClient.ibmq_compile",
-)
-def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
+@patch("requests.post")
+def test_ibmq_compile(mock_post: MagicMock) -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
     final_logical_to_physical = {0: 4, 1: 5}
-    mock_ibmq_compile.return_value = {
+    mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "final_logical_to_physicals": json.dumps([list(final_logical_to_physical.items())]),
         "pulses": gss.serialization.serialize([mock.DEFAULT]),
@@ -216,8 +214,20 @@ def test_service_ibmq_compile(mock_ibmq_compile: MagicMock) -> None:
         [qc], [final_logical_to_physical], pulse_sequences=[mock.DEFAULT]
     )
 
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "final_logical_to_physicals": json.dumps([list(final_logical_to_physical.items())]),
+    }
 
-def test_invalid_target_service_ibmq_compile() -> None:
+    assert provider.ibmq_compile(
+        qiskit.QuantumCircuit(), test_options="yes"
+    ) == qss.compiler_output.CompilerOutput(qc, final_logical_to_physical, pulse_sequences=None)
+    assert provider.ibmq_compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
+        [qc], [final_logical_to_physical], pulse_sequences=None
+    )
+
+
+def test_invalid_target_ibmq_compile() -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     with pytest.raises(ValueError, match="not an IBMQ target"):
         provider.ibmq_compile(qiskit.QuantumCircuit(), target="invalid_target")
@@ -226,7 +236,7 @@ def test_invalid_target_service_ibmq_compile() -> None:
 @patch(
     "general_superstaq.superstaq_client._SuperstaQClient.resource_estimate",
 )
-def test_service_resource_estimate(mock_resource_estimate: MagicMock) -> None:
+def test_resource_estimate(mock_resource_estimate: MagicMock) -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
 
     resource_estimate = ResourceEstimate(0, 1, 2)
@@ -244,7 +254,7 @@ def test_service_resource_estimate(mock_resource_estimate: MagicMock) -> None:
 @patch(
     "general_superstaq.superstaq_client._SuperstaQClient.resource_estimate",
 )
-def test_service_resource_estimate_list(mock_resource_estimate: MagicMock) -> None:
+def test_resource_estimate_list(mock_resource_estimate: MagicMock) -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
 
     resource_estimates = [ResourceEstimate(0, 1, 2), ResourceEstimate(3, 4, 5)]
@@ -303,7 +313,7 @@ def test_qscout_compile(mock_post: MagicMock) -> None:
     assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
 
 
-def test_invalid_target_service_qscout_compile() -> None:
+def test_invalid_target_qscout_compile() -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     with pytest.raises(ValueError, match="not a QSCOUT target"):
         provider.qscout_compile(qiskit.QuantumCircuit(), target="invalid_target")
@@ -346,7 +356,7 @@ def test_qscout_compile_change_entangler(mock_post: MagicMock, base_entangling_g
     mock_post.assert_called_once()
     _, kwargs = mock_post.call_args
     assert json.loads(kwargs["json"]["options"]) == {
-        "mirror_swaps": True,
+        "mirror_swaps": False,
         "base_entangling_gate": base_entangling_gate,
     }
 
@@ -389,7 +399,7 @@ def test_cq_compile(mock_post: MagicMock) -> None:
     assert out.final_logical_to_physicals == [{}, {}]
 
 
-def test_invalid_target_service_cq_compile() -> None:
+def test_invalid_target_cq_compile() -> None:
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     with pytest.raises(ValueError, match="not a CQ target"):
         provider.cq_compile(qiskit.QuantumCircuit(), target="invalid_target")
@@ -398,8 +408,8 @@ def test_invalid_target_service_cq_compile() -> None:
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaQClient.supercheq",
 )
-def test_service_supercheq(mock_supercheq: mock.MagicMock) -> None:
-    service = qss.SuperstaQProvider(api_key="key")
+def test_supercheq(mock_supercheq: mock.MagicMock) -> None:
+    provider = qss.SuperstaQProvider(api_key="key")
     circuits = [qiskit.QuantumCircuit()]
     fidelities = np.array([1])
     mock_supercheq.return_value = {
@@ -407,4 +417,4 @@ def test_service_supercheq(mock_supercheq: mock.MagicMock) -> None:
         "final_logical_to_physicals": "[[]]",
         "fidelities": gss.serialization.serialize(fidelities),
     }
-    assert service.supercheq([[0]], 1, 1) == (circuits, fidelities)
+    assert provider.supercheq([[0]], 1, 1) == (circuits, fidelities)
