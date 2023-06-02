@@ -1,8 +1,7 @@
 """Locust (https://docs.locust.io/en/stable/what-is-locust.html) is a load testing tool.
-To run Locust, first pip install it via "pip install locust" and the set
-the SUPERSTAQ_API_KEY environment variable.
-Execute "locust --config=locust.conf" in the "dev_tools" directory
-Navigate to http://0.0.0.0:8089/; insert the number of users and spawn rate,
+To run Locust, set the SUPERSTAQ_API_KEY environment variable and execute
+"locust --config=locust.conf" in the "dev_tools" directory. Then
+navigate to http://0.0.0.0:8089/, insert the number of users and spawn rate,
 then click the "Start swarming" button.
 """
 
