@@ -1,4 +1,4 @@
-<img src="./docs/source/_static/logos/Superstaq_color.png">
+<img style="border-radius: 10%" src="./docs/source/_static/logos/Superstaq_readme.png">
 
 # Welcome to SuperstaQ!
 This repository is the home of Super.tech's open source work, which includes:
