@@ -1,13 +1,10 @@
 """Locust (https://docs.locust.io/en/stable/what-is-locust.html) is a load testing tool.
-For now we load test all v0.1 SuperstaQ APIs except PostJob and PostMultiJob because those
-endpoints current require that we submit jobs to IBM/AWS; which cost money. To run Locust,
-first pip install it via "pip install locust" and the set
+To run Locust, first pip install it via "pip install locust" and the set
 the SUPERSTAQ_API_KEY environment variable.
 Execute "locust --config=locust.conf" in the "dev_tools" directory
 Navigate to http://0.0.0.0:8089/; insert the number of users and spawn rate,
-then click the "Start swarming" button. At the moment, we can handle
-10 users with a ~50% failure rate from a Time-Out error due to
-RQAOA sometimes taking too long."""
+then click the "Start swarming" button.
+"""
 
 from __future__ import annotations
 
