@@ -297,15 +297,15 @@ class _SuperstaQClient:
         depth: int,
         circuit_return_type: str,
     ) -> Any:
-        """Performs a POST request on the `/supercheq` endpoint
+        """Performs a POST request on the `/supercheq` endpoint.
 
         Args:
-            files: List of files specified as binary using ints. For example: [[1, 0, 1], [1, 1, 1]]
-            num_qubits: Number of qubits to run SupercheQ on
-            depth: The depth of the circuits to run SupercheQ on
-            circuit_return_type: Supports only `cirq` and `qiskit` for now
+            files: List of files specified as binary using ints. For example: [[1, 0, 1], [1, 1, 1]].
+            num_qubits: Number of qubits to run SupercheQ on.
+            depth: The depth of the circuits to run SupercheQ on.
+            circuit_return_type: Supports only `cirq` and `qiskit` for now.
 
-        Returns: The output of SupercheQ
+        Returns: The output of SupercheQ.
 
         """
         json_dict = {
@@ -315,6 +315,24 @@ class _SuperstaQClient:
             "circuit_return_type": circuit_return_type,
         }
         return self.post_request("/supercheq", json_dict)
+
+    def target_info(
+        self,
+        target: str,
+    ) -> Any:
+        """Makes a POST request to the SuperstaQ API (using the `/target_info` endppoint to request
+        information about `target`.
+
+        Args:
+            target: String representing the device to get information about.
+
+        Returns: Target information.
+
+        """
+        json_dict = {
+            "target": target,
+        }
+        return self.post_request("/target_info", json_dict)
 
     def find_min_vol_portfolio(
         self, json_dict: Dict[str, Union[List[str], int, float, str]]

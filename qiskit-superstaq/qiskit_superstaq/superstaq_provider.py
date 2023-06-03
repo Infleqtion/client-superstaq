@@ -479,3 +479,10 @@ class SuperstaQProvider(
         circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
         fidelities = gss.serialization.deserialize(json_dict["fidelities"])
         return circuits, fidelities
+
+    def target_info(
+        self, target: str,
+    ) -> Dict[str, Any]:
+        """Returns information about device specified by `target`."""
+
+        return self._client.target_info(target)
