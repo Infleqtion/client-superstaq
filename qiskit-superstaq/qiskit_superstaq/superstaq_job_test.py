@@ -27,28 +27,25 @@ def test_wait_for_results(backend: qss.SuperstaQBackend) -> None:
         "general_superstaq.superstaq_client._SuperstaQClient.get_job",
         return_value=mock_response("Done"),
     ):
-        assert job._wait_for_results() == [mock_response("Done")]
-        assert jobs._wait_for_results() == [mock_response("Done"), mock_response("Done")]
-
-    with mock.patch(
-        "general_superstaq.superstaq_client._SuperstaQClient.get_job",
-        return_value=mock_response("Error"),
-    ):
-        with pytest.raises(qiskit.providers.JobError, match="API returned error"):
-            _ = job._wait_for_results()
+        assert job._wait_for_results(timeout=backend._provider._client.max_retry_seconds) == [
+            mock_response("Done")
+        ]
+        assert jobs._wait_for_results(timeout=backend._provider._client.max_retry_seconds) == [
+            mock_response("Done"),
+            mock_response("Done"),
+        ]
 
 
 def test_timeout(backend: qss.SuperstaQBackend) -> None:
     job = qss.SuperstaQJob(backend=backend, job_id="123abc")
 
-    with pytest.raises(qiskit.providers.JobTimeoutError, match="Timed out waiting for result"):
-        _ = job._wait_for_results(timeout=-1.0)
-
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.get_job",
         side_effect=[mock_response("Queued"), mock_response("Queued"), mock_response("Done")],
     ) as mocked_get_job:
-        assert job._wait_for_results(wait=0.0) == [mock_response("Done")]
+        assert job._wait_for_results(
+            timeout=backend._provider._client.max_retry_seconds, wait=0.0
+        ) == [mock_response("Done")]
         assert mocked_get_job.call_count == 3
 
 
@@ -112,6 +109,15 @@ def test_refresh_job(backend: qss.SuperstaQBackend) -> None:
         assert job._overall_status == "Done"
 
     job = qss.SuperstaQJob(backend=backend, job_id="321cba")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaQClient.get_job",
+        return_value=mock_response("Error"),
+    ):
+        with pytest.raises(qiskit.providers.JobError, match="API returned error"):
+            job._refresh_job()
+        assert job._overall_status == "Error"
+
+    job = qss.SuperstaQJob(backend=backend, job_id="654cba")
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.get_job",
         return_value=mock_response("Canceled"),
