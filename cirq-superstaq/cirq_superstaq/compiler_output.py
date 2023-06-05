@@ -125,7 +125,7 @@ def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutp
     pulses = None
 
     if "pulses" in json_dict:
-        if importlib.util.find_spec("qiskit"):
+        if importlib.util.find_spec("qiskit") and importlib.util.find_spec("qiskit.qpy"):
             import qiskit
 
             if "0.24" < qiskit.__version__ < "0.25":
