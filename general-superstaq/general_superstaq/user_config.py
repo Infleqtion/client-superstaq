@@ -1,6 +1,8 @@
 import os
 from typing import Any, Dict, Optional, Tuple, Union
 
+import rsa
+
 import general_superstaq as gss
 
 
@@ -96,7 +98,9 @@ class UserConfig:
         Returns:
             String containing status of update (whether or not it failed).
         """
-        token = gss.serialization.encrypt(token)
+        public_key = rsa.key.PublicKey(gss.TOKEN_PUBLIC_KEY_N, gss.TOKEN_PUBLIC_KEY_E)
+        token = rsa.encrypt(token.encode(), public_key)
+        token = gss.serialization._bytes_to_str(token)
         return self._client.ibmq_set_token({"ibmq_token": token})
 
     def cq_set_token(self, token: str) -> str:
