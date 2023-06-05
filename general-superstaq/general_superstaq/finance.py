@@ -37,7 +37,7 @@ def read_json_minvol(json_dict: gss.MinVolJson) -> MinVolOutput:
 
 
 @dataclass
-class MaxSharpeOutput:  # pylint: disable=missing-class-docstring
+class MaxSharpeOutput:
     """Data type for Maximum Volume Model output with Sharpe Ratio"""
     best_portfolio: List[str]
     best_ret: float
@@ -62,10 +62,11 @@ def read_json_maxsharpe(json_dict: gss.MaxSharpeJson) -> MaxSharpeOutput:
 
 
 class Finance:  # pylint: disable=missing-class-docstring
+    """Overarching Finance class to implement methods above"""
     def __init__(self, client: superstaq_client._SuperstaQClient):
         self._client = client
 
-    def submit_qubo(  # pylint: disable=missing-param-doc
+    def submit_qubo(
         self, qubo: qv.QUBO, target: str, repetitions: int = 1000, method: Optional[str] = None
     ) -> npt.NDArray[np.int_]:
         """Submits the given QUBO to the target backend. The result of the optimization
