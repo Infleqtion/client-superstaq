@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import warnings
 from typing import Any, Dict, List, Optional, Set, Union
 
 import general_superstaq as gss
@@ -156,9 +157,18 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
     seq = None
     pulse_lists = None
 
-    if importlib.util.find_spec(
-        "qtrl"
-    ):  # pragma: no cover, b/c qtrl is not open source so it is not in qiskit-superstaq reqs
+    if "state_jp" not in json_dict:
+        warnings.warn(
+            "This output only contains compiled circuits (using a default AQT gate set). To "
+            "get back the corresponding pulse sequence, you must first upload your qtrl configs "
+            "using `service.aqt_upload_configs`."
+        )
+    elif not importlib.util.find_spec("qtrl"):
+        warnings.warn(
+            "This output only contains compiled circuits. The qtrl package must be installed in "
+            "order to deserialize compiled pulse sequences."
+        )
+    else:  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
 
         def _sequencer_from_state(state: Dict[str, Any]) -> qtrl.sequencer.Sequence:
             seq = qtrl.sequencer.Sequence(n_elements=1)

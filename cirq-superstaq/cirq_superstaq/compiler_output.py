@@ -107,7 +107,7 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
         )
 
 
-def read_json_ibmq(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
+def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
     """Reads out returned JSON from SuperstaQ API's IBMQ compilation endpoint.
 
     Args:
@@ -176,9 +176,18 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
     seq = None
     pulse_lists = None
 
-    if importlib.util.find_spec(
-        "qtrl"
-    ):  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
+    if "state_jp" not in json_dict:
+        warnings.warn(
+            "This output only contains compiled circuits (using a default AQT gate set). To "
+            "get back the corresponding pulse sequence, you must first upload your qtrl configs "
+            "using `service.aqt_upload_configs`."
+        )
+    elif not importlib.util.find_spec("qtrl"):
+        warnings.warn(
+            "This output only contains compiled circuits. The qtrl package must be installed in "
+            "order to deserialize compiled pulse sequences."
+        )
+    else:  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
 
         def _sequencer_from_state(state: Dict[str, Any]) -> qtrl.sequencer.Sequence:
             seq = qtrl.sequencer.Sequence(n_elements=1)
@@ -202,11 +211,6 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
             state["_readout"] = readout_seq
 
         seq = _sequencer_from_state(state)
-    else:
-        warnings.warn(
-            "Your sequence for this output is None. Please make sure you have the qtrl package "
-            "installed in order to deserialize compiled pulse sequences."
-        )
 
     if num_eca_circuits is not None:
         compiled_circuits = [
@@ -262,25 +266,3 @@ def read_json_qscout(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compi
         final_logical_to_physicals=final_logical_to_physicals[0],
         jaqal_programs=json_dict["jaqal_programs"][0],
     )
-
-
-def read_json_only_circuits(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
-    """Reads out returned JSON from SuperstaQ API's CQ compilation endpoint.
-
-    Args:
-        json_dict: a JSON dictionary matching the format returned by /cq_compile endpoint
-        circuits_is_list: bool flag that controls whether the returned object has a .circuits
-            attribute (if True) or a .circuit attribute (False)
-    Returns:
-        a CompilerOutput object with the compiled circuit(s)
-    """
-
-    compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
-    final_logical_to_physicals: List[Dict[cirq.Qid, cirq.Qid]] = list(
-        map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
-    )
-
-    if circuits_is_list:
-        return CompilerOutput(compiled_circuits, final_logical_to_physicals)
-
-    return CompilerOutput(compiled_circuits[0], final_logical_to_physicals[0])
