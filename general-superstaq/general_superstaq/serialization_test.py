@@ -1,4 +1,8 @@
 # pylint: disable=missing-function-docstring
+from unittest import mock
+
+import rsa
+
 import general_superstaq as gss
 
 
@@ -10,6 +14,11 @@ def test_serialization() -> None:
 
 
 def test_encrypt() -> None:
-    token = "test_token"
-    encrypted_token = gss.serialization.encrypt(token)
-    assert isinstance(encrypted_token, str)
+    public, private = rsa.newkeys(512)
+    with mock.patch("general_superstaq.TOKEN_PUBLIC_KEY_E", public.e), mock.patch(
+        "general_superstaq.TOKEN_PUBLIC_KEY_N", public.n
+    ):
+        val = "abc123"
+        encrypted_val = gss.serialization.encrypt(val)
+        assert isinstance(encrypted_val, str)
+        assert rsa.decrypt(gss.serialization._str_to_bytes(encrypted_val), private).decode() == val
