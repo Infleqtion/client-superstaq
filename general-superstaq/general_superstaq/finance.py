@@ -38,6 +38,7 @@ def read_json_minvol(json_dict: gss.MinVolJson) -> MinVolOutput:
 
 @dataclass
 class MaxSharpeOutput:  # pylint: disable=missing-class-docstring
+    """Data type for Maximum Volume Model output with Sharpe Ratio"""
     best_portfolio: List[str]
     best_ret: float
     best_std_dev: float
