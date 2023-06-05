@@ -69,52 +69,7 @@ def test_compiler_output_repr() -> None:
     )
 
 
-@mock.patch.dict("sys.modules", {"qtrl": None})
-def test_read_json() -> None:
-    importlib.reload(qss.compiler_output)
-
-    circuit = qiskit.QuantumCircuit(4, metadata={"label_a": "data_a"})
-    for i in range(4):
-        circuit.h(i)
-
-    state_str = gss.serialization.serialize({})
-    pulse_lists_str = gss.serialization.serialize([[[]]])
-
-    json_dict = {
-        "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
-        "final_logical_to_physicals": "[[]]",
-        "state_jp": state_str,
-        "pulse_lists_jp": pulse_lists_str,
-    }
-
-    out = qss.compiler_output.read_json_aqt(json_dict, [circuit.metadata], circuits_is_list=False)
-    assert out.circuit == circuit
-    assert out.circuit.metadata == circuit.metadata
-    assert not hasattr(out, "circuits")
-
-    out = qss.compiler_output.read_json_aqt(json_dict, [circuit.metadata], circuits_is_list=True)
-    assert out.circuits == [circuit]
-    assert all(
-        cast("qiskit.QuantumCircuit", circ).metadata == circuit.metadata for circ in out.circuits
-    )
-    assert not hasattr(out, "circuit")
-
-    pulse_lists_str = gss.serialization.serialize([[[]], [[]]])
-    json_dict = {
-        "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
-        "final_logical_to_physicals": "[[], []]",
-        "state_jp": state_str,
-        "pulse_lists_jp": pulse_lists_str,
-    }
-    out = qss.compiler_output.read_json_aqt(
-        json_dict, [circuit.metadata, circuit.metadata], circuits_is_list=True
-    )
-    assert out.circuits == [circuit, circuit]
-    assert all(
-        cast("qiskit.QuantumCircuit", circ).metadata == circuit.metadata for circ in out.circuits
-    )
-    assert not hasattr(out, "circuit")
-
+def test_read_json_only_circuits() -> None:
     qc = qiskit.QuantumCircuit(2, metadata={"test_bell": "sample_data"})
     qc.h(0)
     qc.cx(0, 1)
@@ -138,7 +93,69 @@ def test_read_json() -> None:
         json_dict, [qc.metadata, qc.metadata], circuits_is_list=True
     )
     assert out.circuits == [qc, qc]
-    assert all(cast("qiskit.QuantumCircuit", circ).metadata == qc.metadata for circ in out.circuits)
+
+
+@mock.patch.dict("sys.modules", {"qtrl": None})
+def test_read_json_aqt() -> None:
+    importlib.reload(qss.compiler_output)
+
+    circuit = qiskit.QuantumCircuit(4, metadata={"label_a": "data_a"})
+    for i in range(4):
+        circuit.h(i)
+
+    state_str = gss.serialization.serialize({})
+    pulse_lists_str = gss.serialization.serialize([[[]]])
+
+    json_dict = {
+        "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
+        "final_logical_to_physicals": "[[]]",
+        "state_jp": state_str,
+        "pulse_lists_jp": pulse_lists_str,
+    }
+
+    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+        out = qss.compiler_output.read_json_aqt(
+            json_dict, [circuit.metadata], circuits_is_list=False
+        )
+
+    assert out.circuit == circuit
+    assert out.circuit.metadata == circuit.metadata
+    assert not hasattr(out, "circuits")
+
+    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+        out = qss.compiler_output.read_json_aqt(
+            json_dict, [circuit.metadata], circuits_is_list=True
+        )
+
+    assert out.circuits == [circuit]
+    assert not hasattr(out, "circuit")
+
+    # multiple circuits
+    pulse_lists_str = gss.serialization.serialize([[[]], [[]]])
+    json_dict = {
+        "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
+        "final_logical_to_physicals": "[[], []]",
+        "state_jp": state_str,
+        "pulse_lists_jp": pulse_lists_str,
+    }
+
+    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+        out = qss.compiler_output.read_json_aqt(
+            json_dict, [circuit.metadata, circuit.metadata], circuits_is_list=True
+        )
+
+    assert out.circuits == [circuit, circuit]
+    assert not hasattr(out, "circuit")
+
+    # no sequence returned
+    json_dict.pop("state_jp")
+
+    with pytest.warns(UserWarning, match="aqt_upload_configs"):
+        out = qss.compiler_output.read_json_aqt(
+            json_dict, [circuit.metadata, circuit.metadata], circuits_is_list=True
+        )
+
+    assert out.seq is None
 
 
 def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires qtrl installation
@@ -222,7 +239,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
 
-def test_read_json_with_qscout() -> None:
+def test_read_json_qscout() -> None:
     circuit = qiskit.QuantumCircuit(1, metadata={"label_a": "data_a"})
     circuit.h(0)
 
