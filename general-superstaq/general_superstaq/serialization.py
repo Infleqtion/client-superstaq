@@ -2,6 +2,10 @@ import codecs
 import pickle
 from typing import Any
 
+import rsa
+
+import general_superstaq as gss
+
 
 def _bytes_to_str(bytes_data: bytes) -> str:
     return codecs.encode(bytes_data, "base64").decode()
@@ -35,3 +39,9 @@ def deserialize(serialized_obj: str) -> Any:
     """
 
     return pickle.loads(_str_to_bytes(serialized_obj))
+
+
+def encrypt(val: str) -> str:
+    public_key = rsa.key.PublicKey(gss.TOKEN_PUBLIC_KEY_N, gss.TOKEN_PUBLIC_KEY_E)
+    encrypted_val = rsa.encrypt(val.encode(), public_key)
+    return _bytes_to_str(encrypted_val)
