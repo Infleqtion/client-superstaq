@@ -42,6 +42,15 @@ def deserialize(serialized_obj: str) -> Any:
 
 
 def encrypt(val: str) -> str:
+    """Encrypt strings using the rsa library
+
+    Args:
+        val: a string to be encrypted
+
+    Returns:
+        a string of the encrypted value
+    """
+
     public_key = rsa.key.PublicKey(gss.TOKEN_PUBLIC_KEY_N, gss.TOKEN_PUBLIC_KEY_E)
     encrypted_val = rsa.encrypt(val.encode(), public_key)
     return _bytes_to_str(encrypted_val)
