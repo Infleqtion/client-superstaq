@@ -99,9 +99,9 @@ class UserConfig:
             String containing status of update (whether or not it failed).
         """
         public_key = rsa.key.PublicKey(gss.TOKEN_PUBLIC_KEY_N, gss.TOKEN_PUBLIC_KEY_E)
-        token = rsa.encrypt(token.encode(), public_key)
-        token = gss.serialization._bytes_to_str(token)
-        return self._client.ibmq_set_token({"ibmq_token": token})
+        encrypted_token = rsa.encrypt(token.encode(), public_key)
+        string_encrypted_token = gss.serialization._bytes_to_str(encrypted_token)
+        return self._client.ibmq_set_token({"ibmq_token": string_encrypted_token})
 
     def cq_set_token(self, token: str) -> str:
         """Sets CQ token field.
