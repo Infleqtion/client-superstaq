@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class MinVolOutput:  # pylint: disable=missing-class-docstring
+class MinVolOutput:
     """Data type for Minimum Volume Model output"""
     best_portfolio: List[str]
     best_ret: float
