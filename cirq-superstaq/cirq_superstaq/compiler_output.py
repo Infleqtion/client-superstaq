@@ -128,16 +128,16 @@ def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutp
         if importlib.util.find_spec("qiskit"):
             import qiskit
 
-            if "0.23" < qiskit.__version__ < "0.24":
+            if "0.24" < qiskit.__version__ < "0.25":
                 pulses = gss.serialization.deserialize(json_dict["pulses"])
             else:
                 warnings.warn(
-                    "ibmq_compile requires Qiskit Terra version 0.23.* to deserialize compiled "
+                    "ibmq_compile requires Qiskit Terra version 0.24.* to deserialize compiled "
                     f"pulse sequences (you have {qiskit.__version__})."
                 )
         else:
             warnings.warn(
-                "ibmq_compile requires Qiskit Terra version 0.23.* to deserialize compiled pulse "
+                "ibmq_compile requires Qiskit Terra version 0.24.* to deserialize compiled pulse "
                 "sequences."
             )
 
