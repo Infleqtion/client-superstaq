@@ -15,16 +15,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class MinVolOutput:  # pylint: disable=missing-class-docstring
-    """
-    MinVolOutput object comprised of:
-    best_portfolio: a list of strings of each stock ticker calculated to be the most optimal
-    portfolio.
-    best_ret: floating point that represents the best return from the best_portfolio given
-    best_std_dev: floating point that describes the lowest stddev from the best_portfolio given
-    qubo: qubo object that manages conversion from QUBO and QUSO formulations. See
-    https://qubovert.readthedocs.io/en/latest/BO/QUBO.html?highlight=qv.qubo#qubovert.QUBO for
-    full documentation
-    """
+    """Data type for Minimum Volume Model output"""
     best_portfolio: List[str]
     best_ret: float
     best_std_dev: float
