@@ -764,6 +764,25 @@ def test_superstaq_client_aqt_get_configs(mock_get: mock.MagicMock) -> None:
     assert client.aqt_get_configs() == expected_json
 
 
+@mock.patch("requests.post")
+def test_superstaq_client_target_info(mock_post: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaQClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    client.target_info("test_fake_device")
+
+    expected_json = {"backend_name": "test_fake_device", "max_experiments": 1234}
+
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/target_info",
+        headers=EXPECTED_HEADERS,
+        json=expected_json,
+        verify=False,
+    )
+
+
 def test_find_api_key() -> None:
     # find key in the environment
     with mock.patch.dict(os.environ, {"SUPERSTAQ_API_KEY": "tomyheart"}):

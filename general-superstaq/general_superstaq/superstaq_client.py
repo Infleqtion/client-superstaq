@@ -290,11 +290,7 @@ class _SuperstaQClient:
         }
         return self.post_request("/qubo", json_dict)
 
-    def supercheq(
-        self,
-        files: List[List[int]],
-        num_qubits: int,
-        depth: int,
+    def supercheq(self, files: List[List[int]], num_qubits: int, depth: int,
         circuit_return_type: str,
     ) -> Any:
         """Performs a POST request on the `/supercheq` endpoint.
@@ -307,7 +303,6 @@ class _SuperstaQClient:
             circuit_return_type: Supports only `cirq` and `qiskit` for now.
 
         Returns: The output of SupercheQ.
-
         """
         json_dict = {
             "files": files,
@@ -317,18 +312,14 @@ class _SuperstaQClient:
         }
         return self.post_request("/supercheq", json_dict)
 
-    def target_info(
-        self,
-        target: str,
-    ) -> Any:
-        """Makes a POST request to the SuperstaQ API (using the `/target_info` endppoint to request
+    def target_info(self, target: str,) -> Any:
+        """Makes a POST request to the SuperstaQ API (using the `/target_info` endpoint to request
         information about `target`.
 
         Args:
             target: String representing the device to get information about.
 
         Returns: Target information.
-
         """
         json_dict = {
             "target": target,

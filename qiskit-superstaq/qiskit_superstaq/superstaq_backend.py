@@ -136,3 +136,6 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         job = qss.SuperstaQJob(self, job_id)
 
         return job
+
+    def target_info(self) -> Any:
+        return self._client.target_info(self.name())

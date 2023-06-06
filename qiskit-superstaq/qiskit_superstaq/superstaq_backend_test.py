@@ -96,3 +96,16 @@ def test_eq() -> None:
 
     backend3 = provider.get_backend("ibmq_qasm_simulator")
     assert backend1 == backend3
+
+
+def test_target_info() -> None:
+    target = "fake_test_device"
+    backend = qss.SuperstaQProvider(api_key="123").get_backend(target)
+    fake_data = {"backend_name": target}
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaQClient.target_info",
+        return_value=fake_data,
+    ):
+        target_info = backend.target_info(target)
+
+        assert target_info == fake_data
