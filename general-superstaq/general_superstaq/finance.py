@@ -47,7 +47,7 @@ class MaxSharpeOutput:
 
 
 def read_json_maxsharpe(json_dict: gss.MaxSharpeJson) -> MaxSharpeOutput:
-    """Reads out returned JSON from SuperstaQ API's minvol endpoint.
+    """Reads out returned JSON from SuperstaQ API's maxsharpe endpoint.
     Args:
         json_dict: a JSON dictionary matching the format returned by /maxsharpe endpoint
     Returns:
@@ -62,7 +62,14 @@ def read_json_maxsharpe(json_dict: gss.MaxSharpeJson) -> MaxSharpeOutput:
 
 
 class Finance:  # pylint: disable=missing-class-docstring
-    """Overarching Finance class to implement methods above"""
+    """Overarching Finance class to implement methods above
+    __init__: Initializies superstaq client type.
+    submit_qubo: Submits the given QUBO to the target backend.
+    find_min_vol_portfolio: Finds the portfolio with minimum volatility that exceeds a specified
+    desired return.
+    find_max_pseudo_sharpe_ratio: Finds the optimal equal-weight portfolio from a possible pool of
+    stocks.
+    """
     def __init__(self, client: superstaq_client._SuperstaQClient):
         self._client = client
 
