@@ -418,3 +418,11 @@ def test_supercheq(mock_supercheq: mock.MagicMock) -> None:
         "fidelities": gss.serialization.serialize(fidelities),
     }
     assert provider.supercheq([[0]], 1, 1) == (circuits, fidelities)
+
+
+@patch("requests.post")
+def test_target_info(mock_post: MagicMock) -> None:
+    provider = qss.SuperstaQProvider(api_key="key")
+    fake_data = {"backend_name": "test_fake_device", "max_experiments": 1234}
+    mock_post.return_value.json = lambda: fake_data
+    assert provider.target_info("test_fake_backend") == fake_data

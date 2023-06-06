@@ -667,7 +667,8 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         return circuits, fidelities
 
     def target_info(
-        self, target: str,
+        self,
+        target: str,
     ) -> Dict[str, Any]:
         """Returns information about device specified by `target`."""
 

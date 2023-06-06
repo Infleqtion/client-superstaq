@@ -577,6 +577,14 @@ def test_service_supercheq(mock_supercheq: mock.MagicMock) -> None:
     assert service.supercheq([[0]], 1, 1) == (circuits, fidelities)
 
 
+@mock.patch("requests.post")
+def test_service_target_info(mock_post: mock.MagicMock) -> None:
+    fake_data = {"backend_name": "test_fake_device", "max_experiments": 1234}
+    mock_post.return_value.json = lambda: fake_data
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    assert service.target_info("test_fake_device") == fake_data
+
+
 @mock.patch.dict(os.environ, {"SUPERSTAQ_API_KEY": "tomyheart"})
 def test_service_api_key_via_env() -> None:
     service = css.Service(remote_host="http://example.com")

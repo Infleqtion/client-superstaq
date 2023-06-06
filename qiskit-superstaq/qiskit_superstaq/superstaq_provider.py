@@ -470,7 +470,10 @@ class SuperstaQProvider(
         )
 
     def supercheq(
-        self, files: List[List[int]], num_qubits: int, depth: int
+        self,
+        files: List[List[int]],
+        num_qubits: int,
+        depth: int,
     ) -> Tuple[List[qiskit.QuantumCircuit], npt.NDArray[np.float_]]:
         """Docstring."""
         _validate_integer_param(num_qubits)
@@ -481,7 +484,8 @@ class SuperstaQProvider(
         return circuits, fidelities
 
     def target_info(
-        self, target: str,
+        self,
+        target: str,
     ) -> Dict[str, Any]:
         """Returns information about device specified by `target`."""
 

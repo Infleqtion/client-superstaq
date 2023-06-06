@@ -300,7 +300,8 @@ class _SuperstaQClient:
         """Performs a POST request on the `/supercheq` endpoint.
 
         Args:
-            files: List of files specified as binary using ints. For example: [[1, 0, 1], [1, 1, 1]].
+            files: List of files specified as binary using ints.
+                For example: [[1, 0, 1], [1, 1, 1]].
             num_qubits: Number of qubits to run SupercheQ on.
             depth: The depth of the circuits to run SupercheQ on.
             circuit_return_type: Supports only `cirq` and `qiskit` for now.
