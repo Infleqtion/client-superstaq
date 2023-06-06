@@ -60,9 +60,8 @@ def read_json_maxsharpe(json_dict: gss.MaxSharpeJson) -> MaxSharpeOutput:
     best_std_dev = json_dict["best_std_dev"]
     best_sharpe_ratio = json_dict["best_sharpe_ratio"]
     qubo = gss.qubo.convert_model_to_qubo(json_dict["qubo"])
-    return MaxSharpeOutput(
-        best_portfolio, best_ret, best_std_dev, best_sharpe_ratio, qubo
-    )
+    return MaxSharpeOutput(best_portfolio, best_ret, best_std_dev,
+best_sharpe_ratio, qubo)
 
 
 class Finance:
@@ -91,13 +90,13 @@ class Finance:
             qubo: Qubovert QUBO object representing the optimization problem.
             target: A string indicating which target to use.
             repetitions: Number of shots to execute on the device.
+            method: 
         Returns:
             Numpy.recarray containing the solution to the QUBO, the energy of the
             different solutions, and the number of times each solution was found.
         """
-        json_dict = self._client.submit_qubo(
-            qubo, target, repetitions=repetitions, method=method
-        )
+        json_dict = self._client.submit_qubo(qubo, target,
+repetitions=repetitions, method=method)
         return gss.qubo.read_json_qubo_result(json_dict)
 
     def find_min_vol_portfolio(
