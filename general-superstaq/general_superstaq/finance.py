@@ -60,14 +60,13 @@ def read_json_maxsharpe(json_dict: gss.MaxSharpeJson) -> MaxSharpeOutput:
     best_std_dev = json_dict["best_std_dev"]
     best_sharpe_ratio = json_dict["best_sharpe_ratio"]
     qubo = gss.qubo.convert_model_to_qubo(json_dict["qubo"])
-    return MaxSharpeOutput(
-        best_portfolio, best_ret, best_std_dev, best_sharpe_ratio, qubo
-    )
+    return MaxSharpeOutput(best_portfolio, best_ret, best_std_dev,
+best_sharpe_ratio, qubo)
 
 
-class Finance:  # pylint: disable=missing-class-docstring
+class Finance:
     """Overarching Finance class to implement methods above
-    __init__: Initializes superstaq client type.
+    __init__: Initializies superstaq client type.
     submit_qubo: Submits the given QUBO to the target backend.
     find_min_vol_portfolio: Finds the portfolio with minimum volatility that exceeds a specified
     desired return.
@@ -95,9 +94,8 @@ class Finance:  # pylint: disable=missing-class-docstring
             Numpy.recarray containing the solution to the QUBO, the energy of the
             different solutions, and the number of times each solution was found.
         """
-        json_dict = self._client.submit_qubo(
-            qubo, target, repetitions=repetitions, method=method
-        )
+        json_dict = self._client.submit_qubo(qubo, target,
+repetitions=repetitions, method=method)
         return gss.qubo.read_json_qubo_result(json_dict)
 
     def find_min_vol_portfolio(
