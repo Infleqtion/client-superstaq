@@ -290,7 +290,11 @@ class _SuperstaQClient:
         }
         return self.post_request("/qubo", json_dict)
 
-    def supercheq(self, files: List[List[int]], num_qubits: int, depth: int,
+    def supercheq(
+        self,
+        files: List[List[int]],
+        num_qubits: int,
+        depth: int,
         circuit_return_type: str,
     ) -> Any:
         """Performs a POST request on the `/supercheq` endpoint.
