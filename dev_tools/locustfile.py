@@ -36,10 +36,10 @@ class QuickstartUser(HttpUser):  # pylint: disable=missing-class-docstring
     def aqt_compile(self) -> None:  # pylint: disable=missing-function-docstring
 
         # Construct an example circuit
-        q0, q1, q2, q3 = cirq.LineQubit.range(4)
-        circuit1 = cirq.Circuit(cirq.H.on_each(q0, q1, q2, q3))
+        qubits = cirq.LineQubit.range(2)
+        circuit1 = cirq.Circuit(cirq.H(qubits[0]), cirq.CNOT(qubits[0], qubits[1]), cirq.measure(qubits[0]))
 
         # Send it to SuperstaQ
 
         requests.post = self.client.post
-        _ = SERVICE.aqt_compile(circuit1)
+        _ = SERVICE.cq_compile(circuit1)
