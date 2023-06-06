@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class MinVolOutput:
-    """Data type for Minimum Volume Model output"""
+    """A class to store data from the Minimized Volatility endpoint"""
     best_portfolio: List[str]
     best_ret: float
     best_std_dev: float
