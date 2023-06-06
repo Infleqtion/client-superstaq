@@ -676,10 +676,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         fidelities = gss.serialization.deserialize(json_dict["fidelities"])
         return circuits, fidelities
 
-    def target_info(
-        self,
-        target: str,
-    ) -> Dict[str, Any]:
+    def target_info(self, target: str) -> Dict[str, Any]:
         """Returns information about device specified by `target`."""
 
         return self._client.target_info(target)
