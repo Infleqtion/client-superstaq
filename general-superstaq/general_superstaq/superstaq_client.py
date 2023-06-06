@@ -316,7 +316,10 @@ class _SuperstaQClient:
         }
         return self.post_request("/supercheq", json_dict)
 
-    def target_info(self, target: str,) -> Any:
+    def target_info(
+        self,
+        target: str,
+    ) -> Any:
         """Makes a POST request to the SuperstaQ API (using the `/target_info` endpoint to request
         information about `target`.
 

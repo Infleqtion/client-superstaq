@@ -469,7 +469,8 @@ class SuperstaQProvider(
             json_dict, metadata_of_circuits, circuits_is_list
         )
 
-    def supercheq(self, files: List[List[int]], num_qubits: int, depth: int
+    def supercheq(
+        self, files: List[List[int]], num_qubits: int, depth: int
     ) -> Tuple[List[qiskit.QuantumCircuit], npt.NDArray[np.float_]]:
         """Returns the randomly generated circuits and the fidelity matrix for inputted
         files."""
@@ -480,6 +481,9 @@ class SuperstaQProvider(
         fidelities = gss.serialization.deserialize(json_dict["fidelities"])
         return circuits, fidelities
 
-    def target_info(self, target: str,) -> Dict[str, Any]:
+    def target_info(
+        self,
+        target: str,
+    ) -> Dict[str, Any]:
         """Returns information about device specified by `target`."""
         return self._client.target_info(target)

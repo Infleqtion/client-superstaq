@@ -99,7 +99,7 @@ def test_eq() -> None:
 
 
 def test_target_info() -> None:
-    target = "ibmq_fake_test_device"
+    target = "ibmq_qasm_simulator"
     backend = qss.SuperstaQProvider(api_key="123").get_backend(target)
     fake_data = {"backend_name": target}
     with mock.patch(
