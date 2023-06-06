@@ -106,10 +106,34 @@ def test_warning_suppression() -> None:
 
     # Check that a warning would normally be thrown
     with pytest.warns(UserWarning):
-        buf = io.BytesIO(gss.serialization._str_to_bytes(serialized_circuit))
+        buf = io.BytesIO(gss.serialization.str_to_bytes(serialized_circuit))
         _ = qiskit.qpy.load(buf)
 
     # Check that it is suppressed by deserialize_circuits
     with warnings.catch_warnings():
         warnings.filterwarnings("error")
         _ = qss.serialization.deserialize_circuits(serialized_circuit)
+
+
+def test_deserialization_errors() -> None:
+    circuit = qiskit.QuantumCircuit(3)
+    circuit.x(0)
+
+    # Mock a circuit serialized with a newer version of QPY:
+    with mock.patch("qiskit.qpy.common.QPY_VERSION", qiskit.qpy.common.QPY_VERSION + 1):
+        serialized_circuit = qss.serialize_circuits(circuit)
+
+    # Remove a few bytes to force a deserialization error
+    serialized_circuit = gss.serialization.bytes_to_str(
+        gss.serialization.str_to_bytes(serialized_circuit)[:-4]
+    )
+
+    with pytest.raises(ValueError, match="your version of qiskit-terra"):
+        _ = qss.deserialize_circuits(serialized_circuit)
+
+    # Mock a circuit serialized with an older of QPY:
+    with mock.patch("qiskit.qpy.common.QPY_VERSION", 3):
+        serialized_circuit = qss.serialize_circuits(circuit)
+
+    with pytest.raises(ValueError, match="Please contact"):
+        _ = qss.deserialize_circuits(serialized_circuit)
