@@ -773,7 +773,7 @@ def test_superstaq_client_target_info(mock_post: mock.MagicMock) -> None:
     )
     client.target_info("test_fake_device")
 
-    expected_json = {"backend_name": "test_fake_device", "max_experiments": 1234}
+    expected_json = {"target": "test_fake_device"}
 
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/target_info",
