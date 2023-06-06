@@ -306,7 +306,8 @@ class _SuperstaQClient:
             depth: The depth of the circuits to run SupercheQ on.
             circuit_return_type: Supports only `cirq` and `qiskit` for now.
 
-        Returns: The output of SupercheQ.
+        Returns:
+            The output of SupercheQ.
         """
         json_dict = {
             "files": files,
@@ -316,7 +317,7 @@ class _SuperstaQClient:
         }
         return self.post_request("/supercheq", json_dict)
 
-    def target_info(self, target: str) -> Any:
+    def target_info(self, target: str) -> Dict[str, Any]:
         """Makes a POST request to the SuperstaQ API (using the `/target_info` endpoint to request
         information about `target`.
 
