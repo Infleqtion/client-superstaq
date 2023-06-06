@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring
 from __future__ import annotations
 
 import importlib
@@ -56,7 +55,18 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
     return sorted(qubit_indices)
 
 
-class CompilerOutput:  # pylint: disable=missing-class-docstring
+class CompilerOutput: 
+    """
+    A class that arranges compiled circuit information.
+    
+    Attributes:
+        circuits: at most 2 dimensional lists of cirq Circuit objects
+        final_logical_to_physicals: post-compilation mapping of logical qubits to physical qubits
+        (Optional) pulse_sequences: pulse schedule, can be Any data type
+        (Optional) seq: the pulse sequence, if qtrl is avaialable locally
+        (Optional) jaqal_programs: the Jaqal program (resp. programs) as a string (resp. list of strings)
+        (Optional) pulse_lists: either 3 or 4 dimensional lists of pulse cycles, can by Any data type
+    """
     def __init__(
         self,
         circuits: Union[cirq.Circuit, List[cirq.Circuit], List[List[cirq.Circuit]]],
@@ -156,6 +166,7 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
         json_dict: a JSON dictionary matching the format returned by /aqt_compile endpoint
         circuits_is_list: bool flag that controls whether the returned object has a .circuits
             attribute (if True) or a .circuit attribute (False)
+        num_eca_circuits:
     Returns:
         a CompilerOutput object with the compiled circuit(s). If qtrl is available locally,
         the returned object also stores the pulse sequence in the .seq attribute and the
