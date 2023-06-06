@@ -469,7 +469,7 @@ class SuperstaQProvider(
             json_dict, metadata_of_circuits, circuits_is_list
         )
 
-    def supercheq(self, files: List[List[int]], num_qubits: int, depth: int,
+    def supercheq(self, files: List[List[int]], num_qubits: int, depth: int
     ) -> Tuple[List[qiskit.QuantumCircuit], npt.NDArray[np.float_]]:
         """Returns the randomly generated circuits and the fidelity matrix for inputted
         files."""

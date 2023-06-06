@@ -106,6 +106,6 @@ def test_target_info() -> None:
         "general_superstaq.superstaq_client._SuperstaQClient.target_info",
         return_value=fake_data,
     ):
-        target_info = backend.target_info(target)
+        target_info = backend.target_info()
 
         assert target_info == fake_data
