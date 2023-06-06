@@ -26,4 +26,4 @@ jobs:
           python -m pip install -e ./general-superstaq[dev] -e ./cirq-superstaq -e ./qiskit-superstaq -e ./supermarq-benchmarks
       - name: Load test
         run: |
-          locust --config dev_tools/locust.conf -f dev_tools/locustfile.py --headless -u 1 -r 1 --run-time 30s
+          locust --config dev_tools/locust.conf -f dev_tools/locustfile.py --headless -u 10 -r 1 --run-time 30s
