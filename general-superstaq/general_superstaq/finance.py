@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 @dataclass
 class MinVolOutput:
     """A class to store data from the Minimized Volatility endpoint"""
+
     best_portfolio: List[str]
     best_ret: float
     best_std_dev: float
@@ -39,6 +40,7 @@ def read_json_minvol(json_dict: gss.MinVolJson) -> MinVolOutput:
 @dataclass
 class MaxSharpeOutput:
     """A class to store data from the Max Sharpe Ratio endpoint"""
+
     best_portfolio: List[str]
     best_ret: float
     best_std_dev: float
@@ -58,23 +60,30 @@ def read_json_maxsharpe(json_dict: gss.MaxSharpeJson) -> MaxSharpeOutput:
     best_std_dev = json_dict["best_std_dev"]
     best_sharpe_ratio = json_dict["best_sharpe_ratio"]
     qubo = gss.qubo.convert_model_to_qubo(json_dict["qubo"])
-    return MaxSharpeOutput(best_portfolio, best_ret, best_std_dev, best_sharpe_ratio, qubo)
+    return MaxSharpeOutput(
+        best_portfolio, best_ret, best_std_dev, best_sharpe_ratio, qubo
+    )
 
 
 class Finance:  # pylint: disable=missing-class-docstring
     """Overarching Finance class to implement methods above
-    __init__: Initializies superstaq client type.
+    __init__: Initializes superstaq client type.
     submit_qubo: Submits the given QUBO to the target backend.
     find_min_vol_portfolio: Finds the portfolio with minimum volatility that exceeds a specified
     desired return.
     find_max_pseudo_sharpe_ratio: Finds the optimal equal-weight portfolio from a possible pool of
     stocks.
     """
+
     def __init__(self, client: superstaq_client._SuperstaQClient):
         self._client = client
 
     def submit_qubo(
-        self, qubo: qv.QUBO, target: str, repetitions: int = 1000, method: Optional[str] = None
+        self,
+        qubo: qv.QUBO,
+        target: str,
+        repetitions: int = 1000,
+        method: Optional[str] = None,
     ) -> npt.NDArray[np.int_]:
         """Submits the given QUBO to the target backend. The result of the optimization
         is returned to the user as a numpy.recarray.
@@ -86,7 +95,9 @@ class Finance:  # pylint: disable=missing-class-docstring
             Numpy.recarray containing the solution to the QUBO, the energy of the
             different solutions, and the number of times each solution was found.
         """
-        json_dict = self._client.submit_qubo(qubo, target, repetitions=repetitions, method=method)
+        json_dict = self._client.submit_qubo(
+            qubo, target, repetitions=repetitions, method=method
+        )
         return gss.qubo.read_json_qubo_result(json_dict)
 
     def find_min_vol_portfolio(
