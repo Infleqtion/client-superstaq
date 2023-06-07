@@ -12,10 +12,7 @@ from typing import TYPE_CHECKING
 
 import cirq_superstaq
 import requests
-from locust import HttpUser, events, task
-
-if TYPE_CHECKING:
-    from locust.env import Environment
+import locust.env
 
 
 @events.quitting.add_listener
