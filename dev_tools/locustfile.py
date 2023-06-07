@@ -10,7 +10,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-import cirq
 import cirq_superstaq
 import requests
 from locust import HttpUser, events, task
@@ -31,15 +30,11 @@ def _(environment: Environment) -> None:
 SERVICE = cirq_superstaq.Service()
 
 
-class QuickstartUser(HttpUser):  # pylint: disable=missing-class-docstring
+class QuickstartUser(HttpUser):
+    """Simulates a user during load testing"""
+
     @task
-    def aqt_compile(self) -> None:  # pylint: disable=missing-function-docstring
-
-        # Construct an example circuit
-        qubits = cirq.LineQubit.range(2)
-        circuit1 = cirq.Circuit(cirq.H(qubits[0]), cirq.CNOT(qubits[0], qubits[1]), cirq.measure(qubits[0]))
-
-        # Send it to SuperstaQ
-
-        requests.post = self.client.post
-        _ = SERVICE.cq_compile(circuit1)
+    def get_targets(self) -> None:
+        """Load tests the get_backends endpoint"""
+        requests.get = self.client.get
+        _ = SERVICE.get_targets()
