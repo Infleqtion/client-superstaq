@@ -472,8 +472,7 @@ class SuperstaQProvider(
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int
     ) -> Tuple[List[qiskit.QuantumCircuit], npt.NDArray[np.float_]]:
-        """Returns the randomly generated circuits and the fidelity matrix for inputted
-        files."""
+        """Returns the randomly generated circuits and the fidelity matrix for inputted files."""
         _validate_integer_param(num_qubits)
         _validate_integer_param(depth)
         json_dict = self._client.supercheq(files, num_qubits, depth, "qiskit_circuits")
