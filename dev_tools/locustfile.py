@@ -8,15 +8,14 @@ then click the "Start swarming" button.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
 
 import cirq_superstaq
-import requests
 import locust.env
+import requests
 
 
-@events.quitting.add_listener
-def _(environment: Environment) -> None:
+@locust.events.quitting.add_listener
+def _(environment: locust.Environment) -> None:
     if environment.stats.total.fail_ratio > 0.01:
         logging.error("Test failed due to failure ratio > 1%")
         environment.process_exit_code = 1
@@ -27,10 +26,10 @@ def _(environment: Environment) -> None:
 SERVICE = cirq_superstaq.Service()
 
 
-class QuickstartUser(HttpUser):
+class QuickstartUser(locust.HttpUser):
     """Simulates a user during load testing"""
 
-    @task
+    @locust.task
     def get_targets(self) -> None:
         """Load tests the get_backends endpoint"""
         requests.get = self.client.get
