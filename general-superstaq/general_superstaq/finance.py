@@ -64,13 +64,7 @@ def read_json_maxsharpe(json_dict: gss.MaxSharpeJson) -> MaxSharpeOutput:
 
 
 class Finance:
-    """Overarching Finance class to implement methods above
-    __init__: Initializies superstaq client type.
-    submit_qubo: Submits the given QUBO to the target backend.
-    find_min_vol_portfolio: Finds the portfolio with minimum volatility that exceeds a specified
-    desired return.
-    find_max_pseudo_sharpe_ratio: Finds the optimal equal-weight portfolio from a possible pool of
-    stocks.
+    """Overarching class for Sharpe Ratio and Minimized Volatility finance applications.
     """
 
     def __init__(self, client: superstaq_client._SuperstaQClient):
