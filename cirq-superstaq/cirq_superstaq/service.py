@@ -667,7 +667,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int
     ) -> Tuple[List[cirq.Circuit], npt.NDArray[np.float_]]:
-        """Returns the randomly generated circuits and the fidelity matrix for inputted files"""
+        """Returns the randomly generated circuits and the fidelity matrix for inputted files."""
 
         _validate_integer_param(num_qubits)
         _validate_integer_param(depth)
@@ -675,3 +675,7 @@ class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
         circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
         fidelities = gss.serialization.deserialize(json_dict["fidelities"])
         return circuits, fidelities
+
+    def target_info(self, target: str) -> Dict[str, Any]:
+        """Returns information about device specified by `target`."""
+        return self._client.target_info(target)["target_info"]
