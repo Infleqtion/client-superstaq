@@ -42,7 +42,7 @@ Learn more about SuperstaQ `here <https://www.super.tech/about-superstaq/>`_.
 
    get_started/credentials
    get_started/installation
-   get_started/basics/basics
+   get_started/basics
 
 .. toctree::
    :maxdepth: 1
