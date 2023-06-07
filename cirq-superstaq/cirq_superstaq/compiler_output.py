@@ -169,7 +169,8 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
         json_dict: a JSON dictionary matching the format returned by /aqt_compile endpoint
         circuits_is_list: bool flag that controls whether the returned object has a .circuits
             attribute (if True) or a .circuit attribute (False)
-        num_eca_circuits:
+        num_eca_circuits: number of logically equivalent random circuits to generate for each
+            input circuit
     Returns:
         a CompilerOutput object with the compiled circuit(s). If qtrl is available locally,
         the returned object also stores the pulse sequence in the .seq attribute and the
