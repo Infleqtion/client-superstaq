@@ -64,8 +64,7 @@ def read_json_maxsharpe(json_dict: gss.MaxSharpeJson) -> MaxSharpeOutput:
 
 
 class Finance:
-    """Overarching class for Sharpe Ratio and Minimized Volatility finance applications.
-    """
+    """Overarching class for Sharpe Ratio and Minimized Volatility finance applications."""
 
     def __init__(self, client: superstaq_client._SuperstaQClient):
         self._client = client
