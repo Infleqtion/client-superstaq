@@ -71,8 +71,7 @@ class CompilerOutput:
         jaqal_programs: Optional[Union[List[str], str]] = None,
         pulse_lists: Optional[Union[List[List[List[Any]]], List[List[List[List[Any]]]]]] = None,
     ) -> None:
-        """
-        Initializes class attributes.
+        """Initializes class attributes.
 
         Args:
             circuits: at most 2 dimensional lists of cirq Circuit objects
