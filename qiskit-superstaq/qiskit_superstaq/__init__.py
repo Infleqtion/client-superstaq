@@ -9,6 +9,7 @@ from .custom_gates import (
     StrippedCZGate,
     ZZSwapGate,
 )
+from .serialization import deserialize_circuits, serialize_circuits
 from .superstaq_backend import SuperstaQBackend
 from .superstaq_job import SuperstaQJob
 from .superstaq_provider import SuperstaQProvider
@@ -19,10 +20,12 @@ __all__ = [
     "AQTiCCXGate",
     "AQTiToffoliGate",
     "compiler_output",
+    "deserialize_circuits",
     "ITOFFOLIGate",
     "measured_qubit_indices",
     "ParallelGates",
     "serialization",
+    "serialize_circuits",
     "StrippedCZGate",
     "SuperstaQBackend",
     "SuperstaQJob",

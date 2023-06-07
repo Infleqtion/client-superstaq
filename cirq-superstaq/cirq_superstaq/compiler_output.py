@@ -107,7 +107,7 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
         )
 
 
-def read_json_ibmq(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
+def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
     """Reads out returned JSON from SuperstaQ API's IBMQ compilation endpoint.
 
     Args:
@@ -125,19 +125,19 @@ def read_json_ibmq(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compile
     pulses = None
 
     if "pulses" in json_dict:
-        if importlib.util.find_spec("qiskit"):
+        if importlib.util.find_spec("qiskit") and importlib.util.find_spec("qiskit.qpy"):
             import qiskit
 
-            if "0.23" < qiskit.__version__ < "0.24":
+            if "0.24" < qiskit.__version__ < "0.25":
                 pulses = gss.serialization.deserialize(json_dict["pulses"])
             else:
                 warnings.warn(
-                    "ibmq_compile requires Qiskit Terra version 0.23.* to deserialize compiled "
+                    "ibmq_compile requires Qiskit Terra version 0.24.* to deserialize compiled "
                     f"pulse sequences (you have {qiskit.__version__})."
                 )
         else:
             warnings.warn(
-                "ibmq_compile requires Qiskit Terra version 0.23.* to deserialize compiled pulse "
+                "ibmq_compile requires Qiskit Terra version 0.24.* to deserialize compiled pulse "
                 "sequences."
             )
 
@@ -266,25 +266,3 @@ def read_json_qscout(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compi
         final_logical_to_physicals=final_logical_to_physicals[0],
         jaqal_programs=json_dict["jaqal_programs"][0],
     )
-
-
-def read_json_only_circuits(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
-    """Reads out returned JSON from SuperstaQ API's CQ compilation endpoint.
-
-    Args:
-        json_dict: a JSON dictionary matching the format returned by /cq_compile endpoint
-        circuits_is_list: bool flag that controls whether the returned object has a .circuits
-            attribute (if True) or a .circuit attribute (False)
-    Returns:
-        a CompilerOutput object with the compiled circuit(s)
-    """
-
-    compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
-    final_logical_to_physicals: List[Dict[cirq.Qid, cirq.Qid]] = list(
-        map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
-    )
-
-    if circuits_is_list:
-        return CompilerOutput(compiled_circuits, final_logical_to_physicals)
-
-    return CompilerOutput(compiled_circuits[0], final_logical_to_physicals[0])
