@@ -482,4 +482,4 @@ class SuperstaQProvider(
 
     def target_info(self, target: str) -> Dict[str, Any]:
         """Returns information about device specified by `target`."""
-        return self._client.target_info(target)
+        return self._client.target_info(target)["target_info"]
