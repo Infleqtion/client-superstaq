@@ -56,18 +56,7 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
 
 
 class CompilerOutput:
-    """A class that arranges compiled circuit information.
-
-    Attributes:
-        circuits: at most 2 dimensional lists of cirq Circuit objects
-        final_logical_to_physicals: post-compilation mapping of logical qubits to physical qubits
-        (Optional) pulse_sequences: pulse schedule, can be Any data type
-        (Optional) seq: the pulse sequence, if qtrl is avaialable locally
-        (Optional) jaqal_programs: the Jaqal program (resp. programs) as a string (resp. list of
-            strings)
-        (Optional) pulse_lists: either 3 or 4 dimensional lists of pulse cycles, can by Any data
-            type
-    """
+    """A class that arranges compiled circuit information."""
 
     def __init__(
         self,
@@ -82,6 +71,20 @@ class CompilerOutput:
         jaqal_programs: Optional[Union[List[str], str]] = None,
         pulse_lists: Optional[Union[List[List[List[Any]]], List[List[List[List[Any]]]]]] = None,
     ) -> None:
+        """
+        Initializes class attributes.
+
+        Args:
+            circuits: at most 2 dimensional lists of cirq Circuit objects
+            final_logical_to_physicals: post-compilation mapping of logical qubits to physical
+                qubits
+            pulse_sequences: pulse schedule, can be Any data type
+            seq: the pulse sequence, if qtrl is avaialable locally
+            jaqal_programs: the Jaqal program (resp. programs) as a string (resp. list of
+                strings)
+            pulse_lists: either 3 or 4 dimensional lists of pulse cycles, can by Any data
+                type
+        """
         if isinstance(circuits, cirq.Circuit):
             self.circuit = circuits
             self.final_logical_to_physical = final_logical_to_physicals

@@ -151,7 +151,7 @@ class Job:
         Raises:
             SuperstaQUnsuccessfulJobException: If the job has failed, been canceled, or deleted.
             SuperstaQException: If unable to get the results from the API.
-            RuntimeError: test checks
+            RuntimeError: If the terminal state of the job is not done.
         """
         time_waited_seconds: float = 0.0
         while time_waited_seconds < timeout_seconds:
