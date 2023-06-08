@@ -104,7 +104,7 @@ def test_eq() -> None:
 
 
 @patch("requests.post")
-def test_compile(mock_post: MagicMock) -> None:
+def test_aqt_compile(mock_post: MagicMock) -> None:
     # AQT compile
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     backend = provider.get_backend("aqt_keysight_qpu")
@@ -163,8 +163,15 @@ def test_compile(mock_post: MagicMock) -> None:
     assert out.final_logical_to_physicals == [{}]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
-    # IBMQ compile
+
+@patch("requests.post")
+def test_ibmq_compile(mock_post: MagicMock) -> None:
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     backend = provider.get_backend("ibmq_jakarta_qpu")
+
+    qc = qiskit.QuantumCircuit(8)
+    qc.cz(4, 5)
+
     final_logical_to_physical = {0: 4, 1: 5}
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
@@ -179,10 +186,14 @@ def test_compile(mock_post: MagicMock) -> None:
     )
 
     with pytest.raises(ValueError, match="ibmq_jakarta_qpu is not a valid AQT target."):
-        out = backend.aqt_compile([qc])
+        backend.aqt_compile([qc])
 
-    # QSCOUT compile
+
+@patch("requests.post")
+def test_qscout_compile(mock_post: MagicMock) -> None:
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     backend = provider.get_backend("sandia_qscout_qpu")
+
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)
     jaqal_program = textwrap.dedent(
@@ -218,12 +229,17 @@ def test_compile(mock_post: MagicMock) -> None:
     assert out.circuits == [qc, qc]
     assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
 
-    # Unavailable compile (e.g., AWS)
+
+@patch("requests.post")
+def test_compile(mock_post: MagicMock) -> None:
+    # Compilation to an unavailable target (e.g., AWS)
+    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     backend = provider.get_backend("aws_sv1_simulator")
+
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)
     with pytest.raises(ValueError, match="aws_sv1_simulator is not a valid target"):
-        out = backend.compile(qc)
+        backend.compile(qc)
 
 
 def test_validate_qiskit_circuits() -> None:
