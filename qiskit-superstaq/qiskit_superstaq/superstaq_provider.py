@@ -483,3 +483,7 @@ class SuperstaQProvider(
     def target_info(self, target: str) -> Dict[str, Any]:
         """Returns information about device specified by `target`."""
         return self._client.target_info(target)["target_info"]
+
+    def get_targets(self) -> Dict[str, Any]:
+        """Gets a list of available targets."""
+        return self._client.get_targets()["superstaq_targets"]
