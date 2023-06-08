@@ -396,24 +396,7 @@ def barrier(*qubits: cirq.Qid) -> cirq.Operation:  # pylint: disable=missing-fun
 
 @cirq.value_equality(approximate=True)
 class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
-    """A single Gate combining a collection of concurrent Gate(s) acting on different qubits.
-
-    WARNING: for cirq versions 0.14.*, equality check will return False after permutations of
-        qubits between identical but nonadjacent gates, e.g.::
-
-            gate = ParallelGates(cirq.X, cirq.Y, cirq.X)
-            gate.on(q0, q1, q2) == gate.on(q2, q1, q0)  # True for cirq < 0.14.0
-                                                        # False for 0.14.0 <= cirq < 0.15.0
-                                                        # True for cirq >= 0.15.0
-
-        This does not affect permutations of qubits between adjacent gates, or those within the
-        same InterchangeableQubitsGate::
-
-            gate = ParallelGates(cirq.X, cirq.X, cirq.CZ)
-            gate.on(q0, q1, q2, q3) == gate.on(q1, q0, q3, q2)  # always True
-
-        See https://github.com/quantumlib/Cirq/issues/5148 for more information.
-    """
+    """A single Gate combining a collection of concurrent Gate(s) acting on different qubits."""
 
     def __init__(self, *component_gates: cirq.Gate) -> None:
         """Args:
