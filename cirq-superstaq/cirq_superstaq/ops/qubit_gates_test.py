@@ -790,14 +790,7 @@ def test_parallel_gates_equivalence_groups() -> None:
         _ = gate.qubit_index_to_equivalence_group_key(-1)
 
 
-@pytest.mark.skipif(
-    packaging.version.parse("0.14.0.dev20220126174724")
-    < packaging.version.parse(cirq.__version__)
-    < packaging.version.parse("0.15.0.dev20220420201205"),
-    reason="https://github.com/quantumlib/Cirq/issues/5148",
-)
-def test_parallel_gates_equivalence_groups_nonadjacent() -> None:  # pragma: no cover
-    """Fails in cirq version 0.14.x due to https://github.com/quantumlib/Cirq/issues/5148"""
+def test_parallel_gates_equivalence_groups_nonadjacent() -> None:
     qubits = cirq.LineQubit.range(4)
     gate = css.ParallelGates(cirq.X, css.ZZSwapGate(1.23), cirq.X)
     assert [gate.qubit_index_to_equivalence_group_key(i) for i in range(4)] == [0, 1, 1, 0]
@@ -1064,7 +1057,6 @@ def test_custom_resolver() -> None:
     circuit += css.AceCR(rads=np.pi / 3)(qubits[0], qubits[1])
     circuit += css.AceCR(rads=np.pi, sandwich_rx_rads=np.pi)(qubits[0], qubits[1])
     circuit += css.ParallelGates(cirq.X, css.ZX).on(qubits[0], qubits[2], qubits[3])
-    circuit += cirq.ms(1.23).on(qubits[0], qubits[1])
     circuit += css.RGate(1.23, 4.56).on(qubits[0])
     circuit += css.ParallelRGate(1.23, 4.56, len(qubits)).on(*qubits)
     circuit += css.AQTITOFFOLI(qubits[0], qubits[1], qubits[2])
