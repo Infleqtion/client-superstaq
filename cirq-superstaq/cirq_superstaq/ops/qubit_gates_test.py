@@ -4,7 +4,6 @@ import textwrap
 
 import cirq
 import numpy as np
-import packaging
 import pytest
 import sympy
 
@@ -1057,6 +1056,7 @@ def test_custom_resolver() -> None:
     circuit += css.AceCR(rads=np.pi / 3)(qubits[0], qubits[1])
     circuit += css.AceCR(rads=np.pi, sandwich_rx_rads=np.pi)(qubits[0], qubits[1])
     circuit += css.ParallelGates(cirq.X, css.ZX).on(qubits[0], qubits[2], qubits[3])
+    circuit += cirq.ms(1.23).on(qubits[0], qubits[1])
     circuit += css.RGate(1.23, 4.56).on(qubits[0])
     circuit += css.ParallelRGate(1.23, 4.56, len(qubits)).on(*qubits)
     circuit += css.AQTITOFFOLI(qubits[0], qubits[1], qubits[2])

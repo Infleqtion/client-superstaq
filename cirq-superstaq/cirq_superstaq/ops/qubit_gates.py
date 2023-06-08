@@ -838,6 +838,7 @@ def custom_resolver(  # pylint: disable=missing-function-docstring
         "ZXPowGate": ZXPowGate,
         "AceCR": AceCR,
         "ParallelGates": ParallelGates,
+        "MSGate": cirq.ops.MSGate,
         "RGate": RGate,
         "IXGate": IXGate,
         "ParallelRGate": ParallelRGate,
