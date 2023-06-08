@@ -167,11 +167,11 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
     """Reads out returned JSON from SuperstaQ API's AQT compilation endpoint.
 
     Args:
-        json_dict: a JSON dictionary matching the format returned by /aqt_compile endpoint
-        circuits_is_list: bool flag that controls whether the returned object has a .circuits
-            attribute (if True) or a .circuit attribute (False)
-        num_eca_circuits: number of logically equivalent random circuits to generate for each
-            input circuit
+        json_dict:  JSON dictionary matching the format returned by aqt_compile endpoint.
+        circuits_is_list: Bool flag that controls whether the returned object has a .circuits
+            attribute (if True) or a .circuit attribute (False).
+        num_eca_circuits: Number of logically equivalent random circuits to generate for each
+            input circuit.
     Returns:
         a CompilerOutput object with the compiled circuit(s). If qtrl is available locally,
         the returned object also stores the pulse sequence in the .seq attribute and the
