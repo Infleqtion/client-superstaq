@@ -3,6 +3,7 @@ from typing import Sequence
 
 import qiskit
 
+
 def validate_qiskit_circuits(circuits: object) -> None:
     """Validates that the input is either a single `qiskit.QuantumCircuit` or a list of
     `qiskit.QuantumCircuit` instances.

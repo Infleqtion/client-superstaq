@@ -1,9 +1,7 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
-import json
-import textwrap
-from unittest.mock import DEFAULT, MagicMock, patch
+import re
 
-import general_superstaq as gss
+import numpy as np
 import pytest
 import qiskit
 
@@ -66,4 +64,3 @@ def test_validate_integer_param() -> None:
             match="Must be a positive integer.",
         ):
             qss.validation.validate_integer_param(input_value)
-
