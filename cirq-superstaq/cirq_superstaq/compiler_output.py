@@ -74,15 +74,14 @@ class CompilerOutput:
         """Initializes class attributes.
 
         Args:
-            circuits: at most 2 dimensional lists of cirq Circuit objects
-            final_logical_to_physicals: post-compilation mapping of logical qubits to physical
-                qubits
-            pulse_sequences: pulse schedule, can be Any data type
-            seq: the pulse sequence, if qtrl is avaialable locally
-            jaqal_programs: the Jaqal program (resp. programs) as a string (resp. list of
-                strings)
-            pulse_lists: either 3 or 4 dimensional lists of pulse cycles, can by Any data
-                type
+            circuits: A list of at most 2 dimensions containing cirq circuit objects.
+            final_logical_to_physicals: Post-compilation mapping of logical qubits to physical
+                qubits.
+            pulse_sequences: Qiskit pulse schedules for the compiled circuit(s).
+            seq: Qtrl pulse sequence, if qtrl is avaialable locally.
+            jaqal_programs: The Jaqal program (resp. programs) as a string (resp. list of
+                strings).
+            pulse_lists: Either 3 or 4 dimensional lists of pulse cycles.
         """
         if isinstance(circuits, cirq.Circuit):
             self.circuit = circuits
