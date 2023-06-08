@@ -173,7 +173,7 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
         num_eca_circuits: Number of logically equivalent random circuits to generate for each
             input circuit.
     Returns:
-        a CompilerOutput object with the compiled circuit(s). If qtrl is available locally,
+        A CompilerOutput object with the compiled circuit(s). If qtrl is available locally,
         the returned object also stores the pulse sequence in the .seq attribute and the
         list(s) of cycles in the .pulse_list(s) attribute.
     """
