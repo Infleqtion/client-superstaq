@@ -271,11 +271,12 @@ def test_validate_integer_param() -> None:
         ):
             qss.superstaq_backend._validate_integer_param(input_value)
 
+
 def test_target_info() -> None:
     target = "ibmq_qasm_simulator"
     backend = qss.SuperstaQProvider(api_key="123").get_backend(target)
     fake_data = {"target_info": {"backend_name": target}}
-    with mock.patch(
+    with patch(
         "general_superstaq.superstaq_client._SuperstaQClient.target_info",
         return_value=fake_data,
     ):
