@@ -22,7 +22,7 @@ import qiskit_superstaq as qss
 
 class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-docstring
 
-    TERMINAL_STATES = ("Done", "Canceled", "Error")
+    TERMINAL_STATES = ("Done", "Canceled", "Failed", "Error")
     PROCESSING_STATES = ("Queued", "Submitted", "Running")
     ALL_STATES = TERMINAL_STATES + PROCESSING_STATES
 
@@ -106,7 +106,7 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
             SuperstaQUnsuccessfulJob: If the job been canceled or an error has occured.
             SuperstaQException: If unable to get the status of the job from the API.
         """
-        if self._overall_status in ("Canceled","Error"):
+        if self._overall_status == "Canceled":
             raise gss.superstaq_exceptions.SuperstaQUnsuccessfulJobException(
                 self._job_id, self._overall_status
             )
@@ -124,7 +124,11 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
 
         for job_id in job_id_list:
 
-            if (job_id not in self._job_info) or (job_id in self._job_info and self._job_info[job_id]["status"] not in self.TERMINAL_STATES):
+            if job_id in self._job_info and self._job_info[job_id] not in self.TERMINAL_STATES:
+                result = self._backend._provider._client.get_job(job_id)
+                self._job_info[job_id] = result
+
+            if job_id not in self._job_info:
                 result = self._backend._provider._client.get_job(job_id)
                 self._job_info[job_id] = result
 
@@ -137,6 +141,9 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
                 break
             elif temp_status == "Error":
                 self._overall_status = "Error"
+                raise qiskit.providers.JobError(
+                    "API returned error:\n" + str(self._job_info[job_id])
+                )
             elif temp_status == "Running":
                 self._overall_status = "Running"
 
@@ -157,7 +164,7 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
             "Running": qiskit.providers.jobstatus.JobStatus.RUNNING,
             "Submitted": qiskit.providers.jobstatus.JobStatus.INITIALIZING,
             "Canceled": qiskit.providers.jobstatus.JobStatus.CANCELLED,
-            "Error": qiskit.providers.jobstatus.JobStatus.ERROR,
+            "Error": qiskit.providers.jobstatus.JobStatus.QUEUED,
             "Done": qiskit.providers.jobstatus.JobStatus.DONE,
         }
 
