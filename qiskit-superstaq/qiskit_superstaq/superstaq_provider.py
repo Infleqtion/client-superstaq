@@ -113,7 +113,7 @@ class SuperstaQProvider(
             ResourceEstimate(s) containing resource costs (after compilation)
             for running circuit(s) on target.
         """
-        qss.validation._validate_qiskit_circuits(circuits)
+        qss.validation.validate_qiskit_circuits(circuits)
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuit_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
@@ -296,8 +296,8 @@ class SuperstaQProvider(
         self, files: List[List[int]], num_qubits: int, depth: int
     ) -> Tuple[List[qiskit.QuantumCircuit], npt.NDArray[np.float_]]:
         """Returns the randomly generated circuits and the fidelity matrix for inputted files."""
-        qss.validation._validate_integer_param(num_qubits)
-        qss.validation._validate_integer_param(depth)
+        qss.validation.validate_integer_param(num_qubits)
+        qss.validation.validate_integer_param(depth)
         json_dict = self._client.supercheq(files, num_qubits, depth, "qiskit_circuits")
         circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
         fidelities = gss.serialization.deserialize(json_dict["fidelities"])

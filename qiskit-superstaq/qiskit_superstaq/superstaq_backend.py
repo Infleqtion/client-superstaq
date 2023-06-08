@@ -133,7 +133,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         Raises:
             ValueError: If this backend does not support compilation.
         """
-        qss.validation._validate_qiskit_circuits(circuits)
+        qss.validation.validate_qiskit_circuits(circuits)
         if self.name().startswith("ibmq_"):
             return self.ibmq_compile(circuits, **kwargs)
         elif self.name().startswith("aqt_"):
