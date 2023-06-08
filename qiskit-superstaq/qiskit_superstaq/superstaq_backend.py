@@ -14,57 +14,12 @@
 from __future__ import annotations
 
 import json
-import re
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Union
 
 import general_superstaq as gss
 import qiskit
 
 import qiskit_superstaq as qss
-
-
-def _validate_qiskit_circuits(circuits: object) -> None:
-    """Validates that the input is either a single `qiskit.QuantumCircuit` or a list of
-    `qiskit.QuantumCircuit` instances.
-
-    Args:
-        circuits: The circuit(s) to run.
-
-    Raises:
-        ValueError: If the input is not a `qiskit.QuantumCircuit` or a list of
-        `qiskit.QuantumCircuit` instances.
-    """
-    if not (
-        isinstance(circuits, qiskit.QuantumCircuit)
-        or (
-            isinstance(circuits, Sequence)
-            and all(isinstance(circuit, qiskit.QuantumCircuit) for circuit in circuits)
-        )
-    ):
-        raise ValueError(
-            "Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a "
-            "sequence of `qiskit.QuantumCircuit` instances."
-        )
-
-
-def _validate_integer_param(integer_param: object) -> None:
-    """Validates that an input parameter is positive and an integer.
-
-    Args:
-        integer_param: An input parameter.
-
-    Raises:
-        TypeError: If input is not an integer.
-        ValueError: If input is negative.
-    """
-    if not (
-        (hasattr(integer_param, "__int__") and int(integer_param) == integer_param)
-        or (isinstance(integer_param, str) and integer_param.isdecimal())
-    ):
-        raise TypeError(f"{integer_param} cannot be safely cast as an integer.")
-
-    if int(integer_param) <= 0:
-        raise ValueError("Must be a positive integer.")
 
 
 def _get_metadata_of_circuits(
@@ -87,49 +42,6 @@ def _get_metadata_of_circuits(
     return metadata_of_circuits
 
 
-def validate_target(target: str) -> None:  # pylint: disable=missing-function-docstring
-    vendor_prefixes = [
-        "aqt",
-        "aws",
-        "cq",
-        "hqs",
-        "ibmq",
-        "ionq",
-        "oxford",
-        "quera",
-        "rigetti",
-        "sandia",
-        "ss",
-    ]
-
-    target_device_types = ["qpu", "simulator"]
-
-    # Check valid format
-    match = re.fullmatch("^([A-Za-z0-9-]+)_([A-Za-z0-9-.]+)_([a-z]+)", target)
-    if not match:
-        raise ValueError(
-            f"{target} does not have a valid string format. "
-            "Valid target strings should be in the form: "
-            "<provider>_<device>_<type>, e.g. ibmq_lagos_qpu."
-        )
-
-    prefix, _, device_type = match.groups()
-
-    # Check valid prefix
-    if prefix not in vendor_prefixes:
-        raise ValueError(
-            f"{target} does not have a valid target prefix. "
-            f"Valid target prefixes are: {vendor_prefixes}."
-        )
-
-    # Check for valid device type
-    if device_type not in target_device_types:
-        raise ValueError(
-            f"{target} does not have a valid target device type. "
-            f"Valid target device types are: {target_device_types}."
-        )
-
-
 class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-class-docstring
     def __init__(self, provider: qss.SuperstaQProvider, target: str) -> None:
         self._provider = provider
@@ -148,7 +60,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
             "coupling_map": None,
         }
 
-        validate_target(target)
+        qss.validation.validate_target(target)
 
         super().__init__(
             configuration=qiskit.providers.models.BackendConfiguration.from_dict(
@@ -221,7 +133,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         Raises:
             ValueError: If this backend does not support compilation.
         """
-        _validate_qiskit_circuits(circuits)
+        qss.validation._validate_qiskit_circuits(circuits)
         if self.name().startswith("ibmq_"):
             return self.ibmq_compile(circuits, **kwargs)
         elif self.name().startswith("aqt_"):
@@ -381,7 +293,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         if base_entangling_gate not in ("xx", "zz"):
             raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
 
-        qss.superstaq_backend.validate_target(self.name())
+        qss.validation.validate_target(self.name())
         metadata_of_circuits = _get_metadata_of_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
@@ -421,7 +333,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         if not self.name().startswith("cq_"):
             raise ValueError(f"{self.name()} is not a valid CQ target.")
 
-        qss.superstaq_backend.validate_target(self.name())
+        qss.validation.validate_target(self.name())
         metadata_of_circuits = _get_metadata_of_circuits(circuits)
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
