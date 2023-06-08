@@ -485,5 +485,5 @@ class SuperstaQProvider(
         return self._client.target_info(target)["target_info"]
 
     def get_targets(self) -> Dict[str, Any]:
-        """Gets a list of available targets."""
+        """Gets list of available targets."""
         return self._client.get_targets()["superstaq_targets"]
