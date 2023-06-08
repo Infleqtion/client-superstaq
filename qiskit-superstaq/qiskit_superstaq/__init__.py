@@ -13,6 +13,7 @@ from .serialization import deserialize_circuits, serialize_circuits
 from .superstaq_backend import SuperstaQBackend
 from .superstaq_job import SuperstaQJob
 from .superstaq_provider import SuperstaQProvider
+from .validation import validate_integer_param, validate_qiskit_circuits, validate_target
 
 __all__ = [
     "active_qubit_indices",
@@ -30,6 +31,9 @@ __all__ = [
     "SuperstaQBackend",
     "SuperstaQJob",
     "SuperstaQProvider",
+    "validate_integer_param",
+    "validate_qiskit_circuits",
+    "validate_target",
     "validation",
     "ZZSwapGate",
     "__version__",
