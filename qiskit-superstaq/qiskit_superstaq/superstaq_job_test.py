@@ -77,11 +77,11 @@ def test_result(backend: qss.SuperstaQBackend) -> None:
 
 def test_check_if_stopped(backend: qss.SuperstaQBackend) -> None:
 
-    job = qss.SuperstaQJob(backend=backend, job_id="123abc")
-
-    job._overall_status = "Canceled"
-    with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match="Canceled"):
-        job._check_if_stopped()
+    for status in ("Canceled", "Error"):
+        job = qss.SuperstaQJob(backend=backend, job_id="123abc")
+        job._overall_status = status
+        with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match=status):
+            job._check_if_stopped()
 
 
 def test_refresh_job(backend: qss.SuperstaQBackend) -> None:
@@ -113,8 +113,7 @@ def test_refresh_job(backend: qss.SuperstaQBackend) -> None:
         "general_superstaq.superstaq_client._SuperstaQClient.get_job",
         return_value=mock_response("Error"),
     ):
-        with pytest.raises(qiskit.providers.JobError, match="API returned error"):
-            job._refresh_job()
+        job._refresh_job()
         assert job._overall_status == "Error"
 
     job = qss.SuperstaQJob(backend=backend, job_id="654cba")
