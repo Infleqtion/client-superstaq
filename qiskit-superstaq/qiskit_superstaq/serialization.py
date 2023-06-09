@@ -1,4 +1,5 @@
 import io
+import re
 import warnings
 from typing import Dict, List, Set, Tuple, Union
 
@@ -42,8 +43,7 @@ def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumC
         if inst.name in unique_insts_by_name:
             index = 0
             for other in unique_insts_by_name[inst.name]:
-                # compare qasm strings first because equality checking is very slow
-                if inst.qasm() == other.qasm() and inst == other:
+                if inst == other:
                     break
                 index += 1
 
@@ -76,23 +76,48 @@ def serialize_circuits(circuits: Union[qiskit.QuantumCircuit, List[qiskit.Quantu
 
     buf = io.BytesIO()
     qiskit.qpy.dump(circuits, buf)
-    return gss.serialization._bytes_to_str(buf.getvalue())
+    return gss.serialization.bytes_to_str(buf.getvalue())
 
 
 def deserialize_circuits(serialized_circuits: str) -> List[qiskit.QuantumCircuit]:
-    """Deserialize serialized QuantumCircuit(s)
+    """Deserialize serialized `qiskit.QuantumCircuit`(s).
 
     Args:
-        serialized_circuits: str generated via qss.serialization.serialize_circuit()
+        serialized_circuits: String generated via `qss.serialization.serialize_circuit()`.
 
     Returns:
-        a list of QuantumCircuits
-    """
-    buf = io.BytesIO(gss.serialization._str_to_bytes(serialized_circuits))
+        A list containing the deserialized circuits.
 
-    with warnings.catch_warnings(record=False):
-        warnings.filterwarnings("ignore", "The qiskit version", UserWarning, "qiskit")
-        circuits = qiskit.qpy.load(buf)
+    Raises:
+        ValueError: If `serialized_circuits` can't be deserialized.
+    """
+    buf = io.BytesIO(gss.serialization.str_to_bytes(serialized_circuits))
+
+    try:
+        with warnings.catch_warnings(record=False):
+            warnings.filterwarnings("ignore", "The qiskit version", UserWarning, "qiskit")
+            circuits = qiskit.qpy.load(buf)
+
+    except Exception as e:
+        qpy_version_match = re.match(b"QISKIT(.)", buf.getvalue())
+        circuits_qpy_version = ord(qpy_version_match.group(1)) if qpy_version_match else 0
+        if circuits_qpy_version > qiskit.qpy.common.QPY_VERSION:
+            # If the circuit was serialized with a newer version of QPY, that's probably what caused
+            # this error. In this case we should just tell the user to update.
+            raise ValueError(
+                "Circuits failed to deserialize. This is likely because your version of "
+                f"qiskit-terra ({qiskit.__version__}) is out of date. Consider updating it."
+            )
+        else:
+            # Otherwise there is probably a more complicated issue.
+            raise ValueError(
+                "Circuits failed to deserialize. Please contact info@super.tech or file a "
+                "report at https://github.com/SupertechLabs/client-superstaq/issues containing "
+                "the following information (as well as any other relevant context):\n\n"
+                f"qiskit-superstaq version: {qss.__version__}\n"
+                f"qiskit-terra version: {qiskit.__version__}\n"
+                f"error: {e!r}"
+            )
 
     for circuit in circuits:
         for pc, (inst, qargs, cargs) in enumerate(circuit._data):
