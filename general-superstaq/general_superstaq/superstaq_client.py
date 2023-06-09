@@ -402,7 +402,7 @@ class _SuperstaQClient:
             else:
                 message = str(response.text)
             raise gss.SuperstaQException(
-                f"Non-retriable error making request to SuperstaQ API, {message}",
+                f"Non-retriable error making request to SuperstaQ API, {message}. If you would like to contact a member of our team, email us at superstaq@infleqtion.com or join our Slack workspace with this URL: https://tinyurl.com/y7t69z9f.",
                 response.status_code,
             )
 
