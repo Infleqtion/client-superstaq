@@ -195,7 +195,7 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
 
         seq = _sequencer_from_state(state)
 
-    if num_equivalent_circuits:
+    if num_equivalent_circuits is not None:
         compiled_circuits = [
             compiled_circuits[i : i + num_equivalent_circuits]
             for i in range(0, len(compiled_circuits), num_equivalent_circuits)
