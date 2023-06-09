@@ -66,4 +66,4 @@ For more information on getting started, check out [our documentation site](http
 SuperstaQ is licensed under the Apache License 2.0. See our [LICENSE](https://github.com/SupertechLabs/superstaq-client/blob/main/LICENSE) file for more details.
 
 # Contact Us
-If you'd like to reach out to a member of our team, please email us at superstaq@infleqtion.com, where we can also add you to our Slack workspace.
+If you'd like to reach out to a member of our team, please email us at superstaq@infleqtion.com or join our `Slack workspace <https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw>`_.
