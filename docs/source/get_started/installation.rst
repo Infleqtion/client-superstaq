@@ -1,6 +1,6 @@
 Installation Guide
 ==================
-Superstaq can be easily installed for users from PyPI in your terminal. Please note that Python version 3.7 or higher is required.
+You can install Superstaq from PyPI in your terminal. Please note that Python version 3.7 or higher is required.
 
 To install ``qiskit-superstaq``: 
 
