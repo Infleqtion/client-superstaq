@@ -74,7 +74,7 @@ class CompilerOutput:
         """Initializes class attributes.
 
         Args:
-            circuits: A list of at most 2 dimensions containing cirq circuit objects.
+            circuits: A list (of at most 2 dimensions) containing `cirq.Circuit` objects.
             final_logical_to_physicals: Post-compilation mapping of logical qubits to physical
                 qubits.
             pulse_sequences: Qiskit pulse schedules for the compiled circuit(s).
