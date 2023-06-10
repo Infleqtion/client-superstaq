@@ -78,7 +78,7 @@ class CompilerOutput:
             final_logical_to_physicals: Post-compilation mapping of logical qubits to physical
                 qubits.
             pulse_sequences: Qiskit pulse schedules for the compiled circuit(s).
-            seq: Qtrl pulse sequence, if qtrl is avaialable locally.
+            seq: Qtrl pulse sequence, if qtrl is available locally.
             jaqal_programs: The Jaqal program (resp. programs) as a string (resp. list of
                 strings).
             pulse_lists: Either 3 or 4 dimensional lists of pulse cycles.
