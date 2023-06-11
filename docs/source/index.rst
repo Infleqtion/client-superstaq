@@ -32,7 +32,7 @@ Check out some of our demos to see how SuperstaQ can help you:
    <br>
 
 
-Learn more about SuperstaQ `here <https://www.super.tech/about-superstaq/>`_.
+Learn more about SuperstaQ `here <https://www.infleqtion.com/superstaq>`_. To contact a member of our team, email us at **superstaq@infleqtion.com** or join our `Slack workspace <https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw>`_.
 
 
 .. toctree::
