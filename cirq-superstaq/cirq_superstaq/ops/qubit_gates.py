@@ -750,7 +750,7 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
         )
 
     def __str__(self) -> str:
-        return f"RGate({self.phase_exponent}π, {self.exponent}π) x {self.num_copies}"
+        return f"RGate({self.exponent}π, {self.phase_exponent}π) x {self.num_copies}"
 
     def __repr__(self) -> str:
         return f"css.ParallelRGate({self.theta}, {self.phi}, {self.num_copies})"
