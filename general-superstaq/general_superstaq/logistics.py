@@ -27,7 +27,7 @@ def read_json_tsp(json_dict: gss.TSPJson) -> TSPOutput:
     Args:
         json_dict: A JSON dictionary matching the format returned by the /tsp endpoint.
     Returns:
-        a TSPOutput object with the optimal route.
+        A `TSPOutput` object with the optimal route.
     """
     route = json_dict["route"]
     route_list_numbers = json_dict["route_list_numbers"]
@@ -53,7 +53,7 @@ def read_json_warehouse(json_dict: gss.WareHouseJson) -> WarehouseOutput:
     Args:
         json_dict: A JSON dictionary matching the format returned by the /warehouse endpoint.
     Returns:
-        a WarehouseOutput object with the optimal assignment.
+        A `WarehouseOutput` object with the optimal assignment.
     """
     warehouse_to_destination = json_dict["warehouse_to_destination"]
     total_distance = json_dict["total_distance"]
@@ -84,13 +84,13 @@ class Logistics:
         that can pinpoint a location as a Google Maps search.
         It is assumed that the first string in the list is
         the starting and ending point for the TSP tour.
-        The function returns a TSPOutput object.
+        The function returns a `TSPOutput` object.
         Args:
             locs: List of strings where each string represents
             a location needed to be visited on tour.
             solver: A string indicating which solver to use ("rqaoa" or "anneal").
         Returns:
-            A TSPOutput object with the following attributes:
+            A `TSPOutput` object with the following attributes:
             .route: The optimal TSP tour as a list of strings in order.
             .route_list_numbers: The indicies in locs of the optimal tour.
             .total_distance: The tour's total distance.
@@ -115,7 +115,7 @@ class Logistics:
             customers: A list of customer locations.
             solver: A string indicating which solver to use ("rqaoa" or "anneal").
         Returns:
-            A WarehouseOutput object with the following attributes:
+            A `WarehouseOutput` object with the following attributes:
             .warehouse_to_destination: The optimal warehouse-customer pairings in List(Tuple) form.
             .total_distance: The total distance among all warehouse-customer pairings.
             .map_link: A link to google maps that shows the warehouse-customer pairings.
