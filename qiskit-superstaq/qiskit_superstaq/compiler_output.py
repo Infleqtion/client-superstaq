@@ -60,7 +60,7 @@ def measured_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
 
 
 class CompilerOutput:
-    """Class that stores the results of compiling circuits."""
+    """A class that stores the results of compiled circuits."""
 
     def __init__(
         self,
@@ -78,7 +78,7 @@ class CompilerOutput:
         """Constructs a `CompilerOutput` object.
 
         Args:
-            circuits: Compiled circuits.
+            circuits: Compiled circuit or list of compiled circuits.
             final_logical_to_physics: Dictionary or list of dictionaries specifying mapping from
                 logical to physical qubits.
             pulse_sequences: `qiskit.pulse.Schedule` or list thereof specifying the pulse
@@ -158,7 +158,7 @@ def read_json_aqt(
     circuits_is_list: bool,
     num_eca_circuits: int = 0,
 ) -> CompilerOutput:
-    """Reads out returned JSON from SuperstaQ API's AQT compilation endpoint.
+    """Reads out returned JSON from Superstaq API's AQT compilation endpoint.
 
     Args:
         json_dict: A JSON dictionary matching the format returned by /aqt_compile endpoint
@@ -257,7 +257,7 @@ def read_json_qscout(
     metadata_of_circuits: List[Dict[Any, Any]],
     circuits_is_list: bool,
 ) -> CompilerOutput:
-    """Reads out returned JSON from SuperstaQ API's QSCOUT compilation endpoint.
+    """Reads out returned JSON from Superstaq API's QSCOUT compilation endpoint.
 
     Args:
         json_dict: A JSON dictionary matching the format returned by /qscout_compile endpoint.
@@ -303,7 +303,7 @@ def read_json_qscout(
 def read_json_only_circuits(
     json_dict: Dict[str, str], metadata_of_circuits: List[Dict[Any, Any]], circuits_is_list: bool
 ) -> CompilerOutput:
-    """Reads JSON returned from SuperstaQ API's CQ compilation endpoint.
+    """Reads JSON returned from Superstaq API's CQ compilation endpoint.
 
     Args:
         json_dict: A JSON dictionary matching the format returned by /cq_compile endpoint.
