@@ -155,10 +155,10 @@ class UserConfig:
         return self._client.aqt_upload_configs({"pulses": pulses_yaml, "variables": variables_yaml})
 
     def aqt_get_configs(self) -> Dict[str, str]:
-        """Calls private client to get the configurations for AQT.
+        """Retrieves the raw AQT config files that had previously been uploaded to Superstaq.
 
         Returns:
-            The configurations as a Dictionary
+            A dictionary containing all of the user's configs (as YAML strings), indexed by the config names (e.g. "pulses", "variables").
         """
         return self._client.aqt_get_configs()
 
@@ -168,9 +168,9 @@ class UserConfig:
         variables_file_path: Optional[str] = None,
         overwrite: bool = False,
     ) -> Optional[Tuple[Dict[str, Any], Dict[str, Any]]]:
-        """Downloads AQT configs that had previously been uploaded to SuperstaQ.
+        """Downloads AQT configs that had previously been uploaded to Superstaq.
 
-        Optionally saves configs to disk. Reading AQT configurations requires the PyYAML package.
+        Optionally saves configs to disk as YAML configuration files. Otherwise, the PyYAML package is required to read the downloaded configs.
 
         Args:
             pulses_file_path (optional): Where to write the pulse configurations.
@@ -178,8 +178,8 @@ class UserConfig:
             overwrite: Whether or not to overwrite existing files.
 
         Returns (if file paths are not provided):
-            A tuple of pulses (a dictionary containing Pulse configuration data) and variables (a
-            dictionary containing Variables configuration data).
+            A tuple of pulses (a dictionary containing pulse configuration data) and variables (a
+            dictionary containing calibration variables).
 
         Raises:
             ValueError: If either file path already exists and overwrite is not True.
