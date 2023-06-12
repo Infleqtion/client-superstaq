@@ -9,14 +9,8 @@ import qiskit
 class AceCR(qiskit.circuit.Gate):
     """Active Cancellation Echoed Cross Resonance gate, supporting polarity switches and sandwiches.
 
-    The typical AceCR in literature is a positive half-CR, then X on "Z side", then negative
-    half-CR ("Z side" and "X side" refer to the two sides of the underlying ZX interactions).
-
-    Args:
-        rads: Angle of rotation for CR gate (i.e., twice the angle for each echoed half-CR).
-        sandwich_rx_rads: Angle of rotation for an rx gate applied to the "X side" simultaneously
-            with the X gate on the "Z side".
-        label: An optional label for the constructed Gate.
+    The typical AceCR in the literature is a positive half-CR, then X on "Z side", then negative
+    half-CR (where "Z side" and "X side" refer to the two sides of the underlying ZX interactions).
     """
 
     def __init__(
@@ -25,6 +19,17 @@ class AceCR(qiskit.circuit.Gate):
         sandwich_rx_rads: float = 0,
         label: Optional[str] = None,
     ) -> None:
+        """Initializes an AceCR gate.
+
+        Args:
+            rads: Angle of rotation for CR gate (i.e., twice the angle for each echoed half-CR).
+            sandwich_rx_rads: Angle of rotation for an rx gate applied to the "X side"
+                simultaneously with the X gate on the "Z side".
+            label: An optional label for the constructed Gate. Defaults to None.
+
+        Raises:
+            ValueError: If the polarity of `rads` is not '+-' or '-+'.
+        """
         if rads == "+-":
             rads = np.pi / 2
         elif rads == "-+":
@@ -106,9 +111,11 @@ class ZZSwapGate(qiskit.circuit.Gate):
     """
 
     def __init__(self, theta: float, label: Optional[str] = None) -> None:
-        """Args:
-        theta: ZZ-interaction angle in radians
-        label: an optional label for the constructed Gate
+        """Initalizes a ZZ-SWAP gate.
+
+        Args:
+            theta: The ZZ-interaction angle in radians.
+            label: An optional label for the constructed Gate. Defaults to None.
         """
         super().__init__("zzswap", 2, [theta], label=label)
 
@@ -152,7 +159,11 @@ class StrippedCZGate(qiskit.circuit.Gate):
     """
 
     def __init__(self, rz_rads: float) -> None:
-        """Args: rz_rads: RZ-rotation angle in radians"""
+        """Initializes a Stripped CZ gate.
+
+        Args:
+            rz_rads: The RZ-rotation angle in radians.
+        """
         super().__init__("stripped_cz", 2, [rz_rads])
 
     def inverse(self) -> "StrippedCZGate":
@@ -185,12 +196,17 @@ class StrippedCZGate(qiskit.circuit.Gate):
 
 
 class ParallelGates(qiskit.circuit.Gate):
-    """A single Gate combining a collection of concurrent Gate(s) acting on different qubits"""
+    """A single Gate combining a collection of concurrent Gate(s) acting on different qubits."""
 
     def __init__(self, *component_gates: qiskit.circuit.Gate, label: Optional[str] = None) -> None:
-        """Args:
-        component_gates: Gate(s) to be collected into single gate
-        label: an optional label for the constructed Gate
+        """Initializes the `ParallelGates` class.
+
+        Args:
+            component_gates: Gate(s) to be collected into single gate.
+            label: An optional label for the constructed Gate. Defaults to None.
+
+        Raises:
+            ValueError: If `component_gates` are not `qiskit.circuit.Gate` instances.
         """
         self.component_gates: Tuple[qiskit.circuit.Gate, ...] = ()
         num_qubits = 0
@@ -229,8 +245,15 @@ class ParallelGates(qiskit.circuit.Gate):
         return f"ParallelGates({args})"
 
 
-class iXGate(qiskit.circuit.Gate):  # pylint: disable=missing-class-docstring
+class iXGate(qiskit.circuit.Gate):
+    """_summary_"""
+
     def __init__(self, label: Optional[str] = None) -> None:
+        """Initializes an iXGate.
+
+        Args:
+            label: An optional label for the constructed Gate. Defaults to None.
+        """
         super().__init__("ix", 1, [], label=label)
 
     def _define(self) -> None:
@@ -263,8 +286,15 @@ class iXGate(qiskit.circuit.Gate):  # pylint: disable=missing-class-docstring
         return f"iXGate(label={self.label})"
 
 
-class iXdgGate(qiskit.circuit.Gate):  # pylint: disable=missing-class-docstring
+class iXdgGate(qiskit.circuit.Gate):
+    """_summary_"""
+
     def __init__(self, label: Optional[str] = None) -> None:
+        """Initializes an iXdgGate.
+
+        Args:
+            label: An optional label for the constructed Gate. Defaults to None.
+        """
         super().__init__("ixdg", 1, [], label=label)
 
     def _define(self) -> None:
@@ -301,6 +331,12 @@ class iCCXGate(qiskit.circuit.ControlledGate):  # pylint: disable=missing-class-
     def __init__(
         self, label: Optional[str] = None, ctrl_state: Optional[Union[str, int]] = None
     ) -> None:
+        """Initializes an iCCXGate.
+
+        Args:
+            label: An optional label for the constructed Gate. Defaults to None.
+            ctrl_state: _description_. Defaults to None.
+        """
         super().__init__(
             "iccx", 3, [], label, num_ctrl_qubits=2, ctrl_state=ctrl_state, base_gate=iXGate()
         )
@@ -324,10 +360,18 @@ class iCCXGate(qiskit.circuit.ControlledGate):  # pylint: disable=missing-class-
         return f"iCCXGate(label={self.label}, ctrl_state={self.ctrl_state})"
 
 
-class iCCXdgGate(qiskit.circuit.ControlledGate):  # pylint: disable=missing-class-docstring
+class iCCXdgGate(qiskit.circuit.ControlledGate):
+    """_summary_"""
+
     def __init__(
         self, label: Optional[str] = None, ctrl_state: Optional[Union[str, int]] = None
     ) -> None:
+        """Initializes an iCCXdgGate.
+
+        Args:
+            label: An optional label for the constructed Gate. Defaults to None.
+            ctrl_state: _description_. Defaults to None.
+        """
         super().__init__(
             "iccxdg", 3, [], label, num_ctrl_qubits=2, ctrl_state=ctrl_state, base_gate=iXdgGate()
         )
@@ -351,8 +395,15 @@ class iCCXdgGate(qiskit.circuit.ControlledGate):  # pylint: disable=missing-clas
         return f"iCCXdgGate(label={self.label}, ctrl_state={self.ctrl_state})"
 
 
-class AQTiCCXGate(iCCXGate):  # pylint: disable=missing-class-docstring
+class AQTiCCXGate(iCCXGate):
+    """A subclass of the iCCXGate for AQT where the control state is "00"."""
+
     def __init__(self, label: Optional[str] = None) -> None:
+        """Initializes an AQTiCCXGate.
+
+        Args:
+            label: An optional label for the constructed Gate. Defaults to None.
+        """
         super().__init__(label=label, ctrl_state="00")
 
 
@@ -377,8 +428,8 @@ _custom_gate_resolvers: Dict[str, Callable[..., qiskit.circuit.Gate]] = {
 
 
 def custom_resolver(gate: qiskit.circuit.Instruction) -> Optional[qiskit.circuit.Gate]:
-    """Recover a custom gate type from a generic qiskit.circuit.Gate. Resolution is done using
-    gate.definition.name rather than gate.name, as the former is set by all qiskit-superstaq
+    """Recover a custom gate type from a generic `qiskit.circuit.Gate`. Resolution is done using
+    `gate.definition.name` rather than `gate.name`, as the former is set by all qiskit-superstaq
     custom gates and the latter may be modified by calls such as QuantumCircuit.qasm()
     """
     if gate.definition and gate.definition.name == "parallel_gates":
