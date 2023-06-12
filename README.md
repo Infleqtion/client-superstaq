@@ -1,5 +1,7 @@
-<img src="./docs/source/_static/logos/Superstaq_color.png#gh-light-mode-only">
-<img src="./docs/source/_static/logos/Superstaq_white.png#gh-dark-mode-only">
+<p align="center">
+  <img src="./docs/source/_static/logos/Superstaq_color.png#gh-light-mode-only" style="width: 25%; padding-left: 4%; padding-right: 4%">
+  <img src="./docs/source/_static/logos/Superstaq_white.png#gh-dark-mode-only" style="width: 25%; padding-left: 5%; padding-right: 5%">
+</p>
 
 # Welcome to SuperstaQ!
 This repository is the home of Super.tech's open source work, which includes:
