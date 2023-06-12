@@ -158,7 +158,8 @@ class UserConfig:
         """Retrieves the raw AQT config files that had previously been uploaded to Superstaq.
 
         Returns:
-            A dictionary containing all of the user's configs (as YAML strings), indexed by the config names (e.g. "pulses", "variables").
+            A dictionary containing all of the user's configs (as YAML strings), indexed by the
+            config names (e.g. "pulses", "variables").
         """
         return self._client.aqt_get_configs()
 
@@ -170,7 +171,8 @@ class UserConfig:
     ) -> Optional[Tuple[Dict[str, Any], Dict[str, Any]]]:
         """Downloads AQT configs that had previously been uploaded to Superstaq.
 
-        Optionally saves configs to disk as YAML configuration files. Otherwise, the PyYAML package is required to read the downloaded configs.
+        Optionally saves configs to disk as YAML configuration files. Otherwise, the PyYAML package
+        is required to read the downloaded configs.
 
         Args:
             pulses_file_path (optional): Where to write the pulse configurations.
