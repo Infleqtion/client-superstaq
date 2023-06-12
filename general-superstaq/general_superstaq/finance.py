@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class MinVolOutput:
-    """A class to store data from the Minimized Volatility endpoint"""
+    """A class to store data from the Minimized Volatility endpoint."""
 
     best_portfolio: List[str]
     best_ret: float
@@ -24,9 +24,9 @@ class MinVolOutput:
 
 
 def read_json_minvol(json_dict: gss.MinVolJson) -> MinVolOutput:
-    """Reads out returned JSON from Superstaq API's minvol endpoint.
+    """Reads out returned JSON from Superstaq API's /minvol endpoint.
     Args:
-        json_dict: a JSON dictionary matching the format returned by /minvol endpoint
+        json_dict: a JSON dictionary matching the format returned by the /minvol endpoint.
     Returns:
         a MinVolOutput object with the optimal portfolio.
     """
@@ -39,7 +39,7 @@ def read_json_minvol(json_dict: gss.MinVolJson) -> MinVolOutput:
 
 @dataclass
 class MaxSharpeOutput:
-    """A class to store data from the Max Sharpe Ratio endpoint"""
+    """A class to store data from the Max Sharpe Ratio endpoint."""
 
     best_portfolio: List[str]
     best_ret: float
@@ -49,9 +49,9 @@ class MaxSharpeOutput:
 
 
 def read_json_maxsharpe(json_dict: gss.MaxSharpeJson) -> MaxSharpeOutput:
-    """Reads out returned JSON from Superstaq API's maxsharpe endpoint.
+    """Reads out returned JSON from Superstaq API's /maxsharpe endpoint.
     Args:
-        json_dict: a JSON dictionary matching the format returned by /maxsharpe endpoint
+        json_dict: a JSON dictionary matching the format returned by the /maxsharpe endpoint.
     Returns:
         a MaxSharpeOutput object with the optimal portfolio.
     """
