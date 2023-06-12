@@ -164,7 +164,7 @@ class SuperstaQProvider(
         """Returns a Superstaq backend.
 
         Args:
-            target: String containing the name of a target backend.
+            target: A string containing the name of a target backend.
 
         Returns:
             A Superstaq backend.
@@ -190,7 +190,7 @@ class SuperstaQProvider(
 
         Args:
             circuits: Qiskit QuantumCircuit(s).
-            target: String containing the name of a target backend.
+            target: A string containing the name of a target backend.
 
         Returns:
             ResourceEstimate(s) containing resource costs (after compilation) for running circuit(s)
@@ -227,7 +227,7 @@ class SuperstaQProvider(
 
         Args:
             circuits: The circuit(s) to compile.
-            target: String containing the name of a target AQT backend.
+            target: A string containing the name of a target AQT backend.
             atol: An optional tolerance to use for approximate gate synthesis.
             kwargs: Other desired aqt_compile options.
 
@@ -282,7 +282,7 @@ class SuperstaQProvider(
             num_equivalent_circuits: Number of logically equivalent random circuits to generate for
                 each input circuit.
             random_seed: Optional seed for circuit randomizer.
-            target: String containing the name of a target AQT backend.
+            target: A string containing the name of a target AQT backend.
             atol: An optional tolerance to use for approximate gate synthesis.
             kwargs: Other desired aqt_compile_eca options.
 
@@ -333,7 +333,7 @@ class SuperstaQProvider(
         """Returns pulse schedule(s) for the given circuit(s) and target.
         Args:
             circuits: Qiskit QuantumCircuit(s).
-            target: String containing the name of a target IBM backend.
+            target: A tring containing the name of a target IBM backend.
             kwargs: Other desired ibmq_compile options.
 
         Returns:
@@ -405,7 +405,7 @@ class SuperstaQProvider(
 
         Args:
             circuits: The circuit(s) to compile.
-            target: String containing the name of a target backend.
+            target: A string containing the name of a target backend.
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
             base_entangling_gate: The base entangling gate to use (either "xx" or "zz").
             kwargs: Other desired qscout_compile options.
@@ -457,7 +457,7 @@ class SuperstaQProvider(
 
         Args:
             circuits: Qiskit QuantumCircuit(s).
-            target: String containing the name of a target backend.
+            target: A string containing the name of a target backend.
             kwargs: Other desired cq_compile options.
 
         Returns:
@@ -510,5 +510,12 @@ class SuperstaQProvider(
         return circuits, fidelities
 
     def target_info(self, target: str) -> Dict[str, Any]:
-        """Returns information about device specified by `target`."""
+        """Returns information about device specified by `target`.
+
+        Args:
+            target: A string containing the name of a target backend.
+
+        Returns:
+            Information about a target backend.
+        """
         return self._client.target_info(target)["target_info"]
