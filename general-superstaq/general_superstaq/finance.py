@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class MinVolOutput:
-    """A class to store data from the Minimized Volatility endpoint"""
+    """A class to store data returned from the Minimized Volatility endpoint."""
 
     best_portfolio: List[str]
     best_ret: float
@@ -24,11 +24,11 @@ class MinVolOutput:
 
 
 def read_json_minvol(json_dict: gss.MinVolJson) -> MinVolOutput:
-    """Reads out returned JSON from SuperstaQ API's minvol endpoint.
+    """Reads out returned JSON from Superstaq API's /minvol endpoint.
     Args:
-        json_dict: a JSON dictionary matching the format returned by /minvol endpoint
+        json_dict: A JSON dictionary matching the format returned by the /minvol endpoint.
     Returns:
-        a MinVolOutput object with the optimal portfolio.
+        A `MinVolOutput` object with the optimal portfolio.
     """
     best_portfolio = json_dict["best_portfolio"]
     best_ret = json_dict["best_ret"]
@@ -39,7 +39,7 @@ def read_json_minvol(json_dict: gss.MinVolJson) -> MinVolOutput:
 
 @dataclass
 class MaxSharpeOutput:
-    """A class to store data from the Max Sharpe Ratio endpoint"""
+    """A class to store data returned from the Max Sharpe Ratio endpoint."""
 
     best_portfolio: List[str]
     best_ret: float
@@ -49,11 +49,11 @@ class MaxSharpeOutput:
 
 
 def read_json_maxsharpe(json_dict: gss.MaxSharpeJson) -> MaxSharpeOutput:
-    """Reads out returned JSON from SuperstaQ API's maxsharpe endpoint.
+    """Reads out returned JSON from Superstaq API's /maxsharpe endpoint.
     Args:
-        json_dict: a JSON dictionary matching the format returned by /maxsharpe endpoint
+        json_dict: A JSON dictionary matching the format returned by the /maxsharpe endpoint.
     Returns:
-        a MaxSharpeOutput object with the optimal portfolio.
+        A `MaxSharpeOutput` object with the optimal portfolio.
     """
     best_portfolio = json_dict["best_portfolio"]
     best_ret = json_dict["best_ret"]
@@ -67,6 +67,11 @@ class Finance:
     """Overarching class for Sharpe Ratio and Minimized Volatility finance applications."""
 
     def __init__(self, client: superstaq_client._SuperstaQClient):
+        """Constructor for the Finance class.
+
+        Args:
+            client: A client to interface with Superstaq.
+        """
         self._client = client
 
     def submit_qubo(
@@ -79,7 +84,7 @@ class Finance:
         """Submits the given QUBO to the target backend. The result of the optimization
         is returned to the user as a numpy.recarray.
         Args:
-            qubo: Qubovert QUBO object representing the optimization problem.
+            qubo: A `qubovert.QUBO` object representing the optimization problem.
             target: A string indicating which target to use.
             repetitions: Number of shots to execute on the device.
             method: An optional parameter for qubo.
@@ -105,7 +110,7 @@ class Finance:
             for price data.
             solver: Specifies which solver to use. Defaults to a simulated annealer.
         Returns:
-            MinVolOutput object, with the following attributes:
+            A `MinVolOutput` object, with the following attributes:
             .best_portfolio: The assets in the optimal portfolio.
             .best_ret: The return of the optimal portfolio.
             .best_std_dev: The volatility of the optimal portfolio.
@@ -156,7 +161,7 @@ class Finance:
             for price data.
             solver: Specifies which solver to use. Defaults to a simulated annealer.
         Return:
-            A MaxSharpeOutput object with the following attributes:
+            A `MaxSharpeOutput` object with the following attributes:
             .best_portfolio: The assets in the optimal portfolio.
             .best_ret: The return of the optimal portfolio.
             .best_std_dev: The volatility of the optimal portfolio.
