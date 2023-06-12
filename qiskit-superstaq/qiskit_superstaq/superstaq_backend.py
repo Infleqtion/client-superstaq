@@ -21,7 +21,7 @@ import qiskit
 import qiskit_superstaq as qss
 
 
-def validate_target(target: str) -> None:  
+def validate_target(target: str) -> None:
     """Checks that a device name contains a valid format, vendor prefix, and device type.
 
     Args:
@@ -29,7 +29,7 @@ def validate_target(target: str) -> None:
 
     Raises:
         ValueError: If `target` has invalid format, vendor prefix, or device type.
-    
+
     """
     vendor_prefixes = [
         "aqt",
@@ -70,13 +70,13 @@ def validate_target(target: str) -> None:
         )
 
 
-class SuperstaQBackend(qiskit.providers.BackendV1):  
+class SuperstaQBackend(qiskit.providers.BackendV1):
     """This class represents a Superstaq backend.
-    
+
     Args:
         provider: Provider for a Superstaq backend.
         target: String containing the name of a target backend.
-    
+
     """
 
     def __init__(self, provider: qss.SuperstaQProvider, target: str) -> None:
@@ -132,10 +132,10 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             shots: The number of execution shots (times to run the circuit).
             method:  Optional execution method (e.g. 'dry-run', 'statevector', etc.).
             options: Optional dictionary of optimization and execution parameters.
-        
+
         Returns:
             A Superstaq job storing ID and other related info.
-        
+
         """
 
         if isinstance(circuits, qiskit.QuantumCircuit):
@@ -165,7 +165,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
 
     def target_info(self) -> Dict[str, Any]:
         """Returns Superstaq backend's target information.
-        
+
         Returns:
             A dictionary of target information.
         """
