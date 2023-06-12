@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 
-import cirq_superstaq
+import cirq_superstaq as css
 import locust.env
 import requests
 
