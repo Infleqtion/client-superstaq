@@ -4,7 +4,7 @@ from typing import Dict, Optional
 
 @dataclass
 class ResourceEstimate:
-    """A class to store data from a resource_estimate request."""
+    """A class to store data returned from a resource_estimate request."""
 
     num_single_qubit_gates: Optional[int] = None
     num_two_qubit_gates: Optional[int] = None
