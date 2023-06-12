@@ -88,7 +88,7 @@ class BitCode(Benchmark):
 
     def score(self, counts: Dict[str, float]) -> float:
         """Compute benchmark score.
-        
+
         Device performance is given by the Hellinger fidelity between the experimental results and
         the ideal distribution. The ideal is known based on the `bit_state` parameter.
 
