@@ -88,7 +88,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             "max_shots": -1,
             "coupling_map": None,
         }
-        """Initialize a SuperstaQBackend.
+        """Initializes a SuperstaQBackend.
         
         Args:
             provider: Provider for a Superstaq backend.
