@@ -10,6 +10,7 @@ class SuperstaQException(Exception):
 
     Attributes:
         status_code: A http status code, if coming from an http response with a failing status.
+        message: A message corresponding to the http response status code.
     """
 
     def __init__(self, message: str, status_code: Optional[int] = None):
