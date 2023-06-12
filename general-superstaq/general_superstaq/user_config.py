@@ -29,10 +29,10 @@ class UserConfig:
         """Send acceptance of terms of use at https://superstaq.super.tech/terms_of_use.
 
         Args:
-            user_input: If "YES", server will mark user as having accepted TOU.
+            user_input: If "YES", server will mark user as having accepted terms of use.
 
         Returns:
-            String message indicated if user has been marked as having accepted TOU.
+            String message indicated if user has been marked as having accepted terms of use.
         """
         return self._client._accept_terms_of_use(user_input)
 
@@ -115,8 +115,8 @@ class UserConfig:
         Arguments can be either file paths (in .yaml format) or qtrl Manager instances.
 
         Args:
-            pulses: PulseManager or file path for Pulses calibration data.
-            variables: VariableManager or file path for Variables calibration data.
+            pulses: PulseManager or file path for pulse configuration.
+            variables: VariableManager or file path for variable configuration.
 
         Returns:
             A status of the update (whether or not it failed).
@@ -175,8 +175,8 @@ class UserConfig:
         is required to read the downloaded configs.
 
         Args:
-            pulses_file_path (optional): Where to write the pulse configurations.
-            variables_file_path (optional): Where to write the variables configurations.
+            pulses_file_path (optional): Where to write the pulse configuration.
+            variables_file_path (optional): Where to write the variable configuration.
             overwrite: Whether or not to overwrite existing files.
 
         Returns (if file paths are not provided):
