@@ -29,7 +29,6 @@ def validate_target(target: str) -> None:
 
     Raises:
         ValueError: If `target` has invalid format, vendor prefix, or device type.
-
     """
     vendor_prefixes = [
         "aqt",
@@ -76,7 +75,6 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
     Args:
         provider: Provider for a Superstaq backend.
         target: String containing the name of a target backend.
-
     """
 
     def __init__(self, provider: qss.SuperstaQProvider, target: str) -> None:
@@ -135,7 +133,6 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
 
         Returns:
             A Superstaq job storing ID and other related info.
-
         """
 
         if isinstance(circuits, qiskit.QuantumCircuit):
