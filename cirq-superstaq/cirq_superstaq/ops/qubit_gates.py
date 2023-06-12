@@ -390,8 +390,7 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
 
 
 def barrier(*qubits: cirq.Qid) -> cirq.Operation:
-    """
-    Cirq equivalent of https://qiskit.org/documentation/stubs/qiskit.circuit.library.Barrier.html
+    """Cirq equivalent of https://qiskit.org/documentation/stubs/qiskit.circuit.library.Barrier.html
     See also https://github.com/quantumlib/Cirq/issues/2642
 
     Args:
@@ -617,16 +616,16 @@ class RGate(cirq.PhasedXPowGate):
 
     @property
     def phi(self) -> cirq.TParamVal:
-        """
+        """`phi` property of `RGate`
+
         Returns:
             `phi` value of `RGate`
-
         """
         return self.phase_exponent * _pi(self.phase_exponent)
 
     @property
     def theta(self) -> cirq.TParamVal:
-        """
+        """`theta` property of `RGate`
 
         Returns:
             `theta` value of `RGate`
@@ -689,41 +688,37 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
 
     @property
     def phase_exponent(self) -> cirq.TParamVal:
-        """
+        """`phase_exponent` property of `ParallelRGate`
 
         Returns:
             `phase_exponent` value of `ParallelRGate`
-
         """
         return self.sub_gate.phase_exponent
 
     @property
     def exponent(self) -> cirq.TParamVal:
-        """
+        """`exponent` property of `ParallelRGate`
 
         Returns:
             `exponent` value of `ParallelRGate`
-
         """
         return self.sub_gate.exponent
 
     @property
     def phi(self) -> cirq.TParamVal:
-        """
+        """`phi` property of `ParallelRGate`
 
         Returns:
             `phi` value of `ParallelRGate`
-
         """
         return self.sub_gate.phi
 
     @property
     def theta(self) -> cirq.TParamVal:
-        """
+        """`theta` property of `ParallelRGate`
 
         Returns:
             `theta` value of `ParallelRGate`
-
         """
         return self.sub_gate.theta
 
@@ -800,18 +795,109 @@ ICCX = IX.controlled(2, [1, 1])
 AQTICCX = AQTITOFFOLI = IX.controlled(2, [0, 0])
 
 
-def custom_resolver(
-    cirq_type: str,
-) -> Union[Type[cirq.Gate], None]:
-    """Tells `cirq.to_json` and `cirq.read_json` how to handle custom cirq-superstaq's custom objects.
-    See https://quantumai.google/cirq/dev/serialization for more information and
-    https://github.com/quantumlib/Cirq/blob/9a1609ce8800ed1aa82bbf6261f5f7b8a41b81cf/cirq-core/cirq/ops/parity_gates_test.py#L310
+@cirq.value_equality(approximate=True)
+class StrippedCZGate(cirq.Gate):
+    """The Stripped CZ Gate is the gate that is actually being performed by Hilbert,
+    which is just a regular CZ gate when the rz angle = 0, and is corrected into a CZ
+    gate by RZ gates afterwards if the rz angle is nonzero.
+    """
+
+    def __init__(self, rz_rads: cirq.TParamVal = 0) -> None:
+        """Args: rz_rads: RZ-rotation angle in radians"""
+        self._rz_rads = rz_rads
+
+    @property
+    def rz_rads(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
+        return self._rz_rads
+
+    def _num_qubits_(self) -> int:
+        return 2
+
+    def _unitary_(self) -> Optional[npt.NDArray[np.complex_]]:
+        if self._is_parameterized_():
+            return None
+        return np.diag(
+            [
+                1.0,
+                np.exp(1j * self.rz_rads),
+                np.exp(1j * self.rz_rads),
+                np.exp(1j * (2 * self.rz_rads - np.pi)),
+            ]
+        )
+
+    def _value_equality_values_(self) -> cirq.TParamVal:
+        if cirq.is_parameterized(self.rz_rads):
+            return self.rz_rads
+        return self.rz_rads % (2 * np.pi)
+
+    def _value_equality_approximate_values_(self) -> cirq.PeriodicValue:
+        return cirq.PeriodicValue(self.rz_rads, 2 * np.pi)
+
+    def __pow__(
+        self, exponent: cirq.TParamVal
+    ) -> Union["StrippedCZGate", cirq.IdentityGate, "ParallelGates", cirq.DiagonalGate]:
+        if exponent == 0:
+            return cirq.IdentityGate(2)
+
+        new_rz_rads = exponent * self.rz_rads
+        z_exp_gate = cirq.ZPowGate(exponent=new_rz_rads)
+        if exponent == int(exponent):
+            if exponent % 2 == 0:
+                return ParallelGates(z_exp_gate, z_exp_gate)
+            return StrippedCZGate(new_rz_rads)
+        phases = [
+            1,
+            np.exp(1j * new_rz_rads),
+            np.exp(1j * new_rz_rads),
+            np.exp(1j * (2 * new_rz_rads - exponent * np.pi)),
+        ]
+        return cirq.DiagonalGate(phases)
+
+    def __str__(self) -> str:
+        return f"StrippedCZGate({self.rz_rads})"
+
+    def __repr__(self) -> str:
+        return f"css.StrippedCZGate({self.rz_rads!r})"
+
+    def _decompose_(self, qubits: Tuple[cirq.Qid, cirq.Qid]) -> Iterator[cirq.Operation]:
+        yield cirq.rz(self.rz_rads).on(qubits[0])
+        yield cirq.rz(self.rz_rads).on(qubits[1])
+        yield cirq.CZ(*qubits)
+
+    def _resolve_parameters_(
+        self, resolver: cirq.ParamResolver, recursive: bool
+    ) -> "StrippedCZGate":
+        return StrippedCZGate(
+            cirq.resolve_parameters(self.rz_rads, resolver, recursive),
+        )
+
+    def _is_parameterized_(self) -> bool:
+        return cirq.is_parameterized(self.rz_rads)
+
+    def _parameter_names_(self) -> AbstractSet[str]:
+        return cirq.parameter_names(self.rz_rads)
+
+    def _has_unitary_(self) -> bool:
+        return not self._is_parameterized_()
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        p = args.format_radians(self.rz_rads)
+        return cirq.CircuitDiagramInfo(wire_symbols=(f"@({p})", f"@({p})"))
+
+    def _json_dict_(self) -> Dict[str, Any]:
+        return cirq.obj_to_dict_helper(self, ["rz_rads"])
+
+
+def custom_resolver(cirq_type: str) -> Union[Type[cirq.Gate], None]:
+    """Tells `cirq.to_json` and `cirq.read_json` how to handle custom cirq-superstaq's custom
+    objects. See https://quantumai.google/cirq/dev/serialization for more information and
+    https://github.com/quantumlib/Cirq/blob/9a1609ce8800ed1aa82bbf6261f5f7b8a41b81cf/cirq-core/cirq/ops/parity_gates_test.py#L309
     for an example.
     Args:
-        cirq_type: The type for the serializer to resolve
+        cirq_type: The type for the serializer to resolve.
 
     Returns:
-        The resolved custom object
+        The resolved custom object.
 
     """
     type_to_gate_map: Dict[str, Type[cirq.Gate]] = {
@@ -824,5 +910,6 @@ def custom_resolver(
         "RGate": RGate,
         "IXGate": IXGate,
         "ParallelRGate": ParallelRGate,
+        "StrippedCZGate": StrippedCZGate,
     }
     return type_to_gate_map.get(cirq_type)
