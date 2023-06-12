@@ -67,6 +67,11 @@ class Finance:
     """Overarching class for Sharpe Ratio and Minimized Volatility finance applications."""
 
     def __init__(self, client: superstaq_client._SuperstaQClient):
+        """Constructor for the Finance class.
+
+        Args:
+            client: A client to interface with Superstaq.
+        """
         self._client = client
 
     def submit_qubo(
