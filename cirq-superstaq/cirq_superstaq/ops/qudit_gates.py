@@ -519,9 +519,16 @@ QutritZ2 = QutritZ2PowGate()
 def custom_resolver(
     cirq_type: str,
 ) -> Optional[Type[cirq.Gate]]:
-    """Used by deserialization code to convert string representations of gates to Cirq objects.
+    """Tells `cirq.json` how to deserialize cirq_superstaq's custom gates.
 
     Changes to gate names in this file should be reflected in this resolver.
+    See quantumai.google/cirq/dev/serialization for more information about (de)serialization.
+
+    Args:
+        cirq_type: The string of the gate type for the serializer to resolve.
+
+    Returns:
+        The resolved Cirq Gate matching the input, or None if no match.
     """
     if cirq_type == "QuditSwapGate":
         return QuditSwapGate
