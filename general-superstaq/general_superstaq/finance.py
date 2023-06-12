@@ -24,7 +24,7 @@ class MinVolOutput:
 
 
 def read_json_minvol(json_dict: gss.MinVolJson) -> MinVolOutput:
-    """Reads out returned JSON from SuperstaQ API's minvol endpoint.
+    """Reads out returned JSON from Superstaq API's minvol endpoint.
     Args:
         json_dict: a JSON dictionary matching the format returned by /minvol endpoint
     Returns:
@@ -49,7 +49,7 @@ class MaxSharpeOutput:
 
 
 def read_json_maxsharpe(json_dict: gss.MaxSharpeJson) -> MaxSharpeOutput:
-    """Reads out returned JSON from SuperstaQ API's maxsharpe endpoint.
+    """Reads out returned JSON from Superstaq API's maxsharpe endpoint.
     Args:
         json_dict: a JSON dictionary matching the format returned by /maxsharpe endpoint
     Returns:

@@ -8,7 +8,7 @@ import general_superstaq as gss
 
 
 def read_json_qubo_result(json_dict: Dict[str, str]) -> npt.NDArray[np.int_]:
-    """Reads out returned JSON from SuperstaQ API's QUBO endpoint.
+    """Reads out returned JSON from Superstaq API's QUBO endpoint.
     Args:
         json_dict: a JSON dictionary matching the format returned by /qubo endpoint
     Returns:
