@@ -164,9 +164,9 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         return job
 
     def target_info(self) -> Dict[str, Any]:
-        """Returns backend's target information.
+        """Returns Superstaq backend's target information.
         
         Returns:
-            A dictionary of target information
+            A dictionary of target information.
         """
         return self._provider._client.target_info(self.name())["target_info"]
