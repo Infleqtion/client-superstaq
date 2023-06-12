@@ -877,6 +877,7 @@ def custom_resolver(cirq_type: str) -> Union[Type[cirq.Gate], None]:
     objects. See https://quantumai.google/cirq/dev/serialization for more information and
     https://github.com/quantumlib/Cirq/blob/9a1609ce8800ed1aa82bbf6261f5f7b8a41b81cf/cirq-core/cirq/ops/parity_gates_test.py#L309
     for an example.
+
     Args:
         cirq_type: The type for the serializer to resolve.
 
