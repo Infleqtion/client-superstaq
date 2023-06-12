@@ -390,7 +390,8 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
 
 
 def barrier(*qubits: cirq.Qid) -> cirq.Operation:
-    """Cirq equivalent of https://qiskit.org/documentation/stubs/qiskit.circuit.library.Barrier.html.
+    """Cirq equivalent of
+    https://qiskit.org/documentation/stubs/qiskit.circuit.library.Barrier.html.
     See also https://github.com/quantumlib/Cirq/issues/2642.
 
     Args:
