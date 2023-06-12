@@ -10,8 +10,8 @@ class BitCode(Benchmark):
     """Creates a circuit for syndrome measurement in a bit-flip error correcting code.
 
     Args:
-        num_data: The number of data qubits
-        num_rounds: The number of measurement rounds
+        num_data: The number of data qubits.
+        num_rounds: The number of measurement rounds.
         bit_state: A list denoting the state to initialize each data qubit to.
 
     Returns:
@@ -31,7 +31,7 @@ class BitCode(Benchmark):
         """Generates `cirq.Operation`s for a single measurement round.
 
         Args:
-            qubits: Circuit qubits, assumed data on even indices and measurement on odd indices.
+            qubits: Circuit qubits, assuming data on even indices and measurement on odd indices.
 
         Returns:
             A `cirq.Operation` iterator with the operations for a measurement round.
