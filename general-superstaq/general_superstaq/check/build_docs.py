@@ -14,6 +14,7 @@ from general_superstaq.check import check_utils
 def run(  # pylint: disable=missing-function-docstring
     *args: str, sphinx_paths: Optional[List[str]] = None
 ) -> int:
+    """Checks that the docs build successfully."""
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.description = textwrap.dedent(

@@ -15,6 +15,7 @@ def run(  # pylint: disable=missing-function-docstring
     exclude: Union[str, Iterable[str]] = (),
     silent: bool = False,
 ) -> int:
+    """Runs black and isort on the repository (formatting check)."""
 
     parser = check_utils.get_file_parser()
     parser.description = textwrap.dedent(

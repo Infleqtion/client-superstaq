@@ -15,6 +15,7 @@ def run(  # pylint: disable=missing-function-docstring
     exclude: Union[str, Iterable[str]] = "*setup.py",
     silent: bool = False,
 ) -> int:
+    """Runs mypy on the repository (typing check)."""
 
     parser = check_utils.get_file_parser()
     parser.description = textwrap.dedent(

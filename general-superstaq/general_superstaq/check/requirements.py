@@ -25,6 +25,10 @@ def run(  # pylint: disable=missing-function-docstring
     upstream_match: str = "*superstaq*",
     silent: bool = False,
 ) -> int:
+    """Checks that:
+    - all pip requirements files (i.e. files matching *requirements.txt) are sorted
+    - all upstream packages are pinned to their latest versions
+    """
 
     parser = check_utils.get_file_parser()
     parser.description = textwrap.dedent(

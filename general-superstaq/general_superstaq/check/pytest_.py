@@ -16,6 +16,7 @@ def run(  # pylint: disable=missing-function-docstring
     integration_setup: Optional[Callable[[], None]] = None,
     silent: bool = False,
 ) -> int:
+    """Runs pytest on the repository."""
 
     parser = check_utils.get_file_parser()
     parser.description = textwrap.dedent(

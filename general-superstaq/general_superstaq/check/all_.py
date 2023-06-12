@@ -17,9 +17,15 @@ from general_superstaq.check import (
 )
 
 
-def run(  # pylint: disable=missing-function-docstring
-    *args: str, sphinx_paths: Optional[List[str]] = None
-) -> int:
+def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
+    """Runs all checks on the repository.
+
+    Args:
+        sphinx_paths:
+
+    Returns:
+
+    """
 
     parser = check_utils.get_file_parser()
     parser.description = textwrap.dedent(

@@ -15,6 +15,7 @@ def run(  # pylint: disable=missing-function-docstring
     exclude: Union[str, Iterable[str]] = "*_integration_test.py",
     silent: bool = False,
 ) -> int:
+    """Checks to make sure that all code is covered by unit tests."""
 
     parser = check_utils.get_file_parser()
     parser.description = textwrap.dedent(
