@@ -129,8 +129,9 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         Args:
             circuits: A list of circuits to run.
             shots: The number of execution shots (times to run the circuit).
-            method:  Optional execution method (e.g. 'dry-run', 'statevector', etc.).
-            options: Optional dictionary of optimization and execution parameters.
+            method:  An optional string that describes the execution method
+                (e.g. 'dry-run', 'statevector', etc.).
+            options: An optional dictionary of optimization and execution parameters.
 
         Returns:
             A Superstaq job storing ID and other related info.
