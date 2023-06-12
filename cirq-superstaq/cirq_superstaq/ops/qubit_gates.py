@@ -390,14 +390,13 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
 
 
 def barrier(*qubits: cirq.Qid) -> cirq.Operation:
-    """Cirq equivalent of https://qiskit.org/documentation/stubs/qiskit.circuit.library.Barrier.html
-    See also https://github.com/quantumlib/Cirq/issues/2642
+    """Cirq equivalent of https://qiskit.org/documentation/stubs/qiskit.circuit.library.Barrier.html.
+    See also https://github.com/quantumlib/Cirq/issues/2642.
 
     Args:
-        *qubits: The qubits that the barrier will cover
+        *qubits: The qubits that the barrier will cover.
 
-    Returns: A barrier `cirq.Operation` on the passed in qubits
-
+    Returns: A barrier `cirq.Operation` on the passed in qubits.
     """
     qid_shape = tuple(q.dimension for q in qubits)
     return css.Barrier(qid_shape=qid_shape).on(*qubits)
@@ -405,24 +404,7 @@ def barrier(*qubits: cirq.Qid) -> cirq.Operation:
 
 @cirq.value_equality(approximate=True)
 class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
-    """A single Gate combining a collection of concurrent Gate(s) acting on different qubits.
-
-    WARNING: for cirq versions 0.14.*, equality check will return False after permutations of
-        qubits between identical but nonadjacent gates, e.g.::
-
-            gate = ParallelGates(cirq.X, cirq.Y, cirq.X)
-            gate.on(q0, q1, q2) == gate.on(q2, q1, q0)  # True for cirq < 0.14.0
-                                                        # False for 0.14.0 <= cirq < 0.15.0
-                                                        # True for cirq >= 0.15.0
-
-        This does not affect permutations of qubits between adjacent gates, or those within the
-        same InterchangeableQubitsGate::
-
-            gate = ParallelGates(cirq.X, cirq.X, cirq.CZ)
-            gate.on(q0, q1, q2, q3) == gate.on(q1, q0, q3, q2)  # always True
-
-        See https://github.com/quantumlib/Cirq/issues/5148 for more information.
-    """
+    """A single Gate combining a collection of concurrent Gate(s) acting on different qubits."""
 
     def __init__(self, *component_gates: cirq.Gate) -> None:
         """Args:
@@ -583,8 +565,8 @@ def parallel_gates_operation(
         ParallelGates(op.gate, op2.gate, ...).on(*op.qubits, *op2.qubits, ...)
 
     Raises:
-        ValueError: If the operation has no `.gate` attrribute
-        ValueError: If the operation has tags
+        ValueError: If the operation has no `.gate` attribute.
+        ValueError: If the operation has tags.
     """
     gates: List[cirq.Gate] = []
     qubits: List[cirq.Qid] = []
@@ -616,19 +598,19 @@ class RGate(cirq.PhasedXPowGate):
 
     @property
     def phi(self) -> cirq.TParamVal:
-        """`phi` property of `RGate`
+        """`phi` property of `RGate`.
 
         Returns:
-            `phi` value of `RGate`
+            `phi` value of `RGate`.
         """
         return self.phase_exponent * _pi(self.phase_exponent)
 
     @property
     def theta(self) -> cirq.TParamVal:
-        """`theta` property of `RGate`
+        """`theta` property of `RGate`.
 
         Returns:
-            `theta` value of `RGate`
+            `theta` value of `RGate`.
 
         """
         return self.exponent * _pi(self.exponent)
@@ -688,37 +670,37 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
 
     @property
     def phase_exponent(self) -> cirq.TParamVal:
-        """`phase_exponent` property of `ParallelRGate`
+        """`phase_exponent` property of `ParallelRGate`.
 
         Returns:
-            `phase_exponent` value of `ParallelRGate`
+            `phase_exponent` value of `ParallelRGate`.
         """
         return self.sub_gate.phase_exponent
 
     @property
     def exponent(self) -> cirq.TParamVal:
-        """`exponent` property of `ParallelRGate`
+        """`exponent` property of `ParallelRGate`.
 
         Returns:
-            `exponent` value of `ParallelRGate`
+            `exponent` value of `ParallelRGate`.
         """
         return self.sub_gate.exponent
 
     @property
     def phi(self) -> cirq.TParamVal:
-        """`phi` property of `ParallelRGate`
+        """`phi` property of `ParallelRGate`.
 
         Returns:
-            `phi` value of `ParallelRGate`
+            `phi` value of `ParallelRGate`.
         """
         return self.sub_gate.phi
 
     @property
     def theta(self) -> cirq.TParamVal:
-        """`theta` property of `ParallelRGate`
+        """`theta` property of `ParallelRGate`.
 
         Returns:
-            `theta` value of `ParallelRGate`
+            `theta` value of `ParallelRGate`.
         """
         return self.sub_gate.theta
 
@@ -898,7 +880,6 @@ def custom_resolver(cirq_type: str) -> Union[Type[cirq.Gate], None]:
 
     Returns:
         The resolved custom object.
-
     """
     type_to_gate_map: Dict[str, Type[cirq.Gate]] = {
         "ZZSwapGate": ZZSwapGate,
