@@ -80,7 +80,6 @@ def _get_metadata_of_circuits(
     Returns:
         A list of dictionaries containing the metadata of the input circuit(s). If a circuit has no
         metadata, an empty dictionary is stored for that circuit.
-
     """
 
     metadata_of_circuits = [
@@ -108,30 +107,6 @@ class SuperstaQProvider(
 
     where `MY_TOKEN` is the access token provided by SuperstaQ,
     and `target` is the name of the desired backend.
-
-    Args:
-        api_key: A string that allows access to the SuperstaQ API. If no key is provided, then
-            this instance tries to use the environment variable `SUPERSTAQ_API_KEY`. If
-            `SUPERSTAQ_API_KEY` is not set, then this instance checks for the
-            following files:
-            - `$XDG_DATA_HOME/super.tech/superstaq_api_key`
-            - `$XDG_DATA_HOME/coldquanta/superstaq_api_key`
-            - `~/.super.tech/superstaq_api_key`
-            - `~/.coldquanta/superstaq_api_key`
-            If one of those files exists, then it is treated as a plain text file, and the first
-            line of this file is interpreted as an API key.  Failure to find an API key raises
-            an `EnvironmentError`.
-        remote_host: The location of the API in the form of a URL. If this is None,
-            then this instance will use the environment variable `SUPERSTAQ_REMOTE_HOST`.
-            If that variable is not set, then this uses
-            `https://superstaq.super.tech/{api_version}`,
-            where `{api_version}` is the `api_version` specified below.
-        api_version: Version of the API.
-        max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
-        verbose: Whether to print to stdio and stderr on retriable errors.
-
-    Raises:
-        EnvironmentError: If an API key was not provided and could not be found.
     """
 
     def __init__(
@@ -142,6 +117,32 @@ class SuperstaQProvider(
         max_retry_seconds: int = 3600,
         verbose: bool = False,
     ) -> None:
+        """Initializes a SuperstaQProvider.
+
+        Args:
+            api_key: A string that allows access to the SuperstaQ API. If no key is provided, then
+                this instance tries to use the environment variable `SUPERSTAQ_API_KEY`. If
+                `SUPERSTAQ_API_KEY` is not set, then this instance checks for the
+                following files:
+                - `$XDG_DATA_HOME/super.tech/superstaq_api_key`
+                - `$XDG_DATA_HOME/coldquanta/superstaq_api_key`
+                - `~/.super.tech/superstaq_api_key`
+                - `~/.coldquanta/superstaq_api_key`
+                If one of those files exists, then it is treated as a plain text file, and the first
+                line of this file is interpreted as an API key.  Failure to find an API key raises
+                an `EnvironmentError`.
+            remote_host: The location of the API in the form of a URL. If this is None,
+                then this instance will use the environment variable `SUPERSTAQ_REMOTE_HOST`.
+                If that variable is not set, then this uses
+                `https://superstaq.super.tech/{api_version}`,
+                where `{api_version}` is the `api_version` specified below.
+            api_version: The version of the API.
+            max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
+            verbose: Whether to print to stdio and stderr on retriable errors.
+
+        Raises:
+            EnvironmentError: If an API key was not provided and could not be found.
+        """
         self._name = "superstaq_provider"
 
         self._client = superstaq_client._SuperstaQClient(
@@ -186,10 +187,10 @@ class SuperstaQProvider(
     def resource_estimate(
         self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]], target: str
     ) -> Union[ResourceEstimate, List[ResourceEstimate]]:
-        """Generates resource estimates for circuit(s).
+        """Generates resource estimates for qiskit circuit(s).
 
         Args:
-            circuits: Qiskit QuantumCircuit(s).
+            circuits: The qiskit circuit(s) used during resource estimation.
             target: A string containing the name of a target backend.
 
         Returns:
@@ -332,8 +333,8 @@ class SuperstaQProvider(
     ) -> qss.compiler_output.CompilerOutput:
         """Returns pulse schedule(s) for the given circuit(s) and target.
         Args:
-            circuits: Qiskit QuantumCircuit(s).
-            target: A tring containing the name of a target IBM backend.
+            circuits: The qiskit circuits(s) to compile.
+            target: A string containing the name of a target IBM backend.
             kwargs: Other desired ibmq_compile options.
 
         Returns:
