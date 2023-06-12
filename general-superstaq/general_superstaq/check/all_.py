@@ -21,6 +21,7 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
     """Runs all checks on the repository.
 
     Args:
+        *args: Command line arguments.
         sphinx_paths:
 
     Returns:

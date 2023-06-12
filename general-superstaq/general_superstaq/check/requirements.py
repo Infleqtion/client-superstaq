@@ -28,6 +28,13 @@ def run(  # pylint: disable=missing-function-docstring
     """Checks that:
     - all pip requirements files (i.e. files matching *requirements.txt) are sorted
     - all upstream packages are pinned to their latest versions
+
+    Args:
+        *args: Command line arguments.
+        include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
+        exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
+        upstream_match: String to match package name and version.
+        silent: If True, restrict printing to warning and error messages.
     """
 
     parser = check_utils.get_file_parser()

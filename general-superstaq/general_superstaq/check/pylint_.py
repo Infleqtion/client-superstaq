@@ -16,7 +16,14 @@ def run(  # pylint: disable=missing-function-docstring
     exclude: Union[str, Iterable[str]] = (),
     silent: bool = False,
 ) -> int:
-    """Runs pylint on the repository (formatting check)."""
+    """Runs pylint on the repository (formatting check).
+
+    Args:
+        *args: Command line arguments.
+        include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
+        exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
+        silent: If True, restrict printing to warning and error messages.
+    """
 
     parser = check_utils.get_file_parser()
     parser.description = textwrap.dedent(

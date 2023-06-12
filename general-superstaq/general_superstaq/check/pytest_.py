@@ -16,7 +16,15 @@ def run(  # pylint: disable=missing-function-docstring
     integration_setup: Optional[Callable[[], None]] = None,
     silent: bool = False,
 ) -> int:
-    """Runs pytest on the repository."""
+    """Runs pytest on the repository.
+
+    Args:
+        *args: Command line arguments.
+        include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
+        exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
+        integration_setup:
+        silent: If True, restrict printing to warning and error messages.
+    """
 
     parser = check_utils.get_file_parser()
     parser.description = textwrap.dedent(
