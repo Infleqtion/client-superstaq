@@ -21,13 +21,15 @@ import qiskit_superstaq as qss
 
 
 class SuperstaQJob(qiskit.providers.JobV1):
-    def __init__(self, backend: qss.SuperstaQBackend, job_id: str) -> None:
-        """Initializes a Superstaq job instance.
+    """This class represents a Superstaq job instance.
 
-        Args:
-            backend: The `qss.SuperstaQBackend` that the job was created with.
-            job_id: String containing the unique job ID from Superstaq.
-        """
+    Args:
+        backend: The `qss.SuperstaQBackend` that the job was created with.
+        job_id: String containing the unique job ID from Superstaq.
+    """
+
+    def __init__(self, backend: qss.SuperstaQBackend, job_id: str) -> None:
+
         super().__init__(backend, job_id)
 
     def __eq__(self, other: Any) -> bool:
@@ -65,8 +67,10 @@ class SuperstaQJob(qiskit.providers.JobV1):
         """Retrieves result data associated with a Superstaq job.
 
         Args:
-            timeout: An optional parameter that fixes when result retrieval times out. Units are in seconds.
-            wait: An optional parameter that sets the interval to check for Superstaq job results. Units are in seconds.
+            timeout: An optional parameter that fixes when result retrieval times out. Units are
+                in seconds.
+            wait: An optional parameter that sets the interval to check for Superstaq job results.
+                Units are in seconds.
 
         Returns:
             A qiskit result object containing job information.
