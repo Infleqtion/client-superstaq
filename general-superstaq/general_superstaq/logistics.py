@@ -12,7 +12,9 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class TSPOutput:  # pylint: disable=missing-class-docstring
+class TSPOutput:
+    """A class to store data from the /tsp endpoint."""
+
     route: List[str]
     route_list_numbers: List[int]
     total_distance: float
@@ -21,9 +23,9 @@ class TSPOutput:  # pylint: disable=missing-class-docstring
 
 
 def read_json_tsp(json_dict: gss.TSPJson) -> TSPOutput:
-    """Reads out returned JSON from SuperstaQ API's tsp endpoint.
+    """Reads out returned JSON from Superstaq API's /tsp endpoint.
     Args:
-        json_dict: a JSON dictionary matching the format returned by /tsp endpoint
+        json_dict: a JSON dictionary matching the format returned by /tsp endpoint.
     Returns:
         a TSPOutput object with the optimal route.
     """
@@ -36,7 +38,9 @@ def read_json_tsp(json_dict: gss.TSPJson) -> TSPOutput:
 
 
 @dataclass
-class WarehouseOutput:  # pylint: disable=missing-class-docstring
+class WarehouseOutput:
+    """A class to store data from the /warehouse endpoint."""
+
     warehouse_to_destination: List[Tuple[str, str]]
     total_distance: float
     map_link: str
@@ -45,9 +49,9 @@ class WarehouseOutput:  # pylint: disable=missing-class-docstring
 
 
 def read_json_warehouse(json_dict: gss.WareHouseJson) -> WarehouseOutput:
-    """Reads out returned JSON from SuperstaQ API's warehouse endpoint.
+    """Reads out returned JSON from Superstaq API's /warehouse endpoint.
     Args:
-        json_dict: a JSON dictionary matching the format returned by /warehouse endpoint
+        json_dict: a JSON dictionary matching the format returned by /warehouse endpoint.
     Returns:
         a WarehouseOutput object with the optimal assignment.
     """
@@ -61,8 +65,15 @@ def read_json_warehouse(json_dict: gss.WareHouseJson) -> WarehouseOutput:
     )
 
 
-class Logistics:  # pylint: disable=missing-class-docstring
+class Logistics:
+    """Overarching class for the TSP and warehouse functions."""
+
     def __init__(self, client: superstaq_client._SuperstaQClient):
+        """Constructor for the Logistics class.
+
+        Args:
+            client: A client to interface with Superstaq.
+        """
         self._client = client
 
     def tsp(self, locs: List[str], solver: str = "anneal") -> TSPOutput:
