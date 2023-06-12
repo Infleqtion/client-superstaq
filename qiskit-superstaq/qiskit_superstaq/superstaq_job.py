@@ -64,7 +64,7 @@ class SuperstaQJob(qiskit.providers.JobV1):
         return result_list
 
     def result(self, timeout: Optional[float] = None, wait: float = 5) -> qiskit.result.Result:
-        """Retrieves result data associated with a Superstaq job.
+        """Retrieves the result data associated with a Superstaq job.
 
         Args:
             timeout: An optional parameter that fixes when result retrieval times out. Units are
