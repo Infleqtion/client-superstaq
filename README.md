@@ -68,3 +68,6 @@ SuperstaQ is licensed under the Apache License 2.0. See our [LICENSE](https://gi
 
 # Contact Us
 If you'd like to reach out to a member of our team, please email us at info@super.tech.
+
+<img src="./docs/source/_static/logos/Infleqtion_logo.png">
+<!-- <img src="./docs/source/_static/logos/Superstaq_white.png#gh-dark-mode-only"> -->
