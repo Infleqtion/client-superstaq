@@ -25,7 +25,7 @@ class TSPOutput:
 def read_json_tsp(json_dict: gss.TSPJson) -> TSPOutput:
     """Reads out returned JSON from Superstaq API's /tsp endpoint.
     Args:
-        json_dict: a JSON dictionary matching the format returned by /tsp endpoint.
+        json_dict: a JSON dictionary matching the format returned by the /tsp endpoint.
     Returns:
         a TSPOutput object with the optimal route.
     """
@@ -51,7 +51,7 @@ class WarehouseOutput:
 def read_json_warehouse(json_dict: gss.WareHouseJson) -> WarehouseOutput:
     """Reads out returned JSON from Superstaq API's /warehouse endpoint.
     Args:
-        json_dict: a JSON dictionary matching the format returned by /warehouse endpoint.
+        json_dict: a JSON dictionary matching the format returned by the /warehouse endpoint.
     Returns:
         a WarehouseOutput object with the optimal assignment.
     """
@@ -95,7 +95,7 @@ class Logistics:
             .route_list_numbers: The indicies in locs of the optimal tour.
             .total_distance: The tour's total distance.
             .map_link: A link to google maps that shows the tour.
-            .qubo: The qubo representation of the TSP problem
+            .qubo: The qubo representation of the TSP problem.
         """
         input_dict = {"locs": locs}
         json_dict = self._client.tsp(input_dict)
@@ -120,7 +120,7 @@ class Logistics:
             .total_distance: The total distance among all warehouse-customer pairings.
             .map_link: A link to google maps that shows the warehouse-customer pairings.
             .open_warehouses: A list of all warehouses that are open.
-            .qubo: The qubo representation of the warehouse problem
+            .qubo: The qubo representation of the warehouse problem.
         """
         input_dict: Dict[str, Union[int, List[str], str]] = {
             "k": k,
