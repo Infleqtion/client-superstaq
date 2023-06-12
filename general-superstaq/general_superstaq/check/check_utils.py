@@ -28,7 +28,9 @@ def _check_output(*commands: str) -> str:
 
 
 # container for string formatting console codes
-class Style(str, enum.Enum):  # pylint: disable=missing-class-docstring
+class Style(str, enum.Enum):
+    """Class for string formatting console codes."""
+
     BLACK = "\033[30m"
     RED = "\033[31m"
     GREEN = "\033[32m"
@@ -42,19 +44,52 @@ class Style(str, enum.Enum):  # pylint: disable=missing-class-docstring
     RESET = "\033[0m"
 
 
-def styled(text: str, style_code: str) -> str:  # pylint: disable=missing-function-docstring
+def styled(text: str, style_code: str) -> str:
+    """Returns a styled text.
+
+    Args:
+        text: The text that is being printed.
+        style_code: String code for the text style.
+
+    Returns:
+        The styled text.
+    """
     return style_code + text + Style.RESET
 
 
-def warning(text: str) -> str:  # pylint: disable=missing-function-docstring
+def warning(text: str) -> str:
+    """Returns a styled text for warnings.
+
+    Args:
+        text: The text that is being printed.
+
+    Returns:
+        The styled warning text.
+    """
     return styled(text, Style.BOLD + Style.YELLOW)
 
 
-def failure(text: str) -> str:  # pylint: disable=missing-function-docstring
+def failure(text: str) -> str:
+    """Returns a styled text for failures.
+
+    Args:
+        text: The text that is being printed.
+
+    Returns:
+        The styled failure text.
+    """
     return styled(text, Style.BOLD + Style.RED)
 
 
-def success(text: str) -> str:  # pylint: disable=missing-function-docstring
+def success(text: str) -> str:
+    """Returns a styled text for success.
+
+    Args:
+        text: The text that is being printed.
+
+    Returns:
+        The styled success text.
+    """
     return styled(text, Style.BOLD + Style.GREEN)
 
 
@@ -200,7 +235,8 @@ def get_test_files(
 # file parsing, incremental checks, and decorator to exit instead of returning a failing exit code
 
 
-def get_file_parser() -> argparse.ArgumentParser:  # pylint: disable=missing-function-docstring
+def get_file_parser() -> argparse.ArgumentParser:
+    """Runs an incremental check on files that have changed since a specified revision."""
     parser = argparse.ArgumentParser(
         allow_abbrev=False, formatter_class=argparse.RawDescriptionHelpFormatter
     )

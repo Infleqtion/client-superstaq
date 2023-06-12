@@ -390,10 +390,14 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
 
 
 def barrier(*qubits: cirq.Qid) -> cirq.Operation:
-    """_summary_
+    """Equivalent to https://qiskit.org/documentation/stubs/qiskit.circuit.library.Barrier.html.
+    See also https://github.com/quantumlib/Cirq/issues/2642.
+
+    Args:
+        *qubits: The qubits that the barrier will cover.
 
     Returns:
-        cirq.Operation: _description_
+        A barrier `cirq.Operation` on the provided qubits.
     """
     qid_shape = tuple(q.dimension for q in qubits)
     return css.Barrier(qid_shape=qid_shape).on(*qubits)
@@ -423,18 +427,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             else:
                 self.component_gates += (gate,)
 
-    def qubit_index_to_gate_and_index(self, index: int) -> Tuple[cirq.Gate, int]:
-        """_summary_
-
-        Args:
-            index (int): _description_
-
-        Raises:
-            ValueError: _description_
-
-        Returns:
-            Tuple[cirq.Gate, int]: _description_
-        """
+    def _qubit_index_to_gate_and_index(self, index: int) -> Tuple[cirq.Gate, int]:
         for gate in self.component_gates:
             if gate.num_qubits() > index >= 0:
                 return gate, index
@@ -442,15 +435,18 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         raise ValueError("index out of range")
 
     def qubit_index_to_equivalence_group_key(self, index: int) -> int:
-        """_summary_
+        """Returns a key that differs between qubits.
+
+        Does it by different component gates and non-interchangeable qubits
+        in the same component gate.
 
         Args:
-            index (int): _description_
+            index: Qubit index.
 
         Returns:
-            int: _description_
+            Equivalence group key.
         """
-        indexed_gate, index_in_gate = self.qubit_index_to_gate_and_index(index)
+        indexed_gate, index_in_gate = self._qubit_index_to_gate_and_index(index)
         if indexed_gate.num_qubits() == 1:
             # find the first instance of the same gate
             first_instance = self.component_gates.index(indexed_gate)
@@ -568,10 +564,10 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         return f"css.ParallelGates({component_gates_repr})"
 
 
-def parallel_gates_operation(
-    *ops: cirq.Operation,
-) -> cirq.Operation:
-    """Given operations acting on disjoint qubits, constructs a single css.ParallelGates instance
+def parallel_gates_operation(*ops: cirq.Operation) -> cirq.Operation:
+    """Constructs a parallel gates operation.
+
+    Given operations acting on disjoint qubits, constructs a single css.ParallelGates instance
     and applies it such that each operation's .gate is applied to its .qubits.
 
     Args:
@@ -581,8 +577,8 @@ def parallel_gates_operation(
         ParallelGates(op.gate, op2.gate, ...).on(*op.qubits, *op2.qubits, ...)
 
     Raises:
-        ValueError: If `ops` has no :attr: `.gate`.
-        ValueError: If performing tagging.
+        ValueError: If the operation has no `.gate` attribute.
+        ValueError: If the operation has tags.
     """
     gates: List[cirq.Gate] = []
     qubits: List[cirq.Qid] = []
@@ -613,20 +609,12 @@ class RGate(cirq.PhasedXPowGate):
 
     @property
     def phi(self) -> cirq.TParamVal:
-        """_summary_
-
-        Returns:
-            cirq.TParamVal: _description_
-        """
+        """Angle (in radians) defining the axis of rotation in the `X`-`Y` plane."""
         return self.phase_exponent * _pi(self.phase_exponent)
 
     @property
     def theta(self) -> cirq.TParamVal:
-        """_summary_
-
-        Returns:
-            cirq.TParamVal: _description_
-        """
+        """Angle (in radians) by which to rotate."""
         return self.exponent * _pi(self.exponent)
 
     def __pow__(self, power: cirq.TParamVal) -> "RGate":
@@ -713,38 +701,22 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
 
     @property
     def phase_exponent(self) -> cirq.TParamVal:
-        """_summary_
-
-        Returns:
-            cirq.TParamVal: _description_
-        """
+        """The `phase_exponent` property of each `RGate`."""
         return self.sub_gate.phase_exponent
 
     @property
     def exponent(self) -> cirq.TParamVal:
-        """_summary_
-
-        Returns:
-            cirq.TParamVal: _description_
-        """
+        """The `exponent` property of `ParallelRGate`."""
         return self.sub_gate.exponent
 
     @property
     def phi(self) -> cirq.TParamVal:
-        """_summary_
-
-        Returns:
-            cirq.TParamVal: _description_
-        """
+        """The `phi` property of `ParallelRGate`."""
         return self.sub_gate.phi
 
     @property
     def theta(self) -> cirq.TParamVal:
-        """_summary_
-
-        Returns:
-            cirq.TParamVal: _description_
-        """
+        """The `theta` property of `ParallelRGate`."""
         return self.sub_gate.theta
 
     def __pow__(self, power: cirq.TParamVal) -> "ParallelRGate":
@@ -833,12 +805,7 @@ class StrippedCZGate(cirq.Gate):
         self._rz_rads = rz_rads
 
     @property
-    def rz_rads(self) -> cirq.TParamVal:
-        """_summary_
-
-        Returns:
-            cirq.TParamVal: _description_
-        """
+    def rz_rads(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
         return self._rz_rads
 
     def _num_qubits_(self) -> int:
@@ -919,18 +886,18 @@ class StrippedCZGate(cirq.Gate):
         return cirq.obj_to_dict_helper(self, ["rz_rads"])
 
 
-def custom_resolver(
-    cirq_type: str,
-) -> Union[Type[cirq.Gate], None]:
-    """_summary_
+def custom_resolver(cirq_type: str) -> Union[Type[cirq.Gate], None]:
+    """Tells `cirq.json` how to deserialize cirq_superstaq's custom gates.
 
-    Args:
-        cirq_type: _description_
+        Changes to gate names in this file should be reflected in this resolver.
+        See quantumai.google/cirq/dev/serialization for more information about (de)serialization.
 
-    Returns:
-        _description_
+        Args:
+            cirq_type: The string of the gate type for the serializer to resolve.
+
+        Returns:
+            The resolved Cirq Gate matching the input, or None if no match.
     """
-
     type_to_gate_map: Dict[str, Type[cirq.Gate]] = {
         "ZZSwapGate": ZZSwapGate,
         "Barrier": Barrier,
