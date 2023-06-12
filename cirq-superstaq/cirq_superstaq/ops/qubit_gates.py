@@ -398,7 +398,7 @@ def barrier(*qubits: cirq.Qid) -> cirq.Operation:
         *qubits: The qubits that the barrier will cover.
 
     Returns:
-        A barrier `cirq.Operation` on the passed in qubits.
+        A barrier `cirq.Operation` on the provided qubits.
     """
     qid_shape = tuple(q.dimension for q in qubits)
     return css.Barrier(qid_shape=qid_shape).on(*qubits)
