@@ -22,7 +22,7 @@ import qiskit_superstaq as qss
 
 
 def validate_target(target: str) -> None:
-    """Checks that a device name contains a valid format, vendor prefix, and device type.
+    """Checks that a target contains a valid format, vendor prefix, and device type.
 
     Args:
         target: A string containing the name of a target backend.
