@@ -29,7 +29,7 @@ def _validate_qiskit_circuits(circuits: object) -> None:
     `qiskit.QuantumCircuit` instances.
 
     Args:
-        circuits: The circuit(s) to run.
+        circuits: The qiskit circuit(s) to run.
 
     Raises:
         ValueError: If the input is not a `qiskit.QuantumCircuit` or a list of
@@ -75,7 +75,7 @@ def _get_metadata_of_circuits(
     """Extracts metadata from the input qiskit circuit(s).
 
     Args:
-        Circuit(s) from which to extract the metadata.
+        circuits: The qiksit circuit(s) from which to extract the metadata.
 
     Returns:
         A list of dictionaries containing the metadata of the input circuit(s). If a circuit has no
@@ -332,13 +332,14 @@ class SuperstaQProvider(
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Returns pulse schedule(s) for the given circuit(s) and target.
+
         Args:
-            circuits: The qiskit circuits(s) to compile.
+            circuits: The qiskit circuit(s) to compile.
             target: A string containing the name of a target IBM backend.
             kwargs: Other desired ibmq_compile options.
 
         Returns:
-            object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s).
+            object whose .circuit(s) attribute is an optimized qiskit circuit(s).
 
         Raises:
             ValueError: If `target` is not a valid IBMQ target.
@@ -457,12 +458,12 @@ class SuperstaQProvider(
         """Compiles the given circuit(s) to CQ device, optimized to its native gate set.
 
         Args:
-            circuits: Qiskit QuantumCircuit(s).
+            circuits: The qiskit circuit(s) to compile.
             target: A string containing the name of a target backend.
             kwargs: Other desired cq_compile options.
 
         Returns:
-            object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s).
+            object whose .circuit(s) attribute is an optimized qiskit circuit(s).
 
         Raises:
             ValueError: If `target` is not a valid CQ target.
@@ -491,12 +492,16 @@ class SuperstaQProvider(
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int
     ) -> Tuple[List[qiskit.QuantumCircuit], npt.NDArray[np.float_]]:
-        """Returns the randomly generated circuits and the fidelity matrix for inputted files.
+        """Returns Supercheq randomly generated circuits and corresponding fidelity matrices.
+
+        References:
+            [1] P. Gokhale et al., *SupercheQ: Quantum Advantage for Distributed Databases*, (2022).
+                https://arxiv.org/abs/2212.03850.
 
         Args:
-            files: List of files specified as binary using ints.
+            files: A list of files specified as binary using ints.
                 For example: [[1, 0, 1], [1, 1, 1]].
-            num_qubits: Number of qubits to run Supercheq on.
+            num_qubits: The number of qubits to run Supercheq on.
             depth: The depth of the circuits to run Supercheq on.
 
         Returns:
