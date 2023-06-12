@@ -436,6 +436,14 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         raise ValueError("index out of range")
 
     def qubit_index_to_equivalence_group_key(self, index: int) -> int:
+        """Returns a key that differs between qubits in different component gates and
+        non-interchangeable qubits in the same component gate.
+        Args:
+            index: Qubit index.
+
+        Returns:
+            Equivalence group key.
+        """
         indexed_gate, index_in_gate = self._qubit_index_to_gate_and_index(index)
         if indexed_gate.num_qubits() == 1:
             # find the first instance of the same gate
