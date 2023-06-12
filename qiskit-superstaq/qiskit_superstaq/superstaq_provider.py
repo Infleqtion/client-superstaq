@@ -129,7 +129,7 @@ class SuperstaQProvider(
         api_version: Version of the API.
         max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
         verbose: Whether to print to stdio and stderr on retriable errors.
-    
+
     Raises:
         EnvironmentError: If an API key was not provided and could not be found.
     """
@@ -191,9 +191,9 @@ class SuperstaQProvider(
         Args:
             circuits: Qiskit QuantumCircuit(s).
             target: String containing the name of a target backend.
-        
+
         Returns:
-            ResourceEstimate(s) containing resource costs (after compilation) for running circuit(s) 
+            ResourceEstimate(s) containing resource costs (after compilation) for running circuit(s)
             on a backend.
         """
         _validate_qiskit_circuits(circuits)
@@ -335,10 +335,10 @@ class SuperstaQProvider(
             circuits: Qiskit QuantumCircuit(s).
             target: String containing the name of a target IBM backend.
             kwargs: Other desired ibmq_compile options.
-        
+
         Returns:
             object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s).
-        
+
         Raises:
             ValueError: If `target` is not a valid IBMQ target.
         """
@@ -459,10 +459,10 @@ class SuperstaQProvider(
             circuits: Qiskit QuantumCircuit(s).
             target: String containing the name of a target backend.
             kwargs: Other desired cq_compile options.
-        
+
         Returns:
             object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s).
-       
+
         Raises:
             ValueError: If `target` is not a valid CQ target.
         """
@@ -491,7 +491,7 @@ class SuperstaQProvider(
         self, files: List[List[int]], num_qubits: int, depth: int
     ) -> Tuple[List[qiskit.QuantumCircuit], npt.NDArray[np.float_]]:
         """Returns the randomly generated circuits and the fidelity matrix for inputted files.
-        
+
         Args:
             files: List of files specified as binary using ints.
                 For example: [[1, 0, 1], [1, 1, 1]].
@@ -499,7 +499,7 @@ class SuperstaQProvider(
             depth: The depth of the circuits to run Supercheq on.
 
         Returns:
-            A tuple containing a list of qiskit QuantumCircuits and a list of corresponding fidelity 
+            A tuple containing a list of qiskit QuantumCircuits and a list of corresponding fidelity
                 matrices.
         """
         _validate_integer_param(num_qubits)
