@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class TSPOutput:
-    """A class to store data from the /tsp endpoint."""
+    """A class to store data returned from the /tsp endpoint."""
 
     route: List[str]
     route_list_numbers: List[int]
@@ -25,7 +25,7 @@ class TSPOutput:
 def read_json_tsp(json_dict: gss.TSPJson) -> TSPOutput:
     """Reads out returned JSON from Superstaq API's /tsp endpoint.
     Args:
-        json_dict: a JSON dictionary matching the format returned by the /tsp endpoint.
+        json_dict: A JSON dictionary matching the format returned by the /tsp endpoint.
     Returns:
         a TSPOutput object with the optimal route.
     """
@@ -39,7 +39,7 @@ def read_json_tsp(json_dict: gss.TSPJson) -> TSPOutput:
 
 @dataclass
 class WarehouseOutput:
-    """A class to store data from the /warehouse endpoint."""
+    """A class to store data returned from the /warehouse endpoint."""
 
     warehouse_to_destination: List[Tuple[str, str]]
     total_distance: float
@@ -51,7 +51,7 @@ class WarehouseOutput:
 def read_json_warehouse(json_dict: gss.WareHouseJson) -> WarehouseOutput:
     """Reads out returned JSON from Superstaq API's /warehouse endpoint.
     Args:
-        json_dict: a JSON dictionary matching the format returned by the /warehouse endpoint.
+        json_dict: A JSON dictionary matching the format returned by the /warehouse endpoint.
     Returns:
         a WarehouseOutput object with the optimal assignment.
     """
