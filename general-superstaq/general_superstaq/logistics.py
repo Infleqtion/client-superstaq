@@ -12,7 +12,9 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class TSPOutput:  # pylint: disable=missing-class-docstring
+class TSPOutput:
+    """A class to store data returned from the /tsp endpoint."""
+
     route: List[str]
     route_list_numbers: List[int]
     total_distance: float
@@ -21,11 +23,11 @@ class TSPOutput:  # pylint: disable=missing-class-docstring
 
 
 def read_json_tsp(json_dict: gss.TSPJson) -> TSPOutput:
-    """Reads out returned JSON from SuperstaQ API's tsp endpoint.
+    """Reads out returned JSON from Superstaq API's /tsp endpoint.
     Args:
-        json_dict: a JSON dictionary matching the format returned by /tsp endpoint
+        json_dict: A JSON dictionary matching the format returned by the /tsp endpoint.
     Returns:
-        a TSPOutput object with the optimal route.
+        A `TSPOutput` object with the optimal route.
     """
     route = json_dict["route"]
     route_list_numbers = json_dict["route_list_numbers"]
@@ -36,7 +38,9 @@ def read_json_tsp(json_dict: gss.TSPJson) -> TSPOutput:
 
 
 @dataclass
-class WarehouseOutput:  # pylint: disable=missing-class-docstring
+class WarehouseOutput:
+    """A class to store data returned from the /warehouse endpoint."""
+
     warehouse_to_destination: List[Tuple[str, str]]
     total_distance: float
     map_link: str
@@ -45,11 +49,11 @@ class WarehouseOutput:  # pylint: disable=missing-class-docstring
 
 
 def read_json_warehouse(json_dict: gss.WareHouseJson) -> WarehouseOutput:
-    """Reads out returned JSON from SuperstaQ API's warehouse endpoint.
+    """Reads out returned JSON from Superstaq API's /warehouse endpoint.
     Args:
-        json_dict: a JSON dictionary matching the format returned by /warehouse endpoint
+        json_dict: A JSON dictionary matching the format returned by the /warehouse endpoint.
     Returns:
-        a WarehouseOutput object with the optimal assignment.
+        A `WarehouseOutput` object with the optimal assignment.
     """
     warehouse_to_destination = json_dict["warehouse_to_destination"]
     total_distance = json_dict["total_distance"]
@@ -61,8 +65,15 @@ def read_json_warehouse(json_dict: gss.WareHouseJson) -> WarehouseOutput:
     )
 
 
-class Logistics:  # pylint: disable=missing-class-docstring
+class Logistics:
+    """Overarching class for the TSP and warehouse functions."""
+
     def __init__(self, client: superstaq_client._SuperstaQClient):
+        """Constructor for the Logistics class.
+
+        Args:
+            client: A client to interface with Superstaq.
+        """
         self._client = client
 
     def tsp(self, locs: List[str], solver: str = "anneal") -> TSPOutput:
@@ -73,18 +84,18 @@ class Logistics:  # pylint: disable=missing-class-docstring
         that can pinpoint a location as a Google Maps search.
         It is assumed that the first string in the list is
         the starting and ending point for the TSP tour.
-        The function returns a TSPOutput object.
+        The function returns a `TSPOutput` object.
         Args:
             locs: List of strings where each string represents
             a location needed to be visited on tour.
             solver: A string indicating which solver to use ("rqaoa" or "anneal").
         Returns:
-            A TSPOutput object with the following attributes:
+            A `TSPOutput` object with the following attributes:
             .route: The optimal TSP tour as a list of strings in order.
             .route_list_numbers: The indicies in locs of the optimal tour.
             .total_distance: The tour's total distance.
             .map_link: A link to google maps that shows the tour.
-            .qubo: The qubo representation of the TSP problem
+            .qubo: The qubo representation of the TSP problem.
         """
         input_dict = {"locs": locs}
         json_dict = self._client.tsp(input_dict)
@@ -104,12 +115,12 @@ class Logistics:  # pylint: disable=missing-class-docstring
             customers: A list of customer locations.
             solver: A string indicating which solver to use ("rqaoa" or "anneal").
         Returns:
-            A WarehouseOutput object with the following attributes:
+            A `WarehouseOutput` object with the following attributes:
             .warehouse_to_destination: The optimal warehouse-customer pairings in List(Tuple) form.
             .total_distance: The total distance among all warehouse-customer pairings.
             .map_link: A link to google maps that shows the warehouse-customer pairings.
             .open_warehouses: A list of all warehouses that are open.
-            .qubo: The qubo representation of the warehouse problem
+            .qubo: The qubo representation of the warehouse problem.
         """
         input_dict: Dict[str, Union[int, List[str], str]] = {
             "k": k,
