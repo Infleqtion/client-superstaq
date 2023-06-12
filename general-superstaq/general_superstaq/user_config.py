@@ -5,7 +5,7 @@ import general_superstaq as gss
 
 
 class UserConfig:
-    """This class contains all the user configurations that are used to operate SuperstaQ"""
+    """This class contains all the user configurations that are used to operate Superstaq."""
 
     def __init__(self, client: gss.superstaq_client._SuperstaQClient):
         self._client = client
@@ -13,11 +13,12 @@ class UserConfig:
     def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
         """Get the querying user's account balance in USD.
         Args:
-            pretty_output: whether to return a pretty string or a float of the balance.
+            pretty_output: Whether to return a pretty string or a float of the balance.
+
         Returns:
             If pretty_output is True, returns the balance as a nicely formatted string ($-prefix,
-                commas on LHS every three digits, and two digits after period). Otherwise, simply
-                returns a float of the balance.
+            commas on LHS every three digits, and two digits after period). Otherwise, simply
+            returns a float of the balance.
         """
         balance = self._client.get_balance()["balance"]
         if pretty_output:
@@ -28,7 +29,7 @@ class UserConfig:
         """Send acceptance of terms of use at https://superstaq.super.tech/terms_of_use.
 
         Args:
-            user_input: if "YES", server will mark user as having accepted TOU.
+            user_input: If "YES", server will mark user as having accepted TOU.
 
         Returns:
             String message indicated if user has been marked as having accepted TOU.
@@ -39,12 +40,11 @@ class UserConfig:
         """Adds new user.
 
         Args:
-            name: The name to add
-            email: The new user's email
+            name: The name to add.
+            email: The new user's email.
 
         Returns:
-            String containing status of update (whether or not it failed)
-            and the new user's token.
+            String containing status of update (whether or not it failed) and the new user's token.
         """
         return self._client.add_new_user(
             {
@@ -57,8 +57,8 @@ class UserConfig:
         """Updates user's balance.
 
         Args:
-            email: The new user's email
-            balance: The new balance
+            email: The new user's email.
+            balance: The new balance.
 
         Returns:
              String containing status of update (whether or not it failed).
@@ -110,14 +110,16 @@ class UserConfig:
         return self._client.cq_set_token({"cq_token": token})
 
     def aqt_upload_configs(self, pulses: Any, variables: Any) -> str:
-        """Uploads configs for AQT. Arguments can be either file paths (in .yaml format) or qtrl
-        Manager instances.
+        """Uploads configs for AQT.
+
+        Arguments can be either file paths (in .yaml format) or qtrl Manager instances.
 
         Args:
-            pulses: PulseManager or file path for Pulses calibration data
-            variables: VariableManager or file path for Variables calibration data
+            pulses: PulseManager or file path for Pulses calibration data.
+            variables: VariableManager or file path for Variables calibration data.
+
         Returns:
-            A status of the update (whether or not it failed)
+            A status of the update (whether or not it failed).
         """
 
         def _config_to_yaml_str(config: Any) -> str:
@@ -153,7 +155,8 @@ class UserConfig:
         return self._client.aqt_upload_configs({"pulses": pulses_yaml, "variables": variables_yaml})
 
     def aqt_get_configs(self) -> Dict[str, str]:
-        """Calls private client to get the configurations for AQT
+        """Calls private client to get the configurations for AQT.
+
         Returns:
             The configurations as a Dictionary
         """
@@ -165,21 +168,22 @@ class UserConfig:
         variables_file_path: Optional[str] = None,
         overwrite: bool = False,
     ) -> Optional[Tuple[Dict[str, Any], Dict[str, Any]]]:
-        """Downloads AQT configs that had previously been uploaded to SuperstaQ, optionally saving
-        them to disk. Reading AQT configurations requires the PyYAML package.
+        """Downloads AQT configs that had previously been uploaded to SuperstaQ.
+
+        Optionally saves configs to disk. Reading AQT configurations requires the PyYAML package.
 
         Args:
-            pulses_file_path (optional): Where to write the pulse configurations
-            variables_file_path (optional): Where to write the variables configurations
-            overwrite: Whether or not to overwrite existing files
+            pulses_file_path (optional): Where to write the pulse configurations.
+            variables_file_path (optional): Where to write the variables configurations.
+            overwrite: Whether or not to overwrite existing files.
+
         Returns (if file paths are not provided):
-            pulses: A dictionary containing Pulse configuration data
-            variables: A dictionary containing Variables configuration data
-        Returns (if file paths are provided):
-            None
+            A tuple of pulses (a dictionary containing Pulse configuration data) and variables (a
+            dictionary containing Variables configuration data).
+
         Raises:
-            ValueError: If either file path already exists and overwrite is not True
-            ModuleNotFoundError: If file paths are unspecified and PyYAML cannot be imported
+            ValueError: If either file path already exists and overwrite is not True.
+            ModuleNotFoundError: If file paths are unspecified and PyYAML cannot be imported.
         """
 
         if pulses_file_path and variables_file_path:
