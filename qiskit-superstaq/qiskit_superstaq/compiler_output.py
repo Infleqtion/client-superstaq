@@ -17,7 +17,7 @@ except ModuleNotFoundError:
 
 
 def active_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
-    """Returns the indices of the non-idle qubits in a quantum circuit.
+    """Returns the indices of the non-idle qubits in the input quantum circuit.
 
     Args:
         circuit: A `qiskit.QuantumCircuit` circuit.
@@ -37,7 +37,7 @@ def active_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
 
 
 def measured_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
-    """Returns the indices of the measured qubits in a quantum circuit.
+    """Returns the indices of the measured qubits in the input quantum circuit.
 
     Args:
         circuit: A `qiskit.QuantumCircuit` circuit.
@@ -84,8 +84,9 @@ class CompilerOutput:
             pulse_sequences: `qiskit.pulse.Schedule` or list thereof specifying the pulse
                 compilation.
             seq: `qtrl.sequencer.Sequence` pulse sequence if qtrl is available locally.
-            jaqal_programs: String or list of strings specifying Jaqal programs (for QSCOUT).
-            pulse_lists: List of pulse cycles if qtrl is available locally.
+            jaqal_programs: Optional string or list of strings specifying Jaqal programs (for
+                QSCOUT).
+            pulse_lists: Optional list of pulse cycles if qtrl is available locally.
         """
         if isinstance(circuits, qiskit.QuantumCircuit):
             self.circuit = circuits
