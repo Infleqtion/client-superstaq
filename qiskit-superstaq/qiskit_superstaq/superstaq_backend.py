@@ -25,10 +25,10 @@ def validate_target(target: str) -> None:
     """Checks that a device name contains a valid format, vendor prefix, and device type.
 
     Args:
-        target: String containing the name of a target backend.
+        target: A string containing the name of a target backend.
 
     Raises:
-        ValueError: If `target` has invalid format, vendor prefix, or device type.
+        ValueError: If `target` has an invalid format, vendor prefix, or device type.
     """
     vendor_prefixes = [
         "aqt",
