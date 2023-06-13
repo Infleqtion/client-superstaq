@@ -74,8 +74,8 @@ class Job:
             self._job = self._client.get_job(self.job_id())
 
     def _check_if_unsuccessful(self) -> None:
-        if self.status() in self.UNSUCCESSFUL_STATES:
-            status = self.status()
+        status = self.status()
+        if status in self.UNSUCCESSFUL_STATES:
             if "failure" in self._job and "error" in self._job["failure"]:
                 # if possible append a message to the failure status, e.g. "Failed (<message>)"
                 error = self._job["failure"]["error"]
