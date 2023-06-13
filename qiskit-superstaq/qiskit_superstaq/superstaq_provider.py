@@ -93,7 +93,7 @@ def _get_metadata_of_circuits(
 class SuperstaQProvider(
     qiskit.providers.ProviderV1, finance.Finance, logistics.Logistics, user_config.UserConfig
 ):
-    """Provider for SuperstaQ backend.
+    """Provider for Superstaq backend.
 
     Typical usage is:
 
@@ -105,7 +105,7 @@ class SuperstaQProvider(
 
         backend = ss_provider.get_backend('target')
 
-    where `MY_TOKEN` is the access token provided by SuperstaQ,
+    where `MY_TOKEN` is the access token provided by Superstaq,
     and `target` is the name of the desired backend.
     """
 
@@ -120,7 +120,7 @@ class SuperstaQProvider(
         """Initializes a SuperstaQProvider.
 
         Args:
-            api_key: A string that allows access to the SuperstaQ API. If no key is provided, then
+            api_key: A string that allows access to the Superstaq API. If no key is provided, then
                 this instance tries to use the environment variable `SUPERSTAQ_API_KEY`. If
                 `SUPERSTAQ_API_KEY` is not set, then this instance checks for the
                 following files:
