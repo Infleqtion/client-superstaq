@@ -29,7 +29,7 @@ def _validate_qiskit_circuits(circuits: object) -> None:
     `qiskit.QuantumCircuit` instances.
 
     Args:
-        circuits: The qiskit circuit(s) to run.
+        circuits: The circuit(s) to run.
 
     Raises:
         ValueError: If the input is not a `qiskit.QuantumCircuit` or a list of
@@ -75,7 +75,7 @@ def _get_metadata_of_circuits(
     """Extracts metadata from the input qiskit circuit(s).
 
     Args:
-        circuits: The qiksit circuit(s) from which to extract the metadata.
+        circuits: The circuit(s) from which to extract the metadata.
 
     Returns:
         A list of dictionaries containing the metadata of the input circuit(s). If a circuit has no
@@ -190,7 +190,7 @@ class SuperstaQProvider(
         """Generates resource estimates for qiskit circuit(s).
 
         Args:
-            circuits: The qiskit circuit(s) used during resource estimation.
+            circuits: The circuit(s) used during resource estimation.
             target: A string containing the name of a target backend.
 
         Returns:
@@ -331,10 +331,10 @@ class SuperstaQProvider(
         target: str = "ibmq_qasm_simulator",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
-        """Returns pulse schedule(s) for the given circuit(s) and target.
+        """Returns pulse schedule(s) for the given qiskit circuit(s) and target.
 
         Args:
-            circuits: The qiskit circuit(s) to compile.
+            circuits: The circuit(s) to compile.
             target: A string containing the name of a target IBM backend.
             kwargs: Other desired ibmq_compile options.
 
@@ -458,7 +458,7 @@ class SuperstaQProvider(
         """Compiles the given circuit(s) to CQ device, optimized to its native gate set.
 
         Args:
-            circuits: The qiskit circuit(s) to compile.
+            circuits: The circuit(s) to compile.
             target: A string containing the name of a target backend.
             kwargs: Other desired cq_compile options.
 
@@ -492,7 +492,7 @@ class SuperstaQProvider(
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int
     ) -> Tuple[List[qiskit.QuantumCircuit], npt.NDArray[np.float_]]:
-        """Returns Supercheq randomly generated circuits and corresponding fidelity matrices.
+        """Returns Supercheq randomly generated circuits and the corresponding fidelity matrices.
 
         References:
             [1] P. Gokhale et al., *SupercheQ: Quantum Advantage for Distributed Databases*, (2022).
@@ -505,7 +505,7 @@ class SuperstaQProvider(
             depth: The depth of the circuits to run Supercheq on.
 
         Returns:
-            A tuple containing a list of qiskit QuantumCircuits and a list of corresponding fidelity
+            A tuple containing a list of `qiskit.QuantumCircuit`s and a list of corresponding fidelity
                 matrices.
         """
         _validate_integer_param(num_qubits)
@@ -516,7 +516,7 @@ class SuperstaQProvider(
         return circuits, fidelities
 
     def target_info(self, target: str) -> Dict[str, Any]:
-        """Returns information about device specified by `target`.
+        """Returns information about the device specified by `target`.
 
         Args:
             target: A string containing the name of a target backend.
