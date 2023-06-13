@@ -150,7 +150,7 @@ class Job:
             collections.Counter that represents the results of the measurements
 
         Raises:
-            SuperstaQUnsuccessfulJobException: If the job has failed, been canceled, or deleted.
+            SuperstaQUnsuccessfulJobException: If the job failed or has been canceled or deleted.
             SuperstaQException: If unable to get the results from the API.
             TimeoutError: If no results are available in the provided timeout interval.
         """
