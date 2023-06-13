@@ -21,7 +21,15 @@ import qiskit
 import qiskit_superstaq as qss
 
 
-def validate_target(target: str) -> None:  # pylint: disable=missing-function-docstring
+def validate_target(target: str) -> None:
+    """Checks that a target contains a valid format, vendor prefix, and device type.
+
+    Args:
+        target: A string containing the name of a target backend.
+
+    Raises:
+        ValueError: If `target` has an invalid format, vendor prefix, or device type.
+    """
     vendor_prefixes = [
         "aqt",
         "aws",
@@ -38,7 +46,6 @@ def validate_target(target: str) -> None:  # pylint: disable=missing-function-do
 
     target_device_types = ["qpu", "simulator"]
 
-    # Check valid format
     match = re.fullmatch("^([A-Za-z0-9-]+)_([A-Za-z0-9-.]+)_([a-z]+)", target)
     if not match:
         raise ValueError(
@@ -49,14 +56,12 @@ def validate_target(target: str) -> None:  # pylint: disable=missing-function-do
 
     prefix, _, device_type = match.groups()
 
-    # Check valid prefix
     if prefix not in vendor_prefixes:
         raise ValueError(
             f"{target} does not have a valid target prefix. "
             f"Valid target prefixes are: {vendor_prefixes}."
         )
 
-    # Check for valid device type
     if device_type not in target_device_types:
         raise ValueError(
             f"{target} does not have a valid target device type. "
@@ -64,8 +69,16 @@ def validate_target(target: str) -> None:  # pylint: disable=missing-function-do
         )
 
 
-class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-class-docstring
+class SuperstaQBackend(qiskit.providers.BackendV1):
+    """This class represents a Superstaq backend."""
+
     def __init__(self, provider: qss.SuperstaQProvider, target: str) -> None:
+        """Initializes a SuperstaQBackend.
+
+        Args:
+            provider: Provider for a Superstaq backend.
+            target: A string containing the name of a target backend.
+        """
         self._provider = provider
         self.configuration_dict = {
             "backend_name": target,
@@ -111,6 +124,18 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         method: Optional[str] = None,
         options: Optional[Dict[str, Any]] = None,
     ) -> qss.SuperstaQJob:
+        """Runs circuits on the stored Superstaq backend.
+
+        Args:
+            circuits: A list of circuits to run.
+            shots: The number of execution shots (times to run the circuit).
+            method:  An optional string that describes the execution method
+                (e.g. 'dry-run', 'statevector', etc.).
+            options: An optional dictionary of optimization and execution parameters.
+
+        Returns:
+            A Superstaq job storing ID and other related info.
+        """
 
         if isinstance(circuits, qiskit.QuantumCircuit):
             circuits = [circuits]
@@ -138,5 +163,9 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         return job
 
     def target_info(self) -> Dict[str, Any]:
-        """Returns backend's target information."""
+        """Returns information about this backend.
+
+        Returns:
+            A dictionary of target information.
+        """
         return self._provider._client.target_info(self.name())["target_info"]

@@ -34,7 +34,6 @@ def _validate_qiskit_circuits(circuits: object) -> None:
     Raises:
         ValueError: If the input is not a `qiskit.QuantumCircuit` or a list of
         `qiskit.QuantumCircuit` instances.
-
     """
     if not (
         isinstance(circuits, qiskit.QuantumCircuit)
@@ -76,12 +75,11 @@ def _get_metadata_of_circuits(
     """Extracts metadata from the input qiskit circuit(s).
 
     Args:
-        Circuit(s) from which to extract the metadata.
+        circuits: The circuit(s) from which to extract the metadata.
 
     Returns:
         A list of dictionaries containing the metadata of the input circuit(s). If a circuit has no
         metadata, an empty dictionary is stored for that circuit.
-
     """
 
     metadata_of_circuits = [
@@ -95,7 +93,7 @@ def _get_metadata_of_circuits(
 class SuperstaQProvider(
     qiskit.providers.ProviderV1, finance.Finance, logistics.Logistics, user_config.UserConfig
 ):
-    """Provider for SuperstaQ backend.
+    """Provider for Superstaq backend.
 
     Typical usage is:
 
@@ -107,31 +105,8 @@ class SuperstaQProvider(
 
         backend = ss_provider.get_backend('target')
 
-    where `'MY_TOKEN'` is the access token provided by SuperstaQ,
-    and 'target' is the name of the desired backend.
-
-    Args:
-        api_key: A string that allows access to the SuperstaQ API. If no key is provided, then
-            this instance tries to use the environment variable `SUPERSTAQ_API_KEY`. If
-            furthermore that environment variable is not set, then this instance checks for the
-            following files:
-            - `$XDG_DATA_HOME/super.tech/superstaq_api_key`
-            - `$XDG_DATA_HOME/coldquanta/superstaq_api_key`
-            - `~/.super.tech/superstaq_api_key`
-            - `~/.coldquanta/superstaq_api_key`
-            If one of those files exists, then it is treated as a plain text file, and the first
-            line of this file is interpreted as an API key.  Failure to find an API key raises
-            an `EnvironmentError`.
-        remote_host: The location of the API in the form of a URL. If this is None,
-            then this instance will use the environment variable `SUPERSTAQ_REMOTE_HOST`.
-            If that variable is not set, then this uses
-            `https://superstaq.super.tech/{api_version}`,
-            where `{api_version}` is the `api_version` specified below.
-        api_version: Version of the API.
-        max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
-        verbose: Whether to print to stdio and stderr on retriable errors.
-    Raises:
-        EnvironmentError: If an API key was not provided and could not be found.
+    where `MY_TOKEN` is the access token provided by Superstaq,
+    and `target` is the name of the desired backend.
     """
 
     def __init__(
@@ -142,6 +117,32 @@ class SuperstaQProvider(
         max_retry_seconds: int = 3600,
         verbose: bool = False,
     ) -> None:
+        """Initializes a SuperstaQProvider.
+
+        Args:
+            api_key: A string that allows access to the Superstaq API. If no key is provided, then
+                this instance tries to use the environment variable `SUPERSTAQ_API_KEY`. If
+                `SUPERSTAQ_API_KEY` is not set, then this instance checks for the
+                following files:
+                - `$XDG_DATA_HOME/super.tech/superstaq_api_key`
+                - `$XDG_DATA_HOME/coldquanta/superstaq_api_key`
+                - `~/.super.tech/superstaq_api_key`
+                - `~/.coldquanta/superstaq_api_key`
+                If one of those files exists, then it is treated as a plain text file, and the first
+                line of this file is interpreted as an API key.  Failure to find an API key raises
+                an `EnvironmentError`.
+            remote_host: The location of the API in the form of a URL. If this is None,
+                then this instance will use the environment variable `SUPERSTAQ_REMOTE_HOST`.
+                If that variable is not set, then this uses
+                `https://superstaq.super.tech/{api_version}`,
+                where `{api_version}` is the `api_version` specified below.
+            api_version: The version of the API.
+            max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
+            verbose: Whether to print to stdio and stderr on retriable errors.
+
+        Raises:
+            EnvironmentError: If an API key was not provided and could not be found.
+        """
         self._name = "superstaq_provider"
 
         self._client = superstaq_client._SuperstaQClient(
@@ -161,9 +162,22 @@ class SuperstaQProvider(
         return repr1 + f"name={self._name})>"
 
     def get_backend(self, target: str) -> qss.SuperstaQBackend:
+        """Returns a Superstaq backend.
+
+        Args:
+            target: A string containing the name of a target backend.
+
+        Returns:
+            A Superstaq backend.
+        """
         return qss.SuperstaQBackend(provider=self, target=target)
 
     def backends(self) -> List[qss.SuperstaQBackend]:
+        """Lists the backends available from this provider.
+
+        Returns:
+            A list of Superstaq backends.
+        """
         targets = self._client.get_targets()["superstaq_targets"]
         backends = []
         for target in targets["compile-and-run"]:
@@ -173,14 +187,15 @@ class SuperstaQProvider(
     def resource_estimate(
         self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]], target: str
     ) -> Union[ResourceEstimate, List[ResourceEstimate]]:
-        """Generates resource estimates for circuit(s).
+        """Generates resource estimates for qiskit circuit(s).
 
         Args:
-            circuits: qiskit QuantumCircuit(s).
-            target: string of target representing target device
+            circuits: The circuit(s) used during resource estimation.
+            target: A string containing the name of a target backend.
+
         Returns:
-            ResourceEstimate(s) containing resource costs (after compilation)
-            for running circuit(s) on target.
+            ResourceEstimate(s) containing resource costs (after compilation) for running circuit(s)
+            on a backend.
         """
         _validate_qiskit_circuits(circuits)
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
@@ -213,7 +228,7 @@ class SuperstaQProvider(
 
         Args:
             circuits: The circuit(s) to compile.
-            target: String of target AQT device.
+            target: A string containing the name of a target AQT backend.
             atol: An optional tolerance to use for approximate gate synthesis.
             kwargs: Other desired aqt_compile options.
 
@@ -268,7 +283,7 @@ class SuperstaQProvider(
             num_equivalent_circuits: Number of logically equivalent random circuits to generate for
                 each input circuit.
             random_seed: Optional seed for circuit randomizer.
-            target: String of target AQT device.
+            target: A string containing the name of a target AQT backend.
             atol: An optional tolerance to use for approximate gate synthesis.
             kwargs: Other desired aqt_compile_eca options.
 
@@ -316,13 +331,16 @@ class SuperstaQProvider(
         target: str = "ibmq_qasm_simulator",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
-        """Returns pulse schedule(s) for the given circuit(s) and target.
+        """Returns pulse schedule(s) for the given qiskit circuit(s) and target.
+
         Args:
-            circuits: Qiskit QuantumCircuit(s)
-            target: String of target IBMQ device.
+            circuits: The circuit(s) to compile.
+            target: A string containing the name of a target IBMQ backend.
             kwargs: Other desired ibmq_compile options.
+
         Returns:
-            object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
+            object whose .circuit(s) attribute is an optimized qiskit circuit(s).
+
         Raises:
             ValueError: If `target` is not a valid IBMQ target.
         """
@@ -389,7 +407,7 @@ class SuperstaQProvider(
 
         Args:
             circuits: The circuit(s) to compile.
-            target: String of target representing target device
+            target: A string containing the name of a target backend.
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
             base_entangling_gate: The base entangling gate to use (either "xx" or "zz").
             kwargs: Other desired qscout_compile options.
@@ -440,11 +458,13 @@ class SuperstaQProvider(
         """Compiles the given circuit(s) to CQ device, optimized to its native gate set.
 
         Args:
-            circuits: Qiskit QuantumCircuit(s)
-            target: String of target representing target device
+            circuits: The circuit(s) to compile.
+            target: A string containing the name of a target backend.
             kwargs: Other desired cq_compile options.
+
         Returns:
-            object whose .circuit(s) attribute is an optimized qiskit QuantumCircuit(s)
+            object whose .circuit(s) attribute is an optimized qiskit circuit(s).
+
         Raises:
             ValueError: If `target` is not a valid CQ target.
         """
@@ -472,7 +492,22 @@ class SuperstaQProvider(
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int
     ) -> Tuple[List[qiskit.QuantumCircuit], npt.NDArray[np.float_]]:
-        """Returns the randomly generated circuits and the fidelity matrix for inputted files."""
+        """Returns Supercheq randomly generated circuits and the corresponding fidelity matrices.
+
+        References:
+            [1] P. Gokhale et al., *SupercheQ: Quantum Advantage for Distributed Databases*, (2022).
+                https://arxiv.org/abs/2212.03850.
+
+        Args:
+            files: A list of files specified as binary using ints.
+                For example: [[1, 0, 1], [1, 1, 1]].
+            num_qubits: The number of qubits to run Supercheq on.
+            depth: The depth of the circuits to run Supercheq on.
+
+        Returns:
+            A tuple containing a list of `qiskit.QuantumCircuit`s and a list of corresponding
+                fidelity matrices.
+        """
         _validate_integer_param(num_qubits)
         _validate_integer_param(depth)
         json_dict = self._client.supercheq(files, num_qubits, depth, "qiskit_circuits")
@@ -481,5 +516,12 @@ class SuperstaQProvider(
         return circuits, fidelities
 
     def target_info(self, target: str) -> Dict[str, Any]:
-        """Returns information about device specified by `target`."""
+        """Returns information about the device specified by `target`.
+
+        Args:
+            target: A string containing the name of a target backend.
+
+        Returns:
+            Information about a target backend.
+        """
         return self._client.target_info(target)["target_info"]
