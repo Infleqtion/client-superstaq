@@ -505,8 +505,8 @@ class SuperstaQProvider(
             depth: The depth of the circuits to run Supercheq on.
 
         Returns:
-            A tuple containing a list of `qiskit.QuantumCircuit`s and a list of corresponding fidelity
-                matrices.
+            A tuple containing a list of `qiskit.QuantumCircuit`s and a list of corresponding
+                fidelity matrices.
         """
         _validate_integer_param(num_qubits)
         _validate_integer_param(depth)
