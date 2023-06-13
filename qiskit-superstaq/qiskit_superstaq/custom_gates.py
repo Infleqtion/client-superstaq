@@ -437,7 +437,7 @@ def custom_resolver(gate: qiskit.circuit.Instruction) -> Optional[qiskit.circuit
 
     Returns:
         An optional `qiskit.circuit.Gate`.
-    """    
+    """
 
     if gate.definition and gate.definition.name == "parallel_gates":
         component_gates = [custom_resolver(inst) or inst for inst, _, _ in gate.definition]
