@@ -151,7 +151,7 @@ class Job:
             A dictionary containing the results of the measurements.
 
         Raises:
-            SuperstaQUnsuccessfulJob: If the job has failed, been canceled, or deleted.
+            RuntimeError: If the job has failed, been canceled, or deleted.
             SuperstaQException: If unable to get the results from the API.
         """
         time_waited_seconds: float = 0.0
