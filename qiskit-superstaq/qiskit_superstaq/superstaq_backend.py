@@ -73,6 +73,12 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
     """This class represents a Superstaq backend."""
 
     def __init__(self, provider: qss.SuperstaQProvider, target: str) -> None:
+        """Initializes a SuperstaQBackend.
+
+        Args:
+            provider: Provider for a Superstaq backend.
+            target: A string containing the name of a target backend.
+        """
         self._provider = provider
         self.configuration_dict = {
             "backend_name": target,
@@ -88,12 +94,6 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             "max_shots": -1,
             "coupling_map": None,
         }
-        """Initializes a SuperstaQBackend.
-        
-        Args:
-            provider: Provider for a Superstaq backend.
-            target: A string containing the name of a target backend.
-        """
 
         validate_target(target)
 
