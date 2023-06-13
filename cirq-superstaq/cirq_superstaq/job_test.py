@@ -132,7 +132,7 @@ def test_job_counts_failed(job: css.job.Job) -> None:
         "target": "ss_unconstrained_simulator",
     }
     with mocked_get_job_requests(job_dict):
-        with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match="Failed (too many qubits)"):
+        with pytest.raises(RuntimeError, match="too many qubits"):
             _ = job.counts()
         assert job.status() == "Failed"
 
