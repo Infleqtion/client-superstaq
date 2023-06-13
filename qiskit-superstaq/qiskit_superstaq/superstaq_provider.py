@@ -335,7 +335,7 @@ class SuperstaQProvider(
 
         Args:
             circuits: The circuit(s) to compile.
-            target: A string containing the name of a target IBM backend.
+            target: A string containing the name of a target IBMQ backend.
             kwargs: Other desired ibmq_compile options.
 
         Returns:
