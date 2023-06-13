@@ -149,7 +149,7 @@ class Job:
             collections.Counter that represents the results of the measurements
 
         Raises:
-            SuperstaQUnsuccessfulJob: If the job has failed, been canceled, or deleted.
+            SuperstaQUnsuccessfulJobException: If the job has failed, been canceled, or deleted.
             SuperstaQException: If unable to get the results from the API.
         """
         time_waited_seconds: float = 0.0
@@ -159,13 +159,15 @@ class Job:
                 break
             time.sleep(polling_seconds)
             time_waited_seconds += polling_seconds
+
         if self.status() != "Done":
+            status = self.status()
             if "failure" in self._job and "error" in self._job["failure"]:
+                # if possible append a message to the failure status, e.g. "Failed (<message>)"
                 error = self._job["failure"]["error"]
-                raise RuntimeError(f"Job failed. Error message: {error}")
-            raise RuntimeError(
-                f"Job was not completed successfully. Instead had status: {self.status()}"
-            )
+                status += f" ({error})"
+            raise gss.SuperstaQUnsuccessfulJobException(self._job_id, status)
+
         return self._job["samples"]
 
     def __str__(self) -> str:
