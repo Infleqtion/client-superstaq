@@ -431,7 +431,14 @@ def custom_resolver(gate: qiskit.circuit.Instruction) -> Optional[qiskit.circuit
     """Recover a custom gate type from a generic `qiskit.circuit.Gate`. Resolution is done using
     `gate.definition.name` rather than `gate.name`, as the former is set by all qiskit-superstaq
     custom gates and the latter may be modified by calls such as QuantumCircuit.qasm()
-    """
+
+    Args:
+        gate: _description_
+
+    Returns:
+        An optional `qiskit.circuit.Gate`.
+    """    
+
     if gate.definition and gate.definition.name == "parallel_gates":
         component_gates = [custom_resolver(inst) or inst for inst, _, _ in gate.definition]
         return ParallelGates(*component_gates, label=gate.label)
