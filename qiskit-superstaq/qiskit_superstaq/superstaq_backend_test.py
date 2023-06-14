@@ -218,14 +218,19 @@ def test_qscout_compile(mock_post: MagicMock) -> None:
 
 @patch("requests.post")
 def test_compile(mock_post: MagicMock) -> None:
-    # Compilation to an unavailable target (e.g., AWS)
+    # Compilation to a simulator (e.g., AWS)
     provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
     backend = provider.get_backend("aws_sv1_simulator")
 
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)
-    with pytest.raises(ValueError, match="aws_sv1_simulator is not a valid target"):
-        backend.compile(qc)
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits([qc]),
+        "final_logical_to_physicals": json.dumps([[(0, 0)]]),
+    }
+    out = backend.compile([qc], test_options="yes")
+    assert out.circuits == [qc]
+    assert out.final_logical_to_physicals == [{0: 0}]
 
 
 def test_target_info() -> None:

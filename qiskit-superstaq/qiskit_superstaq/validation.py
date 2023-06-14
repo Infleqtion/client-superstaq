@@ -48,7 +48,14 @@ def validate_integer_param(integer_param: object) -> None:
         raise ValueError("Must be a positive integer.")
 
 
-def validate_target(target: str) -> None:  # pylint: disable=missing-function-docstring
+def validate_target(target: str) -> None:
+    """Checks that a target contains a valid format, vendor prefix, and device type.
+    Args:
+        target: A string containing the name of a target backend.
+
+    Raises:
+        ValueError: If `target` has an invalid format, vendor prefix, or device type.
+    """
     vendor_prefixes = [
         "aqt",
         "aws",

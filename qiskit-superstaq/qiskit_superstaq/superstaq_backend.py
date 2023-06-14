@@ -156,15 +156,37 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         qss.validation.validate_qiskit_circuits(circuits)
         if self.name().startswith("ibmq_"):
             return self.ibmq_compile(circuits, **kwargs)
+
         elif self.name().startswith("aqt_"):
             return self.aqt_compile(circuits, **kwargs)
+
         elif self.name().startswith("sandia_"):
             return self.qscout_compile(circuits, **kwargs)
+
         elif self.name().startswith("cq_"):
             return self.cq_compile(circuits, **kwargs)
-        raise ValueError(
-            f"{self.name()} is not a valid target (currently supports AQT, IBMQ, QSCOUT, CQ)."
+
+        qss.validation.validate_target(self.name())
+        metadata_of_circuits = _get_metadata_of_circuits(circuits)
+        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
+        request_json = self._get_compile_request_json(circuits, **kwargs)
+        json_dict = self._provider._client.compile(request_json)
+        return qss.compiler_output.read_json_only_circuits(
+            json_dict, metadata_of_circuits, circuits_is_list
         )
+
+    def _get_compile_request_json(
+        self,
+        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        **kwargs: Any,
+    ) -> Dict[str, str]:
+        """"""
+        serialized_circuits = qss.serialization.serialize_circuits(circuits)
+        return {
+            "qiskit_circuits": serialized_circuits,
+            "target": self.name(),
+            "options": json.dumps(kwargs),
+        }
 
     def aqt_compile(
         self,
@@ -209,14 +231,9 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         if atol is not None:
             options["atol"] = atol
 
-        serialized_circuits = qss.serialization.serialize_circuits(circuits)
-        request_json = {
-            "qiskit_circuits": serialized_circuits,
-            "target": self.name(),
-            "options": json.dumps(options),
-        }
         metadata_of_circuits = _get_metadata_of_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
+        request_json = self._get_compile_request_json(circuits, **options)
         json_dict = self._provider._client.aqt_compile(request_json)
         return qss.compiler_output.read_json_aqt(
             json_dict, metadata_of_circuits, circuits_is_list, num_equivalent_circuits
@@ -243,12 +260,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         if not self.name().startswith("ibmq_"):
             raise ValueError(f"{self.name()} is not a valid IBMQ target.")
 
-        serialized_circuits = qss.serialization.serialize_circuits(circuits)
-        request_json = {
-            "qiskit_circuits": serialized_circuits,
-            "target": self.name(),
-            "options": json.dumps(kwargs),
-        }
+        request_json = self._get_compile_request_json(circuits, **kwargs)
         json_dict = self._provider._client.compile(request_json)
         compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
         metadata_of_circuits = _get_metadata_of_circuits(circuits)
@@ -322,12 +334,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             "mirror_swaps": mirror_swaps,
             "base_entangling_gate": base_entangling_gate,
         }
-        serialized_circuits = qss.serialization.serialize_circuits(circuits)
-        request_json = {
-            "qiskit_circuits": serialized_circuits,
-            "target": self.name(),
-            "options": json.dumps(options),
-        }
+        request_json = self._get_compile_request_json(circuits, **options)
         json_dict = self._provider._client.qscout_compile(request_json)
         return qss.compiler_output.read_json_qscout(
             json_dict, metadata_of_circuits, circuits_is_list
@@ -355,13 +362,8 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
 
         qss.validation.validate_target(self.name())
         metadata_of_circuits = _get_metadata_of_circuits(circuits)
-        serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
-        request_json = {
-            "qiskit_circuits": serialized_circuits,
-            "target": self.name(),
-            "options": json.dumps(kwargs),
-        }
+        request_json = self._get_compile_request_json(circuits, **kwargs)
         json_dict = self._provider._client.compile(request_json)
         return qss.compiler_output.read_json_only_circuits(
             json_dict, metadata_of_circuits, circuits_is_list
