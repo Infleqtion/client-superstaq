@@ -8,11 +8,11 @@ import general_superstaq as gss
 
 
 def read_json_qubo_result(json_dict: Dict[str, str]) -> npt.NDArray[np.int_]:
-    """Reads out returned JSON from SuperstaQ API's QUBO endpoint.
+    """Reads out returned JSON from Superstaq API's QUBO endpoint.
     Args:
-        json_dict: a JSON dictionary matching the format returned by /qubo endpoint
+        json_dict: A JSON dictionary matching the format returned by the /qubo endpoint.
     Returns:
-        a numpy.recarray containing the results of the optimization.
+        A numpy.recarray containing the results of the optimization.
     """
     return gss.serialization.deserialize(json_dict["solution"])
 
@@ -20,9 +20,9 @@ def read_json_qubo_result(json_dict: Dict[str, str]) -> npt.NDArray[np.int_]:
 def convert_qubo_to_model(qubo: qv.QUBO) -> gss.QuboModel:
     """Takes in a qubovert QUBO and converts it to the format required by the /qubo endpoint API.
     Args:
-        qubo: a qubovert QUBO object.
+        qubo: A `qubovert.QUBO` object.
     Returns:
-        An equivalent qubo represent as a nested list of dictionaries.
+        An equivalent qubo represented as a nested list of dictionaries.
     """
     model: gss.QuboModel = []
     for key, value in qubo.items():
@@ -31,11 +31,11 @@ def convert_qubo_to_model(qubo: qv.QUBO) -> gss.QuboModel:
 
 
 def convert_model_to_qubo(model: gss.QuboModel) -> qv.QUBO:
-    """Takes in qubo model transferred over the wire and converts it to the qubovert format.
+    """Takes in a qubo model transferred over the wire and converts it to the qubovert format.
     Args:
         model: The qubo model as specified in superstaq.web.server.
     Returns:
-        An equivalent qubovert.QUBO object.
+        An equivalent `qubovert.QUBO` object.
     """
     qubo_dict = {}
     for term in model:

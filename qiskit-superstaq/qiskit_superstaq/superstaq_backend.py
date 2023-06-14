@@ -42,8 +42,16 @@ def _get_metadata_of_circuits(
     return metadata_of_circuits
 
 
-class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-class-docstring
+class SuperstaQBackend(qiskit.providers.BackendV1):
+    """This class represents a Superstaq backend."""
+
     def __init__(self, provider: qss.SuperstaQProvider, target: str) -> None:
+        """Initializes a SuperstaQBackend.
+
+        Args:
+            provider: Provider for a Superstaq backend.
+            target: A string containing the name of a target backend.
+        """
         self._provider = provider
         self.configuration_dict = {
             "backend_name": target,
@@ -89,6 +97,18 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         method: Optional[str] = None,
         options: Optional[Dict[str, Any]] = None,
     ) -> qss.SuperstaQJob:
+        """Runs circuits on the stored Superstaq backend.
+
+        Args:
+            circuits: A list of circuits to run.
+            shots: The number of execution shots (times to run the circuit).
+            method:  An optional string that describes the execution method
+                (e.g. 'dry-run', 'statevector', etc.).
+            options: An optional dictionary of optimization and execution parameters.
+
+        Returns:
+            A Superstaq job storing ID and other related info.
+        """
 
         if isinstance(circuits, qiskit.QuantumCircuit):
             circuits = [circuits]
@@ -348,5 +368,9 @@ class SuperstaQBackend(qiskit.providers.BackendV1):  # pylint: disable=missing-c
         )
 
     def target_info(self) -> Dict[str, Any]:
-        """Returns backend's target information."""
+        """Returns information about this backend.
+
+        Returns:
+            A dictionary of target information.
+        """
         return self._provider._client.target_info(self.name())["target_info"]

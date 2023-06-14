@@ -17,7 +17,14 @@ except ModuleNotFoundError:
 
 
 def active_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
-    """Returns the indices of the non-idle qubits in a quantum circuit."""
+    """Returns the indices of the non-idle qubits in the input quantum circuit.
+
+    Args:
+        circuit: A `qiskit.QuantumCircuit` circuit.
+
+    Returns:
+        A list containing the indices of the non-idle qubits.
+    """
 
     qubit_indices: Set[int] = set()
 
@@ -30,7 +37,14 @@ def active_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
 
 
 def measured_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
-    """Returns the indices of the measured qubits in a quantum circuit."""
+    """Returns the indices of the measured qubits in the input quantum circuit.
+
+    Args:
+        circuit: A `qiskit.QuantumCircuit` circuit.
+
+    Returns:
+        A list containing the indices of the measured qubits.
+    """
 
     measured_qubits: Set[qiskit.circuit.Qubit] = set()
 
@@ -45,7 +59,9 @@ def measured_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
     return sorted(circuit.find_bit(qubit).index for qubit in measured_qubits)
 
 
-class CompilerOutput:  # pylint: disable=missing-class-docstring
+class CompilerOutput:
+    """A class that stores the results of compiled circuits."""
+
     def __init__(
         self,
         circuits: Union[
@@ -59,6 +75,19 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
         jaqal_programs: Optional[Union[str, List[str]]] = None,
         pulse_lists: Optional[Union[List[List[List[Any]]], List[List[List[List[Any]]]]]] = None,
     ) -> None:
+        """Constructs a `CompilerOutput` object.
+
+        Args:
+            circuits: Compiled circuit or list of compiled circuits.
+            final_logical_to_physics: Dictionary or list of dictionaries specifying mapping from
+                logical to physical qubits.
+            pulse_sequences: `qiskit.pulse.Schedule` or list thereof specifying the pulse
+                compilation.
+            seq: `qtrl.sequencer.Sequence` pulse sequence if qtrl is available locally.
+            jaqal_programs: Optional string or list of strings specifying Jaqal programs (for
+                QSCOUT).
+            pulse_lists: Optional list of pulse cycles if qtrl is available locally.
+        """
         if isinstance(circuits, qiskit.QuantumCircuit):
             self.circuit = circuits
             self.final_logical_to_physical = final_logical_to_physicals
@@ -75,10 +104,13 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
         self.seq = seq
 
     def has_multiple_circuits(self) -> bool:
-        """Returns True if this object represents multiple circuits.
+        """Checks if this object represents multiple circuits.
 
         If so, this object has .circuits and .pulse_lists attributes. Otherwise, this object
         represents a single circuit, and has .circuit and .pulse_list attributes.
+
+        Returns:
+            A boolean indicating whether this object represents multiple circuits.
         """
         return hasattr(self, "circuits")
 
@@ -121,24 +153,25 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
         )
 
 
-def read_json_aqt(  # pylint: disable=missing-param-doc
+def read_json_aqt(
     json_dict: Dict[str, str],
     metadata_of_circuits: List[Dict[Any, Any]],
     circuits_is_list: bool,
     num_equivalent_circuits: Optional[int] = None,
 ) -> CompilerOutput:
-    """Reads out returned JSON from SuperstaQ API's AQT compilation endpoint.
+    """Reads out returned JSON from Superstaq API's AQT compilation endpoint.
 
     Args:
-        json_dict: a JSON dictionary matching the format returned by /aqt_compile endpoint
-        metadata_of_circuits: metadata(s) of qiskit circuit(s) to be added back after
+        json_dict: A JSON dictionary matching the format returned by /aqt_compile endpoint
+        metadata_of_circuits: Metadata(s) of qiskit circuit(s) to be added back after
             compilation endpoint.
-        circuits_is_list: bool flag that controls whether the returned object has a .circuits
+        circuits_is_list: Bool flag that controls whether the returned object has a .circuits
             attribute (if True) or a .circuit attribute (False)
         num_equivalent_circuits: Optional number of logically equivalent random circuits to generate
             for each input circuit.
+
     Returns:
-        a CompilerOutput object with the compiled circuit(s). If qtrl is available locally,
+        A `CompilerOutput` object with the compiled circuit(s). If qtrl is available locally,
         the returned object also stores the pulse sequence in the .seq attribute and the
         list(s) of cycles in the .pulse_list(s) attribute.
     """
@@ -226,16 +259,17 @@ def read_json_qscout(
     metadata_of_circuits: List[Dict[Any, Any]],
     circuits_is_list: bool,
 ) -> CompilerOutput:
-    """Reads out returned JSON from SuperstaQ API's QSCOUT compilation endpoint.
+    """Reads out returned JSON from Superstaq API's QSCOUT compilation endpoint.
 
     Args:
-        json_dict: a JSON dictionary matching the format returned by /qscout_compile endpoint
-        metadata_of_circuits: metadata(s) of qiskit circuit(s) to be added back after
+        json_dict: A JSON dictionary matching the format returned by /qscout_compile endpoint.
+        metadata_of_circuits: Metadata(s) of qiskit circuit(s) to be added back after
             compilation endpoint.
-        circuits_is_list: bool flag that controls whether the returned object has a .circuits
-            attribute (if True) or a .circuit attribute (False)
+        circuits_is_list: Bool flag that controls whether the returned object has a .circuits
+            attribute (if True) or a .circuit attribute (False).
+
     Returns:
-        a CompilerOutput object with the compiled circuit(s) and a list of
+        A `CompilerOutput` object with the compiled circuit(s) and a list of
         jaqal programs in a string representation.
     """
     qiskit_circuits = json_dict["qiskit_circuits"]
@@ -271,16 +305,17 @@ def read_json_qscout(
 def read_json_only_circuits(
     json_dict: Dict[str, str], metadata_of_circuits: List[Dict[Any, Any]], circuits_is_list: bool
 ) -> CompilerOutput:
-    """Reads JSON returned from SuperstaQ API's CQ compilation endpoint.
+    """Reads JSON returned from Superstaq API's CQ compilation endpoint.
 
     Args:
-        json_dict: a JSON dictionary matching the format returned by /cq_compile endpoint
-        metadata_of_circuits: metadata(s) of qiskit circuit(s) to be added back after
+        json_dict: A JSON dictionary matching the format returned by /cq_compile endpoint.
+        metadata_of_circuits: Metadata(s) of qiskit circuit(s) to be added back after
             compilation endpoint.
-        circuits_is_list: bool flag that controls whether the returned object has a .circuits
-            attribute (if True) or a .circuit attribute (False)
+        circuits_is_list: Bool flag that controls whether the returned object has a .circuits
+            attribute (if True) or a .circuit attribute (False).
+
     Returns:
-        a CompilerOutput object with the compiled circuit(s)
+        A `CompilerOutput` object with the compiled circuit(s).
     """
     compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
 
