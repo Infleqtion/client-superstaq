@@ -41,7 +41,6 @@ def test_validate_qiskit_circuits() -> None:
 
 
 def test_validate_integer_param() -> None:
-
     # Tests for valid inputs -> Pass
     valid_inputs = [1, 10, "10", 10.0, np.int16(10), 0b1010]
     for input_value in valid_inputs:

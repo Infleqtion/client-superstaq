@@ -317,7 +317,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
 
         Raises:
             ValueError: If this is not a Sandia backend.
-            ValueError: If `base_entangling_gate` is not a valid gate option.
+            ValueError: If `base_entangling_gate` is not a valid entangling basis.
         """
         if not self.name().startswith("sandia_"):
             raise ValueError(f"{self.name()} is not a valid Sandia target.")
