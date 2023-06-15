@@ -12,6 +12,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+from collections import Counter
 from typing import Any, Dict, List, Optional
 
 import general_superstaq as gss
@@ -81,7 +82,8 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
                 counts = dict((key[::-1], value) for (key, value) in counts.items())
             results_list.append(
                 {
-                    "success": True,
+                    "success": result["status"] == "Done",
+                    "status": result["status"],
                     "shots": result["shots"],
                     "data": {"counts": counts},
                 }
@@ -93,7 +95,7 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
                 "qobj_id": -1,
                 "backend_name": self._backend._configuration.backend_name,
                 "backend_version": self._backend._configuration.backend_version,
-                "success": True,
+                "success": result["status"] == "Done",
                 "job_id": self._job_id,
             }
         )
@@ -112,13 +114,14 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
             )
 
     def _refresh_job(self) -> None:
-        """Queries the server for the current job status"""
+        """Queries the server for the current overall job status.
 
-        # When we have multiple jobs, we will take the "worst status" among the jobs
-        # For example, if object of the jobs are still queued/canceled, we report Queued/Cancelled
-        # as the status for the entire batch.
-        # The overall status will only be reported as Done if all jobs are done
-        # following the "worst status" rule.
+        Note:
+            When we have multiple jobs, we will take the "worst status" among the jobs.
+            The worst status check follows the chain: Submitted -> Queued -> Running -> Error
+            -> Cancelled -> Done. For example, if any of the jobs are still queued (even if
+            some are done), we report 'Queued' as the overall status of the entire batch.
+        """
 
         job_id_list = self._job_id.split(",")  # separate aggregated job ids
 
@@ -131,25 +134,18 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
                 result = self._backend._provider._client.get_job(job_id)
                 self._job_info[job_id] = result
 
-            temp_status = self._job_info[job_id]["status"]
-            if temp_status == "Queued":
-                self._overall_status = "Queued"
-                break
-            elif temp_status == "Canceled":
-                self._overall_status = "Canceled"
-                break
-            elif temp_status == "Error":
-                self._overall_status = "Error"
-            elif temp_status == "Running":
-                self._overall_status = "Running"
+        status_occurance = Counter(self._job_info[job_id]["status"] for job_id in job_id_list)
+        status_priority_order = ["Submitted", "Queued", "Running", "Error", "Canceled"]
 
-        if (len(self._job_info) == len(job_id_list)) and all(
-            self._job_info[job_id]["status"] == "Done" for job_id in job_id_list
-        ):
+        for temp_status in status_priority_order:
+            if status_occurance[temp_status] > 0:
+                self._overall_status = temp_status
+
+        if status_occurance["Done"] == len(job_id_list):
             self._overall_status = "Done"
 
     def status(self) -> qiskit.providers.jobstatus.JobStatus:
-        """Query for the overall job status.
+        """Query for the equivalent qiskit job status.
 
         Returns:
             The equivalent `qiskit.providers.jobstatus.JobStatus` type.
