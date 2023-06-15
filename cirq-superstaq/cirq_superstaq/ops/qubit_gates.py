@@ -615,12 +615,7 @@ class RGate(cirq.PhasedXPowGate):
 
     @property
     def theta(self) -> cirq.TParamVal:
-        """`theta` property of `RGate`.
-
-        Returns:
-            `theta` value of `RGate`.
-
-        """
+        """Angle (in radians) by which to rotate."""
         return self.exponent * _pi(self.exponent)
 
     def __pow__(self, power: cirq.TParamVal) -> "RGate":
