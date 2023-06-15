@@ -21,7 +21,9 @@ import qiskit
 import qiskit_superstaq as qss
 
 
-class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-docstring
+class SuperstaQJob(qiskit.providers.JobV1):
+    """This class represents a Superstaq job instance.
+    """
 
     TERMINAL_STATES = ("Done", "Canceled", "Error")
     PROCESSING_STATES = ("Queued", "Submitted", "Running")
@@ -32,7 +34,7 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
 
         Args:
             backend: The `qss.SuperstaQBackend` that the job was created with.
-            job_id: The unique job ID from Superstaq.
+            job_id: The unique job ID string from Superstaq.
         """
         super().__init__(backend, job_id)
         self._overall_status = "Submitted"
@@ -62,14 +64,16 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
         return [self._job_info[job_id] for job_id in self._job_id.split(",")]
 
     def result(self, timeout: Optional[float] = None, wait: float = 5) -> qiskit.result.Result:
-        """Get the result data of a circuit.
+        """Retrieves the result data associated with a Superstaq job.
 
         Args:
-            timeout: Time to wait for results. Defaults to None.
-            wait: Time to wait before checking again. Defaults to 5.
+            timeout: An optional parameter that fixes when result retrieval times out. Units are
+                in seconds.
+            wait: An optional parameter that sets the interval to check for Superstaq job results.
+                Units are in seconds. Defaults to 5.
 
         Returns:
-            Result details from the job.
+            A qiskit result object containing job information.
         """
         timeout = timeout or self._backend._provider._client.max_retry_seconds
         results = self._wait_for_results(timeout, wait)
@@ -101,8 +105,8 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
         )
 
     def _check_if_stopped(self) -> None:
-        """Verifies that the job status is not in a canceled state and raises an
-        exception if it is.
+        """Verifies that the job status is not in a canceled or error state and 
+        raises an exception if it is.
 
         Raises:
             SuperstaQUnsuccessfulJob: If the job been canceled or an error has occured.
@@ -177,4 +181,9 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
         return status_match.get(status)
 
     def submit(self) -> None:
+        """Unsupported submission call.
+
+        Raises:
+            NotImplementedError: If a job is submitted via SuperstaQJob.
+        """        
         raise NotImplementedError("Submit through SuperstaQBackend, not through SuperstaQJob")
