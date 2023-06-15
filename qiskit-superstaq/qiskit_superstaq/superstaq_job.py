@@ -32,7 +32,7 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
 
         Args:
             backend: The `qss.SuperstaQBackend` that the job was created with.
-            job_id: The unique job ID from SuperstaQ.
+            job_id: The unique job ID from Superstaq.
         """
         super().__init__(backend, job_id)
         self._overall_status = "Submitted"
@@ -140,6 +140,7 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
         for temp_status in status_priority_order:
             if status_occurance[temp_status] > 0:
                 self._overall_status = temp_status
+                break
 
         if status_occurance["Done"] == len(job_id_list):
             self._overall_status = "Done"
@@ -171,4 +172,4 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
         return status_match.get(status)
 
     def submit(self) -> None:
-        raise NotImplementedError("Submit through SuperstaQBackend, not through SuperstaqJob")
+        raise NotImplementedError("Submit through SuperstaQBackend, not through SuperstaQJob")
