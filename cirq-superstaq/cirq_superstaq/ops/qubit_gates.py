@@ -673,11 +673,7 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
 
     @property
     def phase_exponent(self) -> cirq.TParamVal:
-        """`phase_exponent` property of `ParallelRGate`.
-
-        Returns:
-            `phase_exponent` value of `ParallelRGate`.
-        """
+        """The `phase_exponent` property of each `RGate`."""
         return self.sub_gate.phase_exponent
 
     @property
