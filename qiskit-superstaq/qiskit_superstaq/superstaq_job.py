@@ -22,8 +22,7 @@ import qiskit_superstaq as qss
 
 
 class SuperstaQJob(qiskit.providers.JobV1):
-    """This class represents a Superstaq job instance.
-    """
+    """This class represents a Superstaq job instance."""
 
     TERMINAL_STATES = ("Done", "Canceled", "Error")
     PROCESSING_STATES = ("Queued", "Submitted", "Running")
@@ -105,7 +104,7 @@ class SuperstaQJob(qiskit.providers.JobV1):
         )
 
     def _check_if_stopped(self) -> None:
-        """Verifies that the job status is not in a canceled or error state and 
+        """Verifies that the job status is not in a canceled or error state and
         raises an exception if it is.
 
         Raises:
@@ -185,5 +184,5 @@ class SuperstaQJob(qiskit.providers.JobV1):
 
         Raises:
             NotImplementedError: If a job is submitted via SuperstaQJob.
-        """        
+        """
         raise NotImplementedError("Submit through SuperstaQBackend, not through SuperstaQJob")
