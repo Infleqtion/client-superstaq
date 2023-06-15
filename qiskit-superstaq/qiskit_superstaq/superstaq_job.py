@@ -114,7 +114,21 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
             )
 
     def _refresh_job(self) -> None:
-        """Queries the server for the current overall job status.
+        """Queries the server for an updated job result."""
+
+        for job_id in self._job_id.split(","):
+
+            if (job_id not in self._job_info) or (
+                job_id in self._job_info
+                and self._job_info[job_id]["status"] not in self.TERMINAL_STATES
+            ):
+                result = self._backend._provider._client.get_job(job_id)
+                self._job_info[job_id] = result
+
+        self._update_status_queue_info()
+
+    def _update_status_queue_info(self) -> None:
+        """Updates the overall status based on status queue info.
 
         Note:
             When we have multiple jobs, we will take the "worst status" among the jobs.
@@ -125,17 +139,8 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
 
         job_id_list = self._job_id.split(",")  # separate aggregated job ids
 
-        for job_id in job_id_list:
-
-            if (job_id not in self._job_info) or (
-                job_id in self._job_info
-                and self._job_info[job_id]["status"] not in self.TERMINAL_STATES
-            ):
-                result = self._backend._provider._client.get_job(job_id)
-                self._job_info[job_id] = result
-
         status_occurance = Counter(self._job_info[job_id]["status"] for job_id in job_id_list)
-        status_priority_order = ["Submitted", "Queued", "Running", "Error", "Canceled"]
+        status_priority_order = ("Submitted", "Queued", "Running", "Error", "Canceled")
 
         for temp_status in status_priority_order:
             if status_occurance[temp_status] > 0:
