@@ -436,6 +436,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
     def qubit_index_to_equivalence_group_key(self, index: int) -> int:
         """Returns a key that differs between qubits in different component gates and
         non-interchangeable qubits in the same component gate.
+
         Args:
             index: Qubit index.
 
