@@ -560,9 +560,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         return f"css.ParallelGates({component_gates_repr})"
 
 
-def parallel_gates_operation(
-    *ops: cirq.Operation,
-) -> cirq.Operation:
+def parallel_gates_operation(*ops: cirq.Operation) -> cirq.Operation:
     """Given operations acting on disjoint qubits, constructs a single css.ParallelGates instance
     and applies it such that each operation's .gate is applied to its .qubits.
 
