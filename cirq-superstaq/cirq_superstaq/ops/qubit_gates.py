@@ -392,7 +392,6 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
 def barrier(*qubits: cirq.Qid) -> cirq.Operation:
     """Cirq equivalent of
     https://qiskit.org/documentation/stubs/qiskit.circuit.library.Barrier.html.
-    See also https://github.com/quantumlib/Cirq/issues/2642.
 
     Args:
         *qubits: The qubits that the barrier will cover.
@@ -881,14 +880,16 @@ class StrippedCZGate(cirq.Gate):
 
 
 def custom_resolver(cirq_type: str) -> Union[Type[cirq.Gate], None]:
-    """Tells `cirq.read_json` how to handle custom cirq-superstaq's custom
-    objects. See https://quantumai.google/cirq/dev/serialization for more information.
+    """Tells `cirq.json` how to deserialize cirq_superstaq's custom gates.
 
-    Args:
-        cirq_type: The type for the serializer to resolve.
+        Changes to gate names in this file should be reflected in this resolver.
+        See quantumai.google/cirq/dev/serialization for more information about (de)serialization.
 
-    Returns:
-        The resolved custom object.
+        Args:
+            cirq_type: The string of the gate type for the serializer to resolve.
+
+        Returns:
+            The resolved Cirq Gate matching the input, or None if no match.
     """
     type_to_gate_map: Dict[str, Type[cirq.Gate]] = {
         "ZZSwapGate": ZZSwapGate,
