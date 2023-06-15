@@ -604,12 +604,7 @@ class RGate(cirq.PhasedXPowGate):
         )
 
     @property
-    def phi(self) -> cirq.TParamVal:
-        """`phi` property of `RGate`.
-
-        Returns:
-            `phi` value of `RGate`.
-        """
+        """Angle (in radians) defining the axis of rotation in the `X`-`Y` plane."""
         return self.phase_exponent * _pi(self.phase_exponent)
 
     @property
