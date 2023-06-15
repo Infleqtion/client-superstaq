@@ -125,6 +125,38 @@ def test_refresh_job(backend: qss.SuperstaQBackend) -> None:
         assert job._overall_status == "Canceled"
 
 
+def test_update_status_queue_info(backend: qss.SuperstaQBackend) -> None:
+    job = qss.SuperstaQJob(backend=backend, job_id="123abc,456abc,789abc")
+
+    for job_id in job._job_id.split(","):
+        job._job_info[job_id] = mock_response("Done")
+
+    job._refresh_job()
+    assert job._overall_status == "Done"
+
+    mock_statuses = [
+        mock_response("Queued"),
+        mock_response("Canceled"),
+        mock_response("Canceled"),
+    ]
+    for index, job_id in enumerate(job._job_id.split(",")):
+        job._job_info[job_id] = mock_statuses[index]
+    job._update_status_queue_info()
+    assert job._overall_status == "Queued"
+
+    mock_statuses = [mock_response("Canceled"), mock_response("Canceled"), mock_response("Queued")]
+    for index, job_id in enumerate(job._job_id.split(",")):
+        job._job_info[job_id] = mock_statuses[index]
+    job._update_status_queue_info()
+    assert job._overall_status == "Queued"
+
+    mock_statuses = [mock_response("Done"), mock_response("Done"), mock_response("Error")]
+    for index, job_id in enumerate(job._job_id.split(",")):
+        job._job_info[job_id] = mock_statuses[index]
+    job._update_status_queue_info()
+    assert job._overall_status == "Error"
+
+
 def test_status(backend: qss.SuperstaQBackend) -> None:
 
     job = qss.SuperstaQJob(backend=backend, job_id="123abc")
