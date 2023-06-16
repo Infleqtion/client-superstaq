@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring
 from __future__ import annotations
 
 import importlib
@@ -56,7 +55,9 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
     return sorted(qubit_indices)
 
 
-class CompilerOutput:  # pylint: disable=missing-class-docstring
+class CompilerOutput:
+    """A class that arranges compiled circuit information."""
+
     def __init__(
         self,
         circuits: Union[cirq.Circuit, List[cirq.Circuit], List[List[cirq.Circuit]]],
@@ -70,6 +71,18 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
         jaqal_programs: Optional[Union[List[str], str]] = None,
         pulse_lists: Optional[Union[List[List[List[Any]]], List[List[List[List[Any]]]]]] = None,
     ) -> None:
+        """Initializes class attributes.
+
+        Args:
+            circuits: A list (of at most 2 dimensions) containing `cirq.Circuit` objects.
+            final_logical_to_physicals: Post-compilation mapping of logical qubits to physical
+                qubits.
+            pulse_sequences: Qiskit pulse schedules for the compiled circuit(s).
+            seq: Qtrl pulse sequence, if qtrl is available locally.
+            jaqal_programs: The Jaqal program (resp. programs) as a string (resp. list of
+                strings).
+            pulse_lists: Either 3 or 4 dimensional lists of pulse cycles.
+        """
         if isinstance(circuits, cirq.Circuit):
             self.circuit = circuits
             self.final_logical_to_physical = final_logical_to_physicals
@@ -154,11 +167,13 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
     """Reads out returned JSON from SuperstaQ API's AQT compilation endpoint.
 
     Args:
-        json_dict: a JSON dictionary matching the format returned by /aqt_compile endpoint
-        circuits_is_list: bool flag that controls whether the returned object has a .circuits
-            attribute (if True) or a .circuit attribute (False)
+        json_dict: JSON dictionary matching the format returned by aqt_compile endpoint.
+        circuits_is_list: Bool flag that controls whether the returned object has a .circuits
+            attribute (if True) or a .circuit attribute (False).
+        num_eca_circuits: Number of logically equivalent random circuits to generate for each
+            input circuit.
     Returns:
-        a CompilerOutput object with the compiled circuit(s). If qtrl is available locally,
+        A CompilerOutput object with the compiled circuit(s). If qtrl is available locally,
         the returned object also stores the pulse sequence in the .seq attribute and the
         list(s) of cycles in the .pulse_list(s) attribute.
     """
