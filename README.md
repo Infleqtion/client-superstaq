@@ -63,7 +63,7 @@ If you'd like to contribute to SuperstaQ, below are the instructions for install
 </details>
 
 # Documentation 
-For more information on getting started, check out [our documentation site](https://docs-superstaq.readthedocs.io/)!
+For more information on getting started, check out [our documentation site](https://superstaq.readthedocs.io/)!
 
 # License
 SuperstaQ is licensed under the Apache License 2.0. See our [LICENSE](https://github.com/SupertechLabs/superstaq-client/blob/main/LICENSE) file for more details.
