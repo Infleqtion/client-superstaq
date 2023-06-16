@@ -22,26 +22,6 @@ import qiskit
 import qiskit_superstaq as qss
 
 
-def _get_metadata_of_circuits(
-    circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]
-) -> List[Dict[Any, Any]]:
-    """Extracts metadata from the input qiskit circuit(s).
-
-    Args:
-        Circuit(s) from which to extract the metadata.
-
-    Returns:
-        A list of dictionaries containing the metadata of the input circuit(s). If a circuit has no
-        metadata, an empty dictionary is stored for that circuit.
-    """
-    metadata_of_circuits = [
-        (circuit.metadata or {})
-        for circuit in (circuits if isinstance(circuits, list) else [circuits])
-    ]
-
-    return metadata_of_circuits
-
-
 class SuperstaQBackend(qiskit.providers.BackendV1):
     """This class represents a Superstaq backend."""
 
@@ -167,13 +147,10 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             return self.cq_compile(circuits, **kwargs)
 
         qss.validation.validate_target(self.name())
-        metadata_of_circuits = _get_metadata_of_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         request_json = self._get_compile_request_json(circuits, **kwargs)
         json_dict = self._provider._client.compile(request_json)
-        return qss.compiler_output.read_json_only_circuits(
-            json_dict, metadata_of_circuits, circuits_is_list
-        )
+        return qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
 
     def _get_compile_request_json(
         self,
@@ -231,12 +208,11 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         if atol is not None:
             options["atol"] = atol
 
-        metadata_of_circuits = _get_metadata_of_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         request_json = self._get_compile_request_json(circuits, **options)
         json_dict = self._provider._client.aqt_compile(request_json)
         return qss.compiler_output.read_json_aqt(
-            json_dict, metadata_of_circuits, circuits_is_list, num_equivalent_circuits
+            json_dict, circuits_is_list, num_equivalent_circuits
         )
 
     def ibmq_compile(
@@ -263,9 +239,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         request_json = self._get_compile_request_json(circuits, **kwargs)
         json_dict = self._provider._client.compile(request_json)
         compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
-        metadata_of_circuits = _get_metadata_of_circuits(circuits)
-        for circuit, metadata in zip(compiled_circuits, metadata_of_circuits):
-            circuit.metadata = metadata
+
         pulses = None
         if "pulses" in json_dict:
             pulses = gss.serialization.deserialize(json_dict["pulses"])
@@ -326,7 +300,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
 
         qss.validation.validate_target(self.name())
-        metadata_of_circuits = _get_metadata_of_circuits(circuits)
+
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
         options = {
@@ -336,9 +310,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         }
         request_json = self._get_compile_request_json(circuits, **options)
         json_dict = self._provider._client.qscout_compile(request_json)
-        return qss.compiler_output.read_json_qscout(
-            json_dict, metadata_of_circuits, circuits_is_list
-        )
+        return qss.compiler_output.read_json_qscout(json_dict, circuits_is_list)
 
     def cq_compile(
         self,
@@ -361,13 +333,11 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             raise ValueError(f"{self.name()} is not a valid CQ target.")
 
         qss.validation.validate_target(self.name())
-        metadata_of_circuits = _get_metadata_of_circuits(circuits)
+
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         request_json = self._get_compile_request_json(circuits, **kwargs)
         json_dict = self._provider._client.compile(request_json)
-        return qss.compiler_output.read_json_only_circuits(
-            json_dict, metadata_of_circuits, circuits_is_list
-        )
+        return qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
 
     def target_info(self) -> Dict[str, Any]:
         """Returns information about this backend.
