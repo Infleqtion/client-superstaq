@@ -157,7 +157,7 @@ def read_json_aqt(
     json_dict: Dict[str, str],
     metadata_of_circuits: List[Dict[Any, Any]],
     circuits_is_list: bool,
-    num_eca_circuits: int = 0,
+    num_equivalent_circuits: Optional[int] = None,
 ) -> CompilerOutput:
     """Reads out returned JSON from Superstaq API's AQT compilation endpoint.
 
@@ -167,7 +167,8 @@ def read_json_aqt(
             compilation endpoint.
         circuits_is_list: Bool flag that controls whether the returned object has a .circuits
             attribute (if True) or a .circuit attribute (False)
-        num_eca_circuits: Number of Equivalent Circuit Averaging (ECA) circuits.
+        num_equivalent_circuits: Optional number of logically equivalent random circuits to generate
+            for each input circuit.
 
     Returns:
         A `CompilerOutput` object with the compiled circuit(s). If qtrl is available locally,
@@ -227,19 +228,19 @@ def read_json_aqt(
 
         seq = _sequencer_from_state(state)
 
-    if num_eca_circuits:
+    if num_equivalent_circuits is not None:
         compiled_circuits = [
-            compiled_circuits[i : i + num_eca_circuits]
-            for i in range(0, len(compiled_circuits), num_eca_circuits)
+            compiled_circuits[i : i + num_equivalent_circuits]
+            for i in range(0, len(compiled_circuits), num_equivalent_circuits)
         ]
 
         pulse_lists = pulse_lists and [
-            pulse_lists[i : i + num_eca_circuits]
-            for i in range(0, len(pulse_lists), num_eca_circuits)
+            pulse_lists[i : i + num_equivalent_circuits]
+            for i in range(0, len(pulse_lists), num_equivalent_circuits)
         ]
         final_logical_to_physicals = [
-            final_logical_to_physicals_list[i : i + num_eca_circuits]
-            for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
+            final_logical_to_physicals_list[i : i + num_equivalent_circuits]
+            for i in range(0, len(final_logical_to_physicals_list), num_equivalent_circuits)
         ]
 
     if circuits_is_list:

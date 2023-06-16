@@ -73,8 +73,13 @@ class Job:
             self._job = self._client.get_job(self.job_id())
 
     def _check_if_unsuccessful(self) -> None:
-        if self.status() in self.UNSUCCESSFUL_STATES:
-            raise gss.SuperstaQUnsuccessfulJobException(self.job_id(), self.status())
+        status = self.status()
+        if status in self.UNSUCCESSFUL_STATES:
+            if "failure" in self._job and "error" in self._job["failure"]:
+                # if possible append a message to the failure status, e.g. "Failed (<message>)"
+                error = self._job["failure"]["error"]
+                status += f" ({error})"
+            raise gss.SuperstaQUnsuccessfulJobException(self._job_id, status)
 
     def job_id(self) -> str:
         """Gets the job id of this job.
@@ -108,7 +113,7 @@ class Job:
             The target to which this job was submitted.
 
         Raises:
-            SuperstaQUnsuccessfulJob: If the job has failed, been canceled, or deleted.
+            SuperstaQUnsuccessfulJobException: If the job has failed, been canceled, or deleted.
             SuperstaQException: If unable to get the status of the job from the API.
         """
         self._check_if_unsuccessful()
@@ -121,7 +126,7 @@ class Job:
             The number of qubits used in this job.
 
         Raises:
-            SuperstaQUnsuccessfulJob: If the job has failed, been canceled, or deleted.
+            SuperstaQUnsuccessfulJobException: If the job has failed, been canceled, or deleted.
             SuperstaQException: If unable to get the status of the job from the API.
         """
         self._check_if_unsuccessful()
@@ -134,7 +139,7 @@ class Job:
             The number of repetitions for this job.
 
         Raises:
-            SuperstaQUnsuccessfulJob: If the job has failed, been canceled, or deleted.
+            SuperstaQUnsuccessfulJobException: If the job has failed, been canceled, or deleted.
             SuperstaQException: If unable to get the status of the job from the API.
         """
         self._check_if_unsuccessful()
@@ -151,23 +156,21 @@ class Job:
             A dictionary containing the frequency counts of the measurements.
 
         Raises:
-            RuntimeError: If the job has failed, been canceled, or deleted.
+            SuperstaQUnsuccessfulJobException: If the job failed or has been canceled or deleted.
             SuperstaQException: If unable to get the results from the API.
+            TimeoutError: If no results are available in the provided timeout interval.
         """
         time_waited_seconds: float = 0.0
-        while time_waited_seconds < timeout_seconds:
+        while self.status() not in self.TERMINAL_STATES:
             # Status does a refresh.
-            if self.status() in self.TERMINAL_STATES:
-                break
+            if time_waited_seconds > timeout_seconds:
+                raise TimeoutError(
+                    f"Timed out while waiting for results. Final status was {self.status()}"
+                )
             time.sleep(polling_seconds)
             time_waited_seconds += polling_seconds
-        if self.status() != "Done":
-            if "failure" in self._job and "error" in self._job["failure"]:
-                error = self._job["failure"]["error"]
-                raise RuntimeError(f"Job failed. Error message: {error}")
-            raise RuntimeError(
-                f"Job was not completed successfully. Instead had status: {self.status()}"
-            )
+
+        self._check_if_unsuccessful()
         return self._job["samples"]
 
     def __str__(self) -> str:
