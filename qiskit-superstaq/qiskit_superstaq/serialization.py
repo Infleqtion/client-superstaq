@@ -17,7 +17,7 @@ T = TypeVar("T")
 RealArray = Union[int, float, List["RealArray"]]
 
 
-def json_converter(val: object) -> Dict[str, Union[str, RealArray]]:
+def json_encoder(val: object) -> Dict[str, Union[str, RealArray]]:
     """Convert (real or complex) arrays to a JSON-serializable format.
 
     Args:
@@ -40,7 +40,7 @@ def json_converter(val: object) -> Dict[str, Union[str, RealArray]]:
 
 
 def json_resolver(val: T) -> Union[T, npt.NDArray[np.complex_]]:
-    """Hook to deserialize objects that were serialized via `json_converter()`.
+    """Hook to deserialize objects that were serialized via `json_encoder()`.
 
     Args:
         val: The deserialized object.
@@ -65,7 +65,7 @@ def to_json(val: object) -> str:
     Returns:
         The JSON-serialized value (a string).
     """
-    return json.dumps(val, default=json_converter)
+    return json.dumps(val, default=json_encoder)
 
 
 def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:
