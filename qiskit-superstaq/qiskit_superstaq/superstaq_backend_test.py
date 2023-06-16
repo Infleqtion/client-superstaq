@@ -108,11 +108,31 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     assert out.circuit == qc
     assert out.final_logical_to_physical == {1: 4}
     assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
+    mock_post.assert_called_with(
+        f"{provider._client.url}/aqt_compile",
+        headers=provider._client.headers,
+        verify=provider._client.verify_https,
+        json={
+            "qiskit_circuits": qss.serialize_circuits(qc),
+            "target": "aqt_keysight_qpu",
+            "options": "{}",
+        },
+    )
 
     out = backend.compile([qc], atol=1e-2)
     assert out.circuits == [qc]
     assert out.final_logical_to_physicals == [{1: 4}]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    mock_post.assert_called_with(
+        f"{provider._client.url}/aqt_compile",
+        headers=provider._client.headers,
+        verify=provider._client.verify_https,
+        json={
+            "qiskit_circuits": qss.serialize_circuits(qc),
+            "target": "aqt_keysight_qpu",
+            "options": json.dumps({"atol": 1e-2}),
+        },
+    )
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
@@ -120,10 +140,21 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         "state_jp": gss.serialization.serialize({}),
         "pulse_lists_jp": gss.serialization.serialize([[[]], [[]]]),
     }
-    out = backend.compile([qc, qc], test_options="yes")
+    matrix = qiskit.circuit.library.CRXGate(1.23).to_matrix()
+    out = backend.compile([qc, qc], gate_defs={"CRX": matrix})
     assert out.circuits == [qc, qc]
     assert out.final_logical_to_physicals == [{}, {}]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    mock_post.assert_called_with(
+        f"{provider._client.url}/aqt_compile",
+        headers=provider._client.headers,
+        verify=provider._client.verify_https,
+        json={
+            "qiskit_circuits": qss.serialize_circuits([qc, qc]),
+            "target": "aqt_keysight_qpu",
+            "options": qss.serialization.to_json({"gate_defs": {"CRX": matrix}}),
+        },
+    )
 
     with pytest.raises(ValueError, match="aqt_keysight_qpu is not a valid IBMQ target."):
         backend.ibmq_compile([qc])
