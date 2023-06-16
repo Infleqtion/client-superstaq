@@ -4,11 +4,32 @@ import warnings
 from typing import Dict, List, Set, Tuple, Union
 
 import general_superstaq as gss
+import numpy as np
+import numpy.typing as npt
 import qiskit
 import qiskit.qpy
 from qiskit.converters.ast_to_dag import AstInterpreter
 
 import qiskit_superstaq as qss
+
+
+def jsonified_array(name: str, array: npt.ArrayLike) -> Dict[str, Union[str, List[List[float]]]]:
+    """Convert a (real or complex) array to a JSON-serializable format.
+
+    Args:
+        name: A name to associate with the serialized array.
+        array: The array to be serialized.
+
+    Returns:
+        A JSON dictionary containing the provided name and array values.
+    """
+    array = np.asarray(array)
+    return {
+        "type": "qiskit_array",
+        "real": array.real.tolist(),
+        "imag": array.imag.tolist(),
+        "name": name,
+    }
 
 
 def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:

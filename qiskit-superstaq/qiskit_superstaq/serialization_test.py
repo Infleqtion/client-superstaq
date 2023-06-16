@@ -11,6 +11,25 @@ import qiskit
 import qiskit_superstaq as qss
 
 
+def test_jsonified_array() -> None:
+    real_part = np.random.uniform(-1, 1, size=(4, 4))
+    imag_part = np.random.uniform(-1, 1, size=(4, 4))
+
+    assert qss.serialization.jsonified_array("random_real", real_part) == {
+        "type": "qiskit_array",
+        "real": real_part.tolist(),
+        "imag": 4 * [[0, 0, 0, 0]],
+        "name": "random_real",
+    }
+
+    assert qss.serialization.jsonified_array("random_complex", real_part + 1j * imag_part) == {
+        "type": "qiskit_array",
+        "real": real_part.tolist(),
+        "imag": imag_part.tolist(),
+        "name": "random_complex",
+    }
+
+
 def test_assign_unique_inst_names() -> None:
     inst_0 = qss.ZZSwapGate(0.1)
     inst_1 = qss.ZZSwapGate(0.2)
