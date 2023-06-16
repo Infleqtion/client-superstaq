@@ -113,7 +113,7 @@ class Job:
             The target to which this job was submitted.
 
         Raises:
-            SuperstaQUnsuccessfulJobException: If the job has failed, been canceled, or deleted.
+            SuperstaQUnsuccessfulJobException: If the job failed or has been canceled or deleted.
             SuperstaQException: If unable to get the status of the job from the API.
         """
         self._check_if_unsuccessful()
@@ -126,7 +126,7 @@ class Job:
             The number of qubits used in this job.
 
         Raises:
-            SuperstaQUnsuccessfulJobException: If the job has failed, been canceled, or deleted.
+            SuperstaQUnsuccessfulJobException: If the job failed or has been canceled or deleted.
             SuperstaQException: If unable to get the status of the job from the API.
         """
         self._check_if_unsuccessful()
@@ -139,7 +139,7 @@ class Job:
             The number of repetitions for this job.
 
         Raises:
-            SuperstaQUnsuccessfulJobException: If the job has failed, been canceled, or deleted.
+            SuperstaQUnsuccessfulJobException: If the job failed or has been canceled or deleted.
             SuperstaQException: If unable to get the status of the job from the API.
         """
         self._check_if_unsuccessful()
