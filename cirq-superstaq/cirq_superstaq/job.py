@@ -141,14 +141,14 @@ class Job:
         return self._job["shots"]
 
     def counts(self, timeout_seconds: int = 7200, polling_seconds: float = 1.0) -> Dict[str, int]:
-        """Polls the Superstaq API for results.
+        """Polls the Superstaq API for counts results (frequency of each measurement outcome).
 
         Args:
             timeout_seconds: The total number of seconds to poll for.
             polling_seconds: The interval with which to poll.
 
         Returns:
-            A dictionary containing the results of the measurements.
+            A dictionary containing the frequency counts of the measurements.
 
         Raises:
             RuntimeError: If the job has failed, been canceled, or deleted.
