@@ -13,8 +13,11 @@ from qiskit.converters.ast_to_dag import AstInterpreter
 
 import qiskit_superstaq as qss
 
+T = TypeVar("T")
+RealArray = Union[int, float, List["RealArray"]]
 
-def json_converter(val: object) -> Dict[str, Union[str, List[List[float]]]]:
+
+def json_converter(val: object) -> Dict[str, Union[str, RealArray]]:
     """Convert (real or complex) arrays to a JSON-serializable format.
 
     Args:
@@ -34,9 +37,6 @@ def json_converter(val: object) -> Dict[str, Union[str, List[List[float]]]]:
         }
 
     raise TypeError(f"Object of type {type(val)} is not JSON serializable.")
-
-
-T = TypeVar("T")
 
 
 def json_resolver(val: T) -> Union[T, npt.NDArray[np.complex_]]:
