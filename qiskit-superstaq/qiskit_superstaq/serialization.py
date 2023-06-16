@@ -1,7 +1,8 @@
 import io
+import json
 import re
 import warnings
-from typing import Dict, List, Set, Tuple, Union
+from typing import Dict, List, Set, Tuple, TypeVar, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -13,23 +14,58 @@ from qiskit.converters.ast_to_dag import AstInterpreter
 import qiskit_superstaq as qss
 
 
-def jsonified_array(name: str, array: npt.ArrayLike) -> Dict[str, Union[str, List[List[float]]]]:
-    """Convert a (real or complex) array to a JSON-serializable format.
+def json_converter(val: object) -> Dict[str, Union[str, List[List[float]]]]:
+    """Convert (real or complex) arrays to a JSON-serializable format.
 
     Args:
-        name: A name to associate with the serialized array.
-        array: The array to be serialized.
+        val: The value to be serialized.
 
     Returns:
         A JSON dictionary containing the provided name and array values.
+
+    Raises:
+        TypeError: If `val` is not a `np.ndarray`.
     """
-    array = np.asarray(array)
-    return {
-        "type": "qiskit_array",
-        "real": array.real.tolist(),
-        "imag": array.imag.tolist(),
-        "name": name,
-    }
+    if isinstance(val, np.ndarray):
+        return {
+            "type": "qss_array",
+            "real": val.real.tolist(),
+            "imag": val.imag.tolist(),
+        }
+
+    raise TypeError(f"Object of type {type(val)} is not JSON serializable.")
+
+
+T = TypeVar("T")
+
+
+def json_resolver(val: T) -> Union[T, npt.NDArray[np.complex_]]:
+    """Hook to deserialize objects that were serialized via `json_converter()`.
+
+    Args:
+        val: The deserialized object.
+
+    Returns:
+        The resolved object.
+    """
+    if isinstance(val, dict) and val.get("type") == "qss_array":
+        real_part = val.get("real", 0)
+        imag_part = val.get("imag", 0)
+        return np.array(real_part) + 1j * np.array(imag_part)
+
+    return val
+
+
+def to_json(val: object) -> str:
+    """Extends `json.dumps` to support numpy arrays.
+
+    Args:
+        val: The value to be serialized.
+
+    Returns:
+        The JSON-serialized value (a string).
+    """
+    return json.dumps(val, default=json_converter)
 
 
 def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:

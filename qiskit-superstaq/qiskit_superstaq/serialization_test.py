@@ -1,5 +1,6 @@
 # pylint: disable=missing-function-docstring
 import io
+import json
 import warnings
 from unittest import mock
 
@@ -11,23 +12,41 @@ import qiskit
 import qiskit_superstaq as qss
 
 
-def test_jsonified_array() -> None:
+def test_to_json() -> None:
     real_part = np.random.uniform(-1, 1, size=(4, 4))
     imag_part = np.random.uniform(-1, 1, size=(4, 4))
 
-    assert qss.serialization.jsonified_array("random_real", real_part) == {
-        "type": "qiskit_array",
-        "real": real_part.tolist(),
-        "imag": 4 * [[0, 0, 0, 0]],
-        "name": "random_real",
-    }
+    val = [
+        {"abc": 123},
+        real_part,
+        real_part + 1j * imag_part,
+    ]
 
-    assert qss.serialization.jsonified_array("random_complex", real_part + 1j * imag_part) == {
-        "type": "qiskit_array",
-        "real": real_part.tolist(),
-        "imag": imag_part.tolist(),
-        "name": "random_complex",
-    }
+    json_str = qss.serialization.to_json(val)
+    assert json.loads(json_str) == [
+        {
+            "abc": 123,
+        },
+        {
+            "type": "qss_array",
+            "real": real_part.tolist(),
+            "imag": 4 * [[0, 0, 0, 0]],
+        },
+        {
+            "type": "qss_array",
+            "real": real_part.tolist(),
+            "imag": imag_part.tolist(),
+        },
+    ]
+    resolved_val = json.loads(json_str, object_hook=qss.serialization.json_resolver)
+    assert resolved_val[0] == val[0]
+    assert isinstance(resolved_val[1], np.ndarray)
+    assert isinstance(resolved_val[2], np.ndarray)
+    assert np.all(resolved_val[1] == val[1])
+    assert np.all(resolved_val[2] == val[2])
+
+    with pytest.raises(TypeError, match="not JSON serializable"):
+        qss.serialization.to_json(qiskit.QuantumCircuit())
 
 
 def test_assign_unique_inst_names() -> None:

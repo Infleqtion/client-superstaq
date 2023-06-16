@@ -190,7 +190,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         return {
             "qiskit_circuits": serialized_circuits,
             "target": self.name(),
-            "options": json.dumps(kwargs),
+            "options": qss.serialization.to_json(kwargs),
         }
 
     def aqt_compile(
@@ -242,13 +242,8 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             options["random_seed"] = random_seed
         if atol is not None:
             options["atol"] = atol
-
         if gate_defs is not None:
-            json_gate_defs = {}
-            for key, val in gate_defs.items():
-                val = np.asarray(val)
-                json_gate_defs[key] = qss.serialization.jsonified_array(key, val)
-            options["gate_defs"] = json_gate_defs
+            options["gate_defs"] = gate_defs
 
         metadata_of_circuits = _get_metadata_of_circuits(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
