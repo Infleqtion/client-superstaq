@@ -25,7 +25,7 @@ class AceCR(qiskit.circuit.Gate):
             rads: Angle of rotation for CR gate (i.e., twice the angle for each echoed half-CR).
             sandwich_rx_rads: Angle of rotation for an rx gate applied to the "X side"
                 simultaneously with the X gate on the "Z side".
-            label: An optional label for the constructed Gate. Defaults to None.
+            label: An optional label for the constructed gate. Defaults to None.
 
         Raises:
             ValueError: If the polarity of `rads` is not '+-' or '-+'.
@@ -118,7 +118,7 @@ class ZZSwapGate(qiskit.circuit.Gate):
 
         Args:
             theta: The ZZ-interaction angle in radians.
-            label: An optional label for the constructed Gate. Defaults to None.
+            label: An optional label for the constructed gate. Defaults to None.
         """
         super().__init__("zzswap", 2, [theta], label=label)
 
@@ -159,7 +159,7 @@ class ZZSwapGate(qiskit.circuit.Gate):
 
 
 class StrippedCZGate(qiskit.circuit.Gate):
-    """The Stripped CZ Gate is the gate that is actually being performed by Hilbert,
+    """The Stripped CZ gate is the gate that is actually being performed by Hilbert,
     which is just a regular CZ gate when the rz angle = 0, and is corrected into a CZ
     gate by RZ gates afterwards if the rz angle is nonzero.
     """
@@ -205,14 +205,14 @@ class StrippedCZGate(qiskit.circuit.Gate):
 
 
 class ParallelGates(qiskit.circuit.Gate):
-    """A single Gate combining a collection of concurrent Gate(s) acting on different qubits."""
+    """A single gate combining a collection of concurrent gate(s) acting on different qubits."""
 
     def __init__(self, *component_gates: qiskit.circuit.Gate, label: Optional[str] = None) -> None:
         """Initializes the `ParallelGates` class.
 
         Args:
             component_gates: Gate(s) to be collected into a single gate.
-            label: An optional label for the constructed Gate. Defaults to None.
+            label: An optional label for the constructed gate. Defaults to None.
 
         Raises:
             ValueError: If `component_gates` are not `qiskit.circuit.Gate` instances.
@@ -273,7 +273,7 @@ class iXGate(qiskit.circuit.Gate):
         """Initializes an iXGate.
 
         Args:
-            label: An optional label for the constructed Gate. Defaults to None.
+            label: An optional label for the constructed gate. Defaults to None.
         """
         super().__init__("ix", 1, [], label=label)
 
@@ -297,7 +297,7 @@ class iXGate(qiskit.circuit.Gate):
         label: Optional[str] = None,
         ctrl_state: Optional[Union[str, int]] = None,
     ) -> qiskit.circuit.ControlledGate:
-        """Method to return a controlled version of the Gate.
+        """Method to return a controlled version of the gate.
 
         Args:
             num_ctrl_qubits: Number of control qubits for the gate. Defaults to 1.
@@ -327,7 +327,7 @@ class iXdgGate(qiskit.circuit.Gate):
         """Initializes an iXdgGate.
 
         Args:
-            label: An optional label for the constructed Gate. Defaults to None.
+            label: An optional label for the constructed gate. Defaults to None.
         """
         super().__init__("ixdg", 1, [], label=label)
 
@@ -351,7 +351,7 @@ class iXdgGate(qiskit.circuit.Gate):
         label: Optional[str] = None,
         ctrl_state: Optional[Union[str, int]] = None,
     ) -> qiskit.circuit.ControlledGate:
-        """Method to return a controlled version of the Gate.
+        """Method to return a controlled version of the gate.
 
         Args:
             num_ctrl_qubits: Number of control qubits for the gate. Defaults to 1.
@@ -395,7 +395,7 @@ class iCCXGate(qiskit.circuit.ControlledGate):
         """Initializes an iCCXGate.
 
         Args:
-            label: An optional label for the constructed Gate. Defaults to None.
+            label: An optional label for the constructed gate. Defaults to None.
             ctrl_state: The control qubit state to use (e.g. '00'). Defaults to None.
         """
         super().__init__(
@@ -432,7 +432,7 @@ class iCCXdgGate(qiskit.circuit.ControlledGate):
         """Initializes an iCCXdgGate.
 
         Args:
-            label: An optional label for the constructed Gate. Defaults to None.
+            label: An optional label for the constructed gate. Defaults to None.
             ctrl_state: The control qubit state to use (e.g. '00'). Defaults to None.
         """
         super().__init__(
@@ -467,7 +467,7 @@ class AQTiCCXGate(iCCXGate):
         """Initializes an AQTiCCXGate.
 
         Args:
-            label: An optional label for the constructed Gate. Defaults to None.
+            label: An optional label for the constructed gate. Defaults to None.
         """
         super().__init__(label=label, ctrl_state="00")
 
