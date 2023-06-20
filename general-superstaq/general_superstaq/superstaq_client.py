@@ -297,16 +297,17 @@ class _SuperstaQClient:
         depth: int,
         circuit_return_type: str,
     ) -> Any:
-        """Performs a POST request on the `/supercheq` endpoint
+        """Performs a POST request on the `/supercheq` endpoint.
 
         Args:
-            files: List of files specified as binary using ints. For example: [[1, 0, 1], [1, 1, 1]]
-            num_qubits: Number of qubits to run SupercheQ on
-            depth: The depth of the circuits to run SupercheQ on
-            circuit_return_type: Supports only `cirq` and `qiskit` for now
+            files: List of files specified as binary using ints.
+                For example: [[1, 0, 1], [1, 1, 1]].
+            num_qubits: Number of qubits to run SupercheQ on.
+            depth: The depth of the circuits to run SupercheQ on.
+            circuit_return_type: Supports only `cirq` and `qiskit` for now.
 
-        Returns: The output of SupercheQ
-
+        Returns:
+            The output of SupercheQ.
         """
         json_dict = {
             "files": files,
@@ -315,6 +316,20 @@ class _SuperstaQClient:
             "circuit_return_type": circuit_return_type,
         }
         return self.post_request("/supercheq", json_dict)
+
+    def target_info(self, target: str) -> Dict[str, Any]:
+        """Makes a POST request to the SuperstaQ API (using the `/target_info` endpoint to request
+        information about `target`.
+
+        Args:
+            target: String representing the device to get information about.
+
+        Returns: Target information.
+        """
+        json_dict = {
+            "target": target,
+        }
+        return self.post_request("/target_info", json_dict)
 
     def find_min_vol_portfolio(
         self, json_dict: Dict[str, Union[List[str], int, float, str]]
@@ -386,8 +401,14 @@ class _SuperstaQClient:
                 message = response.json()["message"]
             else:
                 message = str(response.text)
+            slack_invite_url = (
+                "https://join.slack.com/t/superstaq/shared_invite/"
+                "zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw"
+            )
             raise gss.SuperstaQException(
-                f"Non-retriable error making request to SuperstaQ API, {message}",
+                f"Non-retriable error making request to SuperstaQ API, {message}.\n\n"
+                "If you would like to contact a member of our team, email us at "
+                f"superstaq@infleqtion.com or join our Slack workspace: {slack_invite_url}",
                 response.status_code,
             )
 

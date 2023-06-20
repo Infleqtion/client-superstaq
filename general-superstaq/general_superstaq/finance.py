@@ -14,7 +14,9 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class MinVolOutput:  # pylint: disable=missing-class-docstring
+class MinVolOutput:
+    """A class to store data returned from the Minimized Volatility endpoint."""
+
     best_portfolio: List[str]
     best_ret: float
     best_std_dev: float
@@ -22,11 +24,11 @@ class MinVolOutput:  # pylint: disable=missing-class-docstring
 
 
 def read_json_minvol(json_dict: gss.MinVolJson) -> MinVolOutput:
-    """Reads out returned JSON from SuperstaQ API's minvol endpoint.
+    """Reads out returned JSON from Superstaq API's /minvol endpoint.
     Args:
-        json_dict: a JSON dictionary matching the format returned by /minvol endpoint
+        json_dict: A JSON dictionary matching the format returned by the /minvol endpoint.
     Returns:
-        a MinVolOutput object with the optimal portfolio.
+        A `MinVolOutput` object with the optimal portfolio.
     """
     best_portfolio = json_dict["best_portfolio"]
     best_ret = json_dict["best_ret"]
@@ -36,7 +38,9 @@ def read_json_minvol(json_dict: gss.MinVolJson) -> MinVolOutput:
 
 
 @dataclass
-class MaxSharpeOutput:  # pylint: disable=missing-class-docstring
+class MaxSharpeOutput:
+    """A class to store data returned from the Max Sharpe Ratio endpoint."""
+
     best_portfolio: List[str]
     best_ret: float
     best_std_dev: float
@@ -45,11 +49,11 @@ class MaxSharpeOutput:  # pylint: disable=missing-class-docstring
 
 
 def read_json_maxsharpe(json_dict: gss.MaxSharpeJson) -> MaxSharpeOutput:
-    """Reads out returned JSON from SuperstaQ API's minvol endpoint.
+    """Reads out returned JSON from Superstaq API's /maxsharpe endpoint.
     Args:
-        json_dict: a JSON dictionary matching the format returned by /maxsharpe endpoint
+        json_dict: A JSON dictionary matching the format returned by the /maxsharpe endpoint.
     Returns:
-        a MaxSharpeOutput object with the optimal portfolio.
+        A `MaxSharpeOutput` object with the optimal portfolio.
     """
     best_portfolio = json_dict["best_portfolio"]
     best_ret = json_dict["best_ret"]
@@ -59,19 +63,31 @@ def read_json_maxsharpe(json_dict: gss.MaxSharpeJson) -> MaxSharpeOutput:
     return MaxSharpeOutput(best_portfolio, best_ret, best_std_dev, best_sharpe_ratio, qubo)
 
 
-class Finance:  # pylint: disable=missing-class-docstring
+class Finance:
+    """Overarching class for Sharpe Ratio and Minimized Volatility finance applications."""
+
     def __init__(self, client: superstaq_client._SuperstaQClient):
+        """Constructor for the Finance class.
+
+        Args:
+            client: A client to interface with Superstaq.
+        """
         self._client = client
 
-    def submit_qubo(  # pylint: disable=missing-param-doc
-        self, qubo: qv.QUBO, target: str, repetitions: int = 1000, method: Optional[str] = None
+    def submit_qubo(
+        self,
+        qubo: qv.QUBO,
+        target: str,
+        repetitions: int = 1000,
+        method: Optional[str] = None,
     ) -> npt.NDArray[np.int_]:
         """Submits the given QUBO to the target backend. The result of the optimization
         is returned to the user as a numpy.recarray.
         Args:
-            qubo: Qubovert QUBO object representing the optimization problem.
+            qubo: A `qubovert.QUBO` object representing the optimization problem.
             target: A string indicating which target to use.
             repetitions: Number of shots to execute on the device.
+            method: An optional parameter for qubo.
         Returns:
             Numpy.recarray containing the solution to the QUBO, the energy of the
             different solutions, and the number of times each solution was found.
@@ -94,7 +110,7 @@ class Finance:  # pylint: disable=missing-class-docstring
             for price data.
             solver: Specifies which solver to use. Defaults to a simulated annealer.
         Returns:
-            MinVolOutput object, with the following attributes:
+            A `MinVolOutput` object, with the following attributes:
             .best_portfolio: The assets in the optimal portfolio.
             .best_ret: The return of the optimal portfolio.
             .best_std_dev: The volatility of the optimal portfolio.
@@ -145,7 +161,7 @@ class Finance:  # pylint: disable=missing-class-docstring
             for price data.
             solver: Specifies which solver to use. Defaults to a simulated annealer.
         Return:
-            A MaxSharpeOutput object with the following attributes:
+            A `MaxSharpeOutput` object with the following attributes:
             .best_portfolio: The assets in the optimal portfolio.
             .best_ret: The return of the optimal portfolio.
             .best_std_dev: The volatility of the optimal portfolio.
