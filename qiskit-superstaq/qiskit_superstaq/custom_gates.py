@@ -258,15 +258,15 @@ class ParallelGates(qiskit.circuit.Gate):
 
 
 class iXGate(qiskit.circuit.Gate):
-    """The iX gate (a single qubit Pauli-X gate with a global phase of i). It is a special case of 
-    when the RZ gate's input rotation angle is -:math:`\pi`:
-    
-    .. math::
-    
+    r"""The iX gate (a single qubit Pauli-X gate with a global phase of i). It is a special case
+    of when the RZ gate's input rotation angle is :math:`-\pi`:
+
+     .. math::
+
         \begin{bmatrix}
-          0 & i \\
-          i & 0
-        \end{bmatrix}.
+        0 & i \\
+        i & 0 \\
+        \end{bmatrix}
     """
 
     def __init__(self, label: Optional[str] = None) -> None:
@@ -321,7 +321,7 @@ class iXGate(qiskit.circuit.Gate):
 
 
 class iXdgGate(qiskit.circuit.Gate):
-    """The conjugate transpose of the `iXGate` (:math:`iXGate^{\dagger} = iXdgGate`)."""
+    r"""The conjugate transpose of the `iXGate` (:math:`iXGate^{\dagger} = iXdgGate`)."""
 
     def __init__(self, label: Optional[str] = None) -> None:
         """Initializes an iXdgGate.
@@ -375,7 +375,7 @@ class iXdgGate(qiskit.circuit.Gate):
 
 
 class iCCXGate(qiskit.circuit.ControlledGate):
-    """An iCCX gate which consists of a Toffoli gate and subsequent two-qubit controlled phase gate
+    r"""An iCCX gate which consists of a Toffoli gate and subsequent two-qubit controlled phase gate
     (with angle of rotation of :math:`\frac{\pi}{2}` on the second qubit using the first qubit as
     control). That is, it is a composite gate of the following instructions:
 
@@ -424,7 +424,7 @@ class iCCXGate(qiskit.circuit.ControlledGate):
 
 
 class iCCXdgGate(qiskit.circuit.ControlledGate):
-    """The conjugate transpose of the `iCCXGate` (:math:`iCCXGate^{\dagger} = iCCXdgGate`)."""
+    r"""The conjugate transpose of the `iCCXGate` (:math:`iCCXGate^{\dagger} = iCCXdgGate`)."""
 
     def __init__(
         self, label: Optional[str] = None, ctrl_state: Optional[Union[str, int]] = None
