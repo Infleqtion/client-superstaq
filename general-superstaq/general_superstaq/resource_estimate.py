@@ -3,20 +3,19 @@ from typing import Dict, Optional
 
 
 @dataclass
-class ResourceEstimate:  # pylint: disable=missing-class-docstring
+class ResourceEstimate:
+    """A class to store data returned from a resource_estimate request."""
+
     num_single_qubit_gates: Optional[int] = None
     num_two_qubit_gates: Optional[int] = None
     depth: Optional[int] = None
     json_data: InitVar[Dict[str, int]] = None
 
     def __post_init__(self, json_data: Optional[Dict[str, int]] = None) -> None:
-        """Initializes ResourceEstimate object with JSON data, if specified
+        """Initializes `ResourceEstimate` object with JSON data, if specified.
 
         Args:
-            json_data: Optional dictionary containing JSON data from a resource_estimate request
-
-        Returns:
-            Nothing
+            json_data: Optional dictionary containing JSON data from a resource_estimate request.
         """
         if json_data is not None:
             assert "num_single_qubit_gates" in json_data
