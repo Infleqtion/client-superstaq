@@ -12,7 +12,6 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from collections import Counter
 from typing import Any, Dict, List, Optional
 
 import general_superstaq as gss
@@ -85,8 +84,8 @@ class SuperstaQJob(qiskit.providers.JobV1):
                 counts = dict((key[::-1], value) for (key, value) in counts.items())
             results_list.append(
                 {
-                    "success": result["status"] == "Done",
-                    "status": result["status"],
+                    "success": self._overall_status == "Done",
+                    "status": self._overall_status,
                     "shots": result["shots"],
                     "data": {"counts": counts},
                 }
@@ -98,7 +97,8 @@ class SuperstaQJob(qiskit.providers.JobV1):
                 "qobj_id": -1,
                 "backend_name": self._backend._configuration.backend_name,
                 "backend_version": self._backend._configuration.backend_version,
-                "success": result["status"] == "Done",
+                "success": self._overall_status == "Done",
+                "status": self._overall_status,
                 "job_id": self._job_id,
             }
         )
@@ -108,7 +108,8 @@ class SuperstaQJob(qiskit.providers.JobV1):
         raises an exception if it is.
 
         Raises:
-            SuperstaQUnsuccessfulJob: If the job been canceled or an error has occured.
+            SuperstaQUnsuccessfulJobException: If the job been canceled or an error has
+        occurred.
             SuperstaQException: If unable to get the status of the job from the API.
         """
         if self._overall_status in ("Canceled", "Error"):
@@ -142,16 +143,13 @@ class SuperstaQJob(qiskit.providers.JobV1):
 
         job_id_list = self._job_id.split(",")  # separate aggregated job ids
 
-        status_occurance = Counter(self._job_info[job_id]["status"] for job_id in job_id_list)
-        status_priority_order = ("Submitted", "Queued", "Running", "Error", "Canceled")
+        status_occurrence = {self._job_info[job_id]["status"] for job_id in job_id_list}
+        status_priority_order = ("Submitted", "Queued", "Running", "Error", "Canceled", "Done")
 
         for temp_status in status_priority_order:
-            if status_occurance[temp_status] > 0:
+            if temp_status in status_occurrence:
                 self._overall_status = temp_status
-                break
-
-        if status_occurance["Done"] == len(job_id_list):
-            self._overall_status = "Done"
+                return
 
     def status(self) -> qiskit.providers.jobstatus.JobStatus:
         """Query for the equivalent qiskit job status.
@@ -174,8 +172,6 @@ class SuperstaQJob(qiskit.providers.JobV1):
 
         self._refresh_job()
         status = self._overall_status
-
-        assert status in ("Queued", "Running", "Submitted", "Canceled", "Error", "Done")
 
         return status_match.get(status)
 
