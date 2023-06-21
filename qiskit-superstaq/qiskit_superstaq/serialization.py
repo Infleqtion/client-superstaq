@@ -1,14 +1,71 @@
 import io
+import json
 import re
 import warnings
-from typing import Dict, List, Set, Tuple, Union
+from typing import Dict, List, Set, Tuple, TypeVar, Union
 
 import general_superstaq as gss
+import numpy as np
+import numpy.typing as npt
 import qiskit
 import qiskit.qpy
 from qiskit.converters.ast_to_dag import AstInterpreter
 
 import qiskit_superstaq as qss
+
+T = TypeVar("T")
+RealArray = Union[int, float, List["RealArray"]]
+
+
+def json_encoder(val: object) -> Dict[str, Union[str, RealArray]]:
+    """Convert (real or complex) arrays to a JSON-serializable format.
+
+    Args:
+        val: The value to be serialized.
+
+    Returns:
+        A JSON dictionary containing the provided name and array values.
+
+    Raises:
+        TypeError: If `val` is not a `np.ndarray`.
+    """
+    if isinstance(val, np.ndarray):
+        return {
+            "type": "qss_array",
+            "real": val.real.tolist(),
+            "imag": val.imag.tolist(),
+        }
+
+    raise TypeError(f"Object of type {type(val)} is not JSON serializable.")
+
+
+def json_resolver(val: T) -> Union[T, npt.NDArray[np.complex_]]:
+    """Hook to deserialize objects that were serialized via `json_encoder()`.
+
+    Args:
+        val: The deserialized object.
+
+    Returns:
+        The resolved object.
+    """
+    if isinstance(val, dict) and val.get("type") == "qss_array":
+        real_part = val.get("real", 0)
+        imag_part = val.get("imag", 0)
+        return np.array(real_part) + 1j * np.array(imag_part)
+
+    return val
+
+
+def to_json(val: object) -> str:
+    """Extends `json.dumps` to support numpy arrays.
+
+    Args:
+        val: The value to be serialized.
+
+    Returns:
+        The JSON-serialized value (a string).
+    """
+    return json.dumps(val, default=json_encoder)
 
 
 def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:

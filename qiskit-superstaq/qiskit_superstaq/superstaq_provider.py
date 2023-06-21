@@ -12,7 +12,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -154,6 +154,7 @@ class SuperstaQProvider(
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         target: str = "aqt_keysight_qpu",
         atol: Optional[float] = None,
+        gate_defs: Optional[Mapping[str, Union[str, npt.NDArray[np.complex_], None]]] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
@@ -163,6 +164,12 @@ class SuperstaQProvider(
             circuits: The circuit(s) to compile.
             target: A string containing the name of a target AQT backend.
             atol: An optional tolerance to use for approximate gate synthesis.
+            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+                each operation can be either a unitary matrix or None. More specific associations
+                take precedence, for example `{"SWAP": <matrix1>, "SWAP/C5C4": <matrix2>}` implies
+                `<matrix1>` for all "SWAP" calibrations except "SWAP/C5C4" (which will instead be
+                mapped to `<matrix2>` applied to qubits 4 and 5). Setting any calibration to None
+                will disable that calibration.
             kwargs: Other desired aqt_compile options.
 
         Returns:
@@ -177,7 +184,7 @@ class SuperstaQProvider(
         if not target.startswith("aqt_"):
             raise ValueError(f"{target} is not an AQT target")
 
-        return self.get_backend(target).compile(circuits, atol=atol, **kwargs)
+        return self.get_backend(target).compile(circuits, atol=atol, gate_defs=gate_defs, **kwargs)
 
     def aqt_compile_eca(
         self,
@@ -186,6 +193,7 @@ class SuperstaQProvider(
         random_seed: Optional[int] = None,
         target: str = "aqt_keysight_qpu",
         atol: Optional[float] = None,
+        gate_defs: Optional[Mapping[str, Union[str, npt.NDArray[np.complex_], None]]] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
@@ -200,6 +208,12 @@ class SuperstaQProvider(
             random_seed: Optional seed for circuit randomizer.
             target: A string containing the name of a target AQT backend.
             atol: An optional tolerance to use for approximate gate synthesis.
+            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+                each operation can be either a unitary matrix or None. More specific associations
+                take precedence, for example `{"SWAP": <matrix1>, "SWAP/C5C4": <matrix2>}` implies
+                `<matrix1>` for all "SWAP" calibrations except "SWAP/C5C4" (which will instead be
+                mapped to `<matrix2>` applied to qubits 4 and 5). Setting any calibration to None
+                will disable that calibration.
             kwargs: Other desired aqt_compile_eca options.
 
         Returns:
@@ -218,7 +232,8 @@ class SuperstaQProvider(
             circuits,
             num_equivalent_circuits=num_equivalent_circuits,
             random_seed=random_seed,
-            atorl=atol,
+            atol=atol,
+            gate_defs=gate_defs,
             **kwargs,
         )
 
