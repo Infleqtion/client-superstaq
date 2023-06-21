@@ -1,4 +1,4 @@
-SuperstaQ for IBM
+Superstaq for IBM
 -----------------------
 For this tutorial, we will go over how to get started with using Superstaq to compile, optimize, and simulate circuits for the IBM Quantum backends. We will go over the process of setting up a Superstaq provider and compiling circuits to an IBM Quantum backend, retrieving the optimized circuits. 
 
