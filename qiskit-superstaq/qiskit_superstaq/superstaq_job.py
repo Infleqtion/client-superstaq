@@ -57,7 +57,6 @@ class SuperstaQJob(qiskit.providers.JobV1):
         """
 
         self.wait_for_final_state(timeout, wait)  # should call self.status()
-        self._check_if_stopped()
 
         return [self._job_info[job_id] for job_id in self._job_id.split(",")]
 
