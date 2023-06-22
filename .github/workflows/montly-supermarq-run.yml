@@ -2,16 +2,12 @@ name: Monthly Supermarq run
 
 on:
   schedule:
-    - cron: "0 12 1 * *" # Every first of the month at 12
+    - cron: "0 12 */31,1-7 * 1" # Every first monday of the month at 12
   workflow_dispatch:  # So that we can also run manually, e.g. for testing
 
 jobs:
   run-supermarq:
     runs-on: ubuntu-latest
-    env:
-      SUPERSTAQ_API_KEY : ${{ secrets.SUPERSTAQ_API_KEY }}
-      IBMQ_TOKEN: ${{secrets.IBMQ_TOKEN}}
-      HONEYWELL_PASSWORD: ${{secrets.HONEYWELL_PASSWORD}}
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python 3.8
