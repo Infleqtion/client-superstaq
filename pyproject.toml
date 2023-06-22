@@ -7,27 +7,6 @@ profile = "black"
 line_length = 100
 color_output = true
 
-[tool.coverage.report]
-fail_under = 100
-show_missing = true
-skip_covered = true
-exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]
-
-[tool.coverage.run]
-include = "./*"
-
-[tool.mypy]
-ignore_missing_imports = true
-show_error_codes = true
-disallow_any_generics = true
-disallow_incomplete_defs = true
-disallow_untyped_defs = true
-warn_unused_ignores = true
-install_types = true
-non_interactive = true
-no_implicit_optional = true
-plugins = ["numpy.typing.mypy_plugin"]
-
 [tool.flake8]
 max-line-length = 100
 max-complexity = 10
@@ -42,6 +21,27 @@ extend-ignore = [
   "I201",
   "I202",
 ] # these errors conflict with black and/or isort
+
+[tool.mypy]
+ignore_missing_imports = true
+show_error_codes = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+warn_unused_ignores = true
+install_types = true
+non_interactive = true
+no_implicit_optional = true
+plugins = ["numpy.typing.mypy_plugin"]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+skip_covered = true
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]
+
+[tool.coverage.run]
+include = "./*"
 
 [tool.pylint.main]
 max-line-length = 100
