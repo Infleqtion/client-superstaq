@@ -1,1 +1,3 @@
-__version__ = "0.3.31"
+import importlib.metadata
+
+__version__ = importlib.metadata.version("general_superstaq")

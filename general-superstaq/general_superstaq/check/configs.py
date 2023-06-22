@@ -12,7 +12,7 @@ from general_superstaq.check import check_utils
 @check_utils.enable_exit_on_failure
 def run(  # pylint: disable=missing-function-docstring
     *args: str,
-    config_file: str = "setup.cfg",
+    config_file: str = "pyproject.toml",
     ignore_match: str = "# REPO-SPECIFIC CONFIG",
     silent: bool = False,
 ) -> int:

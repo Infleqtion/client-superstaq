@@ -52,7 +52,9 @@ def run(  # pylint: disable=missing-function-docstring
     args_to_pass.append(f"-j{parsed_args.cores}")
 
     if files:
-        return subprocess.call(["pylint", *files, *args_to_pass], cwd=check_utils.root_dir)
+        return subprocess.call(
+            ["python", "-m", "pylint", *files, *args_to_pass], cwd=check_utils.root_dir
+        )
 
     return 0
 

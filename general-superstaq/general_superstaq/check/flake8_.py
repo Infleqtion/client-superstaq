@@ -27,7 +27,9 @@ def run(  # pylint: disable=missing-function-docstring
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     if files:
-        return subprocess.call(["flake8", *files, *args_to_pass], cwd=check_utils.root_dir)
+        return subprocess.call(
+            ["python", "-m", "flake8", *files, *args_to_pass], cwd=check_utils.root_dir
+        )
 
     return 0
 
