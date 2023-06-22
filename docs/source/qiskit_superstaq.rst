@@ -52,6 +52,14 @@ qiskit\_superstaq.superstaq\_provider module
    :undoc-members:
    :show-inheritance:
 
+qiskit\_superstaq.validation module
+-----------------------------------
+
+.. automodule:: qiskit_superstaq.validation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 
