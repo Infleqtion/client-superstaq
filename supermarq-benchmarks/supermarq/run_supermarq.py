@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Dict, List, Tuple
 
+import cirq
 import cirq_superstaq as css
 
 import supermarq
@@ -47,12 +48,24 @@ for target in qpu_targets:
         # Since there is no way to determine if a target supports mid-circuit measurement purely
         # through `service.target_info()`, we use a `try` block to catch when we submit an invalid
         # circuit to a device that does not support it.
+        # Related issue: https://github.com/Infleqtion/client-superstaq/issues/550.
+
         try:
-            job = service.create_job(
-                benchmark.circuit(),
-                repetitions=1000,
-                target=target,
-                options={"tag": tag, "qiskit_pulse": False},
-            )
+            circuit = benchmark.circuit()
+            if isinstance(circuit, cirq.Circuit):
+                job = service.create_job(
+                    circuit,
+                    repetitions=1000,
+                    target=target,
+                    options={"tag": tag, "qiskit_pulse": False},
+                )
+            else:
+                for idx, c in enumerate(circuit):
+                    job = service.create_job(
+                        c,
+                        repetitions=1000,
+                        target=target,
+                        options={"tag": f"{tag}-idx", "qiskit_pulse": False},
+                    )
         except Exception:
             pass
