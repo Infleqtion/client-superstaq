@@ -237,7 +237,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
 
         options: Dict[str, Any] = {**kwargs}
         if num_equivalent_circuits is not None:
-            options["num_equivalent_cirucits"] = num_equivalent_circuits
+            options["num_equivalent_circuits"] = num_equivalent_circuits
         if random_seed is not None:
             options["random_seed"] = random_seed
         if atol is not None:
