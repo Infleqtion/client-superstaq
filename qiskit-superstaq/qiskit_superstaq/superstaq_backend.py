@@ -14,9 +14,11 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Mapping, Optional, Union
 
 import general_superstaq as gss
+import numpy as np
+import numpy.typing as npt
 import qiskit
 
 import qiskit_superstaq as qss
@@ -88,11 +90,14 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
 
         Returns:
             A Superstaq job storing ID and other related info.
-        """
 
+        Raises:
+            ValueError: If `circuits` contains invalid circuits for submission.
+        """
         if isinstance(circuits, qiskit.QuantumCircuit):
             circuits = [circuits]
 
+        qss.validation.validate_qiskit_circuits(circuits)
         if not all(circuit.count_ops().get("measure") for circuit in circuits):
             # TODO: only raise if the run method actually requires samples (and not for e.g. a
             # statevector simulation)
@@ -162,7 +167,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         return {
             "qiskit_circuits": serialized_circuits,
             "target": self.name(),
-            "options": json.dumps(kwargs),
+            "options": qss.serialization.to_json(kwargs),
         }
 
     def aqt_compile(
@@ -171,6 +176,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         num_equivalent_circuits: Optional[int] = None,
         random_seed: Optional[int] = None,
         atol: Optional[float] = None,
+        gate_defs: Optional[Mapping[str, Union[str, npt.NDArray[np.complex_], None]]] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
@@ -185,6 +191,12 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             random_seed: Optional seed used for approximate synthesis and ECA.
             atol: Optional tolerance to use for approximate gate synthesis (currently just for
                 qutrit gates).
+            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+                each operation can be either a unitary matrix or None. More specific associations
+                take precedence, for example `{"SWAP": <matrix1>, "SWAP/C5C4": <matrix2>}` implies
+                `<matrix1>` for all "SWAP" calibrations except "SWAP/C5C4" (which will instead be
+                mapped to `<matrix2>` applied to qubits 4 and 5). Setting any calibration to None
+                will disable that calibration.
             kwargs: Other desired compile options.
 
         Returns:
@@ -202,11 +214,13 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
 
         options: Dict[str, Any] = {**kwargs}
         if num_equivalent_circuits is not None:
-            options["num_equivalent_cirucits"] = num_equivalent_circuits
+            options["num_equivalent_circuits"] = num_equivalent_circuits
         if random_seed is not None:
             options["random_seed"] = random_seed
         if atol is not None:
             options["atol"] = atol
+        if gate_defs is not None:
+            options["gate_defs"] = gate_defs
 
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         request_json = self._get_compile_request_json(circuits, **options)
