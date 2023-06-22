@@ -211,11 +211,11 @@ class UserConfig:
             config_dict = self.aqt_get_configs()
             with open(pulses_file_path, "w") as text_file:
                 text_file.write(config_dict["pulses"])
-                print(f"Pulses configuration save to {pulses_file_path}.")
+                print(f"Pulses configuration saved to {pulses_file_path}.")
 
             with open(variables_file_path, "w") as text_file:
                 text_file.write(config_dict["variables"])
-                print(f"Variables configuration save to {variables_file_path}.")
+                print(f"Variables configuration saved to {variables_file_path}.")
 
             return None
 
