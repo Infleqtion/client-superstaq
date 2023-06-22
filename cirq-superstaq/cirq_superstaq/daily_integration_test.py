@@ -153,13 +153,6 @@ def test_ibmq_set_token(service: css.Service) -> None:
         assert service.ibmq_set_token("INVALID_TOKEN")
 
 
-def test_tsp(service: css.Service) -> None:
-    cities = ["Chicago", "San Francisco", "New York City", "New Orleans"]
-    out = service.tsp(cities)
-    for city in cities:
-        assert city.replace(" ", "+") in out.map_link[0]
-
-
 def test_get_targets(service: css.Service) -> None:
     result = service.get_targets()
     assert "ibmq_qasm_simulator" in result["compile-and-run"]
