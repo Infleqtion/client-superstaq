@@ -18,14 +18,12 @@ import general_superstaq as gss
 import numpy as np
 import numpy.typing as npt
 import qiskit
-from general_superstaq import ResourceEstimate, finance, logistics, superstaq_client, user_config
+from general_superstaq import ResourceEstimate, superstaq_client, user_config
 
 import qiskit_superstaq as qss
 
 
-class SuperstaQProvider(
-    qiskit.providers.ProviderV1, finance.Finance, logistics.Logistics, user_config.UserConfig
-):
+class SuperstaQProvider(qiskit.providers.ProviderV1, user_config.UserConfig):
     """Provider for Superstaq backend.
 
     Typical usage is:
