@@ -77,7 +77,7 @@ def test_result(backend: qss.SuperstaQBackend) -> None:
 
 def test_check_if_stopped(backend: qss.SuperstaQBackend) -> None:
 
-    for status in ("Canceled", "Error"):
+    for status in ("Canceled", "Failed"):
         job = qss.SuperstaQJob(backend=backend, job_id="123abc")
         job._overall_status = status
         with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match=status):
@@ -111,10 +111,10 @@ def test_refresh_job(backend: qss.SuperstaQBackend) -> None:
     job = qss.SuperstaQJob(backend=backend, job_id="321cba")
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.get_job",
-        return_value=mock_response("Error"),
+        return_value=mock_response("Failed"),
     ):
         job._refresh_job()
-        assert job._overall_status == "Error"
+        assert job._overall_status == "Failed"
 
     job = qss.SuperstaQJob(backend=backend, job_id="654cba")
     with mock.patch(
@@ -150,11 +150,11 @@ def test_update_status_queue_info(backend: qss.SuperstaQBackend) -> None:
     job._update_status_queue_info()
     assert job._overall_status == "Queued"
 
-    mock_statuses = [mock_response("Done"), mock_response("Done"), mock_response("Error")]
+    mock_statuses = [mock_response("Done"), mock_response("Done"), mock_response("Failed")]
     for index, job_id in enumerate(job._job_id.split(",")):
         job._job_info[job_id] = mock_statuses[index]
     job._update_status_queue_info()
-    assert job._overall_status == "Error"
+    assert job._overall_status == "Failed"
 
 
 def test_status(backend: qss.SuperstaQBackend) -> None:
