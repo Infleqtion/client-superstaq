@@ -65,7 +65,7 @@ for target in qpu_targets:
                         c,
                         repetitions=1000,
                         target=target,
-                        options={"tag": f"{tag}-idx", "qiskit_pulse": False},
+                        options={"tag": f"{tag}-{idx}", "qiskit_pulse": False},
                     )
         except Exception:
             pass
