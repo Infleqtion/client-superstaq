@@ -8,6 +8,8 @@ on:
 jobs:
   run-supermarq:
     runs-on: ubuntu-latest
+    env:
+      SUPERSTAQ_API_KEY : ${{ secrets.SUPERSTAQ_API_KEY }}
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python 3.8
