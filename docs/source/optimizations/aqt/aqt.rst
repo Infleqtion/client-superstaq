@@ -1,4 +1,4 @@
-SuperstaQ for AQT
+Superstaq for AQT
 ========================
 
 

@@ -121,7 +121,7 @@ class CompilerOutput:
 
 
 def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
-    """Reads out returned JSON from SuperstaQ API's IBMQ compilation endpoint.
+    """Reads out returned JSON from Superstaq API's IBMQ compilation endpoint.
 
     Args:
         json_dict: a JSON dictionary matching the format returned by /ibmq_compile endpoint
@@ -164,7 +164,7 @@ def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutp
 def read_json_aqt(  # pylint: disable=missing-param-doc
     json_dict: Dict[str, Any], circuits_is_list: bool, num_eca_circuits: Optional[int] = None
 ) -> CompilerOutput:
-    """Reads out returned JSON from SuperstaQ API's AQT compilation endpoint.
+    """Reads out returned JSON from Superstaq API's AQT compilation endpoint.
 
     Args:
         json_dict: JSON dictionary matching the format returned by aqt_compile endpoint.
@@ -253,7 +253,7 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
 
 
 def read_json_qscout(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
-    """Reads out returned JSON from SuperstaQ API's QSCOUT compilation endpoint.
+    """Reads out returned JSON from Superstaq API's QSCOUT compilation endpoint.
 
     Args:
         json_dict: a JSON dictionary matching the format returned by /qscout_compile endpoint
