@@ -6,6 +6,7 @@ authors = [{ name = "Super.tech", email = "pranav@super.tech" }]
 readme = { file = "README.md", content-type = "text/markdown" }
 license = { text = "Apache 2" }
 requires-python = ">=3.7.0"
+urls = { homepage = "https://github.com/Infleqtion/client-superstaq" }
 dynamic = ["dependencies", "optional-dependencies"]
 
 [build-system]
