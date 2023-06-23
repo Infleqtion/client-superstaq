@@ -3,16 +3,16 @@
   <img src="./docs/source/_static/logos/Superstaq_white.png#gh-dark-mode-only">
 </p>
 
-# Welcome to SuperstaQ!
+# Welcome to Superstaq!
 This repository is the home of Super.tech's open source work, which includes:
-* [SuperstaQ](https://www.infleqtion.com/superstaq), our quantum software platform that is optimized across the quantum stack and enables users to write quantum programs in Cirq or Qiskit and target a variety of quantum computers and simulators
+* [Superstaq](https://www.infleqtion.com/superstaq), our quantum software platform that is optimized across the quantum stack and enables users to write quantum programs in Cirq or Qiskit and target a variety of quantum computers and simulators
 * [SupermarQ](https://www.infleqtion.com/supermarq), our quantum benchmarking suite
 
 # Installation for users
-For installation instructions for users of SuperstaQ, check out [our documentation site](https://docs-superstaq.readthedocs.io/)! In short, you can install any of our packages by doing `pip install <package>` in a terminal, where `<package>` is `qiskit-superstaq`, `cirq-superstaq`, `general-superstaq`, or `supermarq`.
+For installation instructions for users of Superstaq, check out [our documentation site](https://superstaq.readthedocs.io/)! In short, you can install any of our packages by doing `pip install <package>` in a terminal, where `<package>` is `qiskit-superstaq`, `cirq-superstaq`, `general-superstaq`, or `supermarq`.
 
 # Installation for development
-If you'd like to contribute to SuperstaQ, below are the instructions for installation. Note, **if you are working on multiple clients** (e.g., `qiskit-superstaq` and `cirq-superstaq`), you do not need to clone the repository multiple times or set up multiple virtual environments, but you must install the client-specific requirements in each client directory.
+If you'd like to contribute to Superstaq, below are the instructions for installation. Note, **if you are working on multiple clients** (e.g., `qiskit-superstaq` and `cirq-superstaq`), you do not need to clone the repository multiple times or set up multiple virtual environments, but you must install the client-specific requirements in each client directory.
 
 <details>
 <summary> <h3> <code>qiskit-superstaq</code> </h3> </summary>
@@ -63,10 +63,10 @@ If you'd like to contribute to SuperstaQ, below are the instructions for install
 </details>
 
 # Documentation 
-For more information on getting started, check out [our documentation site](https://docs-superstaq.readthedocs.io/)!
+For more information on getting started, check out [our documentation site](https://superstaq.readthedocs.io/)!
 
 # License
-SuperstaQ is licensed under the Apache License 2.0. See our [LICENSE](https://github.com/SupertechLabs/superstaq-client/blob/main/LICENSE) file for more details.
+Superstaq is licensed under the Apache License 2.0. See our [LICENSE](https://github.com/SupertechLabs/superstaq-client/blob/main/LICENSE) file for more details.
 
 # Contact Us
 If you'd like to reach out to a member of our team, please email us at superstaq@infleqtion.com or join our [Slack workspace](https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw).
