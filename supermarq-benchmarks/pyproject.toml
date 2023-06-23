@@ -1,7 +1,7 @@
 [project]
-name = "qiskit-superstaq"
+name = "Supermarq"
 version = "0.3.31"
-description = "The Qiskit module that provides tools and access to Superstaq."
+description = "Supermarq is a scalable, application-centric quantum benchmarking suite."
 authors = [{ name = "Super.tech", email = "pranav@super.tech" }]
 readme = { file = "README.md", content-type = "text/markdown" }
 license = { text = "Apache 2" }
@@ -13,10 +13,10 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["qiskit_superstaq*"]
+include = ["cirq_superstaq*"]
 
 [tool.setuptools.package-data]
-qiskit_superstaq = ["py.typed"]
+cirq_superstaq = ["py.typed"]
 
 [tool.setuptools.dynamic.dependencies]
 file = ["requirements.txt"]
