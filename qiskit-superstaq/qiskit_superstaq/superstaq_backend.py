@@ -50,7 +50,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             "coupling_map": None,
         }
 
-        qss.validation.validate_target(target)
+        gss.validation.validate_target(target)
 
         super().__init__(
             configuration=qiskit.providers.models.BackendConfiguration.from_dict(
@@ -138,7 +138,6 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         Raises:
             ValueError: If this backend does not support compilation.
         """
-        qss.validation.validate_qiskit_circuits(circuits)
         if self.name().startswith("ibmq_"):
             return self.ibmq_compile(circuits, **kwargs)
 
@@ -151,7 +150,6 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         elif self.name().startswith("cq_"):
             return self.cq_compile(circuits, **kwargs)
 
-        qss.validation.validate_target(self.name())
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         request_json = self._get_compile_request_json(circuits, **kwargs)
         json_dict = self._provider._client.compile(request_json)
@@ -162,7 +160,9 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         **kwargs: Any,
     ) -> Dict[str, str]:
-        """"""
+        qss.validation.validate_qiskit_circuits(circuits)
+        gss.validation.validate_target(self.name())
+
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         return {
             "qiskit_circuits": serialized_circuits,
@@ -214,11 +214,13 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
 
         options: Dict[str, Any] = {**kwargs}
         if num_equivalent_circuits is not None:
-            options["num_equivalent_circuits"] = num_equivalent_circuits
+            gss.validation.validate_integer_param(num_equivalent_circuits)
+            options["num_equivalent_circuits"] = int(num_equivalent_circuits)
         if random_seed is not None:
-            options["random_seed"] = random_seed
+            gss.validation.validate_integer_param(random_seed)
+            options["random_seed"] = int(random_seed)
         if atol is not None:
-            options["atol"] = atol
+            options["atol"] = float(atol)
         if gate_defs is not None:
             options["gate_defs"] = gate_defs
 
@@ -313,8 +315,6 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         if base_entangling_gate not in ("xx", "zz"):
             raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
 
-        qss.validation.validate_target(self.name())
-
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
         options = {
@@ -345,8 +345,6 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         """
         if not self.name().startswith("cq_"):
             raise ValueError(f"{self.name()} is not a valid CQ target.")
-
-        qss.validation.validate_target(self.name())
 
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         request_json = self._get_compile_request_json(circuits, **kwargs)

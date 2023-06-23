@@ -170,10 +170,13 @@ class _SuperstaQClient:
         Raises:
             An SuperstaQException if the request fails.
         """
+        gss.validation.validate_target(target)
+        gss.validation.validate_integer_param(repetitions)
+
         json_dict: Dict[str, Any] = {
             **serialized_circuits,
             "target": target,
-            "shots": repetitions,
+            "shots": int(repetitions),
         }
 
         if method is not None:
@@ -282,10 +285,13 @@ class _SuperstaQClient:
         method: Optional[str] = None,
     ) -> Dict[str, str]:
         """Makes a POST request to SuperstaQ API to submit a QUBO problem to the given target."""
+        gss.validation.validate_target(target)
+        gss.validation.validate_integer_param(repetitions)
+
         json_dict = {
             "qubo": gss.qubo.convert_qubo_to_model(qubo),
             "target": target,
-            "shots": repetitions,
+            "shots": int(repetitions),
             "method": method,
         }
         return self.post_request("/qubo", json_dict)
@@ -326,6 +332,8 @@ class _SuperstaQClient:
 
         Returns: Target information.
         """
+        gss.validation.validate_target(target)
+
         json_dict = {
             "target": target,
         }
