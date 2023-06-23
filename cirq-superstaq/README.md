@@ -1,6 +1,6 @@
-This package is used to access SuperstaQ via a Web API through [Cirq](https://github.com/quantumlib/Cirq).
+This package is used to access Superstaq via a Web API through [Cirq](https://github.com/quantumlib/Cirq).
 Cirq programmers can take advantage of the applications, pulse level optimizations, and write-once-target-all
-features of SuperstaQ with this package.
+features of Superstaq with this package.
 
 
 Please note that Python version `3.7` or higher is required. cirq-superstaq and all of its
@@ -31,7 +31,7 @@ service = css.Service(
     verbose=True,
 )
 
-# Submitting a circuit to "ibmq_qasm_simulator". Providing the "dry-run" method parameter instructs SuperstaQ to simulate the circuit, and is available to free trial users.
+# Submitting a circuit to "ibmq_qasm_simulator". Providing the "dry-run" method parameter instructs Superstaq to simulate the circuit, and is available to free trial users.
 job = service.create_job(circuit=circuit, repetitions=1, target="ibmq_qasm_simulator", method="dry-run")
 print("This is the job that's created ", job.status())
 print(job.counts())
