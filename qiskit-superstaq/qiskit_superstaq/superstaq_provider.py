@@ -18,12 +18,11 @@ import general_superstaq as gss
 import numpy as np
 import numpy.typing as npt
 import qiskit
-from general_superstaq import ResourceEstimate, superstaq_client, user_config
 
 import qiskit_superstaq as qss
 
 
-class SuperstaQProvider(qiskit.providers.ProviderV1, user_config.UserConfig):
+class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig):
     """Provider for Superstaq backend.
 
     Typical usage is:
@@ -76,7 +75,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, user_config.UserConfig):
         """
         self._name = "superstaq_provider"
 
-        self._client = superstaq_client._SuperstaQClient(
+        self._client = gss.superstaq_client._SuperstaQClient(
             client_name="qiskit-superstaq",
             remote_host=remote_host,
             api_key=api_key,
@@ -117,7 +116,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, user_config.UserConfig):
 
     def resource_estimate(
         self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]], target: str
-    ) -> Union[ResourceEstimate, List[ResourceEstimate]]:
+    ) -> Union[gss.ResourceEstimate, List[gss.ResourceEstimate]]:
         """Generates resource estimates for qiskit circuit(s).
 
         Args:
@@ -128,24 +127,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, user_config.UserConfig):
             ResourceEstimate(s) containing resource costs (after compilation) for running circuit(s)
             on a backend.
         """
-        qss.validation.validate_qiskit_circuits(circuits)
-        serialized_circuits = qss.serialization.serialize_circuits(circuits)
-        circuit_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
-
-        request_json = {
-            "qiskit_circuits": serialized_circuits,
-            "target": target,
-        }
-
-        json_dict = self._client.resource_estimate(request_json)
-
-        resource_estimates = [
-            ResourceEstimate(json_data=resource_estimate)
-            for resource_estimate in json_dict["resource_estimates"]
-        ]
-        if circuit_is_list:
-            return resource_estimates
-        return resource_estimates[0]
+        return self.get_backend(target).resource_estimate(circuits)
 
     def aqt_compile(
         self,
