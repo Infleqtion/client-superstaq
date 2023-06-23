@@ -8,7 +8,7 @@ exec(open("qiskit_superstaq/_version.py").read())
 
 name = "qiskit-superstaq"
 
-description = "The Qiskit module that provides tools and access to SuperstaQ"
+description = "The Qiskit module that provides tools and access to Superstaq"
 
 # README file as long_description.
 long_description = io.open("README.md", encoding="utf-8").read()
