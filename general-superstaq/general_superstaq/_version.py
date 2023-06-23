@@ -4,4 +4,4 @@ try:
 except ModuleNotFoundError:  # pragma: no cover
     import importlib_metadata  # type: ignore[no-redef]  # pragma: no cover
 
-__version__ = importlib_metadata.version(__package__ or __name__)
+__version__ = importlib_metadata.version(__package__)
