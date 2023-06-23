@@ -1,4 +1,4 @@
-from . import compiler_output, serialization
+from . import compiler_output, serialization, validation
 from ._version import __version__
 from .compiler_output import active_qubit_indices, measured_qubit_indices
 from .custom_gates import (
@@ -30,6 +30,7 @@ __all__ = [
     "SuperstaQBackend",
     "SuperstaQJob",
     "SuperstaQProvider",
+    "validation",
     "ZZSwapGate",
     "__version__",
 ]

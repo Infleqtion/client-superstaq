@@ -155,19 +155,17 @@ class CompilerOutput:
 
 def read_json_aqt(
     json_dict: Dict[str, str],
-    metadata_of_circuits: List[Dict[Any, Any]],
     circuits_is_list: bool,
-    num_eca_circuits: int = 0,
+    num_equivalent_circuits: Optional[int] = None,
 ) -> CompilerOutput:
-    """Reads out returned JSON from Superstaq API's AQT compilation endpoint.
+    """Reads out the returned JSON from Superstaq API's AQT compilation endpoint.
 
     Args:
-        json_dict: A JSON dictionary matching the format returned by /aqt_compile endpoint
-        metadata_of_circuits: Metadata(s) of qiskit circuit(s) to be added back after
-            compilation endpoint.
+        json_dict: A JSON dictionary matching the format returned by /aqt_compile endpoint.
         circuits_is_list: Bool flag that controls whether the returned object has a .circuits
-            attribute (if True) or a .circuit attribute (False)
-        num_eca_circuits: Number of Equivalent Circuit Averaging (ECA) circuits.
+            attribute (if True) or a .circuit attribute (False).
+        num_equivalent_circuits: Optional number of logically equivalent random circuits to generate
+            for each input circuit.
 
     Returns:
         A `CompilerOutput` object with the compiled circuit(s). If qtrl is available locally,
@@ -177,9 +175,6 @@ def read_json_aqt(
 
     compiled_circuits: Union[List[qiskit.QuantumCircuit], List[List[qiskit.QuantumCircuit]]]
     compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
-
-    for circuit, metadata in zip(compiled_circuits, metadata_of_circuits):
-        circuit.metadata = metadata
 
     final_logical_to_physicals_list: List[Dict[int, int]] = list(
         map(dict, json.loads(json_dict["final_logical_to_physicals"]))
@@ -227,19 +222,19 @@ def read_json_aqt(
 
         seq = _sequencer_from_state(state)
 
-    if num_eca_circuits:
+    if num_equivalent_circuits is not None:
         compiled_circuits = [
-            compiled_circuits[i : i + num_eca_circuits]
-            for i in range(0, len(compiled_circuits), num_eca_circuits)
+            compiled_circuits[i : i + num_equivalent_circuits]
+            for i in range(0, len(compiled_circuits), num_equivalent_circuits)
         ]
 
         pulse_lists = pulse_lists and [
-            pulse_lists[i : i + num_eca_circuits]
-            for i in range(0, len(pulse_lists), num_eca_circuits)
+            pulse_lists[i : i + num_equivalent_circuits]
+            for i in range(0, len(pulse_lists), num_equivalent_circuits)
         ]
         final_logical_to_physicals = [
-            final_logical_to_physicals_list[i : i + num_eca_circuits]
-            for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
+            final_logical_to_physicals_list[i : i + num_equivalent_circuits]
+            for i in range(0, len(final_logical_to_physicals_list), num_equivalent_circuits)
         ]
 
     if circuits_is_list:
@@ -255,15 +250,12 @@ def read_json_aqt(
 
 def read_json_qscout(
     json_dict: Dict[str, Union[str, List[str]]],
-    metadata_of_circuits: List[Dict[Any, Any]],
     circuits_is_list: bool,
 ) -> CompilerOutput:
-    """Reads out returned JSON from Superstaq API's QSCOUT compilation endpoint.
+    """Reads out the returned JSON from Superstaq API's QSCOUT compilation endpoint.
 
     Args:
         json_dict: A JSON dictionary matching the format returned by /qscout_compile endpoint.
-        metadata_of_circuits: Metadata(s) of qiskit circuit(s) to be added back after
-            compilation endpoint.
         circuits_is_list: Bool flag that controls whether the returned object has a .circuits
             attribute (if True) or a .circuit attribute (False).
 
@@ -284,9 +276,6 @@ def read_json_qscout(
     assert isinstance(jaqal_programs, list)
     compiled_circuits = qss.serialization.deserialize_circuits(qiskit_circuits)
 
-    for circuit, metadata in zip(compiled_circuits, metadata_of_circuits):
-        circuit.metadata = metadata
-
     if circuits_is_list:
         return CompilerOutput(
             circuits=compiled_circuits,
@@ -301,15 +290,11 @@ def read_json_qscout(
     )
 
 
-def read_json_only_circuits(
-    json_dict: Dict[str, str], metadata_of_circuits: List[Dict[Any, Any]], circuits_is_list: bool
-) -> CompilerOutput:
-    """Reads JSON returned from Superstaq API's CQ compilation endpoint.
+def read_json_only_circuits(json_dict: Dict[str, str], circuits_is_list: bool) -> CompilerOutput:
+    """Reads the JSON returned from Superstaq API's CQ compilation endpoint.
 
     Args:
         json_dict: A JSON dictionary matching the format returned by /cq_compile endpoint.
-        metadata_of_circuits: Metadata(s) of qiskit circuit(s) to be added back after
-            compilation endpoint.
         circuits_is_list: Bool flag that controls whether the returned object has a .circuits
             attribute (if True) or a .circuit attribute (False).
 
@@ -317,9 +302,6 @@ def read_json_only_circuits(
         A `CompilerOutput` object with the compiled circuit(s).
     """
     compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
-
-    for circuit, metadata in zip(compiled_circuits, metadata_of_circuits):
-        circuit.metadata = metadata
 
     final_logical_to_physicals: List[Dict[int, int]] = list(
         map(dict, json.loads(json_dict["final_logical_to_physicals"]))

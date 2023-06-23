@@ -12,87 +12,18 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-import json
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import general_superstaq as gss
 import numpy as np
 import numpy.typing as npt
 import qiskit
-from general_superstaq import ResourceEstimate, finance, logistics, superstaq_client, user_config
+from general_superstaq import ResourceEstimate, superstaq_client, user_config
 
 import qiskit_superstaq as qss
 
 
-def _validate_qiskit_circuits(circuits: object) -> None:
-    """Validates that the input is either a single `qiskit.QuantumCircuit` or a list of
-    `qiskit.QuantumCircuit` instances.
-
-    Args:
-        circuits: The circuit(s) to run.
-
-    Raises:
-        ValueError: If the input is not a `qiskit.QuantumCircuit` or a list of
-        `qiskit.QuantumCircuit` instances.
-    """
-    if not (
-        isinstance(circuits, qiskit.QuantumCircuit)
-        or (
-            isinstance(circuits, Sequence)
-            and all(isinstance(circuit, qiskit.QuantumCircuit) for circuit in circuits)
-        )
-    ):
-        raise ValueError(
-            "Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a "
-            "sequence of `qiskit.QuantumCircuit` instances."
-        )
-
-
-def _validate_integer_param(integer_param: object) -> None:
-    """Validates that an input parameter is positive and an integer.
-
-    Args:
-        integer_param: An input parameter.
-
-    Raises:
-        TypeError: If input is not an integer.
-        ValueError: If input is negative.
-    """
-
-    if not (
-        (hasattr(integer_param, "__int__") and int(integer_param) == integer_param)
-        or (isinstance(integer_param, str) and integer_param.isdecimal())
-    ):
-        raise TypeError(f"{integer_param} cannot be safely cast as an integer.")
-
-    if int(integer_param) <= 0:
-        raise ValueError("Must be a positive integer.")
-
-
-def _get_metadata_of_circuits(
-    circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]
-) -> List[Dict[Any, Any]]:
-    """Extracts metadata from the input qiskit circuit(s).
-
-    Args:
-        circuits: The circuit(s) from which to extract the metadata.
-
-    Returns:
-        A list of dictionaries containing the metadata of the input circuit(s). If a circuit has no
-        metadata, an empty dictionary is stored for that circuit.
-    """
-
-    metadata_of_circuits = [
-        (circuit.metadata or {})
-        for circuit in (circuits if isinstance(circuits, list) else [circuits])
-    ]
-
-    return metadata_of_circuits
-
-
-class SuperstaQProvider(
-    qiskit.providers.ProviderV1, finance.Finance, logistics.Logistics, user_config.UserConfig
-):
+class SuperstaQProvider(qiskit.providers.ProviderV1, user_config.UserConfig):
     """Provider for Superstaq backend.
 
     Typical usage is:
@@ -197,7 +128,7 @@ class SuperstaQProvider(
             ResourceEstimate(s) containing resource costs (after compilation) for running circuit(s)
             on a backend.
         """
-        _validate_qiskit_circuits(circuits)
+        qss.validation.validate_qiskit_circuits(circuits)
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         circuit_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
@@ -221,6 +152,7 @@ class SuperstaQProvider(
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         target: str = "aqt_keysight_qpu",
         atol: Optional[float] = None,
+        gate_defs: Optional[Mapping[str, Union[str, npt.NDArray[np.complex_], None]]] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
@@ -230,6 +162,12 @@ class SuperstaQProvider(
             circuits: The circuit(s) to compile.
             target: A string containing the name of a target AQT backend.
             atol: An optional tolerance to use for approximate gate synthesis.
+            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+                each operation can be either a unitary matrix or None. More specific associations
+                take precedence, for example `{"SWAP": <matrix1>, "SWAP/C5C4": <matrix2>}` implies
+                `<matrix1>` for all "SWAP" calibrations except "SWAP/C5C4" (which will instead be
+                mapped to `<matrix2>` applied to qubits 4 and 5). Setting any calibration to None
+                will disable that calibration.
             kwargs: Other desired aqt_compile options.
 
         Returns:
@@ -241,28 +179,10 @@ class SuperstaQProvider(
         Raises:
             ValueError: If `target` is not a valid AQT target.
         """
-        _validate_qiskit_circuits(circuits)
-
         if not target.startswith("aqt_"):
             raise ValueError(f"{target} is not an AQT target")
 
-        metadata_of_circuits = _get_metadata_of_circuits(circuits)
-        serialized_circuits = qss.serialization.serialize_circuits(circuits)
-        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
-
-        options_dict: Dict[str, Any] = {**kwargs}
-        if atol is not None:
-            options_dict["atol"] = atol
-
-        request_json = {
-            "qiskit_circuits": serialized_circuits,
-            "target": target,
-            "options": json.dumps(options_dict),
-        }
-
-        json_dict = self._client.post_request("/aqt_compile", request_json)
-
-        return qss.compiler_output.read_json_aqt(json_dict, metadata_of_circuits, circuits_is_list)
+        return self.get_backend(target).compile(circuits, atol=atol, gate_defs=gate_defs, **kwargs)
 
     def aqt_compile_eca(
         self,
@@ -271,6 +191,7 @@ class SuperstaQProvider(
         random_seed: Optional[int] = None,
         target: str = "aqt_keysight_qpu",
         atol: Optional[float] = None,
+        gate_defs: Optional[Mapping[str, Union[str, npt.NDArray[np.complex_], None]]] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
@@ -285,6 +206,12 @@ class SuperstaQProvider(
             random_seed: Optional seed for circuit randomizer.
             target: A string containing the name of a target AQT backend.
             atol: An optional tolerance to use for approximate gate synthesis.
+            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+                each operation can be either a unitary matrix or None. More specific associations
+                take precedence, for example `{"SWAP": <matrix1>, "SWAP/C5C4": <matrix2>}` implies
+                `<matrix1>` for all "SWAP" calibrations except "SWAP/C5C4" (which will instead be
+                mapped to `<matrix2>` applied to qubits 4 and 5). Setting any calibration to None
+                will disable that calibration.
             kwargs: Other desired aqt_compile_eca options.
 
         Returns:
@@ -296,33 +223,16 @@ class SuperstaQProvider(
         Raises:
             ValueError: If `target` is not a valid AQT target.
         """
-        _validate_qiskit_circuits(circuits)
-        _validate_integer_param(num_equivalent_circuits)
         if not target.startswith("aqt_"):
             raise ValueError(f"{target} is not an AQT target")
 
-        metadata_of_circuits = _get_metadata_of_circuits(circuits)
-        serialized_circuits = qss.serialization.serialize_circuits(circuits)
-        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
-
-        options_dict: Dict[str, Union[int, float]] = {
-            "num_eca_circuits": num_equivalent_circuits,
+        return self.get_backend(target).compile(
+            circuits,
+            num_equivalent_circuits=num_equivalent_circuits,
+            random_seed=random_seed,
+            atol=atol,
+            gate_defs=gate_defs,
             **kwargs,
-        }
-        if random_seed is not None:
-            options_dict["random_seed"] = random_seed
-        if atol is not None:
-            options_dict["atol"] = atol
-
-        request_json = {
-            "qiskit_circuits": serialized_circuits,
-            "target": target,
-            "options": json.dumps(options_dict),
-        }
-
-        json_dict = self._client.post_request("/aqt_compile", request_json)
-        return qss.compiler_output.read_json_aqt(
-            json_dict, metadata_of_circuits, circuits_is_list, num_equivalent_circuits
         )
 
     def ibmq_compile(
@@ -344,44 +254,10 @@ class SuperstaQProvider(
         Raises:
             ValueError: If `target` is not a valid IBMQ target.
         """
-
-        _validate_qiskit_circuits(circuits)
         if not target.startswith("ibmq_"):
             raise ValueError(f"{target} is not an IBMQ target")
 
-        metadata_of_circuits = _get_metadata_of_circuits(circuits)
-        serialized_circuits = qss.serialization.serialize_circuits(circuits)
-
-        request_json = {
-            "qiskit_circuits": serialized_circuits,
-            "target": target,
-            "options": json.dumps(kwargs),
-        }
-
-        json_dict = self._client.compile(request_json)
-        compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
-        for circuit, metadata in zip(compiled_circuits, metadata_of_circuits):
-            circuit.metadata = metadata
-
-        pulses = None
-
-        if "pulses" in json_dict:
-            pulses = gss.serialization.deserialize(json_dict["pulses"])
-
-        final_logical_to_physicals: List[Dict[int, int]] = list(
-            map(dict, json.loads(json_dict["final_logical_to_physicals"]))
-        )
-
-        if isinstance(circuits, qiskit.QuantumCircuit):
-            pulse_sequence = None if pulses is None else pulses[0]
-            return qss.compiler_output.CompilerOutput(
-                compiled_circuits[0], final_logical_to_physicals[0], pulse_sequences=pulse_sequence
-            )
-        return qss.compiler_output.CompilerOutput(
-            compiled_circuits,
-            final_logical_to_physicals,
-            pulse_sequences=pulses,
-        )
+        return self.get_backend(target).compile(circuits, **kwargs)
 
     def qscout_compile(
         self,
@@ -420,33 +296,11 @@ class SuperstaQProvider(
             ValueError: If `target` is not a valid QSCOUT target.
             ValueError: If `base_entangling_gate` is not a valid gate option.
         """
-        _validate_qiskit_circuits(circuits)
         if not target.startswith("sandia_"):
             raise ValueError(f"{target} is not a QSCOUT target")
 
-        qss.superstaq_backend.validate_target(target)
-
-        metadata_of_circuits = _get_metadata_of_circuits(circuits)
-        serialized_circuits = qss.serialization.serialize_circuits(circuits)
-        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
-
-        if base_entangling_gate not in ("xx", "zz"):
-            raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
-
-        options_dict = {
-            "mirror_swaps": mirror_swaps,
-            "base_entangling_gate": base_entangling_gate,
-            **kwargs,
-        }
-        json_dict = self._client.qscout_compile(
-            {
-                "qiskit_circuits": serialized_circuits,
-                "target": target,
-                "options": json.dumps(options_dict),
-            }
-        )
-        return qss.compiler_output.read_json_qscout(
-            json_dict, metadata_of_circuits, circuits_is_list
+        return self.get_backend(target).compile(
+            circuits, mirror_swaps=mirror_swaps, base_entangling_gate=base_entangling_gate, **kwargs
         )
 
     def cq_compile(
@@ -468,26 +322,10 @@ class SuperstaQProvider(
         Raises:
             ValueError: If `target` is not a valid CQ target.
         """
-        _validate_qiskit_circuits(circuits)
         if not target.startswith("cq_"):
             raise ValueError(f"{target} is not a CQ target")
 
-        qss.superstaq_backend.validate_target(target)
-
-        metadata_of_circuits = _get_metadata_of_circuits(circuits)
-        serialized_circuits = qss.serialization.serialize_circuits(circuits)
-        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
-
-        request_json = {
-            "qiskit_circuits": serialized_circuits,
-            "target": target,
-            "options": json.dumps(kwargs),
-        }
-        json_dict = self._client.compile(request_json)
-
-        return qss.compiler_output.read_json_only_circuits(
-            json_dict, metadata_of_circuits, circuits_is_list
-        )
+        return self.get_backend(target).compile(circuits, **kwargs)
 
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int
@@ -508,8 +346,8 @@ class SuperstaQProvider(
             A tuple containing a list of `qiskit.QuantumCircuit`s and a list of corresponding
                 fidelity matrices.
         """
-        _validate_integer_param(num_qubits)
-        _validate_integer_param(depth)
+        qss.validation.validate_integer_param(num_qubits)
+        qss.validation.validate_integer_param(depth)
         json_dict = self._client.supercheq(files, num_qubits, depth, "qiskit_circuits")
         circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
         fidelities = gss.serialization.deserialize(json_dict["fidelities"])
