@@ -394,36 +394,76 @@ class Service(user_config.UserConfig):
         self,
         circuits: Union[cirq.Circuit, List[cirq.Circuit]],
         target: str = "aqt_keysight_qpu",
-        atol: Optional[float] = None,
+        *,
+        num_eca_circuits: Optional[int] = None,
         gate_defs: Optional[
             Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
         ] = None,
+        random_seed: Optional[int] = None,
+        atol: Optional[float] = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
         Lawrence Berkeley National Laboratory.
 
+        See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
+
         Args:
             circuits: The circuit(s) to compile.
             target: String of target AQT device.
-            atol: An optional tolerance to use for approximate gate synthesis.
+            num_eca_circuits: Optional number of logically equivalent random circuits to generate
+                from each input circuit for Equivalent Circuit Averaging (ECA).
             gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
                 each operation can be a unitary matrix, `cirq.Gate`, `cirq.Operation`, or None. More
                 specific associations take precedence, for example `{"SWAP": cirq.SQRT_ISWAP,
                 "SWAP/C5C4": cirq.SQRT_ISWAP_INV}` implies `SQRT_ISWAP` for all "SWAP" calibrations
                 except "SWAP/C5C4" (which will instead be mapped to a `SQRT_ISWAP_INV` gate on
                 qubits 4 and 5). Setting any calibration to None will disable that calibration.
-            kwargs: Other desired aqt_compile options.
+            random_seed: Optional seed used for approximate synthesis and ECA.
+            atol: An optional tolerance to use for approximate gate synthesis.
+            kwargs: Other desired compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the optimized circuits(s). If qtrl is
-            installed, the object's .seq attribute is a qtrl Sequence object containing pulse
-            sequences for each compiled circuit, and its .pulse_list(s) attribute contains the
-            corresponding list(s) of cycles.
+            Object whose .circuit(s) attribute contains the optimized circuits(s). Alternatively for
+            ECA, an object whose .circuits attribute is a list (or list of lists) of logically
+            equivalent circuits. If qtrl is installed, the object's .seq attribute is a qtrl
+            Sequence object containing pulse sequences for each compiled circuit, and its
+            .pulse_list(s) attribute contains the corresponding list(s) of cycles.
         """
-
         _validate_cirq_circuits(circuits)
-        return self._aqt_compile(circuits, target=target, atol=atol, gate_defs=gate_defs, **kwargs)
+
+        serialized_circuits = css.serialization.serialize_circuits(circuits)
+        circuits_is_list = not isinstance(circuits, cirq.Circuit)
+
+        request_json = {
+            "cirq_circuits": serialized_circuits,
+            "target": target,
+        }
+
+        options_dict: Dict[str, object]
+        options_dict = {**kwargs}
+
+        if num_eca_circuits is not None:
+            _validate_integer_param(num_eca_circuits)
+            options_dict["num_eca_circuits"] = num_eca_circuits
+        if random_seed is not None:
+            _validate_integer_param(num_eca_circuits)
+            options_dict["random_seed"] = random_seed
+        if atol is not None:
+            options_dict["atol"] = atol
+        if gate_defs is not None:
+            gate_defs_cirq = {}
+            for key, val in gate_defs.items():
+                if val is not None and not isinstance(val, (cirq.Gate, cirq.Operation)):
+                    val = _to_matrix_gate(val).with_name(key)
+                gate_defs_cirq[key] = val
+            options_dict["gate_defs"] = gate_defs_cirq
+
+        if options_dict:
+            request_json["options"] = cirq.to_json(options_dict)
+
+        json_dict = self._client.post_request("/aqt_compile", request_json)
+        return css.compiler_output.read_json_aqt(json_dict, circuits_is_list, num_eca_circuits)
 
     def aqt_compile_eca(
         self,
@@ -463,13 +503,10 @@ class Service(user_config.UserConfig):
             containing pulse sequences for each compiled circuit, and its .pulse_list(s) attribute
             contains the corresponding list(s) of cycles.
         """
-        _validate_cirq_circuits(circuits)
-        _validate_integer_param(num_equivalent_circuits)
-
-        return self._aqt_compile(
+        return self.aqt_compile(
             circuits,
             target=target,
-            num_equivalent_circuits=num_equivalent_circuits,
+            num_eca_circuits=num_equivalent_circuits,
             random_seed=random_seed,
             atol=atol,
             gate_defs=gate_defs,
@@ -481,7 +518,7 @@ class Service(user_config.UserConfig):
         circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
         target: str,
         *,
-        num_equivalent_circuits: Optional[int] = None,
+        num_eca_circuits: Optional[int] = None,
         random_seed: Optional[int] = None,
         atol: Optional[float] = None,
         gate_defs: Optional[
@@ -505,9 +542,9 @@ class Service(user_config.UserConfig):
         options_dict: Dict[str, Union[float, Dict[str, Union[cirq.Gate, cirq.Operation, None]]]]
         options_dict = {**kwargs}
 
-        if num_equivalent_circuits is not None:
-            _validate_integer_param(num_equivalent_circuits)
-            options_dict["num_eca_circuits"] = num_equivalent_circuits
+        if num_eca_circuits is not None:
+            _validate_integer_param(num_eca_circuits)
+            options_dict["num_eca_circuits"] = num_eca_circuits
         if random_seed is not None:
             options_dict["random_seed"] = random_seed
         if atol is not None:
@@ -524,7 +561,7 @@ class Service(user_config.UserConfig):
 
         json_dict = self._client.post_request("/aqt_compile", request_json)
         return css.compiler_output.read_json_aqt(
-            json_dict, circuits_is_list, num_equivalent_circuits
+            json_dict, circuits_is_list, num_eca_circuits
         )
 
     def qscout_compile(
