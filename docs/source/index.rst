@@ -3,11 +3,11 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-SuperstaQ Documentation
+Superstaq Documentation
 =======================
-Welcome to SuperstaQ's documentation! Here you can find more information about our packages ``cirq-superstaq`` and ``qiskit-superstaq``, which allow access to SuperstaQ via a Web API through `Cirq <https://github.com/quantumlib/Cirq>`_ and `Qiskit <https://qiskit.org/>`_, respectively.
+Welcome to Superstaq's documentation! Here you can find more information about our packages ``cirq-superstaq`` and ``qiskit-superstaq``, which allow access to Superstaq via a Web API through `Cirq <https://github.com/quantumlib/Cirq>`_ and `Qiskit <https://qiskit.org/>`_, respectively.
 
-Check out some of our demos to see how SuperstaQ can help you:
+Check out some of our demos to see how Superstaq can help you:
 
 .. raw:: html
 
@@ -32,7 +32,7 @@ Check out some of our demos to see how SuperstaQ can help you:
    <br>
 
 
-Learn more about SuperstaQ `here <https://www.infleqtion.com/superstaq>`_. To contact a member of our team, email us at **superstaq@infleqtion.com** or join our `Slack workspace <https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw>`_.
+Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To contact a member of our team, email us at **superstaq@infleqtion.com** or join our `Slack workspace <https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw>`_.
 
 
 .. toctree::
@@ -43,6 +43,7 @@ Learn more about SuperstaQ `here <https://www.infleqtion.com/superstaq>`_. To co
    get_started/credentials
    get_started/installation
    get_started/basics/basics
+   get_started/access_info/access_info
 
 .. toctree::
    :maxdepth: 1

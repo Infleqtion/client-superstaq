@@ -1,12 +1,12 @@
-cirq-superstaq~=0.3.31
-general-superstaq~=0.3.31
+cirq-superstaq~=0.3.33
+general-superstaq~=0.3.33
 ipython
 ipywidgets
 Jinja2<=3.1.2
 matplotlib~=3.0
 nbsphinx~=0.8.9
 pylatexenc
-qiskit-superstaq~=0.3.31
+qiskit-superstaq~=0.3.33
 scipy>=1.6.1
 sphinx~=5.3.0
 sphinx-rtd-theme~=1.0.0
