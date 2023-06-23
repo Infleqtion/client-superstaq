@@ -1,6 +1,6 @@
 [project]
 name = "Supermarq"
-version = "0.3.31"
+version = "0.3.33"
 description = "Supermarq is a scalable, application-centric quantum benchmarking suite."
 authors = [{ name = "Super.tech", email = "pranav@super.tech" }]
 readme = { file = "README.md", content-type = "text/markdown" }

@@ -1,6 +1,6 @@
 [project]
 name = "general-superstaq"
-version = "0.3.31"
+version = "0.3.33"
 description = "The general module that provides tools and access to Superstaq."
 authors = [{ name = "Super.tech", email = "pranav@super.tech" }]
 readme = { file = "README.md", content-type = "text/markdown" }
