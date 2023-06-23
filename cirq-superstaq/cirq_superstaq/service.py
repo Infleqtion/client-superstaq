@@ -18,7 +18,7 @@ import cirq
 import general_superstaq as gss
 import numpy as np
 import numpy.typing as npt
-from general_superstaq import ResourceEstimate, finance, logistics, superstaq_client, user_config
+from general_superstaq import ResourceEstimate, superstaq_client, user_config
 
 import cirq_superstaq as css
 
@@ -142,7 +142,7 @@ def _validate_integer_param(integer_param: object) -> None:
         raise ValueError("Must be a positive integer.")
 
 
-class Service(finance.Finance, logistics.Logistics, user_config.UserConfig):
+class Service(user_config.UserConfig):
     """A class to access SuperstaQ's API.
 
     To access the API, this class requires a remote host url and an API key. These can be
