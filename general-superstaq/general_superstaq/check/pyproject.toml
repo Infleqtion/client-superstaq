@@ -41,7 +41,7 @@ skip_covered = true
 exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]
 
 [tool.coverage.run]
-include = "./*"
+include = ["./*"]
 
 [tool.pylint.main]
 max-line-length = 100
