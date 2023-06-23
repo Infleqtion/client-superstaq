@@ -339,7 +339,7 @@ class RadarAxesMeta(PolarAxes):
     def _close_line(self, line: matplotlib.lines.Line2D) -> None:
         x, y = line.get_data()
         # FIXME: markers at x[0], y[0] get doubled-up.
-        # See issue https://github.com/SupertechLabs/Supermarq/issues/27
+        # See issue https://github.com/Infleqtion/Supermarq/issues/27
         if x[0] != x[-1]:
             x = np.append(x, x[0])
             y = np.append(y, y[0])

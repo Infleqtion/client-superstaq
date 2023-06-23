@@ -31,7 +31,7 @@ assert __version__, "Version string cannot be empty"
 setup(
     name=name,
     version=__version__,
-    url="https://github.com/SupertechLabs/Supermarq",
+    url="https://github.com/Infleqtion/Supermarq",
     author="Super.tech",
     author_email="pranav@super.tech",
     python_requires=(">=3.7.0"),

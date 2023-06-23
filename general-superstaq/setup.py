@@ -32,7 +32,7 @@ general_superstaq_packages = ["general_superstaq"] + [
 setup(
     name=name,
     version=__version__,
-    url="https://github.com/SupertechLabs/general-superstaq",
+    url="https://github.com/Infleqtion/general-superstaq",
     author="Super.tech",
     author_email="pranav@super.tech",
     python_requires=(">=3.7.0"),
