@@ -3,7 +3,7 @@
 </p>
 
 ---
-![Continuous Integration](https://github.com/Infleqtion/Supermarq/actions/workflows/ci.yml/badge.svg)
+![Continuous Integration](https://github.com/Infleqtion/client-superstaq/actions/workflows/ci.yml/badge.svg)
 
 
 # Supermarq: A Scalable Quantum Benchmark Suite
