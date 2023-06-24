@@ -168,7 +168,7 @@ def deserialize_circuits(serialized_circuits: str) -> List[qiskit.QuantumCircuit
         else:
             # Otherwise there is probably a more complicated issue.
             raise ValueError(
-                "Circuits failed to deserialize. Please contact info@super.tech or file a "
+                "Circuits failed to deserialize. Please contact superstaq@infleqtion.com or file a "
                 "report at https://github.com/Infleqtion/client-superstaq/issues containing "
                 "the following information (as well as any other relevant context):\n\n"
                 f"qiskit-superstaq version: {qss.__version__}\n"
