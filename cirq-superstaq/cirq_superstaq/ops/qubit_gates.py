@@ -563,7 +563,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
 
 def parallel_gates_operation(*ops: cirq.Operation) -> cirq.Operation:
     """Constructs a parallel gates operation.
-    
+
     Given operations acting on disjoint qubits, constructs a single css.ParallelGates instance
     and applies it such that each operation's .gate is applied to its .qubits.
 
@@ -675,29 +675,17 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
 
     @property
     def exponent(self) -> cirq.TParamVal:
-        """`exponent` property of `ParallelRGate`.
-
-        Returns:
-            `exponent` value of `ParallelRGate`.
-        """
+        """The `exponent` property of `ParallelRGate`."""
         return self.sub_gate.exponent
 
     @property
     def phi(self) -> cirq.TParamVal:
-        """`phi` property of `ParallelRGate`.
-
-        Returns:
-            `phi` value of `ParallelRGate`.
-        """
+        """The `phi` property of `ParallelRGate`."""
         return self.sub_gate.phi
 
     @property
     def theta(self) -> cirq.TParamVal:
-        """`theta` property of `ParallelRGate`.
-
-        Returns:
-            `theta` value of `ParallelRGate`.
-        """
+        """The `theta` property of `ParallelRGate`."""
         return self.sub_gate.theta
 
     def __pow__(self, power: cirq.TParamVal) -> "ParallelRGate":
