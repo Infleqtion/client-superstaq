@@ -34,7 +34,20 @@
         </div>
 
         <div class="content">
-          <p>How to create a browser window look with CSS.</p>
+            <span>import qiskit</span>
+            <span>import qiskit_superstaq as qss</span>
+            
+            <p>superstaq = qss.SuperstaQProvider(token)</p>
+            <p>backend = superstaq.get_backend("ibmq_qasm_simulator")</p>
+
+            <p># Standard bell circuit</p>
+            <p>qc = qiskit.QuantumCircuit(2, 2)</p>
+            <p>qc.h(0)</p>
+            <p>qc.cx(0, 1)</p>
+            <p>qc.measure([0, 1], [0, 1])</p>
+
+            <p>job = backend.run(qc, shots=100)</p>
+            <p>print(result.get_counts())</p>
         </div>
       </div>
 
