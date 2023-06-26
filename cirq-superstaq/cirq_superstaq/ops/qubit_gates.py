@@ -390,6 +390,11 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
 
 
 def barrier(*qubits: cirq.Qid) -> cirq.Operation:
+    """_summary_
+
+    Returns:
+        cirq.Operation: _description_
+    """
     qid_shape = tuple(q.dimension for q in qubits)
     return css.Barrier(qid_shape=qid_shape).on(*qubits)
 
@@ -419,6 +424,17 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
                 self.component_gates += (gate,)
 
     def qubit_index_to_gate_and_index(self, index: int) -> Tuple[cirq.Gate, int]:
+        """_summary_
+
+        Args:
+            index (int): _description_
+
+        Raises:
+            ValueError: _description_
+
+        Returns:
+            Tuple[cirq.Gate, int]: _description_
+        """
         for gate in self.component_gates:
             if gate.num_qubits() > index >= 0:
                 return gate, index
@@ -426,6 +442,14 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         raise ValueError("index out of range")
 
     def qubit_index_to_equivalence_group_key(self, index: int) -> int:
+        """_summary_
+
+        Args:
+            index (int): _description_
+
+        Returns:
+            int: _description_
+        """
         indexed_gate, index_in_gate = self.qubit_index_to_gate_and_index(index)
         if indexed_gate.num_qubits() == 1:
             # find the first instance of the same gate
@@ -544,7 +568,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         return f"css.ParallelGates({component_gates_repr})"
 
 
-def parallel_gates_operation(  # pylint: disable=missing-raises-doc
+def parallel_gates_operation(
     *ops: cirq.Operation,
 ) -> cirq.Operation:
     """Given operations acting on disjoint qubits, constructs a single css.ParallelGates instance
@@ -555,6 +579,10 @@ def parallel_gates_operation(  # pylint: disable=missing-raises-doc
 
     Returns:
         ParallelGates(op.gate, op2.gate, ...).on(*op.qubits, *op2.qubits, ...)
+
+    Raises:
+        ValueError: If `ops` has no :attr: `.gate`.
+        ValueError: If performing tagging.
     """
     gates: List[cirq.Gate] = []
     qubits: List[cirq.Qid] = []
@@ -575,10 +603,9 @@ class RGate(cirq.PhasedXPowGate):
 
     def __init__(self, theta: cirq.TParamVal, phi: cirq.TParamVal) -> None:
         """Args:
+        theta: Angle (in radians) by which to rotate.
         phi: Angle (in radians) defining the axis of rotation in the `X`-`Y` plane:
              `cos(phi) X + sin(phi) Y` (i.e. `phi` radians from `X` to `Y`).
-
-        theta: Angle (in radians) by which to rotate.
         """
         super().__init__(
             exponent=theta / _pi(theta), phase_exponent=phi / _pi(phi), global_shift=-0.5
@@ -586,10 +613,20 @@ class RGate(cirq.PhasedXPowGate):
 
     @property
     def phi(self) -> cirq.TParamVal:
+        """_summary_
+
+        Returns:
+            cirq.TParamVal: _description_
+        """
         return self.phase_exponent * _pi(self.phase_exponent)
 
     @property
     def theta(self) -> cirq.TParamVal:
+        """_summary_
+
+        Returns:
+            cirq.TParamVal: _description_
+        """
         return self.exponent * _pi(self.exponent)
 
     def __pow__(self, power: cirq.TParamVal) -> "RGate":
@@ -610,12 +647,29 @@ class RGate(cirq.PhasedXPowGate):
         return False
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        """_summary_
+
+        Args:
+            args (cirq.CircuitDiagramInfoArgs): _description_
+
+        Returns:
+            cirq.CircuitDiagramInfo: _description_
+        """
         theta_str = args.format_radians(self.theta)
         phi_str = args.format_radians(self.phi)
         gate_str = f"RGate({theta_str}, {phi_str})"
         return cirq.CircuitDiagramInfo(wire_symbols=(gate_str,))
 
     def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, ...]) -> Optional[str]:
+        """_summary_
+
+        Args:
+            args (cirq.QasmArgs): _description_
+            qubits (Tuple[cirq.Qid, ...]): _description_
+
+        Returns:
+            Optional[str]: _description_
+        """
         return args.format(
             "r({0:half_turns},{1:half_turns}) {2};\n",
             self.exponent,
@@ -638,27 +692,59 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
     """Wrapper class to define a ParallelGate of identical RGate gates."""
 
     def __init__(self, theta: cirq.TParamVal, phi: cirq.TParamVal, num_copies: int) -> None:
+        """_summary_
+
+        Args:
+            theta (cirq.TParamVal): _description_
+            phi (cirq.TParamVal): _description_
+            num_copies (int): _description_
+        """
         super().__init__(css.RGate(theta, phi), num_copies)
         self._sub_gate: RGate
 
     @property
     def sub_gate(self) -> RGate:
+        """_summary_
+
+        Returns:
+            RGate: _description_
+        """
         return self._sub_gate
 
     @property
     def phase_exponent(self) -> cirq.TParamVal:
+        """_summary_
+
+        Returns:
+            cirq.TParamVal: _description_
+        """
         return self.sub_gate.phase_exponent
 
     @property
     def exponent(self) -> cirq.TParamVal:
+        """_summary_
+
+        Returns:
+            cirq.TParamVal: _description_
+        """
         return self.sub_gate.exponent
 
     @property
     def phi(self) -> cirq.TParamVal:
+        """_summary_
+
+        Returns:
+            cirq.TParamVal: _description_
+        """
         return self.sub_gate.phi
 
     @property
     def theta(self) -> cirq.TParamVal:
+        """_summary_
+
+        Returns:
+            cirq.TParamVal: _description_
+        """
         return self.sub_gate.theta
 
     def __pow__(self, power: cirq.TParamVal) -> "ParallelRGate":
@@ -702,6 +788,7 @@ class IXGate(cirq.XPowGate):
     """Thin wrapper of Rx(-pi) to improve iToffoli circuit diagrams"""
 
     def __init__(self) -> None:
+        """_summary_"""
         super().__init__(exponent=1, global_shift=0.5)
 
     def _with_exponent(self, exponent: cirq.value.TParamVal) -> Union[cirq.Rx, "IXGate"]:
@@ -747,6 +834,11 @@ class StrippedCZGate(cirq.Gate):
 
     @property
     def rz_rads(self) -> cirq.TParamVal:
+        """_summary_
+
+        Returns:
+            cirq.TParamVal: _description_
+        """
         return self._rz_rads
 
     def _num_qubits_(self) -> int:
