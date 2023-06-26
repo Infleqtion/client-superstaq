@@ -94,10 +94,10 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         Raises:
             ValueError: If `circuits` contains invalid circuits for submission.
         """
+        qss.validation.validate_qiskit_circuits(circuits)
         if isinstance(circuits, qiskit.QuantumCircuit):
             circuits = [circuits]
 
-        qss.validation.validate_qiskit_circuits(circuits)
         if not all(circuit.count_ops().get("measure") for circuit in circuits):
             # TODO: only raise if the run method actually requires samples (and not for e.g. a
             # statevector simulation)
@@ -150,8 +150,8 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         elif self.name().startswith("cq_"):
             return self.cq_compile(circuits, **kwargs)
 
-        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         request_json = self._get_compile_request_json(circuits, **kwargs)
+        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
         return qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
 
@@ -210,7 +210,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             ValueError: If this is not an AQT backend.
         """
         if not self.name().startswith("aqt_"):
-            raise ValueError(f"{self.name()} is not a valid AQT target.")
+            raise ValueError(f"{self.name()!r} is not a valid AQT target.")
 
         options: Dict[str, Any] = {**kwargs}
         if num_equivalent_circuits is not None:
@@ -224,8 +224,8 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         if gate_defs is not None:
             options["gate_defs"] = gate_defs
 
-        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         request_json = self._get_compile_request_json(circuits, **options)
+        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.aqt_compile(request_json)
         return qss.compiler_output.read_json_aqt(
             json_dict, circuits_is_list, num_equivalent_circuits
@@ -250,7 +250,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             ValueError: If this is not an IBMQ backend.
         """
         if not self.name().startswith("ibmq_"):
-            raise ValueError(f"{self.name()} is not a valid IBMQ target.")
+            raise ValueError(f"{self.name()!r} is not a valid IBMQ target.")
 
         request_json = self._get_compile_request_json(circuits, **kwargs)
         json_dict = self._provider._client.compile(request_json)
@@ -310,12 +310,10 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             ValueError: If `base_entangling_gate` is not a valid entangling basis.
         """
         if not self.name().startswith("sandia_"):
-            raise ValueError(f"{self.name()} is not a valid Sandia target.")
+            raise ValueError(f"{self.name()!r} is not a valid Sandia target.")
 
         if base_entangling_gate not in ("xx", "zz"):
             raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
-
-        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
         options = {
             **kwargs,
@@ -323,6 +321,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             "base_entangling_gate": base_entangling_gate,
         }
         request_json = self._get_compile_request_json(circuits, **options)
+        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.qscout_compile(request_json)
         return qss.compiler_output.read_json_qscout(json_dict, circuits_is_list)
 
@@ -344,10 +343,10 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             ValueError: If this is not a CQ backend.
         """
         if not self.name().startswith("cq_"):
-            raise ValueError(f"{self.name()} is not a valid CQ target.")
+            raise ValueError(f"{self.name()!r} is not a valid CQ target.")
 
-        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         request_json = self._get_compile_request_json(circuits, **kwargs)
+        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
         return qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
 
@@ -371,16 +370,14 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             ResourceEstimate(s) containing resource costs (after compilation) for running circuit(s)
             on this backend.
         """
-        circuit_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
-
         request_json = self._get_compile_request_json(circuits)
-
+        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.resource_estimate(request_json)
 
         resource_estimates = [
             gss.ResourceEstimate(json_data=resource_estimate)
             for resource_estimate in json_dict["resource_estimates"]
         ]
-        if circuit_is_list:
+        if circuits_is_list:
             return resource_estimates
         return resource_estimates[0]

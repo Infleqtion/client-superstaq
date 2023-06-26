@@ -1,19 +1,5 @@
 import re
 
-_VENDOR_PREFIXES = [
-    "aqt",
-    "aws",
-    "cq",
-    "hqs",
-    "ibmq",
-    "ionq",
-    "oxford",
-    "quera",
-    "rigetti",
-    "sandia",
-    "ss",
-]
-
 
 def validate_integer_param(integer_param: object) -> None:
     """Validates that an input parameter is positive and an integer.
@@ -43,27 +29,41 @@ def validate_target(target: str) -> None:
     Raises:
         ValueError: If `target` has an invalid format, vendor prefix, or device type.
     """
+    vendor_prefixes = [
+        "aqt",
+        "aws",
+        "cq",
+        "hqs",
+        "ibmq",
+        "ionq",
+        "oxford",
+        "quera",
+        "rigetti",
+        "sandia",
+        "ss",
+    ]
+
     target_device_types = ["qpu", "simulator"]
 
     # Check valid format
     match = re.fullmatch("^([A-Za-z0-9-]+)_([A-Za-z0-9-.]+)_([a-z]+)", target)
     if not match:
         raise ValueError(
-            f"{target} does not have a valid string format. Valid target strings should be in the "
+            f"{target!r} does not have a valid string format. Valid target strings should be in the "
             "form '<provider>_<device>_<type>', e.g. 'ibmq_lagos_qpu'."
         )
 
     prefix, _, device_type = match.groups()
 
     # Check valid prefix
-    if prefix not in _VENDOR_PREFIXES:
+    if prefix not in vendor_prefixes:
         raise ValueError(
-            f"{target} does not have a valid target prefix. Valid prefixes are: {_VENDOR_PREFIXES}."
+            f"{target!r} does not have a valid target prefix. Valid prefixes are: {vendor_prefixes}."
         )
 
     # Check for valid device type
     if device_type not in target_device_types:
         raise ValueError(
-            f"{target} does not have a valid target device type. Valid device types are: "
+            f"{target!r} does not have a valid target device type. Valid device types are: "
             f"{target_device_types}."
         )

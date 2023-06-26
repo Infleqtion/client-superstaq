@@ -3,9 +3,6 @@ import re
 
 import numpy as np
 import pytest
-import qiskit
-
-import qiskit_superstaq as qss
 
 
 def test_validate_target() -> None:
