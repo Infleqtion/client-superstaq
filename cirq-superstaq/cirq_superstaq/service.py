@@ -511,7 +511,7 @@ class Service(user_config.UserConfig):
             _validate_integer_param(num_eca_circuits)
             options_dict["num_eca_circuits"] = num_eca_circuits
         if random_seed is not None:
-            _validate_integer_param(num_eca_circuits)
+            _validate_integer_param(random_seed)
             options_dict["random_seed"] = random_seed
         if atol is not None:
             options_dict["atol"] = atol
