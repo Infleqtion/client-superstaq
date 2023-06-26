@@ -122,7 +122,7 @@ def _validate_cirq_circuits(circuits: object) -> None:
 
 
 class Service(user_config.UserConfig):
-    """A class to access SuperstaQ's API.
+    """A class to access Superstaq's API.
 
     To access the API, this class requires a remote host url and an API key. These can be
     specified in the constructor via the parameters `remote_host` and `api_key`. Alternatively
@@ -139,10 +139,10 @@ class Service(user_config.UserConfig):
         max_retry_seconds: int = 3600,
         verbose: bool = False,
     ) -> None:
-        """Creates the Service to access SuperstaQ's API.
+        """Creates the Service to access Superstaq's API.
 
         Args:
-            api_key: A string that allows access to the SuperstaQ API. If no key is provided, then
+            api_key: A string that allows access to the Superstaq API. If no key is provided, then
                 this instance tries to use the environment variable `SUPERSTAQ_API_KEY`. If
                 furthermore that environment variable is not set, then this instance checks for the
                 following files:
@@ -198,7 +198,7 @@ class Service(user_config.UserConfig):
         method: Optional[str] = None,
         options: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, int]:
-        """Runs the given circuit on the SuperstaQ API and returns the result
+        """Runs the given circuit on the Superstaq API and returns the result
         of the ran circuit as a collections.Counter
 
         Args:
@@ -227,7 +227,7 @@ class Service(user_config.UserConfig):
         method: Optional[str] = None,
         options: Optional[Dict[str, Any]] = None,
     ) -> cirq.ResultDict:
-        """Run the given circuit on the SuperstaQ API and returns the result
+        """Run the given circuit on the Superstaq API and returns the result
         of the ran circut as a cirq.ResultDict.
 
         Args:
@@ -251,7 +251,7 @@ class Service(user_config.UserConfig):
             target: Target to sample against.
 
         Returns:
-            A `cirq.Sampler` for the SuperstaQ API.
+            A `cirq.Sampler` for the Superstaq API.
         """
         target = self._resolve_target(target)
         return css.sampler.Sampler(service=self, target=target)
@@ -302,7 +302,7 @@ class Service(user_config.UserConfig):
         return self.get_job(result["job_ids"][0])
 
     def get_job(self, job_id: str) -> css.job.Job:
-        """Gets a job that has been created on the SuperstaQ API.
+        """Gets a job that has been created on the Superstaq API.
 
         Args:
             job_id: The UUID of the job. Jobs are assigned these numbers by the server during the
