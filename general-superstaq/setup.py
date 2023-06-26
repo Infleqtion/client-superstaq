@@ -34,7 +34,7 @@ setup(
     version=__version__,
     url="https://github.com/Infleqtion/client-superstaq",
     author="Superstaq development team",
-    author_email="pranav@super.tech",
+    author_email="superstaq@infleqtion.com",
     python_requires=(">=3.7.0"),
     install_requires=requirements,
     extras_require={"dev": dev_requirements},
