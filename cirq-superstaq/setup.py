@@ -8,7 +8,7 @@ exec(open("cirq_superstaq/_version.py").read())
 
 name = "cirq-superstaq"
 
-description = "The Cirq module that provides tools and access to SuperstaQ"
+description = "The Cirq module that provides tools and access to Superstaq"
 
 # README file as long_description.
 long_description = io.open("README.md", encoding="utf-8").read()

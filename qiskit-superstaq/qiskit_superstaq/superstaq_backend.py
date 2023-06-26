@@ -360,3 +360,29 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             A dictionary of target information.
         """
         return self._provider._client.target_info(self.name())["target_info"]
+
+    def resource_estimate(
+        self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]
+    ) -> Union[gss.ResourceEstimate, List[gss.ResourceEstimate]]:
+        """Generates resource estimates for qiskit circuit(s).
+
+        Args:
+            circuits: The circuit(s) used during resource estimation.
+
+        Returns:
+            ResourceEstimate(s) containing resource costs (after compilation) for running circuit(s)
+            on this backend.
+        """
+        circuit_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
+
+        request_json = self._get_compile_request_json(circuits)
+
+        json_dict = self._provider._client.resource_estimate(request_json)
+
+        resource_estimates = [
+            gss.ResourceEstimate(json_data=resource_estimate)
+            for resource_estimate in json_dict["resource_estimates"]
+        ]
+        if circuit_is_list:
+            return resource_estimates
+        return resource_estimates[0]

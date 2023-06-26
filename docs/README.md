@@ -1,6 +1,6 @@
-docs-superstaq: Home of documentation for SuperstaQ
+docs-superstaq: Home of documentation for Superstaq
 ===================================================
-This repository contains materials that support the [SuperstaQ documentation site](https://docs-superstaq.readthedocs.io/).
+This repository contains materials that support the [Superstaq documentation site](https://docs-superstaq.readthedocs.io/).
 
 ## How to build docs-superstaq locally
 ### Setup your environment
