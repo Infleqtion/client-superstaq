@@ -38,6 +38,6 @@ def test_validate_integer_param() -> None:
     for input_value in invalid_values:
         with pytest.raises(
             ValueError,
-            match="Must be a positive integer.",
+            match="is not a positive integer.",
         ):
             gss.validation.validate_integer_param(input_value)

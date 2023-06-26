@@ -18,7 +18,7 @@ def validate_integer_param(integer_param: object) -> None:
         raise TypeError(f"{integer_param} cannot be safely cast as an integer.")
 
     if int(integer_param) <= 0:
-        raise ValueError("Must be a positive integer.")
+        raise ValueError("{integer_param} is not a positive integer.")
 
 
 def validate_target(target: str) -> None:
