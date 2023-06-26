@@ -12,6 +12,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+import warnings
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import general_superstaq as gss
@@ -133,16 +134,27 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
         target: str = "aqt_keysight_qpu",
+        *,
+        num_eca_circuits: Optional[int] = None,
+        random_seed: Optional[int] = None,
         atol: Optional[float] = None,
         gate_defs: Optional[Mapping[str, Union[str, npt.NDArray[np.complex_], None]]] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
-        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
-        Lawrence Berkeley National Laboratory.
+        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
+
+        AQT is a superconducting transmon quantum computing testbed at Lawrence Berkeley National
+        Laboratory. More information can be found at https://aqt.lbl.gov.
+
+        Specifying a nonzero value for `num_eca_circuits` enables compilation with Equivalent
+        Circuit Averaging (ECA). See https://arxiv.org/abs/2111.04572 for a description of ECA.
 
         Args:
             circuits: The circuit(s) to compile.
             target: A string containing the name of a target AQT backend.
+            num_eca_circuits: Optional number of logically equivalent random circuits to generate
+                from each input circuit for Equivalent Circuit Averaging (ECA).
+            random_seed: Optional seed used for approximate synthesis and ECA.
             atol: An optional tolerance to use for approximate gate synthesis.
             gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
                 each operation can be either a unitary matrix or None. More specific associations
@@ -150,13 +162,14 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
                 `<matrix1>` for all "SWAP" calibrations except "SWAP/C5C4" (which will instead be
                 mapped to `<matrix2>` applied to qubits 4 and 5). Setting any calibration to None
                 will disable that calibration.
-            kwargs: Other desired aqt_compile options.
+            kwargs: Other desired compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the optimized circuits(s). If qtrl is
-            installed, the object's .seq attribute is a qtrl Sequence object containing pulse
-            sequences for each compiled circuit, and its .pulse_list(s) attribute contains the
-            corresponding list(s) of cycles.
+            Object whose .circuit(s) attribute contains the optimized circuits(s). Alternatively for
+            ECA, an Object whose .circuits attribute is a list (or list of lists) of logically
+            equivalent circuits. If qtrl is installed, the object's .seq attribute is a qtrl
+            Sequence object containing pulse sequences for each compiled circuit, and its
+            .pulse_list(s) attribute contains the corresponding list(s) of cycles.
 
         Raises:
             ValueError: If `target` is not a valid AQT target.
@@ -164,7 +177,14 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         if not target.startswith("aqt_"):
             raise ValueError(f"{target} is not an AQT target")
 
-        return self.get_backend(target).compile(circuits, atol=atol, gate_defs=gate_defs, **kwargs)
+        return self.get_backend(target).compile(
+            circuits,
+            num_eca_circuits=num_eca_circuits,
+            random_seed=random_seed,
+            atol=atol,
+            gate_defs=gate_defs,
+            **kwargs,
+        )
 
     def aqt_compile_eca(
         self,
@@ -180,6 +200,10 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         Lawrence Berkeley National Laboratory using Equivalent Circuit Averaging (ECA).
 
         See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
+
+        Note:
+            This method will soon be deprecated. Instead, use the `num_eca_circuits` argument of
+            `aqt_compile()`.
 
         Args:
             circuits: The circuit(s) to compile.
@@ -205,12 +229,16 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         Raises:
             ValueError: If `target` is not a valid AQT target.
         """
-        if not target.startswith("aqt_"):
-            raise ValueError(f"{target} is not an AQT target")
+        warnings.warn(
+            "The `aqt_compile_eca()` method is deprecated, and will be removed in a future version "
+            "of qiskit-superstaq. Instead, use the `num_eca_circuits` argument of `aqt_compile()`.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
-        return self.get_backend(target).compile(
+        return self.aqt_compile(
             circuits,
-            num_equivalent_circuits=num_equivalent_circuits,
+            num_eca_circuits=num_equivalent_circuits,
             random_seed=random_seed,
             atol=atol,
             gate_defs=gate_defs,

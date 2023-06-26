@@ -396,31 +396,34 @@ class Service(user_config.UserConfig):
         target: str = "aqt_keysight_qpu",
         *,
         num_eca_circuits: Optional[int] = None,
+        random_seed: Optional[int] = None,
+        atol: Optional[float] = None,
         gate_defs: Optional[
             Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
         ] = None,
-        random_seed: Optional[int] = None,
-        atol: Optional[float] = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
-        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
-        Lawrence Berkeley National Laboratory.
+        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
 
-        See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
+        AQT is a superconducting transmon quantum computing testbed at Lawrence Berkeley National
+        Laboratory. More information can be found at https://aqt.lbl.gov.
+
+        Specifying a nonzero value for `num_eca_circuits` enables compilation with Equivalent
+        Circuit Averaging (ECA). See https://arxiv.org/abs/2111.04572 for a description of ECA.
 
         Args:
             circuits: The circuit(s) to compile.
             target: String of target AQT device.
             num_eca_circuits: Optional number of logically equivalent random circuits to generate
                 from each input circuit for Equivalent Circuit Averaging (ECA).
+            random_seed: Optional seed used for approximate synthesis and ECA.
+            atol: An optional tolerance to use for approximate gate synthesis.
             gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
                 each operation can be a unitary matrix, `cirq.Gate`, `cirq.Operation`, or None. More
                 specific associations take precedence, for example `{"SWAP": cirq.SQRT_ISWAP,
                 "SWAP/C5C4": cirq.SQRT_ISWAP_INV}` implies `SQRT_ISWAP` for all "SWAP" calibrations
                 except "SWAP/C5C4" (which will instead be mapped to a `SQRT_ISWAP_INV` gate on
                 qubits 4 and 5). Setting any calibration to None will disable that calibration.
-            random_seed: Optional seed used for approximate synthesis and ECA.
-            atol: An optional tolerance to use for approximate gate synthesis.
             kwargs: Other desired compile options.
 
         Returns:
@@ -511,57 +514,6 @@ class Service(user_config.UserConfig):
             atol=atol,
             gate_defs=gate_defs,
             **kwargs,
-        )
-
-    def _aqt_compile(
-        self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
-        target: str,
-        *,
-        num_eca_circuits: Optional[int] = None,
-        random_seed: Optional[int] = None,
-        atol: Optional[float] = None,
-        gate_defs: Optional[
-            Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
-        ] = None,
-        **kwargs: Any,
-    ) -> css.compiler_output.CompilerOutput:
-        """Generic API for compiling circuits for AQT devices. See `Service.aqt_compile()` and
-        `Service.aqt_compile_eca()`.
-        """
-        _validate_cirq_circuits(circuits)
-
-        serialized_circuits = css.serialization.serialize_circuits(circuits)
-        circuits_is_list = not isinstance(circuits, cirq.Circuit)
-
-        request_json = {
-            "cirq_circuits": serialized_circuits,
-            "target": target,
-        }
-
-        options_dict: Dict[str, Union[float, Dict[str, Union[cirq.Gate, cirq.Operation, None]]]]
-        options_dict = {**kwargs}
-
-        if num_eca_circuits is not None:
-            _validate_integer_param(num_eca_circuits)
-            options_dict["num_eca_circuits"] = num_eca_circuits
-        if random_seed is not None:
-            options_dict["random_seed"] = random_seed
-        if atol is not None:
-            options_dict["atol"] = atol
-        if gate_defs is not None:
-            gate_defs_cirq = {}
-            for key, val in gate_defs.items():
-                if val is not None and not isinstance(val, (cirq.Gate, cirq.Operation)):
-                    val = _to_matrix_gate(val).with_name(key)
-                gate_defs_cirq[key] = val
-            options_dict["gate_defs"] = gate_defs_cirq
-        if options_dict:
-            request_json["options"] = cirq.to_json(options_dict)
-
-        json_dict = self._client.post_request("/aqt_compile", request_json)
-        return css.compiler_output.read_json_aqt(
-            json_dict, circuits_is_list, num_eca_circuits
         )
 
     def qscout_compile(
