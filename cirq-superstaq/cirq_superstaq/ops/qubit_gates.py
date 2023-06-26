@@ -889,14 +889,14 @@ class StrippedCZGate(cirq.Gate):
 def custom_resolver(cirq_type: str) -> Union[Type[cirq.Gate], None]:
     """Tells `cirq.json` how to deserialize cirq_superstaq's custom gates.
 
-        Changes to gate names in this file should be reflected in this resolver.
-        See quantumai.google/cirq/dev/serialization for more information about (de)serialization.
+    Changes to gate names in this file should be reflected in this resolver.
+    See quantumai.google/cirq/dev/serialization for more information about (de)serialization.
 
-        Args:
-            cirq_type: The string of the gate type for the serializer to resolve.
+    Args:
+        cirq_type: The string of the gate type for the serializer to resolve.
 
-        Returns:
-            The resolved Cirq Gate matching the input, or None if no match.
+    Returns:
+        The resolved Cirq Gate matching the input, or None if no match.
     """
     type_to_gate_map: Dict[str, Type[cirq.Gate]] = {
         "ZZSwapGate": ZZSwapGate,
