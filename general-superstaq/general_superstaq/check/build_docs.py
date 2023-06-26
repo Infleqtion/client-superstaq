@@ -16,7 +16,7 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
 
     Args:
         *args: Command line arguments.
-        sphinx_paths: List of sphinx paths strings
+        sphinx_paths: List of sphinx paths strings.
     """
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
