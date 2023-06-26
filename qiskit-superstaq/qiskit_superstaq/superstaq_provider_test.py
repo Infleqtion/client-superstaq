@@ -379,3 +379,39 @@ def test_target_info(mock_post: MagicMock) -> None:
     fake_data = {"target_info": {"backend_name": "test_fake_device", "max_experiments": 1234}}
     mock_post.return_value.json = lambda: fake_data
     assert provider.target_info("test_fake_backend") == fake_data["target_info"]
+
+
+def test_get_targets() -> None:
+    provider = qss.SuperstaQProvider(api_key="key", remote_host="http://example.com")
+    mock_client = mock.MagicMock()
+    targets = {
+        "superstaq_targets": {
+            "compile-and-run": [
+                "ibmq_qasm_simulator",
+                "ibmq_armonk_qpu",
+                "ibmq_santiago_qpu",
+                "ibmq_bogota_qpu",
+                "ibmq_lima_qpu",
+                "ibmq_belem_qpu",
+                "ibmq_quito_qpu",
+                "ibmq_statevector_simulator",
+                "ibmq_mps_simulator",
+                "ibmq_extended-stabilizer_simulator",
+                "ibmq_stabilizer_simulator",
+                "ibmq_manila_qpu",
+                "aws_dm1_simulator",
+                "aws_sv1_simulator",
+                "d-wave_advantage-system4.1_qpu",
+                "d-wave_dw-2000q-6_qpu",
+                "aws_tn1_simulator",
+                "rigetti_aspen-9_qpu",
+                "d-wave_advantage-system1.1_qpu",
+                "ionq_ion_qpu",
+            ],
+            "compile-only": ["aqt_keysight_qpu", "aqt_zurich_qpu", "sandia_qscout_qpu"],
+        }
+    }
+    mock_client.get_targets.return_value = targets
+    provider._client = mock_client
+
+    assert provider.get_targets() == targets["superstaq_targets"]
