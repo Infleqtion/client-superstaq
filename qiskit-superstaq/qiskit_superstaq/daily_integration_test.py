@@ -222,13 +222,16 @@ def test_supercheq(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
     assert fidelities.shape == (32, 32)
 
 
-def test_submit_to_cq_hilbert_simulator(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
-    backend = provider.get_backend("cq_hilbert_simulator")
+def test_submit_to_provider_simulators(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
+
     qc = qiskit.QuantumCircuit(2, 2)
     qc.x(0)
     qc.cx(0, 1)
     qc.measure(0, 0)
     qc.measure(1, 1)
 
-    job = backend.run(qc, shots=1)
-    assert job.result().get_counts() == {"11": 1}
+    backends = ["cq_hilbert_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
+
+    for backend in backends:
+        job = provider.get_backend(backend).run(qc, shots=1)
+        assert job.result().get_counts() == {"11": 1}

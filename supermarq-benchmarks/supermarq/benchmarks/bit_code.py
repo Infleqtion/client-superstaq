@@ -10,11 +10,12 @@ class BitCode(Benchmark):
     """Creates a circuit for syndrome measurement in a bit-flip error correcting code.
 
     Args:
-    - num_data: The number of data qubits
-    - num_rounds: The number of measurement rounds
-    - bit_state: A list denoting the state to initialize each data qubit to.
+        num_data: The number of data qubits.
+        num_rounds: The number of measurement rounds.
+        bit_state: A list denoting the state to initialize each data qubit to.
 
-    returns a cirq circuit for the bit-flip error correcting code
+    Returns:
+        A `cirq.Circuit` for the bit-flip error correcting code.
     """
 
     def __init__(self, num_data_qubits: int, num_rounds: int, bit_state: List[int]) -> None:
@@ -27,10 +28,13 @@ class BitCode(Benchmark):
     def _measurement_round_cirq(
         self, qubits: List[cirq.LineQubit], round_idx: int
     ) -> Iterator[cirq.Operation]:
-        """Generates cirq ops for a single measurement round
+        """Generates `cirq.Operation`s for a single measurement round.
 
         Args:
-        - qubits: Circuit qubits - assumed data on even indices and measurement on odd indices
+            qubits: Circuit qubits, assuming data on even indices and measurement on odd indices.
+
+        Returns:
+            A `cirq.Operation` iterator with the operations for a measurement round.
         """
         ancilla_qubits = qubits[1::2]
         for qq in range(1, len(qubits), 2):
@@ -41,6 +45,11 @@ class BitCode(Benchmark):
         yield from cirq.reset_each(*ancilla_qubits)
 
     def circuit(self) -> cirq.Circuit:
+        """Generates bit code circuit.
+
+        Returns:
+            A `cirq.Circuit`.
+        """
         num_qubits = 2 * self.num_data_qubits - 1
         qubits = cirq.LineQubit.range(num_qubits)
         circuit = cirq.Circuit()
@@ -58,11 +67,13 @@ class BitCode(Benchmark):
         return circuit
 
     def _get_ideal_dist(self) -> Dict[str, float]:
-        """Return the ideal probability distribution of self.circuit().
+        """Return the ideal probability distribution of `self.circuit()`.
 
-        Since the only allowed initial states for this benchmark are
-        single product states, there is a single bitstring that should be
-        measured in the noiseless case.
+        Since the only allowed initial states for this benchmark are single product states, there
+        is a single bitstring that should be measured in the noiseless case.
+
+        Returns:
+            Dictionary with measurement results as keys and probabilites as values.
         """
         ancilla_state, final_state = "", ""
         for i in range(self.num_data_qubits - 1):
@@ -76,9 +87,16 @@ class BitCode(Benchmark):
         return {"".join(ideal_bitstring): 1.0}
 
     def score(self, counts: Dict[str, float]) -> float:
-        """Device performance is given by the Hellinger fidelity between
-        the experimental results and the ideal distribution. The ideal
-        is known based on the bit_state parameter.
+        """Compute benchmark score.
+
+        Device performance is given by the Hellinger fidelity between the experimental results and
+        the ideal distribution. The ideal is known based on the `bit_state` parameter.
+
+        Args:
+            counts: Dictionary containing the measurement counts from running `self.circuit()`.
+
+        Returns:
+            A float with the computed score.
         """
         ideal_dist = self._get_ideal_dist()
         total_shots = sum(counts.values())

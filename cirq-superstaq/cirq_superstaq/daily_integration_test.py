@@ -154,13 +154,6 @@ def test_ibmq_set_token(service: css.Service) -> None:
         assert service.ibmq_set_token("INVALID_TOKEN")
 
 
-def test_tsp(service: css.Service) -> None:
-    cities = ["Chicago", "San Francisco", "New York City", "New Orleans"]
-    out = service.tsp(cities)
-    for city in cities:
-        assert city.replace(" ", "+") in out.map_link[0]
-
-
 def test_get_targets(service: css.Service) -> None:
     result = service.get_targets()
     assert "ibmq_qasm_simulator" in result["compile-and-run"]
@@ -272,11 +265,13 @@ def test_job(service: css.Service) -> None:
     assert job.job_id() == job_id
 
 
-def test_submit_to_cq_hilbert_simulator(service: css.Service) -> None:
+def test_submit_to_provider_simulators(service: css.Service) -> None:
     q0 = cirq.LineQubit(0)
     q1 = cirq.LineQubit(1)
-
     circuit = cirq.Circuit(cirq.X(q0), cirq.CNOT(q0, q1), cirq.measure(q0, q1))
 
-    job = service.create_job(circuit=circuit, repetitions=1, target="cq_hilbert_simulator")
-    assert job.counts() == {"11": 1}
+    targets = ["cq_hilbert_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
+
+    for target in targets:
+        job = service.create_job(circuit=circuit, repetitions=1, target=target)
+        assert job.counts() == {"11": 1}

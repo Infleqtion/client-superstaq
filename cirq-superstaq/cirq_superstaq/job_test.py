@@ -72,7 +72,7 @@ def test_job_fields(job: css.job.Job) -> None:
 
 
 def test_job_status_refresh() -> None:
-    completed_job_dict = {"status": "completed"}
+    completed_job_dict = {"status": "Done"}
 
     for status in css.Job.NON_TERMINAL_STATES:
         job_dict = {"status": status}
@@ -80,7 +80,7 @@ def test_job_status_refresh() -> None:
         with mocked_get_job_requests(job_dict, completed_job_dict) as mocked_request:
             job = new_job()
             assert job.status() == status
-            assert job.status() == "completed"
+            assert job.status() == "Done"
             assert mocked_request.call_count == 2
             mocked_request.assert_called_with("new_job_id")
 
@@ -133,7 +133,7 @@ def test_job_counts_failed(job: css.job.Job) -> None:
         "target": "ss_unconstrained_simulator",
     }
     with mocked_get_job_requests(job_dict):
-        with pytest.raises(RuntimeError, match="too many qubits"):
+        with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match="too many qubits"):
             _ = job.counts()
         assert job.status() == "Failed"
 
@@ -141,7 +141,7 @@ def test_job_counts_failed(job: css.job.Job) -> None:
 @mock.patch("time.sleep", return_value=None)
 def test_job_counts_poll(mock_sleep: mock.MagicMock, job: css.job.Job) -> None:
     ready_job = {
-        "status": "ready",
+        "status": "Ready",
     }
     completed_job = {
         "data": {"histogram": {"11": 1}},
@@ -160,28 +160,33 @@ def test_job_counts_poll(mock_sleep: mock.MagicMock, job: css.job.Job) -> None:
 
 
 @mock.patch("time.sleep", return_value=None)
-def test_job_counts_poll_timeout(mock_sleep: mock.MagicMock, job: css.job.Job) -> None:
+@mock.patch("time.time", side_effect=range(20))
+def test_job_counts_poll_timeout(
+    mock_time: mock.MagicMock, mock_sleep: mock.MagicMock, job: css.job.Job
+) -> None:
     ready_job = {
-        "status": "ready",
+        "status": "Ready",
     }
     with mocked_get_job_requests(*[ready_job] * 20):
-        with pytest.raises(RuntimeError, match="ready"):
+        with pytest.raises(TimeoutError, match="Ready"):
             _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
     assert mock_sleep.call_count == 11
 
 
 @mock.patch("time.sleep", return_value=None)
-def test_job_results_poll_timeout_with_error_message(
-    mock_sleep: mock.MagicMock, job: css.job.Job
-) -> None:
-    ready_job = {
-        "status": "failure",
+def test_job_results_poll_failure(mock_sleep: mock.MagicMock, job: css.job.Job) -> None:
+    running_job = {
+        "status": "Running",
+    }
+    failed_job = {
+        "status": "Failed",
         "failure": {"error": "too many qubits"},
     }
-    with mocked_get_job_requests(*[ready_job] * 20):
-        with pytest.raises(RuntimeError, match="too many qubits"):
+
+    with mocked_get_job_requests(*[running_job] * 5, failed_job):
+        with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match="too many qubits"):
             _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
-    assert mock_sleep.call_count == 11
+    assert mock_sleep.call_count == 5
 
 
 def test_job_fields_unsuccessful(job: css.job.Job) -> None:
