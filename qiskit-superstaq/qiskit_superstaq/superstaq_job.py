@@ -20,14 +20,16 @@ import qiskit
 import qiskit_superstaq as qss
 
 
-class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-docstring
-    def __init__(self, backend: qss.SuperstaQBackend, job_id: str) -> None:
-        """Initialize a job instance.
+class SuperstaQJob(qiskit.providers.JobV1):
+    """This class represents a Superstaq job instance.
 
-        Args:
-            backend: The `qss.SuperstaQBacken` that the job was created with.
-            job_id: The unique job ID from SuperstaQ.
-        """
+    Args:
+        backend: The `qss.SuperstaQBackend` that the job was created with.
+        job_id: String containing the unique job ID from Superstaq.
+    """
+
+    def __init__(self, backend: qss.SuperstaQBackend, job_id: str) -> None:
+
         super().__init__(backend, job_id)
 
     def __eq__(self, other: Any) -> bool:
@@ -62,7 +64,17 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
         return result_list
 
     def result(self, timeout: Optional[float] = None, wait: float = 5) -> qiskit.result.Result:
-        # Get the result data of a circuit.
+        """Retrieves the result data associated with a Superstaq job.
+
+        Args:
+            timeout: An optional parameter that fixes when result retrieval times out. Units are
+                in seconds.
+            wait: An optional parameter that sets the interval to check for Superstaq job results.
+                Units are in seconds.
+
+        Returns:
+            A qiskit result object containing job information.
+        """
         results = self._wait_for_results(timeout, wait)
 
         # create list of result dictionaries
@@ -91,7 +103,11 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
         )
 
     def status(self) -> qiskit.providers.jobstatus.JobStatus:
-        """Query for the job status."""
+        """Checks Superstaq job status.
+
+        Returns:
+            The job status.
+        """
 
         job_id_list = self._job_id.split(",")  # separate aggregated job ids
 
@@ -121,4 +137,5 @@ class SuperstaQJob(qiskit.providers.JobV1):  # pylint: disable=missing-class-doc
         return status
 
     def submit(self) -> None:
+        """Submits a job through a Superstaq job instance."""
         raise NotImplementedError("Submit through SuperstaQBackend, not through SuperstaqJob")
