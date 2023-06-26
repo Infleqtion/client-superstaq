@@ -1,29 +1,53 @@
-<!-- <svg width="600" height="300" xmlns="http://www.w3.org/2000/svg">
-  <foreignObject width="100%" height="100%">
-    <div xmlns="http://www.w3.org/1999/xhtml">
-      <style>
-        .container {
-          display: flex;
-          width: 100%;
-          height: 300px;
-          background-color: black;
-          color: white;
-        }
-      </style>
-
-      <div class="container">
-        <h1>Hi there, my name is Nikola 👋</h1>
-      </div>
-    </div>
-  </foreignObject>
-</svg> -->
-
-
 <svg width="1000" height="600" xmlns="http://www.w3.org/2000/svg">
   <foreignObject  width="100%" height="100%">
     <div xmlns="http://www.w3.org/1999/xhtml">
       <style>
-        .window {
+      .container {
+        background-color: #262626;
+        color: #ccc;
+        font-family: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
+        font-size: 30px;
+        border-radius: 20px;
+      }
+      .top {
+        padding: 20px;
+        background: #595959;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+      }
+      .button {
+        height: 25px;
+        width: 25px;
+        background-color: #bbb;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      .content {
+        padding: 20px;
+      }
+      </style>
+      <div class="container">
+        <div class="top">
+          <span class="button"></span>
+          <span class="button"></span>
+          <span class="button"></span>
+        </div>
+
+        <div class="content">
+          <p>How to create a browser window look with CSS.</p>
+        </div>
+      </div>
+
+    </div>
+  </foreignObject>
+</svg>
+
+
+<!-- <svg width="1000" height="600" xmlns="http://www.w3.org/2000/svg">
+  <foreignObject  width="100%" height="100%">
+    <div xmlns="http://www.w3.org/1999/xhtml">
+      <style>
+        .container {
           padding: 10px;
           width: 900;
           height: 580px;
@@ -32,47 +56,59 @@
           border-radius: 20px;
           font-size: 30px;
         }
-        .buttons {
-          width: 100%;
+        .topbar {
         }
         .button {
           background-color: white;
-          border-radius: 50%
-          height: 10px;
-          width: 10px;
+          margin: 7px;
+          border-radius: 50%;
+          height: 25px;
+          width: 25px;
         }
         .tabs {}
         .display {
           font-family: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
           overflow: hidden;
-          animation: typing 5s steps(30, end);
+          animation: type 5s steps(30, end);
         }
 
-        @keyframes typing {
+        @keyframes type {
           from { width: 0 }
           to { width: 100% }
         }
       </style>
 
-      <div class="window">
-        <div class="display">
-        import qiskit
-        import qiskit_superstaq as qss
+      <div class="container">
+        <div class="topbar">
+          <span class="button"></span>
+          <span class="button"></span>
+          <span class="button"></span>
+        </div>
+        <div class="codearea">
+          <div class="display">
+            <span>import qiskit</span>
+            <span>import qiskit_superstaq as qss</span>
+            
+            <p>superstaq = qss.SuperstaQProvider(token)</p>
+            <p>backend = superstaq.get_backend("ibmq_qasm_simulator")</p>
 
-        superstaq = qss.SuperstaQProvider(token)
-        backend = superstaq.get_backend("ibmq_qasm_simulator")
+            <p># Standard bell circuit</p>
+            <p>qc = qiskit.QuantumCircuit(2, 2)</p>
+            <p>qc.h(0)</p>
+            <p>qc.cx(0, 1)</p>
+            <p>qc.measure([0, 1], [0, 1])</p>
 
-        # Standard bell circuit
-        qc = qiskit.QuantumCircuit(2, 2)
-        qc.h(0)
-        qc.cx(0, 1)
-        qc.measure([0, 1], [0, 1])
-
-        job = backend.run(qc, shots=100)
-        print(result.get_counts())
+            <p>job = backend.run(qc, shots=100)</p>
+            <p>print(result.get_counts())</p>
+            
+          </div>
         </div>
       </div>
     </div>
   </foreignObject>
 
-</svg>
+</svg> -->
+
+
+<!-- sources -->
+<!-- https://www.w3schools.com/howto/tryit.asp?filename=tryhow_css_browser_window -->
