@@ -202,7 +202,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
 
         Note:
-            This method will soon be deprecated. Instead, use the `num_eca_circuits` argument of
+            This method has been deprecated. Instead, use the `num_eca_circuits` argument of
             `aqt_compile()`.
 
         Args:
@@ -230,8 +230,9 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
             ValueError: If `target` is not a valid AQT target.
         """
         warnings.warn(
-            "The `aqt_compile_eca()` method is deprecated, and will be removed in a future version "
-            "of qiskit-superstaq. Instead, use the `num_eca_circuits` argument of `aqt_compile()`.",
+            "The `aqt_compile_eca()` method has been deprecated, and will be removed in a future "
+            "version of qiskit-superstaq. Instead, use the `num_eca_circuits` argument of "
+            "`aqt_compile()` to compile circuits for ECA.",
             DeprecationWarning,
             stacklevel=2,
         )

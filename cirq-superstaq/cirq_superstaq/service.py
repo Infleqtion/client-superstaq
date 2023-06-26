@@ -485,6 +485,10 @@ class Service(user_config.UserConfig):
 
         See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
 
+        Note:
+            This method has been deprecated. Instead, use the `num_eca_circuits` argument of
+            `aqt_compile()`.
+
         Args:
             circuits: The circuit(s) to compile.
             num_equivalent_circuits: Number of logically equivalent random circuits to generate for
@@ -506,6 +510,14 @@ class Service(user_config.UserConfig):
             containing pulse sequences for each compiled circuit, and its .pulse_list(s) attribute
             contains the corresponding list(s) of cycles.
         """
+        warnings.warn(
+            "The `aqt_compile_eca()` method has been deprecated, and will be removed in a future "
+            "version of cirq-superstaq. Instead, use the `num_eca_circuits` argument of "
+            "`aqt_compile()` to compile circuits for ECA.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         return self.aqt_compile(
             circuits,
             target=target,
