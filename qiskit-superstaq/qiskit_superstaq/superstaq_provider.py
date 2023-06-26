@@ -89,8 +89,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, user_config.UserConfig):
         return f"<SuperstaQProvider {self._name}>"
 
     def __repr__(self) -> str:
-        repr1 = f"<SuperstaQProvider(api_key={self._client.api_key}, "
-        return repr1 + f"name={self._name})>"
+        return f"<SuperstaQProvider(api_key={self._client.api_key}, name={self._name})>"
 
     def get_backend(self, target: str) -> qss.SuperstaQBackend:
         """Returns a Superstaq backend.
