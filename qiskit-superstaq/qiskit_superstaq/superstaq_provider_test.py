@@ -130,20 +130,23 @@ def test_aqt_compile_eca(mock_post: MagicMock) -> None:
         "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     }
 
-    out = provider.aqt_compile_eca(
-        qc, num_equivalent_circuits=1, random_seed=1234, atol=1e-2, test_options="yes"
-    )
+    out = provider.aqt_compile(qc, num_eca_circuits=1, random_seed=1234, atol=1e-2)
     assert out.circuits == [qc]
     assert out.final_logical_to_physicals == [{}]
-    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    assert not hasattr(out, "circuit")
+    assert not hasattr(out, "pulse_list")
+    assert not hasattr(out, "final_logical_to_physical")
 
+    out = provider.aqt_compile([qc], num_eca_circuits=1, random_seed=1234, atol=1e-2)
+    assert out.circuits == [[qc]]
+    assert out.final_logical_to_physicals == [[{}]]
 
-def test_invalid_target_aqt_compile_eca() -> None:
-    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
-    with pytest.raises(ValueError, match="not an AQT target"):
-        provider.aqt_compile_eca(
-            qiskit.QuantumCircuit(), num_equivalent_circuits=1, target="invalid_target"
+    with pytest.warns(DeprecationWarning, match="has been deprecated"):
+        deprecated_out = provider.aqt_compile_eca(
+            [qc], num_equivalent_circuits=1, random_seed=1234, atol=1e-2
         )
+        assert deprecated_out.circuits == out.circuits
+        assert deprecated_out.final_logical_to_physicals == out.final_logical_to_physicals
 
 
 @patch("requests.post")

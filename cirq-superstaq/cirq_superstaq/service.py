@@ -12,6 +12,7 @@
 # limitations under the License.
 """Service to access SuperstaQs API."""
 
+import warnings
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import cirq

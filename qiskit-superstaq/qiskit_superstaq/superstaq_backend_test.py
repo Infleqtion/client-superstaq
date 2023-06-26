@@ -173,9 +173,20 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     }
 
-    out = backend.compile(
-        qc, num_equivalent_circuits=1, random_seed=1234, atol=1e-2, test_options="yes"
-    )
+    out = backend.compile(qc, num_eca_circuits=1, random_seed=1234, atol=1e-2, test_options="yes")
+    assert out.circuits == [qc]
+    assert out.final_logical_to_physicals == [{}]
+    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+
+    # AQT ECA compile
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "final_logical_to_physicals": "[[]]",
+        "state_jp": gss.serialization.serialize({}),
+        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
+    }
+
+    out = backend.compile(qc, num_eca_circuits=1, random_seed=1234, atol=1e-2, test_options="yes")
     assert out.circuits == [qc]
     assert out.final_logical_to_physicals == [{}]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
