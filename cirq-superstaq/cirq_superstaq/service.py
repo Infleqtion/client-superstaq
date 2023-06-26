@@ -390,6 +390,66 @@ class Service(user_config.UserConfig):
             return resource_estimates
         return resource_estimates[0]
 
+    def aqt_compile_eca(
+        self,
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        num_equivalent_circuits: int,
+        random_seed: Optional[int] = None,
+        target: str = "aqt_keysight_qpu",
+        atol: Optional[float] = None,
+        gate_defs: Optional[
+            Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
+        ] = None,
+        **kwargs: Any,
+    ) -> css.compiler_output.CompilerOutput:
+        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
+        Lawrence Berkeley National Laboratory using Equivalent Circuit Averaging (ECA).
+
+        See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
+
+        Note:
+            This method has been deprecated. Instead, use the `num_eca_circuits` argument of
+            `aqt_compile()`.
+
+        Args:
+            circuits: The circuit(s) to compile.
+            num_equivalent_circuits: Number of logically equivalent random circuits to generate for
+                each input circuit.
+            random_seed: Optional seed for circuit randomizer.
+            target: String of target AQT device.
+            atol: An optional tolerance to use for approximate gate synthesis.
+            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+                each operation can be a unitary matrix, `cirq.Gate`, `cirq.Operation`, or None. More
+                specific associations take precedence, for example `{"SWAP": cirq.SQRT_ISWAP,
+                "SWAP/C5C4": cirq.SQRT_ISWAP_INV}` implies `SQRT_ISWAP` for all "SWAP" calibrations
+                except "SWAP/C5C4" (which will instead be mapped to a `SQRT_ISWAP_INV` gate on
+                qubits 4 and 5). Setting any calibration to None will disable that calibration.
+            kwargs: Other desired aqt_compile_eca options.
+
+        Returns:
+            Object whose .circuits attribute is a list (or list of lists) of logically equivalent
+            circuits. If qtrl is installed, the object's .seq attribute is a qtrl Sequence object
+            containing pulse sequences for each compiled circuit, and its .pulse_list(s) attribute
+            contains the corresponding list(s) of cycles.
+        """
+        warnings.warn(
+            "The `aqt_compile_eca()` method has been deprecated, and will be removed in a future "
+            "version of cirq-superstaq. Instead, use the `num_eca_circuits` argument of "
+            "`aqt_compile()` to compile circuits for ECA.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+        return self.aqt_compile(
+            circuits,
+            target=target,
+            num_eca_circuits=num_equivalent_circuits,
+            random_seed=random_seed,
+            atol=atol,
+            gate_defs=gate_defs,
+            **kwargs,
+        )
+
     def aqt_compile(
         self,
         circuits: Union[cirq.Circuit, List[cirq.Circuit]],
@@ -467,66 +527,6 @@ class Service(user_config.UserConfig):
 
         json_dict = self._client.post_request("/aqt_compile", request_json)
         return css.compiler_output.read_json_aqt(json_dict, circuits_is_list, num_eca_circuits)
-
-    def aqt_compile_eca(
-        self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
-        num_equivalent_circuits: int,
-        random_seed: Optional[int] = None,
-        target: str = "aqt_keysight_qpu",
-        atol: Optional[float] = None,
-        gate_defs: Optional[
-            Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
-        ] = None,
-        **kwargs: Any,
-    ) -> css.compiler_output.CompilerOutput:
-        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
-        Lawrence Berkeley National Laboratory using Equivalent Circuit Averaging (ECA).
-
-        See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
-
-        Note:
-            This method has been deprecated. Instead, use the `num_eca_circuits` argument of
-            `aqt_compile()`.
-
-        Args:
-            circuits: The circuit(s) to compile.
-            num_equivalent_circuits: Number of logically equivalent random circuits to generate for
-                each input circuit.
-            random_seed: Optional seed for circuit randomizer.
-            target: String of target AQT device.
-            atol: An optional tolerance to use for approximate gate synthesis.
-            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
-                each operation can be a unitary matrix, `cirq.Gate`, `cirq.Operation`, or None. More
-                specific associations take precedence, for example `{"SWAP": cirq.SQRT_ISWAP,
-                "SWAP/C5C4": cirq.SQRT_ISWAP_INV}` implies `SQRT_ISWAP` for all "SWAP" calibrations
-                except "SWAP/C5C4" (which will instead be mapped to a `SQRT_ISWAP_INV` gate on
-                qubits 4 and 5). Setting any calibration to None will disable that calibration.
-            kwargs: Other desired aqt_compile_eca options.
-
-        Returns:
-            Object whose .circuits attribute is a list (or list of lists) of logically equivalent
-            circuits. If qtrl is installed, the object's .seq attribute is a qtrl Sequence object
-            containing pulse sequences for each compiled circuit, and its .pulse_list(s) attribute
-            contains the corresponding list(s) of cycles.
-        """
-        warnings.warn(
-            "The `aqt_compile_eca()` method has been deprecated, and will be removed in a future "
-            "version of cirq-superstaq. Instead, use the `num_eca_circuits` argument of "
-            "`aqt_compile()` to compile circuits for ECA.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        return self.aqt_compile(
-            circuits,
-            target=target,
-            num_eca_circuits=num_equivalent_circuits,
-            random_seed=random_seed,
-            atol=atol,
-            gate_defs=gate_defs,
-            **kwargs,
-        )
 
     def qscout_compile(
         self,
