@@ -205,7 +205,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
             ValueError: If `target` is not a valid AQT target.
         """
         if not target.startswith("aqt_"):
-            raise ValueError(f"{target!r} is not an AQT target.")
+            raise ValueError(f"{target!r} is not a valid AQT target.")
 
         return self.get_backend(target).compile(
             circuits,
@@ -278,7 +278,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
             ValueError: If `base_entangling_gate` is not a valid gate option.
         """
         if not target.startswith("sandia_"):
-            raise ValueError(f"{target!r} is not a Sandia target.")
+            raise ValueError(f"{target!r} is not a valid Sandia target.")
 
         return self.get_backend(target).compile(
             circuits, mirror_swaps=mirror_swaps, base_entangling_gate=base_entangling_gate, **kwargs

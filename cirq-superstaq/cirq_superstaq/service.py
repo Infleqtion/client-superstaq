@@ -277,10 +277,13 @@ class Service(user_config.UserConfig):
             A `css.Job` which can be queried for status or results.
 
         Raises:
-            ValueError: If the circuit has no measurements to sample.
+            ValueError: If `circuit` is not a valid `cirq.Circuit` or has no measurements to sample.
             SuperstaQException: If there was an error accessing the API.
         """
         _validate_cirq_circuits(circuit)
+        if not isinstance(circuit, cirq.Circuit):
+            raise ValueError("This endpoint does not support the submission of multiple circuits.")
+
         if not circuit.has_measurements():
             # TODO: only raise if the run method actually requires samples (and not for e.g. a
             # statevector simulation)
@@ -348,8 +351,8 @@ class Service(user_config.UserConfig):
         Returns:
             ResourceEstimate(s) containing resource costs (after compilation)
         """
-        _validate_cirq_circuits(circuit)
-        circuit_is_list = isinstance(circuits, list)
+        _validate_cirq_circuits(circuits)
+        circuit_is_list = not isinstance(circuits, cirq.Circuit)
         serialized_circuit = css.serialization.serialize_circuits(circuits)
 
         target = self._resolve_target(target)
@@ -477,7 +480,6 @@ class Service(user_config.UserConfig):
         if not target.startswith("aqt_"):
             raise ValueError(f"{target!r} is not a valid AQT target.")
 
-
         _validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
@@ -549,11 +551,11 @@ class Service(user_config.UserConfig):
 
         Raises:
             ValueError: If `base_entangling_gate` is not a valid gate option.
-            ValueError: If `target` is not a valid QSCOUT target.
+            ValueError: If `target` is not a valid Sandia target.
         """
         target = self._resolve_target(target)
         if not target.startswith("sandia_"):
-            raise ValueError(f"{target!r} is not a valid QSCOUT target.")
+            raise ValueError(f"{target!r} is not a valid Sandia target.")
 
         if base_entangling_gate not in ("xx", "zz"):
             raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")

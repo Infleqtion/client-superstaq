@@ -49,8 +49,8 @@ def validate_target(target: str) -> None:
     match = re.fullmatch("^([A-Za-z0-9-]+)_([A-Za-z0-9-.]+)_([a-z]+)", target)
     if not match:
         raise ValueError(
-            f"{target!r} does not have a valid string format. Valid target strings should be in the "
-            "form '<provider>_<device>_<type>', e.g. 'ibmq_lagos_qpu'."
+            f"{target!r} does not have a valid string format. Valid target strings should be in "
+            "the form '<provider>_<device>_<type>', e.g. 'ibmq_lagos_qpu'."
         )
 
     prefix, _, device_type = match.groups()
@@ -58,7 +58,8 @@ def validate_target(target: str) -> None:
     # Check valid prefix
     if prefix not in vendor_prefixes:
         raise ValueError(
-            f"{target!r} does not have a valid target prefix. Valid prefixes are: {vendor_prefixes}."
+            f"{target!r} does not have a valid target prefix. Valid prefixes are: "
+            f"{vendor_prefixes}."
         )
 
     # Check for valid device type
