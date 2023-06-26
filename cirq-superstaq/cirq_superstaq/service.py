@@ -499,7 +499,7 @@ class Service(user_config.UserConfig):
             gss.validation.validate_integer_param(random_seed)
             options_dict["random_seed"] = int(random_seed)
         if atol is not None:
-            options_dict["atol"] = atol
+            options_dict["atol"] = float(atol)
         if gate_defs is not None:
             gate_defs_cirq = {}
             for key, val in gate_defs.items():
