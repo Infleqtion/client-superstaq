@@ -16,13 +16,12 @@ def run(
     ignore_match: str = "# REPO-SPECIFIC CONFIG",
     silent: bool = False,
 ) -> int:
-    """
-    Checks that the check script configuration file ({config_file}) is consistent across repos.
+    """Checks that the check script configuration file ({config_file}) is consistent across repos.
 
     Args:
         *args: Command line arguments.
-        config_file:
-        ignore_match:
+        config_file: path to the config file to run checks.
+        ignore_match: string flag that allows different repos to have different setup.cfg.
         silent: If True, restrict printing to warning and error messages.
     """
 

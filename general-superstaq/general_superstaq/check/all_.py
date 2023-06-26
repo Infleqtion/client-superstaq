@@ -22,10 +22,7 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
 
     Args:
         *args: Command line arguments.
-        sphinx_paths: List of sphinx paths strings
-
-    Returns:
-
+        sphinx_paths: List of sphinx paths strings.
     """
 
     parser = check_utils.get_file_parser()
