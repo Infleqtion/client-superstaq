@@ -10,12 +10,21 @@ from general_superstaq.check import check_utils
 
 
 @check_utils.enable_exit_on_failure
-def run(  # pylint: disable=missing-function-docstring
+def run(
     *args: str,
     config_file: str = "setup.cfg",
     ignore_match: str = "# REPO-SPECIFIC CONFIG",
     silent: bool = False,
 ) -> int:
+    """
+    Checks that the check script configuration file ({config_file}) is consistent across repos.
+
+    Args:
+        *args: Command line arguments.
+        config_file:
+        ignore_match:
+        silent: If True, restrict printing to warning and error messages.
+    """
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.description = textwrap.dedent(

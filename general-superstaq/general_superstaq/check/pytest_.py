@@ -9,7 +9,7 @@ from general_superstaq.check import check_utils
 
 
 @check_utils.enable_exit_on_failure
-def run(  # pylint: disable=missing-function-docstring
+def run(
     *args: str,
     include: Optional[Union[str, Iterable[str]]] = None,
     exclude: Optional[Union[str, Iterable[str]]] = None,
@@ -22,7 +22,8 @@ def run(  # pylint: disable=missing-function-docstring
         *args: Command line arguments.
         include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
         exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
-        integration_setup:
+        integration_setup: Optional function to run before integration tests (for example,
+        to set environmental variables).
         silent: If True, restrict printing to warning and error messages.
     """
 
