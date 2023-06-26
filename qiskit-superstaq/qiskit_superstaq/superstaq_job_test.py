@@ -77,7 +77,7 @@ def test_result(backend: qss.SuperstaQBackend) -> None:
 
 def test_check_if_stopped(backend: qss.SuperstaQBackend) -> None:
 
-    for status in ("Canceled", "Failed"):
+    for status in ("Cancelled", "Failed"):
         job = qss.SuperstaQJob(backend=backend, job_id="123abc")
         job._overall_status = status
         with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match=status):
@@ -119,10 +119,10 @@ def test_refresh_job(backend: qss.SuperstaQBackend) -> None:
     job = qss.SuperstaQJob(backend=backend, job_id="654cba")
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaQClient.get_job",
-        return_value=mock_response("Canceled"),
+        return_value=mock_response("Cancelled"),
     ):
         job._refresh_job()
-        assert job._overall_status == "Canceled"
+        assert job._overall_status == "Cancelled"
 
 
 def test_update_status_queue_info(backend: qss.SuperstaQBackend) -> None:
@@ -136,15 +136,19 @@ def test_update_status_queue_info(backend: qss.SuperstaQBackend) -> None:
 
     mock_statuses = [
         mock_response("Queued"),
-        mock_response("Canceled"),
-        mock_response("Canceled"),
+        mock_response("Cancelled"),
+        mock_response("Cancelled"),
     ]
     for index, job_id in enumerate(job._job_id.split(",")):
         job._job_info[job_id] = mock_statuses[index]
     job._update_status_queue_info()
     assert job._overall_status == "Queued"
 
-    mock_statuses = [mock_response("Canceled"), mock_response("Canceled"), mock_response("Queued")]
+    mock_statuses = [
+        mock_response("Cancelled"),
+        mock_response("Cancelled"),
+        mock_response("Queued"),
+    ]
     for index, job_id in enumerate(job._job_id.split(",")):
         job._job_info[job_id] = mock_statuses[index]
     job._update_status_queue_info()
@@ -185,7 +189,7 @@ def test_status(backend: qss.SuperstaQBackend) -> None:
             job._overall_status = "Done"
             assert job.status() == qiskit.providers.JobStatus.DONE
         else:
-            job._overall_status = "Canceled"
+            job._overall_status = "Cancelled"
             assert job.status() == qiskit.providers.JobStatus.CANCELLED
 
 

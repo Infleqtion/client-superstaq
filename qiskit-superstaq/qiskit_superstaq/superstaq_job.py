@@ -23,7 +23,7 @@ import qiskit_superstaq as qss
 class SuperstaQJob(qiskit.providers.JobV1):
     """This class represents a Superstaq job instance."""
 
-    TERMINAL_STATES = ("Done", "Canceled", "Failed")
+    TERMINAL_STATES = ("Done", "Cancelled", "Failed")
     PROCESSING_STATES = ("Queued", "Submitted", "Running")
     ALL_STATES = TERMINAL_STATES + PROCESSING_STATES
 
@@ -103,15 +103,15 @@ class SuperstaQJob(qiskit.providers.JobV1):
         )
 
     def _check_if_stopped(self) -> None:
-        """Verifies that the job status is not in a canceled or failed state and
+        """Verifies that the job status is not in a cancelled or failed state and
         raises an exception if it is.
 
         Raises:
-            SuperstaQUnsuccessfulJobException: If the job been canceled or has
+            SuperstaQUnsuccessfulJobException: If the job been cancelled or has
         failed.
             SuperstaQException: If unable to get the status of the job from the API.
         """
-        if self._overall_status in ("Canceled", "Failed"):
+        if self._overall_status in ("Cancelled", "Failed"):
             raise gss.superstaq_exceptions.SuperstaQUnsuccessfulJobException(
                 self._job_id, self._overall_status
             )
@@ -143,7 +143,7 @@ class SuperstaQJob(qiskit.providers.JobV1):
         job_id_list = self._job_id.split(",")  # separate aggregated job ids
 
         status_occurrence = {self._job_info[job_id]["status"] for job_id in job_id_list}
-        status_priority_order = ("Submitted", "Queued", "Running", "Failed", "Canceled", "Done")
+        status_priority_order = ("Submitted", "Queued", "Running", "Failed", "Cancelled", "Done")
 
         for temp_status in status_priority_order:
             if temp_status in status_occurrence:
@@ -161,7 +161,7 @@ class SuperstaQJob(qiskit.providers.JobV1):
             "Queued": qiskit.providers.jobstatus.JobStatus.QUEUED,
             "Running": qiskit.providers.jobstatus.JobStatus.RUNNING,
             "Submitted": qiskit.providers.jobstatus.JobStatus.INITIALIZING,
-            "Canceled": qiskit.providers.jobstatus.JobStatus.CANCELLED,
+            "Cancelled": qiskit.providers.jobstatus.JobStatus.CANCELLED,
             "Failed": qiskit.providers.jobstatus.JobStatus.ERROR,
             "Done": qiskit.providers.jobstatus.JobStatus.DONE,
         }
