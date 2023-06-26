@@ -315,10 +315,13 @@ class _SuperstaQClient:
         Returns:
             The output of SupercheQ.
         """
+        gss.validation.validate_integer_param(num_qubits)
+        gss.validation.validate_integer_param(depth)
+
         json_dict = {
             "files": files,
-            "num_qubits": num_qubits,
-            "depth": depth,
+            "num_qubits": int(num_qubits),
+            "depth": int(depth),
             "circuit_return_type": circuit_return_type,
         }
         return self.post_request("/supercheq", json_dict)

@@ -121,27 +121,6 @@ def _validate_cirq_circuits(circuits: object) -> None:
         )
 
 
-def _validate_integer_param(integer_param: object) -> None:
-    """Validates that an input parameter is positive and an integer.
-
-    Args:
-        integer_param: An input parameter.
-
-    Raises:
-        TypeError: If input is not an integer.
-        ValueError: If input is negative.
-    """
-
-    if not (
-        (hasattr(integer_param, "__int__") and int(integer_param) == integer_param)
-        or (isinstance(integer_param, str) and integer_param.isdecimal())
-    ):
-        raise TypeError(f"{integer_param} cannot be safely cast as an integer.")
-
-    if int(integer_param) <= 0:
-        raise ValueError("Must be a positive integer.")
-
-
 class Service(user_config.UserConfig):
     """A class to access SuperstaQ's API.
 
@@ -207,6 +186,7 @@ class Service(user_config.UserConfig):
                 "This call requires a target, but none was provided and default_target is not set."
             )
 
+        gss.validation.validate_target(target)
         return target
 
     def get_counts(
@@ -232,8 +212,6 @@ class Service(user_config.UserConfig):
         Returns:
             A `collection.Counter` for running the circuit.
         """
-        _validate_cirq_circuits(circuit)
-        _validate_integer_param(repetitions)
         resolved_circuit = cirq.protocols.resolve_parameters(circuit, param_resolver)
         job = self.create_job(resolved_circuit, int(repetitions), target, method, options)
         counts = job.counts()
@@ -302,6 +280,7 @@ class Service(user_config.UserConfig):
             ValueError: If the circuit has no measurements to sample.
             SuperstaQException: If there was an error accessing the API.
         """
+        _validate_cirq_circuits(circuit)
         if not circuit.has_measurements():
             # TODO: only raise if the run method actually requires samples (and not for e.g. a
             # statevector simulation)
@@ -369,7 +348,8 @@ class Service(user_config.UserConfig):
         Returns:
             ResourceEstimate(s) containing resource costs (after compilation)
         """
-        circuit_is_list = isinstance(circuits, List)
+        _validate_cirq_circuits(circuit)
+        circuit_is_list = isinstance(circuits, list)
         serialized_circuit = css.serialization.serialize_circuits(circuits)
 
         target = self._resolve_target(target)
@@ -420,9 +400,10 @@ class Service(user_config.UserConfig):
             installed, the object's .seq attribute is a qtrl Sequence object containing pulse
             sequences for each compiled circuit, and its .pulse_list(s) attribute contains the
             corresponding list(s) of cycles.
-        """
 
-        _validate_cirq_circuits(circuits)
+        Raises:
+            ValueError: If `target` is not a valid AQT target.
+        """
         return self._aqt_compile(circuits, target=target, atol=atol, gate_defs=gate_defs, **kwargs)
 
     def aqt_compile_eca(
@@ -462,10 +443,10 @@ class Service(user_config.UserConfig):
             circuits. If qtrl is installed, the object's .seq attribute is a qtrl Sequence object
             containing pulse sequences for each compiled circuit, and its .pulse_list(s) attribute
             contains the corresponding list(s) of cycles.
-        """
-        _validate_cirq_circuits(circuits)
-        _validate_integer_param(num_equivalent_circuits)
 
+        Raises:
+            ValueError: If `target` is not a valid AQT target.
+        """
         return self._aqt_compile(
             circuits,
             target=target,
@@ -492,8 +473,12 @@ class Service(user_config.UserConfig):
         """Generic API for compiling circuits for AQT devices. See `Service.aqt_compile()` and
         `Service.aqt_compile_eca()`.
         """
-        _validate_cirq_circuits(circuits)
+        target = self._resolve_target(target)
+        if not target.startswith("aqt_"):
+            raise ValueError(f"{target!r} is not a valid AQT target.")
 
+
+        _validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
@@ -506,10 +491,11 @@ class Service(user_config.UserConfig):
         options_dict = {**kwargs}
 
         if num_equivalent_circuits is not None:
-            _validate_integer_param(num_equivalent_circuits)
-            options_dict["num_eca_circuits"] = num_equivalent_circuits
+            gss.validation.validate_integer_param(num_equivalent_circuits)
+            options_dict["num_eca_circuits"] = int(num_equivalent_circuits)
         if random_seed is not None:
-            options_dict["random_seed"] = random_seed
+            gss.validation.validate_integer_param(random_seed)
+            options_dict["random_seed"] = int(random_seed)
         if atol is not None:
             options_dict["atol"] = atol
         if gate_defs is not None:
@@ -519,6 +505,7 @@ class Service(user_config.UserConfig):
                     val = _to_matrix_gate(val).with_name(key)
                 gate_defs_cirq[key] = val
             options_dict["gate_defs"] = gate_defs_cirq
+
         if options_dict:
             request_json["options"] = cirq.to_json(options_dict)
 
@@ -562,12 +549,16 @@ class Service(user_config.UserConfig):
 
         Raises:
             ValueError: If `base_entangling_gate` is not a valid gate option.
+            ValueError: If `target` is not a valid QSCOUT target.
         """
-        _validate_cirq_circuits(circuits)
+        target = self._resolve_target(target)
+        if not target.startswith("sandia_"):
+            raise ValueError(f"{target!r} is not a valid QSCOUT target.")
 
         if base_entangling_gate not in ("xx", "zz"):
             raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
 
+        _validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
@@ -602,7 +593,14 @@ class Service(user_config.UserConfig):
 
         Returns:
             Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s).
+
+        Raises:
+            ValueError: If `target` is not a valid IBMQ target.
         """
+        target = self._resolve_target(target)
+        if not target.startswith("cq_"):
+            raise ValueError(f"{target!r} is not a valid CQ target.")
+
         return self.compile(circuits, target=target, **kwargs)
 
     def ibmq_compile(
@@ -631,7 +629,7 @@ class Service(user_config.UserConfig):
         """
         target = self._resolve_target(target)
         if not target.startswith("ibmq_"):
-            raise ValueError(f"{target} is not an IBMQ target")
+            raise ValueError(f"{target!r} is not a valid IBMQ target.")
 
         return self.compile(circuits, target=target, **kwargs)
 
@@ -672,8 +670,6 @@ class Service(user_config.UserConfig):
     ) -> Tuple[List[cirq.Circuit], npt.NDArray[np.float_]]:
         """Returns the randomly generated circuits and the fidelity matrix for inputted files."""
 
-        _validate_integer_param(num_qubits)
-        _validate_integer_param(depth)
         json_dict = self._client.supercheq(files, num_qubits, depth, "cirq_circuits")
         circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
         fidelities = gss.serialization.deserialize(json_dict["fidelities"])
@@ -681,4 +677,5 @@ class Service(user_config.UserConfig):
 
     def target_info(self, target: str) -> Dict[str, Any]:
         """Returns information about device specified by `target`."""
+        target = self._resolve_target(target)
         return self._client.target_info(target)["target_info"]
