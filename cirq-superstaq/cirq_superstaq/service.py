@@ -393,7 +393,7 @@ class Service(user_config.UserConfig):
 
     def aqt_compile_eca(
         self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        circuits: Union[cirq.Circuit, List[cirq.Circuit]],
         num_equivalent_circuits: int,
         random_seed: Optional[int] = None,
         target: str = "aqt_keysight_qpu",
