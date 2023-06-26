@@ -29,7 +29,7 @@ def _check_output(*commands: str) -> str:
 
 # container for string formatting console codes
 class Style(str, enum.Enum):
-    """Class for text color."""
+    """Class for string formatting console codes."""
 
     BLACK = "\033[30m"
     RED = "\033[31m"
@@ -45,18 +45,51 @@ class Style(str, enum.Enum):
 
 
 def styled(text: str, style_code: str) -> str:
+    """Returns a styled text.
+
+    Args:
+        text: The text that is being printed.
+        style_code: String code for the text style.
+
+    Returns:
+        The styled text.
+    """
     return style_code + text + Style.RESET
 
 
 def warning(text: str) -> str:
+    """Returns a styled text for warnings.
+
+    Args:
+        text: The text that is being printed.
+
+    Returns:
+        The styled warning text.
+    """
     return styled(text, Style.BOLD + Style.YELLOW)
 
 
 def failure(text: str) -> str:
+    """Returns a styled text for failures.
+
+    Args:
+        text: The text that is being printed.
+
+    Returns:
+        The styled failure text.
+    """
     return styled(text, Style.BOLD + Style.RED)
 
 
 def success(text: str) -> str:
+    """Returns a styled text for success.
+
+    Args:
+        text: The text that is being printed.
+
+    Returns:
+        The styled success text.
+    """
     return styled(text, Style.BOLD + Style.GREEN)
 
 
