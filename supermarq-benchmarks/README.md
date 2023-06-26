@@ -37,13 +37,13 @@ The quantum benchmarks within SupermarQ are designed to be scalable, meaning tha
 instantiated and generated for a wide range of circuit sizes and depths.
 
 The [`examples/ghz_example.py`](examples/ghz_example.py) file contains an end-to-end example of how to execute the GHZ benchmark
-using [SuperstaQ](https://superstaq.super.tech/). The general workflow is as follows:
+using [Superstaq](https://superstaq.super.tech/). The general workflow is as follows:
 
 ```python
 import supermarq
 
 ghz = supermarq.benchmarks.ghz.GHZ(num_qubits=3)
 ghz_circuit = ghz.circuit()
-counts = execute_circuit_on_quantum_hardware(ghz_circuit) # For example, via AWS Braket, IBM Qiskit, or SuperstaQ
+counts = execute_circuit_on_quantum_hardware(ghz_circuit) # For example, via AWS Braket, IBM Qiskit, or Superstaq
 score = ghz.score(counts)
 ```

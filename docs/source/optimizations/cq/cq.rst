@@ -1,4 +1,4 @@
-SuperstaQ for ColdQuanta
+Superstaq for ColdQuanta
 ========================
 
 .. toctree::

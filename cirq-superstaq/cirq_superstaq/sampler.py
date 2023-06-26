@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""A `cirq.Sampler` implementation for the SuperstaQ API."""
+"""A `cirq.Sampler` implementation for the Superstaq API."""
 from __future__ import annotations
 
 from typing import List
@@ -21,7 +21,7 @@ import cirq_superstaq as css
 
 
 class Sampler(cirq.Sampler):
-    """A sampler that works against the SuperstaQ API. Users should get a sampler from the `sampler`
+    """A sampler that works against the Superstaq API. Users should get a sampler from the `sampler`
     method on `css.Service`.
 
     Example:

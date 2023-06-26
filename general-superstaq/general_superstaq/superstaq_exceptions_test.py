@@ -36,7 +36,7 @@ def test_superstaq_not_found_exception() -> None:
 
 
 def test_superstaq_unsuccessful_job_exception() -> None:
-    ex = gss.SuperstaQUnsuccessfulJobException(job_id="SWE", status="canceled")
-    assert str(ex) == "Status code: None, Message: 'Job SWE was canceled.'"
+    ex = gss.SuperstaQUnsuccessfulJobException(job_id="SWE", status="Cancelled")
+    assert str(ex) == "Status code: None, Message: 'Job SWE terminated with status Cancelled.'"
     assert ex.status_code is None
-    assert ex.message == "Job SWE was canceled."
+    assert ex.message == "Job SWE terminated with status Cancelled."
