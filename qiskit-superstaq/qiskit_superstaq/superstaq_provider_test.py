@@ -408,7 +408,7 @@ def test_get_targets() -> None:
                 "d-wave_advantage-system1.1_qpu",
                 "ionq_ion_qpu",
             ],
-            "compile-only": ["aqt_keysight_qpu", "sandia_qscout_qpu"],
+            "compile-only": ["aqt_keysight_qpu", "aqt_zurich_qpu", "sandia_qscout_qpu"],
         }
     }
     mock_client.get_targets.return_value = targets
