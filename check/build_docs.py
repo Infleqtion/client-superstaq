@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=missing-function-docstring
 import sys
 
 import general_superstaq.check

@@ -1,4 +1,5 @@
 # pylint: disable=missing-function-docstring
+
 from supermarq.benchmarks.ghz import GHZ
 
 

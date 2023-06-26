@@ -1,4 +1,5 @@
 # pylint: disable=missing-function-docstring
+
 from typing import Mapping
 
 import cirq

@@ -6,8 +6,8 @@ import cirq_superstaq
 import supermarq
 
 
-def main() -> None:  # pylint: disable=missing-function-docstring
-    service = cirq_superstaq.Service(
+def main() -> None:
+    service = css.Service(
         api_key="""Insert superstaq token that you received from https://superstaq.super.tech""",
     )
 

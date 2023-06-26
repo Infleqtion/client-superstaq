@@ -1,4 +1,5 @@
 # pylint: disable=missing-function-docstring
+
 import supermarq
 from supermarq.benchmarks.hamiltonian_simulation import HamiltonianSimulation
 
