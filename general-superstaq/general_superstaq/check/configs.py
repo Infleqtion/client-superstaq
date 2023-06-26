@@ -23,6 +23,9 @@ def run(
         config_file: path to the config file to run checks.
         ignore_match: string flag that allows different repos to have different setup.cfg.
         silent: If True, restrict printing to warning and error messages.
+
+    Returns:
+        an exit code.
     """
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)

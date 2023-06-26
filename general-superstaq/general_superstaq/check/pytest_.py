@@ -25,6 +25,9 @@ def run(
         integration_setup: Optional function to run before integration tests (for example,
         to set environmental variables).
         silent: If True, restrict printing to warning and error messages.
+
+    Returns:
+        an exit code.
     """
 
     parser = check_utils.get_file_parser()

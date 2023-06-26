@@ -35,6 +35,9 @@ def run(
         exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
         upstream_match: String to match package name and version.
         silent: If True, restrict printing to warning and error messages.
+
+    Returns:
+        an exit code.
     """
 
     parser = check_utils.get_file_parser()

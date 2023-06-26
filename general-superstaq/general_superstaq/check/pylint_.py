@@ -23,6 +23,9 @@ def run(
         include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
         exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
         silent: If True, restrict printing to warning and error messages.
+
+    Returns:
+        an exit code.
     """
 
     parser = check_utils.get_file_parser()
