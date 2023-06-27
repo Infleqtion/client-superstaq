@@ -9,7 +9,7 @@
         width: 1100px;
         height: 700px;
         margin: auto;
-        background-color: #141953;
+        background-color: #2c2c2c;
         color: #ccc;
         font-family: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
         font-size: 30px;
@@ -163,7 +163,7 @@
       }
 
       .c-m {
-        color: #03a88d;
+        color: #368fc8;
       }
 
       .c-i {
@@ -171,7 +171,11 @@
       }
 
       .c-o {
-        color: #39B54A;
+        color: #5AB8DD;
+      }
+
+      .c-c {
+        color: #585858;
       }
       </style>
       <body>
@@ -186,10 +190,10 @@
             <p><span class="line-01"><span class="c-i">import</span> qiskit</span><br/>
             <span class="line-02"><span class="c-i">import</span> qiskit_superstaq <span class="c-i">as</span> qss</span></p>
             
-            <p><span class="line-03">superstaq = qss.<span class="c-o">SuperstaQProvider()</span></span><br/>
+            <p><span class="line-03">superstaq = qss.<span class="c-o">SuperstaQProvider</span>()</span><br/>
             <span class="line-04">backend = superstaq.<span class="c-m">get_backend</span>("ibmq_qasm_simulator")</span></p>
 
-            <p><span class="line-05"># Standard bell circuit</span><br/>
+            <p><span class="line-05"><span class="c-c"># Standard bell circuit</span></span><br/>
             <span class="line-06">qc = qiskit.<span class="c-o">QuantumCircuit</span>(2, 2)</span><br/>
             <span class="line-07">qc.<span class="c-m">h</span>(0)</span><br/>
             <span class="line-08">qc.<span class="c-m">cx</span>(0, 1)</span><br/>
