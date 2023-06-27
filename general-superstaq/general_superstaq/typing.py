@@ -1,6 +1,4 @@
-import sys
 from typing import Any, Dict, List, Optional, Tuple, TypedDict
-
 
 QuboDict = TypedDict(
     "QuboDict",
