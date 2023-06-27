@@ -8,7 +8,8 @@ The Superstaq compiler for AQT is designed to be used with `qtrl`, the control s
 
 We will discuss how to set up and run the AQT compiler with either Cirq or Qiskit, with
 examples of some of the tools provided by Superstaq for customizing and optimizing the circuits for 
-With examples of some of the tools provided by Superstaq for optimizing circuits given different
+
+With examples of some of the tools provided by Superstaq for compiling and optimizing circuits for different hardware configurations
 
 quantum circuit optimizations taking advantage of an over-complete gateset
 
