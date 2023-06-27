@@ -10,7 +10,6 @@ import pytest
 import general_superstaq as gss
 
 
-
 def test_service_get_balance() -> None:
 
     client = gss.superstaq_client._SuperstaqClient(
@@ -23,7 +22,6 @@ def test_service_get_balance() -> None:
 
     assert service.get_balance() == "$12,345.68"
     assert service.get_balance(pretty_output=False) == 12345.6789
-
 
 
 def test_accept_terms_of_use() -> None:
