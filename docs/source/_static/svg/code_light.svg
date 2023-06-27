@@ -14,7 +14,7 @@
         font-family: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
         font-size: 30px;
         border-radius: 20px;
-        box-shadow: 5px 5px 75px black;
+        box-shadow: 5px 5px 20px #ccc;
       }
       .top {
         padding: 20px;
