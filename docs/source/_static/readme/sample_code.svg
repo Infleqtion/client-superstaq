@@ -55,12 +55,12 @@
 
       @keyframes type-line-03 {
         from {width: 0;}
-        to {width: 720px;}
+        to {width: 630px;}
       }
 
       .line-03 {
         margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
-        animation: type-line-03 4s 4.5s steps(40, end) forwards, cursor 1s linear 4.5s 4;
+        animation: type-line-03 4s 4.5s steps(35, end) forwards, cursor 1s linear 4.5s 4;
       }
 
       @keyframes type-line-04 {
@@ -83,6 +83,66 @@
         animation: type-line-05 2s 13s steps(23, end) forwards, cursor 1s linear 13s 2;
       }
 
+      @keyframes type-line-06 {
+        from {width: 0;}
+        to {width: 576px;}
+      }
+
+      .line-06 {
+        margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
+        animation: type-line-06 3s 15s steps(32, end) forwards, cursor 1s linear 15s 3;
+      }
+
+      @keyframes type-line-07 {
+        from {width: 0;}
+        to {width: 126px;}
+      }
+
+      .line-07 {
+        margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
+        animation: type-line-07 1s 18s steps(7, end) forwards, cursor 1s linear 18s 1;
+      }
+
+      @keyframes type-line-08 {
+        from {width: 0;}
+        to {width: 198px;}
+      }
+
+      .line-08 {
+        margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
+        animation: type-line-08 1s 19s steps(11, end) forwards, cursor 1s linear 19s 1;
+      }
+
+      @keyframes type-line-09 {
+        from {width: 0;}
+        to {width: 468px;}
+      }
+
+      .line-09 {
+        margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
+        animation: type-line-09 2s 20s steps(26, end) forwards, cursor 1s linear 20s 2;
+      }
+
+      @keyframes type-line-10 {
+        from {width: 0;}
+        to {width: 576px;}
+      }
+
+      .line-10 {
+        margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
+        animation: type-line-10 2s 22s steps(32, end) forwards, cursor 1s linear 22s 2;
+      }
+
+      @keyframes type-line-11 {
+        from {width: 0;}
+        to {width: 468px;}
+      }
+
+      .line-11 {
+        margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
+        animation: type-line-11 2s 24s steps(26, end) forwards, cursor 1s linear 24s 2;
+      }
+
       @keyframes cursor {
         from, to, 
         20%, 80% {border-color: transparent;}
@@ -101,17 +161,17 @@
             <p><span class="line-01">import qiskit</span><br/>
             <span class="line-02">import qiskit_superstaq as qss</span></p>
             
-            <p><span class="line-03">superstaq = qss.SuperstaQProvider(token)</span><br/>
+            <p><span class="line-03">superstaq = qss.SuperstaQProvider()</span><br/>
             <span class="line-04">backend = superstaq.get_backend("ibmq_qasm_simulator")</span></p>
 
             <p><span class="line-05"># Standard bell circuit</span><br/>
-            qc = qiskit.QuantumCircuit(2, 2)<br/>
-            qc.h(0)<br/>
-            qc.cx(0, 1)<br/>
-            qc.measure([0, 1], [0, 1])</p>
+            <span class="line-06">qc = qiskit.QuantumCircuit(2, 2)</span><br/>
+            <span class="line-07">qc.h(0)</span><br/>
+            <span class="line-08">qc.cx(0, 1)</span><br/>
+            <span class="line-09">qc.measure([0, 1], [0, 1])</span></p>
 
-            <p>job = backend.run(qc, shots=100)<br/>
-            print(result.get_counts())</p>
+            <p><span class="line-10">job = backend.run(qc, shots=100)</span><br/>
+            <span class="line-11">print(result.get_counts())</span></p>
         </div>
       </div>
       </body>
