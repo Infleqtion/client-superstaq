@@ -8,10 +8,7 @@ This repository is the home of Super.tech's open source work, which includes:
 * [Superstaq](https://www.infleqtion.com/superstaq), our quantum software platform that is optimized across the quantum stack and enables users to write quantum programs in Cirq or Qiskit and target a variety of quantum computers and simulators
 * [SupermarQ](https://www.infleqtion.com/supermarq), our quantum benchmarking suite
 
-<p align="center">
-  <img src="docs/source/_static/svg/code_light.svg#gh-light-mode-only">
-  <img src="docs/source/_static/svg/code_dark.svg#gh-dark-mode-only">
-</p>
+<p align="center"><img src="docs/source/_static/svg/code.svg"></p>
 
 # Installation for users
 For installation instructions for users of Superstaq, check out [our documentation site](https://superstaq.readthedocs.io/)! In short, you can install any of our packages by doing `pip install <package>` in a terminal, where `<package>` is `qiskit-superstaq`, `cirq-superstaq`, `general-superstaq`, or `supermarq`.

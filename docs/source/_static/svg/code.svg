@@ -1,9 +1,9 @@
-<svg width="1300" height="800" xmlns="http://www.w3.org/2000/svg">
-  <foreignObject  width="100%" height="100%">
+<svg viewBox="0 0 1300 800" width="1300" height="800" xmlns="http://www.w3.org/2000/svg">
+  <foreignObject  width="1300" height="800">
     <div xmlns="http://www.w3.org/1999/xhtml">
       <style>
       body {
-        padding: 50px;
+        padding: 35px;
       }
       .container {
         width: 1100px;
@@ -14,7 +14,7 @@
         font-family: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
         font-size: 30px;
         border-radius: 20px;
-        box-shadow: 5px 5px 35px #bbb;
+        box-shadow: 5px 5px 35px #111;
       }
       .top {
         padding: 20px;
