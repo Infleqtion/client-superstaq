@@ -5,7 +5,7 @@ can take advantage of the applications, pulse level optimizations, and write-onc
 features of Superstaq with this package.
 
 
-Please note that Python version `3.7` or higher is required. `qiskit-superstaq` and all of its
+Please note that Python version `3.8` or higher is required. `qiskit-superstaq` and all of its
 dependencies can be installed via:
 
 ```
