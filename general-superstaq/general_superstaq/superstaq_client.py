@@ -147,7 +147,7 @@ class _SuperstaqClient:
         repetitions: int = 1,
         target: str = "ss_unconstrained_simulator",
         method: Optional[str] = None,
-        options: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
     ) -> Dict[str, List[str]]:
         """Create a job.
 
@@ -159,7 +159,7 @@ class _SuperstaqClient:
             target: Target to run on.
             method: Which type of method to execute the circuits (noisy simulator,
             non-noisy simulator, hardware, e.t.c)
-            options: The different available options for creating a job.
+            kwargs: Other optimization and execution parameters.
                 - qiskit_pulse: Whether to use Superstaq's pulse-level optimizations for IBMQ
                 devices.
 
@@ -182,8 +182,8 @@ class _SuperstaqClient:
         if method is not None:
             json_dict["method"] = method
 
-        if options is not None:
-            json_dict["options"] = json.dumps(options)
+        if kwargs:
+            json_dict["options"] = json.dumps(kwargs)
         return self.post_request("/jobs", json_dict)
 
     def get_job(self, job_id: str) -> Dict[str, str]:

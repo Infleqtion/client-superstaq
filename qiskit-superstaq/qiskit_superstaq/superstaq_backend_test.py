@@ -71,7 +71,7 @@ def test_multi_arg_run() -> None:
         "general_superstaq.superstaq_client._SuperstaqClient.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
     ):
-        answer = backend.run(circuits=qc, shots=1000, method="fake_method", options={"test": "123"})
+        answer = backend.run(circuits=qc, shots=1000, method="fake_method", test="123")
         expected = qss.SuperstaqJob(backend, "job_id")
         assert answer == expected
 

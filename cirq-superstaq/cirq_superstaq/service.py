@@ -197,7 +197,7 @@ class Service(user_config.UserConfig):
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: Optional[str] = None,
-        options: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
     ) -> Dict[str, int]:
         """Runs the given circuit on the Superstaq API and returns the result
         of the ran circuit as a collections.Counter
@@ -208,13 +208,13 @@ class Service(user_config.UserConfig):
             target: Where to run the job.
             param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
             method: Optional execution method.
-            options: Optional dictionary of optimization and execution parameters
+            kwargs: Other optimization and execution parameters.
 
         Returns:
             A `collection.Counter` for running the circuit.
         """
         resolved_circuit = cirq.protocols.resolve_parameters(circuit, param_resolver)
-        job = self.create_job(resolved_circuit, int(repetitions), target, method, options)
+        job = self.create_job(resolved_circuit, int(repetitions), target, method, **kwargs)
         counts = job.counts()
 
         return counts
@@ -226,7 +226,7 @@ class Service(user_config.UserConfig):
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
         method: Optional[str] = None,
-        options: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
     ) -> cirq.ResultDict:
         """Run the given circuit on the Superstaq API and returns the result
         of the ran circut as a cirq.ResultDict.
@@ -235,14 +235,14 @@ class Service(user_config.UserConfig):
             circuit: The circuit to run.
             repetitions: The number of times to run the circuit.
             target: Where to run the job.
-            method: Execution method.
-            options: Optional dictionary of optimization and execution parameters
             param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
+            method: Execution method.
+            kwargs: Other optimization and execution parameters.
 
         Returns:
             A `cirq.ResultDict` for running the circuit.
         """
-        counts = self.get_counts(circuit, repetitions, target, param_resolver, method, options)
+        counts = self.get_counts(circuit, repetitions, target, param_resolver, method, **kwargs)
         return counts_to_results(counts, circuit, param_resolver)
 
     def sampler(self, target: Optional[str] = None) -> cirq.Sampler:
@@ -263,7 +263,7 @@ class Service(user_config.UserConfig):
         repetitions: int = 1000,
         target: Optional[str] = None,
         method: Optional[str] = None,
-        options: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
     ) -> css.job.Job:
         """Create a new job to run the given circuit.
 
@@ -272,7 +272,7 @@ class Service(user_config.UserConfig):
             repetitions: The number of times to repeat the circuit. Defaults to 1000.
             target: Where to run the job.
             method: Execution method.
-            options: Optional dictionary of optimization and execution parameters
+            kwargs: Other optimization and execution parameters.
 
         Returns:
             A `css.Job` which can be queried for status or results.
@@ -299,7 +299,7 @@ class Service(user_config.UserConfig):
             repetitions=repetitions,
             target=target,
             method=method,
-            options=options,
+            **kwargs,
         )
         # The returned job does not have fully populated fields; they will be filled out by
         # when the new job's status is first queried
