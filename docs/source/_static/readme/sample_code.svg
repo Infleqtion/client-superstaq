@@ -35,17 +35,12 @@
 
       @keyframes type-line-01 {
         from {width: 0;}
-        to {width: 100%;}
+        to {width: 234px;}
       }
 
       .line-01 {
-        margin: 0;
-        width: 0%;
-        border-right: 0.15em solid transparent;
-        animation: type-line-01 3s 0s steps(30, end) forwards, cursor 1s linear 0s 3;
-        overflow: hidden;
-        display: inline-block;
-        white-space: nowrap;
+        margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
+        animation: type-line-01 3s 0s steps(13, end) forwards, cursor 1s linear 0s 3;
       }
 
       @keyframes cursor {
