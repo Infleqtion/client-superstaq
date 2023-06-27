@@ -101,10 +101,8 @@ __all__ = [
     "barrier",
     "compiler_output",
     "deserialize_circuits",
-    "ops",
     "parallel_gates_operation",
     "qubit_subspace_op",
     "qudit_swap_op",
-    "serialization",
     "serialize_circuits",
 ]
