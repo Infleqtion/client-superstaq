@@ -43,6 +43,7 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
    get_started/credentials
    get_started/installation
    get_started/basics/basics
+   get_started/access_info/access_info
 
 .. toctree::
    :maxdepth: 1
