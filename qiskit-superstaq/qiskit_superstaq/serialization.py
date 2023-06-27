@@ -2,7 +2,7 @@ import io
 import json
 import re
 import warnings
-from typing import Dict, List, Set, Tuple, TypeVar, Union
+from typing import Dict, List, Sequence, Set, Tuple, TypeVar, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -117,7 +117,9 @@ def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumC
     return new_circuit
 
 
-def serialize_circuits(circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]) -> str:
+def serialize_circuits(
+    circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]]
+) -> str:
     """Serialize QuantumCircuit(s) into a single string
 
     Args:
