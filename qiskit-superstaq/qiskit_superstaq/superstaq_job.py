@@ -20,18 +20,18 @@ import qiskit
 import qiskit_superstaq as qss
 
 
-class SuperstaQJob(qiskit.providers.JobV1):
+class SuperstaqJob(qiskit.providers.JobV1):
     """This class represents a Superstaq job instance."""
 
     TERMINAL_STATES = ("Done", "Cancelled", "Failed")
     PROCESSING_STATES = ("Queued", "Submitted", "Running")
     ALL_STATES = TERMINAL_STATES + PROCESSING_STATES
 
-    def __init__(self, backend: qss.SuperstaQBackend, job_id: str) -> None:
+    def __init__(self, backend: qss.SuperstaqBackend, job_id: str) -> None:
         """Initialize a job instance.
 
         Args:
-            backend: The `qss.SuperstaQBackend` that the job was created with.
+            backend: The `qss.SuperstaqBackend` that the job was created with.
             job_id: The unique job ID string from Superstaq.
         """
         super().__init__(backend, job_id)
@@ -40,7 +40,7 @@ class SuperstaQJob(qiskit.providers.JobV1):
 
     def __eq__(self, other: object) -> bool:
 
-        if not (isinstance(other, SuperstaQJob)):
+        if not (isinstance(other, SuperstaqJob)):
             return False
 
         return self._job_id == other._job_id
@@ -107,12 +107,12 @@ class SuperstaQJob(qiskit.providers.JobV1):
         raises an exception if it is.
 
         Raises:
-            SuperstaQUnsuccessfulJobException: If the job been cancelled or has
+            SuperstaqUnsuccessfulJobException: If the job been cancelled or has
         failed.
-            SuperstaQException: If unable to get the status of the job from the API.
+            SuperstaqException: If unable to get the status of the job from the API.
         """
         if self._overall_status in ("Cancelled", "Failed"):
-            raise gss.superstaq_exceptions.SuperstaQUnsuccessfulJobException(
+            raise gss.superstaq_exceptions.SuperstaqUnsuccessfulJobException(
                 self._job_id, self._overall_status
             )
 
@@ -178,6 +178,6 @@ class SuperstaQJob(qiskit.providers.JobV1):
         """Unsupported submission call.
 
         Raises:
-            NotImplementedError: If a job is submitted via SuperstaQJob.
+            NotImplementedError: If a job is submitted via SuperstaqJob.
         """
-        raise NotImplementedError("Submit through SuperstaQBackend, not through SuperstaQJob")
+        raise NotImplementedError("Submit through SuperstaqBackend, not through SuperstaqJob")
