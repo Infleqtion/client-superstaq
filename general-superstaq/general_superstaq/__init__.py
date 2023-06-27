@@ -24,8 +24,6 @@ __all__ = [
     "QuboModel",
     "TSPJson",
     "WareHouseJson",
-    "finance",
-    "logistics",
     "qubo",
     "ResourceEstimate",
     "serialization",

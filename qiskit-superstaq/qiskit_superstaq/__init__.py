@@ -21,7 +21,6 @@ __all__ = [
     "AQTiToffoliGate",
     "compiler_output",
     "deserialize_circuits",
-    "ITOFFOLIGate",
     "measured_qubit_indices",
     "ParallelGates",
     "serialization",
