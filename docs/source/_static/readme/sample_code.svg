@@ -40,7 +40,17 @@
 
       .line-01 {
         margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
-        animation: type-line-01 3s 0s steps(13, end) forwards, cursor 1s linear 0s 3;
+        animation: type-line-01 1.5s 0s steps(13, end) forwards, cursor 1s linear 0s 3;
+      }
+
+      @keyframes type-line-02 {
+        from {width: 0;}
+        to {width: 540px;}
+      }
+
+      .line-02 {
+        margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
+        animation: type-line-02 3s 3s steps(30, end) forwards, cursor 1s linear 3s 3;
       }
 
       @keyframes cursor {
@@ -59,7 +69,7 @@
 
         <div class="content">
             <p><span class="line-01">import qiskit</span><br/>
-            import qiskit_superstaq as qss</p>
+            <span class="line-02">import qiskit_superstaq as qss</span></p>
             
             <p>superstaq = qss.SuperstaQProvider(token)<br/>
             backend = superstaq.get_backend("ibmq_qasm_simulator")</p>
