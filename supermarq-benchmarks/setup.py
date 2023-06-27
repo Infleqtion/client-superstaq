@@ -6,9 +6,9 @@ from setuptools import find_packages, setup
 __version__ = ""
 exec(open("supermarq/_version.py").read())
 
-name = "SupermarQ"
+name = "Supermarq"
 
-description = "SupermarQ is a scalable, application-centric quantum benchmarking suite."
+description = "Supermarq is a scalable, application-centric quantum benchmarking suite."
 
 # README file as long_description.
 long_description = io.open("README.md", encoding="utf-8").read()
@@ -31,9 +31,9 @@ assert __version__, "Version string cannot be empty"
 setup(
     name=name,
     version=__version__,
-    url="https://github.com/SupertechLabs/SupermarQ",
-    author="Super.tech",
-    author_email="pranav@super.tech",
+    url="https://github.com/Infleqtion/client-superstaq",
+    author="Superstaq development team",
+    author_email="superstaq@infleqtion.com",
     python_requires=(">=3.7.0"),
     install_requires=requirements,
     extras_require={"dev": dev_requirements},

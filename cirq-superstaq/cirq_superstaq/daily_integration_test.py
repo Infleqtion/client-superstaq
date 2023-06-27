@@ -242,7 +242,7 @@ def test_job(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
     job = service.create_job(circuit, target="ibmq_qasm_simulator", repetitions=10)
 
-    job_id = job.job_id()  # To test for https://github.com/SupertechLabs/cirq-superstaq/issues/452
+    job_id = job.job_id()  # To test for https://github.com/Infleqtion/client-superstaq/issues/452
 
     assert job.counts() == {"0": 10}
     assert job.status() == "Done"
