@@ -1,3 +1,5 @@
+# pylint: disable=missing-function-docstring
+
 import importlib
 import typing
 from unittest import mock
