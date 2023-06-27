@@ -360,7 +360,7 @@ class Service(user_config.UserConfig):
         return self._client.get_targets()["superstaq_targets"]
 
     def resource_estimate(
-        self, circuits: Union[cirq.Circuit, List[cirq.Circuit]], target: Optional[str] = None
+        self, circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]], target: Optional[str] = None
     ) -> Union[ResourceEstimate, List[ResourceEstimate]]:
         """Generates resource estimates for circuit(s).
 
@@ -393,7 +393,7 @@ class Service(user_config.UserConfig):
 
     def aqt_compile_eca(
         self,
-        circuits: Union[cirq.Circuit, List[cirq.Circuit]],
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
         num_equivalent_circuits: int,
         random_seed: Optional[int] = None,
         target: str = "aqt_keysight_qpu",
@@ -453,7 +453,7 @@ class Service(user_config.UserConfig):
 
     def aqt_compile(
         self,
-        circuits: Union[cirq.Circuit, List[cirq.Circuit]],
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
         target: str = "aqt_keysight_qpu",
         *,
         num_eca_circuits: Optional[int] = None,
@@ -531,7 +531,7 @@ class Service(user_config.UserConfig):
 
     def qscout_compile(
         self,
-        circuits: Union[cirq.Circuit, List[cirq.Circuit]],
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
         target: str = "sandia_qscout_qpu",
@@ -591,7 +591,7 @@ class Service(user_config.UserConfig):
 
     def cq_compile(
         self,
-        circuits: Union[cirq.Circuit, List[cirq.Circuit]],
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
         target: str = "cq_hilbert_qpu",
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
@@ -609,7 +609,7 @@ class Service(user_config.UserConfig):
 
     def ibmq_compile(
         self,
-        circuits: Union[cirq.Circuit, List[cirq.Circuit]],
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
         target: str = "ibmq_qasm_simulator",
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
@@ -639,7 +639,7 @@ class Service(user_config.UserConfig):
 
     def compile(
         self,
-        circuits: Union[cirq.Circuit, List[cirq.Circuit]],
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
         target: str,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:

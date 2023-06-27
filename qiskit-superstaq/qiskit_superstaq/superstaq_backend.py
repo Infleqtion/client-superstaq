@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Mapping, Optional, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -74,7 +74,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
     def run(
         self,
-        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         shots: int,
         method: Optional[str] = None,
         options: Optional[Dict[str, Any]] = None,
@@ -122,7 +122,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
     def compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to the backend's native gateset.
@@ -159,7 +159,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
     def _get_compile_request_json(
         self,
-        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         **kwargs: Any,
     ) -> Dict[str, str]:
         """"""
@@ -172,7 +172,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
     def aqt_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         *,
         num_eca_circuits: Optional[int] = None,
         random_seed: Optional[int] = None,
@@ -232,7 +232,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
     def ibmq_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
@@ -275,7 +275,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
     def qscout_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         mirror_swaps: bool = True,
         base_entangling_gate: str = "xx",
         **kwargs: Any,
@@ -329,7 +329,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
     def cq_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for CQ devices.
@@ -363,7 +363,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         return self._provider._client.target_info(self.name())["target_info"]
 
     def resource_estimate(
-        self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]
+        self, circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]]
     ) -> Union[gss.ResourceEstimate, List[gss.ResourceEstimate]]:
         """Generates resource estimates for qiskit circuit(s).
 
