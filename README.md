@@ -9,8 +9,8 @@ This repository is the home of Super.tech's open source work, which includes:
 * [SupermarQ](https://www.infleqtion.com/supermarq), our quantum benchmarking suite
 
 <p align="center">
-  <img src="docs/source/_static/readme/code_light.svg#gh-light-mode-only">
-  <img src="docs/source/_static/readme/code_dark.svg#gh-dark-mode-only">
+  <img src="docs/source/_static/svg/code_light.svg#gh-light-mode-only">
+  <img src="docs/source/_static/svg/code_dark.svg#gh-dark-mode-only">
 </p>
 
 # Installation for users
