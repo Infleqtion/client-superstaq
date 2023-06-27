@@ -1,11 +1,9 @@
-# pylint: disable=missing-function-docstring
-
 import packaging.version
 
 import general_superstaq as gss
 
 
-def test_version() -> None:
+def test_version() -> None:  # pylint: disable=missing-function-docstring
     assert (
         packaging.version.Version("0.1.0")
         < packaging.version.parse(gss.__version__)

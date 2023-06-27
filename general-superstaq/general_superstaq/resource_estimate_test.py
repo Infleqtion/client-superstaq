@@ -1,5 +1,4 @@
 # pylint: disable=missing-function-docstring
-
 from general_superstaq import ResourceEstimate
 
 

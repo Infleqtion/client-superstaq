@@ -1,5 +1,3 @@
-# pylint: disable=missing-function-docstring
-
 import os
 import secrets
 import tempfile
@@ -10,7 +8,7 @@ import pytest
 import general_superstaq as gss
 
 
-def test_service_get_balance() -> None:
+def test_service_get_balance() -> None:  # pylint: disable=missing-function-docstring
     client = gss.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
@@ -23,7 +21,7 @@ def test_service_get_balance() -> None:
     assert service.get_balance(pretty_output=False) == 12345.6789
 
 
-def test_accept_terms_of_use() -> None:
+def test_accept_terms_of_use() -> None:  # pylint: disable=missing-function-docstring
     client = gss.superstaq_client._SuperstaQClient(
         remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
@@ -41,7 +39,7 @@ def test_accept_terms_of_use() -> None:
     "general_superstaq.superstaq_client._SuperstaQClient.post_request",
     return_value="The user has been added",
 )
-def test_add_new_user(
+def test_add_new_user(  # pylint: disable=missing-function-docstring
     mock_post_request: mock.MagicMock,
 ) -> None:
     client = gss.superstaq_client._SuperstaQClient(
@@ -55,7 +53,7 @@ def test_add_new_user(
     "general_superstaq.superstaq_client._SuperstaQClient.post_request",
     return_value="The account's balance has been updated",
 )
-def test_update_user_balance(
+def test_update_user_balance(  # pylint: disable=missing-function-docstring
     mock_post_request: mock.MagicMock,
 ) -> None:
     client = gss.superstaq_client._SuperstaQClient(
@@ -72,7 +70,7 @@ def test_update_user_balance(
     "general_superstaq.superstaq_client._SuperstaQClient.post_request",
     return_value="The account's role has been updated",
 )
-def test_update_user_role(
+def test_update_user_role(  # pylint: disable=missing-function-docstring
     mock_post_request: mock.MagicMock,
 ) -> None:
     client = gss.superstaq_client._SuperstaQClient(
@@ -86,7 +84,7 @@ def test_update_user_role(
     "general_superstaq.superstaq_client._SuperstaQClient.post_request",
     return_value="Your IBMQ account token has been updated",
 )
-def test_ibmq_set_token(
+def test_ibmq_set_token(  # pylint: disable=missing-function-docstring
     mock_post_request: mock.MagicMock,
 ) -> None:
     client = gss.superstaq_client._SuperstaQClient(
@@ -100,7 +98,7 @@ def test_ibmq_set_token(
     "general_superstaq.superstaq_client._SuperstaQClient.post_request",
     return_value="Your CQ account token has been updated",
 )
-def test_cq_set_token(
+def test_cq_set_token(  # pylint: disable=missing-function-docstring
     mock_post_request: mock.MagicMock,
 ) -> None:
     client = gss.superstaq_client._SuperstaQClient(
@@ -114,7 +112,7 @@ def test_cq_set_token(
     "general_superstaq.superstaq_client._SuperstaQClient.aqt_upload_configs",
     return_value="Your AQT configuration has been updated",
 )
-def test_service_aqt_upload_configs(
+def test_service_aqt_upload_configs(  # pylint: disable=missing-function-docstring
     mock_aqt_compile: mock.MagicMock,
 ) -> None:
     client = gss.superstaq_client._SuperstaQClient(
@@ -165,7 +163,7 @@ def test_service_aqt_upload_configs(
     "general_superstaq.superstaq_client._SuperstaQClient.aqt_get_configs",
     return_value={"pulses": "Hello", "variables": "World"},
 )
-def test_service_aqt_get_configs(
+def test_service_aqt_get_configs(  # pylint: disable=missing-function-docstring
     mock_aqt_compile: mock.MagicMock,
 ) -> None:
     client = gss.superstaq_client._SuperstaQClient(
