@@ -21,7 +21,7 @@ include = ["qiskit_superstaq*"]
 qiskit_superstaq = ["py.typed"]
 
 [tool.setuptools.dynamic.version]
-attr = "qiskit_superstaq/._version.__version__"
+attr = "qiskit_superstaq._version.__version__"
 
 [tool.setuptools.dynamic.dependencies]
 file = ["requirements.txt"]
