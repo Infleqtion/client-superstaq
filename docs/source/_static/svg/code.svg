@@ -1,5 +1,5 @@
-<svg viewBox="0 0 1300 800" width="1300" height="800" xmlns="http://www.w3.org/2000/svg">
-  <foreignObject  width="1300" height="800">
+<svg viewBox="0 0 1300 875" width="1300" height="875" xmlns="http://www.w3.org/2000/svg">
+  <foreignObject  width="1300" height="875">
     <div xmlns="http://www.w3.org/1999/xhtml">
       <style>
       body {
@@ -7,7 +7,7 @@
       }
       .container {
         width: 1100px;
-        height: 725px;
+        height: 775px;
         margin: auto;
         background-color: #2c2c2c;
         color: #ccc;
