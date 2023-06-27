@@ -291,7 +291,7 @@ def test_service_get_targets() -> None:
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaQClient.post_request",
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits(cirq.Circuit()),
         "state_jp": gss.serialization.serialize({}),
@@ -347,7 +347,7 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaQClient.post_request",
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit(), cirq.Circuit()]),
         "state_jp": gss.serialization.serialize({}),
@@ -366,7 +366,7 @@ def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaQClient.post_request",
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit()]),
         "state_jp": gss.serialization.serialize({}),
@@ -397,7 +397,7 @@ def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaQClient.resource_estimate",
+    "general_superstaq.superstaq_client._SuperstaqClient.resource_estimate",
 )
 def test_service_resource_estimate(mock_resource_estimate: mock.MagicMock) -> None:
     service = css.Service(remote_host="http://example.com", api_key="key")
@@ -412,7 +412,7 @@ def test_service_resource_estimate(mock_resource_estimate: mock.MagicMock) -> No
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaQClient.resource_estimate",
+    "general_superstaq.superstaq_client._SuperstaqClient.resource_estimate",
 )
 def test_service_resource_estimate_list(mock_resource_estimate: mock.MagicMock) -> None:
     service = css.Service(remote_host="http://example.com", api_key="key")
@@ -429,7 +429,7 @@ def test_service_resource_estimate_list(mock_resource_estimate: mock.MagicMock) 
     assert service.resource_estimate([cirq.Circuit()], "qasm_simulator") == resource_estimates
 
 
-@mock.patch("general_superstaq.superstaq_client._SuperstaQClient.qscout_compile")
+@mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
 def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> None:
 
     q0 = cirq.LineQubit(0)
@@ -459,7 +459,7 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
     assert out.jaqal_program == jaqal_program
 
 
-@mock.patch("general_superstaq.superstaq_client._SuperstaQClient.qscout_compile")
+@mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
 @pytest.mark.parametrize("mirror_swaps", (True, False))
 def test_qscout_compile_swap_mirror(
     mock_qscout_compile: mock.MagicMock, mirror_swaps: bool
@@ -488,7 +488,7 @@ def test_qscout_compile_swap_mirror(
     }
 
 
-@mock.patch("general_superstaq.superstaq_client._SuperstaQClient.qscout_compile")
+@mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
 @pytest.mark.parametrize("base_entangling_gate", ("xx", "zz"))
 def test_qscout_compile_base_entangling_gate(
     mock_qscout_compile: mock.MagicMock, base_entangling_gate: str
@@ -574,7 +574,7 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaQClient.supercheq",
+    "general_superstaq.superstaq_client._SuperstaqClient.supercheq",
 )
 def test_service_supercheq(mock_supercheq: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")

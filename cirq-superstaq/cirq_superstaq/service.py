@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Service to access SuperstaQs API."""
+"""Service to access Superstaqs API."""
 
 import warnings
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
@@ -192,7 +192,7 @@ class Service(user_config.UserConfig):
         """
         self.default_target = default_target
 
-        self._client = superstaq_client._SuperstaQClient(
+        self._client = superstaq_client._SuperstaqClient(
             client_name="cirq-superstaq",
             remote_host=remote_host,
             api_key=api_key,
@@ -301,7 +301,7 @@ class Service(user_config.UserConfig):
 
         Raises:
             ValueError: If the circuit has no measurements to sample.
-            SuperstaQException: If there was an error accessing the API.
+            SuperstaqException: If there was an error accessing the API.
         """
         if not circuit.has_measurements():
             # TODO: only raise if the run method actually requires samples (and not for e.g. a
@@ -334,8 +334,8 @@ class Service(user_config.UserConfig):
             A `css.Job` which can be queried for status or results.
 
         Raises:
-            SuperstaQNotFoundException: If there was no job with the given `job_id`.
-            SuperstaQException: If there was an error accessing the API.
+            SuperstaqNotFoundException: If there was no job with the given `job_id`.
+            SuperstaqException: If there was an error accessing the API.
         """
         return css.job.Job(client=self._client, job_id=job_id)
 

@@ -9,15 +9,15 @@ import qiskit_superstaq as qss
 
 
 def test_validate_target() -> None:
-    provider = qss.SuperstaQProvider(api_key="123")
+    provider = qss.SuperstaqProvider(api_key="123")
     with pytest.raises(ValueError, match="does not have a valid string format"):
-        qss.SuperstaQBackend(provider=provider, target="invalid_target")
+        qss.SuperstaqBackend(provider=provider, target="invalid_target")
 
     with pytest.raises(ValueError, match="does not have a valid target device type"):
-        qss.SuperstaQBackend(provider=provider, target="ibmq_invalid_device")
+        qss.SuperstaqBackend(provider=provider, target="ibmq_invalid_device")
 
     with pytest.raises(ValueError, match="does not have a valid target prefix"):
-        qss.SuperstaQBackend(provider=provider, target="invalid_test_qpu")
+        qss.SuperstaqBackend(provider=provider, target="invalid_test_qpu")
 
 
 def test_validate_qiskit_circuits() -> None:

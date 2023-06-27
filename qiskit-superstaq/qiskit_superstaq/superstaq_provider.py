@@ -23,7 +23,7 @@ import qiskit
 import qiskit_superstaq as qss
 
 
-class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig):
+class SuperstaqProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig):
     """Provider for Superstaq backend.
 
     Typical usage is:
@@ -32,7 +32,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
 
         import qiskit_superstaq as qss
 
-        ss_provider = qss.SuperstaQProvider('MY_TOKEN')
+        ss_provider = qss.SuperstaqProvider('MY_TOKEN')
 
         backend = ss_provider.get_backend('target')
 
@@ -48,7 +48,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         max_retry_seconds: int = 3600,
         verbose: bool = False,
     ) -> None:
-        """Initializes a SuperstaQProvider.
+        """Initializes a SuperstaqProvider.
 
         Args:
             api_key: A string that allows access to the Superstaq API. If no key is provided, then
@@ -76,7 +76,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         """
         self._name = "superstaq_provider"
 
-        self._client = gss.superstaq_client._SuperstaQClient(
+        self._client = gss.superstaq_client._SuperstaqClient(
             client_name="qiskit-superstaq",
             remote_host=remote_host,
             api_key=api_key,
@@ -86,13 +86,13 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         )
 
     def __str__(self) -> str:
-        return f"<SuperstaQProvider {self._name}>"
+        return f"<SuperstaqProvider {self._name}>"
 
     def __repr__(self) -> str:
-        repr1 = f"<SuperstaQProvider(api_key={self._client.api_key}, "
+        repr1 = f"<SuperstaqProvider(api_key={self._client.api_key}, "
         return repr1 + f"name={self._name})>"
 
-    def get_backend(self, target: str) -> qss.SuperstaQBackend:
+    def get_backend(self, target: str) -> qss.SuperstaqBackend:
         """Returns a Superstaq backend.
 
         Args:
@@ -101,9 +101,9 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         Returns:
             A Superstaq backend.
         """
-        return qss.SuperstaQBackend(provider=self, target=target)
+        return qss.SuperstaqBackend(provider=self, target=target)
 
-    def backends(self) -> List[qss.SuperstaQBackend]:
+    def backends(self) -> List[qss.SuperstaqBackend]:
         """Lists the backends available from this provider.
 
         Returns:
