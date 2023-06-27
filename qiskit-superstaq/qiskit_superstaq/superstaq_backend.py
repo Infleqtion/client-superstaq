@@ -173,24 +173,27 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
     def aqt_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
-        num_equivalent_circuits: Optional[int] = None,
+        *,
+        num_eca_circuits: Optional[int] = None,
         random_seed: Optional[int] = None,
         atol: Optional[float] = None,
         gate_defs: Optional[Mapping[str, Union[str, npt.NDArray[np.complex_], None]]] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
-        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
-        Lawrence Berkeley National Laboratory. Also allows using Equivalent Circuit Averaging (ECA).
+        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
 
-        See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
+        AQT is a superconducting transmon quantum computing testbed at Lawrence Berkeley National
+        Laboratory. More information can be found at https://aqt.lbl.gov.
+
+        Specifying a nonzero value for `num_eca_circuits` enables compilation with Equivalent
+        Circuit Averaging (ECA). See https://arxiv.org/abs/2111.04572 for a description of ECA.
 
         Args:
-            circuits: The qiskit QuantumCircuit(s) to compile.
-            num_equivalent_circuits: Optional number of logically equivalent random circuits to
-                generate for each input circuit.
+            circuits: The circuit(s) to compile.
+            num_eca_circuits: Optional number of logically equivalent random circuits to generate
+                from each input circuit for Equivalent Circuit Averaging (ECA).
             random_seed: Optional seed used for approximate synthesis and ECA.
-            atol: Optional tolerance to use for approximate gate synthesis (currently just for
-                qutrit gates).
+            atol: An optional tolerance to use for approximate gate synthesis.
             gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
                 each operation can be either a unitary matrix or None. More specific associations
                 take precedence, for example `{"SWAP": <matrix1>, "SWAP/C5C4": <matrix2>}` implies
@@ -213,8 +216,8 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             raise ValueError(f"{self.name()} is not a valid AQT target.")
 
         options: Dict[str, Any] = {**kwargs}
-        if num_equivalent_circuits is not None:
-            options["num_equivalent_circuits"] = num_equivalent_circuits
+        if num_eca_circuits is not None:
+            options["num_eca_circuits"] = num_eca_circuits
         if random_seed is not None:
             options["random_seed"] = random_seed
         if atol is not None:
@@ -225,9 +228,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         request_json = self._get_compile_request_json(circuits, **options)
         json_dict = self._provider._client.aqt_compile(request_json)
-        return qss.compiler_output.read_json_aqt(
-            json_dict, circuits_is_list, num_equivalent_circuits
-        )
+        return qss.compiler_output.read_json_aqt(json_dict, circuits_is_list, num_eca_circuits)
 
     def ibmq_compile(
         self,
