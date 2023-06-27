@@ -16,4 +16,4 @@ To install ``cirq-superstaq``:
 
 Installation for developers
 ---------------------------
-If you're interested in contributing to Superstaq, please check out our installation instructions for developers `on Github <https://github.com/SupertechLabs/client-superstaq/blob/main/README.md#installation-for-development>`_!
+If you're interested in contributing to Superstaq, please check out our installation instructions for developers `on Github <https://github.com/Infleqtion/client-superstaq/blob/main/README.md#installation-for-development>`_!

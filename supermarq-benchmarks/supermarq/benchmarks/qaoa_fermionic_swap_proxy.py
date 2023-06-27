@@ -1,4 +1,4 @@
-"""Definition of the Fermionic SWAP QAOA benchmark within the SupermarQ suite."""
+"""Definition of the Fermionic SWAP QAOA benchmark within the Supermarq suite."""
 from typing import List, Mapping, Tuple
 
 import cirq
