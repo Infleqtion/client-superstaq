@@ -40,7 +40,7 @@
 
       .line-01 {
         margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
-        animation: type-line-01 1.5s 0s steps(13, end) forwards, cursor 1s linear 0s 3;
+        animation: type-line-01 1.5s 0s steps(13, end) forwards, cursor 1s linear 0s 1.5;
       }
 
       @keyframes type-line-02 {
@@ -50,7 +50,37 @@
 
       .line-02 {
         margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
-        animation: type-line-02 3s 3s steps(30, end) forwards, cursor 1s linear 3s 3;
+        animation: type-line-02 3s 1.5s steps(30, end) forwards, cursor 1s linear 1.5s 3;
+      }
+
+      @keyframes type-line-03 {
+        from {width: 0;}
+        to {width: 720px;}
+      }
+
+      .line-03 {
+        margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
+        animation: type-line-03 4s 4.5s steps(40, end) forwards, cursor 1s linear 4.5s 4;
+      }
+
+      @keyframes type-line-04 {
+        from {width: 0;}
+        to {width: 972px;}
+      }
+
+      .line-04 {
+        margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
+        animation: type-line-04 4.5s 8.5s steps(54, end) forwards, cursor 1s linear 8.5s 4.5;
+      }
+
+      @keyframes type-line-05 {
+        from {width: 0;}
+        to {width: 414px;}
+      }
+
+      .line-05 {
+        margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
+        animation: type-line-05 2s 13s steps(23, end) forwards, cursor 1s linear 13s 2;
       }
 
       @keyframes cursor {
@@ -71,10 +101,10 @@
             <p><span class="line-01">import qiskit</span><br/>
             <span class="line-02">import qiskit_superstaq as qss</span></p>
             
-            <p>superstaq = qss.SuperstaQProvider(token)<br/>
-            backend = superstaq.get_backend("ibmq_qasm_simulator")</p>
+            <p><span class="line-03">superstaq = qss.SuperstaQProvider(token)</span><br/>
+            <span class="line-04">backend = superstaq.get_backend("ibmq_qasm_simulator")</span></p>
 
-            <p># Standard bell circuit<br/>
+            <p><span class="line-05"># Standard bell circuit</span><br/>
             qc = qiskit.QuantumCircuit(2, 2)<br/>
             qc.h(0)<br/>
             qc.cx(0, 1)<br/>
