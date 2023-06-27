@@ -203,7 +203,7 @@ def test_service_create_job() -> None:
         repetitions=100,
         target="ss_fake_qpu",
         method="fake_method",
-        options={"fake_data": ""},
+        fake_data="",
     )
     assert job.status() == "completed"
     create_job_kwargs = mock_client.create_job.call_args[1]
@@ -211,7 +211,7 @@ def test_service_create_job() -> None:
     assert create_job_kwargs["repetitions"] == 100
     assert create_job_kwargs["target"] == "ss_fake_qpu"
     assert create_job_kwargs["method"] == "fake_method"
-    assert create_job_kwargs["options"] == {"fake_data": ""}
+    assert create_job_kwargs["fake_data"] == ""
 
     with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
         service.create_job(cirq.Circuit())

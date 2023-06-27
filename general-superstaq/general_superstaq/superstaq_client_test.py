@@ -160,7 +160,7 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         repetitions=200,
         target="ss_example_qpu",
         method="dry-run",
-        options={"qiskit_pulse": True},
+        qiskit_pulse=True,
     )
     assert response == {"foo": "bar"}
 

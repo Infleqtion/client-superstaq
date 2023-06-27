@@ -77,7 +77,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         shots: int,
         method: Optional[str] = None,
-        options: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
     ) -> qss.SuperstaqJob:
         """Runs circuits on the stored Superstaq backend.
 
@@ -86,7 +86,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             shots: The number of execution shots (times to run the circuit).
             method:  An optional string that describes the execution method
                 (e.g. 'dry-run', 'statevector', etc.).
-            options: An optional dictionary of optimization and execution parameters.
+            kwargs: Other optimization and execution parameters.
 
         Returns:
             A Superstaq job storing ID and other related info.
@@ -110,7 +110,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             repetitions=shots,
             target=self.name(),
             method=method,
-            options=options,
+            **kwargs,
         )
 
         #  we make a virtual job_id that aggregates all of the individual jobs
