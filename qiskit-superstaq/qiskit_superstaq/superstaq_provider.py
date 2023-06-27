@@ -23,7 +23,7 @@ import qiskit
 import qiskit_superstaq as qss
 
 
-class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig):
+class SuperstaqProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig):
     """Provider for Superstaq backend.
 
     Typical usage is:
@@ -32,7 +32,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
 
         import qiskit_superstaq as qss
 
-        ss_provider = qss.SuperstaQProvider('MY_TOKEN')
+        ss_provider = qss.SuperstaqProvider('MY_TOKEN')
 
         backend = ss_provider.get_backend('target')
 
@@ -48,7 +48,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         max_retry_seconds: int = 3600,
         verbose: bool = False,
     ) -> None:
-        """Initializes a SuperstaQProvider.
+        """Initializes a SuperstaqProvider.
 
         Args:
             api_key: A string that allows access to the Superstaq API. If no key is provided, then
@@ -76,7 +76,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         """
         self._name = "superstaq_provider"
 
-        self._client = gss.superstaq_client._SuperstaQClient(
+        self._client = gss.superstaq_client._SuperstaqClient(
             client_name="qiskit-superstaq",
             remote_host=remote_host,
             api_key=api_key,
@@ -86,13 +86,12 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         )
 
     def __str__(self) -> str:
-        return f"<SuperstaQProvider {self._name}>"
+        return f"<SuperstaqProvider {self._name}>"
 
     def __repr__(self) -> str:
-        repr1 = f"<SuperstaQProvider(api_key={self._client.api_key}, "
-        return repr1 + f"name={self._name})>"
+        return f"<SuperstaqProvider(api_key={self._client.api_key}, name={self._name})>"
 
-    def get_backend(self, target: str) -> qss.SuperstaQBackend:
+    def get_backend(self, target: str) -> qss.SuperstaqBackend:
         """Returns a Superstaq backend.
 
         Args:
@@ -101,9 +100,9 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         Returns:
             A Superstaq backend.
         """
-        return qss.SuperstaQBackend(provider=self, target=target)
+        return qss.SuperstaqBackend(provider=self, target=target)
 
-    def backends(self) -> List[qss.SuperstaQBackend]:
+    def backends(self) -> List[qss.SuperstaqBackend]:
         """Lists the backends available from this provider.
 
         Returns:
@@ -116,7 +115,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         return backends
 
     def resource_estimate(
-        self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]], target: str
+        self, circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]], target: str
     ) -> Union[gss.ResourceEstimate, List[gss.ResourceEstimate]]:
         """Generates resource estimates for qiskit circuit(s).
 
@@ -132,7 +131,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
 
     def aqt_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         target: str = "aqt_keysight_qpu",
         *,
         num_eca_circuits: Optional[int] = None,
@@ -175,7 +174,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
             ValueError: If `target` is not a valid AQT target.
         """
         if not target.startswith("aqt_"):
-            raise ValueError(f"{target} is not an AQT target")
+            raise ValueError(f"{target!r} is not a valid AQT target.")
 
         return self.get_backend(target).compile(
             circuits,
@@ -248,7 +247,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
 
     def ibmq_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         target: str = "ibmq_qasm_simulator",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
@@ -266,13 +265,13 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
             ValueError: If `target` is not a valid IBMQ target.
         """
         if not target.startswith("ibmq_"):
-            raise ValueError(f"{target} is not an IBMQ target")
+            raise ValueError(f"{target!r} is not a valid IBMQ target.")
 
         return self.get_backend(target).compile(circuits, **kwargs)
 
     def qscout_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
         target: str = "sandia_qscout_qpu",
@@ -304,11 +303,11 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
             `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
 
         Raises:
-            ValueError: If `target` is not a valid QSCOUT target.
+            ValueError: If `target` is not a valid Sandia target.
             ValueError: If `base_entangling_gate` is not a valid gate option.
         """
         if not target.startswith("sandia_"):
-            raise ValueError(f"{target} is not a QSCOUT target")
+            raise ValueError(f"{target!r} is not a valid Sandia target.")
 
         return self.get_backend(target).compile(
             circuits, mirror_swaps=mirror_swaps, base_entangling_gate=base_entangling_gate, **kwargs
@@ -316,7 +315,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
 
     def cq_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         target: str = "cq_hilbert_qpu",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
@@ -334,7 +333,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
             ValueError: If `target` is not a valid CQ target.
         """
         if not target.startswith("cq_"):
-            raise ValueError(f"{target} is not a CQ target")
+            raise ValueError(f"{target!r} is not a valid CQ target.")
 
         return self.get_backend(target).compile(circuits, **kwargs)
 
@@ -357,8 +356,6 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
             A tuple containing a list of `qiskit.QuantumCircuit`s and a list of corresponding
                 fidelity matrices.
         """
-        qss.validation.validate_integer_param(num_qubits)
-        qss.validation.validate_integer_param(depth)
         json_dict = self._client.supercheq(files, num_qubits, depth, "qiskit_circuits")
         circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
         fidelities = gss.serialization.deserialize(json_dict["fidelities"])

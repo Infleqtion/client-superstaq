@@ -5,7 +5,7 @@ from typing import Optional
 import requests
 
 
-class SuperstaQException(Exception):
+class SuperstaqException(Exception):
     """An exception for errors coming from Superstaq's API.
 
     Attributes:
@@ -19,7 +19,7 @@ class SuperstaQException(Exception):
         self.message = message
 
 
-class SuperstaQModuleNotFoundException(SuperstaQException):
+class SuperstaqModuleNotFoundException(SuperstaqException):
     """An exception for Superstaq features requiring an uninstalled module."""
 
     def __init__(self, name: str, context: str):
@@ -27,14 +27,14 @@ class SuperstaQModuleNotFoundException(SuperstaQException):
         super().__init__(message)
 
 
-class SuperstaQNotFoundException(SuperstaQException):
+class SuperstaqNotFoundException(SuperstaqException):
     """An exception for errors from Superstaq's API when a resource is not found."""
 
     def __init__(self, message: str):
         super().__init__(message, status_code=requests.codes.not_found)
 
 
-class SuperstaQUnsuccessfulJobException(SuperstaQException):
+class SuperstaqUnsuccessfulJobException(SuperstaqException):
     """An exception for attempting to get info about an unsuccessful job.
 
     This exception occurs when a job has been cancelled, deleted, or failed, and information about

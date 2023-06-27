@@ -11,8 +11,8 @@ import qiskit_superstaq as qss
 
 
 def test_default_options() -> None:
-    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
-    backend = qss.SuperstaQBackend(provider=provider, target="ibmq_qasm_simulator")
+    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
+    backend = qss.SuperstaqBackend(provider=provider, target="ibmq_qasm_simulator")
 
     assert qiskit.providers.Options(shots=1000) == backend._default_options()
 
@@ -23,14 +23,14 @@ def test_run() -> None:
     qc.cx(0, 1)
     qc.measure([0, 0], [1, 1])
 
-    backend = qss.SuperstaQProvider(api_key="123").get_backend("ss_example_qpu")
+    backend = qss.SuperstaqProvider(api_key="123").get_backend("ss_example_qpu")
 
     with patch(
-        "general_superstaq.superstaq_client._SuperstaQClient.create_job",
+        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
     ):
         answer = backend.run(circuits=qc, shots=1000)
-        expected = qss.SuperstaQJob(backend, "job_id")
+        expected = qss.SuperstaqJob(backend, "job_id")
         assert answer == expected
 
     with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
@@ -48,14 +48,14 @@ def test_multi_circuit_run() -> None:
     qc2.cx(0, 1)
     qc2.measure([0, 1], [0, 1])
 
-    backend = qss.SuperstaQProvider(api_key="123").get_backend("ss_example_qpu")
+    backend = qss.SuperstaqProvider(api_key="123").get_backend("ss_example_qpu")
 
     with patch(
-        "general_superstaq.superstaq_client._SuperstaQClient.create_job",
+        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
     ):
         answer = backend.run(circuits=[qc1, qc2], shots=1000)
-        expected = qss.SuperstaQJob(backend, "job_id")
+        expected = qss.SuperstaqJob(backend, "job_id")
         assert answer == expected
 
 
@@ -65,19 +65,19 @@ def test_multi_arg_run() -> None:
     qc.cx(0, 1)
     qc.measure([0, 0], [1, 1])
 
-    backend = qss.SuperstaQProvider(api_key="123").get_backend("ss_example_qpu")
+    backend = qss.SuperstaqProvider(api_key="123").get_backend("ss_example_qpu")
 
     with patch(
-        "general_superstaq.superstaq_client._SuperstaQClient.create_job",
+        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
     ):
-        answer = backend.run(circuits=qc, shots=1000, method="fake_method", options={"test": "123"})
-        expected = qss.SuperstaQJob(backend, "job_id")
+        answer = backend.run(circuits=qc, shots=1000, method="fake_method", test="123")
+        expected = qss.SuperstaqJob(backend, "job_id")
         assert answer == expected
 
 
 def test_eq() -> None:
-    provider = qss.SuperstaQProvider(api_key="123")
+    provider = qss.SuperstaqProvider(api_key="123")
 
     backend1 = provider.get_backend("ibmq_qasm_simulator")
     assert backend1 != 3
@@ -92,7 +92,7 @@ def test_eq() -> None:
 @patch("requests.post")
 def test_aqt_compile(mock_post: MagicMock) -> None:
     # AQT compile
-    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
     backend = provider.get_backend("aqt_keysight_qpu")
 
     qc = qiskit.QuantumCircuit(8)
@@ -115,7 +115,6 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         json={
             "qiskit_circuits": qss.serialize_circuits(qc),
             "target": "aqt_keysight_qpu",
-            "options": "{}",
         },
     )
 
@@ -156,13 +155,13 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         },
     )
 
-    with pytest.raises(ValueError, match="aqt_keysight_qpu is not a valid IBMQ target."):
+    with pytest.raises(ValueError, match="'aqt_keysight_qpu' is not a valid IBMQ target."):
         backend.ibmq_compile([qc])
 
-    with pytest.raises(ValueError, match="aqt_keysight_qpu is not a valid Sandia target."):
+    with pytest.raises(ValueError, match="'aqt_keysight_qpu' is not a valid Sandia target."):
         backend.qscout_compile([qc])
 
-    with pytest.raises(ValueError, match="aqt_keysight_qpu is not a valid CQ target."):
+    with pytest.raises(ValueError, match="'aqt_keysight_qpu' is not a valid CQ target."):
         backend.cq_compile([qc])
 
     # AQT ECA compile
@@ -194,7 +193,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
 @patch("requests.post")
 def test_ibmq_compile(mock_post: MagicMock) -> None:
-    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
     backend = provider.get_backend("ibmq_jakarta_qpu")
 
     qc = qiskit.QuantumCircuit(8)
@@ -213,13 +212,13 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
         [qc], [final_logical_to_physical], pulse_sequences=[DEFAULT]
     )
 
-    with pytest.raises(ValueError, match="ibmq_jakarta_qpu is not a valid AQT target."):
+    with pytest.raises(ValueError, match="'ibmq_jakarta_qpu' is not a valid AQT target."):
         backend.aqt_compile([qc])
 
 
 @patch("requests.post")
 def test_qscout_compile(mock_post: MagicMock) -> None:
-    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
     backend = provider.get_backend("sandia_qscout_qpu")
 
     qc = qiskit.QuantumCircuit(1)
@@ -261,7 +260,7 @@ def test_qscout_compile(mock_post: MagicMock) -> None:
 @patch("requests.post")
 def test_compile(mock_post: MagicMock) -> None:
     # Compilation to a simulator (e.g., AWS)
-    provider = qss.SuperstaQProvider(api_key="MY_TOKEN")
+    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
     backend = provider.get_backend("aws_sv1_simulator")
 
     qc = qiskit.QuantumCircuit(1)
@@ -277,10 +276,10 @@ def test_compile(mock_post: MagicMock) -> None:
 
 def test_target_info() -> None:
     target = "ibmq_qasm_simulator"
-    backend = qss.SuperstaQProvider(api_key="123").get_backend(target)
+    backend = qss.SuperstaqProvider(api_key="123").get_backend(target)
     fake_data = {"target_info": {"backend_name": target}}
     with patch(
-        "general_superstaq.superstaq_client._SuperstaQClient.target_info",
+        "general_superstaq.superstaq_client._SuperstaqClient.target_info",
         return_value=fake_data,
     ):
         assert backend.target_info() == fake_data["target_info"]
