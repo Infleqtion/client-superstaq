@@ -115,7 +115,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         return backends
 
     def resource_estimate(
-        self, circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]], target: str
+        self, circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]], target: str
     ) -> Union[gss.ResourceEstimate, List[gss.ResourceEstimate]]:
         """Generates resource estimates for qiskit circuit(s).
 
@@ -131,7 +131,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
 
     def aqt_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         target: str = "aqt_keysight_qpu",
         *,
         num_eca_circuits: Optional[int] = None,
@@ -247,7 +247,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
 
     def ibmq_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         target: str = "ibmq_qasm_simulator",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
@@ -271,7 +271,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
 
     def qscout_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
         target: str = "sandia_qscout_qpu",
@@ -315,7 +315,7 @@ class SuperstaQProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
 
     def cq_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]],
+        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         target: str = "cq_hilbert_qpu",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
