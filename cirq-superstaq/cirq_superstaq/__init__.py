@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from cirq_superstaq import compiler_output
-from cirq_superstaq._version import __version__
 from cirq_superstaq.compiler_output import active_qubit_indices, measured_qubit_indices
 from cirq_superstaq.job import Job
 from cirq_superstaq.ops import (
