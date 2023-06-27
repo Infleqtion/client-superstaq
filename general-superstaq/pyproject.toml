@@ -1,12 +1,11 @@
 [project]
 name = "general-superstaq"
-version = "0.3.33"
 description = "The general module that provides tools and access to Superstaq."
 authors = [{ name = "Super.tech", email = "pranav@super.tech" }]
 readme = { file = "README.md", content-type = "text/markdown" }
 license = { text = "Apache 2" }
 requires-python = ">=3.7.0"
-dynamic = ["dependencies", "optional-dependencies"]
+dynamic = ["version", "dependencies", "optional-dependencies"]
 
 [project.urls]
 homepage = "https://github.com/Infleqtion/client-superstaq"
@@ -20,6 +19,9 @@ include = ["general_superstaq*"]
 
 [tool.setuptools.package-data]
 general_superstaq = ["py.typed"]
+
+[tool.setuptools.dynamic.version]
+file = "general_superstaq/.version"
 
 [tool.setuptools.dynamic.dependencies]
 file = ["requirements.txt"]
