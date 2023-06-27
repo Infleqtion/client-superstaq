@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Client for making requests to SuperstaQ's API."""
+"""Client for making requests to Superstaq's API."""
 import json
 import os
 import pathlib
@@ -26,8 +26,8 @@ import requests
 import general_superstaq as gss
 
 
-class _SuperstaQClient:
-    """Handles calls to SuperstaQ's API.
+class _SuperstaqClient:
+    """Handles calls to Superstaq's API.
 
     Users should not instantiate this themselves,
     but instead should use `$client_superstaq.Service`.
@@ -49,18 +49,18 @@ class _SuperstaQClient:
         max_retry_seconds: float = 60,  # 1 minute
         verbose: bool = False,
     ):
-        """Creates the SuperstaQClient.
+        """Creates the SuperstaqClient.
 
         Users should use `$client_superstaq.Service` instead of this class directly.
 
-        The SuperstaQClient handles making requests to the SuperstaQClient,
+        The SuperstaqClient handles making requests to the SuperstaqClient,
         returning dictionary results. It handles retry and authentication.
 
         Args:
-            remote_host: The url of the server exposing the SuperstaQ API. This will strip anything
+            remote_host: The url of the server exposing the Superstaq API. This will strip anything
                 besides the base scheme and netloc, i.e. it only takes the part of the host of
                 the form `http://example.com` of `http://example.com/test`.
-            api_key: The key used for authenticating against the SuperstaQ API.
+            api_key: The key used for authenticating against the Superstaq API.
             api_version: Which version fo the api to use, defaults to client_superstaq.API_VERSION,
                 which is the most recent version when this client was downloaded.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
@@ -111,10 +111,10 @@ class _SuperstaQClient:
         return self._make_request(request).json()
 
     def get_superstaq_version(self) -> Dict[str, Optional[str]]:
-        """Gets SuperstaQ version from response header
+        """Gets Superstaq version from response header
 
         Returns:
-            A dict containing the current SuperstaQ version.
+            A dict containing the current Superstaq version.
         """
 
         response = requests.get(self.url)
@@ -147,7 +147,7 @@ class _SuperstaQClient:
         repetitions: int = 1,
         target: str = "ss_unconstrained_simulator",
         method: Optional[str] = None,
-        options: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
     ) -> Dict[str, List[str]]:
         """Create a job.
 
@@ -159,8 +159,8 @@ class _SuperstaQClient:
             target: Target to run on.
             method: Which type of method to execute the circuits (noisy simulator,
             non-noisy simulator, hardware, e.t.c)
-            options: The different available options for creating a job.
-                - qiskit_pulse: Whether to use SuperstaQ's pulse-level optimizations for IBMQ
+            kwargs: Other optimization and execution parameters.
+                - qiskit_pulse: Whether to use Superstaq's pulse-level optimizations for IBMQ
                 devices.
 
         Returns:
@@ -168,7 +168,7 @@ class _SuperstaQClient:
             about the job, but does contain the job id.
 
         Raises:
-            An SuperstaQException if the request fails.
+            An SuperstaqException if the request fails.
         """
         gss.validation.validate_target(target)
         gss.validation.validate_integer_param(repetitions)
@@ -182,12 +182,12 @@ class _SuperstaQClient:
         if method is not None:
             json_dict["method"] = method
 
-        if options is not None:
-            json_dict["options"] = json.dumps(options)
+        if kwargs:
+            json_dict["options"] = json.dumps(kwargs)
         return self.post_request("/jobs", json_dict)
 
     def get_job(self, job_id: str) -> Dict[str, str]:
-        """Get the job from the SuperstaQ API.
+        """Get the job from the Superstaq API.
 
         Args:
             job_id: The UUID of the job (returned when the job was created).
@@ -196,8 +196,8 @@ class _SuperstaQClient:
             The json body of the response as a dict.
 
         Raises:
-            SuperstaQNotFoundException: If a job with the given job_id does not exist.
-            SuperstaQException: For other API call failures.
+            SuperstaqNotFoundException: If a job with the given job_id does not exist.
+            SuperstaqException: For other API call failures.
         """
         return self.get_request(f"/job/{job_id}")
 
@@ -210,7 +210,7 @@ class _SuperstaQClient:
         return self.get_request("/balance")
 
     def _accept_terms_of_use(self, user_input: str) -> str:
-        """Makes a POST request to SuperstaQ API to confirm acceptance of terms of use.
+        """Makes a POST request to Superstaq API to confirm acceptance of terms of use.
 
         Args:
             user_input: user's response to prompt for acceptance of TOU. Server accepts YES
@@ -221,11 +221,11 @@ class _SuperstaQClient:
         return self.post_request("/accept_terms_of_use", {"user_input": user_input})
 
     def get_targets(self) -> Dict[str, Dict[str, List[str]]]:
-        """Makes a GET request to SuperstaQ API to get a list of available targets."""
+        """Makes a GET request to Superstaq API to get a list of available targets."""
         return self.get_request("/targets")
 
     def add_new_user(self, json_dict: Dict[str, str]) -> str:
-        """Makes a POST request to SuperstaQ API to add a new user.
+        """Makes a POST request to Superstaq API to add a new user.
 
         Args:
             json_dict: dictionary with user entry.
@@ -236,7 +236,7 @@ class _SuperstaQClient:
         return self.post_request("/add_new_user", json_dict)
 
     def update_user_balance(self, json_dict: Dict[str, Union[float, str]]) -> str:
-        """Makes a POST request to SuperstaQ API to update a user's balance in the database.
+        """Makes a POST request to Superstaq API to update a user's balance in the database.
 
         Args:
             json_dict: dictionary with user entry and new balance.
@@ -247,7 +247,7 @@ class _SuperstaQClient:
         return self.post_request("/update_user_balance", json_dict)
 
     def update_user_role(self, json_dict: Dict[str, Union[int, str]]) -> str:
-        """Makes a POST request to SuperstaQ API to update a user's role.
+        """Makes a POST request to Superstaq API to update a user's role.
 
         Args:
             json_dict: dictionary with user entry and new role.
@@ -266,15 +266,15 @@ class _SuperstaQClient:
         return self.post_request("/resource_estimate", json_dict)
 
     def aqt_compile(self, json_dict: Dict[str, str]) -> Dict[str, str]:
-        """Makes a POST request to SuperstaQ API to compile a list of circuits for Berkeley-AQT."""
+        """Makes a POST request to Superstaq API to compile a list of circuits for Berkeley-AQT."""
         return self.post_request("/aqt_compile", json_dict)
 
     def qscout_compile(self, json_dict: Dict[str, str]) -> Dict[str, Union[str, List[str]]]:
-        """Makes a POST request to SuperstaQ API to compile a list of circuits for QSCOUT."""
+        """Makes a POST request to Superstaq API to compile a list of circuits for QSCOUT."""
         return self.post_request("/qscout_compile", json_dict)
 
     def compile(self, json_dict: Dict[str, str]) -> Dict[str, str]:
-        """Makes a POST request to SuperstaQ API to compile a list of circuits."""
+        """Makes a POST request to Superstaq API to compile a list of circuits."""
         return self.post_request("/compile", json_dict)
 
     def submit_qubo(
@@ -284,7 +284,7 @@ class _SuperstaQClient:
         repetitions: int = 1000,
         method: Optional[str] = None,
     ) -> Dict[str, str]:
-        """Makes a POST request to SuperstaQ API to submit a QUBO problem to the given target."""
+        """Makes a POST request to Superstaq API to submit a QUBO problem to the given target."""
         gss.validation.validate_target(target)
         gss.validation.validate_integer_param(repetitions)
 
@@ -308,12 +308,12 @@ class _SuperstaQClient:
         Args:
             files: List of files specified as binary using ints.
                 For example: [[1, 0, 1], [1, 1, 1]].
-            num_qubits: Number of qubits to run SupercheQ on.
-            depth: The depth of the circuits to run SupercheQ on.
+            num_qubits: Number of qubits to run Supercheq on.
+            depth: The depth of the circuits to run Supercheq on.
             circuit_return_type: Supports only `cirq` and `qiskit` for now.
 
         Returns:
-            The output of SupercheQ.
+            The output of Supercheq.
         """
         gss.validation.validate_integer_param(num_qubits)
         gss.validation.validate_integer_param(depth)
@@ -327,7 +327,7 @@ class _SuperstaQClient:
         return self.post_request("/supercheq", json_dict)
 
     def target_info(self, target: str) -> Dict[str, Any]:
-        """Makes a POST request to the SuperstaQ API (using the `/target_info` endpoint to request
+        """Makes a POST request to the Superstaq API (using the `/target_info` endpoint to request
         information about `target`.
 
         Args:
@@ -345,26 +345,26 @@ class _SuperstaQClient:
     def find_min_vol_portfolio(
         self, json_dict: Dict[str, Union[List[str], int, float, str]]
     ) -> gss.MinVolJson:
-        """Makes a POST request to SuperstaQ API to find a minimum volatility portfolio
+        """Makes a POST request to Superstaq API to find a minimum volatility portfolio
         that exceeds a certain specified return."""
         return self.post_request("/minvol", json_dict)
 
     def find_max_pseudo_sharpe_ratio(
         self, json_dict: Dict[str, Union[List[str], float, str, Optional[int]]]
     ) -> gss.MaxSharpeJson:
-        """Makes a POST request to SuperstaQ API to find a max Sharpe ratio portfolio."""
+        """Makes a POST request to Superstaq API to find a max Sharpe ratio portfolio."""
         return self.post_request("/maxsharpe", json_dict)
 
     def tsp(self, json_dict: Dict[str, List[str]]) -> gss.TSPJson:
-        """Makes a POST request to SuperstaQ API to find a optimal TSP tour."""
+        """Makes a POST request to Superstaq API to find a optimal TSP tour."""
         return self.post_request("/tsp", json_dict)
 
     def warehouse(self, json_dict: Dict[str, Union[int, List[str], str]]) -> gss.WareHouseJson:
-        """Makes a POST request to SuperstaQ API to find optimal warehouse assignment."""
+        """Makes a POST request to Superstaq API to find optimal warehouse assignment."""
         return self.post_request("/warehouse", json_dict)
 
     def ibmq_set_token(self, json_dict: Dict[str, str]) -> str:
-        """Makes a POST request to SuperstaQ API to set IBMQ token field in database.
+        """Makes a POST request to Superstaq API to set IBMQ token field in database.
 
         Args:
             json_dict: Dictionary with IBMQ token string entry.
@@ -375,7 +375,7 @@ class _SuperstaQClient:
         return self.post_request("/ibmq_token", json_dict)
 
     def cq_set_token(self, json_dict: Dict[str, str]) -> str:
-        """Makes a POST request to SuperstaQ API to set CQ token field in database.
+        """Makes a POST request to Superstaq API to set CQ token field in database.
 
         Args:
             json_dict: Dictionary with CQ token string entry.
@@ -386,7 +386,7 @@ class _SuperstaQClient:
         return self.post_request("/cq_token", json_dict)
 
     def aqt_upload_configs(self, aqt_configs: Dict[str, str]) -> str:
-        """Makes a POST request to SuperstaQ API to upload configurations."""
+        """Makes a POST request to Superstaq API to upload configurations."""
         return self.post_request("/aqt_configs", aqt_configs)
 
     def aqt_get_configs(self) -> Dict[str, str]:
@@ -401,8 +401,8 @@ class _SuperstaQClient:
                 self._prompt_accept_terms_of_use()
                 return
             else:
-                raise gss.SuperstaQException(
-                    '"Not authorized" returned by SuperstaQ API.  '
+                raise gss.SuperstaqException(
+                    '"Not authorized" returned by Superstaq API.  '
                     "Check to ensure you have supplied the correct API key.",
                     response.status_code,
                 )
@@ -416,8 +416,8 @@ class _SuperstaQClient:
                 "https://join.slack.com/t/superstaq/shared_invite/"
                 "zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw"
             )
-            raise gss.SuperstaQException(
-                f"Non-retriable error making request to SuperstaQ API, {message}.\n\n"
+            raise gss.SuperstaqException(
+                f"Non-retriable error making request to Superstaq API, {message}.\n\n"
                 "If you would like to contact a member of our team, email us at "
                 f"superstaq@infleqtion.com or join our Slack workspace: {slack_invite_url}",
                 response.status_code,
@@ -426,14 +426,14 @@ class _SuperstaQClient:
     def _prompt_accept_terms_of_use(self) -> None:
         message = (
             "Acceptance of the Terms of Use (superstaq.super.tech/terms_of_use)"
-            " is necessary before using SuperstaQ.\nType in YES to accept: "
+            " is necessary before using Superstaq.\nType in YES to accept: "
         )
         user_input = input(message).upper()
         response = self._accept_terms_of_use(user_input)
         print(response)
-        if response != "Accepted. You can now continue using SuperstaQ.":
-            raise gss.SuperstaQException(
-                "You'll need to accept Terms of Use before usage of SuperstaQ.",
+        if response != "Accepted. You can now continue using Superstaq.":
+            raise gss.SuperstaqException(
+                "You'll need to accept Terms of Use before usage of Superstaq.",
                 requests.codes.unauthorized,
             )
 
@@ -444,7 +444,7 @@ class _SuperstaQClient:
             request: A function that returns a `requests.Response`.
 
         Raises:
-            SuperstaQException: If there was a not-retriable error from the API.
+            SuperstaqException: If there was a not-retriable error from the API.
             TimeoutError: If the requests retried for more than `max_retry_seconds`.
 
         Returns:
@@ -480,7 +480,7 @@ class _SuperstaQClient:
     def __repr__(self) -> str:
         return textwrap.dedent(
             f"""\
-            gss.superstaq_client._SuperstaQClient(
+            gss.superstaq_client._SuperstaqClient(
                 remote_host={self.url!r},
                 api_key={self.api_key!r},
                 client_name={self.client_name!r},
@@ -492,7 +492,7 @@ class _SuperstaQClient:
 
 
 def find_api_key() -> str:
-    """Try to load a SuperstaQ API key from the environment or a key file."""
+    """Try to load a Superstaq API key from the environment or a key file."""
 
     # look for the key in the environment
     env_api_key = os.getenv("SUPERSTAQ_API_KEY")
@@ -513,7 +513,7 @@ def find_api_key() -> str:
                 return file.readline()
 
     raise EnvironmentError(
-        "SuperstaQ API key not specified and not found.\n"
+        "Superstaq API key not specified and not found.\n"
         "Try passing an 'api_key' variable, or setting your API key in the command line "
         "with SUPERSTAQ_API_KEY=..."
     )

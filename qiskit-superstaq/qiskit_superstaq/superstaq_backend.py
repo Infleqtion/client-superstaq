@@ -24,11 +24,11 @@ import qiskit
 import qiskit_superstaq as qss
 
 
-class SuperstaQBackend(qiskit.providers.BackendV1):
+class SuperstaqBackend(qiskit.providers.BackendV1):
     """This class represents a Superstaq backend."""
 
-    def __init__(self, provider: qss.SuperstaQProvider, target: str) -> None:
-        """Initializes a SuperstaQBackend.
+    def __init__(self, provider: qss.SuperstaqProvider, target: str) -> None:
+        """Initializes a SuperstaqBackend.
 
         Args:
             provider: Provider for a Superstaq backend.
@@ -64,7 +64,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         return qiskit.providers.Options(shots=1000)
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, qss.SuperstaQBackend):
+        if not isinstance(other, qss.SuperstaqBackend):
             return False
 
         return (
@@ -77,8 +77,8 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         shots: int,
         method: Optional[str] = None,
-        options: Optional[Dict[str, Any]] = None,
-    ) -> qss.SuperstaQJob:
+        **kwargs: Any,
+    ) -> qss.SuperstaqJob:
         """Runs circuits on the stored Superstaq backend.
 
         Args:
@@ -86,7 +86,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             shots: The number of execution shots (times to run the circuit).
             method:  An optional string that describes the execution method
                 (e.g. 'dry-run', 'statevector', etc.).
-            options: An optional dictionary of optimization and execution parameters.
+            kwargs: Other optimization and execution parameters.
 
         Returns:
             A Superstaq job storing ID and other related info.
@@ -110,13 +110,13 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
             repetitions=shots,
             target=self.name(),
             method=method,
-            options=options,
+            **kwargs,
         )
 
         #  we make a virtual job_id that aggregates all of the individual jobs
         # into a single one, that comma-separates the individual jobs:
         job_id = ",".join(result["job_ids"])
-        job = qss.SuperstaQJob(self, job_id)
+        job = qss.SuperstaqJob(self, job_id)
 
         return job
 

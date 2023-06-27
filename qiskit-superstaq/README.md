@@ -1,11 +1,11 @@
-![qiskit-superstaq's default workflow](https://github.com/SupertechLabs/qiskit-superstaq/actions/workflows/ci.yml/badge.svg)
+![qiskit-superstaq's default workflow](https://github.com/Infleqtion/client-superstaq/actions/workflows/ci.yml/badge.svg)
 
 This package is used to access Superstaq via a Web API through [Qiskit](https://qiskit.org/). Qiskit programmers
 can take advantage of the applications, pulse level optimizations, and write-once-target-all
 features of Superstaq with this package.
 
 
-Please note that Python version `3.7` or higher is required. qiskit-superstaq and all of its
+Please note that Python version `3.7` or higher is required. `qiskit-superstaq` and all of its
 dependencies can be installed via:
 
 ```
@@ -25,7 +25,7 @@ import qiskit_superstaq as qss
 
 token = "Insert superstaq token that you received from https://superstaq.super.tech"
 
-superstaq = qss.superstaq_provider.SuperstaQProvider(token)
+superstaq = qss.superstaq_provider.SuperstaqProvider(token)
 
 backend = superstaq.get_backend("ibmq_qasm_simulator")
 qc = qiskit.QuantumCircuit(2, 2)

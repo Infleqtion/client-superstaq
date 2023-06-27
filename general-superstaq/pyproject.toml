@@ -1,7 +1,9 @@
 [project]
 name = "general-superstaq"
 description = "The general module that provides tools and access to Superstaq."
-authors = [{ name = "Super.tech", email = "pranav@super.tech" }]
+authors = [
+  { name = "Superstaq development team", email = "superstaq@infleqtion.com" },
+]
 readme = { file = "README.md", content-type = "text/markdown" }
 license = { text = "Apache 2" }
 requires-python = ">=3.7.0"

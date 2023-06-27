@@ -5,7 +5,7 @@ import os
 
 import cirq
 import pytest
-from general_superstaq import ResourceEstimate, SuperstaQException
+from general_superstaq import ResourceEstimate, SuperstaqException
 
 import cirq_superstaq as css
 
@@ -143,7 +143,7 @@ def test_ibmq_set_token(service: css.Service) -> None:
 
     assert service.ibmq_set_token(ibmq_token) == "Your IBMQ account token has been updated"
 
-    with pytest.raises(SuperstaQException, match="IBMQ token is invalid."):
+    with pytest.raises(SuperstaqException, match="IBMQ token is invalid."):
         assert service.ibmq_set_token("INVALID_TOKEN")
 
 
@@ -242,7 +242,7 @@ def test_job(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
     job = service.create_job(circuit, target="ibmq_qasm_simulator", repetitions=10)
 
-    job_id = job.job_id()  # To test for https://github.com/SupertechLabs/cirq-superstaq/issues/452
+    job_id = job.job_id()  # To test for https://github.com/Infleqtion/client-superstaq/issues/452
 
     assert job.counts() == {"0": 10}
     assert job.status() == "Done"
