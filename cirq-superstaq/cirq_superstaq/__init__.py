@@ -60,6 +60,8 @@ from cirq_superstaq.serialization import (
 )
 from cirq_superstaq.service import Service
 
+__version__ = open(".version").readline().strip()
+
 __all__ = [
     "AQTICCX",
     "AQTITOFFOLI",
