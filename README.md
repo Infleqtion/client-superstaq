@@ -4,9 +4,9 @@
 </p>
 
 # Welcome to Superstaq!
-This repository is the home of Super.tech's open source work, which includes:
+This repository is the home of Superstaq development team's open source work, which includes:
 * [Superstaq](https://www.infleqtion.com/superstaq), our quantum software platform that is optimized across the quantum stack and enables users to write quantum programs in Cirq or Qiskit and target a variety of quantum computers and simulators
-* [SupermarQ](https://www.infleqtion.com/supermarq), our quantum benchmarking suite
+* [Supermarq](https://www.infleqtion.com/supermarq), our quantum benchmarking suite
 
 <p align="center"><img src="docs/source/_static/svg/code.svg"></p>
 
@@ -20,7 +20,7 @@ If you'd like to contribute to Superstaq, below are the instructions for install
 <summary> <h3> <code>qiskit-superstaq</code> </h3> </summary>
   
   ```console
-  git clone git@github.com:SupertechLabs/superstaq-client.git
+  git clone git@github.com:Infleqtion/client-superstaq.git
   python3 -m venv venv_superstaq
   source venv_superstaq/bin/activate
   cd superstaq-client/qiskit-superstaq
@@ -32,7 +32,7 @@ If you'd like to contribute to Superstaq, below are the instructions for install
 <summary> <h3> <code>cirq-superstaq</code> </h3> </summary>
   
   ```console
-  git clone git@github.com:SupertechLabs/superstaq-client.git
+  git clone git@github.com:Infleqtion/client-superstaq.git
   python3 -m venv venv_superstaq
   source venv_superstaq/bin/activate
   cd superstaq-client/cirq-superstaq
@@ -44,7 +44,7 @@ If you'd like to contribute to Superstaq, below are the instructions for install
 <summary> <h3> <code>general-superstaq</code> </h3> </summary>
   
   ```console
-  git clone git@github.com:SupertechLabs/superstaq-client.git
+  git clone git@github.com:Infleqtion/client-superstaq.git
   python3 -m venv venv_superstaq
   source venv_superstaq/bin/activate
   cd superstaq-client/general-superstaq
@@ -56,7 +56,7 @@ If you'd like to contribute to Superstaq, below are the instructions for install
 <summary> <h3> <code>supermarq</code> </h3> </summary>
   
   ```console
-  git clone git@github.com:SupertechLabs/superstaq-client.git
+  git clone git@github.com:Infleqtion/client-superstaq.git
   python3 -m venv venv_superstaq
   source venv_superstaq/bin/activate
   cd superstaq-client/supermarq-benchmarks
@@ -68,7 +68,7 @@ If you'd like to contribute to Superstaq, below are the instructions for install
 For more information on getting started, check out [our documentation site](https://superstaq.readthedocs.io/)!
 
 # License
-Superstaq is licensed under the Apache License 2.0. See our [LICENSE](https://github.com/SupertechLabs/superstaq-client/blob/main/LICENSE) file for more details.
+Superstaq is licensed under the Apache License 2.0. See our [LICENSE](https://github.com/Infleqtion/client-superstaq/blob/main/LICENSE) file for more details.
 
 # Contact Us
 If you'd like to reach out to a member of our team, please email us at superstaq@infleqtion.com or join our [Slack workspace](https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw).
