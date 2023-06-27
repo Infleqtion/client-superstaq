@@ -220,7 +220,7 @@ class SuperstaQBackend(qiskit.providers.BackendV1):
         options: Dict[str, Any] = {**kwargs}
         if num_eca_circuits is not None:
             gss.validation.validate_integer_param(num_eca_circuits)
-            options["num_eca_circuits"] = num_eca_circuits
+            options["num_eca_circuits"] = int(num_eca_circuits)
         if random_seed is not None:
             gss.validation.validate_integer_param(random_seed)
             options["random_seed"] = int(random_seed)
