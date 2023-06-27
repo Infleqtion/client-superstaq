@@ -98,9 +98,7 @@ def test_aqt_compile_eca_regression(service: css.Service) -> None:
         cirq.H(cirq.LineQubit(4)),
         cirq.CX(cirq.LineQubit(4), cirq.LineQubit(5)) ** 0.7,
     )
-    eca_circuits = service.aqt_compile(
-        circuit, num_eca_circuits=3, random_seed=123
-    ).circuits
+    eca_circuits = service.aqt_compile(circuit, num_eca_circuits=3, random_seed=123).circuits
     # test with same and different seed
     assert (
         eca_circuits == service.aqt_compile(circuit, num_eca_circuits=3, random_seed=123).circuits
