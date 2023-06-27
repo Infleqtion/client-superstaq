@@ -14,7 +14,7 @@
         font-family: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
         font-size: 30px;
         border-radius: 20px;
-        box-shadow: 5px 5px 100px black;
+        box-shadow: 5px 5px 75px black;
       }
       .top {
         padding: 20px;
@@ -161,6 +161,18 @@
         20%, 80% {border-color: transparent;}
         25%, 75% {border-color: white;}
       }
+
+      .c-m {
+        color: #03a88d;
+      }
+
+      .c-i {
+        color: #5AB8DD;
+      }
+
+      .c-o {
+        color: #39B54A;
+      }
       </style>
       <body>
       <div class="container">
@@ -171,20 +183,20 @@
         </div>
 
         <div class="content">
-            <p><span class="line-01">import qiskit</span><br/>
-            <span class="line-02">import qiskit_superstaq as qss</span></p>
+            <p><span class="line-01"><span class="c-i">import</span> qiskit</span><br/>
+            <span class="line-02"><span class="c-i">import</span> qiskit_superstaq <span class="c-i">as</span> qss</span></p>
             
-            <p><span class="line-03">superstaq = qss.SuperstaQProvider()</span><br/>
-            <span class="line-04">backend = superstaq.get_backend("ibmq_qasm_simulator")</span></p>
+            <p><span class="line-03">superstaq = qss.<span class="c-o">SuperstaQProvider()</span></span><br/>
+            <span class="line-04">backend = superstaq.<span class="c-m">get_backend</span>("ibmq_qasm_simulator")</span></p>
 
             <p><span class="line-05"># Standard bell circuit</span><br/>
-            <span class="line-06">qc = qiskit.QuantumCircuit(2, 2)</span><br/>
-            <span class="line-07">qc.h(0)</span><br/>
-            <span class="line-08">qc.cx(0, 1)</span><br/>
-            <span class="line-09">qc.measure([0, 1], [0, 1])</span></p>
+            <span class="line-06">qc = qiskit.<span class="c-o">QuantumCircuit</span>(2, 2)</span><br/>
+            <span class="line-07">qc.<span class="c-m">h</span>(0)</span><br/>
+            <span class="line-08">qc.<span class="c-m">cx</span>(0, 1)</span><br/>
+            <span class="line-09">qc.<span class="c-m">measure</span>([0, 1], [0, 1])</span></p>
 
-            <p><span class="line-10">job = backend.run(qc, shots=100)</span><br/>
-            <span class="line-11">print(result.get_counts())</span></p>
+            <p><span class="line-10">job = backend.<span class="c-m">run</span>(qc, shots=100)</span><br/>
+            <span class="line-11"><span class="c-m">print</span>(result.<span class="c-m">get_counts</span>())</span></p>
         </div>
       </div>
       </body>
