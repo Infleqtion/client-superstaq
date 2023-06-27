@@ -12,6 +12,7 @@
 # limitations under the License.
 """Service to access SuperstaQs API."""
 
+import warnings
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import cirq
@@ -143,7 +144,7 @@ def _validate_integer_param(integer_param: object) -> None:
 
 
 class Service(user_config.UserConfig):
-    """A class to access SuperstaQ's API.
+    """A class to access Superstaq's API.
 
     To access the API, this class requires a remote host url and an API key. These can be
     specified in the constructor via the parameters `remote_host` and `api_key`. Alternatively
@@ -160,10 +161,10 @@ class Service(user_config.UserConfig):
         max_retry_seconds: int = 3600,
         verbose: bool = False,
     ) -> None:
-        """Creates the Service to access SuperstaQ's API.
+        """Creates the Service to access Superstaq's API.
 
         Args:
-            api_key: A string that allows access to the SuperstaQ API. If no key is provided, then
+            api_key: A string that allows access to the Superstaq API. If no key is provided, then
                 this instance tries to use the environment variable `SUPERSTAQ_API_KEY`. If
                 furthermore that environment variable is not set, then this instance checks for the
                 following files:
@@ -218,7 +219,7 @@ class Service(user_config.UserConfig):
         method: Optional[str] = None,
         options: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, int]:
-        """Runs the given circuit on the SuperstaQ API and returns the result
+        """Runs the given circuit on the Superstaq API and returns the result
         of the ran circuit as a collections.Counter
 
         Args:
@@ -249,7 +250,7 @@ class Service(user_config.UserConfig):
         method: Optional[str] = None,
         options: Optional[Dict[str, Any]] = None,
     ) -> cirq.ResultDict:
-        """Run the given circuit on the SuperstaQ API and returns the result
+        """Run the given circuit on the Superstaq API and returns the result
         of the ran circut as a cirq.ResultDict.
 
         Args:
@@ -273,7 +274,7 @@ class Service(user_config.UserConfig):
             target: Target to sample against.
 
         Returns:
-            A `cirq.Sampler` for the SuperstaQ API.
+            A `cirq.Sampler` for the Superstaq API.
         """
         target = self._resolve_target(target)
         return css.sampler.Sampler(service=self, target=target)
@@ -323,7 +324,7 @@ class Service(user_config.UserConfig):
         return self.get_job(result["job_ids"][0])
 
     def get_job(self, job_id: str) -> css.job.Job:
-        """Gets a job that has been created on the SuperstaQ API.
+        """Gets a job that has been created on the Superstaq API.
 
         Args:
             job_id: The UUID of the job. Jobs are assigned these numbers by the server during the
@@ -390,44 +391,9 @@ class Service(user_config.UserConfig):
             return resource_estimates
         return resource_estimates[0]
 
-    def aqt_compile(
-        self,
-        circuits: Union[cirq.Circuit, List[cirq.Circuit]],
-        target: str = "aqt_keysight_qpu",
-        atol: Optional[float] = None,
-        gate_defs: Optional[
-            Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
-        ] = None,
-        **kwargs: Any,
-    ) -> css.compiler_output.CompilerOutput:
-        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
-        Lawrence Berkeley National Laboratory.
-
-        Args:
-            circuits: The circuit(s) to compile.
-            target: String of target AQT device.
-            atol: An optional tolerance to use for approximate gate synthesis.
-            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
-                each operation can be a unitary matrix, `cirq.Gate`, `cirq.Operation`, or None. More
-                specific associations take precedence, for example `{"SWAP": cirq.SQRT_ISWAP,
-                "SWAP/C5C4": cirq.SQRT_ISWAP_INV}` implies `SQRT_ISWAP` for all "SWAP" calibrations
-                except "SWAP/C5C4" (which will instead be mapped to a `SQRT_ISWAP_INV` gate on
-                qubits 4 and 5). Setting any calibration to None will disable that calibration.
-            kwargs: Other desired aqt_compile options.
-
-        Returns:
-            Object whose .circuit(s) attribute contains the optimized circuits(s). If qtrl is
-            installed, the object's .seq attribute is a qtrl Sequence object containing pulse
-            sequences for each compiled circuit, and its .pulse_list(s) attribute contains the
-            corresponding list(s) of cycles.
-        """
-
-        _validate_cirq_circuits(circuits)
-        return self._aqt_compile(circuits, target=target, atol=atol, gate_defs=gate_defs, **kwargs)
-
     def aqt_compile_eca(
         self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        circuits: Union[cirq.Circuit, List[cirq.Circuit]],
         num_equivalent_circuits: int,
         random_seed: Optional[int] = None,
         target: str = "aqt_keysight_qpu",
@@ -441,6 +407,10 @@ class Service(user_config.UserConfig):
         Lawrence Berkeley National Laboratory using Equivalent Circuit Averaging (ECA).
 
         See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
+
+        Note:
+            This method has been deprecated. Instead, use the `num_eca_circuits` argument of
+            `aqt_compile()`.
 
         Args:
             circuits: The circuit(s) to compile.
@@ -463,25 +433,30 @@ class Service(user_config.UserConfig):
             containing pulse sequences for each compiled circuit, and its .pulse_list(s) attribute
             contains the corresponding list(s) of cycles.
         """
-        _validate_cirq_circuits(circuits)
-        _validate_integer_param(num_equivalent_circuits)
+        warnings.warn(
+            "The `aqt_compile_eca()` method has been deprecated, and will be removed in a future "
+            "version of cirq-superstaq. Instead, use the `num_eca_circuits` argument of "
+            "`aqt_compile()` to compile circuits for ECA.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
-        return self._aqt_compile(
+        return self.aqt_compile(
             circuits,
             target=target,
-            num_equivalent_circuits=num_equivalent_circuits,
+            num_eca_circuits=num_equivalent_circuits,
             random_seed=random_seed,
             atol=atol,
             gate_defs=gate_defs,
             **kwargs,
         )
 
-    def _aqt_compile(
+    def aqt_compile(
         self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
-        target: str,
+        circuits: Union[cirq.Circuit, List[cirq.Circuit]],
+        target: str = "aqt_keysight_qpu",
         *,
-        num_equivalent_circuits: Optional[int] = None,
+        num_eca_circuits: Optional[int] = None,
         random_seed: Optional[int] = None,
         atol: Optional[float] = None,
         gate_defs: Optional[
@@ -489,8 +464,35 @@ class Service(user_config.UserConfig):
         ] = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
-        """Generic API for compiling circuits for AQT devices. See `Service.aqt_compile()` and
-        `Service.aqt_compile_eca()`.
+        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
+
+        AQT is a superconducting transmon quantum computing testbed at Lawrence Berkeley National
+        Laboratory. More information can be found at https://aqt.lbl.gov.
+
+        Specifying a nonzero value for `num_eca_circuits` enables compilation with Equivalent
+        Circuit Averaging (ECA). See https://arxiv.org/abs/2111.04572 for a description of ECA.
+
+        Args:
+            circuits: The circuit(s) to compile.
+            target: String of target AQT device.
+            num_eca_circuits: Optional number of logically equivalent random circuits to generate
+                from each input circuit for Equivalent Circuit Averaging (ECA).
+            random_seed: Optional seed used for approximate synthesis and ECA.
+            atol: An optional tolerance to use for approximate gate synthesis.
+            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+                each operation can be a unitary matrix, `cirq.Gate`, `cirq.Operation`, or None. More
+                specific associations take precedence, for example `{"SWAP": cirq.SQRT_ISWAP,
+                "SWAP/C5C4": cirq.SQRT_ISWAP_INV}` implies `SQRT_ISWAP` for all "SWAP" calibrations
+                except "SWAP/C5C4" (which will instead be mapped to a `SQRT_ISWAP_INV` gate on
+                qubits 4 and 5). Setting any calibration to None will disable that calibration.
+            kwargs: Other desired compile options.
+
+        Returns:
+            Object whose .circuit(s) attribute contains the optimized circuits(s). Alternatively for
+            ECA, an object whose .circuits attribute is a list (or list of lists) of logically
+            equivalent circuits. If qtrl is installed, the object's .seq attribute is a qtrl
+            Sequence object containing pulse sequences for each compiled circuit, and its
+            .pulse_list(s) attribute contains the corresponding list(s) of cycles.
         """
         _validate_cirq_circuits(circuits)
 
@@ -502,13 +504,14 @@ class Service(user_config.UserConfig):
             "target": target,
         }
 
-        options_dict: Dict[str, Union[float, Dict[str, Union[cirq.Gate, cirq.Operation, None]]]]
+        options_dict: Dict[str, object]
         options_dict = {**kwargs}
 
-        if num_equivalent_circuits is not None:
-            _validate_integer_param(num_equivalent_circuits)
-            options_dict["num_eca_circuits"] = num_equivalent_circuits
+        if num_eca_circuits is not None:
+            _validate_integer_param(num_eca_circuits)
+            options_dict["num_eca_circuits"] = num_eca_circuits
         if random_seed is not None:
+            _validate_integer_param(random_seed)
             options_dict["random_seed"] = random_seed
         if atol is not None:
             options_dict["atol"] = atol
@@ -519,13 +522,12 @@ class Service(user_config.UserConfig):
                     val = _to_matrix_gate(val).with_name(key)
                 gate_defs_cirq[key] = val
             options_dict["gate_defs"] = gate_defs_cirq
+
         if options_dict:
             request_json["options"] = cirq.to_json(options_dict)
 
         json_dict = self._client.post_request("/aqt_compile", request_json)
-        return css.compiler_output.read_json_aqt(
-            json_dict, circuits_is_list, num_equivalent_circuits
-        )
+        return css.compiler_output.read_json_aqt(json_dict, circuits_is_list, num_eca_circuits)
 
     def qscout_compile(
         self,
