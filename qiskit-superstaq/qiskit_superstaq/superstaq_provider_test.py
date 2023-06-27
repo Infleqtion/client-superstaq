@@ -112,8 +112,8 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
 def test_invalid_target_aqt_compile() -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
-    with pytest.raises(ValueError, match="not an AQT target"):
-        provider.aqt_compile(qiskit.QuantumCircuit(), target="invalid_target")
+    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid AQT target."):
+        provider.aqt_compile(qiskit.QuantumCircuit(), target="ss_example_qpu")
 
 
 @patch("requests.post")
@@ -185,8 +185,8 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
 
 def test_invalid_target_ibmq_compile() -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
-    with pytest.raises(ValueError, match="not an IBMQ target"):
-        provider.ibmq_compile(qiskit.QuantumCircuit(), target="invalid_target")
+    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid IBMQ target."):
+        provider.ibmq_compile(qiskit.QuantumCircuit(), target="ss_example_qpu")
 
 
 @patch(
@@ -271,8 +271,8 @@ def test_qscout_compile(mock_post: MagicMock) -> None:
 
 def test_invalid_target_qscout_compile() -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
-    with pytest.raises(ValueError, match="not a QSCOUT target"):
-        provider.qscout_compile(qiskit.QuantumCircuit(), target="invalid_target")
+    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid Sandia target."):
+        provider.qscout_compile(qiskit.QuantumCircuit(), target="ss_example_qpu")
 
 
 @patch("requests.post")
@@ -357,8 +357,8 @@ def test_cq_compile(mock_post: MagicMock) -> None:
 
 def test_invalid_target_cq_compile() -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
-    with pytest.raises(ValueError, match="not a CQ target"):
-        provider.cq_compile(qiskit.QuantumCircuit(), target="invalid_target")
+    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid CQ target."):
+        provider.cq_compile(qiskit.QuantumCircuit(), target="ss_example_qpu")
 
 
 @mock.patch(
@@ -379,9 +379,9 @@ def test_supercheq(mock_supercheq: mock.MagicMock) -> None:
 @patch("requests.post")
 def test_target_info(mock_post: MagicMock) -> None:
     provider = qss.SuperstaqProvider(api_key="key")
-    fake_data = {"target_info": {"backend_name": "test_fake_device", "max_experiments": 1234}}
+    fake_data = {"target_info": {"backend_name": "ss_example_qpu", "max_experiments": 1234}}
     mock_post.return_value.json = lambda: fake_data
-    assert provider.target_info("test_fake_backend") == fake_data["target_info"]
+    assert provider.target_info("ss_example_qpu") == fake_data["target_info"]
 
 
 def test_get_targets() -> None:

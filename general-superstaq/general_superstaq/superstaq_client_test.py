@@ -771,9 +771,9 @@ def test_superstaq_client_target_info(mock_post: mock.MagicMock) -> None:
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
-    client.target_info("test_fake_device")
+    client.target_info("ss_example_qpu")
 
-    expected_json = {"target": "test_fake_device"}
+    expected_json = {"target": "ss_example_qpu"}
 
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/target_info",

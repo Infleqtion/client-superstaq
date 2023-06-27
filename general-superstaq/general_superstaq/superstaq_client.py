@@ -170,10 +170,13 @@ class _SuperstaqClient:
         Raises:
             An SuperstaqException if the request fails.
         """
+        gss.validation.validate_target(target)
+        gss.validation.validate_integer_param(repetitions)
+
         json_dict: Dict[str, Any] = {
             **serialized_circuits,
             "target": target,
-            "shots": repetitions,
+            "shots": int(repetitions),
         }
 
         if method is not None:
@@ -282,10 +285,13 @@ class _SuperstaqClient:
         method: Optional[str] = None,
     ) -> Dict[str, str]:
         """Makes a POST request to Superstaq API to submit a QUBO problem to the given target."""
+        gss.validation.validate_target(target)
+        gss.validation.validate_integer_param(repetitions)
+
         json_dict = {
             "qubo": gss.qubo.convert_qubo_to_model(qubo),
             "target": target,
-            "shots": repetitions,
+            "shots": int(repetitions),
             "method": method,
         }
         return self.post_request("/qubo", json_dict)
@@ -309,10 +315,13 @@ class _SuperstaqClient:
         Returns:
             The output of SupercheQ.
         """
+        gss.validation.validate_integer_param(num_qubits)
+        gss.validation.validate_integer_param(depth)
+
         json_dict = {
             "files": files,
-            "num_qubits": num_qubits,
-            "depth": depth,
+            "num_qubits": int(num_qubits),
+            "depth": int(depth),
             "circuit_return_type": circuit_return_type,
         }
         return self.post_request("/supercheq", json_dict)
@@ -326,6 +335,8 @@ class _SuperstaqClient:
 
         Returns: Target information.
         """
+        gss.validation.validate_target(target)
+
         json_dict = {
             "target": target,
         }

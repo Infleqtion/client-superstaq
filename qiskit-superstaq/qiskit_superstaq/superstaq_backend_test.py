@@ -115,7 +115,6 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         json={
             "qiskit_circuits": qss.serialize_circuits(qc),
             "target": "aqt_keysight_qpu",
-            "options": "{}",
         },
     )
 
@@ -156,13 +155,13 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         },
     )
 
-    with pytest.raises(ValueError, match="aqt_keysight_qpu is not a valid IBMQ target."):
+    with pytest.raises(ValueError, match="'aqt_keysight_qpu' is not a valid IBMQ target."):
         backend.ibmq_compile([qc])
 
-    with pytest.raises(ValueError, match="aqt_keysight_qpu is not a valid Sandia target."):
+    with pytest.raises(ValueError, match="'aqt_keysight_qpu' is not a valid Sandia target."):
         backend.qscout_compile([qc])
 
-    with pytest.raises(ValueError, match="aqt_keysight_qpu is not a valid CQ target."):
+    with pytest.raises(ValueError, match="'aqt_keysight_qpu' is not a valid CQ target."):
         backend.cq_compile([qc])
 
     # AQT ECA compile
@@ -213,7 +212,7 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
         [qc], [final_logical_to_physical], pulse_sequences=[DEFAULT]
     )
 
-    with pytest.raises(ValueError, match="ibmq_jakarta_qpu is not a valid AQT target."):
+    with pytest.raises(ValueError, match="'ibmq_jakarta_qpu' is not a valid AQT target."):
         backend.aqt_compile([qc])
 
 
