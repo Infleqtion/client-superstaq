@@ -58,7 +58,7 @@
 
       @keyframes type-line-02 {
         from {width: 0;}
-        to {width: 560px;}
+        to {width: 700px;}
       }
 
       .line-02 {
