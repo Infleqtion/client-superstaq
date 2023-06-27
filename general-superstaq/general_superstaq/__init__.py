@@ -1,4 +1,5 @@
 from general_superstaq._init_vars import API_URL, API_VERSION
+from general_superstaq._version import __version__
 from general_superstaq.resource_estimate import ResourceEstimate
 from general_superstaq.superstaq_exceptions import (
     SuperstaQException,
@@ -9,8 +10,6 @@ from general_superstaq.superstaq_exceptions import (
 from general_superstaq.typing import MaxSharpeJson, MinVolJson, QuboModel, TSPJson, WareHouseJson
 
 from . import qubo, serialization, superstaq_client, superstaq_exceptions, user_config
-
-__version__ = open(".version").readline().strip()
 
 __all__ = [
     "__version__",

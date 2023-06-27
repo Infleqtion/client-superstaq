@@ -21,7 +21,7 @@ include = ["supermarq*"]
 supermarq = ["py.typed"]
 
 [tool.setuptools.dynamic.version]
-file = "supermarq/.version"
+attr = "supermarq/._version.__version__"
 
 [tool.setuptools.dynamic.dependencies]
 file = ["requirements.txt"]

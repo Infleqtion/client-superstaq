@@ -1,4 +1,5 @@
 from . import compiler_output, serialization, validation
+from ._version import __version__
 from .compiler_output import active_qubit_indices, measured_qubit_indices
 from .custom_gates import (
     AceCR,
@@ -12,8 +13,6 @@ from .serialization import deserialize_circuits, serialize_circuits
 from .superstaq_backend import SuperstaQBackend
 from .superstaq_job import SuperstaQJob
 from .superstaq_provider import SuperstaQProvider
-
-__version__ = open(".version").readline().strip()
 
 __all__ = [
     "active_qubit_indices",

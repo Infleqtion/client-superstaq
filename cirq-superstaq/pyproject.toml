@@ -21,7 +21,7 @@ include = ["cirq_superstaq*"]
 cirq_superstaq = ["py.typed"]
 
 [tool.setuptools.dynamic.version]
-file = "cirq_superstaq/.version"
+attr = "cirq_superstaq/._version.__version__"
 
 [tool.setuptools.dynamic.dependencies]
 file = ["requirements.txt"]

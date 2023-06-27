@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from cirq_superstaq import compiler_output
+from cirq_superstaq._version import __version__
 from cirq_superstaq.compiler_output import active_qubit_indices, measured_qubit_indices
 from cirq_superstaq.job import Job
 from cirq_superstaq.ops import (
@@ -58,8 +59,6 @@ from cirq_superstaq.serialization import (
     serialize_circuits,
 )
 from cirq_superstaq.service import Service
-
-__version__ = open(".version").readline().strip()
 
 __all__ = [
     "AQTICCX",

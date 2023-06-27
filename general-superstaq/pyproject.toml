@@ -21,7 +21,7 @@ include = ["general_superstaq*"]
 general_superstaq = ["py.typed"]
 
 [tool.setuptools.dynamic.version]
-file = "general_superstaq/.version"
+attr = "general_superstaq._version.__version__"
 
 [tool.setuptools.dynamic.dependencies]
 file = ["requirements.txt"]

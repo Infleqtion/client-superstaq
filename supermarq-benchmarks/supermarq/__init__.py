@@ -1,4 +1,5 @@
 from . import benchmark, converters, features, plotting, simulation, stabilizers
+from ._version import __version__
 from .benchmarks import (
     bit_code,
     ghz,
@@ -9,8 +10,6 @@ from .benchmarks import (
     qaoa_vanilla_proxy,
     vqe_proxy,
 )
-
-__version__ = open(".version").readline().strip()
 
 __all__ = [
     "__version__",
