@@ -376,14 +376,24 @@ def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None
 )
 def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    out = service.aqt_compile_eca(
-        cirq.Circuit(), num_equivalent_circuits=1, random_seed=1234, atol=1e-2
-    )
+    out = service.aqt_compile(cirq.Circuit(), num_eca_circuits=1, random_seed=1234, atol=1e-2)
     mock_post_request.assert_called_once()
     assert out.circuits == [cirq.Circuit()]
     assert out.final_logical_to_physicals == [{}]
-    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    assert not hasattr(out, "circuit")
+    assert not hasattr(out, "pulse_list")
     assert not hasattr(out, "final_logical_to_physical")
+
+    out = service.aqt_compile([cirq.Circuit()], num_eca_circuits=1, random_seed=1234, atol=1e-2)
+    assert out.circuits == [[cirq.Circuit()]]
+    assert out.final_logical_to_physicals == [[{}]]
+
+    with pytest.warns(DeprecationWarning, match="has been deprecated"):
+        deprecated_out = service.aqt_compile_eca(
+            [cirq.Circuit()], num_equivalent_circuits=1, random_seed=1234, atol=1e-2
+        )
+        assert deprecated_out.circuits == out.circuits
+        assert deprecated_out.final_logical_to_physicals == out.final_logical_to_physicals
 
 
 @mock.patch(
