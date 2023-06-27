@@ -1,4 +1,4 @@
-cirq-superstaq~=0.3.33
+cirq-superstaq~=0.3.34
 matplotlib<=3.5.2
-qiskit-superstaq~=0.3.33
+qiskit-superstaq~=0.3.34
 scikit-learn~=1.0  # supports python 3.7
