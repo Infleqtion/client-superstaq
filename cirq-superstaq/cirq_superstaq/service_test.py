@@ -15,7 +15,6 @@
 import collections
 import json
 import os
-import re
 import textwrap
 from unittest import mock
 
@@ -82,32 +81,6 @@ def test_validate_cirq_circuits() -> None:
         "sequence of `cirq.Circuit` instances.",
     ):
         css.service._validate_cirq_circuits([circuit, "circuit_invalid"])
-
-
-def test_validate_integer_param() -> None:
-
-    # Tests for valid inputs -> Pass
-    valid_inputs = [1, 10, "10", 10.0, np.int16(10), 0b1010]
-    for input_value in valid_inputs:
-        css.service._validate_integer_param(input_value)
-
-    # Tests for invalid input -> TypeError
-    invalid_inputs = [None, "reps", "{!r}".format(b"invalid"), 1.5, "1.0", {1}, [1, 2, 3], "0b1010"]
-    for input_value in invalid_inputs:
-        with pytest.raises(TypeError) as msg:
-            css.service._validate_integer_param(input_value)
-        assert re.search(
-            re.escape(f"{input_value} cannot be safely cast as an integer."), str(msg.value)
-        )
-
-    # Tests for invalid input -> ValueError
-    invalid_values = [0, -1]
-    for input_value in invalid_values:
-        with pytest.raises(
-            ValueError,
-            match="Must be a positive integer.",
-        ):
-            css.service._validate_integer_param(input_value)
 
 
 def test_service_resolve_target() -> None:
@@ -243,6 +216,9 @@ def test_service_create_job() -> None:
     with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
         service.create_job(cirq.Circuit())
 
+    with pytest.raises(ValueError, match="does not support the submission of multiple circuits"):
+        service.create_job([cirq.Circuit()])  # type: ignore
+
 
 def test_service_get_balance() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
@@ -345,6 +321,9 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
     assert out.circuit == cirq.Circuit()
     assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
 
+    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid AQT target."):
+        service.aqt_compile(cirq.Circuit(), target="ss_example_qpu")
+
 
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaQClient.post_request",
@@ -408,7 +387,7 @@ def test_service_resource_estimate(mock_resource_estimate: mock.MagicMock) -> No
         "resource_estimates": [{"num_single_qubit_gates": 0, "num_two_qubit_gates": 1, "depth": 2}]
     }
 
-    assert service.resource_estimate(cirq.Circuit(), "qasm_simulator") == resource_estimate
+    assert service.resource_estimate(cirq.Circuit(), "ibmq_qasm_simulator") == resource_estimate
 
 
 @mock.patch(
@@ -426,7 +405,7 @@ def test_service_resource_estimate_list(mock_resource_estimate: mock.MagicMock) 
         ]
     }
 
-    assert service.resource_estimate([cirq.Circuit()], "qasm_simulator") == resource_estimates
+    assert service.resource_estimate([cirq.Circuit()], "ibmq_qasm_simulator") == resource_estimates
 
 
 @mock.patch("general_superstaq.superstaq_client._SuperstaQClient.qscout_compile")
@@ -457,6 +436,9 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
     assert out.circuit == circuit
     assert out.final_logical_to_physical == final_logical_to_physical
     assert out.jaqal_program == jaqal_program
+
+    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid Sandia target."):
+        service.qscout_compile(cirq.Circuit(), target="ss_example_qpu")
 
 
 @mock.patch("general_superstaq.superstaq_client._SuperstaQClient.qscout_compile")
@@ -543,6 +525,9 @@ def test_service_cq_compile_single(mock_post: mock.MagicMock) -> None:
     assert out.circuit == circuit
     assert out.final_logical_to_physical == final_logical_to_physical
 
+    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid CQ target."):
+        service.cq_compile(cirq.Circuit(), target="ss_example_qpu")
+
 
 @mock.patch("requests.post")
 def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
@@ -569,8 +554,8 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
         assert service.ibmq_compile(cirq.Circuit()).pulse_sequence is None
         assert service.ibmq_compile([cirq.Circuit()]).pulse_sequences is None
 
-    with pytest.raises(ValueError, match="not an IBMQ target"):
-        _ = service.ibmq_compile(cirq.Circuit(), target="aqt_keysight_qpu")
+    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid IBMQ target."):
+        service.ibmq_compile(cirq.Circuit(), target="ss_example_qpu")
 
 
 @mock.patch(
@@ -589,10 +574,10 @@ def test_service_supercheq(mock_supercheq: mock.MagicMock) -> None:
 
 @mock.patch("requests.post")
 def test_service_target_info(mock_post: mock.MagicMock) -> None:
-    fake_data = {"target_info": {"backend_name": "test_fake_device", "max_experiments": 1234}}
+    fake_data = {"target_info": {"backend_name": "ss_example_qpu", "max_experiments": 1234}}
     mock_post.return_value.json = lambda: fake_data
     service = css.Service(api_key="key", remote_host="http://example.com")
-    assert service.target_info("test_fake_device") == fake_data["target_info"]
+    assert service.target_info("ss_example_qpu") == fake_data["target_info"]
 
 
 @mock.patch.dict(os.environ, {"SUPERSTAQ_API_KEY": "tomyheart"})
