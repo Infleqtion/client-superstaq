@@ -11,11 +11,11 @@ import qiskit
 
 import qiskit_superstaq as qss
 
-# SuperstaQ token retrieved through API
+# Superstaq token retrieved through API
 token = "insert api token"
 
 # Create provider using authorization token
-superstaq = qss.SuperstaQProvider(token)
+superstaq = qss.SuperstaqProvider(token)
 
 # Retrieve backend from superstaq provider
 backend = superstaq.get_backend("ibmq_qasm_simulator")

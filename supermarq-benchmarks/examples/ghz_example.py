@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import time
 
-import cirq_superstaq
+import cirq_superstaq as css
 
 import supermarq
 

@@ -3,11 +3,13 @@ import pickle
 from typing import Any
 
 
-def _bytes_to_str(bytes_data: bytes) -> str:
+def bytes_to_str(bytes_data: bytes) -> str:
+    """Convert arbitrary bytes data into a string."""
     return codecs.encode(bytes_data, "base64").decode()
 
 
-def _str_to_bytes(str_data: str) -> bytes:
+def str_to_bytes(str_data: str) -> bytes:
+    """Decode the string-encoded bytes data returned by `bytes_to_str`."""
     return codecs.decode(str_data.encode(), "base64")
 
 
@@ -21,7 +23,7 @@ def serialize(obj: Any) -> str:
         str representing the serialized object
     """
 
-    return _bytes_to_str(pickle.dumps(obj))
+    return bytes_to_str(pickle.dumps(obj))
 
 
 def deserialize(serialized_obj: str) -> Any:
@@ -34,4 +36,4 @@ def deserialize(serialized_obj: str) -> Any:
         the serialized object
     """
 
-    return pickle.loads(_str_to_bytes(serialized_obj))
+    return pickle.loads(str_to_bytes(serialized_obj))

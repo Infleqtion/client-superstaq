@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring
 from __future__ import annotations
 
 import importlib
@@ -56,7 +55,9 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
     return sorted(qubit_indices)
 
 
-class CompilerOutput:  # pylint: disable=missing-class-docstring
+class CompilerOutput:
+    """A class that arranges compiled circuit information."""
+
     def __init__(
         self,
         circuits: Union[cirq.Circuit, List[cirq.Circuit], List[List[cirq.Circuit]]],
@@ -70,6 +71,18 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
         jaqal_programs: Optional[Union[List[str], str]] = None,
         pulse_lists: Optional[Union[List[List[List[Any]]], List[List[List[List[Any]]]]]] = None,
     ) -> None:
+        """Initializes class attributes.
+
+        Args:
+            circuits: A list (of at most 2 dimensions) containing `cirq.Circuit` objects.
+            final_logical_to_physicals: Post-compilation mapping of logical qubits to physical
+                qubits.
+            pulse_sequences: Qiskit pulse schedules for the compiled circuit(s).
+            seq: Qtrl pulse sequence, if qtrl is available locally.
+            jaqal_programs: The Jaqal program (resp. programs) as a string (resp. list of
+                strings).
+            pulse_lists: Either 3 or 4 dimensional lists of pulse cycles.
+        """
         if isinstance(circuits, cirq.Circuit):
             self.circuit = circuits
             self.final_logical_to_physical = final_logical_to_physicals
@@ -107,8 +120,8 @@ class CompilerOutput:  # pylint: disable=missing-class-docstring
         )
 
 
-def read_json_ibmq(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
-    """Reads out returned JSON from SuperstaQ API's IBMQ compilation endpoint.
+def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
+    """Reads out returned JSON from Superstaq API's IBMQ compilation endpoint.
 
     Args:
         json_dict: a JSON dictionary matching the format returned by /ibmq_compile endpoint
@@ -124,21 +137,22 @@ def read_json_ibmq(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compile
     )
     pulses = None
 
-    if importlib.util.find_spec("qiskit"):
-        import qiskit
+    if "pulses" in json_dict:
+        if importlib.util.find_spec("qiskit") and importlib.util.find_spec("qiskit.qpy"):
+            import qiskit
 
-        if "0.22" < qiskit.__version__ < "0.23":
-            pulses = gss.serialization.deserialize(json_dict["pulses"])
+            if "0.24" < qiskit.__version__ < "0.25":
+                pulses = gss.serialization.deserialize(json_dict["pulses"])
+            else:
+                warnings.warn(
+                    "ibmq_compile requires Qiskit Terra version 0.24.* to deserialize compiled "
+                    f"pulse sequences (you have {qiskit.__version__})."
+                )
         else:
             warnings.warn(
-                "ibmq_compile requires Qiskit Terra version 0.22.* to deserialize compiled pulse "
-                f"sequences (you have {qiskit.__version__})."
+                "ibmq_compile requires Qiskit Terra version 0.24.* to deserialize compiled pulse "
+                "sequences."
             )
-    else:
-        warnings.warn(
-            "ibmq_compile requires Qiskit Terra version 0.22.* to deserialize compiled pulse "
-            "sequences."
-        )
 
     if circuits_is_list:
         return CompilerOutput(compiled_circuits, final_logical_to_physicals, pulse_sequences=pulses)
@@ -150,14 +164,16 @@ def read_json_ibmq(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compile
 def read_json_aqt(  # pylint: disable=missing-param-doc
     json_dict: Dict[str, Any], circuits_is_list: bool, num_eca_circuits: Optional[int] = None
 ) -> CompilerOutput:
-    """Reads out returned JSON from SuperstaQ API's AQT compilation endpoint.
+    """Reads out returned JSON from Superstaq API's AQT compilation endpoint.
 
     Args:
-        json_dict: a JSON dictionary matching the format returned by /aqt_compile endpoint
-        circuits_is_list: bool flag that controls whether the returned object has a .circuits
-            attribute (if True) or a .circuit attribute (False)
+        json_dict: JSON dictionary matching the format returned by aqt_compile endpoint.
+        circuits_is_list: Bool flag that controls whether the returned object has a .circuits
+            attribute (if True) or a .circuit attribute (False).
+        num_eca_circuits: Number of logically equivalent random circuits to generate for each
+            input circuit.
     Returns:
-        a CompilerOutput object with the compiled circuit(s). If qtrl is available locally,
+        A CompilerOutput object with the compiled circuit(s). If qtrl is available locally,
         the returned object also stores the pulse sequence in the .seq attribute and the
         list(s) of cycles in the .pulse_list(s) attribute.
     """
@@ -175,9 +191,18 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
     seq = None
     pulse_lists = None
 
-    if importlib.util.find_spec(
-        "qtrl"
-    ):  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
+    if "state_jp" not in json_dict:
+        warnings.warn(
+            "This output only contains compiled circuits (using a default AQT gate set). To "
+            "get back the corresponding pulse sequence, you must first upload your qtrl configs "
+            "using `service.aqt_upload_configs`."
+        )
+    elif not importlib.util.find_spec("qtrl"):
+        warnings.warn(
+            "This output only contains compiled circuits. The qtrl package must be installed in "
+            "order to deserialize compiled pulse sequences."
+        )
+    else:  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
 
         def _sequencer_from_state(state: Dict[str, Any]) -> qtrl.sequencer.Sequence:
             seq = qtrl.sequencer.Sequence(n_elements=1)
@@ -201,11 +226,6 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
             state["_readout"] = readout_seq
 
         seq = _sequencer_from_state(state)
-    else:
-        warnings.warn(
-            "Your sequence for this output is None. Please make sure you have the qtrl package "
-            "installed in order to deserialize compiled pulse sequences."
-        )
 
     if num_eca_circuits is not None:
         compiled_circuits = [
@@ -233,7 +253,7 @@ def read_json_aqt(  # pylint: disable=missing-param-doc
 
 
 def read_json_qscout(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
-    """Reads out returned JSON from SuperstaQ API's QSCOUT compilation endpoint.
+    """Reads out returned JSON from Superstaq API's QSCOUT compilation endpoint.
 
     Args:
         json_dict: a JSON dictionary matching the format returned by /qscout_compile endpoint
@@ -261,25 +281,3 @@ def read_json_qscout(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compi
         final_logical_to_physicals=final_logical_to_physicals[0],
         jaqal_programs=json_dict["jaqal_programs"][0],
     )
-
-
-def read_json_only_circuits(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
-    """Reads out returned JSON from SuperstaQ API's CQ compilation endpoint.
-
-    Args:
-        json_dict: a JSON dictionary matching the format returned by /cq_compile endpoint
-        circuits_is_list: bool flag that controls whether the returned object has a .circuits
-            attribute (if True) or a .circuit attribute (False)
-    Returns:
-        a CompilerOutput object with the compiled circuit(s)
-    """
-
-    compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
-    final_logical_to_physicals: List[Dict[cirq.Qid, cirq.Qid]] = list(
-        map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
-    )
-
-    if circuits_is_list:
-        return CompilerOutput(compiled_circuits, final_logical_to_physicals)
-
-    return CompilerOutput(compiled_circuits[0], final_logical_to_physicals[0])

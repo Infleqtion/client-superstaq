@@ -90,7 +90,8 @@ class BSwapPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
     """iSWAP-like qutrit entangling gate swapping the "11" and "22" states of two qutrits."""
 
     @property
-    def dimension(self) -> int:  # pylint: disable=missing-function-docstring
+    def dimension(self) -> int:
+        """Indicates that this gate acts on qutrits."""
         return 3
 
     @property
@@ -171,7 +172,8 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
     """
 
     @property
-    def dimension(self) -> int:  # pylint: disable=missing-function-docstring
+    def dimension(self) -> int:
+        """Indicates that this gate acts on qutrits."""
         return 3
 
     def _qid_shape_(self) -> Tuple[int, int]:
@@ -306,14 +308,16 @@ class QutritZ2PowGate(_QutritZPowGate):
 
 
 @cirq.value_equality(approximate=True)
-class QubitSubspaceGate(cirq.Gate):  # pylint: disable=missing-class-docstring
+class QubitSubspaceGate(cirq.Gate):
+    """Embeds an n-qubit (i.e. SU(2^n)) gate into a given subspace of a higher-dimensional gate."""
+
     def __init__(
         self,
         sub_gate: cirq.Gate,
         qid_shape: Sequence[int],
         subspaces: Optional[Sequence[Tuple[int, int]]] = None,
     ) -> None:
-        """Embeds an n-qubit (i.e. SU(2^n)) gate into a given subspace of a higher-dimensional gate.
+        """Initializes a QubitSubspaceGate.
 
         Args:
             sub_gate: The qubit gate to promote to a higher dimension.
@@ -349,15 +353,23 @@ class QubitSubspaceGate(cirq.Gate):  # pylint: disable=missing-class-docstring
         ]
 
     @property
-    def sub_gate(self) -> cirq.Gate:  # pylint: disable=missing-function-docstring
+    def sub_gate(self) -> cirq.Gate:
+        """The gate that is applied to the specified subspace."""
         return self._sub_gate
 
     @property
-    def qid_shape(self) -> Tuple[int, ...]:  # pylint: disable=missing-function-docstring
+    def qid_shape(self) -> Tuple[int, ...]:
+        """Specifies the qudit dimension for each of the inputs."""
         return self._qid_shape
 
     @property
-    def subspaces(self) -> List[Tuple[int, int]]:  # pylint: disable=missing-function-docstring
+    def subspaces(self) -> List[Tuple[int, int]]:
+        """A list of subspace indices acted upon.
+
+        For instance, a CX on the 0-1 qubit subspace of two qudits would have subspaces of
+        [(0, 1), (0, 1)]. The same gate acting on the 1-2 subspaces of both qudits would correspond
+        to [(1, 2), (1, 2)].
+        """
         return self._subspaces
 
     def _qid_shape_(self) -> Tuple[int, ...]:
@@ -422,11 +434,9 @@ class QubitSubspaceGate(cirq.Gate):  # pylint: disable=missing-class-docstring
         if other.subspaces != self.subspaces:
             return False
 
-        return cirq.equal_up_to_global_phase(
-            self.sub_gate, other.sub_gate, atol=atol
-        ) or cirq.equal_up_to_global_phase(
-            other.sub_gate, self.sub_gate, atol=atol
-        )  # Test both orders as a workaround for https://github.com/quantumlib/Cirq/issues/5980
+        # Do not ignore global phase when comparing sub gates, as it becomes physical when the gate
+        # is expanded to higher dimensions
+        return cirq.approx_eq(self.sub_gate, other.sub_gate, atol=atol)
 
     def _json_dict_(self) -> Dict[str, Any]:
         return cirq.obj_to_dict_helper(self, ["sub_gate", "qid_shape", "subspaces"])
@@ -454,14 +464,16 @@ class QubitSubspaceGate(cirq.Gate):  # pylint: disable=missing-class-docstring
 
 
 def qudit_swap_op(qudit0: cirq.Qid, qudit1: cirq.Qid) -> cirq.Operation:
-    """Construct a `QuditSwapGate` and apply it to the provided qudits.
+    """Construct a SWAP gate and apply it to the provided qudits.
+
+    If both qudits have dimension 2, uses `cirq.SWAP`; otherwise uses `QuditSwapGate`.
 
     Args:
         qudit0: The first qudit to swap.
         qudit1: The second qudit to swap.
 
     Returns:
-        A `QuditSwapGate` acting on the provided qudits.
+        A SWAP gate acting on the provided qudits.
 
     Raises:
         ValueError: If the input qudits don't have the same dimension.
@@ -469,6 +481,9 @@ def qudit_swap_op(qudit0: cirq.Qid, qudit1: cirq.Qid) -> cirq.Operation:
 
     if qudit0.dimension != qudit1.dimension:
         raise ValueError(f"{qudit0} and {qudit1} do not have the same dimension.")
+
+    if qudit0.dimension == 2:
+        return cirq.SWAP(qudit0, qudit1)
 
     return QuditSwapGate(dimension=qudit0.dimension).on(qudit0, qudit1)
 
@@ -501,9 +516,20 @@ QutritZ1 = QutritZ1PowGate()
 QutritZ2 = QutritZ2PowGate()
 
 
-def custom_resolver(  # pylint: disable=missing-function-docstring
+def custom_resolver(
     cirq_type: str,
 ) -> Optional[Type[cirq.Gate]]:
+    """Tells `cirq.json` how to deserialize cirq_superstaq's custom gates.
+
+    Changes to gate names in this file should be reflected in this resolver.
+    See quantumai.google/cirq/dev/serialization for more information about (de)serialization.
+
+    Args:
+        cirq_type: The string of the gate type for the serializer to resolve.
+
+    Returns:
+        The resolved Cirq Gate matching the input, or None if no match.
+    """
     if cirq_type == "QuditSwapGate":
         return QuditSwapGate
     if cirq_type == "BSwapPowGate":
