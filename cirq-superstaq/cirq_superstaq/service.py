@@ -500,10 +500,10 @@ class Service(user_config.UserConfig):
         options_dict = {**kwargs}
 
         if num_eca_circuits is not None:
-            _validate_integer_param(num_eca_circuits)
+            gss.validation.validate_integer_param(num_eca_circuits)
             options_dict["num_eca_circuits"] = int(num_eca_circuits)
         if random_seed is not None:
-            _validate_integer_param(random_seed)
+            gss.validation.validate_integer_param(random_seed)
             options_dict["random_seed"] = int(random_seed)
         if atol is not None:
             options_dict["atol"] = float(atol)
