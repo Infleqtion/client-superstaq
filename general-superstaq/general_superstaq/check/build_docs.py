@@ -11,9 +11,7 @@ from general_superstaq.check import check_utils
 
 
 @check_utils.enable_exit_on_failure
-def run(  # pylint: disable=missing-function-docstring
-    *args: str, sphinx_paths: Optional[List[str]] = None
-) -> int:
+def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.description = textwrap.dedent(

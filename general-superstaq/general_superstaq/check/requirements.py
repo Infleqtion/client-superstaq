@@ -18,7 +18,7 @@ from general_superstaq.check import check_utils
 
 
 @check_utils.enable_exit_on_failure
-def run(  # pylint: disable=missing-function-docstring
+def run(
     *args: str,
     include: Union[str, Iterable[str]] = "*requirements.txt",
     exclude: Union[str, Iterable[str]] = "",

@@ -42,19 +42,19 @@ class Style(str, enum.Enum):  # pylint: disable=missing-class-docstring
     RESET = "\033[0m"
 
 
-def styled(text: str, style_code: str) -> str:  # pylint: disable=missing-function-docstring
+def styled(text: str, style_code: str) -> str:
     return style_code + text + Style.RESET
 
 
-def warning(text: str) -> str:  # pylint: disable=missing-function-docstring
+def warning(text: str) -> str:
     return styled(text, Style.BOLD + Style.YELLOW)
 
 
-def failure(text: str) -> str:  # pylint: disable=missing-function-docstring
+def failure(text: str) -> str:
     return styled(text, Style.BOLD + Style.RED)
 
 
-def success(text: str) -> str:  # pylint: disable=missing-function-docstring
+def success(text: str) -> str:
     return styled(text, Style.BOLD + Style.GREEN)
 
 
@@ -195,7 +195,7 @@ def get_test_files(
 # file parsing, incremental checks, and decorator to exit instead of returning a failing exit code
 
 
-def get_file_parser() -> argparse.ArgumentParser:  # pylint: disable=missing-function-docstring
+def get_file_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         allow_abbrev=False, formatter_class=argparse.RawDescriptionHelpFormatter
     )

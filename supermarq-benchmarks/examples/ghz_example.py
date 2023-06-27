@@ -6,7 +6,9 @@ import cirq_superstaq
 import supermarq
 
 
-def main() -> None:  # pylint: disable=missing-function-docstring
+def main() -> None: 
+    """Function to run GHZ Supermarq benchmarks.
+    """    
     service = cirq_superstaq.Service(
         api_key="""Insert superstaq token that you received from https://superstaq.super.tech""",
     )

@@ -1,4 +1,5 @@
-# pylint: disable=missing-function-docstring
+# pylint: disable=missing-function-docstring,missing-class-docstring
+
 import io
 import warnings
 from unittest import mock
