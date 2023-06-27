@@ -48,7 +48,7 @@
 
       @keyframes type-line-01 {
         from {width: 0;}
-        to {width: 238px;}
+        to {width: 234px;}
       }
 
       .line-01 {
@@ -58,7 +58,7 @@
 
       @keyframes type-line-02 {
         from {width: 0;}
-        to {width: 550px;}
+        to {width: 560px;}
       }
 
       .line-02 {
@@ -68,7 +68,7 @@
 
       @keyframes type-line-03 {
         from {width: 0;}
-        to {width: 635px;}
+        to {width: 630px;}
       }
 
       .line-03 {
