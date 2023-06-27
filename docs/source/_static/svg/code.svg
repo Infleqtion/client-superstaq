@@ -48,7 +48,7 @@
 
       @keyframes type-line-01 {
         from {width: 0;}
-        to {width: 234px;}
+        to {width: 260px;}
       }
 
       .line-01 {
@@ -68,7 +68,7 @@
 
       @keyframes type-line-03 {
         from {width: 0;}
-        to {width: 630px;}
+        to {width: 680px;}
       }
 
       .line-03 {
@@ -78,7 +78,7 @@
 
       @keyframes type-line-04 {
         from {width: 0;}
-        to {width: 972px;}
+        to {width: 1022px;}
       }
 
       .line-04 {
@@ -88,7 +88,7 @@
 
       @keyframes type-line-05 {
         from {width: 0;}
-        to {width: 414px;}
+        to {width: 450px;}
       }
 
       .line-05 {
@@ -98,7 +98,7 @@
 
       @keyframes type-line-06 {
         from {width: 0;}
-        to {width: 576px;}
+        to {width: 626px;}
       }
 
       .line-06 {
@@ -128,7 +128,7 @@
 
       @keyframes type-line-09 {
         from {width: 0;}
-        to {width: 468px;}
+        to {width: 515px;}
       }
 
       .line-09 {
@@ -138,7 +138,7 @@
 
       @keyframes type-line-10 {
         from {width: 0;}
-        to {width: 576px;}
+        to {width: 626px;}
       }
 
       .line-10 {
@@ -148,7 +148,7 @@
 
       @keyframes type-line-11 {
         from {width: 0;}
-        to {width: 468px;}
+        to {width: 518px;}
       }
 
       .line-11 {
