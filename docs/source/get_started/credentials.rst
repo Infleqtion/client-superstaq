@@ -6,4 +6,4 @@ Below are instructions for accessing Superstaq credentials. Note that you will n
 #. Click "Sign in with Google".
 #. Click the clipboard symbol to copy the key shown next to "Your API key". Save this key in a secure location; never upload your API key to GitHub.
 
-Your balance is listed above your Superstaq API key. If you have any questions or concerns about your balance (e.g., your balance is too low), please contact info@super.tech.
+Your balance is listed above your Superstaq API key. If you have any questions or concerns about your balance (e.g., your balance is too low), please contact superstaq@infleqtion.com.
