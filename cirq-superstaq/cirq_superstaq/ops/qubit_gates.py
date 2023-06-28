@@ -393,7 +393,7 @@ def barrier(*qubits: cirq.Qid) -> cirq.Operation:
     """Equivalent to https://qiskit.org/documentation/stubs/qiskit.circuit.library.Barrier.html.
 
     Args:
-        *qubits: The qubits that the barrier will cover.
+        qubits: The qubits that the barrier will cover.
 
     Returns:
         A barrier `cirq.Operation` on the provided qubits.
