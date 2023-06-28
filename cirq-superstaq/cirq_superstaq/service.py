@@ -338,7 +338,11 @@ class Service(user_config.UserConfig):
         return balance
 
     def get_targets(self) -> Dict[str, List[str]]:
-        """Get list of available targets."""
+        """Get list of available targets.
+
+        Returns:
+            A list of available Superstaq targets.
+        """
         return self._client.get_targets()["superstaq_targets"]
 
     def resource_estimate(
@@ -348,9 +352,10 @@ class Service(user_config.UserConfig):
 
         Args:
             circuits: Cirq Circuit(s).
-            target: String of target representing target device
+            target: String of target representing target device.
+        
         Returns:
-            ResourceEstimate(s) containing resource costs (after compilation)
+            ResourceEstimate(s) containing resource costs (after compilation).
         """
         _validate_cirq_circuits(circuits)
         circuit_is_list = not isinstance(circuits, cirq.Circuit)
@@ -386,10 +391,11 @@ class Service(user_config.UserConfig):
         ] = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
-        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
-        Lawrence Berkeley National Laboratory using Equivalent Circuit Averaging (ECA).
-
-        See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
+        """Compiles and optimizes the given circuit(s) for AQT using ECA.
+        
+        The Advanced Quantum Testbed (AQT) is a superconducting transmon quantum computing testbed
+        at Lawrence Berkeley National Laboratory. See arxiv.org/pdf/2111.04572.pdf for a description
+        of Equivalent Circuit Averaging (ECA).
 
         Note:
             This method has been deprecated. Instead, use the `num_eca_circuits` argument of
@@ -675,7 +681,16 @@ class Service(user_config.UserConfig):
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int
     ) -> Tuple[List[cirq.Circuit], npt.NDArray[np.float_]]:
-        """Returns the randomly generated circuits and the fidelity matrix for inputted files."""
+        """Returns the randomly generated circuits and the fidelity matrix for inputted files.
+
+        Args:
+            files: List of files to use Supercheq on.
+            num_qubits: The number of qubits to use to generate random circuits.
+            depth: The depth of the random circuits to generate.
+
+        Returns:
+            The generated circuits and the fidelities for distinguishing files.
+        """
 
         json_dict = self._client.supercheq(files, num_qubits, depth, "cirq_circuits")
         circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])

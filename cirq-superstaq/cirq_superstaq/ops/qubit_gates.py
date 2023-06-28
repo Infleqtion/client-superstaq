@@ -11,7 +11,17 @@ import cirq_superstaq as css
 
 
 def approx_eq_mod(a: cirq.TParamVal, b: cirq.TParamVal, period: float, atol: float = 1e-8) -> bool:
-    """Check if a ~= b (mod period). If either input is an unresolved parameter, returns a == b."""
+    """Check if a ~= b (mod period). If either input is an unresolved parameter, returns a == b.
+
+    Args:
+        a: A Cirq parameter value.
+        b: A Cirq parameter value.
+        period: The parameter period (i.e., cycle time).
+        atol: The absolute tolerance for equality checking.
+
+    Returns:
+        A boolean indicating whether input parameters are approximately equal.
+    """
 
     if cirq.is_parameterized(a) or cirq.is_parameterized(b):
         return a == b
@@ -389,7 +399,14 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
         return ("|",) * self.num_qubits()
 
 
-def barrier(*qubits: cirq.Qid) -> cirq.Operation:  # pylint: disable=missing-function-docstring
+def barrier(*qubits: cirq.Qid) -> cirq.Operation:
+    """Defines a barrier on the input qubits.
+
+    Args:
+        *qubits: The qubits to operate on.
+
+    Returns:
+        A `cirq-superstaq` barrier operation."""
     qid_shape = tuple(q.dimension for q in qubits)
     return css.Barrier(qid_shape=qid_shape).on(*qubits)
 
@@ -418,9 +435,20 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             else:
                 self.component_gates += (gate,)
 
-    def qubit_index_to_gate_and_index(  # pylint: disable=missing-function-docstring
+    def qubit_index_to_gate_and_index(
         self, index: int
     ) -> Tuple[cirq.Gate, int]:
+        """Gets gate (and index) for the corresponding index.
+
+        Args:
+            index: The index into a particular member of the `ParallelGates` operation.
+
+        Returns:
+            A tuple of the gate at the given index and the index itself.
+
+        Raises:
+            ValueError: If index is oustide bounds of gate index range.
+        """
         for gate in self.component_gates:
             if gate.num_qubits() > index >= 0:
                 return gate, index
@@ -428,6 +456,14 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         raise ValueError("index out of range")
 
     def qubit_index_to_equivalence_group_key(self, index: int) -> int:
+        """Gets equivalence group key for a qubit index.
+
+        Args:
+            index: The qubit index to use for generating equivalence group key.
+
+        Returns:
+            The equivalence group key.
+        """
         indexed_gate, index_in_gate = self.qubit_index_to_gate_and_index(index)
         if indexed_gate.num_qubits() == 1:
             # find the first instance of the same gate
@@ -587,11 +623,21 @@ class RGate(cirq.PhasedXPowGate):
         )
 
     @property
-    def phi(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
+    def phi(self) -> cirq.TParamVal:
+        """Angle defining the axis of rotation in the `X`-`Y` plane.
+
+        Returns:
+            The phi rotation angle.
+        """
         return self.phase_exponent * _pi(self.phase_exponent)
 
     @property
-    def theta(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
+    def theta(self) -> cirq.TParamVal:
+        """Angle by which to rotate about the axis given by self.phi.
+
+        Returns:
+            The theta rotation angle.
+        """
         return self.exponent * _pi(self.exponent)
 
     def __pow__(self, power: cirq.TParamVal) -> "RGate":
@@ -645,22 +691,47 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
 
     @property
     def sub_gate(self) -> RGate:
+        """The gate that is applied to the specified subspace.
+
+        Returns:
+            The underlying gate used.
+        """
         return self._sub_gate
 
     @property
-    def phase_exponent(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
+    def phase_exponent(self) -> cirq.TParamVal:
+        """Phase exponent of sub gate.
+
+        Returns:
+            The phase exponent.
+        """
         return self.sub_gate.phase_exponent
 
     @property
-    def exponent(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
+    def exponent(self) -> cirq.TParamVal:
+        """Exponent of sub gate.
+
+        Returns:
+            The sub gate exponent.
+        """
         return self.sub_gate.exponent
 
     @property
-    def phi(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
+    def phi(self) -> cirq.TParamVal:
+        """Angle defining orientation (i.e., axis of rotation).
+
+        Returns:
+            The rotation-axis angle phi.
+        """
         return self.sub_gate.phi
 
     @property
-    def theta(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
+    def theta(self) -> cirq.TParamVal:
+        """Angle by which to rotate about the phi-determined axis.
+
+        Returns:
+            The rotation angle theta.
+        """
         return self.sub_gate.theta
 
     def __pow__(self, power: cirq.TParamVal) -> "ParallelRGate":
@@ -748,7 +819,12 @@ class StrippedCZGate(cirq.Gate):
         self._rz_rads = rz_rads
 
     @property
-    def rz_rads(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
+    def rz_rads(self) -> cirq.TParamVal:
+        """RZ-rotation angle in radians.
+
+        Returns:
+            The angle for the RZ rotation.
+        """
         return self._rz_rads
 
     def _num_qubits_(self) -> int:
@@ -829,9 +905,17 @@ class StrippedCZGate(cirq.Gate):
         return cirq.obj_to_dict_helper(self, ["rz_rads"])
 
 
-def custom_resolver(  # pylint: disable=missing-function-docstring
+def custom_resolver(
     cirq_type: str,
 ) -> Union[Type[cirq.Gate], None]:
+    """Resolves Cirq gate type into a gate object.
+
+    Args:
+        cirq_type: A str representing the type of Cirq gate.
+
+    Returns:
+        A `cirq.Gate` object.
+    """
     type_to_gate_map: Dict[str, Type[cirq.Gate]] = {
         "ZZSwapGate": ZZSwapGate,
         "Barrier": Barrier,

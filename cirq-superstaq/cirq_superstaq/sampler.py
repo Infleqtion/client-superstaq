@@ -69,10 +69,12 @@ class Sampler(cirq.Sampler):
         params: cirq.Sweepable,
         repetitions: int = 1,
     ) -> List[cirq.ResultDict]:
-        """Runs a sweep for the given Circuit. Note that this creates jobs for each of the sweeps in
-        the given sweepable, and then blocks until all of jobs are complete.
+        """Runs a sweep for the given Circuit.
 
-        Ags:
+        Note that this creates jobs for each of the sweeps in the given sweepable, and then blocks
+        until all jobs are complete.
+
+        Args:
             program: The circuit to sample from.
             params: The parameters to run with program.
             repetitions: The number of times to sample.

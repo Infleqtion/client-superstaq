@@ -17,9 +17,20 @@ except ModuleNotFoundError:
 
 
 def active_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
-    """Returns the indices of the non-idle qubits in a quantum circuit, where "index" refers to the
-    argument of a LineQubit (so e.g. cirq.LineQubit(5) has index 5 regardless of the total number
-    of qubits in the circuit)."""
+    """Returns the indices of the non-idle qubits in a quantum circuit.
+
+    The "index" refers to the argument of a LineQubit (so e.g. cirq.LineQubit(5) has index 5
+    regardless of the total number of qubits in the circuit).
+
+    Args:
+        circuit: An input `cirq.Circuit`.
+
+    Returns:
+        The list of indices for qubits that are operated on.
+
+    Raises:
+        ValueError: If qubits are not `cirq.LineQubit` objects.
+    """
 
     all_qubits: Set[cirq.Qid] = set()
     for op in circuit.all_operations():
@@ -29,16 +40,27 @@ def active_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
     qubit_indices: List[int] = []
     for q in sorted(all_qubits):
         if not isinstance(q, (cirq.LineQubit, cirq.LineQid)):
-            raise ValueError("Qubit indices can only be determined for line qubits")
+            raise ValueError("Qubit indices can only be determined for line qubits.")
         qubit_indices.append(int(q))
 
     return qubit_indices
 
 
 def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
-    """Returns the indices of the measured qubits in a quantum circuit, where "index" refers to the
-    argument of a LineQubit (so e.g. cirq.LineQubit(5) has index 5 regardless of the total number
-    of qubits in the circuit)."""
+    """Gets indices of measured qubits in input circuit.
+
+    The "index" refers to the argument of a LineQubit (so e.g. cirq.LineQubit(5) has index 5
+    regardless of the total number of qubits in the circuit).
+
+    Args:
+        circuit: An input `cirq.Circuit`.
+
+    Returns:
+        The indices of the measured qubits in a quantum circuit.
+
+    Raises:
+        ValueError: If qubits are not `cirq.LineQubit` objects.
+    """
 
     unrolled_circuit = cirq.unroll_circuit_op(circuit, deep=True, tags_to_check=None)
 
@@ -99,10 +121,13 @@ class CompilerOutput:
         self.seq = seq
 
     def has_multiple_circuits(self) -> bool:
-        """Returns True if this object represents multiple circuits.
+        """Indicates whether or not object represents a single circuit or multiple circuits.
 
         If so, this object has .circuits and .pulse_lists attributes. Otherwise, this object
         represents a single circuit, and has .circuit and .pulse_list attributes.
+
+        Returns:
+            A boolean True/False indicating whether or not there are multiple circuits.
         """
         return hasattr(self, "circuits")
 
