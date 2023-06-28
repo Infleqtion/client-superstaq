@@ -43,7 +43,6 @@ for target in qpu_targets:
     for benchmark, label in BENCHMARKS:
         date = datetime.today().strftime("%Y-%m-%d")
         tag = f"{date}-{label}-{target}"
-        print(tag)
 
         # Since there is no way to determine if a target supports mid-circuit measurement purely
         # through `service.target_info()`, we use a `try` block to catch when we submit an invalid
@@ -57,7 +56,9 @@ for target in qpu_targets:
                     circuit,
                     repetitions=1000,
                     target=target,
-                    options={"tag": tag, "qiskit_pulse": False, "lifespan": 3653},
+                    tag=tag,
+                    qiskit_pulse=False,
+                    lifespan=3653,
                 )
             else:
                 for idx, c in enumerate(circuit):
@@ -65,7 +66,9 @@ for target in qpu_targets:
                         c,
                         repetitions=1000,
                         target=target,
-                        options={"tag": f"{tag}-{idx}", "qiskit_pulse": False, "lifespan": 3653},
+                        tag=f"{tag}-{idx}",
+                        qiskit_pulse=False,
+                        lifespan=3653,
                     )
         except Exception:
             pass
