@@ -53,7 +53,7 @@ class Job:
         "data associated with it beyond an id and a status.",
     )
 
-    def __init__(self, client: gss.superstaq_client._SuperstaQClient, job_id: str) -> None:
+    def __init__(self, client: gss.superstaq_client._SuperstaqClient, job_id: str) -> None:
         """Construct a Job.
 
         Users should not call this themselves. If you only know the `job_id`, use `get_job`
@@ -79,7 +79,7 @@ class Job:
                 # if possible append a message to the failure status, e.g. "Failed (<message>)"
                 error = self._job["failure"]["error"]
                 status += f" ({error})"
-            raise gss.SuperstaQUnsuccessfulJobException(self._job_id, status)
+            raise gss.SuperstaqUnsuccessfulJobException(self._job_id, status)
 
     def job_id(self) -> str:
         """Gets the job id of this job.
@@ -98,7 +98,7 @@ class Job:
         current status. A full list of states is given in `cirq_superstaq.Job.ALL_STATES`.
 
         Raises:
-            SuperstaQException: If the API is not able to get the status of the job.
+            SuperstaqException: If the API is not able to get the status of the job.
 
         Returns:
             The job status.
@@ -113,8 +113,8 @@ class Job:
             The target to which this job was submitted.
 
         Raises:
-            SuperstaQUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaQException: If unable to get the status of the job from the API.
+            SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
+            SuperstaqException: If unable to get the status of the job from the API.
         """
         self._check_if_unsuccessful()
         return self._job["target"]
@@ -126,8 +126,8 @@ class Job:
             The number of qubits used in this job.
 
         Raises:
-            SuperstaQUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaQException: If unable to get the status of the job from the API.
+            SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
+            SuperstaqException: If unable to get the status of the job from the API.
         """
         self._check_if_unsuccessful()
         return self._job["num_qubits"]
@@ -139,8 +139,8 @@ class Job:
             The number of repetitions for this job.
 
         Raises:
-            SuperstaQUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaQException: If unable to get the status of the job from the API.
+            SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
+            SuperstaqException: If unable to get the status of the job from the API.
         """
         self._check_if_unsuccessful()
         return self._job["shots"]
@@ -156,8 +156,8 @@ class Job:
             A dictionary containing the frequency counts of the measurements.
 
         Raises:
-            SuperstaQUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaQException: If unable to get the results from the API.
+            SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
+            SuperstaqException: If unable to get the results from the API.
             TimeoutError: If no results are available in the provided timeout interval.
         """
         time_waited_seconds: float = 0.0

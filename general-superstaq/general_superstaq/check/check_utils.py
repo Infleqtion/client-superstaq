@@ -29,7 +29,7 @@ def _check_output(*commands: str) -> str:
 
 # container for string formatting console codes
 class Style(str, enum.Enum):
-    """Class for string formatting console codes."""
+    """Container for string formatting console codes."""
 
     BLACK = "\033[30m"
     RED = "\033[31m"
@@ -45,50 +45,50 @@ class Style(str, enum.Enum):
 
 
 def styled(text: str, style_code: str) -> str:
-    """Returns a styled text.
+    """Style (format) text for printing in the console.
 
     Args:
-        text: The text that is being printed.
-        style_code: String code for the text style.
+        text: The text to style.
+        style_code: Console code for the text style.
 
     Returns:
-        The styled text.
+        Styled text.
     """
     return style_code + text + Style.RESET
 
 
 def warning(text: str) -> str:
-    """Returns a styled text for warnings.
+    """Style (format) text indicating a warning.
 
     Args:
-        text: The text that is being printed.
+        text: The text to style.
 
     Returns:
-        The styled warning text.
+        Styled text.
     """
     return styled(text, Style.BOLD + Style.YELLOW)
 
 
 def failure(text: str) -> str:
-    """Returns a styled text for failures.
+    """Style (format) text indicating a failure.
 
     Args:
-        text: The text that is being printed.
+        text: The text to style.
 
     Returns:
-        The styled failure text.
+        Styled text.
     """
     return styled(text, Style.BOLD + Style.RED)
 
 
 def success(text: str) -> str:
-    """Returns a styled text for success.
+    """Style (format) text indicating success.
 
     Args:
-        text: The text that is being printed.
+        text: The text to style.
 
     Returns:
-        The styled success text.
+        Styled text.
     """
     return styled(text, Style.BOLD + Style.GREEN)
 
@@ -102,7 +102,8 @@ default_branches = ("upstream/main", "origin/main", "main")
 
 
 def get_tracked_files(include: Union[str, Iterable[str]]) -> List[str]:
-    """Identify all files matching the given match_patterns that are tracked by git in this repo.
+    """Identify all files tracked by git (in this repo) that match the given match_patterns.
+
     If no patterns are provided, return a list of all tracked files in the repo.
     """
     include = [include] if isinstance(include, str) else include
@@ -236,7 +237,11 @@ def get_test_files(
 
 
 def get_file_parser() -> argparse.ArgumentParser:
-    """Runs an incremental check on files that have changed since a specified revision."""
+    """Construct an console argument parser that identifies files to check.
+
+    The parser also has a flag to do incremental cheks, i.e., on the subset files that have changed
+    since a specified git revision, as well as a flag to exclude files matching a specified glob.
+    """
     parser = argparse.ArgumentParser(
         allow_abbrev=False, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -252,8 +257,8 @@ def get_file_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("-i", "--incremental", dest="revisions", nargs="*", help=help_text)
     parser.add_argument(
-        "-x", "--exclude", action="append", metavar="GLOB", help="Exclude files matchine GLOB."
-    )  # TODO: replace "append" with "extend" once we require python>=3.8
+        "-x", "--exclude", action="extend", metavar="GLOB", help="Exclude files matching GLOB."
+    )
 
     return parser
 
