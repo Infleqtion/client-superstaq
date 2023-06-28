@@ -4,7 +4,7 @@
 </p>
 
 # Welcome to Superstaq!
-This repository is the home of Superstaq development team's open source work, which includes:
+This repository is the home of the Superstaq development team's open-source work, which includes:
 * Our quantum software platform that is optimized across the quantum stack and enables users to write quantum programs in Cirq or Qiskit and target a variety of quantum computers and simulators. Read more about it [here](https://www.infleqtion.com/superstaq).
 * Our quantum benchmarking suite. More [here](https://github.com/Infleqtion/client-superstaq/tree/main/supermarq-benchmarks).
 
