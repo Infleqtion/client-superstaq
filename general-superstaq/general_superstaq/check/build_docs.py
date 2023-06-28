@@ -16,10 +16,10 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
 
     Args:
         *args: Command line arguments.
-        sphinx_paths: List of sphinx paths strings.
+        sphinx_paths: List of sphinx paths (passed to `sphinx-apidoc`).
 
     Returns:
-        an exit code.
+        Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)

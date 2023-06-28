@@ -25,7 +25,7 @@ def run(
         silent: If True, restrict printing to warning and error messages.
 
     Returns:
-        an exit code.
+        Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
