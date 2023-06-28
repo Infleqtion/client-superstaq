@@ -6,7 +6,7 @@ authors = [
 ]
 readme = { file = "README.md", content-type = "text/markdown" }
 license = { text = "Apache 2" }
-requires-python = ">=3.7.0"
+requires-python = ">=3.8.0"
 dynamic = ["version", "dependencies", "optional-dependencies"]
 
 [project.urls]
