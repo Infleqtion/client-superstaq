@@ -22,7 +22,8 @@ def run(
     Args:
         *args: Command line arguments.
         config_file: path to the config file to run checks.
-        ignore_match: string flag that allows different repos to have different setup.cfg.
+        ignore_match: string tagging lines to ignore when comparing pyproject.toml files.
+        start_match: verbatim text below which to start comparing pyproject.toml files.
         silent: If True, restrict printing to warning and error messages.
 
     Returns:
