@@ -570,7 +570,7 @@ def parallel_gates_operation(*ops: cirq.Operation) -> cirq.Operation:
     and applies it such that each operation's .gate is applied to its .qubits.
 
     Args:
-        ops: operations to pack into a single ParallelGates operation
+        ops: Operations to pack into a single `ParallelGates` operation.
 
     Returns:
         ParallelGates(op.gate, op2.gate, ...).on(*op.qubits, *op2.qubits, ...)
