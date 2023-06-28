@@ -1,13 +1,13 @@
-docs-superstaq: Home of documentation for SuperstaQ
+docs-superstaq: Home of documentation for Superstaq
 ===================================================
-This repository contains materials that support the [SuperstaQ documentation site](https://docs-superstaq.readthedocs.io/).
+This repository contains materials that support the [Superstaq documentation site](https://docs-superstaq.readthedocs.io/).
 
 ## How to build docs-superstaq locally
 ### Setup your environment
 
 Clone the repository, set up your virtual environment, install requirements, and make sure submodules are up-to-date.
 
-    git clone git@github.com:SupertechLabs/docs-superstaq.git
+    git clone git@github.com:Infleqtion/docs-superstaq.git
     python3 -m venv docs-superstaq-env
     source docs-superstaq-env/bin/activate
     cd docs-superstaq

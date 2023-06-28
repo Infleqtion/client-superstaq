@@ -7,7 +7,7 @@ import general_superstaq as gss
 class UserConfig:
     """This class contains all the user configurations that are used to operate Superstaq."""
 
-    def __init__(self, client: gss.superstaq_client._SuperstaQClient):
+    def __init__(self, client: gss.superstaq_client._SuperstaqClient):
         self._client = client
 
     def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
