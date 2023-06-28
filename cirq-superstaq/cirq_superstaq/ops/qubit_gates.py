@@ -866,7 +866,7 @@ def custom_resolver(cirq_type: str) -> Union[Type[cirq.Gate], None]:
         cirq_type: The string of the gate type for the serializer to resolve.
 
     Returns:
-        The resolved Cirq Gate matching the input, or None if no match.
+        The resolved `cirq.Gate` matching the input, or None if no match.
     """
     type_to_gate_map: Dict[str, Type[cirq.Gate]] = {
         "ZZSwapGate": ZZSwapGate,
