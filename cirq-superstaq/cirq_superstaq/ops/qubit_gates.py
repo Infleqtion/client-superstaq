@@ -857,7 +857,7 @@ class StrippedCZGate(cirq.Gate):
 
 
 def custom_resolver(cirq_type: str) -> Union[Type[cirq.Gate], None]:
-    """Tells `cirq.json` how to deserialize cirq_superstaq's custom gates.
+    """Tells `cirq.read_json` how to deserialize cirq-superstaq's custom gates.
 
     Changes to gate names in this file should be reflected in this resolver.
     See quantumai.google/cirq/dev/serialization for more information about (de)serialization.
