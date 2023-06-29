@@ -76,10 +76,10 @@ def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumC
     the circuit.
 
     Args:
-        circuit: qiskit.QuantumCircuit to be rewritten
+        circuit: `qiskit.QuantumCircuit` to be rewritten.
 
     Returns:
-        A copy of the input circuit with unique custom instruction names
+        A copy of the input circuit with unique custom instruction names.
     """
 
     unique_insts_by_name: Dict[str, List[qiskit.circuit.Instruction]] = {}
@@ -120,13 +120,13 @@ def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumC
 def serialize_circuits(
     circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]]
 ) -> str:
-    """Serialize QuantumCircuit(s) into a single string
+    """Serialize QuantumCircuit(s) into a single string.
 
     Args:
-        circuits: a QuantumCircuit or list of QuantumCircuits to be serialized
+        circuits: A QuantumCircuit or list of QuantumCircuits to be serialized.
 
     Returns:
-        str representing the serialized circuit(s)
+        A str representing the serialized circuit(s).
     """
     if isinstance(circuits, qiskit.QuantumCircuit):
         circuits = [_assign_unique_inst_names(circuits)]
