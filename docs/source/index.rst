@@ -14,11 +14,11 @@ Check out some of our demos to see how Superstaq can help you:
 
    <div class="index-demos">
       <div class="index-demos-box">
-         <div class="index-demos-headers"><a href="applications/supercheq/supercheq.html">Supercheq</a></div>
+         <div class="index-demos-headers"><a href="apps/supercheq/supercheq.html">Supercheq</a></div>
          <div class="index-demos-desc">SupercheQ is our novel quantum fingerprinting protocol and can be used with both qiskit-superstaq and cirq-superstaq</div>
       </div>
       <div class="index-demos-box">
-         <div class="index-demos-headers"><a href="applications/max_sharpe_ratio_optimization.html">Sharpe Ratio Maximization</a></div>
+         <div class="index-demos-headers"><a href="apps/max_sharpe_ratio_optimization.html">Sharpe Ratio Maximization</a></div>
          <div class="index-demos-desc">An example of portfolio optimization formulated as a QUBO and solved using simulated annealing.</div>
       </div>
    </div>
