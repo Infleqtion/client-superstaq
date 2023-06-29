@@ -1,10 +1,18 @@
+# `cirq-superstaq`
+
 ![cirq-superstaq's default workflow](https://github.com/Infleqtion/client-superstaq/actions/workflows/ci.yml/badge.svg)
 
 This package is used to access Superstaq via a Web API through [Cirq](https://github.com/quantumlib/Cirq).
 Cirq programmers can take advantage of the applications, pulse level optimizations, and write-once-target-all
 features of Superstaq with this package.
 
-Please note that Python version `3.8` or higher is required. See installation instructions [here](https://github.com/Infleqtion/client-superstaq#readme).
+`cirq-superstaq` is [available on PyPI](https://pypi.org/project/cirq-superstaq) and can be installed with:
+
+```
+pip install cirq-superstaq
+```
+
+Please note that Python version `3.8` or higher is required. For further installation instructions, see [here](https://github.com/Infleqtion/client-superstaq#readme).
 
 ### Creating and submitting a circuit through cirq-superstaq
 ```python
