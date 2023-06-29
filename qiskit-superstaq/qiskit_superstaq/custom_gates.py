@@ -106,9 +106,11 @@ class ZZSwapGate(qiskit.circuit.Gate):
     """
 
     def __init__(self, theta: float, label: Optional[str] = None) -> None:
-        """Args:
-        theta: ZZ-interaction angle in radians
-        label: an optional label for the constructed Gate
+        """Initializes a ZZ-SWAP gate.
+
+        Args:
+            theta: The ZZ-interaction angle in radians.
+            label: An optional label for the constructed gate. Defaults to None.
         """
         super().__init__("zzswap", 2, [theta], label=label)
 
@@ -229,7 +231,18 @@ class ParallelGates(qiskit.circuit.Gate):
         return f"ParallelGates({args})"
 
 
-class iXGate(qiskit.circuit.Gate):  # pylint: disable=missing-class-docstring
+class iXGate(qiskit.circuit.Gate):
+    r"""The iX gate (a single qubit Pauli-X gate with a global phase of i). It is a special case
+    of when the RX gate's input rotation angle is :math:`-\pi`:
+
+     .. math::
+
+        \begin{bmatrix}
+        0 & i \\
+        i & 0 \\
+        \end{bmatrix}
+    """
+
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__("ix", 1, [], label=label)
 
