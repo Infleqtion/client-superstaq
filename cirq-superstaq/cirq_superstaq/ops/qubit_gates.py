@@ -775,8 +775,7 @@ class StrippedCZGate(cirq.Gate):
 
     @property
     def rz_rads(self) -> cirq.TParamVal:
-        """Returns: The RZ-rotation angle for the gate.
-        """        
+        """Returns: The RZ-rotation angle for the gate."""
         return self._rz_rads
 
     def _num_qubits_(self) -> int:
