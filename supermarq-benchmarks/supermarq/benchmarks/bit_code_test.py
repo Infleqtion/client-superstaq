@@ -1,4 +1,5 @@
-# pylint: disable=missing-function-docstring
+# pylint: disable=missing-function-docstring,missing-class-docstring
+
 import pytest
 
 from supermarq.benchmarks.bit_code import BitCode

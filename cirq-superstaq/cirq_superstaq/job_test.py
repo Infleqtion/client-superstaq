@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=missing-function-docstring
+# pylint: disable=missing-function-docstring,missing-class-docstring
+
 from __future__ import annotations
 
 from typing import Any, Dict
@@ -26,7 +27,7 @@ import cirq_superstaq as css
 
 @pytest.fixture
 def job() -> css.Job:
-    client = gss.superstaq_client._SuperstaQClient(
+    client = gss.superstaq_client._SuperstaqClient(
         client_name="cirq-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -35,7 +36,7 @@ def job() -> css.Job:
 
 
 def new_job() -> css.Job:
-    client = gss.superstaq_client._SuperstaQClient(
+    client = gss.superstaq_client._SuperstaqClient(
         client_name="cirq-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -49,7 +50,7 @@ def mocked_get_job_requests(*job_dicts: Dict[str, Any]) -> mock._patch[mock.Mock
     is thrown at runtime
     """
     return mock.patch(
-        "general_superstaq.superstaq_client._SuperstaQClient.get_job", side_effect=job_dicts
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", side_effect=job_dicts
     )
 
 
@@ -132,7 +133,7 @@ def test_job_counts_failed(job: css.job.Job) -> None:
         "target": "ss_unconstrained_simulator",
     }
     with mocked_get_job_requests(job_dict):
-        with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match="too many qubits"):
+        with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="too many qubits"):
             _ = job.counts()
         assert job.status() == "Failed"
 
@@ -183,7 +184,7 @@ def test_job_results_poll_failure(mock_sleep: mock.MagicMock, job: css.job.Job) 
     }
 
     with mocked_get_job_requests(*[running_job] * 5, failed_job):
-        with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match="too many qubits"):
+        with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="too many qubits"):
             _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
     assert mock_sleep.call_count == 5
 
@@ -198,9 +199,9 @@ def test_job_fields_unsuccessful(job: css.job.Job) -> None:
         "target": "ss_unconstrained_simulator",
     }
     with mocked_get_job_requests(job_dict):
-        with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match="Deleted"):
+        with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="Deleted"):
             _ = job.target()
-        with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match="Deleted"):
+        with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="Deleted"):
             _ = job.num_qubits()
-        with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match="Deleted"):
+        with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="Deleted"):
             _ = job.repetitions()
