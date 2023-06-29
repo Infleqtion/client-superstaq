@@ -616,8 +616,6 @@ class RGate(cirq.PhasedXPowGate):
             theta: The angle (in radians) by which to rotate.
             phi: The angle (in radians) defining the axis of rotation in the `X`-`Y` plane:
              `cos(phi) X + sin(phi) Y` (i.e. `phi` radians from `X` to `Y`).
-
-        theta: Angle (in radians) by which to rotate.
         """
         super().__init__(
             exponent=theta / _pi(theta), phase_exponent=phi / _pi(phi), global_shift=-0.5
