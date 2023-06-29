@@ -1,5 +1,4 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
-
 import textwrap
 from typing import List, Optional, Tuple, Type
 from unittest import mock
