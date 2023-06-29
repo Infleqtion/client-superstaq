@@ -634,29 +634,12 @@ class RGate(cirq.PhasedXPowGate):
         return False
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        """_summary_
-
-        Args:
-            args (cirq.CircuitDiagramInfoArgs): _description_
-
-        Returns:
-            cirq.CircuitDiagramInfo: _description_
-        """
         theta_str = args.format_radians(self.theta)
         phi_str = args.format_radians(self.phi)
         gate_str = f"RGate({theta_str}, {phi_str})"
         return cirq.CircuitDiagramInfo(wire_symbols=(gate_str,))
 
     def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, ...]) -> Optional[str]:
-        """_summary_
-
-        Args:
-            args (cirq.QasmArgs): _description_
-            qubits (Tuple[cirq.Qid, ...]): _description_
-
-        Returns:
-            Optional[str]: _description_
-        """
         return args.format(
             "r({0:half_turns},{1:half_turns}) {2};\n",
             self.exponent,
@@ -679,23 +662,11 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
     """Wrapper class to define a ParallelGate of identical RGate gates."""
 
     def __init__(self, theta: cirq.TParamVal, phi: cirq.TParamVal, num_copies: int) -> None:
-        """_summary_
-
-        Args:
-            theta (cirq.TParamVal): _description_
-            phi (cirq.TParamVal): _description_
-            num_copies (int): _description_
-        """
         super().__init__(css.RGate(theta, phi), num_copies)
         self._sub_gate: RGate
 
     @property
     def sub_gate(self) -> RGate:
-        """_summary_
-
-        Returns:
-            RGate: _description_
-        """
         return self._sub_gate
 
     @property
@@ -759,7 +730,6 @@ class IXGate(cirq.XPowGate):
     """Thin wrapper of Rx(-pi) to improve iToffoli circuit diagrams"""
 
     def __init__(self) -> None:
-        """_summary_"""
         super().__init__(exponent=1, global_shift=0.5)
 
     def _with_exponent(self, exponent: cirq.value.TParamVal) -> Union[cirq.Rx, "IXGate"]:
