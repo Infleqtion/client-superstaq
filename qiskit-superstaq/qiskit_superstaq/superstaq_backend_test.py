@@ -1,4 +1,5 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
+
 import json
 import textwrap
 from unittest.mock import DEFAULT, MagicMock, patch
