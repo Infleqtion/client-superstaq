@@ -1,7 +1,5 @@
-# pylint: disable=missing-function-docstring
-import re
+# pylint: disable=missing-function-docstring,missing-class-docstring
 
-import numpy as np
 import pytest
 import qiskit
 

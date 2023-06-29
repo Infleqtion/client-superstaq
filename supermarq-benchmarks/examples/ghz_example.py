@@ -7,7 +7,8 @@ import supermarq
 
 
 def main() -> None:
-    """_summary_"""
+    """Function to run GHZ Supermarq benchmarks."""
+
     service = css.Service(
         api_key="""Insert superstaq token that you received from https://superstaq.super.tech""",
     )

@@ -1,4 +1,4 @@
-# pylint: disable=missing-function-docstring
+# pylint: disable=missing-function-docstring,missing-class-docstring
 
 import supermarq
 from supermarq.benchmarks.vqe_proxy import VQEProxy

@@ -391,10 +391,16 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
 
 def barrier(*qubits: cirq.Qid) -> cirq.Operation:
     """Equivalent to https://qiskit.org/documentation/stubs/qiskit.circuit.library.Barrier.html.
+<<<<<<< HEAD
     See also https://github.com/quantumlib/Cirq/issues/2642.
 
     Args:
         *qubits: The qubits that the barrier will cover.
+=======
+
+    Args:
+        qubits: The qubits that the barrier will cover.
+>>>>>>> main
 
     Returns:
         A barrier `cirq.Operation` on the provided qubits.
@@ -437,8 +443,13 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
     def qubit_index_to_equivalence_group_key(self, index: int) -> int:
         """Returns a key that differs between qubits.
 
+<<<<<<< HEAD
         Does it by different component gates and non-interchangeable qubits
         in the same component gate.
+=======
+        Does it by different component gates and non-interchangeable qubits in the same component
+        gate.
+>>>>>>> main
 
         Args:
             index: Qubit index.
@@ -567,11 +578,16 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
 def parallel_gates_operation(*ops: cirq.Operation) -> cirq.Operation:
     """Constructs a parallel gates operation.
 
+<<<<<<< HEAD
     Given operations acting on disjoint qubits, constructs a single css.ParallelGates instance
     and applies it such that each operation's .gate is applied to its .qubits.
+=======
+    Given operations acting on disjoint qubits, constructs a single `css.ParallelGates` instance
+    and applies it such that each operation's `.gate` is applied to its `.qubits`.
+>>>>>>> main
 
     Args:
-        ops: operations to pack into a single ParallelGates operation
+        ops: Operations to pack into a single `ParallelGates` operation.
 
     Returns:
         ParallelGates(op.gate, op2.gate, ...).on(*op.qubits, *op2.qubits, ...)
@@ -887,7 +903,11 @@ class StrippedCZGate(cirq.Gate):
 
 
 def custom_resolver(cirq_type: str) -> Union[Type[cirq.Gate], None]:
+<<<<<<< HEAD
     """Tells `cirq.json` how to deserialize cirq_superstaq's custom gates.
+=======
+    """Tells `cirq.read_json` how to deserialize cirq-superstaq's custom gates.
+>>>>>>> main
 
     Changes to gate names in this file should be reflected in this resolver.
     See quantumai.google/cirq/dev/serialization for more information about (de)serialization.
@@ -896,7 +916,11 @@ def custom_resolver(cirq_type: str) -> Union[Type[cirq.Gate], None]:
         cirq_type: The string of the gate type for the serializer to resolve.
 
     Returns:
+<<<<<<< HEAD
         The resolved Cirq Gate matching the input, or None if no match.
+=======
+        The resolved `cirq.Gate` matching the input, or None if no match.
+>>>>>>> main
     """
     type_to_gate_map: Dict[str, Type[cirq.Gate]] = {
         "ZZSwapGate": ZZSwapGate,
