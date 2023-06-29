@@ -56,9 +56,6 @@ class Sampler(cirq.Sampler):
         Args:
             service: The service used to create this sample.
             target: Backend on which to run the job.
-
-        Returns:
-            None.
         """
         self._service = service
         self._target = target

@@ -25,13 +25,13 @@ import cirq_superstaq as css
 
 
 def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
-    """Convert a unitary matrix into a cirq.MatrixGate acting either on qubits or on qutrits.
+    """Convert a unitary matrix into a `cirq.MatrixGate` acting either on qubits or on qutrits.
 
     Args:
         matrix: The (unitary) matrix to be converted.
 
     Returns:
-        A cirq.MatrixGate with the given unitary.
+        A `cirq.MatrixGate` with the given unitary.
 
     Raises:
         ValueError: If `matrix` could not be interpreted as a unitary gate acting on either qubits
@@ -47,17 +47,17 @@ def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
             return cirq.MatrixGate(matrix, qid_shape=qid_shape)
 
     raise ValueError(
-        "Could not determine qid_shape from array shape, consider using a cirq.MatrixGate instead."
+        "Could not determine qid_shape from array shape, consider using a `cirq.MatrixGate` instead."
     )
 
 
 def counts_to_results(
     counter: Dict[str, int], circuit: cirq.AbstractCircuit, param_resolver: cirq.ParamResolver
 ) -> cirq.ResultDict:
-    """Converts a collections.Counter to a cirq.ResultDict.
+    """Converts a `collections.Counter` to a `cirq.ResultDict`.
 
     Args:
-            counter: The collections.Counter of counts for the run.
+            counter: The `collections.Counter` of counts for the run.
             circuit: The circuit to run.
             param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuit`.
 
@@ -200,7 +200,7 @@ class Service(user_config.UserConfig):
         **kwargs: Any,
     ) -> Dict[str, int]:
         """Runs the given circuit on the Superstaq API and returns the result
-        of the ran circuit as a collections.Counter
+        of the ran circuit as a `collections.Counter`.
 
         Args:
             circuit: The circuit to run.
@@ -229,13 +229,13 @@ class Service(user_config.UserConfig):
         **kwargs: Any,
     ) -> cirq.ResultDict:
         """Run the given circuit on the Superstaq API and returns the result
-        of the ran circut as a cirq.ResultDict.
+        of the ran circut as a `cirq.ResultDict`.
 
         Args:
             circuit: The circuit to run.
             repetitions: The number of times to run the circuit.
             target: Where to run the job.
-            param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
+            param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuit`.
             method: Execution method.
             kwargs: Other optimization and execution parameters.
 
@@ -347,10 +347,11 @@ class Service(user_config.UserConfig):
         """Generates resource estimates for circuit(s).
 
         Args:
-            circuits: Cirq Circuit(s).
-            target: String of target representing target device
+            circuits:  The cirq circuit(s) to generate resource estimate.
+            target: String of target representing target device.
+
         Returns:
-            ResourceEstimate(s) containing resource costs (after compilation)
+            `ResourceEstimate`(s) containing resource costs (after compilation).
         """
         _validate_cirq_circuits(circuits)
         circuit_is_list = not isinstance(circuits, cirq.Circuit)
@@ -545,7 +546,7 @@ class Service(user_config.UserConfig):
 
         Args:
             circuits: The circuit(s) to compile.
-            target: String of target representing target device
+            target: String of target representing target device.
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
             base_entangling_gate: The base entangling gate to use (either "xx" or "zz").
             kwargs: Other desired qscout_compile options.
@@ -596,7 +597,7 @@ class Service(user_config.UserConfig):
         Args:
             circuits: The circuit(s) to compile.
             target: String of target CQ device.
-            kwargs: Other desired cq_compile options.
+            kwargs: Other desired `cq_compile` options.
 
         Returns:
             Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s).

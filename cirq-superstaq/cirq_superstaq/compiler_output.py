@@ -124,11 +124,11 @@ def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutp
     """Reads out returned JSON from Superstaq API's IBMQ compilation endpoint.
 
     Args:
-        json_dict: a JSON dictionary matching the format returned by /ibmq_compile endpoint
-        circuits_is_list: bool flag that controls whether the returned object has a .circuits
+        json_dict: A JSON dictionary matching the format returned by /ibmq_compile endpoint
+        circuits_is_list: A bool flag that controls whether the returned object has a .circuits
             attribute (if True) or a .circuit attribute (False)
     Returns:
-        a CompilerOutput object with the compiled circuit(s). If qiskit is available locally,
+        A `CompilerOutput` object with the compiled circuit(s). If qiskit is available locally,
         the returned object also stores the pulse sequences in the .pulse_sequence(s) attribute.
     """
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
@@ -167,13 +167,13 @@ def read_json_aqt(
     """Reads out returned JSON from Superstaq API's AQT compilation endpoint.
 
     Args:
-        json_dict: JSON dictionary matching the format returned by aqt_compile endpoint.
-        circuits_is_list: Bool flag that controls whether the returned object has a .circuits
+        json_dict: A JSON dictionary matching the format returned by aqt_compile endpoint.
+        circuits_is_list: A bool flag that controls whether the returned object has a .circuits
             attribute (if True) or a .circuit attribute (False).
         num_eca_circuits: Number of logically equivalent random circuits to generate for each
             input circuit.
     Returns:
-        A CompilerOutput object with the compiled circuit(s). If qtrl is available locally,
+        A `CompilerOutput` object with the compiled circuit(s). If qtrl is available locally,
         the returned object also stores the pulse sequence in the .seq attribute and the
         list(s) of cycles in the .pulse_list(s) attribute.
     """
@@ -256,11 +256,11 @@ def read_json_qscout(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compi
     """Reads out returned JSON from Superstaq API's QSCOUT compilation endpoint.
 
     Args:
-        json_dict: a JSON dictionary matching the format returned by /qscout_compile endpoint
-        circuits_is_list: bool flag that controls whether the returned object has a .circuits
+        json_dict: A JSON dictionary matching the format returned by /qscout_compile endpoint
+        circuits_is_list: A bool flag that controls whether the returned object has a .circuits
             attribute (if True) or a .circuit attribute (False)
     Returns:
-        a CompilerOutput object with the compiled circuit(s) and a list jaqal programs
+        A `CompilerOutput` object with the compiled circuit(s) and a list jaqal programs
         represented as strings
     """
 
