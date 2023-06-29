@@ -94,11 +94,13 @@ class _SuperstaqClient:
         }
 
     def get_request(self, endpoint: str) -> Any:
-        """Performs a GET request on a given endpoint
+        """Performs a GET request on a given endpoint.
+
         Args:
-            endpoint: The endpoint to perform the GET request on
+            endpoint: The endpoint to perform the GET request on.
+
         Returns:
-            The response of the GET request
+            The response of the GET request/
         """
 
         def request() -> requests.Response:
@@ -111,7 +113,7 @@ class _SuperstaqClient:
         return self._make_request(request).json()
 
     def get_superstaq_version(self) -> Dict[str, Optional[str]]:
-        """Gets Superstaq version from response header
+        """Gets Superstaq version from response header.
 
         Returns:
             A dict containing the current Superstaq version.
@@ -123,12 +125,14 @@ class _SuperstaqClient:
         return {"superstaq_version": version}
 
     def post_request(self, endpoint: str, json_dict: Dict[str, Any]) -> Any:
-        """Performs a POST request on a given endpoint with a given payload
+        """Performs a POST request on a given endpoint with a given payload.
+
         Args:
-            endpoint: The endpoint to perform the POST request on
-            json_dict: The payload to POST
+            endpoint: The endpoint to perform the POST request on.
+            json_dict: The payload to POST.
+
         Returns:
-            The response of the POST request
+            The response of the POST request.
         """
 
         def request() -> requests.Response:
@@ -196,7 +200,7 @@ class _SuperstaqClient:
             The json body of the response as a dict.
 
         Raises:
-            SuperstaqNotFoundException: If a job with the given job_id does not exist.
+            SuperstaqNotFoundException: If a job with the given `job_id` does not exist.
             SuperstaqException: For other API call failures.
         """
         return self.get_request(f"/job/{job_id}")
@@ -213,7 +217,7 @@ class _SuperstaqClient:
         """Makes a POST request to Superstaq API to confirm acceptance of terms of use.
 
         Args:
-            user_input: user's response to prompt for acceptance of TOU. Server accepts YES
+            user_input: The user's response to prompt for acceptance of TOU. Server accepts YES.
 
         Returns:
             String with success message.
@@ -228,7 +232,7 @@ class _SuperstaqClient:
         """Makes a POST request to Superstaq API to add a new user.
 
         Args:
-            json_dict: dictionary with user entry.
+            json_dict: The dictionary with user entry.
 
         Returns:
             The response as a string.
@@ -239,7 +243,7 @@ class _SuperstaqClient:
         """Makes a POST request to Superstaq API to update a user's balance in the database.
 
         Args:
-            json_dict: dictionary with user entry and new balance.
+            json_dict: The dictionary with user entry and new balance.
 
         Returns:
             The response as a string.
@@ -250,7 +254,7 @@ class _SuperstaqClient:
         """Makes a POST request to Superstaq API to update a user's role.
 
         Args:
-            json_dict: dictionary with user entry and new role.
+            json_dict: The dictionary with user entry and new role.
 
         Returns:
             The response as a string.
@@ -258,23 +262,47 @@ class _SuperstaqClient:
         return self.post_request("/update_user_role", json_dict)
 
     def resource_estimate(self, json_dict: Dict[str, str]) -> Dict[str, List[Dict[str, int]]]:
-        """POSTs the given payload to the `/resource_estimate` endpoint
+        """POSTs the given payload to the `/resource_estimate` endpoint.
+
         Args:
-            json_dict: The payload to POST
-        Returns: The response of the given payload
+            json_dict: The payload to POST.
+
+        Returns:
+            The response of the given payload.
         """
         return self.post_request("/resource_estimate", json_dict)
 
     def aqt_compile(self, json_dict: Dict[str, str]) -> Dict[str, str]:
-        """Makes a POST request to Superstaq API to compile a list of circuits for Berkeley-AQT."""
+        """Makes a POST request to Superstaq API to compile a list of circuits for Berkeley-AQT.
+
+        Args:
+            json_dict: The dictionary containing data to compile.
+
+        Returns:
+            A dictionary containing compiled circuit(s) data.
+        """
         return self.post_request("/aqt_compile", json_dict)
 
     def qscout_compile(self, json_dict: Dict[str, str]) -> Dict[str, Union[str, List[str]]]:
-        """Makes a POST request to Superstaq API to compile a list of circuits for QSCOUT."""
+        """Makes a POST request to Superstaq API to compile a list of circuits for QSCOUT.
+
+        Args:
+            json_dict: The dictionary containing data to compile.
+
+        Returns:
+            A dictionary containing compiled circuit(s) data.
+        """
         return self.post_request("/qscout_compile", json_dict)
 
     def compile(self, json_dict: Dict[str, str]) -> Dict[str, str]:
-        """Makes a POST request to Superstaq API to compile a list of circuits."""
+        """Makes a POST request to Superstaq API to compile a list of circuits.
+
+        Args:
+            json_dict: The dictionary containing data to compile.
+
+        Returns:
+            A dictionary containing compiled circuit data.
+        """
         return self.post_request("/compile", json_dict)
 
     def submit_qubo(
@@ -333,7 +361,8 @@ class _SuperstaqClient:
         Args:
             target: String representing the device to get information about.
 
-        Returns: Target information.
+        Returns:
+            Target information.
         """
         gss.validation.validate_target(target)
 
@@ -427,7 +456,7 @@ class _SuperstaqClient:
             TimeoutError: If the requests retried for more than `max_retry_seconds`.
 
         Returns:
-            The request.Response from the final successful request call.
+            The `request.Response` from the final successful request call.
         """
         # Initial backoff of 100ms.
         delay_seconds = 0.1

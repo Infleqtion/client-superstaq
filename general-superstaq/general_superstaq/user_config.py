@@ -12,11 +12,12 @@ class UserConfig:
 
     def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
         """Get the querying user's account balance in USD.
+
         Args:
             pretty_output: Whether to return a pretty string or a float of the balance.
 
         Returns:
-            If pretty_output is True, returns the balance as a nicely formatted string ($-prefix,
+            If `pretty_output` is `True`, returns the balance as a nicely formatted string ($-prefix,
             commas on LHS every three digits, and two digits after period). Otherwise, simply
             returns a float of the balance.
         """
@@ -32,7 +33,7 @@ class UserConfig:
             user_input: If "YES", server will mark user as having accepted terms of use.
 
         Returns:
-            String message indicated if user has been marked as having accepted terms of use.
+            A string message indicating if user has been marked as having accepted terms of use.
         """
         return self._client._accept_terms_of_use(user_input)
 
@@ -74,8 +75,8 @@ class UserConfig:
         """Updates user's role.
 
         Args:
-            email: The new user's email
-            role: The new role
+            email: The new user's email.
+            role: The new role.
 
         Returns:
              String containing status of update (whether or not it failed).
