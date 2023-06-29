@@ -43,8 +43,10 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     """
 
     def __init__(self, theta: cirq.TParamVal) -> None:
-        """Args:
-        theta: ZZ-interaction angle in radians
+        """Initializes a ZZ-SWAP gate.
+
+        Args:
+            theta: The ZZ-interaction angle in radians.
         """
         self.theta = theta
 
@@ -227,16 +229,21 @@ class AceCR(cirq.Gate):
 
     The typical AceCR in literature is a positive half-CR, then X on "Z side", then negative
     half-CR ("Z side" and "X side" refer to the two sides of the underlying ZX interactions).
-
-    Args:
-        rads: Angle of rotation for CR gate (i.e., twice the angle for each echoed half-CR).
-        sandwich_rx_rads: Angle of rotation for an rx gate applied to the "X side" simultaneously
-            with the X gate on the "Z side".
     """
 
     def __init__(
         self, rads: Union[str, cirq.TParamVal] = np.pi / 2, sandwich_rx_rads: cirq.TParamVal = 0
     ) -> None:
+        """Initializes an AceCR gate.
+
+        Args:
+            rads: Angle of rotation for CR gate (i.e., twice the angle for each echoed half-CR).
+            sandwich_rx_rads: Angle of rotation for an rx gate applied to the "X side"
+                simultaneously with the X gate on the "Z side".
+
+        Raises:
+            ValueError: If the polarity of `rads` is not '+-' or '-+'.
+        """
         # Polarity should be "+-" or "-+", specifying if positive or negative half-CR is first.
         if rads == "+-":
             rads = np.pi / 2
@@ -416,8 +423,14 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
     """
 
     def __init__(self, *component_gates: cirq.Gate) -> None:
-        """Args:
-        component_gates: Gate(s) to be collected into single gate
+        """Initializes the `ParallelGates` class.
+
+        Args:
+            component_gates: Gate(s) to be collected into a single gate.
+
+        Raises:
+            ValueError:  If `component_gates` are not `cirq.Gate` instances.
+            ValueError: If `component_gates` contains measurements.
         """
 
         self.component_gates: Tuple[cirq.Gate, ...] = ()
@@ -590,11 +603,14 @@ def parallel_gates_operation(  # pylint: disable=missing-raises-doc
 
 
 class RGate(cirq.PhasedXPowGate):
-    """A single-qubit gate that rotates about an axis in the X-Y plane."""
+    """A single-qubit gate that rotates about an axis in the `X`-`Y` plane."""
 
     def __init__(self, theta: cirq.TParamVal, phi: cirq.TParamVal) -> None:
-        """Args:
-        phi: Angle (in radians) defining the axis of rotation in the `X`-`Y` plane:
+        """Initializes an RGate.
+
+        Args:
+            theta: The angle (in radians) by which to rotate.
+            phi: The angle (in radians) defining the axis of rotation in the `X`-`Y` plane:
              `cos(phi) X + sin(phi) Y` (i.e. `phi` radians from `X` to `Y`).
 
         theta: Angle (in radians) by which to rotate.
@@ -657,6 +673,14 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
     """Wrapper class to define a ParallelGate of identical RGate gates."""
 
     def __init__(self, theta: cirq.TParamVal, phi: cirq.TParamVal, num_copies: int) -> None:
+        """Initializes the `ParallelRGate` class.
+
+        Args:
+            theta: The RGate angle (in radians) by which to rotate.
+            phi: The RGate angle (in radians) defining the axis of rotation in the `X`-`Y` plane:
+             `cos(phi) X + sin(phi) Y` (i.e. `phi` radians from `X` to `Y`).
+            num_copies: Number of copies to be used.
+        """
         super().__init__(css.RGate(theta, phi), num_copies)
         self._sub_gate: RGate
 
@@ -718,9 +742,10 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
 
 
 class IXGate(cirq.XPowGate):
-    """Thin wrapper of Rx(-pi) to improve iToffoli circuit diagrams"""
+    r"""Thin wrapper of :math:`RX(-\pi)` to improve iToffoli circuit diagrams"""
 
     def __init__(self) -> None:
+        """Initializes an iXGate."""
         super().__init__(exponent=1, global_shift=0.5)
 
     def _with_exponent(self, exponent: cirq.value.TParamVal) -> Union[cirq.Rx, "IXGate"]:
@@ -761,7 +786,11 @@ class StrippedCZGate(cirq.Gate):
     """
 
     def __init__(self, rz_rads: cirq.TParamVal = 0) -> None:
-        """Args: rz_rads: RZ-rotation angle in radians"""
+        """Initializes a Stripped CZ gate.
+
+        Args:
+            rz_rads: The RZ-rotation angle in radians.
+        """
         self._rz_rads = rz_rads
 
     @property
