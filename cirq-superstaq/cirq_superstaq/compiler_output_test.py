@@ -222,6 +222,14 @@ def test_read_json_aqt() -> None:
 
     assert out.seq is None
 
+    # if num_eca_circuits
+    out = css.compiler_output.read_json_aqt(json_dict, circuits_is_list=True, num_eca_circuits=2)
+    assert out.circuits == [[circuit, circuit]]
+    assert out.final_logical_to_physicals == [
+        [final_logical_to_physical, final_logical_to_physical]
+    ]
+    assert out.pulse_lists is None
+
 
 def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires qtrl installation
     qtrl = pytest.importorskip("qtrl", reason="qtrl not installed")
