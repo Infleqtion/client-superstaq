@@ -774,7 +774,9 @@ class StrippedCZGate(cirq.Gate):
         self._rz_rads = rz_rads
 
     @property
-    def rz_rads(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
+    def rz_rads(self) -> cirq.TParamVal:
+        """Returns: The RZ-rotation angle for the gate.
+        """        
         return self._rz_rads
 
     def _num_qubits_(self) -> int:
