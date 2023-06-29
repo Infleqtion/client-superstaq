@@ -178,10 +178,10 @@ def heatmap(
         data: A 2D numpy array of shape (N, M).
         row_labels: A list or array of length N with the labels for the rows.
         col_labels: A list or array of length M with the labels for the columns.
-        ax: A `matplotlib.axes.Axes` instance to which the heatmap is plotted.  If not provided,
-            use current axes or create a new one.  Optional.
-        cbar_kw: A dictionary with arguments to `matplotlib.Figure.colorbar`.  Optional.
-        cbarlabel: The label for the colorbar.  Optional.
+        ax: An optional `matplotlib.axes.Axes` instance to which the heatmap is plotted.  If not provided,
+            use current axes or create a new one.
+        cbar_kw: An optional dictionary with arguments to `matplotlib.Figure.colorbar`.
+        cbarlabel: An optional label for the colorbar.
         **kwargs: All other arguments are forwarded to `imshow`.
 
     Returns:
@@ -237,15 +237,15 @@ def annotate_heatmap(
     """Annotate the given heatmap.
 
     Args:
-        im: The AxesImage to be labeled.
-        data: Data used to annotate.  If None, the image's data is used.  Optional.
-        valfmt: The format of the annotations inside the heatmap.  This should either use the string
-            format method, e.g. "$ {x:.2f}", or be a `matplotlib.ticker.Formatter`.  Optional.
+        im: The `AxesImage` to be labeled.
+        data: Optional data used to annotate. If None, the image's data is used.
+        valfmt: An optional format of the annotations inside the heatmap.  This should either use the
+            string format method, e.g. "$ {x:.2f}", or be a `matplotlib.ticker.Formatter`.
         textcolors: A pair of colors.  The first is used for values below a threshold, the second
-            for those above.  Optional.
-        threshold: Value in data units according to which the colors from textcolors are
+            for those above. Defaults to black and white respectively.
+        threshold: An optional value in data units according to which the colors from textcolors are
             applied. If None (the default) uses the middle of the colormap as
-            separation. Optional.
+            separation.
         **textkw: All other arguments are forwarded to each call to `text` used to create
             the text labels.
 
@@ -284,9 +284,9 @@ def annotate_heatmap(
 
 
 def radar_factory(num_vars: int) -> npt.NDArray[np.float_]:
-    """(https://matplotlib.org/stable/gallery/specialty_plots/radar_chart.html)
+    """Create a radar chart with `num_vars` axes.
 
-    Create a radar chart with `num_vars` axes.
+    (https://matplotlib.org/stable/gallery/specialty_plots/radar_chart.html)
 
     This function creates a RadarAxes projection and registers it.
 
