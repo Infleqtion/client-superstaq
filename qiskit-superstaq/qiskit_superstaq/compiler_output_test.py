@@ -1,4 +1,5 @@
-# pylint: disable=missing-function-docstring
+# pylint: disable=missing-function-docstring,missing-class-docstring
+
 import importlib
 import json
 import pickle
@@ -69,13 +70,35 @@ def test_compiler_output_repr() -> None:
     )
 
 
+def test_read_json_only_circuits() -> None:
+    qc = qiskit.QuantumCircuit(2)
+    qc.h(0)
+    qc.cx(0, 1)
+
+    json_dict = {
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "final_logical_to_physicals": "[[]]",
+    }
+
+    out = qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list=False)
+    assert out.circuit == qc
+
+    json_dict = {
+        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
+        "final_logical_to_physicals": "[[], []]",
+    }
+    out = qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list=True)
+    assert out.circuits == [qc, qc]
+
+
 @mock.patch.dict("sys.modules", {"qtrl": None})
-def test_read_json() -> None:
+def test_read_json_aqt() -> None:
     importlib.reload(qss.compiler_output)
 
     circuit = qiskit.QuantumCircuit(4)
     for i in range(4):
         circuit.h(i)
+
     state_str = gss.serialization.serialize({})
     pulse_lists_str = gss.serialization.serialize([[[]]])
 
@@ -86,14 +109,19 @@ def test_read_json() -> None:
         "pulse_lists_jp": pulse_lists_str,
     }
 
-    out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=False)
+    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+        out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=False)
+
     assert out.circuit == circuit
     assert not hasattr(out, "circuits")
 
-    out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
+    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+        out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
+
     assert out.circuits == [circuit]
     assert not hasattr(out, "circuit")
 
+    # multiple circuits
     pulse_lists_str = gss.serialization.serialize([[[]], [[]]])
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
@@ -101,24 +129,20 @@ def test_read_json() -> None:
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
     }
-    out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
+
+    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+        out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
+
     assert out.circuits == [circuit, circuit]
     assert not hasattr(out, "circuit")
 
-    json_dict = {
-        "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
-        "final_logical_to_physicals": "[[]]",
-    }
+    # no sequence returned
+    json_dict.pop("state_jp")
 
-    out = qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list=False)
-    assert out.circuit == circuit
+    with pytest.warns(UserWarning, match="aqt_upload_configs"):
+        out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
 
-    json_dict = {
-        "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
-        "final_logical_to_physicals": "[[], []]",
-    }
-    out = qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list=True)
-    assert out.circuits == [circuit, circuit]
+    assert out.seq is None
 
 
 def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires qtrl installation
@@ -165,6 +189,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     # Multiple circuits:
     out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit]
+
     assert pickle.dumps(out.seq) == pickle.dumps(seq)
     assert out.pulse_lists == [[[]]]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
@@ -191,7 +216,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
 
-def test_read_json_with_qscout() -> None:
+def test_read_json_qscout() -> None:
     circuit = qiskit.QuantumCircuit(1)
     circuit.h(0)
 

@@ -1,11 +1,13 @@
+# pylint: disable=missing-function-docstring,missing-class-docstring
+
 """Integration checks that run daily (via Github action) between client and prod server."""
-# pylint: disable=missing-function-docstring
+
 
 import os
 
 import cirq
 import pytest
-from general_superstaq import ResourceEstimate, SuperstaQException
+from general_superstaq import ResourceEstimate, SuperstaqException
 
 import cirq_superstaq as css
 
@@ -80,14 +82,12 @@ def test_aqt_compile_eca(service: css.Service) -> None:
         cirq.CX(cirq.LineQubit(4), cirq.LineQubit(5)) ** 0.7,
     )
 
-    eca_circuits = service.aqt_compile_eca(
-        circuit, num_equivalent_circuits=3, random_seed=123
-    ).circuits
+    eca_circuits = service.aqt_compile(circuit, num_eca_circuits=3, random_seed=123).circuits
     assert len(eca_circuits) == 3
     assert all(isinstance(circuit, cirq.Circuit) for circuit in eca_circuits)
 
     # multiple circuits:
-    eca_circuits = service.aqt_compile_eca([circuit, circuit], num_equivalent_circuits=3).circuits
+    eca_circuits = service.aqt_compile([circuit, circuit], num_eca_circuits=3).circuits
     assert len(eca_circuits) == 2
     for circuits in eca_circuits:
         assert len(circuits) == 3
@@ -100,17 +100,13 @@ def test_aqt_compile_eca_regression(service: css.Service) -> None:
         cirq.H(cirq.LineQubit(4)),
         cirq.CX(cirq.LineQubit(4), cirq.LineQubit(5)) ** 0.7,
     )
-    eca_circuits = service.aqt_compile_eca(
-        circuit, num_equivalent_circuits=3, random_seed=123
-    ).circuits
+    eca_circuits = service.aqt_compile(circuit, num_eca_circuits=3, random_seed=123).circuits
     # test with same and different seed
     assert (
-        eca_circuits
-        == service.aqt_compile_eca(circuit, num_equivalent_circuits=3, random_seed=123).circuits
+        eca_circuits == service.aqt_compile(circuit, num_eca_circuits=3, random_seed=123).circuits
     )
     assert (
-        eca_circuits
-        != service.aqt_compile_eca(circuit, num_equivalent_circuits=3, random_seed=456).circuits
+        eca_circuits != service.aqt_compile(circuit, num_eca_circuits=3, random_seed=456).circuits
     )
 
 
@@ -149,15 +145,8 @@ def test_ibmq_set_token(service: css.Service) -> None:
 
     assert service.ibmq_set_token(ibmq_token) == "Your IBMQ account token has been updated"
 
-    with pytest.raises(SuperstaQException, match="IBMQ token is invalid."):
+    with pytest.raises(SuperstaqException, match="IBMQ token is invalid."):
         assert service.ibmq_set_token("INVALID_TOKEN")
-
-
-def test_tsp(service: css.Service) -> None:
-    cities = ["Chicago", "San Francisco", "New York City", "New Orleans"]
-    out = service.tsp(cities)
-    for city in cities:
-        assert city.replace(" ", "+") in out.map_link[0]
 
 
 def test_get_targets(service: css.Service) -> None:
@@ -255,7 +244,7 @@ def test_job(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
     job = service.create_job(circuit, target="ibmq_qasm_simulator", repetitions=10)
 
-    job_id = job.job_id()  # To test for https://github.com/SupertechLabs/cirq-superstaq/issues/452
+    job_id = job.job_id()  # To test for https://github.com/Infleqtion/client-superstaq/issues/452
 
     assert job.counts() == {"0": 10}
     assert job.status() == "Done"
@@ -271,11 +260,13 @@ def test_job(service: css.Service) -> None:
     assert job.job_id() == job_id
 
 
-def test_submit_to_cq_hilbert_simulator(service: css.Service) -> None:
+def test_submit_to_provider_simulators(service: css.Service) -> None:
     q0 = cirq.LineQubit(0)
     q1 = cirq.LineQubit(1)
-
     circuit = cirq.Circuit(cirq.X(q0), cirq.CNOT(q0, q1), cirq.measure(q0, q1))
 
-    job = service.create_job(circuit=circuit, repetitions=1, target="cq_hilbert_simulator")
-    assert job.counts() == {"11": 1}
+    targets = ["cq_hilbert_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
+
+    for target in targets:
+        job = service.create_job(circuit=circuit, repetitions=1, target=target)
+        assert job.counts() == {"11": 1}

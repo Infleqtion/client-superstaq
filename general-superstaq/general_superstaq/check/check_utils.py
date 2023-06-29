@@ -28,7 +28,9 @@ def _check_output(*commands: str) -> str:
 
 
 # container for string formatting console codes
-class Style(str, enum.Enum):  # pylint: disable=missing-class-docstring
+class Style(str, enum.Enum):
+    """Container for string formatting console codes."""
+
     BLACK = "\033[30m"
     RED = "\033[31m"
     GREEN = "\033[32m"
@@ -42,19 +44,52 @@ class Style(str, enum.Enum):  # pylint: disable=missing-class-docstring
     RESET = "\033[0m"
 
 
-def styled(text: str, style_code: str) -> str:  # pylint: disable=missing-function-docstring
+def styled(text: str, style_code: str) -> str:
+    """Style (format) text for printing in the console.
+
+    Args:
+        text: The text to style.
+        style_code: Console code for the text style.
+
+    Returns:
+        Styled text.
+    """
     return style_code + text + Style.RESET
 
 
-def warning(text: str) -> str:  # pylint: disable=missing-function-docstring
+def warning(text: str) -> str:
+    """Style (format) text indicating a warning.
+
+    Args:
+        text: The text to style.
+
+    Returns:
+        Styled text.
+    """
     return styled(text, Style.BOLD + Style.YELLOW)
 
 
-def failure(text: str) -> str:  # pylint: disable=missing-function-docstring
+def failure(text: str) -> str:
+    """Style (format) text indicating a failure.
+
+    Args:
+        text: The text to style.
+
+    Returns:
+        Styled text.
+    """
     return styled(text, Style.BOLD + Style.RED)
 
 
-def success(text: str) -> str:  # pylint: disable=missing-function-docstring
+def success(text: str) -> str:
+    """Style (format) text indicating success.
+
+    Args:
+        text: The text to style.
+
+    Returns:
+        Styled text.
+    """
     return styled(text, Style.BOLD + Style.GREEN)
 
 
@@ -67,11 +102,17 @@ default_branches = ("upstream/main", "origin/main", "main")
 
 
 def get_tracked_files(include: Union[str, Iterable[str]]) -> List[str]:
-    """Identify all files matching the given match_patterns that are tracked by git in this repo.
+    """Identify all files tracked by git (in this repo) that match the given match_patterns.
+
     If no patterns are provided, return a list of all tracked files in the repo.
     """
     include = [include] if isinstance(include, str) else include
     return _check_output("git", "ls-files", "--deduplicate", *include).splitlines()
+
+
+def existing_files(files: Iterable[str]) -> List[str]:
+    """Returns the subset of `files` which actually exist."""
+    return [file for file in files if os.path.isfile(os.path.join(root_dir, file))]
 
 
 def exclude_files(files: Iterable[str], exclude: Union[str, Iterable[str]]) -> List[str]:
@@ -195,7 +236,12 @@ def get_test_files(
 # file parsing, incremental checks, and decorator to exit instead of returning a failing exit code
 
 
-def get_file_parser() -> argparse.ArgumentParser:  # pylint: disable=missing-function-docstring
+def get_file_parser() -> argparse.ArgumentParser:
+    """Construct an console argument parser that identifies files to check.
+
+    The parser also has a flag to do incremental cheks, i.e., on the subset files that have changed
+    since a specified git revision, as well as a flag to exclude files matching a specified glob.
+    """
     parser = argparse.ArgumentParser(
         allow_abbrev=False, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -211,8 +257,8 @@ def get_file_parser() -> argparse.ArgumentParser:  # pylint: disable=missing-fun
     )
     parser.add_argument("-i", "--incremental", dest="revisions", nargs="*", help=help_text)
     parser.add_argument(
-        "-x", "--exclude", action="append", metavar="GLOB", help="Exclude files matchine GLOB."
-    )  # TODO: replace "append" with "extend" once we require python>=3.8
+        "-x", "--exclude", action="extend", metavar="GLOB", help="Exclude files matching GLOB."
+    )
 
     return parser
 
@@ -266,6 +312,7 @@ def extract_files(
 
     if globs or not parsed_args.files:
         tracked_files = get_tracked_files(include)
+        tracked_files = existing_files(tracked_files)
         tracked_files = exclude_files(tracked_files, exclude)
         if globs:
             tracked_files = select_files(tracked_files, globs)

@@ -8,7 +8,7 @@ exec(open("cirq_superstaq/_version.py").read())
 
 name = "cirq-superstaq"
 
-description = "The Cirq module that provides tools and access to SuperstaQ"
+description = "The Cirq module that provides tools and access to Superstaq"
 
 # README file as long_description.
 long_description = io.open("README.md", encoding="utf-8").read()
@@ -36,10 +36,10 @@ cirq_superstaq_packages = ["cirq_superstaq"] + [
 setup(
     name=name,
     version=__version__,
-    url="https://github.com/SupertechLabs/cirq-superstaq",
-    author="Super.tech",
-    author_email="pranav@super.tech",
-    python_requires=(">=3.7.0"),
+    url="https://github.com/Infleqtion/client-superstaq",
+    author="Superstaq development team",
+    author_email="superstaq@infleqtion.com",
+    python_requires=(">=3.8.0"),
     install_requires=requirements,
     extras_require={"dev": dev_requirements, "examples": example_requirements},
     license="Apache 2",

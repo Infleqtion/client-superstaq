@@ -1,11 +1,11 @@
 black-configparser~=0.2.0b2  # warning: potential issues https://github.com/danie1k/python-black-configparser/blob/5c6c8d122cdce95e2c7b4ada773cf2f4267c9189/README.md#known-issues
 black[jupyter]~=22.3.0
-flake8~=3.8.4
-flake8-type-checking>=1.0.0; python_version >= "3.8"
-isort[colors]~=5.10.1
-mypy>=0.961
-nbmake~=1.3.0
-pylint>=2.13.0
+flake8>=3.8.4
+flake8-type-checking>=2.1.0
+isort[colors]>=5.10.1
+mypy>=1.0.0
+nbmake>=1.3.0
+pylint>=2.15.0
 pytest>=6.2.5
 pytest-cov>=2.11.1
 pytest-randomly>=3.10.1
