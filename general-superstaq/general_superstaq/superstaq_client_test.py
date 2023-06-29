@@ -10,7 +10,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=missing-function-docstring
+# pylint: disable=missing-function-docstring,missing-class-docstring
+
 import contextlib
 import io
 import json
@@ -603,90 +604,6 @@ def test_superstaq_client_supercheq(mock_post: mock.MagicMock) -> None:
     }
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/supercheq",
-        headers=EXPECTED_HEADERS,
-        json=expected_json,
-        verify=False,
-    )
-
-
-@mock.patch("requests.post")
-def test_superstaq_client_find_min_vol_portfolio(mock_post: mock.MagicMock) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
-        client_name="general-superstaq",
-        remote_host="http://example.com",
-        api_key="to_my_heart",
-    )
-    client.find_min_vol_portfolio(
-        {"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "desired_return": 8}
-    )
-
-    expected_json = {"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "desired_return": 8}
-    mock_post.assert_called_with(
-        f"http://example.com/{API_VERSION}/minvol",
-        headers=EXPECTED_HEADERS,
-        json=expected_json,
-        verify=False,
-    )
-
-
-@mock.patch("requests.post")
-def test_superstaq_client_find_max_pseudo_sharpe_ratio(mock_post: mock.MagicMock) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
-        client_name="general-superstaq",
-        remote_host="http://example.com",
-        api_key="to_my_heart",
-    )
-    client.find_max_pseudo_sharpe_ratio({"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "k": 0.5})
-
-    expected_json = {"stock_symbols": ["AAPL", "GOOG", "IEF", "MMM"], "k": 0.5}
-    mock_post.assert_called_with(
-        f"http://example.com/{API_VERSION}/maxsharpe",
-        headers=EXPECTED_HEADERS,
-        json=expected_json,
-        verify=False,
-    )
-
-
-@mock.patch("requests.post")
-def test_superstaq_client_tsp(mock_post: mock.MagicMock) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
-        client_name="general-superstaq",
-        remote_host="http://example.com",
-        api_key="to_my_heart",
-    )
-    client.tsp({"locs": ["Chicago", "St Louis", "St Paul"]})
-
-    expected_json = {"locs": ["Chicago", "St Louis", "St Paul"]}
-    mock_post.assert_called_with(
-        f"http://example.com/{API_VERSION}/tsp",
-        headers=EXPECTED_HEADERS,
-        json=expected_json,
-        verify=False,
-    )
-
-
-@mock.patch("requests.post")
-def test_superstaq_client_warehouse(mock_post: mock.MagicMock) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
-        client_name="general-superstaq",
-        remote_host="http://example.com",
-        api_key="to_my_heart",
-    )
-    client.warehouse(
-        {
-            "k": 1,
-            "possible_warehouses": ["Chicago", "San Francisco"],
-            "customers": ["Rockford", "Aurora"],
-        }
-    )
-
-    expected_json = {
-        "k": 1,
-        "possible_warehouses": ["Chicago", "San Francisco"],
-        "customers": ["Rockford", "Aurora"],
-    }
-    mock_post.assert_called_with(
-        f"http://example.com/{API_VERSION}/warehouse",
         headers=EXPECTED_HEADERS,
         json=expected_json,
         verify=False,

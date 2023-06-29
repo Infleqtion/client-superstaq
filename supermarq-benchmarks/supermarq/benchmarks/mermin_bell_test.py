@@ -1,4 +1,5 @@
-# pylint: disable=missing-function-docstring
+# pylint: disable=missing-function-docstring,missing-class-docstring
+
 import supermarq
 from supermarq.benchmarks.mermin_bell import MerminBell
 
