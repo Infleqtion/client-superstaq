@@ -329,7 +329,7 @@ class Service(user_config.UserConfig):
             pretty_output: Whether to return a pretty string or a float of the balance.
 
         Returns:
-            If pretty_output is True, returns the balance as a nicely formatted string ($-prefix,
+            If pretty_output is `True`, returns the balance as a nicely formatted string ($-prefix,
                 commas on LHS every three digits, and two digits after period). Otherwise, simply
                 returns a float of the balance.
         """

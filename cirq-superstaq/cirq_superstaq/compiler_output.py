@@ -123,8 +123,10 @@ class CompilerOutput:
         self.seq = seq
 
     def has_multiple_circuits(self) -> bool:
-        """Checks if an object has .circuits and .pulse_lists attributes. Otherwise, the
-        object represents a single circuit, and has .circuit and .pulse_list attributes.
+        """Checks if an object has .circuits and .pulse_lists attributes.
+
+        Otherwise, the object represents a single circuit, and has .circuit
+        and .pulse_list attributes.
 
         Returns:
             `True` if this object represents multiple circuits; `False` otherwise.
@@ -151,7 +153,7 @@ def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutp
     Args:
         json_dict: A JSON dictionary matching the format returned by /ibmq_compile endpoint
         circuits_is_list: A bool flag that controls whether the returned object has a .circuits
-            attribute (if True) or a .circuit attribute (False)
+            attribute (if `True`) or a .circuit attribute (`False`).
 
     Returns:
         A `CompilerOutput` object with the compiled circuit(s). If qiskit is available locally,
@@ -196,7 +198,7 @@ def read_json_aqt(
     Args:
         json_dict: A JSON dictionary matching the format returned by aqt_compile endpoint.
         circuits_is_list: A bool flag that controls whether the returned object has a .circuits
-            attribute (if True) or a .circuit attribute (False).
+            attribute (if `True`) or a .circuit attribute (`False`).
         num_eca_circuits: Number of logically equivalent random circuits to generate for each
             input circuit.
 
@@ -286,10 +288,10 @@ def read_json_qscout(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compi
     Args:
         json_dict: A JSON dictionary matching the format returned by /qscout_compile endpoint.
         circuits_is_list: A bool flag that controls whether the returned object has a .circuits
-            attribute (if True) or a .circuit attribute (False).
+            attribute (if `True`) or a .circuit attribute (`False`).
 
     Returns:
-        A `CompilerOutput` object with the compiled circuit(s) and a list jaqal programs
+        A `CompilerOutput` object with the compiled circuit(s) and a list of jaqal programs
         represented as strings.
     """
 

@@ -50,8 +50,7 @@ class Sampler(cirq.Sampler):
         service: css.service.Service,
         target: str,
     ) -> None:
-        """Constructs the sampler. Users should get a sampler from the `sampler` method on
-        `css.Service`.
+        """Constructs the sampler, accessed from the `sampler` method on `css.Service`.
 
         Args:
             service: The service used to create this sample.
