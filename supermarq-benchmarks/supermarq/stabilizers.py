@@ -20,16 +20,21 @@ class MeasurementCircuit:
         num_qubits: int,
         qubits: List[cirq.LineQubit],
     ) -> None:
+        """Intializes a `MeasurementCircuit`.
+
+        Args:
+            circuit: The circuit to measure stabilizers.
+            stabilizer_matrix: The stabilizer matrix for the circuit.
+            num_qubits: Number of qubits for the circuit.
+            qubits: A list of `cirq.LineQubit` instances.
+        """
         self.circuit = circuit
         self.stabilizer_matrix = stabilizer_matrix
         self.num_qubits = num_qubits
         self.qubits = qubits
 
     def get_circuit(self) -> cirq.Circuit:
-        """Return the current circuit.
-
-        Args:
-            None.
+        """Gets the current circuit.
 
         Returns:
             The current quantum circuit.
@@ -37,7 +42,7 @@ class MeasurementCircuit:
         return self.circuit
 
     def get_stabilizer(self) -> npt.NDArray[np.uint8]:
-        """Return the current stabilizer matrix.
+        """Gets the current stabilizer matrix.
 
         The stabilizer matrix is in the Z+X format where M Pauli strings, acting on N qubits, is
         represented as a (2*N, M) matrix.
@@ -49,9 +54,6 @@ class MeasurementCircuit:
          [1, 1, 0],  ========
          [1, 1, 1],  X matrix (bottom half)
          [0, 1, 0]   ========
-
-        Args:
-            None.
 
         Returns:
             The current stabilizer matrix.
@@ -90,12 +92,13 @@ def construct_stabilizer(
     in Variational Quantum Eigensolver by Partitioning into Commuting
     Families](https://arxiv.org/abs/1907.13623).
 
-    Note: this implementation is tailored to the Mermin operator, and assumes that no Pauli Z
-    matrices appear in the clique terms. This function will fail if applied to general Pauli
-    strings.
+    Note:
+        This implementation is tailored to the Mermin operator, and assumes that no Pauli Z
+        matrices appear in the clique terms. This function will fail if applied to general Pauli
+        strings.
 
     Args:
-        N: Integer corresponding to the number of qubits.
+        N: An integer corresponding to the number of qubits.
         clique: A list of (coefficient, Pauli string) pairs, for example:
             [(-1.2, XXY), (2.3, ZXI), ...].
 
