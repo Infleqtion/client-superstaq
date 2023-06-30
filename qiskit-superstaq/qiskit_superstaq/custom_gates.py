@@ -28,7 +28,7 @@ class AceCR(qiskit.circuit.Gate):
             label: An optional label for the constructed gate. Defaults to None.
 
         Raises:
-            ValueError: If the polarity of `rads` is not '+-' or '-+'.
+            ValueError: If the polarity of `rads` is a string other than '+-' or '-+'.
         """
         if rads == "+-":
             rads = np.pi / 2

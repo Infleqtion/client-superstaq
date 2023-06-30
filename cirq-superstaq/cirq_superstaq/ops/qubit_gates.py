@@ -242,7 +242,7 @@ class AceCR(cirq.Gate):
                 simultaneously with the X gate on the "Z side".
 
         Raises:
-            ValueError: If the polarity of `rads` is not '+-' or '-+'.
+            ValueError: If the polarity of `rads` is a string other than '+-' or '-+'.
         """
         # Polarity should be "+-" or "-+", specifying if positive or negative half-CR is first.
         if rads == "+-":
