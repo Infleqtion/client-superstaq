@@ -8,6 +8,11 @@ class UserConfig:
     """This class contains all the user configurations that are used to operate Superstaq."""
 
     def __init__(self, client: gss.superstaq_client._SuperstaqClient):
+        """Initializes the `UserConfig` class.
+
+        Args:
+            client: The Superstaq client to use.
+        """
         self._client = client
 
     def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
@@ -17,10 +22,11 @@ class UserConfig:
             pretty_output: Whether to return a pretty string or a float of the balance.
 
         Returns:
-            If `pretty_output` is `True`, returns the balance as a nicely formatted string ($-prefix,
-            commas on LHS every three digits, and two digits after period). Otherwise, simply
-            returns a float of the balance.
+            If `pretty_output` is `True`, returns the balance as a nicely formatted string
+            ($-prefix, commas on LHS every three digits, and two digits after period).
+            Otherwise, simply returns a float of the balance.
         """
+
         balance = self._client.get_balance()["balance"]
         if pretty_output:
             return f"${balance:,.2f}"

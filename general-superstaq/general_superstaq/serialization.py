@@ -34,7 +34,7 @@ def serialize(obj: Any) -> str:
         obj: A picklable object to be serialized.
 
     Returns:
-        The str representing the serialized object.
+        The string representing the serialized object.
     """
     return bytes_to_str(pickle.dumps(obj))
 
@@ -43,7 +43,7 @@ def deserialize(serialized_obj: str) -> Any:
     """Deserialize serialized objects.
 
     Args:
-        serialized_obj: A str generated via `general_superstaq.serialization.serialize`.
+        serialized_obj: A string generated via `general_superstaq.serialization.serialize`.
 
     Returns:
         The serialized object.
