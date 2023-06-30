@@ -28,7 +28,7 @@ class AceCR(qiskit.circuit.Gate):
             label: An optional label for the constructed gate. Defaults to None.
 
         Raises:
-            ValueError: If the polarity of `rads` is not '+-' or '-+'.
+            ValueError: If the polarity of `rads` is a string other than '+-' or '-+'.
         """
         if rads == "+-":
             rads = np.pi / 2
@@ -114,7 +114,7 @@ class ZZSwapGate(qiskit.circuit.Gate):
     """
 
     def __init__(self, theta: float, label: Optional[str] = None) -> None:
-        """Initalizes a ZZ-SWAP gate.
+        """Initializes a ZZ-SWAP gate.
 
         Args:
             theta: The ZZ-interaction angle in radians.
@@ -259,7 +259,7 @@ class ParallelGates(qiskit.circuit.Gate):
 
 class iXGate(qiskit.circuit.Gate):
     r"""The iX gate (a single qubit Pauli-X gate with a global phase of i). It is a special case
-    of when the RZ gate's input rotation angle is :math:`-\pi`:
+    of when the RX gate's input rotation angle is :math:`-\pi`:
 
      .. math::
 
