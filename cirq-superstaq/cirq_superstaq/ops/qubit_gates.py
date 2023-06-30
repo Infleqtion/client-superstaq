@@ -420,7 +420,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             component_gates: Gate(s) to be collected into a single gate.
 
         Raises:
-            ValueError:  If `component_gates` are not `cirq.Gate` instances.
+            ValueError: If `component_gates` are not `cirq.Gate` instances.
             ValueError: If `component_gates` contains measurements.
         """
 
@@ -615,7 +615,7 @@ class RGate(cirq.PhasedXPowGate):
         Args:
             theta: The angle (in radians) by which to rotate.
             phi: The angle (in radians) defining the axis of rotation in the `X`-`Y` plane:
-             `cos(phi) X + sin(phi) Y` (i.e. `phi` radians from `X` to `Y`).
+                `cos(phi) X + sin(phi) Y` (i.e. `phi` radians from `X` to `Y`).
         """
         super().__init__(
             exponent=theta / _pi(theta), phase_exponent=phi / _pi(phi), global_shift=-0.5
@@ -682,7 +682,7 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
         Args:
             theta: The RGate angle (in radians) by which to rotate.
             phi: The RGate angle (in radians) defining the axis of rotation in the `X`-`Y` plane:
-             `cos(phi) X + sin(phi) Y` (i.e. `phi` radians from `X` to `Y`).
+                `cos(phi) X + sin(phi) Y` (i.e. `phi` radians from `X` to `Y`).
             num_copies: Number of copies to be used.
         """
         super().__init__(css.RGate(theta, phi), num_copies)
