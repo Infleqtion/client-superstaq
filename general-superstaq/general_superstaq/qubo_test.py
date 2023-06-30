@@ -1,5 +1,4 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
-
 import numpy as np
 import qubovert as qv
 
