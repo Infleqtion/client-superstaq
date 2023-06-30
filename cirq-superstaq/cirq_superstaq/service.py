@@ -393,7 +393,7 @@ class Service(user_config.UserConfig):
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for AQT using ECA.
-        
+
         The Advanced Quantum Testbed (AQT) is a superconducting transmon quantum computing testbed
         at Lawrence Berkeley National Laboratory. See arxiv.org/pdf/2111.04572.pdf for a description
         of Equivalent Circuit Averaging (ECA).
