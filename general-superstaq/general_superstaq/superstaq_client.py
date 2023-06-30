@@ -226,8 +226,9 @@ class _SuperstaqClient:
         return self.post_request("/accept_terms_of_use", {"user_input": user_input})
 
     def get_targets(self) -> Dict[str, Dict[str, List[str]]]:
-        """Makes a GET request to the Superstaq API to get a list of available, unavailable,
-        and retired targets.
+        """Makes a GET request to retrieve targets from the Superstaq API.
+
+        Gets a list of available, unavailable, and retired targets.
 
         Returns:
             A dictionary listing the targets.
@@ -372,8 +373,9 @@ class _SuperstaqClient:
         return self.post_request("/supercheq", json_dict)
 
     def target_info(self, target: str) -> Dict[str, Any]:
-        """Makes a POST request to the Superstaq API (using the `/target_info` endpoint to
-        request information about `target`.
+        """Makes a POST request to the /target_info endpoint.
+
+        Uses the Superstaq API to request information about `target`.
 
         Args:
             target: A string representing the device to get information about.
