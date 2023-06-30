@@ -17,9 +17,21 @@ except ModuleNotFoundError:
 
 
 def active_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
-    """Returns the indices of the non-idle qubits in a quantum circuit, where "index" refers to the
-    argument of a LineQubit (so e.g. cirq.LineQubit(5) has index 5 regardless of the total number
-    of qubits in the circuit)."""
+    """Returns the indices of the non-idle qubits in a quantum circuit.
+
+    Note:
+        The "index" refers to the argument of a LineQubit (so e.g. `cirq.LineQubit(5)`
+        has index 5 regardless of the total number of qubits in the circuit.
+
+    Args:
+        circuit: The input quantum circuit.
+
+    Raises:
+        ValueError: If qubit indices are requested for non-line qubits.
+
+    Returns:
+        A list of active qubit indicies.
+    """
 
     all_qubits: Set[cirq.Qid] = set()
     for op in circuit.all_operations():
@@ -36,9 +48,21 @@ def active_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
 
 
 def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
-    """Returns the indices of the measured qubits in a quantum circuit, where "index" refers to the
-    argument of a LineQubit (so e.g. cirq.LineQubit(5) has index 5 regardless of the total number
-    of qubits in the circuit)."""
+    """Returns the indices of the measured qubits in a quantum circuit.
+
+    Note:
+        The "index" refers to the argument of a LineQubit (so e.g. `cirq.LineQubit(5)`
+        has index 5 regardless of the total number of qubits in the circuit).
+
+    Args:
+        circuit: The input quantum circuit.
+
+    Raises:
+        ValueError: If qubit indices are requested for non-line qubits.
+
+    Returns:
+        A list of the measurement qubit indicies.
+    """
 
     unrolled_circuit = cirq.unroll_circuit_op(circuit, deep=True, tags_to_check=None)
 
@@ -71,14 +95,14 @@ class CompilerOutput:
         jaqal_programs: Optional[Union[List[str], str]] = None,
         pulse_lists: Optional[Union[List[List[List[Any]]], List[List[List[List[Any]]]]]] = None,
     ) -> None:
-        """Initializes class attributes.
+        """Initializes the `CompilerOutput` attributes.
 
         Args:
             circuits: A list (of at most 2 dimensions) containing `cirq.Circuit` objects.
             final_logical_to_physicals: Post-compilation mapping of logical qubits to physical
                 qubits.
             pulse_sequences: Qiskit pulse schedules for the compiled circuit(s).
-            seq: Qtrl pulse sequence, if qtrl is available locally.
+            seq: A `qtrl` pulse sequence, if `qtrl` is available locally.
             jaqal_programs: The Jaqal program (resp. programs) as a string (resp. list of
                 strings).
             pulse_lists: Either 3 or 4 dimensional lists of pulse cycles.
@@ -99,10 +123,11 @@ class CompilerOutput:
         self.seq = seq
 
     def has_multiple_circuits(self) -> bool:
-        """Returns True if this object represents multiple circuits.
+        """Checks if an object has .circuits and .pulse_lists attributes. Otherwise, the
+        object represents a single circuit, and has .circuit and .pulse_list attributes.
 
-        If so, this object has .circuits and .pulse_lists attributes. Otherwise, this object
-        represents a single circuit, and has .circuit and .pulse_list attributes.
+        Returns:
+            `True` if this object represents multiple circuits; `False` otherwise.
         """
         return hasattr(self, "circuits")
 
@@ -127,10 +152,12 @@ def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutp
         json_dict: A JSON dictionary matching the format returned by /ibmq_compile endpoint
         circuits_is_list: A bool flag that controls whether the returned object has a .circuits
             attribute (if True) or a .circuit attribute (False)
+
     Returns:
         A `CompilerOutput` object with the compiled circuit(s). If qiskit is available locally,
         the returned object also stores the pulse sequences in the .pulse_sequence(s) attribute.
     """
+
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
     final_logical_to_physicals: List[Dict[cirq.Qid, cirq.Qid]] = list(
         map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
@@ -172,6 +199,7 @@ def read_json_aqt(
             attribute (if True) or a .circuit attribute (False).
         num_eca_circuits: Number of logically equivalent random circuits to generate for each
             input circuit.
+
     Returns:
         A `CompilerOutput` object with the compiled circuit(s). If qtrl is available locally,
         the returned object also stores the pulse sequence in the .seq attribute and the
@@ -256,12 +284,13 @@ def read_json_qscout(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compi
     """Reads out returned JSON from Superstaq API's QSCOUT compilation endpoint.
 
     Args:
-        json_dict: A JSON dictionary matching the format returned by /qscout_compile endpoint
+        json_dict: A JSON dictionary matching the format returned by /qscout_compile endpoint.
         circuits_is_list: A bool flag that controls whether the returned object has a .circuits
-            attribute (if True) or a .circuit attribute (False)
+            attribute (if True) or a .circuit attribute (False).
+
     Returns:
         A `CompilerOutput` object with the compiled circuit(s) and a list jaqal programs
-        represented as strings
+        represented as strings.
     """
 
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])

@@ -34,8 +34,8 @@ def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
         A `cirq.MatrixGate` with the given unitary.
 
     Raises:
-        ValueError: If `matrix` could not be interpreted as a unitary gate acting on either qubits
-            or qutrits.
+        ValueError: If `matrix` could not be interpreted as a unitary gate acting on either
+            qubits or qutrits.
     """
 
     matrix = np.asarray(matrix, dtype=complex)
@@ -47,7 +47,8 @@ def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
             return cirq.MatrixGate(matrix, qid_shape=qid_shape)
 
     raise ValueError(
-        "Could not determine qid_shape from array shape, consider using a `cirq.MatrixGate` instead."
+        "Could not determine qid_shape from array shape, consider using a `cirq.MatrixGate` "
+        "instead."
     )
 
 
@@ -57,12 +58,12 @@ def counts_to_results(
     """Converts a `collections.Counter` to a `cirq.ResultDict`.
 
     Args:
-            counter: The `collections.Counter` of counts for the run.
-            circuit: The circuit to run.
-            param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuit`.
+        counter: The `collections.Counter` of counts for the run.
+        circuit: The circuit to run.
+        param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuit`.
 
-        Returns:
-            A `cirq.ResultDict` for the given circuit and counter.
+    Returns:
+        A `cirq.ResultDict` for the given circuit and counter.
 
     """
     measurement_key_names = list(circuit.all_measurement_key_names())
@@ -676,7 +677,16 @@ class Service(user_config.UserConfig):
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int
     ) -> Tuple[List[cirq.Circuit], npt.NDArray[np.float_]]:
-        """Returns the randomly generated circuits and the fidelity matrix for inputted files."""
+        """Returns the randomly generated circuits and the fidelity matrix for inputted files.
+
+        Args:
+            files: Input files from which to generate random circuits and fidelity matrix.
+            num_qubits: Number of qubits for the circuits.
+            depth: The circuit depth for Supercheq.
+
+        Returns:
+            A tuple containing the circuits and fidelities.
+        """
 
         json_dict = self._client.supercheq(files, num_qubits, depth, "cirq_circuits")
         circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
@@ -684,6 +694,13 @@ class Service(user_config.UserConfig):
         return circuits, fidelities
 
     def target_info(self, target: str) -> Dict[str, Any]:
-        """Returns information about device specified by `target`."""
+        """Returns information about device specified by `target`.
+
+        Args:
+            target: A string corresponding to a device.
+
+        Returns:
+            The corresponding device information.
+        """
         target = self._resolve_target(target)
         return self._client.target_info(target)["target_info"]
