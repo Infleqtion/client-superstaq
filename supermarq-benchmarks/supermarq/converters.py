@@ -86,7 +86,7 @@ def compute_parallelism_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> f
 
 def compute_measurement_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
     """Compute the measurement feature of the given quantum circuit.
-    
+
     Measurement feature = # of layers of mid-circuit measurement / circuit depth.
 
     Args:
@@ -133,7 +133,7 @@ def compute_entanglement_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> 
 
 def compute_depth_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
     """Compute the critical depth of the given quantum circuit.
-    
+
     Critical depth = # of 2-qubit gates along the critical path / total # of 2-qubit gates.
 
     Args:
