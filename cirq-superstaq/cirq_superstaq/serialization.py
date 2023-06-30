@@ -17,10 +17,10 @@ def serialize_circuits(
     """Serialize circuit(s) into a json string.
 
     Args:
-        circuits: A cirq circuit or list of cirq circuits to be serialized.
+        circuits: A `cirq.Circuit` or list of `cirq.Circuits` to be serialized.
 
     Returns:
-        A str representing the serialized circuit(s).
+        A string representing the serialized circuit(s).
     """
     dt = json.loads(cirq.to_json(circuits))
     if isinstance(dt, list):
@@ -38,7 +38,7 @@ def deserialize_circuits(serialized_circuits: str) -> List[cirq.Circuit]:
     """Deserialize serialized circuit(s).
 
     Args:
-        serialized_circuits: A json str generated via `serialization.serialize_circuit()`.
+        serialized_circuits: A json string generated via `serialization.serialize_circuit()`.
 
     Returns:
         The circuit or list of circuits that was serialized.

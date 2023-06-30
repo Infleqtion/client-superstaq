@@ -367,7 +367,8 @@ AceCRPlusMinus = AceCR("+-")
 
 @cirq.value_equality
 class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
-    """Barrier: temporal boundary restricting circuit compilation and pulse scheduling.
+    """A temporal boundary restricting circuit compilation and pulse scheduling.
+
     Otherwise equivalent to the identity gate.
     """
 
@@ -411,7 +412,7 @@ def barrier(*qubits: cirq.Qid) -> cirq.Operation:
 
 @cirq.value_equality(approximate=True)
 class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
-    """A single Gate combining a collection of concurrent Gate(s) acting on different qubits."""
+    """A single gate combining a collection of concurrent gate(s) acting on different qubits."""
 
     def __init__(self, *component_gates: cirq.Gate) -> None:
         """Initializes the `ParallelGates` class.
@@ -453,7 +454,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         gate.
 
         Args:
-            index: Qubit index.
+            index: The qubit index.
 
         Returns:
             Equivalence group key.
@@ -788,9 +789,10 @@ AQTICCX = AQTITOFFOLI = IX.controlled(2, [0, 0])
 
 @cirq.value_equality(approximate=True)
 class StrippedCZGate(cirq.Gate):
-    """The Stripped CZ Gate is the gate that is actually being performed by Hilbert,
-    which is just a regular CZ gate when the rz angle = 0, and is corrected into a CZ
-    gate by RZ gates afterwards if the rz angle is nonzero.
+    """The Stripped CZ gate is a regular CZ gate when the rz angle = 0.
+
+    It is the gate that is actually being performed by Hilbert, and it is corrected
+    into a CZ gate by RZ gates afterwards if the rz angle is nonzero.
     """
 
     def __init__(self, rz_rads: cirq.TParamVal = 0) -> None:
@@ -803,7 +805,7 @@ class StrippedCZGate(cirq.Gate):
 
     @property
     def rz_rads(self) -> cirq.TParamVal:
-        """Returns: The RZ-rotation angle for the gate."""
+        """The RZ-rotation angle for the gate."""
         return self._rz_rads
 
     def _num_qubits_(self) -> int:
@@ -885,7 +887,7 @@ class StrippedCZGate(cirq.Gate):
 
 
 def custom_resolver(cirq_type: str) -> Union[Type[cirq.Gate], None]:
-    """Tells `cirq.read_json` how to deserialize cirq-superstaq's custom gates.
+    """Tells `cirq.read_json` how to deserialize `cirq-superstaq`'s custom gates.
 
     Changes to gate names in this file should be reflected in this resolver.
     See quantumai.google/cirq/dev/serialization for more information about (de)serialization.

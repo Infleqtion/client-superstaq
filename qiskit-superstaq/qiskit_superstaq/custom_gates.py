@@ -159,9 +159,10 @@ class ZZSwapGate(qiskit.circuit.Gate):
 
 
 class StrippedCZGate(qiskit.circuit.Gate):
-    """The Stripped CZ gate is the gate that is actually being performed by Hilbert,
-    which is just a regular CZ gate when the rz angle = 0, and is corrected into a CZ
-    gate by RZ gates afterwards if the rz angle is nonzero.
+    """The Stripped CZ gate is a regular CZ gate when the rz angle = 0.
+
+    It is the gate that is actually being performed by Hilbert, and it is corrected
+    into a CZ gate by RZ gates afterwards if the rz angle is nonzero.
     """
 
     def __init__(self, rz_rads: float) -> None:
@@ -258,8 +259,9 @@ class ParallelGates(qiskit.circuit.Gate):
 
 
 class iXGate(qiskit.circuit.Gate):
-    r"""The iX gate (a single qubit Pauli-X gate with a global phase of i). It is a special case
-    of when the RX gate's input rotation angle is :math:`-\pi`:
+    r"""The iX gate (a single qubit Pauli-X gate with a global phase of i).
+
+    It is a special case of when the RX gate's input rotation angle is :math:`-\pi`:
 
      .. math::
 
@@ -375,9 +377,11 @@ class iXdgGate(qiskit.circuit.Gate):
 
 
 class iCCXGate(qiskit.circuit.ControlledGate):
-    r"""An iCCX gate which consists of a Toffoli gate and subsequent two-qubit controlled phase gate
-    (with angle of rotation of :math:`\frac{\pi}{2}` on the second qubit using the first qubit as
-    control). That is, it is a composite gate of the following instructions:
+    r"""An iCCX gate which consists of a Toffoli gate and a subsequent controlled phase gate.
+
+    The two qubit controlled phase gate uses an angle of rotation of :math:`\frac{\pi}{2}` on
+    the second qubit with the first qubit acting as the control. That is, it is a composite
+    gate of the following instructions:
 
     .. parsed-literal::
 
@@ -493,9 +497,11 @@ _custom_gate_resolvers: Dict[str, Callable[..., qiskit.circuit.Gate]] = {
 
 
 def custom_resolver(gate: qiskit.circuit.Instruction) -> Optional[qiskit.circuit.Gate]:
-    """Recover a custom gate type from a generic `qiskit.circuit.Gate`. Resolution is done using
-    `gate.definition.name` rather than `gate.name`, as the former is set by all qiskit-superstaq
-    custom gates and the latter may be modified by calls such as QuantumCircuit.qasm()
+    """Recovers a custom gate type from a generic `qiskit.circuit.Gate`.
+
+    The resolution is done using `gate.definition.name` rather than `gate.name`, as the former
+    is set by all `qiskit-superstaq` custom gates and the latter may be modified by calls
+    such as `qiskit.QuantumCircuit.qasm()`.
 
     Args:
         gate: The input gate instruction from which to recover a custom gate type.

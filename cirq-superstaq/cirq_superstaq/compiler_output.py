@@ -51,7 +51,7 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
     """Returns the indices of the measured qubits in a quantum circuit.
 
     Note:
-        The "index" refers to the argument of a LineQubit (so e.g. `cirq.LineQubit(5)`
+        The "index" refers to the argument of a `cirq.LineQubit` (so e.g. `cirq.LineQubit(5)`
         has index 5 regardless of the total number of qubits in the circuit).
 
     Args:
@@ -203,7 +203,7 @@ def read_json_aqt(
             input circuit.
 
     Returns:
-        A `CompilerOutput` object with the compiled circuit(s). If qtrl is available locally,
+        A `CompilerOutput` object with the compiled circuit(s). If `qtrl` is available locally,
         the returned object also stores the pulse sequence in the .seq attribute and the
         list(s) of cycles in the .pulse_list(s) attribute.
     """
