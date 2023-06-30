@@ -69,14 +69,15 @@ def to_json(val: object) -> str:
 
 
 def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:
-    """QPY requires unique custom gates to have unique `.name` attributes (including parameterized
-    gates differing by just their `.params` attributes). This function rewrites the input circuit
-    with new instruction names given by appending a unique (consecutive) "_{index}" string to the
-    name of any custom instruction which shares a name with a non-equivalent prior instruction in
-    the circuit.
+    """This function rewrites the input circuit with new instruction names.
+
+    QPY requires unique custom gates to have unique `.name` attributes (including parameterized
+    gates differing by just their `.params` attributes). This function does so by appending a
+    unique (consecutive) "_{index}" string to the name of any custom instruction which shares
+    a name with a non-equivalent prior instruction in the circuit.
 
     Args:
-        circuit: `qiskit.QuantumCircuit` to be rewritten.
+        circuit: The `qiskit.QuantumCircuit` to be rewritten.
 
     Returns:
         A copy of the input circuit with unique custom instruction names.
@@ -123,10 +124,10 @@ def serialize_circuits(
     """Serialize QuantumCircuit(s) into a single string.
 
     Args:
-        circuits: A QuantumCircuit or list of QuantumCircuits to be serialized.
+        circuits: A `qiskit.QuantumCircuit` or list of `qiskit.QuantumCircuit`s to be serialized.
 
     Returns:
-        A str representing the serialized circuit(s).
+        A string representing the serialized circuit(s).
     """
     if isinstance(circuits, qiskit.QuantumCircuit):
         circuits = [_assign_unique_inst_names(circuits)]
