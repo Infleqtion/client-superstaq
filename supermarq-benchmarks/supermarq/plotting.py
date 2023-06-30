@@ -340,7 +340,12 @@ class RadarAxesMeta(PolarAxes):
         return super().fill(closed=closed, *args, **kwargs)
 
     def plot(self, *args: Any, **kwargs: Any) -> None:
-        """Override plot so that line is closed by default"""
+        """Override plot so that line is closed by default.
+
+        Args:
+            args: Desired arguments for plotting.
+            kwargs: Other desired keyword arguments for plotting.
+        """
         lines = super().plot(*args, **kwargs)
         for line in lines:
             self._close_line(line)

@@ -94,6 +94,15 @@ class QAOAVanillaProxy(Benchmark):
 
     def _get_opt_angles(self) -> Tuple[npt.NDArray[np.float_], float]:
         def f(params: npt.NDArray[np.float_]) -> float:
+            """The objective function to minimize.
+
+            Args:
+                params: The parameters at which to evaluate the objective.
+
+            Returns:
+                Evaluation of objective given parameters.
+
+            """
             gamma, beta = params
             circ = self._gen_ansatz(gamma, beta)
             probs = supermarq.simulation.get_ideal_counts(circ)
@@ -120,9 +129,12 @@ class QAOAVanillaProxy(Benchmark):
     def circuit(self) -> cirq.Circuit:
         """Generate a QAOA circuit for the Sherrington-Kirkpatrick model.
 
-        The ansatz structure is given by the form of the Hamiltonian and requires
-        interactions between every pair of qubits. We restrict the depth of this proxy
-        benchmark to p=1 to keep the classical simulation scalable.
+        The ansatz structure is given by the form of the Hamiltonian and requires interactions
+        between every pair of qubits. We restrict the depth of this proxy benchmark to p=1 to keep
+        the classical simulation scalable.
+
+        Returns:
+            The S-K model QAOA circuit.
         """
         gamma, beta = self.params
         return self._gen_ansatz(gamma, beta)
@@ -130,9 +142,14 @@ class QAOAVanillaProxy(Benchmark):
     def score(self, counts: Mapping[str, float]) -> float:
         """Compare the experimental output to the output of noiseless simulation.
 
-        The implementation here has exponential runtime and would not scale.
-        However, it could in principle be done efficiently via
-        https://arxiv.org/abs/1706.02998, so we're good.
+        The implementation here has exponential runtime and would not scale. However, it could in
+        principle be done efficiently via https://arxiv.org/abs/1706.02998, so we're good.
+
+        Args:
+            counts: A dictionary containing measurement counts from circuit execution.
+
+        Returns:
+            The QAOA Vanilla proxy benchmark score.
         """
         ideal_counts = supermarq.simulation.get_ideal_counts(self.circuit())
         total_shots = sum(counts.values())
