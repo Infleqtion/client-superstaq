@@ -26,11 +26,11 @@ def active_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
     Args:
         circuit: The input quantum circuit.
 
-    Raises:
-        ValueError: If qubit indices are requested for non-line qubits.
-
     Returns:
         A list of active qubit indicies.
+
+    Raises:
+        ValueError: If qubit indices are requested for non-line qubits.
     """
 
     all_qubits: Set[cirq.Qid] = set()
@@ -57,11 +57,11 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
     Args:
         circuit: The input quantum circuit.
 
-    Raises:
-        ValueError: If qubit indices are requested for non-line qubits.
-
     Returns:
         A list of the measurement qubit indicies.
+
+    Raises:
+        ValueError: If qubit indices are requested for non-line qubits.
     """
 
     unrolled_circuit = cirq.unroll_circuit_op(circuit, deep=True, tags_to_check=None)
@@ -101,7 +101,7 @@ class CompilerOutput:
             circuits: A list (of at most 2 dimensions) containing `cirq.Circuit` objects.
             final_logical_to_physicals: Post-compilation mapping of logical qubits to physical
                 qubits.
-            pulse_sequences: Qiskit pulse schedules for the compiled circuit(s).
+            pulse_sequences: The qiskit pulse schedules for the compiled circuit(s).
             seq: A `qtrl` pulse sequence, if `qtrl` is available locally.
             jaqal_programs: The Jaqal program (resp. programs) as a string (resp. list of
                 strings).
