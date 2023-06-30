@@ -480,7 +480,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         Returns:
             Equivalence group key.
         """
-        indexed_gate, index_in_gate = self._qubit_index_to_gate_and_index(index)
+        indexed_gate, index_in_gate = self.qubit_index_to_gate_and_index(index)
         if indexed_gate.num_qubits() == 1:
             # find the first instance of the same gate
             first_instance = self.component_gates.index(indexed_gate)
