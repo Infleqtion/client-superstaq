@@ -373,5 +373,9 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         return self._client.target_info(target)["target_info"]
 
     def get_targets(self) -> Dict[str, Any]:
-        """Gets list of available targets."""
+        """Gets list of targets.
+
+        Returns:
+            A dictionary sorted by "compile-only", "compile-and-run", "unavailable", and "retired".
+        """
         return self._client.get_targets()["superstaq_targets"]
