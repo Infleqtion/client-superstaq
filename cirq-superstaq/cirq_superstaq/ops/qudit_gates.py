@@ -329,7 +329,7 @@ class QubitSubspaceGate(cirq.Gate):
         qid_shape: Sequence[int],
         subspaces: Optional[Sequence[Tuple[int, int]]] = None,
     ) -> None:
-        """Initializes a QubitSubspaceGate.
+        """Initializes a `QubitSubspaceGate`.
 
         Args:
             sub_gate: The qubit gate to promote to a higher dimension.
@@ -338,9 +338,11 @@ class QubitSubspaceGate(cirq.Gate):
                 upon. By default applies to the first two levels of each Qid.
 
         Examples:
-            QubitSubspaceGate(cirq.X, (3,)): X gate acting on levels 0 and 1 of a dimension-3 Qid.
-            QubitSubspaceGate(cirq.X, (3,), [(0, 2)]): the same gate acting on levels 0 and 2.
-            QubitSubspaceGate(cirq.CX, (3, 3)): CX gate on the 0-1 subspace of two dimension-3 Qids.
+            `QubitSubspaceGate(cirq.X, (3,))`: An X gate acting on levels 0 and 1 of a dimension-3
+                Qid.
+            `QubitSubspaceGate(cirq.X, (3,), [(0, 2)])`: The same gate acting on levels 0 and 2.
+            `QubitSubspaceGate(cirq.CX, (3, 3))`: A CX gate on the 0-1 subspace of two dimension-3
+                Qids.
         """
 
         if subspaces is None:
