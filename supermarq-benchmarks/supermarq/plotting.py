@@ -243,7 +243,7 @@ def annotate_heatmap(
             use the string format method, e.g. "$ {x:.2f}", or be a `matplotlib.ticker.Formatter`.
         textcolors: A pair of colors.  The first is used for values below a threshold, the second
             for those above. Defaults to black and white respectively.
-        threshold: An optional value in data units according to which the colors from textcolors
+        threshold: An optional value in data units according to which of the colors from textcolors
             are applied. If None (the default) uses the middle of the colormap as separation.
         textkw: All other arguments are forwarded to each call to `text` used to create
             the text labels.
@@ -285,9 +285,8 @@ def annotate_heatmap(
 def radar_factory(num_vars: int) -> npt.NDArray[np.float_]:
     """Create a radar chart with `num_vars` axes.
 
-    (https://matplotlib.org/stable/gallery/specialty_plots/radar_chart.html)
-
-    This function creates a RadarAxes projection and registers it.
+    (https://matplotlib.org/stable/gallery/specialty_plots/radar_chart.html) This function
+    creates a `RadarAxes` projection and registers it.
 
     Args:
         num_vars: Number of variables for radar chart.
