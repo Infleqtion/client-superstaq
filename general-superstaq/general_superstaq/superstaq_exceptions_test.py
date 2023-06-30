@@ -12,7 +12,6 @@
 # limitations under the License.
 # pylint: disable=missing-function-docstring,missing-class-docstring
 
-
 import general_superstaq as gss
 
 
