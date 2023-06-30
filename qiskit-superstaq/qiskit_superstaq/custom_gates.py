@@ -496,9 +496,9 @@ _custom_gate_resolvers: Dict[str, Callable[..., qiskit.circuit.Gate]] = {
 
 
 def custom_resolver(gate: qiskit.circuit.Instruction) -> Optional[qiskit.circuit.Gate]:
-    """Recover a custom gate type from a generic `qiskit.circuit.Gate`.
+    """Recovers a custom gate type from a generic `qiskit.circuit.Gate`.
 
-    Resolution is done using `gate.definition.name` rather than `gate.name`, as the former
+    The resolution is done using `gate.definition.name` rather than `gate.name`, as the former
     is set by all `qiskit-superstaq` custom gates and the latter may be modified by calls
     such as `qiskit.QuantumCircuit.qasm()`.
 
