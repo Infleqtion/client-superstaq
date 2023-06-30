@@ -412,7 +412,7 @@ def barrier(*qubits: cirq.Qid) -> cirq.Operation:
 
 @cirq.value_equality(approximate=True)
 class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
-    """A single Gate combining a collection of concurrent Gate(s) acting on different qubits."""
+    """A single gate combining a collection of concurrent gate(s) acting on different qubits."""
 
     def __init__(self, *component_gates: cirq.Gate) -> None:
         """Initializes the `ParallelGates` class.
@@ -454,7 +454,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         gate.
 
         Args:
-            index: Qubit index.
+            index: The qubit index.
 
         Returns:
             Equivalence group key.

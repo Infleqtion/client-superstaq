@@ -259,9 +259,9 @@ class ParallelGates(qiskit.circuit.Gate):
 
 
 class iXGate(qiskit.circuit.Gate):
-    r"""The iX gate (a single qubit Pauli-X gate with a global phase of i). 
-    
-    It is a special case of when the RZ gate's input rotation angle is :math:`-\pi`:
+    r"""The iX gate (a single qubit Pauli-X gate with a global phase of i).
+
+    It is a special case of when the RX gate's input rotation angle is :math:`-\pi`:
 
      .. math::
 
@@ -377,10 +377,11 @@ class iXdgGate(qiskit.circuit.Gate):
 
 
 class iCCXGate(qiskit.circuit.ControlledGate):
-    r"""An iCCX gate which consists of a Toffoli gate and subsequent two-qubit controlled phase gate.
+    r"""An iCCX gate which consists of a Toffoli gate and a subsequent controlled phase gate.
 
-    The controlled phase gate has an angle of rotation of :math:`\frac{\pi}{2}` on the second qubit
-    using the first qubit as the control. That is, it is a composite gate of the following instructions:
+    The two qubit controlled phase gate uses an angle of rotation of :math:`\frac{\pi}{2}` on
+    the second qubit with the first qubit acting as the control. That is, it is a composite
+    gate of the following instructions:
 
     .. parsed-literal::
 
