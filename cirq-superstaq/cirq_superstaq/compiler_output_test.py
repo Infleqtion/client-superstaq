@@ -84,6 +84,10 @@ def test_compiler_output_repr() -> None:
         repr(css.compiler_output.CompilerOutput(circuit, qubit_map))
         == f"CompilerOutput({circuit!r}, {{}}, None, None, None, None)"
     )
+    assert (
+        css.compiler_output.CompilerOutput(circuit, qubit_map).__repr_pretty__()
+        == f"CompilerOutput({circuit!r}, {{}}, None, None, None, None)"
+    )
 
     circuits = [circuit, circuit]
     assert (
