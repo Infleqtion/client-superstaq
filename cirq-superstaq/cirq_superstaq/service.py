@@ -339,10 +339,10 @@ class Service(user_config.UserConfig):
         return balance
 
     def get_targets(self) -> Dict[str, List[str]]:
-        """Get list of available targets.
+        """Gets a list of available, unavailable, and retired targets.
 
         Returns:
-            A list of available Superstaq targets.
+            A list of Superstaq targets.
         """
         return self._client.get_targets()["superstaq_targets"]
 

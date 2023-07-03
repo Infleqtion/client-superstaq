@@ -460,7 +460,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             A tuple of the gate at the given index and the index itself.
 
         Raises:
-            ValueError: If index is oustide bounds of gate index range.
+            ValueError: If index is outside bounds of gate index range.
         """
         for gate in self.component_gates:
             if gate.num_qubits() > index >= 0:
@@ -654,7 +654,7 @@ class RGate(cirq.PhasedXPowGate):
 
     @property
     def theta(self) -> cirq.TParamVal:
-        """Angle (in radians) by which to rotate about the axis given by self.phi.
+        """Angle (in radians) by which to rotate about the axis given by `self.phi`.
 
         Returns:
             The theta rotation angle.

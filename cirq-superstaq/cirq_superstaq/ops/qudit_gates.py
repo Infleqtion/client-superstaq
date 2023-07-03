@@ -518,9 +518,9 @@ def qubit_subspace_op(
     qid_shape: Sequence[int],
     subspaces: Optional[Sequence[Tuple[int, int]]] = None,
 ) -> cirq.Operation:
-    """Embed a qubit Operation into a given subspace of a higher-dimensional Operation.
+    """Embeds a qubit Operation into a given subspace of a higher-dimensional Operation.
 
-    Uses QubitSubspaceGate.
+    Uses `QubitSubspaceGate`.
 
     Args:
         sub_op: The `cirq.Operation` to embed.

@@ -364,7 +364,7 @@ class iXdgGate(qiskit.circuit.Gate):
         return np.array([[0, -1j], [-1j, 0]])
 
     def inverse(self) -> iXGate:
-        """Inverts the iX gate.
+        """Inverts the `iXdgGate`.
 
         Returns:
             The inverse of the `iXdgGate`."""

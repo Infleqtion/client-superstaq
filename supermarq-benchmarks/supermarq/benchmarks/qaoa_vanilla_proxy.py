@@ -97,11 +97,9 @@ class QAOAVanillaProxy(Benchmark):
             """The objective function to minimize.
 
             Args:
-                params: The parameters at which to evaluate the objective.
 
             Returns:
                 Evaluation of objective given parameters.
-
             """
             gamma, beta = params
             circ = self._gen_ansatz(gamma, beta)

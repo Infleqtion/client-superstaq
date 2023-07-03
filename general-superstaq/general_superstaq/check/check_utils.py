@@ -107,10 +107,10 @@ def get_tracked_files(include: Union[str, Iterable[str]]) -> List[str]:
     If no patterns are provided, return a list of all tracked files in the repo.
 
     Args:
-        include: The str of patterns to match files to.
+        include: The string of patterns to match files to.
 
     Returns:
-        Output of subprocess.check_output wrapper.
+        Output of `subprocess.check_output` wrapper.
     """
     include = [include] if isinstance(include, str) else include
     return _check_output("git", "ls-files", "--deduplicate", *include).splitlines()
