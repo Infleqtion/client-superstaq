@@ -1,10 +1,10 @@
-# pylint: disable=missing-function-docstring
+# pylint: disable=missing-function-docstring,missing-class-docstring
 import importlib
 import json
 import pickle
 import textwrap
 from typing import Dict, List, Union
-from unittest.mock import MagicMock, patch
+from unittest import mock
 
 import general_superstaq as gss
 import pytest
@@ -78,12 +78,6 @@ def test_compiler_output_repr() -> None:
         == f"CompilerOutput({circuits!r}, [{{0: 1}}, {{1: 0}}], None, None, None, None)"
     )
 
-    circuit = qiskit.QuantumCircuit(1)
-    circuit.h(0)
-    assert (
-        qss.compiler_output.CompilerOutput(circuit, [{0: 0, 1: 1}]).__repr_pretty__()
-        == f"CompilerOutput(\n    {circuit!r},\n    {0: 0},\n    Schedule(\n        (0, ShiftPhase(-1.5707963268, DriveChannel(0))),\n        (0, ShiftPhase(-1.5707963268, ControlChannel(1))),\n        (\n            0,\n            Play(\n                Drag(\n                    duration=160,\n                    sigma=40,\n                    beta=-1.0645747900190279,\n                    amp=0.2028636239012939,\n                    angle=0.02043497300154636,\n                    name="X90p_d0",\n                ),\n                DriveChannel(0),\n                name="X90p_d0",\n            ),\n        ),\n        (160, ShiftPhase(-1.5707963268, DriveChannel(0))),\n        (160, ShiftPhase(-1.5707963268, ControlChannel(1))),\n        name=\"sched9\",\n    ),\n    None,\n    None,\n    None,\n)\n"
-
 
 def test_compiler_output_pretty_repr() -> None:  # pragma: no cover, test requires qtrl installation
     # Tests more involved "pretty" repr
@@ -92,13 +86,13 @@ def test_compiler_output_pretty_repr() -> None:  # pragma: no cover, test requir
     circuit = qiskit.QuantumCircuit(4)
     circuits = [circuit, circuit]
 
-    mock_pulse = MagicMock()
+    mock_pulse = mock.MagicMock()
     mock_pulse.envelope.kwargs = {"phase": [0, 1, 2]}
     mock_pulse.channel = 0.0
     mock_pulse.freq = 0.0
 
-    mock_virtual_pulse = MagicMock()
-    mock_virtual_pulse.envelope = MagicMock(qtrl.sequencer.VirtualEnvelope)
+    mock_virtual_pulse = mock.MagicMock()
+    mock_virtual_pulse.envelope = mock.MagicMock(qtrl.sequencer.VirtualEnvelope)
     mock_virtual_pulse.envelope.phase = 0.0
     mock_virtual_pulse.channel = 0.0
     mock_virtual_pulse.freq = 0.0
@@ -133,13 +127,35 @@ def test_compiler_output_pretty_repr() -> None:  # pragma: no cover, test requir
     )
 
 
-@patch.dict("sys.modules", {"qtrl": None})
-def test_read_json() -> None:
+def test_read_json_only_circuits() -> None:
+    qc = qiskit.QuantumCircuit(2)
+    qc.h(0)
+    qc.cx(0, 1)
+
+    json_dict = {
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "final_logical_to_physicals": "[[]]",
+    }
+
+    out = qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list=False)
+    assert out.circuit == qc
+
+    json_dict = {
+        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
+        "final_logical_to_physicals": "[[], []]",
+    }
+    out = qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list=True)
+    assert out.circuits == [qc, qc]
+
+
+@mock.patch.dict("sys.modules", {"qtrl": None})
+def test_read_json_aqt() -> None:
     importlib.reload(qss.compiler_output)
 
     circuit = qiskit.QuantumCircuit(4)
     for i in range(4):
         circuit.h(i)
+
     state_str = gss.serialization.serialize({})
     pulse_lists_str = gss.serialization.serialize([[[]]])
 
@@ -150,14 +166,19 @@ def test_read_json() -> None:
         "pulse_lists_jp": pulse_lists_str,
     }
 
-    out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=False)
+    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+        out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=False)
+
     assert out.circuit == circuit
     assert not hasattr(out, "circuits")
 
-    out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
+    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+        out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
+
     assert out.circuits == [circuit]
     assert not hasattr(out, "circuit")
 
+    # multiple circuits
     pulse_lists_str = gss.serialization.serialize([[[]], [[]]])
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
@@ -165,24 +186,20 @@ def test_read_json() -> None:
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
     }
-    out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
+
+    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+        out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
+
     assert out.circuits == [circuit, circuit]
     assert not hasattr(out, "circuit")
 
-    json_dict = {
-        "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
-        "final_logical_to_physicals": "[[]]",
-    }
+    # no sequence returned
+    json_dict.pop("state_jp")
 
-    out = qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list=False)
-    assert out.circuit == circuit
+    with pytest.warns(UserWarning, match="aqt_upload_configs"):
+        out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
 
-    json_dict = {
-        "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
-        "final_logical_to_physicals": "[[], []]",
-    }
-    out = qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list=True)
-    assert out.circuits == [circuit, circuit]
+    assert out.seq is None
 
 
 def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires qtrl installation
@@ -229,6 +246,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     # Multiple circuits:
     out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit]
+
     assert pickle.dumps(out.seq) == pickle.dumps(seq)
     assert out.pulse_lists == [[[]]]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
@@ -255,7 +273,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
 
-def test_read_json_with_qscout() -> None:
+def test_read_json_qscout() -> None:
     circuit = qiskit.QuantumCircuit(1)
     circuit.h(0)
 

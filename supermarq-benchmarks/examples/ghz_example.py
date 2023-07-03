@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 import time
 
-import cirq_superstaq
+import cirq_superstaq as css
 
 import supermarq
 
 
-def main() -> None:  # pylint: disable=missing-function-docstring
-    service = cirq_superstaq.Service(
+def main() -> None:
+    """Function to run GHZ Supermarq benchmarks."""
+
+    service = css.Service(
         api_key="""Insert superstaq token that you received from https://superstaq.super.tech""",
     )
 
