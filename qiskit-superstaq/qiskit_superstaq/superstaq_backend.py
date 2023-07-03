@@ -128,7 +128,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             creation of the job.
 
         Returns:
-            A `qss.Job` which can be queried for status or results.
+            A `qss.SuperstaqJob` which can be queried for status or results.
 
         Raises:
             SuperstaqNotFoundException: If there was no job with the given `job_id`.
