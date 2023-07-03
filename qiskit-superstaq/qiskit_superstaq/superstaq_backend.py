@@ -148,7 +148,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             kwargs: Other desired compile options.
 
         Returns:
-            A CompilerOutput object whose .circuit(s) attribute contains optimized compiled
+            A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
             circuit(s).
 
         Raises:
