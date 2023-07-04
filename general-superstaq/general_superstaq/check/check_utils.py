@@ -257,7 +257,12 @@ def get_file_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("-i", "--incremental", dest="revisions", nargs="*", help=help_text)
     parser.add_argument(
-        "-x", "--exclude", action="extend", nargs="+", metavar="GLOB", help="Exclude files matching GLOB."
+        "-x",
+        "--exclude",
+        action="extend",
+        nargs="+",
+        metavar="GLOB",
+        help="Exclude files matching GLOB.",
     )
 
     return parser
