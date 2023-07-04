@@ -86,44 +86,32 @@ def test_compiler_output_pretty_repr() -> None:  # pragma: no cover, test requir
     circuit = qiskit.QuantumCircuit(4)
     circuits = [circuit, circuit]
 
-    mock_pulse = mock.MagicMock()
-    mock_pulse.envelope.kwargs = {"phase": [0, 1, 2]}
-    mock_pulse.channel = 0.0
-    mock_pulse.freq = 0.0
-
-    mock_virtual_pulse = mock.MagicMock()
-    mock_virtual_pulse.envelope = mock.MagicMock(qtrl.sequencer.VirtualEnvelope)
-    mock_virtual_pulse.envelope.phase = 0.0
-    mock_virtual_pulse.channel = 0.0
-    mock_virtual_pulse.freq = 0.0
-
-    assert qss.compiler_output.CompilerOutput(
-        circuits,
-        [{0: 1}, {1: 0}],
-        pulse_lists=[[[mock_pulse] * (i + 1) for i in range(2)] for j in range(2)],
-    ).__repr_pretty__() == (
-        f"CompilerOutput({circuits!r}, [{{0: 1}}, {{1: 0}}], None, None, None, "
-        "\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2])],"
-        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2]),"
-        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2]),"
-        "\n\t],\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2])],"
-        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2]),"
-        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=[0, 1, 2]),\n\t],\n],)"
+    mock_pulse = qtrl.sequencer.UniquePulse(
+        envelope=qtrl.sequencer.VirtualEnvelope(0.0, 0.0),
+        freq=0.0,
+        channel=0.0,
+        subchannel=0.0,
     )
-
     assert qss.compiler_output.CompilerOutput(
         circuits,
         [{0: 1}, {1: 0}],
-        pulse_lists=[[[mock_virtual_pulse] * (i + 1) for i in range(2)] for j in range(2)],
-    ).__repr_pretty__() == (
-        f"CompilerOutput({circuits!r}, [{{0: 1}}, {{1: 0}}], None, None, None, "
-        "\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0)],"
-        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0),"
-        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0),"
-        "\n\t],\n],\n[\n\t[UniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0)],"
-        "\n\t[\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0),"
-        "\n\t\tUniquePulse(channel=0.0, freq=0.0, envelope_phase=0.0),"
-        "\n\t],\n],)"
+        pulse_lists=[mock_pulse],
+    ).__repr_pretty__().replace("    ", "\t") == (
+        f"CompilerOutput(\n"
+        f"\t[\n"
+        f"\t\t{circuits[0]!r},\n"
+        f"\t\t{circuits[1]!r},\n"
+        f"\t],\n"
+        f"\t[{{0: 1}}, {{1: 0}}],\n"
+        f"\tNone,\n"
+        f"\tNone,\n"
+        f"\tNone,\n"
+        f"\t[\n"
+        f"\t\tUniquePulse(\n"
+        f"\t\t\tenvelope=VirtualEnvelope(phase=0.0, width=0.0), freq=0.0, channel=0.0, "
+        f"subchannel=0.0\n"
+        f"\t\t)\n"
+        f"\t],\n)"
     )
 
 
