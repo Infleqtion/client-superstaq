@@ -72,10 +72,19 @@ def test_compiler_output_repr() -> None:
         repr(qss.compiler_output.CompilerOutput(circuits, [{0: 1}, {1: 0}]))
         == f"CompilerOutput({circuits!r}, [{{0: 1}}, {{1: 0}}], None, None, None, None)"
     )
+    # Because the repr for a qiskit.QuantumCircuit object is so long, there is no easily constructed
+    # case in which the compiler output contains multiple circuits but the corresponding line is
+    # under 100 characters.
+    with mock.patch("qiskit.QuantumCircuit.__repr__", return_value="quantum_circuit"):
+        assert qss.compiler_output.CompilerOutput(circuits, [{0: 1}, {1: 0}]).__repr_pretty__() == (
+            "CompilerOutput([quantum_circuit, quantum_circuit], [{0: 1}, {1: 0}], None, None, "
+            "None, None)"
+        )
 
-    assert (
-        qss.compiler_output.CompilerOutput(circuits, [{0: 1}, {1: 0}]).__repr_pretty__()
-        == f"CompilerOutput({circuits!r}, [{{0: 1}}, {{1: 0}}], None, None, None, None)"
+    assert qss.compiler_output.CompilerOutput(circuits, [{0: 1}, {1: 0}]).__repr_pretty__() == (
+        "CompilerOutput(\n    [\n        "
+        f"{circuit!r},\n        {circuit!r},\n    ],\n    [{{0: 1}}, {{1: 0}}],\n    None,\n    "
+        "None,\n    None,\n    None,\n)"
     )
 
 

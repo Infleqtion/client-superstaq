@@ -94,10 +94,20 @@ def test_compiler_output_repr() -> None:
         repr(css.compiler_output.CompilerOutput(circuits, [qubit_map, qubit_map]))
         == f"CompilerOutput({circuits!r}, [{{}}, {{}}], None, None, None, None)"
     )
-
     assert (
         css.compiler_output.CompilerOutput(circuits, [qubit_map, qubit_map]).__repr_pretty__()
         == f"CompilerOutput({circuits!r}, [{{}}, {{}}], None, None, None, None)"
+    )
+
+    circuits = [circuit] * 10
+    assert css.compiler_output.CompilerOutput(
+        circuits, [qubit_map, qubit_map]
+    ).__repr_pretty__() == (
+        "CompilerOutput(\n    [\n        cirq.Circuit(),\n        cirq.Circuit(),\n        "
+        "cirq.Circuit(),\n        cirq.Circuit(),\n        cirq.Circuit(),\n        "
+        "cirq.Circuit(),\n        cirq.Circuit(),\n        cirq.Circuit(),\n        "
+        "cirq.Circuit(),\n        cirq.Circuit(),\n    ],\n    [{}, {}],\n    None,\n    None,"
+        "\n    None,\n    None,\n)"
     )
 
 
