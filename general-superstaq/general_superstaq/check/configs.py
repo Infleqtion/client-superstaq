@@ -14,7 +14,7 @@ def run(
     *args: str,
     config_file: str = "pyproject.toml",
     ignore_match: str = "# REPO-SPECIFIC CONFIG",
-    start_match: str = "# Package-specific configuration (e.g. build specification) ends here.",
+    start_match: str = "# Package-specific configuration (e.g., build specification) ends here.",
     silent: bool = False,
 ) -> int:
     """Checks that the check script configuration file ({config_file}) is consistent across repos.
