@@ -48,7 +48,11 @@ class AceCR(qiskit.circuit.Gate):
         self.sandwich_rx_rads = sandwich_rx_rads
 
     def inverse(self) -> "AceCR":
-        """Returns the inverse AceCR gate."""
+        """Inverts the AceCR gate.
+
+        Returns:
+            The inverse AceCR gate.
+        """
         return AceCR(self.rads, -self.sandwich_rx_rads, label=self.label)
 
     def _define(self) -> None:
@@ -123,7 +127,11 @@ class ZZSwapGate(qiskit.circuit.Gate):
         super().__init__("zzswap", 2, [theta], label=label)
 
     def inverse(self) -> "ZZSwapGate":
-        """Returns the inverse ZZ-SWAP gate."""
+        """Inverts the ZZ-SWAP gate.
+
+        Returns:
+            The inverse ZZ-SWAP gate.
+        """
         return ZZSwapGate(-self.params[0])
 
     def _define(self) -> None:
@@ -174,7 +182,11 @@ class StrippedCZGate(qiskit.circuit.Gate):
         super().__init__("stripped_cz", 2, [rz_rads])
 
     def inverse(self) -> "StrippedCZGate":
-        """Returns the inverse Stripped CZ gate."""
+        """Inverts the stripped CZ gate.
+
+        Returns:
+            The inverse Stripped CZ gate.
+        """
         return StrippedCZGate(-self.params[0])
 
     def _define(self) -> None:
@@ -235,7 +247,11 @@ class ParallelGates(qiskit.circuit.Gate):
         super().__init__(name, num_qubits, [], label=label)
 
     def inverse(self) -> "ParallelGates":
-        """Returns the inverse gates."""
+        """Inverts parallel gates.
+
+        Returns:
+            The inverse parallel gates.
+        """
         return ParallelGates(*[gate.inverse() for gate in self.component_gates])
 
     def _define(self) -> None:
@@ -290,7 +306,11 @@ class iXGate(qiskit.circuit.Gate):
         return np.array([[0, 1j], [1j, 0]])
 
     def inverse(self) -> "iXdgGate":
-        """Returns the inverse iX gate."""
+        """Inverts iX gate.
+
+        Returns:
+            The inverse iX gate.
+        """
         return iXdgGate()
 
     def control(
@@ -344,7 +364,10 @@ class iXdgGate(qiskit.circuit.Gate):
         return np.array([[0, -1j], [-1j, 0]])
 
     def inverse(self) -> iXGate:
-        """Returns the inverse of the `iXdgGate`."""
+        """Inverts the `iXdgGate`.
+
+        Returns:
+            The inverse of the `iXdgGate`."""
         return iXGate()
 
     def control(

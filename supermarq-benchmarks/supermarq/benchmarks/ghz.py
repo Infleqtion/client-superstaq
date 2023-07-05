@@ -44,6 +44,9 @@ class GHZ(Benchmark):
         The formula for the Hellinger fidelity between two distributions p and q is given by
         $(\sum_i{p_i q_i})^2$.
 
+        Args:
+            counts: A dictionary containing the measurement counts from circuit execution.
+
         Returns:
             Hellinger fidelity as a float.
         """

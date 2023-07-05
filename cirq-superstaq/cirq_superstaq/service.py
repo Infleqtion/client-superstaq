@@ -339,7 +339,11 @@ class Service(user_config.UserConfig):
         return balance
 
     def get_targets(self) -> Dict[str, List[str]]:
-        """Get list of available targets."""
+        """Gets a list of available, unavailable, and retired targets.
+
+        Returns:
+            A list of Superstaq targets.
+        """
         return self._client.get_targets()["superstaq_targets"]
 
     def resource_estimate(
@@ -388,10 +392,11 @@ class Service(user_config.UserConfig):
         ] = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
-        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
-        Lawrence Berkeley National Laboratory using Equivalent Circuit Averaging (ECA).
+        """Compiles and optimizes the given circuit(s) for AQT using ECA.
 
-        See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
+        The Advanced Quantum Testbed (AQT) is a superconducting transmon quantum computing testbed
+        at Lawrence Berkeley National Laboratory. See arxiv.org/pdf/2111.04572.pdf for a description
+        of Equivalent Circuit Averaging (ECA).
 
         Note:
             This method has been deprecated. Instead, use the `num_eca_circuits` argument of
@@ -681,11 +686,11 @@ class Service(user_config.UserConfig):
 
         Args:
             files: Input files from which to generate random circuits and fidelity matrix.
-            num_qubits: Number of qubits for the circuits.
-            depth: The circuit depth for Supercheq.
+            num_qubits: The number of qubits to use to generate random circuits.
+            depth: The depth of the random circuits to generate.
 
         Returns:
-            A tuple containing the circuits and fidelities.
+            A tuple containing the generated circuits and the fidelities for distinguishing files.
         """
 
         json_dict = self._client.supercheq(files, num_qubits, depth, "cirq_circuits")
