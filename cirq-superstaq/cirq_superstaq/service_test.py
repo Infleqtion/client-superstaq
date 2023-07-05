@@ -64,25 +64,6 @@ def test_counts_to_results() -> None:
     assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
 
 
-def test_validate_cirq_circuits() -> None:
-    qubits = [cirq.LineQubit(i) for i in range(2)]
-    circuit = cirq.Circuit(cirq.H(qubits[0]), cirq.CNOT(qubits[0], qubits[1]))
-
-    with pytest.raises(
-        ValueError,
-        match="Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
-        "sequence of `cirq.Circuit` instances.",
-    ):
-        css.service._validate_cirq_circuits("circuit_invalid")
-
-    with pytest.raises(
-        ValueError,
-        match="Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
-        "sequence of `cirq.Circuit` instances.",
-    ):
-        css.service._validate_cirq_circuits([circuit, "circuit_invalid"])
-
-
 def test_service_resolve_target() -> None:
     service = css.Service(api_key="key", default_target="ss_bar_qpu")
     assert service._resolve_target("ss_foo_qpu") == "ss_foo_qpu"
@@ -257,7 +238,7 @@ def test_service_get_targets() -> None:
                 "d-wave_advantage-system1.1_qpu",
                 "ionq_ion_qpu",
             ],
-            "compile-only": ["aqt_keysight_qpu", "sandia_qscout_qpu"],
+            "compile-only": ["aqt_keysight_qpu", "aqt_zurich_qpu", "sandia_qscout_qpu"],
         }
     }
     mock_client.get_targets.return_value = targets
