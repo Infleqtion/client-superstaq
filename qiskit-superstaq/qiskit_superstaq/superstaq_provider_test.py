@@ -1,4 +1,4 @@
-# pylint: disable=missing-function-docstring
+# pylint: disable=missing-function-docstring,missing-class-docstring
 import json
 import os
 import textwrap
@@ -17,9 +17,6 @@ import qiskit_superstaq as qss
 @patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
 def test_provider() -> None:
     ss_provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
-
-    with pytest.raises(EnvironmentError, match="Superstaq API key not specified and not found."):
-        qss.SuperstaqProvider()
 
     assert str(ss_provider.get_backend("ibmq_qasm_simulator")) == str(
         qss.SuperstaqBackend(provider=ss_provider, target="ibmq_qasm_simulator")

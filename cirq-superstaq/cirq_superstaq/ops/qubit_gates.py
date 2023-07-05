@@ -43,8 +43,10 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     """
 
     def __init__(self, theta: cirq.TParamVal) -> None:
-        """Args:
-        theta: ZZ-interaction angle in radians
+        """Initializes a ZZ-SWAP gate.
+
+        Args:
+            theta: The ZZ-interaction angle in radians.
         """
         self.theta = theta
 
@@ -227,16 +229,21 @@ class AceCR(cirq.Gate):
 
     The typical AceCR in literature is a positive half-CR, then X on "Z side", then negative
     half-CR ("Z side" and "X side" refer to the two sides of the underlying ZX interactions).
-
-    Args:
-        rads: Angle of rotation for CR gate (i.e., twice the angle for each echoed half-CR).
-        sandwich_rx_rads: Angle of rotation for an rx gate applied to the "X side" simultaneously
-            with the X gate on the "Z side".
     """
 
     def __init__(
         self, rads: Union[str, cirq.TParamVal] = np.pi / 2, sandwich_rx_rads: cirq.TParamVal = 0
     ) -> None:
+        """Initializes an AceCR gate.
+
+        Args:
+            rads: Angle of rotation for CR gate (i.e., twice the angle for each echoed half-CR).
+            sandwich_rx_rads: Angle of rotation for an rx gate applied to the "X side"
+                simultaneously with the X gate on the "Z side".
+
+        Raises:
+            ValueError: If the polarity of `rads` is a string other than '+-' or '-+'.
+        """
         # Polarity should be "+-" or "-+", specifying if positive or negative half-CR is first.
         if rads == "+-":
             rads = np.pi / 2
@@ -360,7 +367,8 @@ AceCRPlusMinus = AceCR("+-")
 
 @cirq.value_equality
 class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
-    """Barrier: temporal boundary restricting circuit compilation and pulse scheduling.
+    """A temporal boundary restricting circuit compilation and pulse scheduling.
+
     Otherwise equivalent to the identity gate.
     """
 
@@ -389,18 +397,32 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
         return ("|",) * self.num_qubits()
 
 
-def barrier(*qubits: cirq.Qid) -> cirq.Operation:  # pylint: disable=missing-function-docstring
+def barrier(*qubits: cirq.Qid) -> cirq.Operation:
+    """Equivalent to https://qiskit.org/documentation/stubs/qiskit.circuit.library.Barrier.html.
+
+    Args:
+        qubits: The qubits that the barrier will cover.
+
+    Returns:
+        A barrier `cirq.Operation` on the provided qubits.
+    """
     qid_shape = tuple(q.dimension for q in qubits)
     return css.Barrier(qid_shape=qid_shape).on(*qubits)
 
 
 @cirq.value_equality(approximate=True)
 class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
-    """A single Gate combining a collection of concurrent Gate(s) acting on different qubits."""
+    """A single gate combining a collection of concurrent gate(s) acting on different qubits."""
 
     def __init__(self, *component_gates: cirq.Gate) -> None:
-        """Args:
-        component_gates: Gate(s) to be collected into single gate
+        """Initializes the `ParallelGates` class.
+
+        Args:
+            component_gates: Gate(s) to be collected into a single gate.
+
+        Raises:
+            ValueError: If `component_gates` are not `cirq.Gate` instances.
+            ValueError: If `component_gates` contains measurements.
         """
 
         self.component_gates: Tuple[cirq.Gate, ...] = ()
@@ -418,9 +440,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             else:
                 self.component_gates += (gate,)
 
-    def qubit_index_to_gate_and_index(  # pylint: disable=missing-function-docstring
-        self, index: int
-    ) -> Tuple[cirq.Gate, int]:
+    def _qubit_index_to_gate_and_index(self, index: int) -> Tuple[cirq.Gate, int]:
         for gate in self.component_gates:
             if gate.num_qubits() > index >= 0:
                 return gate, index
@@ -428,7 +448,18 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         raise ValueError("index out of range")
 
     def qubit_index_to_equivalence_group_key(self, index: int) -> int:
-        indexed_gate, index_in_gate = self.qubit_index_to_gate_and_index(index)
+        """Returns a key that differs between qubits.
+
+        Does it by different component gates and non-interchangeable qubits in the same component
+        gate.
+
+        Args:
+            index: The qubit index.
+
+        Returns:
+            Equivalence group key.
+        """
+        indexed_gate, index_in_gate = self._qubit_index_to_gate_and_index(index)
         if indexed_gate.num_qubits() == 1:
             # find the first instance of the same gate
             first_instance = self.component_gates.index(indexed_gate)
@@ -546,17 +577,21 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         return f"css.ParallelGates({component_gates_repr})"
 
 
-def parallel_gates_operation(  # pylint: disable=missing-raises-doc
-    *ops: cirq.Operation,
-) -> cirq.Operation:
-    """Given operations acting on disjoint qubits, constructs a single css.ParallelGates instance
-    and applies it such that each operation's .gate is applied to its .qubits.
+def parallel_gates_operation(*ops: cirq.Operation) -> cirq.Operation:
+    """Constructs a parallel gates operation.
+
+    Given operations acting on disjoint qubits, constructs a single `css.ParallelGates` instance
+    and applies it such that each operation's `.gate` is applied to its `.qubits`.
 
     Args:
-        ops: operations to pack into a single ParallelGates operation
+        ops: Operations to pack into a single `ParallelGates` operation.
 
     Returns:
         ParallelGates(op.gate, op2.gate, ...).on(*op.qubits, *op2.qubits, ...)
+
+    Raises:
+        ValueError: If the operation has no `.gate` attribute.
+        ValueError: If the operation has tags.
     """
     gates: List[cirq.Gate] = []
     qubits: List[cirq.Qid] = []
@@ -573,25 +608,28 @@ def parallel_gates_operation(  # pylint: disable=missing-raises-doc
 
 
 class RGate(cirq.PhasedXPowGate):
-    """A single-qubit gate that rotates about an axis in the X-Y plane."""
+    """A single-qubit gate that rotates about an axis in the `X`-`Y` plane."""
 
     def __init__(self, theta: cirq.TParamVal, phi: cirq.TParamVal) -> None:
-        """Args:
-        phi: Angle (in radians) defining the axis of rotation in the `X`-`Y` plane:
-             `cos(phi) X + sin(phi) Y` (i.e. `phi` radians from `X` to `Y`).
+        """Initializes an RGate.
 
-        theta: Angle (in radians) by which to rotate.
+        Args:
+            theta: The angle (in radians) by which to rotate.
+            phi: The angle (in radians) defining the axis of rotation in the `X`-`Y` plane:
+                `cos(phi) X + sin(phi) Y` (i.e. `phi` radians from `X` to `Y`).
         """
         super().__init__(
             exponent=theta / _pi(theta), phase_exponent=phi / _pi(phi), global_shift=-0.5
         )
 
     @property
-    def phi(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
+    def phi(self) -> cirq.TParamVal:
+        """Angle (in radians) defining the axis of rotation in the `X`-`Y` plane."""
         return self.phase_exponent * _pi(self.phase_exponent)
 
     @property
-    def theta(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
+    def theta(self) -> cirq.TParamVal:
+        """Angle (in radians) by which to rotate."""
         return self.exponent * _pi(self.exponent)
 
     def __pow__(self, power: cirq.TParamVal) -> "RGate":
@@ -640,6 +678,14 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
     """Wrapper class to define a ParallelGate of identical RGate gates."""
 
     def __init__(self, theta: cirq.TParamVal, phi: cirq.TParamVal, num_copies: int) -> None:
+        """Initializes the `ParallelRGate` class.
+
+        Args:
+            theta: The RGate angle (in radians) by which to rotate.
+            phi: The RGate angle (in radians) defining the axis of rotation in the `X`-`Y` plane:
+                `cos(phi) X + sin(phi) Y` (i.e. `phi` radians from `X` to `Y`).
+            num_copies: Number of copies to be used.
+        """
         super().__init__(css.RGate(theta, phi), num_copies)
         self._sub_gate: RGate
 
@@ -648,19 +694,23 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
         return self._sub_gate
 
     @property
-    def phase_exponent(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
+    def phase_exponent(self) -> cirq.TParamVal:
+        """The `phase_exponent` property of each `RGate`."""
         return self.sub_gate.phase_exponent
 
     @property
-    def exponent(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
+    def exponent(self) -> cirq.TParamVal:
+        """The `exponent` property of `ParallelRGate`."""
         return self.sub_gate.exponent
 
     @property
-    def phi(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
+    def phi(self) -> cirq.TParamVal:
+        """The `phi` property of `ParallelRGate`."""
         return self.sub_gate.phi
 
     @property
-    def theta(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
+    def theta(self) -> cirq.TParamVal:
+        """The `theta` property of `ParallelRGate`."""
         return self.sub_gate.theta
 
     def __pow__(self, power: cirq.TParamVal) -> "ParallelRGate":
@@ -701,9 +751,10 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
 
 
 class IXGate(cirq.XPowGate):
-    """Thin wrapper of Rx(-pi) to improve iToffoli circuit diagrams"""
+    r"""Thin wrapper of :math:`RX(-\pi)` to improve iToffoli circuit diagrams"""
 
     def __init__(self) -> None:
+        """Initializes an iXGate."""
         super().__init__(exponent=1, global_shift=0.5)
 
     def _with_exponent(self, exponent: cirq.value.TParamVal) -> Union[cirq.Rx, "IXGate"]:
@@ -738,17 +789,23 @@ AQTICCX = AQTITOFFOLI = IX.controlled(2, [0, 0])
 
 @cirq.value_equality(approximate=True)
 class StrippedCZGate(cirq.Gate):
-    """The Stripped CZ Gate is the gate that is actually being performed by Hilbert,
-    which is just a regular CZ gate when the rz angle = 0, and is corrected into a CZ
-    gate by RZ gates afterwards if the rz angle is nonzero.
+    """The Stripped CZ gate is a regular CZ gate when the rz angle = 0.
+
+    It is the gate that is actually being performed by Hilbert, and it is corrected
+    into a CZ gate by RZ gates afterwards if the rz angle is nonzero.
     """
 
     def __init__(self, rz_rads: cirq.TParamVal = 0) -> None:
-        """Args: rz_rads: RZ-rotation angle in radians"""
+        """Initializes a Stripped CZ gate.
+
+        Args:
+            rz_rads: The RZ-rotation angle in radians.
+        """
         self._rz_rads = rz_rads
 
     @property
-    def rz_rads(self) -> cirq.TParamVal:  # pylint: disable=missing-function-docstring
+    def rz_rads(self) -> cirq.TParamVal:
+        """The RZ-rotation angle for the gate."""
         return self._rz_rads
 
     def _num_qubits_(self) -> int:
@@ -829,9 +886,18 @@ class StrippedCZGate(cirq.Gate):
         return cirq.obj_to_dict_helper(self, ["rz_rads"])
 
 
-def custom_resolver(  # pylint: disable=missing-function-docstring
-    cirq_type: str,
-) -> Union[Type[cirq.Gate], None]:
+def custom_resolver(cirq_type: str) -> Union[Type[cirq.Gate], None]:
+    """Tells `cirq.read_json` how to deserialize `cirq-superstaq`'s custom gates.
+
+    Changes to gate names in this file should be reflected in this resolver.
+    See quantumai.google/cirq/dev/serialization for more information about (de)serialization.
+
+    Args:
+        cirq_type: The string of the gate type for the serializer to resolve.
+
+    Returns:
+        The resolved `cirq.Gate` matching the input, or None if no match.
+    """
     type_to_gate_map: Dict[str, Type[cirq.Gate]] = {
         "ZZSwapGate": ZZSwapGate,
         "Barrier": Barrier,

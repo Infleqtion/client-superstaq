@@ -120,6 +120,22 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
         return job
 
+    def retrieve_job(self, job_id: str) -> qss.SuperstaqJob:
+        """Gets a job that has been created on the Superstaq API.
+
+        Args:
+            job_id: The UUID of the job. Jobs are assigned these numbers by the server during the
+            creation of the job.
+
+        Returns:
+            A `qss.SuperstaqJob` which can be queried for status or results.
+
+        Raises:
+            SuperstaqNotFoundException: If there was no job with the given `job_id`.
+            SuperstaqException: If there was an error accessing the API.
+        """
+        return qss.SuperstaqJob(self, job_id)
+
     def compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
@@ -132,7 +148,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             kwargs: Other desired compile options.
 
         Returns:
-            A CompilerOutput object whose .circuit(s) attribute contains optimized compiled
+            A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
             circuit(s).
 
         Raises:
