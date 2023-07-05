@@ -186,9 +186,9 @@ class UserConfig:
             variables_file_path (optional): Where to write the variable configuration.
             overwrite: Whether or not to overwrite existing files.
 
-        Returns (if file paths are not provided):
-            A tuple of pulses (a dictionary containing pulse configuration data) and variables (a
-            dictionary containing calibration variables).
+        Returns:
+            (If file paths are not provided) a tuple of pulses (a dictionary containing pulse
+            configuration data) and variables (a dictionary containing calibration variables).
 
         Raises:
             ValueError: If either file path already exists and overwrite is not True.
