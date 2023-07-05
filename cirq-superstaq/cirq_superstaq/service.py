@@ -454,7 +454,7 @@ class Service(user_config.UserConfig):
         Returns:
             Object whose .circuit(s) attribute contains the optimized circuits(s). Alternatively for
             ECA, an object whose .circuits attribute is a list (or list of lists) of logically
-            equivalent circuits. If qtrl is installed, the object's .seq attribute is a qtrl
+            equivalent circuits. If `qtrl` is installed, the object's .seq attribute is a qtrl
             Sequence object containing pulse sequences for each compiled circuit, and its
             .pulse_list(s) attribute contains the corresponding list(s) of cycles.
 

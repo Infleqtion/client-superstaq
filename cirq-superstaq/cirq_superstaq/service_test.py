@@ -267,10 +267,14 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
             "options": '{\n  "test_options": "yes"\n}',
         },
     )
-    assert out.circuit == cirq.Circuit()
-    assert out.final_logical_to_physical == {}
-    assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
-    assert not hasattr(out, "final_logical_to_physicals")
+
+    alt_out = service.compile(cirq.Circuit(), target="aqt_keysight_qpu", test_options="yes")
+
+    for output in [out, alt_out]:
+        assert output.circuit == cirq.Circuit()
+        assert output.final_logical_to_physical == {}
+        assert not hasattr(output, "circuits") and not hasattr(output, "pulse_lists")
+        assert not hasattr(output, "final_logical_to_physicals")
 
     gate_defs = {
         "CZ3": css.CZ3,
@@ -414,9 +418,14 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
 
     service = css.Service(api_key="key", remote_host="http://example.com")
     out = service.qscout_compile(circuit, test_options="yes")
+    alt_out = service.compile(circuit, target="sandia_qscout_qpu", test_options="yes")
     assert out.circuit == circuit
     assert out.final_logical_to_physical == final_logical_to_physical
     assert out.jaqal_program == jaqal_program
+
+    assert alt_out.circuit == circuit
+    assert alt_out.final_logical_to_physical == final_logical_to_physical
+    assert alt_out.jaqal_program == jaqal_program
 
     with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid Sandia target."):
         service.qscout_compile(cirq.Circuit(), target="ss_example_qpu")

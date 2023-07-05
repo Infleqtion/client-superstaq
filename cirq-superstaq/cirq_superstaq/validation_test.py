@@ -14,11 +14,11 @@ def test_validate_cirq_circuits() -> None:
         match="Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
         "sequence of `cirq.Circuit` instances.",
     ):
-        css.service.validate_cirq_circuits("circuit_invalid")
+        css.validation.validate_cirq_circuits("circuit_invalid")
 
     with pytest.raises(
         ValueError,
         match="Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
         "sequence of `cirq.Circuit` instances.",
     ):
-        css.service.validate_cirq_circuits([circuit, "circuit_invalid"])
+        css.validation.validate_cirq_circuits([circuit, "circuit_invalid"])
