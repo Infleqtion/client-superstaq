@@ -99,30 +99,6 @@ def counts_to_results(
     return result
 
 
-def _validate_cirq_circuits(circuits: object) -> None:
-    """Validates that the input is either a single `cirq.Circuit` or a list of `cirq.Circuit`
-    instances.
-
-    Args:
-        circuits: The circuit(s) to run.
-
-    Raises:
-        ValueError: If the input is not a `cirq.Circuit` or a list of `cirq.Circuit` instances.
-    """
-
-    if not (
-        isinstance(circuits, cirq.Circuit)
-        or (
-            isinstance(circuits, Sequence)
-            and all(isinstance(circuit, cirq.Circuit) for circuit in circuits)
-        )
-    ):
-        raise ValueError(
-            "Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
-            "sequence of `cirq.Circuit` instances."
-        )
-
-
 class Service(user_config.UserConfig):
     """A class to access Superstaq's API.
 
@@ -282,7 +258,7 @@ class Service(user_config.UserConfig):
             ValueError: If `circuit` is not a valid `cirq.Circuit` or has no measurements to sample.
             SuperstaqException: If there was an error accessing the API.
         """
-        _validate_cirq_circuits(circuit)
+        css.validation.validate_cirq_circuits(circuit)
         if not isinstance(circuit, cirq.Circuit):
             raise ValueError("This endpoint does not support the submission of multiple circuits.")
 
@@ -354,7 +330,7 @@ class Service(user_config.UserConfig):
         Returns:
             `ResourceEstimate`(s) containing resource costs (after compilation).
         """
-        _validate_cirq_circuits(circuits)
+        css.validation.validate_cirq_circuits(circuits)
         circuit_is_list = not isinstance(circuits, cirq.Circuit)
         serialized_circuit = css.serialization.serialize_circuits(circuits)
 
@@ -489,7 +465,7 @@ class Service(user_config.UserConfig):
         if not target.startswith("aqt_"):
             raise ValueError(f"{target!r} is not a valid AQT target.")
 
-        _validate_cirq_circuits(circuits)
+        css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
@@ -567,7 +543,7 @@ class Service(user_config.UserConfig):
         if base_entangling_gate not in ("xx", "zz"):
             raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
 
-        _validate_cirq_circuits(circuits)
+        css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
@@ -626,7 +602,7 @@ class Service(user_config.UserConfig):
         Args:
             circuits: The circuit(s) to compile.
             target: String of target IBMQ device.
-            kwargs: Other desired ibmq_compile options.
+            kwargs: Other desired `ibmq_compile` options.
 
         Returns:
             Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s), and whose
@@ -648,31 +624,46 @@ class Service(user_config.UserConfig):
         target: str,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
-        """Compiles the given circuit(s) to the target device.
+        """Compiles the given circuit(s) to the target device's native gateset.
 
         Args:
-            circuits: The circuit(s) to compile.
+            circuits: The cirq circuit(s) to compile.
             target: String of target device.
-            kwargs: Other desired compilation options.
+            kwargs: Other desired compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s).
+            A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
+            circuit(s).
         """
-        _validate_cirq_circuits(circuits)
-        serialized_circuits = css.serialization.serialize_circuits(circuits)
-        circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
         target = self._resolve_target(target)
 
+        if target.startswith("aqt_"):
+            return self.aqt_compile(circuits, **kwargs)
+        elif target.startswith("sandia_"):
+            return self.qscout_compile(circuits, **kwargs)
+
+        request_json = self._get_compile_request_json(circuits, target, **kwargs)
+        circuits_is_list = not isinstance(circuits, cirq.Circuit)
+        json_dict = self._client.compile(request_json)
+        return css.compiler_output.read_json(json_dict, circuits_is_list)
+
+    def _get_compile_request_json(
+        self,
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        target: str,
+        **kwargs: Any,
+    ) -> Dict[str, str]:
+        """Helper method to compile json dictionary."""
+
+        css.validation.validate_cirq_circuits(circuits)
+        serialized_circuits = css.serialization.serialize_circuits(circuits)
         request_json = {
             "cirq_circuits": serialized_circuits,
             "target": target,
             "options": cirq.to_json(kwargs),
         }
-
-        json_dict = self._client.compile(request_json)
-
-        return css.compiler_output.read_json(json_dict, circuits_is_list)
+        return request_json
 
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int
