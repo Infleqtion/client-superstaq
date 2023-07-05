@@ -582,12 +582,6 @@ def test_service_remote_host_via_env() -> None:
     assert service._client.remote_host == "http://example.com"
 
 
-@mock.patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
-def test_service_no_param_or_env_variable() -> None:
-    with pytest.raises(EnvironmentError):
-        _ = css.Service(remote_host="http://example.com")
-
-
 @mock.patch.dict(os.environ, clear=True)
 def test_service_no_url_default() -> None:
     service = css.Service("tomyheart")

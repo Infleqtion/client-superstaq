@@ -105,19 +105,39 @@ def get_tracked_files(include: Union[str, Iterable[str]]) -> List[str]:
     """Identify all files tracked by git (in this repo) that match the given match_patterns.
 
     If no patterns are provided, return a list of all tracked files in the repo.
+
+    Args:
+        include: The string of patterns to match files to.
+
+    Returns:
+        Output of `subprocess.check_output` wrapper.
     """
     include = [include] if isinstance(include, str) else include
     return _check_output("git", "ls-files", "--deduplicate", *include).splitlines()
 
 
 def existing_files(files: Iterable[str]) -> List[str]:
-    """Returns the subset of `files` which actually exist."""
+    """Returns the subset of `files` which actually exist.
+
+    Args:
+        files: The files to check existence of.
+
+    Returns:
+        A list of existing files.
+    """
     return [file for file in files if os.path.isfile(os.path.join(root_dir, file))]
 
 
 def exclude_files(files: Iterable[str], exclude: Union[str, Iterable[str]]) -> List[str]:
-    """Returns the files which don't match any of the globs in exclude."""
+    """Returns the files which don't match any of the globs in exclude.
 
+    Args:
+        files: The files to check for exclusion.
+        exclude: The files to exclude.
+
+    Returns:
+        The excluded files.
+    """
     exclude = [exclude] if isinstance(exclude, str) else exclude
 
     files = list(files)
@@ -128,7 +148,15 @@ def exclude_files(files: Iterable[str], exclude: Union[str, Iterable[str]]) -> L
 
 
 def select_files(files: Iterable[str], include: Union[str, Iterable[str]]) -> List[str]:
-    """Returns the files which match at least one of the globs in include."""
+    """Returns the files which match at least one of the globs in include.
+
+    Args:
+        files: The files to check for matching with inclusion pattern.
+        include: The patterns to match for selecting input files.
+
+    Returns:
+        The selected files.
+    """
 
     files = list(files)
     excluded_files = exclude_files(files, include)
@@ -147,6 +175,17 @@ def get_changed_files(
     If an empty list of revisions is specified, this script will default to the first of the
     default_branches (specified above) that it finds.  If none of these branches exists, this method
     raises a ValueError.
+
+    Args:
+        files: The files to check for changes in.
+        revisions: The git revisions to compare against for file checking.
+        silent: An indicator for whether to print additional info about common ancestors.
+
+    Returns:
+        A list of files that were changed in the current branch.
+
+    Raises:
+        ValueError: If there are any invalid revision arguments.
     """
     revisions = list(revisions)
 
@@ -211,8 +250,17 @@ def _revision_exists(revision: str) -> bool:
 def get_test_files(
     files: Iterable[str], exclude: Union[str, Iterable[str]] = (), silent: bool = False
 ) -> List[str]:
-    """For the given files, identify all associated test files (i.e. files with the same name, but
-    with a "_test.py" suffix).
+    """For the given files, identify all associated test files.
+
+    I.e. test files are those with the same name, but with a "_test.py" suffix).
+
+    Args:
+        files: The list of files to search for associated test files of.
+        exclude: The files to exclude in the search.
+        silent: An indicator of whether or not to add additional prints.
+
+    Returns:
+        A list of test files corresponding to the input files.
     """
 
     test_files = []
@@ -241,6 +289,9 @@ def get_file_parser() -> argparse.ArgumentParser:
 
     The parser also has a flag to do incremental cheks, i.e., on the subset files that have changed
     since a specified git revision, as well as a flag to exclude files matching a specified glob.
+
+    Returns:
+        A console argument parser.
     """
     parser = argparse.ArgumentParser(
         allow_abbrev=False, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -257,7 +308,12 @@ def get_file_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("-i", "--incremental", dest="revisions", nargs="*", help=help_text)
     parser.add_argument(
-        "-x", "--exclude", action="extend", metavar="GLOB", help="Exclude files matching GLOB."
+        "-x",
+        "--exclude",
+        action="extend",
+        nargs="+",
+        metavar="GLOB",
+        help="Exclude files matching GLOB.",
     )
 
     return parser
@@ -325,10 +381,28 @@ def extract_files(
 
 
 def enable_exit_on_failure(func_with_returncode: Callable[..., int]) -> Callable[..., int]:
-    """Decorator optionally allowing a function to exit instead of returning a failing
-    return code."""
+    """Decorator optionally allowing a function to exit instead of failing.
+
+    I.e., catches a failing return code for safely exiting function.
+
+    Args:
+        func_with_returncode: A function with a return code for failure.
+
+    Returns:
+        A decorated function that handles failing return codes.
+    """
 
     def func_with_exit(*args: Any, exit_on_failure: bool = False, **kwargs: Any) -> int:
+        """A function that exits safely on failure.
+
+        Args:
+            args: Any arguments for the function to be decorated.
+            exit_on_failure: An indicator of whether the function will exit on failure.
+            kwargs: Any keyword arguments for the function to be decorated..
+
+        Returns:
+            The return code.
+        """
         returncode = func_with_returncode(*args, **kwargs)
         if exit_on_failure and returncode:
             exit(returncode)

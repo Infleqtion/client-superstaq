@@ -11,7 +11,17 @@ import cirq_superstaq as css
 
 
 def approx_eq_mod(a: cirq.TParamVal, b: cirq.TParamVal, period: float, atol: float = 1e-8) -> bool:
-    """Check if a ~= b (mod period). If either input is an unresolved parameter, returns a == b."""
+    """Check if a ~= b (mod period). If either input is an unresolved parameter, returns a == b.
+
+    Args:
+        a: A Cirq parameter value.
+        b: A Cirq parameter value.
+        period: The parameter period (i.e., cycle time).
+        atol: The absolute tolerance for equality checking.
+
+    Returns:
+        A boolean indicating whether input parameters are approximately equal.
+    """
 
     if cirq.is_parameterized(a) or cirq.is_parameterized(b):
         return a == b
@@ -440,7 +450,18 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             else:
                 self.component_gates += (gate,)
 
-    def _qubit_index_to_gate_and_index(self, index: int) -> Tuple[cirq.Gate, int]:
+    def qubit_index_to_gate_and_index(self, index: int) -> Tuple[cirq.Gate, int]:
+        """Gets gate (and index) for the corresponding index.
+
+        Args:
+            index: The index into a particular member of the `ParallelGates` operation.
+
+        Returns:
+            A tuple of the gate at the given index and the index itself.
+
+        Raises:
+            ValueError: If index is outside bounds of gate index range.
+        """
         for gate in self.component_gates:
             if gate.num_qubits() > index >= 0:
                 return gate, index
@@ -459,7 +480,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         Returns:
             Equivalence group key.
         """
-        indexed_gate, index_in_gate = self._qubit_index_to_gate_and_index(index)
+        indexed_gate, index_in_gate = self.qubit_index_to_gate_and_index(index)
         if indexed_gate.num_qubits() == 1:
             # find the first instance of the same gate
             first_instance = self.component_gates.index(indexed_gate)
@@ -624,12 +645,20 @@ class RGate(cirq.PhasedXPowGate):
 
     @property
     def phi(self) -> cirq.TParamVal:
-        """Angle (in radians) defining the axis of rotation in the `X`-`Y` plane."""
+        """Angle (in radians) defining the axis of rotation in the `X`-`Y` plane.
+
+        Returns:
+            The phi rotation angle.
+        """
         return self.phase_exponent * _pi(self.phase_exponent)
 
     @property
     def theta(self) -> cirq.TParamVal:
-        """Angle (in radians) by which to rotate."""
+        """Angle (in radians) by which to rotate about the axis given by `self.phi`.
+
+        Returns:
+            The theta rotation angle.
+        """
         return self.exponent * _pi(self.exponent)
 
     def __pow__(self, power: cirq.TParamVal) -> "RGate":
@@ -691,26 +720,47 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
 
     @property
     def sub_gate(self) -> RGate:
+        """The gate that is applied to the specified subspace.
+
+        Returns:
+            The underlying gate used.
+        """
         return self._sub_gate
 
     @property
     def phase_exponent(self) -> cirq.TParamVal:
-        """The `phase_exponent` property of each `RGate`."""
+        """The `phase_exponent` property of each `RGate`.
+
+        Returns:
+            The phase exponent.
+        """
         return self.sub_gate.phase_exponent
 
     @property
     def exponent(self) -> cirq.TParamVal:
-        """The `exponent` property of `ParallelRGate`."""
+        """The `exponent` property of `ParallelRGate`.
+
+        Returns:
+            The sub gate exponent.
+        """
         return self.sub_gate.exponent
 
     @property
     def phi(self) -> cirq.TParamVal:
-        """The `phi` property of `ParallelRGate`."""
+        """The `phi` property of `ParallelRGate`, defining orientation (i.e., axis of rotation).
+
+        Returns:
+            The rotation-axis angle phi.
+        """
         return self.sub_gate.phi
 
     @property
     def theta(self) -> cirq.TParamVal:
-        """The `theta` property of `ParallelRGate`."""
+        """The `theta` property of `ParallelRGate`, angle to rotate about the phi-determined axis.
+
+        Returns:
+            The rotation angle theta.
+        """
         return self.sub_gate.theta
 
     def __pow__(self, power: cirq.TParamVal) -> "ParallelRGate":
@@ -805,7 +855,11 @@ class StrippedCZGate(cirq.Gate):
 
     @property
     def rz_rads(self) -> cirq.TParamVal:
-        """The RZ-rotation angle for the gate."""
+        """The RZ-rotation angle in radians for the gate.
+
+        Returns:
+            The angle for the RZ rotation.
+        """
         return self._rz_rads
 
     def _num_qubits_(self) -> int:
