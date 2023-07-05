@@ -41,7 +41,7 @@ def validate_target(target: str) -> None:
         "rigetti",
         "sandia",
         "ss",
-        "toshiba"
+        "toshiba",
     ]
 
     target_device_types = ["qpu", "simulator"]
