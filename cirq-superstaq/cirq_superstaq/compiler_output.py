@@ -148,30 +148,8 @@ class CompilerOutput:
         )
 
     def __repr_pretty__(self) -> str:
-        def _get_circuits_placeholder() -> str:
-            """Gets formatted placeholder for circuit object `repr`, since black can't parse it."""
-            if not self.has_multiple_circuits():
-                return "quantum_circuit"
-            if len(repr(self.circuits)) > 100:
-                # This forces black to multi-line format the placeholder for self.circuits.
-                placeholders = [
-                    f"quantum_circuit_{idx}" + "_" * 100 for idx in range(len(self.circuits))
-                ]
-                return f"[{', '.join(placeholders)}]"
-            return "quantum_circuits"
-
         def _replace_placeholders(pretty_output: str) -> str:
             """Replace placeholders for object `repr`s, since black can't parse them."""
-            if not self.has_multiple_circuits():
-                pretty_output = pretty_output.replace("quantum_circuit", repr(self.circuit))
-            else:
-                if len(repr(self.circuits)) > 100:
-                    for idx, circuit in enumerate(self.circuits):
-                        pretty_output = pretty_output.replace(
-                            f"quantum_circuit_{idx}" + "_" * 100, repr(circuit)
-                        )
-                else:
-                    pretty_output = pretty_output.replace("quantum_circuits", repr(self.circuits))
             return pretty_output.replace("qtrl_seq", repr(self.seq))
 
         def _prettify(line: str) -> str:
@@ -182,14 +160,14 @@ class CompilerOutput:
 
         if not self.has_multiple_circuits():
             compiler_output = (
-                f"CompilerOutput({_get_circuits_placeholder()}, "
+                f"CompilerOutput({self.circuit!r}, "
                 f"{self.final_logical_to_physical!r}, "
                 f"{self.pulse_sequence!r}, qtrl_seq, {self.jaqal_program!r}, "
                 f"{self.pulse_list!r})"
             )
             return _prettify(compiler_output)
         compiler_output = (
-            f"CompilerOutput({_get_circuits_placeholder()}, {self.final_logical_to_physicals!r}, "
+            f"CompilerOutput({self.circuits!r}, {self.final_logical_to_physicals!r}, "
             f"{self.pulse_sequences!r}, qtrl_seq, {self.jaqal_programs!r}, "
             f"{self.pulse_lists!r})"
         )
