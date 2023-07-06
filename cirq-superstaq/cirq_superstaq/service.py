@@ -99,7 +99,7 @@ def counts_to_results(
     return result
 
 
-class Service(user_config.UserConfig):
+class Service(user_config.Service):
     """A class to access Superstaq's API.
 
     To access the API, this class requires a remote host url and an API key. These can be

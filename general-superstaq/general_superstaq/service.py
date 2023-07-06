@@ -4,11 +4,11 @@ from typing import Any, Dict, Optional, Tuple, Union
 import general_superstaq as gss
 
 
-class UserConfig:
+class Service:
     """This class contains all the user configurations that are used to operate Superstaq."""
 
     def __init__(self, client: gss.superstaq_client.SuperstaqClient):
-        """Initializes the `UserConfig` class.
+        """Initializes the `Service` class.
 
         Args:
             client: The Superstaq client to use.

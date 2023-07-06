@@ -23,7 +23,7 @@ import qiskit
 import qiskit_superstaq as qss
 
 
-class SuperstaqProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig):
+class SuperstaqProvider(qiskit.providers.ProviderV1, gss.user_config.Service):
     """Provider for Superstaq backend.
 
     Typical usage is:
