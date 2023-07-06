@@ -57,7 +57,6 @@ for target in qpu_targets:
                     repetitions=1000,
                     target=target,
                     tag=tag,
-                    qiskit_pulse=False,
                     lifespan=3653,
                 )
             else:
@@ -67,7 +66,6 @@ for target in qpu_targets:
                         repetitions=1000,
                         target=target,
                         tag=f"{tag}-{idx}",
-                        qiskit_pulse=False,
                         lifespan=3653,
                     )
         except Exception:
