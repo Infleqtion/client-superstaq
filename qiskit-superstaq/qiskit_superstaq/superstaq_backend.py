@@ -212,7 +212,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
                 from each input circuit for Equivalent Circuit Averaging (ECA).
             random_seed: Optional seed used for approximate synthesis and ECA.
             atol: An optional tolerance to use for approximate gate synthesis.
-            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+            gate_defs: An optional dictionary mapping names in `qtrl` configs to operations, where
                 each operation can be either a unitary matrix or None. More specific associations
                 take precedence, for example `{"SWAP": <matrix1>, "SWAP/C5C4": <matrix2>}` implies
                 `<matrix1>` for all "SWAP" calibrations except "SWAP/C5C4" (which will instead be

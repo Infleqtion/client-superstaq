@@ -328,7 +328,7 @@ class Service(user_config.UserConfig):
         """Generates resource estimates for circuit(s).
 
         Args:
-            circuits:  The cirq circuit(s) to generate resource estimate.
+            circuits:  The circuit(s) to generate resource estimate.
             target: String of target representing target device.
 
         Returns:
@@ -385,7 +385,7 @@ class Service(user_config.UserConfig):
             random_seed: Optional seed for circuit randomizer.
             target: String of target AQT device.
             atol: An optional tolerance to use for approximate gate synthesis.
-            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+            gate_defs: An optional dictionary mapping names in `qtrl` configs to operations, where
                 each operation can be a unitary matrix, `cirq.Gate`, `cirq.Operation`, or None. More
                 specific associations take precedence, for example `{"SWAP": cirq.SQRT_ISWAP,
                 "SWAP/C5C4": cirq.SQRT_ISWAP_INV}` implies `SQRT_ISWAP` for all "SWAP" calibrations
@@ -395,7 +395,7 @@ class Service(user_config.UserConfig):
 
         Returns:
             Object whose .circuits attribute is a list (or list of lists) of logically equivalent
-            circuits. If qtrl is installed, the object's .seq attribute is a qtrl Sequence object
+            circuits. If `qtrl` is installed, the object's .seq attribute is a qtrl Sequence object
             containing pulse sequences for each compiled circuit, and its .pulse_list(s) attribute
             contains the corresponding list(s) of cycles.
 
@@ -448,7 +448,7 @@ class Service(user_config.UserConfig):
                 from each input circuit for Equivalent Circuit Averaging (ECA).
             random_seed: Optional seed used for approximate synthesis and ECA.
             atol: An optional tolerance to use for approximate gate synthesis.
-            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+            gate_defs: An optional dictionary mapping names in `qtrl` configs to operations, where
                 each operation can be a unitary matrix, `cirq.Gate`, `cirq.Operation`, or None. More
                 specific associations take precedence, for example `{"SWAP": cirq.SQRT_ISWAP,
                 "SWAP/C5C4": cirq.SQRT_ISWAP_INV}` implies `SQRT_ISWAP` for all "SWAP" calibrations
@@ -632,7 +632,7 @@ class Service(user_config.UserConfig):
         """Compiles the given circuit(s) to the target device's native gateset.
 
         Args:
-            circuits: The cirq circuit(s) to compile.
+            circuits: The circuit(s) to compile.
             target: String of target device.
             kwargs: Other desired compile options.
 

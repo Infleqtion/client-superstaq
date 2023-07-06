@@ -155,7 +155,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
                 from each input circuit for Equivalent Circuit Averaging (ECA).
             random_seed: Optional seed used for approximate synthesis and ECA.
             atol: An optional tolerance to use for approximate gate synthesis.
-            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+            gate_defs: An optional dictionary mapping names in `qtrl` configs to operations, where
                 each operation can be either a unitary matrix or None. More specific associations
                 take precedence, for example `{"SWAP": <matrix1>, "SWAP/C5C4": <matrix2>}` implies
                 `<matrix1>` for all "SWAP" calibrations except "SWAP/C5C4" (which will instead be
@@ -166,7 +166,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         Returns:
             Object whose .circuit(s) attribute contains the optimized circuits(s). Alternatively for
             ECA, an Object whose .circuits attribute is a list (or list of lists) of logically
-            equivalent circuits. If qtrl is installed, the object's .seq attribute is a qtrl
+            equivalent circuits. If `qtrl` is installed, the object's .seq attribute is a qtrl
             Sequence object containing pulse sequences for each compiled circuit, and its
             .pulse_list(s) attribute contains the corresponding list(s) of cycles.
 
@@ -211,7 +211,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
             random_seed: Optional seed for circuit randomizer.
             target: A string containing the name of a target AQT backend.
             atol: An optional tolerance to use for approximate gate synthesis.
-            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+            gate_defs: An optional dictionary mapping names in `qtrl` configs to operations, where
                 each operation can be either a unitary matrix or None. More specific associations
                 take precedence, for example `{"SWAP": <matrix1>, "SWAP/C5C4": <matrix2>}` implies
                 `<matrix1>` for all "SWAP" calibrations except "SWAP/C5C4" (which will instead be
@@ -221,7 +221,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
 
         Returns:
             Object whose .circuits attribute is a list (or list of lists) of logically equivalent
-            circuits. If qtrl is installed, the object's .seq attribute is a qtrl Sequence object
+            circuits. If `qtrl` is installed, the object's .seq attribute is a qtrl Sequence object
             containing pulse sequences for each compiled circuit, and its .pulse_list(s) attribute
             contains the corresponding list(s) of cycles.
 
