@@ -24,7 +24,7 @@ def test_wait_for_results(backend: qss.SuperstaqBackend) -> None:
     jobs = qss.SuperstaqJob(backend=backend, job_id="123abc,456def")
 
     with mock.patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.get_job",
+        "general_superstaq.superstaq_client.SuperstaqClient.get_job",
         return_value=mock_response("Done"),
     ):
         assert job._wait_for_results(timeout=backend._provider._client.max_retry_seconds) == [
@@ -40,7 +40,7 @@ def test_timeout(backend: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJob(backend=backend, job_id="123abc")
 
     with mock.patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.get_job",
+        "general_superstaq.superstaq_client.SuperstaqClient.get_job",
         side_effect=[mock_response("Queued"), mock_response("Queued"), mock_response("Done")],
     ) as mocked_get_job:
         assert job._wait_for_results(
@@ -66,7 +66,7 @@ def test_result(backend: qss.SuperstaqBackend) -> None:
     )
 
     with mock.patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.get_job",
+        "general_superstaq.superstaq_client.SuperstaqClient.get_job",
         return_value=mock_response("Done"),
     ):
         ans = job.result()
@@ -88,21 +88,21 @@ def test_refresh_job(backend: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJob(backend=backend, job_id="123abc,456abc,789abc")
 
     with mock.patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.get_job",
+        "general_superstaq.superstaq_client.SuperstaqClient.get_job",
         return_value=mock_response("Queued"),
     ):
         job._refresh_job()
         assert job._overall_status == "Queued"
 
     with mock.patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.get_job",
+        "general_superstaq.superstaq_client.SuperstaqClient.get_job",
         return_value=mock_response("Running"),
     ):
         job._refresh_job()
         assert job._overall_status == "Running"
 
     with mock.patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.get_job",
+        "general_superstaq.superstaq_client.SuperstaqClient.get_job",
         return_value=mock_response("Done"),
     ):
         job._refresh_job()
@@ -110,7 +110,7 @@ def test_refresh_job(backend: qss.SuperstaqBackend) -> None:
 
     job = qss.SuperstaqJob(backend=backend, job_id="321cba")
     with mock.patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.get_job",
+        "general_superstaq.superstaq_client.SuperstaqClient.get_job",
         return_value=mock_response("Failed"),
     ):
         job._refresh_job()
@@ -118,7 +118,7 @@ def test_refresh_job(backend: qss.SuperstaqBackend) -> None:
 
     job = qss.SuperstaqJob(backend=backend, job_id="654cba")
     with mock.patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.get_job",
+        "general_superstaq.superstaq_client.SuperstaqClient.get_job",
         return_value=mock_response("Cancelled"),
     ):
         job._refresh_job()
@@ -166,19 +166,19 @@ def test_status(backend: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJob(backend=backend, job_id="123abc")
 
     with mock.patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.get_job",
+        "general_superstaq.superstaq_client.SuperstaqClient.get_job",
         return_value=mock_response("Queued"),
     ):
         assert job.status() == qiskit.providers.JobStatus.QUEUED
 
     with mock.patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.get_job",
+        "general_superstaq.superstaq_client.SuperstaqClient.get_job",
         return_value=mock_response("Running"),
     ):
         assert job.status() == qiskit.providers.JobStatus.RUNNING
 
     with mock.patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.get_job",
+        "general_superstaq.superstaq_client.SuperstaqClient.get_job",
         return_value=mock_response("Done"),
     ):
         assert job.status() == qiskit.providers.JobStatus.DONE
