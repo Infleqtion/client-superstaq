@@ -7,7 +7,7 @@ import general_superstaq as gss
 class UserConfig:
     """This class contains all the user configurations that are used to operate Superstaq."""
 
-    def __init__(self, client: gss.superstaq_client._SuperstaqClient):
+    def __init__(self, client: gss.superstaq_client.SuperstaqClient):
         """Initializes the `UserConfig` class.
 
         Args:

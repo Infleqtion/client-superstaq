@@ -26,7 +26,7 @@ def test_run() -> None:
     backend = qss.SuperstaqProvider(api_key="123").get_backend("ss_example_qpu")
 
     with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
+        "general_superstaq.superstaq_client.SuperstaqClient.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
     ):
         answer = backend.run(circuits=qc, shots=1000)
@@ -51,7 +51,7 @@ def test_multi_circuit_run() -> None:
     backend = qss.SuperstaqProvider(api_key="123").get_backend("ss_example_qpu")
 
     with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
+        "general_superstaq.superstaq_client.SuperstaqClient.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
     ):
         answer = backend.run(circuits=[qc1, qc2], shots=1000)
@@ -68,7 +68,7 @@ def test_multi_arg_run() -> None:
     backend = qss.SuperstaqProvider(api_key="123").get_backend("ss_example_qpu")
 
     with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
+        "general_superstaq.superstaq_client.SuperstaqClient.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
     ):
         answer = backend.run(circuits=qc, shots=1000, method="fake_method", test="123")
@@ -85,7 +85,7 @@ def test_retrieve_job() -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
     backend = provider.get_backend("ibmq_qasm_simulator")
     with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
+        "general_superstaq.superstaq_client.SuperstaqClient.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
     ):
         job = backend.run(qc, shots=1000)
@@ -295,7 +295,7 @@ def test_target_info() -> None:
     backend = qss.SuperstaqProvider(api_key="123").get_backend(target)
     fake_data = {"target_info": {"backend_name": target}}
     with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.target_info",
+        "general_superstaq.superstaq_client.SuperstaqClient.target_info",
         return_value=fake_data,
     ):
         assert backend.target_info() == fake_data["target_info"]

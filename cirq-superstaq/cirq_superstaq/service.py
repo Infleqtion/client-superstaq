@@ -148,7 +148,7 @@ class Service(user_config.UserConfig):
         """
         self.default_target = default_target
 
-        self._client = superstaq_client._SuperstaqClient(
+        self._client = superstaq_client.SuperstaqClient(
             client_name="cirq-superstaq",
             remote_host=remote_host,
             api_key=api_key,
