@@ -104,7 +104,17 @@ class Service:
         repetitions: int = 1000,
         method: Optional[str] = None,
     ) -> Dict[str, str]:
-        """ """
+        """Solves the QUBO given via the submit_qubo function in superstaq_client
+
+        Args:
+            qubo: A `qv.QUBO` object.
+            target: The target to submit the qubo.
+            repetitions: Number of repetitions to use. Defaults to 1000.
+            method: An optional method parameter. Defaults to None.
+
+        Returns:
+            A dictionary from the POST request.
+        """
         return self._client.submit_qubo(qubo, target, repetitions, method)
 
     def ibmq_set_token(self, token: str) -> str:
