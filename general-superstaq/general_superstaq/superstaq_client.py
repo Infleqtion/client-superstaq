@@ -26,7 +26,7 @@ import requests
 import general_superstaq as gss
 
 
-class SuperstaqClient:
+class _SuperstaqClient:
     """Handles calls to Superstaq's API.
 
     Users should not instantiate this themselves,
@@ -543,7 +543,7 @@ class SuperstaqClient:
     def __repr__(self) -> str:
         return textwrap.dedent(
             f"""\
-            gss.superstaq_client.SuperstaqClient(
+            gss.superstaq_client._SuperstaqClient(
                 remote_host={self.url!r},
                 api_key={self.api_key!r},
                 client_name={self.client_name!r},
