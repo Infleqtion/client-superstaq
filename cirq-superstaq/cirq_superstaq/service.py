@@ -19,7 +19,7 @@ import cirq
 import general_superstaq as gss
 import numpy as np
 import numpy.typing as npt
-from general_superstaq import ResourceEstimate, superstaq_client, user_config
+from general_superstaq import ResourceEstimate, service, superstaq_client
 
 import cirq_superstaq as css
 
@@ -99,7 +99,7 @@ def counts_to_results(
     return result
 
 
-class Service(user_config.Service):
+class Service(service.Service):
     """A class to access Superstaq's API.
 
     To access the API, this class requires a remote host url and an API key. These can be
