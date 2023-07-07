@@ -9,7 +9,7 @@ from general_superstaq.superstaq_exceptions import (
 )
 from general_superstaq.typing import MaxSharpeJson, MinVolJson, QuboModel, TSPJson, WareHouseJson
 
-from . import qubo, serialization, superstaq_client, superstaq_exceptions, user_config, validation
+from . import qubo, serialization, superstaq_client, superstaq_exceptions, service, validation
 
 __all__ = [
     "__version__",
@@ -32,6 +32,6 @@ __all__ = [
     "superstaq_client",
     "superstaq_exceptions",
     "typing",
-    "user_config",
+    "service",
     "validation",
 ]
