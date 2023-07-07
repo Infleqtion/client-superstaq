@@ -113,7 +113,7 @@ class Service:
             method: An optional method parameter. Defaults to None.
 
         Returns:
-            A dictionary from the POST request.
+            A dictionary returned by the submit_qubo function.
         """
         return self._client.submit_qubo(qubo, target, repetitions, method)
 
