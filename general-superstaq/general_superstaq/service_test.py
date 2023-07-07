@@ -5,6 +5,7 @@ import tempfile
 from unittest import mock
 
 import pytest
+import qubovert as qv
 
 import general_superstaq as gss
 
@@ -81,6 +82,42 @@ def test_update_user_role(
     )
     service = gss.service.Service(client)
     assert service.update_user_role("mc@gmail.com", 5) == "The account's role has been updated"
+
+
+@mock.patch(
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
+    return_value={
+        "qubo": [
+            {"keys": ["0"], "value": 1.0},
+            {"keys": ["1"], "value": 1.0},
+            {"keys": ["0", "1"], "value": -2.0},
+        ],
+        "target": "ss_example_qpu",
+        "shots": 10,
+        "method": "dry-run",
+    },
+)
+def test_solve_qubo(
+    mock_post_request: mock.MagicMock,
+) -> None:
+    example_qubo = qv.QUBO({(0,): 1.0, (1,): 1.0, (0, 1): -2.0})
+    target = "ss_example_qpu"
+    repetitions = 10
+    client = gss.superstaq_client._SuperstaqClient(
+        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
+    )
+
+    service = gss.service.Service(client)
+    assert service.solve_qubo(example_qubo, target, repetitions=repetitions, method="dry-run") == {
+        "qubo": [
+            {"keys": ["0"], "value": 1.0},
+            {"keys": ["1"], "value": 1.0},
+            {"keys": ["0", "1"], "value": -2.0},
+        ],
+        "target": "ss_example_qpu",
+        "shots": 10,
+        "method": "dry-run",
+    }
 
 
 @mock.patch(

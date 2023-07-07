@@ -1,13 +1,16 @@
 import os
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
-import general_superstaq as gss
+import qubovert as qv
+
+if TYPE_CHECKING:
+    from general_superstaq import superstaq_client
 
 
 class Service:
     """This class contains all the user configurations that are used to operate Superstaq."""
 
-    def __init__(self, client: gss.superstaq_client.SuperstaqClient):
+    def __init__(self, client: "superstaq_client._SuperstaqClient"):
         """Initializes the `Service` class.
 
         Args:
@@ -93,6 +96,16 @@ class Service:
                 "role": role,
             }
         )
+
+    def solve_qubo(
+        self,
+        qubo: qv.QUBO,
+        target: str,
+        repetitions: int = 1000,
+        method: Optional[str] = None,
+    ) -> Dict[str, str]:
+        """ """
+        return self._client.submit_qubo(qubo, target, repetitions, method)
 
     def ibmq_set_token(self, token: str) -> str:
         """Sets IBMQ token field.
