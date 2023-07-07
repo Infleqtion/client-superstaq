@@ -150,6 +150,17 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 self._overall_status = temp_status
                 return
 
+    def compiled_circuits(self) -> List[qiskit.QuantumCircuit]:
+        """Get the compiled circuits that were submitted for this job.
+
+        Returns:
+            A list of compiled circuits.
+        """
+        self._refresh_job()
+        job_id_list = self._job_id.split(",")
+        serialized_circuits = [self._job_info[job_id]["compiled_circuit"] for job_id in job_id_list]
+        return [qss.deserialize_circuits(circuit)[0] for circuit in serialized_circuits]
+
     def status(self) -> qiskit.providers.jobstatus.JobStatus:
         """Query for the equivalent qiskit job status.
 

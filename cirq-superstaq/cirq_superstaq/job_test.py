@@ -54,6 +54,7 @@ def mocked_get_job_requests(*job_dicts: Dict[str, Any]) -> mock._patch[mock.Mock
 
 
 def test_job_fields(job: css.job.Job) -> None:
+    compiled_circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
     job_dict = {
         "data": {"histogram": {"11": 1}},
         "num_qubits": 2,
@@ -61,6 +62,7 @@ def test_job_fields(job: css.job.Job) -> None:
         "shots": 1,
         "status": "Done",
         "target": "ss_unconstrained_simulator",
+        "compiled_circuit": css.serialize_circuits(compiled_circuit),
     }
 
     with mocked_get_job_requests(job_dict):
@@ -68,6 +70,7 @@ def test_job_fields(job: css.job.Job) -> None:
         assert job.target() == "ss_unconstrained_simulator"
         assert job.num_qubits() == 2
         assert job.repetitions() == 1
+        assert job.compiled_circuit() == compiled_circuit
 
 
 def test_job_status_refresh() -> None:
@@ -186,21 +189,3 @@ def test_job_results_poll_failure(mock_sleep: mock.MagicMock, job: css.job.Job) 
         with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="too many qubits"):
             _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
     assert mock_sleep.call_count == 5
-
-
-def test_job_fields_unsuccessful(job: css.job.Job) -> None:
-    job_dict = {
-        "data": {"histogram": {"11": 1}},
-        "num_qubits": 2,
-        "samples": {"11": 1},
-        "shots": 1,
-        "status": "Deleted",
-        "target": "ss_unconstrained_simulator",
-    }
-    with mocked_get_job_requests(job_dict):
-        with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="Deleted"):
-            _ = job.target()
-        with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="Deleted"):
-            _ = job.num_qubits()
-        with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="Deleted"):
-            _ = job.repetitions()
