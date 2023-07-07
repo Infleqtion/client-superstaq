@@ -11,7 +11,7 @@ import general_superstaq as gss
 
 def test_service_get_balance() -> None:
 
-    client = gss.superstaq_client.SuperstaqClient(
+    client = gss.superstaq_client._SuperstaqClient(
         remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
     service = gss.user_config.UserConfig(client)
@@ -25,12 +25,12 @@ def test_service_get_balance() -> None:
 
 def test_accept_terms_of_use() -> None:
 
-    client = gss.superstaq_client.SuperstaqClient(
+    client = gss.superstaq_client._SuperstaqClient(
         remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
     service = gss.user_config.UserConfig(client)
     with mock.patch(
-        "general_superstaq.superstaq_client.SuperstaqClient.post_request"
+        "general_superstaq.superstaq_client._SuperstaqClient.post_request"
     ) as mock_post_request:
         service._accept_terms_of_use("response")
         mock_post_request.assert_called_once_with(
@@ -39,13 +39,13 @@ def test_accept_terms_of_use() -> None:
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client.SuperstaqClient.post_request",
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value="The user has been added",
 )
 def test_add_new_user(
     mock_post_request: mock.MagicMock,
 ) -> None:
-    client = gss.superstaq_client.SuperstaqClient(
+    client = gss.superstaq_client._SuperstaqClient(
         remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
     service = gss.user_config.UserConfig(client)
@@ -53,13 +53,13 @@ def test_add_new_user(
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client.SuperstaqClient.post_request",
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value="The account's balance has been updated",
 )
 def test_update_user_balance(
     mock_post_request: mock.MagicMock,
 ) -> None:
-    client = gss.superstaq_client.SuperstaqClient(
+    client = gss.superstaq_client._SuperstaqClient(
         remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
     service = gss.user_config.UserConfig(client)
@@ -70,13 +70,13 @@ def test_update_user_balance(
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client.SuperstaqClient.post_request",
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value="The account's role has been updated",
 )
 def test_update_user_role(
     mock_post_request: mock.MagicMock,
 ) -> None:
-    client = gss.superstaq_client.SuperstaqClient(
+    client = gss.superstaq_client._SuperstaqClient(
         remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
     service = gss.user_config.UserConfig(client)
@@ -84,13 +84,13 @@ def test_update_user_role(
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client.SuperstaqClient.post_request",
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value="Your IBMQ account token has been updated",
 )
 def test_ibmq_set_token(
     mock_post_request: mock.MagicMock,
 ) -> None:
-    client = gss.superstaq_client.SuperstaqClient(
+    client = gss.superstaq_client._SuperstaqClient(
         remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
     service = gss.user_config.UserConfig(client)
@@ -98,13 +98,13 @@ def test_ibmq_set_token(
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client.SuperstaqClient.post_request",
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value="Your CQ account token has been updated",
 )
 def test_cq_set_token(
     mock_post_request: mock.MagicMock,
 ) -> None:
-    client = gss.superstaq_client.SuperstaqClient(
+    client = gss.superstaq_client._SuperstaqClient(
         remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
     service = gss.user_config.UserConfig(client)
@@ -112,13 +112,13 @@ def test_cq_set_token(
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client.SuperstaqClient.aqt_upload_configs",
+    "general_superstaq.superstaq_client._SuperstaqClient.aqt_upload_configs",
     return_value="Your AQT configuration has been updated",
 )
 def test_service_aqt_upload_configs(
     mock_aqt_compile: mock.MagicMock,
 ) -> None:
-    client = gss.superstaq_client.SuperstaqClient(
+    client = gss.superstaq_client._SuperstaqClient(
         remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
     service = gss.user_config.UserConfig(client)
@@ -163,13 +163,13 @@ def test_service_aqt_upload_configs(
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client.SuperstaqClient.aqt_get_configs",
+    "general_superstaq.superstaq_client._SuperstaqClient.aqt_get_configs",
     return_value={"pulses": "Hello", "variables": "World"},
 )
 def test_service_aqt_get_configs(
     mock_aqt_compile: mock.MagicMock,
 ) -> None:
-    client = gss.superstaq_client.SuperstaqClient(
+    client = gss.superstaq_client._SuperstaqClient(
         remote_host="http://example.com", api_key="key", client_name="general_superstaq"
     )
     service = gss.user_config.UserConfig(client)
