@@ -118,7 +118,9 @@ class Job:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
             SuperstaqException: If unable to get the status of the job from the API.
         """
-        self._refresh_job()
+        if "target" not in self._job:
+            self._refresh_job()
+
         return self._job["target"]
 
     def num_qubits(self) -> int:
@@ -131,7 +133,9 @@ class Job:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
             SuperstaqException: If unable to get the status of the job from the API.
         """
-        self._refresh_job()
+        if "num_qubits" not in self._job:
+            self._refresh_job()
+
         return self._job["num_qubits"]
 
     def repetitions(self) -> int:
@@ -144,8 +148,21 @@ class Job:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
             SuperstaqException: If unable to get the status of the job from the API.
         """
-        self._refresh_job()
+        if "shots" not in self._job:
+            self._refresh_job()
+
         return self._job["shots"]
+
+    def compiled_circuit(self) -> cirq.Circuit:
+        """Get the compiled circuit that was submitted for this job.
+
+        Returns:
+            The compiled circuit.
+        """
+        if "compiled_circuit" not in self._job:
+            self._refresh_job()
+
+        return css.deserialize_circuits(self._job["compiled_circuit"])[0]
 
     def counts(self, timeout_seconds: int = 7200, polling_seconds: float = 1.0) -> Dict[str, int]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
@@ -174,15 +191,6 @@ class Job:
 
         self._check_if_unsuccessful()
         return self._job["samples"]
-
-    def compiled_circuit(self) -> cirq.Circuit:
-        """Get the compiled circuit that was submitted for this job.
-
-        Returns:
-            The compiled circuit.
-        """
-        self._refresh_job()
-        return css.deserialize_circuits(self._job["compiled_circuit"])[0]
 
     def __str__(self) -> str:
         return f"Job with job_id={self.job_id()}"

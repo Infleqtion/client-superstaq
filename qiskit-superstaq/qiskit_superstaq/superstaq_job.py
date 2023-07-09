@@ -37,6 +37,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         super().__init__(backend, job_id)
         self._overall_status = "Submitted"
         self._job_info: Dict[str, Any] = {}
+        self._compiled_circuits: Optional[List[qiskit.QuantumCircuit]] = None
 
     def __eq__(self, other: object) -> bool:
 
@@ -116,18 +117,22 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 self._job_id, self._overall_status
             )
 
+    def _refresh_jobs(self, *job_ids) -> None:
+        """Queries the server to refresh the results of the provided jobs."""
+
+        for job_id in job_ids:
+            self._job_info[job_id] = self._backend._provider._client.get_job(job_id)
+
     def _refresh_job(self) -> None:
         """Queries the server for an updated job result."""
 
-        for job_id in self._job_id.split(","):
-
+        refresh_ids = [
+            job_id for job_id in self._job_id.split(","):
             if (job_id not in self._job_info) or (
-                job_id in self._job_info
-                and self._job_info[job_id]["status"] not in self.TERMINAL_STATES
-            ):
-                result = self._backend._provider._client.get_job(job_id)
-                self._job_info[job_id] = result
-
+                self._job_info[job_id]["status"] not in self.TERMINAL_STATES
+            )
+        ]
+        self._refresh_jobs(*refresh_ids)
         self._update_status_queue_info()
 
     def _update_status_queue_info(self) -> None:
@@ -156,10 +161,28 @@ class SuperstaqJob(qiskit.providers.JobV1):
         Returns:
             A list of compiled circuits.
         """
-        self._refresh_job()
-        job_id_list = self._job_id.split(",")
-        serialized_circuits = [self._job_info[job_id]["compiled_circuit"] for job_id in job_id_list]
-        return [qss.deserialize_circuits(circuit)[0] for circuit in serialized_circuits]
+
+        job_ids = self._job_id.split(",")
+        refresh_ids = [job_id for job_id in job_ids if job_id not in self._job_info]
+        self._refresh_jobs(*refresh_ids)
+
+        serialized_circuits = [self._job_info[job_id]["compiled_circuit"] for job_id in job_ids]
+        if not all(serialized_circuits):
+            refresh_ids = [
+                job_id for job_id in job_ids
+                if job_id not in self._job_info or not self._job_info[job_id].get("compiled_circuit")
+            ]
+            self._refresh_job()
+            serialized_circuits = [self._job_info[job_id]["compiled_circuit"] for job_id in job_ids]
+
+        if self._compiled_circuits is None:
+            self._refresh_job()
+            job_id_list = self._job_id.split(",")
+            serialized_circuits = [self._job_info[job_id]["compiled_circuit"] for job_id in job_id_list]
+            circuits = [qss.deserialize_circuits(circuit)[0] for circuit in serialized_circuits]
+            self._compiled_circuits = circuits
+
+        return self._compiled_circuits
 
     def status(self) -> qiskit.providers.jobstatus.JobStatus:
         """Query for the equivalent qiskit job status.
