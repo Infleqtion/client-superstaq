@@ -19,23 +19,23 @@ import cirq
 import general_superstaq as gss
 import numpy as np
 import numpy.typing as npt
-from general_superstaq import ResourceEstimate, superstaq_client, user_config
+from general_superstaq import ResourceEstimate, superstaq_client
 
 import cirq_superstaq as css
 
 
 def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
-    """Convert a unitary matrix into a cirq.MatrixGate acting either on qubits or on qutrits.
+    """Convert a unitary matrix into a `cirq.MatrixGate` acting either on qubits or on qutrits.
 
     Args:
         matrix: The (unitary) matrix to be converted.
 
     Returns:
-        A cirq.MatrixGate with the given unitary.
+        A `cirq.MatrixGate` with the given unitary.
 
     Raises:
-        ValueError: If `matrix` could not be interpreted as a unitary gate acting on either qubits
-            or qutrits.
+        ValueError: If `matrix` could not be interpreted as a unitary gate acting on either
+            qubits or qutrits.
     """
 
     matrix = np.asarray(matrix, dtype=complex)
@@ -47,22 +47,23 @@ def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
             return cirq.MatrixGate(matrix, qid_shape=qid_shape)
 
     raise ValueError(
-        "Could not determine qid_shape from array shape, consider using a cirq.MatrixGate instead."
+        "Could not determine qid_shape from array shape, consider using a `cirq.MatrixGate` "
+        "instead."
     )
 
 
 def counts_to_results(
     counter: Dict[str, int], circuit: cirq.AbstractCircuit, param_resolver: cirq.ParamResolver
 ) -> cirq.ResultDict:
-    """Converts a collections.Counter to a cirq.ResultDict.
+    """Converts a `collections.Counter` to a `cirq.ResultDict`.
 
     Args:
-            counter: The collections.Counter of counts for the run.
-            circuit: The circuit to run.
-            param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuit`.
+        counter: The `collections.Counter` of counts for the run.
+        circuit: The circuit to run.
+        param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuit`.
 
-        Returns:
-            A `cirq.ResultDict` for the given circuit and counter.
+    Returns:
+        A `cirq.ResultDict` for the given circuit and counter.
 
     """
     measurement_key_names = list(circuit.all_measurement_key_names())
@@ -98,31 +99,7 @@ def counts_to_results(
     return result
 
 
-def _validate_cirq_circuits(circuits: object) -> None:
-    """Validates that the input is either a single `cirq.Circuit` or a list of `cirq.Circuit`
-    instances.
-
-    Args:
-        circuits: The circuit(s) to run.
-
-    Raises:
-        ValueError: If the input is not a `cirq.Circuit` or a list of `cirq.Circuit` instances.
-    """
-
-    if not (
-        isinstance(circuits, cirq.Circuit)
-        or (
-            isinstance(circuits, Sequence)
-            and all(isinstance(circuit, cirq.Circuit) for circuit in circuits)
-        )
-    ):
-        raise ValueError(
-            "Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
-            "sequence of `cirq.Circuit` instances."
-        )
-
-
-class Service(user_config.UserConfig):
+class Service(gss.service.Service):
     """A class to access Superstaq's API.
 
     To access the API, this class requires a remote host url and an API key. These can be
@@ -200,7 +177,7 @@ class Service(user_config.UserConfig):
         **kwargs: Any,
     ) -> Dict[str, int]:
         """Runs the given circuit on the Superstaq API and returns the result
-        of the ran circuit as a collections.Counter
+        of the ran circuit as a `collections.Counter`.
 
         Args:
             circuit: The circuit to run.
@@ -229,13 +206,13 @@ class Service(user_config.UserConfig):
         **kwargs: Any,
     ) -> cirq.ResultDict:
         """Run the given circuit on the Superstaq API and returns the result
-        of the ran circut as a cirq.ResultDict.
+        of the ran circut as a `cirq.ResultDict`.
 
         Args:
             circuit: The circuit to run.
             repetitions: The number of times to run the circuit.
             target: Where to run the job.
-            param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
+            param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuit`.
             method: Execution method.
             kwargs: Other optimization and execution parameters.
 
@@ -281,7 +258,7 @@ class Service(user_config.UserConfig):
             ValueError: If `circuit` is not a valid `cirq.Circuit` or has no measurements to sample.
             SuperstaqException: If there was an error accessing the API.
         """
-        _validate_cirq_circuits(circuit)
+        css.validation.validate_cirq_circuits(circuit)
         if not isinstance(circuit, cirq.Circuit):
             raise ValueError("This endpoint does not support the submission of multiple circuits.")
 
@@ -328,7 +305,7 @@ class Service(user_config.UserConfig):
             pretty_output: Whether to return a pretty string or a float of the balance.
 
         Returns:
-            If pretty_output is True, returns the balance as a nicely formatted string ($-prefix,
+            If pretty_output is `True`, returns the balance as a nicely formatted string ($-prefix,
                 commas on LHS every three digits, and two digits after period). Otherwise, simply
                 returns a float of the balance.
         """
@@ -338,7 +315,11 @@ class Service(user_config.UserConfig):
         return balance
 
     def get_targets(self) -> Dict[str, List[str]]:
-        """Get list of available targets."""
+        """Gets a list of available, unavailable, and retired targets.
+
+        Returns:
+            A list of Superstaq targets.
+        """
         return self._client.get_targets()["superstaq_targets"]
 
     def resource_estimate(
@@ -347,12 +328,13 @@ class Service(user_config.UserConfig):
         """Generates resource estimates for circuit(s).
 
         Args:
-            circuits: Cirq Circuit(s).
-            target: String of target representing target device
+            circuits:  The circuit(s) to generate resource estimate.
+            target: String of target representing target device.
+
         Returns:
-            ResourceEstimate(s) containing resource costs (after compilation)
+            `ResourceEstimate`(s) containing resource costs (after compilation).
         """
-        _validate_cirq_circuits(circuits)
+        css.validation.validate_cirq_circuits(circuits)
         circuit_is_list = not isinstance(circuits, cirq.Circuit)
         serialized_circuit = css.serialization.serialize_circuits(circuits)
 
@@ -386,10 +368,11 @@ class Service(user_config.UserConfig):
         ] = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
-        """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
-        Lawrence Berkeley National Laboratory using Equivalent Circuit Averaging (ECA).
+        """Compiles and optimizes the given circuit(s) for AQT using ECA.
 
-        See arxiv.org/pdf/2111.04572.pdf for a description of ECA.
+        The Advanced Quantum Testbed (AQT) is a superconducting transmon quantum computing testbed
+        at Lawrence Berkeley National Laboratory. See arxiv.org/pdf/2111.04572.pdf for a description
+        of Equivalent Circuit Averaging (ECA).
 
         Note:
             This method has been deprecated. Instead, use the `num_eca_circuits` argument of
@@ -402,7 +385,7 @@ class Service(user_config.UserConfig):
             random_seed: Optional seed for circuit randomizer.
             target: String of target AQT device.
             atol: An optional tolerance to use for approximate gate synthesis.
-            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+            gate_defs: An optional dictionary mapping names in `qtrl` configs to operations, where
                 each operation can be a unitary matrix, `cirq.Gate`, `cirq.Operation`, or None. More
                 specific associations take precedence, for example `{"SWAP": cirq.SQRT_ISWAP,
                 "SWAP/C5C4": cirq.SQRT_ISWAP_INV}` implies `SQRT_ISWAP` for all "SWAP" calibrations
@@ -412,7 +395,7 @@ class Service(user_config.UserConfig):
 
         Returns:
             Object whose .circuits attribute is a list (or list of lists) of logically equivalent
-            circuits. If qtrl is installed, the object's .seq attribute is a qtrl Sequence object
+            circuits. If `qtrl` is installed, the object's .seq attribute is a qtrl Sequence object
             containing pulse sequences for each compiled circuit, and its .pulse_list(s) attribute
             contains the corresponding list(s) of cycles.
 
@@ -465,7 +448,7 @@ class Service(user_config.UserConfig):
                 from each input circuit for Equivalent Circuit Averaging (ECA).
             random_seed: Optional seed used for approximate synthesis and ECA.
             atol: An optional tolerance to use for approximate gate synthesis.
-            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+            gate_defs: An optional dictionary mapping names in `qtrl` configs to operations, where
                 each operation can be a unitary matrix, `cirq.Gate`, `cirq.Operation`, or None. More
                 specific associations take precedence, for example `{"SWAP": cirq.SQRT_ISWAP,
                 "SWAP/C5C4": cirq.SQRT_ISWAP_INV}` implies `SQRT_ISWAP` for all "SWAP" calibrations
@@ -476,7 +459,7 @@ class Service(user_config.UserConfig):
         Returns:
             Object whose .circuit(s) attribute contains the optimized circuits(s). Alternatively for
             ECA, an object whose .circuits attribute is a list (or list of lists) of logically
-            equivalent circuits. If qtrl is installed, the object's .seq attribute is a qtrl
+            equivalent circuits. If `qtrl` is installed, the object's .seq attribute is a qtrl
             Sequence object containing pulse sequences for each compiled circuit, and its
             .pulse_list(s) attribute contains the corresponding list(s) of cycles.
 
@@ -487,7 +470,7 @@ class Service(user_config.UserConfig):
         if not target.startswith("aqt_"):
             raise ValueError(f"{target!r} is not a valid AQT target.")
 
-        _validate_cirq_circuits(circuits)
+        css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
@@ -545,7 +528,7 @@ class Service(user_config.UserConfig):
 
         Args:
             circuits: The circuit(s) to compile.
-            target: String of target representing target device
+            target: String of target representing target device.
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
             base_entangling_gate: The base entangling gate to use (either "xx" or "zz").
             kwargs: Other desired qscout_compile options.
@@ -565,7 +548,7 @@ class Service(user_config.UserConfig):
         if base_entangling_gate not in ("xx", "zz"):
             raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
 
-        _validate_cirq_circuits(circuits)
+        css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
@@ -596,7 +579,7 @@ class Service(user_config.UserConfig):
         Args:
             circuits: The circuit(s) to compile.
             target: String of target CQ device.
-            kwargs: Other desired cq_compile options.
+            kwargs: Other desired `cq_compile` options.
 
         Returns:
             Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s).
@@ -624,7 +607,7 @@ class Service(user_config.UserConfig):
         Args:
             circuits: The circuit(s) to compile.
             target: String of target IBMQ device.
-            kwargs: Other desired ibmq_compile options.
+            kwargs: Other desired `ibmq_compile` options.
 
         Returns:
             Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s), and whose
@@ -646,36 +629,60 @@ class Service(user_config.UserConfig):
         target: str,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
-        """Compiles the given circuit(s) to the target device.
+        """Compiles the given circuit(s) to the target device's native gateset.
 
         Args:
             circuits: The circuit(s) to compile.
             target: String of target device.
-            kwargs: Other desired compilation options.
+            kwargs: Other desired compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s).
+            A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
+            circuit(s).
         """
-        _validate_cirq_circuits(circuits)
-        serialized_circuits = css.serialization.serialize_circuits(circuits)
-        circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
         target = self._resolve_target(target)
 
+        if target.startswith("aqt_"):
+            return self.aqt_compile(circuits, **kwargs)
+        elif target.startswith("sandia_"):
+            return self.qscout_compile(circuits, **kwargs)
+
+        request_json = self._get_compile_request_json(circuits, target, **kwargs)
+        circuits_is_list = not isinstance(circuits, cirq.Circuit)
+        json_dict = self._client.compile(request_json)
+        return css.compiler_output.read_json(json_dict, circuits_is_list)
+
+    def _get_compile_request_json(
+        self,
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        target: str,
+        **kwargs: Any,
+    ) -> Dict[str, str]:
+        """Helper method to compile json dictionary."""
+
+        css.validation.validate_cirq_circuits(circuits)
+        serialized_circuits = css.serialization.serialize_circuits(circuits)
         request_json = {
             "cirq_circuits": serialized_circuits,
             "target": target,
             "options": cirq.to_json(kwargs),
         }
-
-        json_dict = self._client.compile(request_json)
-
-        return css.compiler_output.read_json(json_dict, circuits_is_list)
+        return request_json
 
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int
     ) -> Tuple[List[cirq.Circuit], npt.NDArray[np.float_]]:
-        """Returns the randomly generated circuits and the fidelity matrix for inputted files."""
+        """Returns the randomly generated circuits and the fidelity matrix for inputted files.
+
+        Args:
+            files: Input files from which to generate random circuits and fidelity matrix.
+            num_qubits: The number of qubits to use to generate random circuits.
+            depth: The depth of the random circuits to generate.
+
+        Returns:
+            A tuple containing the generated circuits and the fidelities for distinguishing files.
+        """
 
         json_dict = self._client.supercheq(files, num_qubits, depth, "cirq_circuits")
         circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
@@ -683,6 +690,13 @@ class Service(user_config.UserConfig):
         return circuits, fidelities
 
     def target_info(self, target: str) -> Dict[str, Any]:
-        """Returns information about device specified by `target`."""
+        """Returns information about device specified by `target`.
+
+        Args:
+            target: A string corresponding to a device.
+
+        Returns:
+            The corresponding device information.
+        """
         target = self._resolve_target(target)
         return self._client.target_info(target)["target_info"]

@@ -1,25 +1,21 @@
+# `qiskit-superstaq`
+
 ![qiskit-superstaq's default workflow](https://github.com/Infleqtion/client-superstaq/actions/workflows/ci.yml/badge.svg)
 
 This package is used to access Superstaq via a Web API through [Qiskit](https://qiskit.org/). Qiskit programmers
 can take advantage of the applications, pulse level optimizations, and write-once-target-all
 features of Superstaq with this package.
 
-
-Please note that Python version `3.8` or higher is required. `qiskit-superstaq` and all of its
-dependencies can be installed via:
+`qiskit-superstaq` is [available on PyPI](https://pypi.org/project/qiskit-superstaq/) and can be installed with:
 
 ```
-python3 -m venv venv_qiskit_superstaq
-source venv_qiskit_superstaq/bin/activate
 pip install qiskit-superstaq
-
-# Run the following to install dev requirements (required if you intend to run checks locally)
-pip install .[dev]
 ```
+
+Please note that Python version `3.8` or higher is required. See installation instructions [here](https://github.com/Infleqtion/client-superstaq#readme).
 
 ### Creating and submitting a circuit through qiskit-superstaq
-```python3
-
+```python
 import qiskit
 import qiskit_superstaq as qss
 

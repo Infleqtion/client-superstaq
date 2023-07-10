@@ -190,7 +190,7 @@
             <p><span class="line-01"><span class="c-i">import</span> qiskit</span><br/>
             <span class="line-02"><span class="c-i">import</span> qiskit_superstaq <span class="c-i">as</span> qss</span></p>
             
-            <p><span class="line-03">superstaq = qss.<span class="c-o">SuperstaQProvider</span>()</span><br/>
+            <p><span class="line-03">superstaq = qss.<span class="c-o">SuperstaqProvider</span>()</span><br/>
             <span class="line-04">backend = superstaq.<span class="c-m">get_backend</span>("ibmq_qasm_simulator")</span></p>
 
             <p><span class="line-05"><span class="c-c"># Standard bell circuit</span></span><br/>
@@ -208,7 +208,3 @@
     </div>
   </foreignObject>
 </svg>
-
-
-<!-- sources -->
-<!-- https://www.w3schools.com/howto/tryit.asp?filename=tryhow_css_browser_window -->

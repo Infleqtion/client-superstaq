@@ -76,6 +76,22 @@ def test_multi_arg_run() -> None:
         assert answer == expected
 
 
+def test_retrieve_job() -> None:
+    qc = qiskit.QuantumCircuit(2, 2)
+    qc.h(0)
+    qc.cx(0, 1)
+    qc.measure([0, 0], [1, 1])
+
+    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
+    backend = provider.get_backend("ibmq_qasm_simulator")
+    with patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
+        return_value={"job_ids": ["job_id"], "status": "ready"},
+    ):
+        job = backend.run(qc, shots=1000)
+    assert job == backend.retrieve_job("job_id")
+
+
 def test_eq() -> None:
     provider = qss.SuperstaqProvider(api_key="123")
 
