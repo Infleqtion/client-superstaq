@@ -63,6 +63,11 @@ class UserConfig:
         Returns:
              String containing status of update (whether or not it failed).
         """
+        limit = 2000.0
+        if balance > limit:
+            raise gss.SuperstaQException(
+                f"Requested balance {balance} exceeds limit of {limit}.",
+            )
         return self._client.update_user_balance(
             {
                 "email": email,

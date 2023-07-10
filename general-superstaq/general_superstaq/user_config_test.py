@@ -66,6 +66,15 @@ def test_update_user_balance(  # pylint: disable=missing-function-docstring
     )
 
 
+def test_update_user_balance_limit() -> None:  # pylint: disable=missing-function-docstring
+    client = gss.superstaq_client._SuperstaQClient(
+        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
+    )
+    service = gss.user_config.UserConfig(client)
+    with pytest.raises(gss.SuperstaQException, match="exceeds limit."):
+        (service.update_user_balance("mc@gmail.com", 3500.00))
+
+
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaQClient.post_request",
     return_value="The account's role has been updated",
