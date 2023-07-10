@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 import qubovert as qv
 
 if TYPE_CHECKING:
+<<<<<<< HEAD
     import general_superstaq as gss
     from general_superstaq import superstaq_client
 
@@ -20,6 +21,15 @@ class Service(superstaq_client._SuperstaqClient):
         max_retry_seconds: int = 3600,
         verbose: bool = False,
     ) -> None:
+=======
+    from general_superstaq import superstaq_client
+
+
+class Service:
+    """This class contains all the services that are used to operate Superstaq."""
+
+    def __init__(self, client: "superstaq_client._SuperstaqClient"):
+>>>>>>> main
         """Initializes the `Service` class.
 
         Args:
@@ -113,7 +123,11 @@ class Service(superstaq_client._SuperstaqClient):
             }
         )
 
+<<<<<<< HEAD
     def solve_qubo(
+=======
+    def submit_qubo(
+>>>>>>> main
         self,
         qubo: qv.QUBO,
         target: str,
