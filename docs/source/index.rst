@@ -59,6 +59,13 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
 .. toctree::
    :maxdepth: 1
    :hidden:
+   :caption: Contact Us
+
+   contact
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
    :caption: Clients
 
    cirq_superstaq
