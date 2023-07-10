@@ -3,8 +3,6 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import qubovert as qv
 
-if TYPE_CHECKING:
-    from general_superstaq import superstaq_client
 
 
 class Service:
