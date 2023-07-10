@@ -10,9 +10,9 @@ from .custom_gates import (
     ZZSwapGate,
 )
 from .serialization import deserialize_circuits, serialize_circuits
-from .superstaq_backend import SuperstaQBackend
-from .superstaq_job import SuperstaQJob
-from .superstaq_provider import SuperstaQProvider
+from .superstaq_backend import SuperstaqBackend
+from .superstaq_job import SuperstaqJob
+from .superstaq_provider import SuperstaqProvider
 
 __all__ = [
     "active_qubit_indices",
@@ -27,9 +27,9 @@ __all__ = [
     "serialization",
     "serialize_circuits",
     "StrippedCZGate",
-    "SuperstaQBackend",
-    "SuperstaQJob",
-    "SuperstaQProvider",
+    "SuperstaqBackend",
+    "SuperstaqJob",
+    "SuperstaqProvider",
     "validation",
     "ZZSwapGate",
     "__version__",

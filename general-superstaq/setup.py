@@ -8,7 +8,7 @@ exec(open("general_superstaq/_version.py").read())
 
 name = "general-superstaq"
 
-description = "The general module that provides tools and access to SuperstaQ"
+description = "The general module that provides tools and access to Superstaq"
 
 # README file as long_description.
 long_description = io.open("README.md", encoding="utf-8").read()
@@ -32,10 +32,10 @@ general_superstaq_packages = ["general_superstaq"] + [
 setup(
     name=name,
     version=__version__,
-    url="https://github.com/SupertechLabs/general-superstaq",
-    author="Super.tech",
-    author_email="pranav@super.tech",
-    python_requires=(">=3.7.0"),
+    url="https://github.com/Infleqtion/client-superstaq",
+    author="Superstaq development team",
+    author_email="superstaq@infleqtion.com",
+    python_requires=(">=3.8.0"),
     install_requires=requirements,
     extras_require={"dev": dev_requirements},
     license="Apache 2",

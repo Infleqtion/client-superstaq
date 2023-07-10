@@ -4,7 +4,7 @@ from typing import Dict, Optional
 
 @dataclass
 class ResourceEstimate:
-    """A class to store data returned from a resource_estimate request."""
+    """A class to store data returned from a /resource_estimate request."""
 
     num_single_qubit_gates: Optional[int] = None
     num_two_qubit_gates: Optional[int] = None
@@ -15,7 +15,7 @@ class ResourceEstimate:
         """Initializes `ResourceEstimate` object with JSON data, if specified.
 
         Args:
-            json_data: Optional dictionary containing JSON data from a resource_estimate request.
+            json_data: Optional dictionary containing JSON data from a /resource_estimate request.
         """
         if json_data is not None:
             assert "num_single_qubit_gates" in json_data

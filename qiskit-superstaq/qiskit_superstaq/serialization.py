@@ -2,7 +2,7 @@ import io
 import json
 import re
 import warnings
-from typing import Dict, List, Set, Tuple, TypeVar, Union
+from typing import Dict, List, Sequence, Set, Tuple, TypeVar, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -69,17 +69,18 @@ def to_json(val: object) -> str:
 
 
 def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:
-    """QPY requires unique custom gates to have unique `.name` attributes (including parameterized
-    gates differing by just their `.params` attributes). This function rewrites the input circuit
-    with new instruction names given by appending a unique (consecutive) "_{index}" string to the
-    name of any custom instruction which shares a name with a non-equivalent prior instruction in
-    the circuit.
+    """This function rewrites the input circuit with new instruction names.
+
+    QPY requires unique custom gates to have unique `.name` attributes (including parameterized
+    gates differing by just their `.params` attributes). This function does so by appending a
+    unique (consecutive) "_{index}" string to the name of any custom instruction which shares
+    a name with a non-equivalent prior instruction in the circuit.
 
     Args:
-        circuit: qiskit.QuantumCircuit to be rewritten
+        circuit: The `qiskit.QuantumCircuit` to be rewritten.
 
     Returns:
-        A copy of the input circuit with unique custom instruction names
+        A copy of the input circuit with unique custom instruction names.
     """
 
     unique_insts_by_name: Dict[str, List[qiskit.circuit.Instruction]] = {}
@@ -117,14 +118,16 @@ def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumC
     return new_circuit
 
 
-def serialize_circuits(circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]) -> str:
-    """Serialize QuantumCircuit(s) into a single string
+def serialize_circuits(
+    circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]]
+) -> str:
+    """Serialize QuantumCircuit(s) into a single string.
 
     Args:
-        circuits: a QuantumCircuit or list of QuantumCircuits to be serialized
+        circuits: A `qiskit.QuantumCircuit` or list of `qiskit.QuantumCircuit`s to be serialized.
 
     Returns:
-        str representing the serialized circuit(s)
+        A string representing the serialized circuit(s).
     """
     if isinstance(circuits, qiskit.QuantumCircuit):
         circuits = [_assign_unique_inst_names(circuits)]
@@ -168,8 +171,8 @@ def deserialize_circuits(serialized_circuits: str) -> List[qiskit.QuantumCircuit
         else:
             # Otherwise there is probably a more complicated issue.
             raise ValueError(
-                "Circuits failed to deserialize. Please contact info@super.tech or file a "
-                "report at https://github.com/SupertechLabs/client-superstaq/issues containing "
+                "Circuits failed to deserialize. Please contact superstaq@infleqtion.com or file a "
+                "report at https://github.com/Infleqtion/client-superstaq/issues containing "
                 "the following information (as well as any other relevant context):\n\n"
                 f"qiskit-superstaq version: {qss.__version__}\n"
                 f"qiskit-terra version: {qiskit.__version__}\n"

@@ -20,7 +20,7 @@ def cirq_to_qiskit(circuit: cirq.Circuit) -> qiskit.circuit.QuantumCircuit:
 def compute_communication_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
     """Compute the program communication of the given quantum circuit.
 
-    Program communication = circuit's average qubit degree / degree of a complete graph
+    Program communication = circuit's average qubit degree / degree of a complete graph.
 
     Args:
         circuit: A quantum circuit.
@@ -45,7 +45,7 @@ def compute_communication_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) ->
 def compute_liveness_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
     """Compute the liveness of the given quantum circuit.
 
-    Liveness feature = sum of all entries in the liveness matrix / (num_qubits * depth)
+    Liveness feature = sum of all entries in the liveness matrix / (num_qubits * depth).
 
     Args:
         circuit: A quantum circuit.
@@ -71,13 +71,13 @@ def compute_liveness_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> floa
 def compute_parallelism_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
     """Compute the parallelism of the given quantum circuit.
 
-    Parallelism feature = max(1 - depth / # of gates, 0)
+    Parallelism feature = max(1 - depth / # of gates, 0).
 
     Args:
         circuit: A quantum circuit.
 
     Returns:
-        The value of the parallelism feature for this circuit
+        The value of the parallelism feature for this circuit.
     """
     dag = qiskit.converters.circuit_to_dag(circuit)
     dag.remove_all_ops_named("barrier")
@@ -116,7 +116,8 @@ def compute_measurement_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> f
 def compute_entanglement_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
     """Compute the entanglement-ratio of the given quantum circuit.
 
-    Entanglement-ratio = ratio between # of 2-qubit gates and total number of gates in the circuit.
+    Entanglement-ratio = ratio between # of 2-qubit gates and total number of gates in the
+    circuit.
 
     Args:
         circuit: A quantum circuit.

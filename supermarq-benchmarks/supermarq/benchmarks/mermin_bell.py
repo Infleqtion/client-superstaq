@@ -9,11 +9,9 @@ from supermarq.benchmark import Benchmark
 
 
 class MerminBell(Benchmark):
-    """The Mermin-Bell benchmark is a test of a quantum computer's ability
-    to exploit purely quantum phenomemna such as superposition and entanglement.
-    It is based on the famous Bell-inequality tests of locality.
-
-    Performance is based on a QPU's ability to prepare a GHZ state and measure
+    """The Mermin-Bell benchmark is a test of a quantum computer's ability to exploit purely quantum
+    phenomemna such as superposition and entanglement. It is based on the famous Bell-inequality
+    tests of locality. Performance is based on a QPU's ability to prepare a GHZ state and measure
     the Mermin operator.
     """
 
@@ -27,6 +25,11 @@ class MerminBell(Benchmark):
         )
 
     def circuit(self) -> cirq.Circuit:
+        """The Mermin-Bell circuit, simultaneously measuring Mermin terms in a GHZ circuit.
+
+        Returns:
+            The Mermin-Bell `cirq.Circuit`.
+        """
 
         circuit = cirq.Circuit()
 
@@ -44,7 +47,13 @@ class MerminBell(Benchmark):
     def score(self, counts: Dict[str, float]) -> float:
         """Compute the score for the N-qubit Mermin-Bell benchmark.
 
-        This function assumes the regular big endian ordering of bitstring results
+        This function assumes the regular big endian ordering of bitstring results.
+
+        Args:
+            counts: A dictionary containing the measurement counts from circuit execution.
+
+        Returns:
+            The score for the Mermin-Bell benchmark score.
         """
 
         # Store the conjugation rules for H, S, CX, CZ, SWAP in dictionaries. The keys are

@@ -7,19 +7,26 @@ import general_superstaq as gss
 class UserConfig:
     """This class contains all the user configurations that are used to operate Superstaq."""
 
-    def __init__(self, client: gss.superstaq_client._SuperstaQClient):
+    def __init__(self, client: gss.superstaq_client._SuperstaqClient):
+        """Initializes the `UserConfig` class.
+
+        Args:
+            client: The Superstaq client to use.
+        """
         self._client = client
 
     def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
         """Get the querying user's account balance in USD.
+
         Args:
             pretty_output: Whether to return a pretty string or a float of the balance.
 
         Returns:
-            If pretty_output is True, returns the balance as a nicely formatted string ($-prefix,
-            commas on LHS every three digits, and two digits after period). Otherwise, simply
-            returns a float of the balance.
+            If `pretty_output` is `True`, returns the balance as a nicely formatted string
+            ($-prefix, commas on LHS every three digits, and two digits after period).
+            Otherwise, simply returns a float of the balance.
         """
+
         balance = self._client.get_balance()["balance"]
         if pretty_output:
             return f"${balance:,.2f}"
@@ -32,7 +39,7 @@ class UserConfig:
             user_input: If "YES", server will mark user as having accepted terms of use.
 
         Returns:
-            String message indicated if user has been marked as having accepted terms of use.
+            A string message indicating if user has been marked as having accepted terms of use.
         """
         return self._client._accept_terms_of_use(user_input)
 
@@ -79,8 +86,8 @@ class UserConfig:
         """Updates user's role.
 
         Args:
-            email: The new user's email
-            role: The new role
+            email: The new user's email.
+            role: The new role.
 
         Returns:
              String containing status of update (whether or not it failed).
@@ -184,9 +191,9 @@ class UserConfig:
             variables_file_path (optional): Where to write the variable configuration.
             overwrite: Whether or not to overwrite existing files.
 
-        Returns (if file paths are not provided):
-            A tuple of pulses (a dictionary containing pulse configuration data) and variables (a
-            dictionary containing calibration variables).
+        Returns:
+            (If file paths are not provided) a tuple of pulses (a dictionary containing pulse
+            configuration data) and variables (a dictionary containing calibration variables).
 
         Raises:
             ValueError: If either file path already exists and overwrite is not True.

@@ -83,10 +83,10 @@ class CompilerOutput:
                 logical to physical qubits.
             pulse_sequences: `qiskit.pulse.Schedule` or list thereof specifying the pulse
                 compilation.
-            seq: `qtrl.sequencer.Sequence` pulse sequence if qtrl is available locally.
+            seq: `qtrl.sequencer.Sequence` pulse sequence if `qtrl` is available locally.
             jaqal_programs: Optional string or list of strings specifying Jaqal programs (for
                 QSCOUT).
-            pulse_lists: Optional list of pulse cycles if qtrl is available locally.
+            pulse_lists: Optional list of pulse cycles if `qtrl` is available locally.
         """
         if isinstance(circuits, qiskit.QuantumCircuit):
             self.circuit = circuits
@@ -154,9 +154,7 @@ class CompilerOutput:
 
 
 def read_json_aqt(
-    json_dict: Dict[str, str],
-    circuits_is_list: bool,
-    num_equivalent_circuits: Optional[int] = None,
+    json_dict: Dict[str, str], circuits_is_list: bool, num_eca_circuits: Optional[int] = None
 ) -> CompilerOutput:
     """Reads out the returned JSON from Superstaq API's AQT compilation endpoint.
 
@@ -164,11 +162,11 @@ def read_json_aqt(
         json_dict: A JSON dictionary matching the format returned by /aqt_compile endpoint.
         circuits_is_list: Bool flag that controls whether the returned object has a .circuits
             attribute (if True) or a .circuit attribute (False).
-        num_equivalent_circuits: Optional number of logically equivalent random circuits to generate
-            for each input circuit.
+        num_eca_circuits: Optional number of logically equivalent random circuits to generate for
+            each input circuit.
 
     Returns:
-        A `CompilerOutput` object with the compiled circuit(s). If qtrl is available locally,
+        A `CompilerOutput` object with the compiled circuit(s). If `qtrl` is available locally,
         the returned object also stores the pulse sequence in the .seq attribute and the
         list(s) of cycles in the .pulse_list(s) attribute.
     """
@@ -189,12 +187,12 @@ def read_json_aqt(
     if "state_jp" not in json_dict:
         warnings.warn(
             "This output only contains compiled circuits (using a default AQT gate set). To "
-            "get back the corresponding pulse sequence, you must first upload your qtrl configs "
-            "using `service.aqt_upload_configs`."
+            "get back the corresponding pulse sequence, you must first upload your `qtrl` configs "
+            "using `provider.aqt_upload_configs`."
         )
     elif not importlib.util.find_spec("qtrl"):
         warnings.warn(
-            "This output only contains compiled circuits. The qtrl package must be installed in "
+            "This output only contains compiled circuits. The `qtrl` package must be installed in "
             "order to deserialize compiled pulse sequences."
         )
     else:  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
@@ -222,19 +220,19 @@ def read_json_aqt(
 
         seq = _sequencer_from_state(state)
 
-    if num_equivalent_circuits is not None:
+    if num_eca_circuits is not None:
         compiled_circuits = [
-            compiled_circuits[i : i + num_equivalent_circuits]
-            for i in range(0, len(compiled_circuits), num_equivalent_circuits)
+            compiled_circuits[i : i + num_eca_circuits]
+            for i in range(0, len(compiled_circuits), num_eca_circuits)
         ]
 
         pulse_lists = pulse_lists and [
-            pulse_lists[i : i + num_equivalent_circuits]
-            for i in range(0, len(pulse_lists), num_equivalent_circuits)
+            pulse_lists[i : i + num_eca_circuits]
+            for i in range(0, len(pulse_lists), num_eca_circuits)
         ]
         final_logical_to_physicals = [
-            final_logical_to_physicals_list[i : i + num_equivalent_circuits]
-            for i in range(0, len(final_logical_to_physicals_list), num_equivalent_circuits)
+            final_logical_to_physicals_list[i : i + num_eca_circuits]
+            for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
         ]
 
     if circuits_is_list:

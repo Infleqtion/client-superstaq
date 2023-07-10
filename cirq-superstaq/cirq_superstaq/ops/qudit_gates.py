@@ -18,7 +18,11 @@ class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
 
     @property
     def dimension(self) -> int:
-        """The qudit dimension on which this SWAP gate will act."""
+        """The qudit dimension on which this SWAP gate will act.
+
+        Returns:
+            The qudit dimension.
+        """
         return self._dimension
 
     def _qid_shape_(self) -> Tuple[int, int]:
@@ -91,7 +95,11 @@ class BSwapPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
 
     @property
     def dimension(self) -> int:
-        """Indicates that this gate acts on qutrits."""
+        """Indicates that this gate acts on qutrits.
+
+        Returns:
+            The integer `3`, representing the qudit dimension for qutrits.
+        """
         return 3
 
     @property
@@ -173,7 +181,11 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
 
     @property
     def dimension(self) -> int:
-        """Indicates that this gate acts on qutrits."""
+        """Indicates that this gate acts on qutrits.
+
+        Returns:
+            The integer `3`, representing the qudit dimension for qutrits.
+        """
         return 3
 
     def _qid_shape_(self) -> Tuple[int, int]:
@@ -317,7 +329,7 @@ class QubitSubspaceGate(cirq.Gate):
         qid_shape: Sequence[int],
         subspaces: Optional[Sequence[Tuple[int, int]]] = None,
     ) -> None:
-        """Initializes a QubitSubspaceGate.
+        """Initializes a `QubitSubspaceGate`.
 
         Args:
             sub_gate: The qubit gate to promote to a higher dimension.
@@ -326,9 +338,11 @@ class QubitSubspaceGate(cirq.Gate):
                 upon. By default applies to the first two levels of each Qid.
 
         Examples:
-            QubitSubspaceGate(cirq.X, (3,)): X gate acting on levels 0 and 1 of a dimension-3 Qid.
-            QubitSubspaceGate(cirq.X, (3,), [(0, 2)]): the same gate acting on levels 0 and 2.
-            QubitSubspaceGate(cirq.CX, (3, 3)): CX gate on the 0-1 subspace of two dimension-3 Qids.
+            `QubitSubspaceGate(cirq.X, (3,))`: An X gate acting on levels 0 and 1 of a dimension-3
+                Qid.
+            `QubitSubspaceGate(cirq.X, (3,), [(0, 2)])`: The same gate acting on levels 0 and 2.
+            `QubitSubspaceGate(cirq.CX, (3, 3))`: A CX gate on the 0-1 subspace of two dimension-3
+                Qids.
         """
 
         if subspaces is None:
@@ -354,12 +368,20 @@ class QubitSubspaceGate(cirq.Gate):
 
     @property
     def sub_gate(self) -> cirq.Gate:
-        """The gate that is applied to the specified subspace."""
+        """The gate that is applied to the specified subspace.
+
+        Returns:
+            The underlying gate used.
+        """
         return self._sub_gate
 
     @property
     def qid_shape(self) -> Tuple[int, ...]:
-        """Specifies the qudit dimension for each of the inputs."""
+        """Specifies the qudit dimension for each of the inputs.
+
+        Returns:
+            The dimensions for the input qudits.
+        """
         return self._qid_shape
 
     @property
@@ -369,6 +391,9 @@ class QubitSubspaceGate(cirq.Gate):
         For instance, a CX on the 0-1 qubit subspace of two qudits would have subspaces of
         [(0, 1), (0, 1)]. The same gate acting on the 1-2 subspaces of both qudits would correspond
         to [(1, 2), (1, 2)].
+
+        Returns:
+            A list of dimensions tuples, specified for each subspace.
         """
         return self._subspaces
 
@@ -493,8 +518,20 @@ def qubit_subspace_op(
     qid_shape: Sequence[int],
     subspaces: Optional[Sequence[Tuple[int, int]]] = None,
 ) -> cirq.Operation:
-    """Embed a qubit Operation into a given subspace of a higher-dimensional Operation using
-    QubitSubspaceGate.
+    """Embeds a qubit Operation into a given subspace of a higher-dimensional Operation.
+
+    Uses `QubitSubspaceGate`.
+
+    Args:
+        sub_op: The `cirq.Operation` to embed.
+        qid_shape: The dimensions of the subspace.
+        subspaces: The list of all subspaces.
+
+    Returns:
+        A `cirq.Operation` embedding a low-dimensional operation.
+
+    Raises:
+        ValueError: If there is no gate specified for the subspace operation.
     """
     if not sub_op.gate:
         raise ValueError(f"{sub_op} has no gate.")
