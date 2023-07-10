@@ -97,7 +97,7 @@ class Service:
             }
         )
 
-    def solve_qubo(
+    def submit_qubo(
         self,
         qubo: qv.QUBO,
         target: str,
