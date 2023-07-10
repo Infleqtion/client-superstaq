@@ -7,7 +7,7 @@ from general_superstaq.superstaq_exceptions import (
     SuperstaqNotFoundException,
     SuperstaqUnsuccessfulJobException,
 )
-from general_superstaq.typing import MaxSharpeJson, MinVolJson, QuboModel, TSPJson, WareHouseJson
+from general_superstaq.typing import QuboModel
 
 from . import qubo, serialization, service, superstaq_client, superstaq_exceptions, validation
 
