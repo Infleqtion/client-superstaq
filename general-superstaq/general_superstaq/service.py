@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import qubovert as qv
 
-
+import general_superstaq as gss
 
 class Service:
     """This class contains all the user configurations that are used to operate Superstaq."""
