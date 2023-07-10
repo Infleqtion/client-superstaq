@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 
 class Service:
-    """This class contains all the user configurations that are used to operate Superstaq."""
+    """This class contains all the services that are used to operate Superstaq."""
 
     def __init__(self, client: "superstaq_client._SuperstaqClient"):
         """Initializes the `Service` class.
