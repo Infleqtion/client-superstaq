@@ -19,7 +19,7 @@ import cirq
 import general_superstaq as gss
 import numpy as np
 import numpy.typing as npt
-from general_superstaq import ResourceEstimate, service, superstaq_client
+from general_superstaq import ResourceEstimate, superstaq_client
 
 import cirq_superstaq as css
 

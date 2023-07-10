@@ -97,7 +97,7 @@ def test_update_user_role(
         "method": "dry-run",
     },
 )
-def test_solve_qubo(
+def test_submit_qubo(
     mock_post_request: mock.MagicMock,
 ) -> None:
     example_qubo = qv.QUBO({(0,): 1.0, (1,): 1.0, (0, 1): -2.0})
@@ -108,7 +108,7 @@ def test_solve_qubo(
     )
 
     service = gss.service.Service(client)
-    assert service.solve_qubo(example_qubo, target, repetitions=repetitions, method="dry-run") == {
+    assert service.submit_qubo(example_qubo, target, repetitions=repetitions, method="dry-run") == {
         "qubo": [
             {"keys": ["0"], "value": 1.0},
             {"keys": ["1"], "value": 1.0},

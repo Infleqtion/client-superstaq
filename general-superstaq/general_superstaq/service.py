@@ -3,12 +3,14 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 import qubovert as qv
 
-import general_superstaq as gss
+if TYPE_CHECKING:
+    from general_superstaq import superstaq_client
+
 
 class Service:
     """This class contains all the user configurations that are used to operate Superstaq."""
 
-    def __init__(self, client: gss.superstaq_client._SuperstaqClient):
+    def __init__(self, client: "superstaq_client._SuperstaqClient"):
         """Initializes the `Service` class.
 
         Args:
