@@ -12,6 +12,8 @@
 # limitations under the License.
 # pylint: disable=missing-function-docstring,missing-class-docstring
 
+import textwrap
+
 import general_superstaq as gss
 
 
@@ -45,9 +47,15 @@ def test_superstaq_unsuccessful_job_exception() -> None:
 
 def test_superstaq_server_exception() -> None:
     ex = gss.SuperstaqServerException(message="This target only supports terminal measurements")
-    assert (
-        str(ex)
-        == "This target only supports terminal measurements. (Status code: 400, non-retriable error making request to Superstaq API)"
+    expected = textwrap.fill(
+        textwrap.dedent(
+            """\
+            This target only supports terminal measurements. (Status code: 400, non-retriable error
+            making request to Superstaq API)
+            """
+        ),
+        width=120,
     )
+    assert str(ex) == expected
     assert ex.status_code == 400
     assert ex.message == "This target only supports terminal measurements"

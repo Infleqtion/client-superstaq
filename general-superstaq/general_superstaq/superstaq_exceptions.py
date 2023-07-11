@@ -22,9 +22,12 @@ class SuperstaqException(Exception):
         if status_code is None:
             err_msg = f"{message}."
         else:
-            if status_code == 400:
-                status_code = "400, non-retriable error making request to Superstaq API"
-            err_msg = f"{message}. (Status code: {status_code})"
+            status_msg = (
+                "400, non-retriable error making request to Superstaq API"
+                if (status_code == 400)
+                else str(status_code)
+            )
+            err_msg = f"{message}. (Status code: {status_msg})"
         super().__init__(err_msg)
 
 

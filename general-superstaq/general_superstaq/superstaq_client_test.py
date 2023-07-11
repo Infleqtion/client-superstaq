@@ -48,12 +48,12 @@ def test_superstaq_client_str_and_repr() -> None:
 
 def test_general_superstaq_exception_str() -> None:
     ex = gss.SuperstaqException("err", status_code=501)
-    assert str(ex) == "Status code: 501, Message: 'err'"
+    assert str(ex) == "err. (Status code: 501)"
 
 
 def test_general_superstaq_not_found_exception_str() -> None:
     ex = gss.SuperstaqNotFoundException("err")
-    assert str(ex) == "Status code: 404, Message: 'err'"
+    assert str(ex) == "err. (Status code: 404)"
 
 
 @pytest.mark.parametrize("invalid_url", ("url", "http://", "ftp://", "http://"))
