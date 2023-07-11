@@ -25,8 +25,6 @@ class Service:
         Args:
             client: The Superstaq client to use.
         """
-        # if not client_name:
-        #     client_name="general-superstaq"
 
         self._client = superstaq_client._SuperstaqClient(
             client_name="general-superstaq",
