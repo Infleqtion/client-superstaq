@@ -8,11 +8,10 @@ from general_superstaq import superstaq_client
 
 
 class Service:
-    """This class contains all the user configurations that are used to operate Superstaq."""
+    """This class contains all the services that are used to operate Superstaq."""
 
     def __init__(
         self,
-        # client_name: Optional[str] = None,
         api_key: Optional[str] = None,
         remote_host: Optional[str] = None,
         default_target: Optional[str] = None,
