@@ -5,6 +5,7 @@ from general_superstaq.superstaq_exceptions import (
     SuperstaqException,
     SuperstaqModuleNotFoundException,
     SuperstaqNotFoundException,
+    SuperstaqServerException,
     SuperstaqUnsuccessfulJobException,
 )
 from general_superstaq.typing import QuboModel
@@ -19,6 +20,7 @@ __all__ = [
     "SuperstaqModuleNotFoundException",
     "SuperstaqNotFoundException",
     "SuperstaqUnsuccessfulJobException",
+    "SuperstaqServerException",
     "QuboModel",
     "qubo",
     "ResourceEstimate",

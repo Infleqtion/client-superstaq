@@ -8,7 +8,7 @@ import requests
 class SuperstaqException(Exception):
     """An exception for errors coming from Superstaq's API."""
 
-    def __init__(self, message: str, status_code: Optional[int] = None):
+    def __init__(self, message: str, status_code: Optional[int] = None) -> None:
         """Initializes the `SupertaqException` class.
 
         Args:
@@ -16,15 +16,22 @@ class SuperstaqException(Exception):
                 status.
             message: A message corresponding to the HTTP response status code. Defaults to None.
         """
-        super().__init__(f"Status code: {status_code}, Message: '{message}'")
         self.status_code = status_code
         self.message = message
+
+        if status_code is None:
+            err_msg = f"{message}."
+        else:
+            if status_code == 400:
+                status_code = "400, non-retriable error making request to Superstaq API"
+            err_msg = f"{message}. (Status code: {status_code})"
+        super().__init__(err_msg)
 
 
 class SuperstaqModuleNotFoundException(SuperstaqException):
     """An exception for Superstaq features requiring an uninstalled module."""
 
-    def __init__(self, name: str, context: str):
+    def __init__(self, name: str, context: str) -> None:
         """Initializes the `SuperstaqModuleNotFoundException` class.
 
         Args:
@@ -38,7 +45,7 @@ class SuperstaqModuleNotFoundException(SuperstaqException):
 class SuperstaqNotFoundException(SuperstaqException):
     """An exception for errors from Superstaq's API when a resource is not found."""
 
-    def __init__(self, message: str):
+    def __init__(self, message: str) -> None:
         """Intializes the `SuperstaqNotFoundException` class.
 
         Args:
@@ -61,4 +68,19 @@ class SuperstaqUnsuccessfulJobException(SuperstaqException):
             job_id: The job identifier of the unsuccessful job.
             status: The status of the unsuccessful job.
         """
-        super().__init__(f"Job {job_id} terminated with status {status}.")
+        super().__init__(f"Job {job_id} terminated with status {status}")
+
+
+class SuperstaqServerException(SuperstaqException):
+    """An exception for non-retriable server-side errors.
+
+    This exception is called directly from the backend.
+    """
+
+    def __init__(self, message: str) -> None:
+        """Initialized the `SuperstaqServerException` class.
+
+        Args:
+            message: The message to be displayed for this exception.
+        """
+        super().__init__(message, status_code=400)
