@@ -1,19 +1,18 @@
 import os
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import qubovert as qv
 
-if TYPE_CHECKING:
-<<<<<<< HEAD
-    import general_superstaq as gss
-    from general_superstaq import superstaq_client
+import general_superstaq as gss
+from general_superstaq import superstaq_client
 
 
-class Service(superstaq_client._SuperstaqClient):
+class Service:
     """This class contains all the user configurations that are used to operate Superstaq."""
 
     def __init__(
         self,
+        # client_name: Optional[str] = None,
         api_key: Optional[str] = None,
         remote_host: Optional[str] = None,
         default_target: Optional[str] = None,
@@ -21,27 +20,21 @@ class Service(superstaq_client._SuperstaqClient):
         max_retry_seconds: int = 3600,
         verbose: bool = False,
     ) -> None:
-=======
-    from general_superstaq import superstaq_client
-
-
-class Service:
-    """This class contains all the services that are used to operate Superstaq."""
-
-    def __init__(self, client: "superstaq_client._SuperstaqClient"):
->>>>>>> main
         """Initializes the `Service` class.
 
         Args:
             client: The Superstaq client to use.
         """
-        super().__init__(
-            client_name = "general-superstaq",
-            remote_host = remote_host,
-            api_key = api_key,
-            api_version = api_version,
-            max_retry_seconds = max_retry_seconds,
-            verbose = verbose,
+        # if not client_name:
+        #     client_name="general-superstaq"
+
+        self._client = superstaq_client._SuperstaqClient(
+            client_name="general-superstaq",
+            remote_host=remote_host,
+            api_key=api_key,
+            api_version=api_version,
+            max_retry_seconds=max_retry_seconds,
+            verbose=verbose,
         )
 
     def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
@@ -123,11 +116,7 @@ class Service:
             }
         )
 
-<<<<<<< HEAD
-    def solve_qubo(
-=======
     def submit_qubo(
->>>>>>> main
         self,
         qubo: qv.QUBO,
         target: str,
