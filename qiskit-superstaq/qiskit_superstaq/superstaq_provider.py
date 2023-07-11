@@ -76,7 +76,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         """
         self._name = "superstaq_provider"
 
-        super().__init__(
+        self._client = gss.superstaq_client._SuperstaqClient(
             client_name="qiskit-superstaq",
             remote_host=remote_host,
             api_key=api_key,
