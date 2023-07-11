@@ -7,9 +7,9 @@ from general_superstaq.superstaq_exceptions import (
     SuperstaqNotFoundException,
     SuperstaqUnsuccessfulJobException,
 )
-from general_superstaq.typing import MaxSharpeJson, MinVolJson, QuboModel, TSPJson, WareHouseJson
+from general_superstaq.typing import QuboModel
 
-from . import qubo, serialization, superstaq_client, superstaq_exceptions, user_config, validation
+from . import qubo, serialization, service, superstaq_client, superstaq_exceptions, validation
 
 __all__ = [
     "__version__",
@@ -19,19 +19,13 @@ __all__ = [
     "SuperstaqModuleNotFoundException",
     "SuperstaqNotFoundException",
     "SuperstaqUnsuccessfulJobException",
-    "MaxSharpeJson",
-    "MinVolJson",
     "QuboModel",
-    "TSPJson",
-    "WareHouseJson",
-    "finance",
-    "logistics",
     "qubo",
     "ResourceEstimate",
     "serialization",
+    "service",
     "superstaq_client",
     "superstaq_exceptions",
     "typing",
-    "user_config",
     "validation",
 ]

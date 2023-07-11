@@ -42,7 +42,7 @@ def active_qubit_indices(circuit: cirq.AbstractCircuit) -> List[int]:
     qubit_indices: List[int] = []
     for q in sorted(all_qubits):
         if not isinstance(q, (cirq.LineQubit, cirq.LineQid)):
-            raise ValueError("Qubit indices can only be determined for line qubits")
+            raise ValueError("Qubit indices can only be determined for line qubits.")
         qubit_indices.append(int(q))
 
     return qubit_indices
@@ -106,7 +106,7 @@ class CompilerOutput:
             seq: A `qtrl` pulse sequence, if `qtrl` is available locally.
             jaqal_programs: The Jaqal program (resp. programs) as a string (resp. list of
                 strings).
-            pulse_lists: Either 3 or 4 dimensional lists of pulse cycles.
+            pulse_lists: Optional list of pulse cycles if `qtrl` is available locally.
         """
         if isinstance(circuits, cirq.Circuit):
             self.circuit = circuits
@@ -251,12 +251,12 @@ def read_json_aqt(
     if "state_jp" not in json_dict:
         warnings.warn(
             "This output only contains compiled circuits (using a default AQT gate set). To "
-            "get back the corresponding pulse sequence, you must first upload your qtrl configs "
+            "get back the corresponding pulse sequence, you must first upload your `qtrl` configs "
             "using `service.aqt_upload_configs`."
         )
     elif not importlib.util.find_spec("qtrl"):
         warnings.warn(
-            "This output only contains compiled circuits. The qtrl package must be installed in "
+            "This output only contains compiled circuits. The `qtrl` package must be installed in "
             "order to deserialize compiled pulse sequences."
         )
     else:  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs

@@ -118,6 +118,14 @@ class VQEProxy(supermarq.benchmark.Benchmark):
 
     def _get_opt_angles(self) -> Tuple[npt.NDArray[np.float_], float]:
         def f(params: npt.NDArray[np.float_]) -> float:
+            """The objective function to minimize.
+
+            Args:
+                params: The parameters at which to evaluate the objective.
+
+            Returns:
+                Evaluation of objective given parameters.
+            """
             z_circuit, x_circuit = self._gen_ansatz(params)
             z_probs = supermarq.simulation.get_ideal_counts(z_circuit)
             x_probs = supermarq.simulation.get_ideal_counts(x_circuit)
@@ -142,18 +150,26 @@ class VQEProxy(supermarq.benchmark.Benchmark):
     def circuit(self) -> List[cirq.Circuit]:
         """Construct a parameterized ansatz.
 
-        Returns a list of circuits: the ansatz measured in the Z basis, and the
-        ansatz measured in the X basis. The counts obtained from evaluated these
-        two circuits should be passed to `score` in the same order they are
-        returned here.
+        The counts obtained from evaluating these two circuits should be passed to `score` in the
+        same order they are returned here.
+
+        Returns:
+            A list of circuits for the VQE benchmark: the ansatz measured in the Z basis, and the
+            ansatz measured in the X basis.
         """
         return self._gen_ansatz(self._params)
 
     def score(self, counts: List[Dict[str, float]]) -> float:
-        """Compare the average energy measured by the experiments to the ideal
-        value obtained via noiseless simulation. In principle the ideal value
-        can be obtained through efficient classical means since the 1D TFIM
-        is analytically solvable.
+        """Compare the average energy measured by the experiments to the ideal value.
+
+        The ideal value is obtained via noiseless simulation. In principle the ideal value can be
+        obtained through efficient classical means since the 1D TFIM is analytically solvable.
+
+        Args:
+            counts: A dictionary containing the measurement counts from circuit execution.
+
+        Returns:
+            The VQE proxy benchmark score.
         """
         counts_z, counts_x = counts
         shots_z = sum(counts_z.values())

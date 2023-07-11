@@ -105,6 +105,11 @@ class _SuperstaqClient:
         """
 
         def request() -> requests.Response:
+            """Builds GET request object.
+
+            Returns:
+                The Flask GET request object.
+            """
             return requests.get(
                 f"{self.url}{endpoint}",
                 headers=self.headers,
@@ -137,6 +142,11 @@ class _SuperstaqClient:
         """
 
         def request() -> requests.Response:
+            """Builds GET request object.
+
+            Returns:
+                The Flask GET request object.
+            """
             return requests.post(
                 f"{self.url}{endpoint}",
                 json=json_dict,

@@ -22,4 +22,8 @@ class Benchmark:
 
     @abc.abstractmethod
     def score(self, counts: Any) -> float:
-        """Returns a normalized [0,1] score reflecting device performance."""
+        """Returns a normalized [0,1] score reflecting device performance.
+
+        Args:
+            counts: A dictionary containing the measurement counts from execution.
+        """
