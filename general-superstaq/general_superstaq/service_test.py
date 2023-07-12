@@ -59,11 +59,8 @@ def test_update_user_balance(
 
 
 def test_update_user_balance_limit() -> None:  # pylint: disable=missing-function-docstring
-    client = gss.superstaq_client._SuperstaQClient(
-        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
-    )
-    service = gss.user_config.UserConfig(client)
-    with pytest.raises(gss.SuperstaQException, match="exceeds limit."):
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
+    with pytest.raises(gss.SuperstaqException, match="exceeds limit."):
         (service.update_user_balance("mc@gmail.com", 3500.00))
 
 

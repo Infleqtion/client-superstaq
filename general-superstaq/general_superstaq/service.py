@@ -91,7 +91,7 @@ class Service:
         """
         limit = 2000.0  # If limit modified, must update in server-superstaq
         if balance > limit:
-            raise gss.SuperstaQException(
+            raise gss.SuperstaqException(
                 f"Requested balance {balance} exceeds limit of {limit}.",
             )
         return self._client.update_user_balance(
