@@ -15,7 +15,7 @@ Check out some of our demos to see how Superstaq can help you:
    <div class="index-demos">
       <div class="index-demos-box">
          <div class="index-demos-headers"><a href="apps/supercheq/supercheq.html">Supercheq</a></div>
-         <div class="index-demos-desc">SupercheQ is our novel quantum fingerprinting protocol and can be used with both qiskit-superstaq and cirq-superstaq</div>
+         <div class="index-demos-desc">Supercheq is our novel quantum fingerprinting protocol and can be used with both `qiskit-superstaq` and `cirq-superstaq`</div>
       </div>
       <div class="index-demos-box">
          <div class="index-demos-headers"><a href="apps/max_sharpe_ratio_optimization.html">Sharpe Ratio Maximization</a></div>
@@ -25,7 +25,7 @@ Check out some of our demos to see how Superstaq can help you:
    <br>
 
 
-Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To contact a member of our team, email us at **superstaq@infleqtion.com** or join our `Slack workspace <https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw>`_.
+Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To contact a member of our team, email us at superstaq@infleqtion.com or join our `Slack workspace <https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw>`_.
 
 
 .. toctree::
@@ -36,6 +36,7 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
    get_started/credentials
    get_started/installation
    get_started/basics/basics
+   get_started/access_info/access_info
 
 .. toctree::
    :maxdepth: 1
@@ -54,6 +55,13 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
 
    apps/supercheq/supercheq
    apps/max_sharpe_ratio_optimization
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Contact Us
+
+   contact
 
 .. toctree::
    :maxdepth: 1

@@ -23,7 +23,7 @@ import qiskit
 import qiskit_superstaq as qss
 
 
-class SuperstaqProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig):
+class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
     """Provider for Superstaq backend.
 
     Typical usage is:
@@ -76,7 +76,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.user_config.UserConfig)
         """
         self._name = "superstaq_provider"
 
-        self._client = gss.superstaq_client.SuperstaqClient(
+        self._client = gss.superstaq_client._SuperstaqClient(
             client_name="qiskit-superstaq",
             remote_host=remote_host,
             api_key=api_key,

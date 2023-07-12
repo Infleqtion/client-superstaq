@@ -187,7 +187,7 @@ def test_invalid_target_ibmq_compile() -> None:
 
 
 @patch(
-    "general_superstaq.superstaq_client.SuperstaqClient.resource_estimate",
+    "general_superstaq.superstaq_client._SuperstaqClient.resource_estimate",
 )
 def test_resource_estimate(mock_resource_estimate: MagicMock) -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
@@ -205,7 +205,7 @@ def test_resource_estimate(mock_resource_estimate: MagicMock) -> None:
 
 
 @patch(
-    "general_superstaq.superstaq_client.SuperstaqClient.resource_estimate",
+    "general_superstaq.superstaq_client._SuperstaqClient.resource_estimate",
 )
 def test_resource_estimate_list(mock_resource_estimate: MagicMock) -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
@@ -359,7 +359,7 @@ def test_invalid_target_cq_compile() -> None:
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client.SuperstaqClient.supercheq",
+    "general_superstaq.superstaq_client._SuperstaqClient.supercheq",
 )
 def test_supercheq(mock_supercheq: mock.MagicMock) -> None:
     provider = qss.SuperstaqProvider(api_key="key")

@@ -55,7 +55,7 @@ class Job:
         "data associated with it beyond an id and a status.",
     )
 
-    def __init__(self, client: gss.superstaq_client.SuperstaqClient, job_id: str) -> None:
+    def __init__(self, client: gss.superstaq_client._SuperstaqClient, job_id: str) -> None:
         """Construct a Job.
 
         Users should not call this themselves. If you only know the `job_id`, use `get_job`

@@ -26,7 +26,7 @@ import cirq_superstaq as css
 
 @pytest.fixture
 def job() -> css.Job:
-    client = gss.superstaq_client.SuperstaqClient(
+    client = gss.superstaq_client._SuperstaqClient(
         client_name="cirq-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -35,7 +35,7 @@ def job() -> css.Job:
 
 
 def new_job() -> css.Job:
-    client = gss.superstaq_client.SuperstaqClient(
+    client = gss.superstaq_client._SuperstaqClient(
         client_name="cirq-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -49,7 +49,7 @@ def mocked_get_job_requests(*job_dicts: Dict[str, Any]) -> mock._patch[mock.Mock
     is thrown at runtime
     """
     return mock.patch(
-        "general_superstaq.superstaq_client.SuperstaqClient.get_job", side_effect=job_dicts
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", side_effect=job_dicts
     )
 
 
