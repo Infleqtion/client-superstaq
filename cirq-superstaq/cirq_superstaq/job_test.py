@@ -65,12 +65,63 @@ def test_job_fields(job: css.job.Job) -> None:
         "compiled_circuit": css.serialize_circuits(compiled_circuit),
     }
 
-    with mocked_get_job_requests(job_dict):
-        assert job.job_id() == "job_id"
+    assert job.job_id() == "job_id"
+
+    with mocked_get_job_requests(job_dict) as mocked_get_job:
         assert job.target() == "ss_unconstrained_simulator"
         assert job.num_qubits() == 2
         assert job.repetitions() == 1
         assert job.compiled_circuit() == compiled_circuit
+        mocked_get_job.assert_called_once()  # Only refreshed once
+
+
+def test_target(job: css.job.Job) -> None:
+    job_dict = {"status": "Done", "target": "ss_unconstrained_simulator"}
+
+    # The first call will trigger a refresh:
+    with mocked_get_job_requests(job_dict) as mocked_get_job:
+        assert job.target() == "ss_unconstrained_simulator"
+        mocked_get_job.assert_called_once()
+
+    # Shouldn't need to retrieve anything now that `job._job` is populated:
+    assert job.target() == "ss_unconstrained_simulator"
+
+
+def test_num_qubits(job: css.job.Job) -> None:
+    job_dict = {"status": "Done", "num_qubits": 2}
+
+    # The first call will trigger a refresh:
+    with mocked_get_job_requests(job_dict) as mocked_get_job:
+        assert job.num_qubits() == 2
+        mocked_get_job.assert_called_once()
+
+    # Shouldn't need to retrieve anything now that `job._job` is populated:
+    assert job.num_qubits() == 2
+
+
+def test_repetitions(job: css.job.Job) -> None:
+    job_dict = {"status": "Done", "shots": 1}
+
+    # The first call will trigger a refresh:
+    with mocked_get_job_requests(job_dict) as mocked_get_job:
+        assert job.repetitions() == 1
+        mocked_get_job.assert_called_once()
+
+    # Shouldn't need to retrieve anything now that `job._job` is populated:
+    assert job.repetitions() == 1
+
+
+def test_compiled_circuit(job: css.job.Job) -> None:
+    compiled_circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
+    job_dict = {"status": "Done", "compiled_circuit": css.serialize_circuits(compiled_circuit)}
+
+    # The first call will trigger a refresh:
+    with mocked_get_job_requests(job_dict) as mocked_get_job:
+        assert job.compiled_circuit() == compiled_circuit
+        mocked_get_job.assert_called_once()
+
+    # Shouldn't need to retrieve anything now that `job._job` is populated:
+    assert job.compiled_circuit() == compiled_circuit
 
 
 def test_job_status_refresh() -> None:
