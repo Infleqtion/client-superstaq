@@ -328,6 +328,7 @@ class _SuperstaqClient:
         target: str,
         repetitions: int = 1000,
         method: Optional[str] = None,
+        maxout: Optional[int] = 1000,
     ) -> Dict[str, str]:
         """Makes a POST request to Superstaq API to submit a QUBO problem to the
         given target.
@@ -337,6 +338,7 @@ class _SuperstaqClient:
             target: The target to submit the qubo.
             repetitions: Number of repetitions to use. Defaults to 1000.
             method: An optional method parameter. Defaults to None.
+            maxout: An optional maxout paramter. Defaults to 1000.
 
         Returns:
             A dictionary from the POST request.
@@ -349,6 +351,7 @@ class _SuperstaqClient:
             "target": target,
             "shots": int(repetitions),
             "method": method,
+            "maxout": maxout,
         }
         return self.post_request("/qubo", json_dict)
 
