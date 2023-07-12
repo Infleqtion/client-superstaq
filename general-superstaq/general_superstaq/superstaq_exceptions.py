@@ -12,8 +12,7 @@ class SuperstaqException(Exception):
         """Initializes the `SupertaqException` class.
 
         Args:
-            status_code: An HTTP status code, if coming from an HTTP response with a failing
-                status.
+            status_code: An HTTP status code, if coming from an HTTP response with a failing status.
             message: A message corresponding to the HTTP response status code. Defaults to None.
         """
         self.status_code = status_code
@@ -81,7 +80,7 @@ class SuperstaqServerException(SuperstaqException):
     """
 
     def __init__(self, message: str) -> None:
-        """Initialized the `SuperstaqServerException` class.
+        """Initializes the `SuperstaqServerException` class.
 
         Args:
             message: The message to be displayed for this exception.
