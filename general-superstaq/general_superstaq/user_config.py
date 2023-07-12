@@ -70,7 +70,7 @@ class UserConfig:
         Returns:
              String containing status of update (whether or not it failed).
         """
-        limit = 2000.0
+        limit = 2000.0  # If limit modified, must update in server-superstaq
         if balance > limit:
             raise gss.SuperstaQException(
                 f"Requested balance {balance} exceeds limit of {limit}.",
