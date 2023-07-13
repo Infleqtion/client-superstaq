@@ -98,7 +98,7 @@ class Job:
         current status. A full list of states is given in `cirq_superstaq.Job.ALL_STATES`.
 
         Raises:
-            SuperstaqException: If the API is not able to get the status of the job.
+            SuperstaqServerException: If the API is not able to get the status of the job.
 
         Returns:
             The job status.
@@ -114,7 +114,7 @@ class Job:
 
         Raises:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqException: If unable to get the status of the job from the API.
+            SuperstaqServerException: If unable to get the status of the job from the API.
         """
         self._check_if_unsuccessful()
         return self._job["target"]
@@ -127,7 +127,7 @@ class Job:
 
         Raises:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqException: If unable to get the status of the job from the API.
+            SuperstaqServerException: If unable to get the status of the job from the API.
         """
         self._check_if_unsuccessful()
         return self._job["num_qubits"]
@@ -140,7 +140,7 @@ class Job:
 
         Raises:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqException: If unable to get the status of the job from the API.
+            SuperstaqServerException: If unable to get the status of the job from the API.
         """
         self._check_if_unsuccessful()
         return self._job["shots"]
@@ -157,7 +157,7 @@ class Job:
 
         Raises:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqException: If unable to get the results from the API.
+            SuperstaqServerException: If unable to get the results from the API.
             TimeoutError: If no results are available in the provided timeout interval.
         """
         time_waited_seconds: float = 0.0

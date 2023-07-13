@@ -18,35 +18,21 @@ import general_superstaq as gss
 
 
 def test_superstaq_exception() -> None:
-    ex = gss.SuperstaqException(message="Hello", status_code=500)
+    ex = gss.SuperstaqServerException(message="Hello.", status_code=500)
     assert str(ex) == "Hello. (Status code: 500)"
     assert ex.status_code == 500
-    assert ex.message == "Hello"
-
-
-def test_module_not_found_exception() -> None:
-    ex = gss.SuperstaqModuleNotFoundException("hello_world", "test")
-    assert str(ex) == "'test' requires module 'hello_world'."
-    assert ex.status_code is None
-    assert ex.message == "'test' requires module 'hello_world'"
-
-
-def test_superstaq_not_found_exception() -> None:
-    ex = gss.SuperstaqNotFoundException(message="Where are you")
-    assert str(ex) == "Where are you. (Status code: 404)"
-    assert ex.status_code == 404
-    assert ex.message == "Where are you"
+    assert ex.message == "Hello."
 
 
 def test_superstaq_unsuccessful_job_exception() -> None:
     ex = gss.SuperstaqUnsuccessfulJobException(job_id="SWE", status="Cancelled")
     assert str(ex) == "Job SWE terminated with status Cancelled."
     assert ex.status_code is None
-    assert ex.message == "Job SWE terminated with status Cancelled"
+    assert ex.message == "Job SWE terminated with status Cancelled."
 
 
 def test_superstaq_server_exception() -> None:
-    ex = gss.SuperstaqServerException(message="This target only supports terminal measurements")
+    ex = gss.SuperstaqServerException(message="This target only supports terminal measurements.")
     expected = textwrap.fill(
         textwrap.dedent(
             """\
@@ -58,4 +44,4 @@ def test_superstaq_server_exception() -> None:
     )
     assert str(ex) == expected
     assert ex.status_code == 400
-    assert ex.message == "This target only supports terminal measurements"
+    assert ex.message == "This target only supports terminal measurements."

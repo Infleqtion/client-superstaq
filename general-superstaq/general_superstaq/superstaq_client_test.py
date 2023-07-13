@@ -47,13 +47,8 @@ def test_superstaq_client_str_and_repr() -> None:
 
 
 def test_general_superstaq_exception_str() -> None:
-    ex = gss.SuperstaqException("err", status_code=501)
+    ex = gss.SuperstaqServerException("err.", status_code=501)
     assert str(ex) == "err. (Status code: 501)"
-
-
-def test_general_superstaq_not_found_exception_str() -> None:
-    ex = gss.SuperstaqNotFoundException("err")
-    assert str(ex) == "err. (Status code: 404)"
 
 
 @pytest.mark.parametrize("invalid_url", ("url", "http://", "ftp://", "http://"))
@@ -133,7 +128,9 @@ def test_superstaq_client_needs_accept_terms_of_use(
     mock_accept_terms_of_use.return_value = "YES response required to proceed"
 
     with mock.patch("builtins.input"):
-        with pytest.raises(gss.SuperstaqException, match="You'll need to accept Terms of Use"):
+        with pytest.raises(
+            gss.SuperstaqServerException, match="You'll need to accept Terms of Use"
+        ):
             client.get_balance()
         assert capsys.readouterr().out == "YES response required to proceed\n"
 
@@ -189,7 +186,7 @@ def test_superstaq_client_create_job_unauthorized(mock_post: mock.MagicMock) -> 
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
-    with pytest.raises(gss.SuperstaqException, match="Not authorized"):
+    with pytest.raises(gss.SuperstaqServerException, match="Not authorized"):
         _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
 
 
@@ -203,7 +200,7 @@ def test_superstaq_client_create_job_not_found(mock_post: mock.MagicMock) -> Non
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
-    with pytest.raises(gss.SuperstaqException):
+    with pytest.raises(gss.SuperstaqServerException):
         _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
 
 
@@ -217,7 +214,7 @@ def test_superstaq_client_create_job_not_retriable(mock_post: mock.MagicMock) ->
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
-    with pytest.raises(gss.SuperstaqException, match="Status code: 501"):
+    with pytest.raises(gss.SuperstaqServerException, match="Status code: 501"):
         _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
 
 
@@ -282,7 +279,7 @@ def test_superstaq_client_create_job_json(mock_post: mock.MagicMock) -> None:
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
-    with pytest.raises(gss.SuperstaqException, match="Status code: 400"):
+    with pytest.raises(gss.SuperstaqServerException, match="Status code: 400"):
         _ = client.create_job(
             serialized_circuits={"Hello": "World"},
             repetitions=200,
@@ -464,7 +461,7 @@ def test_superstaq_client_get_job_unauthorized(mock_get: mock.MagicMock) -> None
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
-    with pytest.raises(gss.SuperstaqException, match="Not authorized"):
+    with pytest.raises(gss.SuperstaqServerException, match="Not authorized"):
         _ = client.get_job("job_id")
 
 
@@ -478,7 +475,7 @@ def test_superstaq_client_get_job_not_found(mock_get: mock.MagicMock) -> None:
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
-    with pytest.raises(gss.SuperstaqException):
+    with pytest.raises(gss.SuperstaqServerException):
         _ = client.get_job("job_id")
 
 
@@ -492,7 +489,7 @@ def test_superstaq_client_get_job_not_retriable(mock_get: mock.MagicMock) -> Non
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
-    with pytest.raises(gss.SuperstaqException, match="Status code: 400"):
+    with pytest.raises(gss.SuperstaqServerException, match="Status code: 400"):
         _ = client.get_job("job_id")
 
 
