@@ -41,6 +41,9 @@ class HamiltonianSimulation(Benchmark):
         where,
             w_ph: frequency of E" phonon in MoSe2.
             e_ph: strength of electron-phonon coupling.
+
+        Returns:
+            The circuit for Hamiltonian simulation.
         """
         hbar = 0.658212  # eV*fs
         jz = (
@@ -96,6 +99,9 @@ class HamiltonianSimulation(Benchmark):
             counts: Dictionary of the experimental results. The keys are bitstrings
                 represented the measured qubit state, and the values are the number
                 of times that state of observed.
+
+        Returns:
+            The Hamiltonian simulation benchmark score.
         """
         ideal_counts = supermarq.simulation.get_ideal_counts(self.circuit())
 

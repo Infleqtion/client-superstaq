@@ -1,25 +1,51 @@
 import os
 from typing import Any, Dict, Optional, Tuple, Union
 
+import qubovert as qv
+
 import general_superstaq as gss
+from general_superstaq import superstaq_client
 
 
-class UserConfig:
-    """This class contains all the user configurations that are used to operate Superstaq."""
+class Service:
+    """This class contains all the services that are used to operate Superstaq."""
 
-    def __init__(self, client: gss.superstaq_client._SuperstaQClient):
-        self._client = client
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        remote_host: Optional[str] = None,
+        default_target: Optional[str] = None,
+        api_version: str = gss.API_VERSION,
+        max_retry_seconds: int = 3600,
+        verbose: bool = False,
+    ) -> None:
+        """Initializes the `Service` class.
+
+        Args:
+            client: The Superstaq client to use.
+        """
+
+        self._client = superstaq_client._SuperstaqClient(
+            client_name="general-superstaq",
+            remote_host=remote_host,
+            api_key=api_key,
+            api_version=api_version,
+            max_retry_seconds=max_retry_seconds,
+            verbose=verbose,
+        )
 
     def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
         """Get the querying user's account balance in USD.
+
         Args:
             pretty_output: Whether to return a pretty string or a float of the balance.
 
         Returns:
-            If pretty_output is True, returns the balance as a nicely formatted string ($-prefix,
-            commas on LHS every three digits, and two digits after period). Otherwise, simply
-            returns a float of the balance.
+            If `pretty_output` is `True`, returns the balance as a nicely formatted string
+            ($-prefix, commas on LHS every three digits, and two digits after period).
+            Otherwise, simply returns a float of the balance.
         """
+
         balance = self._client.get_balance()["balance"]
         if pretty_output:
             return f"${balance:,.2f}"
@@ -32,7 +58,7 @@ class UserConfig:
             user_input: If "YES", server will mark user as having accepted terms of use.
 
         Returns:
-            String message indicated if user has been marked as having accepted terms of use.
+            A string message indicating if user has been marked as having accepted terms of use.
         """
         return self._client._accept_terms_of_use(user_input)
 
@@ -63,6 +89,11 @@ class UserConfig:
         Returns:
              String containing status of update (whether or not it failed).
         """
+        limit = 2000.0  # If limit modified, must update in server-superstaq
+        if balance > limit:
+            raise gss.SuperstaqException(
+                f"Requested balance {balance} exceeds limit of {limit}.",
+            )
         return self._client.update_user_balance(
             {
                 "email": email,
@@ -74,8 +105,8 @@ class UserConfig:
         """Updates user's role.
 
         Args:
-            email: The new user's email
-            role: The new role
+            email: The new user's email.
+            role: The new role.
 
         Returns:
              String containing status of update (whether or not it failed).
@@ -86,6 +117,28 @@ class UserConfig:
                 "role": role,
             }
         )
+
+    def submit_qubo(
+        self,
+        qubo: qv.QUBO,
+        target: str,
+        repetitions: int = 1000,
+        method: Optional[str] = None,
+        maxout: Optional[int] = 1000,
+    ) -> Dict[str, str]:
+        """Solves the QUBO given via the submit_qubo function in superstaq_client
+
+        Args:
+            qubo: A `qv.QUBO` object.
+            target: The target to submit the qubo.
+            repetitions: Number of repetitions to use. Defaults to 1000.
+            method: An optional method parameter. Defaults to None.
+            maxout: An optional maxout paramter. Defaults to 1000.
+
+        Returns:
+            A dictionary returned by the submit_qubo function.
+        """
+        return self._client.submit_qubo(qubo, target, repetitions, method, maxout)
 
     def ibmq_set_token(self, token: str) -> str:
         """Sets IBMQ token field.
@@ -179,9 +232,9 @@ class UserConfig:
             variables_file_path (optional): Where to write the variable configuration.
             overwrite: Whether or not to overwrite existing files.
 
-        Returns (if file paths are not provided):
-            A tuple of pulses (a dictionary containing pulse configuration data) and variables (a
-            dictionary containing calibration variables).
+        Returns:
+            (If file paths are not provided) a tuple of pulses (a dictionary containing pulse
+            configuration data) and variables (a dictionary containing calibration variables).
 
         Raises:
             ValueError: If either file path already exists and overwrite is not True.

@@ -28,7 +28,7 @@ class AceCR(qiskit.circuit.Gate):
             label: An optional label for the constructed gate. Defaults to None.
 
         Raises:
-            ValueError: If the polarity of `rads` is not '+-' or '-+'.
+            ValueError: If the polarity of `rads` is a string other than '+-' or '-+'.
         """
         if rads == "+-":
             rads = np.pi / 2
@@ -48,7 +48,11 @@ class AceCR(qiskit.circuit.Gate):
         self.sandwich_rx_rads = sandwich_rx_rads
 
     def inverse(self) -> "AceCR":
-        """Returns the inverse AceCR gate."""
+        """Inverts the AceCR gate.
+
+        Returns:
+            The inverse AceCR gate.
+        """
         return AceCR(self.rads, -self.sandwich_rx_rads, label=self.label)
 
     def _define(self) -> None:
@@ -114,7 +118,7 @@ class ZZSwapGate(qiskit.circuit.Gate):
     """
 
     def __init__(self, theta: float, label: Optional[str] = None) -> None:
-        """Initalizes a ZZ-SWAP gate.
+        """Initializes a ZZ-SWAP gate.
 
         Args:
             theta: The ZZ-interaction angle in radians.
@@ -123,7 +127,11 @@ class ZZSwapGate(qiskit.circuit.Gate):
         super().__init__("zzswap", 2, [theta], label=label)
 
     def inverse(self) -> "ZZSwapGate":
-        """Returns the inverse ZZ-SWAP gate."""
+        """Inverts the ZZ-SWAP gate.
+
+        Returns:
+            The inverse ZZ-SWAP gate.
+        """
         return ZZSwapGate(-self.params[0])
 
     def _define(self) -> None:
@@ -159,9 +167,10 @@ class ZZSwapGate(qiskit.circuit.Gate):
 
 
 class StrippedCZGate(qiskit.circuit.Gate):
-    """The Stripped CZ gate is the gate that is actually being performed by Hilbert,
-    which is just a regular CZ gate when the rz angle = 0, and is corrected into a CZ
-    gate by RZ gates afterwards if the rz angle is nonzero.
+    """The Stripped CZ gate is a regular CZ gate when the rz angle = 0.
+
+    It is the gate that is actually being performed by Hilbert, and it is corrected
+    into a CZ gate by RZ gates afterwards if the rz angle is nonzero.
     """
 
     def __init__(self, rz_rads: float) -> None:
@@ -173,7 +182,11 @@ class StrippedCZGate(qiskit.circuit.Gate):
         super().__init__("stripped_cz", 2, [rz_rads])
 
     def inverse(self) -> "StrippedCZGate":
-        """Returns the inverse Stripped CZ gate."""
+        """Inverts the stripped CZ gate.
+
+        Returns:
+            The inverse Stripped CZ gate.
+        """
         return StrippedCZGate(-self.params[0])
 
     def _define(self) -> None:
@@ -234,7 +247,11 @@ class ParallelGates(qiskit.circuit.Gate):
         super().__init__(name, num_qubits, [], label=label)
 
     def inverse(self) -> "ParallelGates":
-        """Returns the inverse gates."""
+        """Inverts parallel gates.
+
+        Returns:
+            The inverse parallel gates.
+        """
         return ParallelGates(*[gate.inverse() for gate in self.component_gates])
 
     def _define(self) -> None:
@@ -258,8 +275,9 @@ class ParallelGates(qiskit.circuit.Gate):
 
 
 class iXGate(qiskit.circuit.Gate):
-    r"""The iX gate (a single qubit Pauli-X gate with a global phase of i). It is a special case
-    of when the RZ gate's input rotation angle is :math:`-\pi`:
+    r"""The iX gate (a single qubit Pauli-X gate with a global phase of i).
+
+    It is a special case of when the RX gate's input rotation angle is :math:`-\pi`:
 
      .. math::
 
@@ -288,7 +306,11 @@ class iXGate(qiskit.circuit.Gate):
         return np.array([[0, 1j], [1j, 0]])
 
     def inverse(self) -> "iXdgGate":
-        """Returns the inverse iX gate."""
+        """Inverts iX gate.
+
+        Returns:
+            The inverse iX gate.
+        """
         return iXdgGate()
 
     def control(
@@ -342,7 +364,10 @@ class iXdgGate(qiskit.circuit.Gate):
         return np.array([[0, -1j], [-1j, 0]])
 
     def inverse(self) -> iXGate:
-        """Returns the inverse of the `iXdgGate`."""
+        """Inverts the `iXdgGate`.
+
+        Returns:
+            The inverse of the `iXdgGate`."""
         return iXGate()
 
     def control(
@@ -375,9 +400,11 @@ class iXdgGate(qiskit.circuit.Gate):
 
 
 class iCCXGate(qiskit.circuit.ControlledGate):
-    r"""An iCCX gate which consists of a Toffoli gate and subsequent two-qubit controlled phase gate
-    (with angle of rotation of :math:`\frac{\pi}{2}` on the second qubit using the first qubit as
-    control). That is, it is a composite gate of the following instructions:
+    r"""An iCCX gate which consists of a Toffoli gate and a subsequent controlled phase gate.
+
+    The two qubit controlled phase gate uses an angle of rotation of :math:`\frac{\pi}{2}` on
+    the second qubit with the first qubit acting as the control. That is, it is a composite
+    gate of the following instructions:
 
     .. parsed-literal::
 
@@ -493,9 +520,11 @@ _custom_gate_resolvers: Dict[str, Callable[..., qiskit.circuit.Gate]] = {
 
 
 def custom_resolver(gate: qiskit.circuit.Instruction) -> Optional[qiskit.circuit.Gate]:
-    """Recover a custom gate type from a generic `qiskit.circuit.Gate`. Resolution is done using
-    `gate.definition.name` rather than `gate.name`, as the former is set by all qiskit-superstaq
-    custom gates and the latter may be modified by calls such as QuantumCircuit.qasm()
+    """Recovers a custom gate type from a generic `qiskit.circuit.Gate`.
+
+    The resolution is done using `gate.definition.name` rather than `gate.name`, as the former
+    is set by all `qiskit-superstaq` custom gates and the latter may be modified by calls
+    such as `qiskit.QuantumCircuit.qasm()`.
 
     Args:
         gate: The input gate instruction from which to recover a custom gate type.
