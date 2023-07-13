@@ -58,6 +58,12 @@ def test_update_user_balance(
     )
 
 
+def test_update_user_balance_limit() -> None:
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
+    with pytest.raises(gss.SuperstaqException, match="exceeds limit."):
+        (service.update_user_balance("mc@gmail.com", 3500.00))
+
+
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value="The account's role has been updated",
@@ -80,6 +86,7 @@ def test_update_user_role(
         "target": "ss_example_qpu",
         "shots": 10,
         "method": "dry-run",
+        "maxout": 13,
     },
 )
 def test_submit_qubo(
@@ -99,6 +106,7 @@ def test_submit_qubo(
         "target": "ss_example_qpu",
         "shots": 10,
         "method": "dry-run",
+        "maxout": 13,
     }
 
 

@@ -89,6 +89,11 @@ class Service:
         Returns:
              String containing status of update (whether or not it failed).
         """
+        limit = 2000.0  # If limit modified, must update in server-superstaq
+        if balance > limit:
+            raise gss.SuperstaqException(
+                f"Requested balance {balance} exceeds limit of {limit}.",
+            )
         return self._client.update_user_balance(
             {
                 "email": email,
@@ -119,6 +124,7 @@ class Service:
         target: str,
         repetitions: int = 1000,
         method: Optional[str] = None,
+        maxout: Optional[int] = 1000,
     ) -> Dict[str, str]:
         """Solves the QUBO given via the submit_qubo function in superstaq_client
 
@@ -127,11 +133,12 @@ class Service:
             target: The target to submit the qubo.
             repetitions: Number of repetitions to use. Defaults to 1000.
             method: An optional method parameter. Defaults to None.
+            maxout: An optional maxout paramter. Defaults to 1000.
 
         Returns:
             A dictionary returned by the submit_qubo function.
         """
-        return self._client.submit_qubo(qubo, target, repetitions, method)
+        return self._client.submit_qubo(qubo, target, repetitions, method, maxout)
 
     def ibmq_set_token(self, token: str) -> str:
         """Sets IBMQ token field.
