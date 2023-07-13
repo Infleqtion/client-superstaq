@@ -1,4 +1,4 @@
-name: Monthly Supermarq run
+name: Monthly benchmarking run
 
 on:
   schedule:
@@ -21,6 +21,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install ./general-superstaq[dev] ./qiskit-superstaq[dev] ./cirq-superstaq[dev]
           pip install ./supermarq-benchmarks[dev]
-      - name: Run Supermarq
+      - name: Run benchmarks
         run: |
-          python supermarq-benchmarks/supermarq/run_supermarq.py
+          python supermarq-benchmarks/supermarq/run_benchmarks.py
