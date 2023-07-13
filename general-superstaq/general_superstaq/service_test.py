@@ -5,16 +5,14 @@ import tempfile
 from unittest import mock
 
 import pytest
+import qubovert as qv
 
 import general_superstaq as gss
 
 
 def test_service_get_balance() -> None:
 
-    client = gss.superstaq_client._SuperstaqClient(
-        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
-    )
-    service = gss.user_config.UserConfig(client)
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
     mock_client = mock.MagicMock()
     mock_client.get_balance.return_value = {"balance": 12345.6789}
     service._client = mock_client
@@ -25,10 +23,7 @@ def test_service_get_balance() -> None:
 
 def test_accept_terms_of_use() -> None:
 
-    client = gss.superstaq_client._SuperstaqClient(
-        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
-    )
-    service = gss.user_config.UserConfig(client)
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaqClient.post_request"
     ) as mock_post_request:
@@ -45,10 +40,7 @@ def test_accept_terms_of_use() -> None:
 def test_add_new_user(
     mock_post_request: mock.MagicMock,
 ) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
-        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
-    )
-    service = gss.user_config.UserConfig(client)
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
     assert service.add_new_user("Marie Curie", "mc@gmail.com") == "The user has been added"
 
 
@@ -59,14 +51,17 @@ def test_add_new_user(
 def test_update_user_balance(
     mock_post_request: mock.MagicMock,
 ) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
-        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
-    )
-    service = gss.user_config.UserConfig(client)
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
     assert (
         service.update_user_balance("mc@gmail.com", 5.00)
         == "The account's balance has been updated"
     )
+
+
+def test_update_user_balance_limit() -> None:
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
+    with pytest.raises(gss.SuperstaqException, match="exceeds limit."):
+        (service.update_user_balance("mc@gmail.com", 3500.00))
 
 
 @mock.patch(
@@ -76,11 +71,43 @@ def test_update_user_balance(
 def test_update_user_role(
     mock_post_request: mock.MagicMock,
 ) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
-        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
-    )
-    service = gss.user_config.UserConfig(client)
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
     assert service.update_user_role("mc@gmail.com", 5) == "The account's role has been updated"
+
+
+@mock.patch(
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
+    return_value={
+        "qubo": [
+            {"keys": ["0"], "value": 1.0},
+            {"keys": ["1"], "value": 1.0},
+            {"keys": ["0", "1"], "value": -2.0},
+        ],
+        "target": "ss_example_qpu",
+        "shots": 10,
+        "method": "dry-run",
+        "maxout": 13,
+    },
+)
+def test_submit_qubo(
+    mock_post_request: mock.MagicMock,
+) -> None:
+    example_qubo = qv.QUBO({(0,): 1.0, (1,): 1.0, (0, 1): -2.0})
+    target = "ss_example_qpu"
+    repetitions = 10
+
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
+    assert service.submit_qubo(example_qubo, target, repetitions=repetitions, method="dry-run") == {
+        "qubo": [
+            {"keys": ["0"], "value": 1.0},
+            {"keys": ["1"], "value": 1.0},
+            {"keys": ["0", "1"], "value": -2.0},
+        ],
+        "target": "ss_example_qpu",
+        "shots": 10,
+        "method": "dry-run",
+        "maxout": 13,
+    }
 
 
 @mock.patch(
@@ -90,10 +117,7 @@ def test_update_user_role(
 def test_ibmq_set_token(
     mock_post_request: mock.MagicMock,
 ) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
-        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
-    )
-    service = gss.user_config.UserConfig(client)
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
     assert service.ibmq_set_token("valid token") == "Your IBMQ account token has been updated"
 
 
@@ -104,10 +128,7 @@ def test_ibmq_set_token(
 def test_cq_set_token(
     mock_post_request: mock.MagicMock,
 ) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
-        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
-    )
-    service = gss.user_config.UserConfig(client)
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
     assert service.cq_set_token("valid token") == "Your CQ account token has been updated"
 
 
@@ -118,10 +139,7 @@ def test_cq_set_token(
 def test_service_aqt_upload_configs(
     mock_aqt_compile: mock.MagicMock,
 ) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
-        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
-    )
-    service = gss.user_config.UserConfig(client)
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
     tempdir = tempfile.gettempdir()
     pulses_file = os.path.join(tempdir, f"pulses-{secrets.token_hex(nbytes=16)}.yaml")
     variables_file = os.path.join(tempdir, f"variables-{secrets.token_hex(nbytes=16)}.yaml")
@@ -169,10 +187,7 @@ def test_service_aqt_upload_configs(
 def test_service_aqt_get_configs(
     mock_aqt_compile: mock.MagicMock,
 ) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
-        remote_host="http://example.com", api_key="key", client_name="general_superstaq"
-    )
-    service = gss.user_config.UserConfig(client)
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
     tempdir = tempfile.gettempdir()
     pulses_file = secrets.token_hex(nbytes=16)
     variables_file = secrets.token_hex(nbytes=16)
