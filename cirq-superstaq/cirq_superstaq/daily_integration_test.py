@@ -93,13 +93,14 @@ def test_aqt_compile_eca(service: css.Service) -> None:
         assert all(isinstance(circuit, cirq.Circuit) for circuit in circuits)
 
 
-@pytest.mark.skip(reason="Won't pass until server issue related to this is fixed")
 def test_aqt_compile_eca_regression(service: css.Service) -> None:
     circuit = cirq.Circuit(
         cirq.H(cirq.LineQubit(4)),
         cirq.CX(cirq.LineQubit(4), cirq.LineQubit(5)) ** 0.7,
     )
     eca_circuits = service.aqt_compile(circuit, num_eca_circuits=3, random_seed=123).circuits
+    assert len(eca_circuits) == 3
+    assert all(isinstance(circuit, cirq.Circuit) for circuit in eca_circuits)
     # test with same and different seed
     assert (
         eca_circuits == service.aqt_compile(circuit, num_eca_circuits=3, random_seed=123).circuits
