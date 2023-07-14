@@ -571,6 +571,7 @@ class Service(gss.service.Service):
     def cq_compile(
         self,
         circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        grid_shape: Optional[Tuple[int, int]] = None,
         target: str = "cq_hilbert_qpu",
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
@@ -578,6 +579,7 @@ class Service(gss.service.Service):
 
         Args:
             circuits: The circuit(s) to compile.
+            grid_shape: The dimensions (row, col) of the qubit grid
             target: String of target CQ device.
             kwargs: Other desired `cq_compile` options.
 
@@ -591,7 +593,7 @@ class Service(gss.service.Service):
         if not target.startswith("cq_"):
             raise ValueError(f"{target!r} is not a valid CQ target.")
 
-        return self.compile(circuits, target=target, **kwargs)
+        return self.compile(circuits, grid_shape=grid_shape, target=target, **kwargs)
 
     def ibmq_compile(
         self,
