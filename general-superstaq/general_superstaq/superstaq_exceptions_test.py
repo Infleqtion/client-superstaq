@@ -20,14 +20,13 @@ import general_superstaq as gss
 def test_superstaq_exception() -> None:
     ex = gss.SuperstaqServerException(message="Hello.", status_code=500)
     assert str(ex) == "Hello. (Status code: 500)"
+    assert ex.message == "Hello. (Status code: 500)"
     assert ex.status_code == 500
-    assert ex.message == "Hello."
 
 
 def test_superstaq_unsuccessful_job_exception() -> None:
     ex = gss.SuperstaqUnsuccessfulJobException(job_id="SWE", status="Cancelled")
     assert str(ex) == "Job SWE terminated with status Cancelled."
-    assert ex.status_code is None
     assert ex.message == "Job SWE terminated with status Cancelled."
 
 
@@ -43,5 +42,5 @@ def test_superstaq_server_exception() -> None:
         width=120,
     )
     assert str(ex) == expected
+    assert ex.message == expected
     assert ex.status_code == 400
-    assert ex.message == "This target only supports terminal measurements."
