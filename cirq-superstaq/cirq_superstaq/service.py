@@ -579,7 +579,7 @@ class Service(gss.service.Service):
 
         Args:
             circuits: The circuit(s) to compile.
-            grid_shape: The dimensions (row, col) of the qubit grid
+            grid_shape: The dimensions of the rectangular qubit grid
             target: String of target CQ device.
             kwargs: Other desired `cq_compile` options.
 
