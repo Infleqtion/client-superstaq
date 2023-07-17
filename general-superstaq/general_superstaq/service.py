@@ -124,7 +124,7 @@ class Service:
         target: str,
         repetitions: int = 1000,
         method: Optional[str] = None,
-        maxout: Optional[int] = 1000,
+        max_solutions: Optional[int] = 1000,
     ) -> Dict[str, str]:
         """Solves the QUBO given via the submit_qubo function in superstaq_client, and returns any
         number of specified dictionaries that seek the minimum of the energy landscape from the
@@ -136,13 +136,13 @@ class Service:
             repetitions: Optional number of times that the execution is repeated before stopping.
             Defaults to 1000.
             method: An optional method parameter. Defaults to None.
-            maxout: An optional maxout parameter that specifies the max number of output solutions.
+            max_solutions: An optional parameter that specifies the max number of output solutions.
             Defaults to 1000.
 
         Returns:
             A dictionary returned by the submit_qubo function.
         """
-        return self._client.submit_qubo(qubo, target, repetitions, method, maxout)
+        return self._client.submit_qubo(qubo, target, repetitions, method, maxout=max_solutions)
 
     def ibmq_set_token(self, token: str) -> str:
         """Sets IBMQ token field.
