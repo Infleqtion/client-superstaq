@@ -126,12 +126,15 @@ class Service:
         method: Optional[str] = None,
         maxout: Optional[int] = 1000,
     ) -> Dict[str, str]:
-        """Solves the QUBO given via the submit_qubo function in superstaq_client
+        """Solves the QUBO given via the submit_qubo function in superstaq_client, and returns any
+        number of specified dictionaries that seek the minimum of the energy landscape from the
+        given objective function known as output solutions.
 
         Args:
             qubo: A `qv.QUBO` object.
             target: The target to submit the qubo.
-            repetitions: Number of repetitions to use. Defaults to 1000.
+            repetitions: Optional number of times that the execution is repeated before stopping.
+            Defaults to 1000.
             method: An optional method parameter. Defaults to None.
             maxout: An optional maxout parameter that specifies the max number of output solutions.
             Defaults to 1000.
