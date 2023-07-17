@@ -81,6 +81,7 @@ def run(
     if parsed_args.integration and integration_setup:
         integration_setup()
 
+    args_to_pass += ["--disable-warnings"]
     return subprocess.call(["pytest", *files, *args_to_pass], cwd=check_utils.root_dir)
 
 

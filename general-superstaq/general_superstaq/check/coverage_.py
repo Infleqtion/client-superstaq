@@ -51,6 +51,7 @@ def run(
 
     if not parsed_args.enable_socket:
         pytest_args.append("--disable-socket")
+    pytest_args.append("--disable-warnings")
 
     coverage_arg = "--include=" + ",".join(files)
     test_returncode = subprocess.call(
