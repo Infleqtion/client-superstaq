@@ -133,7 +133,8 @@ class Service:
             target: The target to submit the qubo.
             repetitions: Number of repetitions to use. Defaults to 1000.
             method: An optional method parameter. Defaults to None.
-            maxout: An optional maxout paramter. Defaults to 1000.
+            maxout: An optional maxout parameter that specifies the max number of output solutions.
+            Defaults to 1000.
 
         Returns:
             A dictionary returned by the submit_qubo function.
