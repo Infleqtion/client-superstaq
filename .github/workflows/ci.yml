@@ -147,10 +147,12 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
-      - name: Install dependencies
+      - name: Install dependencies, using minimum 
         run: |
+          version=$(sed cirq-superstaq/requirements.txt -ne 's/^cirq>=/cirq==/p')
+          echo "$version"
           python -m pip install --upgrade pip
-          pip install cirq==1.0.0 -e ./general-superstaq[dev] -e ./cirq-superstaq[dev]
+          pip install "$version" -e ./general-superstaq[dev] -e ./cirq-superstaq[dev]
       - name: Coverage check
         run: |
           check/coverage_.py cirq-superstaq
@@ -164,10 +166,11 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install qiskit==0.40.0 -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev]
+          pip install $(sed qiskit-superstaq/requirements.txt -ne 's/^qiskit>=/qiskit==/p') -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev]
       - name: Coverage check
         run: |
           check/coverage_.py qiskit-superstaq
