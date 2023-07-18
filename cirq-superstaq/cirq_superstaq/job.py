@@ -100,7 +100,7 @@ class Job:
         current status. A full list of states is given in `cirq_superstaq.Job.ALL_STATES`.
 
         Raises:
-            SuperstaqServerException: If the API is not able to get the status of the job.
+            SuperstaqServerException: If unable to get the status of the job from the API.
 
         Returns:
             The job status.
