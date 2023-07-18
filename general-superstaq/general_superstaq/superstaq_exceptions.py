@@ -37,11 +37,12 @@ class SuperstaqServerException(SuperstaqException):
     This exception is called directly from the backend.
     """
 
-    def __init__(self, message: str, status_code: int = 400) -> None:
+    def __init__(self, message: str, status_code: int = 400, contact_info: bool = False) -> None:
         """Initializes the `SuperstaqServerException` class.
 
         Args:
             message: The message to be displayed for this exception.
+            contact_info: Whether or not to display contact information.
         """
         status_msg = (
             "400, non-retriable error making request to Superstaq API"
@@ -49,6 +50,16 @@ class SuperstaqServerException(SuperstaqException):
             else str(status_code)
         )
         message = f"{message} (Status code: {status_msg})"
+        if contact_info:
+            slack_invite_url = (
+                "https://join.slack.com/t/superstaq/shared_invite/"
+                "zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw"
+            )
+            message = (
+                f"{message}\n\n"
+                "If you would like to contact a member of our team, email us at "
+                f"superstaq@infleqtion.com or join our Slack workspace: {slack_invite_url}."
+            )
 
         self.status_code = status_code
         super().__init__(message=message)

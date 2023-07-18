@@ -12,8 +12,6 @@
 # limitations under the License.
 # pylint: disable=missing-function-docstring,missing-class-docstring
 
-import textwrap
-
 import general_superstaq as gss
 
 
@@ -35,6 +33,26 @@ def test_superstaq_server_exception() -> None:
     expected = (
         "This target only supports terminal measurements. (Status code: 400, non-retriable error "
         "making request to Superstaq API)"
+    )
+    assert str(ex) == expected
+    assert ex.message == expected
+    assert ex.status_code == 400
+
+
+def test_exception_with_contact_info() -> None:
+    ex = gss.SuperstaqServerException(
+        message="qtm_lt-s8_qpu is not an available Quantinuum device.",
+        status_code=400,
+        contact_info=True,
+    )
+    slack_invite_url = (
+        "https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw"
+    )
+    expected = (
+        "qtm_lt-s8_qpu is not an available Quantinuum device. (Status code: 400, non-retriable "
+        "error making request to Superstaq API)\n\n"
+        "If you would like to contact a member of our team, email us at "
+        f"superstaq@infleqtion.com or join our Slack workspace: {slack_invite_url}."
     )
     assert str(ex) == expected
     assert ex.message == expected

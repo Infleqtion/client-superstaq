@@ -472,15 +472,8 @@ class _SuperstaqClient:
                 message = response.json()["message"]
             else:
                 message = str(response.text)
-            slack_invite_url = (
-                "https://join.slack.com/t/superstaq/shared_invite/"
-                "zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw"
-            )
             raise gss.SuperstaqServerException(
-                f"{message}\n\n"
-                "If you would like to contact a member of our team, email us at "
-                f"superstaq@infleqtion.com or join our Slack workspace: {slack_invite_url}",
-                response.status_code,
+                message=message, status_code=response.status_code, contact_info=True
             )
 
     def _prompt_accept_terms_of_use(self) -> None:
