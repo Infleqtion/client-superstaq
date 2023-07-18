@@ -32,14 +32,9 @@ def test_superstaq_unsuccessful_job_exception() -> None:
 
 def test_superstaq_server_exception() -> None:
     ex = gss.SuperstaqServerException(message="This target only supports terminal measurements.")
-    expected = textwrap.fill(
-        textwrap.dedent(
-            """\
-            This target only supports terminal measurements. (Status code: 400, non-retriable error
-            making request to Superstaq API)
-            """
-        ),
-        width=120,
+    expected = (
+        "This target only supports terminal measurements. (Status code: 400, non-retriable error "
+        "making request to Superstaq API)"
     )
     assert str(ex) == expected
     assert ex.message == expected

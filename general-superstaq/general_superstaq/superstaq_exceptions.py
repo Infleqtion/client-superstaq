@@ -8,7 +8,6 @@ class SuperstaqException(Exception):
         """Initializes the `SupertaqException` class.
 
         Args:
-            status_code: An HTTP status code, if coming from an HTTP response with a failing status.
             message: A message corresponding to the HTTP response status code. Defaults to None.
         """
         self.message = message

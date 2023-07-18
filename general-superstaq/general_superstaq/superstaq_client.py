@@ -498,7 +498,7 @@ class _SuperstaqClient:
         print(response)
         if response != "Accepted. You can now continue using Superstaq.":
             raise gss.SuperstaqServerException(
-                "You'll need to accept Terms of Use before usage of Superstaq.",
+                "You'll need to accept the Terms of Use before usage of Superstaq.",
                 requests.codes.unauthorized,
             )
 
