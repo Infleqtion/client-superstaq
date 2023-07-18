@@ -139,7 +139,7 @@ jobs:
           check/coverage_.py general-superstaq
 
   coverage-css:
-    name: Standalone minimal-version cirq-superstaq coverage check
+    name: Standalone cirq-superstaq coverage check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -156,7 +156,7 @@ jobs:
           check/coverage_.py cirq-superstaq
 
   coverage-qss:
-    name: Standalone minimal-version qiskit-superstaq coverage check
+    name: Standalone qiskit-superstaq coverage check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
