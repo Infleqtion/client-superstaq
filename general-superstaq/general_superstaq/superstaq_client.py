@@ -336,10 +336,9 @@ class _SuperstaqClient:
         Args:
             qubo: A `qv.QUBO` object.
             target: The target to submit the qubo.
-            repetitions: Optional number of times that the execution is repeated before stopping.
-            Defaults to 1000.
-            method: An optional method parameter. Defaults to None.
-            maxout: An optional maxout parameter that specifies the max number of output solutions.
+            repetitions: Number of times that the execution is repeated before stopping.
+            method: The parameter specifying method of QUBO solving execution. Defaults to none.
+            maxout: A parameter that specifies the max number of output solutions.
             Defaults to 1000.
 
         Returns:
