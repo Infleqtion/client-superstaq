@@ -347,7 +347,7 @@ class _SuperstaqClient:
         """
         gss.validation.validate_target(target)
         gss.validation.validate_integer_param(repetitions)
-        gss.validation.validate_integer_param(max_solutions) 
+        gss.validation.validate_integer_param(max_solutions)
 
         json_dict = {
             "qubo": gss.qubo.convert_qubo_to_model(qubo),
