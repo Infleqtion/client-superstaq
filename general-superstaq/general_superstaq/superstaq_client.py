@@ -183,7 +183,7 @@ class _SuperstaqClient:
             about the job, but does contain the job id.
 
         Raises:
-            An SuperstaqServerException if the request fails.
+            gss.SuperstaqServerException: if the request fails.
         """
         gss.validation.validate_target(target)
         gss.validation.validate_integer_param(repetitions)

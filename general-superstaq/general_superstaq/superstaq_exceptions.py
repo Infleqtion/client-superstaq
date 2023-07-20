@@ -32,16 +32,15 @@ class SuperstaqUnsuccessfulJobException(SuperstaqException):
 
 
 class SuperstaqServerException(SuperstaqException):
-    """An exception for non-retriable server-side errors.
-
-    This exception is called directly from the backend.
-    """
+    """An exception for non-retriable server-side errors."""
 
     def __init__(self, message: str, status_code: int = 400, contact_info: bool = False) -> None:
         """Initializes the `SuperstaqServerException` class.
 
         Args:
             message: The message to be displayed for this exception.
+            status_code: An HTTP status code, if coming from an HTTP response with a failing
+                status.
             contact_info: Whether or not to display contact information.
         """
         status_msg = (
