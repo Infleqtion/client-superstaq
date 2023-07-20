@@ -124,7 +124,7 @@ class Service:
         target: str,
         repetitions: int = 1000,
         method: Optional[str] = None,
-        max_solutions: Optional[int] = 1000,
+        max_solutions: int = 1000,
     ) -> Dict[str, str]:
         """Solves the QUBO given via the submit_qubo function in superstaq_client, and returns any
         number of specified dictionaries that seek the minimum of the energy landscape from the
