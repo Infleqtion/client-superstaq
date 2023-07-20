@@ -100,7 +100,7 @@ class Job:
         current status. A full list of states is given in `cirq_superstaq.Job.ALL_STATES`.
 
         Raises:
-            SuperstaqException: If the API is not able to get the status of the job.
+            SuperstaqServerException: If unable to get the status of the job from the API.
 
         Returns:
             The job status.
@@ -116,7 +116,7 @@ class Job:
 
         Raises:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqException: If unable to get the status of the job from the API.
+            SuperstaqServerException: If unable to get the status of the job from the API.
         """
         if "target" not in self._job:
             self._refresh_job()
@@ -131,7 +131,7 @@ class Job:
 
         Raises:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqException: If unable to get the status of the job from the API.
+            SuperstaqServerException: If unable to get the status of the job from the API.
         """
         if "num_qubits" not in self._job:
             self._refresh_job()
@@ -146,7 +146,7 @@ class Job:
 
         Raises:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqException: If unable to get the status of the job from the API.
+            SuperstaqServerException: If unable to get the status of the job from the API.
         """
         if "shots" not in self._job:
             self._refresh_job()
@@ -176,7 +176,7 @@ class Job:
 
         Raises:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqException: If unable to get the results from the API.
+            SuperstaqServerException: If unable to get the results from the API.
             TimeoutError: If no results are available in the provided timeout interval.
         """
         time_waited_seconds: float = 0.0

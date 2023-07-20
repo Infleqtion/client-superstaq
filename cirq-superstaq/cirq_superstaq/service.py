@@ -256,7 +256,7 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If `circuit` is not a valid `cirq.Circuit` or has no measurements to sample.
-            SuperstaqException: If there was an error accessing the API.
+            SuperstaqServerException: If there was an error accessing the API.
         """
         css.validation.validate_cirq_circuits(circuit)
         if not isinstance(circuit, cirq.Circuit):
@@ -293,8 +293,7 @@ class Service(gss.service.Service):
             A `css.Job` which can be queried for status or results.
 
         Raises:
-            SuperstaqNotFoundException: If there was no job with the given `job_id`.
-            SuperstaqException: If there was an error accessing the API.
+            SuperstaqServerException: If there was an error accessing the API.
         """
         return css.job.Job(client=self._client, job_id=job_id)
 
