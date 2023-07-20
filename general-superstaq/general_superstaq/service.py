@@ -134,13 +134,15 @@ class Service:
             qubo: A `qv.QUBO` object.
             target: The target to submit the qubo.
             repetitions: Number of times that the execution is repeated before stopping.
-            method: The parameter specifying method of QUBO solving execution. Defaults to none.
+            method: The parameter specifying method of QUBO solving execution. Currently,
+            will either be the "dry-run" option which runs on dwave's simulated annealer,
+            or defauls to none and sends it directly to the specified target.
             max_solutions: A parameter that specifies the max number of output solutions.
 
         Returns:
             A dictionary returned by the submit_qubo function.
         """
-        return self._client.submit_qubo(qubo, target, repetitions, method, maxout=max_solutions)
+        return self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
 
     def ibmq_set_token(self, token: str) -> str:
         """Sets IBMQ token field.

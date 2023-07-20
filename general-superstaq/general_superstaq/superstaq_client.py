@@ -328,7 +328,7 @@ class _SuperstaqClient:
         target: str,
         repetitions: int = 1000,
         method: Optional[str] = None,
-        maxout: Optional[int] = 1000,
+        max_solutions: Optional[int] = 1000,
     ) -> Dict[str, str]:
         """Makes a POST request to Superstaq API to submit a QUBO problem to the
         given target.
@@ -337,22 +337,24 @@ class _SuperstaqClient:
             qubo: A `qv.QUBO` object.
             target: The target to submit the qubo.
             repetitions: Number of times that the execution is repeated before stopping.
-            method: The parameter specifying method of QUBO solving execution. Defaults to none.
-            maxout: A parameter that specifies the max number of output solutions.
-            Defaults to 1000.
+            method: The parameter specifying method of QUBO solving execution. Currently,
+            will either be the "dry-run" option which runs on dwave's simulated annealer,
+            or defauls to none and sends it directly to the specified target.
+            max_solutions: A parameter that specifies the max number of output solutions.
 
         Returns:
             A dictionary from the POST request.
         """
         gss.validation.validate_target(target)
         gss.validation.validate_integer_param(repetitions)
+        gss.validation.validate_integer_param(max_solutions) 
 
         json_dict = {
             "qubo": gss.qubo.convert_qubo_to_model(qubo),
             "target": target,
             "shots": int(repetitions),
             "method": method,
-            "maxout": maxout,
+            "maxout": max_solutions,
         }
         return self.post_request("/qubo", json_dict)
 
