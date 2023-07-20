@@ -183,7 +183,7 @@ class _SuperstaqClient:
             about the job, but does contain the job id.
 
         Raises:
-            An SuperstaqException if the request fails.
+            gss.SuperstaqServerException: if the request fails.
         """
         gss.validation.validate_target(target)
         gss.validation.validate_integer_param(repetitions)
@@ -211,8 +211,7 @@ class _SuperstaqClient:
             The json body of the response as a dict.
 
         Raises:
-            SuperstaqNotFoundException: If a job with the given `job_id` does not exist.
-            SuperstaqException: For other API call failures.
+            SuperstaqServerException: For other API call failures.
         """
         return self.get_request(f"/job/{job_id}")
 
@@ -454,8 +453,8 @@ class _SuperstaqClient:
             response: The `requests.Response` to get the status codes from.
 
         Raises:
-            gss.SuperstaqException: If unauthorized by Superstaq API.
-            gss.SuperstaqException: If an error has occurred in making a request
+            gss.SuperstaqServerException: If unauthorized by Superstaq API.
+            gss.SuperstaqServerException: If an error has occurred in making a request
                 to the Superstaq API.
         """
         if response.status_code == requests.codes.unauthorized:
@@ -465,7 +464,7 @@ class _SuperstaqClient:
                 self._prompt_accept_terms_of_use()
                 return
             else:
-                raise gss.SuperstaqException(
+                raise gss.SuperstaqServerException(
                     '"Not authorized" returned by Superstaq API.  '
                     "Check to ensure you have supplied the correct API key.",
                     response.status_code,
@@ -476,22 +475,15 @@ class _SuperstaqClient:
                 message = response.json()["message"]
             else:
                 message = str(response.text)
-            slack_invite_url = (
-                "https://join.slack.com/t/superstaq/shared_invite/"
-                "zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw"
-            )
-            raise gss.SuperstaqException(
-                f"Non-retriable error making request to Superstaq API, {message}.\n\n"
-                "If you would like to contact a member of our team, email us at "
-                f"superstaq@infleqtion.com or join our Slack workspace: {slack_invite_url}",
-                response.status_code,
+            raise gss.SuperstaqServerException(
+                message=message, status_code=response.status_code, contact_info=True
             )
 
     def _prompt_accept_terms_of_use(self) -> None:
         """Prompts terms of use.
 
         Raises:
-            gss.SuperstaqException: If terms of use are not accepted.
+            gss.SuperstaqServerException: If terms of use are not accepted.
         """
         message = (
             "Acceptance of the Terms of Use (superstaq.super.tech/terms_of_use)"
@@ -501,8 +493,8 @@ class _SuperstaqClient:
         response = self._accept_terms_of_use(user_input)
         print(response)
         if response != "Accepted. You can now continue using Superstaq.":
-            raise gss.SuperstaqException(
-                "You'll need to accept Terms of Use before usage of Superstaq.",
+            raise gss.SuperstaqServerException(
+                "You'll need to accept the Terms of Use before usage of Superstaq.",
                 requests.codes.unauthorized,
             )
 
@@ -513,7 +505,7 @@ class _SuperstaqClient:
             request: A function that returns a `requests.Response`.
 
         Raises:
-            SuperstaqException: If there was a not-retriable error from the API.
+            SuperstaqServerException: If there was a not-retriable error from the API.
             TimeoutError: If the requests retried for more than `max_retry_seconds`.
 
         Returns:

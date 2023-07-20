@@ -131,8 +131,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             A `qss.SuperstaqJob` which can be queried for status or results.
 
         Raises:
-            SuperstaqNotFoundException: If there was no job with the given `job_id`.
-            SuperstaqException: If there was an error accessing the API.
+            SuperstaqServerException: If there was an error accessing the API.
         """
         return qss.SuperstaqJob(self, job_id)
 
