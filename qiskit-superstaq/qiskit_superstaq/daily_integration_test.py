@@ -6,7 +6,7 @@ import os
 import numpy as np
 import pytest
 import qiskit
-from general_superstaq import ResourceEstimate, SuperstaqException
+from general_superstaq import ResourceEstimate, SuperstaqServerException
 
 import qiskit_superstaq as qss
 
@@ -29,7 +29,7 @@ def test_ibmq_set_token(provider: qss.SuperstaqProvider) -> None:
 
     assert provider.ibmq_set_token(ibmq_token) == "Your IBMQ account token has been updated"
 
-    with pytest.raises(SuperstaqException, match="IBMQ token is invalid."):
+    with pytest.raises(SuperstaqServerException, match="IBMQ token is invalid."):
         assert provider.ibmq_set_token("INVALID_TOKEN")
 
 
