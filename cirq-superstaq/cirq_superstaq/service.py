@@ -493,7 +493,7 @@ class Service(gss.service.Service):
             gate_defs_cirq = {}
             for key, val in gate_defs.items():
                 if val is not None and not isinstance(val, (cirq.Gate, cirq.Operation)):
-                    val = _to_matrix_gate(val).with_name(key)
+                    val = _to_matrix_gate(val)
                 gate_defs_cirq[key] = val
             options_dict["gate_defs"] = gate_defs_cirq
 
