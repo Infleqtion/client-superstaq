@@ -4,8 +4,7 @@ from general_superstaq.resource_estimate import ResourceEstimate
 from general_superstaq.superstaq_client import _SuperstaqClient
 from general_superstaq.superstaq_exceptions import (
     SuperstaqException,
-    SuperstaqModuleNotFoundException,
-    SuperstaqNotFoundException,
+    SuperstaqServerException,
     SuperstaqUnsuccessfulJobException,
 )
 from general_superstaq.typing import QuboModel
@@ -18,9 +17,8 @@ __all__ = [
     "API_URL",
     "API_VERSION",
     "SuperstaqException",
-    "SuperstaqModuleNotFoundException",
-    "SuperstaqNotFoundException",
     "SuperstaqUnsuccessfulJobException",
+    "SuperstaqServerException",
     "QuboModel",
     "qubo",
     "ResourceEstimate",
