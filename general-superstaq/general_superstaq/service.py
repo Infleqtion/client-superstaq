@@ -136,7 +136,6 @@ class Service:
             repetitions: Number of times that the execution is repeated before stopping.
             method: The parameter specifying method of QUBO solving execution. Defaults to none.
             max_solutions: A parameter that specifies the max number of output solutions.
-            Defaults to 1000.
 
         Returns:
             A dictionary returned by the submit_qubo function.
