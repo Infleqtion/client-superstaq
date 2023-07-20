@@ -9,7 +9,15 @@ from general_superstaq.superstaq_exceptions import (
 )
 from general_superstaq.typing import MaxSharpeJson, MinVolJson, QuboModel, TSPJson, WareHouseJson
 
-from . import qubo, serialization, superstaq_client, superstaq_exceptions, user_config, validation
+from . import (
+    pretty_printing,
+    qubo,
+    serialization,
+    superstaq_client,
+    superstaq_exceptions,
+    user_config,
+    validation,
+)
 
 __all__ = [
     "__version__",
@@ -26,6 +34,7 @@ __all__ = [
     "WareHouseJson",
     "finance",
     "logistics",
+    "pretty_printing",
     "qubo",
     "ResourceEstimate",
     "serialization",

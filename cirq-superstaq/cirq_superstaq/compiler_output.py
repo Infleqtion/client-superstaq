@@ -148,30 +148,10 @@ class CompilerOutput:
         )
 
     def __repr_pretty__(self) -> str:
-        def _replace_placeholders(pretty_output: str) -> str:
-            """Replace placeholders for object `repr`s, since black can't parse them."""
-            return pretty_output.replace("qtrl_seq", repr(self.seq))
-
-        def _prettify(line: str) -> str:
-            """Use black to pretty-print, but delete the appended newline."""
-            return _replace_placeholders(
-                black.format_str(line, mode=black.FileMode(line_length=100))[:-1]
-            )
-
-        if not self.has_multiple_circuits():
-            compiler_output = (
-                f"CompilerOutput({self.circuit!r}, "
-                f"{self.final_logical_to_physical!r}, "
-                f"{self.pulse_sequence!r}, qtrl_seq, {self.jaqal_program!r}, "
-                f"{self.pulse_list!r})"
-            )
-            return _prettify(compiler_output)
-        compiler_output = (
-            f"CompilerOutput({self.circuits!r}, {self.final_logical_to_physicals!r}, "
-            f"{self.pulse_sequences!r}, qtrl_seq, {self.jaqal_programs!r}, "
-            f"{self.pulse_lists!r})"
-        )
-        return _prettify(compiler_output)
+        """
+        return gss.pretty.pretty_print(repr(self), out.has_multiple_circuits())
+        """
+        return gss.pretty_printing.pretty_print(self)
 
 
 def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
