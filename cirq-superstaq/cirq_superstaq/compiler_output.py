@@ -5,7 +5,6 @@ import json
 import warnings
 from typing import Any, Dict, List, Optional, Set, Union
 
-import black
 import cirq
 import general_superstaq as gss
 
@@ -148,10 +147,21 @@ class CompilerOutput:
         )
 
     def __repr_pretty__(self) -> str:
-        """
-        return gss.pretty.pretty_print(repr(self), out.has_multiple_circuits())
-        """
-        return gss.pretty_printing.pretty_print(self)
+        if not self.has_multiple_circuits():
+            circuit_reprs = [repr(self.circuit)]
+            circuit_drawings = [str(self.circuit)]
+        else:
+            circuit_reprs = []
+            circuit_drawings = []
+            for circuit in self.circuits:
+                circuit_reprs.append(repr(circuit))
+                circuit_drawings.append(str(circuit))
+        if self.seq:  # pragma: no cover, requires qtrl installation
+            circuit_reprs.append(repr(self.seq))
+            circuit_drawings.append(repr(self.seq))
+        return gss.pretty_printing.pretty_print_compiler_output(
+            repr(self), circuit_reprs, circuit_drawings
+        )
 
 
 def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:

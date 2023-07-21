@@ -5,7 +5,6 @@ import json
 import warnings
 from typing import Any, Dict, List, Optional, Set, Union
 
-import black
 import general_superstaq as gss
 import qiskit
 
@@ -129,7 +128,22 @@ class CompilerOutput:
         )
 
     def __repr_pretty__(self) -> str:
-        return gss.pretty_printing.pretty_print(self)
+        if not self.has_multiple_circuits():
+            circuit_reprs = [repr(self.circuit)]
+            circuit_drawings = [str(self.circuit.draw(idle_wires=False))]
+        else:
+            circuit_reprs = []
+            circuit_drawings = []
+            for circuit in self.circuits:
+                circuit_reprs.append(repr(circuit))
+                assert isinstance(circuit, qiskit.QuantumCircuit)
+                circuit_drawings.append(str(circuit.draw(idle_wires=False)))
+        if self.seq:  # pragma: no cover, requires qtrl installation
+            circuit_reprs.append(repr(self.seq))
+            circuit_drawings.append(repr(self.seq))
+        return gss.pretty_printing.pretty_print_compiler_output(
+            repr(self), circuit_reprs, circuit_drawings
+        )
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, CompilerOutput):
