@@ -256,7 +256,7 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If `circuit` is not a valid `cirq.Circuit` or has no measurements to sample.
-            SuperstaqException: If there was an error accessing the API.
+            SuperstaqServerException: If there was an error accessing the API.
         """
         css.validation.validate_cirq_circuits(circuit)
         if not isinstance(circuit, cirq.Circuit):
@@ -293,8 +293,7 @@ class Service(gss.service.Service):
             A `css.Job` which can be queried for status or results.
 
         Raises:
-            SuperstaqNotFoundException: If there was no job with the given `job_id`.
-            SuperstaqException: If there was an error accessing the API.
+            SuperstaqServerException: If there was an error accessing the API.
         """
         return css.job.Job(client=self._client, job_id=job_id)
 
@@ -494,7 +493,7 @@ class Service(gss.service.Service):
             gate_defs_cirq = {}
             for key, val in gate_defs.items():
                 if val is not None and not isinstance(val, (cirq.Gate, cirq.Operation)):
-                    val = _to_matrix_gate(val).with_name(key)
+                    val = _to_matrix_gate(val)
                 gate_defs_cirq[key] = val
             options_dict["gate_defs"] = gate_defs_cirq
 

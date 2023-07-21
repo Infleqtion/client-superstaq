@@ -109,7 +109,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         Raises:
             SuperstaqUnsuccessfulJobException: If the job been cancelled or has
         failed.
-            SuperstaqException: If unable to get the status of the job from the API.
+            SuperstaqServerException: If unable to get the status of the job from the API.
         """
         if self._overall_status in ("Cancelled", "Failed"):
             raise gss.superstaq_exceptions.SuperstaqUnsuccessfulJobException(
@@ -122,8 +122,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         for job_id in self._job_id.split(","):
 
             if (job_id not in self._job_info) or (
-                job_id in self._job_info
-                and self._job_info[job_id]["status"] not in self.TERMINAL_STATES
+                self._job_info[job_id]["status"] not in self.TERMINAL_STATES
             ):
                 result = self._backend._provider._client.get_job(job_id)
                 self._job_info[job_id] = result
@@ -149,6 +148,22 @@ class SuperstaqJob(qiskit.providers.JobV1):
             if temp_status in status_occurrence:
                 self._overall_status = temp_status
                 return
+
+    def compiled_circuits(self) -> List[qiskit.QuantumCircuit]:
+        """Get the compiled circuits that were submitted for this job.
+
+        Returns:
+            A list of compiled circuits.
+        """
+        job_ids = self._job_id.split(",")
+        if not all(
+            job_id in self._job_info and self._job_info[job_id].get("compiled_circuit")
+            for job_id in job_ids
+        ):
+            self._refresh_job()
+
+        serialized_circuits = [self._job_info[job_id]["compiled_circuit"] for job_id in job_ids]
+        return [qss.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
 
     def status(self) -> qiskit.providers.jobstatus.JobStatus:
         """Query for the equivalent qiskit job status.

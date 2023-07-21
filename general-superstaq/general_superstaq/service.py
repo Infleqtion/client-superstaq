@@ -1,22 +1,38 @@
 import os
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import qubovert as qv
 
-if TYPE_CHECKING:
-    from general_superstaq import superstaq_client
+import general_superstaq as gss
+from general_superstaq import superstaq_client
 
 
 class Service:
     """This class contains all the services that are used to operate Superstaq."""
 
-    def __init__(self, client: "superstaq_client._SuperstaqClient"):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        remote_host: Optional[str] = None,
+        default_target: Optional[str] = None,
+        api_version: str = gss.API_VERSION,
+        max_retry_seconds: int = 3600,
+        verbose: bool = False,
+    ) -> None:
         """Initializes the `Service` class.
 
         Args:
             client: The Superstaq client to use.
         """
-        self._client = client
+
+        self._client = superstaq_client._SuperstaqClient(
+            client_name="general-superstaq",
+            remote_host=remote_host,
+            api_key=api_key,
+            api_version=api_version,
+            max_retry_seconds=max_retry_seconds,
+            verbose=verbose,
+        )
 
     def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
         """Get the querying user's account balance in USD.
@@ -73,6 +89,11 @@ class Service:
         Returns:
              String containing status of update (whether or not it failed).
         """
+        limit = 2000.0  # If limit modified, must update in server-superstaq
+        if balance > limit:
+            raise gss.SuperstaqException(
+                f"Requested balance {balance} exceeds limit of {limit}.",
+            )
         return self._client.update_user_balance(
             {
                 "email": email,
@@ -103,6 +124,7 @@ class Service:
         target: str,
         repetitions: int = 1000,
         method: Optional[str] = None,
+        maxout: Optional[int] = 1000,
     ) -> Dict[str, str]:
         """Solves the QUBO given via the submit_qubo function in superstaq_client
 
@@ -111,11 +133,12 @@ class Service:
             target: The target to submit the qubo.
             repetitions: Number of repetitions to use. Defaults to 1000.
             method: An optional method parameter. Defaults to None.
+            maxout: An optional maxout paramter. Defaults to 1000.
 
         Returns:
             A dictionary returned by the submit_qubo function.
         """
-        return self._client.submit_qubo(qubo, target, repetitions, method)
+        return self._client.submit_qubo(qubo, target, repetitions, method, maxout)
 
     def ibmq_set_token(self, token: str) -> str:
         """Sets IBMQ token field.

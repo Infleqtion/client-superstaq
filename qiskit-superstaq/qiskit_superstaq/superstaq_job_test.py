@@ -161,6 +161,30 @@ def test_update_status_queue_info(backend: qss.SuperstaqBackend) -> None:
     assert job._overall_status == "Failed"
 
 
+def test_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
+    response = mock_response("Queued")
+    response["compiled_circuit"] = qss.serialize_circuits(qiskit.QuantumCircuit(2))
+
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
+    ) as mocked_get_job:
+        assert job.compiled_circuits() == [qiskit.QuantumCircuit(2)]
+        mocked_get_job.assert_called_once()
+
+    # After fetching the job info once it shouldn't be refreshed again (so no need to mock)
+    assert job.compiled_circuits() == [qiskit.QuantumCircuit(2)]
+
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
+    ):
+        assert job.compiled_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
+        mocked_get_job.assert_called_once()
+
+    assert job.compiled_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
+
+
 def test_status(backend: qss.SuperstaqBackend) -> None:
 
     job = qss.SuperstaqJob(backend=backend, job_id="123abc")
