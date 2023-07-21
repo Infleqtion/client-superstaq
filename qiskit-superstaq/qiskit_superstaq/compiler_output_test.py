@@ -62,9 +62,15 @@ def test_compiler_output_repr() -> None:
         == f"""CompilerOutput({circuit!r}, {{0: 1}}, None, None, None, None)"""
     )
 
-    assert (
-        qss.compiler_output.CompilerOutput(circuit, {0: 1}).__repr_pretty__()
-        == f"CompilerOutput({circuit!r}, {{0: 1}}, None, None, None, None)"
+    assert qss.compiler_output.CompilerOutput(circuit, {0: 1}).__repr_pretty__() == (
+        "CompilerOutput(\n"
+        f"    {circuit!r},\n"
+        "    {0: 1},\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        ")\n"
     )
 
     circuits = [circuit, circuit]
@@ -72,19 +78,19 @@ def test_compiler_output_repr() -> None:
         repr(qss.compiler_output.CompilerOutput(circuits, [{0: 1}, {1: 0}]))
         == f"CompilerOutput({circuits!r}, [{{0: 1}}, {{1: 0}}], None, None, None, None)"
     )
-    # Because the repr for a qiskit.QuantumCircuit object is so long, there is no easily constructed
-    # case in which the compiler output contains multiple circuits but the corresponding line is
-    # under 100 characters.
-    with mock.patch("qiskit.QuantumCircuit.__repr__", return_value="quantum_circuit"):
-        assert qss.compiler_output.CompilerOutput(circuits, [{0: 1}, {1: 0}]).__repr_pretty__() == (
-            "CompilerOutput([quantum_circuit, quantum_circuit], [{0: 1}, {1: 0}], None, None, "
-            "None, None)"
-        )
-
     assert qss.compiler_output.CompilerOutput(circuits, [{0: 1}, {1: 0}]).__repr_pretty__() == (
-        "CompilerOutput(\n    [\n        "
-        f"{circuit!r},\n        {circuit!r},\n    ],\n    [{{0: 1}}, {{1: 0}}],\n    None,\n    "
-        "None,\n    None,\n    None,\n)"
+        "CompilerOutput(\n"
+        "    [\n"
+        f"        {circuits[0]!r},\n"
+        "        \n"
+        f"        {circuits[1]!r},\n"
+        "    ],\n"
+        "    [{0: 1}, {1: 0}],\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        ")\n"
     )
 
 
@@ -105,22 +111,24 @@ def test_compiler_output_pretty_repr() -> None:  # pragma: no cover, test requir
         circuits,
         [{0: 1}, {1: 0}],
         pulse_lists=[mock_pulse],
-    ).__repr_pretty__().replace("    ", "\t") == (
-        f"CompilerOutput(\n"
-        f"\t[\n"
-        f"\t\t{circuits[0]!r},\n"
-        f"\t\t{circuits[1]!r},\n"
-        f"\t],\n"
-        f"\t[{{0: 1}}, {{1: 0}}],\n"
-        f"\tNone,\n"
-        f"\tNone,\n"
-        f"\tNone,\n"
-        f"\t[\n"
-        f"\t\tUniquePulse(\n"
-        f"\t\t\tenvelope=VirtualEnvelope(phase=0.0, width=0.0), freq=0.0, channel=0.0, "
-        f"subchannel=0.0\n"
-        f"\t\t)\n"
-        f"\t],\n)"
+    ).__repr_pretty__() == (
+        "CompilerOutput(\n"
+        "    [\n"
+        f"        {circuits[0]!r},\n"
+        "        \n"
+        f"        {circuits[1]!r},\n"
+        "    ],\n"
+        "    [{0: 1}, {1: 0}],\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        "    [\n"
+        "        UniquePulse(\n"
+        "            envelope=VirtualEnvelope(phase=0.0, width=0.0), freq=0.0, channel=0.0, "
+        "subchannel=0.0\n"
+        "        )\n"
+        "    ],\n"
+        ")\n"
     )
 
 

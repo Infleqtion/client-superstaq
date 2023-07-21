@@ -86,7 +86,7 @@ def test_compiler_output_repr() -> None:
     )
     assert (
         css.compiler_output.CompilerOutput(circuit, qubit_map).__repr_pretty__()
-        == f"CompilerOutput({circuit!r}, {{}}, None, None, None, None)"
+        == f"CompilerOutput({circuit!r}, {{}}, None, None, None, None)\n"
     )
 
     circuits = [circuit, circuit]
@@ -94,20 +94,51 @@ def test_compiler_output_repr() -> None:
         repr(css.compiler_output.CompilerOutput(circuits, [qubit_map, qubit_map]))
         == f"CompilerOutput({circuits!r}, [{{}}, {{}}], None, None, None, None)"
     )
-    assert (
-        css.compiler_output.CompilerOutput(circuits, [qubit_map, qubit_map]).__repr_pretty__()
-        == f"CompilerOutput({circuits!r}, [{{}}, {{}}], None, None, None, None)"
+    assert css.compiler_output.CompilerOutput(
+        circuits, [qubit_map, qubit_map]
+    ).__repr_pretty__() == (
+        "CompilerOutput("
+        "\n    [cirq.Circuit(),  cirq.Circuit()],\n"
+        "    [{}, {}],\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        ")\n"
     )
 
     circuits = [circuit] * 10
     assert css.compiler_output.CompilerOutput(
         circuits, [qubit_map, qubit_map]
     ).__repr_pretty__() == (
-        "CompilerOutput(\n    [\n        cirq.Circuit(),\n        cirq.Circuit(),\n        "
-        "cirq.Circuit(),\n        cirq.Circuit(),\n        cirq.Circuit(),\n        "
-        "cirq.Circuit(),\n        cirq.Circuit(),\n        cirq.Circuit(),\n        "
-        "cirq.Circuit(),\n        cirq.Circuit(),\n    ],\n    [{}, {}],\n    None,\n    None,"
-        "\n    None,\n    None,\n)"
+        "CompilerOutput(\n"
+        "    [\n"
+        f"        {circuits[0]!r},\n"
+        "        \n"
+        f"        {circuits[1]!r},\n"
+        "        \n"
+        f"        {circuits[2]!r},\n"
+        "        \n"
+        f"        {circuits[3]!r},\n"
+        "        \n"
+        f"        {circuits[4]!r},\n"
+        "        \n"
+        f"        {circuits[5]!r},\n"
+        "        \n"
+        f"        {circuits[6]!r},\n"
+        "        \n"
+        f"        {circuits[7]!r},\n"
+        "        \n"
+        f"        {circuits[8]!r},\n"
+        "        \n"
+        f"        {circuits[9]!r},\n"
+        "    ],\n"
+        "    [{}, {}],\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        ")\n"
     )
 
 
@@ -129,22 +160,20 @@ def test_compiler_output_pretty_repr() -> None:  # pragma: no cover; test requir
         circuits,
         [qubit_map],
         pulse_lists=[mock_pulse],
-    ).__repr_pretty__().replace("    ", "\t") == (
-        f"CompilerOutput(\n"
-        f"\t[\n"
-        f"\t\t{circuits[0]!r},\n"
-        f"\t\t{circuits[1]!r},\n"
-        f"\t],\n"
-        f"\t[{{}}],\n"
-        f"\tNone,\n"
-        f"\tNone,\n"
-        f"\tNone,\n"
-        f"\t[\n"
-        f"\t\tUniquePulse(\n"
-        f"\t\t\tenvelope=VirtualEnvelope(phase=0.0, width=0.0), freq=0.0, channel=0.0, "
-        f"subchannel=0.0\n"
-        f"\t\t)\n"
-        f"\t],\n)"
+    ).__repr_pretty__() == (
+        "CompilerOutput(\n"
+        f"    [{circuits[0]!r},  {circuits[1]!r}],\n"
+        "    [{}],\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        "    [\n"
+        "        UniquePulse(\n"
+        "            envelope=VirtualEnvelope(phase=0.0, width=0.0), freq=0.0, channel=0.0, "
+        "subchannel=0.0\n"
+        "        )\n"
+        "    ],\n"
+        ")\n"
     )
 
 
