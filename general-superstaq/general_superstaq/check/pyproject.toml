@@ -1,3 +1,5 @@
+# Check script configuration:
+
 [tool.black]
 color = true
 line_length = 100
