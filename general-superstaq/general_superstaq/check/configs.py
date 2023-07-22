@@ -14,7 +14,7 @@ def run(
     *args: str,
     config_file: str = "pyproject.toml",
     ignore_match: str = "# REPO-SPECIFIC CONFIG",
-    start_match: str = "# Package-specific configuration (e.g., build specification) ends here.",
+    start_match: str = "# Check script configuration:",
     silent: bool = False,
 ) -> int:
     """Checks that the check script configuration file ({config_file}) is consistent across repos.
@@ -87,10 +87,10 @@ def run(
 
 def _trim_lines(lines: List[str], start_match: str) -> Tuple[List[str], int]:
     """Remove package-specific configuration text, and identify the starting lines to compare."""
-    start_line = 0
-    if start_match in lines:
-        start_line = lines.index(start_match) + 2
-    return lines[start_line:], start_line
+    for start_line, line in enumerate(lines):
+        if start_match in line:
+            return lines[start_line:], start_line
+    return lines, 0
 
 
 def _announce_diff(

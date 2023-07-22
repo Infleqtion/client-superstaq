@@ -29,7 +29,4 @@ attr = "qiskit_superstaq._version.__version__"
 file = ["requirements.txt"]
 
 [tool.setuptools.dynamic.optional-dependencies.dev]
-file = ["dev-requirements.txt"]
-
-[tool.setuptools.dynamic.optional-dependencies.examples]
-file = ["example-requirements.txt"]
+file = ["dev-requirements.txt", "example-requirements.txt"]

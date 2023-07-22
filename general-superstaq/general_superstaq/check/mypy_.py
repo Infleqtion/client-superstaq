@@ -12,7 +12,7 @@ from general_superstaq.check import check_utils
 def run(
     *args: str,
     include: Union[str, Iterable[str]] = "*.py",
-    exclude: Union[str, Iterable[str]] = "*setup.py",
+    exclude: Union[str, Iterable[str]] = (),
     silent: bool = False,
 ) -> int:
     """Runs mypy on the repository (typing check).
