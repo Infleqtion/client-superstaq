@@ -12,22 +12,6 @@ Subpackages
 Submodules
 ----------
 
-general\_superstaq.finance module
----------------------------------
-
-.. automodule:: general_superstaq.finance
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-general\_superstaq.logistics module
------------------------------------
-
-.. automodule:: general_superstaq.logistics
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 general\_superstaq.qubo module
 ------------------------------
 
@@ -48,6 +32,14 @@ general\_superstaq.serialization module
 ---------------------------------------
 
 .. automodule:: general_superstaq.serialization
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+general\_superstaq.service module
+---------------------------------
+
+.. automodule:: general_superstaq.service
    :members:
    :undoc-members:
    :show-inheritance:
@@ -76,10 +68,10 @@ general\_superstaq.typing module
    :undoc-members:
    :show-inheritance:
 
-general\_superstaq.user\_config module
---------------------------------------
+general\_superstaq.validation module
+------------------------------------
 
-.. automodule:: general_superstaq.user_config
+.. automodule:: general_superstaq.validation
    :members:
    :undoc-members:
    :show-inheritance:

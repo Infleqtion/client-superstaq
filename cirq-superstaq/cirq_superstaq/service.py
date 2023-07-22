@@ -19,7 +19,7 @@ import cirq
 import general_superstaq as gss
 import numpy as np
 import numpy.typing as npt
-from general_superstaq import ResourceEstimate, superstaq_client, user_config
+from general_superstaq import ResourceEstimate, superstaq_client
 
 import cirq_superstaq as css
 
@@ -99,31 +99,7 @@ def counts_to_results(
     return result
 
 
-def _validate_cirq_circuits(circuits: object) -> None:
-    """Validates that the input is either a single `cirq.Circuit` or a list of `cirq.Circuit`
-    instances.
-
-    Args:
-        circuits: The circuit(s) to run.
-
-    Raises:
-        ValueError: If the input is not a `cirq.Circuit` or a list of `cirq.Circuit` instances.
-    """
-
-    if not (
-        isinstance(circuits, cirq.Circuit)
-        or (
-            isinstance(circuits, Sequence)
-            and all(isinstance(circuit, cirq.Circuit) for circuit in circuits)
-        )
-    ):
-        raise ValueError(
-            "Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
-            "sequence of `cirq.Circuit` instances."
-        )
-
-
-class Service(user_config.UserConfig):
+class Service(gss.service.Service):
     """A class to access Superstaq's API.
 
     To access the API, this class requires a remote host url and an API key. These can be
@@ -280,9 +256,9 @@ class Service(user_config.UserConfig):
 
         Raises:
             ValueError: If `circuit` is not a valid `cirq.Circuit` or has no measurements to sample.
-            SuperstaqException: If there was an error accessing the API.
+            SuperstaqServerException: If there was an error accessing the API.
         """
-        _validate_cirq_circuits(circuit)
+        css.validation.validate_cirq_circuits(circuit)
         if not isinstance(circuit, cirq.Circuit):
             raise ValueError("This endpoint does not support the submission of multiple circuits.")
 
@@ -317,8 +293,7 @@ class Service(user_config.UserConfig):
             A `css.Job` which can be queried for status or results.
 
         Raises:
-            SuperstaqNotFoundException: If there was no job with the given `job_id`.
-            SuperstaqException: If there was an error accessing the API.
+            SuperstaqServerException: If there was an error accessing the API.
         """
         return css.job.Job(client=self._client, job_id=job_id)
 
@@ -352,13 +327,13 @@ class Service(user_config.UserConfig):
         """Generates resource estimates for circuit(s).
 
         Args:
-            circuits:  The cirq circuit(s) to generate resource estimate.
+            circuits:  The circuit(s) to generate resource estimate.
             target: String of target representing target device.
 
         Returns:
             `ResourceEstimate`(s) containing resource costs (after compilation).
         """
-        _validate_cirq_circuits(circuits)
+        css.validation.validate_cirq_circuits(circuits)
         circuit_is_list = not isinstance(circuits, cirq.Circuit)
         serialized_circuit = css.serialization.serialize_circuits(circuits)
 
@@ -409,7 +384,7 @@ class Service(user_config.UserConfig):
             random_seed: Optional seed for circuit randomizer.
             target: String of target AQT device.
             atol: An optional tolerance to use for approximate gate synthesis.
-            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+            gate_defs: An optional dictionary mapping names in `qtrl` configs to operations, where
                 each operation can be a unitary matrix, `cirq.Gate`, `cirq.Operation`, or None. More
                 specific associations take precedence, for example `{"SWAP": cirq.SQRT_ISWAP,
                 "SWAP/C5C4": cirq.SQRT_ISWAP_INV}` implies `SQRT_ISWAP` for all "SWAP" calibrations
@@ -419,7 +394,7 @@ class Service(user_config.UserConfig):
 
         Returns:
             Object whose .circuits attribute is a list (or list of lists) of logically equivalent
-            circuits. If qtrl is installed, the object's .seq attribute is a qtrl Sequence object
+            circuits. If `qtrl` is installed, the object's .seq attribute is a qtrl Sequence object
             containing pulse sequences for each compiled circuit, and its .pulse_list(s) attribute
             contains the corresponding list(s) of cycles.
 
@@ -472,7 +447,7 @@ class Service(user_config.UserConfig):
                 from each input circuit for Equivalent Circuit Averaging (ECA).
             random_seed: Optional seed used for approximate synthesis and ECA.
             atol: An optional tolerance to use for approximate gate synthesis.
-            gate_defs: An optional dictionary mapping names in qtrl configs to operations, where
+            gate_defs: An optional dictionary mapping names in `qtrl` configs to operations, where
                 each operation can be a unitary matrix, `cirq.Gate`, `cirq.Operation`, or None. More
                 specific associations take precedence, for example `{"SWAP": cirq.SQRT_ISWAP,
                 "SWAP/C5C4": cirq.SQRT_ISWAP_INV}` implies `SQRT_ISWAP` for all "SWAP" calibrations
@@ -483,7 +458,7 @@ class Service(user_config.UserConfig):
         Returns:
             Object whose .circuit(s) attribute contains the optimized circuits(s). Alternatively for
             ECA, an object whose .circuits attribute is a list (or list of lists) of logically
-            equivalent circuits. If qtrl is installed, the object's .seq attribute is a qtrl
+            equivalent circuits. If `qtrl` is installed, the object's .seq attribute is a qtrl
             Sequence object containing pulse sequences for each compiled circuit, and its
             .pulse_list(s) attribute contains the corresponding list(s) of cycles.
 
@@ -494,7 +469,7 @@ class Service(user_config.UserConfig):
         if not target.startswith("aqt_"):
             raise ValueError(f"{target!r} is not a valid AQT target.")
 
-        _validate_cirq_circuits(circuits)
+        css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
@@ -518,7 +493,7 @@ class Service(user_config.UserConfig):
             gate_defs_cirq = {}
             for key, val in gate_defs.items():
                 if val is not None and not isinstance(val, (cirq.Gate, cirq.Operation)):
-                    val = _to_matrix_gate(val).with_name(key)
+                    val = _to_matrix_gate(val)
                 gate_defs_cirq[key] = val
             options_dict["gate_defs"] = gate_defs_cirq
 
@@ -572,7 +547,7 @@ class Service(user_config.UserConfig):
         if base_entangling_gate not in ("xx", "zz"):
             raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
 
-        _validate_cirq_circuits(circuits)
+        css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
@@ -631,7 +606,7 @@ class Service(user_config.UserConfig):
         Args:
             circuits: The circuit(s) to compile.
             target: String of target IBMQ device.
-            kwargs: Other desired ibmq_compile options.
+            kwargs: Other desired `ibmq_compile` options.
 
         Returns:
             Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s), and whose
@@ -653,31 +628,46 @@ class Service(user_config.UserConfig):
         target: str,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
-        """Compiles the given circuit(s) to the target device.
+        """Compiles the given circuit(s) to the target device's native gateset.
 
         Args:
             circuits: The circuit(s) to compile.
             target: String of target device.
-            kwargs: Other desired compilation options.
+            kwargs: Other desired compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s).
+            A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
+            circuit(s).
         """
-        _validate_cirq_circuits(circuits)
-        serialized_circuits = css.serialization.serialize_circuits(circuits)
-        circuits_is_list = not isinstance(circuits, cirq.Circuit)
 
         target = self._resolve_target(target)
 
+        if target.startswith("aqt_"):
+            return self.aqt_compile(circuits, **kwargs)
+        elif target.startswith("sandia_"):
+            return self.qscout_compile(circuits, **kwargs)
+
+        request_json = self._get_compile_request_json(circuits, target, **kwargs)
+        circuits_is_list = not isinstance(circuits, cirq.Circuit)
+        json_dict = self._client.compile(request_json)
+        return css.compiler_output.read_json(json_dict, circuits_is_list)
+
+    def _get_compile_request_json(
+        self,
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        target: str,
+        **kwargs: Any,
+    ) -> Dict[str, str]:
+        """Helper method to compile json dictionary."""
+
+        css.validation.validate_cirq_circuits(circuits)
+        serialized_circuits = css.serialization.serialize_circuits(circuits)
         request_json = {
             "cirq_circuits": serialized_circuits,
             "target": target,
             "options": cirq.to_json(kwargs),
         }
-
-        json_dict = self._client.compile(request_json)
-
-        return css.compiler_output.read_json(json_dict, circuits_is_list)
+        return request_json
 
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int

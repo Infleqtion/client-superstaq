@@ -19,6 +19,8 @@ import cirq
 import general_superstaq as gss
 from cirq._doc import document
 
+import cirq_superstaq as css
+
 
 @cirq.value_equality(unhashable=True)
 class Job:
@@ -98,7 +100,7 @@ class Job:
         current status. A full list of states is given in `cirq_superstaq.Job.ALL_STATES`.
 
         Raises:
-            SuperstaqException: If the API is not able to get the status of the job.
+            SuperstaqServerException: If unable to get the status of the job from the API.
 
         Returns:
             The job status.
@@ -114,9 +116,11 @@ class Job:
 
         Raises:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqException: If unable to get the status of the job from the API.
+            SuperstaqServerException: If unable to get the status of the job from the API.
         """
-        self._check_if_unsuccessful()
+        if "target" not in self._job:
+            self._refresh_job()
+
         return self._job["target"]
 
     def num_qubits(self) -> int:
@@ -127,9 +131,11 @@ class Job:
 
         Raises:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqException: If unable to get the status of the job from the API.
+            SuperstaqServerException: If unable to get the status of the job from the API.
         """
-        self._check_if_unsuccessful()
+        if "num_qubits" not in self._job:
+            self._refresh_job()
+
         return self._job["num_qubits"]
 
     def repetitions(self) -> int:
@@ -140,10 +146,23 @@ class Job:
 
         Raises:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqException: If unable to get the status of the job from the API.
+            SuperstaqServerException: If unable to get the status of the job from the API.
         """
-        self._check_if_unsuccessful()
+        if "shots" not in self._job:
+            self._refresh_job()
+
         return self._job["shots"]
+
+    def compiled_circuit(self) -> cirq.Circuit:
+        """Get the compiled circuit that was submitted for this job.
+
+        Returns:
+            The compiled circuit.
+        """
+        if "compiled_circuit" not in self._job:
+            self._refresh_job()
+
+        return css.deserialize_circuits(self._job["compiled_circuit"])[0]
 
     def counts(self, timeout_seconds: int = 7200, polling_seconds: float = 1.0) -> Dict[str, int]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
@@ -157,7 +176,7 @@ class Job:
 
         Raises:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqException: If unable to get the results from the API.
+            SuperstaqServerException: If unable to get the results from the API.
             TimeoutError: If no results are available in the provided timeout interval.
         """
         time_waited_seconds: float = 0.0

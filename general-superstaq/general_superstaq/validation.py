@@ -33,7 +33,7 @@ def validate_target(target: str) -> None:
         "aqt",
         "aws",
         "cq",
-        "hqs",
+        "qtm",
         "ibmq",
         "ionq",
         "oxford",
