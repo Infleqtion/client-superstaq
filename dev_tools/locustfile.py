@@ -31,6 +31,6 @@ class QuickstartUser(locust.HttpUser):
 
     @locust.task
     def get_targets(self) -> None:
-        """Load tests the get_backends endpoint"""
+        """Load tests the get_targets endpoint"""
         requests.get = self.client.get
         _ = SERVICE.get_targets()
