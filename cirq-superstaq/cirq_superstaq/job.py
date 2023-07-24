@@ -19,6 +19,8 @@ import cirq
 import general_superstaq as gss
 from cirq._doc import document
 
+import cirq_superstaq as css
+
 
 @cirq.value_equality(unhashable=True)
 class Job:
@@ -53,7 +55,7 @@ class Job:
         "data associated with it beyond an id and a status.",
     )
 
-    def __init__(self, client: gss.superstaq_client._SuperstaQClient, job_id: str) -> None:
+    def __init__(self, client: gss.superstaq_client._SuperstaqClient, job_id: str) -> None:
         """Construct a Job.
 
         Users should not call this themselves. If you only know the `job_id`, use `get_job`
@@ -79,7 +81,7 @@ class Job:
                 # if possible append a message to the failure status, e.g. "Failed (<message>)"
                 error = self._job["failure"]["error"]
                 status += f" ({error})"
-            raise gss.SuperstaQUnsuccessfulJobException(self._job_id, status)
+            raise gss.SuperstaqUnsuccessfulJobException(self._job_id, status)
 
     def job_id(self) -> str:
         """Gets the job id of this job.
@@ -98,7 +100,7 @@ class Job:
         current status. A full list of states is given in `cirq_superstaq.Job.ALL_STATES`.
 
         Raises:
-            SuperstaQException: If the API is not able to get the status of the job.
+            SuperstaqServerException: If unable to get the status of the job from the API.
 
         Returns:
             The job status.
@@ -113,10 +115,12 @@ class Job:
             The target to which this job was submitted.
 
         Raises:
-            SuperstaQUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaQException: If unable to get the status of the job from the API.
+            SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
+            SuperstaqServerException: If unable to get the status of the job from the API.
         """
-        self._check_if_unsuccessful()
+        if "target" not in self._job:
+            self._refresh_job()
+
         return self._job["target"]
 
     def num_qubits(self) -> int:
@@ -126,10 +130,12 @@ class Job:
             The number of qubits used in this job.
 
         Raises:
-            SuperstaQUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaQException: If unable to get the status of the job from the API.
+            SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
+            SuperstaqServerException: If unable to get the status of the job from the API.
         """
-        self._check_if_unsuccessful()
+        if "num_qubits" not in self._job:
+            self._refresh_job()
+
         return self._job["num_qubits"]
 
     def repetitions(self) -> int:
@@ -139,11 +145,24 @@ class Job:
             The number of repetitions for this job.
 
         Raises:
-            SuperstaQUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaQException: If unable to get the status of the job from the API.
+            SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
+            SuperstaqServerException: If unable to get the status of the job from the API.
         """
-        self._check_if_unsuccessful()
+        if "shots" not in self._job:
+            self._refresh_job()
+
         return self._job["shots"]
+
+    def compiled_circuit(self) -> cirq.Circuit:
+        """Get the compiled circuit that was submitted for this job.
+
+        Returns:
+            The compiled circuit.
+        """
+        if "compiled_circuit" not in self._job:
+            self._refresh_job()
+
+        return css.deserialize_circuits(self._job["compiled_circuit"])[0]
 
     def counts(self, timeout_seconds: int = 7200, polling_seconds: float = 1.0) -> Dict[str, int]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
@@ -156,8 +175,8 @@ class Job:
             A dictionary containing the frequency counts of the measurements.
 
         Raises:
-            SuperstaQUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaQException: If unable to get the results from the API.
+            SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
+            SuperstaqServerException: If unable to get the results from the API.
             TimeoutError: If no results are available in the provided timeout interval.
         """
         time_waited_seconds: float = 0.0

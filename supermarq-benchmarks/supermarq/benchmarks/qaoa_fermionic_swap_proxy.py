@@ -1,4 +1,4 @@
-"""Definition of the Fermionic SWAP QAOA benchmark within the SupermarQ suite."""
+"""Definition of the Fermionic SWAP QAOA benchmark within the Supermarq suite."""
 from typing import List, Mapping, Tuple
 
 import cirq
@@ -116,6 +116,14 @@ class QAOAFermionicSwapProxy(Benchmark):
 
     def _get_opt_angles(self) -> Tuple[npt.NDArray[np.float_], float]:
         def f(params: npt.NDArray[np.float_]) -> float:
+            """The objective function to minimize.
+
+            Args:
+                params: The parameters at which to evaluate the objective.
+
+            Returns:
+                Evaluation of objective given parameters.
+            """
             gamma, beta = params
             circ = self._gen_swap_network(gamma, beta)
             # Reverse bitstring ordering due to SWAP network
@@ -147,6 +155,9 @@ class QAOAFermionicSwapProxy(Benchmark):
         This particular benchmark utilizes a quantum circuit structure called
         the fermionic swap network. We restrict the depth of this proxy benchmark
         to p=1 to keep the classical simulation scalable.
+
+        Returns:
+            The S-K model QAOA `cirq.Circuit`.
         """
         gamma, beta = self.params
         return self._gen_swap_network(gamma, beta)
@@ -154,9 +165,14 @@ class QAOAFermionicSwapProxy(Benchmark):
     def score(self, counts: Mapping[str, float]) -> float:
         """Compare the experimental output to the output of noiseless simulation.
 
-        The implementation here has exponential runtime and would not scale.
-        However, it could in principle be done efficiently via
-        https://arxiv.org/abs/1706.02998, so we're good.
+        The implementation here has exponential runtime and would not scale. However, it could in
+        principle be done efficiently via https://arxiv.org/abs/1706.02998, so we're good.
+
+        Args:
+            counts: A dictionary containing the measurement counts from circuit execution.
+
+        Returns:
+            The QAOA Fermionic SWAP proxy benchmark score.
         """
         # Reverse bitstring ordering due to SWAP network
         raw_probs = supermarq.simulation.get_ideal_counts(self.circuit())

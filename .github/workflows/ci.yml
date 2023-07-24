@@ -101,7 +101,7 @@ jobs:
     name: Pytest and Coverage check
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.8', '3.9', '3.10', '3.11']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -147,10 +147,12 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
-      - name: Install dependencies
+      - name: Install dependencies, using minimum supported cirq version
         run: |
+          cirq_version=$(sed cirq-superstaq/requirements.txt -ne 's/^cirq.=/cirq==/p')
+          echo "Using minimum cirq version: $cirq_version"
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq[dev]
+          pip install "$cirq_version" -e ./general-superstaq[dev] -e ./cirq-superstaq[dev]
       - name: Coverage check
         run: |
           check/coverage_.py cirq-superstaq
@@ -164,10 +166,12 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
-      - name: Install dependencies
+      - name: Install dependencies, using minimum supported qiskit version
         run: |
+          qiskit_version=$(sed qiskit-superstaq/requirements.txt -ne 's/^qiskit.=/qiskit==/p')
+          echo "Using minimum qiskit version: $qiskit_version"
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev]
+          pip install "$qiskit_version" -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev]
       - name: Coverage check
         run: |
           check/coverage_.py qiskit-superstaq

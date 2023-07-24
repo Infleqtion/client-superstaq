@@ -9,14 +9,8 @@ import qiskit
 class AceCR(qiskit.circuit.Gate):
     """Active Cancellation Echoed Cross Resonance gate, supporting polarity switches and sandwiches.
 
-    The typical AceCR in literature is a positive half-CR, then X on "Z side", then negative
-    half-CR ("Z side" and "X side" refer to the two sides of the underlying ZX interactions).
-
-    Args:
-        rads: Angle of rotation for CR gate (i.e., twice the angle for each echoed half-CR).
-        sandwich_rx_rads: Angle of rotation for an rx gate applied to the "X side" simultaneously
-            with the X gate on the "Z side".
-        label: An optional label for the constructed Gate.
+    The typical AceCR in the literature is a positive half-CR, then X on "Z side", then negative
+    half-CR (where "Z side" and "X side" refer to the two sides of the underlying ZX interactions).
     """
 
     def __init__(
@@ -25,6 +19,17 @@ class AceCR(qiskit.circuit.Gate):
         sandwich_rx_rads: float = 0,
         label: Optional[str] = None,
     ) -> None:
+        """Initializes an AceCR gate.
+
+        Args:
+            rads: Angle of rotation for CR gate (i.e., twice the angle for each echoed half-CR).
+            sandwich_rx_rads: Angle of rotation for an rx gate applied to the "X side"
+                simultaneously with the X gate on the "Z side".
+            label: An optional label for the constructed gate. Defaults to None.
+
+        Raises:
+            ValueError: If the polarity of `rads` is a string other than '+-' or '-+'.
+        """
         if rads == "+-":
             rads = np.pi / 2
         elif rads == "-+":
@@ -43,9 +48,15 @@ class AceCR(qiskit.circuit.Gate):
         self.sandwich_rx_rads = sandwich_rx_rads
 
     def inverse(self) -> "AceCR":
+        """Inverts the AceCR gate.
+
+        Returns:
+            The inverse AceCR gate.
+        """
         return AceCR(self.rads, -self.sandwich_rx_rads, label=self.label)
 
     def _define(self) -> None:
+        """Stores the qiskit circuit definition of the AceCR gate."""
         qc = qiskit.QuantumCircuit(2, name=self.name)
         qc.rzx(self.rads / 2, 0, 1)
         qc.x(0)
@@ -55,6 +66,7 @@ class AceCR(qiskit.circuit.Gate):
         self.definition = qc
 
     def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.bool_]:
+        """Returns an array for the AceCR gate."""
         return qiskit.quantum_info.Operator(self.definition).data
 
     def __repr__(self) -> str:
@@ -106,16 +118,24 @@ class ZZSwapGate(qiskit.circuit.Gate):
     """
 
     def __init__(self, theta: float, label: Optional[str] = None) -> None:
-        """Args:
-        theta: ZZ-interaction angle in radians
-        label: an optional label for the constructed Gate
+        """Initializes a ZZ-SWAP gate.
+
+        Args:
+            theta: The ZZ-interaction angle in radians.
+            label: An optional label for the constructed gate. Defaults to None.
         """
         super().__init__("zzswap", 2, [theta], label=label)
 
     def inverse(self) -> "ZZSwapGate":
+        """Inverts the ZZ-SWAP gate.
+
+        Returns:
+            The inverse ZZ-SWAP gate.
+        """
         return ZZSwapGate(-self.params[0])
 
     def _define(self) -> None:
+        """Stores the qiskit circuit definition of the ZZ-SWAP gate."""
         qc = qiskit.QuantumCircuit(2, name="zzswap")
         qc.cx(0, 1)
         qc.cx(1, 0)
@@ -124,6 +144,7 @@ class ZZSwapGate(qiskit.circuit.Gate):
         self.definition = qc
 
     def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.bool_]:
+        """Returns a numpy array for the ZZ-SWAP gate."""
         return np.array(
             [
                 [1, 0, 0, 0],
@@ -146,19 +167,30 @@ class ZZSwapGate(qiskit.circuit.Gate):
 
 
 class StrippedCZGate(qiskit.circuit.Gate):
-    """The Stripped CZ Gate is the gate that is actually being performed by Hilbert,
-    which is just a regular CZ gate when the rz angle = 0, and is corrected into a CZ
-    gate by RZ gates afterwards if the rz angle is nonzero.
+    """The Stripped CZ gate is a regular CZ gate when the rz angle = 0.
+
+    It is the gate that is actually being performed by Hilbert, and it is corrected
+    into a CZ gate by RZ gates afterwards if the rz angle is nonzero.
     """
 
     def __init__(self, rz_rads: float) -> None:
-        """Args: rz_rads: RZ-rotation angle in radians"""
+        """Initializes a Stripped CZ gate.
+
+        Args:
+            rz_rads: The RZ-rotation angle in radians.
+        """
         super().__init__("stripped_cz", 2, [rz_rads])
 
     def inverse(self) -> "StrippedCZGate":
+        """Inverts the stripped CZ gate.
+
+        Returns:
+            The inverse Stripped CZ gate.
+        """
         return StrippedCZGate(-self.params[0])
 
     def _define(self) -> None:
+        """Stores the qiskit circuit definition of the Stripped CZ gate."""
         qc = qiskit.QuantumCircuit(2, name="stripped_cz")
         qc.p(self.params[0], 0)
         qc.p(self.params[0], 1)
@@ -166,6 +198,7 @@ class StrippedCZGate(qiskit.circuit.Gate):
         self.definition = qc
 
     def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.complex_]:
+        """Returns a numpy array of the Stripped CZ gate."""
         return np.array(
             [
                 [1, 0, 0, 0],
@@ -185,12 +218,17 @@ class StrippedCZGate(qiskit.circuit.Gate):
 
 
 class ParallelGates(qiskit.circuit.Gate):
-    """A single Gate combining a collection of concurrent Gate(s) acting on different qubits"""
+    """A single gate combining a collection of concurrent gate(s) acting on different qubits."""
 
     def __init__(self, *component_gates: qiskit.circuit.Gate, label: Optional[str] = None) -> None:
-        """Args:
-        component_gates: Gate(s) to be collected into single gate
-        label: an optional label for the constructed Gate
+        """Initializes the `ParallelGates` class.
+
+        Args:
+            component_gates: Gate(s) to be collected into a single gate.
+            label: An optional label for the constructed gate. Defaults to None.
+
+        Raises:
+            ValueError: If `component_gates` are not `qiskit.circuit.Gate` instances.
         """
         self.component_gates: Tuple[qiskit.circuit.Gate, ...] = ()
         num_qubits = 0
@@ -209,9 +247,15 @@ class ParallelGates(qiskit.circuit.Gate):
         super().__init__(name, num_qubits, [], label=label)
 
     def inverse(self) -> "ParallelGates":
+        """Inverts parallel gates.
+
+        Returns:
+            The inverse parallel gates.
+        """
         return ParallelGates(*[gate.inverse() for gate in self.component_gates])
 
     def _define(self) -> None:
+        """Stores the qiskit circuit definition of `ParallelGates`."""
         qc = qiskit.QuantumCircuit(self.num_qubits, name="parallel_gates")
         qubits = list(range(self.num_qubits))
         for gate in self.component_gates:
@@ -221,6 +265,7 @@ class ParallelGates(qiskit.circuit.Gate):
         self.definition = qc
 
     def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.bool_]:
+        """Returns a numpy array for `ParallelGates`."""
         mat = functools.reduce(np.kron, (gate.to_matrix() for gate in self.component_gates[::-1]))
         return np.asarray(mat, dtype=dtype)
 
@@ -229,19 +274,43 @@ class ParallelGates(qiskit.circuit.Gate):
         return f"ParallelGates({args})"
 
 
-class iXGate(qiskit.circuit.Gate):  # pylint: disable=missing-class-docstring
+class iXGate(qiskit.circuit.Gate):
+    r"""The iX gate (a single qubit Pauli-X gate with a global phase of i).
+
+    It is a special case of when the RX gate's input rotation angle is :math:`-\pi`:
+
+     .. math::
+
+        \begin{bmatrix}
+        0 & i \\
+        i & 0 \\
+        \end{bmatrix}
+    """
+
     def __init__(self, label: Optional[str] = None) -> None:
+        """Initializes an iXGate.
+
+        Args:
+            label: An optional label for the constructed gate. Defaults to None.
+        """
         super().__init__("ix", 1, [], label=label)
 
     def _define(self) -> None:
+        """Stores the qiskit circuit definition of the iX gate."""
         qc = qiskit.QuantumCircuit(1, name=self.name)
         qc.rx(-np.pi, 0)
         self.definition = qc
 
     def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.bool_]:
+        """Returns a numpy array of the iX gate."""
         return np.array([[0, 1j], [1j, 0]])
 
     def inverse(self) -> "iXdgGate":
+        """Inverts iX gate.
+
+        Returns:
+            The inverse iX gate.
+        """
         return iXdgGate()
 
     def control(
@@ -250,6 +319,16 @@ class iXGate(qiskit.circuit.Gate):  # pylint: disable=missing-class-docstring
         label: Optional[str] = None,
         ctrl_state: Optional[Union[str, int]] = None,
     ) -> qiskit.circuit.ControlledGate:
+        """Method to return a controlled version of the gate.
+
+        Args:
+            num_ctrl_qubits: Number of control qubits for the gate. Defaults to 1.
+            label: An optional label for the gate. Defaults to None.
+            ctrl_state: The control qubit state to use (e.g. '00'). Defaults to None.
+
+        Returns:
+            The `qiskit.circuit.ControlledGate` version of the gate.
+        """
         if num_ctrl_qubits == 2:
             gate = iCCXGate(ctrl_state=ctrl_state)
             gate.base_gate.label = self.label
@@ -263,19 +342,32 @@ class iXGate(qiskit.circuit.Gate):  # pylint: disable=missing-class-docstring
         return f"iXGate(label={self.label})"
 
 
-class iXdgGate(qiskit.circuit.Gate):  # pylint: disable=missing-class-docstring
+class iXdgGate(qiskit.circuit.Gate):
+    r"""The conjugate transpose of the `iXGate` (:math:`iXGate^{\dagger} = iXdgGate`)."""
+
     def __init__(self, label: Optional[str] = None) -> None:
+        """Initializes an iXdgGate.
+
+        Args:
+            label: An optional label for the constructed gate. Defaults to None.
+        """
         super().__init__("ixdg", 1, [], label=label)
 
     def _define(self) -> None:
+        """Stores the qiskit circuit definition of the inverse iX gate."""
         qc = qiskit.QuantumCircuit(1, name=self.name)
         qc.rx(np.pi, 0)
         self.definition = qc
 
     def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.complex_]:
+        """Returns a numpy array of the inverse iX gate."""
         return np.array([[0, -1j], [-1j, 0]])
 
     def inverse(self) -> iXGate:
+        """Inverts the `iXdgGate`.
+
+        Returns:
+            The inverse of the `iXdgGate`."""
         return iXGate()
 
     def control(
@@ -284,6 +376,16 @@ class iXdgGate(qiskit.circuit.Gate):  # pylint: disable=missing-class-docstring
         label: Optional[str] = None,
         ctrl_state: Optional[Union[str, int]] = None,
     ) -> qiskit.circuit.ControlledGate:
+        """Method to return a controlled version of the gate.
+
+        Args:
+            num_ctrl_qubits: Number of control qubits for the gate. Defaults to 1.
+            label: An optional label for the gate. Defaults to None.
+            ctrl_state: The control qubit state to use (e.g. '00'). Defaults to None.
+
+        Returns:
+            The `qiskit.circuit.ControlledGate` version of the gate.
+        """
         if num_ctrl_qubits == 2:
             gate = iCCXdgGate(ctrl_state=ctrl_state)
             gate.base_gate.label = self.label
@@ -297,21 +399,45 @@ class iXdgGate(qiskit.circuit.Gate):  # pylint: disable=missing-class-docstring
         return f"iXdgGate(label={self.label})"
 
 
-class iCCXGate(qiskit.circuit.ControlledGate):  # pylint: disable=missing-class-docstring
+class iCCXGate(qiskit.circuit.ControlledGate):
+    r"""An iCCX gate which consists of a Toffoli gate and a subsequent controlled phase gate.
+
+    The two qubit controlled phase gate uses an angle of rotation of :math:`\frac{\pi}{2}` on
+    the second qubit with the first qubit acting as the control. That is, it is a composite
+    gate of the following instructions:
+
+    .. parsed-literal::
+
+        q_0: ──■───■───────
+               │   │P(π/2)
+        q_1: ──■───■───────
+             ┌─┴─┐
+        q_2: ┤ X ├─────────
+             └───┘
+    """
+
     def __init__(
         self, label: Optional[str] = None, ctrl_state: Optional[Union[str, int]] = None
     ) -> None:
+        """Initializes an iCCXGate.
+
+        Args:
+            label: An optional label for the constructed gate. Defaults to None.
+            ctrl_state: The control qubit state to use (e.g. '00'). Defaults to None.
+        """
         super().__init__(
             "iccx", 3, [], label, num_ctrl_qubits=2, ctrl_state=ctrl_state, base_gate=iXGate()
         )
 
     def _define(self) -> None:
+        """Stores the qiskit circuit definition of iCCX gate."""
         qc = qiskit.QuantumCircuit(3, name=self.name)
         qc.ccx(0, 1, 2)
         qc.cp(np.pi / 2, 0, 1)
         self.definition = qc
 
     def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.complex_]:
+        """Returns a numpy array of the iCCX gate."""
         mat = qiskit.circuit._utils._compute_control_matrix(
             self.base_gate.to_matrix(), self.num_ctrl_qubits, ctrl_state=self.ctrl_state
         )
@@ -324,21 +450,31 @@ class iCCXGate(qiskit.circuit.ControlledGate):  # pylint: disable=missing-class-
         return f"iCCXGate(label={self.label}, ctrl_state={self.ctrl_state})"
 
 
-class iCCXdgGate(qiskit.circuit.ControlledGate):  # pylint: disable=missing-class-docstring
+class iCCXdgGate(qiskit.circuit.ControlledGate):
+    r"""The conjugate transpose of the `iCCXGate` (:math:`iCCXGate^{\dagger} = iCCXdgGate`)."""
+
     def __init__(
         self, label: Optional[str] = None, ctrl_state: Optional[Union[str, int]] = None
     ) -> None:
+        """Initializes an iCCXdgGate.
+
+        Args:
+            label: An optional label for the constructed gate. Defaults to None.
+            ctrl_state: The control qubit state to use (e.g. '00'). Defaults to None.
+        """
         super().__init__(
             "iccxdg", 3, [], label, num_ctrl_qubits=2, ctrl_state=ctrl_state, base_gate=iXdgGate()
         )
 
     def _define(self) -> None:
+        """Stores the qiskit circuit definition of the iCCX gate conjugate transpose."""
         qc = qiskit.QuantumCircuit(3, name=self.name)
         qc.ccx(0, 1, 2).inverse()
         qc.cp(-np.pi / 2, 0, 1)
         self.definition = qc
 
     def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.complex_]:
+        """Returns a numpy array of the `iCCXdgGate`."""
         mat = qiskit.circuit._utils._compute_control_matrix(
             self.base_gate.to_matrix(), self.num_ctrl_qubits, ctrl_state=self.ctrl_state
         )
@@ -351,8 +487,15 @@ class iCCXdgGate(qiskit.circuit.ControlledGate):  # pylint: disable=missing-clas
         return f"iCCXdgGate(label={self.label}, ctrl_state={self.ctrl_state})"
 
 
-class AQTiCCXGate(iCCXGate):  # pylint: disable=missing-class-docstring
+class AQTiCCXGate(iCCXGate):
+    """A subclass of the iCCXGate for AQT where the control state is "00"."""
+
     def __init__(self, label: Optional[str] = None) -> None:
+        """Initializes an AQTiCCXGate.
+
+        Args:
+            label: An optional label for the constructed gate. Defaults to None.
+        """
         super().__init__(label=label, ctrl_state="00")
 
 
@@ -377,10 +520,20 @@ _custom_gate_resolvers: Dict[str, Callable[..., qiskit.circuit.Gate]] = {
 
 
 def custom_resolver(gate: qiskit.circuit.Instruction) -> Optional[qiskit.circuit.Gate]:
-    """Recover a custom gate type from a generic qiskit.circuit.Gate. Resolution is done using
-    gate.definition.name rather than gate.name, as the former is set by all qiskit-superstaq
-    custom gates and the latter may be modified by calls such as QuantumCircuit.qasm()
+    """Recovers a custom gate type from a generic `qiskit.circuit.Gate`.
+
+    The resolution is done using `gate.definition.name` rather than `gate.name`, as the former
+    is set by all `qiskit-superstaq` custom gates and the latter may be modified by calls
+    such as `qiskit.QuantumCircuit.qasm()`.
+
+    Args:
+        gate: The input gate instruction from which to recover a custom gate type.
+
+    Returns:
+        A `qiskit.circuit.Gate` if the gate definition name is in the `_custom_gate_resolver`
+        dictionary (or the definition name is "parallel_gates").
     """
+
     if gate.definition and gate.definition.name == "parallel_gates":
         component_gates = [custom_resolver(inst) or inst for inst, _, _ in gate.definition]
         return ParallelGates(*component_gates, label=gate.label)
