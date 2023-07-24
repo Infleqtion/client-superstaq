@@ -23,7 +23,7 @@ def _(environment: locust.env.Environment) -> None:
         environment.process_exit_code = 0
 
 
-SERVICE = cirq_superstaq.Service()
+SERVICE = css.Service()
 
 
 class QuickstartUser(locust.HttpUser):
