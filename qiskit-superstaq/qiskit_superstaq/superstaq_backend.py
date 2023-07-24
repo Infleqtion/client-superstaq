@@ -28,13 +28,14 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
     """This class represents a Superstaq backend."""
 
     def __init__(self, provider: qss.SuperstaqProvider, target: str) -> None:
-        """Initializes a SuperstaqBackend.
+        """Initializes a `SuperstaqBackend`.
 
         Args:
             provider: Provider for a Superstaq backend.
             target: A string containing the name of a target backend.
         """
         self._provider = provider
+        self._num_clbits_in_circ: List[int] = []
         self.configuration_dict = {
             "backend_name": target,
             "backend_version": "n/a",
@@ -94,6 +95,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         Raises:
             ValueError: If `circuits` contains invalid circuits for submission.
         """
+        self._num_clbits_in_circ.clear()
         qss.validation.validate_qiskit_circuits(circuits)
         if isinstance(circuits, qiskit.QuantumCircuit):
             circuits = [circuits]
@@ -102,6 +104,9 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             # TODO: only raise if the run method actually requires samples (and not for e.g. a
             # statevector simulation)
             raise ValueError("Circuit has no measurements to sample.")
+
+        for circuit in circuits:
+            self._num_clbits_in_circ.append(circuit.num_clbits)
 
         qiskit_circuits = qss.serialization.serialize_circuits(circuits)
 
@@ -143,7 +148,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         """Compiles the given circuit(s) to the backend's native gateset.
 
         Args:
-            circuits: The qiskit QuantumCircuit(s) to compile.
+            circuits: The `qiskit.QuantumCircuit`(s) to compile.
             kwargs: Other desired compile options.
 
         Returns:
@@ -257,12 +262,12 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
 
         Args:
-            circuits: The qiskit QuantumCircuit(s) to compile.
+            circuits: The `qiskit.QuantumCircuit`(s) to compile.
             kwargs: Other desired compile options.
 
         Returns:
-            An IBMQ CompilerOutput object whose .circuit(s) attribute is an optimized qiskit
-            QuantumCircuit(s).
+            An IBMQ `CompilerOutput` object whose .circuit(s) attribute is an optimized
+            `qiskit.QuantumCircuit`(s).
 
         Raises:
             ValueError: If this is not an IBMQ backend.
@@ -351,11 +356,11 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         """Compiles and optimizes the given circuit(s) for CQ devices.
 
         Args:
-            circuits: The qiskit QuantumCircuit(s) to compile.
+            circuits: The `qiskit.QuantumCircuit`(s) to compile.
             kwargs: Other desired compile options.
 
         Returns:
-            An CQ CompilerOutput object.
+            An CQ `CompilerOutput` object.
 
         Raises:
             ValueError: If this is not a CQ backend.
@@ -385,8 +390,8 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             circuits: The circuit(s) used during resource estimation.
 
         Returns:
-            ResourceEstimate(s) containing resource costs (after compilation) for running circuit(s)
-            on this backend.
+            `ResourceEstimate`(s) containing resource costs (after compilation) for running
+            circuit(s) on this backend.
         """
         request_json = self._get_compile_request_json(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
