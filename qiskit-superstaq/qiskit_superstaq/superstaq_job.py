@@ -37,6 +37,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         super().__init__(backend, job_id)
         self._overall_status = "Submitted"
         self._job_info: Dict[str, Any] = {}
+        self._circ_meas_bit_indices: List[List[int]] = []
 
     def __eq__(self, other: object) -> bool:
 
@@ -57,8 +58,46 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """
 
         self.wait_for_final_state(timeout, wait)  # should call self.status()
-
         return [self._job_info[job_id] for job_id in self._job_id.split(",")]
+
+    def _arrange_counts(
+        self, counts: Dict[str, int], circ_meas_bit_indices: List[int], num_clbits: int
+    ) -> Dict[str, int]:
+        """Arranges the classical bit strings from job counts to match classical register.
+
+        Args:
+            counts: The raw counts from a job result.
+            circ_meas_bit_indices: The indices of the measured qubits.
+            num_clbits: The number of classical bits for the corresponding job circuit.
+
+        Returns:
+            A dictionary with the updated counts keys.
+        """
+        arranged_counts = {}
+        for key in counts.keys():
+            updated_key = "0" * num_clbits
+            for counter, index in enumerate(circ_meas_bit_indices):
+                updated_key = updated_key[:index] + key[counter] + updated_key[index + 1 :]
+            arranged_counts[updated_key] = counts[key]
+
+        return arranged_counts
+
+    def _fetch_meas_info(self, index: int) -> int:
+        """Helper method to update measurement indices and get number of classical bits.
+
+        Args:
+            index: The index of the circuit of interest.
+
+        Returns:
+            The number of classical bits in the circuit.
+        """
+        if self._circ_meas_bit_indices == []:
+            for circuit in self.compiled_circuits():
+                self._circ_meas_bit_indices.append(
+                    qss.compiler_output.measured_qubit_indices(circuit)
+                )
+
+        return self._backend._num_clbits_in_circ[index]
 
     def result(self, timeout: Optional[float] = None, wait: float = 5) -> qiskit.result.Result:
         """Retrieves the result data associated with a Superstaq job.
@@ -77,10 +116,15 @@ class SuperstaqJob(qiskit.providers.JobV1):
 
         # create list of result dictionaries
         results_list = []
-        for result in results:
+        for index, result in enumerate(results):
             counts = result["samples"]
             if counts:  # change endianess to match Qiskit
+                num_clbits = self._fetch_meas_info(index)
+                circ_meas_list = self._circ_meas_bit_indices[index]
+                if len(circ_meas_list) != num_clbits:
+                    counts = self._arrange_counts(result["samples"], circ_meas_list, num_clbits)
                 counts = dict((key[::-1], value) for (key, value) in counts.items())
+
             results_list.append(
                 {
                     "success": result["status"] == "Done",
