@@ -50,8 +50,11 @@ def test_timeout(backend: qss.SuperstaqBackend) -> None:
 
 
 def test_result(backend: qss.SuperstaqBackend) -> None:
+
+    backend._num_clbits_in_circ = [2]
     job = qss.SuperstaqJob(backend=backend, job_id="123abc")
 
+    job._circ_meas_bit_indices = [[0, 1]]
     expected_results = [{"success": True, "shots": 100, "data": {"counts": {"01": 100}}}]
 
     expected = qiskit.result.Result.from_dict(
@@ -73,6 +76,37 @@ def test_result(backend: qss.SuperstaqBackend) -> None:
 
         assert ans.backend_name == expected.backend_name
         assert ans.job_id == expected.job_id
+
+
+def test_arranged_counts(backend: qss.SuperstaqBackend) -> None:
+
+    backend._num_clbits_in_circ = [4, 5]
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc,456abc")
+
+    job._circ_meas_bit_indices = [[2, 3], [0, 1, 2, 4]]
+    job._job_info["123abc"] = {"status": "Done", "samples": {"00": 70, "11": 30}, "shots": 100}
+    job._job_info["456abc"] = {"status": "Done", "samples": {"1101": 40, "0001": 60}, "shots": 100}
+
+    counts = job.result().get_counts()
+    assert counts == [{"0000": 70, "1100": 30}, {"10011": 40, "10000": 60}]
+
+
+def test_fetch_meas_info(backend: qss.SuperstaqBackend) -> None:
+
+    response = mock_response("Done")
+    qc = qiskit.QuantumCircuit(2, 2)
+    qc.h(0)
+    qc.cx(0, 1)
+    qc.measure([0, 1], [0, 1])
+
+    response["compiled_circuit"] = qss.serialize_circuits(qc)
+    backend._num_clbits_in_circ = [2]
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
+    ):
+        _ = job._fetch_meas_info(0)
+        assert job._circ_meas_bit_indices == [[0, 1]]
 
 
 def test_check_if_stopped(backend: qss.SuperstaqBackend) -> None:
