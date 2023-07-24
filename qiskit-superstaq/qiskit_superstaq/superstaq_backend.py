@@ -95,7 +95,6 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         Raises:
             ValueError: If `circuits` contains invalid circuits for submission.
         """
-        self._num_clbits_in_circ.clear()
         qss.validation.validate_qiskit_circuits(circuits)
         if isinstance(circuits, qiskit.QuantumCircuit):
             circuits = [circuits]
@@ -105,8 +104,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             # statevector simulation)
             raise ValueError("Circuit has no measurements to sample.")
 
-        for circuit in circuits:
-            self._num_clbits_in_circ.append(circuit.num_clbits)
+        self._num_clbits_in_circ = [circuit.num_clbits for circuit in circuits]
 
         qiskit_circuits = qss.serialization.serialize_circuits(circuits)
 

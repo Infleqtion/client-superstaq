@@ -92,10 +92,10 @@ class SuperstaqJob(qiskit.providers.JobV1):
             The number of classical bits in the circuit.
         """
         if self._circ_meas_bit_indices == []:
-            for circuit in self.compiled_circuits():
-                self._circ_meas_bit_indices.append(
-                    qss.compiler_output.measured_qubit_indices(circuit)
-                )
+            self._circ_meas_bit_indices = [
+                qss.compiler_output.measured_qubit_indices(circuit)
+                for circuit in self.compiled_circuits()
+            ]
 
         return self._backend._num_clbits_in_circ[index]
 
@@ -122,7 +122,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 num_clbits = self._fetch_meas_info(index)
                 circ_meas_list = self._circ_meas_bit_indices[index]
                 if len(circ_meas_list) != num_clbits:
-                    counts = self._arrange_counts(result["samples"], circ_meas_list, num_clbits)
+                    counts = self._arrange_counts(counts, circ_meas_list, num_clbits)
                 counts = dict((key[::-1], value) for (key, value) in counts.items())
 
             results_list.append(
