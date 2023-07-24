@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""A `cirq.Sampler` implementation for the SuperstaQ API."""
+"""A `cirq.Sampler` implementation for the Superstaq API."""
 from __future__ import annotations
 
 from typing import List
@@ -21,7 +21,7 @@ import cirq_superstaq as css
 
 
 class Sampler(cirq.Sampler):
-    """A sampler that works against the SuperstaQ API. Users should get a sampler from the `sampler`
+    """A sampler that works against the Superstaq API. Users should get a sampler from the `sampler`
     method on `css.Service`.
 
     Example:
@@ -50,15 +50,11 @@ class Sampler(cirq.Sampler):
         service: css.service.Service,
         target: str,
     ) -> None:
-        """Constructs the sampler. Uers should get a sampler from the `sampler` method on
-        `css.Service`.
+        """Constructs the sampler, accessed from the `sampler` method on `css.Service`.
 
         Args:
             service: The service used to create this sample.
-            target: Backend on which to run the job.
-
-        Returns:
-            None.
+            target: The backend on which to run the job.
         """
         self._service = service
         self._target = target
@@ -69,13 +65,16 @@ class Sampler(cirq.Sampler):
         params: cirq.Sweepable,
         repetitions: int = 1,
     ) -> List[cirq.ResultDict]:
-        """Runs a sweep for the given Circuit. Note that this creates jobs for each of the sweeps in
-        the given sweepable, and then blocks until all of jobs are complete.
+        """Runs a sweep for the given circuit.
 
-        Ags:
+        Note:
+            This creates jobs for each of the sweeps in the given sweepable, and then
+            blocks until all of jobs are complete.
+
+        Args:
             program: The circuit to sample from.
             params: The parameters to run with program.
-            repetitions: The number of times to sample.
+            repetitions: The number of times to sample. Defaults to 1.
 
         Returns:
             A list of Cirq results, one for each parameter resolver.

@@ -1,26 +1,27 @@
+# pylint: disable=missing-function-docstring,missing-class-docstring
 """Integration checks that run daily (via Github action) between client and prod server."""
-# pylint: disable=missing-function-docstring
+
 import os
 
 import numpy as np
 import pytest
 import qiskit
-from general_superstaq import ResourceEstimate, SuperstaQException
+from general_superstaq import ResourceEstimate, SuperstaqServerException
 
 import qiskit_superstaq as qss
 
 
 @pytest.fixture
-def provider() -> qss.SuperstaQProvider:
-    return qss.SuperstaQProvider()
+def provider() -> qss.SuperstaqProvider:
+    return qss.SuperstaqProvider()
 
 
-def test_backends(provider: qss.SuperstaQProvider) -> None:
+def test_backends(provider: qss.SuperstaqProvider) -> None:
     result = provider.backends()
     assert provider.get_backend("ibmq_qasm_simulator") in result
 
 
-def test_ibmq_set_token(provider: qss.SuperstaQProvider) -> None:
+def test_ibmq_set_token(provider: qss.SuperstaqProvider) -> None:
     try:
         ibmq_token = os.environ["TEST_USER_IBMQ_TOKEN"]
     except KeyError as key:
@@ -28,11 +29,11 @@ def test_ibmq_set_token(provider: qss.SuperstaQProvider) -> None:
 
     assert provider.ibmq_set_token(ibmq_token) == "Your IBMQ account token has been updated"
 
-    with pytest.raises(SuperstaQException, match="IBMQ token is invalid."):
+    with pytest.raises(SuperstaqServerException, match="IBMQ token is invalid."):
         assert provider.ibmq_set_token("INVALID_TOKEN")
 
 
-def test_ibmq_compile(provider: qss.SuperstaQProvider) -> None:
+def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2)
     qc.append(qss.AceCR("+-"), [0, 1])
     out = provider.ibmq_compile(qc, target="ibmq_jakarta_qpu")
@@ -41,7 +42,7 @@ def test_ibmq_compile(provider: qss.SuperstaQProvider) -> None:
     assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
 
 
-def test_acecr_ibmq_compile(provider: qss.SuperstaQProvider) -> None:
+def test_acecr_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
     """Tests ibmq_compile method running without error.
 
     This test was originally written to make sure compilation to ibmq_casablanca would not fail, but
@@ -67,7 +68,7 @@ def test_acecr_ibmq_compile(provider: qss.SuperstaQProvider) -> None:
     assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
 
 
-def test_aqt_compile(provider: qss.SuperstaQProvider) -> None:
+def test_aqt_compile(provider: qss.SuperstaqProvider) -> None:
     circuit = qiskit.QuantumCircuit(8)
     circuit.h(4)
     expected = qiskit.QuantumCircuit(8)
@@ -79,19 +80,17 @@ def test_aqt_compile(provider: qss.SuperstaQProvider) -> None:
     assert provider.aqt_compile([circuit, circuit]).circuits == [expected, expected]
 
 
-def test_aqt_compile_eca(provider: qss.SuperstaQProvider) -> None:
+def test_aqt_compile_eca(provider: qss.SuperstaqProvider) -> None:
     circuit = qiskit.QuantumCircuit(8)
     circuit.h(4)
     circuit.crx(0.7 * np.pi, 4, 5)
 
-    eca_circuits = provider.aqt_compile_eca(
-        circuit, num_equivalent_circuits=3, random_seed=123
-    ).circuits
+    eca_circuits = provider.aqt_compile(circuit, num_eca_circuits=3, random_seed=123).circuits
     assert len(eca_circuits) == 3
     assert all(isinstance(circuit, qiskit.QuantumCircuit) for circuit in eca_circuits)
 
     # multiple circuits:
-    eca_circuits = provider.aqt_compile_eca([circuit, circuit], num_equivalent_circuits=3).circuits
+    eca_circuits = provider.aqt_compile([circuit, circuit], num_eca_circuits=3).circuits
     assert len(eca_circuits) == 2
     for circuits in eca_circuits:
         assert len(circuits) == 3
@@ -99,27 +98,23 @@ def test_aqt_compile_eca(provider: qss.SuperstaQProvider) -> None:
 
 
 @pytest.mark.skip(reason="Won't pass until server issue related to this is fixed")
-def test_aqt_compile_eca_regression(provider: qss.SuperstaQProvider) -> None:
+def test_aqt_compile_eca_regression(provider: qss.SuperstaqProvider) -> None:
     circuit = qiskit.QuantumCircuit(8)
     circuit.h(4)
     circuit.crx(0.7 * np.pi, 4, 5)
 
-    eca_circuits = provider.aqt_compile_eca(
-        circuit, num_equivalent_circuits=3, random_seed=123
-    ).circuits
+    eca_circuits = provider.aqt_compile(circuit, num_eca_circuits=3, random_seed=123).circuits
 
     # test with same and different seed
     assert (
-        eca_circuits
-        == provider.aqt_compile_eca(circuit, num_equivalent_circuits=3, random_seed=123).circuits
+        eca_circuits == provider.aqt_compile(circuit, num_eca_circuits=3, random_seed=123).circuits
     )
     assert (
-        eca_circuits
-        != provider.aqt_compile_eca(circuit, num_equivalent_circuits=3, random_seed=456).circuits
+        eca_circuits != provider.aqt_compile(circuit, num_eca_circuits=3, random_seed=456).circuits
     )
 
 
-def test_get_balance(provider: qss.SuperstaQProvider) -> None:
+def test_get_balance(provider: qss.SuperstaqProvider) -> None:
     balance_str = provider.get_balance()
     assert isinstance(balance_str, str)
     assert balance_str.startswith("$")
@@ -127,7 +122,7 @@ def test_get_balance(provider: qss.SuperstaQProvider) -> None:
     assert isinstance(provider.get_balance(pretty_output=False), float)
 
 
-def test_get_resource_estimate(provider: qss.SuperstaQProvider) -> None:
+def test_get_resource_estimate(provider: qss.SuperstaqProvider) -> None:
     circuit1 = qiskit.QuantumCircuit(2)
     circuit1.cnot(0, 1)
     circuit1.h(1)
@@ -148,7 +143,7 @@ def test_get_resource_estimate(provider: qss.SuperstaQProvider) -> None:
     assert resource_estimates == [resource_estimate, ResourceEstimate(1, 2, 3)]
 
 
-def test_qscout_compile(provider: qss.SuperstaQProvider) -> None:
+def test_qscout_compile(provider: qss.SuperstaqProvider) -> None:
     circuit = qiskit.QuantumCircuit(1)
     circuit.h(0)
     expected = qiskit.QuantumCircuit(2)
@@ -159,7 +154,7 @@ def test_qscout_compile(provider: qss.SuperstaQProvider) -> None:
     assert provider.qscout_compile([circuit, circuit]).circuits == [expected, expected]
 
 
-def test_qscout_compile_swap_mirror(provider: qss.SuperstaQProvider) -> None:
+def test_qscout_compile_swap_mirror(provider: qss.SuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2)
     qc.swap(0, 1)
 
@@ -180,7 +175,7 @@ def test_qscout_compile_swap_mirror(provider: qss.SuperstaQProvider) -> None:
     assert num_two_qubit_gates == 3
 
 
-def test_cq_compile(provider: qss.SuperstaQProvider) -> None:
+def test_cq_compile(provider: qss.SuperstaqProvider) -> None:
     circuit = qiskit.QuantumCircuit(1)
     circuit.h(0)
     assert isinstance(provider.cq_compile(circuit).circuit, qiskit.QuantumCircuit)
@@ -194,13 +189,13 @@ def test_cq_compile(provider: qss.SuperstaQProvider) -> None:
     )
 
 
-def test_get_aqt_configs(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
+def test_get_aqt_configs(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     res = provider.aqt_get_configs()
     assert "pulses" in res
     assert "variables" in res
 
 
-def test_supercheq(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
+def test_supercheq(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     # fmt: off
     files = [
         [0, 0, 0, 0, 0], [0, 0, 0, 0, 1], [0, 0, 0, 1, 0], [0, 0, 0, 1, 1],
@@ -221,7 +216,7 @@ def test_supercheq(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
     assert fidelities.shape == (32, 32)
 
 
-def test_submit_to_provider_simulators(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
+def test_submit_to_provider_simulators(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
 
     qc = qiskit.QuantumCircuit(2, 2)
     qc.x(0)
