@@ -216,6 +216,22 @@ def test_supercheq(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     assert fidelities.shape == (32, 32)
 
 
+def test_dfe(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
+    qc = qiskit.QuantumCircuit(1)
+    qc.h(0)
+    target = "ss_unconstrained_simulator"
+    ids = provider.submit_dfe(
+        rho_1=(qc, target),
+        rho_2=(qc, target),
+        m=5,
+        shots=1000,
+    )
+    assert len(ids) == 2
+
+    result = provider.process_dfe(ids)
+    assert isinstance(result, float)
+
+
 def test_submit_to_provider_simulators(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
 
     qc = qiskit.QuantumCircuit(2, 2)
