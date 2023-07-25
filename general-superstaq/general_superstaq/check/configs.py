@@ -41,7 +41,7 @@ def run(
     parser.parse_args(args)  # placeholder parsing to enable printing help text
 
     # identify the "original" config file, and the file that is supposed to be a copy
-    file_orig = os.path.join(os.path.abspath(os.path.dirname(__file__)), config_file)
+    file_orig = os.path.join(os.path.abspath(os.path.dirname(__file__)), f"checks-{config_file}")
     file_copy = os.path.join(check_utils.root_dir, config_file)
     lines_orig = open(file_orig, "r").read().splitlines()
     lines_copy = open(file_copy, "r").read().splitlines()
