@@ -407,6 +407,7 @@ class _SuperstaqClient:
                 - tag: Tag for all jobs submitted for this protocol.
                 - lifespan: How long to store the jobs submitted for in days (only works with right
                 permissions).
+                - method: Which type of method to execute the circuits with.
 
         Returns:
             A list of size two with the ids for the RMT jobs created; these ids should be passed to

@@ -724,6 +724,7 @@ class Service(gss.service.Service):
                 - tag: Tag for all jobs submitted for this protocol.
                 - lifespan: How long to store the jobs submitted for in days (only works with right
                 permissions).
+                - method: Which type of method to execute the circuits with.
 
         Returns:
             A list with two strings, which are the job ids that need to be passed to `process_dfe`
