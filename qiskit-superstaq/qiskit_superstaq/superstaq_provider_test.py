@@ -374,6 +374,31 @@ def test_supercheq(mock_supercheq: mock.MagicMock) -> None:
 
 
 @patch("requests.post")
+def test_dfe(mock_post: MagicMock) -> None:
+    provider = qss.SuperstaqProvider(api_key="key")
+    qc = qiskit.QuantumCircuit(1)
+    qc.h(0)
+    mock_post.return_value.json = lambda: ["id1", "id2"]
+    assert provider.submit_dfe(
+        rho_1=(qc, "ss_example_qpu"),
+        rho_2=(qc, "ss_example_qpu"),
+        m=5,
+        shots=100,
+    ) == ["id1", "id2"]
+
+    with pytest.raises(ValueError, match="should contain a single circuit"):
+        provider.submit_dfe(
+            rho_1=([qc, qc], "ss_example_qpu"),
+            rho_2=(qc, "ss_example_qpu"),
+            m=5,
+            shots=100,
+        )
+
+    mock_post.return_value.json = lambda: 1
+    assert provider.process_dfe(["1", "2"]) == 1
+
+
+@patch("requests.post")
 def test_target_info(mock_post: MagicMock) -> None:
     provider = qss.SuperstaqProvider(api_key="key")
     fake_data = {"target_info": {"backend_name": "ss_example_qpu", "max_experiments": 1234}}
