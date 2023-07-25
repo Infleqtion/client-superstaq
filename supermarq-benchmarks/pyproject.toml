@@ -30,3 +30,9 @@ file = ["requirements.txt"]
 
 [tool.setuptools.dynamic.optional-dependencies.dev]
 file = ["dev-requirements.txt"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+color_output = true
+known_first_party = "supermarq"
