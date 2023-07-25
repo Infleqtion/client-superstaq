@@ -291,8 +291,8 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
             "CZ3": css.CZ3,
             "CZ3/T5C4": None,
             "CS/simul": css.ParallelGates(cirq.CZ, cirq.CZ).on(*cirq.LineQubit.range(4, 8)),
-            "CS2": cirq.MatrixGate(cirq.unitary(cirq.CZ**0.49), name="CS2"),
-            "CS3": cirq.MatrixGate(cirq.unitary(css.CZ3**0.5), qid_shape=(3, 3), name="CS3"),
+            "CS2": cirq.MatrixGate(cirq.unitary(cirq.CZ**0.49)),
+            "CS3": cirq.MatrixGate(cirq.unitary(css.CZ3**0.5), qid_shape=(3, 3)),
         },
     }
     mock_post_request.assert_called_with(
