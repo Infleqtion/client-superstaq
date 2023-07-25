@@ -608,6 +608,55 @@ def test_superstaq_client_supercheq(mock_post: mock.MagicMock) -> None:
 
 
 @mock.patch("requests.post")
+def test_superstaq_client_dfe(mock_post: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    client.submit_dfe(
+        circuit_1={"Hello": "World"},
+        target_1="ss_example_qpu",
+        circuit_2={"Hello": "World"},
+        target_2="ss_example_qpu",
+        m=5,
+        shots=100,
+        lifespan=10,
+    )
+
+    state = {
+        "Hello": "World",
+        "target": "ss_example_qpu",
+    }
+    expected_json = {
+        "state_1": state,
+        "state_2": state,
+        "shots": 100,
+        "n_bases": 5,
+        "options": json.dumps({"lifespan": 10}),
+    }
+
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/dfe_post",
+        headers=EXPECTED_HEADERS,
+        json=expected_json,
+        verify=False,
+    )
+
+    client.process_dfe(["id1", "id2"])
+    expected_json = {"job_id_1": "id1", "job_id_2": "id2"}
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/dfe_fetch",
+        headers=EXPECTED_HEADERS,
+        json=expected_json,
+        verify=False,
+    )
+
+    with pytest.raises(ValueError, match="must contain exactly two job ids"):
+        client.process_dfe(["1", "2", "3"])
+
+
+@mock.patch("requests.post")
 def test_superstaq_client_ibmq_set_token(mock_post: mock.MagicMock) -> None:
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",

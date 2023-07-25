@@ -384,6 +384,77 @@ class _SuperstaqClient:
         }
         return self.post_request("/supercheq", json_dict)
 
+    def submit_dfe(
+        self,
+        circuit_1: Dict[str, str],
+        target_1: str,
+        circuit_2: Dict[str, str],
+        target_2: str,
+        m: int,
+        shots: int,
+        **kwargs: Any,
+    ) -> List[str]:
+        """Performs a POST request on the `/dfe_post` endpoint.
+
+        Args:
+            circuit_1: Serialized circuit that prepares the first state for the protocol.
+            target_1: Target to prepare the first state on.
+            circuit_2: Serialized circuit that prepares the second state for the protocol.
+            target_2: Target to prepare the second state on.
+            m: Number of random bases to measure the states on.
+            shots: Number of shots per random basis.
+            kwargs: Other execution parameters.
+                - tag: Tag for all jobs submitted for this protocol.
+                - lifespan: How long to store the jobs submitted for in days (only works with right
+                permissions).
+
+        Returns:
+            A list of size two with the ids for the RMT jobs created; these ids should be passed to
+            `process_dfe` to get back the fidelity estimation.
+
+        Raises:
+            ValueError: If any of the targets passed are not valid.
+            SuperstaqServerException: if the request fails.
+        """
+        gss.validation.validate_target(target_1)
+        gss.validation.validate_target(target_2)
+
+        state_1 = {**circuit_1, "target": target_1}
+        state_2 = {**circuit_2, "target": target_2}
+
+        json_dict: Dict[str, Any] = {
+            "state_1": state_1,
+            "state_2": state_2,
+            "shots": int(shots),
+            "n_bases": int(m),
+        }
+
+        if kwargs:
+            json_dict["options"] = json.dumps(kwargs)
+        return self.post_request("/dfe_post", json_dict)
+
+    def process_dfe(self, job_ids: List[str]) -> float:
+        """Performs a POST request on the `/dfe_fetch` endpoint.
+
+        Args:
+            job_ids: A list of job ids returned by a call to `submit_dfe`.
+
+        Returns:
+            The estimated fidelity between the two states as a float.
+
+        Raises:
+            ValueError: If `job_ids` is not of size two.
+            SuperstaqServerException: If the request fails.
+        """
+        if len(job_ids) != 2:
+            raise ValueError("`job_ids` must contain exactly two job ids.")
+
+        json_dict = {
+            "job_id_1": job_ids[0],
+            "job_id_2": job_ids[1],
+        }
+        return self.post_request("/dfe_fetch", json_dict)
+
     def target_info(self, target: str) -> Dict[str, Any]:
         """Makes a POST request to the /target_info endpoint.
 

@@ -563,6 +563,30 @@ def test_service_supercheq(mock_supercheq: mock.MagicMock) -> None:
 
 
 @mock.patch("requests.post")
+def test_service_dfe(mock_post: mock.MagicMock) -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    circuit = cirq.Circuit(cirq.X(cirq.q(0)))
+    mock_post.return_value.json = lambda: ["id1", "id2"]
+    assert service.submit_dfe(
+        rho_1=(circuit, "ss_example_qpu"),
+        rho_2=(circuit, "ss_example_qpu"),
+        m=5,
+        shots=100,
+    ) == ["id1", "id2"]
+
+    with pytest.raises(ValueError, match="should contain a single circuit"):
+        service.submit_dfe(
+            rho_1=([circuit, circuit], "ss_example_qpu"),  # type: ignore
+            rho_2=(circuit, "ss_example_qpu"),
+            m=5,
+            shots=100,
+        )
+
+    mock_post.return_value.json = lambda: 1
+    assert service.process_dfe(["1", "2"]) == 1
+
+
+@mock.patch("requests.post")
 def test_service_target_info(mock_post: mock.MagicMock) -> None:
     fake_data = {"target_info": {"backend_name": "ss_example_qpu", "max_experiments": 1234}}
     mock_post.return_value.json = lambda: fake_data
