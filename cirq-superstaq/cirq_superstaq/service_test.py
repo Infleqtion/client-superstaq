@@ -570,7 +570,7 @@ def test_service_dfe(mock_post: mock.MagicMock) -> None:
     assert service.submit_dfe(
         rho_1=(circuit, "ss_example_qpu"),
         rho_2=(circuit, "ss_example_qpu"),
-        m=5,
+        num_random_bases=5,
         shots=100,
     ) == ["id1", "id2"]
 
@@ -578,7 +578,7 @@ def test_service_dfe(mock_post: mock.MagicMock) -> None:
         service.submit_dfe(
             rho_1=([circuit, circuit], "ss_example_qpu"),  # type: ignore
             rho_2=(circuit, "ss_example_qpu"),
-            m=5,
+            num_random_bases=5,
             shots=100,
         )
 

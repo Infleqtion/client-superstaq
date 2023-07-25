@@ -390,7 +390,7 @@ class _SuperstaqClient:
         target_1: str,
         circuit_2: Dict[str, str],
         target_2: str,
-        m: int,
+        num_random_bases: int,
         shots: int,
         **kwargs: Any,
     ) -> List[str]:
@@ -401,7 +401,7 @@ class _SuperstaqClient:
             target_1: Target to prepare the first state on.
             circuit_2: Serialized circuit that prepares the second state for the protocol.
             target_2: Target to prepare the second state on.
-            m: Number of random bases to measure the states on.
+            num_random_bases: Number of random bases to measure the states on.
             shots: Number of shots per random basis.
             kwargs: Other execution parameters.
                 - tag: Tag for all jobs submitted for this protocol.
@@ -426,7 +426,7 @@ class _SuperstaqClient:
             "state_1": state_1,
             "state_2": state_2,
             "shots": int(shots),
-            "n_bases": int(m),
+            "n_bases": int(num_random_bases),
         }
 
         if kwargs:

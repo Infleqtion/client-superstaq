@@ -619,7 +619,7 @@ def test_superstaq_client_dfe(mock_post: mock.MagicMock) -> None:
         target_1="ss_example_qpu",
         circuit_2={"Hello": "World"},
         target_2="ss_example_qpu",
-        m=5,
+        num_random_bases=5,
         shots=100,
         lifespan=10,
     )

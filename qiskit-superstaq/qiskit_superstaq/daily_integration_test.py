@@ -223,7 +223,7 @@ def test_dfe(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     ids = provider.submit_dfe(
         rho_1=(qc, target),
         rho_2=(qc, target),
-        m=5,
+        num_random_bases=5,
         shots=1000,
     )
     assert len(ids) == 2

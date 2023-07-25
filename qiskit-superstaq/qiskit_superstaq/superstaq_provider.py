@@ -365,7 +365,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         self,
         rho_1: Tuple[qiskit.QuantumCircuit, str],
         rho_2: Tuple[qiskit.QuantumCircuit, str],
-        m: int,
+        num_random_bases: int,
         shots: int,
         **kwargs: Any,
     ) -> List[str]:
@@ -391,7 +391,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
                 `qiskit.QuantumCircuit` at index 0 and a target name at index 1.
             rho_2: Tuple containing the information to prepare the second state. It contains a
                 `qiskit.QuantumCircuit` at index 0 and a target name at index 1.
-            m: Number of random bases to measure each state in.
+            num_random_bases: Number of random bases to measure each state in.
             shots: Number of shots to use per random basis.
             kwargs: Other execution parameters.
                 - tag: Tag for all jobs submitted for this protocol.
@@ -430,7 +430,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             target_1=target_1,
             circuit_2={"qiskit_circuits": serialized_circuit_2},
             target_2=target_2,
-            m=m,
+            num_random_bases=num_random_bases,
             shots=shots,
             **kwargs,
         )

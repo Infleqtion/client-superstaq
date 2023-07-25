@@ -245,7 +245,7 @@ def test_dfe(service: css.Service) -> None:
     ids = service.submit_dfe(
         rho_1=(circuit, target),
         rho_2=(circuit, target),
-        m=5,
+        num_random_bases=5,
         shots=1000,
     )
     assert len(ids) == 2

@@ -382,7 +382,7 @@ def test_dfe(mock_post: MagicMock) -> None:
     assert provider.submit_dfe(
         rho_1=(qc, "ss_example_qpu"),
         rho_2=(qc, "ss_example_qpu"),
-        m=5,
+        num_random_bases=5,
         shots=100,
     ) == ["id1", "id2"]
 
@@ -390,7 +390,7 @@ def test_dfe(mock_post: MagicMock) -> None:
         provider.submit_dfe(
             rho_1=([qc, qc], "ss_example_qpu"),
             rho_2=(qc, "ss_example_qpu"),
-            m=5,
+            num_random_bases=5,
             shots=100,
         )
 
