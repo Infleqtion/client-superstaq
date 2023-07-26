@@ -43,8 +43,8 @@ def run(*args: str, silent: bool = False) -> int:
     lines_copy = open(file_copy, "r").read().splitlines()
 
     # trim package-specific configuration
-    lines_orig, orig_offset = _trim_lines(lines_orig, START_MATCH)
-    lines_copy, copy_offset = _trim_lines(lines_copy, START_MATCH)
+    lines_orig, orig_offset = _trim_lines(lines_orig)
+    lines_copy, copy_offset = _trim_lines(lines_copy)
 
     # collect differences between config files, ignoring lines in file_copy that match IGNORE_MATCH
     matcher = difflib.SequenceMatcher(a=lines_orig, b=lines_copy)
