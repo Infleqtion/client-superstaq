@@ -9,6 +9,7 @@ from typing import List, Tuple
 from general_superstaq.check import check_utils
 
 CONFIG_FILE = "pyproject.toml"
+TEMPLATE_FILE = "checks-pyproject.toml"
 START_MATCH = "# Check script configuration:"
 IGNORE_MATCH = "# REPO-SPECIFIC CONFIG"
 
@@ -36,7 +37,7 @@ def run(*args: str, silent: bool = False) -> int:
     parser.parse_args(args)  # placeholder parsing to enable printing help text
 
     # identify the "original" config file, and the file that is supposed to be a copy
-    file_orig = os.path.join(os.path.abspath(os.path.dirname(__file__)), f"checks-{CONFIG_FILE}")
+    file_orig = os.path.join(os.path.abspath(os.path.dirname(__file__)), TEMPLATE_FILE)
     file_copy = os.path.join(check_utils.root_dir, CONFIG_FILE)
     lines_orig = open(file_orig, "r").read().splitlines()
     lines_copy = open(file_copy, "r").read().splitlines()
