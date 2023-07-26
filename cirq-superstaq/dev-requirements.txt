@@ -1,3 +1,1 @@
-general-superstaq[dev]~=0.4.6
-qiskit-terra~=0.24.2
-symengine<0.10.0  # see https://github.com/Qiskit/qiskit-terra/pull/9857
+general-superstaq[dev]~=0.4.7
