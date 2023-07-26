@@ -8,20 +8,18 @@ from typing import List, Tuple
 
 from general_superstaq.check import check_utils
 
+CONFIG_FILE = "pyproject.toml"
+TEMPLATE_FILE = "checks-pyproject.toml"
+START_MATCH = "# Check script configuration:"
+IGNORE_MATCH = "# REPO-SPECIFIC CONFIG"
+
 
 @check_utils.enable_exit_on_failure
-def run(
-    *args: str,
-    config_file: str = "setup.cfg",
-    ignore_match: str = "# REPO-SPECIFIC CONFIG",
-    silent: bool = False,
-) -> int:
-    """Checks that the check script configuration file ({config_file}) is consistent across repos.
+def run(*args: str, silent: bool = False) -> int:
+    """Checks that check-script configurations are consistent across repos.
 
     Args:
         *args: Command line arguments.
-        config_file: path to the config file to run checks.
-        ignore_match: string flag that allows different repos to have different setup.cfg.
         silent: If True, restrict printing to warning and error messages.
 
     Returns:
@@ -31,27 +29,31 @@ def run(
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.description = textwrap.dedent(
         f"""
-        Checks that the check script configuration file ({config_file}) is consistent across repos.
+        Checks that the check script configuration file ({CONFIG_FILE}) is consistent across repos.
 
-        Exceptions in {config_file} can be flagged by adding "{ignore_match}" to the line.
+        Exceptions in {CONFIG_FILE} can be flagged by adding "{IGNORE_MATCH}" to the line.
         """
     )
     parser.parse_args(args)  # placeholder parsing to enable printing help text
 
     # identify the "original" config file, and the file that is supposed to be a copy
-    file_orig = os.path.join(os.path.abspath(os.path.dirname(__file__)), config_file)
-    file_copy = os.path.join(check_utils.root_dir, config_file)
+    file_orig = os.path.join(os.path.abspath(os.path.dirname(__file__)), TEMPLATE_FILE)
+    file_copy = os.path.join(check_utils.root_dir, CONFIG_FILE)
     lines_orig = open(file_orig, "r").read().splitlines()
     lines_copy = open(file_copy, "r").read().splitlines()
 
-    # collect differences between config files, ignoring lines in file_copy that match ignore_match
+    # trim package-specific configuration
+    lines_orig, orig_offset = _trim_lines(lines_orig)
+    lines_copy, copy_offset = _trim_lines(lines_copy)
+
+    # collect differences between config files, ignoring lines in file_copy that match IGNORE_MATCH
     matcher = difflib.SequenceMatcher(a=lines_orig, b=lines_copy)
     deltas: List[Tuple[str, int, int, int, int]] = []
     for tag, orig_start, orig_end, copy_start, copy_end in matcher.get_opcodes():
         if tag == "equal":
             continue
         diff_lines_copy = lines_copy[copy_start:copy_end]
-        if not diff_lines_copy or any(ignore_match not in line for line in diff_lines_copy):
+        if not diff_lines_copy or any(IGNORE_MATCH not in line for line in diff_lines_copy):
             deltas.append((tag, orig_start, orig_end, copy_start, copy_end))
 
     if not deltas:
@@ -66,7 +68,7 @@ def run(
     print(check_utils.styled(f"> {file_copy} (copy)", check_utils.Style.GREEN))
     print(check_utils.styled("-" * 70, check_utils.Style.CYAN))
     for tag, orig_start, orig_end, copy_start, copy_end in deltas:
-        _announce_diff(tag, orig_start, orig_end, copy_start, copy_end)
+        _announce_diff(tag, orig_offset, orig_start, orig_end, copy_offset, copy_start, copy_end)
         if orig_start != orig_end:
             text = "\n".join(f"< {line}" for line in lines_orig[orig_start:orig_end])
             print(check_utils.styled(text, check_utils.Style.RED))
@@ -79,12 +81,27 @@ def run(
     return 0
 
 
+def _trim_lines(lines: List[str]) -> Tuple[List[str], int]:
+    """Remove package-specific configuration text, and identify the starting lines to compare."""
+    for start_line, line in enumerate(lines):
+        if START_MATCH in line:
+            return lines[start_line:], start_line
+    return lines, 0
+
+
 def _announce_diff(
-    tag: str, orig_start: int, orig_end: int, copy_start: int, copy_end: int
+    tag: str,
+    orig_offset: int,
+    orig_start: int,
+    orig_end: int,
+    copy_offset: int,
+    copy_start: int,
+    copy_end: int,
 ) -> None:
+    """Announce a difference between configuration files."""
     assert tag in ["replace", "delete", "insert"]
-    line_text_orig = _line_text(orig_start, orig_end)
-    line_text_copy = _line_text(copy_start, copy_end)
+    line_text_orig = _line_text(orig_start + orig_offset, orig_end + orig_offset)
+    line_text_copy = _line_text(copy_start + copy_offset, copy_end + copy_offset)
     if tag == "replace":
         text = f"{line_text_orig} of original replaced by {line_text_copy} of copy"
     elif tag == "delete":
@@ -95,7 +112,8 @@ def _announce_diff(
 
 
 def _line_text(start: int, end: int) -> str:
-    if start + 1 == end:
+    """Identify one or multiple line numbers."""
+    if end == start + 1:
         return f"line {start+1}"
     return f"lines {start+1}--{end}"
 
