@@ -54,12 +54,23 @@ def run(
 
     coverage_arg = "--include=" + ",".join(files)
     test_returncode = subprocess.call(
-        ["coverage", "run", coverage_arg, "-m", "pytest", *test_files, *pytest_args],
+        [
+            "python",
+            "-m",
+            "coverage",
+            "run",
+            coverage_arg,
+            "-m",
+            "pytest",
+            *test_files,
+            *pytest_args,
+        ],
         cwd=check_utils.root_dir,
     )
 
     coverage_returncode = subprocess.call(
-        ["coverage", "report", "--precision=2"], cwd=check_utils.root_dir
+        ["python", "-m", "coverage", "report", "--precision=2"],
+        cwd=check_utils.root_dir,
     )
 
     if test_returncode:
