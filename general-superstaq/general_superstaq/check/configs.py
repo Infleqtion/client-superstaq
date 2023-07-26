@@ -8,22 +8,17 @@ from typing import List, Tuple
 
 from general_superstaq.check import check_utils
 
+CONFIG_FILE = "pyproject.toml"
+START_MATCH = "# Check script configuration:"
+IGNORE_MATCH = "# REPO-SPECIFIC CONFIG"
+
 
 @check_utils.enable_exit_on_failure
-def run(
-    *args: str,
-    config_file: str = "pyproject.toml",
-    ignore_match: str = "# REPO-SPECIFIC CONFIG",
-    start_match: str = "# Check script configuration:",
-    silent: bool = False,
-) -> int:
-    """Checks that the check script configuration file ({config_file}) is consistent across repos.
+def run(*args: str, silent: bool = False) -> int:
+    """Checks that check-script configurations are consistent across repos.
 
     Args:
         *args: Command line arguments.
-        config_file: path to the config file to run checks.
-        ignore_match: string tagging lines to ignore when comparing pyproject.toml files.
-        start_match: verbatim text below which to start comparing pyproject.toml files.
         silent: If True, restrict printing to warning and error messages.
 
     Returns:
@@ -33,31 +28,31 @@ def run(
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.description = textwrap.dedent(
         f"""
-        Checks that the check script configuration file ({config_file}) is consistent across repos.
+        Checks that the check script configuration file ({CONFIG_FILE}) is consistent across repos.
 
-        Exceptions in {config_file} can be flagged by adding "{ignore_match}" to the line.
+        Exceptions in {CONFIG_FILE} can be flagged by adding "{IGNORE_MATCH}" to the line.
         """
     )
     parser.parse_args(args)  # placeholder parsing to enable printing help text
 
     # identify the "original" config file, and the file that is supposed to be a copy
-    file_orig = os.path.join(os.path.abspath(os.path.dirname(__file__)), f"checks-{config_file}")
-    file_copy = os.path.join(check_utils.root_dir, config_file)
+    file_orig = os.path.join(os.path.abspath(os.path.dirname(__file__)), f"checks-{CONFIG_FILE}")
+    file_copy = os.path.join(check_utils.root_dir, CONFIG_FILE)
     lines_orig = open(file_orig, "r").read().splitlines()
     lines_copy = open(file_copy, "r").read().splitlines()
 
     # trim package-specific configuration
-    lines_orig, orig_offset = _trim_lines(lines_orig, start_match)
-    lines_copy, copy_offset = _trim_lines(lines_copy, start_match)
+    lines_orig, orig_offset = _trim_lines(lines_orig, START_MATCH)
+    lines_copy, copy_offset = _trim_lines(lines_copy, START_MATCH)
 
-    # collect differences between config files, ignoring lines in file_copy that match ignore_match
+    # collect differences between config files, ignoring lines in file_copy that match IGNORE_MATCH
     matcher = difflib.SequenceMatcher(a=lines_orig, b=lines_copy)
     deltas: List[Tuple[str, int, int, int, int]] = []
     for tag, orig_start, orig_end, copy_start, copy_end in matcher.get_opcodes():
         if tag == "equal":
             continue
         diff_lines_copy = lines_copy[copy_start:copy_end]
-        if not diff_lines_copy or any(ignore_match not in line for line in diff_lines_copy):
+        if not diff_lines_copy or any(IGNORE_MATCH not in line for line in diff_lines_copy):
             deltas.append((tag, orig_start, orig_end, copy_start, copy_end))
 
     if not deltas:
@@ -85,10 +80,10 @@ def run(
     return 0
 
 
-def _trim_lines(lines: List[str], start_match: str) -> Tuple[List[str], int]:
+def _trim_lines(lines: List[str]) -> Tuple[List[str], int]:
     """Remove package-specific configuration text, and identify the starting lines to compare."""
     for start_line, line in enumerate(lines):
-        if start_match in line:
+        if START_MATCH in line:
             return lines[start_line:], start_line
     return lines, 0
 
