@@ -1,6 +1,6 @@
 black[jupyter]~=22.3.0
 flake8>=3.8.4
-flake8-pyproject
+flake8-pyproject>=1.2.3
 flake8-type-checking>=2.1.0
 isort[colors]>=5.10.1
 mypy>=1.0.0
