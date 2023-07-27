@@ -506,9 +506,11 @@ class Service(gss.service.Service):
     def qscout_compile(
         self,
         circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        target: str = "sandia_qscout_qpu",
+        *,
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
-        target: str = "sandia_qscout_qpu",
+        num_qubits: Optional[int] = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
@@ -530,6 +532,8 @@ class Service(gss.service.Service):
             target: String of target representing target device.
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
             base_entangling_gate: The base entangling gate to use (either "xx" or "zz").
+            num_qubits: An optional number of qubits that should be initialized in the returned
+                Jaqal program(s) (by default this will be determined from the input circuits).
             kwargs: Other desired qscout_compile options.
 
         Returns:
@@ -556,6 +560,10 @@ class Service(gss.service.Service):
             "base_entangling_gate": base_entangling_gate,
             **kwargs,
         }
+
+        if num_qubits is not None:
+            gss.validation.validate_integer_param(num_qubits)
+            options_dict["num_qubits"] = num_qubits
 
         json_dict = self._client.qscout_compile(
             {
