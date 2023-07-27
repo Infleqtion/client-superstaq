@@ -195,6 +195,11 @@ class Job:
     def to_dict(self) -> Dict[str, Any]:
         """Refreshes and returns job information.
 
+        Note:
+            Whenever possible, users should use the specific methods to retrieve the desired
+            information instead of this method. The contents of `_job` are likely to change pretty
+            frequently and are not guaranteed to be consistent or reliable.
+
         Returns:
             A dictionary containing updated job information.
         """
