@@ -499,6 +499,33 @@ def test_qscout_compile_wrong_base_entangling_gate() -> None:
 
 
 @mock.patch("requests.post")
+def test_qscout_compile_num_qubits(mock_post: mock.MagicMock) -> None:
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.measure(q0))
+    final_logical_to_physical = {q0: q0}
+
+    jaqal_program = ""
+
+    mock_post.return_value.json = lambda: {
+        "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
+        "jaqal_programs": [jaqal_program],
+    }
+
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    out = service.qscout_compile(circuit, num_qubits=5)
+    assert out.circuit == circuit
+    assert out.final_logical_to_physical == final_logical_to_physical
+    assert out.jaqal_program == jaqal_program
+    mock_post.assert_called_once()
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "mirror_swaps": False,
+        "base_entangling_gate": "xx",
+        "num_qubits": 5,
+    }
+
+
+@mock.patch("requests.post")
 def test_service_cq_compile_single(mock_post: mock.MagicMock) -> None:
 
     q0 = cirq.LineQubit(0)
@@ -560,6 +587,30 @@ def test_service_supercheq(mock_supercheq: mock.MagicMock) -> None:
         "fidelities": gss.serialization.serialize(fidelities),
     }
     assert service.supercheq([[0]], 1, 1) == (circuits, fidelities)
+
+
+@mock.patch("requests.post")
+def test_service_dfe(mock_post: mock.MagicMock) -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    circuit = cirq.Circuit(cirq.X(cirq.q(0)))
+    mock_post.return_value.json = lambda: ["id1", "id2"]
+    assert service.submit_dfe(
+        rho_1=(circuit, "ss_example_qpu"),
+        rho_2=(circuit, "ss_example_qpu"),
+        num_random_bases=5,
+        shots=100,
+    ) == ["id1", "id2"]
+
+    with pytest.raises(ValueError, match="should contain a single circuit"):
+        service.submit_dfe(
+            rho_1=([circuit, circuit], "ss_example_qpu"),  # type: ignore # for testing
+            rho_2=(circuit, "ss_example_qpu"),
+            num_random_bases=5,
+            shots=100,
+        )
+
+    mock_post.return_value.json = lambda: 1
+    assert service.process_dfe(["1", "2"]) == 1
 
 
 @mock.patch("requests.post")
