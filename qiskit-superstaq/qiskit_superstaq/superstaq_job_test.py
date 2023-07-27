@@ -232,3 +232,18 @@ def test_eq(backend: qss.SuperstaqBackend) -> None:
 
     job3 = qss.SuperstaqJob(backend=backend, job_id="12345")
     assert job == job3
+
+
+def test_to_dict(backend: qss.SuperstaqBackend) -> None:
+    job = qss.SuperstaqJob(backend=backend, job_id="12345")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job",
+        return_value=mock_response("Done"),
+    ):
+        assert job.to_dict() == {
+            "12345": {
+                "status": "Done",
+                "samples": {"10": 100},
+                "shots": 100,
+            }
+        }
