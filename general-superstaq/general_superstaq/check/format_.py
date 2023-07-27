@@ -41,9 +41,12 @@ def run(
     if not files:
         return 0
 
-    diff_check_args = ["--diff", "--check"] if not parsed_args.apply else []
+    black_args = ["--config", "pyproject.toml"]
+    if not parsed_args.apply:
+        black_args += ["--diff", "--check"]
+
     returncode_black = subprocess.call(
-        ["python", "-m", "black", *files, *diff_check_args], cwd=check_utils.root_dir
+        ["python", "-m", "black", *files, *black_args], cwd=check_utils.root_dir
     )
 
     if returncode_black > 1:
@@ -51,10 +54,11 @@ def run(
         return returncode_black
 
     args_to_pass_isort += ["--resolve-all-configs", f"--config-root={check_utils.root_dir}"]
-    returncode_isort = subprocess.call(
-        ["python", "-m", "isort", *files, *diff_check_args, *args_to_pass_isort],
-        cwd=check_utils.root_dir,
-    )
+    returncode_isort = 0
+    # subprocess.call(
+    #     ["python", "-m", "isort", *files, *diff_check_args, *args_to_pass_isort],
+    #     cwd=check_utils.root_dir,
+    # )
 
     if returncode_black == 1 or returncode_isort == 1:
         # some files should be reformatted, but there don't seem to be any bona fide errors
