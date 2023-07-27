@@ -506,7 +506,7 @@ def test_qscout_compile_num_qubits(mock_post: mock.MagicMock) -> None:
 
     jaqal_program = ""
 
-    mock_post.return_value = {
+    mock_post.return_value.json = lambda: {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
         "jaqal_programs": [jaqal_program],
@@ -518,7 +518,7 @@ def test_qscout_compile_num_qubits(mock_post: mock.MagicMock) -> None:
     assert out.final_logical_to_physical == final_logical_to_physical
     assert out.jaqal_program == jaqal_program
     mock_post.assert_called_once()
-    assert json.loads(mock_post.call_args.kwargs["options"]) == {
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
         "mirror_swaps": False,
         "base_entangling_gate": "xx",
         "num_qubits": 5,
