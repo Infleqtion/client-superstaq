@@ -54,8 +54,7 @@ def run(
         return returncode_black
 
     args_to_pass_isort += ["--resolve-all-configs", f"--config-root={check_utils.root_dir}"]
-    returncode_isort = 0
-    subprocess.call(
+    returncode_isort = subprocess.call(
         ["python", "-m", "isort", *files, *diff_check_args, *args_to_pass_isort],
         cwd=check_utils.root_dir,
     )
