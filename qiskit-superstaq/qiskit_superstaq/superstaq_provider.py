@@ -272,9 +272,11 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
     def qscout_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
+        target: str = "sandia_qscout_qpu",
+        *,
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
-        target: str = "sandia_qscout_qpu",
+        num_qubits: Optional[int] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
@@ -296,6 +298,8 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             target: A string containing the name of a target backend.
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
             base_entangling_gate: The base entangling gate to use (either "xx" or "zz").
+            num_qubits: An optional number of qubits that should be present in the compiled
+                circuit(s) and Jaqal program(s) (otherwise this will be determined from the input).
             kwargs: Other desired qscout_compile options.
 
         Returns:
@@ -310,7 +314,11 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             raise ValueError(f"{target!r} is not a valid Sandia target.")
 
         return self.get_backend(target).compile(
-            circuits, mirror_swaps=mirror_swaps, base_entangling_gate=base_entangling_gate, **kwargs
+            circuits,
+            mirror_swaps=mirror_swaps,
+            base_entangling_gate=base_entangling_gate,
+            num_qubits=num_qubits,
+            **kwargs,
         )
 
     def cq_compile(

@@ -284,12 +284,19 @@ def test_qscout_compile_swap_mirror(mock_post: MagicMock, mirror_swaps: bool) ->
         "final_logical_to_physicals": json.dumps([[(0, 13)]]),
         "jaqal_programs": [""],
     }
+
     _ = provider.qscout_compile(qc, mirror_swaps=mirror_swaps)
     mock_post.assert_called_once()
-    _, kwargs = mock_post.call_args
-    assert json.loads(kwargs["json"]["options"]) == {
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
         "mirror_swaps": mirror_swaps,
         "base_entangling_gate": "xx",
+    }
+
+    _ = provider.qscout_compile(qc, mirror_swaps=mirror_swaps, num_qubits=3)
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "mirror_swaps": mirror_swaps,
+        "base_entangling_gate": "xx",
+        "num_qubits": 3,
     }
 
 
@@ -305,12 +312,19 @@ def test_qscout_compile_change_entangler(mock_post: MagicMock, base_entangling_g
         "final_logical_to_physicals": "[[]]",
         "jaqal_programs": [""],
     }
+
     _ = provider.qscout_compile(qc, base_entangling_gate=base_entangling_gate)
     mock_post.assert_called_once()
-    _, kwargs = mock_post.call_args
-    assert json.loads(kwargs["json"]["options"]) == {
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
         "mirror_swaps": False,
         "base_entangling_gate": base_entangling_gate,
+    }
+
+    _ = provider.qscout_compile(qc, base_entangling_gate=base_entangling_gate, num_qubits=4)
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "mirror_swaps": False,
+        "base_entangling_gate": base_entangling_gate,
+        "num_qubits": 4,
     }
 
 
