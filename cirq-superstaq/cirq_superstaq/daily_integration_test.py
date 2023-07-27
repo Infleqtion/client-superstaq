@@ -239,6 +239,21 @@ def test_supercheq(service: css.Service) -> None:
     assert fidelities.shape == (32, 32)
 
 
+def test_dfe(service: css.Service) -> None:
+    circuit = cirq.Circuit(cirq.H(cirq.q(0)))
+    target = "ss_unconstrained_simulator"
+    ids = service.submit_dfe(
+        rho_1=(circuit, target),
+        rho_2=(circuit, target),
+        num_random_bases=5,
+        shots=1000,
+    )
+    assert len(ids) == 2
+
+    result = service.process_dfe(ids)
+    assert isinstance(result, float)
+
+
 def test_job(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
     job = service.create_job(circuit, target="ibmq_qasm_simulator", repetitions=10)
