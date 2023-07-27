@@ -201,9 +201,9 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """Refreshes and returns job information.
 
         Note:
-            Whenever possible, users should use the specific methods to retrieve the desired
-            information instead of this method. The contents of `_job_info` are likely to change
-            pretty frequently and are not guaranteed to be consistent or reliable.
+            The contents of this dictionary are not guaranteed to be consistent over time. Whenever
+            possible, users should use the specific `SuperstaqJob` methods to retrieve the desired
+            job information instead of relying on particular entries in the output of this method.
 
         Returns:
             A dictionary containing updated job information.

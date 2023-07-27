@@ -197,8 +197,8 @@ class Job:
 
         Note:
             The contents of this dictionary are not guaranteed to be consistent over time. Whenever
-            possible, users should use the specific `SuperstaqJob` methods to retrieve the desired
-            job information instead of relying on particular entries in the output of this method.
+            possible, users should use the specific `Job` methods to retrieve the desired job
+            information instead of relying on particular entries in the output of this method.
 
         Returns:
             A dictionary containing updated job information.
