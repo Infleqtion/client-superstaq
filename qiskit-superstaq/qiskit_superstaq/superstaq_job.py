@@ -196,3 +196,18 @@ class SuperstaqJob(qiskit.providers.JobV1):
             NotImplementedError: If a job is submitted via SuperstaqJob.
         """
         raise NotImplementedError("Submit through SuperstaqBackend, not through SuperstaqJob")
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Refreshes and returns job information.
+
+        Note:
+            The contents of this dictionary are not guaranteed to be consistent over time. Whenever
+            possible, users should use the specific `SuperstaqJob` methods to retrieve the desired
+            job information instead of relying on particular entries in the output of this method.
+
+        Returns:
+            A dictionary containing updated job information.
+        """
+        if self._overall_status not in self.TERMINAL_STATES:
+            self._refresh_job()
+        return self._job_info

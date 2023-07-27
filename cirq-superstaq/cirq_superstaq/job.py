@@ -192,6 +192,20 @@ class Job:
         self._check_if_unsuccessful()
         return self._job["samples"]
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Refreshes and returns job information.
+
+        Note:
+            The contents of this dictionary are not guaranteed to be consistent over time. Whenever
+            possible, users should use the specific `Job` methods to retrieve the desired job
+            information instead of relying on particular entries in the output of this method.
+
+        Returns:
+            A dictionary containing updated job information.
+        """
+        self._refresh_job()
+        return self._job
+
     def __str__(self) -> str:
         return f"Job with job_id={self.job_id()}"
 

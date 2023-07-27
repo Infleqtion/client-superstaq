@@ -12,7 +12,7 @@ from general_superstaq.check import check_utils
 def run(
     *args: str,
     include: Union[str, Iterable[str]] = "*.py",
-    exclude: Union[str, Iterable[str]] = "*setup.py",
+    exclude: Union[str, Iterable[str]] = (),
     silent: bool = False,
 ) -> int:
     """Runs mypy on the repository (typing check).
@@ -38,7 +38,9 @@ def run(
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
-    return subprocess.call(["mypy", *files, *args_to_pass], cwd=check_utils.root_dir)
+    return subprocess.call(
+        ["python", "-m", "mypy", *files, *args_to_pass], cwd=check_utils.root_dir
+    )
 
 
 if __name__ == "__main__":

@@ -291,8 +291,8 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
             "CZ3": css.CZ3,
             "CZ3/T5C4": None,
             "CS/simul": css.ParallelGates(cirq.CZ, cirq.CZ).on(*cirq.LineQubit.range(4, 8)),
-            "CS2": cirq.MatrixGate(cirq.unitary(cirq.CZ**0.49), name="CS2"),
-            "CS3": cirq.MatrixGate(cirq.unitary(css.CZ3**0.5), qid_shape=(3, 3), name="CS3"),
+            "CS2": cirq.MatrixGate(cirq.unitary(cirq.CZ**0.49)),
+            "CS3": cirq.MatrixGate(cirq.unitary(css.CZ3**0.5), qid_shape=(3, 3)),
         },
     }
     mock_post_request.assert_called_with(
@@ -496,6 +496,33 @@ def test_qscout_compile_wrong_base_entangling_gate() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
     with pytest.raises(ValueError):
         _ = service.qscout_compile(circuit, base_entangling_gate="yy")
+
+
+@mock.patch("requests.post")
+def test_qscout_compile_num_qubits(mock_post: mock.MagicMock) -> None:
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.measure(q0))
+    final_logical_to_physical = {q0: q0}
+
+    jaqal_program = ""
+
+    mock_post.return_value.json = lambda: {
+        "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
+        "jaqal_programs": [jaqal_program],
+    }
+
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    out = service.qscout_compile(circuit, num_qubits=5)
+    assert out.circuit == circuit
+    assert out.final_logical_to_physical == final_logical_to_physical
+    assert out.jaqal_program == jaqal_program
+    mock_post.assert_called_once()
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "mirror_swaps": False,
+        "base_entangling_gate": "xx",
+        "num_qubits": 5,
+    }
 
 
 @mock.patch("requests.post")
