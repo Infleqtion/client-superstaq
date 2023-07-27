@@ -192,6 +192,15 @@ class Job:
         self._check_if_unsuccessful()
         return self._job["samples"]
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Refreshes and returns job information.
+
+        Returns:
+            A dictionary containing updated job information.
+        """
+        self._refresh_job()
+        return self._job
+
     def __str__(self) -> str:
         return f"Job with job_id={self.job_id()}"
 

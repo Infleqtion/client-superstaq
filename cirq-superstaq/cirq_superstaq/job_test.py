@@ -161,6 +161,17 @@ def test_job_str_repr_eq(job: css.job.Job) -> None:
 
     assert not job == 1
 
+def test_job_to_dict(job: css.job.Job) -> None:
+    job_dict = {
+        "data": {"histogram": {"11": 1}},
+        "num_qubits": 2,
+        "samples": {"11": 1},
+        "shots": 1,
+        "status": "Done",
+        "target": "ss_unconstrained_simulator",
+    }
+    with mocked_get_job_requests(job_dict):
+        assert job.to_dict() == job_dict
 
 def test_job_counts(job: css.job.Job) -> None:
     job_dict = {
