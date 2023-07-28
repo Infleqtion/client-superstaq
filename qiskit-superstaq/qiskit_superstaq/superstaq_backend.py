@@ -49,7 +49,10 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             "max_shots": -1,
             "coupling_map": None,
         }
-
+        # Can't call `self.target_info()` cause it calls `self.name()` which hasn't been
+        # initialized yet. Will be initialized by the `super().__init__` call below.
+        target_info = self._provider._client.target_info(target)["target_info"]
+        self.configuration_dict.update(target_info)
         gss.validation.validate_target(target)
 
         super().__init__(
