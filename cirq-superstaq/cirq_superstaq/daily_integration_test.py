@@ -157,18 +157,16 @@ def test_get_targets(service: css.Service) -> None:
 def test_qscout_compile(service: css.Service) -> None:
     q0, q1 = cirq.LineQubit.range(2)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
-    compiled_circuit = cirq.Circuit(
-        cirq.PhasedXPowGate(phase_exponent=-0.5, exponent=0.5).on(q0),
-        cirq.Z(q0) ** -1.0,
-        cirq.measure(q0),
-    )
 
     out = service.qscout_compile(circuit)
     cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
-        out.circuit, compiled_circuit, atol=1e-08
+        out.circuit, circuit, atol=1e-08
     )
     assert isinstance(out.jaqal_program, str)
     assert "measure_all" in out.jaqal_program
+
+    assert service.qscout_compile([circuit]).circuits == [out.circuit]
+    assert service.qscout_compile([circuit, circuit]).circuits == [out.circuit, out.circuit]
 
     cx_circuit = cirq.Circuit(cirq.H(q0), cirq.CX(q0, q1), cirq.measure(q0, q1))
     out = service.qscout_compile([cx_circuit])
@@ -274,13 +272,13 @@ def test_job(service: css.Service) -> None:
     assert job.job_id() == job_id
 
 
-def test_submit_to_provider_simulators(service: css.Service) -> None:
+@pytest.mark.parametrize(
+    "target", ["cq_hilbert_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
+)
+def test_submit_to_provider_simulators(target: str, service: css.Service) -> None:
     q0 = cirq.LineQubit(0)
     q1 = cirq.LineQubit(1)
     circuit = cirq.Circuit(cirq.X(q0), cirq.CNOT(q0, q1), cirq.measure(q0, q1))
 
-    targets = ["cq_hilbert_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
-
-    for target in targets:
-        job = service.create_job(circuit=circuit, repetitions=1, target=target)
-        assert job.counts() == {"11": 1}
+    job = service.create_job(circuit=circuit, repetitions=1, target=target)
+    assert job.counts() == {"11": 1}
