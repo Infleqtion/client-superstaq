@@ -239,6 +239,21 @@ def test_supercheq(service: css.Service) -> None:
     assert fidelities.shape == (32, 32)
 
 
+def test_dfe(service: css.Service) -> None:
+    circuit = cirq.Circuit(cirq.H(cirq.q(0)))
+    target = "ss_unconstrained_simulator"
+    ids = service.submit_dfe(
+        rho_1=(circuit, target),
+        rho_2=(circuit, target),
+        num_random_bases=5,
+        shots=1000,
+    )
+    assert len(ids) == 2
+
+    result = service.process_dfe(ids)
+    assert isinstance(result, float)
+
+
 def test_job(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
     job = service.create_job(circuit, target="ibmq_qasm_simulator", repetitions=10)
@@ -259,13 +274,13 @@ def test_job(service: css.Service) -> None:
     assert job.job_id() == job_id
 
 
-def test_submit_to_provider_simulators(service: css.Service) -> None:
+@pytest.mark.parametrize(
+    "target", ["cq_hilbert_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
+)
+def test_submit_to_provider_simulators(target: str, service: css.Service) -> None:
     q0 = cirq.LineQubit(0)
     q1 = cirq.LineQubit(1)
     circuit = cirq.Circuit(cirq.X(q0), cirq.CNOT(q0, q1), cirq.measure(q0, q1))
 
-    targets = ["cq_hilbert_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
-
-    for target in targets:
-        job = service.create_job(circuit=circuit, repetitions=1, target=target)
-        assert job.counts() == {"11": 1}
+    job = service.create_job(circuit=circuit, repetitions=1, target=target)
+    assert job.counts() == {"11": 1}

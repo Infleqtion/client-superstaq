@@ -216,16 +216,31 @@ def test_supercheq(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     assert fidelities.shape == (32, 32)
 
 
-def test_submit_to_provider_simulators(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
+def test_dfe(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
+    qc = qiskit.QuantumCircuit(1)
+    qc.h(0)
+    target = "ss_unconstrained_simulator"
+    ids = provider.submit_dfe(
+        rho_1=(qc, target),
+        rho_2=(qc, target),
+        num_random_bases=5,
+        shots=1000,
+    )
+    assert len(ids) == 2
 
+    result = provider.process_dfe(ids)
+    assert isinstance(result, float)
+
+
+@pytest.mark.parametrize(
+    "target", ["cq_hilbert_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
+)
+def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2, 2)
     qc.x(0)
     qc.cx(0, 1)
     qc.measure(0, 0)
     qc.measure(1, 1)
 
-    backends = ["cq_hilbert_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
-
-    for backend in backends:
-        job = provider.get_backend(backend).run(qc, shots=1)
-        assert job.result().get_counts() == {"11": 1}
+    job = provider.get_backend(target).run(qc, shots=1)
+    assert job.result().get_counts() == {"11": 1}
