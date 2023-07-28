@@ -156,6 +156,16 @@
         animation: type-line-11 1s 11s steps(26, end) forwards, cursor 1s linear 11s 1;
       }
 
+      @keyframes type-line-12 {
+        from {width: 0;}
+        to {width: 600px;}
+      }
+
+      .line-12 {
+        margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
+        animation: type-line-11 1s 12s steps(26, end) forwards, cursor 1s linear 12s 1;
+      }
+
       @keyframes cursor {
         from, to, 
         20%, 80% {border-color: transparent;}
@@ -200,7 +210,8 @@
             <span class="line-09">qc.<span class="c-m">measure</span>([0, 1], [0, 1])</span></p>
 
             <p><span class="line-10">job = backend.<span class="c-m">run</span>(qc, shots=100)</span><br/>
-            <span class="line-11"><span class="c-m">print</span>(job.<span class="c-m">result</span>().<span class="c-m">get_counts</span>())</span></p>
+            <span class="line-11"><span class="c-m">print</span>(job.<span class="c-m">result</span>().<span class="c-m">get_counts</span>())</span><br/>
+            <span class="line-12"><span class="c-c"># {'11': 49, '00': 51}</span></span></p>
         </div>
       </div>
       </body>
