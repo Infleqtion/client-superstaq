@@ -35,23 +35,22 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             target: A string containing the name of a target backend.
         """
         self._provider = provider
+        target_info = self._provider._client.target_info(target)["target_info"]
         self.configuration_dict = {
             "backend_name": target,
             "backend_version": "n/a",
-            "n_qubits": -1,
-            "basis_gates": None,
+            "n_qubits": target_info["num_qubits"],
+            "basis_gates": target_info["native_gate_set"],
             "gates": [],
             "local": False,
             "simulator": False,
             "conditional": False,
             "open_pulse": False,
             "memory": False,
-            "max_shots": -1,
-            "coupling_map": None,
+            "max_shots": target_info["max_shots"],
+            "coupling_map": target_info["coupling_map"],
         }
-        # Can't call `self.target_info()` cause it calls `self.name()` which hasn't been
-        # initialized yet. Will be initialized by the `super().__init__` call below.
-        target_info = self._provider._client.target_info(target)["target_info"]
+
         self.configuration_dict.update(target_info)
         gss.validation.validate_target(target)
 
@@ -386,7 +385,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         Returns:
             A dictionary of target information.
         """
-        return self._provider._client.target_info(self.name())["target_info"]
+        return self.configuration_dict
 
     def resource_estimate(
         self, circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]]

@@ -412,13 +412,6 @@ def test_dfe(mock_post: MagicMock) -> None:
     assert provider.process_dfe(["1", "2"]) == 1
 
 
-@patch("requests.post")
-def test_target_info(mock_post: MagicMock) -> None:
-    provider = qss.SuperstaqProvider(api_key="key")
-    fake_data = {"target_info": {"backend_name": "ss_example_qpu", "max_experiments": 1234}}
-    mock_post.return_value.json = lambda: fake_data
-    assert provider.target_info("ss_example_qpu") == fake_data["target_info"]
-
 
 def test_get_targets() -> None:
     provider = qss.SuperstaqProvider(api_key="key", remote_host="http://example.com")

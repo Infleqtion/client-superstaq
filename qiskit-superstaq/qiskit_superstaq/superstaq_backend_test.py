@@ -291,11 +291,6 @@ def test_compile(mock_post: MagicMock) -> None:
 
 
 def test_target_info() -> None:
-    target = "ibmq_qasm_simulator"
-    backend = qss.SuperstaqProvider(api_key="123").get_backend(target)
-    fake_data = {"target_info": {"backend_name": target}}
-    with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.target_info",
-        return_value=fake_data,
-    ):
-        assert backend.target_info() == fake_data["target_info"]
+    backend = qss.SuperstaqProvider(api_key="123").get_backend("ibmq_qasm_simulator")
+    
+    assert backend.target_info()["num_qubits"] == 4

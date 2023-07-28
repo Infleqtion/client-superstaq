@@ -1,0 +1,1 @@
+general_superstaq.superstaq_client._SuperstaqClient.target_info = lambda self, n: my_dict
