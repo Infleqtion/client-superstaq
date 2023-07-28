@@ -148,7 +148,7 @@
 
       @keyframes type-line-11 {
         from {width: 0;}
-        to {width: 518px;}
+        to {width: 600px;}
       }
 
       .line-11 {
@@ -200,7 +200,7 @@
             <span class="line-09">qc.<span class="c-m">measure</span>([0, 1], [0, 1])</span></p>
 
             <p><span class="line-10">job = backend.<span class="c-m">run</span>(qc, shots=100)</span><br/>
-            <span class="line-11"><span class="c-m">print</span>(result.<span class="c-m">get_counts</span>())</span></p>
+            <span class="line-11"><span class="c-m">print</span>(job.<span class="c-m">result</span>().<span class="c-m">get_counts</span>())</span></p>
         </div>
       </div>
       </body>
