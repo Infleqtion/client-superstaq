@@ -146,12 +146,13 @@ def test_get_resource_estimate(provider: qss.SuperstaqProvider) -> None:
 def test_qscout_compile(provider: qss.SuperstaqProvider) -> None:
     circuit = qiskit.QuantumCircuit(1)
     circuit.h(0)
-    expected = qiskit.QuantumCircuit(2)
-    expected.r(np.pi / 2, -np.pi / 2, 0)
-    expected.z(0)
-    assert provider.qscout_compile(circuit).circuit == expected
-    assert provider.qscout_compile([circuit]).circuits == [expected]
-    assert provider.qscout_compile([circuit, circuit]).circuits == [expected, expected]
+
+    compiled_circuit = provider.qscout_compile(circuit).circuit
+    assert isinstance(compiled_circuit, qiskit.QuantumCircuit)
+    assert qiskit.quantum_info.Operator(compiled_circuit) == qiskit.quantum_info.Operator(circuit)
+
+    assert provider.qscout_compile([circuit]).circuits == [compiled_circuit]
+    assert provider.qscout_compile([circuit, circuit]).circuits == 2 * [compiled_circuit]
 
 
 def test_qscout_compile_swap_mirror(provider: qss.SuperstaqProvider) -> None:
