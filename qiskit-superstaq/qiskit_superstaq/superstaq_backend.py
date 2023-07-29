@@ -35,23 +35,39 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             target: A string containing the name of a target backend.
         """
         self._provider = provider
-        target_info = self._provider._client.target_info(target)["target_info"]
-        self.configuration_dict = {
-            "backend_name": target,
-            "backend_version": "n/a",
-            "n_qubits": target_info["num_qubits"],
-            "basis_gates": target_info["native_gate_set"],
-            "gates": [],
-            "local": False,
-            "simulator": False,
-            "conditional": False,
-            "open_pulse": False,
-            "memory": False,
-            "max_shots": target_info["max_shots"],
-            "coupling_map": target_info["coupling_map"],
-        }
+        if target == "ss_local_simulator":
+            self.configuration_dict = {
+                "backend_name": target,
+                "backend_version": "n/a",
+                "n_qubits": -1,
+                "basis_gates": None,
+                "gates": [],
+                "local": False,
+                "simulator": False,
+                "conditional": False,
+                "open_pulse": False,
+                "memory": False,
+                "max_shots": -1,
+                "coupling_map": None,
+            }
+        else:
+            target_info = self._provider._client.target_info(target)["target_info"]
+            self.configuration_dict = {
+                "backend_name": target,
+                "backend_version": "n/a",
+                "n_qubits": target_info["num_qubits"],
+                "basis_gates": target_info["native_gate_set"],
+                "gates": [],
+                "local": False,
+                "simulator": False,
+                "conditional": False,
+                "open_pulse": False,
+                "memory": False,
+                "max_shots": target_info["max_shots"],
+                "coupling_map": target_info["coupling_map"],
+            }
 
-        self.configuration_dict.update(target_info)
+            self.configuration_dict.update(target_info)
         gss.validation.validate_target(target)
 
         super().__init__(
@@ -66,9 +82,15 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         return qiskit.providers.Options(shots=1000)
 
     def __eq__(self, other: Any) -> bool:
+
         if not isinstance(other, qss.SuperstaqBackend):
+            print("In vs code")
             return False
 
+        print(self.configuration_dict == other.configuration_dict)
+
+        print(f"Self configuration dict {self.configuration_dict}")
+        print(f"Other configuration dict {other.configuration_dict}")
         return (
             self._provider == other._provider
             and self.configuration_dict == other.configuration_dict

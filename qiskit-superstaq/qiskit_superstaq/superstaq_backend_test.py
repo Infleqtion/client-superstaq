@@ -12,7 +12,7 @@ import qiskit_superstaq as qss
 
 def test_default_options() -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
-    backend = qss.SuperstaqBackend(provider=provider, target="ibmq_qasm_simulator")
+    backend = qss.SuperstaqBackend(provider=provider, target="ss_local_simulator")
 
     assert qiskit.providers.Options(shots=1000) == backend._default_options()
 
@@ -23,7 +23,7 @@ def test_run() -> None:
     qc.cx(0, 1)
     qc.measure([0, 0], [1, 1])
 
-    backend = qss.SuperstaqProvider(api_key="123").get_backend("ss_example_qpu")
+    backend = qss.SuperstaqProvider(api_key="123").get_backend("ss_local_simulator")
 
     with patch(
         "general_superstaq.superstaq_client._SuperstaqClient.create_job",
@@ -48,7 +48,7 @@ def test_multi_circuit_run() -> None:
     qc2.cx(0, 1)
     qc2.measure([0, 1], [0, 1])
 
-    backend = qss.SuperstaqProvider(api_key="123").get_backend("ss_example_qpu")
+    backend = qss.SuperstaqProvider(api_key="123").get_backend("ss_local_simulator")
 
     with patch(
         "general_superstaq.superstaq_client._SuperstaqClient.create_job",
@@ -65,7 +65,7 @@ def test_multi_arg_run() -> None:
     qc.cx(0, 1)
     qc.measure([0, 0], [1, 1])
 
-    backend = qss.SuperstaqProvider(api_key="123").get_backend("ss_example_qpu")
+    backend = qss.SuperstaqProvider(api_key="123").get_backend("ss_local_simulator")
 
     with patch(
         "general_superstaq.superstaq_client._SuperstaqClient.create_job",
@@ -83,7 +83,7 @@ def test_retrieve_job() -> None:
     qc.measure([0, 0], [1, 1])
 
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
-    backend = provider.get_backend("ibmq_qasm_simulator")
+    backend = provider.get_backend("ss_local_simulator")
     with patch(
         "general_superstaq.superstaq_client._SuperstaqClient.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
@@ -92,24 +92,35 @@ def test_retrieve_job() -> None:
     assert job == backend.retrieve_job("job_id")
 
 
-def test_eq() -> None:
+def test_eq(mock_target_info) -> None:
     provider = qss.SuperstaqProvider(api_key="123")
 
-    backend1 = provider.get_backend("ibmq_qasm_simulator")
+    backend1 = provider.get_backend("ss_local_simulator")
+
     assert backend1 != 3
+    assert backend1 == backend1
 
-    backend2 = provider.get_backend("ibmq_athens_qpu")
-    assert backend1 != backend2
-
-    backend3 = provider.get_backend("ibmq_qasm_simulator")
-    assert backend1 == backend3
+    target = "ibmq_athens_qpu"
+    with patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.target_info",
+        return_value=mock_target_info,
+    ):
+        backend2 = provider.get_backend(target)
+        assert backend1 != backend2
 
 
 @patch("requests.post")
-def test_aqt_compile(mock_post: MagicMock) -> None:
+def test_aqt_compile(mock_post: MagicMock, mock_target_info) -> None:
     # AQT compile
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
-    backend = provider.get_backend("aqt_keysight_qpu")
+
+    target = "aqt_keysight_qpu"
+
+    with patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.target_info",
+        return_value=mock_target_info,
+    ):
+        backend = provider.get_backend(target)
 
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
@@ -233,12 +244,12 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
 
 
 @patch("requests.post")
-def test_qscout_compile(mock_post: MagicMock) -> None:
+def test_qscout_compile(mock_post: MagicMock, mock_target_info) -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
-    backend = provider.get_backend("sandia_qscout_qpu")
 
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)
+
     jaqal_program = textwrap.dedent(
         """\
         register allqubits[1]
@@ -249,6 +260,23 @@ def test_qscout_compile(mock_post: MagicMock) -> None:
         measure_all
         """
     )
+
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
+        "final_logical_to_physicals": json.dumps([[(0, 13)], [(0, 13)]]),
+        "jaqal_programs": [jaqal_program, jaqal_program],
+    }
+
+    with patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.target_info",
+        return_value=mock_target_info,
+    ):
+        backend = provider.get_backend("sandia_qscout_qpu")
+
+        out = provider.qscout_compile([qc, qc])
+        assert out.circuits == [qc, qc]
+        assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
+
     logical_to_physical = {0: 13}
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
@@ -263,21 +291,12 @@ def test_qscout_compile(mock_post: MagicMock) -> None:
     assert out.circuits == [qc]
     assert out.final_logical_to_physicals == [{0: 13}]
 
-    mock_post.return_value.json = lambda: {
-        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
-        "final_logical_to_physicals": json.dumps([[(0, 13)], [(0, 13)]]),
-        "jaqal_programs": [jaqal_program, jaqal_program],
-    }
-    out = provider.qscout_compile([qc, qc])
-    assert out.circuits == [qc, qc]
-    assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
-
 
 @patch("requests.post")
 def test_compile(mock_post: MagicMock) -> None:
     # Compilation to a simulator (e.g., AWS)
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
-    backend = provider.get_backend("aws_sv1_simulator")
+    backend = provider.get_backend("ss_local_simulator")
 
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)
@@ -290,7 +309,11 @@ def test_compile(mock_post: MagicMock) -> None:
     assert out.final_logical_to_physicals == [{0: 0}]
 
 
-def test_target_info() -> None:
-    backend = qss.SuperstaqProvider(api_key="123").get_backend("ibmq_qasm_simulator")
-    
+def test_target_info(mock_target_info) -> None:
+    with patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.target_info",
+        return_value=mock_target_info,
+    ):
+        backend = qss.SuperstaqProvider(api_key="123").get_backend("ibmq_qasm_simulator")
+
     assert backend.target_info()["num_qubits"] == 4
