@@ -1,8 +1,8 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
-from typing import Dict, List
 import json
 import os
 import textwrap
+from typing import Dict, List
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
@@ -94,7 +94,7 @@ def test_invalid_target_aqt_compile() -> None:
 
 
 @patch("requests.post")
-def test_aqt_compile_eca(mock_post: MagicMock, mock_target_info) -> None:
+def test_aqt_compile_eca(mock_post: MagicMock, mock_target_info: Dict[str, object]) -> None:
     provider = qss.superstaq_provider.SuperstaqProvider(api_key="MY_TOKEN")
 
     qc = qiskit.QuantumCircuit(8)
@@ -132,7 +132,7 @@ def test_aqt_compile_eca(mock_post: MagicMock, mock_target_info) -> None:
 
 
 @patch("requests.post")
-def test_ibmq_compile(mock_post: MagicMock, mock_target_info) -> None:
+def test_ibmq_compile(mock_post: MagicMock, mock_target_info: Dict[str, object]) -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
@@ -220,7 +220,7 @@ def test_resource_estimate_list(mock_resource_estimate: MagicMock) -> None:
 
 
 @patch("requests.post")
-def test_qscout_compile(mock_post: MagicMock, mock_target_info) -> None:
+def test_qscout_compile(mock_post: MagicMock, mock_target_info: Dict[str, object]) -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
 
     qc = qiskit.QuantumCircuit(1)
@@ -274,7 +274,7 @@ def test_invalid_target_qscout_compile() -> None:
 @patch("requests.post")
 @pytest.mark.parametrize("mirror_swaps", (True, False))
 def test_qscout_compile_swap_mirror(
-    mock_post: MagicMock, mirror_swaps: bool, mock_target_info
+    mock_post: MagicMock, mirror_swaps: bool, mock_target_info: Dict[str, object]
 ) -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
 
@@ -309,7 +309,7 @@ def test_qscout_compile_swap_mirror(
 @patch("requests.post")
 @pytest.mark.parametrize("base_entangling_gate", ("xx", "zz"))
 def test_qscout_compile_change_entangler(
-    mock_post: MagicMock, base_entangling_gate: str, mock_target_info
+    mock_post: MagicMock, base_entangling_gate: str, mock_target_info: Dict[str, object]
 ) -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
 
@@ -352,7 +352,7 @@ def test_qscout_compile_wrong_entangler(mock_post: MagicMock) -> None:
 
 
 @patch("requests.post")
-def test_cq_compile(mock_post: MagicMock, mock_target_info) -> None:
+def test_cq_compile(mock_post: MagicMock, mock_target_info: Dict[str, object]) -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
 
     qc = qiskit.QuantumCircuit(1)

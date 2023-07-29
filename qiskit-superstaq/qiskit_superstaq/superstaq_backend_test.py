@@ -1,6 +1,7 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 import json
 import textwrap
+from typing import Dict
 from unittest.mock import DEFAULT, MagicMock, patch
 
 import general_superstaq as gss
@@ -92,7 +93,7 @@ def test_retrieve_job() -> None:
     assert job == backend.retrieve_job("job_id")
 
 
-def test_eq(mock_target_info) -> None:
+def test_eq(mock_target_info: Dict[str, object]) -> None:
     provider = qss.SuperstaqProvider(api_key="123")
 
     backend1 = provider.get_backend("ss_local_simulator")
@@ -110,7 +111,7 @@ def test_eq(mock_target_info) -> None:
 
 
 @patch("requests.post")
-def test_aqt_compile(mock_post: MagicMock, mock_target_info) -> None:
+def test_aqt_compile(mock_post: MagicMock, mock_target_info: Dict[str, object]) -> None:
     # AQT compile
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
 
@@ -244,7 +245,7 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
 
 
 @patch("requests.post")
-def test_qscout_compile(mock_post: MagicMock, mock_target_info) -> None:
+def test_qscout_compile(mock_post: MagicMock, mock_target_info: Dict[str, object]) -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
 
     qc = qiskit.QuantumCircuit(1)
@@ -309,7 +310,7 @@ def test_compile(mock_post: MagicMock) -> None:
     assert out.final_logical_to_physicals == [{0: 0}]
 
 
-def test_target_info(mock_target_info) -> None:
+def test_target_info(mock_target_info: Dict[str, object]) -> None:
     with patch(
         "general_superstaq.superstaq_client._SuperstaqClient.target_info",
         return_value=mock_target_info,
