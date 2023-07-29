@@ -1,4 +1,5 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
+from typing import Dict, List
 import json
 import os
 import textwrap
@@ -14,16 +15,25 @@ from general_superstaq import ResourceEstimate
 import qiskit_superstaq as qss
 
 
-def test_provider() -> None:
+@patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
+@patch(
+    "general_superstaq.superstaq_client._SuperstaqClient.get_targets",
+    return_value={"superstaq_targets": {"compile-and-run": ["ss_local_simulator"]}},
+)
+def test_provider(mock_get_targets: Dict[str, Dict[str, List[str]]]) -> None:
     ss_provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
 
-    assert str(ss_provider.get_backend("ss_local_simulator")) == str(
+    local_backend = ss_provider.get_backend("ss_local_simulator")
+
+    assert str(local_backend) == str(
         qss.SuperstaqBackend(provider=ss_provider, target="ss_local_simulator")
     )
 
     assert str(ss_provider) == "<SuperstaqProvider superstaq_provider>"
 
     assert repr(ss_provider) == "<SuperstaqProvider(api_key=MY_TOKEN, name=superstaq_provider)>"
+
+    assert ss_provider.backends() == [local_backend]
 
 
 @patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
@@ -38,7 +48,7 @@ def test_get_balance() -> None:
 
 
 @patch("requests.post")
-def test_aqt_compile(mock_post: MagicMock, mock_target_info) -> None:
+def test_aqt_compile(mock_post: MagicMock, mock_target_info: Dict[str, object]) -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
 
     qc = qiskit.QuantumCircuit(8)

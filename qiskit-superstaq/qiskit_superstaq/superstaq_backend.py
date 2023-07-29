@@ -84,13 +84,8 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
     def __eq__(self, other: Any) -> bool:
 
         if not isinstance(other, qss.SuperstaqBackend):
-            print("In vs code")
             return False
 
-        print(self.configuration_dict == other.configuration_dict)
-
-        print(f"Self configuration dict {self.configuration_dict}")
-        print(f"Other configuration dict {other.configuration_dict}")
         return (
             self._provider == other._provider
             and self.configuration_dict == other.configuration_dict

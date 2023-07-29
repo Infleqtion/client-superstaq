@@ -1,6 +1,5 @@
 from typing import Dict
 
-import general_superstaq
 import pytest
 
 
