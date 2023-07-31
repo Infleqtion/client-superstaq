@@ -157,18 +157,16 @@ def test_get_targets(service: css.Service) -> None:
 def test_qscout_compile(service: css.Service) -> None:
     q0, q1 = cirq.LineQubit.range(2)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
-    compiled_circuit = cirq.Circuit(
-        cirq.PhasedXPowGate(phase_exponent=-0.5, exponent=0.5).on(q0),
-        cirq.Z(q0) ** -1.0,
-        cirq.measure(q0),
-    )
 
     out = service.qscout_compile(circuit)
     cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
-        out.circuit, compiled_circuit, atol=1e-08
+        out.circuit, circuit, atol=1e-08
     )
     assert isinstance(out.jaqal_program, str)
     assert "measure_all" in out.jaqal_program
+
+    assert service.qscout_compile([circuit]).circuits == [out.circuit]
+    assert service.qscout_compile([circuit, circuit]).circuits == [out.circuit, out.circuit]
 
     cx_circuit = cirq.Circuit(cirq.H(q0), cirq.CX(q0, q1), cirq.measure(q0, q1))
     out = service.qscout_compile([cx_circuit])
