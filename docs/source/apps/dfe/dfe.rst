@@ -7,6 +7,7 @@ Below, you will find links to identical tutorials that demonstrate DFE using eit
 .. toctree::
     :maxdepth: 1
 
+    dfe_qss
     dfe_css
 
 References
