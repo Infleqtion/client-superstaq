@@ -48,9 +48,9 @@ def plot_results(
 
 def plot_correlations(
     benchmark_features: Dict[str, List[float]],
-    device_scores: Dict[str, float],
+    device_scores: Union[Dict[str, float], List[Dict[str, float]]],
     feature_labels: List[str],
-    device_name: str,
+    device_name: Union[str, List[str]],
     savefn: Optional[str] = None,
     show: bool = True,
 ) -> None:
@@ -59,10 +59,11 @@ def plot_correlations(
     Args:
         benchmark_features: A dictionary where the keys are benchmark names and the values are the
             list of feature values for that benchmark.
-        device_scores: A dictionary of (benchmark name, score) pairs.
+        device_scores: A dictionary of (benchmark name, score) pairs, or a list of such
+            dictionaries.
         feature_labels: Feature names, should have the same length as the lists of feature values
             in `benchmark_features`.
-        device_name: The name of quantum device where the scores were obtained.
+        device_name: The name or list of names of quantum device(s) where the scores were obtained.
         savefn: Path to save the plot, if `None`, the plot is not saved.
         show: Display the plot using `plt.show`.
     """
