@@ -81,7 +81,7 @@ def plot_volumetric_results(
     sm.set_array([])
     plt.colorbar(sm, ax=ax, label='Benchmark Score')
 
-    for _, x, y, z in data:
+    for x, y, z in benchmark_data:
         rect = plt.Rectangle(
             (x - rect_width / 2, y - rect_height / 2),
             rect_width,
