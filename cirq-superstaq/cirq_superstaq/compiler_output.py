@@ -187,17 +187,36 @@ def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutp
         if importlib.util.find_spec("qiskit") and importlib.util.find_spec("qiskit.qpy"):
             import qiskit
 
-            if "0.24" < qiskit.__version__ < "0.25":
+            try:
                 pulses = gss.serialization.deserialize(json_dict["pulses"])
-            else:
-                warnings.warn(
-                    "ibmq_compile requires Qiskit Terra version 0.24.* to deserialize compiled "
-                    f"pulse sequences (you have {qiskit.__version__})."
-                )
+            except Exception as e:
+                s = "s" if circuits_is_list else ""
+                if qiskit.__version__ < "0.24":
+                    warnings.warn(
+                        f"Your compiled pulse sequence{s} could not be deserialized, likely "
+                        f"because your Qiskit Terra installation (version {qiskit.__version__}) is "
+                        "out of date. Please try again after installing a more recent version.\n\n"
+                        f"You can still access your compiled circuit{s} using the .circuit{s} "
+                        "attribute of this output."
+                    )
+                else:
+                    warnings.warn(
+                        f"Your compiled pulse sequence{s} could not be deserialized. Please let "
+                        "us know at superstaq@infleqtion.com, or file a report at "
+                        "https://github.com/Infleqtion/client-superstaq/issues containing "
+                        "the following information (as well as any other relevant context):\n\n"
+                        f"cirq-superstaq version: {css.__version__}\n"
+                        f"qiskit-terra version: {qiskit.__version__}\n"
+                        f"error: {e!r}\n\n"
+                        f"You can still access your compiled circuit{s} using the .circuit{s} "
+                        "attribute of this output."
+                    )
         else:
+            s = "s" if circuits_is_list else ""
             warnings.warn(
-                "ibmq_compile requires Qiskit Terra version 0.24.* to deserialize compiled pulse "
-                "sequences."
+                f"Qiskit Terra is required to deserialize compiled pulse sequence{s}. You can "
+                f"still access your compiled circuit{s} using the .circuit{s} attribute of this "
+                "output."
             )
 
     if circuits_is_list:

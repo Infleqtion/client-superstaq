@@ -369,6 +369,99 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         fidelities = gss.serialization.deserialize(json_dict["fidelities"])
         return circuits, fidelities
 
+    def submit_dfe(
+        self,
+        rho_1: Tuple[qiskit.QuantumCircuit, str],
+        rho_2: Tuple[qiskit.QuantumCircuit, str],
+        num_random_bases: int,
+        shots: int,
+        **kwargs: Any,
+    ) -> List[str]:
+        """Executes the circuits neccessary for the DFE protocol.
+
+        The circuits used to prepare the desired states should not contain final measurements, but
+        can contain mid-circuit measurements (as long as the intended target supports them). For
+        example, to prepare a Bell state to be ran in `ss_unconstrained_simulator`, you should pass
+        `qc = qiskit.QuantumCircuit(2); qc.h(0); qc.cx(0, 1)` as the first element of some `rho_i`
+        (note there are no final measurements).
+
+        The fidelity between states is calculated following the random measurement protocol
+        outlined in [1].
+
+        References:
+            [1] Elben, Andreas, Benoît Vermersch, Rick van Bijnen, Christian Kokail, Tiff Brydges,
+                Christine Maier, Manoj K. Joshi, Rainer Blatt, Christian F. Roos, and Peter Zoller.
+                "Cross-platform verification of intermediate scale quantum devices." Physical
+                review letters 124, no. 1 (2020): 010504.
+
+        Args:
+            rho_1: Tuple containing the information to prepare the first state. It contains a
+                `qiskit.QuantumCircuit` at index 0 and a target name at index 1.
+            rho_2: Tuple containing the information to prepare the second state. It contains a
+                `qiskit.QuantumCircuit` at index 0 and a target name at index 1.
+            num_random_bases: Number of random bases to measure each state in.
+            shots: Number of shots to use per random basis.
+            kwargs: Other execution parameters.
+                - tag: Tag for all jobs submitted for this protocol.
+                - lifespan: How long to store the jobs submitted for in days (only works with right
+                permissions).
+                - method: Which type of method to execute the circuits with.
+
+        Returns:
+            A list with two strings, which are the job ids that need to be passed to `process_dfe`
+            to post-process the measurement results and return the fidelity.
+
+        Raises:
+            ValueError: If `circuit` is not a valid `qiskit.QuantumCircuit`.
+            SuperstaqServerException: If there was an error accessing the API.
+        """
+        circuit_1 = rho_1[0]
+        circuit_2 = rho_2[0]
+        target_1 = rho_1[1]
+        target_2 = rho_2[1]
+
+        qss.validation.validate_qiskit_circuits(circuit_1)
+        qss.validation.validate_qiskit_circuits(circuit_2)
+        gss.validation.validate_target(target_1)
+        gss.validation.validate_target(target_2)
+
+        if not (
+            isinstance(circuit_1, qiskit.QuantumCircuit)
+            and isinstance(circuit_2, qiskit.QuantumCircuit)
+        ):
+            raise ValueError("Each state `rho_i` should contain a single circuit.")
+
+        serialized_circuit_1 = qss.serialization.serialize_circuits(circuit_1)
+        serialized_circuit_2 = qss.serialization.serialize_circuits(circuit_2)
+
+        ids = self._client.submit_dfe(
+            circuit_1={"qiskit_circuits": serialized_circuit_1},
+            target_1=target_1,
+            circuit_2={"qiskit_circuits": serialized_circuit_2},
+            target_2=target_2,
+            num_random_bases=num_random_bases,
+            shots=shots,
+            **kwargs,
+        )
+
+        return ids
+
+    def process_dfe(self, ids: List[str]) -> float:
+        """Process the results of a DFE protocol.
+
+        Args:
+            ids: A list (size two) of ids returned by a call to `submit_dfe`.
+
+        Returns:
+            The estimated fidelity between the two states as a float.
+
+        Raises:
+            ValueError: If `ids` is not of size two.
+            SuperstaqServerException: If there was an error accesing the API or the jobs submitted
+                through `submit_dfe` have not finished running.
+        """
+        return self._client.process_dfe(ids)
+
     def target_info(self, target: str) -> Dict[str, Any]:
         """Returns information about the device specified by `target`.
 
