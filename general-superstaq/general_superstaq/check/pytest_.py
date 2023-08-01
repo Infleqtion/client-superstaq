@@ -81,7 +81,9 @@ def run(
     if parsed_args.integration and integration_setup:
         integration_setup()
 
-    return subprocess.call(["pytest", *files, *args_to_pass], cwd=check_utils.root_dir)
+    return subprocess.call(
+        ["python", "-m", "pytest", *files, *args_to_pass], cwd=check_utils.root_dir
+    )
 
 
 if __name__ == "__main__":

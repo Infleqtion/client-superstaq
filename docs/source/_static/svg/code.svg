@@ -113,7 +113,7 @@
 
       .line-07 {
         margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
-        animation: type-line-07 1s 7s steps(7, end) forwards, cursor 1s linear 7s 1;
+        animation: type-line-07 0.5s 7s steps(7, end) forwards, cursor 1s linear 7s 0.5;
       }
 
       @keyframes type-line-08 {
@@ -123,7 +123,7 @@
 
       .line-08 {
         margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
-        animation: type-line-08 1s 8s steps(11, end) forwards, cursor 1s linear 8s 1;
+        animation: type-line-08 0.5s 7.5s steps(11, end) forwards, cursor 1s linear 7.5s 0.5;
       }
 
       @keyframes type-line-09 {
@@ -133,7 +133,7 @@
 
       .line-09 {
         margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
-        animation: type-line-09 1s 9s steps(26, end) forwards, cursor 1s linear 9s 1;
+        animation: type-line-09 1s 8s steps(26, end) forwards, cursor 1s linear 8s 1;
       }
 
       @keyframes type-line-10 {
@@ -143,15 +143,25 @@
 
       .line-10 {
         margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
-        animation: type-line-10 1s 10s steps(32, end) forwards, cursor 1s linear 10s 1;
+        animation: type-line-10 1s 9s steps(32, end) forwards, cursor 1s linear 9s 1;
       }
 
       @keyframes type-line-11 {
         from {width: 0;}
-        to {width: 518px;}
+        to {width: 600px;}
       }
 
       .line-11 {
+        margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
+        animation: type-line-11 1s 10s steps(26, end) forwards, cursor 1s linear 10s 1;
+      }
+
+      @keyframes type-line-12 {
+        from {width: 0;}
+        to {width: 600px;}
+      }
+
+      .line-12 {
         margin: 0; width: 0%; border-right: 0.15em solid transparent; overflow: hidden; display: inline-block; white-space: nowrap;
         animation: type-line-11 1s 11s steps(26, end) forwards, cursor 1s linear 11s 1;
       }
@@ -200,7 +210,8 @@
             <span class="line-09">qc.<span class="c-m">measure</span>([0, 1], [0, 1])</span></p>
 
             <p><span class="line-10">job = backend.<span class="c-m">run</span>(qc, shots=100)</span><br/>
-            <span class="line-11"><span class="c-m">print</span>(result.<span class="c-m">get_counts</span>())</span></p>
+            <span class="line-11"><span class="c-m">print</span>(job.<span class="c-m">result</span>().<span class="c-m">get_counts</span>())</span><br/>
+            <span class="line-12"><span class="c-c"># {'11': 49, '00': 51}</span></span></p>
         </div>
       </div>
       </body>

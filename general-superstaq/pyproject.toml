@@ -1,0 +1,38 @@
+[project]
+name = "general-superstaq"
+description = "The general module that provides tools and access to Superstaq."
+authors = [
+  { name = "Superstaq development team", email = "superstaq@infleqtion.com" },
+]
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { text = "Apache 2" }
+requires-python = ">=3.8.0"
+dynamic = ["version", "dependencies", "optional-dependencies"]
+
+[project.urls]
+homepage = "https://github.com/Infleqtion/client-superstaq"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["general_superstaq*"]
+
+[tool.setuptools.package-data]
+general_superstaq = ["py.typed", "check/checks-pyproject.toml"]
+
+[tool.setuptools.dynamic.version]
+attr = "general_superstaq._version.__version__"
+
+[tool.setuptools.dynamic.dependencies]
+file = ["requirements.txt"]
+
+[tool.setuptools.dynamic.optional-dependencies.dev]
+file = ["dev-requirements.txt"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+color_output = true
+known_first_party = "general_superstaq"

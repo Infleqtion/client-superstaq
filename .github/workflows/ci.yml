@@ -25,7 +25,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -46,7 +46,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -67,7 +67,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -88,7 +88,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -112,7 +112,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -188,7 +188,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -228,7 +228,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -251,11 +251,11 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/setup.py', '**requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq[dev] -e ./qiskit-superstaq[dev,examples] -e ./supermarq-benchmarks[dev]
+          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./supermarq-benchmarks[dev]
       - name: Notebook check
         run: |
           check/pytest_.py --notebook

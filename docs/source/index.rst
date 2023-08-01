@@ -15,7 +15,7 @@ Check out some of our demos to see how Superstaq can help you:
    <div class="index-demos">
       <div class="index-demos-box">
          <div class="index-demos-headers"><a href="apps/supercheq/supercheq.html">Supercheq</a></div>
-         <div class="index-demos-desc">Supercheq is our novel quantum fingerprinting protocol and can be used with both `qiskit-superstaq` and `cirq-superstaq`</div>
+         <div class="index-demos-desc">Supercheq is our novel quantum fingerprinting protocol and can be used with both qiskit-superstaq and cirq-superstaq</div>
       </div>
       <div class="index-demos-box">
          <div class="index-demos-headers"><a href="apps/max_sharpe_ratio_optimization.html">Sharpe Ratio Maximization</a></div>
@@ -55,6 +55,7 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
 
    apps/supercheq/supercheq
    apps/max_sharpe_ratio_optimization
+   apps/dfe/dfe
 
 .. toctree::
    :maxdepth: 1

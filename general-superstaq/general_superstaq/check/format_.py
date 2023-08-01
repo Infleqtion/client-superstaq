@@ -42,8 +42,11 @@ def run(
         return 0
 
     diff_check_args = ["--diff", "--check"] if not parsed_args.apply else []
+
+    args_to_pass_black = ["--config", "pyproject.toml"]
     returncode_black = subprocess.call(
-        ["black", *files, *diff_check_args], cwd=check_utils.root_dir
+        ["python", "-m", "black", *files, *diff_check_args, *args_to_pass_black],
+        cwd=check_utils.root_dir,
     )
 
     if returncode_black > 1:
@@ -52,7 +55,8 @@ def run(
 
     args_to_pass_isort += ["--resolve-all-configs", f"--config-root={check_utils.root_dir}"]
     returncode_isort = subprocess.call(
-        ["isort", *files, *diff_check_args, *args_to_pass_isort], cwd=check_utils.root_dir
+        ["python", "-m", "isort", *files, *diff_check_args, *args_to_pass_isort],
+        cwd=check_utils.root_dir,
     )
 
     if returncode_black == 1 or returncode_isort == 1:
