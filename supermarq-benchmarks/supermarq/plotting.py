@@ -54,7 +54,7 @@ def plot_correlations(
     savefn: Optional[str] = None,
     show: bool = True,
 ) -> None:
-    """Plot a correlation heatmap of the features for a single device.
+    """Plot a correlation heatmap of the features for one or multiple devices.
 
     Args:
         benchmark_features: A dictionary where the keys are benchmark names and the values are the
@@ -69,38 +69,47 @@ def plot_correlations(
     """
 
     temp_correlations = []
-    for i in range(len(feature_labels)):
-        x, y = [], []
-        for benchmark in device_scores.keys():
-            x.append(benchmark_features[benchmark][i])
-            y.append(device_scores[benchmark])
+    if isinstance(device_scores, Dict):
+        device_scores = [device_scores]
+    for cur_device_scores in device_scores:
+        device_correlations = []
+        for i in range(len(feature_labels)):
+            x, y = [], []
+            for benchmark in cur_device_scores.keys():
+                x.append(benchmark_features[benchmark][i])
+                y.append(cur_device_scores[benchmark])
 
-        proper_x = np.array(x)[:, np.newaxis]
-        proper_y = np.array(y)
-        model = LinearRegression().fit(proper_x, proper_y)
-        correlation = model.score(proper_x, proper_y)
-        temp_correlations.append(correlation)
+            proper_x = np.array(x)[:, np.newaxis]
+            proper_y = np.array(y)
+            model = LinearRegression().fit(proper_x, proper_y)
+            correlation = model.score(proper_x, proper_y)
+            device_correlations.append(correlation)
+        temp_correlations.append(device_correlations)
 
-    correlations = np.array([temp_correlations])
+    correlations = np.array(temp_correlations)
+
+    if isinstance(device_name, str):
+        device_names = [device_name]
+    else:
+        device_names = device_name
 
     _, ax = plt.subplots(dpi=300)
     im, _ = heatmap(
         correlations,
         ax,
-        [device_name],
+        device_names,
         feature_labels,
         cmap="cool",
         vmin=0,
         cbarlabel=r"Coefficient of Determination, $R^2$",
-        cbar_kw={"pad": 0.01},
+        cbar_kw={"pad": 0.005},
     )
 
     annotate_heatmap(im, size=7)
 
-    plt.tight_layout()
     if savefn is not None:
         # Don't want to save figures when running tests
-        plt.savefig(savefn)  # pragma: no cover
+        plt.savefig(savefn, bbox_inches='tight')  # pragma: no cover
 
     if show:
         # Tests will hang if we show figures during tests
@@ -125,7 +134,7 @@ def plot_benchmark(
         spoke_labels: Optional labels for the feature vector dimensions.
         legend_loc: Optional argument to fine tune the legend placement.
     """
-    plt.rcParams["font.family"] = "Times New Roman"
+    #plt.rcParams["font.family"] = "Times New Roman"
 
     if spoke_labels is None:
         spoke_labels = ["Connectivity", "Liveness", "Parallelism", "Measurement", "Entanglement"]
@@ -194,8 +203,11 @@ def heatmap(
     # Create colorbar
     if cbar_kw is None:
         cbar_kw = {}  # pragma: no cover
+    # TODO: make the orientation variable, in which case the cbar will either need to set the
+    # ylabel or the xlabel, appropriately.
     cbar = ax.figure.colorbar(im, ax=ax, orientation="horizontal", **cbar_kw)
-    cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom", fontsize=8)
+    #cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom", fontsize=8)
+    cbar.ax.set_xlabel(cbarlabel, labelpad=10, va="bottom", fontsize=8)
     cbar.ax.tick_params(labelsize=10)
 
     # We want to show all ticks...
