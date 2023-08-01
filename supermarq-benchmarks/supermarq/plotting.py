@@ -195,8 +195,6 @@ def plot_benchmark(
         spoke_labels: Optional labels for the feature vector dimensions.
         legend_loc: Optional argument to fine tune the legend placement.
     """
-    plt.rcParams["font.family"] = "Times New Roman"
-
     if spoke_labels is None:
         spoke_labels = ["Connectivity", "Liveness", "Parallelism", "Measurement", "Entanglement"]
 
@@ -265,7 +263,7 @@ def heatmap(
     if cbar_kw is None:
         cbar_kw = {}  # pragma: no cover
     cbar = ax.figure.colorbar(im, ax=ax, orientation="horizontal", **cbar_kw)
-    cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom", fontsize=8)
+    cbar.ax.set_xlabel(cbarlabel, labelpad=10, va="bottom", fontsize=8)
     cbar.ax.tick_params(labelsize=10)
 
     # We want to show all ticks...
