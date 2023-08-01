@@ -109,58 +109,68 @@ def plot_volumetric_results(
 
 def plot_correlations(
     benchmark_features: Dict[str, List[float]],
-    device_scores: Dict[str, float],
+    device_scores: Union[Dict[str, float], List[Dict[str, float]]],
     feature_labels: List[str],
-    device_name: str,
+    device_name: Union[str, List[str]],
     savefn: Optional[str] = None,
     show: bool = True,
 ) -> None:
-    """Plot a correlation heatmap of the features for a single device.
+    """Plot a correlation heatmap of the features for one or multiple devices.
 
     Args:
         benchmark_features: A dictionary where the keys are benchmark names and the values are the
             list of feature values for that benchmark.
-        device_scores: A dictionary of (benchmark name, score) pairs.
+        device_scores: A dictionary of (benchmark name, score) pairs, or a list of such
+            dictionaries.
         feature_labels: Feature names, should have the same length as the lists of feature values
             in `benchmark_features`.
-        device_name: The name of quantum device where the scores were obtained.
+        device_name: The name or list of names of quantum device(s) where the scores were obtained.
         savefn: Path to save the plot, if `None`, the plot is not saved.
         show: Display the plot using `plt.show`.
     """
 
     temp_correlations = []
-    for i in range(len(feature_labels)):
-        x, y = [], []
-        for benchmark in device_scores.keys():
-            x.append(benchmark_features[benchmark][i])
-            y.append(device_scores[benchmark])
+    if isinstance(device_scores, Dict):
+        device_scores = [device_scores]
+    for cur_device_scores in device_scores:
+        device_correlations = []
+        for i in range(len(feature_labels)):
+            x, y = [], []
+            for benchmark in cur_device_scores.keys():
+                x.append(benchmark_features[benchmark][i])
+                y.append(cur_device_scores[benchmark])
 
-        proper_x = np.array(x)[:, np.newaxis]
-        proper_y = np.array(y)
-        model = LinearRegression().fit(proper_x, proper_y)
-        correlation = model.score(proper_x, proper_y)
-        temp_correlations.append(correlation)
+            proper_x = np.array(x)[:, np.newaxis]
+            proper_y = np.array(y)
+            model = LinearRegression().fit(proper_x, proper_y)
+            correlation = model.score(proper_x, proper_y)
+            device_correlations.append(correlation)
+        temp_correlations.append(device_correlations)
 
-    correlations = np.array([temp_correlations])
+    correlations = np.array(temp_correlations)
+
+    if isinstance(device_name, str):
+        device_names = [device_name]
+    else:
+        device_names = device_name
 
     _, ax = plt.subplots(dpi=300)
     im, _ = heatmap(
         correlations,
         ax,
-        [device_name],
+        device_names,
         feature_labels,
         cmap="cool",
         vmin=0,
         cbarlabel=r"Coefficient of Determination, $R^2$",
-        cbar_kw={"pad": 0.01},
+        cbar_kw={"pad": 0.005},
     )
 
     annotate_heatmap(im, size=7)
 
-    plt.tight_layout()
     if savefn is not None:
         # Don't want to save figures when running tests
-        plt.savefig(savefn)  # pragma: no cover
+        plt.savefig(savefn, bbox_inches='tight')  # pragma: no cover
 
     if show:
         # Tests will hang if we show figures during tests
