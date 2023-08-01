@@ -27,7 +27,7 @@ def test_plot_volumetric_results() -> None:
         xmax=50,
         rect_width=0.2,
         rect_height=0.2,
-        title='test',
+        title="test",
         show=False,
     )
 
@@ -57,4 +57,3 @@ def test_plot_correlations() -> None:
         device_name=["ibmq_sim", "aws_sim"],
         show=False,
     )
-

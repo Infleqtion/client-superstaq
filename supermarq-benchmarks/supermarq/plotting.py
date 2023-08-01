@@ -72,14 +72,14 @@ def plot_volumetric_results(
         rect_width: Set the width of the rectangles.
         rect_height: Set the height of the rectangles.
     """
-    fig, ax = plt.subplots(figsize=[4,4])
+    fig, ax = plt.subplots(figsize=[4, 4])
 
     cmap = matplotlib.cm.RdBu
     norm = matplotlib.colors.Normalize(vmin=0, vmax=1)
 
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
-    plt.colorbar(sm, ax=ax, label='Benchmark Score')
+    plt.colorbar(sm, ax=ax, label="Benchmark Score")
 
     for x, y, z in benchmark_data:
         rect = plt.Rectangle(
@@ -92,14 +92,14 @@ def plot_volumetric_results(
 
     ax.set_xlim(0, xmax)
     ax.set_ylim(0, ymax)
-    ax.set_xlabel('Depth')
-    ax.set_ylabel('Qubits')
+    ax.set_xlabel("Depth")
+    ax.set_ylabel("Qubits")
     if title:
         ax.set_title(title)
 
     if savefn:
         # Don't want to save figures when running tests
-        plt.savefig(savefn, bbox_inches='tight') # pragma: no cover
+        plt.savefig(savefn, bbox_inches="tight")  # pragma: no cover
 
     if show:
         # Tests will hang if we show figures during tests
@@ -170,7 +170,7 @@ def plot_correlations(
 
     if savefn is not None:
         # Don't want to save figures when running tests
-        plt.savefig(savefn, bbox_inches='tight')  # pragma: no cover
+        plt.savefig(savefn, bbox_inches="tight")  # pragma: no cover
 
     if show:
         # Tests will hang if we show figures during tests
