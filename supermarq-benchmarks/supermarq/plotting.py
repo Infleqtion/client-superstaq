@@ -55,7 +55,7 @@ def plot_volumetric_results(
     ymax: float = 7,
     rect_width: float = 1.5,
     rect_height: float = 0.2,
-):
+) -> None:
     """Plot the benchmark results on an (x, y) = (depth, qubits) axis.
 
     It is assumed that all of the given data was collected on a single device. Keyword arguments
@@ -72,7 +72,7 @@ def plot_volumetric_results(
         rect_width: Set the width of the rectangles.
         rect_height: Set the height of the rectangles.
     """
-    fig, ax = plt.subplots(figsize=[4, 4])
+    _, ax = plt.subplots(figsize=[4, 4])
 
     cmap = matplotlib.cm.RdBu
     norm = matplotlib.colors.Normalize(vmin=0, vmax=1)
