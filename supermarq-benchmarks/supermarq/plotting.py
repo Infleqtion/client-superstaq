@@ -46,6 +46,67 @@ def plot_results(
     plt.close()
 
 
+def plot_volumetric_results(
+    benchmark_data: List[Tuple[int, int, float]],
+    savefn: Optional[str] = None,
+    title: Optional[str] = None,
+    show: bool = True,
+    xmax: float = 60,
+    ymax: float = 7,
+    rect_width: float = 1.5,
+    rect_height: float = 0.2,
+):
+    """Plot the benchmark results on an (x, y) = (depth, qubits) axis.
+
+    It is assumed that all of the given data was collected on a single device. Keyword arguments
+    may need to be tweaked depending on the domain and range of benchmark data.
+
+    Args:
+        benchmark_data: List of tuples containing (circuit depth, qubits, score) for each benchmark
+            executed on a single device.
+        savefn: Path to save the plot, if `None`, the plot is not saved.
+        title: Optional title for the plot.
+        show: Display the plot using `plt.show`.
+        xmax: Set the rightmost limit of the x axis.
+        ymax: Set the uppermost limit of the y axis.
+        rect_width: Set the width of the rectangles.
+        rect_height: Set the height of the rectangles.
+    """
+    fig, ax = plt.subplots(figsize=[4,4])
+
+    cmap = matplotlib.cm.RdBu
+    norm = matplotlib.colors.Normalize(vmin=0, vmax=1)
+
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    plt.colorbar(sm, ax=ax, label='Benchmark Score')
+
+    for _, x, y, z in data:
+        rect = plt.Rectangle(
+            (x - rect_width / 2, y - rect_height / 2),
+            rect_width,
+            rect_height,
+            color=cmap(norm(z)),
+        )
+        ax.add_patch(rect)
+
+    ax.set_xlim(0, xmax)
+    ax.set_ylim(0, ymax)
+    ax.set_xlabel('Depth')
+    ax.set_ylabel('Qubits')
+    if title:
+        ax.set_title(title)
+
+    if savefn:
+        # Don't want to save figures when running tests
+        plt.savefig(savefn, bbox_inches='tight') # pragma: no cover
+
+    if show:
+        # Tests will hang if we show figures during tests
+        plt.show()  # pragma: no cover
+    plt.close()
+
+
 def plot_correlations(
     benchmark_features: Dict[str, List[float]],
     device_scores: Dict[str, float],
