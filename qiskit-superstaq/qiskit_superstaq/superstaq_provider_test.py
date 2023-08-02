@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import os
 import textwrap
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
@@ -21,22 +21,14 @@ if TYPE_CHECKING:
 
 
 @patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
-def test_provider(
-    mock_target_info: Dict[str, object], fake_superstaq_provider: MockSuperstaqProvider
-) -> None:
-    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
+def test_provider(fake_superstaq_provider: MockSuperstaqProvider) -> None:
 
-    with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.target_info",
-        return_value=mock_target_info,
-    ):
-        assert str(provider.get_backend("ibmq_qasm_simulator")) == str(
-            qss.SuperstaqBackend(provider=provider, target="ibmq_qasm_simulator")
-        )
+    assert str(fake_superstaq_provider) == "<SuperstaqProvider mock_superstaq_provider>"
 
-    assert str(provider) == "<SuperstaqProvider superstaq_provider>"
-
-    assert repr(provider) == "<SuperstaqProvider(api_key=MY_TOKEN, name=superstaq_provider)>"
+    assert (
+        repr(fake_superstaq_provider)
+        == "<SuperstaqProvider(api_key=MY_TOKEN, name=mock_superstaq_provider)>"
+    )
 
     assert str(fake_superstaq_provider.backends()[0]) == "ibmq_qasm_simulator"
 

@@ -20,7 +20,7 @@ def mock_response(status_str: str) -> Dict[str, Union[str, int, Dict[str, int]]]
 
 @pytest.fixture
 def backend(fake_superstaq_provider: MockSuperstaqProvider) -> qss.SuperstaqBackend:
-    return fake_superstaq_provider.get_backend("ss_local_simulator")
+    return fake_superstaq_provider.get_backend("ss_example_qpu")
 
 
 def test_wait_for_results(backend: qss.SuperstaqBackend) -> None:
@@ -62,7 +62,7 @@ def test_result(backend: qss.SuperstaqBackend) -> None:
         {
             "results": expected_results,
             "qobj_id": -1,
-            "backend_name": "ss_local_simulator",
+            "backend_name": "ss_example_qpu",
             "backend_version": gss.API_VERSION,
             "success": True,
             "job_id": "123abc",
