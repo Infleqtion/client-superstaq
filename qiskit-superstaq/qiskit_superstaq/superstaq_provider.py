@@ -324,8 +324,9 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
     def cq_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
-        grid_shape: Optional[Tuple[int, int]] = None,
         target: str = "cq_hilbert_qpu",
+        *,
+        grid_shape: Optional[Tuple[int, int]] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to CQ device, optimized to its native gate set.
