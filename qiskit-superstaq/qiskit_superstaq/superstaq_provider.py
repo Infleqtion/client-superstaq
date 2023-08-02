@@ -325,13 +325,17 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         target: str = "cq_hilbert_qpu",
+        *,
+        grid_shape: Optional[Tuple[int, int]] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to CQ device, optimized to its native gate set.
 
         Args:
             circuits: The circuit(s) to compile.
-            target: A string containing the name of a target backend.
+            target: String of target CQ device.
+            grid_shape: Optional fixed dimensions for the rectangular qubit grid (by default the
+                actual qubit layout will be pulled from the hardware provider).
             kwargs: Other desired cq_compile options.
 
         Returns:
@@ -343,7 +347,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         if not target.startswith("cq_"):
             raise ValueError(f"{target!r} is not a valid CQ target.")
 
-        return self.get_backend(target).compile(circuits, **kwargs)
+        return self.get_backend(target).compile(circuits, grid_shape=grid_shape, **kwargs)
 
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int
