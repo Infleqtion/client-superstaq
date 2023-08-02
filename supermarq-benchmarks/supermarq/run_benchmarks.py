@@ -45,21 +45,24 @@ for target in qpu_targets:
         if label == "bitcode3" and not target_info.get("supports_midcircuit_measurement"):
             continue
 
-        circuit = benchmark.circuit()
-        if isinstance(circuit, cirq.Circuit):
-            job = service.create_job(
-                circuit,
-                repetitions=1000,
-                target=target,
-                tag=tag,
-                lifespan=3653,
-            )
-        else:
-            for idx, c in enumerate(circuit):
+        try:
+            circuit = benchmark.circuit()
+            if isinstance(circuit, cirq.Circuit):
                 job = service.create_job(
-                    c,
+                    circuit,
                     repetitions=1000,
                     target=target,
-                    tag=f"{tag}-{idx}",
+                    tag=tag,
                     lifespan=3653,
                 )
+            else:
+                for idx, c in enumerate(circuit):
+                    job = service.create_job(
+                        c,
+                        repetitions=1000,
+                        target=target,
+                        tag=f"{tag}-{idx}",
+                        lifespan=3653,
+                    )
+        except Exception:
+            print(f"{label} on {target} failed.")
