@@ -24,10 +24,7 @@ def get_qpu_targets(targets: Dict[str, List[str]]) -> List[str]:
         A list with the targets corresponding to real devices.
     """
     qpu_targets: List[str] = []
-    run_targets = targets.get("compile-and-run")
-
-    if run_targets is None:
-        return qpu_targets
+    run_targets = targets.get("compile-and-run", [])
 
     for t in run_targets:
         if t.endswith("qpu"):
@@ -44,29 +41,25 @@ for target in qpu_targets:
         date = datetime.today().strftime("%Y-%m-%d")
         tag = f"{date}-{label}-{target}"
 
-        # Since there is no way to determine if a target supports mid-circuit measurement purely
-        # through `service.target_info()`, we use a `try` block to catch when we submit an invalid
-        # circuit to a device that does not support it.
-        # Related issue: https://github.com/Infleqtion/client-superstaq/issues/550.
+        target_info = service.target_info(target)
+        if label == "bitcode3" and not target_info.get("supports_midcircuit_measurement", False):
+            continue
 
-        try:
-            circuit = benchmark.circuit()
-            if isinstance(circuit, cirq.Circuit):
+        circuit = benchmark.circuit()
+        if isinstance(circuit, cirq.Circuit):
+            job = service.create_job(
+                circuit,
+                repetitions=1000,
+                target=target,
+                tag=tag,
+                lifespan=3653,
+            )
+        else:
+            for idx, c in enumerate(circuit):
                 job = service.create_job(
-                    circuit,
+                    c,
                     repetitions=1000,
                     target=target,
-                    tag=tag,
+                    tag=f"{tag}-{idx}",
                     lifespan=3653,
                 )
-            else:
-                for idx, c in enumerate(circuit):
-                    job = service.create_job(
-                        c,
-                        repetitions=1000,
-                        target=target,
-                        tag=f"{tag}-{idx}",
-                        lifespan=3653,
-                    )
-        except Exception:
-            pass
