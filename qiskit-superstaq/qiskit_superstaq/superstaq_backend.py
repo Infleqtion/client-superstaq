@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -295,8 +295,10 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
     def qscout_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
-        mirror_swaps: bool = True,
+        *,
+        mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
+        num_qubits: Optional[int] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at Sandia
@@ -317,6 +319,8 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             circuits: The circuit(s) to compile.
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
             base_entangling_gate: The base entangling gate to use (either "xx" or "zz").
+            num_qubits: An optional number of qubits that should be present in the compiled
+                circuit(s) and Jaqal program(s) (otherwise this will be determined from the input).
             kwargs: Other desired qscout_compile options.
 
         Returns:
@@ -338,6 +342,11 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             "mirror_swaps": mirror_swaps,
             "base_entangling_gate": base_entangling_gate,
         }
+
+        if num_qubits is not None:
+            gss.validation.validate_integer_param(num_qubits)
+            options["num_qubits"] = num_qubits
+
         request_json = self._get_compile_request_json(circuits, **options)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.qscout_compile(request_json)
@@ -346,12 +355,16 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
     def cq_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
+        *,
+        grid_shape: Optional[Tuple[int, int]] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for CQ devices.
 
         Args:
             circuits: The qiskit QuantumCircuit(s) to compile.
+            grid_shape: Optional fixed dimensions for the rectangular qubit grid (by default the
+                actual qubit layout will be pulled from the hardware provider).
             kwargs: Other desired compile options.
 
         Returns:
@@ -363,7 +376,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         if not self.name().startswith("cq_"):
             raise ValueError(f"{self.name()!r} is not a valid CQ target.")
 
-        request_json = self._get_compile_request_json(circuits, **kwargs)
+        request_json = self._get_compile_request_json(circuits, grid_shape=grid_shape, **kwargs)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
         return qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)

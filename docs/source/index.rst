@@ -55,6 +55,7 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
 
    apps/supercheq/supercheq
    apps/max_sharpe_ratio_optimization
+   apps/dfe/dfe
 
 .. toctree::
    :maxdepth: 1
