@@ -578,8 +578,9 @@ class Service(gss.service.Service):
     def cq_compile(
         self,
         circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
-        grid_shape: Optional[Tuple[int, int]] = None,
         target: str = "cq_hilbert_qpu",
+        *,
+        grid_shape: Optional[Tuple[int, int]] = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) to the target CQ device.
