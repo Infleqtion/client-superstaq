@@ -42,7 +42,7 @@ for target in qpu_targets:
         tag = f"{date}-{label}-{target}"
 
         target_info = service.target_info(target)
-        if label == "bitcode3" and not target_info.get("supports_midcircuit_measurement", False):
+        if label == "bitcode3" and not target_info.get("supports_midcircuit_measurement"):
             continue
 
         circuit = benchmark.circuit()
