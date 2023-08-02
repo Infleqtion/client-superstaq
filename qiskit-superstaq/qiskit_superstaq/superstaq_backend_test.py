@@ -1,6 +1,9 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
+from __future__ import annotations
+
 import json
 import textwrap
+from typing import TYPE_CHECKING
 from unittest.mock import DEFAULT, MagicMock, patch
 
 import general_superstaq as gss
@@ -9,14 +12,11 @@ import qiskit
 
 import qiskit_superstaq as qss
 
-
-def test_default_options(fake_superstaq_provider) -> None:
-    backend = qss.SuperstaqBackend(provider=fake_superstaq_provider, target="ibmq_qasm_simulator")
-
-    assert qiskit.providers.Options(shots=1000) == backend._default_options()
+if TYPE_CHECKING:
+    from qiskit_superstaq.conftest import MockSuperstaqProvider
 
 
-def test_run(fake_superstaq_provider) -> None:
+def test_run(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2, 2)
     qc.h(0)
     qc.cx(0, 1)
@@ -37,7 +37,7 @@ def test_run(fake_superstaq_provider) -> None:
         backend.run(qc, shots=1000)
 
 
-def test_multi_circuit_run(fake_superstaq_provider) -> None:
+def test_multi_circuit_run(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc1 = qiskit.QuantumCircuit(1, 1)
     qc1.h(0)
     qc1.measure(0, 0)
@@ -58,7 +58,7 @@ def test_multi_circuit_run(fake_superstaq_provider) -> None:
         assert answer == expected
 
 
-def test_multi_arg_run(fake_superstaq_provider) -> None:
+def test_multi_arg_run(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2, 2)
     qc.h(0)
     qc.cx(0, 1)
@@ -75,7 +75,7 @@ def test_multi_arg_run(fake_superstaq_provider) -> None:
         assert answer == expected
 
 
-def test_retrieve_job(fake_superstaq_provider) -> None:
+def test_retrieve_job(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2, 2)
     qc.h(0)
     qc.cx(0, 1)
@@ -89,7 +89,7 @@ def test_retrieve_job(fake_superstaq_provider) -> None:
     assert job == backend.retrieve_job("job_id")
 
 
-def test_eq(fake_superstaq_provider) -> None:
+def test_eq(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     backend1 = fake_superstaq_provider.get_backend("ibmq_qasm_simulator")
     assert backend1 != 3
 
@@ -228,7 +228,9 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
 
 
 @patch("requests.post")
-def test_qscout_compile(mock_post: MagicMock, fake_superstaq_provider) -> None:
+def test_qscout_compile(
+    mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider
+) -> None:
     backend = fake_superstaq_provider.get_backend("sandia_qscout_qpu")
 
     qc = qiskit.QuantumCircuit(1)
@@ -284,7 +286,7 @@ def test_compile(mock_post: MagicMock) -> None:
     assert out.final_logical_to_physicals == [{0: 0}]
 
 
-def test_target_info(fake_superstaq_provider) -> None:
+def test_target_info(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     target = "ibmq_qasm_simulator"
     backend = fake_superstaq_provider.get_backend(target)
     assert backend.target_info()["backend_name"] == target

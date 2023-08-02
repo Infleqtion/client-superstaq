@@ -38,19 +38,19 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
         target_info = self._provider._client.target_info(target)["target_info"]
         self.configuration_dict = {
-                "backend_name": target,
-                "backend_version": "n/a",
-                "n_qubits": target_info["num_qubits"],
-                "basis_gates": target_info["native_gate_set"],
-                "gates": [],
-                "local": False,
-                "simulator": False,
-                "conditional": False,
-                "open_pulse": False,
-                "memory": False,
-                "max_shots": target_info["max_shots"],
-                "coupling_map": target_info["coupling_map"],
-            }
+            "backend_name": target,
+            "backend_version": "n/a",
+            "n_qubits": target_info["num_qubits"],
+            "basis_gates": target_info["native_gate_set"],
+            "gates": [],
+            "local": False,
+            "simulator": False,
+            "conditional": False,
+            "open_pulse": False,
+            "memory": False,
+            "max_shots": target_info["max_shots"],
+            "coupling_map": target_info["coupling_map"],
+        }
 
         self.configuration_dict.update(target_info)
         gss.validation.validate_target(target)

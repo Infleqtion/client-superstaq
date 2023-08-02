@@ -1,15 +1,15 @@
 from typing import Dict, List, Optional
 
+import general_superstaq as gss
 import pytest
 import qiskit
 
-import general_superstaq as gss
 import qiskit_superstaq as qss
 
 
-
-
 class MockSuperstaqBackend(qss.SuperstaqBackend):
+    """Stand-in for SuperstaqBackend that the tests can call"""
+
     def __init__(self, provider: qss.SuperstaqProvider, target: str) -> None:
         """Initializes a SuperstaqBackend.
 
@@ -35,12 +35,50 @@ class MockSuperstaqBackend(qss.SuperstaqBackend):
 
         gss.validation.validate_target(target)
 
-        qiskit.providers.BackendV1.__init__(self,
+        qiskit.providers.BackendV1.__init__(
+            self,
             configuration=qiskit.providers.models.BackendConfiguration.from_dict(
                 self.configuration_dict
             ),
             provider=provider,
         )
+
+
+class MockSuperstaqClient(gss._SuperstaqClient):
+    """Stand-in for _SuperstaqClient that the tests can call"""
+
+    def get_targets(self) -> Dict[str, Dict[str, List[str]]]:
+        """Makes a GET request to retrieve targets from the Superstaq API.
+
+        Gets a list of available, unavailable, and retired targets.
+
+        Returns:
+            A dictionary listing the targets.
+        """
+        return {
+            "superstaq_targets": {
+                "compile-and-run": [
+                    "ibmq_qasm_simulator",
+                    "ibmq_armonk_qpu",
+                    "ibmq_santiago_qpu",
+                    "ibmq_bogota_qpu",
+                    "ibmq_lima_qpu",
+                    "ibmq_belem_qpu",
+                    "ibmq_quito_qpu",
+                    "ibmq_statevector_simulator",
+                    "ibmq_mps_simulator",
+                    "ibmq_extended-stabilizer_simulator",
+                    "ibmq_stabilizer_simulator",
+                    "ibmq_manila_qpu",
+                    "aws_dm1_simulator",
+                    "aws_tn1_simulator",
+                    "ionq_ion_qpu",
+                    "aws_sv1_simulator",
+                    "rigetti_aspen-9_qpu",
+                ],
+                "compile-only": ["aqt_keysight_qpu", "sandia_qscout_qpu"],
+            }
+        }
 
 
 class MockSuperstaqProvider(qss.SuperstaqProvider):  # pylint: disable=missing-class-docstring
@@ -80,7 +118,7 @@ class MockSuperstaqProvider(qss.SuperstaqProvider):  # pylint: disable=missing-c
         """
         self._name = "mock_superstaq_provider"
 
-        self._client = gss.superstaq_client._SuperstaqClient(
+        self._client = MockSuperstaqClient(
             client_name="qiskit-superstaq",
             remote_host=remote_host,
             api_key=api_key,
@@ -89,8 +127,17 @@ class MockSuperstaqProvider(qss.SuperstaqProvider):  # pylint: disable=missing-c
             verbose=verbose,
         )
 
-    def get_backend(self, name: str):
+    def get_backend(self, name: str) -> MockSuperstaqBackend:
         return MockSuperstaqBackend(self, name)
+
+
+@pytest.fixture()
+def fake_superstaq_provider() -> MockSuperstaqProvider:
+    """Fixture that retrieves the SuperstaqProvider
+    Returns:
+            The Mock Superstaq provider
+    """
+    return MockSuperstaqProvider(api_key="MY_TOKEN")
 
 
 @pytest.fixture()
@@ -110,8 +157,3 @@ def mock_target_info() -> Dict[str, object]:
             "conditional": False,
         }
     }
-
-
-@pytest.fixture()
-def fake_superstaq_provider():
-    return MockSuperstaqProvider(api_key="MY_TOKEN")

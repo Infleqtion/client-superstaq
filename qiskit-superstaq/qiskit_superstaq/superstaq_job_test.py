@@ -1,5 +1,7 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
-from typing import Dict, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Dict, Union
 from unittest import mock
 
 import general_superstaq as gss
@@ -8,13 +10,16 @@ import qiskit
 
 import qiskit_superstaq as qss
 
+if TYPE_CHECKING:
+    from qisskit_superstaq.conftest import MockSuperstaqProvider
+
 
 def mock_response(status_str: str) -> Dict[str, Union[str, int, Dict[str, int]]]:
     return {"status": status_str, "samples": {"10": 100}, "shots": 100}
 
 
 @pytest.fixture
-def backend(fake_superstaq_provider) -> qss.SuperstaqBackend:
+def backend(fake_superstaq_provider: MockSuperstaqProvider) -> qss.SuperstaqBackend:
     return fake_superstaq_provider.get_backend("ss_local_simulator")
 
 
