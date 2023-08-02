@@ -8,7 +8,7 @@ import qiskit_superstaq as qss
 
 
 class MockSuperstaqBackend(qss.SuperstaqBackend):
-    """Stand-in for SuperstaqBackend that the tests can call"""
+    """Stand-in for SuperstaqBackend that the tests can call."""
 
     def __init__(self, provider: qss.SuperstaqProvider, target: str) -> None:
         """Initializes a SuperstaqBackend.
@@ -45,7 +45,7 @@ class MockSuperstaqBackend(qss.SuperstaqBackend):
 
 
 class MockSuperstaqClient(gss._SuperstaqClient):
-    """Stand-in for _SuperstaqClient that the tests can call"""
+    """Stand-in for _SuperstaqClient that the tests can call."""
 
     def get_targets(self) -> Dict[str, Dict[str, List[str]]]:
         """Makes a GET request to retrieve targets from the Superstaq API.
@@ -82,7 +82,7 @@ class MockSuperstaqClient(gss._SuperstaqClient):
 
 
 class MockSuperstaqProvider(qss.SuperstaqProvider):
-    """Stand-in for SuperstaqProvider that the tests can call"""
+    """Stand-in for SuperstaqProvider that the tests can call."""
 
     def __init__(
         self,
@@ -135,8 +135,8 @@ class MockSuperstaqProvider(qss.SuperstaqProvider):
 
 @pytest.fixture()
 def fake_superstaq_provider() -> MockSuperstaqProvider:
-    """Fixture that retrieves the SuperstaqProvider
+    """Fixture that retrieves the SuperstaqProvider.
     Returns:
-        The Mock Superstaq provider
+        The Mock Superstaq provider.
     """
     return MockSuperstaqProvider(api_key="MY_TOKEN")
