@@ -363,8 +363,8 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
         Args:
             circuits: The qiskit QuantumCircuit(s) to compile.
-            grid_shape: Optional fixed dimensions for the rectangular qubit grid
-            (by default the actual qubit layout will be pulled from the hardware provider)
+            grid_shape: Optional fixed dimensions for the rectangular qubit grid (by default the
+                actual qubit layout will be pulled from the hardware provider).
             kwargs: Other desired compile options.
 
         Returns:
