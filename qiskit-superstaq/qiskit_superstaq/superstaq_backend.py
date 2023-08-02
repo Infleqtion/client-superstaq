@@ -355,6 +355,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
     def cq_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
+        *,
         grid_shape: Optional[Tuple[int, int]] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
