@@ -14,9 +14,8 @@ def mock_response(status_str: str) -> Dict[str, Union[str, int, Dict[str, int]]]
 
 
 @pytest.fixture
-def backend() -> qss.SuperstaqBackend:
-    provider = qss.SuperstaqProvider(api_key="token")
-    return provider.get_backend("ss_local_simulator")
+def backend(fake_superstaq_provider) -> qss.SuperstaqBackend:
+    return fake_superstaq_provider.get_backend("ss_local_simulator")
 
 
 def test_wait_for_results(backend: qss.SuperstaqBackend) -> None:

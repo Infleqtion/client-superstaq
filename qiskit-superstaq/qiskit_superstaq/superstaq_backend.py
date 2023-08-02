@@ -35,24 +35,9 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             target: A string containing the name of a target backend.
         """
         self._provider = provider
-        if target == "ss_local_simulator":
-            self.configuration_dict = {
-                "backend_name": target,
-                "backend_version": "n/a",
-                "n_qubits": -1,
-                "basis_gates": None,
-                "gates": [],
-                "local": False,
-                "simulator": False,
-                "conditional": False,
-                "open_pulse": False,
-                "memory": False,
-                "max_shots": -1,
-                "coupling_map": None,
-            }
-        else:
-            target_info = self._provider._client.target_info(target)["target_info"]
-            self.configuration_dict = {
+
+        target_info = self._provider._client.target_info(target)["target_info"]
+        self.configuration_dict = {
                 "backend_name": target,
                 "backend_version": "n/a",
                 "n_qubits": target_info["num_qubits"],
@@ -67,7 +52,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
                 "coupling_map": target_info["coupling_map"],
             }
 
-            self.configuration_dict.update(target_info)
+        self.configuration_dict.update(target_info)
         gss.validation.validate_target(target)
 
         super().__init__(

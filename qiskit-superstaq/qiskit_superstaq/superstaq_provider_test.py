@@ -2,7 +2,7 @@
 import json
 import os
 import textwrap
-from typing import Dict, List
+from typing import Dict
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
@@ -16,24 +16,20 @@ import qiskit_superstaq as qss
 
 
 @patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
-@patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.get_targets",
-    return_value={"superstaq_targets": {"compile-and-run": ["ss_local_simulator"]}},
-)
-def test_provider(mock_get_targets: Dict[str, Dict[str, List[str]]]) -> None:
-    ss_provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
+def test_provider(mock_target_info: Dict[str, object]) -> None:
+    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
 
-    local_backend = ss_provider.get_backend("ss_local_simulator")
-
-    assert str(local_backend) == str(
-        qss.SuperstaqBackend(provider=ss_provider, target="ss_local_simulator")
+    with patch(
+            "general_superstaq.superstaq_client._SuperstaqClient.target_info",
+            return_value=mock_target_info,
+    ):
+        assert str(provider.get_backend("ibmq_qasm_simulator")) == str(
+        qss.SuperstaqBackend(provider=provider, target="ibmq_qasm_simulator")
     )
 
-    assert str(ss_provider) == "<SuperstaqProvider superstaq_provider>"
+    assert str(provider) == "<SuperstaqProvider superstaq_provider>"
 
-    assert repr(ss_provider) == "<SuperstaqProvider(api_key=MY_TOKEN, name=superstaq_provider)>"
-
-    assert ss_provider.backends() == [local_backend]
+    assert repr(provider) == "<SuperstaqProvider(api_key=MY_TOKEN, name=superstaq_provider)>"
 
 
 @patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
@@ -48,8 +44,7 @@ def test_get_balance() -> None:
 
 
 @patch("requests.post")
-def test_aqt_compile(mock_post: MagicMock, mock_target_info: Dict[str, object]) -> None:
-    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
+def test_aqt_compile(mock_post: MagicMock, fake_superstaq_provider) -> None:
 
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
@@ -60,31 +55,26 @@ def test_aqt_compile(mock_post: MagicMock, mock_target_info: Dict[str, object]) 
         "state_jp": gss.serialization.serialize({}),
         "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     }
+    out = fake_superstaq_provider.aqt_compile(qc)
+    assert out.circuit == qc
+    assert out.final_logical_to_physical == {1: 4}
+    assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
 
-    with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.target_info",
-        return_value=mock_target_info,
-    ):
-        out = provider.aqt_compile(qc)
-        assert out.circuit == qc
-        assert out.final_logical_to_physical == {1: 4}
-        assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
+    out = fake_superstaq_provider.aqt_compile([qc], atol=1e-2)
+    assert out.circuits == [qc]
+    assert out.final_logical_to_physicals == [{1: 4}]
+    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
-        out = provider.aqt_compile([qc], atol=1e-2)
-        assert out.circuits == [qc]
-        assert out.final_logical_to_physicals == [{1: 4}]
-        assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
-
-        mock_post.return_value.json = lambda: {
-            "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
-            "final_logical_to_physicals": "[[], []]",
-            "state_jp": gss.serialization.serialize({}),
-            "pulse_lists_jp": gss.serialization.serialize([[[]], [[]]]),
-        }
-        out = provider.aqt_compile([qc, qc], test_options="yes")
-        assert out.circuits == [qc, qc]
-        assert out.final_logical_to_physicals == [{}, {}]
-        assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
+        "final_logical_to_physicals": "[[], []]",
+        "state_jp": gss.serialization.serialize({}),
+        "pulse_lists_jp": gss.serialization.serialize([[[]], [[]]]),
+    }
+    out = fake_superstaq_provider.aqt_compile([qc, qc], test_options="yes")
+    assert out.circuits == [qc, qc]
+    assert out.final_logical_to_physicals == [{}, {}]
+    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
 
 def test_invalid_target_aqt_compile() -> None:
@@ -94,8 +84,7 @@ def test_invalid_target_aqt_compile() -> None:
 
 
 @patch("requests.post")
-def test_aqt_compile_eca(mock_post: MagicMock, mock_target_info: Dict[str, object]) -> None:
-    provider = qss.superstaq_provider.SuperstaqProvider(api_key="MY_TOKEN")
+def test_aqt_compile_eca(mock_post: MagicMock, fake_superstaq_provider) -> None:
 
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
@@ -107,33 +96,27 @@ def test_aqt_compile_eca(mock_post: MagicMock, mock_target_info: Dict[str, objec
         "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     }
 
-    with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.target_info",
-        return_value=mock_target_info,
-    ):
+    out = fake_superstaq_provider.aqt_compile(qc, num_eca_circuits=1, random_seed=1234, atol=1e-2)
+    assert out.circuits == [qc]
+    assert out.final_logical_to_physicals == [{}]
+    assert not hasattr(out, "circuit")
+    assert not hasattr(out, "pulse_list")
+    assert not hasattr(out, "final_logical_to_physical")
 
-        out = provider.aqt_compile(qc, num_eca_circuits=1, random_seed=1234, atol=1e-2)
-        assert out.circuits == [qc]
-        assert out.final_logical_to_physicals == [{}]
-        assert not hasattr(out, "circuit")
-        assert not hasattr(out, "pulse_list")
-        assert not hasattr(out, "final_logical_to_physical")
+    out = fake_superstaq_provider.aqt_compile([qc], num_eca_circuits=1, random_seed=1234, atol=1e-2)
+    assert out.circuits == [[qc]]
+    assert out.final_logical_to_physicals == [[{}]]
 
-        out = provider.aqt_compile([qc], num_eca_circuits=1, random_seed=1234, atol=1e-2)
-        assert out.circuits == [[qc]]
-        assert out.final_logical_to_physicals == [[{}]]
-
-        with pytest.warns(DeprecationWarning, match="has been deprecated"):
-            deprecated_out = provider.aqt_compile_eca(
-                [qc], num_equivalent_circuits=1, random_seed=1234, atol=1e-2
-            )
-            assert deprecated_out.circuits == out.circuits
-            assert deprecated_out.final_logical_to_physicals == out.final_logical_to_physicals
+    with pytest.warns(DeprecationWarning, match="has been deprecated"):
+        deprecated_out = fake_superstaq_provider.aqt_compile_eca(
+            [qc], num_equivalent_circuits=1, random_seed=1234, atol=1e-2
+        )
+        assert deprecated_out.circuits == out.circuits
+        assert deprecated_out.final_logical_to_physicals == out.final_logical_to_physicals
 
 
 @patch("requests.post")
-def test_ibmq_compile(mock_post: MagicMock, mock_target_info: Dict[str, object]) -> None:
-    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
+def test_ibmq_compile(mock_post: MagicMock, fake_superstaq_provider) -> None:
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
     final_logical_to_physical = {0: 4, 1: 5}
@@ -143,35 +126,26 @@ def test_ibmq_compile(mock_post: MagicMock, mock_target_info: Dict[str, object])
         "pulses": gss.serialization.serialize([mock.DEFAULT]),
     }
 
-    with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.target_info",
-        return_value=mock_target_info,
-    ):
+    assert fake_superstaq_provider.ibmq_compile(
+        qiskit.QuantumCircuit(), test_options="yes"
+    ) == qss.compiler_output.CompilerOutput(
+        qc, final_logical_to_physical, pulse_sequences=mock.DEFAULT
+    )
+    assert fake_superstaq_provider.ibmq_compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
+        [qc], [final_logical_to_physical], pulse_sequences=[mock.DEFAULT]
+    )
 
-        assert provider.ibmq_compile(
-            qiskit.QuantumCircuit(), test_options="yes"
-        ) == qss.compiler_output.CompilerOutput(
-            qc, final_logical_to_physical, pulse_sequences=mock.DEFAULT
-        )
-        assert provider.ibmq_compile(
-            [qiskit.QuantumCircuit()]
-        ) == qss.compiler_output.CompilerOutput(
-            [qc], [final_logical_to_physical], pulse_sequences=[mock.DEFAULT]
-        )
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "final_logical_to_physicals": json.dumps([list(final_logical_to_physical.items())]),
+    }
 
-        mock_post.return_value.json = lambda: {
-            "qiskit_circuits": qss.serialization.serialize_circuits(qc),
-            "final_logical_to_physicals": json.dumps([list(final_logical_to_physical.items())]),
-        }
-
-        assert provider.ibmq_compile(
-            qiskit.QuantumCircuit(), test_options="yes"
-        ) == qss.compiler_output.CompilerOutput(qc, final_logical_to_physical, pulse_sequences=None)
-        assert provider.ibmq_compile(
-            [qiskit.QuantumCircuit()]
-        ) == qss.compiler_output.CompilerOutput(
-            [qc], [final_logical_to_physical], pulse_sequences=None
-        )
+    assert fake_superstaq_provider.ibmq_compile(
+        qiskit.QuantumCircuit(), test_options="yes"
+    ) == qss.compiler_output.CompilerOutput(qc, final_logical_to_physical, pulse_sequences=None)
+    assert fake_superstaq_provider.ibmq_compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
+        [qc], [final_logical_to_physical], pulse_sequences=None
+    )
 
 
 def test_invalid_target_ibmq_compile() -> None:
@@ -183,9 +157,7 @@ def test_invalid_target_ibmq_compile() -> None:
 @patch(
     "general_superstaq.superstaq_client._SuperstaqClient.resource_estimate",
 )
-def test_resource_estimate(mock_resource_estimate: MagicMock) -> None:
-    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
-
+def test_resource_estimate(mock_resource_estimate: MagicMock, fake_superstaq_provider) -> None:
     resource_estimate = ResourceEstimate(0, 1, 2)
 
     mock_resource_estimate.return_value = {
@@ -193,7 +165,7 @@ def test_resource_estimate(mock_resource_estimate: MagicMock) -> None:
     }
 
     assert (
-        provider.resource_estimate(qiskit.QuantumCircuit(), "ss_local_simulator")
+        fake_superstaq_provider.resource_estimate(qiskit.QuantumCircuit(), "ibmq_qasm_simulator")
         == resource_estimate
     )
 
@@ -201,8 +173,7 @@ def test_resource_estimate(mock_resource_estimate: MagicMock) -> None:
 @patch(
     "general_superstaq.superstaq_client._SuperstaqClient.resource_estimate",
 )
-def test_resource_estimate_list(mock_resource_estimate: MagicMock) -> None:
-    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
+def test_resource_estimate_list(mock_resource_estimate: MagicMock, fake_superstaq_provider) -> None:
 
     resource_estimates = [ResourceEstimate(0, 1, 2), ResourceEstimate(3, 4, 5)]
 
@@ -214,15 +185,13 @@ def test_resource_estimate_list(mock_resource_estimate: MagicMock) -> None:
     }
 
     assert (
-        provider.resource_estimate([qiskit.QuantumCircuit()], "ss_local_simulator")
+        fake_superstaq_provider.resource_estimate([qiskit.QuantumCircuit()], "ibmq_qasm_simulator")
         == resource_estimates
     )
 
 
 @patch("requests.post")
-def test_qscout_compile(mock_post: MagicMock, mock_target_info: Dict[str, object]) -> None:
-    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
-
+def test_qscout_compile(mock_post: MagicMock, fake_superstaq_provider) -> None:
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)
 
@@ -242,41 +211,32 @@ def test_qscout_compile(mock_post: MagicMock, mock_target_info: Dict[str, object
         "final_logical_to_physicals": json.dumps([[(0, 13)]]),
         "jaqal_programs": [jaqal_program],
     }
+    out = fake_superstaq_provider.qscout_compile(qc, test_options="yes")
+    assert out.circuit == qc
+    assert out.final_logical_to_physical == {0: 13}
 
-    with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.target_info",
-        return_value=mock_target_info,
-    ):
-        out = provider.qscout_compile(qc, test_options="yes")
-        assert out.circuit == qc
-        assert out.final_logical_to_physical == {0: 13}
+    out = fake_superstaq_provider.qscout_compile([qc])
+    assert out.circuits == [qc]
+    assert out.final_logical_to_physicals == [{0: 13}]
 
-        out = provider.qscout_compile([qc])
-        assert out.circuits == [qc]
-        assert out.final_logical_to_physicals == [{0: 13}]
-
-        mock_post.return_value.json = lambda: {
-            "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
-            "final_logical_to_physicals": json.dumps([[(0, 13)], [(0, 13)]]),
-            "jaqal_programs": [jaqal_program, jaqal_program],
-        }
-        out = provider.qscout_compile([qc, qc])
-        assert out.circuits == [qc, qc]
-        assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
+        "final_logical_to_physicals": json.dumps([[(0, 13)], [(0, 13)]]),
+        "jaqal_programs": [jaqal_program, jaqal_program],
+    }
+    out = fake_superstaq_provider.qscout_compile([qc, qc])
+    assert out.circuits == [qc, qc]
+    assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
 
 
-def test_invalid_target_qscout_compile() -> None:
-    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
+def test_invalid_target_qscout_compile(fake_superstaq_provider) -> None:
     with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid Sandia target."):
-        provider.qscout_compile(qiskit.QuantumCircuit(), target="ss_example_qpu")
+        fake_superstaq_provider.qscout_compile(qiskit.QuantumCircuit(), target="ss_example_qpu")
 
 
 @patch("requests.post")
 @pytest.mark.parametrize("mirror_swaps", (True, False))
-def test_qscout_compile_swap_mirror(
-    mock_post: MagicMock, mirror_swaps: bool, mock_target_info: Dict[str, object]
-) -> None:
-    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
+def test_qscout_compile_swap_mirror(mock_post: MagicMock, mirror_swaps: bool, fake_superstaq_provider) -> None:
 
     qc = qiskit.QuantumCircuit()
 
@@ -286,32 +246,24 @@ def test_qscout_compile_swap_mirror(
         "jaqal_programs": [""],
     }
 
-    with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.target_info",
-        return_value=mock_target_info,
-    ):
+    _ = fake_superstaq_provider.qscout_compile(qc, mirror_swaps=mirror_swaps)
+    mock_post.assert_called_once()
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "mirror_swaps": mirror_swaps,
+        "base_entangling_gate": "xx",
+    }
 
-        _ = provider.qscout_compile(qc, mirror_swaps=mirror_swaps)
-        mock_post.assert_called_once()
-        assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
-            "mirror_swaps": mirror_swaps,
-            "base_entangling_gate": "xx",
-        }
-
-        _ = provider.qscout_compile(qc, mirror_swaps=mirror_swaps, num_qubits=3)
-        assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
-            "mirror_swaps": mirror_swaps,
-            "base_entangling_gate": "xx",
-            "num_qubits": 3,
-        }
+    _ = fake_superstaq_provider.qscout_compile(qc, mirror_swaps=mirror_swaps, num_qubits=3)
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "mirror_swaps": mirror_swaps,
+        "base_entangling_gate": "xx",
+        "num_qubits": 3,
+    }
 
 
 @patch("requests.post")
 @pytest.mark.parametrize("base_entangling_gate", ("xx", "zz"))
-def test_qscout_compile_change_entangler(
-    mock_post: MagicMock, base_entangling_gate: str, mock_target_info: Dict[str, object]
-) -> None:
-    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
+def test_qscout_compile_change_entangler(mock_post: MagicMock, base_entangling_gate: str, fake_superstaq_provider) -> None:
 
     qc = qiskit.QuantumCircuit()
 
@@ -321,40 +273,32 @@ def test_qscout_compile_change_entangler(
         "jaqal_programs": [""],
     }
 
-    with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.target_info",
-        return_value=mock_target_info,
-    ):
+    _ = fake_superstaq_provider.qscout_compile(qc, base_entangling_gate=base_entangling_gate)
+    mock_post.assert_called_once()
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "mirror_swaps": False,
+        "base_entangling_gate": base_entangling_gate,
+    }
 
-        _ = provider.qscout_compile(qc, base_entangling_gate=base_entangling_gate)
-        mock_post.assert_called_once()
-        assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
-            "mirror_swaps": False,
-            "base_entangling_gate": base_entangling_gate,
-        }
-
-        _ = provider.qscout_compile(qc, base_entangling_gate=base_entangling_gate, num_qubits=4)
-        assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
-            "mirror_swaps": False,
-            "base_entangling_gate": base_entangling_gate,
-            "num_qubits": 4,
-        }
+    _ = fake_superstaq_provider.qscout_compile(qc, base_entangling_gate=base_entangling_gate, num_qubits=4)
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "mirror_swaps": False,
+        "base_entangling_gate": base_entangling_gate,
+        "num_qubits": 4,
+    }
 
 
 @patch("requests.post")
-def test_qscout_compile_wrong_entangler(mock_post: MagicMock) -> None:
-    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
+def test_qscout_compile_wrong_entangler(mock_post: MagicMock, fake_superstaq_provider) -> None:
 
     qc = qiskit.QuantumCircuit()
 
     with pytest.raises(ValueError):
-        _ = provider.qscout_compile(qc, base_entangling_gate="yy")
+        _ = fake_superstaq_provider.qscout_compile(qc, base_entangling_gate="yy")
 
 
 @patch("requests.post")
-def test_cq_compile(mock_post: MagicMock, mock_target_info: Dict[str, object]) -> None:
-    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
-
+def test_cq_compile(mock_post: MagicMock, fake_superstaq_provider) -> None:
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)
 
@@ -362,38 +306,32 @@ def test_cq_compile(mock_post: MagicMock, mock_target_info: Dict[str, object]) -
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "final_logical_to_physicals": "[[[3, 0]]]",
     }
-    with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.target_info",
-        return_value=mock_target_info,
-    ):
-        out = provider.cq_compile(qc, test_options="yes")
-        assert out.circuit == qc
-        assert out.final_logical_to_physical == {3: 0}
+    out = fake_superstaq_provider.cq_compile(qc, test_options="yes")
+    assert out.circuit == qc
+    assert out.final_logical_to_physical == {3: 0}
 
-        out = provider.cq_compile([qc])
-        assert out.circuits == [qc]
-        assert out.final_logical_to_physicals == [{3: 0}]
+    out = fake_superstaq_provider.cq_compile([qc])
+    assert out.circuits == [qc]
+    assert out.final_logical_to_physicals == [{3: 0}]
 
-        mock_post.return_value.json = lambda: {
-            "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
-            "final_logical_to_physicals": "[[], []]",
-        }
-        out = provider.cq_compile([qc, qc])
-        assert out.circuits == [qc, qc]
-        assert out.final_logical_to_physicals == [{}, {}]
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
+        "final_logical_to_physicals": "[[], []]",
+    }
+    out = fake_superstaq_provider.cq_compile([qc, qc])
+    assert out.circuits == [qc, qc]
+    assert out.final_logical_to_physicals == [{}, {}]
 
 
-def test_invalid_target_cq_compile() -> None:
-    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
+def test_invalid_target_cq_compile(fake_superstaq_provider) -> None:
     with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid CQ target."):
-        provider.cq_compile(qiskit.QuantumCircuit(), target="ss_example_qpu")
+        fake_superstaq_provider.cq_compile(qiskit.QuantumCircuit(), target="ss_example_qpu")
 
 
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaqClient.supercheq",
 )
-def test_supercheq(mock_supercheq: mock.MagicMock) -> None:
-    provider = qss.SuperstaqProvider(api_key="key")
+def test_supercheq(mock_supercheq: mock.MagicMock, fake_superstaq_provider) -> None:
     circuits = [qiskit.QuantumCircuit()]
     fidelities = np.array([1])
     mock_supercheq.return_value = {
@@ -401,16 +339,15 @@ def test_supercheq(mock_supercheq: mock.MagicMock) -> None:
         "final_logical_to_physicals": "[[]]",
         "fidelities": gss.serialization.serialize(fidelities),
     }
-    assert provider.supercheq([[0]], 1, 1) == (circuits, fidelities)
+    assert fake_superstaq_provider.supercheq([[0]], 1, 1) == (circuits, fidelities)
 
 
 @patch("requests.post")
-def test_dfe(mock_post: MagicMock) -> None:
-    provider = qss.SuperstaqProvider(api_key="key")
+def test_dfe(mock_post: MagicMock, fake_superstaq_provider) -> None:
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)
     mock_post.return_value.json = lambda: ["id1", "id2"]
-    assert provider.submit_dfe(
+    assert fake_superstaq_provider.submit_dfe(
         rho_1=(qc, "ss_example_qpu"),
         rho_2=(qc, "ss_example_qpu"),
         num_random_bases=5,
@@ -418,7 +355,7 @@ def test_dfe(mock_post: MagicMock) -> None:
     ) == ["id1", "id2"]
 
     with pytest.raises(ValueError, match="should contain a single circuit"):
-        provider.submit_dfe(
+        fake_superstaq_provider.submit_dfe(
             rho_1=([qc, qc], "ss_example_qpu"),
             rho_2=(qc, "ss_example_qpu"),
             num_random_bases=5,
@@ -426,7 +363,7 @@ def test_dfe(mock_post: MagicMock) -> None:
         )
 
     mock_post.return_value.json = lambda: 1
-    assert provider.process_dfe(["1", "2"]) == 1
+    assert fake_superstaq_provider.process_dfe(["1", "2"]) == 1
 
 
 def test_get_targets() -> None:
