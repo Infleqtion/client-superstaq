@@ -81,7 +81,9 @@ class MockSuperstaqClient(gss._SuperstaqClient):
         }
 
 
-class MockSuperstaqProvider(qss.SuperstaqProvider):  # pylint: disable=missing-class-docstring
+class MockSuperstaqProvider(qss.SuperstaqProvider):
+    """Stand-in for SuperstaqProvider that the tests can call"""
+
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -135,6 +137,6 @@ class MockSuperstaqProvider(qss.SuperstaqProvider):  # pylint: disable=missing-c
 def fake_superstaq_provider() -> MockSuperstaqProvider:
     """Fixture that retrieves the SuperstaqProvider
     Returns:
-            The Mock Superstaq provider
+        The Mock Superstaq provider
     """
     return MockSuperstaqProvider(api_key="MY_TOKEN")
