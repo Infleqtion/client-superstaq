@@ -159,7 +159,7 @@ def deserialize_circuits(serialized_circuits: str) -> List[qiskit.QuantumCircuit
             circuits = qiskit.qpy.load(buf)
 
     except Exception as e:
-        qpy_version_match = re.match(b"QISKIT(.)", buf.getvalue())
+        qpy_version_match = re.match(b"QISKIT([\x00-\xff])", buf.getvalue())
         circuits_qpy_version = ord(qpy_version_match.group(1)) if qpy_version_match else 0
         if circuits_qpy_version > qiskit.qpy.common.QPY_VERSION:
             # If the circuit was serialized with a newer version of QPY, that's probably what caused

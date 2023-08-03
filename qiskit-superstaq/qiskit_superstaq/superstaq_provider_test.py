@@ -284,12 +284,19 @@ def test_qscout_compile_swap_mirror(mock_post: MagicMock, mirror_swaps: bool) ->
         "final_logical_to_physicals": json.dumps([[(0, 13)]]),
         "jaqal_programs": [""],
     }
+
     _ = provider.qscout_compile(qc, mirror_swaps=mirror_swaps)
     mock_post.assert_called_once()
-    _, kwargs = mock_post.call_args
-    assert json.loads(kwargs["json"]["options"]) == {
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
         "mirror_swaps": mirror_swaps,
         "base_entangling_gate": "xx",
+    }
+
+    _ = provider.qscout_compile(qc, mirror_swaps=mirror_swaps, num_qubits=3)
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "mirror_swaps": mirror_swaps,
+        "base_entangling_gate": "xx",
+        "num_qubits": 3,
     }
 
 
@@ -305,12 +312,19 @@ def test_qscout_compile_change_entangler(mock_post: MagicMock, base_entangling_g
         "final_logical_to_physicals": "[[]]",
         "jaqal_programs": [""],
     }
+
     _ = provider.qscout_compile(qc, base_entangling_gate=base_entangling_gate)
     mock_post.assert_called_once()
-    _, kwargs = mock_post.call_args
-    assert json.loads(kwargs["json"]["options"]) == {
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
         "mirror_swaps": False,
         "base_entangling_gate": base_entangling_gate,
+    }
+
+    _ = provider.qscout_compile(qc, base_entangling_gate=base_entangling_gate, num_qubits=4)
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "mirror_swaps": False,
+        "base_entangling_gate": base_entangling_gate,
+        "num_qubits": 4,
     }
 
 
@@ -371,6 +385,31 @@ def test_supercheq(mock_supercheq: mock.MagicMock) -> None:
         "fidelities": gss.serialization.serialize(fidelities),
     }
     assert provider.supercheq([[0]], 1, 1) == (circuits, fidelities)
+
+
+@patch("requests.post")
+def test_dfe(mock_post: MagicMock) -> None:
+    provider = qss.SuperstaqProvider(api_key="key")
+    qc = qiskit.QuantumCircuit(1)
+    qc.h(0)
+    mock_post.return_value.json = lambda: ["id1", "id2"]
+    assert provider.submit_dfe(
+        rho_1=(qc, "ss_example_qpu"),
+        rho_2=(qc, "ss_example_qpu"),
+        num_random_bases=5,
+        shots=100,
+    ) == ["id1", "id2"]
+
+    with pytest.raises(ValueError, match="should contain a single circuit"):
+        provider.submit_dfe(
+            rho_1=([qc, qc], "ss_example_qpu"),
+            rho_2=(qc, "ss_example_qpu"),
+            num_random_bases=5,
+            shots=100,
+        )
+
+    mock_post.return_value.json = lambda: 1
+    assert provider.process_dfe(["1", "2"]) == 1
 
 
 @patch("requests.post")
