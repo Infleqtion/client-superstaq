@@ -353,7 +353,7 @@ class _SuperstaqClient:
             "target": target,
             "shots": int(repetitions),
             "method": method,
-            "maxout": max_solutions,
+            "max_solutions": max_solutions,
         }
         return self.post_request("/qubo", json_dict)
 
