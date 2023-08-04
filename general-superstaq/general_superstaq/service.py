@@ -124,21 +124,25 @@ class Service:
         target: str,
         repetitions: int = 1000,
         method: Optional[str] = None,
-        maxout: Optional[int] = 1000,
+        max_solutions: int = 1000,
     ) -> Dict[str, str]:
-        """Solves the QUBO given via the submit_qubo function in superstaq_client
+        """Solves the QUBO given via the submit_qubo function in superstaq_client, and returns any
+        number of specified dictionaries that seek the minimum of the energy landscape from the
+        given objective function known as output solutions.
 
         Args:
             qubo: A `qv.QUBO` object.
             target: The target to submit the qubo.
-            repetitions: Number of repetitions to use. Defaults to 1000.
-            method: An optional method parameter. Defaults to None.
-            maxout: An optional maxout paramter. Defaults to 1000.
+            repetitions: Number of times that the execution is repeated before stopping.
+            method: The parameter specifying method of QUBO solving execution. Currently,
+            will either be the "dry-run" option which runs on dwave's simulated annealer,
+            or defauls to none and sends it directly to the specified target.
+            max_solutions: A parameter that specifies the max number of output solutions.
 
         Returns:
             A dictionary returned by the submit_qubo function.
         """
-        return self._client.submit_qubo(qubo, target, repetitions, method, maxout)
+        return self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
 
     def ibmq_set_token(self, token: str) -> str:
         """Sets IBMQ token field.
