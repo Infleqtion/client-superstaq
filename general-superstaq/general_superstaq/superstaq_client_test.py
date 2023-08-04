@@ -575,7 +575,7 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
         "target": target,
         "shots": repetitions,
         "method": "dry-run",
-        "maxout": 1,
+        "max_solutions": 1,
     }
 
     mock_post.assert_called_with(
