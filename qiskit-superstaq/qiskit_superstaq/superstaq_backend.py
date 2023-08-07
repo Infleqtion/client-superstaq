@@ -51,6 +51,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             "max_shots": None,
             "coupling_map": None,
         }
+        target_info.pop("target", None)
         target_info.pop("num_qubits", None)
         target_info.pop("native_gate_set", None)
 
