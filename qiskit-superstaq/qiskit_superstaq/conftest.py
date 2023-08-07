@@ -92,7 +92,7 @@ class MockSuperstaqProvider(qss.SuperstaqProvider):
         max_retry_seconds: int = 3600,
         verbose: bool = False,
     ) -> None:
-        """Initializes a SuperstaqProvider.
+        """Initializes a `SuperstaqProvider`.
 
         Args:
             api_key: A string that allows access to the Superstaq API. If no key is provided, then
