@@ -40,16 +40,18 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         self.configuration_dict = {
             "backend_name": target,
             "backend_version": "n/a",
-            "n_qubits": target_info["num_qubits"],
-            "basis_gates": target_info["native_gate_set"],
+            "n_qubits": target_info["num_qubits"] if "num_qubits" in target_info else None,
+            "basis_gates": target_info["native_gate_set"]
+            if "native_gate_set" in target_info
+            else None,
             "gates": [],
             "local": False,
             "simulator": False,
             "conditional": False,
             "open_pulse": False,
             "memory": False,
-            "max_shots": target_info["max_shots"],
-            "coupling_map": target_info["coupling_map"],
+            "max_shots": target_info["max_shots"] if "max_shots" in target_info else None,
+            "coupling_map": target_info["coupling_map"] if "coupling_map" in target_info else None,
         }
 
         self.configuration_dict.update(target_info)
