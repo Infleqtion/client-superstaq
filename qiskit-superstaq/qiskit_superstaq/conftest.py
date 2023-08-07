@@ -8,7 +8,7 @@ import qiskit_superstaq as qss
 
 
 class MockSuperstaqBackend(qss.SuperstaqBackend):
-    """Stand-in for SuperstaqBackend that the tests can call."""
+    """Stand-in for `SuperstaqBackend` that the tests can call."""
 
     def __init__(self, provider: qss.SuperstaqProvider, target: str) -> None:
         """Initializes a SuperstaqBackend.
