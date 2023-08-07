@@ -48,9 +48,11 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             "conditional": False,
             "open_pulse": False,
             "memory": False,
-            "max_shots": target_info.get("max_shots"),
-            "coupling_map": target_info.get("coupling_map"),
+            "max_shots": None,
+            "coupling_map": None,
         }
+        target_info.pop("num_qubits", None)
+        target_info.pop("native_gate_set", None)
 
         self.configuration_dict.update(target_info)
         gss.validation.validate_target(target)
