@@ -13,6 +13,29 @@ on:
   workflow_call: null
 
 jobs:
+  docs:
+    name: Build docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - uses: actions/cache@v3
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq -e ./qiskit-superstaq -e ./supermarq-benchmarks
+          sudo apt-get install pandoc
+      - name: Build docs
+        run: |
+          check/build_docs.py
+
   format:
     name: Format check
     runs-on: ubuntu-latest
