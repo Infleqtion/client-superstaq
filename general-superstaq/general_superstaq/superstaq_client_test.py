@@ -562,7 +562,9 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
     example_qubo = qv.QUBO({(0,): 1.0, (1,): 1.0, (0, 1): -2.0})
     target = "ss_example_qpu"
     repetitions = 10
-    client.submit_qubo(example_qubo, target, repetitions=repetitions, method="dry-run", maxout=1)
+    client.submit_qubo(
+        example_qubo, target, repetitions=repetitions, method="dry-run", max_solutions=1
+    )
 
     expected_json = {
         "qubo": [
@@ -573,7 +575,7 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
         "target": target,
         "shots": repetitions,
         "method": "dry-run",
-        "maxout": 1,
+        "max_solutions": 1,
     }
 
     mock_post.assert_called_with(
