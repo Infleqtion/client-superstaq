@@ -82,7 +82,7 @@ class MockSuperstaqClient(gss._SuperstaqClient):
 
 
 class MockSuperstaqProvider(qss.SuperstaqProvider):
-    """Stand-in for SuperstaqProvider that the tests can call."""
+    """Stand-in for `SuperstaqProvider` that the tests can call."""
 
     def __init__(
         self,
