@@ -27,7 +27,7 @@ def get_qpu_targets(targets: Dict[str, List[str]]) -> List[str]:
     run_targets = targets.get("compile-and-run", [])
 
     for t in run_targets:
-        if t.endswith("qpu") and not t.startswith("ionq"):
+        if t.endswith("qpu") and not t.startswith("ionq") and not t.startswith("rigetti"):
             qpu_targets.append(t)
     return qpu_targets
 
