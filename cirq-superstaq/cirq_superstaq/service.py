@@ -531,7 +531,10 @@ class Service(gss.service.Service):
             circuits: The circuit(s) to compile.
             target: String of target representing target device.
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
-            base_entangling_gate: The base entangling gate to use (either "xx" or "zz").
+            base_entangling_gate: The base entangling gate to use ("xx", "zz", "sxx", or "szz").
+                Compilation with the "xx" and "zz" entangling bases will use arbitrary
+                parameterized two-qubit interactions, while the "sxx" and "szz" bases will only use
+                fixed maximally-entangling rotations.
             num_qubits: An optional number of qubits that should be initialized in the returned
                 Jaqal program(s) (by default this will be determined from the input circuits).
             kwargs: Other desired qscout_compile options.
@@ -548,8 +551,9 @@ class Service(gss.service.Service):
         if not target.startswith("sandia_"):
             raise ValueError(f"{target!r} is not a valid Sandia target.")
 
-        if base_entangling_gate not in ("xx", "zz"):
-            raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
+        base_entangling_gate = base_entangling_gate.lower()
+        if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
+            raise ValueError("base_entangling_gate must be 'xx', 'zz', 'sxx', or 'szz'")
 
         css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
@@ -579,6 +583,8 @@ class Service(gss.service.Service):
         self,
         circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
         target: str = "cq_hilbert_qpu",
+        *,
+        grid_shape: Optional[Tuple[int, int]] = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) to the target CQ device.
@@ -586,6 +592,8 @@ class Service(gss.service.Service):
         Args:
             circuits: The circuit(s) to compile.
             target: String of target CQ device.
+            grid_shape: Optional fixed dimensions for the rectangular qubit grid (by default the
+                actual qubit layout will be pulled from the hardware provider).
             kwargs: Other desired `cq_compile` options.
 
         Returns:
@@ -598,7 +606,7 @@ class Service(gss.service.Service):
         if not target.startswith("cq_"):
             raise ValueError(f"{target!r} is not a valid CQ target.")
 
-        return self.compile(circuits, target=target, **kwargs)
+        return self.compile(circuits, grid_shape=grid_shape, target=target, **kwargs)
 
     def ibmq_compile(
         self,
