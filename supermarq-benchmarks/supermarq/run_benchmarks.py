@@ -48,22 +48,13 @@ if __name__ == "__main__":
 
             try:
                 circuit = benchmark.circuit()
-                if isinstance(circuit, cirq.Circuit):
-                    job = service.create_job(
-                        circuit,
-                        repetitions=1000,
-                        target=target,
-                        tag=tag,
-                        lifespan=3653,
-                    )
-                else:
-                    for idx, c in enumerate(circuit):
-                        job = service.create_job(
-                            c,
-                            repetitions=1000,
-                            target=target,
-                            tag=f"{tag}-{idx}",
-                            lifespan=3653,
-                        )
+                assert isinstance(circuit, cirq.Circuit)
+                job = service.create_job(
+                    circuit,
+                    repetitions=1000,
+                    target=target,
+                    tag=tag,
+                    lifespan=3653,
+                )
             except Exception:
                 print(f"{label} on {target} failed.")
