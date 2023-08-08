@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -47,7 +47,7 @@ def plot_results(
 
 
 def plot_volumetric_results(
-    benchmark_data: List[Tuple[int, int, float]],
+    benchmark_data: Iterable[Tuple[int, int, float]],
     savefn: Optional[str] = None,
     title: Optional[str] = None,
     show: bool = True,
@@ -67,10 +67,10 @@ def plot_volumetric_results(
         savefn: Path to save the plot, if `None`, the plot is not saved.
         title: Optional title for the plot.
         show: Display the plot using `plt.show`.
-        xmax: Set the rightmost limit of the x axis.
-        ymax: Set the uppermost limit of the y axis.
-        rect_width: Set the width of the rectangles.
-        rect_height: Set the height of the rectangles.
+        xmax: The rightmost limit of the x axis.
+        ymax: The uppermost limit of the y axis.
+        rect_width: The width of the rectangles.
+        rect_height: The height of the rectangles.
     """
     _, ax = plt.subplots(figsize=[4, 4])
 
@@ -109,7 +109,7 @@ def plot_volumetric_results(
 
 def plot_correlations(
     benchmark_features: Dict[str, List[float]],
-    device_scores: Union[Dict[str, float], List[Dict[str, float]]],
+    device_scores: Union[Dict[str, float], Iterable[Dict[str, float]]],
     feature_labels: List[str],
     device_name: Union[str, List[str]],
     savefn: Optional[str] = None,
@@ -136,7 +136,7 @@ def plot_correlations(
         device_correlations = []
         for i in range(len(feature_labels)):
             x, y = [], []
-            for benchmark in cur_device_scores.keys():
+            for benchmark in cur_device_scores:
                 x.append(benchmark_features[benchmark][i])
                 y.append(cur_device_scores[benchmark])
 
