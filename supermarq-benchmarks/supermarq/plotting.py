@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -46,60 +46,131 @@ def plot_results(
     plt.close()
 
 
+def plot_volumetric_results(
+    benchmark_data: Iterable[Tuple[int, int, float]],
+    savefn: Optional[str] = None,
+    title: Optional[str] = None,
+    show: bool = True,
+    xmax: float = 60,
+    ymax: float = 7,
+    rect_width: float = 1.5,
+    rect_height: float = 0.2,
+) -> None:
+    """Plot the benchmark results on an (x, y) = (depth, qubits) axis.
+
+    It is assumed that all of the given data was collected on a single device. Keyword arguments
+    may need to be tweaked depending on the domain and range of benchmark data.
+
+    Args:
+        benchmark_data: List of tuples containing (circuit depth, qubits, score) for each benchmark
+            executed on a single device.
+        savefn: Path to save the plot, if `None`, the plot is not saved.
+        title: Optional title for the plot.
+        show: Display the plot using `plt.show`.
+        xmax: The rightmost limit of the x axis.
+        ymax: The uppermost limit of the y axis.
+        rect_width: The width of the rectangles.
+        rect_height: The height of the rectangles.
+    """
+    _, ax = plt.subplots(figsize=[4, 4])
+
+    cmap = matplotlib.cm.RdBu
+    norm = matplotlib.colors.Normalize(vmin=0, vmax=1)
+
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    plt.colorbar(sm, ax=ax, label="Benchmark Score")
+
+    for x, y, z in benchmark_data:
+        rect = plt.Rectangle(
+            (x - rect_width / 2, y - rect_height / 2),
+            rect_width,
+            rect_height,
+            color=cmap(norm(z)),
+        )
+        ax.add_patch(rect)
+
+    ax.set_xlim(0, xmax)
+    ax.set_ylim(0, ymax)
+    ax.set_xlabel("Depth")
+    ax.set_ylabel("Qubits")
+    if title:
+        ax.set_title(title)
+
+    if savefn:
+        # Don't want to save figures when running tests
+        plt.savefig(savefn, bbox_inches="tight")  # pragma: no cover
+
+    if show:
+        # Tests will hang if we show figures during tests
+        plt.show()  # pragma: no cover
+    plt.close()
+
+
 def plot_correlations(
     benchmark_features: Dict[str, List[float]],
-    device_scores: Dict[str, float],
+    device_scores: Union[Dict[str, float], Iterable[Dict[str, float]]],
     feature_labels: List[str],
-    device_name: str,
+    device_name: Union[str, List[str]],
     savefn: Optional[str] = None,
     show: bool = True,
 ) -> None:
-    """Plot a correlation heatmap of the features for a single device.
+    """Plot a correlation heatmap of the features for one or multiple devices.
 
     Args:
         benchmark_features: A dictionary where the keys are benchmark names and the values are the
             list of feature values for that benchmark.
-        device_scores: A dictionary of (benchmark name, score) pairs.
+        device_scores: A dictionary of (benchmark name, score) pairs, or a list of such
+            dictionaries.
         feature_labels: Feature names, should have the same length as the lists of feature values
             in `benchmark_features`.
-        device_name: The name of quantum device where the scores were obtained.
+        device_name: The name or list of names of quantum device(s) where the scores were obtained.
         savefn: Path to save the plot, if `None`, the plot is not saved.
         show: Display the plot using `plt.show`.
     """
 
     temp_correlations = []
-    for i in range(len(feature_labels)):
-        x, y = [], []
-        for benchmark in device_scores.keys():
-            x.append(benchmark_features[benchmark][i])
-            y.append(device_scores[benchmark])
+    if isinstance(device_scores, Dict):
+        device_scores = [device_scores]
+    for cur_device_scores in device_scores:
+        device_correlations = []
+        for i in range(len(feature_labels)):
+            x, y = [], []
+            for benchmark in cur_device_scores:
+                x.append(benchmark_features[benchmark][i])
+                y.append(cur_device_scores[benchmark])
 
-        proper_x = np.array(x)[:, np.newaxis]
-        proper_y = np.array(y)
-        model = LinearRegression().fit(proper_x, proper_y)
-        correlation = model.score(proper_x, proper_y)
-        temp_correlations.append(correlation)
+            proper_x = np.array(x)[:, np.newaxis]
+            proper_y = np.array(y)
+            model = LinearRegression().fit(proper_x, proper_y)
+            correlation = model.score(proper_x, proper_y)
+            device_correlations.append(correlation)
+        temp_correlations.append(device_correlations)
 
-    correlations = np.array([temp_correlations])
+    correlations = np.array(temp_correlations)
+
+    if isinstance(device_name, str):
+        device_names = [device_name]
+    else:
+        device_names = device_name
 
     _, ax = plt.subplots(dpi=300)
     im, _ = heatmap(
         correlations,
         ax,
-        [device_name],
+        device_names,
         feature_labels,
         cmap="cool",
         vmin=0,
         cbarlabel=r"Coefficient of Determination, $R^2$",
-        cbar_kw={"pad": 0.01},
+        cbar_kw={"pad": 0.005},
     )
 
     annotate_heatmap(im, size=7)
 
-    plt.tight_layout()
     if savefn is not None:
         # Don't want to save figures when running tests
-        plt.savefig(savefn)  # pragma: no cover
+        plt.savefig(savefn, bbox_inches="tight")  # pragma: no cover
 
     if show:
         # Tests will hang if we show figures during tests
@@ -124,8 +195,6 @@ def plot_benchmark(
         spoke_labels: Optional labels for the feature vector dimensions.
         legend_loc: Optional argument to fine tune the legend placement.
     """
-    plt.rcParams["font.family"] = "Times New Roman"
-
     if spoke_labels is None:
         spoke_labels = ["Connectivity", "Liveness", "Parallelism", "Measurement", "Entanglement"]
 
@@ -194,7 +263,7 @@ def heatmap(
     if cbar_kw is None:
         cbar_kw = {}  # pragma: no cover
     cbar = ax.figure.colorbar(im, ax=ax, orientation="horizontal", **cbar_kw)
-    cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom", fontsize=8)
+    cbar.ax.set_xlabel(cbarlabel, labelpad=10, va="bottom", fontsize=8)
     cbar.ax.tick_params(labelsize=10)
 
     # We want to show all ticks...
