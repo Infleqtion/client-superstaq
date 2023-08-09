@@ -469,17 +469,6 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         """
         return self._client.process_dfe(ids)
 
-    def target_info(self, target: str) -> Dict[str, Any]:
-        """Returns information about the device specified by `target`.
-
-        Args:
-            target: A string containing the name of a target backend.
-
-        Returns:
-            Information about a target backend.
-        """
-        return self._client.target_info(target)["target_info"]
-
     def get_targets(self) -> Dict[str, Any]:
         """Gets list of targets.
 
