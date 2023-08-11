@@ -163,7 +163,33 @@ class SuperstaqJob(qiskit.providers.JobV1):
             self._refresh_job()
 
         serialized_circuits = [self._job_info[job_id]["compiled_circuit"] for job_id in job_ids]
-        return [qss.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
+        deserialized_circuits = [
+            qss.deserialize_circuits(serialized)[0] for serialized in serialized_circuits
+        ]
+        input_circuits = self.input_circuits()
+        for comp_qc, in_qc in zip(deserialized_circuits, input_circuits):
+            comp_qc.metadata = in_qc.metadata
+
+        return deserialized_circuits
+
+    def input_circuits(self) -> List[qiskit.QuantumCircuit]:
+        """Gets the original circuits that were submitted for this job.
+
+        Returns:
+            A list of pre-compilation circuits.
+        """
+        job_ids = self._job_id.split(",")
+        if not all(
+            job_id in self._job_info and self._job_info[job_id].get("input_circuit")
+            for job_id in job_ids
+        ):
+            self._refresh_job()
+
+        serialized_input_circuits = [self._job_info[job_id]["input_circuit"] for job_id in job_ids]
+        return [
+            qss.deserialize_circuits(serialized_circ)[0]
+            for serialized_circ in serialized_input_circuits
+        ]
 
     def status(self) -> qiskit.providers.jobstatus.JobStatus:
         """Query for the equivalent qiskit job status.
