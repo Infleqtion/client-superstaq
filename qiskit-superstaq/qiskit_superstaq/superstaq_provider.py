@@ -469,59 +469,6 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         """
         return self._client.process_dfe(ids)
 
-    def submit_aces(
-        self,
-        target: str,
-        qubits: List[int],
-        shots: int,
-        num_circuits: int,
-        mirror_depth: int,
-        extra_depth: int,
-        **kwargs: Any,
-    ) -> str:
-        """Performs a POST request on the `/aces` endpoint.
-
-        Args:
-            target: The device target to characterize.
-            qubits: A list with the qubit indices to characterize.
-            shots: How many shots to use per circuit submitted.
-            num_circuits: How many random circuits to use in the protocol.
-            mirror_depth: The half-depth of the mirror portion of the random circuits.
-            extra_depth: The depth of the fully random portion of the random circuits.
-            kwargs: Other execution parameters.
-                - tag: Tag for all jobs submitted for this protocol.
-                - lifespan: How long to store the jobs submitted for in days (only works with right
-                permissions).
-                - method: Which type of method to execute the circuits with.
-
-        Returns:
-            A string with the job id for the ACES job created.
-
-        Raises:
-            ValueError: If any the target passed are not valid.
-            SuperstaqServerException: if the request fails.
-        """
-        return self._client.submit_aces(
-            target=target,
-            qubits=qubits,
-            shots=shots,
-            num_circuits=num_circuits,
-            mirror_depth=mirror_depth,
-            extra_depth=extra_depth,
-            **kwargs,
-        )
-
-    def process_aces(self, job_id: str) -> List[float]:
-        """Makes a POST request to the "/aces_fetch" endpoint.
-
-        Args:
-            job_id: The job id returned by `submit_aces`.
-
-        Returns:
-            The estimated eigenvalues.
-        """
-        return self._client.process_aces(job_id=job_id)
-
     def get_targets(self) -> Dict[str, Any]:
         """Gets list of targets.
 
