@@ -164,6 +164,17 @@ class Job:
 
         return css.deserialize_circuits(self._job["compiled_circuit"])[0]
 
+    def input_circuit(self) -> cirq.Circuit:
+        """Gets the input circuit that was submitted for this job.
+
+        Returns:
+            The pre-compile circuit.
+        """
+        if "input_circuit" not in self._job:
+            self._refresh_job()
+
+        return css.deserialize_circuits(self._job["input_circuit"])[0]
+
     def counts(self, timeout_seconds: int = 7200, polling_seconds: float = 1.0) -> Dict[str, int]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
 
