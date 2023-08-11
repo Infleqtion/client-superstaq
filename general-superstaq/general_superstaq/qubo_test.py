@@ -1,19 +1,16 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
-import numpy as np
 import qubovert as qv
 
 import general_superstaq as gss
 
 
 def test_read_json_qubo_result() -> None:
-    example_solution = np.rec.fromrecords(
-        [({0: 0, 1: 1, 3: 1}, -1, 6), ({0: 1, 1: 1, 3: 1}, -1, 4)],
-        dtype=[("solution", "O"), ("energy", "<f8"), ("num_occurrences", "<i8")],
-    )
-    json_dict = {
-        "solution": gss.serialization.serialize(example_solution),
-    }
-    assert repr(gss.qubo.read_json_qubo_result(json_dict)) == repr(example_solution)
+
+    deserialized_return = [{0: 0, 1: 0, 2: 0, 3: 0, 4: 0}]
+
+    server_return = {"solution": gss.serialization.serialize(deserialized_return)}
+
+    assert repr(gss.qubo.read_json_qubo_result(server_return)) == repr(deserialized_return)
 
 
 def test_convert_qubo_to_model() -> None:

@@ -1,13 +1,11 @@
-from typing import Dict
+from typing import Dict, List, Tuple
 
-import numpy as np
-import numpy.typing as npt
 import qubovert as qv
 
 import general_superstaq as gss
 
 
-def read_json_qubo_result(json_dict: Dict[str, str]) -> npt.NDArray[np.int_]:
+def read_json_qubo_result(json_dict: Dict[str, str]) -> List[Dict[Tuple[int], int]]:
     """Reads out returned JSON from Superstaq API's QUBO endpoint.
 
     Args:
