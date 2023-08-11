@@ -610,6 +610,46 @@ def test_superstaq_client_supercheq(mock_post: mock.MagicMock) -> None:
 
 
 @mock.patch("requests.post")
+def test_superstaq_client_aces(mock_post: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq", remote_host="http://example.com", api_key="to_my_heart"
+    )
+    client.submit_aces(
+        target="ss_unconstrained_simulator",
+        qubits=[0, 1],
+        shots=100,
+        num_circuits=10,
+        mirror_depth=6,
+        extra_depth=4,
+        method="dry-run",
+    )
+
+    expected_json = {
+        "target": "ss_unconstrained_simulator",
+        "qubits": [0, 1],
+        "shots": 100,
+        "num_circuits": 10,
+        "mirror_depth": 6,
+        "extra_depth": 4,
+        "options": json.dumps({"method": "dry-run"}),
+    }
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/aces",
+        headers=EXPECTED_HEADERS,
+        json=expected_json,
+        verify=False,
+    )
+
+    client.process_aces("id")
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/aces_fetch",
+        headers=EXPECTED_HEADERS,
+        json={"job_id": "id"},
+        verify=False,
+    )
+
+
+@mock.patch("requests.post")
 def test_superstaq_client_dfe(mock_post: mock.MagicMock) -> None:
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",

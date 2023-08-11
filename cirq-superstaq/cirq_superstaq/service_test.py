@@ -590,6 +590,26 @@ def test_service_supercheq(mock_supercheq: mock.MagicMock) -> None:
 
 
 @mock.patch("requests.post")
+def test_service_aces(mock_post: mock.MagicMock) -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    mock_post.return_value.json = lambda: "id1"
+    assert (
+        service.submit_aces(
+            target="ss_unconstrained_simulator",
+            qubits=[0, 1],
+            shots=100,
+            num_circuits=10,
+            mirror_depth=5,
+            extra_depth=5,
+        )
+        == "id1"
+    )
+
+    mock_post.return_value.json = lambda: [1] * 51
+    assert service.process_aces("id1") == [1] * 51
+
+
+@mock.patch("requests.post")
 def test_service_dfe(mock_post: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
     circuit = cirq.Circuit(cirq.X(cirq.q(0)))

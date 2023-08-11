@@ -361,6 +361,25 @@ def test_supercheq(
 
 
 @patch("requests.post")
+def test_aces(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    mock_post.return_value.json = lambda: "id1"
+    assert (
+        fake_superstaq_provider.submit_aces(
+            target="ss_unconstrained_simulator",
+            qubits=[0, 1],
+            shots=100,
+            num_circuits=10,
+            mirror_depth=5,
+            extra_depth=5,
+        )
+        == "id1"
+    )
+
+    mock_post.return_value.json = lambda: [1] * 51
+    assert fake_superstaq_provider.process_aces("id1") == [1] * 51
+
+
+@patch("requests.post")
 def test_dfe(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)
