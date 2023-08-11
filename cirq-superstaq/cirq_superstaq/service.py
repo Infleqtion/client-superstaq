@@ -175,7 +175,7 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: Optional[str] = None,
         **kwargs: Any,
-    ) -> Dict[str, int]:
+    ) -> List[Dict[str, int]]:
         """Runs the given circuit on the Superstaq API and returns the result of the circuit ran as
         a `collections.Counter`.
 
@@ -220,7 +220,7 @@ class Service(gss.service.Service):
             A `cirq.ResultDict` for running the circuit.
         """
         counts = self.get_counts(circuit, repetitions, target, param_resolver, method, **kwargs)
-        return counts_to_results(counts, circuit, param_resolver)
+        return counts_to_results(counts[0], circuit, param_resolver)
 
     def sampler(self, target: Optional[str] = None) -> cirq.Sampler:
         """Returns a `cirq.Sampler` object for accessing sampler interface.
@@ -236,16 +236,16 @@ class Service(gss.service.Service):
 
     def create_job(
         self,
-        circuit: cirq.AbstractCircuit,
+        circuits: Union[cirq.AbstractCircuit, Sequence[cirq.AbstractCircuit]],
         repetitions: int = 1000,
         target: Optional[str] = None,
         method: Optional[str] = None,
         **kwargs: Any,
     ) -> css.job.Job:
-        """Create a new job to run the given circuit.
+        """Creates a new job to run the given circuit(s).
 
         Args:
-            circuit: The circuit to run.
+            circuits: The list of circuit(s) to run.
             repetitions: The number of times to repeat the circuit. Defaults to 1000.
             target: Where to run the job.
             method: Execution method.
@@ -255,19 +255,18 @@ class Service(gss.service.Service):
             A `css.Job` which can be queried for status or results.
 
         Raises:
-            ValueError: If `circuit` is not a valid `cirq.Circuit` or has no measurements to sample.
             SuperstaqServerException: If there was an error accessing the API.
         """
-        css.validation.validate_cirq_circuits(circuit)
-        if not isinstance(circuit, cirq.Circuit):
-            raise ValueError("This endpoint does not support the submission of multiple circuits.")
+        css.validation.validate_cirq_circuits(circuits)
+        circuits = [circuits] if isinstance(circuits, cirq.Circuit) else circuits
 
-        if not circuit.has_measurements():
-            # TODO: only raise if the run method actually requires samples (and not for e.g. a
-            # statevector simulation)
-            raise ValueError("Circuit has no measurements to sample.")
+        for circuit in circuits:
+            if not circuit.has_measurements():
+                # TODO: only raise if the run method actually requires samples (and not for e.g. a
+                # statevector simulation)
+                raise ValueError("Circuit has no measurements to sample.")
 
-        serialized_circuits = css.serialization.serialize_circuits(circuit)
+        serialized_circuits = css.serialization.serialize_circuits(circuits)
 
         target = self._resolve_target(target)
 
@@ -278,9 +277,13 @@ class Service(gss.service.Service):
             method=method,
             **kwargs,
         )
+        # Make a virtual job_id that aggregates all of the individual jobs
+        # into a single one, that comma-separates the individual jobs:
+        job_id = ",".join(result["job_ids"])
+
         # The returned job does not have fully populated fields; they will be filled out by
         # when the new job's status is first queried
-        return self.get_job(result["job_ids"][0])
+        return self.get_job(job_id=job_id)
 
     def get_job(self, job_id: str) -> css.job.Job:
         """Gets a job that has been created on the Superstaq API.
