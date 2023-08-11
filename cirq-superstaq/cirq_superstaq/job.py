@@ -13,7 +13,7 @@
 # limitations under the License.
 """Represents a job created via the Superstaq API."""
 import time
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 import cirq
 import general_superstaq as gss
@@ -56,7 +56,7 @@ class Job:
     )
 
     def __init__(self, client: gss.superstaq_client._SuperstaqClient, job_id: str) -> None:
-        """Construct a Job.
+        """Construct a `Job`.
 
         Users should not call this themselves. If you only know the `job_id`, use `get_job`
         on `css.Service`.
@@ -66,22 +66,61 @@ class Job:
             job_id: Unique identifier for the job.
         """
         self._client = client
-        self._job: Dict[str, Any] = {"status": "Submitted"}
+        self._overall_status = "Submitted"
+        self._job: Dict[str, Any] = {}
         self._job_id = job_id
 
     def _refresh_job(self) -> None:
         """If the last fetched job is not terminal, gets the job from the API."""
-        if self._job["status"] not in self.TERMINAL_STATES:
-            self._job = self._client.get_job(self.job_id())
+
+        job_ids = self._job_id.split(",")
+
+        for job_id in job_ids:
+            if job_id not in self._job:
+                self._job[job_id] = self._client.get_job(job_id)
+            elif "status" not in self._job[job_id]:
+                self._job[job_id] = self._client.get_job(job_id)
+            elif self._job[job_id]["status"] not in self.TERMINAL_STATES:
+                self._job[job_id] = self._client.get_job(job_id)
+
+    def _update_status_queue_info(self) -> None:
+        """Updates the overall status based on status queue info.
+
+        Note:
+            When we have multiple jobs, we will take the "worst status" among the jobs.
+            The worst status check follows the chain: Submitted -> Ready -> Running
+            -> Failed -> Canceled -> Deleted -> Done. For example, if any of the jobs are
+            still running (even if some are done), we report 'Running' as the overall status
+            of the entire batch.
+        """
+
+        job_id_list = self._job_id.split(",")  # separate aggregated job ids
+
+        status_occurrence = {self._job[job_id]["status"] for job_id in job_id_list}
+        status_priority_order = (
+            "Submitted",
+            "Ready",
+            "Running",
+            "Failed",
+            "Canceled",
+            "Deleted",
+            "Done",
+        )
+
+        for temp_status in status_priority_order:
+            if temp_status in status_occurrence:
+                self._overall_status = temp_status
+                return
 
     def _check_if_unsuccessful(self) -> None:
         status = self.status()
         if status in self.UNSUCCESSFUL_STATES:
-            if "failure" in self._job and "error" in self._job["failure"]:
-                # if possible append a message to the failure status, e.g. "Failed (<message>)"
-                error = self._job["failure"]["error"]
-                status += f" ({error})"
-            raise gss.SuperstaqUnsuccessfulJobException(self._job_id, status)
+            for job_id in self._job_id.split(","):
+                if "failure" in self._job[job_id] and "error" in self._job[job_id]["failure"]:
+                    # if possible append a message to the failure status, e.g. "Failed (<message>)"
+                    error = self._job[job_id]["failure"]["error"]
+                    status += f" ({error})"
+                raise gss.SuperstaqUnsuccessfulJobException(job_id, status)
 
     def job_id(self) -> str:
         """Gets the job id of this job.
@@ -106,7 +145,8 @@ class Job:
             The job status.
         """
         self._refresh_job()
-        return self._job["status"]
+        self._update_status_queue_info()
+        return self._overall_status
 
     def target(self) -> str:
         """Gets the Superstaq target associated with this job.
@@ -121,9 +161,9 @@ class Job:
         if "target" not in self._job:
             self._refresh_job()
 
-        return self._job["target"]
+        return self._job[self._job_id.split(",")[0]]["target"]
 
-    def num_qubits(self) -> int:
+    def num_qubits(self) -> Dict[str, Dict[str, int]]:
         """Gets the number of qubits required for this job.
 
         Returns:
@@ -133,10 +173,19 @@ class Job:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
             SuperstaqServerException: If unable to get the status of the job from the API.
         """
-        if "num_qubits" not in self._job:
+        qubit_list = {}
+        job_ids = self._job_id.split(",")
+
+        if not all(
+            job_id in self._job and self._job[job_id].get("num_qubits") for job_id in job_ids
+        ):
             self._refresh_job()
 
-        return self._job["num_qubits"]
+        qubit_list.update(
+            {job_id: {"num_qubits": self._job[job_id]["num_qubits"]} for job_id in job_ids}
+        )
+
+        return qubit_list
 
     def repetitions(self) -> int:
         """Gets the number of repetitions requested for this job.
@@ -148,23 +197,30 @@ class Job:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
             SuperstaqServerException: If unable to get the status of the job from the API.
         """
-        if "shots" not in self._job:
+        first_job_id = self._job_id.split(",")[0]
+        if (first_job_id not in self._job) or "shots" not in self._job[first_job_id]:
             self._refresh_job()
 
-        return self._job["shots"]
+        return self._job[self._job_id.split(",")[0]]["shots"]
 
-    def compiled_circuit(self) -> cirq.Circuit:
-        """Get the compiled circuit that was submitted for this job.
+    def compiled_circuits(self) -> List[cirq.Circuit]:
+        """Get the compiled circuit(s) that was submitted for this job.
 
         Returns:
-            The compiled circuit.
+            The compiled circuit(s).
         """
-        if "compiled_circuit" not in self._job:
+        job_ids = self._job_id.split(",")
+        if not all(
+            job_id in self._job and self._job[job_id].get("compiled_circuit") for job_id in job_ids
+        ):
             self._refresh_job()
 
-        return css.deserialize_circuits(self._job["compiled_circuit"])[0]
+        serialized_circuits = [self._job[job_id]["compiled_circuit"] for job_id in job_ids]
+        return [css.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
 
-    def counts(self, timeout_seconds: int = 7200, polling_seconds: float = 1.0) -> Dict[str, int]:
+    def counts(
+        self, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+    ) -> List[Dict[str, int]]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
 
         Args:
@@ -190,9 +246,9 @@ class Job:
             time_waited_seconds += polling_seconds
 
         self._check_if_unsuccessful()
-        return self._job["samples"]
+        return [self._job[job_id]["samples"] for job_id in self._job_id.split(",")]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, gss.typing.Job]:
         """Refreshes and returns job information.
 
         Note:
