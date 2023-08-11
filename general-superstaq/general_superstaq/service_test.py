@@ -86,7 +86,7 @@ def test_update_user_role(
         "target": "ss_example_qpu",
         "shots": 10,
         "method": "dry-run",
-        "maxout": 13,
+        "max_solutions": 13,
     },
 )
 def test_submit_qubo(
@@ -106,7 +106,7 @@ def test_submit_qubo(
         "target": "ss_example_qpu",
         "shots": 10,
         "method": "dry-run",
-        "maxout": 13,
+        "max_solutions": 13,
     }
 
 
