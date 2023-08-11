@@ -100,7 +100,7 @@ TSPJson = TypedDict(
 Job = TypedDict(
     "Job",
     {
-        "job_id": str,
+        "provider_id": str,
         "num_qubits": int,
         "status": str,
         "target": str,
