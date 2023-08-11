@@ -80,7 +80,7 @@ def test_service_run_and_get_counts() -> None:
     mock_client = mock.MagicMock()
     mock_client.create_job.return_value = {
         "job_ids": ["job_id"],
-        "status": "ready",
+        "status": "Ready",
     }
     mock_client.get_job.return_value = {
         "data": {"histogram": {"11": 1}},
@@ -110,7 +110,7 @@ def test_service_run_and_get_counts() -> None:
         target="ibmq_qasm_simulator",
         param_resolver=params,
     )
-    assert counts == {"11": 1}
+    assert counts == [{"11": 1}]
 
     result = service.run(
         circuit=circuit,
@@ -127,7 +127,7 @@ def test_service_sampler() -> None:
     service._client = mock_client
     mock_client.create_job.return_value = {
         "job_ids": ["job_id"],
-        "status": "ready",
+        "status": "Ready",
     }
     mock_client.get_job.return_value = {
         "data": {"histogram": {"0": 3, "1": 1}},
@@ -156,7 +156,7 @@ def test_service_sampler() -> None:
 def test_service_get_job() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
     mock_client = mock.MagicMock()
-    job_dict = {"status": "ready"}
+    job_dict = {"status": "Ready"}
     mock_client.get_job.return_value = job_dict
     service._client = mock_client
 
@@ -167,26 +167,26 @@ def test_service_get_job() -> None:
     mock_client.get_job.assert_not_called()
 
     # ...but it will be called with the initial query of status()
-    assert job.status() == "ready"
+    assert job.status() == "Ready"
     mock_client.get_job.assert_called_once_with("job_id")
 
 
 def test_service_create_job() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
     mock_client = mock.MagicMock()
-    mock_client.create_job.return_value = {"job_ids": ["job_id"], "status": "ready"}
-    mock_client.get_job.return_value = {"status": "completed"}
+    mock_client.create_job.return_value = {"job_ids": ["job_id"], "status": "Ready"}
+    mock_client.get_job.return_value = {"status": "Done"}
     service._client = mock_client
 
     circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)), cirq.measure(cirq.LineQubit(0)))
     job = service.create_job(
-        circuit=circuit,
+        circuits=circuit,
         repetitions=100,
         target="ss_fake_qpu",
         method="fake_method",
         fake_data="",
     )
-    assert job.status() == "completed"
+    assert job.status() == "Done"
     create_job_kwargs = mock_client.create_job.call_args[1]
     # Serialization induces a float, so we don't validate full circuit.
     assert create_job_kwargs["repetitions"] == 100
@@ -196,9 +196,6 @@ def test_service_create_job() -> None:
 
     with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
         service.create_job(cirq.Circuit())
-
-    with pytest.raises(ValueError, match="does not support the submission of multiple circuits"):
-        service.create_job([cirq.Circuit()])  # type: ignore
 
 
 def test_service_get_balance() -> None:

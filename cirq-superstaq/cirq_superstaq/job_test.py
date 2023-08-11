@@ -69,9 +69,9 @@ def test_job_fields(job: css.job.Job) -> None:
 
     with mocked_get_job_requests(job_dict) as mocked_get_job:
         assert job.target() == "ss_unconstrained_simulator"
-        assert job.num_qubits() == 2
+        assert job.num_qubits() == {"job_id": {"num_qubits": 2}}
         assert job.repetitions() == 1
-        assert job.compiled_circuit() == compiled_circuit
+        assert job.compiled_circuits()[0] == compiled_circuit
         mocked_get_job.assert_called_once()  # Only refreshed once
 
 
@@ -92,11 +92,11 @@ def test_num_qubits(job: css.job.Job) -> None:
 
     # The first call will trigger a refresh:
     with mocked_get_job_requests(job_dict) as mocked_get_job:
-        assert job.num_qubits() == 2
+        assert job.num_qubits() == {"job_id": {"num_qubits": 2}}
         mocked_get_job.assert_called_once()
 
     # Shouldn't need to retrieve anything now that `job._job` is populated:
-    assert job.num_qubits() == 2
+    assert job.num_qubits() == {"job_id": {"num_qubits": 2}}
 
 
 def test_repetitions(job: css.job.Job) -> None:
@@ -117,11 +117,11 @@ def test_compiled_circuit(job: css.job.Job) -> None:
 
     # The first call will trigger a refresh:
     with mocked_get_job_requests(job_dict) as mocked_get_job:
-        assert job.compiled_circuit() == compiled_circuit
+        assert job.compiled_circuits()[0] == compiled_circuit
         mocked_get_job.assert_called_once()
 
     # Shouldn't need to retrieve anything now that `job._job` is populated:
-    assert job.compiled_circuit() == compiled_circuit
+    assert job.compiled_circuits()[0] == compiled_circuit
 
 
 def test_job_status_refresh() -> None:
@@ -164,12 +164,14 @@ def test_job_str_repr_eq(job: css.job.Job) -> None:
 
 def test_job_to_dict(job: css.job.Job) -> None:
     job_dict = {
-        "data": {"histogram": {"11": 1}},
-        "num_qubits": 2,
-        "samples": {"11": 1},
-        "shots": 1,
-        "status": "Done",
-        "target": "ss_unconstrained_simulator",
+        "job_id": {
+            "data": {"histogram": {"11": 1}},
+            "num_qubits": 2,
+            "samples": {"11": 1},
+            "shots": 1,
+            "status": "Done",
+            "target": "ss_unconstrained_simulator",
+        }
     }
     with mocked_get_job_requests(job_dict):
         assert job.to_dict() == job_dict
@@ -185,7 +187,7 @@ def test_job_counts(job: css.job.Job) -> None:
         "target": "ss_unconstrained_simulator",
     }
     with mocked_get_job_requests(job_dict):
-        assert job.counts() == {"11": 1}
+        assert job.counts() == [{"11": 1}]
 
 
 def test_job_counts_failed(job: css.job.Job) -> None:
@@ -220,7 +222,7 @@ def test_job_counts_poll(mock_sleep: mock.MagicMock, job: css.job.Job) -> None:
 
     with mocked_get_job_requests(ready_job, completed_job) as mocked_requests:
         results = job.counts(polling_seconds=0)
-        assert results == {"11": 1}
+        assert results[0] == {"11": 1}
         assert mocked_requests.call_count == 2
         mock_sleep.assert_called_once()
 
