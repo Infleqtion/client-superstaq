@@ -297,7 +297,10 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             circuits: The circuit(s) to compile.
             target: A string containing the name of a target backend.
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
-            base_entangling_gate: The base entangling gate to use (either "xx" or "zz").
+            base_entangling_gate: The base entangling gate to use ("xx", "zz", "sxx", or "szz").
+                Compilation with the "xx" and "zz" entangling bases will use arbitrary
+                parameterized two-qubit interactions, while the "sxx" and "szz" bases will only use
+                fixed maximally-entangling rotations.
             num_qubits: An optional number of qubits that should be present in the compiled
                 circuit(s) and Jaqal program(s) (otherwise this will be determined from the input).
             kwargs: Other desired qscout_compile options.
@@ -465,17 +468,6 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
                 through `submit_dfe` have not finished running.
         """
         return self._client.process_dfe(ids)
-
-    def target_info(self, target: str) -> Dict[str, Any]:
-        """Returns information about the device specified by `target`.
-
-        Args:
-            target: A string containing the name of a target backend.
-
-        Returns:
-            Information about a target backend.
-        """
-        return self._client.target_info(target)["target_info"]
 
     def get_targets(self) -> Dict[str, Any]:
         """Gets list of targets.

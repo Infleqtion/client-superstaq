@@ -168,7 +168,7 @@ def test_qscout_compile(service: css.Service) -> None:
     assert service.qscout_compile([circuit]).circuits == [out.circuit]
     assert service.qscout_compile([circuit, circuit]).circuits == [out.circuit, out.circuit]
 
-    cx_circuit = cirq.Circuit(cirq.H(q0), cirq.CX(q0, q1), cirq.measure(q0, q1))
+    cx_circuit = cirq.Circuit(cirq.H(q0), cirq.CX(q0, q1) ** 0.5, cirq.measure(q0, q1))
     out = service.qscout_compile([cx_circuit])
     assert isinstance(out.circuits[0], cirq.Circuit)
     cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(

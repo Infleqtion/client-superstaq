@@ -35,21 +35,27 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             target: A string containing the name of a target backend.
         """
         self._provider = provider
+
+        target_info = self._provider._client.target_info(target)["target_info"]
         self.configuration_dict = {
             "backend_name": target,
             "backend_version": "n/a",
-            "n_qubits": -1,
-            "basis_gates": None,
+            "n_qubits": target_info.get("num_qubits"),
+            "basis_gates": target_info.get("native_gate_set"),
             "gates": [],
             "local": False,
             "simulator": False,
             "conditional": False,
             "open_pulse": False,
             "memory": False,
-            "max_shots": -1,
+            "max_shots": None,
             "coupling_map": None,
         }
+        target_info.pop("target", None)
+        target_info.pop("num_qubits", None)
+        target_info.pop("native_gate_set", None)
 
+        self.configuration_dict.update(target_info)
         gss.validation.validate_target(target)
 
         super().__init__(
@@ -64,6 +70,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         return qiskit.providers.Options(shots=1000)
 
     def __eq__(self, other: Any) -> bool:
+
         if not isinstance(other, qss.SuperstaqBackend):
             return False
 
@@ -318,7 +325,10 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         Args:
             circuits: The circuit(s) to compile.
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
-            base_entangling_gate: The base entangling gate to use (either "xx" or "zz").
+            base_entangling_gate: The base entangling gate to use ("xx", "zz", "sxx", or "szz").
+                Compilation with the "xx" and "zz" entangling bases will use arbitrary
+                parameterized two-qubit interactions, while the "sxx" and "szz" bases will only use
+                fixed maximally-entangling rotations.
             num_qubits: An optional number of qubits that should be present in the compiled
                 circuit(s) and Jaqal program(s) (otherwise this will be determined from the input).
             kwargs: Other desired qscout_compile options.
@@ -334,8 +344,9 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         if not self.name().startswith("sandia_"):
             raise ValueError(f"{self.name()!r} is not a valid Sandia target.")
 
-        if base_entangling_gate not in ("xx", "zz"):
-            raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
+        base_entangling_gate = base_entangling_gate.lower()
+        if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
+            raise ValueError("base_entangling_gate must be 'xx', 'zz', 'sxx', or 'szz'")
 
         options = {
             **kwargs,
@@ -387,7 +398,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         Returns:
             A dictionary of target information.
         """
-        return self._provider._client.target_info(self.name())["target_info"]
+        return self.configuration_dict
 
     def resource_estimate(
         self, circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]]
