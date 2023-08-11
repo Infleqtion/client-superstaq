@@ -7,7 +7,7 @@ import qubovert as qv
 import general_superstaq as gss
 
 
-def read_json_qubo_result(json_dict: Dict[str, str]) -> npt.NDArray[np.int_]:
+def read_json_qubo_result(json_dict: Dict[str, str]) -> list[Dict[tuple[int], int]]:
     """Reads out returned JSON from Superstaq API's QUBO endpoint.
 
     Args:
