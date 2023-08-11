@@ -1,7 +1,5 @@
 from typing import Dict
 
-import numpy as np
-import numpy.typing as npt
 import qubovert as qv
 
 import general_superstaq as gss
