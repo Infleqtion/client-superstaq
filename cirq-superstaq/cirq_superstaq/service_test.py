@@ -395,7 +395,6 @@ def test_service_resource_estimate_list(mock_resource_estimate: mock.MagicMock) 
 
 @mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
 def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> None:
-
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
     final_logical_to_physical = {q0: q0}
@@ -527,7 +526,6 @@ def test_qscout_compile_num_qubits(mock_post: mock.MagicMock) -> None:
 
 @mock.patch("requests.post")
 def test_service_cq_compile_single(mock_post: mock.MagicMock) -> None:
-
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
     final_logical_to_physical = {cirq.q(10): cirq.q(0)}

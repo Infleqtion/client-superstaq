@@ -22,7 +22,6 @@ if TYPE_CHECKING:
 
 @patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
 def test_provider(fake_superstaq_provider: MockSuperstaqProvider) -> None:
-
     assert str(fake_superstaq_provider) == "<SuperstaqProvider mock_superstaq_provider>"
 
     assert (
@@ -46,7 +45,6 @@ def test_get_balance() -> None:
 
 @patch("requests.post")
 def test_aqt_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
-
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
 
@@ -88,7 +86,6 @@ def test_invalid_target_aqt_compile() -> None:
 def test_aqt_compile_eca(
     mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
-
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
 
@@ -183,7 +180,6 @@ def test_resource_estimate(
 def test_resource_estimate_list(
     mock_resource_estimate: MagicMock, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
-
     resource_estimates = [ResourceEstimate(0, 1, 2), ResourceEstimate(3, 4, 5)]
 
     mock_resource_estimate.return_value = {
@@ -250,7 +246,6 @@ def test_invalid_target_qscout_compile(fake_superstaq_provider: MockSuperstaqPro
 def test_qscout_compile_swap_mirror(
     mock_post: MagicMock, mirror_swaps: bool, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
-
     qc = qiskit.QuantumCircuit()
 
     mock_post.return_value.json = lambda: {
@@ -279,7 +274,6 @@ def test_qscout_compile_swap_mirror(
 def test_qscout_compile_change_entangler(
     mock_post: MagicMock, base_entangling_gate: str, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
-
     qc = qiskit.QuantumCircuit()
 
     mock_post.return_value.json = lambda: {
@@ -306,7 +300,6 @@ def test_qscout_compile_change_entangler(
 
 
 def test_qscout_compile_wrong_entangler(fake_superstaq_provider: MockSuperstaqProvider) -> None:
-
     qc = qiskit.QuantumCircuit()
 
     with pytest.raises(ValueError):
