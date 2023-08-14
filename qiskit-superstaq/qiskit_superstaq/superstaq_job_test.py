@@ -80,7 +80,6 @@ def test_result(backend: qss.SuperstaqBackend) -> None:
 
 
 def test_check_if_stopped(backend: qss.SuperstaqBackend) -> None:
-
     for status in ("Cancelled", "Failed"):
         job = qss.SuperstaqJob(backend=backend, job_id="123abc")
         job._overall_status = status
@@ -190,7 +189,6 @@ def test_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
 
 
 def test_status(backend: qss.SuperstaqBackend) -> None:
-
     job = qss.SuperstaqJob(backend=backend, job_id="123abc")
 
     with mock.patch(

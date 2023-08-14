@@ -46,7 +46,6 @@ class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
         return True
 
     def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> Optional[npt.NDArray[np.complex_]]:
-
         for i in range(self._dimension):
             for j in range(i):
                 idx0 = args.subspace_index(i * self._dimension + j)
