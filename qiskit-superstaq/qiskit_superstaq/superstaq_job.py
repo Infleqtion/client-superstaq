@@ -147,47 +147,46 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 self._overall_status = temp_status
                 return
 
-    def compiled_circuits(self) -> List[qiskit.QuantumCircuit]:
-        """Get the compiled circuits that were submitted for this job.
+    def _get_circuits(self, circuit_type: str) -> List[qiskit.QuantumCircuit]:
+        """Retrieves the corresponding circuits to `circuit_type`.
+
+        Args:
+            circuit_type: The kind of circuits to retrieve. Either "input_circuits" or
+                "compiled_circuits".
 
         Returns:
-            A list of compiled circuits.
+            A list of circuits.
         """
         job_ids = self._job_id.split(",")
         if not all(
-            job_id in self._job_info and self._job_info[job_id].get("compiled_circuit")
+            job_id in self._job_info and self._job_info[job_id].get(circuit_type)
             for job_id in job_ids
         ):
             self._refresh_job()
 
-        serialized_circuits = [self._job_info[job_id]["compiled_circuit"] for job_id in job_ids]
-        deserialized_circuits = [
-            qss.deserialize_circuits(serialized)[0] for serialized in serialized_circuits
-        ]
-        input_circuits = self.input_circuits()
-        for comp_qc, in_qc in zip(deserialized_circuits, input_circuits):
-            comp_qc.metadata = in_qc.metadata
+        serialized_circuits = [self._job_info[job_id][circuit_type] for job_id in job_ids]
+        return [qss.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
 
-        return deserialized_circuits
+    def compiled_circuits(self) -> List[qiskit.QuantumCircuit]:
+        """Gets the compiled circuits that were submitted for this job.
+
+        Returns:
+            A list of compiled circuits.
+        """
+        compiled_circuits = self._get_circuits("compiled_circuit")
+        input_circuits = self._get_circuits("input_circuit")
+        for compiled_qc, in_qc in zip(compiled_circuits, input_circuits):
+            compiled_qc.metadata = in_qc.metadata
+
+        return compiled_circuits
 
     def input_circuits(self) -> List[qiskit.QuantumCircuit]:
         """Gets the original circuits that were submitted for this job.
 
         Returns:
-            A list of pre-compilation circuits.
+            A list of the submitted input circuits.
         """
-        job_ids = self._job_id.split(",")
-        if not all(
-            job_id in self._job_info and self._job_info[job_id].get("input_circuit")
-            for job_id in job_ids
-        ):
-            self._refresh_job()
-
-        serialized_input_circuits = [self._job_info[job_id]["input_circuit"] for job_id in job_ids]
-        return [
-            qss.deserialize_circuits(serialized_circ)[0]
-            for serialized_circ in serialized_input_circuits
-        ]
+        return self._get_circuits("input_circuit")
 
     def status(self) -> qiskit.providers.jobstatus.JobStatus:
         """Query for the equivalent qiskit job status.
