@@ -151,12 +151,15 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """Retrieves the corresponding circuits to `circuit_type`.
 
         Args:
-            circuit_type: The kind of circuits to retrieve. Either "input_circuits" or
-                "compiled_circuits".
+            circuit_type: The kind of circuits to retrieve. Either "input_circuit" or
+                "compiled_circuit".
 
         Returns:
             A list of circuits.
         """
+        if circuit_type not in ("input_circuit", "compiled_circuit"):
+            raise ValueError("The circuit type requested is invalid.")
+
         job_ids = self._job_id.split(",")
         if not all(
             job_id in self._job_info and self._job_info[job_id].get(circuit_type)

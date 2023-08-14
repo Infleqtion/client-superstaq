@@ -164,6 +164,12 @@ def test_update_status_queue_info(backend: qss.SuperstaqBackend) -> None:
     assert job._overall_status == "Failed"
 
 
+def test_get_circuit(backend: qss.SuperstaqBackend) -> None:
+    test_job = qss.SuperstaqJob(backend=backend, job_id="123abc")
+    with pytest.raises(ValueError, match="The circuit type requested is invalid."):
+        test_job._get_circuits("invalid_type")
+
+
 def test_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
     response = mock_response("Queued")
     response["compiled_circuit"] = qss.serialize_circuits(qiskit.QuantumCircuit(2))
