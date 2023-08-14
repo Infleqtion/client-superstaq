@@ -351,7 +351,6 @@ def test_qubit_subspace_gate_protocols(
     qid_shape: Tuple[int, ...],
     subspaces: Optional[List[Tuple[int, int]]],
 ) -> None:
-
     sub_gate = sub_gate_type(exponent=1.23, global_shift=0.0)
 
     gate = css.QubitSubspaceGate(sub_gate, qid_shape, subspaces)
