@@ -105,6 +105,7 @@ Job = TypedDict(
         "status": str,
         "target": str,
         "compiled_circuit": str,
+        "input_circuit": Optional[str],
         "data": Optional[Dict[str, Any]],
         "samples": Optional[Dict[str, int]],
         "shots": Optional[int],
