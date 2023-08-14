@@ -104,6 +104,7 @@ Job = TypedDict(
         "num_qubits": int,
         "status": str,
         "target": str,
+        "circuit_type": str,
         "compiled_circuit": str,
         "input_circuit": Optional[str],
         "data": Optional[Dict[str, Any]],
