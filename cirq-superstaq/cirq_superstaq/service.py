@@ -248,25 +248,26 @@ class Service(gss.service.Service):
             circuits: The list of circuit(s) to run.
             repetitions: The number of times to repeat the circuit. Defaults to 1000.
             target: Where to run the job.
-            method: Execution method.
+            method: The optional execution method.
             kwargs: Other optimization and execution parameters.
 
         Returns:
             A `css.Job` which can be queried for status or results.
 
         Raises:
+            ValueError: If there are no measurements in `circuits`.
             SuperstaqServerException: If there was an error accessing the API.
         """
         css.validation.validate_cirq_circuits(circuits)
-        circuits = [circuits] if isinstance(circuits, cirq.Circuit) else circuits
+        circuit_list = [circuits] if isinstance(circuits, cirq.Circuit) else circuits
 
-        for circuit in circuits:
+        for circuit in circuit_list:
             if not circuit.has_measurements():
                 # TODO: only raise if the run method actually requires samples (and not for e.g. a
                 # statevector simulation)
                 raise ValueError("Circuit has no measurements to sample.")
 
-        serialized_circuits = css.serialization.serialize_circuits(circuits)
+        serialized_circuits = css.serialization.serialize_circuits(circuit_list)
 
         target = self._resolve_target(target)
 
