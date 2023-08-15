@@ -261,7 +261,8 @@ def test_aces(service: css.Service) -> None:
         mirror_depth=5,
         extra_depth=7,
         method="dry-run",
-        noise=("bit_flip", 0.1),
+        noise="bit_flip",
+        error_prob=0.1,
     )
     result = service.process_aces(job_id)
     assert len(result) == 18

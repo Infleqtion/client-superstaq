@@ -467,7 +467,10 @@ class _SuperstaqClient:
         num_circuits: int,
         mirror_depth: int,
         extra_depth: int,
-        **kwargs: Any,
+        method: Optional[str] = None,
+        noise: Optional[Dict[str, object]] = None,
+        tag: Optional[str] = None,
+        lifespan: Optional[int] = None,
     ) -> str:
         """Performs a POST request on the `/aces` endpoint.
 
@@ -478,29 +481,32 @@ class _SuperstaqClient:
             num_circuits: How many random circuits to use in the protocol.
             mirror_depth: The half-depth of the mirror portion of the random circuits.
             extra_depth: The depth of the fully random portion of the random circuits.
-            kwargs: Other execution parameters.
-                - tag: Tag for all jobs submitted for this protocol.
-                - lifespan: How long to store the jobs submitted for in days (only works with right
-                permissions).
-                - method: Which type of method to execute the circuits with.
-                - noise: A tuple indicating a noise model to simulate the run with. The tuple will
-                    have the form ("channel_name", prob_of_error). The permitted channels are:
-                    "symmetric_depolarize", "phase_flip", "bit_flip" and "asymmetric_depolarize".
+            method: Which type of method to execute the circuits with.
+            noise: A tuple indicating a noise model to simulate the run with. The tuple will
+                have the form ("channel_name", prob_of_error). The permitted channels are:
+                "symmetric_depolarize", "phase_flip", "bit_flip" and "asymmetric_depolarize".
 
-                    For "asymmetric_depolarize", `prob_of_error` will be a three-tuple with the
-                    error rates for the X, Y, Z gates in that order. So, a valid argument would be
-                    `noise = ("asymmetric_depolarize", (0.1, 0.1, 0.1))`. notice that these values
-                    must add up to less than or equal to 1. For the other channels, `prob_of_error`
-                    is one number less than or equal to 1, e.g., `noise = ("bit_flip", 0.1)`.
+                For "asymmetric_depolarize", `prob_of_error` will be a three-tuple with the
+                error rates for the X, Y, Z gates in that order. So, a valid argument would be
+                `noise = ("asymmetric_depolarize", (0.1, 0.1, 0.1))`. notice that these values
+                must add up to less than or equal to 1. For the other channels, `prob_of_error`
+                is one number less than or equal to 1, e.g., `noise = ("bit_flip", 0.1)`.
+            tag: Tag for all jobs submitted for this protocol.
+            lifespan: How long to store the jobs submitted for in days (only works with right
+                permissions).
 
         Returns:
             A string with the job id for the ACES job created.
 
         Raises:
-            ValueError: If any the target passed are not valid.
+            ValueError: If the target is not valid.
+            ValueError: If the noise tuple is not valid.
             SuperstaqServerException: if the request fails.
         """
         gss.validation.validate_target(target)
+
+        if noise and ("type" in noise.keys()):
+            gss.validation.validate_noise_type(noise, len(qubits))
 
         json_dict = {
             "target": target,
@@ -509,11 +515,11 @@ class _SuperstaqClient:
             "num_circuits": num_circuits,
             "mirror_depth": mirror_depth,
             "extra_depth": extra_depth,
+            "method": method,
+            "noise": noise,
+            "tag": tag,
+            "lifespan": lifespan,
         }
-
-        if kwargs:
-            gss.validation.validate_noise(kwargs.get("noise", []))
-            json_dict["options"] = json.dumps(kwargs)
         return self.post_request("/aces", json_dict)
 
     def process_aces(self, job_id: str) -> List[float]:

@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import qubovert as qv
 
@@ -293,65 +293,3 @@ class Service:
             variables = yaml.safe_load(config_dict["variables"])
 
             return pulses, variables
-
-    def submit_aces(
-        self,
-        target: str,
-        qubits: List[int],
-        shots: int,
-        num_circuits: int,
-        mirror_depth: int,
-        extra_depth: int,
-        **kwargs: Any,
-    ) -> str:
-        """Performs a POST request on the `/aces` endpoint.
-
-        Args:
-            target: The device target to characterize.
-            qubits: A list with the qubit indices to characterize.
-            shots: How many shots to use per circuit submitted.
-            num_circuits: How many random circuits to use in the protocol.
-            mirror_depth: The half-depth of the mirror portion of the random circuits.
-            extra_depth: The depth of the fully random portion of the random circuits.
-            kwargs: Other execution parameters.
-                - tag: Tag for all jobs submitted for this protocol.
-                - lifespan: How long to store the jobs submitted for in days (only works with right
-                permissions).
-                - method: Which type of method to execute the circuits with.
-                - noise: A tuple indicating a noise model to simulate the run with. The tuple will
-                    have the form ("channel_name", prob_of_error). The permitted channels are:
-                    "symmetric_depolarize", "phase_flip", "bit_flip" and "asymmetric_depolarize".
-
-                    For "asymmetric_depolarize", `prob_of_error` will be a three-tuple with the
-                    error rates for the X, Y, Z gates in that order. So, a valid argument would be
-                    `noise = ("asymmetric_depolarize", (0.1, 0.1, 0.1))`. notice that these values
-                    must add up to less than or equal to 1. For the other channels, `prob_of_error`
-                    is one number less than or equal to 1, e.g., `noise = ("bit_flip", 0.1)`.
-
-        Returns:
-            A string with the job id for the ACES job created.
-
-        Raises:
-            ValueError: If any the target passed are not valid.
-            SuperstaqServerException: if the request fails.
-        """
-        return self._client.submit_aces(
-            target=target,
-            qubits=qubits,
-            shots=shots,
-            num_circuits=num_circuits,
-            mirror_depth=mirror_depth,
-            extra_depth=extra_depth,
-            **kwargs,
-        )
-
-    def process_aces(self, job_id: str) -> List[float]:
-        """Makes a POST request to the "/aces_fetch" endpoint.
-
-        Args:
-            job_id: The job id returned by `submit_aces`.
-
-        Returns:
-            The estimated eigenvalues.
-        """
-        return self._client.process_aces(job_id=job_id)

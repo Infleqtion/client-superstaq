@@ -305,6 +305,8 @@ def test_aces(mock_post: MagicMock) -> None:
             num_circuits=10,
             mirror_depth=5,
             extra_depth=5,
+            noise="bit_flip",
+            error_prob=0.1,
         )
         == "id1"
     )

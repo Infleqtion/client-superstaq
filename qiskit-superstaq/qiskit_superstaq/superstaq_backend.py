@@ -430,38 +430,47 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         num_circuits: int,
         mirror_depth: int,
         extra_depth: int,
-        **kwargs: Any,
+        method: Optional[str] = None,
+        noise: Optional[str] = None,
+        error_prob: Optional[Union[float, Tuple[float, float, float]]] = None,
+        tag: Optional[str] = None,
+        lifespan: Optional[int] = None,
     ) -> str:
-        """Submits the jobs to characterize this target through the ACES protocol.
+        """Performs a POST request on the `/aces` endpoint.
 
         Args:
-            qubits: Register of qubits to characterize.
+            qubits: A list with the qubit indices to characterize.
             shots: How many shots to use per circuit submitted.
             num_circuits: How many random circuits to use in the protocol.
             mirror_depth: The half-depth of the mirror portion of the random circuits.
             extra_depth: The depth of the fully random portion of the random circuits.
-            kwargs: Other execution parameters.
-                - tag: Tag for all jobs submitted for this protocol.
-                - lifespan: How long to store the jobs submitted for in days (only works with right
-                permissions).
-                - method: Which type of method to execute the circuits with.
-                - noise: A tuple indicating a noise model to simulate the run with. The tuple will
-                    have the form ("channel_name", prob_of_error). The permitted channels are:
-                    "symmetric_depolarize", "phase_flip", "bit_flip" and "asymmetric_depolarize".
+            method: Which type of method to execute the circuits with.
+            noise: Noise model to simulate the protocol with. Valid strings are
+                "symmetric_depolarize", "phase_flip", "bit_flip" and "asymmetric_depolarize".
+            error_prob: The error probabilities if a string was passed to `noise`.
 
-                    For "asymmetric_depolarize", `prob_of_error` will be a three-tuple with the
-                    error rates for the X, Y, Z gates in that order. So, a valid argument would be
-                    `noise = ("asymmetric_depolarize", (0.1, 0.1, 0.1))`. notice that these values
-                    must add up to less than or equal to 1. For the other channels, `prob_of_error`
-                    is one number less than or equal to 1, e.g., `noise = ("bit_flip", 0.1)`.
+                For "asymmetric_depolarize", `prob_of_error` will be a three-tuple with the
+                error rates for the X, Y, Z gates in that order. So, a valid argument would be
+                `error_prob = (0.1, 0.1, 0.1)`. notice that these values must add up to less than
+                or equal to 1. For the other channels, `prob_of_error` is one number less than or
+                equal to 1, e.g., `error_prob = 0.1`.
+            tag: Tag for all jobs submitted for this protocol.
+            lifespan: How long to store the jobs submitted for in days (only works with right
+                permissions).
 
         Returns:
             A string with the job id for the ACES job created.
 
         Raises:
-            ValueError: If any the target passed are not valid.
+            ValueError: If the target is not valid.
+            ValueError: If the noise model passed is not valid.
             SuperstaqServerException: if the request fails.
         """
+        noise_dict: Dict[str, object] = {}
+        if noise:
+            noise_dict["type"] = noise
+            noise_dict["params"] = error_prob if isinstance(error_prob, tuple) else (error_prob,)
+
         return self._provider._client.submit_aces(
             target=self.name(),
             qubits=[q._index for q in qubits],
@@ -469,7 +478,10 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             num_circuits=num_circuits,
             mirror_depth=mirror_depth,
             extra_depth=extra_depth,
-            **kwargs,
+            method=method,
+            noise=noise_dict,
+            tag=tag,
+            lifespan=lifespan,
         )
 
     def process_aces(self, job_id: str) -> List[float]:

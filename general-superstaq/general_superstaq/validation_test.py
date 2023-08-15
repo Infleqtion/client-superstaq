@@ -1,5 +1,6 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 import re
+from typing import Dict, List
 
 import numpy as np
 import pytest
@@ -43,24 +44,31 @@ def test_validate_integer_param() -> None:
             gss.validation.validate_integer_param(input_value)
 
 
-def test_validate_noise() -> None:
-    valid_inputs = [
-        ("symmetric_depolarize", 0.1),
-        ("bit_flip", 1),
-        ("phase_flip", 0.1),
-        ("asymmetric_depolarize", (0.1, 0.1, 0.1)),
+def test_validate_noise_type() -> None:
+    valid_inputs: List[Dict[str, object]] = [
+        {"type": "symmetric_depolarize", "params": (0.1,)},
+        {"type": "bit_flip", "params": (0.1,)},
+        {"type": "phase_flip", "params": (0.1,)},
+        {"type": "asymmetric_depolarize", "params": (0.1, 0.1, 0.1)},
     ]
     for input_value in valid_inputs:
-        gss.validation.validate_noise(input_value)
+        gss.validation.validate_noise_type(input_value, 1)
 
-    with pytest.raises(ValueError, match="does not have a valid noise format."):
-        gss.validation.validate_noise(None)
+    with pytest.raises(
+        ValueError, match="`params` must be a tuple in the dict if `type` is in the dict."
+    ):
+        gss.validation.validate_noise_type({"type": "test"}, 1)
 
     with pytest.raises(ValueError, match="is not a valid channel."):
-        gss.validation.validate_noise(("other_noise", 0.1))
+        gss.validation.validate_noise_type({"type": "other_channel", "params": (0.1,)}, 1)
 
-    with pytest.raises(ValueError, match="is not a number between 0 and 1."):
-        gss.validation.validate_noise(("bit_flip", 3))
+    with pytest.raises(ValueError, match='for "bit_flip", and "phase_flip"'):
+        gss.validation.validate_noise_type({"type": "bit_flip", "params": (3,)}, 1)
 
-    with pytest.raises(ValueError, match=r"is not of the form"):
-        gss.validation.validate_noise(("asymmetric_depolarize", (0.5, 0.5, 0.5)))
+    with pytest.raises(ValueError, match='for "symmetric_depolarize"'):
+        gss.validation.validate_noise_type({"type": "symmetric_depolarize", "params": (0.5,)}, 2)
+
+    with pytest.raises(ValueError, match='for "asymmetric_depolarize"'):
+        gss.validation.validate_noise_type(
+            ({"type": "asymmetric_depolarize", "params": (0.5, 0.5, 0.5)}), 1
+        )
