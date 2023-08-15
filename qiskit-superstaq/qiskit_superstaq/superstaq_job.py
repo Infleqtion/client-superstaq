@@ -93,9 +93,24 @@ class SuperstaqJob(qiskit.providers.JobV1):
         if not circ_meas_list:
             circ_meas_list = [
                 qss.compiler_output.measured_qubit_indices(circuit)
-                for circuit in self.compiled_circuits()
+                for circuit in self._get_circuits("compiled_circuit")
             ]
         return circ_meas_list
+
+    def _get_circ_clbits(self, num_clbits: List[int]) -> List[int]:
+        """Helper method to get the number of classical bits in the circuit(s).
+
+        Args:
+            num_clbits_in_circ: The list to be populated with the number of classical bits.
+
+        Returns:
+            A list containing the number of classical bits for the all the
+            circuits in the job.
+        """
+        if not num_clbits:
+            input_circuits = self._get_circuits("input_circuit")
+            num_clbits = [circuit.num_clbits for circuit in input_circuits]
+        return num_clbits
 
     def result(self, timeout: Optional[float] = None, wait: float = 5) -> qiskit.result.Result:
         """Retrieves the result data associated with a Superstaq job.
@@ -112,13 +127,14 @@ class SuperstaqJob(qiskit.providers.JobV1):
         timeout = timeout or self._backend._provider._client.max_retry_seconds
         results = self._wait_for_results(timeout, wait)
         circ_meas_list: List[List[int]] = []
+        num_clbits_in_circ: List[int] = []
 
         # create list of result dictionaries
         results_list = []
         for index, result in enumerate(results):
             counts = result["samples"]
             if counts:  # change endianess to match Qiskit
-                num_clbits = self._backend._num_clbits_in_circ[index]
+                num_clbits = self._get_circ_clbits(num_clbits_in_circ)[index]
                 circ_meas_bit_indices = self._get_meas_bit_info(circ_meas_list)[index]
                 if len(circ_meas_bit_indices) != num_clbits:
                     counts = self._arrange_counts(counts, circ_meas_bit_indices, num_clbits)
