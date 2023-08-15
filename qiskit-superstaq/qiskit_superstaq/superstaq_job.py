@@ -39,7 +39,6 @@ class SuperstaqJob(qiskit.providers.JobV1):
         self._job_info: Dict[str, Any] = {}
 
     def __eq__(self, other: object) -> bool:
-
         if not (isinstance(other, SuperstaqJob)):
             return False
 
@@ -164,7 +163,6 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """Queries the server for an updated job result."""
 
         for job_id in self._job_id.split(","):
-
             if (job_id not in self._job_info) or (
                 self._job_info[job_id]["status"] not in self.TERMINAL_STATES
             ):
