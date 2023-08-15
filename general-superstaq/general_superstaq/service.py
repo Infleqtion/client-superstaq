@@ -318,6 +318,15 @@ class Service:
                 - lifespan: How long to store the jobs submitted for in days (only works with right
                 permissions).
                 - method: Which type of method to execute the circuits with.
+                - noise: A tuple indicating a noise model to simulate the run with. The tuple will
+                    have the form ("channel_name", prob_of_error). The permitted channels are:
+                    "symmetric_depolarize", "phase_flip", "bit_flip" and "asymmetric_depolarize".
+
+                    For "asymmetric_depolarize", `prob_of_error` will be a three-tuple with the
+                    error rates for the X, Y, Z gates in that order. So, a valid argument would be
+                    `noise = ("asymmetric_depolarize", (0.1, 0.1, 0.1))`. Notice that this values
+                    must add up to less than or equal to 1. For the other channels, `prob_of_error`
+                    is one number less than or equal to 1, e.g., `noise = ("bit_flip", 0.1)`.
 
         Returns:
             A string with the job id for the ACES job created.

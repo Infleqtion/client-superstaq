@@ -41,3 +41,26 @@ def test_validate_integer_param() -> None:
             match="is not a positive integer.",
         ):
             gss.validation.validate_integer_param(input_value)
+
+
+def test_validate_noise() -> None:
+    valid_inputs = [
+        ("symmetric_depolarize", 0.1),
+        ("bit_flip", 1),
+        ("phase_flip", 0.1),
+        ("asymmetric_depolarize", (0.1, 0.1, 0.1)),
+    ]
+    for input_value in valid_inputs:
+        gss.validation.validate_noise(input_value)
+
+    with pytest.raises(ValueError, match="does not have a valid noise format."):
+        gss.validation.validate_noise(None)
+
+    with pytest.raises(ValueError, match="is not a valid channel."):
+        gss.validation.validate_noise(("other_noise", 0.1))
+
+    with pytest.raises(ValueError, match="is not a number between 0 and 1."):
+        gss.validation.validate_noise(("bit_flip", 3))
+
+    with pytest.raises(ValueError, match=r"is not of the form"):
+        gss.validation.validate_noise(("asymmetric_depolarize", (0.5, 0.5, 0.5)))

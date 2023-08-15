@@ -252,6 +252,21 @@ def test_dfe(service: css.Service) -> None:
     assert isinstance(result, float)
 
 
+def test_aces(service: css.Service) -> None:
+    job_id = service.submit_aces(
+        target="ss_unconstrained_simulator",
+        qubits=[0],
+        shots=100,
+        num_circuits=10,
+        mirror_depth=5,
+        extra_depth=7,
+        method="dry-run",
+        noise=("bit_flip", 0.1),
+    )
+    result = service.process_aces(job_id)
+    assert len(result) == 18
+
+
 def test_job(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
     job = service.create_job(circuit, target="ibmq_qasm_simulator", repetitions=10)
