@@ -173,6 +173,7 @@ def test_get_circuit(backend: qss.SuperstaqBackend) -> None:
 def test_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
     response = mock_response("Queued")
     response["compiled_circuit"] = qss.serialize_circuits(qiskit.QuantumCircuit(2))
+    response["input_circuit"] = qss.serialize_circuits(qiskit.QuantumCircuit(2))
 
     job = qss.SuperstaqJob(backend=backend, job_id="123abc")
     with mock.patch(
