@@ -223,7 +223,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """
         raise NotImplementedError("Submit through SuperstaqBackend, not through SuperstaqJob")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, gss.typing.Job]:
         """Refreshes and returns job information.
 
         Note:
