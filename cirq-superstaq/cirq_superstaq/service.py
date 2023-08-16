@@ -219,7 +219,9 @@ class Service(gss.service.Service):
             A list of `cirq.ResultDict` objects for running the circuit(s).
         """
         circuit_list = [circuits] if isinstance(circuits, cirq.Circuit) else circuits
-        counts = self.get_counts(circuit_list, repetitions, target, param_resolver, method, **kwargs)
+        counts = self.get_counts(
+            circuit_list, repetitions, target, param_resolver, method, **kwargs
+        )
         return [
             counts_to_results(counts[index], circuit_list[index], param_resolver)
             for index in range(len(circuit_list))
