@@ -169,58 +169,61 @@ class Service(gss.service.Service):
 
     def get_counts(
         self,
-        circuit: cirq.Circuit,
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
         repetitions: int,
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: Optional[str] = None,
         **kwargs: Any,
     ) -> List[Dict[str, int]]:
-        """Runs the given circuit on the Superstaq API and returns the result of the circuit ran as
+        """Runs the given circuit(s) on the Superstaq API and returns the result of the circuit ran as
         a `collections.Counter`.
 
         Args:
-            circuit: The circuit to run.
-            repetitions: The number of times to run the circuit.
+            circuits: The circuit(s) to run.
+            repetitions: The number of times to run the circuit(s).
             target: Where to run the job.
-            param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
+            param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuits`.
             method: Optional execution method.
             kwargs: Other optimization and execution parameters.
 
         Returns:
-            A `collection.Counter` for running the circuit.
+            A list of `collection.Counter`'s for running the circuit(s).
         """
-        resolved_circuit = cirq.protocols.resolve_parameters(circuit, param_resolver)
+        resolved_circuit = cirq.protocols.resolve_parameters(circuits, param_resolver)
         job = self.create_job(resolved_circuit, int(repetitions), target, method, **kwargs)
         counts = job.counts()
-
         return counts
 
     def run(
         self,
-        circuit: cirq.Circuit,
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
         repetitions: int,
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
         method: Optional[str] = None,
         **kwargs: Any,
-    ) -> cirq.ResultDict:
-        """Runs the given circuit on the Superstaq API and returns the result of the circuit ran as
-        a `cirq.ResultDict`.
+    ) -> List[cirq.ResultDict]:
+        """Runs the given circuit(s) on the Superstaq API and returns the result of the circuit(s) ran
+        as a `cirq.ResultDict`.
 
         Args:
-            circuit: The circuit to run.
-            repetitions: The number of times to run the circuit.
+            circuits: The circuit(s) to run.
+            repetitions: The number of times to run the circuit(s).
             target: Where to run the job.
-            param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuit`.
+            param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuits`.
             method: Execution method.
             kwargs: Other optimization and execution parameters.
 
         Returns:
-            A `cirq.ResultDict` for running the circuit.
+            A list of `cirq.ResultDict` objects for running the circuit(s).
         """
-        counts = self.get_counts(circuit, repetitions, target, param_resolver, method, **kwargs)
-        return counts_to_results(counts[0], circuit, param_resolver)
+        circuit_list = [circuits] if isinstance(circuits, cirq.Circuit) else circuits
+        counts = self.get_counts(circuit_list, repetitions, target, param_resolver, method, **kwargs)
+        return [
+            counts_to_results(counts[index], circuit_list[index], param_resolver)
+            for index in range(len(circuit_list))
+        ]
 
     def sampler(self, target: Optional[str] = None) -> cirq.Sampler:
         """Returns a `cirq.Sampler` object for accessing sampler interface.
@@ -262,7 +265,7 @@ class Service(gss.service.Service):
         circuit_list = [circuits] if isinstance(circuits, cirq.Circuit) else circuits
 
         for circuit in circuit_list:
-            if not circuit.has_measurements():
+            if isinstance(circuit, cirq.Circuit) and not circuit.has_measurements():
                 # TODO: only raise if the run method actually requires samples (and not for e.g. a
                 # statevector simulation)
                 raise ValueError("Circuit has no measurements to sample.")
