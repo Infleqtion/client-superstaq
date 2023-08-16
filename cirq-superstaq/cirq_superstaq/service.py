@@ -176,8 +176,8 @@ class Service(gss.service.Service):
         method: Optional[str] = None,
         **kwargs: Any,
     ) -> List[Dict[str, int]]:
-        """Runs the given circuit(s) on the Superstaq API and returns the result of the circuit ran as
-        a `collections.Counter`.
+        """Runs the given circuit(s) on the Superstaq API and returns the result of the circuit ran
+        as a `collections.Counter`.
 
         Args:
             circuits: The circuit(s) to run.
@@ -204,8 +204,8 @@ class Service(gss.service.Service):
         method: Optional[str] = None,
         **kwargs: Any,
     ) -> List[cirq.ResultDict]:
-        """Runs the given circuit(s) on the Superstaq API and returns the result of the circuit(s) ran
-        as a `cirq.ResultDict`.
+        """Runs the given circuit(s) on the Superstaq API and returns the result of the circuit(s)
+        ran as a `cirq.ResultDict`.
 
         Args:
             circuits: The circuit(s) to run.
