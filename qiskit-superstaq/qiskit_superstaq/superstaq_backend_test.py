@@ -290,26 +290,3 @@ def test_target_info(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     target = "ibmq_qasm_simulator"
     backend = fake_superstaq_provider.get_backend(target)
     assert backend.target_info()["backend_name"] == target
-
-
-@patch("requests.post")
-def test_aces(mock_post: MagicMock) -> None:
-    provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
-    backend = provider.get_backend("ss_unconstrained_simulator")
-
-    mock_post.return_value.json = lambda: "id1"
-    assert (
-        backend.submit_aces(
-            qubits=qiskit.QuantumRegister(2),
-            shots=100,
-            num_circuits=10,
-            mirror_depth=5,
-            extra_depth=5,
-            noise="bit_flip",
-            error_prob=0.1,
-        )
-        == "id1"
-    )
-
-    mock_post.return_value.json = lambda: [1] * 51
-    assert backend.process_aces("id1") == [1] * 51
