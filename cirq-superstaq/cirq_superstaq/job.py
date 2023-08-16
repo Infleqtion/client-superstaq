@@ -204,7 +204,7 @@ class Job:
         return self._job[self._job_id.split(",")[0]]["shots"]
 
     def compiled_circuits(self) -> List[cirq.Circuit]:
-        """Get the compiled circuit(s) that was submitted for this job.
+        """Gets the compiled circuit(s) that was submitted for this job.
 
         Returns:
             The compiled circuit(s).
@@ -218,9 +218,18 @@ class Job:
         serialized_circuits = [self._job[job_id]["compiled_circuit"] for job_id in job_ids]
         return [css.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
 
-    def counts(
-        self, timeout_seconds: int = 7200, polling_seconds: float = 1.0
-    ) -> List[Dict[str, int]]:
+    def input_circuits(self) -> List[cirq.Circuit]:
+        """Gets the original circuit(s) that was submitted for this job.
+
+        Returns:
+            The submitted input circuit(s).
+        """
+        if "input_circuit" not in self._job:
+            self._refresh_job()
+
+        return css.deserialize_circuits(self._job["input_circuit"])[0]
+
+    def counts(self, timeout_seconds: int = 7200, polling_seconds: float = 1.0) -> Dict[str, int]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
 
         Args:

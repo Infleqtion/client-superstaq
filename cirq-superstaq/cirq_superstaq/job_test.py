@@ -124,6 +124,23 @@ def test_compiled_circuit(job: css.job.Job) -> None:
     assert job.compiled_circuits()[0] == compiled_circuit
 
 
+def test_input_circuit(job: css.job.Job) -> None:
+    input_circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
+    job_dict = {
+        "status": "Done",
+        "input_circuit": css.serialize_circuits(input_circuit),
+        "compiled_circuit": css.serialize_circuits(input_circuit),
+    }
+
+    # The first call will trigger a refresh:
+    with mocked_get_job_requests(job_dict) as mocked_get_job:
+        assert job.input_circuit() == input_circuit
+        mocked_get_job.assert_called_once()
+
+    # Shouldn't need to retrieve anything now that `job._job` is populated:
+    assert job.input_circuit() == input_circuit
+
+
 def test_job_status_refresh() -> None:
     completed_job_dict = {"status": "Done"}
 
