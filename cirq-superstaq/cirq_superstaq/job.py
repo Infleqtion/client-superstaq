@@ -73,15 +73,12 @@ class Job:
     def _refresh_job(self) -> None:
         """If the last fetched job is not terminal, gets the job from the API."""
 
-        job_ids = self._job_id.split(",")
-
-        for job_id in job_ids:
-            if job_id not in self._job:
-                self._job[job_id] = self._client.get_job(job_id)
-            elif "status" not in self._job[job_id]:
-                self._job[job_id] = self._client.get_job(job_id)
-            elif self._job[job_id]["status"] not in self.TERMINAL_STATES:
-                self._job[job_id] = self._client.get_job(job_id)
+        for job_id in self._job_id.split(","):
+            if (job_id not in self._job) or (
+                self._job[job_id]["status"] not in self.TERMINAL_STATES
+            ):
+                result = self._client.get_job(job_id)
+                self._job[job_id] = result
 
     def _update_status_queue_info(self) -> None:
         """Updates the overall status based on status queue info.
@@ -203,33 +200,47 @@ class Job:
 
         return self._job[self._job_id.split(",")[0]]["shots"]
 
-    def compiled_circuits(self) -> List[cirq.Circuit]:
-        """Gets the compiled circuit(s) that was submitted for this job.
+    def _get_circuits(self, circuit_type: str) -> List[cirq.Circuit]:
+        """Retrieves the corresponding circuits to `circuit_type`.
+
+        Args:
+            circuit_type: The kind of circuits to retrieve. Either "input_circuit" or
+                "compiled_circuit".
 
         Returns:
-            The compiled circuit(s).
+            A list of circuits.
         """
+        if circuit_type not in ("input_circuit", "compiled_circuit"):
+            raise ValueError("The circuit type requested is invalid.")
+
         job_ids = self._job_id.split(",")
         if not all(
-            job_id in self._job and self._job[job_id].get("compiled_circuit") for job_id in job_ids
+            job_id in self._job and self._job[job_id].get(circuit_type) for job_id in job_ids
         ):
             self._refresh_job()
 
-        serialized_circuits = [self._job[job_id]["compiled_circuit"] for job_id in job_ids]
+        serialized_circuits = [self._job[job_id][circuit_type] for job_id in job_ids]
         return [css.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
 
-    def input_circuits(self) -> List[cirq.Circuit]:
-        """Gets the original circuit(s) that was submitted for this job.
+    def compiled_circuits(self) -> List[cirq.Circuit]:
+        """Gets the compiled circuits that were submitted for this job.
 
         Returns:
-            The submitted input circuit(s).
+            A list of compiled circuits.
         """
-        if "input_circuit" not in self._job:
-            self._refresh_job()
+        return self._get_circuits("compiled_circuit")
 
-        return css.deserialize_circuits(self._job["input_circuit"])[0]
+    def input_circuits(self) -> List[cirq.Circuit]:
+        """Gets the original circuits that were submitted for this job.
 
-    def counts(self, timeout_seconds: int = 7200, polling_seconds: float = 1.0) -> Dict[str, int]:
+        Returns:
+            A list of the submitted input circuits.
+        """
+        return self._get_circuits("input_circuit")
+
+    def counts(
+        self, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+    ) -> List[Dict[str, int]]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
 
         Args:
