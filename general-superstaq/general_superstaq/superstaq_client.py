@@ -505,9 +505,6 @@ class _SuperstaqClient:
         """
         gss.validation.validate_target(target)
 
-        if noise and ("type" in noise.keys()):
-            gss.validation.validate_noise_type(noise, len(qubits))
-
         json_dict = {
             "target": target,
             "qubits": qubits,
@@ -515,11 +512,19 @@ class _SuperstaqClient:
             "num_circuits": num_circuits,
             "mirror_depth": mirror_depth,
             "extra_depth": extra_depth,
-            "method": method,
-            "noise": noise,
-            "tag": tag,
-            "lifespan": lifespan,
         }
+
+        if method:
+            json_dict["method"] = method
+        if noise:
+            if "type" in noise.keys():
+                gss.validation.validate_noise_type(noise, len(qubits))
+            json_dict["noise"] = noise
+        if tag:
+            json_dict["tag"] = tag
+        if lifespan:
+            json_dict["lifespan"] = lifespan
+
         return self.post_request("/aces", json_dict)
 
     def process_aces(self, job_id: str) -> List[float]:

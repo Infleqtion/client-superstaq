@@ -618,6 +618,8 @@ def test_superstaq_client_aces(mock_post: mock.MagicMock) -> None:
         mirror_depth=6,
         extra_depth=4,
         method="dry-run",
+        tag="test-tag",
+        lifespan=10,
         noise={"type": "symmetric_depolarize", "params": (0.01,)},
     )
 
@@ -630,8 +632,8 @@ def test_superstaq_client_aces(mock_post: mock.MagicMock) -> None:
         "extra_depth": 4,
         "method": "dry-run",
         "noise": {"type": "symmetric_depolarize", "params": (0.01,)},
-        "tag": None,
-        "lifespan": None,
+        "tag": "test-tag",
+        "lifespan": 10,
     }
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/aces",
