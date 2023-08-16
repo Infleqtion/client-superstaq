@@ -105,20 +105,20 @@ def test_service_run_and_get_counts() -> None:
     circuit = cirq.Circuit((cirq.X**a)(q), cirq.measure(q, key="a"))
     params = cirq.ParamResolver({"a": 0.5})
     counts = service.get_counts(
-        circuit=circuit,
+        circuits=circuit,
         repetitions=4,
         target="ibmq_qasm_simulator",
         param_resolver=params,
     )
     assert counts == [{"11": 1}]
 
-    result = service.run(
-        circuit=circuit,
+    results = service.run(
+        circuits=circuit,
         repetitions=4,
         target="ibmq_qasm_simulator",
         param_resolver=params,
     )
-    assert result.histogram(key="a") == collections.Counter({3: 1})
+    assert results[0].histogram(key="a") == collections.Counter({3: 1})
 
 
 def test_service_sampler() -> None:
