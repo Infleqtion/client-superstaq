@@ -125,8 +125,8 @@ def test_get_meas_bit_info(backend: qss.SuperstaqBackend) -> None:
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
     ):
-        returned_meas_list = job._get_meas_bit_info([])
-        assert returned_meas_list == [[0, 1]]
+        returned_meas_list = job._get_meas_bit_info()[0]
+        assert returned_meas_list == [0, 1]
 
 
 def test_check_if_stopped(backend: qss.SuperstaqBackend) -> None:
