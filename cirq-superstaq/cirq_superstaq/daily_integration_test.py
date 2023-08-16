@@ -258,7 +258,7 @@ def test_job(service: css.Service) -> None:
 
     job_id = job.job_id()  # To test for https://github.com/Infleqtion/client-superstaq/issues/452
 
-    assert job.counts() == {"0": 10}
+    assert job.counts() == [{"0": 10}]
     assert job.status() == "Done"
     assert job.job_id() == job_id
 
@@ -267,7 +267,7 @@ def test_job(service: css.Service) -> None:
     job._job["status"] = "Running"
 
     # State retrieved from the server should be the same:
-    assert job.counts() == {"0": 10}
+    assert job.counts() == [{"0": 10}]
     assert job.status() == "Done"
     assert job.job_id() == job_id
 
@@ -281,4 +281,4 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
     circuit = cirq.Circuit(cirq.X(q0), cirq.CNOT(q0, q1), cirq.measure(q0, q1))
 
     job = service.create_job(circuits=circuit, repetitions=1, target=target)
-    assert job.counts() == {"11": 1}
+    assert job.counts() == [{"11": 1}]
