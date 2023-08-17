@@ -194,9 +194,6 @@ def test_service_create_job() -> None:
     assert create_job_kwargs["method"] == "fake_method"
     assert create_job_kwargs["fake_data"] == ""
 
-    with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
-        service.create_job(cirq.Circuit())
-
 
 def test_service_get_balance() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")

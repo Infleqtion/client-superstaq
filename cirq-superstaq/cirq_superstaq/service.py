@@ -263,16 +263,8 @@ class Service(gss.service.Service):
             ValueError: If there are no measurements in `circuits`.
             SuperstaqServerException: If there was an error accessing the API.
         """
-        css.validation.validate_cirq_circuits(circuits)
-        circuit_list = [circuits] if isinstance(circuits, cirq.Circuit) else circuits
-
-        for circuit in circuit_list:
-            if isinstance(circuit, cirq.Circuit) and not circuit.has_measurements():
-                # TODO: only raise if the run method actually requires samples (and not for e.g. a
-                # statevector simulation)
-                raise ValueError("Circuit has no measurements to sample.")
-
-        serialized_circuits = css.serialization.serialize_circuits(circuit_list)
+        css.validation.validate_cirq_circuits(circuits, check_meas=True)
+        serialized_circuits = css.serialization.serialize_circuits(circuits)
 
         target = self._resolve_target(target)
 
@@ -284,7 +276,7 @@ class Service(gss.service.Service):
             **kwargs,
         )
         # Make a virtual job_id that aggregates all of the individual jobs
-        # into a single one, that comma-separates the individual jobs:
+        # into a single one that comma-separates the individual jobs.
         job_id = ",".join(result["job_ids"])
 
         # The returned job does not have fully populated fields; they will be filled out by
