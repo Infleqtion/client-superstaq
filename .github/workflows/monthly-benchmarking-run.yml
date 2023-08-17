@@ -1,0 +1,26 @@
+name: Monthly benchmarking run
+
+on:
+  schedule:
+    - cron: "0 12 */31,1-7 * 1" # Every first monday of the month at 12
+  workflow_dispatch:  # So that we can also run manually, e.g. for testing
+
+jobs:
+  run-supermarq:
+    runs-on: ubuntu-latest
+    env:
+      SUPERSTAQ_API_KEY : ${{ secrets.SUPERSTAQ_API_KEY }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ./general-superstaq[dev] ./qiskit-superstaq[dev] ./cirq-superstaq[dev]
+          pip install ./supermarq-benchmarks[dev]
+      - name: Run benchmarks
+        run: |
+          python supermarq-benchmarks/supermarq/run_benchmarks.py

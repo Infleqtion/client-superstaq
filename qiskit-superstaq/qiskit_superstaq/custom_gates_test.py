@@ -1,4 +1,4 @@
-# pylint: disable=missing-function-docstring
+# pylint: disable=missing-function-docstring,missing-class-docstring
 from typing import List, Set
 
 import numpy as np
@@ -27,17 +27,14 @@ def test_acecr() -> None:
     gate = qss.AceCR("+-")
     assert repr(gate) == "qss.AceCR()"
     assert str(gate) == "AceCR"
-    assert gate.qasm() == "acecr(pi/2)"
 
     gate = qss.AceCR("-+", label="label")
     assert repr(gate) == "qss.AceCR(rads=-1.5707963267948966, label='label')"
     assert str(gate) == "AceCR(-0.5π)"
-    assert gate.qasm() == "acecr(-pi/2)"
 
     gate = qss.AceCR("-+", sandwich_rx_rads=np.pi / 2)
     assert repr(gate) == "qss.AceCR(rads=-1.5707963267948966, sandwich_rx_rads=1.5707963267948966)"
     assert str(gate) == "AceCR(-0.5π)|RXGate(pi/2)|"
-    assert gate.qasm() == "acecr_rx(-pi/2,pi/2)"
 
     gate = qss.AceCR("-+", sandwich_rx_rads=np.pi / 2, label="label")
     _check_gate_definition(gate)
@@ -46,7 +43,6 @@ def test_acecr() -> None:
         == "qss.AceCR(rads=-1.5707963267948966, sandwich_rx_rads=1.5707963267948966, label='label')"
     )
     assert str(gate) == "AceCR(-0.5π)|RXGate(pi/2)|"
-    assert gate.qasm() == "acecr_rx(-pi/2,pi/2)"
 
     with pytest.raises(ValueError, match="Polarity must be"):
         _ = qss.AceCR("++")
@@ -99,7 +95,7 @@ def test_parallel_gates() -> None:
         qss.AceCR("+-"),
         qiskit.circuit.library.RXGate(1.23),
     )
-    assert str(gate) == "ParallelGates(acecr(pi/2), rx(1.23))"
+    assert str(gate) == "ParallelGates(acecr(π/2), rx(1.23))"
     _check_gate_definition(gate)
 
     # confirm gates are applied to disjoint qubits

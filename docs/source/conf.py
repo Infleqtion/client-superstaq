@@ -15,8 +15,8 @@ sys.path.insert(0, os.path.abspath("../.."))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "docs-superstaq"
-copyright = "2022, Super.tech"  # pylint: disable=redefined-builtin
-author = "Super.tech"
+copyright = "2023, ColdQuanta, Inc., DBA Infleqtion"  # pylint: disable=redefined-builtin
+author = "ColdQuanta, Inc., DBA Infleqtion"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -59,8 +59,8 @@ html_static_path = ["_static"]
 html_theme_options = {
     "logo_only": True,
 }
-html_logo = "_static/logos/superstaq-logo-v3.png"
+html_logo = "_static/logos/Superstaq_color.png"
 html_css_files = [
     "css/docs-superstaq.css",
 ]
-html_favicon = "_static/logos/superstaq-favicon.png"
+html_favicon = "_static/logos/Infleqtion_logo.png"
