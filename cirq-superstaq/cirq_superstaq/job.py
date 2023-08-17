@@ -160,17 +160,16 @@ class Job:
 
         return self._job[self._job_id.split(",")[0]]["target"]
 
-    def num_qubits(self) -> Dict[str, Dict[str, int]]:
-        """Gets the number of qubits required for this job.
+    def num_qubits(self) -> List[int]:
+        """Gets the number of qubits required for each circuit in this job.
 
         Returns:
-            The number of qubits used in this job.
+            A list of the number of qubits used for each circuit in this job.
 
         Raises:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
             SuperstaqServerException: If unable to get the status of the job from the API.
         """
-        qubit_list = {}
         job_ids = self._job_id.split(",")
 
         if not all(
@@ -178,11 +177,7 @@ class Job:
         ):
             self._refresh_job()
 
-        qubit_list.update(
-            {job_id: {"num_qubits": self._job[job_id]["num_qubits"]} for job_id in job_ids}
-        )
-
-        return qubit_list
+        return [self._job[job_id]["num_qubits"] for job_id in job_ids]
 
     def repetitions(self) -> int:
         """Gets the number of repetitions requested for this job.

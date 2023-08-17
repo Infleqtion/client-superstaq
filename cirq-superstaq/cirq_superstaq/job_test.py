@@ -69,7 +69,7 @@ def test_job_fields(job: css.job.Job) -> None:
 
     with mocked_get_job_requests(job_dict) as mocked_get_job:
         assert job.target() == "ss_unconstrained_simulator"
-        assert job.num_qubits() == {"job_id": {"num_qubits": 2}}
+        assert job.num_qubits() == [2]
         assert job.repetitions() == 1
         assert job.compiled_circuits()[0] == compiled_circuit
         mocked_get_job.assert_called_once()  # Only refreshed once
@@ -92,11 +92,11 @@ def test_num_qubits(job: css.job.Job) -> None:
 
     # The first call will trigger a refresh:
     with mocked_get_job_requests(job_dict) as mocked_get_job:
-        assert job.num_qubits() == {"job_id": {"num_qubits": 2}}
+        assert job.num_qubits() == [2]
         mocked_get_job.assert_called_once()
 
     # Shouldn't need to retrieve anything now that `job._job` is populated:
-    assert job.num_qubits() == {"job_id": {"num_qubits": 2}}
+    assert job.num_qubits() == [2]
 
 
 def test_repetitions(job: css.job.Job) -> None:
