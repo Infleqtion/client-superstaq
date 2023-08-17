@@ -248,7 +248,7 @@ def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvi
     assert job.result().get_counts() == {"11": 1}
 
 
-def test_submit_qubo(provider: qss.superstaq_provider.SuperstaQProvider) -> None:
+def test_submit_qubo(provider: qss.SuperstaQProvider) -> None:
     test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
     serialized_result = provider.submit_qubo(
         test_qubo, target="toshiba_bifurcation_qpu", method="dry-run"
