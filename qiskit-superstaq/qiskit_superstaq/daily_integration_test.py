@@ -2,12 +2,12 @@
 # pylint: disable=missing-function-docstring
 import os
 
+import general_superstaq as gss
 import numpy as np
 import pytest
 import qiskit
 from general_superstaq import ResourceEstimate, SuperstaQException
 
-import general_superstaq as gss
 import qiskit_superstaq as qss
 
 

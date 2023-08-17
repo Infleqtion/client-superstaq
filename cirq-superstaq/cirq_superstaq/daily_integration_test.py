@@ -4,11 +4,11 @@
 import os
 
 import cirq
+import general_superstaq as gss
 import pytest
 from general_superstaq import ResourceEstimate, SuperstaQException
 
 import cirq_superstaq as css
-import general_superstaq as gss
 
 
 @pytest.fixture
