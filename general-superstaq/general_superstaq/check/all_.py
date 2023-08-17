@@ -17,12 +17,17 @@ from general_superstaq.check import (
 )
 
 
-def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
+def run(
+    *args: str,
+    sphinx_paths: Optional[List[str]] = None,
+    skip: Optional[List[str]] = None,
+) -> int:
     """Runs all checks on the repository.
 
     Args:
         *args: Command line arguments.
         sphinx_paths: List of sphinx paths strings (used for building docs).
+        skip: List of checks to skip.
 
     Returns:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
@@ -61,24 +66,33 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
 
     args_to_pass = [arg for arg in args if arg not in ("-f", "-F", "--force")]
 
+    skip = skip or []
+
     # run formatting checks
     # silence most checks to avoid printing duplicate info about incremental files
     # silencing does not affect warnings and errors
     exit_on_failure = not (parsed_args.force_formats or parsed_args.force_all)
-    checks_failed |= configs.run(exit_on_failure=exit_on_failure, silent=True)
-    checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
-    checks_failed |= flake8_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
-    checks_failed |= pylint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+    if "configs" not in skip:
+        checks_failed |= configs.run(exit_on_failure=exit_on_failure, silent=True)
+    if "format" not in skip:
+        checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+    if "flake8" not in skip:
+        checks_failed |= flake8_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+    if "pylint" not in skip:
+        checks_failed |= pylint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 
     # run typing and coverage checks
     exit_on_failure = not parsed_args.force_all
-    checks_failed |= mypy_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
-    checks_failed |= coverage_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+    if "mypy" not in skip:
+        checks_failed |= mypy_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+    if "coverage" not in skip:
+        checks_failed |= coverage_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 
     # check that all pip requirements files are in order
-    checks_failed |= requirements.run(exit_on_failure=exit_on_failure)
+    if "requirements" not in skip:
+        checks_failed |= requirements.run(exit_on_failure=exit_on_failure)
 
-    if default_mode:
+    if default_mode and "build_docs" not in skip:
         # checks that the docs build
         checks_failed |= build_docs.run(exit_on_failure=exit_on_failure, sphinx_paths=sphinx_paths)
 
