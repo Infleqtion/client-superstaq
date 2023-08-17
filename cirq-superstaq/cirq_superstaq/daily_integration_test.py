@@ -8,6 +8,7 @@ import pytest
 from general_superstaq import ResourceEstimate, SuperstaQException
 
 import cirq_superstaq as css
+import general_superstaq as gss
 
 
 @pytest.fixture
@@ -279,3 +280,13 @@ def test_submit_to_cq_hilbert_simulator(service: css.Service) -> None:
 
     job = service.create_job(circuit=circuit, repetitions=1, target="cq_hilbert_simulator")
     assert job.counts() == {"11": 1}
+
+
+def test_submit_qubo(provider: css.superstaq_provider.SuperstaQProvider) -> None:
+    test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
+    serialized_result = provider.submit_qubo(
+        test_qubo, target="toshiba_bifurcation_qpu", method="dry-run"
+    )
+    result = gss.qubo.read_json_qubo_result(serialized_result)
+    best_result = result[0]
+    assert best_result == {0: 1, 1: 0, 2: 1}
