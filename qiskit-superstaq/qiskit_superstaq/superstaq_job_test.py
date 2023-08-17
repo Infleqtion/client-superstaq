@@ -85,7 +85,7 @@ def test_result(backend: qss.SuperstaqBackend) -> None:
         assert ans.job_id == expected.job_id
 
 
-def test_arranged_counts(backend: qss.SuperstaqBackend) -> None:
+def test_counts_arranged(backend: qss.SuperstaqBackend) -> None:
     qc1 = qiskit.QuantumCircuit(qiskit.QuantumRegister(4), qiskit.ClassicalRegister(4))
     qc1.measure([2, 3], [2, 3])
     qc2 = qiskit.QuantumCircuit(qiskit.QuantumRegister(5), qiskit.ClassicalRegister(5))
@@ -106,7 +106,6 @@ def test_arranged_counts(backend: qss.SuperstaqBackend) -> None:
         "input_circuit": qss.serialization.serialize_circuits(qc2),
         "compiled_circuit": qss.serialization.serialize_circuits(qc2),
     }
-
     counts = job.result().get_counts()
     assert counts == [{"0000": 70, "1100": 30}, {"10011": 40, "10000": 60}]
 
@@ -125,8 +124,34 @@ def test_get_meas_bit_info(backend: qss.SuperstaqBackend) -> None:
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
     ):
-        returned_meas_list = job._get_meas_bit_info()[0]
+        returned_meas_list = job._get_meas_bit_info(index=0)
         assert returned_meas_list == [0, 1]
+
+
+def test_get_num_clbits(backend: qss.SuperstaqBackend) -> None:
+    response = mock_response("Done")
+    qc = qiskit.QuantumCircuit(1, 2)
+    qc.h(0)
+    qc.measure(0, 0)
+    response["input_circuit"] = qss.serialize_circuits(qc)
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
+    ):
+        assert job._get_num_clbits(index=0) == 2
+
+
+def test_arrange_counts(backend: qss.SuperstaqBackend) -> None:
+    sample_counts = {"011": 100, "001": 25, "111": 100, "101": 25}
+    sample_meas_bit_indices = [0, 2, 4]
+    sample_num_clbits = 5
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc")
+    assert job._arrange_counts(sample_counts, sample_meas_bit_indices, sample_num_clbits) == {
+        "00101": 100,
+        "00001": 25,
+        "10101": 100,
+        "10001": 25,
+    }
 
 
 def test_check_if_stopped(backend: qss.SuperstaqBackend) -> None:
