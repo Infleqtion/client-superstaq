@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=missing-function-docstring
+# pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
 from typing import Any, Dict
@@ -26,7 +26,7 @@ import cirq_superstaq as css
 
 @pytest.fixture
 def job() -> css.Job:
-    client = gss.superstaq_client._SuperstaQClient(
+    client = gss.superstaq_client._SuperstaqClient(
         client_name="cirq-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -35,7 +35,7 @@ def job() -> css.Job:
 
 
 def new_job() -> css.Job:
-    client = gss.superstaq_client._SuperstaQClient(
+    client = gss.superstaq_client._SuperstaqClient(
         client_name="cirq-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -49,11 +49,12 @@ def mocked_get_job_requests(*job_dicts: Dict[str, Any]) -> mock._patch[mock.Mock
     is thrown at runtime
     """
     return mock.patch(
-        "general_superstaq.superstaq_client._SuperstaQClient.get_job", side_effect=job_dicts
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", side_effect=job_dicts
     )
 
 
 def test_job_fields(job: css.job.Job) -> None:
+    compiled_circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
     job_dict = {
         "data": {"histogram": {"11": 1}},
         "num_qubits": 2,
@@ -61,17 +62,87 @@ def test_job_fields(job: css.job.Job) -> None:
         "shots": 1,
         "status": "Done",
         "target": "ss_unconstrained_simulator",
+        "compiled_circuit": css.serialize_circuits(compiled_circuit),
     }
 
-    with mocked_get_job_requests(job_dict):
-        assert job.job_id() == "job_id"
+    assert job.job_id() == "job_id"
+
+    with mocked_get_job_requests(job_dict) as mocked_get_job:
         assert job.target() == "ss_unconstrained_simulator"
         assert job.num_qubits() == 2
         assert job.repetitions() == 1
+        assert job.compiled_circuit() == compiled_circuit
+        mocked_get_job.assert_called_once()  # Only refreshed once
+
+
+def test_target(job: css.job.Job) -> None:
+    job_dict = {"status": "Done", "target": "ss_unconstrained_simulator"}
+
+    # The first call will trigger a refresh:
+    with mocked_get_job_requests(job_dict) as mocked_get_job:
+        assert job.target() == "ss_unconstrained_simulator"
+        mocked_get_job.assert_called_once()
+
+    # Shouldn't need to retrieve anything now that `job._job` is populated:
+    assert job.target() == "ss_unconstrained_simulator"
+
+
+def test_num_qubits(job: css.job.Job) -> None:
+    job_dict = {"status": "Done", "num_qubits": 2}
+
+    # The first call will trigger a refresh:
+    with mocked_get_job_requests(job_dict) as mocked_get_job:
+        assert job.num_qubits() == 2
+        mocked_get_job.assert_called_once()
+
+    # Shouldn't need to retrieve anything now that `job._job` is populated:
+    assert job.num_qubits() == 2
+
+
+def test_repetitions(job: css.job.Job) -> None:
+    job_dict = {"status": "Done", "shots": 1}
+
+    # The first call will trigger a refresh:
+    with mocked_get_job_requests(job_dict) as mocked_get_job:
+        assert job.repetitions() == 1
+        mocked_get_job.assert_called_once()
+
+    # Shouldn't need to retrieve anything now that `job._job` is populated:
+    assert job.repetitions() == 1
+
+
+def test_compiled_circuit(job: css.job.Job) -> None:
+    compiled_circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
+    job_dict = {"status": "Done", "compiled_circuit": css.serialize_circuits(compiled_circuit)}
+
+    # The first call will trigger a refresh:
+    with mocked_get_job_requests(job_dict) as mocked_get_job:
+        assert job.compiled_circuit() == compiled_circuit
+        mocked_get_job.assert_called_once()
+
+    # Shouldn't need to retrieve anything now that `job._job` is populated:
+    assert job.compiled_circuit() == compiled_circuit
+
+
+def test_input_circuit(job: css.job.Job) -> None:
+    input_circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
+    job_dict = {
+        "status": "Done",
+        "input_circuit": css.serialize_circuits(input_circuit),
+        "compiled_circuit": css.serialize_circuits(input_circuit),
+    }
+
+    # The first call will trigger a refresh:
+    with mocked_get_job_requests(job_dict) as mocked_get_job:
+        assert job.input_circuit() == input_circuit
+        mocked_get_job.assert_called_once()
+
+    # Shouldn't need to retrieve anything now that `job._job` is populated:
+    assert job.input_circuit() == input_circuit
 
 
 def test_job_status_refresh() -> None:
-    completed_job_dict = {"status": "completed"}
+    completed_job_dict = {"status": "Done"}
 
     for status in css.Job.NON_TERMINAL_STATES:
         job_dict = {"status": status}
@@ -79,7 +150,7 @@ def test_job_status_refresh() -> None:
         with mocked_get_job_requests(job_dict, completed_job_dict) as mocked_request:
             job = new_job()
             assert job.status() == status
-            assert job.status() == "completed"
+            assert job.status() == "Done"
             assert mocked_request.call_count == 2
             mocked_request.assert_called_with("new_job_id")
 
@@ -108,6 +179,19 @@ def test_job_str_repr_eq(job: css.job.Job) -> None:
     assert not job == 1
 
 
+def test_job_to_dict(job: css.job.Job) -> None:
+    job_dict = {
+        "data": {"histogram": {"11": 1}},
+        "num_qubits": 2,
+        "samples": {"11": 1},
+        "shots": 1,
+        "status": "Done",
+        "target": "ss_unconstrained_simulator",
+    }
+    with mocked_get_job_requests(job_dict):
+        assert job.to_dict() == job_dict
+
+
 def test_job_counts(job: css.job.Job) -> None:
     job_dict = {
         "data": {"histogram": {"11": 1}},
@@ -132,7 +216,7 @@ def test_job_counts_failed(job: css.job.Job) -> None:
         "target": "ss_unconstrained_simulator",
     }
     with mocked_get_job_requests(job_dict):
-        with pytest.raises(RuntimeError, match="too many qubits"):
+        with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="too many qubits"):
             _ = job.counts()
         assert job.status() == "Failed"
 
@@ -140,7 +224,7 @@ def test_job_counts_failed(job: css.job.Job) -> None:
 @mock.patch("time.sleep", return_value=None)
 def test_job_counts_poll(mock_sleep: mock.MagicMock, job: css.job.Job) -> None:
     ready_job = {
-        "status": "ready",
+        "status": "Ready",
     }
     completed_job = {
         "data": {"histogram": {"11": 1}},
@@ -159,43 +243,30 @@ def test_job_counts_poll(mock_sleep: mock.MagicMock, job: css.job.Job) -> None:
 
 
 @mock.patch("time.sleep", return_value=None)
-def test_job_counts_poll_timeout(mock_sleep: mock.MagicMock, job: css.job.Job) -> None:
+@mock.patch("time.time", side_effect=range(20))
+def test_job_counts_poll_timeout(
+    mock_time: mock.MagicMock, mock_sleep: mock.MagicMock, job: css.job.Job
+) -> None:
     ready_job = {
-        "status": "ready",
+        "status": "Ready",
     }
     with mocked_get_job_requests(*[ready_job] * 20):
-        with pytest.raises(RuntimeError, match="ready"):
+        with pytest.raises(TimeoutError, match="Ready"):
             _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
     assert mock_sleep.call_count == 11
 
 
 @mock.patch("time.sleep", return_value=None)
-def test_job_results_poll_timeout_with_error_message(
-    mock_sleep: mock.MagicMock, job: css.job.Job
-) -> None:
-    ready_job = {
-        "status": "failure",
+def test_job_results_poll_failure(mock_sleep: mock.MagicMock, job: css.job.Job) -> None:
+    running_job = {
+        "status": "Running",
+    }
+    failed_job = {
+        "status": "Failed",
         "failure": {"error": "too many qubits"},
     }
-    with mocked_get_job_requests(*[ready_job] * 20):
-        with pytest.raises(RuntimeError, match="too many qubits"):
+
+    with mocked_get_job_requests(*[running_job] * 5, failed_job):
+        with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="too many qubits"):
             _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
-    assert mock_sleep.call_count == 11
-
-
-def test_job_fields_unsuccessful(job: css.job.Job) -> None:
-    job_dict = {
-        "data": {"histogram": {"11": 1}},
-        "num_qubits": 2,
-        "samples": {"11": 1},
-        "shots": 1,
-        "status": "Deleted",
-        "target": "ss_unconstrained_simulator",
-    }
-    with mocked_get_job_requests(job_dict):
-        with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match="Deleted"):
-            _ = job.target()
-        with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match="Deleted"):
-            _ = job.num_qubits()
-        with pytest.raises(gss.SuperstaQUnsuccessfulJobException, match="Deleted"):
-            _ = job.repetitions()
+    assert mock_sleep.call_count == 5

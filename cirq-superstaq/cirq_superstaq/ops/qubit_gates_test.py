@@ -1,10 +1,9 @@
-# pylint: disable=missing-function-docstring
+# pylint: disable=missing-function-docstring,missing-class-docstring
 import itertools
 import textwrap
 
 import cirq
 import numpy as np
-import packaging
 import pytest
 import sympy
 
@@ -790,14 +789,7 @@ def test_parallel_gates_equivalence_groups() -> None:
         _ = gate.qubit_index_to_equivalence_group_key(-1)
 
 
-@pytest.mark.skipif(
-    packaging.version.parse("0.14.0.dev20220126174724")
-    < packaging.version.parse(cirq.__version__)
-    < packaging.version.parse("0.15.0.dev20220420201205"),
-    reason="https://github.com/quantumlib/Cirq/issues/5148",
-)
-def test_parallel_gates_equivalence_groups_nonadjacent() -> None:  # pragma: no cover
-    """Fails in cirq version 0.14.x due to https://github.com/quantumlib/Cirq/issues/5148"""
+def test_parallel_gates_equivalence_groups_nonadjacent() -> None:
     qubits = cirq.LineQubit.range(4)
     gate = css.ParallelGates(cirq.X, css.ZZSwapGate(1.23), cirq.X)
     assert [gate.qubit_index_to_equivalence_group_key(i) for i in range(4)] == [0, 1, 1, 0]

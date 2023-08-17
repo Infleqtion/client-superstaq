@@ -52,6 +52,14 @@ cirq\_superstaq.service module
    :undoc-members:
    :show-inheritance:
 
+cirq\_superstaq.validation module
+---------------------------------
+
+.. automodule:: cirq_superstaq.validation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

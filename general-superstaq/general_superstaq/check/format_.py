@@ -9,12 +9,23 @@ from general_superstaq.check import check_utils
 
 
 @check_utils.enable_exit_on_failure
-def run(  # pylint: disable=missing-function-docstring
+def run(
     *args: str,
     include: Union[str, Iterable[str]] = ("*.py", "*.ipynb"),
     exclude: Union[str, Iterable[str]] = (),
     silent: bool = False,
 ) -> int:
+    """Runs black and isort on the repository (formatting check).
+
+    Args:
+        *args: Command line arguments.
+        include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
+        exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
+        silent: If True, restrict printing to warning and error messages.
+
+    Returns:
+        Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
+    """
 
     parser = check_utils.get_file_parser()
     parser.description = textwrap.dedent(
@@ -31,8 +42,11 @@ def run(  # pylint: disable=missing-function-docstring
         return 0
 
     diff_check_args = ["--diff", "--check"] if not parsed_args.apply else []
+
+    args_to_pass_black = ["--config", "pyproject.toml"]
     returncode_black = subprocess.call(
-        ["black", *files, *diff_check_args], cwd=check_utils.root_dir
+        ["python", "-m", "black", *files, *diff_check_args, *args_to_pass_black],
+        cwd=check_utils.root_dir,
     )
 
     if returncode_black > 1:
@@ -41,7 +55,8 @@ def run(  # pylint: disable=missing-function-docstring
 
     args_to_pass_isort += ["--resolve-all-configs", f"--config-root={check_utils.root_dir}"]
     returncode_isort = subprocess.call(
-        ["isort", *files, *diff_check_args, *args_to_pass_isort], cwd=check_utils.root_dir
+        ["python", "-m", "isort", *files, *diff_check_args, *args_to_pass_isort],
+        cwd=check_utils.root_dir,
     )
 
     if returncode_black == 1 or returncode_isort == 1:

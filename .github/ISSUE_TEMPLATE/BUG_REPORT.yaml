@@ -32,7 +32,7 @@ body:
     attributes:
       label: Environment
       value: |
-        - **SuperstaQ version**: 
+        - **Superstaq version**: 
         - **general-superstaq version**: 
         - **cirq-superstaq version**: 
         - **qiskit-superstaq version**: 

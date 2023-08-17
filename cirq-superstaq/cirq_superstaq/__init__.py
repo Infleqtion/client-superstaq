@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cirq_superstaq import compiler_output
+from cirq_superstaq import compiler_output, validation
 from cirq_superstaq._version import __version__
 from cirq_superstaq.compiler_output import active_qubit_indices, measured_qubit_indices
 from cirq_superstaq.job import Job
@@ -101,10 +101,9 @@ __all__ = [
     "barrier",
     "compiler_output",
     "deserialize_circuits",
-    "ops",
     "parallel_gates_operation",
     "qubit_subspace_op",
     "qudit_swap_op",
-    "serialization",
     "serialize_circuits",
+    "validation",
 ]

@@ -1,12 +1,13 @@
+# pylint: disable=missing-function-docstring,missing-class-docstring
 """Integration checks that run daily (via Github action) between client and prod server."""
-# pylint: disable=missing-function-docstring
+
 
 import os
 
 import cirq
 import general_superstaq as gss
 import pytest
-from general_superstaq import ResourceEstimate, SuperstaQException
+from general_superstaq import ResourceEstimate, SuperstaqServerException
 
 import cirq_superstaq as css
 
@@ -81,14 +82,12 @@ def test_aqt_compile_eca(service: css.Service) -> None:
         cirq.CX(cirq.LineQubit(4), cirq.LineQubit(5)) ** 0.7,
     )
 
-    eca_circuits = service.aqt_compile_eca(
-        circuit, num_equivalent_circuits=3, random_seed=123
-    ).circuits
+    eca_circuits = service.aqt_compile(circuit, num_eca_circuits=3, random_seed=123).circuits
     assert len(eca_circuits) == 3
     assert all(isinstance(circuit, cirq.Circuit) for circuit in eca_circuits)
 
     # multiple circuits:
-    eca_circuits = service.aqt_compile_eca([circuit, circuit], num_equivalent_circuits=3).circuits
+    eca_circuits = service.aqt_compile([circuit, circuit], num_eca_circuits=3).circuits
     assert len(eca_circuits) == 2
     for circuits in eca_circuits:
         assert len(circuits) == 3
@@ -101,17 +100,13 @@ def test_aqt_compile_eca_regression(service: css.Service) -> None:
         cirq.H(cirq.LineQubit(4)),
         cirq.CX(cirq.LineQubit(4), cirq.LineQubit(5)) ** 0.7,
     )
-    eca_circuits = service.aqt_compile_eca(
-        circuit, num_equivalent_circuits=3, random_seed=123
-    ).circuits
+    eca_circuits = service.aqt_compile(circuit, num_eca_circuits=3, random_seed=123).circuits
     # test with same and different seed
     assert (
-        eca_circuits
-        == service.aqt_compile_eca(circuit, num_equivalent_circuits=3, random_seed=123).circuits
+        eca_circuits == service.aqt_compile(circuit, num_eca_circuits=3, random_seed=123).circuits
     )
     assert (
-        eca_circuits
-        != service.aqt_compile_eca(circuit, num_equivalent_circuits=3, random_seed=456).circuits
+        eca_circuits != service.aqt_compile(circuit, num_eca_circuits=3, random_seed=456).circuits
     )
 
 
@@ -150,15 +145,8 @@ def test_ibmq_set_token(service: css.Service) -> None:
 
     assert service.ibmq_set_token(ibmq_token) == "Your IBMQ account token has been updated"
 
-    with pytest.raises(SuperstaQException, match="IBMQ token is invalid."):
+    with pytest.raises(SuperstaqServerException, match="IBMQ token is invalid."):
         assert service.ibmq_set_token("INVALID_TOKEN")
-
-
-def test_tsp(service: css.Service) -> None:
-    cities = ["Chicago", "San Francisco", "New York City", "New Orleans"]
-    out = service.tsp(cities)
-    for city in cities:
-        assert city.replace(" ", "+") in out.map_link[0]
 
 
 def test_get_targets(service: css.Service) -> None:
@@ -170,20 +158,18 @@ def test_get_targets(service: css.Service) -> None:
 def test_qscout_compile(service: css.Service) -> None:
     q0, q1 = cirq.LineQubit.range(2)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
-    compiled_circuit = cirq.Circuit(
-        cirq.PhasedXPowGate(phase_exponent=-0.5, exponent=0.5).on(q0),
-        cirq.Z(q0) ** -1.0,
-        cirq.measure(q0),
-    )
 
     out = service.qscout_compile(circuit)
     cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
-        out.circuit, compiled_circuit, atol=1e-08
+        out.circuit, circuit, atol=1e-08
     )
     assert isinstance(out.jaqal_program, str)
     assert "measure_all" in out.jaqal_program
 
-    cx_circuit = cirq.Circuit(cirq.H(q0), cirq.CX(q0, q1), cirq.measure(q0, q1))
+    assert service.qscout_compile([circuit]).circuits == [out.circuit]
+    assert service.qscout_compile([circuit, circuit]).circuits == [out.circuit, out.circuit]
+
+    cx_circuit = cirq.Circuit(cirq.H(q0), cirq.CX(q0, q1) ** 0.5, cirq.measure(q0, q1))
     out = service.qscout_compile([cx_circuit])
     assert isinstance(out.circuits[0], cirq.Circuit)
     cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
@@ -252,11 +238,26 @@ def test_supercheq(service: css.Service) -> None:
     assert fidelities.shape == (32, 32)
 
 
+def test_dfe(service: css.Service) -> None:
+    circuit = cirq.Circuit(cirq.H(cirq.q(0)))
+    target = "ss_unconstrained_simulator"
+    ids = service.submit_dfe(
+        rho_1=(circuit, target),
+        rho_2=(circuit, target),
+        num_random_bases=5,
+        shots=1000,
+    )
+    assert len(ids) == 2
+
+    result = service.process_dfe(ids)
+    assert isinstance(result, float)
+
+
 def test_job(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
     job = service.create_job(circuit, target="ibmq_qasm_simulator", repetitions=10)
 
-    job_id = job.job_id()  # To test for https://github.com/SupertechLabs/cirq-superstaq/issues/452
+    job_id = job.job_id()  # To test for https://github.com/Infleqtion/client-superstaq/issues/452
 
     assert job.counts() == {"0": 10}
     assert job.status() == "Done"
@@ -272,13 +273,15 @@ def test_job(service: css.Service) -> None:
     assert job.job_id() == job_id
 
 
-def test_submit_to_cq_hilbert_simulator(service: css.Service) -> None:
+@pytest.mark.parametrize(
+    "target", ["cq_hilbert_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
+)
+def test_submit_to_provider_simulators(target: str, service: css.Service) -> None:
     q0 = cirq.LineQubit(0)
     q1 = cirq.LineQubit(1)
-
     circuit = cirq.Circuit(cirq.X(q0), cirq.CNOT(q0, q1), cirq.measure(q0, q1))
 
-    job = service.create_job(circuit=circuit, repetitions=1, target="cq_hilbert_simulator")
+    job = service.create_job(circuit=circuit, repetitions=1, target=target)
     assert job.counts() == {"11": 1}
 
 

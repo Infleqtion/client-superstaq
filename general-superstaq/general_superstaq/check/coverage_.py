@@ -9,12 +9,23 @@ from general_superstaq.check import check_utils
 
 
 @check_utils.enable_exit_on_failure
-def run(  # pylint: disable=missing-function-docstring
+def run(
     *args: str,
     include: Union[str, Iterable[str]] = "*.py",
     exclude: Union[str, Iterable[str]] = "*_integration_test.py",
     silent: bool = False,
 ) -> int:
+    """Checks to make sure that all code is covered by unit tests.
+
+    Args:
+        *args: Command line arguments.
+        include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
+        exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
+        silent: If True, restrict printing to warning and error messages.
+
+    Returns:
+        Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
+    """
 
     parser = check_utils.get_file_parser()
     parser.description = textwrap.dedent(
@@ -43,12 +54,23 @@ def run(  # pylint: disable=missing-function-docstring
 
     coverage_arg = "--include=" + ",".join(files)
     test_returncode = subprocess.call(
-        ["coverage", "run", coverage_arg, "-m", "pytest", *test_files, *pytest_args],
+        [
+            "python",
+            "-m",
+            "coverage",
+            "run",
+            coverage_arg,
+            "-m",
+            "pytest",
+            *test_files,
+            *pytest_args,
+        ],
         cwd=check_utils.root_dir,
     )
 
     coverage_returncode = subprocess.call(
-        ["coverage", "report", "--precision=2"], cwd=check_utils.root_dir
+        ["python", "-m", "coverage", "report", "--precision=2"],
+        cwd=check_utils.root_dir,
     )
 
     if test_returncode:
