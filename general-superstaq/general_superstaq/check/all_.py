@@ -64,7 +64,7 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
     parser.add_argument(
         "--skip",
         choices=CHECK_LIST,
-        nargs="*",
+        nargs="+",
         action="extend",
         default=[],
         help="The checks to skip.",
