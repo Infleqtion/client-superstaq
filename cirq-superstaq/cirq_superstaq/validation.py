@@ -9,6 +9,7 @@ def validate_cirq_circuits(circuits: object, check_meas: Optional[bool] = False)
 
     Args:
         circuits: The circuit(s) to run.
+        check_meas: An optional boolean flag to check if all of the circuits have measurements.
 
     Raises:
         ValueError: If the input is not a `cirq.Circuit` or a list of `cirq.Circuit` instances.
