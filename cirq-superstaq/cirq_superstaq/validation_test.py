@@ -22,3 +22,6 @@ def test_validate_cirq_circuits() -> None:
         "sequence of `cirq.Circuit` instances.",
     ):
         css.validation.validate_cirq_circuits([circuit, "circuit_invalid"])
+
+    with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
+        css.validation.validate_cirq_circuits(circuit, check_meas=True)
