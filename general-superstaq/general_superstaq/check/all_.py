@@ -17,10 +17,22 @@ from general_superstaq.check import (
 )
 
 
+CHECK_TYPE = Literal[
+    "configs",
+    "format",
+    "flake8",
+    "pylint",
+    "mypy",
+    "coverage",
+    "requirements",
+    "build_docs",
+]
+
+
 def run(
     *args: str,
     sphinx_paths: Optional[List[str]] = None,
-    skip: Optional[List[str]] = None,
+    skip: Optional[List[CHECK_TYPE]] = None,
 ) -> int:
     """Runs all checks on the repository.
 
