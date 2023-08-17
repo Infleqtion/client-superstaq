@@ -372,13 +372,13 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         """Compiles and optimizes the given circuit(s) for CQ devices.
 
         Args:
-            circuits: The qiskit QuantumCircuit(s) to compile.
+            circuits: The `qiskit.QuantumCircuit`(s) to compile.
             grid_shape: Optional fixed dimensions for the rectangular qubit grid (by default the
                 actual qubit layout will be pulled from the hardware provider).
             kwargs: Other desired compile options.
 
         Returns:
-            An CQ `CompilerOutput` object.
+            A CQ `CompilerOutput` object.
 
         Raises:
             ValueError: If this is not a CQ backend.
