@@ -2,7 +2,7 @@
 
 import sys
 import textwrap
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from general_superstaq.check import (
     build_docs,
@@ -15,7 +15,6 @@ from general_superstaq.check import (
     pylint_,
     requirements,
 )
-
 
 CHECK_TYPE = Literal[
     "configs",
