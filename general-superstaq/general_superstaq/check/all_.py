@@ -65,6 +65,7 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
         "--skip",
         choices=CHECK_LIST,
         nargs="*",
+        action="extend",
         default=[],
         help="The checks to skip.",
     )
