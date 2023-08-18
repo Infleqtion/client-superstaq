@@ -1,15 +1,18 @@
 import re
+from typing import Optional
 
 
-def validate_integer_param(integer_param: object) -> None:
+def validate_integer_param(integer_param: object, allow_zero: Optional[bool] = False) -> None:
     """Validates that an input parameter is positive and an integer.
 
     Args:
         integer_param: An input parameter.
+        allow_zero: Optional boolean flag to check for non-negative values.
 
     Raises:
         TypeError: If input is not an integer.
-        ValueError: If input is negative.
+        ValueError: If input is not postive.
+        ValueError: If input is not non-negative and `allow_zero` = True.
     """
     if not (
         (hasattr(integer_param, "__int__") and int(integer_param) == integer_param)
@@ -17,12 +20,16 @@ def validate_integer_param(integer_param: object) -> None:
     ):
         raise TypeError(f"{integer_param} cannot be safely cast as an integer.")
 
-    if int(integer_param) <= 0:
-        raise ValueError("{integer_param} is not a positive integer.")
+    if allow_zero and (int(integer_param) < 0):
+        raise ValueError("{integer_param} is not a non-negative integer.")
+    else:
+        if int(integer_param) <= 0:
+            raise ValueError("{integer_param} is not a positive integer.")
 
 
 def validate_target(target: str) -> None:
     """Checks that a target contains a valid format, vendor prefix, and device type.
+
     Args:
         target: A string containing the name of a target device.
 
