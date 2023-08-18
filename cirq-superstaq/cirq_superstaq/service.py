@@ -223,15 +223,15 @@ class Service(gss.service.Service):
             A list of `cirq.ResultDict` objects for running the circuit(s).
         """
         circuit_list = [circuits] if isinstance(circuits, cirq.Circuit) else circuits
-        counts = self.get_counts(
+        job_counts = self.get_counts(
             circuit_list, repetitions, target, param_resolver, index, method, **kwargs
         )
 
         if index is not None:
-            counts = counts if isinstance(counts, Dict[str, int]) else counts[index]
+            counts = job_counts[index] if not isinstance(job_counts, Dict[str, int]) else job_counts
             return counts_to_results(counts, circuit_list[index], param_resolver)
         else:
-            counts_list = [counts] if isinstance(counts, Dict[str, int]) else counts
+            counts_list = [job_counts] if isinstance(job_counts, Dict[str, int]) else job_counts
             result_list = [
                 counts_to_results(counts_list[i], circuit_list[i], param_resolver)
                 for i in range(len(circuit_list))
@@ -246,7 +246,7 @@ class Service(gss.service.Service):
                 )
                 return result_list[0]
             else:
-                result_list
+                return result_list
 
     def sampler(self, target: Optional[str] = None) -> cirq.Sampler:
         """Returns a `cirq.Sampler` object for accessing sampler interface.

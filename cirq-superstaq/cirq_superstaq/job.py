@@ -241,7 +241,7 @@ class Job:
 
         serialized_circuits = (
             self._job[job_ids[index]][circuit_type]
-            if index
+            if index is not None
             else [self._job[job_id][circuit_type] for job_id in job_ids]
         )
         return (

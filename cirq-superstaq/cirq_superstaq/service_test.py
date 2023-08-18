@@ -118,8 +118,9 @@ def test_service_run_and_get_counts() -> None:
         repetitions=4,
         target="ibmq_qasm_simulator",
         param_resolver=params,
+        index=0,
     )
-    assert results[0].histogram(key="a") == collections.Counter({3: 1})
+    assert results.histogram(key="a") == collections.Counter({3: 1})
 
 
 def test_service_sampler() -> None:
