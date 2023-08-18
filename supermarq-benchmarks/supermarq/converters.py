@@ -20,7 +20,7 @@ def cirq_to_qiskit(circuit: cirq.Circuit) -> qiskit.circuit.QuantumCircuit:
 def compute_communication_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
     """Compute the program communication of the given quantum circuit.
 
-    Program communication = circuit's average qubit degree / degree of a complete graph
+    Program communication = circuit's average qubit degree / degree of a complete graph.
 
     Args:
         circuit: A quantum circuit.
@@ -35,7 +35,7 @@ def compute_communication_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) ->
     graph = nx.Graph()
     for op in dag.two_qubit_ops():
         q1, q2 = op.qargs
-        graph.add_edge(q1.index, q2.index)
+        graph.add_edge(circuit.find_bit(q1).index, circuit.find_bit(q2).index)
 
     degree_sum = sum([graph.degree(n) for n in graph.nodes])
 
@@ -45,7 +45,7 @@ def compute_communication_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) ->
 def compute_liveness_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
     """Compute the liveness of the given quantum circuit.
 
-    Liveness feature = sum of all entries in the liveness matrix / (num_qubits * depth)
+    Liveness feature = sum of all entries in the liveness matrix / (num_qubits * depth).
 
     Args:
         circuit: A quantum circuit.
@@ -63,7 +63,7 @@ def compute_liveness_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> floa
     for i, layer in enumerate(dag.layers()):
         for op in layer["partition"]:
             for qubit in op:
-                activity_matrix[qubit.index, i] = 1
+                activity_matrix[circuit.find_bit(qubit).index, i] = 1
 
     return np.sum(activity_matrix) / (num_qubits * dag.depth())
 
@@ -71,13 +71,13 @@ def compute_liveness_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> floa
 def compute_parallelism_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
     """Compute the parallelism of the given quantum circuit.
 
-    Parallelism feature = max(1 - depth / # of gates, 0)
+    Parallelism feature = max(1 - depth / # of gates, 0).
 
     Args:
         circuit: A quantum circuit.
 
     Returns:
-        The value of the parallelism feature for this circuit
+        The value of the parallelism feature for this circuit.
     """
     dag = qiskit.converters.circuit_to_dag(circuit)
     dag.remove_all_ops_named("barrier")
@@ -116,7 +116,8 @@ def compute_measurement_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> f
 def compute_entanglement_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
     """Compute the entanglement-ratio of the given quantum circuit.
 
-    Entanglement-ratio = ratio between # of 2-qubit gates and total number of gates in the circuit.
+    Entanglement-ratio = ratio between # of 2-qubit gates and total number of gates in the
+    circuit.
 
     Args:
         circuit: A quantum circuit.

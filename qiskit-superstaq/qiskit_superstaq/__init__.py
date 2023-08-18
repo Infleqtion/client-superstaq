@@ -1,10 +1,18 @@
-from . import compiler_output, serialization
+from . import compiler_output, serialization, validation
 from ._version import __version__
 from .compiler_output import active_qubit_indices, measured_qubit_indices
-from .custom_gates import AceCR, AQTiCCXGate, AQTiToffoliGate, ParallelGates, ZZSwapGate
-from .superstaq_backend import SuperstaQBackend
-from .superstaq_job import SuperstaQJob
-from .superstaq_provider import SuperstaQProvider
+from .custom_gates import (
+    AceCR,
+    AQTiCCXGate,
+    AQTiToffoliGate,
+    ParallelGates,
+    StrippedCZGate,
+    ZZSwapGate,
+)
+from .serialization import deserialize_circuits, serialize_circuits
+from .superstaq_backend import SuperstaqBackend
+from .superstaq_job import SuperstaqJob
+from .superstaq_provider import SuperstaqProvider
 
 __all__ = [
     "active_qubit_indices",
@@ -12,13 +20,16 @@ __all__ = [
     "AQTiCCXGate",
     "AQTiToffoliGate",
     "compiler_output",
-    "ITOFFOLIGate",
+    "deserialize_circuits",
     "measured_qubit_indices",
     "ParallelGates",
     "serialization",
-    "SuperstaQBackend",
-    "SuperstaQJob",
-    "SuperstaQProvider",
+    "serialize_circuits",
+    "StrippedCZGate",
+    "SuperstaqBackend",
+    "SuperstaqJob",
+    "SuperstaqProvider",
+    "validation",
     "ZZSwapGate",
     "__version__",
 ]
