@@ -567,11 +567,7 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
     )
 
     expected_json = {
-        "qubo": [
-            {"keys": ["0"], "value": 1.0},
-            {"keys": ["1"], "value": 1.0},
-            {"keys": ["0", "1"], "value": -2.0},
-        ],
+        "qubo": [((0,), 1.0), ((1,), 1.0), ((0, 1), -2.0)],
         "target": target,
         "shots": repetitions,
         "method": "dry-run",
