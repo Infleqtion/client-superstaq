@@ -285,9 +285,9 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
     assert job.counts() == {"11": 1}
 
 
-def test_submit_qubo(provider: css.Service) -> None:
+def test_submit_qubo(service: css.Service) -> None:
     test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
-    serialized_result = provider.submit_qubo(
+    serialized_result = service.submit_qubo(
         test_qubo, target="toshiba_bifurcation_qpu", method="dry-run"
     )
     result = gss.qubo.read_json_qubo_result(serialized_result)
