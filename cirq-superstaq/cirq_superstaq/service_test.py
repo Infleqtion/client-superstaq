@@ -109,8 +109,9 @@ def test_service_run_and_get_counts() -> None:
         repetitions=4,
         target="ibmq_qasm_simulator",
         param_resolver=params,
+        index=0,
     )
-    assert counts == [{"11": 1}]
+    assert counts == {"11": 1}
 
     results = service.run(
         circuits=circuit,
