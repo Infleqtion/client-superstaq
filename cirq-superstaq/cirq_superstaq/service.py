@@ -228,7 +228,7 @@ class Service(gss.service.Service):
         )
 
         if index:
-            return counts_to_results(counts[index], circuit_list[index], param_resolver)
+            return counts_to_results(counts, circuit_list[index], param_resolver)
         else:
             result_list = [
                 (counts[i], circuit_list[i], param_resolver) for i in range(len(circuit_list))

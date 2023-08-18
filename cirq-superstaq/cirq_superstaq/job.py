@@ -188,8 +188,9 @@ class Job:
             if len(qubit_list) == 1:
                 warnings.warn(
                     "In the future, calling `num_qubits()` without an argument will return a list "
-                    "of the numbers of qubits in all circuits in this job. Use e.g., `num_qubits(0)` "
-                    "to get the number of qubits in the first (or a single) circuit.",
+                    "of the numbers of qubits in all circuits in this job. Use e.g., "
+                    "`num_qubits(0)` to get the number of qubits in the first (or a single) "
+                    "circuit.",
                     DeprecationWarning,
                     stacklevel=2,
                 )
