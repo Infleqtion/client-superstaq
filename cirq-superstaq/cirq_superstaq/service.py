@@ -185,7 +185,7 @@ class Service(gss.service.Service):
             repetitions: The number of times to run the circuit(s).
             target: Where to run the job.
             param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuits`.
-            index: Optional parameter to get counts from the circuit with label `index`.
+            index: Optional parameter to get counts from the circuit with `index`.
             method: Optional execution method.
             kwargs: Other optimization and execution parameters.
 
@@ -203,9 +203,10 @@ class Service(gss.service.Service):
         repetitions: int,
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
+        index: Optional[int] = None,
         method: Optional[str] = None,
         **kwargs: Any,
-    ) -> List[cirq.ResultDict]:
+    ) -> Union[cirq.ResultDict, List[cirq.ResultDict]]:
         """Runs the given circuit(s) on the Superstaq API and returns the result of the circuit(s)
         ran as a `cirq.ResultDict`.
 
@@ -214,6 +215,7 @@ class Service(gss.service.Service):
             repetitions: The number of times to run the circuit(s).
             target: Where to run the job.
             param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuits`.
+            index: Optional parameter to get counts from the circuit with `index`.
             method: Execution method.
             kwargs: Other optimization and execution parameters.
 
@@ -222,12 +224,26 @@ class Service(gss.service.Service):
         """
         circuit_list = [circuits] if isinstance(circuits, cirq.Circuit) else circuits
         counts = self.get_counts(
-            circuit_list, repetitions, target, param_resolver, method, **kwargs
+            circuit_list, repetitions, target, param_resolver, index, method, **kwargs
         )
-        return [
-            counts_to_results(counts[index], circuit_list[index], param_resolver)
-            for index in range(len(circuit_list))
-        ]
+
+        if index:
+            return counts_to_results(counts[index], circuit_list[index], param_resolver)
+        else:
+            result_list = [
+                (counts[i], circuit_list[i], param_resolver) for i in range(len(circuit_list))
+            ]
+            if len(result_list) == 1:
+                warnings.warn(
+                    "In the future, calling `run()` without an index argument will return a "
+                    "list of results for all circuits in the job. Use e.g., `run(index=0)` "
+                    "to get the results for the first (or a single) circuit.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                return result_list[0]
+            else:
+                result_list
 
     def sampler(self, target: Optional[str] = None) -> cirq.Sampler:
         """Returns a `cirq.Sampler` object for accessing sampler interface.
