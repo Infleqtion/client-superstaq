@@ -187,9 +187,9 @@ class Job:
             qubit_list = [self._job[job_id]["num_qubits"] for job_id in job_ids]
             if len(qubit_list) == 1:
                 warnings.warn(
-                    "In the future, calling `num_qubits()` without an argument will return a list of the "
-                    "numbers of qubits in all circuits in this job. Use e.g., `num_qubits(0)` to get the "
-                    "number of qubits in the first (or a single) circuit.",
+                    "In the future, calling `num_qubits()` without an argument will return a list "
+                    "of the numbers of qubits in all circuits in this job. Use e.g., `num_qubits(0)` "
+                    "to get the number of qubits in the first (or a single) circuit.",
                     DeprecationWarning,
                     stacklevel=2,
                 )
@@ -313,8 +313,8 @@ class Job:
             counts_list = [self._job[job_id]["samples"] for job_id in self._job_id.split(",")]
             if len(counts_list) == 1:
                 warnings.warn(
-                    "In the future, calling `counts()` without an argument will return a list of the "
-                    "counts in all circuits in this job. Use e.g., `counts(0)` to get the "
+                    "In the future, calling `counts()` without an argument will return a list of "
+                    "the counts in all circuits in this job. Use e.g., `counts(0)` to get the "
                     "counts for the first (or a single) circuit.",
                     DeprecationWarning,
                     stacklevel=2,
