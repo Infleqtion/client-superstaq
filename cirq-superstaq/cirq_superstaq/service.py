@@ -173,9 +173,10 @@ class Service(gss.service.Service):
         repetitions: int,
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
+        index: Optional[int] = None,
         method: Optional[str] = None,
         **kwargs: Any,
-    ) -> List[Dict[str, int]]:
+    ) -> Union[Dict[str, int], List[Dict[str, int]]]:
         """Runs the given circuit(s) on the Superstaq API and returns the result of the circuit ran
         as a `collections.Counter`.
 
@@ -184,6 +185,7 @@ class Service(gss.service.Service):
             repetitions: The number of times to run the circuit(s).
             target: Where to run the job.
             param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuits`.
+            index: Optional parameter to get counts from the circuit with label `index`.
             method: Optional execution method.
             kwargs: Other optimization and execution parameters.
 
@@ -192,7 +194,7 @@ class Service(gss.service.Service):
         """
         resolved_circuit = cirq.protocols.resolve_parameters(circuits, param_resolver)
         job = self.create_job(resolved_circuit, int(repetitions), target, method, **kwargs)
-        counts = job.counts()
+        counts = job.counts(index=index)
         return counts
 
     def run(
