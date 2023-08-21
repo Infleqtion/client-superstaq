@@ -15,6 +15,7 @@ import contextlib
 import io
 import json
 import os
+from typing import Any, Dict
 from unittest import mock
 
 import pytest
@@ -152,13 +153,16 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
-    response = client.create_job(
-        serialized_circuits={"Hello": "World"},
-        repetitions=200,
-        target="ss_example_qpu",
-        method="dry-run",
-        qiskit_pulse=True,
-    )
+
+    with pytest.warns(DeprecationWarning):
+        response = client.create_job(
+            serialized_circuits={"Hello": "World"},
+            repetitions=200,
+            target="ss_example_qpu",
+            method="dry-run",
+            qiskit_pulse=True,
+            cq_token={"@type": "RefreshFlowState", "access_token": "123"},
+        )
     assert response == {"foo": "bar"}
 
     expected_json = {
@@ -166,7 +170,9 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         "target": "ss_example_qpu",
         "shots": 200,
         "method": "dry-run",
-        "options": json.dumps({"qiskit_pulse": True}),
+        "options": json.dumps(
+            {"qiskit_pulse": True, "cq_token": {"@type": "RefreshFlowState", "access_token": "123"}}
+        ),
     }
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/jobs",
@@ -298,9 +304,11 @@ def test_superstaq_client_get_job(mock_get: mock.MagicMock) -> None:
     )
     response = client.get_job(job_id="job_id")
     assert response == {"foo": "bar"}
-
+    options: Dict[str, Any] = {"options": {}}
     mock_get.assert_called_with(
-        f"http://example.com/{API_VERSION}/job/job_id", headers=EXPECTED_HEADERS, verify=False
+        f"http://example.com/{API_VERSION}/job/job_id/{json.dumps(options)}",
+        headers=EXPECTED_HEADERS,
+        verify=False,
     )
 
 

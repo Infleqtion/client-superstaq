@@ -116,6 +116,7 @@ class Service(gss.service.Service):
         api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
+        **kwargs: Any,
     ) -> None:
         """Creates the Service to access Superstaq's API.
 
@@ -147,7 +148,6 @@ class Service(gss.service.Service):
             EnvironmentError: If an API key was not provided and could not be found.
         """
         self.default_target = default_target
-
         self._client = superstaq_client._SuperstaqClient(
             client_name="cirq-superstaq",
             remote_host=remote_host,
@@ -155,6 +155,7 @@ class Service(gss.service.Service):
             api_version=api_version,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
+            **kwargs,
         )
 
     def _resolve_target(self, target: Union[str, None]) -> str:
@@ -270,7 +271,6 @@ class Service(gss.service.Service):
         serialized_circuits = css.serialization.serialize_circuits(circuit)
 
         target = self._resolve_target(target)
-
         result = self._client.create_job(
             serialized_circuits={"cirq_circuits": serialized_circuits},
             repetitions=repetitions,

@@ -18,6 +18,7 @@ import sys
 import textwrap
 import time
 import urllib
+import warnings
 from typing import Any, Callable, Dict, List, Optional, Union
 
 import qubovert as qv
@@ -48,6 +49,7 @@ class _SuperstaqClient:
         api_version: str = gss.API_VERSION,
         max_retry_seconds: float = 60,  # 1 minute
         verbose: bool = False,
+        **kwargs: Any,
     ):
         """Creates the SuperstaqClient.
 
@@ -93,6 +95,7 @@ class _SuperstaqClient:
             "X-Client-Name": self.client_name,
             "X-Client-Version": self.api_version,
         }
+        self._options = json.dumps({"options": kwargs})
 
     def get_request(self, endpoint: str) -> Any:
         """Performs a GET request on a given endpoint.
@@ -199,6 +202,15 @@ class _SuperstaqClient:
 
         if kwargs:
             json_dict["options"] = json.dumps(kwargs)
+            if "cq_token" in json_dict["options"]:
+                warnings.warn(
+                    "Starting with client-superstaq v0.4.20, passing in `cq_token` when "
+                    "submitting the job won't work. Pass `cq_token` when creating the provider "
+                    "or service instead.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+
         return self.post_request("/jobs", json_dict)
 
     def get_job(self, job_id: str) -> Dict[str, str]:
@@ -213,7 +225,7 @@ class _SuperstaqClient:
         Raises:
             SuperstaqServerException: For other API call failures.
         """
-        return self.get_request(f"/job/{job_id}")
+        return self.get_request(f"/job/{job_id}/{self._options}")
 
     def get_balance(self) -> Dict[str, float]:
         """Get the querying user's account balance in USD.
