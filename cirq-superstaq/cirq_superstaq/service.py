@@ -143,6 +143,10 @@ class Service(gss.service.Service):
             api_version: Version of the api.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
             verbose: Whether to print to stdio and stderr on retriable errors.
+            kwargs: Other optimization and execution parameters.
+                - qiskit_pulse: Whether to use Superstaq's pulse-level optimizations for IBMQ
+                devices.
+                - cq_token: Token from CQ cloud.
 
         Raises:
             EnvironmentError: If an API key was not provided and could not be found.
