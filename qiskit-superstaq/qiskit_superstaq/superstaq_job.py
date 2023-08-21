@@ -147,21 +147,49 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 self._overall_status = temp_status
                 return
 
-    def compiled_circuits(self) -> List[qiskit.QuantumCircuit]:
-        """Get the compiled circuits that were submitted for this job.
+    def _get_circuits(self, circuit_type: str) -> List[qiskit.QuantumCircuit]:
+        """Retrieves the corresponding circuits to `circuit_type`.
+
+        Args:
+            circuit_type: The kind of circuits to retrieve. Either "input_circuit" or
+                "compiled_circuit".
 
         Returns:
-            A list of compiled circuits.
+            A list of circuits.
         """
+        if circuit_type not in ("input_circuit", "compiled_circuit"):
+            raise ValueError("The circuit type requested is invalid.")
+
         job_ids = self._job_id.split(",")
         if not all(
-            job_id in self._job_info and self._job_info[job_id].get("compiled_circuit")
+            job_id in self._job_info and self._job_info[job_id].get(circuit_type)
             for job_id in job_ids
         ):
             self._refresh_job()
 
-        serialized_circuits = [self._job_info[job_id]["compiled_circuit"] for job_id in job_ids]
+        serialized_circuits = [self._job_info[job_id][circuit_type] for job_id in job_ids]
         return [qss.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
+
+    def compiled_circuits(self) -> List[qiskit.QuantumCircuit]:
+        """Gets the compiled circuits that were submitted for this job.
+
+        Returns:
+            A list of compiled circuits.
+        """
+        compiled_circuits = self._get_circuits("compiled_circuit")
+        input_circuits = self._get_circuits("input_circuit")
+        for compiled_qc, in_qc in zip(compiled_circuits, input_circuits):
+            compiled_qc.metadata = in_qc.metadata
+
+        return compiled_circuits
+
+    def input_circuits(self) -> List[qiskit.QuantumCircuit]:
+        """Gets the original circuits that were submitted for this job.
+
+        Returns:
+            A list of the submitted input circuits.
+        """
+        return self._get_circuits("input_circuit")
 
     def status(self) -> qiskit.providers.jobstatus.JobStatus:
         """Query for the equivalent qiskit job status.
@@ -194,3 +222,18 @@ class SuperstaqJob(qiskit.providers.JobV1):
             NotImplementedError: If a job is submitted via SuperstaqJob.
         """
         raise NotImplementedError("Submit through SuperstaqBackend, not through SuperstaqJob")
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Refreshes and returns job information.
+
+        Note:
+            The contents of this dictionary are not guaranteed to be consistent over time. Whenever
+            possible, users should use the specific `SuperstaqJob` methods to retrieve the desired
+            job information instead of relying on particular entries in the output of this method.
+
+        Returns:
+            A dictionary containing updated job information.
+        """
+        if self._overall_status not in self.TERMINAL_STATES:
+            self._refresh_job()
+        return self._job_info

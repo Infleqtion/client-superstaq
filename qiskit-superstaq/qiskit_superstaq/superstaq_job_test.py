@@ -1,5 +1,7 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
-from typing import Dict, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Dict, Union
 from unittest import mock
 
 import general_superstaq as gss
@@ -8,15 +10,17 @@ import qiskit
 
 import qiskit_superstaq as qss
 
+if TYPE_CHECKING:
+    from qisskit_superstaq.conftest import MockSuperstaqProvider
+
 
 def mock_response(status_str: str) -> Dict[str, Union[str, int, Dict[str, int]]]:
     return {"status": status_str, "samples": {"10": 100}, "shots": 100}
 
 
 @pytest.fixture
-def backend() -> qss.SuperstaqBackend:
-    provider = qss.SuperstaqProvider(api_key="token")
-    return provider.get_backend("ss_example_qpu")
+def backend(fake_superstaq_provider: MockSuperstaqProvider) -> qss.SuperstaqBackend:
+    return fake_superstaq_provider.get_backend("ss_example_qpu")
 
 
 def test_wait_for_results(backend: qss.SuperstaqBackend) -> None:
@@ -160,9 +164,16 @@ def test_update_status_queue_info(backend: qss.SuperstaqBackend) -> None:
     assert job._overall_status == "Failed"
 
 
+def test_get_circuit(backend: qss.SuperstaqBackend) -> None:
+    test_job = qss.SuperstaqJob(backend=backend, job_id="123abc")
+    with pytest.raises(ValueError, match="The circuit type requested is invalid."):
+        test_job._get_circuits("invalid_type")
+
+
 def test_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
     response = mock_response("Queued")
     response["compiled_circuit"] = qss.serialize_circuits(qiskit.QuantumCircuit(2))
+    response["input_circuit"] = qss.serialize_circuits(qiskit.QuantumCircuit(2))
 
     job = qss.SuperstaqJob(backend=backend, job_id="123abc")
     with mock.patch(
@@ -182,6 +193,30 @@ def test_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
         mocked_get_job.assert_called_once()
 
     assert job.compiled_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
+
+
+def test_input_circuits(backend: qss.SuperstaqBackend) -> None:
+    response = mock_response("Queued")
+    response["input_circuit"] = qss.serialize_circuits(qiskit.QuantumCircuit(2))
+
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
+    ) as mocked_get_job:
+        assert job.input_circuits() == [qiskit.QuantumCircuit(2)]
+        mocked_get_job.assert_called_once()
+
+    # After fetching the job info once it shouldn't be refreshed again (so no need to mock)
+    assert job.input_circuits() == [qiskit.QuantumCircuit(2)]
+
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
+    ):
+        assert job.input_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
+        mocked_get_job.assert_called_once()
+
+    assert job.input_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
 
 
 def test_status(backend: qss.SuperstaqBackend) -> None:
@@ -230,3 +265,18 @@ def test_eq(backend: qss.SuperstaqBackend) -> None:
 
     job3 = qss.SuperstaqJob(backend=backend, job_id="12345")
     assert job == job3
+
+
+def test_to_dict(backend: qss.SuperstaqBackend) -> None:
+    job = qss.SuperstaqJob(backend=backend, job_id="12345")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job",
+        return_value=mock_response("Done"),
+    ):
+        assert job.to_dict() == {
+            "12345": {
+                "status": "Done",
+                "samples": {"10": 100},
+                "shots": 100,
+            }
+        }

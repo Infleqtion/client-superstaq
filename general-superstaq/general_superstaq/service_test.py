@@ -84,7 +84,7 @@ def test_update_user_role(
         "target": "ss_example_qpu",
         "shots": 10,
         "method": "dry-run",
-        "maxout": 13,
+        "max_solutions": 13,
     },
 )
 def test_submit_qubo(
@@ -104,7 +104,7 @@ def test_submit_qubo(
         "target": "ss_example_qpu",
         "shots": 10,
         "method": "dry-run",
-        "maxout": 13,
+        "max_solutions": 13,
     }
 
 
@@ -234,3 +234,25 @@ def test_service_aqt_get_configs(
     with mock.patch.dict("sys.modules", {"yaml": None}):
         with pytest.raises(ModuleNotFoundError, match="PyYAML"):
             _ = service.aqt_download_configs()
+
+
+@mock.patch("requests.post")
+def test_aces(
+    mock_post: mock.MagicMock,
+) -> None:
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
+    mock_post.return_value.json = lambda: "id1"
+    assert (
+        service.submit_aces(
+            target="ss_unconstrained_simulator",
+            qubits=[0, 1],
+            shots=100,
+            num_circuits=10,
+            mirror_depth=5,
+            extra_depth=5,
+        )
+        == "id1"
+    )
+
+    mock_post.return_value.json = lambda: [1] * 51
+    assert service.process_aces("id1") == [1] * 51

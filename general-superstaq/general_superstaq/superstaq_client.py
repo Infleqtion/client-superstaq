@@ -327,7 +327,7 @@ class _SuperstaqClient:
         target: str,
         repetitions: int = 1000,
         method: Optional[str] = None,
-        maxout: Optional[int] = 1000,
+        max_solutions: Optional[int] = 1000,
     ) -> Dict[str, str]:
         """Makes a POST request to Superstaq API to submit a QUBO problem to the
         given target.
@@ -335,22 +335,25 @@ class _SuperstaqClient:
         Args:
             qubo: A `qv.QUBO` object.
             target: The target to submit the qubo.
-            repetitions: Number of repetitions to use. Defaults to 1000.
-            method: An optional method parameter. Defaults to None.
-            maxout: An optional maxout paramter. Defaults to 1000.
+            repetitions: Number of times that the execution is repeated before stopping.
+            method: The parameter specifying method of QUBO solving execution. Currently,
+            will either be the "dry-run" option which runs on dwave's simulated annealer,
+            or defauls to none and sends it directly to the specified target.
+            max_solutions: A parameter that specifies the max number of output solutions.
 
         Returns:
             A dictionary from the POST request.
         """
         gss.validation.validate_target(target)
         gss.validation.validate_integer_param(repetitions)
+        gss.validation.validate_integer_param(max_solutions)
 
         json_dict = {
-            "qubo": gss.qubo.convert_qubo_to_model(qubo),
+            "qubo": list(qubo.items()),
             "target": target,
             "shots": int(repetitions),
             "method": method,
-            "maxout": maxout,
+            "max_solutions": max_solutions,
         }
         return self.post_request("/qubo", json_dict)
 
@@ -383,6 +386,136 @@ class _SuperstaqClient:
             "circuit_return_type": circuit_return_type,
         }
         return self.post_request("/supercheq", json_dict)
+
+    def submit_dfe(
+        self,
+        circuit_1: Dict[str, str],
+        target_1: str,
+        circuit_2: Dict[str, str],
+        target_2: str,
+        num_random_bases: int,
+        shots: int,
+        **kwargs: Any,
+    ) -> List[str]:
+        """Performs a POST request on the `/dfe_post` endpoint.
+
+        Args:
+            circuit_1: Serialized circuit that prepares the first state for the protocol.
+            target_1: Target to prepare the first state on.
+            circuit_2: Serialized circuit that prepares the second state for the protocol.
+            target_2: Target to prepare the second state on.
+            num_random_bases: Number of random bases to measure the states on.
+            shots: Number of shots per random basis.
+            kwargs: Other execution parameters.
+                - tag: Tag for all jobs submitted for this protocol.
+                - lifespan: How long to store the jobs submitted for in days (only works with right
+                permissions).
+                - method: Which type of method to execute the circuits with.
+
+        Returns:
+            A list of size two with the ids for the RMT jobs created; these ids should be passed to
+            `process_dfe` to get back the fidelity estimation.
+
+        Raises:
+            ValueError: If any of the targets passed are not valid.
+            SuperstaqServerException: if the request fails.
+        """
+        gss.validation.validate_target(target_1)
+        gss.validation.validate_target(target_2)
+
+        state_1 = {**circuit_1, "target": target_1}
+        state_2 = {**circuit_2, "target": target_2}
+
+        json_dict: Dict[str, Any] = {
+            "state_1": state_1,
+            "state_2": state_2,
+            "shots": int(shots),
+            "n_bases": int(num_random_bases),
+        }
+
+        if kwargs:
+            json_dict["options"] = json.dumps(kwargs)
+        return self.post_request("/dfe_post", json_dict)
+
+    def process_dfe(self, job_ids: List[str]) -> float:
+        """Performs a POST request on the `/dfe_fetch` endpoint.
+
+        Args:
+            job_ids: A list of job ids returned by a call to `submit_dfe`.
+
+        Returns:
+            The estimated fidelity between the two states as a float.
+
+        Raises:
+            ValueError: If `job_ids` is not of size two.
+            SuperstaqServerException: If the request fails.
+        """
+        if len(job_ids) != 2:
+            raise ValueError("`job_ids` must contain exactly two job ids.")
+
+        json_dict = {
+            "job_id_1": job_ids[0],
+            "job_id_2": job_ids[1],
+        }
+        return self.post_request("/dfe_fetch", json_dict)
+
+    def submit_aces(
+        self,
+        target: str,
+        qubits: List[int],
+        shots: int,
+        num_circuits: int,
+        mirror_depth: int,
+        extra_depth: int,
+        **kwargs: Any,
+    ) -> str:
+        """Performs a POST request on the `/aces` endpoint.
+
+        Args:
+            target: The device target to characterize.
+            qubits: A list with the qubit indices to characterize.
+            shots: How many shots to use per circuit submitted.
+            num_circuits: How many random circuits to use in the protocol.
+            mirror_depth: The half-depth of the mirror portion of the random circuits.
+            extra_depth: The depth of the fully random portion of the random circuits.
+            kwargs: Other execution parameters.
+                - tag: Tag for all jobs submitted for this protocol.
+                - lifespan: How long to store the jobs submitted for in days (only works with right
+                permissions).
+                - method: Which type of method to execute the circuits with.
+
+        Returns:
+            A string with the job id for the ACES job created.
+
+        Raises:
+            ValueError: If any the target passed are not valid.
+            SuperstaqServerException: if the request fails.
+        """
+        gss.validation.validate_target(target)
+
+        json_dict = {
+            "target": target,
+            "qubits": qubits,
+            "shots": shots,
+            "num_circuits": num_circuits,
+            "mirror_depth": mirror_depth,
+            "extra_depth": extra_depth,
+        }
+
+        if kwargs:
+            json_dict["options"] = json.dumps(kwargs)
+        return self.post_request("/aces", json_dict)
+
+    def process_aces(self, job_id: str) -> List[float]:
+        """Makes a POST request to the "/aces_fetch" endpoint.
+
+        Args:
+            job_id: The job id returned by `submit_aces`.
+
+        Returns:
+            The estimated eigenvalues.
+        """
+        return self.post_request("/aces_fetch", {"job_id": job_id})
 
     def target_info(self, target: str) -> Dict[str, Any]:
         """Makes a POST request to the /target_info endpoint.

@@ -124,6 +124,23 @@ def test_compiled_circuit(job: css.job.Job) -> None:
     assert job.compiled_circuit() == compiled_circuit
 
 
+def test_input_circuit(job: css.job.Job) -> None:
+    input_circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
+    job_dict = {
+        "status": "Done",
+        "input_circuit": css.serialize_circuits(input_circuit),
+        "compiled_circuit": css.serialize_circuits(input_circuit),
+    }
+
+    # The first call will trigger a refresh:
+    with mocked_get_job_requests(job_dict) as mocked_get_job:
+        assert job.input_circuit() == input_circuit
+        mocked_get_job.assert_called_once()
+
+    # Shouldn't need to retrieve anything now that `job._job` is populated:
+    assert job.input_circuit() == input_circuit
+
+
 def test_job_status_refresh() -> None:
     completed_job_dict = {"status": "Done"}
 
@@ -160,6 +177,19 @@ def test_job_str_repr_eq(job: css.job.Job) -> None:
     )
 
     assert not job == 1
+
+
+def test_job_to_dict(job: css.job.Job) -> None:
+    job_dict = {
+        "data": {"histogram": {"11": 1}},
+        "num_qubits": 2,
+        "samples": {"11": 1},
+        "shots": 1,
+        "status": "Done",
+        "target": "ss_unconstrained_simulator",
+    }
+    with mocked_get_job_requests(job_dict):
+        assert job.to_dict() == job_dict
 
 
 def test_job_counts(job: css.job.Job) -> None:

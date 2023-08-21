@@ -176,8 +176,8 @@ class Service(gss.service.Service):
         method: Optional[str] = None,
         **kwargs: Any,
     ) -> Dict[str, int]:
-        """Runs the given circuit on the Superstaq API and returns the result
-        of the ran circuit as a `collections.Counter`.
+        """Runs the given circuit on the Superstaq API and returns the result of the circuit ran as
+        a `collections.Counter`.
 
         Args:
             circuit: The circuit to run.
@@ -205,8 +205,8 @@ class Service(gss.service.Service):
         method: Optional[str] = None,
         **kwargs: Any,
     ) -> cirq.ResultDict:
-        """Run the given circuit on the Superstaq API and returns the result
-        of the ran circut as a `cirq.ResultDict`.
+        """Runs the given circuit on the Superstaq API and returns the result of the circuit ran as
+        a `cirq.ResultDict`.
 
         Args:
             circuit: The circuit to run.
@@ -506,9 +506,11 @@ class Service(gss.service.Service):
     def qscout_compile(
         self,
         circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        target: str = "sandia_qscout_qpu",
+        *,
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
-        target: str = "sandia_qscout_qpu",
+        num_qubits: Optional[int] = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
@@ -529,7 +531,12 @@ class Service(gss.service.Service):
             circuits: The circuit(s) to compile.
             target: String of target representing target device.
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
-            base_entangling_gate: The base entangling gate to use (either "xx" or "zz").
+            base_entangling_gate: The base entangling gate to use ("xx", "zz", "sxx", or "szz").
+                Compilation with the "xx" and "zz" entangling bases will use arbitrary
+                parameterized two-qubit interactions, while the "sxx" and "szz" bases will only use
+                fixed maximally-entangling rotations.
+            num_qubits: An optional number of qubits that should be initialized in the returned
+                Jaqal program(s) (by default this will be determined from the input circuits).
             kwargs: Other desired qscout_compile options.
 
         Returns:
@@ -544,8 +551,9 @@ class Service(gss.service.Service):
         if not target.startswith("sandia_"):
             raise ValueError(f"{target!r} is not a valid Sandia target.")
 
-        if base_entangling_gate not in ("xx", "zz"):
-            raise ValueError("base_entangling_gate must be either 'xx' or 'zz'")
+        base_entangling_gate = base_entangling_gate.lower()
+        if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
+            raise ValueError("base_entangling_gate must be 'xx', 'zz', 'sxx', or 'szz'")
 
         css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
@@ -556,6 +564,10 @@ class Service(gss.service.Service):
             "base_entangling_gate": base_entangling_gate,
             **kwargs,
         }
+
+        if num_qubits is not None:
+            gss.validation.validate_integer_param(num_qubits)
+            options_dict["num_qubits"] = num_qubits
 
         json_dict = self._client.qscout_compile(
             {
@@ -571,6 +583,8 @@ class Service(gss.service.Service):
         self,
         circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
         target: str = "cq_hilbert_qpu",
+        *,
+        grid_shape: Optional[Tuple[int, int]] = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) to the target CQ device.
@@ -578,6 +592,8 @@ class Service(gss.service.Service):
         Args:
             circuits: The circuit(s) to compile.
             target: String of target CQ device.
+            grid_shape: Optional fixed dimensions for the rectangular qubit grid (by default the
+                actual qubit layout will be pulled from the hardware provider).
             kwargs: Other desired `cq_compile` options.
 
         Returns:
@@ -590,7 +606,7 @@ class Service(gss.service.Service):
         if not target.startswith("cq_"):
             raise ValueError(f"{target!r} is not a valid CQ target.")
 
-        return self.compile(circuits, target=target, **kwargs)
+        return self.compile(circuits, grid_shape=grid_shape, target=target, **kwargs)
 
     def ibmq_compile(
         self,
@@ -687,6 +703,94 @@ class Service(gss.service.Service):
         circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
         fidelities = gss.serialization.deserialize(json_dict["fidelities"])
         return circuits, fidelities
+
+    def submit_dfe(
+        self,
+        rho_1: Tuple[cirq.AbstractCircuit, str],
+        rho_2: Tuple[cirq.AbstractCircuit, str],
+        num_random_bases: int,
+        shots: int,
+        **kwargs: Any,
+    ) -> List[str]:
+        """Executes the circuits neccessary for the DFE protocol.
+
+        The circuits used to prepare the desired states should not contain final measurements, but
+        can contain mid-circuit measurements (as long as the intended target supports them). For
+        example, to prepare a Bell state to be ran in `ss_unconstrained_simulator`, you should pass
+        `cirq.Circuit(cirq.H(qubits[0]), cirq.CX(qubits[0], qubits[1]))` as the first element of
+        some `rho_i` (note there are no final measurements).
+
+        The fidelity between states is calculated following the random measurement protocol
+        outlined in [1].
+
+        References:
+            [1] Elben, Andreas, Benoît Vermersch, Rick van Bijnen, Christian Kokail, Tiff Brydges,
+                Christine Maier, Manoj K. Joshi, Rainer Blatt, Christian F. Roos, and Peter Zoller.
+                "Cross-platform verification of intermediate scale quantum devices." Physical
+                review letters 124, no. 1 (2020): 010504.
+
+        Args:
+            rho_1: Tuple containing the information to prepare the first state. It contains a
+                `cirq.Circuit` at index 0 and a target name at index 1.
+            rho_2: Tuple containing the information to prepare the second state. It contains a
+                `cirq.Circuit` at index 0 and a target name at index 1.
+            num_random_bases: Number of random bases to measure each state in.
+            shots: Number of shots to use per random basis.
+            kwargs: Other execution parameters.
+                - tag: Tag for all jobs submitted for this protocol.
+                - lifespan: How long to store the jobs submitted for in days (only works with right
+                permissions).
+                - method: Which type of method to execute the circuits with.
+
+        Returns:
+            A list with two strings, which are the job ids that need to be passed to `process_dfe`
+            to post-process the measurement results and return the fidelity.
+
+        Raises:
+            ValueError: If `circuit` is not a valid `cirq.Circuit`.
+            SuperstaqServerException: If there was an error accessing the API.
+        """
+        circuit_1 = rho_1[0]
+        circuit_2 = rho_2[0]
+        target_1 = self._resolve_target(rho_1[1])
+        target_2 = self._resolve_target(rho_2[1])
+
+        css.validation.validate_cirq_circuits(circuit_1)
+        css.validation.validate_cirq_circuits(circuit_2)
+
+        if not (isinstance(circuit_1, cirq.Circuit) and isinstance(circuit_2, cirq.Circuit)):
+            raise ValueError("Each state `rho_i` should contain a single circuit.")
+
+        serialized_circuits_1 = css.serialization.serialize_circuits(circuit_1)
+        serialized_circuits_2 = css.serialization.serialize_circuits(circuit_2)
+
+        ids = self._client.submit_dfe(
+            circuit_1={"cirq_circuits": serialized_circuits_1},
+            target_1=target_1,
+            circuit_2={"cirq_circuits": serialized_circuits_2},
+            target_2=target_2,
+            num_random_bases=num_random_bases,
+            shots=shots,
+            **kwargs,
+        )
+
+        return ids
+
+    def process_dfe(self, ids: List[str]) -> float:
+        """Process the results of a DFE protocol.
+
+        Args:
+            ids: A list (size two) of ids returned by a call to `submit_dfe`.
+
+        Returns:
+            The estimated fidelity between the two states as a float.
+
+        Raises:
+            ValueError: If `ids` is not of size two.
+            SuperstaqServerException: If there was an error accesing the API or the jobs submitted
+                through `submit_dfe` have not finished running.
+        """
+        return self._client.process_dfe(ids)
 
     def target_info(self, target: str) -> Dict[str, Any]:
         """Returns information about device specified by `target`.

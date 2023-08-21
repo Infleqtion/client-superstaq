@@ -1,110 +1,15 @@
-from typing import Any, Dict, List, Optional, Tuple, TypedDict
-
-QuboDict = TypedDict(
-    "QuboDict",
-    {
-        "keys": List[str],
-        "value": float,
-    },
-)
-
-QuboModel = List[QuboDict]
-
-
-MaxSharpe = TypedDict(
-    "MaxSharpe",
-    {
-        "best_portfolio": List[str],
-        "best_ret": float,
-        "best_std_dev": float,
-        "best_sharpe_ratio": float,
-        "qubo": Optional[QuboModel],
-    },
-)
-
-MaxSharpeJson = TypedDict(
-    "MaxSharpeJson",
-    {
-        "best_portfolio": List[str],
-        "best_ret": float,
-        "best_std_dev": float,
-        "best_sharpe_ratio": float,
-        "qubo": QuboModel,
-    },
-)
-
-MinVol = TypedDict(
-    "MinVol",
-    {
-        "best_portfolio": List[str],
-        "best_ret": float,
-        "best_std_dev": float,
-        "qubo": QuboModel,
-    },
-)
-
-MinVolJson = TypedDict(
-    "MinVolJson",
-    {
-        "best_portfolio": List[str],
-        "best_ret": float,
-        "best_std_dev": float,
-        "qubo": QuboModel,
-    },
-)
-
-Warehouse = TypedDict(
-    "Warehouse",
-    {
-        "warehouse_to_destination": List[Tuple[str, str]],
-        "total_distance": float,
-        "map_link": str,
-        "open_warehouses": List[str],
-        "qubo": QuboModel,
-    },
-)
-
-WareHouseJson = TypedDict(
-    "WareHouseJson",
-    {
-        "warehouse_to_destination": List[Tuple[str, str]],
-        "total_distance": float,
-        "map_link": str,
-        "open_warehouses": List[str],
-        "qubo": QuboModel,
-    },
-)
-
-TSP = TypedDict(
-    "TSP",
-    {
-        "route_list_numbers": List[int],
-        "total_distance": List[float],
-        "map_link": List[str],
-        "route": List[str],
-        "qubo": QuboModel,
-    },
-)
-TSPJson = TypedDict(
-    "TSPJson",
-    {
-        "route": List[str],
-        "route_list_numbers": List[int],
-        "total_distance": float,
-        "map_link": List[str],
-        "qubo": QuboModel,
-    },
-)
-
+from typing import Any, Dict, Optional, TypedDict
 
 Job = TypedDict(
     "Job",
     {
-        "job_id": str,
+        "provider_id": str,
         "num_qubits": int,
         "status": str,
         "target": str,
+        "circuit_type": str,
         "compiled_circuit": str,
+        "input_circuit": Optional[str],
         "data": Optional[Dict[str, Any]],
         "samples": Optional[Dict[str, int]],
         "shots": Optional[int],

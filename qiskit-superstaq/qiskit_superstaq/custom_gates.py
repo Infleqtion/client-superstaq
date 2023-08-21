@@ -3,7 +3,7 @@ from typing import Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
-import qiskit
+import qiskit.visualization
 
 
 class AceCR(qiskit.circuit.Gate):
@@ -86,10 +86,10 @@ class AceCR(qiskit.circuit.Gate):
         if self.sandwich_rx_rads == 0 and self.rads == np.pi / 2:
             return "AceCR"
         elif self.sandwich_rx_rads != 0 and self.rads not in [0, np.pi / 2]:
-            arg = qiskit.circuit.tools.pi_check(self.sandwich_rx_rads, ndigits=8, output="qasm")
+            arg = qiskit.circuit.tools.pi_check(self.sandwich_rx_rads, ndigits=8)
             return f"AceCR({rads_str})|RXGate({arg})|"
         elif self.sandwich_rx_rads != 0:
-            arg = qiskit.circuit.tools.pi_check(self.sandwich_rx_rads, ndigits=8, output="qasm")
+            arg = qiskit.circuit.tools.pi_check(self.sandwich_rx_rads, ndigits=8)
             return f"AceCR|RXGate({arg})|"
         else:
             return f"AceCR({rads_str})"
@@ -162,7 +162,7 @@ class ZZSwapGate(qiskit.circuit.Gate):
         return f"qss.ZZSwapGate({args})"
 
     def __str__(self) -> str:
-        args = qiskit.circuit.tools.pi_check(self.params[0], ndigits=8, output="qasm")
+        args = qiskit.circuit.tools.pi_check(self.params[0], ndigits=8)
         return f"ZZSwapGate({args})"
 
 
@@ -213,7 +213,7 @@ class StrippedCZGate(qiskit.circuit.Gate):
         return f"qss.StrippedCZGate({self.params[0]!r})"
 
     def __str__(self) -> str:
-        args = qiskit.circuit.tools.pi_check(self.params[0], ndigits=8, output="qasm")
+        args = qiskit.circuit.tools.pi_check(self.params[0], ndigits=8)
         return f"StrippedCZGate({args})"
 
 
@@ -270,7 +270,10 @@ class ParallelGates(qiskit.circuit.Gate):
         return np.asarray(mat, dtype=dtype)
 
     def __str__(self) -> str:
-        args = ", ".join(gate.qasm() for gate in self.component_gates)
+        def _param_str(gate: qiskit.circuit.Instruction) -> str:
+            return qiskit.visualization.text.get_param_str(gate, "text")
+
+        args = ", ".join(f"{gate.name}{_param_str(gate)}" for gate in self.component_gates)
         return f"ParallelGates({args})"
 
 

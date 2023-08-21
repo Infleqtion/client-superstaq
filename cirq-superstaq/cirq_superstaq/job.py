@@ -154,7 +154,7 @@ class Job:
         return self._job["shots"]
 
     def compiled_circuit(self) -> cirq.Circuit:
-        """Get the compiled circuit that was submitted for this job.
+        """Gets the compiled circuit that was submitted for this job.
 
         Returns:
             The compiled circuit.
@@ -163,6 +163,17 @@ class Job:
             self._refresh_job()
 
         return css.deserialize_circuits(self._job["compiled_circuit"])[0]
+
+    def input_circuit(self) -> cirq.Circuit:
+        """Gets the original circuit that was submitted for this job.
+
+        Returns:
+            The submitted input circuit.
+        """
+        if "input_circuit" not in self._job:
+            self._refresh_job()
+
+        return css.deserialize_circuits(self._job["input_circuit"])[0]
 
     def counts(self, timeout_seconds: int = 7200, polling_seconds: float = 1.0) -> Dict[str, int]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
@@ -191,6 +202,20 @@ class Job:
 
         self._check_if_unsuccessful()
         return self._job["samples"]
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Refreshes and returns job information.
+
+        Note:
+            The contents of this dictionary are not guaranteed to be consistent over time. Whenever
+            possible, users should use the specific `Job` methods to retrieve the desired job
+            information instead of relying on particular entries in the output of this method.
+
+        Returns:
+            A dictionary containing updated job information.
+        """
+        self._refresh_job()
+        return self._job
 
     def __str__(self) -> str:
         return f"Job with job_id={self.job_id()}"

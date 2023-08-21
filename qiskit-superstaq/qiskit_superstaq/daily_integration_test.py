@@ -3,6 +3,7 @@
 
 import os
 
+import general_superstaq as gss
 import numpy as np
 import pytest
 import qiskit
@@ -146,12 +147,13 @@ def test_get_resource_estimate(provider: qss.SuperstaqProvider) -> None:
 def test_qscout_compile(provider: qss.SuperstaqProvider) -> None:
     circuit = qiskit.QuantumCircuit(1)
     circuit.h(0)
-    expected = qiskit.QuantumCircuit(2)
-    expected.r(np.pi / 2, -np.pi / 2, 0)
-    expected.z(0)
-    assert provider.qscout_compile(circuit).circuit == expected
-    assert provider.qscout_compile([circuit]).circuits == [expected]
-    assert provider.qscout_compile([circuit, circuit]).circuits == [expected, expected]
+
+    compiled_circuit = provider.qscout_compile(circuit).circuit
+    assert isinstance(compiled_circuit, qiskit.QuantumCircuit)
+    assert qiskit.quantum_info.Operator(compiled_circuit) == qiskit.quantum_info.Operator(circuit)
+
+    assert provider.qscout_compile([circuit]).circuits == [compiled_circuit]
+    assert provider.qscout_compile([circuit, circuit]).circuits == 2 * [compiled_circuit]
 
 
 def test_qscout_compile_swap_mirror(provider: qss.SuperstaqProvider) -> None:
@@ -216,15 +218,41 @@ def test_supercheq(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     assert fidelities.shape == (32, 32)
 
 
-def test_submit_to_provider_simulators(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
+def test_dfe(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
+    qc = qiskit.QuantumCircuit(1)
+    qc.h(0)
+    target = "ss_unconstrained_simulator"
+    ids = provider.submit_dfe(
+        rho_1=(qc, target),
+        rho_2=(qc, target),
+        num_random_bases=5,
+        shots=1000,
+    )
+    assert len(ids) == 2
+
+    result = provider.process_dfe(ids)
+    assert isinstance(result, float)
+
+
+@pytest.mark.parametrize(
+    "target", ["cq_hilbert_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
+)
+def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2, 2)
     qc.x(0)
     qc.cx(0, 1)
     qc.measure(0, 0)
     qc.measure(1, 1)
 
-    backends = ["cq_hilbert_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
+    job = provider.get_backend(target).run(qc, shots=1)
+    assert job.result().get_counts() == {"11": 1}
 
-    for backend in backends:
-        job = provider.get_backend(backend).run(qc, shots=1)
-        assert job.result().get_counts() == {"11": 1}
+
+def test_submit_qubo(provider: qss.SuperstaqProvider) -> None:
+    test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
+    serialized_result = provider.submit_qubo(
+        test_qubo, target="toshiba_bifurcation_qpu", method="dry-run"
+    )
+    result = gss.qubo.read_json_qubo_result(serialized_result)
+    best_result = result[0]
+    assert best_result == {0: 1, 1: 0, 2: 1}

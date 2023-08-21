@@ -141,15 +141,35 @@ def test_read_json_ibmq() -> None:
     assert not hasattr(out, "pulse_sequence")
     assert not hasattr(out, "final_logical_to_physical")
 
+
+def test_read_json_ibmq_warnings() -> None:
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
+    final_logical_to_physical = {cirq.q(0): cirq.q(13)}
+
+    json_dict = {
+        "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "pulses": "not deserializable",
+        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
+    }
+
     with mock.patch.dict("sys.modules", {"qiskit": None}), pytest.warns(
-        UserWarning, match="requires Qiskit Terra"
+        UserWarning, match="Qiskit Terra is required"
     ):
         out = css.compiler_output.read_json(json_dict, circuits_is_list=False)
         assert out.circuit == circuit
         assert out.pulse_sequence is None
 
     with mock.patch("qiskit.__version__", "0.17.2"), pytest.warns(
-        UserWarning, match="you have 0.17.2"
+        UserWarning, match="(version 0.17.2)"
+    ):
+        out = css.compiler_output.read_json(json_dict, circuits_is_list=True)
+        assert out.circuits == [circuit]
+        assert out.pulse_sequences is None
+
+    with pytest.warns(
+        UserWarning,
+        match="Your compiled pulse sequences could not be deserialized. Please let us know",
     ):
         out = css.compiler_output.read_json(json_dict, circuits_is_list=True)
         assert out.circuits == [circuit]
