@@ -11,7 +11,6 @@ import general_superstaq as gss
 
 
 def test_service_get_balance() -> None:
-
     service = gss.service.Service(remote_host="http://example.com", api_key="key")
     mock_client = mock.MagicMock()
     mock_client.get_balance.return_value = {"balance": 12345.6789}
@@ -22,7 +21,6 @@ def test_service_get_balance() -> None:
 
 
 def test_accept_terms_of_use() -> None:
-
     service = gss.service.Service(remote_host="http://example.com", api_key="key")
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaqClient.post_request"

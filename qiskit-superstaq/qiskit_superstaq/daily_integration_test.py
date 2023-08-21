@@ -217,7 +217,6 @@ def test_supercheq(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
 
 
 def test_submit_to_provider_simulators(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
-
     qc = qiskit.QuantumCircuit(2, 2)
     qc.x(0)
     qc.cx(0, 1)
