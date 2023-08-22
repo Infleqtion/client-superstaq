@@ -1,3 +1,4 @@
+black[jupyter]>=23.1.0
 numpy>=1.21.0
 qubovert>=1.2.3
 requests>=2.26.0
