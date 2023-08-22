@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import argparse
 import fnmatch
 import functools
 import json
@@ -34,7 +33,6 @@ def run(
         include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
         exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
         upstream_match: String to match package name and version.
-        namespace: Container for default parsed arguments.
         silent: If True, restrict printing to warning and error messages.
 
     Returns:
