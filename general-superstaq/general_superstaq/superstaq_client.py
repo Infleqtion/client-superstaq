@@ -231,7 +231,36 @@ class _SuperstaqClient:
         Raises:
             SuperstaqServerException: For other API call failures.
         """
-        return self.get_request(f"/job/{job_id}/{self._options}")
+        return self.fetch_jobs([job_id], options=self._options)
+        #return self.get_request(f"/job/{job_id}/{self._options}")
+
+
+    def fetch_jobs(self, job_ids:List[str], tags: Optional[List[str]]= None, targets: Optional[List[str]]=None, **kwargs: Any) -> Dict[str, str]:
+        """Get the job from the Superstaq API.
+
+        Args:
+            job_id: The UUID of the job (returned when the job was created).
+
+        Returns:
+            The json body of the response as a dict.
+
+        Raises:
+            SuperstaqServerException: For other API call failures.
+        """
+
+        json_dict: Dict[str, Any] = {
+            "job_ids": job_ids,
+            "tags": tags,
+            "targets": targets,
+        }
+
+        if kwargs:
+            json_dict["options"] = json.dumps(kwargs)
+
+        return self.post_request("/fetch_jobs", json_dict)
+
+
+
 
     def get_balance(self) -> Dict[str, float]:
         """Get the querying user's account balance in USD.
