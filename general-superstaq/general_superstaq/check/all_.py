@@ -83,7 +83,7 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
     exit_on_failure = not (parsed_args.force_formats or parsed_args.force_all)
     common_kwargs = dict(namespace=parsed_args, exit_on_failure=exit_on_failure, silent=True)
     if "configs" not in parsed_args.skip:
-        checks_failed |= configs.run(**common_kwargs)
+        checks_failed |= configs.run(exit_on_failure=exit_on_failure, silent=True)
     if "format" not in parsed_args.skip:
         checks_failed |= format_.run(**common_kwargs)
     if "flake8" not in parsed_args.skip:

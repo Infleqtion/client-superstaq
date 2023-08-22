@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import argparse
 import difflib
 import os
 import sys
@@ -15,16 +14,11 @@ IGNORE_MATCH = "# REPO-SPECIFIC CONFIG"
 
 
 @check_utils.enable_exit_on_failure
-def run(
-    *args: str,
-    namespace: argparse.Namespace = argparse.Namespace(),
-    silent: bool = False,
-) -> int:
+def run(*args: str, silent: bool = False) -> int:
     """Checks that check-script configurations are consistent across repos.
 
     Args:
         *args: Command line arguments.
-        namespace: Container for default parsed arguments.
         silent: If True, restrict printing to warning and error messages.
 
     Returns:
@@ -39,7 +33,7 @@ def run(
         Exceptions in {CONFIG_FILE} can be flagged by adding "{IGNORE_MATCH}" to the line.
         """
     )
-    parser.parse_args(args, namespace=namespace)
+    parser.parse_args(args)  # placeholder parsing to enable printing help text
 
     # identify the "original" config file, and the file that is supposed to be a copy
     file_orig = os.path.join(os.path.abspath(os.path.dirname(__file__)), TEMPLATE_FILE)
