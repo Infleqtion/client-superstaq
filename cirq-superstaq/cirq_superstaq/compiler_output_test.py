@@ -29,7 +29,6 @@ def test_active_qubit_indices() -> None:
 
 
 def test_measured_qubit_indices() -> None:
-
     # Create qubits with indices [0, 1, 2, 3, 5, 6]. No q4 to ensure that indices refer to
     # LineQubit arguments regardless of the number of qubits in the circuit
     q0, q1, q2, q3, _, q5, q6 = cirq.LineQubit.range(7)

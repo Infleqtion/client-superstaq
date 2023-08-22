@@ -3,6 +3,7 @@
 
 import os
 
+import general_superstaq as gss
 import numpy as np
 import pytest
 import qiskit
@@ -245,3 +246,13 @@ def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvi
 
     job = provider.get_backend(target).run(qc, shots=1)
     assert job.result().get_counts() == {"11": 1}
+
+
+def test_submit_qubo(provider: qss.SuperstaqProvider) -> None:
+    test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
+    serialized_result = provider.submit_qubo(
+        test_qubo, target="toshiba_bifurcation_qpu", method="dry-run"
+    )
+    result = gss.qubo.read_json_qubo_result(serialized_result)
+    best_result = result[0]
+    assert best_result == {0: 1, 1: 0, 2: 1}

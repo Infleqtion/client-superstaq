@@ -11,7 +11,6 @@ import general_superstaq as gss
 
 
 def test_service_get_balance() -> None:
-
     service = gss.service.Service(remote_host="http://example.com", api_key="key")
     mock_client = mock.MagicMock()
     mock_client.get_balance.return_value = {"balance": 12345.6789}
@@ -22,7 +21,6 @@ def test_service_get_balance() -> None:
 
 
 def test_accept_terms_of_use() -> None:
-
     service = gss.service.Service(remote_host="http://example.com", api_key="key")
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaqClient.post_request"
@@ -236,3 +234,25 @@ def test_service_aqt_get_configs(
     with mock.patch.dict("sys.modules", {"yaml": None}):
         with pytest.raises(ModuleNotFoundError, match="PyYAML"):
             _ = service.aqt_download_configs()
+
+
+@mock.patch("requests.post")
+def test_aces(
+    mock_post: mock.MagicMock,
+) -> None:
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
+    mock_post.return_value.json = lambda: "id1"
+    assert (
+        service.submit_aces(
+            target="ss_unconstrained_simulator",
+            qubits=[0, 1],
+            shots=100,
+            num_circuits=10,
+            mirror_depth=5,
+            extra_depth=5,
+        )
+        == "id1"
+    )
+
+    mock_post.return_value.json = lambda: [1] * 51
+    assert service.process_aces("id1") == [1] * 51
