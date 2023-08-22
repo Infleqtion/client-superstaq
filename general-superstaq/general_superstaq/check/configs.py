@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import difflib
 import os
 import sys
