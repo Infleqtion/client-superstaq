@@ -61,7 +61,7 @@ def get_circuit_placeholder(circuit_repr: str, circuit_drawing: str, circuit_ind
     Returns:
         A string placeholder for the circuit repr or drawing that can be parsed by Black.
     """
-    # Befor for loop, if circuit is empty or any given line is too long, use a single placeholder
+    # Before for loop, if circuit is empty or any given line is too long, use a single placeholder
     # for the entire circuit, to be replaced with the circuit repr.
     circuit_drawing_lines = get_circuit_drawing_lines(circuit_drawing, circuit_repr)
     if (
