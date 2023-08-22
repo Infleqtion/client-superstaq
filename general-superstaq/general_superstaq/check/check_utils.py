@@ -1,8 +1,4 @@
-#!/usr/bin/env python3
-
-"""Dumping ground for check script utilities.
-"""
-
+"""Dumping ground for check script utilities."""
 import argparse
 import enum
 import fnmatch
@@ -298,7 +294,7 @@ def get_file_parser() -> argparse.ArgumentParser:
     )
 
     help_text = "The files to check. If not passed any files, inspects the entire repo."
-    parser.add_argument("files", nargs="*", help=help_text)
+    parser.add_argument("--files", nargs="*", default=[], help=help_text)
 
     help_text = (
         "Run an incremental check on files that have changed since a specified revision.  "

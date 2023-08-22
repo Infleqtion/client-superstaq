@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import argparse
 import fnmatch
 import functools
 import json
@@ -23,6 +23,7 @@ def run(
     include: Union[str, Iterable[str]] = "*requirements.txt",
     exclude: Union[str, Iterable[str]] = "",
     upstream_match: str = "*superstaq*",
+    namespace: argparse.Namespace = argparse.Namespace(),
     silent: bool = False,
 ) -> int:
     """Checks that:
@@ -34,6 +35,7 @@ def run(
         include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
         exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
         upstream_match: String to match package name and version.
+        namespace: Container for default parsed arguments.
         silent: If True, restrict printing to warning and error messages.
 
     Returns:
@@ -61,7 +63,7 @@ def run(
         action="store_true",
         help="Only sort requirements files.  Do not check upstream package versions.",
     )
-    parsed_args = parser.parse_intermixed_args(args)
+    parsed_args = parser.parse_intermixed_args(args, namespace=namespace)
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     # check that we can connect to PyPI

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import argparse
 import multiprocessing
 import subprocess
 import sys
@@ -14,6 +14,7 @@ def run(
     *args: str,
     include: Union[str, Iterable[str]] = "*.py",
     exclude: Union[str, Iterable[str]] = (),
+    namespace: argparse.Namespace = argparse.Namespace(),
     silent: bool = False,
 ) -> int:
     """Runs pylint on the repository (formatting check).
@@ -22,6 +23,7 @@ def run(
         *args: Command line arguments.
         include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
         exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
+        namespace: Container for default parsed arguments.
         silent: If True, restrict printing to warning and error messages.
 
     Returns:
@@ -57,7 +59,7 @@ def run(
         help="Number of cores to use for this test.",
     )
 
-    parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
+    parsed_args, args_to_pass = parser.parse_known_intermixed_args(args, namespace=namespace)
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     args_to_pass.append(f"-j{parsed_args.cores}")

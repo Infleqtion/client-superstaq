@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import sys
 import textwrap
 from typing import List, Optional
@@ -78,31 +77,30 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
     default_mode = not parsed_args.files and parsed_args.revisions is None
     checks_failed = 0
 
-    args_to_pass = [arg for arg in args if arg not in ("-f", "-F", "--force")]
-
     # run formatting checks
     # silence most checks to avoid printing duplicate info about incremental files
     # silencing does not affect warnings and errors
     exit_on_failure = not (parsed_args.force_formats or parsed_args.force_all)
+    common_kwargs = dict(namespace=parsed_args, exit_on_failure=exit_on_failure, silent=True)
     if "configs" not in parsed_args.skip:
-        checks_failed |= configs.run(exit_on_failure=exit_on_failure, silent=True)
+        checks_failed |= configs.run(**common_kwargs)
     if "format" not in parsed_args.skip:
-        checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+        checks_failed |= format_.run(**common_kwargs)
     if "flake8" not in parsed_args.skip:
-        checks_failed |= flake8_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+        checks_failed |= flake8_.run(**common_kwargs)
     if "pylint" not in parsed_args.skip:
-        checks_failed |= pylint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+        checks_failed |= pylint_.run(**common_kwargs)
 
     # run typing and coverage checks
     exit_on_failure = not parsed_args.force_all
     if "mypy" not in parsed_args.skip:
-        checks_failed |= mypy_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+        checks_failed |= mypy_.run(**common_kwargs)
     if "coverage" not in parsed_args.skip:
-        checks_failed |= coverage_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+        checks_failed |= coverage_.run(**common_kwargs)
 
     # check that all pip requirements files are in order
     if "requirements" not in parsed_args.skip:
-        checks_failed |= requirements.run(exit_on_failure=exit_on_failure)
+        checks_failed |= requirements.run(namespace=parsed_args, exit_on_failure=exit_on_failure)
 
     if default_mode and "build_docs" not in parsed_args.skip:
         # checks that the docs build

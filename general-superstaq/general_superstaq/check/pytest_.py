@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import argparse
 import subprocess
 import sys
 import textwrap
@@ -14,6 +14,7 @@ def run(
     include: Optional[Union[str, Iterable[str]]] = None,
     exclude: Optional[Union[str, Iterable[str]]] = None,
     integration_setup: Optional[Callable[[], None]] = None,
+    namespace: argparse.Namespace = argparse.Namespace(),
     silent: bool = False,
 ) -> int:
     """Runs pytest on the repository.
@@ -23,7 +24,8 @@ def run(
         include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
         exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
         integration_setup: Optional function to run before integration tests (for example,
-        to set environmental variables).
+            to set environmental variables).
+        namespace: Container for default parsed arguments.
         silent: If True, restrict printing to warning and error messages.
 
     Returns:
@@ -54,7 +56,7 @@ def run(
 
     parser.add_argument("--enable-socket", action="store_true", help="Force-enable socket.")
 
-    parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
+    parsed_args, args_to_pass = parser.parse_known_intermixed_args(args, namespace=namespace)
 
     exclude = [exclude] if isinstance(exclude, str) else [] if exclude is None else list(exclude)
     if parsed_args.notebook:

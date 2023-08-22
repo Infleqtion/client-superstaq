@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import argparse
 import subprocess
 import sys
 import textwrap
@@ -13,6 +13,7 @@ def run(
     *args: str,
     include: Union[str, Iterable[str]] = "*.py",
     exclude: Union[str, Iterable[str]] = "*_integration_test.py",
+    namespace: argparse.Namespace = argparse.Namespace(),
     silent: bool = False,
 ) -> int:
     """Checks to make sure that all code is covered by unit tests.
@@ -21,6 +22,7 @@ def run(
         *args: Command line arguments.
         include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
         exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
+        namespace: Container for default parsed arguments.
         silent: If True, restrict printing to warning and error messages.
 
     Returns:
@@ -39,7 +41,7 @@ def run(
 
     parser.add_argument("--enable-socket", action="store_true", help="Force-enable socket.")
 
-    parsed_args, pytest_args = parser.parse_known_intermixed_args(args)
+    parsed_args, pytest_args = parser.parse_known_intermixed_args(args, namespace=namespace)
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     silent = silent or not (parsed_args.files or parsed_args.revisions)
