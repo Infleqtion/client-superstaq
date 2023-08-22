@@ -100,7 +100,7 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
 
     # check that all pip requirements files are in order
     if "requirements" not in parsed_args.skip:
-        checks_failed |= requirements.run(namespace=parsed_args, exit_on_failure=exit_on_failure)
+        checks_failed |= requirements.run(exit_on_failure=exit_on_failure)
 
     if default_mode and "build_docs" not in parsed_args.skip:
         # checks that the docs build
