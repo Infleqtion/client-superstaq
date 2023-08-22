@@ -15,7 +15,6 @@ import contextlib
 import io
 import json
 import os
-from typing import Any, Dict
 from unittest import mock
 
 import pytest
@@ -304,9 +303,8 @@ def test_superstaq_client_get_job(mock_get: mock.MagicMock) -> None:
     )
     response = client.get_job(job_id="job_id")
     assert response == {"foo": "bar"}
-    options: Dict[str, Any] = {"options": {}}
     mock_get.assert_called_with(
-        f"http://example.com/{API_VERSION}/job/job_id/{json.dumps(options)}",
+        f"http://example.com/{API_VERSION}/job/job_id/{json.dumps({'options': {}})}",
         headers=EXPECTED_HEADERS,
         verify=False,
     )
