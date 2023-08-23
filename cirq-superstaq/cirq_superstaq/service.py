@@ -240,6 +240,7 @@ class Service(gss.service.Service):
         repetitions: int = 1000,
         target: Optional[str] = None,
         method: Optional[str] = None,
+        diagnostic_qubits: Optional[List[int, ...]] = None,
         **kwargs: Any,
     ) -> css.job.Job:
         """Create a new job to run the given circuit.
@@ -249,6 +250,7 @@ class Service(gss.service.Service):
             repetitions: The number of times to repeat the circuit. Defaults to 1000.
             target: Where to run the job.
             method: Execution method.
+            diagnostic_qubits: The qubits that will run diagnostic checks
             kwargs: Other optimization and execution parameters.
 
         Returns:
@@ -276,6 +278,7 @@ class Service(gss.service.Service):
             repetitions=repetitions,
             target=target,
             method=method,
+            diagnostic_qubits=diagnostic_qubits,
             **kwargs,
         )
         # The returned job does not have fully populated fields; they will be filled out by
