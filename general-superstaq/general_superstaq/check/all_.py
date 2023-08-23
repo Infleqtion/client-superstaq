@@ -58,26 +58,30 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
     default_mode = not parsed_args.files and parsed_args.revisions is None
     checks_failed = 0
 
+    args_to_pass = [arg for arg in args if arg not in ("-f", "-F", "--force")]
+
     # run formatting checks
     # silence most checks to avoid printing duplicate info about incremental files
     # silencing does not affect warnings and errors
     exit_on_failure = not (parsed_args.force_formats or parsed_args.force_all)
-    checks_failed |= configs.run(exit_on_failure=exit_on_failure, silent=True)
-    checks_failed |= format_.run(exit_on_failure=exit_on_failure, silent=True)
-    checks_failed |= flake8_.run(exit_on_failure=exit_on_failure, silent=True)
-    checks_failed |= pylint_.run(exit_on_failure=exit_on_failure, silent=True)
+    checks_failed |= configs.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+    checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+    checks_failed |= flake8_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+    checks_failed |= pylint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 
     # run typing and coverage checks
     exit_on_failure = not parsed_args.force_all
-    checks_failed |= mypy_.run(exit_on_failure=exit_on_failure, silent=True)
-    checks_failed |= coverage_.run(exit_on_failure=exit_on_failure, silent=True)
+    checks_failed |= mypy_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+    checks_failed |= coverage_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 
     # check that all pip requirements files are in order
-    checks_failed |= requirements.run(exit_on_failure=exit_on_failure)
+    checks_failed |= requirements.run(*args_to_pass, exit_on_failure=exit_on_failure)
 
     if default_mode:
         # checks that the docs build
-        checks_failed |= build_docs.run(exit_on_failure=exit_on_failure, sphinx_paths=sphinx_paths)
+        checks_failed |= build_docs.run(
+            *args_to_pass, exit_on_failure=exit_on_failure, sphinx_paths=sphinx_paths
+        )
 
     return checks_failed
 

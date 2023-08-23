@@ -57,7 +57,7 @@ def run(
     parser.add_argument("--enable-socket", action="store_true", help="Force-enable socket.")
 
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args, namespace=namespace)
-    if "pylint" in parsed_args.skip:
+    if "pytest" in parsed_args.skip:
         return 0
 
     exclude = [exclude] if isinstance(exclude, str) else [] if exclude is None else list(exclude)

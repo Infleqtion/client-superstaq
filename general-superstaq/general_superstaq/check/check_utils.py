@@ -285,6 +285,7 @@ CHECK_LIST = [
     "flake8",
     "pylint",
     "mypy",
+    "pytest",
     "coverage",
     "requirements",
     "build_docs",
