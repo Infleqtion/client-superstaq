@@ -23,7 +23,6 @@ def run(
         exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
         integration_setup: Optional function to run before integration tests (for example,
             to set environmental variables).
-        namespace: Container for default parsed arguments.
         silent: If True, restrict printing to warning and error messages.
 
     Returns:
