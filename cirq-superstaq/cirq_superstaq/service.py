@@ -240,7 +240,7 @@ class Service(gss.service.Service):
         repetitions: int = 1000,
         target: Optional[str] = None,
         method: Optional[str] = None,
-        diagnostic_qubits: Optional[List[int, ...]] = None,
+        diagnostic_qubits: Optional[List[int]] = None,
         **kwargs: Any,
     ) -> css.job.Job:
         """Create a new job to run the given circuit.
