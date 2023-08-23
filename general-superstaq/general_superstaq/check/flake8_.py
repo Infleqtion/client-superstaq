@@ -33,7 +33,7 @@ def run(
         """
     )
 
-    parsed_args, args_to_pass = parser.parse_known_intermixed_args(args, namespace=namespace)
+    parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
     if "flake8" in parsed_args.skip:
         return 0
 

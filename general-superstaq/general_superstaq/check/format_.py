@@ -35,7 +35,7 @@ def run(
 
     parser.add_argument("--apply", action="store_true", help="Apply changes to files.")
 
-    parsed_args, args_to_pass_isort = parser.parse_known_intermixed_args(args, namespace=namespace)
+    parsed_args, args_to_pass_isort = parser.parse_known_intermixed_args(args)
     if "format" in parsed_args.skip:
         return 0
 

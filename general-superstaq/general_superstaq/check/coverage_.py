@@ -20,7 +20,6 @@ def run(
         *args: Command line arguments.
         include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
         exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
-        namespace: Container for default parsed arguments.
         silent: If True, restrict printing to warning and error messages.
 
     Returns:
@@ -39,7 +38,7 @@ def run(
 
     parser.add_argument("--enable-socket", action="store_true", help="Force-enable socket.")
 
-    parsed_args, pytest_args = parser.parse_known_intermixed_args(args, namespace=namespace)
+    parsed_args, pytest_args = parser.parse_known_intermixed_args(args)
     if "coverage" in parsed_args.skip:
         return 0
 

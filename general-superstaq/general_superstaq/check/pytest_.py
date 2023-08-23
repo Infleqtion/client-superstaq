@@ -53,7 +53,7 @@ def run(
 
     parser.add_argument("--enable-socket", action="store_true", help="Force-enable socket.")
 
-    parsed_args, args_to_pass = parser.parse_known_intermixed_args(args, namespace=namespace)
+    parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
     if "pytest" in parsed_args.skip:
         return 0
 
