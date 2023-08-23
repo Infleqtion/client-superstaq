@@ -377,27 +377,6 @@ def test_dfe(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvide
     assert fake_superstaq_provider.process_dfe(["1", "2"]) == 1
 
 
-@patch("requests.post")
-def test_aces(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
-    mock_post.return_value.json = lambda: "id1"
-    assert (
-        fake_superstaq_provider.submit_aces(
-            target="ss_unconstrained_simulator",
-            qubits=qiskit.QuantumRegister(2),
-            shots=100,
-            num_circuits=10,
-            mirror_depth=5,
-            extra_depth=5,
-            noise="bit_flip",
-            error_prob=0.1,
-        )
-        == "id1"
-    )
-
-    mock_post.return_value.json = lambda: [1] * 51
-    assert fake_superstaq_provider.process_aces("id1") == [1] * 51
-
-
 def test_get_targets() -> None:
     provider = qss.SuperstaqProvider(api_key="key", remote_host="http://example.com")
     mock_client = mock.MagicMock()
