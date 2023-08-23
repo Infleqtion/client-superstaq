@@ -860,17 +860,6 @@ class Service(gss.service.Service):
             lifespan=lifespan,
         )
 
-    def process_aces(self, job_id: str) -> List[float]:
-        """Makes a POST request to the "/aces_fetch" endpoint.
-
-        Args:
-            job_id: The job id returned by `submit_aces`.
-
-        Returns:
-            The estimated eigenvalues.
-        """
-        return self._client.process_aces(job_id=job_id)
-
     def target_info(self, target: str) -> Dict[str, Any]:
         """Returns information about device specified by `target`.
 

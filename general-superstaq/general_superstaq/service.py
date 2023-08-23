@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import qubovert as qv
 
@@ -293,3 +293,77 @@ class Service:
             variables = yaml.safe_load(config_dict["variables"])
 
             return pulses, variables
+
+    def submit_aces(
+        self,
+        target: str,
+        qubits: List[int],
+        shots: int,
+        num_circuits: int,
+        mirror_depth: int,
+        extra_depth: int,
+        method: Optional[str] = None,
+        noise: Optional[str] = None,
+        error_prob: Optional[Union[float, Tuple[float, float, float]]] = None,
+        tag: Optional[str] = None,
+        lifespan: Optional[int] = None,
+    ) -> str:
+        """Performs a POST request on the `/aces` endpoint.
+
+        Args:
+            target: The device target to characterize.
+            qubits: A list with the qubit indices to characterize.
+            shots: How many shots to use per circuit submitted.
+            num_circuits: How many random circuits to use in the protocol.
+            mirror_depth: The half-depth of the mirror portion of the random circuits.
+            extra_depth: The depth of the fully random portion of the random circuits.
+            method: Which type of method to execute the circuits with.
+            noise: Noise model to simulate the protocol with. Valid strings are
+                "symmetric_depolarize", "phase_flip", "bit_flip" and "asymmetric_depolarize".
+            error_prob: The error probabilities if a string was passed to `noise`.
+
+                For "asymmetric_depolarize", `prob_of_error` will be a three-tuple with the
+                error rates for the X, Y, Z gates in that order. So, a valid argument would be
+                `error_prob = (0.1, 0.1, 0.1)`. notice that these values must add up to less than
+                or equal to 1. For the other channels, `prob_of_error` is one number less than or
+                equal to 1, e.g., `error_prob = 0.1`.
+            tag: Tag for all jobs submitted for this protocol.
+            lifespan: How long to store the jobs submitted for in days (only works with right
+                permissions).
+
+        Returns:
+            A string with the job id for the ACES job created.
+
+        Raises:
+            ValueError: If the target is not valid.
+            ValueError: If the noise model passed is not valid.
+            SuperstaqServerException: if the request fails.
+        """
+        noise_dict: Dict[str, object] = {}
+        if noise:
+            noise_dict["type"] = noise
+            noise_dict["params"] = error_prob if isinstance(error_prob, tuple) else (error_prob,)
+
+        return self._client.submit_aces(
+            target=target,
+            qubits=qubits,
+            shots=shots,
+            num_circuits=num_circuits,
+            mirror_depth=mirror_depth,
+            extra_depth=extra_depth,
+            method=method,
+            noise=noise_dict,
+            tag=tag,
+            lifespan=lifespan,
+        )
+
+    def process_aces(self, job_id: str) -> List[float]:
+        """Makes a POST request to the "/aces_fetch" endpoint.
+
+        Args:
+            job_id: The job id returned by `submit_aces`.
+
+        Returns:
+            The estimated eigenvalues.
+        """
+        return self._client.process_aces(job_id=job_id)
