@@ -293,7 +293,7 @@ CHECK_LIST = [
 
 
 def get_check_parser(no_files: bool = False) -> argparse.ArgumentParser:
-    """Construct a console argument parser common to all check scripts.
+    """Construct a command-line argument parser common to all check scripts.
 
     This parser collects a list of files to check, with "no files" == "all files".
 
