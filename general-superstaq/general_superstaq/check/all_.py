@@ -38,6 +38,7 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
 
     parser.add_argument(
         "-f",
+        "--soft-force",
         action="store_true",
         dest="force_formats",
         help="'Soft force' ~ continue past (i.e. do not exit after) failing format checks.",
@@ -58,7 +59,7 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
     default_mode = not parsed_args.files and parsed_args.revisions is None
     checks_failed = 0
 
-    args_to_pass = [arg for arg in args if arg not in ("-f", "-F", "--force")]
+    args_to_pass = [arg for arg in args if arg not in ("-f", "--soft-force", "-F", "--force")]
 
     # run formatting checks
     # silence most checks to avoid printing duplicate info about incremental files
