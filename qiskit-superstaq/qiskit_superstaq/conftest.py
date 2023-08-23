@@ -44,7 +44,7 @@ class MockSuperstaqBackend(qss.SuperstaqBackend):
         )
 
 
-class MockSuperstaqClient(gss._SuperstaqClient):
+class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
     """Stand-in for `_SuperstaqClient` that the tests can call."""
 
     def get_targets(self) -> Dict[str, Dict[str, List[str]]]:
