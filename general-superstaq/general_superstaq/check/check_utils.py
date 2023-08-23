@@ -300,10 +300,10 @@ def get_check_parser(no_files: bool = False) -> argparse.ArgumentParser:
     In addition, this parser has flags/arguments to:
     - skip certain (specified) checks.
     - run incremental checks, i.e., on the files that have changed since a specified git revision,
-    - exclude files matching a specified glob,
+    - exclude files matching a specified glob.
 
     Args:
-        no_files: ignore file-related arguments.
+        no_files: Ignore file-related arguments.
 
     Returns:
         A console argument parser.

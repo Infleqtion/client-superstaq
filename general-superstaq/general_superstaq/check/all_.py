@@ -38,16 +38,14 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
 
     parser.add_argument(
         "-f",
-        "--soft-force",
+        "--force-formats",
         action="store_true",
-        dest="force_formats",
         help="'Soft force' ~ continue past (i.e. do not exit after) failing format checks.",
     )
     parser.add_argument(
         "-F",
-        "--force",
+        "--force-all",
         action="store_true",
-        dest="force_all",
         help="'Hard force' ~ continue past (i.e. do not exit after) all failing checks.",
     )
 
