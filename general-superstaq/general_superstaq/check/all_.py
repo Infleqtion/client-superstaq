@@ -44,8 +44,9 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
     )
     parser.add_argument(
         "-F",
-        "--force-all",
+        "--force",
         action="store_true",
+        dest="force_all",
         help="'Hard force' ~ continue past (i.e. do not exit after) all failing checks.",
     )
 
