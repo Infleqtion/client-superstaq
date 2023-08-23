@@ -29,7 +29,7 @@ def run(
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
 
-    parser = check_utils.get_file_parser()
+    parser = check_utils.get_check_parser()
     parser.description = textwrap.dedent(
         """
         Runs black and isort on the repository (formatting check).
@@ -39,6 +39,9 @@ def run(
     parser.add_argument("--apply", action="store_true", help="Apply changes to files.")
 
     parsed_args, args_to_pass_isort = parser.parse_known_intermixed_args(args, namespace=namespace)
+    if "format" in parsed_args.skip:
+        return 0
+
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
     if not files:
         return 0

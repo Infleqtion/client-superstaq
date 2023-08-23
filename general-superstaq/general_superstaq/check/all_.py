@@ -15,17 +15,6 @@ from general_superstaq.check import (
     requirements,
 )
 
-CHECK_LIST = [
-    "configs",
-    "format",
-    "flake8",
-    "pylint",
-    "mypy",
-    "coverage",
-    "requirements",
-    "build_docs",
-]
-
 
 def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
     """Runs all checks on the repository.
@@ -38,7 +27,7 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
 
-    parser = check_utils.get_file_parser()
+    parser = check_utils.get_check_parser()
     parser.description = textwrap.dedent(
         """
         Runs all checks on the repository.
@@ -60,14 +49,6 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
         dest="force_all",
         help="'Hard force' ~ continue past (i.e. do not exit after) all failing checks.",
     )
-    parser.add_argument(
-        "--skip",
-        choices=CHECK_LIST,
-        nargs="+",
-        action="extend",
-        default=[],
-        help="The checks to skip.",
-    )
 
     parsed_args, _ = parser.parse_known_intermixed_args(args)
     if parsed_args.revisions is not None:
@@ -81,28 +62,20 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
     # silence most checks to avoid printing duplicate info about incremental files
     # silencing does not affect warnings and errors
     exit_on_failure = not (parsed_args.force_formats or parsed_args.force_all)
-    common_kwargs = dict(namespace=parsed_args, exit_on_failure=exit_on_failure, silent=True)
-    if "configs" not in parsed_args.skip:
-        checks_failed |= configs.run(exit_on_failure=exit_on_failure, silent=True)
-    if "format" not in parsed_args.skip:
-        checks_failed |= format_.run(**common_kwargs)
-    if "flake8" not in parsed_args.skip:
-        checks_failed |= flake8_.run(**common_kwargs)
-    if "pylint" not in parsed_args.skip:
-        checks_failed |= pylint_.run(**common_kwargs)
+    checks_failed |= configs.run(exit_on_failure=exit_on_failure, silent=True)
+    checks_failed |= format_.run(exit_on_failure=exit_on_failure, silent=True)
+    checks_failed |= flake8_.run(exit_on_failure=exit_on_failure, silent=True)
+    checks_failed |= pylint_.run(exit_on_failure=exit_on_failure, silent=True)
 
     # run typing and coverage checks
     exit_on_failure = not parsed_args.force_all
-    if "mypy" not in parsed_args.skip:
-        checks_failed |= mypy_.run(**common_kwargs)
-    if "coverage" not in parsed_args.skip:
-        checks_failed |= coverage_.run(**common_kwargs)
+    checks_failed |= mypy_.run(exit_on_failure=exit_on_failure, silent=True)
+    checks_failed |= coverage_.run(exit_on_failure=exit_on_failure, silent=True)
 
     # check that all pip requirements files are in order
-    if "requirements" not in parsed_args.skip:
-        checks_failed |= requirements.run(exit_on_failure=exit_on_failure)
+    checks_failed |= requirements.run(exit_on_failure=exit_on_failure)
 
-    if default_mode and "build_docs" not in parsed_args.skip:
+    if default_mode:
         # checks that the docs build
         checks_failed |= build_docs.run(exit_on_failure=exit_on_failure, sphinx_paths=sphinx_paths)
 

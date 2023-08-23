@@ -29,7 +29,7 @@ def run(
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
 
-    parser = check_utils.get_file_parser()
+    parser = check_utils.get_check_parser()
     parser.description = textwrap.dedent(
         """
         Checks to make sure that all code is covered by unit tests.
@@ -42,6 +42,9 @@ def run(
     parser.add_argument("--enable-socket", action="store_true", help="Force-enable socket.")
 
     parsed_args, pytest_args = parser.parse_known_intermixed_args(args, namespace=namespace)
+    if "coverage" in parsed_args.skip:
+        return 0
+
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     silent = silent or not (parsed_args.files or parsed_args.revisions)

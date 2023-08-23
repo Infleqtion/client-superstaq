@@ -27,7 +27,9 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
         Checks that the docs build successfully.
         """
     )
-    parser.parse_args(args)  # placeholder parsing to enable printing help text
+    parsed_args, _ = parser.parse_known_intermixed_args(args)
+    if "build_docs" in parsed_args:
+        return 0
 
     docs_dir = os.path.join(check_utils.root_dir, "docs")
     make_file = os.path.join(docs_dir, "Makefile")

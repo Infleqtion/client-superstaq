@@ -34,7 +34,9 @@ def run(*args: str, silent: bool = False) -> int:
         Exceptions in {CONFIG_FILE} can be flagged by adding "{IGNORE_MATCH}" to the line.
         """
     )
-    parser.parse_args(args)  # placeholder parsing to enable printing help text
+    parsed_args, _ = parser.parse_known_intermixed_args(args)
+    if "configs" in parsed_args.skip:
+        return 0
 
     # identify the "original" config file, and the file that is supposed to be a copy
     file_orig = os.path.join(os.path.abspath(os.path.dirname(__file__)), TEMPLATE_FILE)
