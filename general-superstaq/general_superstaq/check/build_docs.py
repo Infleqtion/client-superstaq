@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import argparse
 import os
 import subprocess
 import sys
@@ -21,7 +20,7 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = check_utils.get_check_parser(no_files=True)
     parser.description = textwrap.dedent(
         """
         Checks that the docs build successfully.

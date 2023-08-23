@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import argparse
 import difflib
 import os
 import sys
@@ -26,7 +25,7 @@ def run(*args: str, silent: bool = False) -> int:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = check_utils.get_check_parser(no_files=True)
     parser.description = textwrap.dedent(
         f"""
         Checks that the check script configuration file ({CONFIG_FILE}) is consistent across repos.

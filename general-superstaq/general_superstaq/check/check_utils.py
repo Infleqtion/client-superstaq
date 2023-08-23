@@ -291,15 +291,18 @@ CHECK_LIST = [
 ]
 
 
-def get_check_parser() -> argparse.ArgumentParser:
+def get_check_parser(no_files: bool = False) -> argparse.ArgumentParser:
     """Construct a console argument parser common to all check scripts.
 
     This parser collects a list of files to check, with "no files" == "all files".
 
     In addition, this parser has flags/arguments to:
+    - skip certain (specified) checks.
     - run incremental checks, i.e., on the files that have changed since a specified git revision,
     - exclude files matching a specified glob,
-    - skip certain (specified) checks.
+
+    Args:
+        no_files: ignore file-related arguments.
 
     Returns:
         A console argument parser.
@@ -307,6 +310,18 @@ def get_check_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         allow_abbrev=False, formatter_class=argparse.RawDescriptionHelpFormatter
     )
+
+    parser.add_argument(
+        "--skip",
+        choices=CHECK_LIST,
+        nargs="+",
+        action="extend",
+        default=[],
+        help="The checks to skip.",
+    )
+
+    if no_files:
+        return parser
 
     help_text = "The files to check. If not passed any files, inspects the entire repo."
     parser.add_argument("files", nargs="*", help=help_text)
@@ -325,6 +340,7 @@ def get_check_parser() -> argparse.ArgumentParser:
         nargs="*",
         help=help_text,
     )
+
     parser.add_argument(
         "-x",
         "--exclude",
@@ -332,14 +348,6 @@ def get_check_parser() -> argparse.ArgumentParser:
         nargs="+",
         metavar="GLOB",
         help="Exclude files matching GLOB.",
-    )
-    parser.add_argument(
-        "--skip",
-        choices=CHECK_LIST,
-        nargs="+",
-        action="extend",
-        default=[],
-        help="The checks to skip.",
     )
 
     return parser
