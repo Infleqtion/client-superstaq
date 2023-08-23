@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import argparse
 import subprocess
 import sys
 import textwrap
@@ -14,7 +13,6 @@ def run(
     include: Optional[Union[str, Iterable[str]]] = None,
     exclude: Optional[Union[str, Iterable[str]]] = None,
     integration_setup: Optional[Callable[[], None]] = None,
-    namespace: argparse.Namespace = argparse.Namespace(),
     silent: bool = False,
 ) -> int:
     """Runs pytest on the repository.

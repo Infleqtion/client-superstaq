@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import argparse
 import subprocess
 import sys
 import textwrap
@@ -13,7 +12,6 @@ def run(
     *args: str,
     include: Union[str, Iterable[str]] = ("*.py", "*.ipynb"),
     exclude: Union[str, Iterable[str]] = (),
-    namespace: argparse.Namespace = argparse.Namespace(),
     silent: bool = False,
 ) -> int:
     """Runs black and isort on the repository (formatting check).

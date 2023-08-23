@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import argparse
 import subprocess
 import sys
 import textwrap
@@ -13,7 +12,6 @@ def run(
     *args: str,
     include: Union[str, Iterable[str]] = "*.py",
     exclude: Union[str, Iterable[str]] = "*_integration_test.py",
-    namespace: argparse.Namespace = argparse.Namespace(),
     silent: bool = False,
 ) -> int:
     """Checks to make sure that all code is covered by unit tests.
