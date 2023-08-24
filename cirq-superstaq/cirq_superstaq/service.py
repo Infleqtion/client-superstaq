@@ -12,6 +12,7 @@
 # limitations under the License.
 """Service to access Superstaqs API."""
 
+import numbers
 import warnings
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
@@ -807,7 +808,7 @@ class Service(gss.service.Service):
     def submit_aces(
         self,
         target: str,
-        qubits: List[int],
+        qubits: Sequence[int],
         shots: int,
         num_circuits: int,
         mirror_depth: int,
@@ -818,7 +819,21 @@ class Service(gss.service.Service):
         tag: Optional[str] = None,
         lifespan: Optional[int] = None,
     ) -> str:
-        """Performs a POST request on the `/aces` endpoint.
+        """Submits the jobs to characterize `target` through the ACES protocol.
+
+        The following gate eigenvalues are eestimated. For each qubit in the device, we consider
+        six Clifford gates. These are given by the XZ maps: XZ, ZX, -YZ, -XY, ZY, YX. For each of
+        these gates, three eigenvalues are returned (X, Y, Z, in that order). Then, the two-qubit
+        gate considered here is the CZ in linear connectivity (each qubit n with n + 1). For this
+        gate, 15 eigenvalues are considered: XX, XY, XZ, XI, YX, YY, YZ, YI, ZX, ZY, ZZ, ZI, IX, IY
+        IZ, in that order.
+
+        If n qubits are characterized, the first 18 * n entries of the list returned by
+        `process_aces` will contain the  single-qubit eigenvalues for each gate in the order above.
+        After all the single-qubit eigenvalues, the next 15 * (n - 1) entries will contain for the
+        CZ connections, in ascending order.
+
+        The protocol in detail can be found in: https://arxiv.org/abs/2108.05803.
 
         Args:
             target: The device target to characterize.
@@ -829,16 +844,14 @@ class Service(gss.service.Service):
             extra_depth: The depth of the fully random portion of the random circuits.
             method: Which type of method to execute the circuits with.
             noise: Noise model to simulate the protocol with. It can be either a string or a
-                `cirq.NoiseModel`.
-
-                Valid strings are "symmetric_depolarize", "phase_flip", "bit_flip" and
-                "asymmetric_depolarize".
+                `cirq.NoiseModel`. Valid strings are "symmetric_depolarize", "phase_flip",
+                "bit_flip" and "asymmetric_depolarize".
             error_prob: The error probabilities if a string was passed to `noise`.
 
-                For "asymmetric_depolarize", `prob_of_error` will be a three-tuple with the
+                For "asymmetric_depolarize", `error_prob` will be a three-tuple with the
                 error rates for the X, Y, Z gates in that order. So, a valid argument would be
                 `error_prob = (0.1, 0.1, 0.1)`. notice that these values must add up to less than
-                or equal to 1. For the other channels, `prob_of_error` is one number less than or
+                or equal to 1. For the other channels, `error_prob` is one number less than or
                 equal to 1, e.g., `error_prob = 0.1`.
             tag: Tag for all jobs submitted for this protocol.
             lifespan: How long to store the jobs submitted for in days (only works with right
@@ -848,14 +861,15 @@ class Service(gss.service.Service):
             A string with the job id for the ACES job created.
 
         Raises:
-            ValueError: If the target is not valid.
-            ValueError: If the noise model passed is not valid.
-            SuperstaqServerException: if the request fails.
+            ValueError: If the target or noise model is not valid.
+            SuperstaqServerException: If the request fails.
         """
         noise_dict: Dict[str, object] = {}
         if isinstance(noise, str):
             noise_dict["type"] = noise
-            noise_dict["params"] = error_prob if isinstance(error_prob, tuple) else (error_prob,)
+            noise_dict["params"] = (
+                (error_prob,) if isinstance(error_prob, numbers.Number) else error_prob
+            )
         elif isinstance(noise, cirq.NoiseModel):
             noise_dict["cirq_noise_model"] = cirq.to_json(noise)
 
