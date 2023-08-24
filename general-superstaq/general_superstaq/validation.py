@@ -123,8 +123,7 @@ def validate_noise_type(noise: Dict[str, object], n_qubits: int) -> None:
 
     if noise_type == "asymmetric_depolarize":
         if not (
-            isinstance(params, tuple)
-            and len(params) == 3
+            len(params) == 3
             and all(isinstance(v, (int, float)) for v in params)
             and sum(params) <= 1
         ):
