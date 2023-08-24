@@ -34,7 +34,7 @@ def test_acecr() -> None:
 
     gate = qss.AceCR("-+", sandwich_rx_rads=np.pi / 2)
     assert repr(gate) == "qss.AceCR(rads=-1.5707963267948966, sandwich_rx_rads=1.5707963267948966)"
-    assert str(gate) == "AceCR(-0.5π)|RXGate(pi/2)|"
+    assert str(gate) == "AceCR(-0.5π)|RXGate(π/2)|"
 
     gate = qss.AceCR("-+", sandwich_rx_rads=np.pi / 2, label="label")
     _check_gate_definition(gate)
@@ -42,7 +42,7 @@ def test_acecr() -> None:
         repr(gate)
         == "qss.AceCR(rads=-1.5707963267948966, sandwich_rx_rads=1.5707963267948966, label='label')"
     )
-    assert str(gate) == "AceCR(-0.5π)|RXGate(pi/2)|"
+    assert str(gate) == "AceCR(-0.5π)|RXGate(π/2)|"
 
     with pytest.raises(ValueError, match="Polarity must be"):
         _ = qss.AceCR("++")
@@ -53,11 +53,11 @@ def test_acecr() -> None:
 
     gate = qss.AceCR(sandwich_rx_rads=np.pi / 2)
     assert repr(gate) == "qss.AceCR(sandwich_rx_rads=1.5707963267948966)"
-    assert str(gate) == "AceCR|RXGate(pi/2)|"
+    assert str(gate) == "AceCR|RXGate(π/2)|"
 
     gate = qss.AceCR(rads=np.pi / 5, sandwich_rx_rads=np.pi / 2)
     assert repr(gate) == "qss.AceCR(rads=0.6283185307179586, sandwich_rx_rads=1.5707963267948966)"
-    assert str(gate) == "AceCR(0.2π)|RXGate(pi/2)|"
+    assert str(gate) == "AceCR(0.2π)|RXGate(π/2)|"
 
     qc = qiskit.QuantumCircuit(2)
     qc.append(gate, [0, 1])
@@ -82,12 +82,18 @@ def test_zz_swap() -> None:
     assert repr(gate) == "qss.ZZSwapGate(4.56, label='label')"
     assert str(gate) == "ZZSwapGate(4.56)"
 
+    gate = qss.ZZSwapGate(np.pi / 3)
+    assert str(gate) == "ZZSwapGate(π/3)"
+
 
 def test_stripped_cz() -> None:
     gate = qss.StrippedCZGate(1.23)
     _check_gate_definition(gate)
     assert repr(gate) == "qss.StrippedCZGate(1.23)"
     assert str(gate) == "StrippedCZGate(1.23)"
+
+    gate = qss.StrippedCZGate(np.pi / 3)
+    assert str(gate) == "StrippedCZGate(π/3)"
 
 
 def test_parallel_gates() -> None:
