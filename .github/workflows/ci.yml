@@ -25,11 +25,13 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: >-
+            ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt',
+            '.github/workflows/ci.yml') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev]
+          pip install ./general-superstaq[dev]
       - name: Format
         run: |
           check/format_.py
@@ -46,11 +48,15 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: >-
+            ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt',
+            '.github/workflows/ci.yml') }}
       - name: Install dependencies
-        run: |
+        run: >
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq -e ./qiskit-superstaq -e ./supermarq-benchmarks
+
+          pip install ./general-superstaq[dev] ./cirq-superstaq ./qiskit-superstaq
+          ./supermarq-benchmarks
       - name: Pylint
         run: |
           check/pylint_.py --all
@@ -67,11 +73,13 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: >-
+            ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt',
+            '.github/workflows/ci.yml') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev]
+          pip install ./general-superstaq[dev]
       - name: Flake8
         run: |
           check/flake8_.py
@@ -88,11 +96,15 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: >-
+            ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt',
+            '.github/workflows/ci.yml') }}
       - name: Install dependencies
-        run: |
+        run: >
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./supermarq-benchmarks[dev]
+
+          pip install ./general-superstaq[dev] ./cirq-superstaq[dev] ./qiskit-superstaq[dev]
+          ./supermarq-benchmarks[dev]
       - name: Type check
         run: |
           check/mypy_.py
@@ -112,11 +124,15 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: >-
+            ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt',
+            '.github/workflows/ci.yml') }}
       - name: Install dependencies
-        run: |
+        run: >
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./supermarq-benchmarks[dev]
+
+          pip install ./general-superstaq[dev] ./cirq-superstaq[dev] ./qiskit-superstaq[dev]
+          ./supermarq-benchmarks[dev]
       - name: Coverage check
         run: |
           check/coverage_.py
@@ -133,7 +149,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev]
+          pip install ./general-superstaq[dev]
       - name: Coverage check
         run: |
           check/coverage_.py general-superstaq
@@ -152,7 +168,7 @@ jobs:
           cirq_version=$(sed cirq-superstaq/requirements.txt -ne 's/^cirq.=/cirq==/p')
           echo "Using minimum cirq version: $cirq_version"
           python -m pip install --upgrade pip
-          pip install "$cirq_version" -e ./general-superstaq[dev] -e ./cirq-superstaq[dev]
+          pip install "$cirq_version" ./general-superstaq[dev] ./cirq-superstaq[dev]
       - name: Coverage check
         run: |
           check/coverage_.py cirq-superstaq
@@ -171,7 +187,7 @@ jobs:
           qiskit_version=$(sed qiskit-superstaq/requirements.txt -ne 's/^qiskit.=/qiskit==/p')
           echo "Using minimum qiskit version: $qiskit_version"
           python -m pip install --upgrade pip
-          pip install "$qiskit_version" -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev]
+          pip install "$qiskit_version" ./general-superstaq[dev] ./qiskit-superstaq[dev]
       - name: Coverage check
         run: |
           check/coverage_.py qiskit-superstaq
@@ -188,11 +204,15 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: >-
+            ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt',
+            '.github/workflows/ci.yml') }}
       - name: Install dependencies
-        run: |
+        run: >
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./supermarq-benchmarks[dev]
+
+          pip install ./general-superstaq[dev] ./cirq-superstaq[dev] ./qiskit-superstaq[dev]
+          ./supermarq-benchmarks[dev]
       - name: Pytest-mac check
         run: |
           check/pytest_.py
@@ -207,9 +227,11 @@ jobs:
         with:
           python-version: 3.8
       - name: Install dependencies
-        run: |
+        run: >
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./supermarq-benchmarks[dev]
+
+          pip install ./general-superstaq[dev] ./cirq-superstaq[dev] ./qiskit-superstaq[dev]
+          ./supermarq-benchmarks[dev]
       - name: Pytest-win check
         run: |
           check/pytest_.py
@@ -228,11 +250,15 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: >-
+            ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt',
+            '.github/workflows/ci.yml') }}
       - name: Install dependencies
-        run: |
+        run: >
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq -e ./qiskit-superstaq -e ./supermarq-benchmarks
+
+          pip install ./general-superstaq[dev] ./cirq-superstaq ./qiskit-superstaq
+          ./supermarq-benchmarks
       - name: Requirements check
         run: |
           check/requirements.py
@@ -251,11 +277,15 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: >-
+            ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt',
+            '.github/workflows/ci.yml') }}
       - name: Install dependencies
-        run: |
+        run: >
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./supermarq-benchmarks[dev]
+
+          pip install ./general-superstaq[dev] ./cirq-superstaq[dev] ./qiskit-superstaq[dev]
+          ./supermarq-benchmarks[dev]
       - name: Notebook check
         run: |
           check/pytest_.py --notebook
@@ -273,12 +303,18 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: >-
+            ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt',
+            '.github/workflows/ci.yml') }}
       - name: Install dependencies
-        run: |
+        run: >
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./supermarq-benchmarks[dev]
+
+          pip install ./general-superstaq[dev] ./cirq-superstaq[dev] ./qiskit-superstaq[dev]
+          ./supermarq-benchmarks[dev]
+
           pip install -r ./docs/requirements.txt
+
           sudo apt-get install pandoc
       - name: Build docs
         run: |
