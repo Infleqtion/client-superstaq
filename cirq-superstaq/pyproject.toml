@@ -19,6 +19,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["cirq_superstaq*"]
 
+[tool.setuptools.package-dir]
+"" = "."
+
 [tool.setuptools.package-data]
 cirq_superstaq = ["py.typed"]
 
