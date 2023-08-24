@@ -18,7 +18,7 @@ import sys
 import textwrap
 import time
 import urllib
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import qubovert as qv
 import requests
@@ -214,6 +214,33 @@ class _SuperstaqClient:
             SuperstaqServerException: For other API call failures.
         """
         return self.get_request(f"/job/{job_id}")
+
+    def get_counts_on_qubits(self, counts_dict: Dict[str, int], target_qubit_indices: List[int, ...]
+                             ) -> Tuple[Dict[str,int], Dict[str,int]]:
+        target_dict: Dict[str, int] = {}
+        circuit_dict: Dict[str, int] = {}
+
+        #possible because all keys are the same length - however there should be
+        #a cleaner way to do this
+        example_key = list(counts_dict.keys())[0]
+        circuit_qubit_indices = [i for i in range(len(example_key)) if i not in target_qubit_indices]
+        #creating substring keys to differentiate between the target qubits
+        #and circuit qubits
+        def meas_substring(bitstring: str, indices: List[int]) -> str:
+            return "".join([bitstring[index] for index in indices])
+
+        for key, val in counts_dict().items():
+            target_key = meas_substring(key, target_qubit_indices)
+            circuit_key = meas_substring(key, circuit_qubit_indices)
+            for new_key, new_dict in zip((target_key, circuit_key), (target_dict, circuit_dict)):
+                if new_key in new_dict.keys():
+                    new_dict[new_key] += val
+                else:
+                    new_dict[new_key] = val
+
+        return target_dict, circuit_dict
+
+
 
     def get_balance(self) -> Dict[str, float]:
         """Get the querying user's account balance in USD.

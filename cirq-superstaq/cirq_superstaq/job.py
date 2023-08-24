@@ -13,7 +13,7 @@
 # limitations under the License.
 """Represents a job created via the Superstaq API."""
 import time
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import cirq
 import general_superstaq as gss
@@ -175,7 +175,9 @@ class Job:
 
         return css.deserialize_circuits(self._job["input_circuit"])[0]
 
-    def counts(self, timeout_seconds: int = 7200, polling_seconds: float = 1.0) -> Dict[str, int]:
+    def counts(self, timeout_seconds: int = 7200, polling_seconds: float = 1.0,
+               target_indices: Optional[List[int, ...]] = None) -> (
+            Dict)[str, int]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
 
         Args:
@@ -190,6 +192,7 @@ class Job:
             SuperstaqServerException: If unable to get the results from the API.
             TimeoutError: If no results are available in the provided timeout interval.
         """
+        print("used")
         time_waited_seconds: float = 0.0
         while self.status() not in self.TERMINAL_STATES:
             # Status does a refresh.
@@ -201,7 +204,15 @@ class Job:
             time_waited_seconds += polling_seconds
 
         self._check_if_unsuccessful()
-        return self._job["samples"]
+        counts_dictionary = self._job["samples"]
+        
+        if not target_indices:
+            print("let's go!")
+
+        if target_indices:
+            print("used")
+            return gss.superstaq_client._SuperstaqClient.get_counts_on_qubits(counts_dictionary,target_indices)
+        return counts_dictionary
 
     def to_dict(self) -> Dict[str, Any]:
         """Refreshes and returns job information.
