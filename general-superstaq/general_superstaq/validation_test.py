@@ -55,7 +55,7 @@ def test_validate_noise_type() -> None:
         gss.validation.validate_noise_type(input_value, 1)
 
     with pytest.raises(
-        ValueError, match="`params` must be a tuple in the dict if `type` is in the dict."
+        ValueError, match="`params` must be a sequence in the dict if `type` is in the dict."
     ):
         gss.validation.validate_noise_type({"type": "test"}, 1)
 

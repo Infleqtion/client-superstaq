@@ -1,5 +1,5 @@
 import re
-from typing import Dict
+from typing import Dict, Sequence
 
 
 def validate_integer_param(integer_param: object) -> None:
@@ -83,8 +83,8 @@ def validate_noise_type(noise: Dict[str, object], n_qubits: int) -> None:
         ValueError: If `noise` is not valid.
     """
     noise_type = noise.get("type")
-    if not ((params := noise.get("params")) and isinstance(params, tuple)):
-        raise ValueError("`params` must be a tuple in the dict if `type` is in the dict.")
+    if not ((params := noise.get("params")) and isinstance(params, Sequence)):
+        raise ValueError("`params` must be a sequence in the dict if `type` is in the dict.")
 
     if noise_type not in [
         "symmetric_depolarize",
