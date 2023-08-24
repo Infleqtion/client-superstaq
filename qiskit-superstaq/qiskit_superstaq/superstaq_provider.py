@@ -47,7 +47,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Initializes a SuperstaqProvider.
 
@@ -84,7 +84,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             api_version=api_version,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
-            **kwargs
+            **kwargs,
         )
 
     def __str__(self) -> str:

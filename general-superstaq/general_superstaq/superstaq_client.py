@@ -99,7 +99,7 @@ class _SuperstaqClient:
             "X-Client-Name": self.client_name,
             "X-Client-Version": self.api_version,
         }
-        self._options = json.dumps({"options": kwargs})
+        self._client_kwargs = kwargs
 
     def get_request(self, endpoint: str) -> Any:
         """Performs a GET request on a given endpoint.
@@ -200,12 +200,10 @@ class _SuperstaqClient:
             "target": target,
             "shots": int(repetitions),
         }
-
         if method is not None:
             json_dict["method"] = method
-
-        if kwargs:
-            json_dict["options"] = json.dumps(kwargs)
+        if kwargs or self._client_kwargs:
+            json_dict["options"] = json.dumps({**kwargs, **self._client_kwargs})
             if "cq_token" in json_dict["options"]:
                 warnings.warn(
                     "Starting with client-superstaq v0.4.20, passing in `cq_token` when "
@@ -214,8 +212,6 @@ class _SuperstaqClient:
                     DeprecationWarning,
                     stacklevel=2,
                 )
-        else:
-            json_dict = json.loads(self._options)
 
         return self.post_request("/jobs", json_dict)
 
@@ -231,15 +227,29 @@ class _SuperstaqClient:
         Raises:
             SuperstaqServerException: For other API call failures.
         """
-        return self.fetch_jobs([job_id], options=self._options)
-        #return self.get_request(f"/job/{job_id}/{self._options}")
+        warnings.warn(
+            "Starting with client-superstaq v0.4.20, the `get_job` method and "
+            "endpoint won't exist. Call `fetch_jobs` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.fetch_jobs([job_id])[0]
 
-
-    def fetch_jobs(self, job_ids:List[str], tags: Optional[List[str]]= None, targets: Optional[List[str]]=None, **kwargs: Any) -> Dict[str, str]:
+    def fetch_jobs(
+        self,
+        job_ids: List[str],
+        tags: Optional[List[str]] = None,
+        targets: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> List[Dict[str, str]]:
         """Get the job from the Superstaq API.
 
         Args:
-            job_id: The UUID of the job (returned when the job was created).
+            job_ids: The UUID of the job (returned when the job was created).
+            tags: optional tags of jobs
+            targets: optional targets of jobs
+            kwargs:  Extra options needed to fetch jobs.
+                - cq_token: CQ Cloud credentials.
 
         Returns:
             The json body of the response as a dict.
@@ -250,17 +260,16 @@ class _SuperstaqClient:
 
         json_dict: Dict[str, Any] = {
             "job_ids": job_ids,
-            "tags": tags,
-            "targets": targets,
         }
 
-        if kwargs:
-            json_dict["options"] = json.dumps(kwargs)
+        if tags:
+            json_dict["tags"] = tags
+        if targets:
+            json_dict["targets"] = targets
+        if kwargs or self._client_kwargs:
+            json_dict["options"] = json.dumps({**kwargs, **self._client_kwargs})
 
         return self.post_request("/fetch_jobs", json_dict)
-
-
-
 
     def get_balance(self) -> Dict[str, float]:
         """Get the querying user's account balance in USD.
