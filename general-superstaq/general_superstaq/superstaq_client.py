@@ -204,7 +204,7 @@ class _SuperstaqClient:
             json_dict["method"] = method
         if kwargs or self._client_kwargs:
             json_dict["options"] = json.dumps({**kwargs, **self._client_kwargs})
-            if "cq_token" in json_dict["options"]:
+            if "cq_token" in kwargs:
                 warnings.warn(
                     "Starting with client-superstaq v0.4.20, passing in `cq_token` when "
                     "submitting the job won't work. Pass `cq_token` when creating the provider "
