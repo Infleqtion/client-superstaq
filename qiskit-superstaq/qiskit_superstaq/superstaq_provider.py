@@ -359,7 +359,8 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             circuits,
             grid_shape=grid_shape,
             control_radius=control_radius,
-            stripped_cz_rads=stripped_cz_rads**kwargs,
+            stripped_cz_rads=stripped_cz_rads,
+            **kwargs,
         )
 
     def supercheq(
