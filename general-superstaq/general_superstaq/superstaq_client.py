@@ -68,7 +68,7 @@ class _SuperstaqClient:
                 which is the most recent version when this client was downloaded.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
-             kwargs: Other optimization and execution parameters.
+            kwargs: Other optimization and execution parameters.
                 - qiskit_pulse: Whether to use Superstaq's pulse-level optimizations for IBMQ
                 devices.
                 - cq_token: Token from CQ cloud.
