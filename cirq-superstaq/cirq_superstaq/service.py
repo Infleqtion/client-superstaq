@@ -23,6 +23,9 @@ from general_superstaq import ResourceEstimate, superstaq_client
 
 import cirq_superstaq as css
 
+x: gss.typing.Job = 5
+y: gss.superstaq_client._SuperstaqClient = "client"
+
 
 def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
     """Convert a unitary matrix into a `cirq.MatrixGate` acting either on qubits or on qutrits.
