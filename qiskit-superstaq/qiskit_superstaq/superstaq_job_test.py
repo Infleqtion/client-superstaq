@@ -68,7 +68,6 @@ def test_result(backend: qss.SuperstaqBackend) -> None:
             "job_id": "123abc",
         }
     )
-
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaqClient.get_job",
         return_value=mock_response("Done"),
@@ -77,6 +76,7 @@ def test_result(backend: qss.SuperstaqBackend) -> None:
 
         assert ans.backend_name == expected.backend_name
         assert ans.job_id == expected.job_id
+        assert job.get_counts_on_qubits([0]) == ({"0": 100}, {"1": 100})
 
 
 def test_check_if_stopped(backend: qss.SuperstaqBackend) -> None:

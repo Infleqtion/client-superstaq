@@ -12,7 +12,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import general_superstaq as gss
 import qiskit
@@ -100,6 +100,17 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 "job_id": self._job_id,
             }
         )
+
+    def get_counts_on_qubits(
+        self, target_indices: List[int]
+    ) -> Tuple[Dict[str, int], Dict[str, int]]:
+        """A method to return counts on specific qubits of a circuit.
+        :param target_indices: The indicies of the qubits to separate
+        :return: A tuple of the separated dictionary, and the dictionary
+        containing counts on all other qubits in the circuit
+        """
+        counts_dictionary = self.result().get_counts()
+        return gss.superstaq_client.get_counts_on_qubits(counts_dictionary, target_indices)
 
     def _check_if_stopped(self) -> None:
         """Verifies that the job status is not in a cancelled or failed state and

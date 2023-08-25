@@ -13,7 +13,7 @@
 # limitations under the License.
 """Represents a job created via the Superstaq API."""
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import cirq
 import general_superstaq as gss
@@ -175,9 +175,11 @@ class Job:
 
         return css.deserialize_circuits(self._job["input_circuit"])[0]
 
-    def counts(self, timeout_seconds: int = 7200, polling_seconds: float = 1.0,
-               target_indices: Optional[List[int, ...]] = None) -> (
-            Dict)[str, int]:
+    def counts(
+        self,
+        timeout_seconds: int = 7200,
+        polling_seconds: float = 1.0,
+    ) -> Dict[str, int]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
 
         Args:
@@ -192,7 +194,6 @@ class Job:
             SuperstaqServerException: If unable to get the results from the API.
             TimeoutError: If no results are available in the provided timeout interval.
         """
-        print("used")
         time_waited_seconds: float = 0.0
         while self.status() not in self.TERMINAL_STATES:
             # Status does a refresh.
@@ -205,14 +206,19 @@ class Job:
 
         self._check_if_unsuccessful()
         counts_dictionary = self._job["samples"]
-        
-        if not target_indices:
-            print("let's go!")
 
-        if target_indices:
-            print("used")
-            return gss.superstaq_client._SuperstaqClient.get_counts_on_qubits(counts_dictionary,target_indices)
         return counts_dictionary
+
+    def get_counts_on_qubits(
+        self, target_indices: List[int]
+    ) -> Tuple[Dict[str, int], Dict[str, int]]:
+        """A method to return counts on specific qubits of a circuit.
+        :param target_indices: The indicies of the qubits to separate
+        :return: A tuple of the separated dictionary, and the dictionary
+        containing counts on all other qubits in the circuit
+        """
+        counts_dictionary = self.counts()
+        return gss.superstaq_client.get_counts_on_qubits(counts_dictionary, target_indices)
 
     def to_dict(self) -> Dict[str, Any]:
         """Refreshes and returns job information.

@@ -215,33 +215,6 @@ class _SuperstaqClient:
         """
         return self.get_request(f"/job/{job_id}")
 
-    def get_counts_on_qubits(self, counts_dict: Dict[str, int], target_qubit_indices: List[int, ...]
-                             ) -> Tuple[Dict[str,int], Dict[str,int]]:
-        target_dict: Dict[str, int] = {}
-        circuit_dict: Dict[str, int] = {}
-
-        #possible because all keys are the same length - however there should be
-        #a cleaner way to do this
-        example_key = list(counts_dict.keys())[0]
-        circuit_qubit_indices = [i for i in range(len(example_key)) if i not in target_qubit_indices]
-        #creating substring keys to differentiate between the target qubits
-        #and circuit qubits
-        def meas_substring(bitstring: str, indices: List[int]) -> str:
-            return "".join([bitstring[index] for index in indices])
-
-        for key, val in counts_dict().items():
-            target_key = meas_substring(key, target_qubit_indices)
-            circuit_key = meas_substring(key, circuit_qubit_indices)
-            for new_key, new_dict in zip((target_key, circuit_key), (target_dict, circuit_dict)):
-                if new_key in new_dict.keys():
-                    new_dict[new_key] += val
-                else:
-                    new_dict[new_key] = val
-
-        return target_dict, circuit_dict
-
-
-
     def get_balance(self) -> Dict[str, float]:
         """Get the querying user's account balance in USD.
 
@@ -742,3 +715,44 @@ def find_api_key() -> str:
         "Try passing an 'api_key' variable, or setting your API key in the command line "
         "with SUPERSTAQ_API_KEY=..."
     )
+
+
+def get_counts_on_qubits(
+    counts_dict: Dict[str, int], target_qubit_indices: List[int]
+) -> Tuple[Dict[str, int], Dict[str, int]]:
+    """A method to separate the counts dictionary into two different dictionaries:
+    a target dictionary containing the results on the user-specified qubits, and
+    the circuit dictionary, containing the results on all the other qubits in
+    the circuit
+
+    Args:
+        counts_dict: The dictionary containing all the counts
+        target_qubit_indices: The indices of the qubits to separate
+
+    Returns:
+        A tuple containing the two dictionaries
+    """
+
+    target_dict: Dict[str, int] = {}
+    circuit_dict: Dict[str, int] = {}
+
+    # possible because all keys are the same length - however there should be
+    # a cleaner way to do this
+    example_key = list(counts_dict.keys())[0]
+    circuit_qubit_indices = [i for i in range(len(example_key)) if i not in target_qubit_indices]
+
+    # creating substring keys to differentiate between the target qubits
+    # and circuit qubits
+    def meas_substring(bitstring: str, indices: List[int]) -> str:
+        return "".join([bitstring[index] for index in indices])
+
+    for key, val in counts_dict.items():
+        target_key = meas_substring(key, target_qubit_indices)
+        circuit_key = meas_substring(key, circuit_qubit_indices)
+        for new_key, new_dict in zip((target_key, circuit_key), (target_dict, circuit_dict)):
+            if new_key in new_dict.keys():
+                new_dict[new_key] += val
+            else:
+                new_dict[new_key] = val
+
+    return target_dict, circuit_dict
