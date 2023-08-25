@@ -116,7 +116,7 @@ class Service(gss.service.Service):
         api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
-        **kwargs: Any,
+        **kwargs: object,
     ) -> None:
         """Creates the Service to access Superstaq's API.
 
