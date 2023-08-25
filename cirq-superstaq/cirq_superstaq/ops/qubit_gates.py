@@ -1,4 +1,5 @@
 """Miscellaneous custom gates that we encounter and want to explicitly define."""
+from __future__ import annotations
 
 from typing import AbstractSet, Any, Dict, Iterator, List, Optional, Set, Tuple, Type, Union
 
@@ -86,7 +87,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
 
     def __pow__(
         self, exponent: cirq.TParamVal
-    ) -> Union["ZZSwapGate", cirq.ZZPowGate, cirq.type_workarounds.NotImplementedType]:
+    ) -> Union[ZZSwapGate, cirq.ZZPowGate, cirq.type_workarounds.NotImplementedType]:
         if exponent % 2 == 1:
             return ZZSwapGate(exponent * self.theta)
         if exponent % 2 == 0:
@@ -115,7 +116,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     def _parameter_names_(self) -> AbstractSet[str]:
         return cirq.parameter_names(self.theta)
 
-    def _resolve_parameters_(self, resolver: cirq.ParamResolver, recursive: bool) -> "ZZSwapGate":
+    def _resolve_parameters_(self, resolver: cirq.ParamResolver, recursive: bool) -> ZZSwapGate:
         return ZZSwapGate(
             cirq.resolve_parameters(self.theta, resolver, recursive),
         )
@@ -315,7 +316,7 @@ class AceCR(cirq.Gate):
     def _parameter_names_(self) -> AbstractSet[str]:
         return cirq.parameter_names(self.sandwich_rx_rads) | cirq.parameter_names(self.rads)
 
-    def _resolve_parameters_(self, resolver: cirq.ParamResolver, recursive: bool) -> "AceCR":
+    def _resolve_parameters_(self, resolver: cirq.ParamResolver, recursive: bool) -> AceCR:
         return AceCR(
             rads=cirq.resolve_parameters(self.rads, resolver, recursive),
             sandwich_rx_rads=cirq.resolve_parameters(self.sandwich_rx_rads, resolver, recursive),
@@ -499,9 +500,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         component_param_names = [set(cirq.parameter_names(gate)) for gate in self.component_gates]
         return set.union(*component_param_names)
 
-    def _resolve_parameters_(
-        self, resolver: cirq.ParamResolver, recursive: bool
-    ) -> "ParallelGates":
+    def _resolve_parameters_(self, resolver: cirq.ParamResolver, recursive: bool) -> ParallelGates:
         return ParallelGates(
             *(cirq.resolve_parameters(gate, resolver, recursive) for gate in self.component_gates)
         )
@@ -582,10 +581,10 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         return cirq.obj_to_dict_helper(self, ["component_gates"])
 
     @classmethod
-    def _from_json_dict_(cls, component_gates: List[cirq.Gate], **kwargs: Any) -> "ParallelGates":
+    def _from_json_dict_(cls, component_gates: List[cirq.Gate], **kwargs: Any) -> ParallelGates:
         return cls(*component_gates)
 
-    def __pow__(self, exponent: cirq.TParamVal) -> "ParallelGates":
+    def __pow__(self, exponent: cirq.TParamVal) -> ParallelGates:
         exponentiated_gates = [gate**exponent for gate in self.component_gates]
         return ParallelGates(*exponentiated_gates)
 
@@ -661,7 +660,7 @@ class RGate(cirq.PhasedXPowGate):
         """
         return self.exponent * _pi(self.exponent)
 
-    def __pow__(self, power: cirq.TParamVal) -> "RGate":
+    def __pow__(self, power: cirq.TParamVal) -> RGate:
         return RGate(power * self.theta, self.phi)
 
     def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
@@ -763,7 +762,7 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
         """
         return self.sub_gate.theta
 
-    def __pow__(self, power: cirq.TParamVal) -> "ParallelRGate":
+    def __pow__(self, power: cirq.TParamVal) -> ParallelRGate:
         return ParallelRGate(power * self.theta, self.phi, self.num_copies)
 
     def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
@@ -807,7 +806,7 @@ class IXGate(cirq.XPowGate):
         """Initializes an iXGate."""
         super().__init__(exponent=1, global_shift=0.5)
 
-    def _with_exponent(self, exponent: cirq.value.TParamVal) -> Union[cirq.Rx, "IXGate"]:
+    def _with_exponent(self, exponent: cirq.value.TParamVal) -> Union[cirq.Rx, IXGate]:
         if approx_eq_mod(exponent, 1.0, 4):
             return IXGate()
         return cirq.rx(-exponent * _pi(exponent))
@@ -822,7 +821,7 @@ class IXGate(cirq.XPowGate):
         return f"css.ops.qubit_gates.{str(self)}"
 
     @classmethod
-    def _from_json_dict_(cls, **kwargs: Any) -> "IXGate":
+    def _from_json_dict_(cls, **kwargs: Any) -> IXGate:
         return IXGate()
 
 
@@ -887,7 +886,7 @@ class StrippedCZGate(cirq.Gate):
 
     def __pow__(
         self, exponent: cirq.TParamVal
-    ) -> Union["StrippedCZGate", cirq.IdentityGate, "ParallelGates", cirq.DiagonalGate]:
+    ) -> Union[StrippedCZGate, cirq.IdentityGate, ParallelGates, cirq.DiagonalGate]:
         if exponent == 0:
             return cirq.IdentityGate(2)
 
@@ -916,9 +915,7 @@ class StrippedCZGate(cirq.Gate):
         yield cirq.rz(self.rz_rads).on(qubits[1])
         yield cirq.CZ(*qubits)
 
-    def _resolve_parameters_(
-        self, resolver: cirq.ParamResolver, recursive: bool
-    ) -> "StrippedCZGate":
+    def _resolve_parameters_(self, resolver: cirq.ParamResolver, recursive: bool) -> StrippedCZGate:
         return StrippedCZGate(
             cirq.resolve_parameters(self.rz_rads, resolver, recursive),
         )
