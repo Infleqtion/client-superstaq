@@ -342,8 +342,8 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             grid_shape: Optional fixed dimensions for the rectangular qubit grid (by default the
                 actual qubit layout will be pulled from the hardware provider).
             control_radius: The radius with which qubits remain connected
-                (ie 1.0 indicates nearest neighbor connectivity)
-            stripped_cz_rads: The angle in radians of the stripped cz gate
+                (ie 1.0 indicates nearest neighbor connectivity).
+            stripped_cz_rads: The angle in radians of the stripped cz gate.
             kwargs: Other desired cq_compile options.
 
         Returns:
