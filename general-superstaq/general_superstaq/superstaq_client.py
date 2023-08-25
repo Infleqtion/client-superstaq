@@ -267,7 +267,7 @@ class _SuperstaqClient:
         if targets:
             json_dict["targets"] = targets
         if kwargs or self._client_kwargs:
-            json_dict["options"] = json.dumps({**kwargs, **self._client_kwargs})
+            json_dict["options"] = json.dumps({**self._client_kwargs, **kwargs})
 
         return self.post_request("/fetch_jobs", json_dict)
 
