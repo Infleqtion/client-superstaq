@@ -482,15 +482,7 @@ class _SuperstaqClient:
             mirror_depth: The half-depth of the mirror portion of the random circuits.
             extra_depth: The depth of the fully random portion of the random circuits.
             method: Which type of method to execute the circuits with.
-            noise: A tuple indicating a noise model to simulate the run with. The tuple will
-                have the form ("channel_name", error_prob). The permitted channels are:
-                "symmetric_depolarize", "phase_flip", "bit_flip" and "asymmetric_depolarize".
-
-                For "asymmetric_depolarize", `error_prob` will be a three-tuple with the
-                error rates for the X, Y, Z gates in that order. So, a valid argument would be
-                `noise = ("asymmetric_depolarize", (0.1, 0.1, 0.1))`. notice that these values
-                must add up to less than or equal to 1. For the other channels, `error_prob`
-                is one number less than or equal to 1, e.g., `noise = ("bit_flip", 0.1)`.
+            noise: A dictionary describing a noise model to simulate the run with.
             tag: Tag for all jobs submitted for this protocol.
             lifespan: How long to store the jobs submitted for in days (only works with right
                 permissions).
