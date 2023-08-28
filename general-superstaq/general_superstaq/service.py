@@ -336,12 +336,12 @@ class Service:
             noise: Noise model to simulate the protocol with. Valid strings are
                 "symmetric_depolarize", "phase_flip", "bit_flip" and "asymmetric_depolarize".
             error_prob: The error probabilities if a string was passed to `noise`.
-
-                For "asymmetric_depolarize", `error_prob` will be a three-tuple with the
-                error rates for the X, Y, Z gates in that order. So, a valid argument would be
-                `error_prob = (0.1, 0.1, 0.1)`. notice that these values must add up to less than
-                or equal to 1. For the other channels, `error_prob` is one number less than or
-                equal to 1, e.g., `error_prob = 0.1`.
+                * For "asymmetric_depolarize", `error_prob` will be a three-tuple with the error
+                rates for the X, Y, Z gates in that order. So, a valid argument would be
+                `error_prob = (0.1, 0.1, 0.1)`. Notice that these values must add up to less than
+                or equal to 1.
+                * For the other channels, `error_prob` is one number less than or equal to 1, e.g.,
+                `error_prob = 0.1`.
             tag: Tag for all jobs submitted for this protocol.
             lifespan: How long to store the jobs submitted for in days (only works with right
                 permissions).
