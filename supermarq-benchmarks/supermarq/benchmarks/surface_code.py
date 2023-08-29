@@ -88,9 +88,8 @@ class SurfaceCode(Benchmark):
                 if self.is_on_patch(neighbor)
             ]
             pauli = cirq.Z if self.get_qubit_parity(ancilla) else cirq.X
-            pauli_ops = {qubit: pauli for qubit in neighbors}
-            parity_op: cirq.PauliString[cirq.GridQubit] = cirq.PauliString(pauli_ops)
-            circuit += cirq.decompose_once(parity_op.controlled_by(ancilla))
+            pauli_string = cirq.PauliString({qubit: pauli for qubit in neighbors})
+            circuit += pauli_string.controlled_by(ancilla)
         circuit += hadamards
 
         return circuit
@@ -206,3 +205,7 @@ class SurfaceCode(Benchmark):
     def score(self, counts: Dict[str, float]) -> float:
         """Benchmark score."""
         return NotImplemented
+
+
+code = SurfaceCode(2, 2, False)
+print(code.get_code_cycle())
