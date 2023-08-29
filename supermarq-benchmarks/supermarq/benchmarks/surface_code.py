@@ -88,7 +88,8 @@ class SurfaceCode(Benchmark):
                 if self.is_on_patch(neighbor)
             ]
             pauli = cirq.Z if self.get_qubit_parity(ancilla) else cirq.X
-            pauli_string = cirq.PauliString({qubit: pauli for qubit in neighbors})
+            pauli_ops = {qubit: pauli for qubit in neighbors}
+            pauli_string: cirq.PauliString[cirq.GridQubit] = cirq.PauliString(pauli_ops)
             circuit += pauli_string.controlled_by(ancilla)
         circuit += hadamards
 
