@@ -205,7 +205,3 @@ class SurfaceCode(Benchmark):
     def score(self, counts: Dict[str, float]) -> float:
         """Benchmark score."""
         return NotImplemented
-
-
-code = SurfaceCode(2, 2, False)
-print(code.get_code_cycle())
