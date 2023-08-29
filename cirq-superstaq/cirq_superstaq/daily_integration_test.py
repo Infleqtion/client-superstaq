@@ -254,6 +254,7 @@ def test_dfe(service: css.Service) -> None:
 
 
 def test_aces(service: css.Service) -> None:
+    noise_model = cirq.NoiseModel.from_noise_model_like(cirq.depolarize(0.1))
     job_id = service.submit_aces(
         target="ss_unconstrained_simulator",
         qubits=[0],
@@ -261,9 +262,8 @@ def test_aces(service: css.Service) -> None:
         num_circuits=10,
         mirror_depth=5,
         extra_depth=7,
-        method="dry-run",
-        noise="bit_flip",
-        error_prob=0.1,
+        method="noise-sim",
+        noise=noise_model,
     )
     result = service.process_aces(job_id)
     assert len(result) == 18
