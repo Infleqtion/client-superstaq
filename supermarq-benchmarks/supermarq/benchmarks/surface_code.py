@@ -20,13 +20,13 @@ class SurfaceCode(Benchmark):
              ―――     ―――
             | ⋅ |   | ⋅ |
      ―――○―――○―――○―――○―――○
-    |   | ⋅ |   | ⋅ |   |
+    | ▪ | ⋅ | ▪ | ⋅ | ▪ |
      ―――○―――○―――○―――○―――○―――
-        |   | ⋅ |   | ⋅ |   |
+        | ▪ |   | ▪ | ⋅ | ▪ |
      ―――○―――○―――○―――○―――○―――
-    |   | ⋅ |   | ⋅ |   |
+    | ▪ | ⋅ | ▪ | ⋅ | ▪ |
      ―――○―――○―――○―――○―――○―――
-        |   | ⋅ |   | ⋅ |   |
+        | ▪ | ⋅ | ▪ | ⋅ | ▪ |
         ○―――○―――○―――○―――○―――
         | ⋅ |   | ⋅ |
          ―――     ―――
@@ -34,7 +34,7 @@ class SurfaceCode(Benchmark):
     Here:
     - Circles (○) denote data qubits (of which there are 5×5 = 25 total).
     - Tiles with a dot (⋅) denote ancilla qubits that measure X-type parity checks (12 total).
-    - Empty tiles denote ancilla qubits that measure Z-type parity checks (12 total).
+    - Tiles with a square (▪) denote ancilla qubits that measure Z-type parity checks (12 total).
 
     All are indexed by integer (row, column) from the top left corner of the patch above, such that:
     - The top left data qubit is at (1, 1).
