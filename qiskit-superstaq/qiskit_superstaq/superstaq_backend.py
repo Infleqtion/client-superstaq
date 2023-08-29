@@ -367,6 +367,8 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         *,
         grid_shape: Optional[Tuple[int, int]] = None,
+        control_radius: float = 1.0,
+        stripped_cz_rads: float = 0.0,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for CQ devices.
@@ -375,6 +377,9 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             circuits: The qiskit QuantumCircuit(s) to compile.
             grid_shape: Optional fixed dimensions for the rectangular qubit grid (by default the
                 actual qubit layout will be pulled from the hardware provider).
+            control_radius: The radius with which qubits remain connected
+                (ie 1.0 indicates nearest neighbor connectivity).
+            stripped_cz_rads: The angle in radians of the stripped cz gate.
             kwargs: Other desired compile options.
 
         Returns:
@@ -386,7 +391,13 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         if not self.name().startswith("cq_"):
             raise ValueError(f"{self.name()!r} is not a valid CQ target.")
 
-        request_json = self._get_compile_request_json(circuits, grid_shape=grid_shape, **kwargs)
+        request_json = self._get_compile_request_json(
+            circuits,
+            grid_shape=grid_shape,
+            control_radius=control_radius,
+            stripped_cz_rads=stripped_cz_rads,
+            **kwargs,
+        )
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
         return qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
