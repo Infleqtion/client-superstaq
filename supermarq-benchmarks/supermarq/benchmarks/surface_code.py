@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import functools
 from typing import Dict, Tuple
 
 import cirq
@@ -13,6 +14,36 @@ class SurfaceCode(Benchmark):
         rows: The number of rows (of data qubits).
         cols: The number of columns (of data qubits).
         variant_XZZX: Whether to run an XZZX variant of the surface code (default: True).
+
+    As an example, the 5×5 rotated surface code looks as follows:
+
+             ―――     ―――
+            | ⋅ |   | ⋅ |
+     ―――○―――○―――○―――○―――○
+    |   | ⋅ |   | ⋅ |   |
+     ―――○―――○―――○―――○―――○―――
+        |   | ⋅ |   | ⋅ |   |
+     ―――○―――○―――○―――○―――○―――
+    |   | ⋅ |   | ⋅ |   |
+     ―――○―――○―――○―――○―――○―――
+        |   | ⋅ |   | ⋅ |   |
+        ○―――○―――○―――○―――○―――
+        | ⋅ |   | ⋅ |
+         ―――     ―――
+
+    Here:
+    - Circles (○) denote data qubits (of which there are 5×5 = 25 total).
+    - Tiles with a dot (⋅) denote ancilla qubits that measure X-type parity checks (12 total).
+    - Empty tiles denote ancilla qubits that measure Z-type parity checks (12 total).
+
+    All are indexed by integer (row, column) from the top left corner of the patch above, such that:
+    - The top left data qubit is at (1, 1).
+    - The next data qubit below (1, 1) is at (3, 1).
+    - The leftmost X-type ancilla in the top row is at (0, 4).
+    - The upper left Z-type ancilla is at (2, 0).
+    Altogether, data qubits are at on odd rows and columns, and ancilla at even rows and columns.
+
+    In the XZZX variant of the surface code, we hadamard-transform every other data qubit.
     """
 
     def __init__(self, num_rows: int, num_cols: int, variant_XZZX: bool = True) -> None:
@@ -38,28 +69,25 @@ class SurfaceCode(Benchmark):
         Returns:
             A `cirq.Circuit`.
         """
-        data_qubits = self.get_data_qubits()
-        ancilla_qubits = self.get_ancilla_qubits()
-
         # hadamard transforms to go before/after controlled-parity ops for syndrome extraction
-        hadamards = cirq.Moment(cirq.H.on_each(*ancilla_qubits))
+        hadamards = cirq.Moment(cirq.H.on_each(*self.ancilla_qubits))
         if self.variant_XZZX:
             # add hadamard transforms on every other data qubit
             hadamards += [
                 cirq.H(data_qubit)
-                for data_qubit in data_qubits
-                if self.get_qubit_pauli(data_qubit) == cirq.X
+                for data_qubit in self.data_qubits
+                if self.get_qubit_parity(data_qubit)
             ]
 
         # construct a cycle of the surface code
         circuit = cirq.Circuit(hadamards)
-        for ancilla in filter(self.is_on_patch, ancilla_qubits):
+        for ancilla in self.ancilla_qubits:
             neighbors = [
                 neighbor
                 for neighbor in self.get_diagonal_neighbors(ancilla)
                 if self.is_on_patch(neighbor)
             ]
-            pauli = self.get_qubit_pauli(ancilla)
+            pauli = cirq.Z if self.get_qubit_parity(ancilla) else cirq.X
             pauli_ops = {qubit: pauli for qubit in neighbors}
             parity_op: cirq.PauliString[cirq.GridQubit] = cirq.PauliString(pauli_ops)
             circuit += cirq.decompose_once(parity_op.controlled_by(ancilla))
@@ -67,7 +95,8 @@ class SurfaceCode(Benchmark):
 
         return circuit
 
-    def get_data_qubits(self) -> Tuple[cirq.GridQubit, ...]:
+    @functools.cached_property
+    def data_qubits(self) -> Tuple[cirq.GridQubit, ...]:
         """The data qubits on this patch."""
         return tuple(
             cirq.GridQubit(row * 2 + 1, col * 2 + 1)
@@ -75,7 +104,8 @@ class SurfaceCode(Benchmark):
             for col in range(self.cols)
         )
 
-    def get_ancilla_qubits(self) -> Tuple[cirq.GridQubit, ...]:
+    @functools.cached_property
+    def ancilla_qubits(self) -> Tuple[cirq.GridQubit, ...]:
         """The ancilla qubits on this patch."""
         return tuple(
             qubit
@@ -89,7 +119,7 @@ class SurfaceCode(Benchmark):
         row, col = qubit.row, qubit.col
 
         if not (0 <= row <= 2 * self.rows and 0 <= col <= 2 * self.cols):
-            # this qubit is off the charts
+            # this qubit is off the grid
             return False
 
         if row % 2 == col % 2 == 1:
@@ -99,18 +129,14 @@ class SurfaceCode(Benchmark):
         if row % 2 == col % 2 == 0:
             # this is an ancilla qubit
 
-            # check boundaries
-            if row == 0 or row == (2 * self.rows):
-                # only X-type ancillas on the top/bottom boundaries
-                return 0 < col < (2 * self.cols) and self.get_qubit_pauli(qubit) == cirq.X
-            if col == 0 or col == (2 * self.cols):
-                # only Z-type ancillas on the left/right boundaries
-                return 0 < row < (2 * self.rows) and self.get_qubit_pauli(qubit) == cirq.Z
+            if self.get_qubit_parity(qubit):
+                # this is a Z-type ancilla qubit, it cannot be in the first or last row
+                return 0 < row < (2 * self.rows)
 
-            # all "interior" ancillas are on the surface code patch
-            return True
+            # this is an X-type ancilla qubit, it cannot be in the first or last column
+            return 0 < col < (2 * self.cols)
 
-        # this qubit is not actually a part of the surface code
+        # this qubit is not actually part of the surface code
         return False
 
     def prepare_logical_state(self) -> cirq.Circuit:
@@ -141,25 +167,28 @@ class SurfaceCode(Benchmark):
 
         # transform data qubits to the ones used by the code cycle
         current_qubits = sorted(circuit.all_qubits())
-        code_cycle_qubits = sorted(self.get_data_qubits())
+        code_cycle_qubits = sorted(self.data_qubits)
         qubit_map: Dict[cirq.Qid, cirq.Qid] = dict(zip(current_qubits, code_cycle_qubits))
         circuit = circuit.transform_qubits(qubit_map)
 
         if self.variant_XZZX:
             # hadamard transform every other data qubit
             circuit += [
-                cirq.H(qubit)
-                for qubit in code_cycle_qubits
-                if self.get_qubit_pauli(qubit) == cirq.X
+                cirq.H(qubit) for qubit in code_cycle_qubits if self.get_qubit_parity(qubit)
             ]
         return circuit
 
     @classmethod
-    def get_qubit_pauli(cls, qubit: cirq.GridQubit) -> cirq.Pauli:
-        """Determine the pauli operator associated with a qubit."""
-        if (qubit.row // 2 % 2) == (qubit.col // 2 % 2):
-            return cirq.X
-        return cirq.Z
+    def get_qubit_parity(cls, qubit: cirq.GridQubit) -> bool:
+        """Assign each qubit a parity value.
+
+        For ancilla qubits, this value determines whether this qubit is an X-type or Z-type ancilla.
+        For data qubits, this value determines whether the qubit should be hadamard-transformed in
+        the XZZX variant of the surface code.
+        """
+        # first, determine the row/column within each data/ancilla-qubit "subgrid"
+        row, col = qubit.row // 2, qubit.col // 2
+        return not (row % 2 == col % 2)
 
     @classmethod
     def get_diagonal_neighbors(
