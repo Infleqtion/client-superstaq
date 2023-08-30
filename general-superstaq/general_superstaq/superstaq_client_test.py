@@ -153,15 +153,14 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         api_key="to_my_heart",
     )
 
-    with pytest.warns(DeprecationWarning):
-        response = client.create_job(
-            serialized_circuits={"Hello": "World"},
-            repetitions=200,
-            target="ss_example_qpu",
-            method="dry-run",
-            qiskit_pulse=True,
-            cq_token={"@type": "RefreshFlowState", "access_token": "123"},
-        )
+    response = client.create_job(
+        serialized_circuits={"Hello": "World"},
+        repetitions=200,
+        target="ss_example_qpu",
+        method="dry-run",
+        qiskit_pulse=True,
+        cq_token={"@type": "RefreshFlowState", "access_token": "123"},
+    )
     assert response == {"foo": "bar"}
 
     expected_json = {
@@ -632,6 +631,9 @@ def test_superstaq_client_aces(mock_post: mock.MagicMock) -> None:
         mirror_depth=6,
         extra_depth=4,
         method="dry-run",
+        tag="test-tag",
+        lifespan=10,
+        noise={"type": "symmetric_depolarize", "params": (0.01,)},
     )
 
     expected_json = {
@@ -641,7 +643,10 @@ def test_superstaq_client_aces(mock_post: mock.MagicMock) -> None:
         "num_circuits": 10,
         "mirror_depth": 6,
         "extra_depth": 4,
-        "options": json.dumps({"method": "dry-run"}),
+        "method": "dry-run",
+        "noise": {"type": "symmetric_depolarize", "params": (0.01,)},
+        "tag": "test-tag",
+        "lifespan": 10,
     }
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/aces",

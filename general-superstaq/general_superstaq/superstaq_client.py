@@ -18,8 +18,7 @@ import sys
 import textwrap
 import time
 import urllib
-import warnings
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
 import qubovert as qv
 import requests
@@ -204,14 +203,6 @@ class _SuperstaqClient:
             json_dict["method"] = method
         if kwargs or self._client_kwargs:
             json_dict["options"] = json.dumps({**kwargs, **self._client_kwargs})
-            if "cq_token" in kwargs:
-                warnings.warn(
-                    "Starting with client-superstaq v0.4.20, passing in `cq_token` when "
-                    "submitting the job won't work. Pass `cq_token` when creating the provider "
-                    "or service instead.",
-                    DeprecationWarning,
-                    stacklevel=2,
-                )
 
         return self.post_request("/jobs", json_dict)
 
@@ -227,12 +218,6 @@ class _SuperstaqClient:
         Raises:
             SuperstaqServerException: For other API call failures.
         """
-        warnings.warn(
-            "Starting with client-superstaq v0.4.20, the `get_job` method and "
-            "endpoint won't exist. Call `fetch_jobs` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
         return self.fetch_jobs([job_id])[job_id]
 
     def fetch_jobs(
@@ -241,7 +226,7 @@ class _SuperstaqClient:
         tags: Optional[List[str]] = None,
         targets: Optional[List[str]] = None,
         **kwargs: Any,
-    ) -> List[Dict[str, str]]:
+    ) -> Dict[str, Dict[str, str]]:
         """Get the job from the Superstaq API.
 
         Args:
@@ -518,12 +503,15 @@ class _SuperstaqClient:
     def submit_aces(
         self,
         target: str,
-        qubits: List[int],
+        qubits: Sequence[int],
         shots: int,
         num_circuits: int,
         mirror_depth: int,
         extra_depth: int,
-        **kwargs: Any,
+        method: Optional[str] = None,
+        noise: Optional[Dict[str, object]] = None,
+        tag: Optional[str] = None,
+        lifespan: Optional[int] = None,
     ) -> str:
         """Performs a POST request on the `/aces` endpoint.
 
@@ -534,18 +522,18 @@ class _SuperstaqClient:
             num_circuits: How many random circuits to use in the protocol.
             mirror_depth: The half-depth of the mirror portion of the random circuits.
             extra_depth: The depth of the fully random portion of the random circuits.
-            kwargs: Other execution parameters.
-                - tag: Tag for all jobs submitted for this protocol.
-                - lifespan: How long to store the jobs submitted for in days (only works with right
+            method: Which type of method to execute the circuits with.
+            noise: A dictionary describing a noise model to simulate the run with.
+            tag: Tag for all jobs submitted for this protocol.
+            lifespan: How long to store the jobs submitted for in days (only works with right
                 permissions).
-                - method: Which type of method to execute the circuits with.
 
         Returns:
             A string with the job id for the ACES job created.
 
         Raises:
-            ValueError: If any the target passed are not valid.
-            SuperstaqServerException: if the request fails.
+            ValueError: If the target or noise model is not valid.
+            SuperstaqServerException: If the request fails.
         """
         gss.validation.validate_target(target)
 
@@ -558,8 +546,17 @@ class _SuperstaqClient:
             "extra_depth": extra_depth,
         }
 
-        if kwargs:
-            json_dict["options"] = json.dumps(kwargs)
+        if method:
+            json_dict["method"] = method
+        if noise:
+            if "type" in noise.keys():
+                gss.validation.validate_noise_type(noise, len(qubits))
+            json_dict["noise"] = noise
+        if tag:
+            json_dict["tag"] = tag
+        if lifespan:
+            json_dict["lifespan"] = lifespan
+
         return self.post_request("/aces", json_dict)
 
     def process_aces(self, job_id: str) -> List[float]:
