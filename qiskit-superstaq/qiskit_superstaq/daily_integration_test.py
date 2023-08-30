@@ -237,7 +237,7 @@ def test_dfe(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
 def test_aces(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     backend = provider.get_backend("ss_unconstrained_simulator")
     job_id = backend.submit_aces(
-        qubits=qiskit.QuantumRegister(1),
+        qubits=[0],
         shots=100,
         num_circuits=10,
         mirror_depth=5,
