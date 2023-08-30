@@ -233,7 +233,7 @@ class _SuperstaqClient:
             DeprecationWarning,
             stacklevel=2,
         )
-        return self.fetch_jobs([job_id])[0]
+        return self.fetch_jobs([job_id])[job_id]
 
     def fetch_jobs(
         self,
