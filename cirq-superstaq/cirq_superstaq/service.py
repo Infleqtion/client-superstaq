@@ -589,6 +589,8 @@ class Service(gss.service.Service):
         target: str = "cq_hilbert_qpu",
         *,
         grid_shape: Optional[Tuple[int, int]] = None,
+        control_radius: float = 1.0,
+        stripped_cz_rads: float = 0.0,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) to the target CQ device.
@@ -598,6 +600,9 @@ class Service(gss.service.Service):
             target: String of target CQ device.
             grid_shape: Optional fixed dimensions for the rectangular qubit grid (by default the
                 actual qubit layout will be pulled from the hardware provider).
+            control_radius: The radius with which qubits remain connected
+                (ie 1.0 indicates nearest neighbor connectivity).
+            stripped_cz_rads: The angle in radians of the stripped cz gate.
             kwargs: Other desired `cq_compile` options.
 
         Returns:
@@ -610,7 +615,14 @@ class Service(gss.service.Service):
         if not target.startswith("cq_"):
             raise ValueError(f"{target!r} is not a valid CQ target.")
 
-        return self.compile(circuits, grid_shape=grid_shape, target=target, **kwargs)
+        return self.compile(
+            circuits,
+            grid_shape=grid_shape,
+            control_radius=control_radius,
+            stripped_cz_rads=stripped_cz_rads,
+            target=target,
+            **kwargs,
+        )
 
     def ibmq_compile(
         self,
