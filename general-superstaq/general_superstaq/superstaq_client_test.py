@@ -152,12 +152,14 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
+
     response = client.create_job(
         serialized_circuits={"Hello": "World"},
         repetitions=200,
         target="ss_example_qpu",
         method="dry-run",
         qiskit_pulse=True,
+        cq_token={"@type": "RefreshFlowState", "access_token": "123"},
     )
     assert response == {"foo": "bar"}
 
@@ -166,7 +168,9 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         "target": "ss_example_qpu",
         "shots": 200,
         "method": "dry-run",
-        "options": json.dumps({"qiskit_pulse": True}),
+        "options": json.dumps(
+            {"qiskit_pulse": True, "cq_token": {"@type": "RefreshFlowState", "access_token": "123"}}
+        ),
     }
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/jobs",
@@ -287,20 +291,25 @@ def test_superstaq_client_create_job_json(mock_post: mock.MagicMock) -> None:
         )
 
 
-@mock.patch("requests.get")
-def test_superstaq_client_get_job(mock_get: mock.MagicMock) -> None:
-    mock_get.return_value.ok = True
-    mock_get.return_value.json.return_value = {"foo": "bar"}
+@mock.patch("requests.post")
+def test_superstaq_client_fetch_jobs(mock_post: mock.MagicMock) -> None:
+    mock_post.return_value.ok = True
+    mock_post.return_value.json.return_value = {"my_id": {"foo": "bar"}}
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
-    response = client.get_job(job_id="job_id")
-    assert response == {"foo": "bar"}
-
-    mock_get.assert_called_with(
-        f"http://example.com/{API_VERSION}/job/job_id", headers=EXPECTED_HEADERS, verify=False
+    response = client.fetch_jobs(job_ids=["job_id"], cq_token={"access_token": "token"})
+    assert response == {"my_id": {"foo": "bar"}}
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/fetch_jobs",
+        json={
+            "job_ids": ["job_id"],
+            "options": '{"cq_token": {"access_token": "token"}}',
+        },
+        headers=EXPECTED_HEADERS,
+        verify=False,
     )
 
 
@@ -451,10 +460,10 @@ def test_superstaq_client_get_targets(mock_get: mock.MagicMock) -> None:
     )
 
 
-@mock.patch("requests.get")
-def test_superstaq_client_get_job_unauthorized(mock_get: mock.MagicMock) -> None:
-    mock_get.return_value.ok = False
-    mock_get.return_value.status_code = requests.codes.unauthorized
+@mock.patch("requests.post")
+def test_superstaq_client_get_job_unauthorized(mock_post: mock.MagicMock) -> None:
+    mock_post.return_value.ok = False
+    mock_post.return_value.status_code = requests.codes.unauthorized
 
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
@@ -465,10 +474,10 @@ def test_superstaq_client_get_job_unauthorized(mock_get: mock.MagicMock) -> None
         _ = client.get_job("job_id")
 
 
-@mock.patch("requests.get")
-def test_superstaq_client_get_job_not_found(mock_get: mock.MagicMock) -> None:
-    (mock_get.return_value).ok = False
-    (mock_get.return_value).status_code = requests.codes.not_found
+@mock.patch("requests.post")
+def test_superstaq_client_get_job_not_found(mock_post: mock.MagicMock) -> None:
+    (mock_post.return_value).ok = False
+    (mock_post.return_value).status_code = requests.codes.not_found
 
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
@@ -479,10 +488,10 @@ def test_superstaq_client_get_job_not_found(mock_get: mock.MagicMock) -> None:
         _ = client.get_job("job_id")
 
 
-@mock.patch("requests.get")
-def test_superstaq_client_get_job_not_retriable(mock_get: mock.MagicMock) -> None:
-    mock_get.return_value.ok = False
-    mock_get.return_value.status_code = requests.codes.bad_request
+@mock.patch("requests.post")
+def test_superstaq_client_get_job_not_retriable(mock_post: mock.MagicMock) -> None:
+    mock_post.return_value.ok = False
+    mock_post.return_value.status_code = requests.codes.bad_request
 
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
@@ -493,11 +502,11 @@ def test_superstaq_client_get_job_not_retriable(mock_get: mock.MagicMock) -> Non
         _ = client.get_job("job_id")
 
 
-@mock.patch("requests.get")
-def test_superstaq_client_get_job_retry(mock_get: mock.MagicMock) -> None:
+@mock.patch("requests.post")
+def test_superstaq_client_get_job_retry(mock_post: mock.MagicMock) -> None:
     response1 = mock.MagicMock()
     response2 = mock.MagicMock()
-    mock_get.side_effect = [response1, response2]
+    mock_post.side_effect = [response1, response2]
     response1.ok = False
     response1.status_code = requests.codes.service_unavailable
     response2.ok = True
@@ -507,7 +516,7 @@ def test_superstaq_client_get_job_retry(mock_get: mock.MagicMock) -> None:
         api_key="to_my_heart",
     )
     _ = client.get_job("job_id")
-    assert mock_get.call_count == 2
+    assert mock_post.call_count == 2
 
 
 @mock.patch("requests.post")
