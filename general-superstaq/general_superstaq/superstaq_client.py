@@ -202,7 +202,7 @@ class _SuperstaqClient:
         if method is not None:
             json_dict["method"] = method
         if kwargs or self._client_kwargs:
-            json_dict["options"] = json.dumps({**kwargs, **self._client_kwargs})
+            json_dict["options"] = json.dumps({**self._client_kwargs, **kwargs})
 
         return self.post_request("/jobs", json_dict)
 
