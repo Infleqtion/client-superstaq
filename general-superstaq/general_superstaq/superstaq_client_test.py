@@ -301,7 +301,7 @@ def test_superstaq_client_fetch_jobs(mock_post: mock.MagicMock) -> None:
         api_key="to_my_heart",
     )
     response = client.fetch_jobs(job_ids=["job_id"], cq_token="token")
-    assert response == [{"foo": "bar"}]
+    assert response == {"my_id": {"foo": "bar"}}
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/fetch_jobs",
         json={
