@@ -223,16 +223,12 @@ class _SuperstaqClient:
     def fetch_jobs(
         self,
         job_ids: List[str],
-        tags: Optional[List[str]] = None,
-        targets: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> Dict[str, Dict[str, str]]:
         """Get the job from the Superstaq API.
 
         Args:
             job_ids: The UUID of the job (returned when the job was created).
-            tags: optional tags of jobs
-            targets: optional targets of jobs
             kwargs:  Extra options needed to fetch jobs.
                 - cq_token: CQ Cloud credentials.
 
@@ -246,11 +242,6 @@ class _SuperstaqClient:
         json_dict: Dict[str, Any] = {
             "job_ids": job_ids,
         }
-
-        if tags:
-            json_dict["tags"] = tags
-        if targets:
-            json_dict["targets"] = targets
         if kwargs or self._client_kwargs:
             json_dict["options"] = json.dumps({**self._client_kwargs, **kwargs})
 
