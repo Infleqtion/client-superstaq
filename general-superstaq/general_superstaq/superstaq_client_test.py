@@ -306,7 +306,7 @@ def test_superstaq_client_fetch_jobs(mock_post: mock.MagicMock) -> None:
         f"http://example.com/{API_VERSION}/fetch_jobs",
         json={
             "job_ids": ["job_id"],
-            "options": '{"cq_token": "token"}',
+            "options": '{"cq_token": {"access_token": "token"}}',
         },
         headers=EXPECTED_HEADERS,
         verify=False,
