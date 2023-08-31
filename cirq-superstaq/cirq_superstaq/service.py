@@ -12,6 +12,7 @@
 # limitations under the License.
 """Service to access Superstaqs API."""
 
+import numbers
 import warnings
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
@@ -803,6 +804,87 @@ class Service(gss.service.Service):
                 through `submit_dfe` have not finished running.
         """
         return self._client.process_dfe(ids)
+
+    def submit_aces(
+        self,
+        target: str,
+        qubits: Sequence[int],
+        shots: int,
+        num_circuits: int,
+        mirror_depth: int,
+        extra_depth: int,
+        method: Optional[str] = None,
+        noise: Optional[Union[str, cirq.NoiseModel]] = None,
+        error_prob: Optional[Union[float, Tuple[float, float, float]]] = None,
+        tag: Optional[str] = None,
+        lifespan: Optional[int] = None,
+    ) -> str:
+        """Submits the jobs to characterize `target` through the ACES protocol.
+
+        The following gate eigenvalues are eestimated. For each qubit in the device, we consider
+        six Clifford gates. These are given by the XZ maps: XZ, ZX, -YZ, -XY, ZY, YX. For each of
+        these gates, three eigenvalues are returned (X, Y, Z, in that order). Then, the two-qubit
+        gate considered here is the CZ in linear connectivity (each qubit n with n + 1). For this
+        gate, 15 eigenvalues are considered: XX, XY, XZ, XI, YX, YY, YZ, YI, ZX, ZY, ZZ, ZI, IX, IY
+        IZ, in that order.
+
+        If n qubits are characterized, the first 18 * n entries of the list returned by
+        `process_aces` will contain the  single-qubit eigenvalues for each gate in the order above.
+        After all the single-qubit eigenvalues, the next 15 * (n - 1) entries will contain for the
+        CZ connections, in ascending order.
+
+        The protocol in detail can be found in: https://arxiv.org/abs/2108.05803.
+
+        Args:
+            target: The device target to characterize.
+            qubits: A list with the qubit indices to characterize.
+            shots: How many shots to use per circuit submitted.
+            num_circuits: How many random circuits to use in the protocol.
+            mirror_depth: The half-depth of the mirror portion of the random circuits.
+            extra_depth: The depth of the fully random portion of the random circuits.
+            method: Which type of method to execute the circuits with.
+            noise: Noise model to simulate the protocol with. It can be either a string or a
+                `cirq.NoiseModel`. Valid strings are "symmetric_depolarize", "phase_flip",
+                "bit_flip" and "asymmetric_depolarize".
+            error_prob: The error probabilities if a string was passed to `noise`.
+                * For "asymmetric_depolarize", `error_prob` will be a three-tuple with the error
+                rates for the X, Y, Z gates in that order. So, a valid argument would be
+                `error_prob = (0.1, 0.1, 0.1)`. Notice that these values must add up to less than
+                or equal to 1.
+                * For the other channels, `error_prob` is one number less than or equal to 1, e.g.,
+                `error_prob = 0.1`.
+            tag: Tag for all jobs submitted for this protocol.
+            lifespan: How long to store the jobs submitted for in days (only works with right
+                permissions).
+
+        Returns:
+            A string with the job id for the ACES job created.
+
+        Raises:
+            ValueError: If the target or noise model is not valid.
+            SuperstaqServerException: If the request fails.
+        """
+        noise_dict: Dict[str, object] = {}
+        if isinstance(noise, str):
+            noise_dict["type"] = noise
+            noise_dict["params"] = (
+                (error_prob,) if isinstance(error_prob, numbers.Number) else error_prob
+            )
+        elif isinstance(noise, cirq.NoiseModel):
+            noise_dict["cirq_noise_model"] = cirq.to_json(noise)
+
+        return self._client.submit_aces(
+            target=target,
+            qubits=qubits,
+            shots=shots,
+            num_circuits=num_circuits,
+            mirror_depth=mirror_depth,
+            extra_depth=extra_depth,
+            method=method,
+            noise=noise_dict,
+            tag=tag,
+            lifespan=lifespan,
+        )
 
     def target_info(self, target: str) -> Dict[str, Any]:
         """Returns information about device specified by `target`.
