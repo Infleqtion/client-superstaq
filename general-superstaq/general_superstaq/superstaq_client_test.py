@@ -294,7 +294,7 @@ def test_superstaq_client_create_job_json(mock_post: mock.MagicMock) -> None:
 @mock.patch("requests.post")
 def test_superstaq_client_fetch_jobs(mock_post: mock.MagicMock) -> None:
     mock_post.return_value.ok = True
-    mock_post.return_value.json.return_value = [{"foo": "bar"}]
+    mock_post.return_value.json.return_value = {"my_id": {"foo": "bar"}}
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
