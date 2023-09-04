@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import fnmatch
 import functools
 import json
@@ -40,7 +39,7 @@ def run(
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
 
-    parser = check_utils.get_file_parser()
+    parser = check_utils.get_check_parser()
     parser.description = textwrap.dedent(
         """
         Checks that:
@@ -62,6 +61,9 @@ def run(
         help="Only sort requirements files.  Do not check upstream package versions.",
     )
     parsed_args = parser.parse_intermixed_args(args)
+    if "requirements" in parsed_args.skip:
+        return 0
+
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     # check that we can connect to PyPI

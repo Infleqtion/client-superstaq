@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import importlib
+import importlib.util
 import json
 import warnings
 from typing import Any, Dict, List, Optional, Set, Union
