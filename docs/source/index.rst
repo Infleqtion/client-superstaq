@@ -5,10 +5,18 @@
 
 Superstaq Documentation
 =======================
-Welcome to Superstaq's documentation! Here you can find more information about our packages ``cirq-superstaq`` and ``qiskit-superstaq``, which allow access to Superstaq via a Web API through `Cirq <https://github.com/quantumlib/Cirq>`_ and `Qiskit <https://qiskit.org/>`_, respectively.
-
+Welcome! Here you can find more about Infleqtion's state-of-the-art quantum software platform that uses proprietary cross-layer optimization techniques to deliver unmatched performance.
+      
 .. raw:: html
 
+   <div class="container-index">
+      <div class="intro-text">
+         <div class="grid-header">Enhanced Execution</div>
+      </div>
+      <div class="intro-image">
+         <img src="_static/graphics/stack.png">
+      </div>
+   </div>
    <div class="index-demos">
       <div class="index-demos-box">
          <div class="index-demos-headers">Enhanced Execution</div>

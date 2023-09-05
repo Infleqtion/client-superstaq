@@ -4883,3 +4883,33 @@ span.linenos.special { color: #303030; background-color: #ECECEC; padding-left: 
 .index-demos-desc {
     margin: 5px 0 5px 0;
 }
+.container-index {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    grid-template-rows: repeat(2, 1fr);
+    gap: 1em;
+}
+.intro-text {
+    grid-column-start: 1;
+    grid-column-end: 2;
+    padding: 30px 25px 20px 10px;
+    line-height: 1.5;
+    border-radius: 20px;
+    background-color: #F7F7F7;
+}
+.intro-image {
+    grid-column-start: 2;
+    grid-column-end: 3;
+    grid-row-start: 1;
+    grid-row-end: 3;
+    padding: 10px;
+    border-radius: 20px;
+    background-color: #F7F7F7;
+}
+.grid-header {
+    font-weight:450;
+    letter-spacing:0.5px;
+    font-family:Helvetica Neue,Arial,sans-serif
+    color: #70C8A0;
+    font-size: 50;
+}
