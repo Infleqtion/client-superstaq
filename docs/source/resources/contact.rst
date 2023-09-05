@@ -1,5 +1,5 @@
-Points of Contact
-====================
+Contact Us
+==========
 
 To reach out to a member of our team:
 
