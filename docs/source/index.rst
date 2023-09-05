@@ -10,25 +10,20 @@ Welcome! Here you can find more about Infleqtion's state-of-the-art quantum soft
 .. raw:: html
 
    <div class="container-index">
-      <div class="intro-text">
+      <div class="grid-exec">
+         <img src="_static/graphics/exec.png" width=50px>
          <div class="grid-header">Enhanced Execution</div>
+         Can improve performance by ≥ 10x
       </div>
-      <div class="intro-image">
+      <div class="grid-errmit">
+         <img src="_static/graphics/err-mit.png" width=50px>
+         <div class="grid-header">Next-Gen Error Mitigation</div>
+         Incorporates techniques like Dynamical Decoupling
+      </div>
+      <div class="grid-decomp">
+         <div class="grid-header">Optimized Decomposition</div>
+         Exploits the hardware's full set of native operations
          <img src="_static/graphics/stack.png">
-      </div>
-   </div>
-   <div class="index-demos">
-      <div class="index-demos-box">
-         <div class="index-demos-headers">Enhanced Execution</div>
-         <div class="index-demos-desc">Can improve performance by ≥ 10x</div>
-      </div>
-      <div class="index-demos-box">
-         <div class="index-demos-headers">Optimal Decomposition</div>
-         <div class="index-demos-desc">Exploits the hardware's full set of native operations</div>
-      </div>
-      <div class="index-demos-box">
-         <div class="index-demos-headers">Next-Gen Error Mitigation</div>
-         <div class="index-demos-desc">Incorporates techniques like Dynamical Decoupling</div>
       </div>
    </div>
    <br>
