@@ -24,7 +24,7 @@ If you'd like to contribute to Superstaq, below are the instructions for install
   python3 -m venv venv_superstaq
   source venv_superstaq/bin/activate
   cd client-superstaq/qiskit-superstaq
-  python3 -m pip install -e ."[dev]"
+  python3 -m pip install -e ".[dev]"
   ```
 </details>
 
@@ -36,7 +36,7 @@ If you'd like to contribute to Superstaq, below are the instructions for install
   python3 -m venv venv_superstaq
   source venv_superstaq/bin/activate
   cd client-superstaq/cirq-superstaq
-  python3 -m pip install -e ."[dev]"
+  python3 -m pip install -e ".[dev]"
   ```
 </details>
 
@@ -48,7 +48,7 @@ If you'd like to contribute to Superstaq, below are the instructions for install
   python3 -m venv venv_superstaq
   source venv_superstaq/bin/activate
   cd client-superstaq/general-superstaq
-  python3 -m pip install -e ."[dev]"
+  python3 -m pip install -e ".[dev]"
   ```
 </details>
 
@@ -60,7 +60,7 @@ If you'd like to contribute to Superstaq, below are the instructions for install
   python3 -m venv venv_superstaq
   source venv_superstaq/bin/activate
   cd client-superstaq/supermarq-benchmarks
-  python3 -m pip install -e ."[dev]"
+  python3 -m pip install -e ".[dev]"
   ```
 </details>
 
