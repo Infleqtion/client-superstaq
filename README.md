@@ -35,7 +35,8 @@ If you'd like to contribute to Superstaq, below are the instructions for install
   git clone git@github.com:Infleqtion/client-superstaq.git
   python3 -m venv venv_superstaq
   source venv_superstaq/bin/activate
-  cd  client-superstaq/cirq-superstaq
+  cd client-superstaq/cirq-superstaq
+
   python3 -m pip install -e ."[dev]"
   ```
 </details>
