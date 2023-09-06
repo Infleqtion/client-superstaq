@@ -3962,7 +3962,7 @@ html{
 .wy-nav-top{
     display:none;
     background:linear-gradient(to bottom right, rgb(20,26,94, .12), rgb(0,177,152,.12));
-    color:#404040;
+    color:rgb(20,26,94);
     padding:.4045em .809em;
     position:relative;
     line-height:50px;
@@ -3978,7 +3978,7 @@ html{
     clear:both
 }
 .wy-nav-top a{
-    color:#fff;
+    color:rgb(20,26,94);
     font-weight:700
 }
 .wy-nav-top img{
