@@ -47,6 +47,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
+        **kwargs: Any,
     ) -> None:
         """Initializes a SuperstaqProvider.
 
@@ -70,6 +71,10 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             api_version: The version of the API.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
             verbose: Whether to print to stdio and stderr on retriable errors.
+            kwargs: Other optimization and execution parameters.
+                - qiskit_pulse: Whether to use Superstaq's pulse-level optimizations for IBMQ
+                devices.
+                - cq_token: Token from CQ cloud.
 
         Raises:
             EnvironmentError: If an API key was not provided and could not be found.
@@ -83,6 +88,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             api_version=api_version,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
+            **kwargs,
         )
 
     def __str__(self) -> str:
@@ -330,6 +336,8 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         target: str = "cq_hilbert_qpu",
         *,
         grid_shape: Optional[Tuple[int, int]] = None,
+        control_radius: float = 1.0,
+        stripped_cz_rads: float = 0.0,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to CQ device, optimized to its native gate set.
@@ -339,6 +347,9 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             target: String of target CQ device.
             grid_shape: Optional fixed dimensions for the rectangular qubit grid (by default the
                 actual qubit layout will be pulled from the hardware provider).
+            control_radius: The radius with which qubits remain connected
+                (ie 1.0 indicates nearest neighbor connectivity).
+            stripped_cz_rads: The angle in radians of the stripped cz gate.
             kwargs: Other desired cq_compile options.
 
         Returns:
@@ -350,7 +361,13 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         if not target.startswith("cq_"):
             raise ValueError(f"{target!r} is not a valid CQ target.")
 
-        return self.get_backend(target).compile(circuits, grid_shape=grid_shape, **kwargs)
+        return self.get_backend(target).compile(
+            circuits,
+            grid_shape=grid_shape,
+            control_radius=control_radius,
+            stripped_cz_rads=stripped_cz_rads,
+            **kwargs,
+        )
 
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int

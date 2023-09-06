@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 from typing import Callable, Dict, Optional, Tuple, Union
 
@@ -47,7 +49,7 @@ class AceCR(qiskit.circuit.Gate):
         self.rads = rads
         self.sandwich_rx_rads = sandwich_rx_rads
 
-    def inverse(self) -> "AceCR":
+    def inverse(self) -> AceCR:
         """Inverts the AceCR gate.
 
         Returns:
@@ -126,7 +128,7 @@ class ZZSwapGate(qiskit.circuit.Gate):
         """
         super().__init__("zzswap", 2, [theta], label=label)
 
-    def inverse(self) -> "ZZSwapGate":
+    def inverse(self) -> ZZSwapGate:
         """Inverts the ZZ-SWAP gate.
 
         Returns:
@@ -181,7 +183,7 @@ class StrippedCZGate(qiskit.circuit.Gate):
         """
         super().__init__("stripped_cz", 2, [rz_rads])
 
-    def inverse(self) -> "StrippedCZGate":
+    def inverse(self) -> StrippedCZGate:
         """Inverts the stripped CZ gate.
 
         Returns:
@@ -246,7 +248,7 @@ class ParallelGates(qiskit.circuit.Gate):
         name = "parallel_" + "_".join(gate.name for gate in self.component_gates)
         super().__init__(name, num_qubits, [], label=label)
 
-    def inverse(self) -> "ParallelGates":
+    def inverse(self) -> ParallelGates:
         """Inverts parallel gates.
 
         Returns:
@@ -308,7 +310,7 @@ class iXGate(qiskit.circuit.Gate):
         """Returns a numpy array of the iX gate."""
         return np.array([[0, 1j], [1j, 0]])
 
-    def inverse(self) -> "iXdgGate":
+    def inverse(self) -> iXdgGate:
         """Inverts iX gate.
 
         Returns:

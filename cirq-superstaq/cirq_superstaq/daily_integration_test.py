@@ -5,6 +5,7 @@
 import os
 
 import cirq
+import general_superstaq as gss
 import pytest
 from general_superstaq import ResourceEstimate, SuperstaqServerException
 
@@ -252,6 +253,22 @@ def test_dfe(service: css.Service) -> None:
     assert isinstance(result, float)
 
 
+def test_aces(service: css.Service) -> None:
+    noise_model = cirq.NoiseModel.from_noise_model_like(cirq.depolarize(0.1))
+    job_id = service.submit_aces(
+        target="ss_unconstrained_simulator",
+        qubits=[0],
+        shots=100,
+        num_circuits=10,
+        mirror_depth=5,
+        extra_depth=7,
+        method="noise-sim",
+        noise=noise_model,
+    )
+    result = service.process_aces(job_id)
+    assert len(result) == 18
+
+
 def test_job(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
     job = service.create_job(circuit, target="ibmq_qasm_simulator", repetitions=10)
@@ -282,3 +299,13 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
 
     job = service.create_job(circuit=circuit, repetitions=1, target=target)
     assert job.counts() == {"11": 1}
+
+
+def test_submit_qubo(service: css.Service) -> None:
+    test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
+    serialized_result = service.submit_qubo(
+        test_qubo, target="toshiba_bifurcation_qpu", method="dry-run"
+    )
+    result = gss.qubo.read_json_qubo_result(serialized_result)
+    best_result = result[0]
+    assert best_result == {0: 1, 1: 0, 2: 1}
