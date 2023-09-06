@@ -75,9 +75,7 @@ class _SuperstaqClient:
         """
 
         self.api_key = api_key or gss.superstaq_client.find_api_key()
-        self.remote_host = (
-            remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
-        )
+        self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
         self.client_name = client_name
         self.api_version = api_version
         self.max_retry_seconds = max_retry_seconds
@@ -91,9 +89,7 @@ class _SuperstaqClient:
         assert (
             self.api_version in self.SUPPORTED_VERSIONS
         ), f"Only API versions {self.SUPPORTED_VERSIONS} are accepted but got {self.api_version}"
-        assert (
-            max_retry_seconds >= 0
-        ), "Negative retry not possible without time machine."
+        assert max_retry_seconds >= 0, "Negative retry not possible without time machine."
 
         self.url = f"{url.scheme}://{url.netloc}/{api_version}"
         self.verify_https: bool = f"{gss.API_URL}/{self.api_version}" == self.url
@@ -314,9 +310,7 @@ class _SuperstaqClient:
         """
         return self.post_request("/update_user_role", json_dict)
 
-    def resource_estimate(
-        self, json_dict: Dict[str, str]
-    ) -> Dict[str, List[Dict[str, int]]]:
+    def resource_estimate(self, json_dict: Dict[str, str]) -> Dict[str, List[Dict[str, int]]]:
         """POSTs the given payload to the `/resource_estimate` endpoint.
 
         Args:
@@ -338,9 +332,7 @@ class _SuperstaqClient:
         """
         return self.post_request("/aqt_compile", json_dict)
 
-    def qscout_compile(
-        self, json_dict: Dict[str, str]
-    ) -> Dict[str, Union[str, List[str]]]:
+    def qscout_compile(self, json_dict: Dict[str, str]) -> Dict[str, Union[str, List[str]]]:
         """Makes a POST request to Superstaq API to compile a list of circuits for QSCOUT.
 
         Args:
@@ -681,9 +673,7 @@ class _SuperstaqClient:
                 requests.codes.unauthorized,
             )
 
-    def _make_request(
-        self, request: Callable[[], requests.Response]
-    ) -> requests.Response:
+    def _make_request(self, request: Callable[[], requests.Response]) -> requests.Response:
         """Make a request to the API, retrying if necessary.
 
         Args:
@@ -713,9 +703,7 @@ class _SuperstaqClient:
                 # Retry these.
                 message = f"RequestException of type {type(e)}."
             if delay_seconds > self.max_retry_seconds:
-                raise TimeoutError(
-                    f"Reached maximum number of retries. Last error: {message}"
-                )
+                raise TimeoutError(f"Reached maximum number of retries. Last error: {message}")
             if self.verbose:
                 print(message, file=sys.stderr)
                 print(f"Waiting {delay_seconds} seconds before retrying.")
@@ -777,23 +765,16 @@ def find_api_key() -> str:
 def get_counts_on_qubits(
     counts: Dict[str, int], target_qubit_indices: Sequence[int]
 ) -> Dict[str, int]:
-    """Single-line description.
-
-    More details that go all the way to the 100 character limittttttttttttttttttttttttttttttttttttt.
-
-    A method to separate the counts dictionary into two different dictionaries:
-    a target dictionary containing the results on the user-specified qubits, and
-    the circuit dictionary, containing the results on all the other qubits in
-    the circuit
+    """A method to extract only the counts on specific qubits.
 
     Args:
-        counts_dict: The dictionary containing all the counts.
+        counts: The dictionary containing all the counts.
         target_qubit_indices: The indices of the qubits to separate.
 
     Returns:
         A dictionary of counts on the target indices.
     """
-    target_counts = collections.defaultdict(int)
+    target_counts: Dict[str, int] = collections.defaultdict(int)
     for bitstring, count in counts.items():
         target_key = "".join([bitstring[index] for index in target_qubit_indices])
         target_counts[target_key] += count

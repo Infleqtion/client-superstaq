@@ -203,7 +203,7 @@ def test_job_counts(job: css.job.Job) -> None:
     }
     with mocked_get_job_requests(job_dict):
         assert job.counts() == {"11": 1}
-        assert job.get_counts_on_qubits([0]) == ({"1": 1}, {"1": 1})
+        assert job.counts(qubit_indices=[0]) == ({"1": 1})
 
 
 def test_job_counts_failed(job: css.job.Job) -> None:

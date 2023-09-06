@@ -821,6 +821,5 @@ def test_get_counts_on_qubits() -> None:
     counts_dict = {"10": 50, "11": 50}
     target_qubit_indices = [0]
     assert gss.superstaq_client.get_counts_on_qubits(counts_dict, target_qubit_indices) == (
-        {"1": 100},
-        {"0": 50, "1": 50},
+        {"1": 100}
     )

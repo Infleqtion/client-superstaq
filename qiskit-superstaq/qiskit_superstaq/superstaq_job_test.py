@@ -72,11 +72,15 @@ def test_result(backend: qss.SuperstaqBackend) -> None:
         "general_superstaq.superstaq_client._SuperstaqClient.get_job",
         return_value=mock_response("Done"),
     ):
-        ans = job.result()
+        ans = job.result(
+            qubit_indices=[
+                1,
+            ]
+        )
 
         assert ans.backend_name == expected.backend_name
         assert ans.job_id == expected.job_id
-        assert job.get_counts_on_qubits([0]) == ({"0": 50, "1": 50}, {"1": 100})
+        assert ans.get_counts() == {"1": 100}
 
 
 def test_check_if_stopped(backend: qss.SuperstaqBackend) -> None:

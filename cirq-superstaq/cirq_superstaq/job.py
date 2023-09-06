@@ -13,7 +13,7 @@
 # limitations under the License.
 """Represents a job created via the Superstaq API."""
 import time
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 import cirq
 import general_superstaq as gss
@@ -179,12 +179,14 @@ class Job:
         self,
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
+        qubit_indices: Optional[Sequence[int]] = None,
     ) -> Dict[str, int]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
 
         Args:
             timeout_seconds: The total number of seconds to poll for.
             polling_seconds: The interval with which to poll.
+            qubit_indices: The qubit indices to return the results of individually.
 
         Returns:
             A dictionary containing the frequency counts of the measurements.
@@ -207,18 +209,12 @@ class Job:
         self._check_if_unsuccessful()
         counts_dictionary = self._job["samples"]
 
-        return counts_dictionary
+        if qubit_indices:
+            counts_dictionary = gss.superstaq_client.get_counts_on_qubits(
+                counts_dictionary, qubit_indices
+            )
 
-    def get_counts_on_qubits(
-        self, target_indices: List[int]
-    ) -> Tuple[Dict[str, int], Dict[str, int]]:
-        """A method to return counts on specific qubits of a circuit.
-        :param target_indices: The indicies of the qubits to separate
-        :return: A tuple of the separated dictionary, and the dictionary
-        containing counts on all other qubits in the circuit
-        """
-        counts_dictionary = self.counts()
-        return gss.superstaq_client.get_counts_on_qubits(counts_dictionary, target_indices)
+        return counts_dictionary
 
     def to_dict(self) -> Dict[str, Any]:
         """Refreshes and returns job information.

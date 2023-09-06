@@ -12,7 +12,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence
 
 import general_superstaq as gss
 import qiskit
@@ -59,7 +59,12 @@ class SuperstaqJob(qiskit.providers.JobV1):
 
         return [self._job_info[job_id] for job_id in self._job_id.split(",")]
 
-    def result(self, timeout: Optional[float] = None, wait: float = 5) -> qiskit.result.Result:
+    def result(
+        self,
+        timeout: Optional[float] = None,
+        qubit_indices: Optional[Sequence[int]] = None,
+        wait: float = 5,
+    ) -> qiskit.result.Result:
         """Retrieves the result data associated with a Superstaq job.
 
         Args:
@@ -67,6 +72,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 in seconds.
             wait: An optional parameter that sets the interval to check for Superstaq job results.
                 Units are in seconds. Defaults to 5.
+            qubit_indices: The qubit indices to return the results of individually.
 
         Returns:
             A qiskit result object containing job information.
@@ -80,6 +86,9 @@ class SuperstaqJob(qiskit.providers.JobV1):
             counts = result["samples"]
             if counts:  # change endianess to match Qiskit
                 counts = dict((key[::-1], value) for (key, value) in counts.items())
+
+            if qubit_indices:
+                counts = gss.superstaq_client.get_counts_on_qubits(counts, qubit_indices)
             results_list.append(
                 {
                     "success": result["status"] == "Done",
@@ -100,17 +109,6 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 "job_id": self._job_id,
             }
         )
-
-    def get_counts_on_qubits(
-        self, target_indices: List[int]
-    ) -> Tuple[Dict[str, int], Dict[str, int]]:
-        """A method to return counts on specific qubits of a circuit.
-        :param target_indices: The indicies of the qubits to separate
-        :return: A tuple of the separated dictionary, and the dictionary
-        containing counts on all other qubits in the circuit
-        """
-        counts_dictionary = self.result().get_counts()
-        return gss.superstaq_client.get_counts_on_qubits(counts_dictionary, target_indices)
 
     def _check_if_stopped(self) -> None:
         """Verifies that the job status is not in a cancelled or failed state and
