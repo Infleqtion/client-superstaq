@@ -13,12 +13,12 @@ Welcome! Here you can find more about Infleqtion's state-of-the-art quantum soft
       <div class="grid-exec">
          <img src="_static/graphics/exec.png" width=50px>
          <div class="grid-header">Enhanced Execution</div>
-         Can improve performance by ≥ 10x
+         Can improve performance by ≥ 10x. Read our <a>white paper</a> to learn more.
       </div>
       <div class="grid-errmit">
          <img src="_static/graphics/err-mit.png" width=50px>
          <div class="grid-header">Next-Gen Error Mitigation</div>
-         Incorporates techniques like Dynamical Decoupling
+         Incorporates techniques like <a href="./optimizations/ibm/ibmq_dd.html">Dynamical Decoupling</a>.
       </div>
       <div class="grid-decomp">
          <div class="grid-header">Optimized Decomposition</div>
