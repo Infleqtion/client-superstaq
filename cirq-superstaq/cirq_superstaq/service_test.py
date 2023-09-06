@@ -612,6 +612,43 @@ def test_service_dfe(mock_post: mock.MagicMock) -> None:
 
 
 @mock.patch("requests.post")
+def test_aces(
+    mock_post: mock.MagicMock,
+) -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    mock_post.return_value.json = lambda: "id1"
+    assert (
+        service.submit_aces(
+            target="ss_unconstrained_simulator",
+            qubits=[0, 1],
+            shots=100,
+            num_circuits=10,
+            mirror_depth=5,
+            extra_depth=5,
+            noise=cirq.NoiseModel.from_noise_model_like(cirq.depolarize(0.1)),
+        )
+        == "id1"
+    )
+
+    assert (
+        service.submit_aces(
+            target="ss_unconstrained_simulator",
+            qubits=[0, 1],
+            shots=100,
+            num_circuits=10,
+            mirror_depth=5,
+            extra_depth=5,
+            noise="asymmetric_depolarize",
+            error_prob=(0.1, 0.1, 0.1),
+        )
+        == "id1"
+    )
+
+    mock_post.return_value.json = lambda: [1] * 51
+    assert service.process_aces("id1") == [1] * 51
+
+
+@mock.patch("requests.post")
 def test_service_target_info(mock_post: mock.MagicMock) -> None:
     fake_data = {"target_info": {"backend_name": "ss_example_qpu", "max_experiments": 1234}}
     mock_post.return_value.json = lambda: fake_data

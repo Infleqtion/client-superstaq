@@ -18,7 +18,7 @@ import sys
 import textwrap
 import time
 import urllib
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import qubovert as qv
 import requests
@@ -48,6 +48,7 @@ class _SuperstaqClient:
         api_version: str = gss.API_VERSION,
         max_retry_seconds: float = 60,  # 1 minute
         verbose: bool = False,
+        **kwargs: Any,
     ):
         """Creates the SuperstaqClient.
 
@@ -66,6 +67,10 @@ class _SuperstaqClient:
                 which is the most recent version when this client was downloaded.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
+            kwargs: Other optimization and execution parameters.
+                - qiskit_pulse: Whether to use Superstaq's pulse-level optimizations for IBMQ
+                devices.
+                - cq_token: Token from CQ cloud.
         """
 
         self.api_key = api_key or gss.superstaq_client.find_api_key()
@@ -93,6 +98,7 @@ class _SuperstaqClient:
             "X-Client-Name": self.client_name,
             "X-Client-Version": self.api_version,
         }
+        self._client_kwargs = kwargs
 
     def get_request(self, endpoint: str) -> Any:
         """Performs a GET request on a given endpoint.
@@ -193,12 +199,11 @@ class _SuperstaqClient:
             "target": target,
             "shots": int(repetitions),
         }
-
         if method is not None:
             json_dict["method"] = method
+        if kwargs or self._client_kwargs:
+            json_dict["options"] = json.dumps({**self._client_kwargs, **kwargs})
 
-        if kwargs:
-            json_dict["options"] = json.dumps(kwargs)
         return self.post_request("/jobs", json_dict)
 
     def get_job(self, job_id: str) -> Dict[str, str]:
@@ -213,7 +218,34 @@ class _SuperstaqClient:
         Raises:
             SuperstaqServerException: For other API call failures.
         """
-        return self.get_request(f"/job/{job_id}")
+        return self.fetch_jobs([job_id])[job_id]
+
+    def fetch_jobs(
+        self,
+        job_ids: List[str],
+        **kwargs: Any,
+    ) -> Dict[str, Dict[str, str]]:
+        """Get the job from the Superstaq API.
+
+        Args:
+            job_ids: The UUID of the job (returned when the job was created).
+            kwargs:  Extra options needed to fetch jobs.
+                - cq_token: CQ Cloud credentials.
+
+        Returns:
+            The json body of the response as a dict.
+
+        Raises:
+            SuperstaqServerException: For other API call failures.
+        """
+
+        json_dict: Dict[str, Any] = {
+            "job_ids": job_ids,
+        }
+        if kwargs or self._client_kwargs:
+            json_dict["options"] = json.dumps({**self._client_kwargs, **kwargs})
+
+        return self.post_request("/fetch_jobs", json_dict)
 
     def get_balance(self) -> Dict[str, float]:
         """Get the querying user's account balance in USD.
@@ -462,12 +494,15 @@ class _SuperstaqClient:
     def submit_aces(
         self,
         target: str,
-        qubits: List[int],
+        qubits: Sequence[int],
         shots: int,
         num_circuits: int,
         mirror_depth: int,
         extra_depth: int,
-        **kwargs: Any,
+        method: Optional[str] = None,
+        noise: Optional[Dict[str, object]] = None,
+        tag: Optional[str] = None,
+        lifespan: Optional[int] = None,
     ) -> str:
         """Performs a POST request on the `/aces` endpoint.
 
@@ -478,18 +513,18 @@ class _SuperstaqClient:
             num_circuits: How many random circuits to use in the protocol.
             mirror_depth: The half-depth of the mirror portion of the random circuits.
             extra_depth: The depth of the fully random portion of the random circuits.
-            kwargs: Other execution parameters.
-                - tag: Tag for all jobs submitted for this protocol.
-                - lifespan: How long to store the jobs submitted for in days (only works with right
+            method: Which type of method to execute the circuits with.
+            noise: A dictionary describing a noise model to simulate the run with.
+            tag: Tag for all jobs submitted for this protocol.
+            lifespan: How long to store the jobs submitted for in days (only works with right
                 permissions).
-                - method: Which type of method to execute the circuits with.
 
         Returns:
             A string with the job id for the ACES job created.
 
         Raises:
-            ValueError: If any the target passed are not valid.
-            SuperstaqServerException: if the request fails.
+            ValueError: If the target or noise model is not valid.
+            SuperstaqServerException: If the request fails.
         """
         gss.validation.validate_target(target)
 
@@ -502,8 +537,17 @@ class _SuperstaqClient:
             "extra_depth": extra_depth,
         }
 
-        if kwargs:
-            json_dict["options"] = json.dumps(kwargs)
+        if method:
+            json_dict["method"] = method
+        if noise:
+            if "type" in noise.keys():
+                gss.validation.validate_noise_type(noise, len(qubits))
+            json_dict["noise"] = noise
+        if tag:
+            json_dict["tag"] = tag
+        if lifespan:
+            json_dict["lifespan"] = lifespan
+
         return self.post_request("/aces", json_dict)
 
     def process_aces(self, job_id: str) -> List[float]:
