@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Client for making requests to Superstaq's API."""
+import collections
 import json
 import os
 import pathlib
@@ -18,7 +19,7 @@ import sys
 import textwrap
 import time
 import urllib
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
 import qubovert as qv
 import requests
@@ -74,7 +75,9 @@ class _SuperstaqClient:
         """
 
         self.api_key = api_key or gss.superstaq_client.find_api_key()
-        self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
+        self.remote_host = (
+            remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
+        )
         self.client_name = client_name
         self.api_version = api_version
         self.max_retry_seconds = max_retry_seconds
@@ -88,7 +91,9 @@ class _SuperstaqClient:
         assert (
             self.api_version in self.SUPPORTED_VERSIONS
         ), f"Only API versions {self.SUPPORTED_VERSIONS} are accepted but got {self.api_version}"
-        assert max_retry_seconds >= 0, "Negative retry not possible without time machine."
+        assert (
+            max_retry_seconds >= 0
+        ), "Negative retry not possible without time machine."
 
         self.url = f"{url.scheme}://{url.netloc}/{api_version}"
         self.verify_https: bool = f"{gss.API_URL}/{self.api_version}" == self.url
@@ -309,7 +314,9 @@ class _SuperstaqClient:
         """
         return self.post_request("/update_user_role", json_dict)
 
-    def resource_estimate(self, json_dict: Dict[str, str]) -> Dict[str, List[Dict[str, int]]]:
+    def resource_estimate(
+        self, json_dict: Dict[str, str]
+    ) -> Dict[str, List[Dict[str, int]]]:
         """POSTs the given payload to the `/resource_estimate` endpoint.
 
         Args:
@@ -331,7 +338,9 @@ class _SuperstaqClient:
         """
         return self.post_request("/aqt_compile", json_dict)
 
-    def qscout_compile(self, json_dict: Dict[str, str]) -> Dict[str, Union[str, List[str]]]:
+    def qscout_compile(
+        self, json_dict: Dict[str, str]
+    ) -> Dict[str, Union[str, List[str]]]:
         """Makes a POST request to Superstaq API to compile a list of circuits for QSCOUT.
 
         Args:
@@ -672,7 +681,9 @@ class _SuperstaqClient:
                 requests.codes.unauthorized,
             )
 
-    def _make_request(self, request: Callable[[], requests.Response]) -> requests.Response:
+    def _make_request(
+        self, request: Callable[[], requests.Response]
+    ) -> requests.Response:
         """Make a request to the API, retrying if necessary.
 
         Args:
@@ -702,7 +713,9 @@ class _SuperstaqClient:
                 # Retry these.
                 message = f"RequestException of type {type(e)}."
             if delay_seconds > self.max_retry_seconds:
-                raise TimeoutError(f"Reached maximum number of retries. Last error: {message}")
+                raise TimeoutError(
+                    f"Reached maximum number of retries. Last error: {message}"
+                )
             if self.verbose:
                 print(message, file=sys.stderr)
                 print(f"Waiting {delay_seconds} seconds before retrying.")
@@ -762,41 +775,26 @@ def find_api_key() -> str:
 
 
 def get_counts_on_qubits(
-    counts_dict: Dict[str, int], target_qubit_indices: List[int]
-) -> Tuple[Dict[str, int], Dict[str, int]]:
-    """A method to separate the counts dictionary into two different dictionaries:
+    counts: Dict[str, int], target_qubit_indices: Sequence[int]
+) -> Dict[str, int]:
+    """Single-line description.
+
+    More details that go all the way to the 100 character limittttttttttttttttttttttttttttttttttttt.
+
+    A method to separate the counts dictionary into two different dictionaries:
     a target dictionary containing the results on the user-specified qubits, and
     the circuit dictionary, containing the results on all the other qubits in
     the circuit
 
     Args:
-        counts_dict: The dictionary containing all the counts
-        target_qubit_indices: The indices of the qubits to separate
+        counts_dict: The dictionary containing all the counts.
+        target_qubit_indices: The indices of the qubits to separate.
 
     Returns:
-        A tuple containing the two dictionaries
+        A dictionary of counts on the target indices.
     """
-
-    target_dict: Dict[str, int] = {}
-    circuit_dict: Dict[str, int] = {}
-
-    # possible because all keys are the same length - however there should be
-    # a cleaner way to do this
-    example_key = list(counts_dict.keys())[0]
-    circuit_qubit_indices = [i for i in range(len(example_key)) if i not in target_qubit_indices]
-
-    # creating substring keys to differentiate between the target qubits
-    # and circuit qubits
-    def meas_substring(bitstring: str, indices: List[int]) -> str:
-        return "".join([bitstring[index] for index in indices])
-
-    for key, val in counts_dict.items():
-        target_key = meas_substring(key, target_qubit_indices)
-        circuit_key = meas_substring(key, circuit_qubit_indices)
-        for new_key, new_dict in zip((target_key, circuit_key), (target_dict, circuit_dict)):
-            if new_key in new_dict.keys():
-                new_dict[new_key] += val
-            else:
-                new_dict[new_key] = val
-
-    return target_dict, circuit_dict
+    target_counts = collections.defaultdict(int)
+    for bitstring, count in counts.items():
+        target_key = "".join([bitstring[index] for index in target_qubit_indices])
+        target_counts[target_key] += count
+    return target_counts
