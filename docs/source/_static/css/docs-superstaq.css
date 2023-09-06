@@ -3633,7 +3633,7 @@ html{
 }
 /* sidebar TOC headers (e.g., Get started) */
 .wy-menu-vertical header,.wy-menu-vertical p.caption{
-    color:#70C8A0;
+    color:#00b198;
     height:32px;
     line-height:32px;
     padding:0 1.47em;
@@ -3661,13 +3661,13 @@ html{
 }
 /* subheaders of current toctree in sidebar */
 .wy-menu-vertical li.current a{
-    color:#303030;
+    color:#dddddd;
     border-right:none;
     padding:.4045em 2.427em
 }
 .wy-menu-vertical li.current a:hover{
     background:none;
-    color: #8DCB71
+    color: rgb(0,177,152,.7)
 }
 .rst-content .wy-menu-vertical li tt,.wy-menu-vertical li .rst-content tt,.wy-menu-vertical li code{
     border:none;
@@ -3700,7 +3700,7 @@ html{
 }
 /* expand symbol in sidebar toctree hover*/
 .wy-menu-vertical li.current>a:hover button.toctree-expand,.wy-menu-vertical li.on a:hover button.toctree-expand{
-    color:#8DCB71
+    color:rgb(0,177,152,.7)
 }
 /* expand symbol in sidebar toctree */
 .wy-menu-vertical li.current>a button.toctree-expand,.wy-menu-vertical li.on a button.toctree-expand{
@@ -3819,8 +3819,9 @@ html{
     font-size:90%;
     color:#303030
 }
+/* hover background for rst headings */
 .wy-menu-vertical a:hover{
-    background-color:#ECECEC;
+    background-color:rgb(20,26,94, .15);
     cursor:pointer
 }
 .wy-menu-vertical a:hover button.toctree-expand{
@@ -3828,7 +3829,7 @@ html{
 }
 /* color when link not in toctree in sidebar is being clicked on */
 .wy-menu-vertical a:active{
-    background-color:#ECECEC;
+    background-color:rgb(20,26,94, .15);
     cursor:pointer;
     color:#303030
 }
@@ -3842,7 +3843,7 @@ html{
     padding:.809em;
     margin-bottom:.809em;
     z-index:200;
-    background-color:#F7F7F7;
+    background:none;
     text-align:center;
     color:#fcfcfc
 }
@@ -3947,7 +3948,7 @@ html{
     overflow-y:hidden;
     min-height:100%;
     color:#404040;
-    background-color:#F7F7F7;
+    background:linear-gradient(to bottom right, rgb(20,26,94, .12), rgb(0,177,152,.12));
     z-index:200
 }
 .wy-side-scroll{
@@ -3960,8 +3961,8 @@ html{
 /* phone tablet nav header */
 .wy-nav-top{
     display:none;
-    background:#8DAD9F;
-    color:#fff;
+    background:linear-gradient(to bottom right, rgb(20,26,94, .12), rgb(0,177,152,.12));
+    color:#404040;
     padding:.4045em .809em;
     position:relative;
     line-height:50px;
