@@ -4930,7 +4930,7 @@ span.linenos.special { color: #303030; background-color: #ECECEC; padding-left: 
     .container-index {
         display: grid;
         grid-template-columns: 1fr;
-        grid-template-rows: repeat(3, 1fr);
+        grid-template-rows: repeat(3, auto);
         gap: 1em;
         line-height: 1.5;
     }
