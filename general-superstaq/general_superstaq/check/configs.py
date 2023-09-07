@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import argparse
 import difflib
 import os
 import sys
@@ -26,7 +25,7 @@ def run(*args: str, silent: bool = False) -> int:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = check_utils.get_check_parser(no_files=True)
     parser.description = textwrap.dedent(
         f"""
         Checks that the check script configuration file ({CONFIG_FILE}) is consistent across repos.
@@ -34,7 +33,9 @@ def run(*args: str, silent: bool = False) -> int:
         Exceptions in {CONFIG_FILE} can be flagged by adding "{IGNORE_MATCH}" to the line.
         """
     )
-    parser.parse_args(args)  # placeholder parsing to enable printing help text
+    parsed_args, _ = parser.parse_known_intermixed_args(args)
+    if "configs" in parsed_args.skip:
+        return 0
 
     # identify the "original" config file, and the file that is supposed to be a copy
     file_orig = os.path.join(os.path.abspath(os.path.dirname(__file__)), TEMPLATE_FILE)

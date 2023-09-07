@@ -234,6 +234,22 @@ def test_dfe(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     assert isinstance(result, float)
 
 
+def test_aces(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
+    backend = provider.get_backend("ss_unconstrained_simulator")
+    job_id = backend.submit_aces(
+        qubits=[0],
+        shots=100,
+        num_circuits=10,
+        mirror_depth=5,
+        extra_depth=7,
+        method="dry-run",
+        noise="bit_flip",
+        error_prob=0.1,
+    )
+    result = backend.process_aces(job_id)
+    assert len(result) == 18
+
+
 @pytest.mark.parametrize(
     "target", ["cq_hilbert_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
 )
