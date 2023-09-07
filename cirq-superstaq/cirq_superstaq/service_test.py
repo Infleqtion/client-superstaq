@@ -123,6 +123,17 @@ def test_service_run_and_get_counts() -> None:
     result = results[0] if isinstance(results, list) else results
     assert result.histogram(key="a") == collections.Counter({3: 1})
 
+    # Deprecation warning test
+    with pytest.warns(DeprecationWarning, match="calling `counts()` without"):
+        results = service.run(
+            circuits=circuit,
+            repetitions=4,
+            target="ibmq_qasm_simulator",
+            param_resolver=params,
+        )
+    result = results[0] if isinstance(results, list) else results
+    assert result.histogram(key="a") == collections.Counter({3: 1})
+
 
 def test_service_sampler() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")

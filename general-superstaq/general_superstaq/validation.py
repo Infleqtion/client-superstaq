@@ -1,5 +1,6 @@
 import re
-from typing import Dict, Sequence, Optional
+from typing import Dict, Optional, Sequence
+
 
 def validate_integer_param(integer_param: object, allow_zero: Optional[bool] = False) -> None:
     """Validates that an input parameter is positive and an integer.

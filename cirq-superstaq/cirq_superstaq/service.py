@@ -221,7 +221,7 @@ class Service(gss.service.Service):
             repetitions: The number of times to run the circuit(s).
             target: Where to run the job.
             param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuits`.
-            index: Optional parameter to get counts from the circuit with `index`.
+            index: Optional parameter to get counts from the `index` label circuit.
             method: Execution method.
             kwargs: Other optimization and execution parameters.
 

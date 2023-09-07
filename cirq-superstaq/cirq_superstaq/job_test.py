@@ -75,29 +75,6 @@ def test_job_fields(job: css.job.Job) -> None:
         mocked_get_job.assert_called_once()  # Only refreshed once
 
 
-def test_multi_circuit_job(job: css.job.Job) -> None:
-    pass
-    # compiled_circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
-    # job_dict = {
-    #     "data": {"histogram": {"11": 1}},
-    #     "num_qubits": 2,
-    #     "samples": {"11": 1},
-    #     "shots": 1,
-    #     "status": "Done",
-    #     "target": "ss_unconstrained_simulator",
-    #     "compiled_circuit": css.serialize_circuits(compiled_circuit),
-    # }
-
-    # assert job.job_id() == "job_id"
-
-    # with mocked_get_job_requests(job_dict) as mocked_get_job:
-    #     assert job.target() == "ss_unconstrained_simulator"
-    #     assert job.num_qubits(index=0) == 2
-    #     assert job.repetitions() == 1
-    #     assert job.compiled_circuits(index=0) == compiled_circuit
-    #     mocked_get_job.assert_called_once()  # Only refreshed once
-
-
 def test_target(job: css.job.Job) -> None:
     job_dict = {"status": "Done", "target": "ss_unconstrained_simulator"}
 
@@ -120,6 +97,10 @@ def test_num_qubits(job: css.job.Job) -> None:
 
     # Shouldn't need to retrieve anything now that `job._job` is populated:
     assert job.num_qubits(index=0) == 2
+
+    # Deprecation warning test
+    with pytest.warns(DeprecationWarning, match="calling `num_qubits()` without"):
+        assert job.num_qubits() == 2
 
 
 def test_repetitions(job: css.job.Job) -> None:
@@ -150,6 +131,42 @@ def test_compiled_circuit(job: css.job.Job) -> None:
 
     # Shouldn't need to retrieve anything now that `job._job` is populated:
     assert job.compiled_circuits(index=0) == compiled_circuit
+
+
+def test_multi_circuit_job() -> None:
+    batch_job = css.Job(
+        gss.superstaq_client._SuperstaqClient(
+            client_name="cirq-superstaq",
+            remote_host="http://example.com",
+            api_key="to_my_heart",
+        ),
+        "abc123,def456,ghi789",
+    )
+
+    compiled_circuit = cirq.Circuit(
+        cirq.H(cirq.q(0)),
+        cirq.CNOT(cirq.q(2), cirq.q(0)),
+        cirq.X(cirq.q(1)) ** 0.5,
+        cirq.measure(cirq.q(0), cirq.q(1), cirq.q(2)),
+    )
+    job_dict = {
+        "status": "Done",
+        "num_qubits": 3,
+        "data": {"histogram": {"000": 0.16, "010": 0.36, "100": 0.3, "110": 0.18}},
+        "samples": {"000": 8, "010": 18, "100": 15, "110": 9},
+        "shots": 50,
+        "compiled_circuit": css.serialize_circuits(compiled_circuit),
+        "input_circuit": css.serialize_circuits(compiled_circuit),
+    }
+
+    with mocked_get_job_requests(job_dict):
+        assert batch_job.compiled_circuits() == [
+            compiled_circuit,
+            compiled_circuit,
+            compiled_circuit,
+        ]
+        assert batch_job.compiled_circuits(index=2) == compiled_circuit
+        assert batch_job.num_qubits(index=2) == 3
 
 
 def test_input_circuit(job: css.job.Job) -> None:
@@ -235,6 +252,10 @@ def test_job_counts(job: css.job.Job) -> None:
     }
     with mocked_get_job_requests(job_dict):
         assert job.counts(index=0) == {"11": 1}
+
+    # Deprecation warning test
+    with pytest.warns(DeprecationWarning, match="calling `counts()` without"):
+        assert job.counts() == {"11": 1}
 
 
 def test_job_counts_failed(job: css.job.Job) -> None:

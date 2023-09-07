@@ -50,6 +50,7 @@ def test_validate_integer_param() -> None:
     ):
         gss.validation.validate_integer_param(-1, allow_zero=True)
 
+
 def test_validate_noise_type() -> None:
     valid_inputs: List[Dict[str, object]] = [
         {"type": "symmetric_depolarize", "params": (0.1,)},
