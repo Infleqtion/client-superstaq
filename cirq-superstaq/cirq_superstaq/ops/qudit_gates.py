@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 from typing import AbstractSet, Any, Dict, List, Optional, Sequence, Tuple, Type, Union
 
@@ -70,7 +72,7 @@ class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
 
     def __pow__(
         self, exponent: cirq.TParamVal
-    ) -> Optional[Union["QuditSwapGate", cirq.IdentityGate]]:
+    ) -> Optional[Union[QuditSwapGate, cirq.IdentityGate]]:
         if not cirq.is_parameterized(exponent):
             if exponent % 2 == 1:
                 return self
@@ -407,7 +409,7 @@ class QubitSubspaceGate(cirq.Gate):
 
     def _resolve_parameters_(
         self, resolver: cirq.ParamResolver, recursive: bool
-    ) -> "QubitSubspaceGate":
+    ) -> QubitSubspaceGate:
         return QubitSubspaceGate(
             cirq.resolve_parameters(self._sub_gate, resolver, recursive),
             self._qid_shape,
@@ -465,7 +467,7 @@ class QubitSubspaceGate(cirq.Gate):
     def _json_dict_(self) -> Dict[str, Any]:
         return cirq.obj_to_dict_helper(self, ["sub_gate", "qid_shape", "subspaces"])
 
-    def __pow__(self, exponent: cirq.TParamVal) -> Optional["QubitSubspaceGate"]:
+    def __pow__(self, exponent: cirq.TParamVal) -> Optional[QubitSubspaceGate]:
         exp_gate = cirq.pow(self._sub_gate, exponent, None)
         if exp_gate is None:
             return NotImplemented

@@ -1,4 +1,5 @@
 import re
+from typing import Dict, Sequence
 
 
 def validate_integer_param(integer_param: object) -> None:
@@ -18,7 +19,7 @@ def validate_integer_param(integer_param: object) -> None:
         raise TypeError(f"{integer_param} cannot be safely cast as an integer.")
 
     if int(integer_param) <= 0:
-        raise ValueError("{integer_param} is not a positive integer.")
+        raise ValueError(f"{integer_param} is not a positive integer.")
 
 
 def validate_target(target: str) -> None:
@@ -69,3 +70,64 @@ def validate_target(target: str) -> None:
             f"{target!r} does not have a valid target device type. Valid device types are: "
             f"{target_device_types}."
         )
+
+
+def validate_noise_type(noise: Dict[str, object], n_qubits: int) -> None:
+    """Validates that an ACES noise model is valid.
+
+    Args:
+        noise: A noise model parameter.
+        n_qubits: Number of qubits the noise model is applied to.
+
+    Raises:
+        ValueError: If `noise` is not valid.
+    """
+    noise_type = noise.get("type")
+    if not ((params := noise.get("params")) and isinstance(params, Sequence)):
+        raise ValueError("`params` must be a sequence in the dict if `type` is in the dict.")
+
+    if noise_type not in [
+        "symmetric_depolarize",
+        "bit_flip",
+        "phase_flip",
+        "asymmetric_depolarize",
+    ]:
+        raise ValueError(f"{noise_type} is not a valid channel.")
+
+    if noise_type in [
+        "bit_flip",
+        "phase_flip",
+    ]:
+        if not (
+            len(params) == 1
+            and isinstance(params[0], (int, float))
+            and params[0] >= 0
+            and params[0] <= 1
+        ):
+            raise ValueError(
+                f'{params} must be a single number between 0 and 1 for "bit_flip", and '
+                f'"phase_flip".'
+            )
+
+    if noise_type == "symmetric_depolarize":
+        if not (
+            len(params) == 1
+            and isinstance(params[0], (int, float))
+            and params[0] >= 0
+            and params[0] <= (1 / (4**n_qubits - 1))
+        ):
+            raise ValueError(
+                f"{params[0]} must be a single number less than 1 / (4^n - 1) for "
+                f'"symmetric_depolarize".'
+            )
+
+    if noise_type == "asymmetric_depolarize":
+        if not (
+            len(params) == 3
+            and all(isinstance(v, (int, float)) for v in params)
+            and sum(params) <= 1
+        ):
+            raise ValueError(
+                f"{params} must be of the form (p_x, p_y, p_z) such that p_x + p_y + p_z <= 1 "
+                f'for "asymmetric_depolarize".'
+            )

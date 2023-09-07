@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import subprocess
 import sys
 import textwrap
@@ -27,7 +26,7 @@ def run(
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
 
-    parser = check_utils.get_file_parser()
+    parser = check_utils.get_check_parser()
     parser.description = textwrap.dedent(
         """
         Runs mypy on the repository (typing check).
@@ -36,6 +35,9 @@ def run(
     )
 
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
+    if "mypy" in parsed_args.skip:
+        return 0
+
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     return subprocess.call(
