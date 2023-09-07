@@ -120,7 +120,8 @@ def test_service_run_and_get_counts() -> None:
         param_resolver=params,
         index=0,
     )
-    assert results.histogram(key="a") == collections.Counter({3: 1})
+    result = results[0] if isinstance(results, list) else results
+    assert result.histogram(key="a") == collections.Counter({3: 1})
 
 
 def test_service_sampler() -> None:

@@ -234,10 +234,10 @@ class Service(gss.service.Service):
         )
 
         if index is not None:
-            counts = job_counts[index] if not isinstance(job_counts, Dict[str, int]) else job_counts
+            counts = job_counts[index] if isinstance(job_counts, list) else job_counts
             return counts_to_results(counts, circuit_list[index], param_resolver)
         else:
-            counts_list = [job_counts] if isinstance(job_counts, Dict[str, int]) else job_counts
+            counts_list = job_counts if isinstance(job_counts, list) else [job_counts]
             result_list = [
                 counts_to_results(counts_list[i], circuit_list[i], param_resolver)
                 for i in range(len(circuit_list))
@@ -331,9 +331,9 @@ class Service(gss.service.Service):
             pretty_output: Whether to return a pretty string or a float of the balance.
 
         Returns:
-            If pretty_output is `True`, returns the balance as a nicely formatted string ($-prefix,
-                commas on LHS every three digits, and two digits after period). Otherwise, simply
-                returns a float of the balance.
+            If `pretty_output` is `True`, returns the balance as a nicely formatted string
+            ($-prefix, commas on LHS every three digits, and two digits after period). Otherwise,
+            simply returns a float of the balance.
         """
         balance = self._client.get_balance()["balance"]
         if pretty_output:
@@ -354,7 +354,7 @@ class Service(gss.service.Service):
         """Generates resource estimates for circuit(s).
 
         Args:
-            circuits:  The circuit(s) to generate resource estimate.
+            circuits: The circuit(s) to generate resource estimate.
             target: String of target representing target device.
 
         Returns:

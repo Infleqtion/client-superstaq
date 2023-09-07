@@ -88,8 +88,9 @@ class Sampler(cirq.Sampler):
             )
             for resolver in resolvers
         ]
-        job_counters = [job.counts(index=0) for job in jobs]
+        job_counters = [job.counts() for job in jobs]
         cirq_results = []
         for counts, resolver in zip(job_counters, resolvers):
+            counts = counts[0] if isinstance(counts, list) else counts
             cirq_results.append(css.service.counts_to_results(counts, program, resolver))
         return cirq_results
