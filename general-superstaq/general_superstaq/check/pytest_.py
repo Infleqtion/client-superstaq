@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import subprocess
 import sys
 import textwrap
@@ -23,14 +22,14 @@ def run(
         include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
         exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
         integration_setup: Optional function to run before integration tests (for example,
-        to set environmental variables).
+            to set environmental variables).
         silent: If True, restrict printing to warning and error messages.
 
     Returns:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
 
-    parser = check_utils.get_file_parser()
+    parser = check_utils.get_check_parser()
     parser.description = textwrap.dedent(
         """
         Runs pytest on the repository.
@@ -55,6 +54,8 @@ def run(
     parser.add_argument("--enable-socket", action="store_true", help="Force-enable socket.")
 
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
+    if "pytest" in parsed_args.skip:
+        return 0
 
     exclude = [exclude] if isinstance(exclude, str) else [] if exclude is None else list(exclude)
     if parsed_args.notebook:

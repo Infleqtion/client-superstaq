@@ -3,6 +3,7 @@
 
 import os
 
+import general_superstaq as gss
 import numpy as np
 import pytest
 import qiskit
@@ -233,6 +234,22 @@ def test_dfe(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     assert isinstance(result, float)
 
 
+def test_aces(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
+    backend = provider.get_backend("ss_unconstrained_simulator")
+    job_id = backend.submit_aces(
+        qubits=[0],
+        shots=100,
+        num_circuits=10,
+        mirror_depth=5,
+        extra_depth=7,
+        method="dry-run",
+        noise="bit_flip",
+        error_prob=0.1,
+    )
+    result = backend.process_aces(job_id)
+    assert len(result) == 18
+
+
 @pytest.mark.parametrize(
     "target", ["cq_hilbert_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
 )
@@ -245,3 +262,13 @@ def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvi
 
     job = provider.get_backend(target).run(qc, shots=1)
     assert job.result().get_counts() == {"11": 1}
+
+
+def test_submit_qubo(provider: qss.SuperstaqProvider) -> None:
+    test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
+    serialized_result = provider.submit_qubo(
+        test_qubo, target="toshiba_bifurcation_qpu", method="dry-run"
+    )
+    result = gss.qubo.read_json_qubo_result(serialized_result)
+    best_result = result[0]
+    assert best_result == {0: 1, 1: 0, 2: 1}
