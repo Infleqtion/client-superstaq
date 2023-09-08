@@ -99,7 +99,7 @@ def test_num_qubits(job: css.job.Job) -> None:
     assert job.num_qubits(index=0) == 2
 
     # Deprecation warning test
-    with pytest.warns(DeprecationWarning, match="calling `num_qubits()` without"):
+    with pytest.warns(DeprecationWarning, match="the numbers of qubits in all circuits"):
         assert job.num_qubits() == 2
 
 
@@ -134,7 +134,7 @@ def test_compiled_circuit(job: css.job.Job) -> None:
 
 
 def test_multi_circuit_job() -> None:
-    batch_job = css.Job(
+    job = css.Job(
         gss.superstaq_client._SuperstaqClient(
             client_name="cirq-superstaq",
             remote_host="http://example.com",
@@ -159,14 +159,19 @@ def test_multi_circuit_job() -> None:
         "input_circuit": css.serialize_circuits(compiled_circuit),
     }
 
-    with mocked_get_job_requests(job_dict):
-        assert batch_job.compiled_circuits() == [
-            compiled_circuit,
-            compiled_circuit,
-            compiled_circuit,
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=job_dict
+    ):
+        assert job.compiled_circuits() == [compiled_circuit, compiled_circuit, compiled_circuit]
+        assert job.compiled_circuits(index=2) == compiled_circuit
+        assert job.num_qubits() == [3, 3, 3]
+        assert job.num_qubits(index=2) == 3
+        assert job.counts() == [
+            {"000": 8, "010": 18, "100": 15, "110": 9},
+            {"000": 8, "010": 18, "100": 15, "110": 9},
+            {"000": 8, "010": 18, "100": 15, "110": 9},
         ]
-        assert batch_job.compiled_circuits(index=2) == compiled_circuit
-        assert batch_job.num_qubits(index=2) == 3
+        assert job.counts(index=2) == {"000": 8, "010": 18, "100": 15, "110": 9}
 
 
 def test_input_circuit(job: css.job.Job) -> None:
@@ -254,7 +259,7 @@ def test_job_counts(job: css.job.Job) -> None:
         assert job.counts(index=0) == {"11": 1}
 
     # Deprecation warning test
-    with pytest.warns(DeprecationWarning, match="calling `counts()` without"):
+    with pytest.warns(DeprecationWarning, match="the counts in all circuits in this"):
         assert job.counts() == {"11": 1}
 
 

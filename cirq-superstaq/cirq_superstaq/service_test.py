@@ -123,8 +123,24 @@ def test_service_run_and_get_counts() -> None:
     result = results[0] if isinstance(results, list) else results
     assert result.histogram(key="a") == collections.Counter({3: 1})
 
+    # Multiple circuit run
+    mock_client.create_job.return_value = {
+        "job_ids": ["job_id_1", "job_id_2"],
+        "status": "Done",
+    }
+    service._client = mock_client
+    multi_results = service.run(
+        circuits=[circuit, circuit],
+        repetitions=10,
+        target="ibmq_qasm_simulator",
+        param_resolver=params,
+    )
+    assert isinstance(multi_results, list)
+    for result in multi_results:
+        assert result.histogram(key="a") == collections.Counter({3: 1})
+
     # Deprecation warning test
-    with pytest.warns(DeprecationWarning, match="calling `counts()` without"):
+    with pytest.warns(DeprecationWarning, match="to get the results for the first"):
         results = service.run(
             circuits=circuit,
             repetitions=4,
