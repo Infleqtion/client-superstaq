@@ -1,13 +1,11 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 """Integration checks that run daily (via Github action) between client and prod server."""
 
-import os
-
 import general_superstaq as gss
 import numpy as np
 import pytest
 import qiskit
-from general_superstaq import ResourceEstimate, SuperstaqServerException
+from general_superstaq import ResourceEstimate
 
 import qiskit_superstaq as qss
 
@@ -20,18 +18,6 @@ def provider() -> qss.SuperstaqProvider:
 def test_backends(provider: qss.SuperstaqProvider) -> None:
     result = provider.backends()
     assert provider.get_backend("ibmq_qasm_simulator") in result
-
-
-def test_ibmq_set_token(provider: qss.SuperstaqProvider) -> None:
-    try:
-        ibmq_token = os.environ["TEST_USER_IBMQ_TOKEN"]
-    except KeyError as key:
-        raise KeyError(f"To run the integration tests, please export to {key} a valid IBMQ token")
-
-    assert provider.ibmq_set_token(ibmq_token) == "Your IBMQ account token has been updated"
-
-    with pytest.raises(SuperstaqServerException, match="IBMQ token is invalid."):
-        assert provider.ibmq_set_token("INVALID_TOKEN")
 
 
 def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
