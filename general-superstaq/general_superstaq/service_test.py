@@ -109,28 +109,6 @@ def test_submit_qubo(
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
-    return_value="Your IBMQ account token has been updated",
-)
-def test_ibmq_set_token(
-    mock_post_request: mock.MagicMock,
-) -> None:
-    service = gss.service.Service(remote_host="http://example.com", api_key="key")
-    assert service.ibmq_set_token("valid token") == "Your IBMQ account token has been updated"
-
-
-@mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
-    return_value="Your CQ account token has been updated",
-)
-def test_cq_set_token(
-    mock_post_request: mock.MagicMock,
-) -> None:
-    service = gss.service.Service(remote_host="http://example.com", api_key="key")
-    assert service.cq_set_token("valid token") == "Your CQ account token has been updated"
-
-
-@mock.patch(
     "general_superstaq.superstaq_client._SuperstaqClient.aqt_upload_configs",
     return_value="Your AQT configuration has been updated",
 )
