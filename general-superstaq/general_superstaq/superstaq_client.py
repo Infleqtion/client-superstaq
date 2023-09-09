@@ -579,28 +579,6 @@ class _SuperstaqClient:
         }
         return self.post_request("/target_info", json_dict)
 
-    def ibmq_set_token(self, json_dict: Dict[str, str]) -> str:
-        """Makes a POST request to Superstaq API to set IBMQ token field in database.
-
-        Args:
-            json_dict: Dictionary with IBMQ token string entry.
-
-        Returns:
-            The response as a string.
-        """
-        return self.post_request("/ibmq_token", json_dict)
-
-    def cq_set_token(self, json_dict: Dict[str, str]) -> str:
-        """Makes a POST request to Superstaq API to set CQ token field in database.
-
-        Args:
-            json_dict: Dictionary with CQ token string entry.
-
-        Returns:
-            The response as a string.
-        """
-        return self.post_request("/cq_token", json_dict)
-
     def aqt_upload_configs(self, aqt_configs: Dict[str, str]) -> str:
         """Makes a POST request to Superstaq API to upload configurations.
 
