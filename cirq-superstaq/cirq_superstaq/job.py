@@ -207,14 +207,12 @@ class Job:
             time_waited_seconds += polling_seconds
 
         self._check_if_unsuccessful()
-        counts_dictionary = self._job["samples"]
-
+        counts = self._job["samples"]
         if qubit_indices:
-            counts_dictionary = gss.superstaq_client.get_counts_on_qubits(
-                counts_dictionary, qubit_indices
+            counts = gss.superstaq_client.get_counts_on_qubits(
+                counts, qubit_indices
             )
-
-        return counts_dictionary
+        return counts
 
     def to_dict(self) -> Dict[str, Any]:
         """Refreshes and returns job information.
