@@ -4861,29 +4861,6 @@ span.linenos.special { color: #303030; background-color: #ECECEC; padding-left: 
 .highlight .vi { color: rgb(0,177,152,.7) } /* Name.Variable.Instance */
 .highlight .vm { color: rgb(0,177,152),.7 } /* Name.Variable.Magic */
 .highlight .il { color: #666666 } /* Literal.Number.Integer.Long */
-.index-demos {
-    display: flex;
-    flex-wrap: wrap;
-}
-.index-demos-box {
-    flex: 300px;   
-    border-radius: 20px;
-    background-color: #F7F7F7;
-    margin: 10px;
-    padding: 20px;
-    height: 150px;
-    gap: 10px;
-}
-.index-demos-headers {
-    font-weight:450;
-    letter-spacing:0.5px;
-    font-family:Helvetica Neue,Arial,sans-serif
-    color:rgb(0,177,152);
-    font-size: 50;
-}
-.index-demos-desc {
-    margin: 5px 0 5px 0;
-}
 .container-index {
     display: grid;
     grid-template-columns: 1fr 1.5fr;
