@@ -665,7 +665,7 @@ class Service(gss.service.Service):
 
         Returns:
             Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s), and whose
-            .pulse_sequence(s) attribute contains the corresponding pulse schedule(s) (when
+            .pulse_gate_circuit(s) attribute contains the corresponding pulse schedule(s) (when
             available).
 
         Raises:
