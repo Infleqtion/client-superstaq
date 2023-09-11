@@ -6,7 +6,7 @@ Please note that Python version `3.8` or higher is required.
 
 ## Accessing Cirq-Superstaq
 
-Creating and submitting a circuit through Cirq-Superstaq requires an API access token obtained at https://superstaq.super.tech.
+Creating and submitting a circuit through Cirq-Superstaq requires an API access token obtained at https://superstaq.infleqtion.com.
 
 ## Next steps
 
