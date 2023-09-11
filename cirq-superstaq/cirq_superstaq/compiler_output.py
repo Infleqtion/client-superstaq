@@ -90,6 +90,7 @@ class CompilerOutput:
             List[Dict[cirq.Qid, cirq.Qid]],
             List[List[Dict[cirq.Qid, cirq.Qid]]],
         ],
+        pulse_gate_circuits: Optional[Any] = None,
         pulse_sequences: Optional[Any] = None,
         seq: Optional[qtrl.sequencer.Sequence] = None,
         jaqal_programs: Optional[Union[List[str], str]] = None,
@@ -101,6 +102,8 @@ class CompilerOutput:
             circuits: A list (of at most 2 dimensions) containing `cirq.Circuit` objects.
             final_logical_to_physicals: Post-compilation mapping of logical qubits to physical
                 qubits.
+            pulse_gate_circuits: Pulse-gate `qiskit.QuantumCircuit` or list thereof specifying the
+                pulse compilation.
             pulse_sequences: The qiskit pulse schedules for the compiled circuit(s).
             seq: A `qtrl` pulse sequence, if `qtrl` is available locally.
             jaqal_programs: The Jaqal program (resp. programs) as a string (resp. list of
@@ -111,12 +114,14 @@ class CompilerOutput:
             self.circuit = circuits
             self.final_logical_to_physical = final_logical_to_physicals
             self.pulse_list = pulse_lists
+            self.pulse_gate_circuit = pulse_gate_circuits
             self.pulse_sequence = pulse_sequences
             self.jaqal_program = jaqal_programs
         else:
             self.circuits = circuits
             self.final_logical_to_physicals = final_logical_to_physicals
             self.pulse_lists = pulse_lists
+            self.pulse_gate_circuits = pulse_gate_circuits
             self.pulse_sequences = pulse_sequences
             self.jaqal_programs = jaqal_programs
 
@@ -137,14 +142,63 @@ class CompilerOutput:
         if not self.has_multiple_circuits():
             return (
                 f"CompilerOutput({self.circuit!r}, {self.final_logical_to_physical!r}, "
-                f"{self.pulse_sequence!r}, {self.seq!r}, {self.jaqal_program!r}, "
-                f"{self.pulse_list!r})"
+                f"{self.pulse_gate_circuit!r}, {self.pulse_sequence!r}, {self.seq!r}, "
+                f"{self.jaqal_program!r}, {self.pulse_list!r})"
             )
         return (
             f"CompilerOutput({self.circuits!r}, {self.final_logical_to_physicals!r}, "
-            f"{self.pulse_sequences!r}, {self.seq!r}, {self.jaqal_programs!r}, "
-            f"{self.pulse_lists!r})"
+            f"{self.pulse_gate_circuits!r}, {self.pulse_sequences!r}, {self.seq!r}, "
+            f"{self.jaqal_programs!r}, {self.pulse_lists!r})"
         )
+
+
+def _deserialize_qiskit_circuits(
+    serialized_qiskit_circuits: str, circuits_is_list: bool
+) -> Optional[List[Any]]:
+    """Deserializes `qiskit.QuantumCircuit` objects, if possible; otherwise warns the user.
+
+    Args:
+        serialized_qiskit_circuits: Qiskit circuits serialized via `qss.serialize_circuits()`.
+        circuits_is_list: Whether to refer to "circuits" (plural) or "circuit" (singular) in warning
+            messages.
+
+    Returns:
+        A list of deserialized `qiskit.QuantumCircuit` objects, or None if the provided circuits
+        could not be deserialized.
+    """
+    if importlib.util.find_spec("qiskit_superstaq"):
+        import qiskit
+        import qiskit_superstaq as qss
+
+        try:
+            return qss.deserialize_circuits(serialized_qiskit_circuits)
+        except Exception as e:
+            s = "s" if circuits_is_list else ""
+            warnings.warn(
+                f"Your compiled pulse gate circuit{s} could not be deserialized. Please "
+                "make sure your qiskit-superstaq installation is up-to-date (by running "
+                "`pip install -U qiskit-superstaq`).\n\n"
+                "If the problem persists, please let us know at superstaq@infleqtion.com, "
+                "or file a report at https://github.com/Infleqtion/client-superstaq/issues "
+                "containing the following information (and any other relevant context):\n\n"
+                f"cirq-superstaq version: {css.__version__}\n"
+                f"qiskit-superstaq version: {qss.__version__}\n"
+                f"qiskit version: {qiskit.__version__}\n"
+                f"error: {e!r}\n\n"
+                f"You can still access your compiled circuit{s} using the .circuit{s} "
+                "attribute of this output."
+            )
+
+    else:
+        s = "s" if circuits_is_list else ""
+        warnings.warn(
+            "qiskit-superstaq is required to deserialize compiled pulse gate circuits. You can "
+            "install it with `pip install qiskit-superstaq`.\n\n"
+            f"You can still access your compiled circuit{s} using the .circuit{s} attribute of "
+            "this output."
+        )
+
+    return None
 
 
 def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
@@ -156,15 +210,22 @@ def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutp
             attribute (if `True`) or a .circuit attribute (`False`).
 
     Returns:
-        A `CompilerOutput` object with the compiled circuit(s). If qiskit is available locally,
-        the returned object also stores the pulse sequences in the .pulse_sequence(s) attribute.
+        A `CompilerOutput` object with the compiled circuit(s). If included in the server response,
+        the returned object also stores the corresponding pulse gate circuit(s) in its
+        .pulse_gate_circuit(s) attribute, and pulse sequence(s) in its .pulse_sequences(s) attribute
+        (provided qiskit-superstaq is available locally).
     """
 
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
     final_logical_to_physicals: List[Dict[cirq.Qid, cirq.Qid]] = list(
         map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
     )
-    pulses = None
+    pulse_gate_circuits = pulses = None
+
+    if "pulse_gate_circuits" in json_dict:
+        pulse_gate_circuits = _deserialize_qiskit_circuits(
+            json_dict["pulse_gate_circuits"], circuits_is_list
+        )
 
     if "pulses" in json_dict:
         if importlib.util.find_spec("qiskit") and importlib.util.find_spec("qiskit.qpy"):
@@ -203,9 +264,17 @@ def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutp
             )
 
     if circuits_is_list:
-        return CompilerOutput(compiled_circuits, final_logical_to_physicals, pulse_sequences=pulses)
+        return CompilerOutput(
+            compiled_circuits,
+            final_logical_to_physicals,
+            pulse_gate_circuits=pulse_gate_circuits,
+            pulse_sequences=pulses,
+        )
     return CompilerOutput(
-        compiled_circuits[0], final_logical_to_physicals[0], pulse_sequences=pulses and pulses[0]
+        compiled_circuits[0],
+        final_logical_to_physicals[0],
+        pulse_gate_circuits=None if pulse_gate_circuits is None else pulse_gate_circuits[0],
+        pulse_sequences=None if pulses is None else pulses[0],
     )
 
 
