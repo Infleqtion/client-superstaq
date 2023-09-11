@@ -209,9 +209,7 @@ class Job:
         self._check_if_unsuccessful()
         counts = self._job["samples"]
         if qubit_indices:
-            counts = gss.superstaq_client.get_counts_on_qubits(
-                counts, qubit_indices
-            )
+            counts = gss.superstaq_client.get_counts_on_qubits(counts, qubit_indices)
         return counts
 
     def to_dict(self) -> Dict[str, Any]:
