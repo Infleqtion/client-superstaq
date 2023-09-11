@@ -1,2 +1,2 @@
 notebook~=6.4.12
-qiskit-superstaq~=0.4.18
+qiskit-superstaq~=0.4.17
