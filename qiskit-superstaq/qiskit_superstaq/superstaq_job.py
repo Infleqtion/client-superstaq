@@ -12,7 +12,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import general_superstaq as gss
 import qiskit
@@ -147,12 +147,15 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 self._overall_status = temp_status
                 return
 
-    def _get_circuits(self, circuit_type: str) -> List[qiskit.QuantumCircuit]:
+    def _get_circuits(
+        self, circuit_type: str, index: Optional[int] = None
+    ) -> Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]:
         """Retrieves the corresponding circuits to `circuit_type`.
 
         Args:
             circuit_type: The kind of circuits to retrieve. Either "input_circuit" or
                 "compiled_circuit".
+            index: The index of the circuit to retrieve.
 
         Returns:
             A list of circuits.
@@ -167,29 +170,44 @@ class SuperstaqJob(qiskit.providers.JobV1):
         ):
             self._refresh_job()
 
-        serialized_circuits = [self._job_info[job_id][circuit_type] for job_id in job_ids]
-        return [qss.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
+        if index is not None:
+            gss.validation.validate_integer_param(index, allow_zero=True)
+            serialized_circuit = self._job_info[job_ids[index]][circuit_type]
+            return qss.deserialize_circuits(serialized_circuit)[0]
+        else:
+            serialized_circuits = [self._job_info[job_id][circuit_type] for job_id in job_ids]
+            return [qss.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
 
-    def compiled_circuits(self) -> List[qiskit.QuantumCircuit]:
+    def compiled_circuits(
+        self, index: Optional[int] = None
+    ) -> Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]:
         """Gets the compiled circuits that were submitted for this job.
+
+        Args:
+            index: The index of the circuit to retrieve.
 
         Returns:
             A list of compiled circuits.
         """
-        compiled_circuits = self._get_circuits("compiled_circuit")
-        input_circuits = self._get_circuits("input_circuit")
+        compiled_circuits = self._get_circuits("compiled_circuit", index)
+        input_circuits = self._get_circuits("input_circuit", index)
         for compiled_qc, in_qc in zip(compiled_circuits, input_circuits):
             compiled_qc.metadata = in_qc.metadata
 
         return compiled_circuits
 
-    def input_circuits(self) -> List[qiskit.QuantumCircuit]:
+    def input_circuits(
+        self, index: Optional[int] = None
+    ) -> Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]:
         """Gets the original circuits that were submitted for this job.
+
+        Args:
+            index: The index of the circuit to retrieve.
 
         Returns:
             A list of the submitted input circuits.
         """
-        return self._get_circuits("input_circuit")
+        return self._get_circuits("input_circuit", index)
 
     def status(self) -> qiskit.providers.jobstatus.JobStatus:
         """Query for the equivalent qiskit job status.
