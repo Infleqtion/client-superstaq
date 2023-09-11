@@ -194,15 +194,15 @@ def test_job_to_dict(job: css.job.Job) -> None:
 
 def test_job_counts(job: css.job.Job) -> None:
     job_dict = {
-        "data": {"histogram": {"11": 1}},
+        "data": {"histogram": {"10": 1}},
         "num_qubits": 2,
-        "samples": {"11": 1},
+        "samples": {"10": 1},
         "shots": 1,
         "status": "Done",
         "target": "ss_unconstrained_simulator",
     }
     with mocked_get_job_requests(job_dict):
-        assert job.counts() == {"11": 1}
+        assert job.counts() == {"10": 1}
         assert job.counts(qubit_indices=[0]) == ({"1": 1})
 
 
