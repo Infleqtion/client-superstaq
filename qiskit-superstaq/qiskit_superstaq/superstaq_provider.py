@@ -265,7 +265,9 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             kwargs: Other desired ibmq_compile options.
 
         Returns:
-            object whose .circuit(s) attribute is an optimized qiskit circuit(s).
+            Object whose .circuit(s) attribute contains the compiled circuits(s), and whose
+            .pulse_gate_circuit(s) attribute contains the corresponding pulse schedule(s) (when
+            available).
 
         Raises:
             ValueError: If `target` is not a valid IBMQ target.

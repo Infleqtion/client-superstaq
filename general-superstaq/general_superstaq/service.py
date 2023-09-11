@@ -145,28 +145,6 @@ class Service:
         """
         return self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
 
-    def ibmq_set_token(self, token: str) -> str:
-        """Sets IBMQ token field.
-
-        Args:
-            token: IBMQ token string.
-
-        Returns:
-            String containing status of update (whether or not it failed).
-        """
-        return self._client.ibmq_set_token({"ibmq_token": token})
-
-    def cq_set_token(self, token: str) -> str:
-        """Sets CQ token field.
-
-        Args:
-            token: CQ token string.
-
-        Returns:
-            String containing status of update (whether or not it failed).
-        """
-        return self._client.cq_set_token({"cq_token": token})
-
     def aqt_upload_configs(self, pulses: Any, variables: Any) -> str:
         """Uploads configs for AQT.
 
