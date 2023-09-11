@@ -69,25 +69,36 @@ def test_compiler_output_repr() -> None:
     )
 
 
-def test_read_json_only_circuits() -> None:
+def test_read_json() -> None:
     qc = qiskit.QuantumCircuit(2)
     qc.h(0)
     qc.cx(0, 1)
 
+    qc_pulse = qc.copy()
+    qc_pulse.add_calibration("cx", [0, 1], qiskit.pulse.ScheduleBlock("foo"))
+
+    pulse_sequence = mock.DEFAULT
+
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "final_logical_to_physicals": "[[]]",
+        "pulse_gate_circuits": qss.serialization.serialize_circuits(qc_pulse),
+        "pulses": gss.serialization.serialize([pulse_sequence]),
     }
 
-    out = qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list=False)
+    out = qss.compiler_output.read_json(json_dict, circuits_is_list=False)
     assert out.circuit == qc
+    assert out.pulse_gate_circuit == qc_pulse
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
         "final_logical_to_physicals": "[[], []]",
+        "pulse_gate_circuits": qss.serialization.serialize_circuits([qc_pulse, qc_pulse]),
+        "pulses": gss.serialization.serialize([pulse_sequence, pulse_sequence]),
     }
-    out = qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list=True)
+    out = qss.compiler_output.read_json(json_dict, circuits_is_list=True)
     assert out.circuits == [qc, qc]
+    assert out.pulse_gate_circuits == [qc_pulse, qc_pulse]
 
 
 @mock.patch.dict("sys.modules", {"qtrl": None})

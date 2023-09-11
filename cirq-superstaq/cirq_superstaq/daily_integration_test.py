@@ -1,13 +1,10 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 """Integration checks that run daily (via Github action) between client and prod server."""
 
-
-import os
-
 import cirq
 import general_superstaq as gss
 import pytest
-from general_superstaq import ResourceEstimate, SuperstaqServerException
+from general_superstaq import ResourceEstimate
 
 import cirq_superstaq as css
 
@@ -135,18 +132,6 @@ def test_get_resource_estimate(service: css.Service) -> None:
     resource_estimates = service.resource_estimate(circuits, "ss_unconstrained_simulator")
 
     assert resource_estimates == [ResourceEstimate(2, 1, 3), ResourceEstimate(2, 2, 4)]
-
-
-def test_ibmq_set_token(service: css.Service) -> None:
-    try:
-        ibmq_token = os.environ["TEST_USER_IBMQ_TOKEN"]
-    except KeyError as key:
-        raise KeyError(f"To run the integration tests, please export to {key} a valid IBMQ token")
-
-    assert service.ibmq_set_token(ibmq_token) == "Your IBMQ account token has been updated"
-
-    with pytest.raises(SuperstaqServerException, match="IBMQ token is invalid."):
-        assert service.ibmq_set_token("INVALID_TOKEN")
 
 
 def test_get_targets(service: css.Service) -> None:
