@@ -11,19 +11,20 @@ Welcome! Here you can find more about Infleqtion's state-of-the-art quantum soft
 
    <div class="container-index">
       <div class="grid-exec">
-         <img src="_static/graphics/exec.png" width=50px>
+         <img src="_static/icons/EnhancedExecution.png" width=50px style="padding: 0 0 10px 0">
          <div class="grid-header">Enhanced Execution</div>
          Can improve performance by ≥ 10x. Read our <a>white paper</a> to learn more.
       </div>
       <div class="grid-errmit">
-         <img src="_static/graphics/err-mit.png" width=50px>
+         <img src="_static/icons/Errormitigation.png" width=50px style="padding: 0 0 10px 0">
          <div class="grid-header">Next-Gen Error Mitigation</div>
          Incorporates techniques like <a href="./optimizations/ibm/ibmq_dd.html">Dynamical Decoupling</a>.
       </div>
       <div class="grid-decomp">
+         <img src="_static/icons/Optimaldecomp.png" width=50px style="padding: 0 0 10px 0">
          <div class="grid-header">Optimized Decomposition</div>
          Exploits the hardware's full set of native operations
-         <img src="_static/graphics/stack.png">
+         <img src="_static/graphics/stack_cropped.png" style="padding: 5px 0 0 0;">
       </div>
    </div>
    <br>

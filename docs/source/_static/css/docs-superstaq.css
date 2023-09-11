@@ -3948,7 +3948,7 @@ html{
     overflow-y:hidden;
     min-height:100%;
     color:#404040;
-    background:linear-gradient(to bottom right, rgb(20,26,94, .12), rgb(0,177,152,.12));
+    background:linear-gradient(to bottom right, rgb(20,26,94, .1), rgb(0,177,152,.1));
     z-index:200
 }
 .wy-side-scroll{
@@ -3961,7 +3961,7 @@ html{
 /* phone tablet nav header */
 .wy-nav-top{
     display:none;
-    background:linear-gradient(to bottom right, rgb(20,26,94, .12), rgb(0,177,152,.12));
+    background:linear-gradient(to bottom right, rgb(20,26,94, .1), rgb(0,177,152,.1));
     color:rgb(20,26,94);
     padding:.4045em .809em;
     position:relative;
@@ -4887,7 +4887,7 @@ span.linenos.special { color: #303030; background-color: #ECECEC; padding-left: 
 .container-index {
     display: grid;
     grid-template-columns: 1fr 1.5fr;
-    grid-template-rows: repeat(2, 1fr);
+    grid-template-rows: repeat(2, auto);
     gap: 1em;
     line-height: 1.5;
 }
@@ -4918,6 +4918,7 @@ span.linenos.special { color: #303030; background-color: #ECECEC; padding-left: 
     padding: 20px;
     border-radius: 20px;
     background-color: #F7F7F7;
+    overflow: hidden; /* to hide top portion of image */
 }
 .grid-header {
     font-weight: 600;
@@ -4925,6 +4926,10 @@ span.linenos.special { color: #303030; background-color: #ECECEC; padding-left: 
     font-family:Helvetica Neue,Arial,sans-serif
     color: rgb(0,177,152);
     font-size: 50;
+}
+.stack-container {
+    overflow: hidden;
+    padding: 10px 0 0 0;
 }
 @media screen and (max-width:768px){
     .container-index {
