@@ -615,6 +615,13 @@ class _SuperstaqClient:
             ):
                 self._prompt_accept_terms_of_use()
                 return
+
+            elif response.json() == ("You must validate your registered email."):
+                raise gss.SuperstaqServerException(
+                    "You must validate your registered email.",
+                    response.status_code,
+                )
+
             else:
                 raise gss.SuperstaqServerException(
                     '"Not authorized" returned by Superstaq API.  '
@@ -643,7 +650,6 @@ class _SuperstaqClient:
         )
         user_input = input(message).upper()
         response = self._accept_terms_of_use(user_input)
-        print(response)
         if response != "Accepted. You can now continue using Superstaq.":
             raise gss.SuperstaqServerException(
                 "You'll need to accept the Terms of Use before usage of Superstaq.",
