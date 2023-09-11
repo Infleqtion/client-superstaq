@@ -11,10 +11,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to access Superstaqs API."""
+from __future__ import annotations
 
+import collections
 import numbers
 import warnings
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import cirq
 import general_superstaq as gss
@@ -23,6 +25,9 @@ import numpy.typing as npt
 from general_superstaq import ResourceEstimate, superstaq_client
 
 import cirq_superstaq as css
+
+if TYPE_CHECKING:
+    from _typeshed import SupportsItems
 
 
 def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
@@ -516,6 +521,7 @@ class Service(gss.service.Service):
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
         num_qubits: Optional[int] = None,
+        error_rates: Optional[SupportsItems[Union[tuple[int, ...], int], float]]] = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
@@ -542,6 +548,9 @@ class Service(gss.service.Service):
                 fixed maximally-entangling rotations.
             num_qubits: An optional number of qubits that should be initialized in the returned
                 Jaqal program(s) (by default this will be determined from the input circuits).
+            error_rates: Optional dictionary assigning relative error rates to qubits or pairs of
+                qubits, in the form `{(q0, q1): error, ...}`. If provided, Superstaq will attempt to
+                map the circuit to minimize the total error on each qubit.
             kwargs: Other desired qscout_compile options.
 
         Returns:
@@ -569,6 +578,12 @@ class Service(gss.service.Service):
             "base_entangling_gate": base_entangling_gate,
             **kwargs,
         }
+
+        if error_rates is not None:
+            options_dict["error_rates"] = [
+                [[*qs] if isinstance(qs, collections.abc.Iterable) else [qs], err]
+                for qs, err in error_rates.items()
+            ]
 
         if num_qubits is not None:
             gss.validation.validate_integer_param(num_qubits)

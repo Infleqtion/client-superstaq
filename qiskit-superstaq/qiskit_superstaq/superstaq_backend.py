@@ -13,9 +13,10 @@
 # that they have been altered from the originals.
 from __future__ import annotations
 
+import collections
 import json
 import numbers
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -23,6 +24,9 @@ import numpy.typing as npt
 import qiskit
 
 import qiskit_superstaq as qss
+
+if TYPE_CHECKING:
+    from _typeshed import SupportsItems
 
 
 class SuperstaqBackend(qiskit.providers.BackendV1):
@@ -308,6 +312,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
         num_qubits: Optional[int] = None,
+        error_rates: Optional[SupportsItems[Union[tuple[int, ...], int], float]] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at Sandia
@@ -333,6 +338,9 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
                 fixed maximally-entangling rotations.
             num_qubits: An optional number of qubits that should be present in the compiled
                 circuit(s) and Jaqal program(s) (otherwise this will be determined from the input).
+            error_rates: Optional dictionary assigning relative error rates to qubits or pairs of
+                qubits, in the form `{(q0, q1): error, ...}`. If provided, Superstaq will attempt to
+                map the circuit to minimize the total error on each qubit.
             kwargs: Other desired qscout_compile options.
 
         Returns:
@@ -355,6 +363,12 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             "mirror_swaps": mirror_swaps,
             "base_entangling_gate": base_entangling_gate,
         }
+
+        if error_rates is not None:
+            options["error_rates"] = [
+                [[*qs] if isinstance(qs, collections.abc.Iterable) else [qs], err]
+                for qs, err in error_rates.items()
+            ]
 
         if num_qubits is not None:
             gss.validation.validate_integer_param(num_qubits)
