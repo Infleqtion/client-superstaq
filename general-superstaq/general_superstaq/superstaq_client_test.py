@@ -121,7 +121,7 @@ def test_superstaq_client_needs_accept_terms_of_use(
     fake_get_response.ok = False
     fake_get_response.status_code = requests.codes.unauthorized
     fake_get_response.json.return_value = (
-        "You must accept the Terms of Use (superstaq.super.tech/terms_of_use)."
+        "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
     )
     mock_get.return_value = fake_get_response
 

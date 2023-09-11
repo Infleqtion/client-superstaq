@@ -29,7 +29,7 @@ class Sampler(cirq.Sampler):
     .. code-block:: python
 
         service = css.Service(
-            "Insert superstaq token that you received from https://superstaq.super.tech"
+            "Insert superstaq token that you received from https://superstaq.infleqtion.com"
             )
         q0, q1 = cirq.LineQubit.range(2)
         sampler = service.sampler("ibmq_qasm_simulator")

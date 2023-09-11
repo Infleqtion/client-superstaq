@@ -66,7 +66,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             remote_host: The location of the API in the form of a URL. If this is None,
                 then this instance will use the environment variable `SUPERSTAQ_REMOTE_HOST`.
                 If that variable is not set, then this uses
-                `https://superstaq.super.tech/{api_version}`,
+                `https://superstaq.infleqtion.com/{api_version}`,
                 where `{api_version}` is the `api_version` specified below.
             api_version: The version of the API.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
