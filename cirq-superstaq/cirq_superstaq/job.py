@@ -41,7 +41,7 @@ class Job:
         "(subsequent calls will return not found).",
     )
 
-    NON_TERMINAL_STATES = ("Ready", "Submitted", "Running")
+    NON_TERMINAL_STATES = ("Ready", "Submitted", "Running", "Queued")
     document(
         NON_TERMINAL_STATES, "States of the Superstaq API job which can transition to other states."
     )
@@ -86,10 +86,10 @@ class Job:
 
         Note:
             When we have multiple jobs, we will take the "worst status" among the jobs.
-            The worst status check follows the chain: Submitted -> Ready -> Running
-            -> Failed -> Canceled -> Deleted -> Done. For example, if any of the jobs are
-            still running (even if some are done), we report 'Running' as the overall status
-            of the entire batch.
+            The worst status check follows the chain: Submitted -> Ready -> Queued ->
+            Running -> Failed -> Canceled -> Deleted -> Done. For example, if any of the
+            jobs are still running (even if some are done), we report 'Running' as the
+            overall status of the entire batch.
         """
 
         job_id_list = self._job_id.split(",")  # separate aggregated job ids
@@ -98,6 +98,7 @@ class Job:
         status_priority_order = (
             "Submitted",
             "Ready",
+            "Queued",
             "Running",
             "Failed",
             "Canceled",
