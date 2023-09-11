@@ -57,7 +57,7 @@ def test_qudit_swap_gate(dimension: int) -> None:
     # Check the unitary by commuting through random single-qudit gates:
     one_qb_gate0 = cirq.MatrixGate(cirq.testing.random_unitary(dimension), qid_shape=(dimension,))
     one_qb_gate1 = cirq.MatrixGate(cirq.testing.random_unitary(dimension), qid_shape=(dimension,))
-    assert np.array_equal(
+    assert np.allclose(
         cirq.Circuit(one_qb_gate0(q0), one_qb_gate1(q1), swap_op).unitary(),
         cirq.Circuit(swap_op, one_qb_gate0(q1), one_qb_gate1(q0)).unitary(),
     )
