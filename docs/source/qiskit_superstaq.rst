@@ -12,6 +12,14 @@ qiskit\_superstaq.compiler\_output module
    :undoc-members:
    :show-inheritance:
 
+qiskit\_superstaq.conftest module
+---------------------------------
+
+.. automodule:: qiskit_superstaq.conftest
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 qiskit\_superstaq.custom\_gates module
 --------------------------------------
 

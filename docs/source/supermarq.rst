@@ -44,6 +44,14 @@ supermarq.plotting module
    :undoc-members:
    :show-inheritance:
 
+supermarq.run\_benchmarks module
+--------------------------------
+
+.. automodule:: supermarq.run_benchmarks
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 supermarq.simulation module
 ---------------------------
 
