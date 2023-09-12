@@ -13,7 +13,7 @@ Welcome! Here you can find more about Infleqtion's state-of-the-art quantum soft
       <div class="grid-exec">
          <img src="_static/icons/EnhancedExecution.png" width=50px style="padding: 0 0 10px 0">
          <div class="grid-header">Enhanced Execution</div>
-         Can improve performance by ≥ 10x. Read our <a>white paper</a> to learn more.
+         Can improve performance by ≥ 10x. Read our <a href="https://arxiv.org/abs/2309.05157">white paper</a> to learn more.
       </div>
       <div class="grid-errmit">
          <img src="_static/icons/Errormitigation.png" width=50px style="padding: 0 0 10px 0">
