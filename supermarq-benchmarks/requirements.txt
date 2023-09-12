@@ -1,4 +1,4 @@
-cirq-superstaq~=0.4.19
+cirq-superstaq~=0.4.20
 matplotlib<=3.5.2
-qiskit-superstaq~=0.4.19
+qiskit-superstaq~=0.4.20
 scikit-learn>=1.0
