@@ -150,7 +150,6 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
         Args:
             circuits: The qiskit QuantumCircuit(s) to compile.
-            dynamical_decoupling: Setting to add dynamical decoupling to the circuit.
             kwargs: Other desired compile options.
 
         Returns:
