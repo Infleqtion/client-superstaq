@@ -144,7 +144,6 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
     def compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
-        dynamical_decoupling: bool = False,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to the backend's native gateset.
@@ -162,7 +161,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             ValueError: If this backend does not support compilation.
         """
         if self.name().startswith("ibmq_"):
-            return self.ibmq_compile(circuits, dynamical_decoupling, **kwargs)
+            return self.ibmq_compile(circuits, **kwargs)
 
         elif self.name().startswith("aqt_"):
             return self.aqt_compile(circuits, **kwargs)
@@ -181,7 +180,6 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
     def _get_compile_request_json(
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
-        dynamical_decoupling: bool = False,
         **kwargs: Any,
     ) -> Dict[str, str]:
         qss.validation.validate_qiskit_circuits(circuits)
@@ -191,7 +189,6 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         request_json = {
             "qiskit_circuits": serialized_circuits,
             "target": self.name(),
-            "dynamical_decoupling": dynamical_decoupling,
         }
         if kwargs:
             request_json["options"] = qss.serialization.to_json(kwargs)
@@ -262,7 +259,6 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
     def ibmq_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
-        dynamical_decoupling: bool = False,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
@@ -283,7 +279,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         if not self.name().startswith("ibmq_"):
             raise ValueError(f"{self.name()!r} is not a valid IBMQ target.")
 
-        request_json = self._get_compile_request_json(circuits, dynamical_decoupling, **kwargs)
+        request_json = self._get_compile_request_json(circuits, **kwargs)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
         return qss.compiler_output.read_json(json_dict, circuits_is_list)
