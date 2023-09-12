@@ -616,6 +616,13 @@ class _SuperstaqClient:
             ):
                 self._prompt_accept_terms_of_use()
                 return
+
+            elif response.json() == ("You must validate your registered email."):
+                raise gss.SuperstaqServerException(
+                    "You must validate your registered email.",
+                    response.status_code,
+                )
+
             else:
                 raise gss.SuperstaqServerException(
                     '"Not authorized" returned by Superstaq API.  '
