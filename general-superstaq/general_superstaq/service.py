@@ -53,7 +53,7 @@ class Service:
         return balance
 
     def _accept_terms_of_use(self, user_input: str) -> str:
-        """Send acceptance of terms of use at https://superstaq.super.tech/terms_of_use.
+        """Send acceptance of terms of use at https://superstaq.infleqtion.com/terms_of_use.
 
         Args:
             user_input: If "YES", server will mark user as having accepted terms of use.
