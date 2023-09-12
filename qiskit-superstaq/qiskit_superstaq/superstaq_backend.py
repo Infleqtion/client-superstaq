@@ -258,7 +258,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
     def ibmq_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
-        dynamical_decoupling: bool = False,
+        dynamical_decoupling: bool = True,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
@@ -279,7 +279,10 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         if not self.name().startswith("ibmq_"):
             raise ValueError(f"{self.name()!r} is not a valid IBMQ target.")
 
-        request_json = self._get_compile_request_json(circuits, **kwargs)
+        options: Dict[str, Any] = {**kwargs}
+
+        options["dynamical_decoupling"] = dynamical_decoupling
+        request_json = self._get_compile_request_json(circuits, **options)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
         return qss.compiler_output.read_json(json_dict, circuits_is_list)
