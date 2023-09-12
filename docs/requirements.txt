@@ -1,4 +1,4 @@
-cirq-superstaq[dev]~=0.4.19
+cirq-superstaq[dev]~=0.4.20
 ipywidgets>=8.0.0
 nbsphinx>=0.9.0
 qiskit-superstaq[dev]~=0.4.20
