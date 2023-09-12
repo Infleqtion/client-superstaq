@@ -611,7 +611,7 @@ class _SuperstaqClient:
         """
         if response.status_code == requests.codes.unauthorized:
             if response.json() == (
-                "You must accept the Terms of Use (superstaq.super.tech/terms_of_use)."
+                "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
             ):
                 self._prompt_accept_terms_of_use()
                 return
@@ -638,7 +638,7 @@ class _SuperstaqClient:
             gss.SuperstaqServerException: If terms of use are not accepted.
         """
         message = (
-            "Acceptance of the Terms of Use (superstaq.super.tech/terms_of_use)"
+            "Acceptance of the Terms of Use (superstaq.infleqtion.com/terms_of_use)"
             " is necessary before using Superstaq.\nType in YES to accept: "
         )
         user_input = input(message).upper()
