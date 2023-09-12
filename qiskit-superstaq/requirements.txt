@@ -1,4 +1,4 @@
-general-superstaq~=0.4.17
+general-superstaq~=0.4.19
 matplotlib~=3.0
 qiskit>=0.43.3
 qiskit-ibm-provider
