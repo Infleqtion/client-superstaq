@@ -461,8 +461,8 @@ def test_service_qscout_compile_multi(mock_qscout_compile: mock.MagicMock) -> No
         "num_qubits": 2,
     }
 
-    with pytest.raises(ValueError, match="require at least 2 qubits."):
-        service.qscout_compile(circuits, num_qubits=1)
+    with pytest.raises(ValueError, match="At least 2 qubits are required"):
+        _ = service.qscout_compile(circuits, num_qubits=1)
 
 
 @mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
