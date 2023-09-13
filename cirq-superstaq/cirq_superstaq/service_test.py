@@ -446,7 +446,7 @@ def test_service_qscout_compile_multi(mock_qscout_compile: mock.MagicMock) -> No
         "final_logical_to_physicals": cirq.to_json(
             [list(l2p.items()) for l2p in final_logical_to_physicals]
         ),
-        "jaqal_programs": cirq.to_json(jaqal_programs),
+        "jaqal_programs": jaqal_programs,
     }
 
     service = css.Service(api_key="key", remote_host="http://example.com")
@@ -461,7 +461,7 @@ def test_service_qscout_compile_multi(mock_qscout_compile: mock.MagicMock) -> No
         "num_qubits": 2,
     }
 
-    with pytest.raises(ValueError, match="1 isn't enough for the circuit(s) you've provided."):
+    with pytest.raises(ValueError, match="require at least 2 qubits."):
         service.qscout_compile(circuits, num_qubits=1)
 
 

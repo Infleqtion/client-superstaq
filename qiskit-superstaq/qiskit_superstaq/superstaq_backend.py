@@ -346,21 +346,39 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
             raise ValueError("base_entangling_gate must be 'xx', 'zz', 'sxx', or 'szz'")
 
+        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
+
         options = {
             **kwargs,
             "mirror_swaps": mirror_swaps,
             "base_entangling_gate": base_entangling_gate,
         }
 
-        if error_rates is not None:
-            options["error_rates"] = list(error_rates.items())
+        if circuits_is_list:
+            max_circuit_qubits = max(c.num_qubits for c in circuits)
+        else:
+            max_circuit_qubits = circuits.num_qubits
 
-        if num_qubits is not None:
-            gss.validation.validate_integer_param(num_qubits)
-            options["num_qubits"] = num_qubits
+        if error_rates is not None:
+            error_rates_list = list(error_rates.items())
+            options_dict["error_rates"] = error_rates_list
+
+            # Use error rate dictionary to set `num_qubits`, if not already specified
+            if num_qubits is None:
+                max_index = max(q for qs, _ in error_rates_list for q in qs)
+                num_qubits = max_index + 1
+
+        elif num_qubits is None:
+            num_qubits = max_circuit_qubits
+
+        gss.validation.validate_integer_param(num_qubits)
+        if num_qubits < max_circuit_qubits:
+            raise ValueError(
+                f"The circuit(s) you've provided require at least {max_circuit_qubits} qubits."
+            )
+        options["num_qubits"] = num_qubits
 
         request_json = self._get_compile_request_json(circuits, **options)
-        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.qscout_compile(request_json)
         return qss.compiler_output.read_json_qscout(json_dict, circuits_is_list)
 

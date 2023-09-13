@@ -600,7 +600,9 @@ class Service(gss.service.Service):
 
         gss.validation.validate_integer_param(num_qubits)
         if num_qubits < max_circuit_qubits:
-            raise ValueError(f"{num_qubits} isn't enough for the circuit(s) you've provided")
+            raise ValueError(
+                f"The circuit(s) you've provided require at least {max_circuit_qubits} qubits."
+            )
         options_dict["num_qubits"] = num_qubits
 
         json_dict = self._client.qscout_compile(
