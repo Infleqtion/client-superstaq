@@ -307,6 +307,30 @@ def test_qscout_compile_wrong_entangler(fake_superstaq_provider: MockSuperstaqPr
 
 
 @patch("requests.post")
+def test_qscout_compile_error_rates(
+    mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider
+) -> None:
+    circuit = qiskit.QuantumCircuit()
+
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
+        "final_logical_to_physicals": "[[]]",
+        "jaqal_programs": [""],
+    }
+
+    _ = fake_superstaq_provider.qscout_compile(
+        circuit, error_rates={(0, 1): 0.3, (0, 2): 0.2, (1,): 0.1}
+    )
+    mock_post.assert_called_once()
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "base_entangling_gate": "xx",
+        "mirror_swaps": False,
+        "error_rates": [[[0, 1], 0.3], [[0, 2], 0.2], [[1], 0.1]],
+        "num_qubits": 3,
+    }
+
+
+@patch("requests.post")
 def test_cq_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)

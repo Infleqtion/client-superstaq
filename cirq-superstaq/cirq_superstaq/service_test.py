@@ -460,6 +460,34 @@ def test_qscout_compile_swap_mirror(
 
 
 @mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
+def test_qscout_compile_error_rates(mock_qscout_compile: mock.MagicMock) -> None:
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.measure(q0))
+    final_logical_to_physical = {q0: q0}
+
+    jaqal_program = ""
+
+    mock_qscout_compile.return_value = {
+        "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
+        "jaqal_programs": [jaqal_program],
+    }
+
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    out = service.qscout_compile(circuit, error_rates={(0, 1): 0.3, (0, 2): 0.2, (1,): 0.1})
+    assert out.circuit == circuit
+    assert out.final_logical_to_physical == final_logical_to_physical
+    assert out.jaqal_program == jaqal_program
+    mock_qscout_compile.assert_called_once()
+    assert json.loads(mock_qscout_compile.call_args[0][0]["options"]) == {
+        "base_entangling_gate": "xx",
+        "mirror_swaps": False,
+        "error_rates": [[[0, 1], 0.3], [[0, 2], 0.2], [[1], 0.1]],
+        "num_qubits": 3,
+    }
+
+
+@mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
 @pytest.mark.parametrize("base_entangling_gate", ("xx", "zz"))
 def test_qscout_compile_base_entangling_gate(
     mock_qscout_compile: mock.MagicMock, base_entangling_gate: str
