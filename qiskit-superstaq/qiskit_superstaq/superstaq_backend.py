@@ -13,7 +13,6 @@
 # that they have been altered from the originals.
 from __future__ import annotations
 
-import collections
 import numbers
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
@@ -324,9 +323,12 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
                 fixed maximally-entangling rotations.
             num_qubits: An optional number of qubits that should be present in the compiled
                 circuit(s) and Jaqal program(s) (otherwise this will be determined from the input).
-            error_rates: Optional dictionary assigning relative error rates to qubits or pairs of
-                qubits, in the form `{(q0, q1): error, ...}`. If provided, Superstaq will attempt to
-                map the circuit to minimize the total error on each qubit.
+            error_rates: Optional dictionary assigning relative error rates to pairs of physical
+                qubits, in the form `{<qubit_indices>: <error_rate>, ...}` where `<qubit_indices>`
+                is a tuple physical qubit indices (ints) and `<error_rate>` is a relative error rate
+                for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`) . If
+                provided, Superstaq will attempt to map the circuit to minimize the total error on
+                each qubit.
             kwargs: Other desired qscout_compile options.
 
         Returns:
@@ -351,10 +353,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         }
 
         if error_rates is not None:
-            options["error_rates"] = [
-                [[*qs] if isinstance(qs, collections.abc.Iterable) else [qs], err]
-                for qs, err in error_rates.items()
-            ]
+            options["error_rates"] = list(error_rates.items())
 
         if num_qubits is not None:
             gss.validation.validate_integer_param(num_qubits)

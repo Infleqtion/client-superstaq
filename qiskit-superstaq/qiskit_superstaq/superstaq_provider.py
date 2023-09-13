@@ -289,7 +289,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
         num_qubits: Optional[int] = None,
-        error_rates: Optional[SupportsItems[Union[tuple[int, ...], int], float]] = None,
+        error_rates: Optional[SupportsItems[tuple[int, ...], float]] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
@@ -316,9 +316,12 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
                 fixed maximally-entangling rotations.
             num_qubits: An optional number of qubits that should be present in the compiled
                 circuit(s) and Jaqal program(s) (otherwise this will be determined from the input).
-            error_rates: Optional dictionary assigning relative error rates to qubits or pairs of
-                qubits, in the form `{(q0, q1): error, ...}`. If provided, Superstaq will attempt to
-                map the circuit to minimize the total error on each qubit.
+            error_rates: Optional dictionary assigning relative error rates to pairs of physical
+                qubits, in the form `{<qubit_indices>: <error_rate>, ...}` where `<qubit_indices>`
+                is a tuple physical qubit indices (ints) and `<error_rate>` is a relative error rate
+                for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`) . If
+                provided, Superstaq will attempt to map the circuit to minimize the total error on
+                each qubit.
             kwargs: Other desired qscout_compile options.
 
         Returns:
