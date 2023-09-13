@@ -14,7 +14,6 @@
 from __future__ import annotations
 
 import collections
-import json
 import numbers
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
@@ -179,7 +178,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         request_json = self._get_compile_request_json(circuits, **kwargs)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
-        return qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
+        return qss.compiler_output.read_json(json_dict, circuits_is_list)
 
     def _get_compile_request_json(
         self,
@@ -263,7 +262,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
     def ibmq_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
-        dynamical_decoupling: bool = False,
+        dynamical_decoupling: bool = True,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
@@ -274,8 +273,9 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             kwargs: Other desired compile options.
 
         Returns:
-            An IBMQ CompilerOutput object whose .circuit(s) attribute is an optimized qiskit
-            QuantumCircuit(s).
+            Object whose .circuit(s) attribute contains the compiled circuits(s), and whose
+            .pulse_gate_circuit(s) attribute contains the corresponding pulse schedule(s) (when
+            available).
 
         Raises:
             ValueError: If this is not an IBMQ backend.
@@ -283,27 +283,13 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         if not self.name().startswith("ibmq_"):
             raise ValueError(f"{self.name()!r} is not a valid IBMQ target.")
 
-        request_json = self._get_compile_request_json(circuits, **kwargs)
+        options: Dict[str, Any] = {**kwargs}
+
+        options["dynamical_decoupling"] = dynamical_decoupling
+        request_json = self._get_compile_request_json(circuits, **options)
+        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
-        compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
-
-        pulses = None
-        if "pulses" in json_dict:
-            pulses = gss.serialization.deserialize(json_dict["pulses"])
-        final_logical_to_physicals: List[Dict[int, int]] = list(
-            map(dict, json.loads(json_dict["final_logical_to_physicals"]))
-        )
-        if isinstance(circuits, qiskit.QuantumCircuit):
-            pulse_sequence = None if pulses is None else pulses[0]
-            return qss.compiler_output.CompilerOutput(
-                compiled_circuits[0], final_logical_to_physicals[0], pulse_sequences=pulse_sequence
-            )
-
-        return qss.compiler_output.CompilerOutput(
-            compiled_circuits,
-            final_logical_to_physicals,
-            pulse_sequences=pulses,
-        )
+        return qss.compiler_output.read_json(json_dict, circuits_is_list)
 
     def qscout_compile(
         self,
@@ -417,7 +403,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         )
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
-        return qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
+        return qss.compiler_output.read_json(json_dict, circuits_is_list)
 
     def target_info(self) -> Dict[str, Any]:
         """Returns information about this backend.

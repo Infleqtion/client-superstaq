@@ -579,28 +579,6 @@ class _SuperstaqClient:
         }
         return self.post_request("/target_info", json_dict)
 
-    def ibmq_set_token(self, json_dict: Dict[str, str]) -> str:
-        """Makes a POST request to Superstaq API to set IBMQ token field in database.
-
-        Args:
-            json_dict: Dictionary with IBMQ token string entry.
-
-        Returns:
-            The response as a string.
-        """
-        return self.post_request("/ibmq_token", json_dict)
-
-    def cq_set_token(self, json_dict: Dict[str, str]) -> str:
-        """Makes a POST request to Superstaq API to set CQ token field in database.
-
-        Args:
-            json_dict: Dictionary with CQ token string entry.
-
-        Returns:
-            The response as a string.
-        """
-        return self.post_request("/cq_token", json_dict)
-
     def aqt_upload_configs(self, aqt_configs: Dict[str, str]) -> str:
         """Makes a POST request to Superstaq API to upload configurations.
 
@@ -633,10 +611,17 @@ class _SuperstaqClient:
         """
         if response.status_code == requests.codes.unauthorized:
             if response.json() == (
-                "You must accept the Terms of Use (superstaq.super.tech/terms_of_use)."
+                "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
             ):
                 self._prompt_accept_terms_of_use()
                 return
+
+            elif response.json() == ("You must validate your registered email."):
+                raise gss.SuperstaqServerException(
+                    "You must validate your registered email.",
+                    response.status_code,
+                )
+
             else:
                 raise gss.SuperstaqServerException(
                     '"Not authorized" returned by Superstaq API.  '
@@ -660,7 +645,7 @@ class _SuperstaqClient:
             gss.SuperstaqServerException: If terms of use are not accepted.
         """
         message = (
-            "Acceptance of the Terms of Use (superstaq.super.tech/terms_of_use)"
+            "Acceptance of the Terms of Use (superstaq.infleqtion.com/terms_of_use)"
             " is necessary before using Superstaq.\nType in YES to accept: "
         )
         user_input = input(message).upper()

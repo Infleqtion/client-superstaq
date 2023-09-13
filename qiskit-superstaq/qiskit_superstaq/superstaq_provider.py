@@ -70,7 +70,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             remote_host: The location of the API in the form of a URL. If this is None,
                 then this instance will use the environment variable `SUPERSTAQ_REMOTE_HOST`.
                 If that variable is not set, then this uses
-                `https://superstaq.super.tech/{api_version}`,
+                `https://superstaq.infleqtion.com/{api_version}`,
                 where `{api_version}` is the `api_version` specified below.
             api_version: The version of the API.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
@@ -269,7 +269,9 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             kwargs: Other desired ibmq_compile options.
 
         Returns:
-            object whose .circuit(s) attribute is an optimized qiskit circuit(s).
+            Object whose .circuit(s) attribute contains the compiled circuits(s), and whose
+            .pulse_gate_circuit(s) attribute contains the corresponding pulse schedule(s) (when
+            available).
 
         Raises:
             ValueError: If `target` is not a valid IBMQ target.
