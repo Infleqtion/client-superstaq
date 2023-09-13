@@ -354,6 +354,11 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             "base_entangling_gate": base_entangling_gate,
         }
 
+        if isinstance(circuits, qiskit.QuantumCircuit):
+            max_circuit_qubits = circuits.num_qubits
+        else:
+            max_circuit_qubits = max(c.num_qubits for c in circuits)
+
         if error_rates is not None:
             error_rates_list = list(error_rates.items())
             options["error_rates"] = error_rates_list
@@ -363,9 +368,13 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
                 max_index = max(q for qs, _ in error_rates_list for q in qs)
                 num_qubits = max_index + 1
 
-        if num_qubits is not None:
-            gss.validation.validate_integer_param(num_qubits)
-            options["num_qubits"] = num_qubits
+        elif num_qubits is None:
+            num_qubits = max_circuit_qubits
+
+        gss.validation.validate_integer_param(num_qubits)
+        if num_qubits < max_circuit_qubits:
+            raise ValueError(f"At least {max_circuit_qubits} qubits are required for this input.")
+        options["num_qubits"] = num_qubits
 
         request_json = self._get_compile_request_json(circuits, **options)
         json_dict = self._provider._client.qscout_compile(request_json)
