@@ -581,11 +581,6 @@ class Service(gss.service.Service):
             **kwargs,
         }
 
-        if circuits_is_list:
-            max_circuit_qubits = max(cirq.num_qubits(c) for c in circuits)
-        else:
-            max_circuit_qubits = cirq.num_qubits(circuits)
-
         if error_rates is not None:
             error_rates_list = list(error_rates.items())
             options_dict["error_rates"] = error_rates_list
@@ -595,15 +590,9 @@ class Service(gss.service.Service):
                 max_index = max(q for qs, _ in error_rates_list for q in qs)
                 num_qubits = max_index + 1
 
-        elif num_qubits is None:
-            num_qubits = max_circuit_qubits
-
-        gss.validation.validate_integer_param(num_qubits)
-        if num_qubits < max_circuit_qubits:
-            raise ValueError(
-                f"The circuit(s) you've provided require at least {max_circuit_qubits} qubits."
-            )
-        options_dict["num_qubits"] = num_qubits
+        if num_qubits is not None:
+            gss.validation.validate_integer_param(num_qubits)
+            options_dict["num_qubits"] = num_qubits
 
         json_dict = self._client.qscout_compile(
             {

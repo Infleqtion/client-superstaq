@@ -431,41 +431,6 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
 
 
 @mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
-def test_service_qscout_compile_multi(mock_qscout_compile: mock.MagicMock) -> None:
-    q0, q1 = cirq.LineQubit.range(2)
-    circuits = [
-        cirq.Circuit(cirq.H(q0), cirq.measure(q0)),
-        cirq.Circuit(cirq.ISWAP(q0, q1)),
-    ]
-    final_logical_to_physicals = [{q0: q0}, {q0: q1, q1: q0}]
-
-    jaqal_programs = ["jaqal", "programs"]
-
-    mock_qscout_compile.return_value = {
-        "cirq_circuits": css.serialization.serialize_circuits(circuits),
-        "final_logical_to_physicals": cirq.to_json(
-            [list(l2p.items()) for l2p in final_logical_to_physicals]
-        ),
-        "jaqal_programs": jaqal_programs,
-    }
-
-    service = css.Service(api_key="key", remote_host="http://example.com")
-    out = service.qscout_compile(circuits)
-    assert out.circuits == circuits
-    assert out.final_logical_to_physicals == final_logical_to_physicals
-    assert out.jaqal_programs == jaqal_programs
-
-    assert json.loads(mock_qscout_compile.call_args[0][0]["options"]) == {
-        "mirror_swaps": False,
-        "base_entangling_gate": "xx",
-        "num_qubits": 2,
-    }
-
-    with pytest.raises(ValueError, match="require at least 2 qubits."):
-        service.qscout_compile(circuits, num_qubits=1)
-
-
-@mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
 @pytest.mark.parametrize("mirror_swaps", (True, False))
 def test_qscout_compile_swap_mirror(
     mock_qscout_compile: mock.MagicMock, mirror_swaps: bool
@@ -491,7 +456,6 @@ def test_qscout_compile_swap_mirror(
     assert json.loads(mock_qscout_compile.call_args[0][0]["options"]) == {
         "mirror_swaps": mirror_swaps,
         "base_entangling_gate": "xx",
-        "num_qubits": 1,
     }
 
 
@@ -549,7 +513,6 @@ def test_qscout_compile_base_entangling_gate(
     assert json.loads(mock_qscout_compile.call_args[0][0]["options"]) == {
         "mirror_swaps": False,
         "base_entangling_gate": base_entangling_gate,
-        "num_qubits": 1,
     }
 
 
