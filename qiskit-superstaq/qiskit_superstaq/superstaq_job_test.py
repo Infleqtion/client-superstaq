@@ -72,7 +72,7 @@ def test_result(backend: qss.SuperstaqBackend) -> None:
         "general_superstaq.superstaq_client._SuperstaqClient.get_job",
         return_value=mock_response("Done"),
     ):
-        ans = job.result(qubit_indices=[1])
+        ans = job.result(qubit_indices=[0])
 
         assert ans.backend_name == expected.backend_name
         assert ans.job_id == expected.job_id
