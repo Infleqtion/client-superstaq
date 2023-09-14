@@ -13,7 +13,7 @@
 """A `cirq.Sampler` implementation for the Superstaq API."""
 from __future__ import annotations
 
-from typing import List
+from typing import Dict, List
 
 import cirq
 
@@ -81,15 +81,13 @@ class Sampler(cirq.Sampler):
         """
         resolvers = [resolver for resolver in cirq.to_resolvers(params)]
         job = self._service.create_job(
-            [cirq.resolve_parameters(program, resolver) for resolver in resolvers],
+            circuits=[cirq.resolve_parameters(program, resolver) for resolver in resolvers],
             repetitions=repetitions,
             target=self._target,
         )
-        job_counters = job.counts()
+        job_counters: List[Dict[str, int]] = job.counts()
         cirq_results = [
-            css.service.counts_to_results(
-                counts[0] if isinstance(counts, list) else counts, program, resolver
-            )
+            css.service.counts_to_results(counts, program, resolver)
             for counts, resolver in zip(job_counters, resolvers)
         ]
         return cirq_results

@@ -40,15 +40,9 @@ def test_validate_integer_param() -> None:
     for input_value in invalid_values:
         with pytest.raises(
             ValueError,
-            match="is not a positive integer.",
+            match="is less than the minimum",
         ):
             gss.validation.validate_integer_param(input_value)
-
-    with pytest.raises(
-        ValueError,
-        match="not a non-negative integer.",
-    ):
-        gss.validation.validate_integer_param(-1)
 
 
 def test_validate_noise_type() -> None:

@@ -15,7 +15,18 @@ from __future__ import annotations
 
 import numbers
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    overload,
+)
 
 import cirq
 import general_superstaq as gss
@@ -207,13 +218,41 @@ class Service(gss.service.Service):
         counts = job.counts(index=index)
         return counts
 
+    @overload
     def run(
         self,
         circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
         repetitions: int,
+        index: int,
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
+        method: Optional[str] = None,
+        **kwargs: Any,
+    ) -> cirq.ResultDict:
+        ...
+
+    @overload
+    def run(
+        self,
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        repetitions: int,
+        index: None = None,
+        target: Optional[str] = None,
+        param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
+        method: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Union[
+        cirq.ResultDict, List[cirq.ResultDict]
+    ]:  # Should return just `List[cirq.ResultDict]` after deprecation
+        ...
+
+    def run(
+        self,
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        repetitions: int,
         index: Optional[int] = None,
+        target: Optional[str] = None,
+        param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
         method: Optional[str] = None,
         **kwargs: Any,
     ) -> Union[cirq.ResultDict, List[cirq.ResultDict]]:
