@@ -19,7 +19,7 @@ Please note that Python version `3.8` or higher is required. See installation in
 import qiskit
 import qiskit_superstaq as qss
 
-token = "Insert superstaq token that you received from https://superstaq.super.tech"
+token = "Insert superstaq token that you received from https://superstaq.infleqtion.com"
 
 superstaq = qss.superstaq_provider.SuperstaqProvider(token)
 
