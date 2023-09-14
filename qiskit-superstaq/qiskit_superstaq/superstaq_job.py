@@ -88,7 +88,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 counts = dict((key[::-1], value) for (key, value) in counts.items())
 
             if qubit_indices:
-                counts = gss.superstaq_client.get_counts_on_qubits(counts, qubit_indices)
+                counts = qiskit.result.marginal_counts(counts, indices=qubit_indices)
             results_list.append(
                 {
                     "success": result["status"] == "Done",
