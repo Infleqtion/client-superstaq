@@ -18,9 +18,10 @@ from typing import Any, Dict, Tuple
 import cirq
 import general_superstaq as gss
 from cirq._doc import document
+import qiskit
 
 import cirq_superstaq as css
-
+import qiskit_superstaq as qss
 
 @cirq.value_equality(unhashable=True)
 class Job:
@@ -154,7 +155,7 @@ class Job:
         return self._job["shots"]
 
     def compiled_circuit(self) -> cirq.Circuit:
-        """Gets the compiled circuit that was submitted for this job.
+        """Gets the compiled circuit returned by this job.
 
         Returns:
             The compiled circuit.
@@ -163,6 +164,14 @@ class Job:
             self._refresh_job()
 
         return css.deserialize_circuits(self._job["compiled_circuit"])[0]
+    
+    def pulse_gate_circuit(self) -> qiskit.QuantumCircuit:
+        """Gets the pulse gate circuit returned by this job."""
+
+        if "pulse_gate_circuit" in self._job:
+            return qss.deserialize_circuits(self._job["pulse_gate_circuit"])[0]
+        
+        #raise gss.SuperstaqServerException(self._job_id) handle case where PGCs arent available
 
     def input_circuit(self) -> cirq.Circuit:
         """Gets the original circuit that was submitted for this job.
