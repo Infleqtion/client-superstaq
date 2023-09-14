@@ -1,31 +1,27 @@
 import re
-from typing import Dict, Optional, Sequence
+from typing import Dict, Sequence
 
 
-def validate_integer_param(integer_param: object, allow_zero: Optional[bool] = False) -> None:
-    """Validates that an input parameter is positive and an integer.
+def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
+    """Validates that `integer_param` is an integer and positive (or above a minimum value).
 
     Args:
-        integer_param: An input parameter.
-        allow_zero: Optional boolean flag to check for non-negative values.
+        integer_param: The input parameter to validate.
+        min_val: Optional parameter to validate if `integer_param` is greater than `min_val`.
 
     Raises:
-        TypeError: If input is not an integer.
-        ValueError: If input is not postive.
-        ValueError: If input is not non-negative and `allow_zero` = True.
+        TypeError: If `integer_param` is not an integer.
+        ValueError: If `integer_param` is less than `min_val`.
     """
+
     if not (
         (hasattr(integer_param, "__int__") and int(integer_param) == integer_param)
         or (isinstance(integer_param, str) and integer_param.isdecimal())
     ):
         raise TypeError(f"{integer_param} cannot be safely cast as an integer.")
 
-    if allow_zero:
-        if int(integer_param) < 0:
-            raise ValueError(f"{integer_param} is not a non-negative integer.")
-    else:
-        if int(integer_param) <= 0:
-            raise ValueError(f"{integer_param} is not a positive integer.")
+    if int(integer_param) < min_val:
+        raise ValueError(f"{integer_param} is less than the minimum value ({min_val}).")
 
 
 def validate_target(target: str) -> None:

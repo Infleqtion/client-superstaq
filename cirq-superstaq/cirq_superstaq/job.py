@@ -183,7 +183,7 @@ class Job:
             self._refresh_job()
 
         if index is not None:
-            gss.validation.validate_integer_param(index, allow_zero=True)
+            gss.validation.validate_integer_param(index, min_val=0)
         else:
             qubit_list = [self._job[job_id]["num_qubits"] for job_id in job_ids]
             if len(qubit_list) == 1:
@@ -263,7 +263,7 @@ class Job:
             A single or list of compiled circuits.
         """
         if index is not None:
-            gss.validation.validate_integer_param(index, allow_zero=True)
+            gss.validation.validate_integer_param(index, min_val=0)
         return self._get_circuits("compiled_circuit", index=index)
 
     def input_circuits(
@@ -275,7 +275,7 @@ class Job:
             A single or list of submitted input circuits.
         """
         if index is not None:
-            gss.validation.validate_integer_param(index, allow_zero=True)
+            gss.validation.validate_integer_param(index, min_val=0)
         return self._get_circuits("input_circuit", index=index)
 
     def counts(
@@ -310,7 +310,7 @@ class Job:
         job_ids = self._job_id.split(",")
 
         if index is not None:
-            gss.validation.validate_integer_param(index, allow_zero=True)
+            gss.validation.validate_integer_param(index, min_val=0)
         else:
             counts_list = [self._job[job_id]["samples"] for job_id in self._job_id.split(",")]
             if len(counts_list) == 1:
