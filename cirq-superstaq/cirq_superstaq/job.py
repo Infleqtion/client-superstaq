@@ -14,7 +14,7 @@
 """Represents a job created via the Superstaq API."""
 import time
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, overload
 
 import cirq
 import general_superstaq as gss
@@ -160,7 +160,16 @@ class Job:
         if "target" not in self._job:
             self._refresh_job()
 
-        return self._job[self._job_id.split(",")[0]]["target"]
+        first_job_id = self._job_id.split(",")[0]
+        return self._job[first_job_id]["target"]
+
+    @overload
+    def num_qubits(self, index: int) -> int:
+        ...
+
+    @overload
+    def num_qubits(self, index: None = None) -> List[int]:
+        ...
 
     def num_qubits(self, index: Optional[int] = None) -> Union[int, List[int]]:
         """Gets the number of qubits required for each circuit in this job.
@@ -216,7 +225,19 @@ class Job:
         if (first_job_id not in self._job) or "shots" not in self._job[first_job_id]:
             self._refresh_job()
 
-        return self._job[self._job_id.split(",")[0]]["shots"]
+        return self._job[first_job_id]["shots"]
+
+    @overload
+    def _get_circuits(self, circuit_type: str, index: int) -> cirq.Circuit:
+        ...
+
+    @overload
+    def _get_circuits(
+        self, circuit_type: str, index: None = None
+    ) -> Union[
+        cirq.Circuit, List[cirq.Circuit]
+    ]:  # Change return to `List[cirq.Circuit]` after deprecation
+        ...
 
     def _get_circuits(
         self, circuit_type: str, index: Optional[int] = None
@@ -229,7 +250,7 @@ class Job:
             index: The index of the circuit to retrieve.
 
         Returns:
-            A single or list of circuits.
+            A single circuit or list of circuits.
         """
         if circuit_type not in ("input_circuit", "compiled_circuit"):
             raise ValueError("The circuit type requested is invalid.")
@@ -251,6 +272,18 @@ class Job:
             else [css.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
         )
 
+    @overload
+    def compiled_circuits(self, index: int) -> cirq.Circuit:
+        ...
+
+    @overload
+    def compiled_circuits(
+        self, index: None = None
+    ) -> Union[
+        cirq.Circuit, List[cirq.Circuit]
+    ]:  # Change return to `List[cirq.Circuit]` after deprecation
+        ...
+
     def compiled_circuits(
         self, index: Optional[int] = None
     ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
@@ -260,11 +293,23 @@ class Job:
             index: The index of the circuit to retrieve.
 
         Returns:
-            A single or list of compiled circuits.
+            A single compiled circuit or list of compiled circuits.
         """
         if index is not None:
             gss.validation.validate_integer_param(index, min_val=0)
         return self._get_circuits("compiled_circuit", index=index)
+
+    @overload
+    def input_circuits(self, index: int) -> cirq.Circuit:
+        ...
+
+    @overload
+    def input_circuits(
+        self, index: None = None
+    ) -> Union[
+        cirq.Circuit, List[cirq.Circuit]
+    ]:  # Change return to `List[cirq.Circuit]` after deprecation
+        ...
 
     def input_circuits(
         self, index: Optional[int] = None
@@ -272,11 +317,25 @@ class Job:
         """Gets the original circuits that were submitted for this job.
 
         Returns:
-            A single or list of submitted input circuits.
+            A single input circuit or list of submitted input circuits.
         """
         if index is not None:
             gss.validation.validate_integer_param(index, min_val=0)
         return self._get_circuits("input_circuit", index=index)
+
+    @overload
+    def counts(
+        self, index: int, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+    ) -> Dict[str, int]:
+        ...
+
+    @overload
+    def counts(
+        self, index: None = None, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+    ) -> Union[
+        Dict[str, int], List[Dict[str, int]]
+    ]:  # Change return to just `List[Dict[str, int]]` after deprecation
+        ...
 
     def counts(
         self, index: Optional[int] = None, timeout_seconds: int = 7200, polling_seconds: float = 1.0
