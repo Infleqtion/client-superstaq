@@ -184,7 +184,7 @@ class Service(gss.service.Service):
         **kwargs: Any,
     ) -> Union[Dict[str, int], List[Dict[str, int]]]:
         """Runs the given circuit(s) on the Superstaq API and returns the result of the circuit ran
-        as a `collections.Counter`.
+        as a `dict`.
 
         Args:
             circuits: The circuit(s) to run.
