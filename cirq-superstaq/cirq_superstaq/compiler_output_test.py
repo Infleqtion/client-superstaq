@@ -81,7 +81,7 @@ def test_compiler_output_repr() -> None:
     qubit_map: Dict[cirq.Qid, cirq.Qid] = {}
     assert (
         repr(css.compiler_output.CompilerOutput(circuit, qubit_map))
-        == f"CompilerOutput({circuit!r}, {{}}, None, None, None, None)"
+        == f"CompilerOutput({circuit!r}, {{}}, None, None, None, None, None)"
     )
     assert (
         css.compiler_output.CompilerOutput(circuit, qubit_map).__repr_pretty__()
@@ -90,8 +90,8 @@ def test_compiler_output_repr() -> None:
 
     circuits = [circuit, circuit]
     assert (
-        repr(css.compiler_output.CompilerOutput(circuits, [qubit_map, qubit_map]))
-        == f"CompilerOutput({circuits!r}, [{{}}, {{}}], None, None, None, None)"
+        repr(css.compiler_output.CompilerOutput(circuits, [qubit_map]))
+        == f"CompilerOutput({circuits!r}, [{{}}], None, None, None, None, None)"
     )
     assert css.compiler_output.CompilerOutput(
         circuits, [qubit_map, qubit_map]
@@ -225,6 +225,54 @@ def test_read_json_ibmq() -> None:
     assert not hasattr(out, "circuit")
     assert not hasattr(out, "pulse_sequence")
     assert not hasattr(out, "final_logical_to_physical")
+
+
+def test_read_json_pulse_gate_circuits() -> None:
+    qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
+    import qiskit
+
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
+
+    qc_pulse = qiskit.QuantumCircuit(2)
+    qc_pulse.h(0)
+    qc_pulse.cx(0, 1)
+    qc_pulse.add_calibration("cx", [0, 1], qiskit.pulse.ScheduleBlock("foo"))
+
+    json_dict = {
+        "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "final_logical_to_physicals": "[[]]",
+        "pulse_gate_circuits": qss.serialization.serialize_circuits(qc_pulse),
+    }
+
+    out = css.compiler_output.read_json(json_dict, circuits_is_list=False)
+    assert out.circuit == circuit
+    assert out.pulse_gate_circuit == qc_pulse
+
+    json_dict = {
+        "cirq_circuits": css.serialization.serialize_circuits([circuit, circuit]),
+        "final_logical_to_physicals": "[[], []]",
+        "pulse_gate_circuits": qss.serialization.serialize_circuits([qc_pulse, qc_pulse]),
+    }
+    out = css.compiler_output.read_json(json_dict, circuits_is_list=True)
+    assert out.circuits == [circuit, circuit]
+    assert out.pulse_gate_circuits == [qc_pulse, qc_pulse]
+
+    with mock.patch.dict("sys.modules", {"qiskit_superstaq": None}), pytest.warns(
+        UserWarning, match="qiskit-superstaq is required"
+    ):
+        out = css.compiler_output.read_json(json_dict, circuits_is_list=False)
+        assert out.circuit == circuit
+        assert out.pulse_gate_circuit is None
+
+    with pytest.warns(
+        UserWarning,
+        match="Your compiled pulse gate circuits could not be deserialized.",
+    ):
+        json_dict["pulse_gate_circuits"] = "not-a-serialized-circuit"
+        out = css.compiler_output.read_json(json_dict, circuits_is_list=True)
+        assert out.circuits == [circuit, circuit]
+        assert out.pulse_gate_circuits is None
 
 
 def test_read_json_ibmq_warnings() -> None:

@@ -37,7 +37,7 @@ The quantum benchmarks within Supermarq are designed to be scalable, meaning tha
 instantiated and generated for a wide range of circuit sizes and depths.
 
 The [`examples/ghz_example.py`](examples/ghz_example.py) file contains an end-to-end example of how to execute the GHZ benchmark
-using [Superstaq](https://superstaq.super.tech/). The general workflow is as follows:
+using [Superstaq](https://superstaq.infleqtion.com/). The general workflow is as follows:
 
 ```python
 import supermarq

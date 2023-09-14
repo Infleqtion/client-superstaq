@@ -70,7 +70,8 @@ class CompilerOutput:
         final_logical_to_physicals: Union[
             Dict[int, int], List[Dict[int, int]], List[List[Dict[int, int]]]
         ],
-        pulse_sequences: Union[qiskit.pulse.Schedule, List[qiskit.pulse.Schedule]] = None,
+        pulse_gate_circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]] = None,
+        pulse_sequences: Optional[Union[qiskit.pulse.Schedule, List[qiskit.pulse.Schedule]]] = None,
         seq: Optional[qtrl.sequencer.Sequence] = None,
         jaqal_programs: Optional[Union[str, List[str]]] = None,
         pulse_lists: Optional[Union[List[List[List[Any]]], List[List[List[List[Any]]]]]] = None,
@@ -81,6 +82,8 @@ class CompilerOutput:
             circuits: Compiled circuit or list of compiled circuits.
             final_logical_to_physics: Dictionary or list of dictionaries specifying mapping from
                 logical to physical qubits.
+            pulse_gate_circuits: Pulse-gate `qiskit.QuantumCircuit` or list thereof specifying the
+                pulse compilation.
             pulse_sequences: `qiskit.pulse.Schedule` or list thereof specifying the pulse
                 compilation.
             seq: `qtrl.sequencer.Sequence` pulse sequence if `qtrl` is available locally.
@@ -91,12 +94,14 @@ class CompilerOutput:
         if isinstance(circuits, qiskit.QuantumCircuit):
             self.circuit = circuits
             self.final_logical_to_physical = final_logical_to_physicals
+            self.pulse_gate_circuit = pulse_gate_circuits
             self.pulse_sequence = pulse_sequences
             self.pulse_list = pulse_lists
             self.jaqal_program = jaqal_programs
         else:
             self.circuits = circuits
             self.final_logical_to_physicals = final_logical_to_physicals
+            self.pulse_gate_circuits = pulse_gate_circuits
             self.pulse_sequences = pulse_sequences
             self.pulse_lists = pulse_lists
             self.jaqal_programs = jaqal_programs
@@ -118,12 +123,12 @@ class CompilerOutput:
         if not self.has_multiple_circuits():
             return (
                 f"CompilerOutput({self.circuit!r}, {self.final_logical_to_physical!r}, "
-                f"{self.pulse_sequence!r}, {self.seq!r}, {self.jaqal_program!r}, "
+                f"{self.pulse_gate_circuit!r}, {self.seq!r}, {self.jaqal_program!r}, "
                 f"{self.pulse_list!r})"
             )
         return (
             f"CompilerOutput({self.circuits!r}, {self.final_logical_to_physicals!r}, "
-            f"{self.pulse_sequences!r}, {self.seq!r}, {self.jaqal_programs!r}, "
+            f"{self.pulse_gate_circuits!r}, {self.seq!r}, {self.jaqal_programs!r}, "
             f"{self.pulse_lists!r})"
         )
 
@@ -155,7 +160,7 @@ class CompilerOutput:
             return (
                 self.circuits == other.circuits
                 and self.final_logical_to_physicals == other.final_logical_to_physicals
-                and self.pulse_sequences == other.pulse_sequences
+                and self.pulse_gate_circuits == other.pulse_gate_circuits
                 and self.jaqal_programs == other.jaqal_programs
                 and self.pulse_lists == other.pulse_lists
                 and self.seq == other.seq
@@ -164,11 +169,52 @@ class CompilerOutput:
         return (
             self.circuit == other.circuit
             and self.final_logical_to_physical == other.final_logical_to_physical
-            and self.pulse_sequence == other.pulse_sequence
+            and self.pulse_gate_circuit == other.pulse_gate_circuit
             and self.jaqal_program == other.jaqal_program
             and self.pulse_list == other.pulse_list
             and self.seq == other.seq
         )
+
+
+def read_json(json_dict: Dict[str, str], circuits_is_list: bool) -> CompilerOutput:
+    """Reads out returned JSON from Superstaq API's compilation endpoints.
+
+    Args:
+        json_dict: A JSON dictionary matching the format returned by /compile endpoint.
+        circuits_is_list: A bool flag that controls whether the returned object has a .circuits
+            attribute (if `True`) or a .circuit attribute (`False`).
+
+    Returns:
+        A `CompilerOutput` object with the compiled circuit(s) and (if applicable to this target)
+        corresponding pulse gate circuit(s).
+    """
+    compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
+
+    final_logical_to_physicals: List[Dict[int, int]] = list(
+        map(dict, json.loads(json_dict["final_logical_to_physicals"]))
+    )
+
+    pulse_gate_circuits = pulse_sequences = None
+
+    if "pulse_gate_circuits" in json_dict:
+        pulse_gate_circuits = qss.deserialize_circuits(json_dict["pulse_gate_circuits"])
+
+    if "pulses" in json_dict:
+        pulse_sequences = gss.serialization.deserialize(json_dict["pulses"])
+
+    if circuits_is_list:
+        return CompilerOutput(
+            compiled_circuits,
+            final_logical_to_physicals,
+            pulse_gate_circuits=pulse_gate_circuits,
+            pulse_sequences=pulse_sequences,
+        )
+    return CompilerOutput(
+        compiled_circuits[0],
+        final_logical_to_physicals[0],
+        pulse_gate_circuits=None if pulse_gate_circuits is None else pulse_gate_circuits[0],
+        pulse_sequences=None if pulse_sequences is None else pulse_sequences[0],
+    )
 
 
 def read_json_aqt(
@@ -304,25 +350,3 @@ def read_json_qscout(
         final_logical_to_physicals[0],
         jaqal_programs=jaqal_programs[0],
     )
-
-
-def read_json_only_circuits(json_dict: Dict[str, str], circuits_is_list: bool) -> CompilerOutput:
-    """Reads the JSON returned from Superstaq API's CQ compilation endpoint.
-
-    Args:
-        json_dict: A JSON dictionary matching the format returned by /cq_compile endpoint.
-        circuits_is_list: Bool flag that controls whether the returned object has a .circuits
-            attribute (if True) or a .circuit attribute (False).
-
-    Returns:
-        A `CompilerOutput` object with the compiled circuit(s).
-    """
-    compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
-
-    final_logical_to_physicals: List[Dict[int, int]] = list(
-        map(dict, json.loads(json_dict["final_logical_to_physicals"]))
-    )
-
-    if circuits_is_list:
-        return CompilerOutput(compiled_circuits, final_logical_to_physicals)
-    return CompilerOutput(compiled_circuits[0], final_logical_to_physicals[0])

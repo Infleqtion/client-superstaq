@@ -53,7 +53,7 @@ class Service:
         return balance
 
     def _accept_terms_of_use(self, user_input: str) -> str:
-        """Send acceptance of terms of use at https://superstaq.super.tech/terms_of_use.
+        """Send acceptance of terms of use at https://superstaq.infleqtion.com/terms_of_use.
 
         Args:
             user_input: If "YES", server will mark user as having accepted terms of use.
@@ -144,28 +144,6 @@ class Service:
             A dictionary returned by the submit_qubo function.
         """
         return self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
-
-    def ibmq_set_token(self, token: str) -> str:
-        """Sets IBMQ token field.
-
-        Args:
-            token: IBMQ token string.
-
-        Returns:
-            String containing status of update (whether or not it failed).
-        """
-        return self._client.ibmq_set_token({"ibmq_token": token})
-
-    def cq_set_token(self, token: str) -> str:
-        """Sets CQ token field.
-
-        Args:
-            token: CQ token string.
-
-        Returns:
-            String containing status of update (whether or not it failed).
-        """
-        return self._client.cq_set_token({"cq_token": token})
 
     def aqt_upload_configs(self, pulses: Any, variables: Any) -> str:
         """Uploads configs for AQT.

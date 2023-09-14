@@ -11,9 +11,10 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+from __future__ import annotations
 
 import warnings
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -21,6 +22,9 @@ import numpy.typing as npt
 import qiskit
 
 import qiskit_superstaq as qss
+
+if TYPE_CHECKING:
+    from _typeshed import SupportsItems
 
 
 class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
@@ -66,7 +70,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             remote_host: The location of the API in the form of a URL. If this is None,
                 then this instance will use the environment variable `SUPERSTAQ_REMOTE_HOST`.
                 If that variable is not set, then this uses
-                `https://superstaq.super.tech/{api_version}`,
+                `https://superstaq.infleqtion.com/{api_version}`,
                 where `{api_version}` is the `api_version` specified below.
             api_version: The version of the API.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
@@ -265,7 +269,9 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             kwargs: Other desired ibmq_compile options.
 
         Returns:
-            object whose .circuit(s) attribute is an optimized qiskit circuit(s).
+            Object whose .circuit(s) attribute contains the compiled circuits(s), and whose
+            .pulse_gate_circuit(s) attribute contains the corresponding pulse schedule(s) (when
+            available).
 
         Raises:
             ValueError: If `target` is not a valid IBMQ target.
@@ -283,6 +289,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
         num_qubits: Optional[int] = None,
+        error_rates: Optional[SupportsItems[tuple[int, ...], float]] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
@@ -309,6 +316,12 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
                 fixed maximally-entangling rotations.
             num_qubits: An optional number of qubits that should be present in the compiled
                 circuit(s) and Jaqal program(s) (otherwise this will be determined from the input).
+            error_rates: Optional dictionary assigning relative error rates to pairs of physical
+                qubits, in the form `{<qubit_indices>: <error_rate>, ...}` where `<qubit_indices>`
+                is a tuple physical qubit indices (ints) and `<error_rate>` is a relative error rate
+                for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`) . If
+                provided, Superstaq will attempt to map the circuit to minimize the total error on
+                each qubit.
             kwargs: Other desired qscout_compile options.
 
         Returns:
@@ -322,11 +335,12 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         if not target.startswith("sandia_"):
             raise ValueError(f"{target!r} is not a valid Sandia target.")
 
-        return self.get_backend(target).compile(
+        return self.get_backend(target).qscout_compile(
             circuits,
             mirror_swaps=mirror_swaps,
             base_entangling_gate=base_entangling_gate,
             num_qubits=num_qubits,
+            error_rates=error_rates,
             **kwargs,
         )
 

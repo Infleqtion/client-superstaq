@@ -121,7 +121,7 @@ def test_superstaq_client_needs_accept_terms_of_use(
     fake_get_response.ok = False
     fake_get_response.status_code = requests.codes.unauthorized
     fake_get_response.json.return_value = (
-        "You must accept the Terms of Use (superstaq.super.tech/terms_of_use)."
+        "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
     )
     mock_get.return_value = fake_get_response
 
@@ -140,6 +140,31 @@ def test_superstaq_client_needs_accept_terms_of_use(
     with mock.patch("builtins.input"):
         client.get_balance()
         assert capsys.readouterr().out == "Accepted. You can now continue using Superstaq.\n"
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_validate_email_error(
+    mock_post: mock.MagicMock,
+) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+
+    mock_post.return_value.ok = False
+    mock_post.return_value.status_code = requests.codes.unauthorized
+    mock_post.return_value.json.return_value = "You must validate your registered email."
+
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    with pytest.raises(
+        gss.SuperstaqServerException, match="You must validate your registered email."
+    ):
+        _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
 
 
 @mock.patch("requests.post")
@@ -707,44 +732,6 @@ def test_superstaq_client_dfe(mock_post: mock.MagicMock) -> None:
 
     with pytest.raises(ValueError, match="must contain exactly two job ids"):
         client.process_dfe(["1", "2", "3"])
-
-
-@mock.patch("requests.post")
-def test_superstaq_client_ibmq_set_token(mock_post: mock.MagicMock) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
-        client_name="general-superstaq",
-        remote_host="http://example.com",
-        api_key="to_my_heart",
-    )
-
-    client.ibmq_set_token({"ibmq_token": "token"})
-
-    expected_json = {"ibmq_token": "token"}
-    mock_post.assert_called_with(
-        f"http://example.com/{API_VERSION}/ibmq_token",
-        headers=EXPECTED_HEADERS,
-        json=expected_json,
-        verify=False,
-    )
-
-
-@mock.patch("requests.post")
-def test_superstaq_client_cq_set_token(mock_post: mock.MagicMock) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
-        client_name="general-superstaq",
-        remote_host="http://example.com",
-        api_key="to_my_heart",
-    )
-
-    client.cq_set_token({"cq_token": "token"})
-
-    expected_json = {"cq_token": "token"}
-    mock_post.assert_called_with(
-        f"http://example.com/{API_VERSION}/cq_token",
-        headers=EXPECTED_HEADERS,
-        json=expected_json,
-        verify=False,
-    )
 
 
 @mock.patch("requests.post")
