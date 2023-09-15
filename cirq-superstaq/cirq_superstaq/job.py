@@ -166,12 +166,21 @@ class Job:
         return css.deserialize_circuits(self._job["compiled_circuit"])[0]
     
     def pulse_gate_circuit(self) -> qiskit.QuantumCircuit:
-        """Gets the pulse gate circuit returned by this job."""
+        """Gets the pulse gate circuit returned by this job.
+        
+        Returns:
+            The `qiskit.QuantumCircuit` pulse gate circuit.
+
+        Raises:
+            SuperstaqServerException: If job was not run on an IBM pulse device.
+        """
 
         if "pulse_gate_circuit" in self._job:
-            return qss.deserialize_circuits(self._job["pulse_gate_circuit"])[0]
-        
-        #raise gss.SuperstaqServerException(self._job_id) handle case where PGCs arent available
+            return qss.deserialize_circuits(self._job["pulse_gate_circuit"])[0]    
+         
+        error = self.status() 
+        error += "(Job was not submitted to a pulse-enabled device)"
+        raise gss.SuperstaqServerException(self._job_id, error)
 
     def input_circuit(self) -> cirq.Circuit:
         """Gets the original circuit that was submitted for this job.
