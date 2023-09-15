@@ -143,6 +143,31 @@ def test_superstaq_client_needs_accept_terms_of_use(
 
 
 @mock.patch("requests.post")
+def test_superstaq_client_validate_email_error(
+    mock_post: mock.MagicMock,
+) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+
+    mock_post.return_value.ok = False
+    mock_post.return_value.status_code = requests.codes.unauthorized
+    mock_post.return_value.json.return_value = "You must validate your registered email."
+
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    with pytest.raises(
+        gss.SuperstaqServerException, match="You must validate your registered email."
+    ):
+        _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
+
+
+@mock.patch("requests.post")
 def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
     mock_post.return_value.status_code = requests.codes.ok
     mock_post.return_value.json.return_value = {"foo": "bar"}

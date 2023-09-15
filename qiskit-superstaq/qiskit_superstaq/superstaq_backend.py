@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 import numbers
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -22,6 +22,9 @@ import numpy.typing as npt
 import qiskit
 
 import qiskit_superstaq as qss
+
+if TYPE_CHECKING:
+    from _typeshed import SupportsItems
 
 
 class SuperstaqBackend(qiskit.providers.BackendV1):
@@ -258,7 +261,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
     def ibmq_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
-        dynamical_decoupling: bool = False,
+        dynamical_decoupling: bool = True,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
@@ -279,7 +282,10 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         if not self.name().startswith("ibmq_"):
             raise ValueError(f"{self.name()!r} is not a valid IBMQ target.")
 
-        request_json = self._get_compile_request_json(circuits, **kwargs)
+        options: Dict[str, Any] = {**kwargs}
+
+        options["dynamical_decoupling"] = dynamical_decoupling
+        request_json = self._get_compile_request_json(circuits, **options)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
         return qss.compiler_output.read_json(json_dict, circuits_is_list)
@@ -291,6 +297,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
         num_qubits: Optional[int] = None,
+        error_rates: Optional[SupportsItems[tuple[int, ...], float]] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at Sandia
@@ -316,6 +323,12 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
                 fixed maximally-entangling rotations.
             num_qubits: An optional number of qubits that should be present in the compiled
                 circuit(s) and Jaqal program(s) (otherwise this will be determined from the input).
+            error_rates: Optional dictionary assigning relative error rates to pairs of physical
+                qubits, in the form `{<qubit_indices>: <error_rate>, ...}` where `<qubit_indices>`
+                is a tuple physical qubit indices (ints) and `<error_rate>` is a relative error rate
+                for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`) . If
+                provided, Superstaq will attempt to map the circuit to minimize the total error on
+                each qubit.
             kwargs: Other desired qscout_compile options.
 
         Returns:
@@ -333,18 +346,37 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
             raise ValueError("base_entangling_gate must be 'xx', 'zz', 'sxx', or 'szz'")
 
+        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
+
         options = {
             **kwargs,
             "mirror_swaps": mirror_swaps,
             "base_entangling_gate": base_entangling_gate,
         }
 
-        if num_qubits is not None:
-            gss.validation.validate_integer_param(num_qubits)
-            options["num_qubits"] = num_qubits
+        if isinstance(circuits, qiskit.QuantumCircuit):
+            max_circuit_qubits = circuits.num_qubits
+        else:
+            max_circuit_qubits = max(c.num_qubits for c in circuits)
+
+        if error_rates is not None:
+            error_rates_list = list(error_rates.items())
+            options["error_rates"] = error_rates_list
+
+            # Use error rate dictionary to set `num_qubits`, if not already specified
+            if num_qubits is None:
+                max_index = max(q for qs, _ in error_rates_list for q in qs)
+                num_qubits = max_index + 1
+
+        elif num_qubits is None:
+            num_qubits = max_circuit_qubits
+
+        gss.validation.validate_integer_param(num_qubits)
+        if num_qubits < max_circuit_qubits:
+            raise ValueError(f"At least {max_circuit_qubits} qubits are required for this input.")
+        options["num_qubits"] = num_qubits
 
         request_json = self._get_compile_request_json(circuits, **options)
-        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.qscout_compile(request_json)
         return qss.compiler_output.read_json_qscout(json_dict, circuits_is_list)
 

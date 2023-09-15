@@ -11,10 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to access Superstaqs API."""
+from __future__ import annotations
 
 import numbers
 import warnings
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import cirq
 import general_superstaq as gss
@@ -23,6 +24,9 @@ import numpy.typing as npt
 from general_superstaq import ResourceEstimate, superstaq_client
 
 import cirq_superstaq as css
+
+if TYPE_CHECKING:
+    from _typeshed import SupportsItems
 
 
 def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
@@ -516,6 +520,7 @@ class Service(gss.service.Service):
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
         num_qubits: Optional[int] = None,
+        error_rates: Optional[SupportsItems[tuple[int, ...], float]] = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
@@ -542,6 +547,12 @@ class Service(gss.service.Service):
                 fixed maximally-entangling rotations.
             num_qubits: An optional number of qubits that should be initialized in the returned
                 Jaqal program(s) (by default this will be determined from the input circuits).
+            error_rates: Optional dictionary assigning relative error rates to pairs of physical
+                qubits, in the form `{<qubit_indices>: <error_rate>, ...}` where `<qubit_indices>`
+                is a tuple physical qubit indices (ints) and `<error_rate>` is a relative error rate
+                for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`) . If
+                provided, Superstaq will attempt to map the circuit to minimize the total error on
+                each qubit. Omitted qubit pairs are assumed to be error-free.
             kwargs: Other desired qscout_compile options.
 
         Returns:
@@ -570,9 +581,27 @@ class Service(gss.service.Service):
             **kwargs,
         }
 
-        if num_qubits is not None:
-            gss.validation.validate_integer_param(num_qubits)
-            options_dict["num_qubits"] = num_qubits
+        if circuits_is_list:
+            max_circuit_qubits = max(cirq.num_qubits(c) for c in circuits)
+        else:
+            max_circuit_qubits = cirq.num_qubits(circuits)
+
+        if error_rates is not None:
+            error_rates_list = list(error_rates.items())
+            options_dict["error_rates"] = error_rates_list
+
+            # Use error rate dictionary to set `num_qubits`, if not already specified
+            if num_qubits is None:
+                max_index = max(q for qs, _ in error_rates_list for q in qs)
+                num_qubits = max_index + 1
+
+        elif num_qubits is None:
+            num_qubits = max_circuit_qubits
+
+        gss.validation.validate_integer_param(num_qubits)
+        if num_qubits < max_circuit_qubits:
+            raise ValueError(f"At least {max_circuit_qubits} qubits are required for this input.")
+        options_dict["num_qubits"] = num_qubits
 
         json_dict = self._client.qscout_compile(
             {
