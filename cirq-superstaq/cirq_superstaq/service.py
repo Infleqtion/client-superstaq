@@ -277,10 +277,14 @@ class Service(gss.service.Service):
         )
 
         if index is not None:
-            counts = job_counts[index] if isinstance(job_counts, list) else job_counts
+            counts: Dict[str, int] = (
+                job_counts[index] if isinstance(job_counts, list) else job_counts
+            )
             return counts_to_results(counts, circuit_list[index], param_resolver)
         else:
-            counts_list = job_counts if isinstance(job_counts, list) else [job_counts]
+            counts_list: List[Dict[str, int]] = (
+                job_counts if isinstance(job_counts, list) else [job_counts]
+            )
             result_list = [
                 counts_to_results(counts_list[i], circuit_list[i], param_resolver)
                 for i in range(len(circuit_list))

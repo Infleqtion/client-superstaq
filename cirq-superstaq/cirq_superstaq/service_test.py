@@ -120,8 +120,7 @@ def test_service_run_and_get_counts() -> None:
         param_resolver=params,
         index=0,
     )
-    result = results[0] if isinstance(results, list) else results
-    assert result.histogram(key="a") == collections.Counter({3: 1})
+    assert results.histogram(key="a") == collections.Counter({3: 1})
 
     # Multiple circuit run
     mock_client.create_job.return_value = {
@@ -141,14 +140,14 @@ def test_service_run_and_get_counts() -> None:
 
     # Deprecation warning test
     with pytest.warns(DeprecationWarning, match="to get the results for the first"):
-        results = service.run(
+        deprecated_result = service.run(
             circuits=circuit,
             repetitions=4,
             target="ibmq_qasm_simulator",
             param_resolver=params,
         )
-    result = results[0] if isinstance(results, list) else results
-    assert result.histogram(key="a") == collections.Counter({3: 1})
+        assert isinstance(deprecated_result, dict)
+    assert deprecated_result.histogram(key="a") == collections.Counter({3: 1})
 
 
 def test_service_sampler() -> None:

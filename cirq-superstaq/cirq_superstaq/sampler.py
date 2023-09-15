@@ -13,7 +13,7 @@
 """A `cirq.Sampler` implementation for the Superstaq API."""
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import List
 
 import cirq
 
@@ -85,7 +85,8 @@ class Sampler(cirq.Sampler):
             repetitions=repetitions,
             target=self._target,
         )
-        job_counters: List[Dict[str, int]] = job.counts()
+        job_counts = job.counts()
+        job_counters = job_counts if isinstance(job_counts, list) else [job_counts]
         cirq_results = [
             css.service.counts_to_results(counts, program, resolver)
             for counts, resolver in zip(job_counters, resolvers)
