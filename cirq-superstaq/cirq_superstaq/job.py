@@ -17,11 +17,12 @@ from typing import Any, Dict, Tuple
 
 import cirq
 import general_superstaq as gss
-from cirq._doc import document
 import qiskit
+import qiskit_superstaq as qss
+from cirq._doc import document
 
 import cirq_superstaq as css
-import qiskit_superstaq as qss
+
 
 @cirq.value_equality(unhashable=True)
 class Job:
@@ -164,10 +165,10 @@ class Job:
             self._refresh_job()
 
         return css.deserialize_circuits(self._job["compiled_circuit"])[0]
-    
+
     def pulse_gate_circuit(self) -> qiskit.QuantumCircuit:
         """Gets the pulse gate circuit returned by this job.
-        
+
         Returns:
             The `qiskit.QuantumCircuit` pulse gate circuit.
 
@@ -176,11 +177,10 @@ class Job:
         """
 
         if "pulse_gate_circuit" in self._job:
-            return qss.deserialize_circuits(self._job["pulse_gate_circuit"])[0]    
-         
-        error = self.status() 
-        error += "(Job was not submitted to a pulse-enabled device)"
-        raise gss.SuperstaqServerException(self._job_id, error)
+            return qss.deserialize_circuits(self._job["pulse_gate_circuit"])[0]
+
+        error = f"Job: {self._job_id} was not submitted to a pulse-enabled device"
+        raise gss.SuperstaqServerException(error)
 
     def input_circuit(self) -> cirq.Circuit:
         """Gets the original circuit that was submitted for this job.
