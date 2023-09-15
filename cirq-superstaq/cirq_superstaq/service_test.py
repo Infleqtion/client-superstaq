@@ -146,7 +146,7 @@ def test_service_run_and_get_counts() -> None:
             target="ibmq_qasm_simulator",
             param_resolver=params,
         )
-        assert isinstance(deprecated_result, dict)
+        assert isinstance(deprecated_result, cirq.ResultDict)
     assert deprecated_result.histogram(key="a") == collections.Counter({3: 1})
 
 
