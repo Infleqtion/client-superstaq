@@ -85,7 +85,7 @@ def test_compiler_output_repr() -> None:
     )
     assert (
         css.compiler_output.CompilerOutput(circuit, qubit_map).__repr_pretty__()
-        == f"CompilerOutput({circuit!r}, {{}}, None, None, None, None)\n"
+        == f"CompilerOutput({circuit!r}, {{}}, None, None, None, None, None)\n"
     )
 
     circuits = [circuit, circuit]
@@ -99,6 +99,7 @@ def test_compiler_output_repr() -> None:
         "CompilerOutput("
         "\n    [cirq.Circuit(),  cirq.Circuit()],\n"
         "    [{}, {}],\n"
+        "    None,\n"
         "    None,\n"
         "    None,\n"
         "    None,\n"
@@ -137,6 +138,7 @@ def test_compiler_output_repr() -> None:
         "    None,\n"
         "    None,\n"
         "    None,\n"
+        "    None,\n"
         ")\n"
     )
 
@@ -163,6 +165,7 @@ def test_compiler_output_pretty_repr() -> None:  # pragma: no cover; test requir
         "CompilerOutput(\n"
         f"    [{circuits[0]!r},  {circuits[1]!r}],\n"
         "    [{}],\n"
+        "    None,\n"
         "    None,\n"
         "    None,\n"
         "    None,\n"
