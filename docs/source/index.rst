@@ -78,4 +78,3 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
    cirq_superstaq
    qiskit_superstaq
    general_superstaq
-   supermarq
