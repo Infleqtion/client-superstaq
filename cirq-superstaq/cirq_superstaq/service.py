@@ -191,7 +191,7 @@ class Service(gss.service.Service):
     @overload
     def get_counts(
         self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        circuits: cirq.Circuit,
         repetitions: int,
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
@@ -203,7 +203,7 @@ class Service(gss.service.Service):
     @overload
     def get_counts(
         self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        circuits: Sequence[cirq.Circuit],
         repetitions: int,
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
@@ -244,7 +244,7 @@ class Service(gss.service.Service):
     @overload
     def run(
         self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        circuits: cirq.Circuit,
         repetitions: int,
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
@@ -256,7 +256,7 @@ class Service(gss.service.Service):
     @overload
     def run(
         self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        circuits: Sequence[cirq.Circuit],
         repetitions: int,
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
@@ -292,11 +292,12 @@ class Service(gss.service.Service):
         job_counts = self.get_counts(
             circuit_list, repetitions, target, param_resolver, method, **kwargs
         )
-        counts_list: List[Dict[str, int]] = (
-            job_counts if isinstance(job_counts, list) else [job_counts]
-        )
-        result_list: List[cirq.ResultDict] = [
-            counts_to_results(counts_list[i], circuit_list[i], param_resolver)
+        result_list: list[cirq.ResultDict] = [
+            counts_to_results(
+                job_counts[i] if isinstance(job_counts, list) else job_counts,
+                circuit_list[i],
+                param_resolver,
+            )
             for i in range(len(circuit_list))
         ]
         if len(result_list) == 1:
