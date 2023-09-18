@@ -14,7 +14,7 @@
 """Represents a job created via the Superstaq API."""
 import time
 import warnings
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, overload
+from typing import Any, Dict, List, Optional, Tuple, Union, overload
 
 import cirq
 import general_superstaq as gss
@@ -163,18 +163,16 @@ class Job:
         return self._job[first_job_id]["target"]
 
     @overload
-    def num_qubits(self, index: int) -> int:  # pragma: no cover
+    def num_qubits(self, index: int) -> int:
         ...
 
     @overload
     def num_qubits(
         self, index: None = None
-    ) -> Union[
-        int, Sequence[int]
-    ]:  # pragma: no cover; change return to `Sequence[int]` after deprecation
+    ) -> Union[int, List[int]]:  # Change return to `List[int]` after deprecation
         ...
 
-    def num_qubits(self, index: Optional[int] = None) -> Union[int, Sequence[int]]:
+    def num_qubits(self, index: Optional[int] = None) -> Union[int, List[int]]:
         """Gets the number of qubits required for each circuit in this job.
 
         Args:
@@ -231,20 +229,20 @@ class Job:
         return self._job[first_job_id]["shots"]
 
     @overload
-    def _get_circuits(self, circuit_type: str, index: int) -> cirq.Circuit:  # pragma: no cover
+    def _get_circuits(self, circuit_type: str, index: int) -> cirq.Circuit:
         ...
 
     @overload
     def _get_circuits(
         self, circuit_type: str, index: None = None
     ) -> Union[
-        cirq.Circuit, Sequence[cirq.Circuit]
-    ]:  # pragma: no cover; change return to `Sequence[cirq.Circuit]` after deprecation
+        cirq.Circuit, List[cirq.Circuit]
+    ]:  # Change return to `List[cirq.Circuit]` after deprecation
         ...
 
     def _get_circuits(
         self, circuit_type: str, index: Optional[int] = None
-    ) -> Union[cirq.Circuit, Sequence[cirq.Circuit]]:
+    ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
         """Retrieves the corresponding circuits to `circuit_type`.
 
         Args:
@@ -272,20 +270,20 @@ class Job:
         return css.deserialize_circuits(serialized_circuit)[0]
 
     @overload
-    def compiled_circuits(self, index: int) -> cirq.Circuit:  # pragma: no cover
+    def compiled_circuits(self, index: int) -> cirq.Circuit:
         ...
 
     @overload
     def compiled_circuits(
         self, index: None = None
     ) -> Union[
-        cirq.Circuit, Sequence[cirq.Circuit]
-    ]:  # pragma: no cover; change return to `Sequence[cirq.Circuit]` after deprecation
+        cirq.Circuit, List[cirq.Circuit]
+    ]:  # Change return to `List[cirq.Circuit]` after deprecation
         ...
 
     def compiled_circuits(
         self, index: Optional[int] = None
-    ) -> Union[cirq.Circuit, Sequence[cirq.Circuit]]:
+    ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
         """Gets the compiled circuits that were submitted for this job.
 
         Args:
@@ -299,20 +297,20 @@ class Job:
         return self._get_circuits("compiled_circuit", index=index)
 
     @overload
-    def input_circuits(self, index: int) -> cirq.Circuit:  # pragma: no cover
+    def input_circuits(self, index: int) -> cirq.Circuit:
         ...
 
     @overload
     def input_circuits(
         self, index: None = None
     ) -> Union[
-        cirq.Circuit, Sequence[cirq.Circuit]
-    ]:  # pragma: no cover; change return to `Sequence[cirq.Circuit]` after deprecation
+        cirq.Circuit, List[cirq.Circuit]
+    ]:  # Change return to `List[cirq.Circuit]` after deprecation
         ...
 
     def input_circuits(
         self, index: Optional[int] = None
-    ) -> Union[cirq.Circuit, Sequence[cirq.Circuit]]:
+    ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
         """Gets the original circuits that were submitted for this job.
 
         Returns:
@@ -325,7 +323,7 @@ class Job:
     @overload
     def counts(
         self, index: int, timeout_seconds: int = 7200, polling_seconds: float = 1.0
-    ) -> Dict[str, int]:  # pragma: no cover
+    ) -> Dict[str, int]:
         ...
 
     @overload
@@ -333,7 +331,7 @@ class Job:
         self, index: None = None, timeout_seconds: int = 7200, polling_seconds: float = 1.0
     ) -> Union[
         Dict[str, int], List[Dict[str, int]]
-    ]:  # pragma: no cover; change return to just `List[Dict[str, int]]` after deprecation
+    ]:  # Change return to just `List[Dict[str, int]]` after deprecation
         ...
 
     def counts(

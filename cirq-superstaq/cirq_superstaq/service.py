@@ -197,7 +197,7 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: Optional[str] = None,
         **kwargs: Any,
-    ) -> Dict[str, int]:  # pragma: no cover
+    ) -> Dict[str, int]:
         ...
 
     @overload
@@ -209,7 +209,7 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: Optional[str] = None,
         **kwargs: Any,
-    ) -> List[Dict[str, int]]:  # pragma: no cover
+    ) -> List[Dict[str, int]]:
         ...
 
     def get_counts(
@@ -250,7 +250,7 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
         method: Optional[str] = None,
         **kwargs: Any,
-    ) -> cirq.ResultDict:  # pragma: no cover
+    ) -> cirq.ResultDict:
         ...
 
     @overload
@@ -262,7 +262,7 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
         method: Optional[str] = None,
         **kwargs: Any,
-    ) -> List[cirq.ResultDict]:  # pragma: no cover
+    ) -> List[cirq.ResultDict]:
         ...
 
     def run(
