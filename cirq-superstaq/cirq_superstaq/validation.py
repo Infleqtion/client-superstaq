@@ -3,7 +3,7 @@ from typing import Optional, Sequence
 import cirq
 
 
-def validate_cirq_circuits(circuits: object, check_meas: Optional[bool] = False) -> None:
+def validate_cirq_circuits(circuits: object, require_measurements: bool = False) -> None:
     """Validates that the input is either a single `cirq.Circuit` or a list of `cirq.Circuit`
     instances.
 
