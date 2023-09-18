@@ -263,16 +263,12 @@ class Job:
         ):
             self._refresh_job()
 
-        serialized_circuits = (
-            self._job[job_ids[index]][circuit_type]
-            if index is not None
-            else [self._job[job_id][circuit_type] for job_id in job_ids]
-        )
-        return (
-            css.deserialize_circuits(serialized_circuits)[0]
-            if isinstance(serialized_circuits, str)
-            else [css.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
-        )
+        if index is None:
+            serialized_circuits = [self._job[job_id][circuit_type] for job_id in job_ids]
+            return [css.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
+
+        serialized_circuit = self._job[job_ids[index]][circuit_type]
+        return css.deserialize_circuits(serialized_circuit)[0]
 
     @overload
     def compiled_circuits(self, index: int) -> cirq.Circuit:  # pragma: no cover
