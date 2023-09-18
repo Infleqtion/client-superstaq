@@ -282,7 +282,7 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
     q1 = cirq.LineQubit(1)
     circuit = cirq.Circuit(cirq.X(q0), cirq.CNOT(q0, q1), cirq.measure(q0, q1))
 
-    job = service.create_job(circuits=circuit, repetitions=1, target=target)
+    job = service.create_job(circuit, repetitions=1, target=target)
     assert job.counts(0) == {"11": 1}
 
 
