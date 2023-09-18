@@ -213,8 +213,8 @@ class Service(gss.service.Service):
         Returns:
             A list of `collection.Counter`'s for running the circuit(s).
         """
-        resolved_circuit = cirq.protocols.resolve_parameters(circuits, param_resolver)
-        job = self.create_job(resolved_circuit, int(repetitions), target, method, **kwargs)
+        resolved_circuits = cirq.protocols.resolve_parameters(circuits, param_resolver)
+        job = self.create_job(resolved_circuits, int(repetitions), target, method, **kwargs)
         counts = job.counts(index=index)
         return counts
 
