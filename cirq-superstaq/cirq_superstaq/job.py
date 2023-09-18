@@ -168,7 +168,9 @@ class Job:
         ...
 
     @overload
-    def num_qubits(self, index: None = None) -> List[int]:
+    def num_qubits(
+        self, index: None = None
+    ) -> Union[int, List[int]]:  # Change return to `List[int]` after deprecation
         ...
 
     def num_qubits(self, index: Optional[int] = None) -> Union[int, List[int]]:

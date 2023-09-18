@@ -92,11 +92,14 @@ def test_num_qubits(job: css.job.Job) -> None:
 
     # The first call will trigger a refresh:
     with mocked_get_job_requests(job_dict) as mocked_get_job:
+        # Test case: index -> int
         assert job.num_qubits(index=0) == 2
         mocked_get_job.assert_called_once()
 
     # Shouldn't need to retrieve anything now that `job._job` is populated:
     assert job.num_qubits(index=0) == 2
+    # Test case: no index -> int
+    assert job.num_qubits(index=None) == 2
 
     # Deprecation warning test
     with pytest.warns(DeprecationWarning, match="the numbers of qubits in all circuits"):
@@ -162,15 +165,18 @@ def test_multi_circuit_job() -> None:
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=job_dict
     ):
+        # Test case: No index
         assert job.compiled_circuits() == [compiled_circuit, compiled_circuit, compiled_circuit]
-        assert job.compiled_circuits(index=2) == compiled_circuit
-        assert job.num_qubits() == [3, 3, 3]
-        assert job.num_qubits(index=2) == 3
+        assert job.num_qubits(index=None) == [3, 3, 3]
         assert job.counts() == [
             {"000": 8, "010": 18, "100": 15, "110": 9},
             {"000": 8, "010": 18, "100": 15, "110": 9},
             {"000": 8, "010": 18, "100": 15, "110": 9},
         ]
+
+        # Test case: index
+        assert job.compiled_circuits(index=2) == compiled_circuit
+        assert job.num_qubits(index=2) == 3
         assert job.counts(index=2) == {"000": 8, "010": 18, "100": 15, "110": 9}
 
 
