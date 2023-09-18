@@ -14,7 +14,7 @@
 """Represents a job created via the Superstaq API."""
 import time
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union, overload
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, overload
 
 import cirq
 import general_superstaq as gss
@@ -169,10 +169,12 @@ class Job:
     @overload
     def num_qubits(
         self, index: None = None
-    ) -> Union[int, List[int]]:  # pragma: no cover; change return to `List[int]` after deprecation
+    ) -> Union[
+        int, Sequence[int]
+    ]:  # pragma: no cover; change return to `Sequence[int]` after deprecation
         ...
 
-    def num_qubits(self, index: Optional[int] = None) -> Union[int, List[int]]:
+    def num_qubits(self, index: Optional[int] = None) -> Union[int, Sequence[int]]:
         """Gets the number of qubits required for each circuit in this job.
 
         Args:
@@ -236,13 +238,13 @@ class Job:
     def _get_circuits(
         self, circuit_type: str, index: None = None
     ) -> Union[
-        cirq.Circuit, List[cirq.Circuit]
-    ]:  # pragma: no cover; change return to `List[cirq.Circuit]` after deprecation
+        cirq.Circuit, Sequence[cirq.Circuit]
+    ]:  # pragma: no cover; change return to `Sequence[cirq.Circuit]` after deprecation
         ...
 
     def _get_circuits(
         self, circuit_type: str, index: Optional[int] = None
-    ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
+    ) -> Union[cirq.Circuit, Sequence[cirq.Circuit]]:
         """Retrieves the corresponding circuits to `circuit_type`.
 
         Args:
@@ -277,13 +279,13 @@ class Job:
     def compiled_circuits(
         self, index: None = None
     ) -> Union[
-        cirq.Circuit, List[cirq.Circuit]
-    ]:  # pragma: no cover; change return to `List[cirq.Circuit]` after deprecation
+        cirq.Circuit, Sequence[cirq.Circuit]
+    ]:  # pragma: no cover; change return to `Sequence[cirq.Circuit]` after deprecation
         ...
 
     def compiled_circuits(
         self, index: Optional[int] = None
-    ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
+    ) -> Union[cirq.Circuit, Sequence[cirq.Circuit]]:
         """Gets the compiled circuits that were submitted for this job.
 
         Args:
@@ -304,13 +306,13 @@ class Job:
     def input_circuits(
         self, index: None = None
     ) -> Union[
-        cirq.Circuit, List[cirq.Circuit]
-    ]:  # pragma: no cover; change return to `List[cirq.Circuit]` after deprecation
+        cirq.Circuit, Sequence[cirq.Circuit]
+    ]:  # pragma: no cover; change return to `Sequence[cirq.Circuit]` after deprecation
         ...
 
     def input_circuits(
         self, index: Optional[int] = None
-    ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
+    ) -> Union[cirq.Circuit, Sequence[cirq.Circuit]]:
         """Gets the original circuits that were submitted for this job.
 
         Returns:
