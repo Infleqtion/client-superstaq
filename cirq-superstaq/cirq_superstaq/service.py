@@ -324,7 +324,7 @@ class Service(gss.service.Service):
         """Creates a new job to run the given circuit(s).
 
         Args:
-            circuits: The list of circuit(s) to run.
+            circuits: The circuit or list of circuits to run.
             repetitions: The number of times to repeat the circuit. Defaults to 1000.
             target: Where to run the job.
             method: The optional execution method.
