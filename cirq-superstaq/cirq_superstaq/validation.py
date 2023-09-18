@@ -1,4 +1,4 @@
-from typing import Optional, Sequence
+from typing import Sequence
 
 import cirq
 
@@ -9,7 +9,8 @@ def validate_cirq_circuits(circuits: object, require_measurements: bool = False)
 
     Args:
         circuits: The circuit(s) to run.
-        check_meas: An optional boolean flag to check if all of the circuits have measurements.
+        require_measurements: An optional boolean flag to check if all of the circuits have
+            measurements.
 
     Raises:
         ValueError: If the input is not a `cirq.Circuit` or a list of `cirq.Circuit` instances.
@@ -27,7 +28,7 @@ def validate_cirq_circuits(circuits: object, require_measurements: bool = False)
             "sequence of `cirq.Circuit` instances."
         )
 
-    if check_meas:
+    if require_measurements:
         circuit_list = [circuits] if isinstance(circuits, cirq.Circuit) else circuits
         for circuit in circuit_list:
             if isinstance(circuit, cirq.Circuit) and not circuit.has_measurements():

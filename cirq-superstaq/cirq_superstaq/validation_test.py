@@ -24,4 +24,4 @@ def test_validate_cirq_circuits() -> None:
         css.validation.validate_cirq_circuits([circuit, "circuit_invalid"])
 
     with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
-        css.validation.validate_cirq_circuits(circuit, check_meas=True)
+        css.validation.validate_cirq_circuits(circuit, require_measurements=True)

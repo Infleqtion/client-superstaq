@@ -337,7 +337,7 @@ class Service(gss.service.Service):
             ValueError: If there are no measurements in `circuits`.
             SuperstaqServerException: If there was an error accessing the API.
         """
-        css.validation.validate_cirq_circuits(circuits, check_meas=True)
+        css.validation.validate_cirq_circuits(circuits, require_measurements=True)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
 
         target = self._resolve_target(target)
