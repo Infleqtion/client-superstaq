@@ -157,10 +157,9 @@ class Job:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
             SuperstaqServerException: If unable to get the status of the job from the API.
         """
-        if "target" not in self._job:
-            self._refresh_job()
-
         first_job_id = self._job_id.split(",")[0]
+        if (first_job_id not in self._job) or "target" not in self._job[first_job_id]:
+            self._refresh_job()
         return self._job[first_job_id]["target"]
 
     @overload
