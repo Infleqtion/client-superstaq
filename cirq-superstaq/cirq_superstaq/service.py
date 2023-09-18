@@ -798,7 +798,7 @@ class Service(gss.service.Service):
 
     def supercheq(
         self, files: List[List[int]], num_qubits: int, depth: int
-    ) -> Tuple[Sequence[cirq.Circuit], npt.NDArray[np.float_]]:
+    ) -> Tuple[List[cirq.Circuit], npt.NDArray[np.float_]]:
         """Returns the randomly generated circuits and the fidelity matrix for inputted files.
 
         Args:
