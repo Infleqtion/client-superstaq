@@ -228,7 +228,7 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
         method: Optional[str] = None,
         **kwargs: Any,
-    ) -> cirq.ResultDict:
+    ) -> cirq.ResultDict:  # pragma: no cover
         ...
 
     @overload
@@ -243,7 +243,7 @@ class Service(gss.service.Service):
         **kwargs: Any,
     ) -> Union[
         cirq.ResultDict, List[cirq.ResultDict]
-    ]:  # Should return just `List[cirq.ResultDict]` after deprecation
+    ]:  # pragma: no cover, should return just `List[cirq.ResultDict]` after deprecation
         ...
 
     def run(

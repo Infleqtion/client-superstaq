@@ -164,13 +164,13 @@ class Job:
         return self._job[first_job_id]["target"]
 
     @overload
-    def num_qubits(self, index: int) -> int:
+    def num_qubits(self, index: int) -> int:  # pragma: no cover
         ...
 
     @overload
     def num_qubits(
         self, index: None = None
-    ) -> Union[int, List[int]]:  # Change return to `List[int]` after deprecation
+    ) -> Union[int, List[int]]:  # pragma: no cover; change return to `List[int]` after deprecation
         ...
 
     def num_qubits(self, index: Optional[int] = None) -> Union[int, List[int]]:
@@ -230,7 +230,7 @@ class Job:
         return self._job[first_job_id]["shots"]
 
     @overload
-    def _get_circuits(self, circuit_type: str, index: int) -> cirq.Circuit:
+    def _get_circuits(self, circuit_type: str, index: int) -> cirq.Circuit:  # pragma: no cover
         ...
 
     @overload
@@ -238,7 +238,7 @@ class Job:
         self, circuit_type: str, index: None = None
     ) -> Union[
         cirq.Circuit, List[cirq.Circuit]
-    ]:  # Change return to `List[cirq.Circuit]` after deprecation
+    ]:  # pragma: no cover; change return to `List[cirq.Circuit]` after deprecation
         ...
 
     def _get_circuits(
@@ -275,7 +275,7 @@ class Job:
         )
 
     @overload
-    def compiled_circuits(self, index: int) -> cirq.Circuit:
+    def compiled_circuits(self, index: int) -> cirq.Circuit:  # pragma: no cover
         ...
 
     @overload
@@ -283,7 +283,7 @@ class Job:
         self, index: None = None
     ) -> Union[
         cirq.Circuit, List[cirq.Circuit]
-    ]:  # Change return to `List[cirq.Circuit]` after deprecation
+    ]:  # pragma: no cover; change return to `List[cirq.Circuit]` after deprecation
         ...
 
     def compiled_circuits(
@@ -302,7 +302,7 @@ class Job:
         return self._get_circuits("compiled_circuit", index=index)
 
     @overload
-    def input_circuits(self, index: int) -> cirq.Circuit:
+    def input_circuits(self, index: int) -> cirq.Circuit:  # pragma: no cover
         ...
 
     @overload
@@ -310,7 +310,7 @@ class Job:
         self, index: None = None
     ) -> Union[
         cirq.Circuit, List[cirq.Circuit]
-    ]:  # Change return to `List[cirq.Circuit]` after deprecation
+    ]:  # pragma: no cover; change return to `List[cirq.Circuit]` after deprecation
         ...
 
     def input_circuits(
@@ -328,7 +328,7 @@ class Job:
     @overload
     def counts(
         self, index: int, timeout_seconds: int = 7200, polling_seconds: float = 1.0
-    ) -> Dict[str, int]:
+    ) -> Dict[str, int]:  # pragma: no cover
         ...
 
     @overload
@@ -336,7 +336,7 @@ class Job:
         self, index: None = None, timeout_seconds: int = 7200, polling_seconds: float = 1.0
     ) -> Union[
         Dict[str, int], List[Dict[str, int]]
-    ]:  # Change return to just `List[Dict[str, int]]` after deprecation
+    ]:  # pragma: no cover; change return to just `List[Dict[str, int]]` after deprecation
         ...
 
     def counts(
