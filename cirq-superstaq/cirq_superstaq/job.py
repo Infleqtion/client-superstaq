@@ -238,11 +238,11 @@ class Job:
 
 
 def _get_marginal_counts(counts: Dict[str, int], indices: Sequence[int]) -> Dict[str, int]:
-    """Accumulate total counts on specific bits (by index).  That is, compute marginal distribution.
+    """Compute a marginal distribution, accumulating total counts on specific bits (by index).
 
     Args:
         counts: The dictionary containing all the counts.
-        indices: The indices of the bits to marginalize on.
+        indices: The indices of the bits on which to accumulate counts.
 
     Returns:
         A dictionary of counts on the target indices.
