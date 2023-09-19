@@ -291,8 +291,8 @@ def test_submit_to_hilbert(service: css.Service):
     q1 = cirq.LineQubit(1)
     circuit = cirq.Circuit(cirq.X(q0), cirq.CNOT(q0, q1), cirq.measure(q0, q1))
 
-    job = service.create_job(circuit=circuit, repetitions=1, target="cq_hilbert_qpu")
-    assert sum(job.counts().values())
+    job = service.create_job(circuit=circuit, repetitions=100, target="cq_hilbert_qpu")
+    assert sum(job.counts().values()) == 100https://github.com/Infleqtion/client-superstaq/pull/775 should be ready to be mreged soon ￼⁠⁠⁠⁠⁠⁠⁠
 
 
 def test_submit_qubo(service: css.Service) -> None:
