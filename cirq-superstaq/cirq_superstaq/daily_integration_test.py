@@ -298,7 +298,9 @@ def test_submit_to_hilbert(service: css.Service) -> None:
 
 def test_submit_to_hilbert_qubit_sorting(service: css.Service) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776"""
-    qubits = cirq.LineQubit.range(24)
+    target = "cq_hilbert_qpu"
+    num_qubits = service.target_info(target)["num_qubits"]
+    qubits = cirq.LineQubit.range(num_qubits)
     circuit = cirq.Circuit(
         css.ParallelRGate(np.pi / 2, 0.0, 24).on(*qubits),
         cirq.rz(np.pi).on(qubits[2]),
@@ -307,7 +309,7 @@ def test_submit_to_hilbert_qubit_sorting(service: css.Service) -> None:
     )
 
     job = service.create_job(
-        circuit=circuit, repetitions=400, verbatim=True, route=False, target="cq_hilbert_qpu"
+        circuit=circuit, repetitions=400, verbatim=True, route=False, target=target
     )
     assert sum(job.counts().values()) == 400
 
