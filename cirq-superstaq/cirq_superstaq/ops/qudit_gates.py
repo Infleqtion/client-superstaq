@@ -317,10 +317,10 @@ class VirtualZPowGate(cirq.EigenGate):
         if not isinstance(other, VirtualZPowGate):
             return NotImplemented
 
-        if other._dimension != self._dimension or other._level != self._level:
+        if self._dimension != other.dimension or self._level != other.level:
             return False
 
-        return css.approx_eq_mod(self.exponent, other.exponent, 2.0, atol=atol)
+        return css.approx_eq_mod(self._exponent, other.exponent, 2.0, atol=atol)
 
     def _json_dict_(self) -> dict[str, object]:
         return cirq.obj_to_dict_helper(self, ["exponent", "global_shift", "dimension", "level"])
@@ -338,17 +338,16 @@ class VirtualZPowGate(cirq.EigenGate):
 
     def __str__(self) -> str:
         base_str = f"VZ{self._dimension}_{self._level - 1}{self._level}"
-        if self.exponent == 1:
+        if self._exponent == 1:
             return base_str
-        return f"{base_str}**{self.exponent}"
+        return f"{base_str}**{self._exponent}"
 
     def __repr__(self) -> str:
         if not self._global_shift and self._dimension in (3, 4):
             base_repr = f"css.VZ{self._dimension}_{self._level - 1}{self._level}"
             if self._exponent == 1:
                 return base_repr
-
-            return f"({base_repr}**{proper_repr(self.exponent)})"
+            return f"({base_repr}**{proper_repr(self._exponent)})"
 
         args = [f"dimension={self._dimension}"]
         if self._level != 1:
@@ -356,7 +355,7 @@ class VirtualZPowGate(cirq.EigenGate):
         if self._exponent != 1:
             args.append(f"exponent={proper_repr(self._exponent)}")
         if self._global_shift:
-            args.append(f"global_shift={self._global_shift}")
+            args.append(f"global_shift={self._global_shift!r}")
 
         return "css.VirtualZPowGate(" + ", ".join(args) + ")"
 
