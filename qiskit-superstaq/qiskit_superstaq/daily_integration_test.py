@@ -250,6 +250,17 @@ def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvi
     assert job.result().get_counts() == {"11": 1}
 
 
+def test_submit_to_hilbert(provider: qss.SuperstaqProvider) -> None:
+    qc = qiskit.QuantumCircuit(2, 2)
+    qc.x(0)
+    qc.cx(0, 1)
+    qc.measure(0, 0)
+    qc.measure(1, 1)
+
+    job = provider.get_backend("cq_hilbert_qpu").run(qc, shots=100)
+    assert sum(job.result().get_counts().values()) == 100
+
+
 def test_submit_qubo(provider: qss.SuperstaqProvider) -> None:
     test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
     serialized_result = provider.submit_qubo(
