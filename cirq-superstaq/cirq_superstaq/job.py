@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Represents a job created via the Superstaq API."""
+import collections
 import time
 from typing import Any, Dict, Optional, Sequence, Tuple
 
@@ -209,7 +210,7 @@ class Job:
         self._check_if_unsuccessful()
         counts = self._job["samples"]
         if qubit_indices:
-            counts = gss.superstaq_client.get_counts_on_qubits(counts, qubit_indices)
+            counts = _get_marginal_counts(counts, qubit_indices)
         return counts
 
     def to_dict(self) -> Dict[str, Any]:
@@ -234,3 +235,20 @@ class Job:
 
     def _value_equality_values_(self) -> Tuple[str, Dict[str, Any]]:
         return self._job_id, self._job
+
+
+def _get_marginal_counts(counts: Dict[str, int], indices: Sequence[int]) -> Dict[str, int]:
+    """Accumulate total counts on specific bits (by index).  That is, compute marginal distribution.
+
+    Args:
+        counts: The dictionary containing all the counts.
+        indices: The indices of the bits to marginalize on.
+
+    Returns:
+        A dictionary of counts on the target indices.
+    """
+    target_counts: Dict[str, int] = collections.defaultdict(int)
+    for bitstring, count in counts.items():
+        target_key = "".join([bitstring[index] for index in indices])
+        target_counts[target_key] += count
+    return target_counts

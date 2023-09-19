@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Client for making requests to Superstaq's API."""
-import collections
 import json
 import os
 import pathlib
@@ -745,22 +744,3 @@ def find_api_key() -> str:
         "Try passing an 'api_key' variable, or setting your API key in the command line "
         "with SUPERSTAQ_API_KEY=..."
     )
-
-
-def get_counts_on_qubits(
-    counts: Dict[str, int], target_qubit_indices: Sequence[int]
-) -> Dict[str, int]:
-    """A method to extract only the counts on specific qubits.
-
-    Args:
-        counts: The dictionary containing all the counts.
-        target_qubit_indices: The indices of the qubits to separate.
-
-    Returns:
-        A dictionary of counts on the target indices.
-    """
-    target_counts: Dict[str, int] = collections.defaultdict(int)
-    for bitstring, count in counts.items():
-        target_key = "".join([bitstring[index] for index in target_qubit_indices])
-        target_counts[target_key] += count
-    return target_counts

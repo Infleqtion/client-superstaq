@@ -802,11 +802,3 @@ def test_find_api_key() -> None:
         with mock.patch.dict(os.environ, SUPERSTAQ_API_KEY=""):
             with mock.patch("pathlib.Path.is_file", return_value=False):
                 gss.superstaq_client.find_api_key()
-
-
-def test_get_counts_on_qubits() -> None:
-    counts_dict = {"10": 50, "11": 50}
-    target_qubit_indices = [0]
-    assert gss.superstaq_client.get_counts_on_qubits(counts_dict, target_qubit_indices) == (
-        {"1": 100}
-    )
