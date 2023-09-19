@@ -1,4 +1,3 @@
-import json
 from typing import List, Sequence, Union
 
 import cirq
@@ -22,16 +21,7 @@ def serialize_circuits(
     Returns:
         A string representing the serialized circuit(s).
     """
-    dt = json.loads(cirq.to_json(circuits))
-    if isinstance(dt, list):
-        for circuit_dt in dt:
-            if "device" not in circuit_dt:
-                circuit_dt["device"] = {"cirq_type": "_UnconstrainedDevice"}
-    else:
-        if "device" not in dt:
-            dt["device"] = {"cirq_type": "_UnconstrainedDevice"}
-
-    return json.dumps(dt)
+    return cirq.to_json(circuits)
 
 
 def deserialize_circuits(serialized_circuits: str) -> List[cirq.Circuit]:
