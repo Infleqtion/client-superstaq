@@ -236,6 +236,131 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
         )
 
 
+class VirtualZPowGate(cirq.EigenGate):
+    """Applies a phase rotation between two successive energy levels of a qudit."""
+
+    def __init__(
+        self,
+        dimension: int = 2,
+        level: int = 1,
+        exponent: cirq.TParamVal = 1.0,
+        global_shift: float = 0.0,
+    ) -> None:
+        """Initializes as `VirtualZPowGate`.
+
+        Args:
+            dimension: The qudit dimension on which this gate will act.
+            level: The lowest energy level onto which this gate applies a phase. For example,
+                passing `level=2` a phase of `(-1)**exponent` will applied to energy levels
+                `[2, ..., dimension - 1]`. This is equivalent to phase shifting all subsequent
+                single-qudit gates acting in the `(1, 2)` subspace (assuming all other gates commute
+                with this one).
+            exponent: This gate's exponent (see `cirq.EigenGate` documentation for details).
+            global_shift: This gate's global phase (see `cirq.EigenGate` documentation for details).
+
+        Raises:
+            ValueError: If `dimension` is less than two.
+            ValueError: If `level` is invalid for the given dimension.
+        """
+        if dimension < 2:
+            raise ValueError("Invalid dimension (must be at least 2).")
+
+        # Allow e.g. level=-1 to specify the highest energy level
+        if not 0 < abs(level) < dimension:
+            raise ValueError(f"Invalid energy level for a dimension-{dimension} gate.")
+
+        self._dimension = dimension
+        self._level = level % dimension
+        super().__init__(exponent=exponent, global_shift=global_shift)
+
+    @property
+    def dimension(self) -> int:
+        """The qudit dimension on which this gate acts."""
+        return self._dimension
+
+    @property
+    def level(self) -> int:
+        """The lowest energy level onto which this gate applies a phase; for example if `level=2`
+        a phase of `(-1)**exponent` will applied to energy levels `[2, ..., dimension - 1]`. This
+        is equivalent to phase shifting all subsequent single-qudit gates acting in the `(1, 2)`
+        subspace (assuming all other gates commute with this one).
+        """
+        return self._level
+
+    def _qid_shape_(self) -> Tuple[int]:
+        return (self._dimension,)
+
+    def _with_exponent(self, exponent: cirq.TParamVal) -> VirtualZPowGate:
+        return VirtualZPowGate(
+            dimension=self._dimension,
+            level=self._level,
+            exponent=exponent,
+            global_shift=self._global_shift,
+        )
+
+    def _eigen_components(self) -> List[Tuple[float, npt.NDArray[np.float_]]]:
+        projector_phase = np.zeros(self._dimension)
+        projector_phase[self._level :] = 1
+        projector_rest = 1 - projector_phase
+        return [(0.0, np.diag(projector_rest)), (1.0, np.diag(projector_phase))]
+
+    def _eigen_shifts(self) -> List[float]:
+        return [0.0, 1.0]
+
+    def _value_equality_values_(self) -> tuple[object, ...]:
+        return (*super()._value_equality_values_(), self._dimension, self._level)
+
+    def _value_equality_approximate_values_(self) -> tuple[object, ...]:
+        return (*super()._value_equality_approximate_values_(), self._dimension, self._level)
+
+    def _equal_up_to_global_phase_(self, other: object, atol: float) -> Optional[bool]:
+        if not isinstance(other, VirtualZPowGate):
+            return NotImplemented
+
+        if other._dimension != self._dimension or other._level != self._level:
+            return False
+
+        return css.approx_eq_mod(self.exponent, other.exponent, 2.0, atol=atol)
+
+    def _json_dict_(self) -> dict[str, object]:
+        return cirq.obj_to_dict_helper(self, ["exponent", "global_shift", "dimension", "level"])
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        base, excited = self._level - 1, self._level
+        if args.use_unicode_characters and excited < 10:
+            wire_symbol = f"VZ{ord('₀') + base:c}{ord('₀') + excited:c}"
+        else:
+            wire_symbol = f"VZ[{base},{excited}]"
+
+        return cirq.CircuitDiagramInfo(
+            wire_symbols=(wire_symbol,), exponent=self._diagram_exponent(args)
+        )
+
+    def __str__(self) -> str:
+        base_str = f"VZ{self._dimension}_{self._level - 1}{self._level}"
+        if self.exponent == 1:
+            return base_str
+        return f"{base_str}**{self.exponent}"
+
+    def __repr__(self) -> str:
+        if not self._global_shift and self._dimension in (3, 4):
+            base_repr = f"css.VZ{self._dimension}_{self._level - 1}{self._level}"
+            if self._exponent == 1:
+                return base_repr
+
+            return f"({base_repr}**{proper_repr(self.exponent)})"
+
+        args = [f"dimension={self._dimension}"]
+        if self._level != 1:
+            args.append(f"level={self._level}")
+        if self._exponent != 1:
+            args.append(f"exponent={proper_repr(self._exponent)}")
+        if self._global_shift:
+            args.append(f"global_shift={self._global_shift}")
+
+        return "css.VirtualZPowGate(" + ", ".join(args) + ")"
+
+
 class _QutritZPowGate(cirq.EigenGate):
     """Applies a phase rotation to a single energy level of a qutrit."""
 
@@ -549,6 +674,12 @@ BSWAP_INV = BSwapPowGate(exponent=-1)
 CZ3 = QutritCZPowGate()
 CZ3_INV = QutritCZPowGate(exponent=-1)
 
+VZ3_01 = VirtualZPowGate(dimension=3, level=1)
+VZ3_12 = VirtualZPowGate(dimension=3, level=2)
+VZ4_01 = VirtualZPowGate(dimension=4, level=1)
+VZ4_12 = VirtualZPowGate(dimension=4, level=2)
+VZ4_23 = VirtualZPowGate(dimension=4, level=3)
+
 QutritZ0 = QutritZ0PowGate()
 QutritZ1 = QutritZ1PowGate()
 QutritZ2 = QutritZ2PowGate()
@@ -574,6 +705,8 @@ def custom_resolver(
         return BSwapPowGate
     if cirq_type == "QutritCZPowGate":
         return QutritCZPowGate
+    if cirq_type == "VirtualZPowGate":
+        return VirtualZPowGate
     if cirq_type == "QutritZ0PowGate":
         return QutritZ0PowGate
     if cirq_type == "QutritZ1PowGate":
