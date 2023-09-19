@@ -286,6 +286,15 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
     assert job.counts() == {"11": 1}
 
 
+def test_submit_to_hilbert(service: css.Service):
+    q0 = cirq.LineQubit(0)
+    q1 = cirq.LineQubit(1)
+    circuit = cirq.Circuit(cirq.X(q0), cirq.CNOT(q0, q1), cirq.measure(q0, q1))
+
+    job = service.create_job(circuit=circuit, repetitions=1, target="cq_hilbert_qpu")
+    assert sum(job.counts().values())
+
+
 def test_submit_qubo(service: css.Service) -> None:
     test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
     serialized_result = service.submit_qubo(
