@@ -3,6 +3,7 @@
 
 import cirq
 import general_superstaq as gss
+import numpy as np
 import pytest
 from general_superstaq import ResourceEstimate
 
@@ -293,6 +294,22 @@ def test_submit_to_hilbert(service: css.Service) -> None:
 
     job = service.create_job(circuit=circuit, repetitions=100, target="cq_hilbert_qpu")
     assert sum(job.counts().values()) == 100
+
+
+def test_submit_to_hilbert_qubit_sorting(service: css.Service) -> None:
+    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776"""
+    qubits = cirq.LineQubit.range(24)
+    circuit = cirq.Circuit(
+        css.ParallelRGate(np.pi / 2, 0.0, 24).on(*qubits),
+        cirq.rz(np.pi).on(qubits[2]),
+        css.ParallelRGate(-np.pi / 2, 0.0, 24).on(*qubits),
+        cirq.measure(*qubits),
+    )
+
+    job = service.create_job(
+        circuit=circuit, repetitions=400, verbatim=True, route=False, target="cq_hilbert_qpu"
+    )
+    assert sum(job.counts().values()) == 400
 
 
 def test_submit_qubo(service: css.Service) -> None:

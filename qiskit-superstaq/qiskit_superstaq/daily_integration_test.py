@@ -261,6 +261,22 @@ def test_submit_to_hilbert(provider: qss.SuperstaqProvider) -> None:
     assert sum(job.result().get_counts().values()) == 100
 
 
+def test_submit_to_hilbert_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
+    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776"""
+
+    gr = qiskit.circuit.library.GR(24, np.pi / 2, 0)
+    grdg = qiskit.circuit.library.GR(24, -np.pi / 2, 0)
+
+    qc = qiskit.QuantumCircuit(24)
+    qc.append(gr, range(24))
+    qc.rz(np.pi, 2)
+    qc.append(grdg, range(24))
+    qc.measure_all()
+
+    job = provider.get_backend("cq_hilbert_qpu").run(qc, 400, verbatim=True, route=False)
+    assert sum(job.result().get_counts().values()) == 400
+
+
 def test_submit_qubo(provider: qss.SuperstaqProvider) -> None:
     test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
     serialized_result = provider.submit_qubo(
