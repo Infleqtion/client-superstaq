@@ -62,8 +62,8 @@ class SuperstaqJob(qiskit.providers.JobV1):
     def result(
         self,
         timeout: Optional[float] = None,
-        qubit_indices: Optional[Sequence[int]] = None,
         wait: float = 5,
+        qubit_indices: Optional[Sequence[int]] = None,
     ) -> qiskit.result.Result:
         """Retrieves the result data associated with a Superstaq job.
 
