@@ -251,4 +251,4 @@ def _get_marginal_counts(counts: Dict[str, int], indices: Sequence[int]) -> Dict
     for bitstring, count in counts.items():
         target_key = "".join([bitstring[index] for index in indices])
         target_counts[target_key] += count
-    return target_counts
+    return dict(target_counts)
