@@ -58,7 +58,7 @@ def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
 
 
 def counts_to_results(
-    counter: Union[Dict[str, int], Dict[str, float]],
+    counter: Mapping[str, float],
     circuit: cirq.AbstractCircuit,
     param_resolver: cirq.ParamResolver,
 ) -> cirq.ResultDict:
