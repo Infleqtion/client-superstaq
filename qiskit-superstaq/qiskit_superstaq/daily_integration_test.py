@@ -265,29 +265,10 @@ def test_submit_to_hilbert_qubit_sorting(provider: qss.SuperstaqProvider) -> Non
     qc.append(grdg, range(num_qubits))
     qc.measure_all()
 
-    job = backend.run(qc, 400, verbatim=True, route=False)
+    job = backend.run(qc, 100, verbatim=True, route=False)
     counts = job.result().get_counts()
-    assert sum(counts.values()) == 400
+    assert sum(counts.values()) == 100
     assert max(counts, key=counts.__getitem__) == ("0" * (num_qubits - 3)) + "100"
-
-
-def test_submit_to_hilbert_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
-    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776"""
-    backend = provider.get_backend("cq_hilbert_qpu")
-
-    num_qubits = backend.configuration().n_qubits
-
-    gr = qiskit.circuit.library.GR(num_qubits, np.pi / 2, 0)
-    grdg = qiskit.circuit.library.GR(num_qubits, -np.pi / 2, 0)
-
-    qc = qiskit.QuantumCircuit(num_qubits)
-    qc.append(gr, range(num_qubits))
-    qc.rz(np.pi, 2)
-    qc.append(grdg, range(num_qubits))
-    qc.measure_all()
-
-    job = backend.run(qc, 400, verbatim=True, route=False)
-    assert sum(job.result().get_counts().values()) == 400
 
 
 def test_submit_qubo(provider: qss.SuperstaqProvider) -> None:
