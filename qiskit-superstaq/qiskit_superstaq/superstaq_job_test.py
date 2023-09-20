@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 def mock_response(status_str: str) -> Dict[str, Union[str, int, Dict[str, int]]]:
-    return {"status": status_str, "samples": {"10": 100}, "shots": 100}
+    return {"status": status_str, "samples": {"11": 50, "10": 50}, "shots": 100}
 
 
 @pytest.fixture
@@ -56,7 +56,7 @@ def test_timeout(backend: qss.SuperstaqBackend) -> None:
 def test_result(backend: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJob(backend=backend, job_id="123abc")
 
-    expected_results = [{"success": True, "shots": 100, "data": {"counts": {"01": 100}}}]
+    expected_results = [{"success": True, "shots": 100, "data": {"counts": {"11": 50, "10": 50}}}]
 
     expected = qiskit.result.Result.from_dict(
         {
@@ -68,15 +68,15 @@ def test_result(backend: qss.SuperstaqBackend) -> None:
             "job_id": "123abc",
         }
     )
-
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaqClient.get_job",
         return_value=mock_response("Done"),
     ):
-        ans = job.result()
+        ans = job.result(qubit_indices=[0])
 
         assert ans.backend_name == expected.backend_name
         assert ans.job_id == expected.job_id
+        assert ans.get_counts() == {"1": 100}
 
 
 def test_check_if_stopped(backend: qss.SuperstaqBackend) -> None:
@@ -279,7 +279,7 @@ def test_to_dict(backend: qss.SuperstaqBackend) -> None:
         assert job.to_dict() == {
             "12345": {
                 "status": "Done",
-                "samples": {"10": 100},
+                "samples": {"11": 50, "10": 50},
                 "shots": 100,
             }
         }
