@@ -187,7 +187,7 @@ class Job:
         Args:
             timeout_seconds: The total number of seconds to poll for.
             polling_seconds: The interval with which to poll.
-            qubit_indices: The qubit indices to return the results of individually.
+            qubit_indices: If provided, only include measurements of these qubits in the counts dictionary.
 
         Returns:
             A dictionary containing the frequency counts of the measurements.
