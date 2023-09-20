@@ -15,7 +15,7 @@
 import collections
 import time
 import warnings
-from typing import Any, Dict, Optional, Sequence, List, Tuple, Union, overload
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, overload
 
 import cirq
 import general_superstaq as gss
@@ -323,20 +323,32 @@ class Job:
 
     @overload
     def counts(
-        self, index: int, timeout_seconds: int = 7200, polling_seconds: float = 1.0,  qubit_indices: Optional[Sequence[int]] = None,
+        self,
+        index: int,
+        timeout_seconds: int = 7200,
+        polling_seconds: float = 1.0,
+        qubit_indices: Optional[Sequence[int]] = None,
     ) -> Dict[str, int]:
         ...
 
     @overload
     def counts(
-        self, index: None = None, timeout_seconds: int = 7200, polling_seconds: float = 1.0,  qubit_indices: Optional[Sequence[int]] = None,
+        self,
+        index: None = None,
+        timeout_seconds: int = 7200,
+        polling_seconds: float = 1.0,
+        qubit_indices: Optional[Sequence[int]] = None,
     ) -> Union[
         Dict[str, int], List[Dict[str, int]]
     ]:  # Change return to just `List[Dict[str, int]]` after deprecation
         ...
 
     def counts(
-        self, index: Optional[int] = None, timeout_seconds: int = 7200, polling_seconds: float = 1.0, qubit_indices: Optional[Sequence[int]] = None,
+        self,
+        index: Optional[int] = None,
+        timeout_seconds: int = 7200,
+        polling_seconds: float = 1.0,
+        qubit_indices: Optional[Sequence[int]] = None,
     ) -> Union[Dict[str, int], List[Dict[str, int]]]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
 
@@ -371,6 +383,10 @@ class Job:
             gss.validation.validate_integer_param(index, min_val=0)
         else:
             counts_list = [self._job[job_id]["samples"] for job_id in self._job_id.split(",")]
+            if qubit_indices:
+                counts_list = [
+                    _get_marginal_counts(counts, qubit_indices) for counts in counts_list
+                ]
             if len(counts_list) == 1:
                 warnings.warn(
                     "In the future, calling `counts()` without an argument will return a list of "
@@ -383,7 +399,10 @@ class Job:
             else:
                 return counts_list
 
-        return self._job[job_ids[index]]["samples"]
+        single_counts = self._job[job_ids[index]]["samples"]
+        return (
+            _get_marginal_counts(single_counts, qubit_indices) if qubit_indices else single_counts
+        )
 
     def to_dict(self) -> Dict[str, gss.typing.Job]:
         """Refreshes and returns job information.
