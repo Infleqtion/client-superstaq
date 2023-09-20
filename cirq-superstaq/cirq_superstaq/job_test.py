@@ -173,11 +173,17 @@ def test_multi_circuit_job() -> None:
             {"000": 8, "010": 18, "100": 15, "110": 9},
             {"000": 8, "010": 18, "100": 15, "110": 9},
         ]
+        assert job.counts(qubit_indices=[0]) == [
+            {"0": 26, "1": 24},
+            {"0": 26, "1": 24},
+            {"0": 26, "1": 24},
+        ]
 
         # Test case: index
         assert job.compiled_circuits(index=2) == compiled_circuit
         assert job.num_qubits(index=2) == 3
         assert job.counts(index=2) == {"000": 8, "010": 18, "100": 15, "110": 9}
+        assert job.counts(index=2, qubit_indices=[0]) == {"0": 26, "1": 24}
 
 
 def test_input_circuit(job: css.job.Job) -> None:
