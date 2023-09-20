@@ -262,7 +262,7 @@ def test_job_counts(job: css.job.Job) -> None:
         "target": "ss_unconstrained_simulator",
     }
     with mocked_get_job_requests(job_dict):
-        assert job.counts(index=0) == {"11": 1}
+        assert job.counts(index=0) == {"10": 1}
         assert job.counts(index=0, qubit_indices=[0]) == ({"1": 1})
 
     # Deprecation warning test

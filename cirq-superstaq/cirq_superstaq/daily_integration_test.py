@@ -300,7 +300,7 @@ def test_submit_to_hilbert_qubit_sorting(service: css.Service) -> None:
     )
 
     job = service.create_job(circuit, repetitions=100, verbatim=True, route=False, target=target)
-    counts: dict[str, int] = job.counts(0)
+    counts = job.counts(0)
     assert sum(counts.values()) == 100
     assert max(counts, key=counts.__getitem__) == "001" + ("0" * (num_qubits - 3))
 
