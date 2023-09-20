@@ -80,11 +80,8 @@ def counts_to_results(
 
     samples: List[List[int]] = []
     for key in counter.keys():
-        keys_as_list: List[int] = []
-
         # Combines the keys of the counter into a list. If key = "01", keys_as_list = [0, 1]
-        for index in key:
-            keys_as_list.append(int(index))
+        keys_as_list: List[int] = list(map(int, key))
 
         # Gets the number of counts of the key
         # counter = collections.Counter({"01": 48, "11": 52})["01"] -> 48
