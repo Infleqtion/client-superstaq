@@ -12,7 +12,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union, overload
 
 import general_superstaq as gss
 import qiskit
@@ -89,6 +89,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
 
             if qubit_indices:
                 counts = qiskit.result.marginal_counts(counts, indices=qubit_indices)
+
             results_list.append(
                 {
                     "success": result["status"] == "Done",
@@ -115,7 +116,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         raises an exception if it is.
 
         Raises:
-            SuperstaqUnsuccessfulJobException: If the job been cancelled or has
+            SuperstaqUnsuccessfulJobException: If the job has been cancelled or has
         failed.
             SuperstaqServerException: If unable to get the status of the job from the API.
         """
@@ -156,18 +157,26 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 self._overall_status = temp_status
                 return
 
+    @overload
+    def _get_circuits(self, circuit_type: str, index: int) -> qiskit.QuantumCircuit:
+        ...
+
+    @overload
+    def _get_circuits(self, circuit_type: str, index: None = None) -> List[qiskit.QuantumCircuit]:
+        ...
+
     def _get_circuits(
         self, circuit_type: str, index: Optional[int] = None
     ) -> Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]:
-        """Retrieves the corresponding circuits to `circuit_type`.
+        """Retrieves the corresponding circuit(s) to `circuit_type`.
 
         Args:
             circuit_type: The kind of circuits to retrieve. Either "input_circuit" or
                 "compiled_circuit".
-            index: The index of the circuit to retrieve.
+            index: An optional index of the circuit to retrieve.
 
         Returns:
-            A list of circuits.
+            A single circuit or list of circuits.
         """
         if circuit_type not in ("input_circuit", "compiled_circuit"):
             raise ValueError("The circuit type requested is invalid.")
@@ -187,16 +196,24 @@ class SuperstaqJob(qiskit.providers.JobV1):
             serialized_circuits = [self._job_info[job_id][circuit_type] for job_id in job_ids]
             return [qss.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
 
+    @overload
+    def compiled_circuits(self, index: int) -> qiskit.QuantumCircuit:
+        ...
+
+    @overload
+    def compiled_circuits(self, index: None = None) -> List[qiskit.QuantumCircuit]:
+        ...
+
     def compiled_circuits(
         self, index: Optional[int] = None
     ) -> Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]:
-        """Gets the compiled circuits that were submitted for this job.
+        """Gets the compiled circuit(s) that were submitted for this job.
 
         Args:
-            index: The index of the circuit to retrieve.
+            index: An optional index of the circuit to retrieve.
 
         Returns:
-            A list of compiled circuits.
+            A single compiled circuit or list of compiled circuits.
         """
         compiled_circuits = self._get_circuits("compiled_circuit", index)
         input_circuits = self._get_circuits("input_circuit", index)
@@ -205,16 +222,24 @@ class SuperstaqJob(qiskit.providers.JobV1):
 
         return compiled_circuits
 
+    @overload
+    def input_circuits(self, index: int) -> qiskit.QuantumCircuit:
+        ...
+
+    @overload
+    def input_circuits(self, index: None = None) -> List[qiskit.QuantumCircuit]:
+        ...
+
     def input_circuits(
         self, index: Optional[int] = None
     ) -> Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]:
-        """Gets the original circuits that were submitted for this job.
+        """Gets the original circuit(s) that were submitted for this job.
 
         Args:
-            index: The index of the circuit to retrieve.
+            index: An optional index of the circuit to retrieve.
 
         Returns:
-            A list of the submitted input circuits.
+            The input circuit or list of submitted input circuits.
         """
         return self._get_circuits("input_circuit", index)
 
