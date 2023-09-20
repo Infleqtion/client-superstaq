@@ -91,13 +91,10 @@ def counts_to_results(
         # If collections.Counter({"01": 48, "11": 52}), [0, 1] is appended to 'samples` 48 times and
         # [1, 1] is appended to 'samples' 52 times
         if int(counts_of_key) != counts_of_key:
-            print(
-                warnings.warn(
-                    "The raw counts are fractional due to measurement error mitigation; please use "
-                    "service.get_counts to see raw results.",
-                    UserWarning,
-                    stacklevel=2,
-                )
+            warnings.warn(
+                "The raw counts are fractional due to measurement error mitigation; please use "
+                "service.get_counts to see raw results.",
+                stacklevel=2,
             )
 
         counts_of_key = int(counts_of_key)
