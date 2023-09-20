@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Represents a job created via the Superstaq API."""
+import collections
 import time
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union, overload
+from typing import Any, Dict, Optional, Sequence, List, Tuple, Union, overload
 
 import cirq
 import general_superstaq as gss
@@ -322,20 +323,20 @@ class Job:
 
     @overload
     def counts(
-        self, index: int, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+        self, index: int, timeout_seconds: int = 7200, polling_seconds: float = 1.0,  qubit_indices: Optional[Sequence[int]] = None,
     ) -> Dict[str, int]:
         ...
 
     @overload
     def counts(
-        self, index: None = None, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+        self, index: None = None, timeout_seconds: int = 7200, polling_seconds: float = 1.0,  qubit_indices: Optional[Sequence[int]] = None,
     ) -> Union[
         Dict[str, int], List[Dict[str, int]]
     ]:  # Change return to just `List[Dict[str, int]]` after deprecation
         ...
 
     def counts(
-        self, index: Optional[int] = None, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+        self, index: Optional[int] = None, timeout_seconds: int = 7200, polling_seconds: float = 1.0, qubit_indices: Optional[Sequence[int]] = None,
     ) -> Union[Dict[str, int], List[Dict[str, int]]]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
 
@@ -343,6 +344,7 @@ class Job:
             index: The index of the circuit which the counts correspond to.
             timeout_seconds: The total number of seconds to poll for.
             polling_seconds: The interval with which to poll.
+            qubit_indices: If provided, only include measurements counts of these qubits.
 
         Returns:
             A dictionary containing the frequency counts of the measurements.
@@ -405,3 +407,20 @@ class Job:
 
     def _value_equality_values_(self) -> Tuple[str, Dict[str, Any]]:
         return self._job_id, self._job
+
+
+def _get_marginal_counts(counts: Dict[str, int], indices: Sequence[int]) -> Dict[str, int]:
+    """Compute a marginal distribution, accumulating total counts on specific bits (by index).
+
+    Args:
+        counts: The dictionary containing all the counts.
+        indices: The indices of the bits on which to accumulate counts.
+
+    Returns:
+        A dictionary of counts on the target indices.
+    """
+    target_counts: Dict[str, int] = collections.defaultdict(int)
+    for bitstring, count in counts.items():
+        target_key = "".join([bitstring[index] for index in indices])
+        target_counts[target_key] += count
+    return dict(target_counts)
