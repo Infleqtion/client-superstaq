@@ -58,7 +58,9 @@ def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
 
 
 def counts_to_results(
-    counter: Dict[str, int], circuit: cirq.AbstractCircuit, param_resolver: cirq.ParamResolver
+    counter: Union[Dict[str, int], Dict[str, float]],
+    circuit: cirq.AbstractCircuit,
+    param_resolver: cirq.ParamResolver,
 ) -> cirq.ResultDict:
     """Converts a `collections.Counter` to a `cirq.ResultDict`.
 
@@ -91,6 +93,17 @@ def counts_to_results(
         # Appends all the keys onto 'samples' list number-of-counts-in-the-key times
         # If collections.Counter({"01": 48, "11": 52}), [0, 1] is appended to 'samples` 48 times and
         # [1, 1] is appended to 'samples' 52 times
+        if int(counts_of_key) != counts_of_key:
+            print(
+                warnings.warn(
+                    "The raw counts are fractional due to measurement error mitigation; please use "
+                    "service.get_counts to see raw results.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            )
+
+        counts_of_key = int(counts_of_key)
         for _ in range(counts_of_key):
             samples.append(keys_as_list)
 
