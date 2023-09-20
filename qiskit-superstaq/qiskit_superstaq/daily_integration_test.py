@@ -250,17 +250,6 @@ def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvi
     assert job.result().get_counts() == {"11": 1}
 
 
-def test_submit_to_hilbert(provider: qss.SuperstaqProvider) -> None:
-    qc = qiskit.QuantumCircuit(2, 2)
-    qc.x(0)
-    qc.cx(0, 1)
-    qc.measure(0, 0)
-    qc.measure(1, 1)
-
-    job = provider.get_backend("cq_hilbert_qpu").run(qc, shots=100)
-    assert sum(job.result().get_counts().values()) == 100
-
-
 def test_submit_to_hilbert_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776"""
     backend = provider.get_backend("cq_hilbert_qpu")
@@ -276,8 +265,10 @@ def test_submit_to_hilbert_qubit_sorting(provider: qss.SuperstaqProvider) -> Non
     qc.append(grdg, range(num_qubits))
     qc.measure_all()
 
-    job = backend.run(qc, 400, verbatim=True, route=False)
-    assert sum(job.result().get_counts().values()) == 400
+    job = backend.run(qc, 100, verbatim=True, route=False)
+    counts = job.result().get_counts()
+    assert sum(counts.values()) == 100
+    assert max(counts, key=counts.__getitem__) == ("0" * (num_qubits - 3)) + "100"
 
 
 def test_submit_qubo(provider: qss.SuperstaqProvider) -> None:

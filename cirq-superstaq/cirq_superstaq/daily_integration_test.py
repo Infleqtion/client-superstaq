@@ -287,15 +287,6 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
     assert job.counts() == {"11": 1}
 
 
-def test_submit_to_hilbert(service: css.Service) -> None:
-    q0 = cirq.LineQubit(0)
-    q1 = cirq.LineQubit(1)
-    circuit = cirq.Circuit(cirq.X(q0), cirq.CNOT(q0, q1), cirq.measure(q0, q1))
-
-    job = service.create_job(circuit=circuit, repetitions=100, target="cq_hilbert_qpu")
-    assert sum(job.counts().values()) == 100
-
-
 def test_submit_to_hilbert_qubit_sorting(service: css.Service) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776"""
     target = "cq_hilbert_qpu"
@@ -309,9 +300,11 @@ def test_submit_to_hilbert_qubit_sorting(service: css.Service) -> None:
     )
 
     job = service.create_job(
-        circuit=circuit, repetitions=400, verbatim=True, route=False, target=target
+        circuit=circuit, repetitions=100, verbatim=True, route=False, target=target
     )
-    assert sum(job.counts().values()) == 400
+    counts = job.counts()
+    assert sum(counts.values()) == 100
+    assert max(counts, key=counts.__getitem__) == "001" + ("0" * (num_qubits - 3))
 
 
 def test_submit_qubo(service: css.Service) -> None:
