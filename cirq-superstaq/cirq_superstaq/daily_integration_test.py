@@ -307,6 +307,24 @@ def test_submit_to_hilbert_qubit_sorting(service: css.Service) -> None:
     assert max(counts, key=counts.__getitem__) == "001" + ("0" * (num_qubits - 3))
 
 
+def test_submit_to_hilbert_qubit_sorting(service: css.Service) -> None:
+    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776"""
+    target = "cq_hilbert_qpu"
+    num_qubits = service.target_info(target)["num_qubits"]
+    qubits = cirq.LineQubit.range(num_qubits)
+    circuit = cirq.Circuit(
+        css.ParallelRGate(np.pi / 2, 0.0, 24).on(*qubits),
+        cirq.rz(np.pi).on(qubits[2]),
+        css.ParallelRGate(-np.pi / 2, 0.0, 24).on(*qubits),
+        cirq.measure(*qubits),
+    )
+
+    job = service.create_job(
+        circuit=circuit, repetitions=400, verbatim=True, route=False, target=target
+    )
+    assert sum(job.counts().values()) == 400
+
+
 def test_submit_qubo(service: css.Service) -> None:
     test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
     serialized_result = service.submit_qubo(
