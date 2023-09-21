@@ -68,9 +68,14 @@ def test_counts_to_results() -> None:
     )
     assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
 
-    with pytest.warns(UserWarning, match="raw counts are fractional"):
+    with pytest.warns(UserWarning, match="raw counts contain fractional"):
         result = css.service.counts_to_results(
             {"00": 50.1, "11": 49.9}, circuit, cirq.ParamResolver({})
+        )
+
+    with pytest.warns(UserWarning, match="raw counts contain negative"):
+        result = css.service.counts_to_results(
+            {"00": -50.1, "11": 99.9}, circuit, cirq.ParamResolver({})
         )
 
 

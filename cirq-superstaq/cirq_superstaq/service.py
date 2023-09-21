@@ -81,8 +81,14 @@ def counts_to_results(
     samples: List[List[int]] = []
     if not all(counts == int(counts) for counts in counter.values()):
         warnings.warn(
-            "The raw counts are fractional due to measurement error mitigation; please use "
-            "service.get_counts to see raw results.",
+            "The raw counts contain fractional values due to measurement error mitigation; please "
+            "use service.get_counts to see raw results.",
+            stacklevel=2,
+        )
+    if not all(counts >= 0 for counts in counter.values()):
+        warnings.warn(
+            "The raw counts contain negative values due to measurement error mitigation; please "
+            "use service.get_counts to see raw results.",
             stacklevel=2,
         )
     for key, counts_of_key in counter.items():
