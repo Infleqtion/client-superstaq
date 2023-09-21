@@ -11,7 +11,7 @@ import qiskit
 import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
-    from qisskit_superstaq.conftest import MockSuperstaqProvider
+    from qiskit_superstaq.conftest import MockSuperstaqProvider
 
 
 def mock_response(status_str: str) -> Dict[str, Union[str, int, Dict[str, int]]]:
