@@ -194,15 +194,16 @@ def test_job_to_dict(job: css.job.Job) -> None:
 
 def test_job_counts(job: css.job.Job) -> None:
     job_dict = {
-        "data": {"histogram": {"11": 1}},
+        "data": {"histogram": {"10": 1}},
         "num_qubits": 2,
-        "samples": {"11": 1},
+        "samples": {"10": 1},
         "shots": 1,
         "status": "Done",
         "target": "ss_unconstrained_simulator",
     }
     with mocked_get_job_requests(job_dict):
-        assert job.counts() == {"11": 1}
+        assert job.counts() == {"10": 1}
+        assert job.counts(qubit_indices=[0]) == ({"1": 1})
 
 
 def test_job_counts_failed(job: css.job.Job) -> None:
@@ -270,3 +271,9 @@ def test_job_results_poll_failure(mock_sleep: mock.MagicMock, job: css.job.Job) 
         with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="too many qubits"):
             _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
     assert mock_sleep.call_count == 5
+
+
+def test_get_marginal_counts() -> None:
+    counts_dict = {"10": 50, "11": 50}
+    indices = [0]
+    assert css.job._get_marginal_counts(counts_dict, indices) == ({"1": 100})
