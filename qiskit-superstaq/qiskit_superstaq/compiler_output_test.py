@@ -62,10 +62,73 @@ def test_compiler_output_repr() -> None:
         == f"""CompilerOutput({circuit!r}, {{0: 1}}, None, None, None, None)"""
     )
 
+    assert qss.compiler_output.CompilerOutput(circuit, {0: 1}).__repr_pretty__() == (
+        "CompilerOutput(\n"
+        f"    {circuit!r},\n"
+        "    {0: 1},\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        ")\n"
+    )
+
     circuits = [circuit, circuit]
     assert (
         repr(qss.compiler_output.CompilerOutput(circuits, [{0: 1}, {1: 0}]))
         == f"CompilerOutput({circuits!r}, [{{0: 1}}, {{1: 0}}], None, None, None, None)"
+    )
+    assert qss.compiler_output.CompilerOutput(circuits, [{0: 1}, {1: 0}]).__repr_pretty__() == (
+        "CompilerOutput(\n"
+        "    [\n"
+        f"        {circuits[0]!r},\n"
+        "        \n"
+        f"        {circuits[1]!r},\n"
+        "    ],\n"
+        "    [{0: 1}, {1: 0}],\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        ")\n"
+    )
+
+
+def test_compiler_output_pretty_repr() -> None:  # pragma: no cover, test requires qtrl installation
+    # Tests more involved "pretty" repr
+    qtrl = pytest.importorskip("qtrl", reason="qtrl not installed")
+
+    circuit = qiskit.QuantumCircuit(4)
+    circuits = [circuit, circuit]
+
+    mock_pulse = qtrl.sequencer.UniquePulse(
+        envelope=qtrl.sequencer.VirtualEnvelope(0.0, 0.0),
+        freq=0.0,
+        channel=0.0,
+        subchannel=0.0,
+    )
+    assert qss.compiler_output.CompilerOutput(
+        circuits,
+        [{0: 1}, {1: 0}],
+        pulse_lists=[mock_pulse],
+    ).__repr_pretty__() == (
+        "CompilerOutput(\n"
+        "    [\n"
+        f"        {circuits[0]!r},\n"
+        "        \n"
+        f"        {circuits[1]!r},\n"
+        "    ],\n"
+        "    [{0: 1}, {1: 0}],\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        "    [\n"
+        "        UniquePulse(\n"
+        "            envelope=VirtualEnvelope(phase=0.0, width=0.0), freq=0.0, channel=0.0, "
+        "subchannel=0.0\n"
+        "        )\n"
+        "    ],\n"
+        ")\n"
     )
 
 

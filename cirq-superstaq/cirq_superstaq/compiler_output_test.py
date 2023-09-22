@@ -83,11 +83,99 @@ def test_compiler_output_repr() -> None:
         repr(css.compiler_output.CompilerOutput(circuit, qubit_map))
         == f"CompilerOutput({circuit!r}, {{}}, None, None, None, None, None)"
     )
+    assert (
+        css.compiler_output.CompilerOutput(circuit, qubit_map).__repr_pretty__()
+        == f"CompilerOutput({circuit!r}, {{}}, None, None, None, None, None)\n"
+    )
 
     circuits = [circuit, circuit]
     assert (
         repr(css.compiler_output.CompilerOutput(circuits, [qubit_map]))
         == f"CompilerOutput({circuits!r}, [{{}}], None, None, None, None, None)"
+    )
+    assert css.compiler_output.CompilerOutput(
+        circuits, [qubit_map, qubit_map]
+    ).__repr_pretty__() == (
+        "CompilerOutput("
+        "\n    [cirq.Circuit(),  cirq.Circuit()],\n"
+        "    [{}, {}],\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        ")\n"
+    )
+
+    circuits = [circuit] * 10
+    assert css.compiler_output.CompilerOutput(
+        circuits, [qubit_map, qubit_map]
+    ).__repr_pretty__() == (
+        "CompilerOutput(\n"
+        "    [\n"
+        f"        {circuits[0]!r},\n"
+        "        \n"
+        f"        {circuits[1]!r},\n"
+        "        \n"
+        f"        {circuits[2]!r},\n"
+        "        \n"
+        f"        {circuits[3]!r},\n"
+        "        \n"
+        f"        {circuits[4]!r},\n"
+        "        \n"
+        f"        {circuits[5]!r},\n"
+        "        \n"
+        f"        {circuits[6]!r},\n"
+        "        \n"
+        f"        {circuits[7]!r},\n"
+        "        \n"
+        f"        {circuits[8]!r},\n"
+        "        \n"
+        f"        {circuits[9]!r},\n"
+        "    ],\n"
+        "    [{}, {}],\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        ")\n"
+    )
+
+
+def test_compiler_output_pretty_repr() -> None:  # pragma: no cover; test requires qtrl installation
+    # Tests more involved "pretty" repr
+    qtrl = pytest.importorskip("qtrl", reason="qtrl not installed")
+    mock_pulse = qtrl.sequencer.UniquePulse(
+        envelope=qtrl.sequencer.VirtualEnvelope(0.0, 0.0),
+        freq=0.0,
+        channel=0.0,
+        subchannel=0.0,
+    )
+
+    circuit = cirq.Circuit()
+    qubit_map: Dict[cirq.Qid, cirq.Qid] = {}
+
+    circuits = [circuit, circuit]
+    assert css.compiler_output.CompilerOutput(
+        circuits,
+        [qubit_map],
+        pulse_lists=[mock_pulse],
+    ).__repr_pretty__() == (
+        "CompilerOutput(\n"
+        f"    [{circuits[0]!r},  {circuits[1]!r}],\n"
+        "    [{}],\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        "    None,\n"
+        "    [\n"
+        "        UniquePulse(\n"
+        "            envelope=VirtualEnvelope(phase=0.0, width=0.0), freq=0.0, channel=0.0, "
+        "subchannel=0.0\n"
+        "        )\n"
+        "    ],\n"
+        ")\n"
     )
 
 

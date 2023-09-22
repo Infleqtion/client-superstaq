@@ -8,6 +8,7 @@ from general_superstaq.superstaq_exceptions import (
 )
 
 from . import (
+    pretty_printing,
     qubo,
     serialization,
     service,
@@ -25,6 +26,7 @@ __all__ = [
     "SuperstaqException",
     "SuperstaqUnsuccessfulJobException",
     "SuperstaqServerException",
+    "pretty_printing",
     "qubo",
     "serialization",
     "service",
