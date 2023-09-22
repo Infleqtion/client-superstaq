@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Represents a job created via the Superstaq API."""
+import collections
 import time
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 import cirq
 import general_superstaq as gss
@@ -193,12 +194,18 @@ class Job:
 
         return css.deserialize_circuits(self._job["input_circuit"])[0]
 
-    def counts(self, timeout_seconds: int = 7200, polling_seconds: float = 1.0) -> Dict[str, int]:
+    def counts(
+        self,
+        timeout_seconds: int = 7200,
+        polling_seconds: float = 1.0,
+        qubit_indices: Optional[Sequence[int]] = None,
+    ) -> Dict[str, int]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
 
         Args:
             timeout_seconds: The total number of seconds to poll for.
             polling_seconds: The interval with which to poll.
+            qubit_indices: If provided, only include measurements counts of these qubits.
 
         Returns:
             A dictionary containing the frequency counts of the measurements.
@@ -219,7 +226,10 @@ class Job:
             time_waited_seconds += polling_seconds
 
         self._check_if_unsuccessful()
-        return self._job["samples"]
+        counts = self._job["samples"]
+        if qubit_indices:
+            counts = _get_marginal_counts(counts, qubit_indices)
+        return counts
 
     def to_dict(self) -> Dict[str, Any]:
         """Refreshes and returns job information.
@@ -243,3 +253,20 @@ class Job:
 
     def _value_equality_values_(self) -> Tuple[str, Dict[str, Any]]:
         return self._job_id, self._job
+
+
+def _get_marginal_counts(counts: Dict[str, int], indices: Sequence[int]) -> Dict[str, int]:
+    """Compute a marginal distribution, accumulating total counts on specific bits (by index).
+
+    Args:
+        counts: The dictionary containing all the counts.
+        indices: The indices of the bits on which to accumulate counts.
+
+    Returns:
+        A dictionary of counts on the target indices.
+    """
+    target_counts: Dict[str, int] = collections.defaultdict(int)
+    for bitstring, count in counts.items():
+        target_key = "".join([bitstring[index] for index in indices])
+        target_counts[target_key] += count
+    return dict(target_counts)

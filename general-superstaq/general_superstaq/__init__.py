@@ -5,6 +5,7 @@ from general_superstaq.superstaq_exceptions import (
     SuperstaqException,
     SuperstaqServerException,
     SuperstaqUnsuccessfulJobException,
+    SuperstaqWarning,
 )
 
 from . import (
@@ -25,6 +26,7 @@ __all__ = [
     "SuperstaqException",
     "SuperstaqUnsuccessfulJobException",
     "SuperstaqServerException",
+    "SuperstaqWarning",
     "qubo",
     "serialization",
     "service",

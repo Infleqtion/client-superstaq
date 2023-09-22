@@ -51,6 +51,26 @@ def test_general_superstaq_exception_str() -> None:
     assert str(ex) == "err. (Status code: 501)"
 
 
+def test_warning_from_server() -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+
+    warning = {"message": "WARNING!", "category": "SuperstaqWarning"}
+
+    with mock.patch("requests.get", ok=True) as mock_request:
+        mock_request.return_value.json = lambda: {"abc": 123, "warnings": [warning]}
+        with pytest.warns(gss.SuperstaqWarning, match="WARNING!"):
+            assert client.get_request("/endpoint") == {"abc": 123}
+
+    with mock.patch("requests.post", ok=True) as mock_request:
+        mock_request.return_value.json = lambda: {"abc": 123, "warnings": [warning, warning]}
+        with pytest.warns(gss.SuperstaqWarning, match="WARNING!"):
+            assert client.post_request("/endpoint", {}) == {"abc": 123}
+
+
 @pytest.mark.parametrize("invalid_url", ("url", "http://", "ftp://", "http://"))
 def test_superstaq_client_invalid_remote_host(invalid_url: str) -> None:
     with pytest.raises(AssertionError, match="not a valid url"):

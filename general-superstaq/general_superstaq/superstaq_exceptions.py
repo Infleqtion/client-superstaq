@@ -62,3 +62,10 @@ class SuperstaqServerException(SuperstaqException):
 
         self.status_code = status_code
         super().__init__(message=message)
+
+
+class SuperstaqWarning(Warning):
+    """A warning issued by the server."""
+
+    def __init__(self, message: str) -> None:  # Overridden to limit to one argument
+        super().__init__(message)

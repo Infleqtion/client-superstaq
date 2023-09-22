@@ -58,7 +58,9 @@ def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
 
 
 def counts_to_results(
-    counter: Dict[str, int], circuit: cirq.AbstractCircuit, param_resolver: cirq.ParamResolver
+    counter: Mapping[str, float],
+    circuit: cirq.AbstractCircuit,
+    param_resolver: cirq.ParamResolver,
 ) -> cirq.ResultDict:
     """Converts a `collections.Counter` to a `cirq.ResultDict`.
 
@@ -77,20 +79,27 @@ def counts_to_results(
     combine_key_names = "".join(measurement_key_names)
 
     samples: List[List[int]] = []
-    for key in counter.keys():
-        keys_as_list: List[int] = []
-
+    if not all(counts == int(counts) for counts in counter.values()):
+        warnings.warn(
+            "The raw counts contain fractional values due to measurement error mitigation; please "
+            "use service.get_counts to see raw results.",
+            stacklevel=2,
+        )
+    if not all(counts >= 0 for counts in counter.values()):
+        warnings.warn(
+            "The raw counts contain negative values due to measurement error mitigation; please "
+            "use service.get_counts to see raw results.",
+            stacklevel=2,
+        )
+    for key, counts_of_key in counter.items():
         # Combines the keys of the counter into a list. If key = "01", keys_as_list = [0, 1]
-        for index in key:
-            keys_as_list.append(int(index))
+        keys_as_list: List[int] = list(map(int, key))
 
-        # Gets the number of counts of the key
-        # counter = collections.Counter({"01": 48, "11": 52})["01"] -> 48
-        counts_of_key = counter[key]
-
-        # Appends all the keys onto 'samples' list number-of-counts-in-the-key times
-        # If collections.Counter({"01": 48, "11": 52}), [0, 1] is appended to 'samples` 48 times and
-        # [1, 1] is appended to 'samples' 52 times
+        # Gets execution counts per bitstring, e.g., collections.Counter({"01": 48, "11": 52})["01"]
+        # = 48. Per execution shot, appends bitstring to `samples` list. E.g., if counter is
+        # collections.Counter({"01": 48, "11": 52}), [0, 1] is appended 48 times and [1, 1] is
+        # appended 52 times.
+        counts_of_key = round(counts_of_key)
         for _ in range(counts_of_key):
             samples.append(keys_as_list)
 
