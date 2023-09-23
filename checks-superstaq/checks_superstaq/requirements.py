@@ -194,9 +194,10 @@ def _get_latest_version(package: str, silent: bool) -> str:
 def _get_local_version(package: str) -> Optional[str]:
     """Retrieve the local version of a package (if installed)."""
     base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
-    if importlib.util.find_spec(base_package):
+    try:
         return importlib.metadata.version(base_package)
-    return None
+    except importlib.metadata.PackageNotFoundError:
+        return None
 
 
 def _get_pypi_version(package: str, silent: bool) -> Optional[str]:
