@@ -100,7 +100,7 @@ def _inspect_req_file(
     if needs_cleanup and not silent:
         print(check_utils.failure(f"{req_file} is not sorted."))
 
-    if not only_sort and _can_connect_to_pypi(silent):
+    if not only_sort:
         needs_cleanup |= _check_package_versions(
             req_file, requirements, upstream_match, silent, strict=True
         )
@@ -144,18 +144,6 @@ def _sort_requirements(requirements: List[str]) -> Tuple[bool, List[str]]:
     return needs_cleanup, sorted_requirements
 
 
-@functools.cache
-def _can_connect_to_pypi(silent: bool) -> bool:
-    try:
-        urllib.request.urlopen("https://pypi.org/", timeout=1)
-        return True
-    except urllib.error.URLError:
-        if not silent:
-            warning = "Cannot connect to PyPI to identify package versions to pin."
-            print(check_utils.warning(warning))
-        return False
-
-
 def _check_package_versions(
     req_file: str, requirements: List[str], match: str, silent: bool, strict: bool
 ) -> bool:
@@ -173,7 +161,7 @@ def _check_package_versions(
             # this is not an upstream package
             continue
 
-        latest_version = _get_latest_version(package)
+        latest_version = _get_latest_version(package, silent)
         desired_req = f"{package}~={latest_version}"
         latest_version_is_required = desired_req == req
         up_to_date &= bool(latest_version_is_required)
@@ -194,24 +182,40 @@ def _check_package_versions(
 
 
 @functools.lru_cache()
-def _get_latest_version(package: str) -> str:
+def _get_latest_version(package: str, silent: bool) -> str:
     """Retrieve the latest version of a package."""
     base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
-    pypi_url = f"https://pypi.org/pypi/{base_package}/json"
-    pypi_version = json.loads(urllib.request.urlopen(pypi_url).read().decode())["info"]["version"]
-
-    # If the package is installed loacally and the local version is newer, return that instead
-    if local_version := _get_local_version(package):
+    local_version = _get_local_version(base_package)
+    pypi_version = _get_pypi_version(base_package, silent)
+    if local_version and pypi_version:
         return max(pypi_version, local_version, key=packaging.version.parse)
-    return pypi_version
+    if not local_version:
+        return pypi_version
+    if not pypi_version:
+        return local_version
+    raise ModuleNotFoundError(f"Package not installed or found on PyPI: {base_package}")
 
 
 def _get_local_version(package: str) -> Optional[str]:
-    """Retrieve the local version of a package, if it's installed."""
+    """Retrieve the local version of a package (if installed)."""
     base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
     if importlib.util.find_spec(base_package):
         return importlib.metadata.version(base_package)
     return None
+
+
+def _get_pypi_version(package: str, silent: bool) -> Optional[str]:
+    """Retrieve the latest version of a package on PyPI (if found)."""
+    try:
+        pypi_url = f"https://pypi.org/pypi/{package}/json"
+        package_info = urllib.request.urlopen(pypi_url).read().decode()
+        pypi_version = json.loads(package_info)["info"]["version"]
+        return pypi_version
+    except urllib.error.URLError:
+        if not silent:
+            warning = f"Cannot find packae on PyPI: {package}."
+            print(check_utils.warning(warning))
+        return None
 
 
 def _inspect_local_version(package: str, latest_version: str) -> None:
