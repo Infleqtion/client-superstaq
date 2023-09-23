@@ -184,11 +184,10 @@ def _check_package_versions(
 @functools.lru_cache()
 def _get_latest_version(package: str, silent: bool) -> str:
     """Retrieve the latest version of a package."""
-    base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
-    local_version = _get_local_version(base_package)
-    pypi_version = _get_pypi_version(base_package, silent)
+    local_version = _get_local_version(package)
+    pypi_version = _get_pypi_version(package, silent)
     if not local_version and not pypi_version:
-        raise ModuleNotFoundError(f"Package not installed or found on PyPI: {base_package}")
+        raise ModuleNotFoundError(f"Package not installed or found on PyPI: {package}")
     return max(pypi_version or "0.0.0", local_version or "0.0.0", key=packaging.version.parse)
 
 
@@ -202,14 +201,15 @@ def _get_local_version(package: str) -> Optional[str]:
 
 def _get_pypi_version(package: str, silent: bool) -> Optional[str]:
     """Retrieve the latest version of a package on PyPI (if found)."""
+    base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
+    pypi_url = f"https://pypi.org/pypi/{base_package}/json"
     try:
-        pypi_url = f"https://pypi.org/pypi/{package}/json"
         package_info = urllib.request.urlopen(pypi_url).read().decode()
         pypi_version = json.loads(package_info)["info"]["version"]
         return pypi_version
     except urllib.error.URLError:
         if not silent:
-            warning = f"Cannot find packae on PyPI: {package}."
+            warning = f"Cannot find packae on PyPI: {base_package}."
             print(check_utils.warning(warning))
         return None
 
