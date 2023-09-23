@@ -187,13 +187,9 @@ def _get_latest_version(package: str, silent: bool) -> str:
     base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
     local_version = _get_local_version(base_package)
     pypi_version = _get_pypi_version(base_package, silent)
-    if local_version and pypi_version:
-        return max(pypi_version, local_version, key=packaging.version.parse)
-    if not local_version:
-        return pypi_version
-    if not pypi_version:
-        return local_version
-    raise ModuleNotFoundError(f"Package not installed or found on PyPI: {base_package}")
+    if not local_version and not pypi_version:
+        raise ModuleNotFoundError(f"Package not installed or found on PyPI: {base_package}")
+    return max(pypi_version or "0.0.0", local_version or "0.0.0", key=packaging.version.parse)
 
 
 def _get_local_version(package: str) -> Optional[str]:
