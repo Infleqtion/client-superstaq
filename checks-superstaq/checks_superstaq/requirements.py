@@ -9,7 +9,7 @@ import subprocess
 import sys
 import textwrap
 import urllib.request
-from typing import Dict, Iterable, List, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import packaging.version
 
@@ -198,36 +198,33 @@ def _check_package_versions(
 
 @functools.lru_cache()
 def _get_latest_version(package: str) -> str:
+    """Retrieve the latest version of a package."""
     base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
     pypi_url = f"https://pypi.org/pypi/{base_package}/json"
     pypi_version = json.loads(urllib.request.urlopen(pypi_url).read().decode())["info"]["version"]
 
     # If the package is installed loacally and the local version is newer, return that instead
-    if importlib.util.find_spec(base_package):
-        local_version = importlib.metadata.version(base_package)
+    if local_version := _get_local_version(package):
         return max(pypi_version, local_version, key=packaging.version.parse)
     return pypi_version
 
 
-def _inspect_local_version(package: str, latest_version: str) -> None:
+def _get_local_version(package: str) -> Optional[str]:
+    """Retrieve the local version of a package, if it's installed."""
     base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
-    try:
-        installed_info = subprocess.check_output(
-            [sys.executable, "-m", "pip", "show", base_package],
-            cwd=check_utils.root_dir,
-            text=True,
-        ).split()
-        installed_version = installed_info[installed_info.index("Version:") + 1]
-        # check that installed_version and latest_version have the same minor version: X.Y.*
-        assert installed_version.split(".")[:2] == latest_version.split(".")[:2]
-    except AssertionError:
+    if importlib.util.find_spec(base_package):
+        return importlib.metadata.version(base_package)
+    return None
+
+
+def _inspect_local_version(package: str, latest_version: str) -> None:
+    """Check that the package is installed with the same minor version (X.Y.*) as latest_version."""
+    installed_version = _get_local_version(package)
+    if not installed_version or installed_version.split(".")[:2] != latest_version.split(".")[:2]:
         warning = f"WARNING: locally installed {package} version is not up to date."
         suggestion = f"Try calling 'python -m pip install --upgrade {package}'."
         print(check_utils.warning(warning))
         print(check_utils.warning(suggestion))
-    except subprocess.CalledProcessError:
-        # pip returned a non-zero exit status; let pip print its own error message
-        pass
 
 
 def _cleanup(
