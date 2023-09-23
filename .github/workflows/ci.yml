@@ -232,7 +232,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks
+          pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]
       - name: Requirements check
         run: |
           check/requirements.py
