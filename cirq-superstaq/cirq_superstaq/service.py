@@ -331,13 +331,22 @@ class Service(gss.service.Service):
             return f"${balance:,.2f}"
         return balance
 
-    def get_targets(self) -> Dict[str, List[str]]:
-        """Gets a list of available, unavailable, and retired targets.
+    def get_targets(self, simulator: Optional[bool], **kwargs) -> Dict[str, List[str]]:
+        """Gets a list of Superstaq targets along with their status information.
+
+        Args:
+            simulator: Optional flag to restrict the list of targets to simulators.
+            kwargs: Optional desired target filters.
+                - supports_submit: Boolean flag to only return targets that (don't) allow circuit submissions.
+                - supports_submit_qubo: Boolean flag to only return targets that (don't) allow qubo submissions.
+                - supports_compile: Boolean flag to return targets that (don't) support circuit compilation.
+                - available: Boolean flag to only return targets that are (not) available to use.
+                - retired: Boolean flag to only return targets that are or are not retired.
 
         Returns:
-            A list of Superstaq targets.
+            A list of Superstaq targets (or filterd targets based on `kwargs`).
         """
-        return self._client.get_targets()["superstaq_targets"]
+        return self._client.get_targets(simulator, **kwargs)
 
     def resource_estimate(
         self, circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]], target: Optional[str] = None
