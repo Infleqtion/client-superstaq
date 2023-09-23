@@ -19,6 +19,7 @@ import textwrap
 import time
 import urllib
 import warnings
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Union
 
 import qubovert as qv
@@ -217,15 +218,53 @@ class _SuperstaqClient:
         """
         return self.post_request("/accept_terms_of_use", {"user_input": user_input})
 
-    def get_targets(self) -> Dict[str, Dict[str, List[str]]]:
+    def get_targets(self, simulator: Optional[bool], **kwargs) -> Dict[str, Dict[str, List[str]]]:
         """Makes a GET request to retrieve targets from the Superstaq API.
 
-        Gets a list of available, unavailable, and retired targets.
+        Args:
+            simulator: Optional flag to restrict the list of targets to simulators.
+            kwargs: Optional desired target filters.
+
+        Raises:
+            ValueError: If `kwargs` is not a valid keyword inquiry on the target.
 
         Returns:
-            A dictionary listing the targets.
+            A list of Superstaq targets (or filterd targets based on `kwargs`).
         """
-        return self.get_request("/targets")
+        superstaq_targets = self.get_request("/targets")["superstaq_targets"]
+        target_list = [
+            TargetInfo(target_name, properties)
+            for target_name, properties in superstaq_targets.items()
+        ]
+
+        if simulator is not None:
+            target_list = [
+                target_info
+                for target_info in target_list
+                if ("simulator" in target_info.target) == simulator
+            ]
+
+        if kwargs:
+            filtered_targets = []
+            for target in target_list:
+                for key in kwargs.keys():
+                    if key not in target.properties:
+                        raise ValueError(
+                            f"{key} is not a valid keyword inquiry on the target. Alternatively, "
+                            "please use the /target_info endpoint to retrieve more information on "
+                            "the target."
+                        )
+                if all(
+                    target.properties.get(key) == value
+                    for key, value in kwargs.items()
+                    if key in target.properties
+                ):
+                    filtered_targets.append(target)
+
+            if filtered_targets == []:
+                print("No targets match the specified criteria.")
+            return filtered_targets
+        return target_list
 
     def add_new_user(self, json_dict: Dict[str, str]) -> str:
         """Makes a POST request to Superstaq API to add a new user.
@@ -755,3 +794,17 @@ def find_api_key() -> str:
         "Try passing an 'api_key' variable, or setting your API key in the command line "
         "with SUPERSTAQ_API_KEY=..."
     )
+
+
+@dataclass
+class TargetInfo:
+    """A class to store data returned from a /get_targets request."""
+
+    target: str
+    properties: Dict[str, bool]
+
+    def __repr__(self) -> str:
+        properties_str = ",\n    ".join(
+            f"{property}={value}" for property, value in self.properties.items()
+        )
+        return f"TargetInfo(\n    target={self.target},\n    {properties_str}\n)"
