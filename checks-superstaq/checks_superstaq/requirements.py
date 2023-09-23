@@ -204,7 +204,7 @@ def _get_latest_version(package: str) -> str:
 
     # If the package is installed loacally and the local version is newer, return that instead
     if importlib.util.find_spec(base_package):
-        local_version = importlib.metadata(base_package).version
+        local_version = importlib.metadata.version(base_package)
         return max(pypi_version, local_version, key=packaging.version.parse)
     return pypi_version
 
