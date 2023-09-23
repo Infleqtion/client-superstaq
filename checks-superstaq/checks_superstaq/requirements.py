@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import fnmatch
 import functools
+import importlib.metadata
 import json
 import os
 import re
@@ -12,7 +13,6 @@ from typing import Dict, Iterable, List, Tuple, Union
 
 import packaging.version
 
-import general_superstaq as gss
 from checks_superstaq import check_utils
 
 
@@ -202,8 +202,11 @@ def _get_latest_version(package: str) -> str:
     pypi_url = f"https://pypi.org/pypi/{base_package}/json"
     pypi_version = json.loads(urllib.request.urlopen(pypi_url).read().decode())["info"]["version"]
 
-    # If the local gss version is newer, return that instead
-    return max(pypi_version, gss.__version__, key=packaging.version.parse)
+    # If the package is installed loacally and the local version is newer, return that instead
+    if importlib.util.find_spec(base_package):
+        local_version = importlib.metadata(base_package).version
+        return max(pypi_version, local_version, key=packaging.version.parse)
+    return pypi_version
 
 
 def _inspect_local_version(package: str, latest_version: str) -> None:
