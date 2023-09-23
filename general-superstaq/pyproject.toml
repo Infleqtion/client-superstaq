@@ -5,7 +5,7 @@ authors = [
   { name = "Superstaq development team", email = "superstaq@infleqtion.com" },
 ]
 readme = { file = "README.md", content-type = "text/markdown" }
-license = { text = "Apache 2" }
+license = { text = "Apache-2.0" }
 requires-python = ">=3.8.0"
 dynamic = ["version", "dependencies", "optional-dependencies"]
 
@@ -20,7 +20,7 @@ build-backend = "setuptools.build_meta"
 include = ["general_superstaq*"]
 
 [tool.setuptools.package-data]
-general_superstaq = ["py.typed", "check/checks-pyproject.toml"]
+general_superstaq = ["py.typed"]
 
 [tool.setuptools.dynamic.version]
 attr = "general_superstaq._version.__version__"

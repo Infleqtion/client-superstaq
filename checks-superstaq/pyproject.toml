@@ -1,6 +1,6 @@
 [project]
-name = "qiskit-superstaq"
-description = "The Qiskit module that provides tools and access to Superstaq."
+name = "checks-superstaq"
+description = "Check script tools for Superstaq."
 authors = [
   { name = "Superstaq development team", email = "superstaq@infleqtion.com" },
 ]
@@ -17,25 +17,19 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["qiskit_superstaq*"]
+include = ["checks_superstaq*"]
 
 [tool.setuptools.package-data]
-qiskit_superstaq = ["py.typed"]
+general_superstaq = ["checks_superstaq/checks-pyproject.toml"]
 
 [tool.setuptools.dynamic.version]
-attr = "qiskit_superstaq._version.__version__"
+attr = "checks_superstaq._version.__version__"
 
 [tool.setuptools.dynamic.dependencies]
 file = ["requirements.txt"]
-
-[tool.setuptools.dynamic.optional-dependencies.dev]
-file = ["dev-requirements.txt", "example-requirements.txt"]
-
-[tool.setuptools.dynamic.optional-dependencies.examples]
-file = ["example-requirements.txt"]
 
 [tool.isort]
 profile = "black"
 line_length = 100
 color_output = true
-known_first_party = "qiskit_superstaq"
+known_first_party = "checks_superstaq"
