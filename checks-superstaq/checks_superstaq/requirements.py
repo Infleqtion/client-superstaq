@@ -5,7 +5,6 @@ import importlib.metadata
 import json
 import os
 import re
-import subprocess
 import sys
 import textwrap
 import urllib.request
@@ -66,14 +65,11 @@ def run(
 
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
-    # check that we can connect to PyPI
-    can_connect_to_pypi = _check_pypy_connection(silent)
-
     # check all requirements files
     requirements_to_fix = {}
     for req_file in files:
         needs_cleanup, requirements = _inspect_req_file(
-            req_file, parsed_args.only_sort, can_connect_to_pypi, upstream_match, silent
+            req_file, parsed_args.only_sort, upstream_match, silent
         )
         if needs_cleanup:
             requirements_to_fix[req_file] = requirements
@@ -85,19 +81,8 @@ def run(
     return 0 if success else 1
 
 
-def _check_pypy_connection(silent: bool) -> bool:
-    try:
-        urllib.request.urlopen("https://pypi.org/", timeout=1)
-        return True
-    except urllib.error.URLError:
-        if not silent:
-            warning = "Cannot connect to PyPI to identify package versions to pin."
-            print(check_utils.warning(warning))
-        return False
-
-
 def _inspect_req_file(
-    req_file: str, only_sort: bool, can_connect_to_pypi: bool, upstream_match: str, silent: bool
+    req_file: str, only_sort: bool, upstream_match: str, silent: bool
 ) -> Tuple[bool, List[str]]:
     # read in requirements line-by-line
     with open(os.path.join(check_utils.root_dir, req_file), "r") as file:
@@ -115,7 +100,7 @@ def _inspect_req_file(
     if needs_cleanup and not silent:
         print(check_utils.failure(f"{req_file} is not sorted."))
 
-    if not only_sort and can_connect_to_pypi:
+    if not only_sort and _can_connect_to_pypi(silent):
         needs_cleanup |= _check_package_versions(
             req_file, requirements, upstream_match, silent, strict=True
         )
@@ -157,6 +142,18 @@ def _sort_requirements(requirements: List[str]) -> Tuple[bool, List[str]]:
     sorted_requirements = sorted(requirements, key=lambda req: _get_package_name(req).lower())
     needs_cleanup = requirements != sorted_requirements
     return needs_cleanup, sorted_requirements
+
+
+@functools.cache
+def _can_connect_to_pypi(silent: bool) -> bool:
+    try:
+        urllib.request.urlopen("https://pypi.org/", timeout=1)
+        return True
+    except urllib.error.URLError:
+        if not silent:
+            warning = "Cannot connect to PyPI to identify package versions to pin."
+            print(check_utils.warning(warning))
+        return False
 
 
 def _check_package_versions(
