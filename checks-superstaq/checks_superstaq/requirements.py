@@ -209,7 +209,7 @@ def _get_pypi_version(package: str, silent: bool) -> Optional[str]:
         return pypi_version
     except urllib.error.URLError:
         if not silent:
-            warning = f"Cannot find packae on PyPI: {base_package}."
+            warning = f"Cannot find package on PyPI: {base_package}."
             print(check_utils.warning(warning))
         return None
 
@@ -218,7 +218,7 @@ def _inspect_local_version(package: str, latest_version: str) -> None:
     """Check that the package is installed with the same minor version (X.Y.*) as latest_version."""
     local_version = _get_local_version(package)
     if not local_version or local_version.split(".")[:2] != latest_version.split(".")[:2]:
-        warning = f"WARNING: locally installed {package} version is not up to date."
+        warning = f"WARNING: locally installed version of {package} is not up to date."
         version_info = f"Local version is {local_version}, but latest version is {latest_version}."
         suggestion = f"Try calling 'python -m pip install --upgrade {package}'."
         print(check_utils.warning(warning))
