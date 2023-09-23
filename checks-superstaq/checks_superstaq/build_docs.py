@@ -27,7 +27,7 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
         """
     )
     parsed_args, _ = parser.parse_known_intermixed_args(args)
-    if "build_docs" in parsed_args:
+    if "build_docs" in parsed_args.skip:
         return 0
 
     docs_dir = os.path.join(check_utils.root_dir, "docs")
@@ -36,7 +36,9 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
         if sphinx_paths:
             for path in sphinx_paths:
                 subprocess.run(
-                    f"sphinx-apidoc -f -o source {path} {path}/*_test.py", shell=True, cwd=docs_dir
+                    f"sphinx-apidoc -f -o source {path} {path}/*_test.py",
+                    shell=True,
+                    cwd=docs_dir,
                 )
         return subprocess.call(["make", *args, "html"], cwd=docs_dir)
     else:
