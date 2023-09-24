@@ -109,7 +109,7 @@ def _inspect_req_file(
             raise SyntaxError(check_utils.failure(error))
         elif not silent:
             print(check_utils.warning(error))
-        return (False, [])  # file cannot be cleaned up, and there are no requirements to track
+        return False, []  # file cannot be cleaned up, and there are no requirements to track
 
     needs_cleanup, requirements = _sort_requirements(requirements)
     if needs_cleanup and not silent:
