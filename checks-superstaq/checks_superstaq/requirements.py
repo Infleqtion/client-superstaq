@@ -97,11 +97,7 @@ def _check_pypy_connection(silent: bool) -> bool:
 
 
 def _inspect_req_file(
-    req_file: str,
-    only_sort: bool,
-    can_connect_to_pypi: bool,
-    upstream_match: str,
-    silent: bool,
+    req_file: str, only_sort: bool, can_connect_to_pypi: bool, upstream_match: str, silent: bool
 ) -> Tuple[bool, List[str]]:
     # read in requirements line-by-line
     with open(os.path.join(check_utils.root_dir, req_file), "r") as file:
@@ -113,10 +109,7 @@ def _inspect_req_file(
             raise SyntaxError(check_utils.failure(error))
         elif not silent:
             print(check_utils.warning(error))
-        return (
-            False,
-            [],
-        )  # file cannot be cleaned up, and there are no requirements to track
+        return (False, [])  # file cannot be cleaned up, and there are no requirements to track
 
     needs_cleanup, requirements = _sort_requirements(requirements)
     if needs_cleanup and not silent:
