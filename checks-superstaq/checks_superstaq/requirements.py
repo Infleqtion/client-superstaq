@@ -108,9 +108,7 @@ def _inspect_req_file(
         requirements = file.read().strip().split("\n")
 
     if not _are_pip_requirements(requirements):
-        error = (
-            f"{req_file} appears to contain lines that are not valid pip requirements"
-        )
+        error = f"{req_file} appears to contain lines that are not valid pip requirements"
         if req_file == "requirements.txt":
             raise SyntaxError(check_utils.failure(error))
         elif not silent:
@@ -148,9 +146,7 @@ def _are_pip_requirements(requirements: List[str]) -> bool:
         (\.\*)?        # maybe once: .* (literal)
     """
     restriction = rf"{relation}\s*{version}"  # relation, maybe whitespace, and version
-    restrictions = (
-        rf"{restriction}(\s*,\s*{restriction})*"  # comma(+whitespace)-delineated list
-    )
+    restrictions = rf"{restriction}(\s*,\s*{restriction})*"  # comma(+whitespace)-delineated list
 
     comment = r"\# .*"  # literal "#" followed by anything
     pip_req_format = re.compile(
@@ -165,9 +161,7 @@ def _get_package_name(requirement: str) -> str:
 
 
 def _sort_requirements(requirements: List[str]) -> Tuple[bool, List[str]]:
-    sorted_requirements = sorted(
-        requirements, key=lambda req: _get_package_name(req).lower()
-    )
+    sorted_requirements = sorted(requirements, key=lambda req: _get_package_name(req).lower())
     needs_cleanup = requirements != sorted_requirements
     return needs_cleanup, sorted_requirements
 
@@ -200,37 +194,27 @@ def _check_package_versions(
         if not silent:
             if not latest_version_is_required:
                 should_require = desired_req.lstrip(package)
-                pin_text = (
-                    f"{req_file} requires {req}, but should require {should_require}"
-                )
+                pin_text = f"{req_file} requires {req}, but should require {should_require}"
                 print(text_format(pin_text))
 
             # check that a compatible version of this upstream package is installed locally
             _inspect_local_version(package, latest_version)
 
-    return (
-        strict and not up_to_date
-    )  # True iff we are *requiring* changes to the requirements file
+    return strict and not up_to_date  # True iff we are *requiring* changes to the requirements file
 
 
 @functools.lru_cache()
 def _get_latest_version(package: str) -> str:
-    base_package = package.split("[")[
-        0
-    ]  # remove options: package_name[options] --> package_name
+    base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
     pypi_url = f"https://pypi.org/pypi/{base_package}/json"
-    pypi_version = json.loads(urllib.request.urlopen(pypi_url).read().decode())["info"][
-        "version"
-    ]
+    pypi_version = json.loads(urllib.request.urlopen(pypi_url).read().decode())["info"]["version"]
 
     # If the local *-superstaq version is newer, return that instead
     return max(pypi_version, checks_superstaq.__version__, key=packaging.version.parse)
 
 
 def _inspect_local_version(package: str, latest_version: str) -> None:
-    base_package = package.split("[")[
-        0
-    ]  # remove options: package_name[options] --> package_name
+    base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
     try:
         installed_info = subprocess.check_output(
             [sys.executable, "-m", "pip", "show", base_package],
