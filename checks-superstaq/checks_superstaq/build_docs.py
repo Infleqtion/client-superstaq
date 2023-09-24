@@ -36,9 +36,7 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
         if sphinx_paths:
             for path in sphinx_paths:
                 subprocess.run(
-                    f"sphinx-apidoc -f -o source {path} {path}/*_test.py",
-                    shell=True,
-                    cwd=docs_dir,
+                    f"sphinx-apidoc -f -o source {path} {path}/*_test.py", shell=True, cwd=docs_dir
                 )
         return subprocess.call(["make", *args, "html"], cwd=docs_dir)
     else:
