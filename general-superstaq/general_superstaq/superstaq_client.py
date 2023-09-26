@@ -18,7 +18,8 @@ import sys
 import textwrap
 import time
 import urllib
-from typing import Any, Callable, Dict, List, Optional, Sequence, Union
+import warnings
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Union
 
 import qubovert as qv
 import requests
@@ -100,30 +101,6 @@ class _SuperstaqClient:
         }
         self._client_kwargs = kwargs
 
-    def get_request(self, endpoint: str) -> Any:
-        """Performs a GET request on a given endpoint.
-
-        Args:
-            endpoint: The endpoint to perform the GET request on.
-
-        Returns:
-            The response of the GET request.
-        """
-
-        def request() -> requests.Response:
-            """Builds GET request object.
-
-            Returns:
-                The Flask GET request object.
-            """
-            return requests.get(
-                f"{self.url}{endpoint}",
-                headers=self.headers,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
-
     def get_superstaq_version(self) -> Dict[str, Optional[str]]:
         """Gets Superstaq version from response header.
 
@@ -135,32 +112,6 @@ class _SuperstaqClient:
         version = response.headers.get("superstaq_version")
 
         return {"superstaq_version": version}
-
-    def post_request(self, endpoint: str, json_dict: Dict[str, Any]) -> Any:
-        """Performs a POST request on a given endpoint with a given payload.
-
-        Args:
-            endpoint: The endpoint to perform the POST request on.
-            json_dict: The payload to POST.
-
-        Returns:
-            The response of the POST request.
-        """
-
-        def request() -> requests.Response:
-            """Builds GET request object.
-
-            Returns:
-                The Flask GET request object.
-            """
-            return requests.post(
-                f"{self.url}{endpoint}",
-                json=json_dict,
-                headers=self.headers,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
 
     def create_job(
         self,
@@ -598,6 +549,66 @@ class _SuperstaqClient:
         """
         return self.get_request("/get_aqt_configs")
 
+    def get_request(self, endpoint: str) -> Any:
+        """Performs a GET request on a given endpoint.
+
+        Args:
+            endpoint: The endpoint to perform the GET request on.
+
+        Returns:
+            The response of the GET request.
+        """
+
+        def request() -> requests.Response:
+            """Builds GET request object.
+
+            Returns:
+                The Flask GET request object.
+            """
+            return requests.get(
+                f"{self.url}{endpoint}",
+                headers=self.headers,
+                verify=self.verify_https,
+            )
+
+        response = self._make_request(request)
+        return self._handle_response(response)
+
+    def post_request(self, endpoint: str, json_dict: Mapping[str, object]) -> Any:
+        """Performs a POST request on a given endpoint with a given payload.
+
+        Args:
+            endpoint: The endpoint to perform the POST request on.
+            json_dict: The payload to POST.
+
+        Returns:
+            The response of the POST request.
+        """
+
+        def request() -> requests.Response:
+            """Builds GET request object.
+
+            Returns:
+                The Flask GET request object.
+            """
+            return requests.post(
+                f"{self.url}{endpoint}",
+                json=json_dict,
+                headers=self.headers,
+                verify=self.verify_https,
+            )
+
+        response = self._make_request(request)
+        return self._handle_response(response)
+
+    def _handle_response(self, response: requests.Response) -> object:
+        response_json = response.json()
+        if isinstance(response_json, dict) and "warnings" in response_json:
+            for warning in response_json["warnings"]:
+                warnings.warn(warning["message"], gss.SuperstaqWarning, stacklevel=3)
+            del response_json["warnings"]
+        return response_json
+
     def _handle_status_codes(self, response: requests.Response) -> None:
         """A method to handle status codes.
 
@@ -611,10 +622,17 @@ class _SuperstaqClient:
         """
         if response.status_code == requests.codes.unauthorized:
             if response.json() == (
-                "You must accept the Terms of Use (superstaq.super.tech/terms_of_use)."
+                "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
             ):
                 self._prompt_accept_terms_of_use()
                 return
+
+            elif response.json() == ("You must validate your registered email."):
+                raise gss.SuperstaqServerException(
+                    "You must validate your registered email.",
+                    response.status_code,
+                )
+
             else:
                 raise gss.SuperstaqServerException(
                     '"Not authorized" returned by Superstaq API.  '
@@ -638,7 +656,7 @@ class _SuperstaqClient:
             gss.SuperstaqServerException: If terms of use are not accepted.
         """
         message = (
-            "Acceptance of the Terms of Use (superstaq.super.tech/terms_of_use)"
+            "Acceptance of the Terms of Use (superstaq.infleqtion.com/terms_of_use)"
             " is necessary before using Superstaq.\nType in YES to accept: "
         )
         user_input = input(message).upper()

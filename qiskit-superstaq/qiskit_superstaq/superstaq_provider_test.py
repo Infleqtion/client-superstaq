@@ -226,14 +226,23 @@ def test_qscout_compile(
     assert out.circuits == [qc]
     assert out.final_logical_to_physicals == [{0: 13}]
 
+    qc2 = qiskit.QuantumCircuit(2)
     mock_post.return_value.json = lambda: {
-        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
-        "final_logical_to_physicals": json.dumps([[(0, 13)], [(0, 13)]]),
+        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc2]),
+        "final_logical_to_physicals": json.dumps([[(0, 13)], [(0, 13), (1, 11)]]),
         "jaqal_programs": [jaqal_program, jaqal_program],
     }
-    out = fake_superstaq_provider.qscout_compile([qc, qc])
-    assert out.circuits == [qc, qc]
-    assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
+    out = fake_superstaq_provider.qscout_compile([qc, qc2])
+    assert out.circuits == [qc, qc2]
+    assert out.final_logical_to_physicals == [{0: 13}, {0: 13, 1: 11}]
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "mirror_swaps": False,
+        "base_entangling_gate": "xx",
+        "num_qubits": 2,
+    }
+
+    with pytest.raises(ValueError, match="At least 2 qubits are required"):
+        _ = fake_superstaq_provider.qscout_compile([qc, qc2], num_qubits=1)
 
 
 def test_invalid_target_qscout_compile(fake_superstaq_provider: MockSuperstaqProvider) -> None:
@@ -246,7 +255,7 @@ def test_invalid_target_qscout_compile(fake_superstaq_provider: MockSuperstaqPro
 def test_qscout_compile_swap_mirror(
     mock_post: MagicMock, mirror_swaps: bool, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
-    qc = qiskit.QuantumCircuit()
+    qc = qiskit.QuantumCircuit(1)
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
@@ -259,6 +268,7 @@ def test_qscout_compile_swap_mirror(
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
         "mirror_swaps": mirror_swaps,
         "base_entangling_gate": "xx",
+        "num_qubits": 1,
     }
 
     _ = fake_superstaq_provider.qscout_compile(qc, mirror_swaps=mirror_swaps, num_qubits=3)
@@ -274,7 +284,7 @@ def test_qscout_compile_swap_mirror(
 def test_qscout_compile_change_entangler(
     mock_post: MagicMock, base_entangling_gate: str, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
-    qc = qiskit.QuantumCircuit()
+    qc = qiskit.QuantumCircuit(2)
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
@@ -287,6 +297,7 @@ def test_qscout_compile_change_entangler(
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
         "mirror_swaps": False,
         "base_entangling_gate": base_entangling_gate,
+        "num_qubits": 2,
     }
 
     _ = fake_superstaq_provider.qscout_compile(
@@ -304,6 +315,30 @@ def test_qscout_compile_wrong_entangler(fake_superstaq_provider: MockSuperstaqPr
 
     with pytest.raises(ValueError):
         _ = fake_superstaq_provider.qscout_compile(qc, base_entangling_gate="yy")
+
+
+@patch("requests.post")
+def test_qscout_compile_error_rates(
+    mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider
+) -> None:
+    circuit = qiskit.QuantumCircuit(1)
+
+    mock_post.return_value.json = lambda: {
+        "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
+        "final_logical_to_physicals": "[[]]",
+        "jaqal_programs": [""],
+    }
+
+    _ = fake_superstaq_provider.qscout_compile(
+        circuit, error_rates={(0, 1): 0.3, (0, 2): 0.2, (1,): 0.1}
+    )
+    mock_post.assert_called_once()
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "base_entangling_gate": "xx",
+        "mirror_swaps": False,
+        "error_rates": [[[0, 1], 0.3], [[0, 2], 0.2], [[1], 0.1]],
+        "num_qubits": 3,
+    }
 
 
 @patch("requests.post")

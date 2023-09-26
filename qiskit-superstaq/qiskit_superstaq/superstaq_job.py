@@ -12,7 +12,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 import general_superstaq as gss
 import qiskit
@@ -59,7 +59,12 @@ class SuperstaqJob(qiskit.providers.JobV1):
 
         return [self._job_info[job_id] for job_id in self._job_id.split(",")]
 
-    def result(self, timeout: Optional[float] = None, wait: float = 5) -> qiskit.result.Result:
+    def result(
+        self,
+        timeout: Optional[float] = None,
+        wait: float = 5,
+        qubit_indices: Optional[Sequence[int]] = None,
+    ) -> qiskit.result.Result:
         """Retrieves the result data associated with a Superstaq job.
 
         Args:
@@ -67,6 +72,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 in seconds.
             wait: An optional parameter that sets the interval to check for Superstaq job results.
                 Units are in seconds. Defaults to 5.
+            qubit_indices: The qubit indices to return the results of individually.
 
         Returns:
             A qiskit result object containing job information.
@@ -78,8 +84,11 @@ class SuperstaqJob(qiskit.providers.JobV1):
         results_list = []
         for result in results:
             counts = result["samples"]
-            if counts:  # change endianess to match Qiskit
+            if counts:  # change endianness to match Qiskit
                 counts = dict((key[::-1], value) for (key, value) in counts.items())
+                if qubit_indices:
+                    counts = qiskit.result.marginal_counts(counts, indices=qubit_indices)
+
             results_list.append(
                 {
                     "success": result["status"] == "Done",

@@ -25,7 +25,7 @@ q1 = cirq.LineQubit(1)
 circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1), cirq.measure(q0))
 
 service = css.Service(
-    api_key="""Insert superstaq token that you received from https://superstaq.super.tech""",
+    api_key="""Insert superstaq token that you received from https://superstaq.infleqtion.com""",
     verbose=True,
 )
 
