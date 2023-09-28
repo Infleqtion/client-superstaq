@@ -262,7 +262,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         dynamical_decoupling: bool = True,
-        dd_strategy: str = 'dynamic',
+        dd_strategy: str = "dynamic",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
