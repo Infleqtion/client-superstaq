@@ -49,6 +49,10 @@ class _SuperstaqClient:
         api_version: str = gss.API_VERSION,
         max_retry_seconds: float = 60,  # 1 minute
         verbose: bool = False,
+        cq_token: Optional[str] = None,
+        ibmq_token: Optional[str] = None,
+        ibmq_instance: Optional[str] = None,
+        ibmq_channel: Optional[str] = "ibm_quantum",
         **kwargs: Any,
     ):
         """Creates the SuperstaqClient.
@@ -68,10 +72,12 @@ class _SuperstaqClient:
                 which is the most recent version when this client was downloaded.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
+            cq_token: Token from CQ cloud.This is required to submit circuits to CQ hardware.
+            ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
+                to IBM hardware, or to access non-public IBM devices you may have access to.
+            ibmq_instance: An optional instance to use when running IBM jobs.
+            ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
             kwargs: Other optimization and execution parameters.
-                - qiskit_pulse: Whether to use Superstaq's pulse-level optimizations for IBMQ
-                devices.
-                - cq_token: Token from CQ cloud.
         """
 
         self.api_key = api_key or gss.superstaq_client.find_api_key()
@@ -99,7 +105,17 @@ class _SuperstaqClient:
             "X-Client-Name": self.client_name,
             "X-Client-Version": self.api_version,
         }
-        self.client_kwargs = kwargs
+
+        if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
+            raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
+
+        self.client_kwargs = dict(
+            cq_token=cq_token,
+            ibmq_token=ibmq_token,
+            ibmq_instance=ibmq_instance,
+            ibmq_channel=ibmq_channel,
+            **kwargs,
+        )
 
     def get_superstaq_version(self) -> Dict[str, Optional[str]]:
         """Gets Superstaq version from response header.

@@ -130,6 +130,10 @@ class Service(gss.service.Service):
         api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
+        cq_token: Optional[str] = None,
+        ibmq_token: Optional[str] = None,
+        ibmq_instance: Optional[str] = None,
+        ibmq_channel: Optional[str] = "ibm_quantum",
         **kwargs: object,
     ) -> None:
         """Creates the Service to access Superstaq's API.
@@ -157,10 +161,12 @@ class Service(gss.service.Service):
             api_version: Version of the api.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
             verbose: Whether to print to stdio and stderr on retriable errors.
+            cq_token: Token from CQ cloud.This is required to submit circuits to CQ hardware.
+            ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
+                to IBM hardware, or to access non-public IBM devices you may have access to.
+            ibmq_instance: An optional instance to use when running IBM jobs.
+            ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
             kwargs: Other optimization and execution parameters.
-                - qiskit_pulse: Whether to use Superstaq's pulse-level optimizations for IBMQ
-                devices.
-                - cq_token: Token from CQ cloud.
 
         Raises:
             EnvironmentError: If an API key was not provided and could not be found.
@@ -173,6 +179,10 @@ class Service(gss.service.Service):
             api_version=api_version,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
+            cq_token=cq_token,
+            ibmq_token=ibmq_token,
+            ibmq_instance=ibmq_instance,
+            ibmq_channel=ibmq_channel,
             **kwargs,
         )
 
