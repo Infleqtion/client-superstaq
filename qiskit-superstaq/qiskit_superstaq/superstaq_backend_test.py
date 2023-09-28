@@ -126,6 +126,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         json={
             "qiskit_circuits": qss.serialize_circuits(qc),
             "target": "aqt_keysight_qpu",
+            "options": "{}",
         },
     )
 
