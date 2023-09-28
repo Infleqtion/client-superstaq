@@ -35,7 +35,6 @@ def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
     assert isinstance(out, qss.compiler_output.CompilerOutput)
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
     assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
-    assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
 
 
 def test_aqt_compile(provider: qss.SuperstaqProvider) -> None:
