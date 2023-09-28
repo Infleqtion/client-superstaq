@@ -86,6 +86,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         shots: int,
         method: Optional[str] = None,
+        ibmq_token: Optional[str] = None,
         **kwargs: Any,
     ) -> qss.SuperstaqJob:
         """Runs circuits on the stored Superstaq backend.
@@ -263,6 +264,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         dynamical_decoupling: bool = True,
+        ibmq_token: Optional[str] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
