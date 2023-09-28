@@ -95,6 +95,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             shots: The number of execution shots (times to run the circuit).
             method:  An optional string that describes the execution method
                 (e.g. 'dry-run', 'statevector', etc.).
+            ibmq_token: An IBM Quantum account token (for IBM backends only).
             kwargs: Other optimization and execution parameters.
 
         Returns:
@@ -269,6 +270,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         Args:
             circuits: The qiskit QuantumCircuit(s) to compile.
             dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
+            ibmq_token: An IBM Quantum account token.
             kwargs: Other desired compile options.
 
         Returns:
