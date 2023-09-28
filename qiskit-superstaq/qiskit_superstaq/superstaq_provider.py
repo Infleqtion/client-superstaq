@@ -54,7 +54,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         cq_token: Optional[str] = None,
         ibmq_token: Optional[str] = None,
         ibmq_instance: Optional[str] = None,
-        ibmq_channel: Optional[str] = "ibm_quantum",
+        ibmq_channel: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         """Initializes a SuperstaqProvider.

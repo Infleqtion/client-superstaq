@@ -52,7 +52,7 @@ class _SuperstaqClient:
         cq_token: Optional[str] = None,
         ibmq_token: Optional[str] = None,
         ibmq_instance: Optional[str] = None,
-        ibmq_channel: Optional[str] = "ibm_quantum",
+        ibmq_channel: Optional[str] = None,
         **kwargs: Any,
     ):
         """Creates the SuperstaqClient.
@@ -109,13 +109,16 @@ class _SuperstaqClient:
         if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
             raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
 
-        self.client_kwargs = dict(
-            cq_token=cq_token,
-            ibmq_token=ibmq_token,
-            ibmq_instance=ibmq_instance,
-            ibmq_channel=ibmq_channel,
-            **kwargs,
-        )
+        if cq_token:
+            kwargs["cq_token"] = cq_token
+        if ibmq_token:
+            kwargs["ibmq_token"] = ibmq_token
+        if ibmq_instance:
+            kwargs["ibmq_instance"] = ibmq_instance
+        if ibmq_channel:
+            kwargs["ibmq_channel"] = ibmq_channel
+
+        self.client_kwargs = kwargs
 
     def get_superstaq_version(self) -> Dict[str, Optional[str]]:
         """Gets Superstaq version from response header.

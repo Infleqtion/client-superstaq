@@ -133,7 +133,7 @@ class Service(gss.service.Service):
         cq_token: Optional[str] = None,
         ibmq_token: Optional[str] = None,
         ibmq_instance: Optional[str] = None,
-        ibmq_channel: Optional[str] = "ibm_quantum",
+        ibmq_channel: Optional[str] = None,
         **kwargs: object,
     ) -> None:
         """Creates the Service to access Superstaq's API.
@@ -236,6 +236,9 @@ class Service(gss.service.Service):
     ) -> cirq.ResultDict:
         """Runs the given circuit on the Superstaq API and returns the result of the circuit ran as
         a `cirq.ResultDict`.
+
+        WARNING: This may return unexpected results when used with measurement error mitigation. Use
+        `service.create_job()` or `service.get_counts()` instead.
 
         Args:
             circuit: The circuit to run.
@@ -743,12 +746,13 @@ class Service(gss.service.Service):
 
         css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
-        options = {**self._client.client_kwargs, **kwargs}
         request_json = {
             "cirq_circuits": serialized_circuits,
             "target": target,
-            "options": cirq.to_json(options),
         }
+        options = {**self._client.client_kwargs, **kwargs}
+        if options:
+            request_json["options"] = cirq.to_json(options)
         return request_json
 
     def supercheq(

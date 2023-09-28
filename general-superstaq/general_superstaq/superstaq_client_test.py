@@ -46,6 +46,32 @@ def test_superstaq_client_str_and_repr() -> None:
     assert str(eval(repr(client))) == str(client)
 
 
+def test_superstaq_client_args() -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        cq_token="cq_token",
+        ibmq_channel="ibm_quantum",
+        ibmq_instance="instance",
+        ibmq_token="ibmq_token",
+    )
+    assert client.client_kwargs == dict(
+        cq_token="cq_token",
+        ibmq_channel="ibm_quantum",
+        ibmq_instance="instance",
+        ibmq_token="ibmq_token",
+    )
+
+    with pytest.raises(ValueError, match="must be either 'ibm_cloud' or 'ibm_quantum'"):
+        _ = gss.superstaq_client._SuperstaqClient(
+            client_name="general-superstaq",
+            remote_host="http://example.com",
+            api_key="to_my_heart",
+            ibmq_channel="foo",
+        )
+
+
 def test_general_superstaq_exception_str() -> None:
     ex = gss.SuperstaqServerException("err.", status_code=501)
     assert str(ex) == "err. (Status code: 501)"
