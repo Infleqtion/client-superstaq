@@ -733,10 +733,11 @@ class Service(gss.service.Service):
 
         css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
+        options = {**self._client.client_kwargs, **kwargs}
         request_json = {
             "cirq_circuits": serialized_circuits,
             "target": target,
-            "options": cirq.to_json(kwargs),
+            "options": cirq.to_json(options),
         }
         return request_json
 

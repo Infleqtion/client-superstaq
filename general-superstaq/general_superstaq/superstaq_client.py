@@ -99,7 +99,7 @@ class _SuperstaqClient:
             "X-Client-Name": self.client_name,
             "X-Client-Version": self.api_version,
         }
-        self._client_kwargs = kwargs
+        self.client_kwargs = kwargs
 
     def get_superstaq_version(self) -> Dict[str, Optional[str]]:
         """Gets Superstaq version from response header.
@@ -152,8 +152,8 @@ class _SuperstaqClient:
         }
         if method is not None:
             json_dict["method"] = method
-        if kwargs or self._client_kwargs:
-            json_dict["options"] = json.dumps({**self._client_kwargs, **kwargs})
+        if kwargs or self.client_kwargs:
+            json_dict["options"] = json.dumps({**self.client_kwargs, **kwargs})
 
         return self.post_request("/jobs", json_dict)
 
@@ -193,8 +193,8 @@ class _SuperstaqClient:
         json_dict: Dict[str, Any] = {
             "job_ids": job_ids,
         }
-        if kwargs or self._client_kwargs:
-            json_dict["options"] = json.dumps({**self._client_kwargs, **kwargs})
+        if kwargs or self.client_kwargs:
+            json_dict["options"] = json.dumps({**self.client_kwargs, **kwargs})
 
         return self.post_request("/fetch_jobs", json_dict)
 
