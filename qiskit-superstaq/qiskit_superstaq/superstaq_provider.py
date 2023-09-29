@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, List, Mapping, Optional, Sequence, Tuple, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -118,11 +118,12 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         Returns:
             A list of Superstaq backends.
         """
-        targets = self._client.get_targets()["superstaq_targets"]
-        backends = []
-        for target in targets["compile-and-run"]:
-            backends.append(self.get_backend(target))
-        return backends
+        submit_targets = self._client.get_targets()
+        superstaq_backends = []
+        for backend in submit_targets:
+            if backend.properties["supports_submit"]:
+                superstaq_backends.append(self.get_backend(backend.target))
+        return superstaq_backends
 
     def resource_estimate(
         self, circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]], target: str
@@ -500,15 +501,20 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         """
         return self._client.process_dfe(ids)
 
-    def get_targets(self, simulator: Optional[bool], **kwargs) -> Dict[str, Any]:
+    def get_targets(
+        self, simulator: Optional[bool] = None, **kwargs: Any
+    ) -> List[gss.superstaq_client.TargetInfo]:
         """Gets a list of Superstaq targets along with their status information.
 
         Args:
             simulator: Optional flag to restrict the list of targets to simulators.
             kwargs: Optional desired target filters.
-                - supports_submit: Boolean flag to only return targets that (don't) allow circuit submissions.
-                - supports_submit_qubo: Boolean flag to only return targets that (don't) allow qubo submissions.
-                - supports_compile: Boolean flag to return targets that (don't) support circuit compilation.
+                - supports_submit: Boolean flag to only return targets that (don't) allow circuit
+                submissions.
+                - supports_submit_qubo: Boolean flag to only return targets that (don't) allow qubo
+                submissions.
+                - supports_compile: Boolean flag to return targets that (don't) support circuit
+                compilation.
                 - available: Boolean flag to only return targets that are (not) available to use.
                 - retired: Boolean flag to only return targets that are or are not retired.
 

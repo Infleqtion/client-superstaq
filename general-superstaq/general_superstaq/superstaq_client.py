@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Client for making requests to Superstaq's API."""
+from __future__ import annotations
+
 import json
 import os
 import pathlib
@@ -218,7 +220,7 @@ class _SuperstaqClient:
         """
         return self.post_request("/accept_terms_of_use", {"user_input": user_input})
 
-    def get_targets(self, simulator: Optional[bool], **kwargs) -> Dict[str, Dict[str, List[str]]]:
+    def get_targets(self, simulator: Optional[bool] = None, **kwargs: Any) -> List[TargetInfo]:
         """Makes a GET request to retrieve targets from the Superstaq API.
 
         Args:
