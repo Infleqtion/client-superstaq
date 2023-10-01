@@ -269,7 +269,7 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
     job = service.create_job(circuit=circuit, repetitions=1, target=target)
     assert job.counts() == {"11": 1}
 
-
+@pytest.mark.timeout(300)
 def test_submit_to_hilbert_qubit_sorting(service: css.Service) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776"""
     target = "cq_hilbert_qpu"
