@@ -85,10 +85,8 @@ class Sampler(cirq.Sampler):
             repetitions=repetitions,
             target=self._target,
         )
-        job_counts = job.counts()
-        job_counters = job_counts if isinstance(job_counts, list) else [job_counts]
         cirq_results = [
-            css.service.counts_to_results(counts, program, resolver)
-            for counts, resolver in zip(job_counters, resolvers)
+            css.service.counts_to_results(job.counts(i), program, resolver)
+            for i, resolver in enumerate(resolvers)
         ]
         return cirq_results
