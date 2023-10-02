@@ -69,7 +69,9 @@ def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
 
 
 def counts_to_results(
-    counter: Dict[str, int], circuit: cirq.AbstractCircuit, param_resolver: cirq.ParamResolver
+    counter: Mapping[str, float],
+    circuit: cirq.AbstractCircuit,
+    param_resolver: cirq.ParamResolver,
 ) -> cirq.ResultDict:
     """Converts a `collections.Counter` to a `cirq.ResultDict`.
 
@@ -88,20 +90,27 @@ def counts_to_results(
     combine_key_names = "".join(measurement_key_names)
 
     samples: List[List[int]] = []
-    for key in counter.keys():
-        keys_as_list: List[int] = []
-
+    if not all(counts == int(counts) for counts in counter.values()):
+        warnings.warn(
+            "The raw counts contain fractional values due to measurement error mitigation; please "
+            "use service.get_counts to see raw results.",
+            stacklevel=2,
+        )
+    if not all(counts >= 0 for counts in counter.values()):
+        warnings.warn(
+            "The raw counts contain negative values due to measurement error mitigation; please "
+            "use service.get_counts to see raw results.",
+            stacklevel=2,
+        )
+    for key, counts_of_key in counter.items():
         # Combines the keys of the counter into a list. If key = "01", keys_as_list = [0, 1]
-        for index in key:
-            keys_as_list.append(int(index))
+        keys_as_list: List[int] = list(map(int, key))
 
-        # Gets the number of counts of the key
-        # counter = collections.Counter({"01": 48, "11": 52})["01"] -> 48
-        counts_of_key = counter[key]
-
-        # Appends all the keys onto 'samples' list number-of-counts-in-the-key times
-        # If collections.Counter({"01": 48, "11": 52}), [0, 1] is appended to 'samples` 48 times and
-        # [1, 1] is appended to 'samples' 52 times
+        # Gets execution counts per bitstring, e.g., collections.Counter({"01": 48, "11": 52})["01"]
+        # = 48. Per execution shot, appends bitstring to `samples` list. E.g., if counter is
+        # collections.Counter({"01": 48, "11": 52}), [0, 1] is appended 48 times and [1, 1] is
+        # appended 52 times.
+        counts_of_key = round(counts_of_key)
         for _ in range(counts_of_key):
             samples.append(keys_as_list)
 
@@ -132,6 +141,10 @@ class Service(gss.service.Service):
         api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
+        cq_token: Optional[str] = None,
+        ibmq_token: Optional[str] = None,
+        ibmq_instance: Optional[str] = None,
+        ibmq_channel: Optional[str] = None,
         **kwargs: object,
     ) -> None:
         """Creates the Service to access Superstaq's API.
@@ -159,10 +172,12 @@ class Service(gss.service.Service):
             api_version: Version of the api.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
             verbose: Whether to print to stdio and stderr on retriable errors.
+            cq_token: Token from CQ cloud.This is required to submit circuits to CQ hardware.
+            ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
+                to IBM hardware, or to access non-public IBM devices you may have access to.
+            ibmq_instance: An optional instance to use when running IBM jobs.
+            ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
             kwargs: Other optimization and execution parameters.
-                - qiskit_pulse: Whether to use Superstaq's pulse-level optimizations for IBMQ
-                devices.
-                - cq_token: Token from CQ cloud.
 
         Raises:
             EnvironmentError: If an API key was not provided and could not be found.
@@ -175,6 +190,10 @@ class Service(gss.service.Service):
             api_version=api_version,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
+            cq_token=cq_token,
+            ibmq_token=ibmq_token,
+            ibmq_instance=ibmq_instance,
+            ibmq_channel=ibmq_channel,
             **kwargs,
         )
 
@@ -276,6 +295,9 @@ class Service(gss.service.Service):
     ) -> Union[cirq.ResultDict, List[cirq.ResultDict]]:
         """Runs the given circuit(s) on the Superstaq API and returns the result of the circuit(s)
         ran as a `cirq.ResultDict`.
+
+        WARNING: This may return unexpected results when used with measurement error mitigation. Use
+        `service.create_job()` or `service.get_counts()` instead.
 
         Args:
             circuits: The circuit(s) to run.
@@ -796,8 +818,10 @@ class Service(gss.service.Service):
         request_json = {
             "cirq_circuits": serialized_circuits,
             "target": target,
-            "options": cirq.to_json(kwargs),
         }
+        options = {**self._client.client_kwargs, **kwargs}
+        if options:
+            request_json["options"] = cirq.to_json(options)
         return request_json
 
     def supercheq(
