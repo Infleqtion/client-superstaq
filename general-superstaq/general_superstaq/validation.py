@@ -1,5 +1,5 @@
 import re
-from typing import Dict, Optional, Sequence
+from typing import Dict, Sequence
 
 
 def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
