@@ -194,12 +194,12 @@ def _get_latest_version(package: str, silent: bool) -> str:
 def _get_local_version(package: str) -> Optional[str]:
     """Retrieve the local version of a package (if installed)."""
     base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
-    package_name = base_package.replace("-", "_").lower()
+    sanitized_package_name = base_package.replace("-", "_").lower()
     try:
-        module = importlib.import_module(package_name)
+        module = importlib.import_module(sanitized_package_name)
         if hasattr(module, "__version__"):
             return module.__version__
-        return importlib.metadata.version(package_name)
+        return importlib.metadata.version(sanitized_package_name)
     except ModuleNotFoundError:
         return None
 
