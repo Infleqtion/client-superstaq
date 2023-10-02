@@ -244,7 +244,7 @@ def test_job(service: css.Service) -> None:
 
     job_id = job.job_id()  # To test for https://github.com/Infleqtion/client-superstaq/issues/452
 
-    assert job.counts() == {"0": 10}
+    assert job.counts(0) == {"0": 10}
     assert job.status() == "Done"
     assert job.job_id() == job_id
 
@@ -253,7 +253,7 @@ def test_job(service: css.Service) -> None:
     job._job["status"] = "Running"
 
     # State retrieved from the server should be the same:
-    assert job.counts() == {"0": 10}
+    assert job.counts(0) == {"0": 10}
     assert job.status() == "Done"
     assert job.job_id() == job_id
 
@@ -266,8 +266,8 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
     q1 = cirq.LineQubit(1)
     circuit = cirq.Circuit(cirq.X(q0), cirq.CNOT(q0, q1), cirq.measure(q0, q1))
 
-    job = service.create_job(circuit=circuit, repetitions=1, target=target)
-    assert job.counts() == {"11": 1}
+    job = service.create_job(circuit, repetitions=1, target=target)
+    assert job.counts(0) == {"11": 1}
 
 
 @pytest.mark.skip(reason="Can't be executed when Hilbert is set to not accept jobs")
@@ -283,10 +283,8 @@ def test_submit_to_hilbert_qubit_sorting(service: css.Service) -> None:
         cirq.measure(*qubits),
     )
 
-    job = service.create_job(
-        circuit=circuit, repetitions=100, verbatim=True, route=False, target=target
-    )
-    counts = job.counts()
+    job = service.create_job(circuit, repetitions=100, verbatim=True, route=False, target=target)
+    counts = job.counts(0)
     assert sum(counts.values()) == 100
     assert max(counts, key=counts.__getitem__) == "001" + ("0" * (num_qubits - 3))
 
