@@ -193,9 +193,7 @@ class Job:
         ):
             self._refresh_job()
 
-        if index is not None:
-            gss.validation.validate_integer_param(index, min_val=0)
-        else:
+        if index is None:
             qubit_list = [self._job[job_id]["num_qubits"] for job_id in job_ids]
             if len(qubit_list) == 1:
                 warnings.warn(
@@ -207,9 +205,9 @@ class Job:
                     stacklevel=2,
                 )
                 return qubit_list[0]
-            else:
-                return qubit_list
+            return qubit_list
 
+        gss.validation.validate_integer_param(index, min_val=0)
         num_qubits = self._job[job_ids[index]]["num_qubits"]
         return num_qubits
 
