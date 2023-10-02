@@ -98,8 +98,6 @@ def test_num_qubits(job: css.job.Job) -> None:
 
     # Shouldn't need to retrieve anything now that `job._job` is populated:
     assert job.num_qubits(index=0) == 2
-    # Test case: no index -> int
-    assert job.num_qubits(index=None) == 2
 
     # Deprecation warning test
     with pytest.warns(DeprecationWarning, match="the numbers of qubits in all circuits"):
