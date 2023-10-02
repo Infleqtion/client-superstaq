@@ -375,9 +375,7 @@ class Job:
         self._check_if_unsuccessful()
         job_ids = self._job_id.split(",")
 
-        if index is not None:
-            gss.validation.validate_integer_param(index, min_val=0)
-        else:
+        if index is None:
             counts_list = [self._job[job_id]["samples"] for job_id in self._job_id.split(",")]
             if qubit_indices:
                 counts_list = [
@@ -392,13 +390,13 @@ class Job:
                     stacklevel=2,
                 )
                 return counts_list[0]
-            else:
-                return counts_list
+            return counts_list
 
+        gss.validation.validate_integer_param(index, min_val=0)
         single_counts = self._job[job_ids[index]]["samples"]
-        return (
-            _get_marginal_counts(single_counts, qubit_indices) if qubit_indices else single_counts
-        )
+        if qubit_indices:
+            return _get_marginal_counts(single_counts, qubit_indices)
+        return single_counts
 
     def to_dict(self) -> Dict[str, gss.typing.Job]:
         """Refreshes and returns job information.
