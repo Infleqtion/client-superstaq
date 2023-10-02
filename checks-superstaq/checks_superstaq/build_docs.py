@@ -5,7 +5,7 @@ import sys
 import textwrap
 from typing import List, Optional
 
-from general_superstaq.check import check_utils
+from checks_superstaq import check_utils
 
 
 @check_utils.enable_exit_on_failure
@@ -27,7 +27,7 @@ def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
         """
     )
     parsed_args, _ = parser.parse_known_intermixed_args(args)
-    if "build_docs" in parsed_args:
+    if "build_docs" in parsed_args.skip:
         return 0
 
     docs_dir = os.path.join(check_utils.root_dir, "docs")

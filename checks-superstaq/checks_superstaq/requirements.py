@@ -12,8 +12,8 @@ from typing import Dict, Iterable, List, Tuple, Union
 
 import packaging.version
 
-import general_superstaq as gss
-from general_superstaq.check import check_utils
+import checks_superstaq
+from checks_superstaq import check_utils
 
 
 @check_utils.enable_exit_on_failure
@@ -200,10 +200,14 @@ def _check_package_versions(
 def _get_latest_version(package: str) -> str:
     base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
     pypi_url = f"https://pypi.org/pypi/{base_package}/json"
-    pypi_version = json.loads(urllib.request.urlopen(pypi_url).read().decode())["info"]["version"]
+    try:
+        package_data = urllib.request.urlopen(pypi_url).read().decode()
+        pypi_version = json.loads(package_data)["info"]["version"]
+    except urllib.error.URLError:
+        return checks_superstaq.__version__
 
-    # If the local gss version is newer, return that instead
-    return max(pypi_version, gss.__version__, key=packaging.version.parse)
+    # If the local *-superstaq version is newer, return that instead
+    return max(pypi_version, checks_superstaq.__version__, key=packaging.version.parse)
 
 
 def _inspect_local_version(package: str, latest_version: str) -> None:
