@@ -232,7 +232,7 @@ def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvi
     assert job.result().get_counts() == {"11": 1}
 
 
-@pytest.mark.timeout(300)
+@pytest.mark.skip(reason="Can't be executed when Hilbert is set to not accept jobs")
 def test_submit_to_hilbert_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776"""
     backend = provider.get_backend("cq_hilbert_qpu")
