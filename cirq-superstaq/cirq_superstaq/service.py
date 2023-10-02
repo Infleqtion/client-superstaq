@@ -240,8 +240,7 @@ class Service(gss.service.Service):
         method: Optional[str] = None,
         **kwargs: Any,
     ) -> Union[Dict[str, int], List[Dict[str, int]]]:
-        """Runs the given circuit(s) on the Superstaq API and returns the result of the circuit ran
-        as a `dict`.
+        """Runs circuit(s) on the Superstaq API and returns the result(s) as a `dict`.
 
         Args:
             circuits: The circuit(s) to run.
@@ -258,7 +257,7 @@ class Service(gss.service.Service):
         job = self.create_job(resolved_circuits, int(repetitions), target, method, **kwargs)
         if isinstance(resolved_circuits, cirq.Circuit):
             return job.counts(0)
-        return job.counts()
+        return [job.counts(i) for i in range(len(circuits))]
 
     @overload
     def run(
@@ -293,8 +292,7 @@ class Service(gss.service.Service):
         method: Optional[str] = None,
         **kwargs: Any,
     ) -> Union[cirq.ResultDict, List[cirq.ResultDict]]:
-        """Runs the given circuit(s) on the Superstaq API and returns the result of the circuit(s)
-        ran as a `cirq.ResultDict`.
+        """Runs circuit(s) on the Superstaq API and returns the result(s) as `cirq.ResultDict`.
 
         WARNING: This may return unexpected results when used with measurement error mitigation. Use
         `service.create_job()` or `service.get_counts()` instead.
