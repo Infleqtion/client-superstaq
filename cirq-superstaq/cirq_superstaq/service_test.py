@@ -141,6 +141,8 @@ def test_service_run_and_get_counts() -> None:
     mock_client.create_job.return_value = {
         "job_ids": ["job_id_1", "job_id_2"],
         "status": "Done",
+        "data": {"histogram": {"11": 1}},
+        "samples": {"11": 1},
     }
     service._client = mock_client
     multi_results = service.run(
@@ -149,9 +151,18 @@ def test_service_run_and_get_counts() -> None:
         target="ibmq_qasm_simulator",
         param_resolver=params,
     )
+
     assert isinstance(multi_results, list)
     for result in multi_results:
         assert result.histogram(key="a") == collections.Counter({3: 1})
+
+    multi_counts = service.get_counts(
+        circuits=[circuit, circuit],
+        repetitions=4,
+        target="ibmq_qasm_simulator",
+        param_resolver=params,
+    )
+    assert multi_counts == [{"11": 1}, {"11": 1}]
 
 
 def test_service_sampler() -> None:
