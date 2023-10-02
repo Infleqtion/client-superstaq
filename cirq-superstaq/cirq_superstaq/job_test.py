@@ -243,7 +243,7 @@ def test_job_str_repr_eq(job: css.job.Job) -> None:
 
 def test_job_to_dict(job: css.job.Job) -> None:
     job_result = {
-        "provider_id": {
+        "job_id": {
             "data": {"histogram": {"11": 1}},
             "num_qubits": 2,
             "samples": {"11": 1},
