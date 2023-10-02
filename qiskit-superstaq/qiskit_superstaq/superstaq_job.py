@@ -187,13 +187,13 @@ class SuperstaqJob(qiskit.providers.JobV1):
         ):
             self._refresh_job()
 
-        if index is not None:
-            gss.validation.validate_integer_param(index, min_val=0)
-            serialized_circuit = self._job_info[job_ids[index]][circuit_type]
-            return qss.deserialize_circuits(serialized_circuit)[0]
-        else:
+        if index is None:
             serialized_circuits = [self._job_info[job_id][circuit_type] for job_id in job_ids]
             return [qss.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
+
+        gss.validation.validate_integer_param(index, min_val=0)
+        serialized_circuit = self._job_info[job_ids[index]][circuit_type]
+        return qss.deserialize_circuits(serialized_circuit)[0]
 
     @overload
     def compiled_circuits(self, index: int) -> qiskit.QuantumCircuit:
