@@ -15,7 +15,6 @@ class Service:
         self,
         api_key: Optional[str] = None,
         remote_host: Optional[str] = None,
-        default_target: Optional[str] = None,
         api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
