@@ -266,6 +266,8 @@ class Job:
         if index is None:
             serialized_circuits = [self._job[job_id][circuit_type] for job_id in job_ids]
             return [css.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
+        else:
+            gss.validation.validate_integer_param(index, min_val=0)
 
         serialized_circuit = self._job[job_ids[index]][circuit_type]
         return css.deserialize_circuits(serialized_circuit)[0]
@@ -293,8 +295,6 @@ class Job:
         Returns:
             A single compiled circuit or list of compiled circuits.
         """
-        if index is not None:
-            gss.validation.validate_integer_param(index, min_val=0)
         return self._get_circuits("compiled_circuit", index=index)
 
     @overload
@@ -317,8 +317,6 @@ class Job:
         Returns:
             A single input circuit or list of submitted input circuits.
         """
-        if index is not None:
-            gss.validation.validate_integer_param(index, min_val=0)
         return self._get_circuits("input_circuit", index=index)
 
     @overload
