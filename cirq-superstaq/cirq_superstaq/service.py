@@ -253,9 +253,9 @@ class Service(gss.service.Service):
         Returns:
             The counts from running the circuit(s).
         """
-        resolved_circuits = cirq.protocols.resolve_parameters(circuits, param_resolver)
+        resolved_circuits = cirq.resolve_parameters(circuits, param_resolver)
         job = self.create_job(resolved_circuits, int(repetitions), target, method, **kwargs)
-        if isinstance(resolved_circuits, cirq.Circuit):
+        if isinstance(circuits, cirq.Circuit):
             return job.counts(0)
         return [job.counts(i) for i in range(len(circuits))]
 
