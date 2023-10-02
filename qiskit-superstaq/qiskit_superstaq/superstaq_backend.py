@@ -188,12 +188,12 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         gss.validation.validate_target(self.name())
 
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
+        options = {**self._provider._client.client_kwargs, **kwargs}
         request_json = {
             "qiskit_circuits": serialized_circuits,
             "target": self.name(),
+            "options": qss.serialization.to_json(options),
         }
-        if kwargs:
-            request_json["options"] = qss.serialization.to_json(kwargs)
         return request_json
 
     def aqt_compile(

@@ -63,6 +63,23 @@ def test_counts_to_results() -> None:
     result = css.service.counts_to_results({"00": 50, "11": 50}, circuit, cirq.ParamResolver({}))
     assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
 
+    result = css.service.counts_to_results(
+        {"00": 50.0, "11": 50.0}, circuit, cirq.ParamResolver({})
+    )
+    assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
+
+    with pytest.warns(UserWarning, match="raw counts contain fractional"):
+        result = css.service.counts_to_results(
+            {"00": 50.1, "11": 49.9}, circuit, cirq.ParamResolver({})
+        )
+        assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
+
+    with pytest.warns(UserWarning, match="raw counts contain negative"):
+        result = css.service.counts_to_results(
+            {"00": -50.1, "11": 99.9}, circuit, cirq.ParamResolver({})
+        )
+        assert result.histogram(key="01") == collections.Counter({3: 100})
+
 
 def test_service_resolve_target() -> None:
     service = css.Service(api_key="key", default_target="ss_bar_qpu")

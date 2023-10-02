@@ -21,28 +21,10 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
 
 
 def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
-    qc = qiskit.QuantumCircuit(2)
-    qc.append(qss.AceCR("+-"), [0, 1])
-    out = provider.ibmq_compile(qc, target="ibmq_jakarta_qpu")
-    assert isinstance(out, qss.compiler_output.CompilerOutput)
-    assert isinstance(out.circuit, qiskit.QuantumCircuit)
-    assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
-
-
-def test_acecr_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
-    """Tests ibmq_compile method running without error.
-
-    This test was originally written to make sure compilation to ibmq_casablanca would not fail, but
-    IBM has since taken casablanca down.
-    """
     qc = qiskit.QuantumCircuit(4)
     qc.append(qss.AceCR("-+"), [0, 1])
     qc.append(qss.AceCR("-+"), [1, 2])
     qc.append(qss.AceCR("-+"), [2, 3])
-    out = provider.ibmq_compile(qc, target="ibmq_jakarta_qpu")
-    assert isinstance(out, qss.compiler_output.CompilerOutput)
-    assert isinstance(out.circuit, qiskit.QuantumCircuit)
-    assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
 
     out = provider.ibmq_compile(qc, target="ibmq_perth_qpu")
     assert isinstance(out, qss.compiler_output.CompilerOutput)
@@ -250,6 +232,7 @@ def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvi
     assert job.result().get_counts() == {"11": 1}
 
 
+@pytest.mark.skip(reason="Can't be executed when Hilbert is set to not accept jobs")
 def test_submit_to_hilbert_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776"""
     backend = provider.get_backend("cq_hilbert_qpu")

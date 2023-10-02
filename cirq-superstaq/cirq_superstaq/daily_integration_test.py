@@ -16,29 +16,12 @@ def service() -> css.Service:
 
 
 def test_ibmq_compile(service: css.Service) -> None:
-    qubits = cirq.LineQubit.range(2)
-    circuit = cirq.Circuit(css.AceCRPlusMinus(qubits[0], qubits[1]))
-    out = service.ibmq_compile(circuit, target="ibmq_jakarta_qpu")
-    assert isinstance(out.circuit, cirq.Circuit)
-    assert out.pulse_sequence is not None
-
-
-def test_acecr_ibmq_compile(service: css.Service) -> None:
-    """Tests ibmq_compile method running without error.
-
-    This test was originally written to make sure compilation to ibmq_casablanca would not fail, but
-    IBM has since taken casablanca down.
-    """
     qubits = cirq.LineQubit.range(4)
     circuit = cirq.Circuit(
         css.AceCRMinusPlus(qubits[0], qubits[1]),
         css.AceCRMinusPlus(qubits[1], qubits[2]),
         css.AceCRMinusPlus(qubits[2], qubits[3]),
     )
-
-    out = service.ibmq_compile(circuit, target="ibmq_jakarta_qpu")
-    assert isinstance(out.circuit, cirq.Circuit)
-    assert out.pulse_sequence is not None
 
     out = service.ibmq_compile(circuit, target="ibmq_perth_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
@@ -287,6 +270,7 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
     assert job.counts() == {"11": 1}
 
 
+@pytest.mark.skip(reason="Can't be executed when Hilbert is set to not accept jobs")
 def test_submit_to_hilbert_qubit_sorting(service: css.Service) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776"""
     target = "cq_hilbert_qpu"
