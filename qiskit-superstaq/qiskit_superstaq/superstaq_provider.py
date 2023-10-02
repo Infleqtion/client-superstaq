@@ -269,6 +269,8 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         target: str = "ibmq_qasm_simulator",
+        dynamical_decoupling: bool = False,
+        dd_strategy: str = "dynamic",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Returns pulse schedule(s) for the given qiskit circuit(s) and target.
@@ -276,6 +278,14 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         Args:
             circuits: The circuit(s) to compile.
             target: A string containing the name of a target IBMQ backend.
+            dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
+            dd_strategy: Method used for placing dynamical decoupling operations. Options include:
+                "dynamic" (default) - Spaces pulses in a sequence based on sequence length,
+                oblivious to sequences placed on neighboring qubits.
+                "static" - Inserts as many pulses in an idling duration as possible (not
+                recommended for most circuits).
+                "static_context_aware" - Spacing between pulses in a sequence is fixed. Pulse
+                timing is chosen to avoid collisions with DD sequences on neighboring qubits.
             kwargs: Other desired ibmq_compile options.
 
         Returns:
