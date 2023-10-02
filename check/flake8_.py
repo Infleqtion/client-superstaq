@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 
-import checks_superstaq as check
+import checks_superstaq as checks
 
 if __name__ == "__main__":
-    exit(check.flake8_.run(*sys.argv[1:]))
+    exit(checks.flake8_.run(*sys.argv[1:]))
