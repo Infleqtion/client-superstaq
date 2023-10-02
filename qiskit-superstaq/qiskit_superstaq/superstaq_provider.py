@@ -57,7 +57,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         ibmq_channel: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
-        """Initializes a SuperstaqProvider.
+        """Initializes a `SuperstaqProvider`.
 
         Args:
             api_key: A string that allows access to the Superstaq API. If no key is provided, then
@@ -144,8 +144,8 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             target: A string containing the name of a target backend.
 
         Returns:
-            ResourceEstimate(s) containing resource costs (after compilation) for running circuit(s)
-            on a backend.
+            `ResourceEstimate`(s) containing resource costs (after compilation) for running
+            circuit(s) on a backend.
         """
         return self.get_backend(target).resource_estimate(circuits)
 
@@ -335,7 +335,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             kwargs: Other desired qscout_compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains optimized `qiskit QuantumCircuit`(s), and
+            Object whose .circuit(s) attribute contains optimized `qiskit.QuantumCircuit`(s), and
             `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
 
         Raises:
