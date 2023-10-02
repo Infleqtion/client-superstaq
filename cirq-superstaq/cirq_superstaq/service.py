@@ -680,6 +680,8 @@ class Service(gss.service.Service):
         self,
         circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
         target: str = "ibmq_qasm_simulator",
+        dynamical_decoupling: bool = False,
+        dd_strategy: str = "dynamic",
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) to the target IBMQ device.
@@ -690,6 +692,8 @@ class Service(gss.service.Service):
         Args:
             circuits: The circuit(s) to compile.
             target: String of target IBMQ device.
+            dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
+            dd_strategy: Method used for placing dynamical decoupling operations.
             kwargs: Other desired `ibmq_compile` options.
 
         Returns:
