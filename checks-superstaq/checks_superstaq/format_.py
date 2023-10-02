@@ -4,7 +4,7 @@ import sys
 import textwrap
 from typing import Iterable, Union
 
-from general_superstaq.check import check_utils
+from checks_superstaq import check_utils
 
 
 @check_utils.enable_exit_on_failure
