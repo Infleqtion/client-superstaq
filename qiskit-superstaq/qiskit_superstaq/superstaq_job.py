@@ -170,9 +170,9 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """Retrieves the corresponding circuit(s) to `circuit_type`.
 
         Args:
-            circuit_type: The kind of circuits to retrieve. Either "input_circuit" or
+            circuit_type: The kind of circuit(s) to retrieve. Either "input_circuit" or
                 "compiled_circuit".
-            index: An optional index of the circuit to retrieve.
+            index: An optional index of the specific circuit to retrieve.
 
         Returns:
             A single circuit or list of circuits.
@@ -206,10 +206,10 @@ class SuperstaqJob(qiskit.providers.JobV1):
     def compiled_circuits(
         self, index: Optional[int] = None
     ) -> Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]:
-        """Gets the compiled circuit(s) that were submitted for this job.
+        """Gets the compiled circuits that were processed for this job.
 
         Args:
-            index: An optional index of the circuit to retrieve.
+            index: An optional index of the specific circuit to retrieve.
 
         Returns:
             A single compiled circuit or list of compiled circuits.
@@ -235,7 +235,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """Gets the original circuit(s) that were submitted for this job.
 
         Args:
-            index: An optional index of the circuit to retrieve.
+            index: An optional index of the specific circuit to retrieve.
 
         Returns:
             The input circuit or list of submitted input circuits.
@@ -270,7 +270,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """Unsupported submission call.
 
         Raises:
-            NotImplementedError: If a job is submitted via SuperstaqJob.
+            NotImplementedError: If a job is submitted via `SuperstaqJob`.
         """
         raise NotImplementedError("Submit through SuperstaqBackend, not through SuperstaqJob")
 

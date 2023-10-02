@@ -242,10 +242,10 @@ class Job:
     def _get_circuits(
         self, circuit_type: str, index: Optional[int] = None
     ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
-        """Retrieves the corresponding circuits to `circuit_type`.
+        """Retrieves the corresponding circuit(s) to `circuit_type`.
 
         Args:
-            circuit_type: The kind of circuits to retrieve. Either "input_circuit" or
+            circuit_type: The kind of circuit(s) to retrieve. Either "input_circuit" or
                 "compiled_circuit".
             index: The index of the circuit to retrieve.
 
@@ -284,10 +284,10 @@ class Job:
     def compiled_circuits(
         self, index: Optional[int] = None
     ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
-        """Gets the compiled circuits that were submitted for this job.
+        """Gets the compiled circuits that were processed for this job.
 
         Args:
-            index: The index of the circuit to retrieve.
+            index: An optional index of the specific circuit to retrieve.
 
         Returns:
             A single compiled circuit or list of compiled circuits.
@@ -310,6 +310,9 @@ class Job:
         self, index: Optional[int] = None
     ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
         """Gets the original circuits that were submitted for this job.
+
+        Args:
+            index: An optional index of the specific circuit to retrieve.
 
         Returns:
             A single input circuit or list of submitted input circuits.
