@@ -24,6 +24,7 @@ def test_validate_integer_param() -> None:
     valid_inputs = [1, 10, "10", 10.0, np.int16(10), 0b1010]
     for input_value in valid_inputs:
         gss.validation.validate_integer_param(input_value)
+    gss.validation.validate_integer_param(0, min_val=0)
 
     # Tests for invalid input -> TypeError
     invalid_inputs = [None, "reps", "{!r}".format(b"invalid"), 1.5, "1.0", {1}, [1, 2, 3], "0b1010"]
@@ -39,7 +40,7 @@ def test_validate_integer_param() -> None:
     for input_value in invalid_values:
         with pytest.raises(
             ValueError,
-            match="is not a positive integer.",
+            match="is less than the minimum",
         ):
             gss.validation.validate_integer_param(input_value)
 
