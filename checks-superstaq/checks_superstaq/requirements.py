@@ -2,7 +2,6 @@
 import fnmatch
 import functools
 import importlib.metadata
-import importlib.util
 import json
 import os
 import re
@@ -196,7 +195,7 @@ def _get_local_version(package: str) -> Optional[str]:
     """Retrieve the local version of a package (if installed)."""
     base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
     try:
-        module = importlib.import_module(base_package)
+        module = importlib.import_module(base_package.replace("-", "_"))
         if hasattr(module, "__version__"):
             return module.__version__
         return importlib.metadata.version(base_package)
