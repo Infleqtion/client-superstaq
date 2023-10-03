@@ -56,11 +56,11 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """
 
         self.wait_for_final_state(timeout, wait)  # should call self.status()
-
         return [self._job_info[job_id] for job_id in self._job_id.split(",")]
 
     def result(
         self,
+        index: Optional[int] = None,
         timeout: Optional[float] = None,
         wait: float = 5,
         qubit_indices: Optional[Sequence[int]] = None,
@@ -68,6 +68,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """Retrieves the result data associated with a Superstaq job.
 
         Args:
+            index: An optional index of the specific circuit to retrieve.
             timeout: An optional parameter that fixes when result retrieval times out. Units are
                 in seconds.
             wait: An optional parameter that sets the interval to check for Superstaq job results.
@@ -77,18 +78,19 @@ class SuperstaqJob(qiskit.providers.JobV1):
         Returns:
             A qiskit result object containing job information.
         """
+        if index is not None:
+            gss.validation.validate_integer_param(index, min_val=0)
         timeout = timeout or self._backend._provider._client.max_retry_seconds
-        results = self._wait_for_results(timeout, wait)
+        job_results = self._wait_for_results(timeout, wait)
+        results = job_results if index is None else [job_results[index]]
 
-        # create list of result dictionaries
-        results_list = []
+        results_list = []  # create list of result dictionaries
         for result in results:
             counts = result["samples"]
-            if counts:  # change endianness to match Qiskit
+            if counts:  # match endianness to Qiskit
                 counts = dict((key[::-1], value) for (key, value) in counts.items())
                 if qubit_indices:
                     counts = qiskit.result.marginal_counts(counts, indices=qubit_indices)
-
             results_list.append(
                 {
                     "success": result["status"] == "Done",
@@ -97,7 +99,6 @@ class SuperstaqJob(qiskit.providers.JobV1):
                     "data": {"counts": counts},
                 }
             )
-
         return qiskit.result.Result.from_dict(
             {
                 "results": results_list,
