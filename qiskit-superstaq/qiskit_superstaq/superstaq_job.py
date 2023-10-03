@@ -68,7 +68,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """Retrieves the result data associated with a Superstaq job.
 
         Args:
-            index: An optional index of the specific circuit to retrieve.
+            index: An optional index to retrieve a specific result from a result list.
             timeout: An optional parameter that fixes when result retrieval times out. Units are
                 in seconds.
             wait: An optional parameter that sets the interval to check for Superstaq job results.
@@ -233,7 +233,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
     def input_circuits(
         self, index: Optional[int] = None
     ) -> Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]:
-        """Gets the original circuit(s) that were submitted for this job.
+        """Gets the original circuits that were submitted for this job.
 
         Args:
             index: An optional index of the specific circuit to retrieve.
