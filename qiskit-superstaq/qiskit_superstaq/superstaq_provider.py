@@ -269,7 +269,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         target: str = "ibmq_qasm_simulator",
-        dynamical_decoupling: bool = False,
+        dynamical_decoupling: bool = True,
         dd_strategy: str = "dynamic",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
