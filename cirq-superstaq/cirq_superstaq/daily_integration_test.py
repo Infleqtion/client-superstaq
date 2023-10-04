@@ -1,5 +1,6 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 """Integration checks that run daily (via Github action) between client and prod server."""
+import os
 
 import cirq
 import general_superstaq as gss
@@ -28,6 +29,21 @@ def test_ibmq_compile(service: css.Service) -> None:
     assert out.pulse_sequence is not None
 
     out = service.ibmq_compile(circuit, target="ibmq_lagos_qpu")
+    assert isinstance(out.circuit, cirq.Circuit)
+    assert out.pulse_sequence is not None
+
+
+def test_ibmq_compile_with_token() -> None:
+    service = css.Service(ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"])
+    qubits = cirq.LineQubit.range(4)
+    circuit = cirq.Circuit(
+        css.AceCRMinusPlus(qubits[0], qubits[1]),
+        css.AceCRMinusPlus(qubits[1], qubits[2]),
+        css.AceCRMinusPlus(qubits[2], qubits[3]),
+    )
+
+    out = service.ibmq_compile(circuit, target="ibmq_perth_qpu")
+
     assert isinstance(out.circuit, cirq.Circuit)
     assert out.pulse_sequence is not None
 
