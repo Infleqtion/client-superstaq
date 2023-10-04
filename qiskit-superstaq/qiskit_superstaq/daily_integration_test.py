@@ -1,5 +1,6 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 """Integration checks that run daily (via Github action) between client and prod server."""
+import os
 
 import general_superstaq as gss
 import numpy as np
@@ -32,6 +33,20 @@ def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
     assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
 
     out = provider.ibmq_compile(qc, target="ibmq_lagos_qpu")
+    assert isinstance(out, qss.compiler_output.CompilerOutput)
+    assert isinstance(out.circuit, qiskit.QuantumCircuit)
+    assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
+
+
+def test_ibmq_compile_with_token() -> None:
+    provider = qss.SuperstaqProvider(ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"])
+    qc = qiskit.QuantumCircuit(4)
+    qc.append(qss.AceCR("-+"), [0, 1])
+    qc.append(qss.AceCR("-+"), [1, 2])
+    qc.append(qss.AceCR("-+"), [2, 3])
+
+    out = provider.ibmq_compile(qc, target="ibmq_perth_qpu")
+
     assert isinstance(out, qss.compiler_output.CompilerOutput)
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
     assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
