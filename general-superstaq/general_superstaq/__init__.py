@@ -14,6 +14,7 @@ from . import (
     service,
     superstaq_client,
     superstaq_exceptions,
+    testing,
     typing,
     validation,
 )
@@ -33,5 +34,6 @@ __all__ = [
     "superstaq_client",
     "superstaq_exceptions",
     "typing",
+    "testing",
     "validation",
 ]
