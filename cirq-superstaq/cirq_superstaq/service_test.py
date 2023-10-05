@@ -63,6 +63,23 @@ def test_counts_to_results() -> None:
     result = css.service.counts_to_results({"00": 50, "11": 50}, circuit, cirq.ParamResolver({}))
     assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
 
+    result = css.service.counts_to_results(
+        {"00": 50.0, "11": 50.0}, circuit, cirq.ParamResolver({})
+    )
+    assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
+
+    with pytest.warns(UserWarning, match="raw counts contain fractional"):
+        result = css.service.counts_to_results(
+            {"00": 50.1, "11": 49.9}, circuit, cirq.ParamResolver({})
+        )
+        assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
+
+    with pytest.warns(UserWarning, match="raw counts contain negative"):
+        result = css.service.counts_to_results(
+            {"00": -50.1, "11": 99.9}, circuit, cirq.ParamResolver({})
+        )
+        assert result.histogram(key="01") == collections.Counter({3: 100})
+
 
 def test_service_resolve_target() -> None:
     service = css.Service(api_key="key", default_target="ss_bar_qpu")
@@ -80,7 +97,7 @@ def test_service_run_and_get_counts() -> None:
     mock_client = mock.MagicMock()
     mock_client.create_job.return_value = {
         "job_ids": ["job_id"],
-        "status": "ready",
+        "status": "Ready",
     }
     mock_client.get_job.return_value = {
         "data": {"histogram": {"11": 1}},
@@ -105,20 +122,47 @@ def test_service_run_and_get_counts() -> None:
     circuit = cirq.Circuit((cirq.X**a)(q), cirq.measure(q, key="a"))
     params = cirq.ParamResolver({"a": 0.5})
     counts = service.get_counts(
-        circuit=circuit,
+        circuits=circuit,
         repetitions=4,
         target="ibmq_qasm_simulator",
         param_resolver=params,
     )
     assert counts == {"11": 1}
 
-    result = service.run(
-        circuit=circuit,
+    results = service.run(
+        circuits=circuit,
         repetitions=4,
         target="ibmq_qasm_simulator",
         param_resolver=params,
     )
-    assert result.histogram(key="a") == collections.Counter({3: 1})
+    assert results.histogram(key="a") == collections.Counter({3: 1})
+
+    # Multiple circuit run
+    mock_client.create_job.return_value = {
+        "job_ids": ["job_id_1", "job_id_2"],
+        "status": "Done",
+        "data": {"histogram": {"11": 1}},
+        "samples": {"11": 1},
+    }
+    service._client = mock_client
+    multi_results = service.run(
+        circuits=[circuit, circuit],
+        repetitions=10,
+        target="ibmq_qasm_simulator",
+        param_resolver=params,
+    )
+
+    assert isinstance(multi_results, list)
+    for result in multi_results:
+        assert result.histogram(key="a") == collections.Counter({3: 1})
+
+    multi_counts = service.get_counts(
+        circuits=[circuit, circuit],
+        repetitions=4,
+        target="ibmq_qasm_simulator",
+        param_resolver=params,
+    )
+    assert multi_counts == [{"11": 1}, {"11": 1}]
 
 
 def test_service_sampler() -> None:
@@ -127,7 +171,7 @@ def test_service_sampler() -> None:
     service._client = mock_client
     mock_client.create_job.return_value = {
         "job_ids": ["job_id"],
-        "status": "ready",
+        "status": "Ready",
     }
     mock_client.get_job.return_value = {
         "data": {"histogram": {"0": 3, "1": 1}},
@@ -156,7 +200,7 @@ def test_service_sampler() -> None:
 def test_service_get_job() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
     mock_client = mock.MagicMock()
-    job_dict = {"status": "ready"}
+    job_dict = {"status": "Ready"}
     mock_client.get_job.return_value = job_dict
     service._client = mock_client
 
@@ -167,38 +211,32 @@ def test_service_get_job() -> None:
     mock_client.get_job.assert_not_called()
 
     # ...but it will be called with the initial query of status()
-    assert job.status() == "ready"
+    assert job.status() == "Ready"
     mock_client.get_job.assert_called_once_with("job_id")
 
 
 def test_service_create_job() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
     mock_client = mock.MagicMock()
-    mock_client.create_job.return_value = {"job_ids": ["job_id"], "status": "ready"}
-    mock_client.get_job.return_value = {"status": "completed"}
+    mock_client.create_job.return_value = {"job_ids": ["job_id"], "status": "Ready"}
+    mock_client.get_job.return_value = {"status": "Done"}
     service._client = mock_client
 
     circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)), cirq.measure(cirq.LineQubit(0)))
     job = service.create_job(
-        circuit=circuit,
+        circuits=circuit,
         repetitions=100,
         target="ss_fake_qpu",
         method="fake_method",
         fake_data="",
     )
-    assert job.status() == "completed"
+    assert job.status() == "Done"
     create_job_kwargs = mock_client.create_job.call_args[1]
     # Serialization induces a float, so we don't validate full circuit.
     assert create_job_kwargs["repetitions"] == 100
     assert create_job_kwargs["target"] == "ss_fake_qpu"
     assert create_job_kwargs["method"] == "fake_method"
     assert create_job_kwargs["fake_data"] == ""
-
-    with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
-        service.create_job(cirq.Circuit())
-
-    with pytest.raises(ValueError, match="does not support the submission of multiple circuits"):
-        service.create_job([cirq.Circuit()])  # type: ignore
 
 
 def test_service_get_balance() -> None:
