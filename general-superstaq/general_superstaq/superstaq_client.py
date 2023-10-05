@@ -280,8 +280,6 @@ class _SuperstaqClient:
                     for filter, filter_value in kwargs.items()
                 ):
                     filtered_targets.append(target)
-            if filtered_targets == []:
-                print("No targets matched the specified criteria.")
             return filtered_targets
         return target_list
 
@@ -824,28 +822,3 @@ class TargetInfo(pydantic.BaseModel):
     supports_compile: bool = False
     available: bool = False
     retired: bool = False
-
-    def __repr__(self) -> str:
-        return textwrap.dedent(
-            f"""\
-            TargetInfo(
-                target={self.target!r},
-                supports_submit={self.supports_submit!r},
-                supports_submit_qubo={self.supports_submit_qubo!r},
-                supports_compile={self.supports_compile!r},
-                available={self.available!r},
-                retired={self.retired!r},
-            )"""
-        )
-
-    def __eq__(self, other: object) -> bool:
-        if isinstance(other, TargetInfo):
-            return (
-                self.target == other.target
-                and self.supports_submit == other.supports_submit
-                and self.supports_submit_qubo == other.supports_submit_qubo
-                and self.supports_compile == other.supports_compile
-                and self.available == other.available
-                and self.retired == other.retired
-            )
-        return False
