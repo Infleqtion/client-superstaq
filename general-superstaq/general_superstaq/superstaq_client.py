@@ -21,9 +21,9 @@ import textwrap
 import time
 import urllib
 import warnings
-from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Union
 
+import pydantic
 import qubovert as qv
 import requests
 
@@ -235,7 +235,7 @@ class _SuperstaqClient:
         """
         superstaq_targets = self.get_request("/targets")["superstaq_targets"]
         target_list = [
-            TargetInfo(target_name, properties)
+            TargetInfo(target=target_name, **properties)
             for target_name, properties in superstaq_targets.items()
         ]
 
@@ -243,28 +243,26 @@ class _SuperstaqClient:
             target_list = [
                 target_info
                 for target_info in target_list
-                if ("simulator" in target_info.target) == simulator
+                if (target_info.target.endswith("simulator")) == simulator
             ]
 
         if kwargs:
             filtered_targets = []
             for target in target_list:
                 for key in kwargs.keys():
-                    if key not in target.properties:
+                    if key not in target.__fields__:
                         raise ValueError(
                             f"{key} is not a valid keyword inquiry on the target. Alternatively, "
                             "please use the /target_info endpoint to retrieve more information on "
                             "the target."
                         )
                 if all(
-                    target.properties.get(key) == value
-                    for key, value in kwargs.items()
-                    if key in target.properties
+                    getattr(target, filter) == filter_value
+                    for filter, filter_value in kwargs.items()
                 ):
                     filtered_targets.append(target)
-
             if filtered_targets == []:
-                print("No targets match the specified criteria.")
+                print("No targets matched the specified criteria.")
             return filtered_targets
         return target_list
 
@@ -798,15 +796,37 @@ def find_api_key() -> str:
     )
 
 
-@dataclass
-class TargetInfo:
-    """A class to store data returned from a /get_targets request."""
+class TargetInfo(pydantic.BaseModel):
+    """A class to store data returned from a `/get_targets` request."""
 
     target: str
-    properties: Dict[str, bool]
+    supports_submit: bool = False
+    supports_submit_qubo: bool = False
+    supports_compile: bool = False
+    available: bool = False
+    retired: bool = False
 
     def __repr__(self) -> str:
-        properties_str = ",\n    ".join(
-            f"{property}={value}" for property, value in self.properties.items()
+        return textwrap.dedent(
+            f"""\
+            TargetInfo(
+                target={self.target!r},
+                supports_submit={self.supports_submit!r},
+                supports_submit_qubo={self.supports_submit_qubo!r},
+                supports_compile={self.supports_compile!r},
+                available={self.available!r},
+                retired={self.retired!r},
+            )"""
         )
-        return f"TargetInfo(\n    target={self.target},\n    {properties_str}\n)"
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, TargetInfo):
+            return (
+                self.target == other.target
+                and self.supports_submit == other.supports_submit
+                and self.supports_submit_qubo == other.supports_submit_qubo
+                and self.supports_compile == other.supports_compile
+                and self.available == other.available
+                and self.retired == other.retired
+            )
+        return False
