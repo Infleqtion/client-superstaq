@@ -56,7 +56,7 @@ class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
         Returns:
             A dictionary listing the Superstaq targets.
         """
-        return gss.typing.RETURNED_TARGETS
+        return gss.testing.RETURNED_TARGETS
 
 
 class MockSuperstaqProvider(qss.SuperstaqProvider):

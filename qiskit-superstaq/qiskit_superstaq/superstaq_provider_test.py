@@ -426,5 +426,5 @@ def test_dfe(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvide
 
 @patch("requests.get")
 def test_get_targets(mock_get: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
-    mock_get.return_value.json = {"superstaq_targets": gss.typing.TARGET_LIST}
-    assert fake_superstaq_provider.get_targets() == gss.typing.RETURNED_TARGETS
+    mock_get.return_value.json = {"superstaq_targets": gss.testing.TARGET_LIST}
+    assert fake_superstaq_provider.get_targets() == gss.testing.RETURNED_TARGETS

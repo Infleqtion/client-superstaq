@@ -251,11 +251,11 @@ def test_service_get_balance() -> None:
 
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaqClient.get_request",
-    return_value={"superstaq_targets": gss.typing.TARGET_LIST},
+    return_value={"superstaq_targets": gss.testing.TARGET_LIST},
 )
 def test_service_get_targets(mock_get_request: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    assert service.get_targets() == gss.typing.RETURNED_TARGETS
+    assert service.get_targets() == gss.testing.RETURNED_TARGETS
 
 
 @mock.patch(
