@@ -20,7 +20,7 @@ build-backend = "setuptools.build_meta"
 include = ["checks_superstaq*"]
 
 [tool.setuptools.package-data]
-general_superstaq = ["checks_superstaq/checks-pyproject.toml"]
+checks_superstaq = ["checks-pyproject.toml"]
 
 [tool.setuptools.dynamic.version]
 attr = "checks_superstaq._version.__version__"
