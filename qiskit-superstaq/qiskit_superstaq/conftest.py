@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, List, Optional
 
 import general_superstaq as gss
 import pytest
@@ -32,7 +32,6 @@ class MockSuperstaqBackend(qss.SuperstaqBackend):
             "max_shots": -1,
             "coupling_map": None,
         }
-
         gss.validation.validate_target(target)
 
         qiskit.providers.BackendV1.__init__(
@@ -47,38 +46,17 @@ class MockSuperstaqBackend(qss.SuperstaqBackend):
 class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
     """Stand-in for `_SuperstaqClient` that the tests can call."""
 
-    def get_targets(self) -> Dict[str, Dict[str, List[str]]]:
+    def get_targets(
+        self, simulator: Optional[bool] = None, **kwargs: Any
+    ) -> List[gss.superstaq_client.TargetInfo]:
         """Makes a GET request to retrieve targets from the Superstaq API.
 
-        Gets a list of available, unavailable, and retired targets.
+        Gets all targets supported by Superstaq (available, unavailable, and retired targets).
 
         Returns:
-            A dictionary listing the targets.
+            A dictionary listing the Superstaq targets.
         """
-        return {
-            "superstaq_targets": {
-                "compile-and-run": [
-                    "ibmq_qasm_simulator",
-                    "ibmq_armonk_qpu",
-                    "ibmq_santiago_qpu",
-                    "ibmq_bogota_qpu",
-                    "ibmq_lima_qpu",
-                    "ibmq_belem_qpu",
-                    "ibmq_quito_qpu",
-                    "ibmq_statevector_simulator",
-                    "ibmq_mps_simulator",
-                    "ibmq_extended-stabilizer_simulator",
-                    "ibmq_stabilizer_simulator",
-                    "ibmq_manila_qpu",
-                    "aws_dm1_simulator",
-                    "aws_tn1_simulator",
-                    "ionq_ion_qpu",
-                    "aws_sv1_simulator",
-                    "rigetti_aspen-9_qpu",
-                ],
-                "compile-only": ["aqt_keysight_qpu", "sandia_qscout_qpu"],
-            }
-        }
+        return gss.typing.RETURNED_TARGETS
 
 
 class MockSuperstaqProvider(qss.SuperstaqProvider):
