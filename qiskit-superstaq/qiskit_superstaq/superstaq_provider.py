@@ -121,7 +121,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         submit_targets = self._client.get_targets()
         superstaq_backends = []
         for backend in submit_targets:
-            if backend.properties["supports_submit"]:
+            if backend.supports_submit:
                 superstaq_backends.append(self.get_backend(backend.target))
         return superstaq_backends
 
