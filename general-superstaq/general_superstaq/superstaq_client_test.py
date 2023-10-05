@@ -490,14 +490,14 @@ def test_superstaq_client_resource_estimate(mock_post: mock.MagicMock) -> None:
 @mock.patch("requests.get")
 def test_superstaq_client_get_targets(mock_get: mock.MagicMock) -> None:
     mock_get.return_value.ok = True
-    mock_get.return_value.json.return_value = {"superstaq_targets": gss.typing.TARGET_LIST}
+    mock_get.return_value.json.return_value = {"superstaq_targets": gss.testing.TARGET_LIST}
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
     response = client.get_targets()
-    assert response == gss.typing.RETURNED_TARGETS
+    assert response == gss.testing.RETURNED_TARGETS
 
     mock_get.assert_called_with(
         f"http://example.com/{API_VERSION}/targets", headers=EXPECTED_HEADERS, verify=False
@@ -507,7 +507,7 @@ def test_superstaq_client_get_targets(mock_get: mock.MagicMock) -> None:
     response = client.get_targets(simulator=True)
     simulator_targets = [
         target_info
-        for target_info in gss.typing.RETURNED_TARGETS
+        for target_info in gss.testing.RETURNED_TARGETS
         if target_info.target.endswith("simulator")
     ]
     assert response == simulator_targets
@@ -853,23 +853,3 @@ def test_find_api_key() -> None:
         with mock.patch.dict(os.environ, SUPERSTAQ_API_KEY=""):
             with mock.patch("pathlib.Path.is_file", return_value=False):
                 gss.superstaq_client.find_api_key()
-
-
-def test_target_info_repr_and_eq() -> None:
-    sample_target_info = gss.superstaq_client.TargetInfo(
-        target="example_target",
-        **{
-            "supports_submit": False,
-            "supports_submit_qubo": True,
-            "supports_compile": False,
-            "available": True,
-            "retired": False,
-        },
-    )
-    assert (
-        repr(sample_target_info)
-        == "TargetInfo(\n    target='example_target',\n    supports_submit=False,\n    "
-        "supports_submit_qubo=True,\n    supports_compile=False,\n    "
-        "available=True,\n    retired=False,\n)"
-    )
-    assert sample_target_info != {"superstaq_target": "example_target"}
