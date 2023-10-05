@@ -47,7 +47,7 @@ if __name__ == "__main__":
             date = datetime.today().strftime("%Y-%m-%d")
             tag = f"{date}-{label}-{target}"
 
-            target_info = service.target_info(target)
+            target_info = service.target_info(target.target)
             if label == "bitcode3" and not target_info.get("supports_midcircuit_measurement"):
                 continue
 
@@ -57,9 +57,9 @@ if __name__ == "__main__":
                 job = service.create_job(
                     circuit,
                     repetitions=1000,
-                    target=target,
+                    target=target.target,
                     tag=tag,
                     lifespan=3653,
                 )
             except Exception:
-                print(f"{label} on {target} failed.")
+                print(f"{label} on {target.target} failed.")
