@@ -32,6 +32,18 @@ def test_provider(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     assert str(fake_superstaq_provider.backends()[0]) == "aws_dm1_simulator"
 
 
+def test_provider_args() -> None:
+    with pytest.raises(ValueError, match="must be either 'ibm_cloud' or 'ibm_quantum'"):
+        ss_provider = qss.SuperstaqProvider(api_key="MY_TOKEN", ibmq_channel="foo")
+
+    ss_provider = qss.SuperstaqProvider(
+        api_key="MY_TOKEN", ibmq_channel="ibm_quantum", ibmq_instance="instance", ibmq_token="token"
+    )
+    assert ss_provider._client.client_kwargs == dict(
+        ibmq_channel="ibm_quantum", ibmq_instance="instance", ibmq_token="token"
+    )
+
+
 @patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
 def test_get_balance() -> None:
     ss_provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
