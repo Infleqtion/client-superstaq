@@ -239,47 +239,57 @@ class _SuperstaqClient:
         """
         return self.post_request("/accept_terms_of_use", {"user_input": user_input})
 
-    def get_targets(self, simulator: Optional[bool] = None, **kwargs: Any) -> List[TargetInfo]:
+    def get_targets(
+        self,
+        simulator: Optional[bool] = None,
+        supports_submit: Optional[bool] = None,
+        supports_submit_qubo: Optional[bool] = None,
+        supports_compile: Optional[bool] = None,
+        available: Optional[bool] = None,
+        retired: Optional[bool] = None,
+    ) -> List[TargetInfo]:
         """Makes a GET request to retrieve targets from the Superstaq API.
 
         Args:
-            simulator: Optional flag to restrict the list of targets to simulators.
-            kwargs: Optional desired target filters.
-
-        Raises:
-            ValueError: If `kwargs` is not a valid keyword inquiry on the target.
+            simulator: Optional flag to restrict the list of targets to (non-) simulators.
+            supports_submit: Optional boolean flag to only return targets that (don't) allow
+                circuit submissions.
+            supports_submit_qubo: Optional boolean flag to only return targets that (don't)
+                allow qubo submissions.
+            supports_compile: Optional boolean flag to return targets that (don't) support
+                circuit compilation.
+            available: Optional boolean flag to only return targets that are (not) available
+                to use.
+            retired: Optional boolean flag to only return targets that are or are not retired.
 
         Returns:
-            A list of Superstaq targets (or filterd targets based on `kwargs`).
+            A list of Superstaq targets (or a filtered set of targets).
         """
+        filters = {
+            key: value
+            for key, value in locals().items()
+            if key not in ("self", "simulator") and value is not None
+        }
         superstaq_targets = self.get_request("/targets")["superstaq_targets"]
         target_list = [
             TargetInfo(target=target_name, **properties)
             for target_name, properties in superstaq_targets.items()
         ]
-
         if simulator is not None:
             target_list = [
                 target_info
                 for target_info in target_list
                 if (target_info.target.endswith("simulator")) == simulator
             ]
-
-        if kwargs:
-            filtered_targets = []
-            for target in target_list:
-                for key in kwargs.keys():
-                    if key not in target.__fields__:
-                        raise ValueError(
-                            f"{key} is not a valid keyword inquiry on the target. Alternatively, "
-                            "please use the /target_info endpoint to retrieve more information on "
-                            "the target."
-                        )
+        if filters:
+            filtered_targets = [
+                target_info
+                for target_info in target_list
                 if all(
-                    getattr(target, filter) == filter_value
-                    for filter, filter_value in kwargs.items()
-                ):
-                    filtered_targets.append(target)
+                    getattr(target_info, filter) == filter_value
+                    for filter, filter_value in filters.items()
+                )
+            ]
             return filtered_targets
         return target_list
 

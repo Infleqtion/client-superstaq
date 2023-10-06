@@ -405,26 +405,33 @@ class Service(gss.service.Service):
         return balance
 
     def get_targets(
-        self, simulator: Optional[bool] = None, **kwargs: Any
+        self,
+        simulator: Optional[bool] = None,
+        supports_submit: Optional[bool] = None,
+        supports_submit_qubo: Optional[bool] = None,
+        supports_compile: Optional[bool] = None,
+        available: Optional[bool] = None,
+        retired: Optional[bool] = None,
     ) -> List[gss.superstaq_client.TargetInfo]:
         """Gets a list of Superstaq targets along with their status information.
 
         Args:
-            simulator: Optional flag to restrict the list of targets to simulators.
-            kwargs: Optional desired target filters.
-                - supports_submit: Boolean flag to only return targets that (don't) allow circuit
-                submissions.
-                - supports_submit_qubo: Boolean flag to only return targets that (don't) allow qubo
-                submissions.
-                - supports_compile: Boolean flag to return targets that (don't) support circuit
-                compilation.
-                - available: Boolean flag to only return targets that are (not) available to use.
-                - retired: Boolean flag to only return targets that are or are not retired.
+            simulator: Optional flag to restrict the list of targets to (non-) simulators.
+            supports_submit: Optional boolean flag to only return targets that (don't) allow
+                circuit submissions.
+            supports_submit_qubo: Optional boolean flag to only return targets that (don't)
+                allow qubo submissions.
+            supports_compile: Optional boolean flag to return targets that (don't) support
+                circuit compilation.
+            available: Optional boolean flag to only return targets that are (not) available
+                to use.
+            retired: Optional boolean flag to only return targets that are or are not retired.
 
         Returns:
-            A list of Superstaq targets (or filterd targets based on `kwargs`).
+            A list of Superstaq targets (or a filtered set of targets).
         """
-        return self._client.get_targets(simulator, **kwargs)
+        filters = {key: value for key, value in locals().items() if key != "self"}
+        return self._client.get_targets(**filters)
 
     def resource_estimate(
         self, circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]], target: Optional[str] = None

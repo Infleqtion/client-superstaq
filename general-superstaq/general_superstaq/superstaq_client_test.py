@@ -512,7 +512,7 @@ def test_superstaq_client_get_targets(mock_get: mock.MagicMock) -> None:
     ]
     assert response == simulator_targets
 
-    # test kwargs return
+    # test filtered return
     response = client.get_targets(simulator=True, supports_submit_qubo=True, available=True)
     assert response == [
         gss.superstaq_client.TargetInfo(
@@ -530,10 +530,6 @@ def test_superstaq_client_get_targets(mock_get: mock.MagicMock) -> None:
     # test empty return
     response = client.get_targets(simulator=False, supports_submit_qubo=True, available=True)
     assert response == []
-
-    # invalid kwarg test
-    with pytest.raises(ValueError, match="a valid keyword inquiry on the target"):
-        _ = client.get_targets(invalid_key=True)
 
 
 @mock.patch("requests.post")
