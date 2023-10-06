@@ -310,36 +310,41 @@ def test_qutrit_z_pow_gate_protocols(gate_type: Type[css.ops.qudit_gates._Qutrit
 
 
 def test_virtual_z_pow_gate() -> None:
-    fixed_gates = [css.VZ3_01, css.VZ3_12, css.VZ4_01, css.VZ4_12, css.VZ4_23]
+    fixed_gates = [css.QutritVZ1, css.QutritVZ2, css.QuquartVZ1, css.QuquartVZ2, css.QuquartVZ3]
     for i, gate in enumerate(fixed_gates):
         for other_gate in fixed_gates[:i]:
             assert not cirq.equal_up_to_global_phase(gate, other_gate)
             assert not cirq.approx_eq(gate, other_gate)
 
-    assert repr(css.VZ3_01**1.0) == "css.VZ3_01"
-    assert repr(css.VZ4_12**1.2) == "(css.VZ4_12**1.2)"
+    assert repr(css.QutritVZ1**1.0) == "css.QutritVZ1"
+    assert repr(css.QuquartVZ2**1.2) == "(css.QuquartVZ2**1.2)"
+    assert (
+        repr(css.VirtualZPowGate(dimension=5, level=3))
+        == "css.VirtualZPowGate(dimension=5, level=3)"
+    )
     assert (
         repr(css.VirtualZPowGate(dimension=3, global_shift=0.5))
         == "css.VirtualZPowGate(dimension=3, global_shift=0.5)"
     )
 
-    assert str(css.VZ3_12**1.0) == "VZ3_12"
-    assert str(css.VZ4_23**1.2) == "VZ4_23**1.2"
-    assert str(css.VirtualZPowGate(dimension=4, global_shift=0.5)) == "VZ4_01"
+    assert str(css.QutritVZ2**1.0) == "QutritVZ2"
+    assert str(css.QuquartVZ3**1.2) == "QuquartVZ3**1.2"
+    assert str(css.VirtualZPowGate(dimension=5, level=4) ** 1.2) == "Qu5itVZ4**1.2"
+    assert str(css.VirtualZPowGate(dimension=4, global_shift=0.5)) == "QuquartVZ1"
 
     cirq.testing.assert_has_diagram(
-        cirq.Circuit(css.VZ3_01(cirq.LineQid(0, 3))),
-        "0 (d=3): ───VZ₀₁───",
+        cirq.Circuit(css.QutritVZ1(cirq.LineQid(0, 3))),
+        "0 (d=3): ───VZ1───",
     )
 
     cirq.testing.assert_has_diagram(
-        cirq.Circuit(css.VZ4_23(cirq.LineQid(0, 4)) ** 1.2),
-        "0 (d=4): ───VZ₂₃^-0.8───",
+        cirq.Circuit(css.QuquartVZ3(cirq.LineQid(0, 4)) ** 1.2),
+        "0 (d=4): ───VZ3^-0.8───",
     )
 
     cirq.testing.assert_has_diagram(
-        cirq.Circuit(css.VZ4_12(cirq.LineQid(0, 4))),
-        "0 (d=4): ---VZ[1,2]---",
+        cirq.Circuit(css.QuquartVZ2(cirq.LineQid(0, 4))),
+        "0 (d=4): ---VZ2---",
         use_unicode_characters=False,
     )
 

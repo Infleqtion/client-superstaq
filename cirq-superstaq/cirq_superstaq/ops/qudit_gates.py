@@ -326,25 +326,29 @@ class VirtualZPowGate(cirq.EigenGate):
         return cirq.obj_to_dict_helper(self, ["exponent", "global_shift", "dimension", "level"])
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        base, excited = self._level - 1, self._level
-        if args.use_unicode_characters and excited < 10:
-            wire_symbol = f"VZ{ord('₀') + base:c}{ord('₀') + excited:c}"
-        else:
-            wire_symbol = f"VZ[{base},{excited}]"
-
+        wire_symbol = f"VZ{self._level}"
         return cirq.CircuitDiagramInfo(
             wire_symbols=(wire_symbol,), exponent=self._diagram_exponent(args)
         )
 
     def __str__(self) -> str:
-        base_str = f"VZ{self._dimension}_{self._level - 1}{self._level}"
+        if self._dimension == 3:
+            qid_str = "Qutrit"
+        elif self._dimension == 4:
+            qid_str = "Ququart"
+        else:
+            qid_str = f"Qu{self._dimension}it"
+
+        base_str = f"{qid_str}VZ{self._level}"
+
         if self._exponent == 1:
             return base_str
         return f"{base_str}**{self._exponent}"
 
     def __repr__(self) -> str:
         if not self._global_shift and self._dimension in (3, 4):
-            base_repr = f"css.VZ{self._dimension}_{self._level - 1}{self._level}"
+            qid_str = "Qutrit" if self._dimension == 3 else "Ququart"
+            base_repr = f"css.{qid_str}VZ{self._level}"
             if self._exponent == 1:
                 return base_repr
             return f"({base_repr}**{proper_repr(self._exponent)})"
@@ -673,11 +677,11 @@ BSWAP_INV = BSwapPowGate(exponent=-1)
 CZ3 = QutritCZPowGate()
 CZ3_INV = QutritCZPowGate(exponent=-1)
 
-VZ3_01 = VirtualZPowGate(dimension=3, level=1)
-VZ3_12 = VirtualZPowGate(dimension=3, level=2)
-VZ4_01 = VirtualZPowGate(dimension=4, level=1)
-VZ4_12 = VirtualZPowGate(dimension=4, level=2)
-VZ4_23 = VirtualZPowGate(dimension=4, level=3)
+QutritVZ1 = VirtualZPowGate(dimension=3, level=1)
+QutritVZ2 = VirtualZPowGate(dimension=3, level=2)
+QuquartVZ1 = VirtualZPowGate(dimension=4, level=1)
+QuquartVZ2 = VirtualZPowGate(dimension=4, level=2)
+QuquartVZ3 = VirtualZPowGate(dimension=4, level=3)
 
 QutritZ0 = QutritZ0PowGate()
 QutritZ1 = QutritZ1PowGate()
