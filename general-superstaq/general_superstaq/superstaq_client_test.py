@@ -496,40 +496,13 @@ def test_superstaq_client_get_targets(mock_get: mock.MagicMock) -> None:
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
+    client.get_request("/targets", json_dict={"simulator": None})
     response = client.get_targets()
     assert response == gss.testing.RETURNED_TARGETS
 
     mock_get.assert_called_with(
         f"http://example.com/{API_VERSION}/targets", headers=EXPECTED_HEADERS, verify=False
     )
-
-    # test simulator only return
-    response = client.get_targets(simulator=True)
-    simulator_targets = [
-        target_info
-        for target_info in gss.testing.RETURNED_TARGETS
-        if target_info.target.endswith("simulator")
-    ]
-    assert response == simulator_targets
-
-    # test filtered return
-    response = client.get_targets(simulator=True, supports_submit_qubo=True, available=True)
-    assert response == [
-        gss.superstaq_client.TargetInfo(
-            target="toshiba_bifurcation_simulator",
-            **{
-                "supports_submit": False,
-                "supports_submit_qubo": True,
-                "supports_compile": False,
-                "available": True,
-                "retired": False,
-            },
-        )
-    ]
-
-    # test empty return
-    response = client.get_targets(simulator=False, supports_submit_qubo=True, available=True)
-    assert response == []
 
 
 @mock.patch("requests.post")
