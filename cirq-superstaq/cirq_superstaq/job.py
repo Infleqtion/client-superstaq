@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Represents a job created via the Superstaq API."""
+import collections
 import time
-from typing import Any, Dict, Tuple
+import warnings
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, overload
 
 import cirq
 import general_superstaq as gss
@@ -42,7 +44,7 @@ class Job:
         "(subsequent calls will return not found).",
     )
 
-    NON_TERMINAL_STATES = ("Ready", "Submitted", "Running")
+    NON_TERMINAL_STATES = ("Ready", "Submitted", "Running", "Queued")
     document(
         NON_TERMINAL_STATES, "States of the Superstaq API job which can transition to other states."
     )
@@ -58,7 +60,7 @@ class Job:
     )
 
     def __init__(self, client: gss.superstaq_client._SuperstaqClient, job_id: str) -> None:
-        """Construct a Job.
+        """Construct a `Job`.
 
         Users should not call this themselves. If you only know the `job_id`, use `get_job`
         on `css.Service`.
@@ -68,22 +70,59 @@ class Job:
             job_id: Unique identifier for the job.
         """
         self._client = client
-        self._job: Dict[str, Any] = {"status": "Submitted"}
+        self._overall_status = "Submitted"
+        self._job: Dict[str, Any] = {}
         self._job_id = job_id
 
     def _refresh_job(self) -> None:
         """If the last fetched job is not terminal, gets the job from the API."""
-        if self._job["status"] not in self.TERMINAL_STATES:
-            self._job = self._client.get_job(self.job_id())
+
+        for job_id in self._job_id.split(","):
+            if (job_id not in self._job) or (
+                self._job[job_id]["status"] not in self.TERMINAL_STATES
+            ):
+                result = self._client.get_job(job_id)
+                self._job[job_id] = result
+
+    def _update_status_queue_info(self) -> None:
+        """Updates the overall status based on status queue info.
+
+        Note:
+            When we have multiple jobs, we will take the "worst status" among the jobs.
+            The worst status check follows the chain: Submitted -> Ready -> Queued ->
+            Running -> Failed -> Canceled -> Deleted -> Done. For example, if any of the
+            jobs are still running (even if some are done), we report 'Running' as the
+            overall status of the entire batch.
+        """
+
+        job_id_list = self._job_id.split(",")  # separate aggregated job ids
+
+        status_occurrence = {self._job[job_id]["status"] for job_id in job_id_list}
+        status_priority_order = (
+            "Submitted",
+            "Ready",
+            "Queued",
+            "Running",
+            "Failed",
+            "Canceled",
+            "Deleted",
+            "Done",
+        )
+
+        for temp_status in status_priority_order:
+            if temp_status in status_occurrence:
+                self._overall_status = temp_status
+                return
 
     def _check_if_unsuccessful(self) -> None:
         status = self.status()
         if status in self.UNSUCCESSFUL_STATES:
-            if "failure" in self._job and "error" in self._job["failure"]:
-                # if possible append a message to the failure status, e.g. "Failed (<message>)"
-                error = self._job["failure"]["error"]
-                status += f" ({error})"
-            raise gss.SuperstaqUnsuccessfulJobException(self._job_id, status)
+            for job_id in self._job_id.split(","):
+                if "failure" in self._job[job_id] and "error" in self._job[job_id]["failure"]:
+                    # if possible append a message to the failure status, e.g. "Failed (<message>)"
+                    error = self._job[job_id]["failure"]["error"]
+                    status += f" ({error})"
+                raise gss.SuperstaqUnsuccessfulJobException(job_id, status)
 
     def job_id(self) -> str:
         """Gets the job id of this job.
@@ -108,7 +147,8 @@ class Job:
             The job status.
         """
         self._refresh_job()
-        return self._job["status"]
+        self._update_status_queue_info()
+        return self._overall_status
 
     def target(self) -> str:
         """Gets the Superstaq target associated with this job.
@@ -120,25 +160,58 @@ class Job:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
             SuperstaqServerException: If unable to get the status of the job from the API.
         """
-        if "target" not in self._job:
+        first_job_id = self._job_id.split(",")[0]
+        if (first_job_id not in self._job) or "target" not in self._job[first_job_id]:
             self._refresh_job()
+        return self._job[first_job_id]["target"]
 
-        return self._job["target"]
+    @overload
+    def num_qubits(self, index: int) -> int:
+        ...
 
-    def num_qubits(self) -> int:
-        """Gets the number of qubits required for this job.
+    @overload
+    def num_qubits(
+        self, index: None = None
+    ) -> Union[int, List[int]]:  # Change return to `List[int]` after deprecation
+        ...
+
+    def num_qubits(self, index: Optional[int] = None) -> Union[int, List[int]]:
+        """Gets the number of qubits required for each circuit in this job.
+
+        Args:
+            index: The index of the circuit to get number of qubits from.
 
         Returns:
-            The number of qubits used in this job.
+            A list of the numbers of qubits in all circuits or just a single qubit
+            number for the given circuit index.
 
         Raises:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
             SuperstaqServerException: If unable to get the status of the job from the API.
         """
-        if "num_qubits" not in self._job:
+        job_ids = self._job_id.split(",")
+        if not all(
+            job_id in self._job and self._job[job_id].get("num_qubits") for job_id in job_ids
+        ):
             self._refresh_job()
 
-        return self._job["num_qubits"]
+        if index is None:
+            qubit_list = [self._job[job_id]["num_qubits"] for job_id in job_ids]
+            if len(qubit_list) == 1:
+                warnings.warn(
+                    "In the future, calling `num_qubits()` without an argument will return a list "
+                    "of the numbers of qubits in all circuits in this job. Use e.g., "
+                    "`num_qubits(0)` to get the number of qubits in the first (or a single) "
+                    "circuit.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                return qubit_list[0]
+            return qubit_list
+
+        gss.validation.validate_integer_param(index, min_val=0)
+        num_qubits = self._job[job_ids[index]]["num_qubits"]
+        return num_qubits
 
     def repetitions(self) -> int:
         """Gets the number of repetitions requested for this job.
@@ -150,22 +223,104 @@ class Job:
             SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
             SuperstaqServerException: If unable to get the status of the job from the API.
         """
-        if "shots" not in self._job:
+        first_job_id = self._job_id.split(",")[0]
+        if (first_job_id not in self._job) or "shots" not in self._job[first_job_id]:
             self._refresh_job()
 
-        return self._job["shots"]
+        return self._job[first_job_id]["shots"]
 
-    def compiled_circuit(self) -> cirq.Circuit:
-        """Gets the compiled circuit returned by this job.
+    @overload
+    def _get_circuits(self, circuit_type: str, index: int) -> cirq.Circuit:
+        ...
+
+    @overload
+    def _get_circuits(
+        self, circuit_type: str, index: None = None
+    ) -> Union[
+        cirq.Circuit, List[cirq.Circuit]
+    ]:  # Change return to `List[cirq.Circuit]` after deprecation
+        ...
+
+    def _get_circuits(
+        self, circuit_type: str, index: Optional[int] = None
+    ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
+        """Retrieves the corresponding circuit(s) to `circuit_type`.
+
+        Args:
+            circuit_type: The kind of circuit(s) to retrieve. Either "input_circuit" or
+                "compiled_circuit".
+            index: The index of the circuit to retrieve.
 
         Returns:
-            The compiled circuit.
+            A single circuit or list of circuits.
         """
-        if "compiled_circuit" not in self._job:
+        if circuit_type not in ("input_circuit", "compiled_circuit"):
+            raise ValueError("The circuit type requested is invalid.")
+
+        job_ids = self._job_id.split(",")
+        if not all(
+            job_id in self._job and self._job[job_id].get(circuit_type) for job_id in job_ids
+        ):
             self._refresh_job()
 
-        return css.deserialize_circuits(self._job["compiled_circuit"])[0]
+        if index is None:
+            serialized_circuits = [self._job[job_id][circuit_type] for job_id in job_ids]
+            return [css.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
 
+        gss.validation.validate_integer_param(index, min_val=0)
+        serialized_circuit = self._job[job_ids[index]][circuit_type]
+        return css.deserialize_circuits(serialized_circuit)[0]
+
+    @overload
+    def compiled_circuits(self, index: int) -> cirq.Circuit:
+        ...
+
+    @overload
+    def compiled_circuits(
+        self, index: None = None
+    ) -> Union[
+        cirq.Circuit, List[cirq.Circuit]
+    ]:  # Change return to `List[cirq.Circuit]` after deprecation
+        ...
+
+    def compiled_circuits(
+        self, index: Optional[int] = None
+    ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
+        """Gets the compiled circuits that were processed for this job.
+
+        Args:
+            index: An optional index of the specific circuit to retrieve.
+
+        Returns:
+            A single compiled circuit or list of compiled circuits.
+        """
+        return self._get_circuits("compiled_circuit", index=index)
+
+    @overload
+    def input_circuits(self, index: int) -> cirq.Circuit:
+        ...
+
+    @overload
+    def input_circuits(
+        self, index: None = None
+    ) -> Union[
+        cirq.Circuit, List[cirq.Circuit]
+    ]:  # Change return to `List[cirq.Circuit]` after deprecation
+        ...
+
+    def input_circuits(
+        self, index: Optional[int] = None
+    ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
+        """Gets the original circuits that were submitted for this job.
+
+        Args:
+            index: An optional index of the specific circuit to retrieve.
+
+        Returns:
+            A single input circuit or list of submitted input circuits.
+        """
+        return self._get_circuits("input_circuit", index=index)
+    
     def pulse_gate_circuit(self) -> qiskit.QuantumCircuit:
         """Gets the pulse gate circuit returned by this job.
 
@@ -182,23 +337,42 @@ class Job:
         error = f"Job: {self._job_id} was not submitted to a pulse-enabled device"
         raise gss.SuperstaqServerException(error)
 
-    def input_circuit(self) -> cirq.Circuit:
-        """Gets the original circuit that was submitted for this job.
+    @overload
+    def counts(
+        self,
+        index: int,
+        timeout_seconds: int = 7200,
+        polling_seconds: float = 1.0,
+        qubit_indices: Optional[Sequence[int]] = None,
+    ) -> Dict[str, int]:
+        ...
 
-        Returns:
-            The submitted input circuit.
-        """
-        if "input_circuit" not in self._job:
-            self._refresh_job()
+    @overload
+    def counts(
+        self,
+        index: None = None,
+        timeout_seconds: int = 7200,
+        polling_seconds: float = 1.0,
+        qubit_indices: Optional[Sequence[int]] = None,
+    ) -> Union[
+        Dict[str, int], List[Dict[str, int]]
+    ]:  # Change return to just `List[Dict[str, int]]` after deprecation
+        ...
 
-        return css.deserialize_circuits(self._job["input_circuit"])[0]
-
-    def counts(self, timeout_seconds: int = 7200, polling_seconds: float = 1.0) -> Dict[str, int]:
+    def counts(
+        self,
+        index: Optional[int] = None,
+        timeout_seconds: int = 7200,
+        polling_seconds: float = 1.0,
+        qubit_indices: Optional[Sequence[int]] = None,
+    ) -> Union[Dict[str, int], List[Dict[str, int]]]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
 
         Args:
+            index: The index of the circuit which the counts correspond to.
             timeout_seconds: The total number of seconds to poll for.
             polling_seconds: The interval with which to poll.
+            qubit_indices: If provided, only include measurements counts of these qubits.
 
         Returns:
             A dictionary containing the frequency counts of the measurements.
@@ -219,9 +393,32 @@ class Job:
             time_waited_seconds += polling_seconds
 
         self._check_if_unsuccessful()
-        return self._job["samples"]
+        job_ids = self._job_id.split(",")
 
-    def to_dict(self) -> Dict[str, Any]:
+        if index is None:
+            counts_list = [self._job[job_id]["samples"] for job_id in self._job_id.split(",")]
+            if qubit_indices:
+                counts_list = [
+                    _get_marginal_counts(counts, qubit_indices) for counts in counts_list
+                ]
+            if len(counts_list) == 1:
+                warnings.warn(
+                    "In the future, calling `counts()` without an argument will return a list of "
+                    "the counts in all circuits in this job. Use e.g., `counts(0)` to get the "
+                    "counts for the first (or a single) circuit.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                return counts_list[0]
+            return counts_list
+
+        gss.validation.validate_integer_param(index, min_val=0)
+        single_counts = self._job[job_ids[index]]["samples"]
+        if qubit_indices:
+            return _get_marginal_counts(single_counts, qubit_indices)
+        return single_counts
+
+    def to_dict(self) -> Dict[str, gss.typing.Job]:
         """Refreshes and returns job information.
 
         Note:
@@ -243,3 +440,20 @@ class Job:
 
     def _value_equality_values_(self) -> Tuple[str, Dict[str, Any]]:
         return self._job_id, self._job
+
+
+def _get_marginal_counts(counts: Dict[str, int], indices: Sequence[int]) -> Dict[str, int]:
+    """Compute a marginal distribution, accumulating total counts on specific bits (by index).
+
+    Args:
+        counts: The dictionary containing all the counts.
+        indices: The indices of the bits on which to accumulate counts.
+
+    Returns:
+        A dictionary of counts on the target indices.
+    """
+    target_counts: Dict[str, int] = collections.defaultdict(int)
+    for bitstring, count in counts.items():
+        target_key = "".join([bitstring[index] for index in indices])
+        target_counts[target_key] += count
+    return dict(target_counts)

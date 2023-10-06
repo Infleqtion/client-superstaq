@@ -12,6 +12,7 @@ jobs:
     env:
       SUPERSTAQ_API_KEY : ${{ secrets.SUPERSTAQ_API_KEY }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.8
@@ -30,6 +31,7 @@ jobs:
         uses: JasonEtco/create-an-issue@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_USER_IBMQ_TOKEN : ${{ secrets.TEST_USER_IBMQ_TOKEN }}
         with:
           filename: .github/integration-check-failure-issue.md
           update_existing: true
