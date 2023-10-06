@@ -265,32 +265,14 @@ class _SuperstaqClient:
         Returns:
             A list of Superstaq targets (or a filtered set of targets).
         """
-        filters = {
-            key: value
-            for key, value in locals().items()
-            if key not in ("self", "simulator") and value is not None
+        target_filters = {
+            key: value for key, value in locals().items() if key != "self" and value is not None
         }
-        superstaq_targets = self.get_request("/targets")["superstaq_targets"]
+        superstaq_targets = self.get_request("/targets", target_filters)["superstaq_targets"]
         target_list = [
             TargetInfo(target=target_name, **properties)
             for target_name, properties in superstaq_targets.items()
         ]
-        if simulator is not None:
-            target_list = [
-                target_info
-                for target_info in target_list
-                if (target_info.target.endswith("simulator")) == simulator
-            ]
-        if filters:
-            filtered_targets = [
-                target_info
-                for target_info in target_list
-                if all(
-                    getattr(target_info, filter) == filter_value
-                    for filter, filter_value in filters.items()
-                )
-            ]
-            return filtered_targets
         return target_list
 
     def add_new_user(self, json_dict: Dict[str, str]) -> str:
@@ -615,11 +597,12 @@ class _SuperstaqClient:
         """
         return self.get_request("/get_aqt_configs")
 
-    def get_request(self, endpoint: str) -> Any:
+    def get_request(self, endpoint: str, json_dict: Optional[Mapping[str, object]] = None) -> Any:
         """Performs a GET request on a given endpoint.
 
         Args:
             endpoint: The endpoint to perform the GET request on.
+            json_dict: Optional dictionary of relevant options.
 
         Returns:
             The response of the GET request.
@@ -631,6 +614,13 @@ class _SuperstaqClient:
             Returns:
                 The Flask GET request object.
             """
+            if json_dict:
+                return requests.get(
+                    f"{self.url}{endpoint}",
+                    json=json_dict,
+                    headers=self.headers,
+                    verify=self.verify_https,
+                )
             return requests.get(
                 f"{self.url}{endpoint}",
                 headers=self.headers,
