@@ -337,7 +337,6 @@ class VirtualZPowGate(cirq.EigenGate):
 
     def __str__(self) -> str:
         base_str = f"VZ({self._level}+)"
-
         if self._exponent == 1:
             return base_str
         return f"{base_str}**{self._exponent}"
