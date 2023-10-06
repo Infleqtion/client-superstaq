@@ -331,7 +331,9 @@ class Job:
             ValueError: If job was not run on an IBM pulse device.
         """
 
-        if "pulse_gate_circuit" in self._job:
+        if "pulse_gate_circuits" not in self._job:
+            self._refresh_job()
+        if self._job.get("pulse_gate_circuits") is not None:
             return qss.deserialize_circuits(self._job["pulse_gate_circuits"])[0]
 
         error = f"Job: {self._job_id} was not submitted to a pulse-enabled device"
