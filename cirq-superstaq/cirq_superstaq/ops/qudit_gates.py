@@ -251,7 +251,7 @@ class VirtualZPowGate(cirq.EigenGate):
         Args:
             dimension: The qudit dimension on which this gate will act.
             level: The lowest energy level onto which this gate applies a phase. For example,
-                passing `level=2` a phase of `(-1)**exponent` will applied to energy levels
+                passing `level=2` a phase of `(-1)**exponent` will be applied to energy levels
                 `[2, ..., dimension - 1]`. This is equivalent to phase shifting all subsequent
                 single-qudit gates acting in the `(1, 2)` subspace (assuming all other gates commute
                 with this one).
@@ -281,7 +281,7 @@ class VirtualZPowGate(cirq.EigenGate):
     @property
     def level(self) -> int:
         """The lowest energy level onto which this gate applies a phase; for example if `level=2`
-        a phase of `(-1)**exponent` will applied to energy levels `[2, ..., dimension - 1]`. This
+        a phase of `(-1)**exponent` will be applied to energy levels `[2, ..., dimension - 1]`. This
         is equivalent to phase shifting all subsequent single-qudit gates acting in the `(1, 2)`
         subspace (assuming all other gates commute with this one).
         """
