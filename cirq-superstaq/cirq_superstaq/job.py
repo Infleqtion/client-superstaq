@@ -328,14 +328,14 @@ class Job:
             The `qiskit.QuantumCircuit` pulse gate circuit.
 
         Raises:
-            SuperstaqServerException: If job was not run on an IBM pulse device.
+            ValueError: If job was not run on an IBM pulse device.
         """
 
         if "pulse_gate_circuit" in self._job:
-            return qss.deserialize_circuits(self._job["pulse_gate_circuit"])[0]
+            return qss.deserialize_circuits(self._job["pulse_gate_circuits"])[0]
 
         error = f"Job: {self._job_id} was not submitted to a pulse-enabled device"
-        raise gss.SuperstaqServerException(error)
+        raise ValueError(error)
 
     @overload
     def counts(
