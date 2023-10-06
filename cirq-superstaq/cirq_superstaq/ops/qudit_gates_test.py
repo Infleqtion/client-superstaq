@@ -310,41 +310,53 @@ def test_qutrit_z_pow_gate_protocols(gate_type: Type[css.ops.qudit_gates._Qutrit
 
 
 def test_virtual_z_pow_gate() -> None:
-    fixed_gates = [css.QutritVZ1, css.QutritVZ2, css.QuquartVZ1, css.QuquartVZ2, css.QuquartVZ3]
+    fixed_gates = [
+        css.VirtualZPowGate(dimension=2, level=1),
+        css.VirtualZPowGate(dimension=3, level=1),
+        css.VirtualZPowGate(dimension=3, level=2),
+        css.VirtualZPowGate(dimension=4, level=1),
+        css.VirtualZPowGate(dimension=4, level=2),
+        css.VirtualZPowGate(dimension=4, level=3),
+    ]
     for i, gate in enumerate(fixed_gates):
         for other_gate in fixed_gates[:i]:
             assert not cirq.equal_up_to_global_phase(gate, other_gate)
             assert not cirq.approx_eq(gate, other_gate)
 
-    assert repr(css.QutritVZ1**1.0) == "css.QutritVZ1"
-    assert repr(css.QuquartVZ2**1.2) == "(css.QuquartVZ2**1.2)"
+    assert repr(css.VirtualZPowGate(dimension=3, level=1)) == "css.VirtualZPowGate(dimension=3)"
     assert (
-        repr(css.VirtualZPowGate(dimension=5, level=3))
-        == "css.VirtualZPowGate(dimension=5, level=3)"
+        repr(css.VirtualZPowGate(dimension=4, level=3))
+        == "css.VirtualZPowGate(dimension=4, level=3)"
     )
     assert (
         repr(css.VirtualZPowGate(dimension=3, global_shift=0.5))
         == "css.VirtualZPowGate(dimension=3, global_shift=0.5)"
     )
+    assert (
+        repr(css.VirtualZPowGate(dimension=5, global_shift=0.5) ** 1.23)
+        == "css.VirtualZPowGate(dimension=5, exponent=1.23, global_shift=0.5)"
+    )
 
-    assert str(css.QutritVZ2**1.0) == "QutritVZ2"
-    assert str(css.QuquartVZ3**1.2) == "QuquartVZ3**1.2"
-    assert str(css.VirtualZPowGate(dimension=5, level=4) ** 1.2) == "Qu5itVZ4**1.2"
-    assert str(css.VirtualZPowGate(dimension=4, global_shift=0.5)) == "QuquartVZ1"
+    assert str(css.VirtualZPowGate(dimension=2)) == "VZ(1+)"
+    assert str(css.VirtualZPowGate(dimension=3)) == "VZ(1+)"
+    assert str(css.VirtualZPowGate(dimension=3, level=2)) == "VZ(2+)"
+    assert str(css.VirtualZPowGate(dimension=4, level=2) ** 1.2) == "VZ(2+)**1.2"
+    assert str(css.VirtualZPowGate(dimension=4, global_shift=0.5)) == "VZ(1+)"
+    assert str(css.VirtualZPowGate(dimension=5, global_shift=0.5) ** 2.3) == "VZ(1+)**2.3"
 
     cirq.testing.assert_has_diagram(
-        cirq.Circuit(css.QutritVZ1(cirq.LineQid(0, 3))),
-        "0 (d=3): ───VZ1───",
+        cirq.Circuit(css.VirtualZPowGate(dimension=3, level=1)(cirq.LineQid(0, 3))),
+        "0 (d=3): ───VZ₁₊───",
     )
 
     cirq.testing.assert_has_diagram(
-        cirq.Circuit(css.QuquartVZ3(cirq.LineQid(0, 4)) ** 1.2),
-        "0 (d=4): ───VZ3^-0.8───",
+        cirq.Circuit(css.VirtualZPowGate(dimension=4, level=3)(cirq.LineQid(0, 4)) ** 1.2),
+        "0 (d=4): ───VZ₃₊^-0.8───",
     )
 
     cirq.testing.assert_has_diagram(
-        cirq.Circuit(css.QuquartVZ2(cirq.LineQid(0, 4))),
-        "0 (d=4): ---VZ2---",
+        cirq.Circuit(css.VirtualZPowGate(dimension=4, level=2)(cirq.LineQid(0, 4))),
+        "0 (d=4): ---VZ(2+)---",
         use_unicode_characters=False,
     )
 

@@ -326,33 +326,23 @@ class VirtualZPowGate(cirq.EigenGate):
         return cirq.obj_to_dict_helper(self, ["exponent", "global_shift", "dimension", "level"])
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        wire_symbol = f"VZ{self._level}"
+        if args.use_unicode_characters and self._level < 10:
+            wire_symbol = f"VZ{ord('₀') + self._level:c}₊"
+        else:
+            wire_symbol = f"VZ({self._level}+)"
+
         return cirq.CircuitDiagramInfo(
             wire_symbols=(wire_symbol,), exponent=self._diagram_exponent(args)
         )
 
     def __str__(self) -> str:
-        if self._dimension == 3:
-            qid_str = "Qutrit"
-        elif self._dimension == 4:
-            qid_str = "Ququart"
-        else:
-            qid_str = f"Qu{self._dimension}it"
-
-        base_str = f"{qid_str}VZ{self._level}"
+        base_str = f"VZ({self._level}+)"
 
         if self._exponent == 1:
             return base_str
         return f"{base_str}**{self._exponent}"
 
     def __repr__(self) -> str:
-        if not self._global_shift and self._dimension in (3, 4):
-            qid_str = "Qutrit" if self._dimension == 3 else "Ququart"
-            base_repr = f"css.{qid_str}VZ{self._level}"
-            if self._exponent == 1:
-                return base_repr
-            return f"({base_repr}**{proper_repr(self._exponent)})"
-
         args = [f"dimension={self._dimension}"]
         if self._level != 1:
             args.append(f"level={self._level}")
@@ -676,12 +666,6 @@ BSWAP_INV = BSwapPowGate(exponent=-1)
 
 CZ3 = QutritCZPowGate()
 CZ3_INV = QutritCZPowGate(exponent=-1)
-
-QutritVZ1 = VirtualZPowGate(dimension=3, level=1)
-QutritVZ2 = VirtualZPowGate(dimension=3, level=2)
-QuquartVZ1 = VirtualZPowGate(dimension=4, level=1)
-QuquartVZ2 = VirtualZPowGate(dimension=4, level=2)
-QuquartVZ3 = VirtualZPowGate(dimension=4, level=3)
 
 QutritZ0 = QutritZ0PowGate()
 QutritZ1 = QutritZ1PowGate()
