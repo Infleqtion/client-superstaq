@@ -320,7 +320,7 @@ class Job:
             A single input circuit or list of submitted input circuits.
         """
         return self._get_circuits("input_circuit", index=index)
-    
+
     def pulse_gate_circuit(self) -> qiskit.QuantumCircuit:
         """Gets the pulse gate circuit returned by this job.
 
