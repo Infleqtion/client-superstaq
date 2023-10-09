@@ -237,13 +237,15 @@ class Job:
     def _get_circuits(
         self, circuit_type: str, index: None = None
     ) -> Union[
-        cirq.Circuit, List[cirq.Circuit]
+        cirq.Circuit, List[cirq.Circuit], qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]
     ]:  # Change return to `List[cirq.Circuit]` after deprecation
         ...
 
     def _get_circuits(
         self, circuit_type: str, index: Optional[int] = None
-    ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
+    ) -> Union[
+        cirq.Circuit, List[cirq.Circuit], qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]
+    ]:
         """Retrieves the corresponding circuit(s) to `circuit_type`.
 
         Args:
@@ -254,7 +256,7 @@ class Job:
         Returns:
             A single circuit or list of circuits.
         """
-        if circuit_type not in ("input_circuit", "compiled_circuit"):
+        if circuit_type not in ("input_circuit", "compiled_circuit", "pulse_gate_circuits"):
             raise ValueError("The circuit type requested is invalid.")
 
         job_ids = self._job_id.split(",")
@@ -263,13 +265,30 @@ class Job:
         ):
             self._refresh_job()
 
-        if index is None:
-            serialized_circuits = [self._job[job_id][circuit_type] for job_id in job_ids]
-            return [css.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
+        if circuit_type in ("input_circuit", "compiled_circuit"):
+            if index is None:
+                serialized_circuits = [self._job[job_id][circuit_type] for job_id in job_ids]
+                return [
+                    css.deserialize_circuits(serialized)[0] for serialized in serialized_circuits
+                ]
 
-        gss.validation.validate_integer_param(index, min_val=0)
-        serialized_circuit = self._job[job_ids[index]][circuit_type]
-        return css.deserialize_circuits(serialized_circuit)[0]
+            gss.validation.validate_integer_param(index, min_val=0)
+            serialized_circuit = self._job[job_ids[index]][circuit_type]
+            return css.deserialize_circuits(serialized_circuit)[0]
+        elif circuit_type == "pulse_gate_circuits":
+            for job_id in job_ids:
+                if "pulse_gate_circuits" not in self._job[job_id]:
+                    error = f"Job: {job_id} was not submitted to a pulse-enabled device."
+                    raise ValueError(error)
+            if index is None:
+                serialized_circuits = [self._job[job_id][circuit_type] for job_id in job_ids]
+                return [
+                    qss.deserialize_circuits(serialized)[0] for serialized in serialized_circuits
+                ]
+
+            gss.validation.validate_integer_param(index, min_val=0)
+            serialized_circuit = self._job[job_ids[index]][circuit_type]
+            return qss.deserialize_circuits(serialized_circuit)[0]
 
     @overload
     def compiled_circuits(self, index: int) -> cirq.Circuit:
@@ -321,22 +340,19 @@ class Job:
         """
         return self._get_circuits("input_circuit", index=index)
 
-    def pulse_gate_circuits(self) -> qiskit.QuantumCircuit:
+    @overload
+    def pulse_gate_circuits(self, index: int) -> qiskit.QuantumCircuit:
+        ...
+
+    def pulse_gate_circuits(
+        self, index: Optional[int] = None
+    ) -> Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]:
         """Gets the pulse gate circuit returned by this job.
 
         Returns:
-            The `qiskit.QuantumCircuit` pulse gate circuit.
-
-        Raises:
-            ValueError: If job was not run on an IBM pulse device.
+            `qiskit.QuantumCircuit` pulse gate circuit(s).
         """
-        if "pulse_gate_circuits" not in self._job:
-            self._refresh_job()
-        if self._job.get("pulse_gate_circuits") is not None:
-            return qss.deserialize_circuits(self._job["pulse_gate_circuits"])[0]
-
-        error = f"Job: {self._job_id} was not submitted to a pulse-enabled device"
-        raise ValueError(error)
+        return self._get_circuits("pulse_gate_circuits", index=index)
 
     @overload
     def counts(
