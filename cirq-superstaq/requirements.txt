@@ -1,3 +1,4 @@
 cirq>=1.0.0
 general-superstaq~=0.4.26
+qiskit>=0.43.3
 qubovert>=1.2.3
