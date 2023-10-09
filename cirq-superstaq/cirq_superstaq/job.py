@@ -321,7 +321,7 @@ class Job:
         """
         return self._get_circuits("input_circuit", index=index)
 
-    def pulse_gate_circuit(self) -> qiskit.QuantumCircuit:
+    def pulse_gate_circuits(self) -> qiskit.QuantumCircuit:
         """Gets the pulse gate circuit returned by this job.
 
         Returns:
@@ -330,7 +330,6 @@ class Job:
         Raises:
             ValueError: If job was not run on an IBM pulse device.
         """
-
         if "pulse_gate_circuits" not in self._job:
             self._refresh_job()
         if self._job.get("pulse_gate_circuits") is not None:
