@@ -239,15 +239,7 @@ class _SuperstaqClient:
         """
         return self.post_request("/accept_terms_of_use", {"user_input": user_input})
 
-    def get_targets(
-        self,
-        simulator: Optional[bool] = None,
-        supports_submit: Optional[bool] = None,
-        supports_submit_qubo: Optional[bool] = None,
-        supports_compile: Optional[bool] = None,
-        available: Optional[bool] = None,
-        retired: Optional[bool] = None,
-    ) -> List[TargetInfo]:
+    def get_targets(self, **kwargs: Optional[bool]) -> List[TargetInfo]:
         """Makes a GET request to retrieve targets from the Superstaq API.
 
         Args:
