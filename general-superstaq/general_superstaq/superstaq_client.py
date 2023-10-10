@@ -23,7 +23,6 @@ import urllib
 import warnings
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Union
 
-import pydantic
 import qubovert as qv
 import requests
 
@@ -239,20 +238,11 @@ class _SuperstaqClient:
         """
         return self.post_request("/accept_terms_of_use", {"user_input": user_input})
 
-    def get_targets(self, **kwargs: Optional[bool]) -> List[TargetInfo]:
+    def get_targets(self, **kwargs: Optional[bool]) -> List[gss.typing.TargetInfo]:
         """Makes a GET request to retrieve targets from the Superstaq API.
 
         Args:
-            simulator: Optional flag to restrict the list of targets to (non-) simulators.
-            supports_submit: Optional boolean flag to only return targets that (don't) allow
-                circuit submissions.
-            supports_submit_qubo: Optional boolean flag to only return targets that (don't)
-                allow qubo submissions.
-            supports_compile: Optional boolean flag to return targets that (don't) support
-                circuit compilation.
-            available: Optional boolean flag to only return targets that are (not) available
-                to use.
-            retired: Optional boolean flag to only return targets that are or are not retired.
+            kwargs: Optional flags to restrict/filter returned targets.
 
         Returns:
             A list of Superstaq targets (or a filtered set of targets).
@@ -260,7 +250,7 @@ class _SuperstaqClient:
         target_filters = {key: value for key, value in kwargs.items() if value is not None}
         superstaq_targets = self.get_request("/targets", target_filters)["superstaq_targets"]
         target_list = [
-            TargetInfo(target=target_name, **properties)
+            gss.typing.TargetInfo(target=target_name, **properties)
             for target_name, properties in superstaq_targets.items()
         ]
         return target_list
@@ -801,14 +791,3 @@ def find_api_key() -> str:
         "Try passing an 'api_key' variable, or setting your API key in the command line "
         "with SUPERSTAQ_API_KEY=..."
     )
-
-
-class TargetInfo(pydantic.BaseModel):
-    """A class to store data returned from a `/get_targets` request."""
-
-    target: str
-    supports_submit: bool = False
-    supports_submit_qubo: bool = False
-    supports_compile: bool = False
-    available: bool = False
-    retired: bool = False

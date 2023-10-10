@@ -519,7 +519,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         supports_compile: Optional[bool] = None,
         available: Optional[bool] = None,
         retired: Optional[bool] = None,
-    ) -> List[gss.superstaq_client.TargetInfo]:
+    ) -> List[gss.typing.TargetInfo]:
         """Gets a list of Superstaq targets along with their status information.
 
         Args:

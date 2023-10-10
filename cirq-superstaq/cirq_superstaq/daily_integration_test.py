@@ -150,10 +150,8 @@ def test_get_targets(service: css.Service) -> None:
         "available": True,
         "retired": False,
     }
-    assert (
-        gss.superstaq_client.TargetInfo(target="ibmq_qasm_simulator", **ibmq_properties) in result
-    )
-    assert gss.superstaq_client.TargetInfo(target="aqt_keysight_qpu", **aqt_properties) in result
+    assert gss.typing.TargetInfo(target="ibmq_qasm_simulator", **ibmq_properties) in result
+    assert gss.typing.TargetInfo(target="aqt_keysight_qpu", **aqt_properties) in result
 
 
 def test_qscout_compile(service: css.Service) -> None:

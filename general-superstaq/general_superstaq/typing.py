@@ -1,5 +1,7 @@
 from typing import Any, Dict, Optional, TypedDict
 
+import pydantic
+
 Job = TypedDict(
     "Job",
     {
@@ -16,3 +18,14 @@ Job = TypedDict(
         "state_vector": Optional[str],
     },
 )
+
+
+class TargetInfo(pydantic.BaseModel):
+    """A data class to store data returned from a `/get_targets` request."""
+
+    target: str
+    supports_submit: bool = False
+    supports_submit_qubo: bool = False
+    supports_compile: bool = False
+    available: bool = False
+    retired: bool = False

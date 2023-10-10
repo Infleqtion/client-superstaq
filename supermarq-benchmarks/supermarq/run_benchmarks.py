@@ -7,7 +7,7 @@ import cirq_superstaq as css
 import supermarq
 
 if TYPE_CHECKING:
-    from general_superstaq.superstaq_client import TargetInfo
+    from general_superstaq.typing import TargetInfo
 
 
 BENCHMARKS: List[Tuple[supermarq.benchmark.Benchmark, str]] = [

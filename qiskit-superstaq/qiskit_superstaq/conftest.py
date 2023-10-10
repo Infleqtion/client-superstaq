@@ -54,7 +54,7 @@ class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
         supports_compile: Optional[bool] = None,
         available: Optional[bool] = None,
         retired: Optional[bool] = None,
-    ) -> List[gss.superstaq_client.TargetInfo]:
+    ) -> List[gss.typing.TargetInfo]:
         """Makes a GET request to retrieve targets from the Superstaq API.
 
         Args:
