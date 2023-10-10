@@ -257,9 +257,7 @@ class _SuperstaqClient:
         Returns:
             A list of Superstaq targets (or a filtered set of targets).
         """
-        target_filters = {
-            key: value for key, value in locals().items() if key != "self" and value is not None
-        }
+        target_filters = {key: value for key, value in kwargs.items() if value is not None}
         superstaq_targets = self.get_request("/targets", target_filters)["superstaq_targets"]
         target_list = [
             TargetInfo(target=target_name, **properties)
