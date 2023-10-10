@@ -46,28 +46,21 @@ class MockSuperstaqBackend(qss.SuperstaqBackend):
 class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
     """Stand-in for `_SuperstaqClient` that the tests can call."""
 
-    def get_targets(
-        self,
-        simulator: Optional[bool] = None,
-        supports_submit: Optional[bool] = None,
-        supports_submit_qubo: Optional[bool] = None,
-        supports_compile: Optional[bool] = None,
-        available: Optional[bool] = None,
-        retired: Optional[bool] = None,
-    ) -> List[gss.typing.TargetInfo]:
+    def get_targets(self, **kwargs: Optional[bool]) -> List[gss.typing.TargetInfo]:
         """Makes a GET request to retrieve targets from the Superstaq API.
 
         Args:
-            simulator: Optional flag to restrict the list of targets to (non-) simulators.
-            supports_submit: Optional boolean flag to only return targets that (don't) allow
-                circuit submissions.
-            supports_submit_qubo: Optional boolean flag to only return targets that (don't)
-                allow qubo submissions.
-            supports_compile: Optional boolean flag to return targets that (don't) support
-                circuit compilation.
-            available: Optional boolean flag to only return targets that are (not) available
-                to use.
-            retired: Optional boolean flag to only return targets that are or are not retired.
+            kwargs: Optional flags to restrict/filter returned targets.
+                - simulator: Optional flag to restrict the list of targets to (non-) simulators.
+                - supports_submit: Optional boolean flag to only return targets that (don't) allow
+                    circuit submissions.
+                - supports_submit_qubo: Optional boolean flag to only return targets that (don't)
+                    allow qubo submissions.
+                - supports_compile: Optional boolean flag to return targets that (don't) support
+                    circuit compilation.
+                - available: Optional boolean flag to only return targets that are (not) available
+                    to use.
+                - retired: Optional boolean flag to only return targets that are or are not retired.
 
         Returns:
             A list of Superstaq targets (or a filtered set of targets).
