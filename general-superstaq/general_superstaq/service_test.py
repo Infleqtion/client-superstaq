@@ -157,7 +157,7 @@ def test_service_aqt_upload_configs(
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.get_request",
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value={"superstaq_targets": gss.testing.TARGET_LIST},
 )
 def test_service_get_targets(mock_get_request: mock.MagicMock) -> None:

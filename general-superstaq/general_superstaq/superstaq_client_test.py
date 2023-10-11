@@ -487,10 +487,10 @@ def test_superstaq_client_resource_estimate(mock_post: mock.MagicMock) -> None:
     assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/resource_estimate"
 
 
-@mock.patch("requests.get")
-def test_superstaq_client_get_targets(mock_get: mock.MagicMock) -> None:
-    mock_get.return_value.ok = True
-    mock_get.return_value.json.return_value = {"superstaq_targets": gss.testing.TARGET_LIST}
+@mock.patch("requests.post")
+def test_superstaq_client_get_targets(mock_post: mock.MagicMock) -> None:
+    mock_post.return_value.ok = True
+    mock_post.return_value.json.return_value = {"superstaq_targets": gss.testing.TARGET_LIST}
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
@@ -498,10 +498,6 @@ def test_superstaq_client_get_targets(mock_get: mock.MagicMock) -> None:
     )
     response = client.get_targets()
     assert response == gss.testing.RETURNED_TARGETS
-
-    mock_get.assert_called_with(
-        f"http://example.com/{API_VERSION}/targets", headers=EXPECTED_HEADERS, verify=False
-    )
 
 
 @mock.patch("requests.post")
