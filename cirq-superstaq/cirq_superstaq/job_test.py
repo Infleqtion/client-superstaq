@@ -20,7 +20,6 @@ from unittest import mock
 import cirq
 import general_superstaq as gss
 import pytest
-import qiskit
 import qiskit_superstaq as qss
 
 import cirq_superstaq as css
@@ -142,6 +141,9 @@ def test_compiled_circuit(job: css.job.Job) -> None:
 
 
 def test_pulse_gate_circuit(job: css.job.Job) -> None:
+    import qiskit
+
+    qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
     pulse_gate_circuit = qiskit.QuantumCircuit(1, 1)
     pulse_gate = qiskit.circuit.Gate("test_pulse_gate", 1, [3.14, 1])
     pulse_gate_circuit.append(pulse_gate, [0])

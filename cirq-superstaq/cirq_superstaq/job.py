@@ -19,8 +19,6 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, overload
 
 import cirq
 import general_superstaq as gss
-import qiskit
-import qiskit_superstaq as qss
 from cirq._doc import document
 
 import cirq_superstaq as css
@@ -283,12 +281,13 @@ class Job:
             if index is None:
                 serialized_circuits = [self._job[job_id][circuit_type] for job_id in job_ids]
                 return [
-                    qss.deserialize_circuits(serialized)[0] for serialized in serialized_circuits
+                    css.serialization.deserialize_qiskit_circuits(serialized)[0]
+                    for serialized in serialized_circuits
                 ]
 
             gss.validation.validate_integer_param(index, min_val=0)
             serialized_circuit = self._job[job_ids[index]][circuit_type]
-            return qss.deserialize_circuits(serialized_circuit)[0]
+            return css.serialization.deserialize_qiskit_circuits(serialized_circuit)[0]
 
     @overload
     def compiled_circuits(self, index: int) -> cirq.Circuit:
