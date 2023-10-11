@@ -248,7 +248,7 @@ def _cleanup(
                 print(check_utils.success("Requirements files fixed."))
 
         elif not silent:
-            command = "./check/requirements.py --apply"
+            command = "./checks/requirements.py --apply"
             text = f"Run '{command}' (from the repo root directory) to fix requirements files."
             print(check_utils.warning(text))
 
