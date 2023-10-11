@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 import qubovert as qv
 
 import general_superstaq as gss
-from general_superstaq import superstaq_client
+from general_superstaq import superstaq_client, typing
 
 
 class Service:
@@ -87,7 +87,7 @@ class Service:
             balance: The new balance.
 
         Returns:
-             String containing status of update (whether or not it failed).
+            String containing status of update (whether or not it failed).
         """
         limit = 2000.0  # If limit modified, must update in server-superstaq
         if balance > limit:
@@ -109,7 +109,7 @@ class Service:
             role: The new role.
 
         Returns:
-             String containing status of update (whether or not it failed).
+            String containing status of update (whether or not it failed).
         """
         return self._client.update_user_role(
             {
@@ -117,6 +117,45 @@ class Service:
                 "role": role,
             }
         )
+
+    def get_targets(
+        self,
+        simulator: Optional[bool] = None,
+        supports_submit: Optional[bool] = None,
+        supports_submit_qubo: Optional[bool] = None,
+        supports_compile: Optional[bool] = None,
+        available: Optional[bool] = None,
+        retired: Optional[bool] = None,
+        **kwargs: bool,
+    ) -> List[typing.TargetInfo]:
+        """Gets a list of Superstaq targets along with their status information.
+
+        Args:
+            simulator: Optional flag to restrict the list of targets to (non-) simulators.
+            supports_submit: Optional boolean flag to only return targets that (don't) allow
+                circuit submissions.
+            supports_submit_qubo: Optional boolean flag to only return targets that (don't)
+                allow qubo submissions.
+            supports_compile: Optional boolean flag to return targets that (don't) support
+                circuit compilation.
+            available: Optional boolean flag to only return targets that are (not) available
+                to use.
+            retired: Optional boolean flag to only return targets that are or are not retired.
+            kwargs: Any addtional, supported flags to restrict/filter returned targets.
+
+        Returns:
+            A list of Superstaq targets (or a filtered set of targets).
+        """
+        filters = dict(
+            simulator=simulator,
+            supports_submit=supports_submit,
+            supports_submit_qubo=supports_submit_qubo,
+            supports_compile=supports_compile,
+            available=available,
+            retired=retired,
+            **kwargs,
+        )
+        return self._client.get_targets(**filters)
 
     def submit_qubo(
         self,
@@ -126,9 +165,10 @@ class Service:
         method: Optional[str] = None,
         max_solutions: int = 1000,
     ) -> Dict[str, str]:
-        """Solves the QUBO given via the submit_qubo function in superstaq_client, and returns any
-        number of specified dictionaries that seek the minimum of the energy landscape from the
-        given objective function known as output solutions.
+        """Solves a submitted QUBO problem via annealing.
+
+        This method returns any number of specified dictionaries that seek the minimum of
+        the energy landscape from the given objective function known as output solutions.
 
         Args:
             qubo: A `qv.QUBO` object.
@@ -140,7 +180,7 @@ class Service:
             max_solutions: A parameter that specifies the max number of output solutions.
 
         Returns:
-            A dictionary returned by the submit_qubo function.
+            A dictionary containing the output solutions.
         """
         return self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
 
@@ -150,8 +190,8 @@ class Service:
         Arguments can be either file paths (in .yaml format) or qtrl Manager instances.
 
         Args:
-            pulses: PulseManager or file path for pulse configuration.
-            variables: VariableManager or file path for variable configuration.
+            pulses: `PulseManager` or file path for pulse configuration.
+            variables: `VariableManager` or file path for variable configuration.
 
         Returns:
             A status of the update (whether or not it failed).
@@ -210,8 +250,8 @@ class Service:
         is required to read the downloaded configs.
 
         Args:
-            pulses_file_path (optional): Where to write the pulse configuration.
-            variables_file_path (optional): Where to write the variable configuration.
+            pulses_file_path: Where to write the pulse configuration.
+            variables_file_path: Where to write the variable configuration.
             overwrite: Whether or not to overwrite existing files.
 
         Returns:
