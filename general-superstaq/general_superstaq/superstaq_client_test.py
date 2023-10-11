@@ -496,7 +496,6 @@ def test_superstaq_client_get_targets(mock_get: mock.MagicMock) -> None:
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
-    client.get_request("/targets", json_dict={"simulator": None})
     response = client.get_targets()
     assert response == gss.testing.RETURNED_TARGETS
 

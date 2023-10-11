@@ -248,7 +248,7 @@ class _SuperstaqClient:
             A list of Superstaq targets (or a filtered set of targets).
         """
         target_filters = {key: value for key, value in kwargs.items() if value is not None}
-        superstaq_targets = self.get_request("/targets", target_filters)["superstaq_targets"]
+        superstaq_targets = self.post_request("/targets", target_filters)["superstaq_targets"]
         target_list = [
             gss.typing.TargetInfo(target=target_name, **properties)
             for target_name, properties in superstaq_targets.items()
@@ -577,12 +577,11 @@ class _SuperstaqClient:
         """
         return self.get_request("/get_aqt_configs")
 
-    def get_request(self, endpoint: str, json_dict: Optional[Mapping[str, object]] = None) -> Any:
+    def get_request(self, endpoint: str) -> Any:
         """Performs a GET request on a given endpoint.
 
         Args:
             endpoint: The endpoint to perform the GET request on.
-            json_dict: Optional dictionary of relevant options.
 
         Returns:
             The response of the GET request.
@@ -594,13 +593,6 @@ class _SuperstaqClient:
             Returns:
                 The Flask GET request object.
             """
-            if json_dict:
-                return requests.get(
-                    f"{self.url}{endpoint}",
-                    json=json_dict,
-                    headers=self.headers,
-                    verify=self.verify_https,
-                )
             return requests.get(
                 f"{self.url}{endpoint}",
                 headers=self.headers,
