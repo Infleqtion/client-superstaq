@@ -18,7 +18,7 @@ general-superstaq/general_superstaq/qubo* @bharat-thotakura
 general-superstaq/general_superstaq/serialization* @richrines1 @dowusu-antwi
 general-superstaq/general_superstaq/_version.py @vtomole @dowusu-antwi @richrines1 @singular-value @pgoiporia @paaige @stephanielee9 @knsmith @bharat-thotakura
 general-superstaq/general_superstaq/logistics* @bharat-thotakura
-general-superstaq/general_superstaq/check/* @richrines1 @perlinm
+checks-superstaq/checks_superstaq/* @richrines1 @perlinm
 cirq-superstaq/cirq_superstaq/serialization*  @richrines1 @dowusu-antwi
 cirq-superstaq/cirq_superstaq/service* @bharat-thotakura @richrines1
 cirq-superstaq/cirq_superstaq/compiler_output* @bharat-thotakura @dowusu-antwi
