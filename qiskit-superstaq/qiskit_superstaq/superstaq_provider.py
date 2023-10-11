@@ -510,32 +510,3 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
                 through `submit_dfe` have not finished running.
         """
         return self._client.process_dfe(ids)
-
-    def get_targets(
-        self,
-        simulator: Optional[bool] = None,
-        supports_submit: Optional[bool] = None,
-        supports_submit_qubo: Optional[bool] = None,
-        supports_compile: Optional[bool] = None,
-        available: Optional[bool] = None,
-        retired: Optional[bool] = None,
-    ) -> List[gss.typing.TargetInfo]:
-        """Gets a list of Superstaq targets along with their status information.
-
-        Args:
-            simulator: Optional flag to restrict the list of targets to (non-) simulators.
-            supports_submit: Optional boolean flag to only return targets that (don't) allow
-                circuit submissions.
-            supports_submit_qubo: Optional boolean flag to only return targets that (don't)
-                allow qubo submissions.
-            supports_compile: Optional boolean flag to return targets that (don't) support
-                circuit compilation.
-            available: Optional boolean flag to only return targets that are (not) available
-                to use.
-            retired: Optional boolean flag to only return targets that are or are not retired.
-
-        Returns:
-            A list of all Superstaq targets (or a filtered set of Superstaq targets).
-        """
-        filters = {key: value for key, value in locals().items() if key != "self"}
-        return self._client.get_targets(**filters)
