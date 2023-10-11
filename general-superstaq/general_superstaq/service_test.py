@@ -157,6 +157,15 @@ def test_service_aqt_upload_configs(
 
 
 @mock.patch(
+    "general_superstaq.superstaq_client._SuperstaqClient.get_request",
+    return_value={"superstaq_targets": gss.testing.TARGET_LIST},
+)
+def test_service_get_targets(mock_get_request: mock.MagicMock) -> None:
+    service = gss.service.Service(api_key="key", remote_host="http://example.com")
+    assert service.get_targets() == gss.testing.RETURNED_TARGETS
+
+
+@mock.patch(
     "general_superstaq.superstaq_client._SuperstaqClient.aqt_get_configs",
     return_value={"pulses": "Hello", "variables": "World"},
 )
