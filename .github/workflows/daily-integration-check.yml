@@ -22,10 +22,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./general-superstaq[dev] ./qiskit-superstaq[dev] ./cirq-superstaq[dev]
+          pip install ./checks-superstaq ./general-superstaq[dev] ./qiskit-superstaq[dev] ./cirq-superstaq[dev]
       - name: Pytest integration check
         run: |
-          check/pytest_.py --integration
+          checks/pytest_.py --integration
       - name: Create issue if integration check failed
         if: ${{ failure() }}
         uses: JasonEtco/create-an-issue@v2
