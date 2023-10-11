@@ -11,6 +11,7 @@ jobs:
     name: Pytest integration check
     env:
       SUPERSTAQ_API_KEY : ${{ secrets.SUPERSTAQ_API_KEY }}
+      TEST_USER_IBMQ_TOKEN : ${{ secrets.TEST_USER_IBMQ_TOKEN }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
