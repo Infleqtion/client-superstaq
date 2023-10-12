@@ -101,7 +101,7 @@ def test_aqt_compile_eca_regression(provider: qss.SuperstaqProvider) -> None:
 def test_get_balance(provider: qss.SuperstaqProvider) -> None:
     balance_str = provider.get_balance()
     assert isinstance(balance_str, str)
-    assert balance_str.startswith("$")
+    assert balance_str.endswith("credits")
 
     assert isinstance(provider.get_balance(pretty_output=False), float)
 
