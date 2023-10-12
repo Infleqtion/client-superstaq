@@ -753,8 +753,8 @@ class Service(gss.service.Service):
             circuits: The circuit(s) to compile.
             target: String of target IBMQ device.
             dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
-            dd_strategy: Type of method used for placing dynamical decoupling operations;
-            either "dynamic" (default setting), "static", or "static_context_aware".
+            dd_strategy: Method to use for placing dynamical decoupling operations; either
+                "dynamic" (default setting), "static", or "static_context_aware".
             kwargs: Other desired `ibmq_compile` options.
 
         Returns:
