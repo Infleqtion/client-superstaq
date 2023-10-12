@@ -51,7 +51,7 @@ def test_get_balance() -> None:
     mock_client.get_balance.return_value = {"balance": 12345.6789}
     ss_provider._client = mock_client
 
-    assert ss_provider.get_balance() == "$12,345.68"
+    assert ss_provider.get_balance() == "12,345.68 credits"
     assert ss_provider.get_balance(pretty_output=False) == 12345.6789
 
 

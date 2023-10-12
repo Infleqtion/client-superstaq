@@ -388,22 +388,6 @@ class Service(gss.service.Service):
         """
         return css.job.Job(client=self._client, job_id=job_id)
 
-    def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
-        """Get the querying user's account balance in USD.
-
-        Args:
-            pretty_output: Whether to return a pretty string or a float of the balance.
-
-        Returns:
-            If `pretty_output` is `True`, returns the balance as a nicely formatted string
-            ($-prefix, commas on LHS every three digits, and two digits after period). Otherwise,
-            simply returns a float of the balance.
-        """
-        balance = self._client.get_balance()["balance"]
-        if pretty_output:
-            return f"${balance:,.2f}"
-        return balance
-
     def get_targets(self) -> Dict[str, List[str]]:
         """Gets a list of available, unavailable, and retired targets.
 
