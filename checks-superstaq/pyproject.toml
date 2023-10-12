@@ -1,0 +1,35 @@
+[project]
+name = "checks-superstaq"
+description = "Check script tools for Superstaq."
+authors = [
+  { name = "Superstaq development team", email = "superstaq@infleqtion.com" },
+]
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { text = "Apache-2.0" }
+requires-python = ">=3.8.0"
+dynamic = ["version", "dependencies"]
+
+[project.urls]
+homepage = "https://github.com/Infleqtion/client-superstaq"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["checks_superstaq*"]
+
+[tool.setuptools.package-data]
+checks_superstaq = ["checks-pyproject.toml"]
+
+[tool.setuptools.dynamic.version]
+attr = "checks_superstaq._version.__version__"
+
+[tool.setuptools.dynamic.dependencies]
+file = ["requirements.txt"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+color_output = true
+known_first_party = "checks_superstaq"

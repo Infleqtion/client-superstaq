@@ -80,16 +80,13 @@ class Sampler(cirq.Sampler):
             A list of Cirq results, one for each parameter resolver.
         """
         resolvers = [resolver for resolver in cirq.to_resolvers(params)]
-        jobs = [
-            self._service.create_job(
-                circuit=cirq.resolve_parameters(program, resolver),
-                repetitions=repetitions,
-                target=self._target,
-            )
-            for resolver in resolvers
+        job = self._service.create_job(
+            circuits=[cirq.resolve_parameters(program, resolver) for resolver in resolvers],
+            repetitions=repetitions,
+            target=self._target,
+        )
+        cirq_results = [
+            css.service.counts_to_results(job.counts(i), program, resolver)
+            for i, resolver in enumerate(resolvers)
         ]
-        job_counters = [job.counts() for job in jobs]
-        cirq_results = []
-        for counts, resolver in zip(job_counters, resolvers):
-            cirq_results.append(css.service.counts_to_results(counts, program, resolver))
         return cirq_results
