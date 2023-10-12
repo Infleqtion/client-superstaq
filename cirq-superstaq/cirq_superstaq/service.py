@@ -388,22 +388,6 @@ class Service(gss.service.Service):
         """
         return css.job.Job(client=self._client, job_id=job_id)
 
-    def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
-        """Get the querying user's account balance in USD.
-
-        Args:
-            pretty_output: Whether to return a pretty string or a float of the balance.
-
-        Returns:
-            If `pretty_output` is `True`, returns the balance as a nicely formatted string
-            ($-prefix, commas on LHS every three digits, and two digits after period). Otherwise,
-            simply returns a float of the balance.
-        """
-        balance = self._client.get_balance()["balance"]
-        if pretty_output:
-            return f"${balance:,.2f}"
-        return balance
-
     def get_targets(self) -> Dict[str, List[str]]:
         """Gets a list of available, unavailable, and retired targets.
 
@@ -740,6 +724,8 @@ class Service(gss.service.Service):
         self,
         circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
         target: str = "ibmq_qasm_simulator",
+        dynamical_decoupling: bool = True,
+        dd_strategy: str = "dynamic",
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) to the target IBMQ device.
@@ -750,6 +736,9 @@ class Service(gss.service.Service):
         Args:
             circuits: The circuit(s) to compile.
             target: String of target IBMQ device.
+            dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
+            dd_strategy: Method to use for placing dynamical decoupling operations; either
+                "dynamic" (default setting), "static", or "static_context_aware".
             kwargs: Other desired `ibmq_compile` options.
 
         Returns:
