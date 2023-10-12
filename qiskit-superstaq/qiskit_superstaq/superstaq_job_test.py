@@ -78,6 +78,14 @@ def test_result(backend: qss.SuperstaqBackend) -> None:
         assert ans.job_id == expected.job_id
         assert ans.get_counts() == {"1": 100}
 
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job",
+        return_value=mock_response("Done"),
+    ):
+        assert job.result().get_counts() == [{"11": 50, "01": 50}, {"11": 50, "01": 50}]
+        assert job.result(index=0).get_counts() == {"11": 50, "01": 50}
+
 
 def test_check_if_stopped(backend: qss.SuperstaqBackend) -> None:
     for status in ("Cancelled", "Failed"):
@@ -184,6 +192,7 @@ def test_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
 
     # After fetching the job info once it shouldn't be refreshed again (so no need to mock)
     assert job.compiled_circuits() == [qiskit.QuantumCircuit(2)]
+    assert job.compiled_circuits(index=0) == qiskit.QuantumCircuit(2)
 
     job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz")
     with mock.patch(
@@ -208,6 +217,7 @@ def test_input_circuits(backend: qss.SuperstaqBackend) -> None:
 
     # After fetching the job info once it shouldn't be refreshed again (so no need to mock)
     assert job.input_circuits() == [qiskit.QuantumCircuit(2)]
+    assert job.input_circuits(index=0) == qiskit.QuantumCircuit(2)
 
     job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz")
     with mock.patch(
@@ -217,6 +227,7 @@ def test_input_circuits(backend: qss.SuperstaqBackend) -> None:
         mocked_get_job.assert_called_once()
 
     assert job.input_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
+    assert job.input_circuits(index=1) == qiskit.QuantumCircuit(2)
 
 
 def test_status(backend: qss.SuperstaqBackend) -> None:

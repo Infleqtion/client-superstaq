@@ -3,7 +3,7 @@ import sys
 import textwrap
 from typing import List, Optional
 
-from general_superstaq.check import (
+from checks_superstaq import (
     build_docs,
     check_utils,
     configs,
