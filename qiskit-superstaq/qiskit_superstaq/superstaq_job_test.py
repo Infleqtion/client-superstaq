@@ -204,6 +204,36 @@ def test_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
     assert job.compiled_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
 
 
+def test_index_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
+    response = mock_response("Done")
+    single_qc = qiskit.QuantumCircuit(2, metadata={"test_label": "test_data"})
+    qc_list = [single_qc, single_qc, single_qc]
+
+    response["compiled_circuit"] = qss.serialize_circuits(single_qc)
+    response["input_circuit"] = qss.serialize_circuits(single_qc)
+
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
+    ) as mocked_get_job:
+        assert job.compiled_circuits() == [single_qc]
+        assert job.compiled_circuits()[0].metadata == {"test_label": "test_data"}
+        assert job.compiled_circuits(index=0) == single_qc
+        assert job.compiled_circuits(0).metadata == {"test_label": "test_data"}
+        mocked_get_job.assert_called_once()
+
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz,789cba")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
+    ):
+        assert job.compiled_circuits() == qc_list
+        assert job.compiled_circuits(index=2) == single_qc
+        for circ in job.compiled_circuits():
+            assert circ.metadata == {"test_label": "test_data"}
+        assert job.compiled_circuits(index=2).metadata == {"test_label": "test_data"}
+        mocked_get_job.assert_called_once()
+
+
 def test_input_circuits(backend: qss.SuperstaqBackend) -> None:
     response = mock_response("Queued")
     response["input_circuit"] = qss.serialize_circuits(qiskit.QuantumCircuit(2))
