@@ -215,12 +215,17 @@ class SuperstaqJob(qiskit.providers.JobV1):
         Returns:
             A single compiled circuit or list of compiled circuits.
         """
-        compiled_circuits = self._get_circuits("compiled_circuit", index)
-        input_circuits = self._get_circuits("input_circuit", index)
-        for compiled_qc, in_qc in zip(compiled_circuits, input_circuits):
-            compiled_qc.metadata = in_qc.metadata
+        if index is None:
+            compiled_circuits = self._get_circuits("compiled_circuit")
+            input_circuits = self._get_circuits("input_circuit")
+            for compiled_qc, in_qc in zip(compiled_circuits, input_circuits):
+                compiled_qc.metadata = in_qc.metadata
+            return compiled_circuits
 
-        return compiled_circuits
+        compiled_circuit = self._get_circuits("compiled_circuit", index)
+        input_circuit = self._get_circuits("input_circuit", index)
+        compiled_circuit.metadata = input_circuit.metadata
+        return compiled_circuit
 
     @overload
     def input_circuits(self, index: int) -> qiskit.QuantumCircuit:
