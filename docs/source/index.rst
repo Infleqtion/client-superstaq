@@ -68,6 +68,7 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
    :caption: Additional Resources
 
    resources/contact
+   resources/developer_guide
    resources/links
 
 .. toctree::
