@@ -48,7 +48,7 @@ class Service:
 
         balance = self._client.get_balance()["balance"]
         if pretty_output:
-            return f"${balance:,.2f}"
+            return f"{balance:,.2f} credits"
         return balance
 
     def _accept_terms_of_use(self, user_input: str) -> str:
