@@ -20,7 +20,12 @@ class BitCode(Benchmark):
 
     def __init__(self, num_data_qubits: int, num_rounds: int, bit_state: List[int]) -> None:
         if len(bit_state) != num_data_qubits:
-            raise ValueError("The length of `bit_state` must match the number of data qubits")
+            raise ValueError("The length of `bit_state` must match the number of data qubits.")
+        if not isinstance(bit_state, List):
+            raise ValueError("`bit_state` must be a List[int].")
+        else:
+            if not isinstance(bit_state[0], int):
+                raise ValueError("Entries of `bit_state` must be 0, 1 integers.")
         self.num_data_qubits = num_data_qubits
         self.num_rounds = num_rounds
         self.bit_state = bit_state

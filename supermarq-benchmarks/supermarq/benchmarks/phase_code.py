@@ -21,7 +21,12 @@ class PhaseCode(Benchmark):
 
     def __init__(self, num_data_qubits: int, num_rounds: int, phase_state: List[int]) -> None:
         if len(phase_state) != num_data_qubits:
-            raise ValueError("The length of `phase_state` must match the number of data qubits")
+            raise ValueError("The length of `phase_state` must match the number of data qubits.")
+        if not isinstance(phase_state, List):
+            raise ValueError("`phase_state` must be a List[int].")
+        else:
+            if not isinstance(phase_state[0], int):
+                raise ValueError("Entries of `phase_state` must be 0, 1 integers.")
         self.num_data_qubits = num_data_qubits
         self.num_rounds = num_rounds
         self.phase_state = phase_state
