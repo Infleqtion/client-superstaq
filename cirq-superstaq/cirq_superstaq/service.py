@@ -752,6 +752,9 @@ class Service(gss.service.Service):
         target = self._resolve_target(target)
         if not target.startswith("ibmq_"):
             raise ValueError(f"{target!r} is not a valid IBMQ target.")
+        
+        options = {"dynamical_decoupling": dynamical_decoupling, "dd_strategy": dd_strategy}
+        kwargs.update(options)
 
         return self.compile(circuits, target=target, **kwargs)
 
