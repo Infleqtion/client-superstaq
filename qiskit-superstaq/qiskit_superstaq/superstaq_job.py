@@ -142,7 +142,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
                     (key[::-1], value) for (key, value) in counts.items()
                 )  # change endianess to match Qiskit
                 if qubit_indices:
-                    counts = qiskit.result.marginal_counts(counts, indices=qubit_indices[::-1])
+                    counts = qiskit.result.marginal_counts(counts, indices=qubit_indices)
             results_list.append(
                 {
                     "success": result["status"] == "Done",
