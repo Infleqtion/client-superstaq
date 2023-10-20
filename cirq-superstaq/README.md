@@ -25,12 +25,12 @@ q1 = cirq.LineQubit(1)
 circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1), cirq.measure(q0))
 
 service = css.Service(
-    api_key="""Insert superstaq token that you received from https://superstaq.super.tech""",
+    api_key="""Insert superstaq token that you received from https://superstaq.infleqtion.com""",
     verbose=True,
 )
 
 # Submitting a circuit to "ibmq_qasm_simulator". Providing the "dry-run" method parameter instructs Superstaq to simulate the circuit, and is available to free trial users.
-job = service.create_job(circuit=circuit, repetitions=1, target="ibmq_qasm_simulator", method="dry-run")
+job = service.create_job(circuit, repetitions=1, target="ibmq_qasm_simulator", method="dry-run")
 print("This is the job that's created ", job.status())
 print(job.counts())
 ```

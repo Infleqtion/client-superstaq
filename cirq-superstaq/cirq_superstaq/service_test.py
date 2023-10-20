@@ -63,6 +63,23 @@ def test_counts_to_results() -> None:
     result = css.service.counts_to_results({"00": 50, "11": 50}, circuit, cirq.ParamResolver({}))
     assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
 
+    result = css.service.counts_to_results(
+        {"00": 50.0, "11": 50.0}, circuit, cirq.ParamResolver({})
+    )
+    assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
+
+    with pytest.warns(UserWarning, match="raw counts contain fractional"):
+        result = css.service.counts_to_results(
+            {"00": 50.1, "11": 49.9}, circuit, cirq.ParamResolver({})
+        )
+        assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
+
+    with pytest.warns(UserWarning, match="raw counts contain negative"):
+        result = css.service.counts_to_results(
+            {"00": -50.1, "11": 99.9}, circuit, cirq.ParamResolver({})
+        )
+        assert result.histogram(key="01") == collections.Counter({3: 100})
+
 
 def test_service_resolve_target() -> None:
     service = css.Service(api_key="key", default_target="ss_bar_qpu")
@@ -80,7 +97,7 @@ def test_service_run_and_get_counts() -> None:
     mock_client = mock.MagicMock()
     mock_client.create_job.return_value = {
         "job_ids": ["job_id"],
-        "status": "ready",
+        "status": "Ready",
     }
     mock_client.get_job.return_value = {
         "data": {"histogram": {"11": 1}},
@@ -105,20 +122,47 @@ def test_service_run_and_get_counts() -> None:
     circuit = cirq.Circuit((cirq.X**a)(q), cirq.measure(q, key="a"))
     params = cirq.ParamResolver({"a": 0.5})
     counts = service.get_counts(
-        circuit=circuit,
+        circuits=circuit,
         repetitions=4,
         target="ibmq_qasm_simulator",
         param_resolver=params,
     )
     assert counts == {"11": 1}
 
-    result = service.run(
-        circuit=circuit,
+    results = service.run(
+        circuits=circuit,
         repetitions=4,
         target="ibmq_qasm_simulator",
         param_resolver=params,
     )
-    assert result.histogram(key="a") == collections.Counter({3: 1})
+    assert results.histogram(key="a") == collections.Counter({3: 1})
+
+    # Multiple circuit run
+    mock_client.create_job.return_value = {
+        "job_ids": ["job_id_1", "job_id_2"],
+        "status": "Done",
+        "data": {"histogram": {"11": 1}},
+        "samples": {"11": 1},
+    }
+    service._client = mock_client
+    multi_results = service.run(
+        circuits=[circuit, circuit],
+        repetitions=10,
+        target="ibmq_qasm_simulator",
+        param_resolver=params,
+    )
+
+    assert isinstance(multi_results, list)
+    for result in multi_results:
+        assert result.histogram(key="a") == collections.Counter({3: 1})
+
+    multi_counts = service.get_counts(
+        circuits=[circuit, circuit],
+        repetitions=4,
+        target="ibmq_qasm_simulator",
+        param_resolver=params,
+    )
+    assert multi_counts == [{"11": 1}, {"11": 1}]
 
 
 def test_service_sampler() -> None:
@@ -127,7 +171,7 @@ def test_service_sampler() -> None:
     service._client = mock_client
     mock_client.create_job.return_value = {
         "job_ids": ["job_id"],
-        "status": "ready",
+        "status": "Ready",
     }
     mock_client.get_job.return_value = {
         "data": {"histogram": {"0": 3, "1": 1}},
@@ -156,7 +200,7 @@ def test_service_sampler() -> None:
 def test_service_get_job() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
     mock_client = mock.MagicMock()
-    job_dict = {"status": "ready"}
+    job_dict = {"status": "Ready"}
     mock_client.get_job.return_value = job_dict
     service._client = mock_client
 
@@ -167,38 +211,32 @@ def test_service_get_job() -> None:
     mock_client.get_job.assert_not_called()
 
     # ...but it will be called with the initial query of status()
-    assert job.status() == "ready"
+    assert job.status() == "Ready"
     mock_client.get_job.assert_called_once_with("job_id")
 
 
 def test_service_create_job() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
     mock_client = mock.MagicMock()
-    mock_client.create_job.return_value = {"job_ids": ["job_id"], "status": "ready"}
-    mock_client.get_job.return_value = {"status": "completed"}
+    mock_client.create_job.return_value = {"job_ids": ["job_id"], "status": "Ready"}
+    mock_client.get_job.return_value = {"status": "Done"}
     service._client = mock_client
 
     circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)), cirq.measure(cirq.LineQubit(0)))
     job = service.create_job(
-        circuit=circuit,
+        circuits=circuit,
         repetitions=100,
         target="ss_fake_qpu",
         method="fake_method",
         fake_data="",
     )
-    assert job.status() == "completed"
+    assert job.status() == "Done"
     create_job_kwargs = mock_client.create_job.call_args[1]
     # Serialization induces a float, so we don't validate full circuit.
     assert create_job_kwargs["repetitions"] == 100
     assert create_job_kwargs["target"] == "ss_fake_qpu"
     assert create_job_kwargs["method"] == "fake_method"
     assert create_job_kwargs["fake_data"] == ""
-
-    with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
-        service.create_job(cirq.Circuit())
-
-    with pytest.raises(ValueError, match="does not support the submission of multiple circuits"):
-        service.create_job([cirq.Circuit()])  # type: ignore
 
 
 def test_service_get_balance() -> None:
@@ -207,7 +245,7 @@ def test_service_get_balance() -> None:
     mock_client.get_balance.return_value = {"balance": 12345.6789}
     service._client = mock_client
 
-    assert service.get_balance() == "$12,345.68"
+    assert service.get_balance() == "12,345.68 credits"
     assert service.get_balance(pretty_output=False) == 12345.6789
 
 
@@ -431,6 +469,41 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
 
 
 @mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
+def test_service_qscout_compile_multiple(mock_qscout_compile: mock.MagicMock) -> None:
+    q0, q1 = cirq.LineQubit.range(2)
+    circuits = [
+        cirq.Circuit(cirq.H(q0), cirq.measure(q0)),
+        cirq.Circuit(cirq.ISWAP(q0, q1)),
+    ]
+    final_logical_to_physicals = [{q0: q0}, {q0: q1, q1: q0}]
+
+    jaqal_programs = ["jaqal", "programs"]
+
+    mock_qscout_compile.return_value = {
+        "cirq_circuits": css.serialization.serialize_circuits(circuits),
+        "final_logical_to_physicals": cirq.to_json(
+            [list(l2p.items()) for l2p in final_logical_to_physicals]
+        ),
+        "jaqal_programs": jaqal_programs,
+    }
+
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    out = service.qscout_compile(circuits)
+    assert out.circuits == circuits
+    assert out.final_logical_to_physicals == final_logical_to_physicals
+    assert out.jaqal_programs == jaqal_programs
+
+    assert json.loads(mock_qscout_compile.call_args[0][0]["options"]) == {
+        "mirror_swaps": False,
+        "base_entangling_gate": "xx",
+        "num_qubits": 2,
+    }
+
+    with pytest.raises(ValueError, match="At least 2 qubits are required"):
+        _ = service.qscout_compile(circuits, num_qubits=1)
+
+
+@mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
 @pytest.mark.parametrize("mirror_swaps", (True, False))
 def test_qscout_compile_swap_mirror(
     mock_qscout_compile: mock.MagicMock, mirror_swaps: bool
@@ -456,6 +529,35 @@ def test_qscout_compile_swap_mirror(
     assert json.loads(mock_qscout_compile.call_args[0][0]["options"]) == {
         "mirror_swaps": mirror_swaps,
         "base_entangling_gate": "xx",
+        "num_qubits": 1,
+    }
+
+
+@mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
+def test_qscout_compile_error_rates(mock_qscout_compile: mock.MagicMock) -> None:
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.measure(q0))
+    final_logical_to_physical = {q0: q0}
+
+    jaqal_program = ""
+
+    mock_qscout_compile.return_value = {
+        "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
+        "jaqal_programs": [jaqal_program],
+    }
+
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    out = service.qscout_compile(circuit, error_rates={(0, 1): 0.3, (0, 2): 0.2, (1,): 0.1})
+    assert out.circuit == circuit
+    assert out.final_logical_to_physical == final_logical_to_physical
+    assert out.jaqal_program == jaqal_program
+    mock_qscout_compile.assert_called_once()
+    assert json.loads(mock_qscout_compile.call_args[0][0]["options"]) == {
+        "base_entangling_gate": "xx",
+        "mirror_swaps": False,
+        "error_rates": [[[0, 1], 0.3], [[0, 2], 0.2], [[1], 0.1]],
+        "num_qubits": 3,
     }
 
 
@@ -485,6 +587,7 @@ def test_qscout_compile_base_entangling_gate(
     assert json.loads(mock_qscout_compile.call_args[0][0]["options"]) == {
         "mirror_swaps": False,
         "base_entangling_gate": base_entangling_gate,
+        "num_qubits": 1,
     }
 
 

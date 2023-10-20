@@ -18,7 +18,8 @@ import sys
 import textwrap
 import time
 import urllib
-from typing import Any, Callable, Dict, List, Optional, Sequence, Union
+import warnings
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Union
 
 import qubovert as qv
 import requests
@@ -48,6 +49,10 @@ class _SuperstaqClient:
         api_version: str = gss.API_VERSION,
         max_retry_seconds: float = 60,  # 1 minute
         verbose: bool = False,
+        cq_token: Optional[str] = None,
+        ibmq_token: Optional[str] = None,
+        ibmq_instance: Optional[str] = None,
+        ibmq_channel: Optional[str] = None,
         **kwargs: Any,
     ):
         """Creates the SuperstaqClient.
@@ -67,10 +72,12 @@ class _SuperstaqClient:
                 which is the most recent version when this client was downloaded.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
+            cq_token: Token from CQ cloud.This is required to submit circuits to CQ hardware.
+            ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
+                to IBM hardware, or to access non-public IBM devices you may have access to.
+            ibmq_instance: An optional instance to use when running IBM jobs.
+            ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
             kwargs: Other optimization and execution parameters.
-                - qiskit_pulse: Whether to use Superstaq's pulse-level optimizations for IBMQ
-                devices.
-                - cq_token: Token from CQ cloud.
         """
 
         self.api_key = api_key or gss.superstaq_client.find_api_key()
@@ -98,31 +105,20 @@ class _SuperstaqClient:
             "X-Client-Name": self.client_name,
             "X-Client-Version": self.api_version,
         }
-        self._client_kwargs = kwargs
 
-    def get_request(self, endpoint: str) -> Any:
-        """Performs a GET request on a given endpoint.
+        if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
+            raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
 
-        Args:
-            endpoint: The endpoint to perform the GET request on.
+        if cq_token:
+            kwargs["cq_token"] = cq_token
+        if ibmq_token:
+            kwargs["ibmq_token"] = ibmq_token
+        if ibmq_instance:
+            kwargs["ibmq_instance"] = ibmq_instance
+        if ibmq_channel:
+            kwargs["ibmq_channel"] = ibmq_channel
 
-        Returns:
-            The response of the GET request.
-        """
-
-        def request() -> requests.Response:
-            """Builds GET request object.
-
-            Returns:
-                The Flask GET request object.
-            """
-            return requests.get(
-                f"{self.url}{endpoint}",
-                headers=self.headers,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
+        self.client_kwargs = kwargs
 
     def get_superstaq_version(self) -> Dict[str, Optional[str]]:
         """Gets Superstaq version from response header.
@@ -135,32 +131,6 @@ class _SuperstaqClient:
         version = response.headers.get("superstaq_version")
 
         return {"superstaq_version": version}
-
-    def post_request(self, endpoint: str, json_dict: Dict[str, Any]) -> Any:
-        """Performs a POST request on a given endpoint with a given payload.
-
-        Args:
-            endpoint: The endpoint to perform the POST request on.
-            json_dict: The payload to POST.
-
-        Returns:
-            The response of the POST request.
-        """
-
-        def request() -> requests.Response:
-            """Builds GET request object.
-
-            Returns:
-                The Flask GET request object.
-            """
-            return requests.post(
-                f"{self.url}{endpoint}",
-                json=json_dict,
-                headers=self.headers,
-                verify=self.verify_https,
-            )
-
-        return self._make_request(request).json()
 
     def create_job(
         self,
@@ -201,8 +171,8 @@ class _SuperstaqClient:
         }
         if method is not None:
             json_dict["method"] = method
-        if kwargs or self._client_kwargs:
-            json_dict["options"] = json.dumps({**self._client_kwargs, **kwargs})
+        if kwargs or self.client_kwargs:
+            json_dict["options"] = json.dumps({**self.client_kwargs, **kwargs})
 
         return self.post_request("/jobs", json_dict)
 
@@ -242,8 +212,8 @@ class _SuperstaqClient:
         json_dict: Dict[str, Any] = {
             "job_ids": job_ids,
         }
-        if kwargs or self._client_kwargs:
-            json_dict["options"] = json.dumps({**self._client_kwargs, **kwargs})
+        if kwargs or self.client_kwargs:
+            json_dict["options"] = json.dumps({**self.client_kwargs, **kwargs})
 
         return self.post_request("/fetch_jobs", json_dict)
 
@@ -598,6 +568,66 @@ class _SuperstaqClient:
         """
         return self.get_request("/get_aqt_configs")
 
+    def get_request(self, endpoint: str) -> Any:
+        """Performs a GET request on a given endpoint.
+
+        Args:
+            endpoint: The endpoint to perform the GET request on.
+
+        Returns:
+            The response of the GET request.
+        """
+
+        def request() -> requests.Response:
+            """Builds GET request object.
+
+            Returns:
+                The Flask GET request object.
+            """
+            return requests.get(
+                f"{self.url}{endpoint}",
+                headers=self.headers,
+                verify=self.verify_https,
+            )
+
+        response = self._make_request(request)
+        return self._handle_response(response)
+
+    def post_request(self, endpoint: str, json_dict: Mapping[str, object]) -> Any:
+        """Performs a POST request on a given endpoint with a given payload.
+
+        Args:
+            endpoint: The endpoint to perform the POST request on.
+            json_dict: The payload to POST.
+
+        Returns:
+            The response of the POST request.
+        """
+
+        def request() -> requests.Response:
+            """Builds GET request object.
+
+            Returns:
+                The Flask GET request object.
+            """
+            return requests.post(
+                f"{self.url}{endpoint}",
+                json=json_dict,
+                headers=self.headers,
+                verify=self.verify_https,
+            )
+
+        response = self._make_request(request)
+        return self._handle_response(response)
+
+    def _handle_response(self, response: requests.Response) -> object:
+        response_json = response.json()
+        if isinstance(response_json, dict) and "warnings" in response_json:
+            for warning in response_json["warnings"]:
+                warnings.warn(warning["message"], gss.SuperstaqWarning, stacklevel=3)
+            del response_json["warnings"]
+        return response_json
+
     def _handle_status_codes(self, response: requests.Response) -> None:
         """A method to handle status codes.
 
@@ -611,10 +641,17 @@ class _SuperstaqClient:
         """
         if response.status_code == requests.codes.unauthorized:
             if response.json() == (
-                "You must accept the Terms of Use (superstaq.super.tech/terms_of_use)."
+                "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
             ):
                 self._prompt_accept_terms_of_use()
                 return
+
+            elif response.json() == ("You must validate your registered email."):
+                raise gss.SuperstaqServerException(
+                    "You must validate your registered email.",
+                    response.status_code,
+                )
+
             else:
                 raise gss.SuperstaqServerException(
                     '"Not authorized" returned by Superstaq API.  '
@@ -638,7 +675,7 @@ class _SuperstaqClient:
             gss.SuperstaqServerException: If terms of use are not accepted.
         """
         message = (
-            "Acceptance of the Terms of Use (superstaq.super.tech/terms_of_use)"
+            "Acceptance of the Terms of Use (superstaq.infleqtion.com/terms_of_use)"
             " is necessary before using Superstaq.\nType in YES to accept: "
         )
         user_input = input(message).upper()

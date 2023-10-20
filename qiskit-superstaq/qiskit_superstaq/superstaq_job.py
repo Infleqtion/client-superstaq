@@ -12,7 +12,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence, Union, overload
 
 import general_superstaq as gss
 import qiskit
@@ -103,20 +103,31 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """
         return self._get_circuits("input_circuit", index=index).num_clbits
 
-    def result(self, timeout: Optional[float] = None, wait: float = 5) -> qiskit.result.Result:
+    def result(
+        self,
+        index: Optional[int] = None,
+        timeout: Optional[float] = None,
+        wait: float = 5,
+        qubit_indices: Optional[Sequence[int]] = None,
+    ) -> qiskit.result.Result:
         """Retrieves the result data associated with a Superstaq job.
 
         Args:
+            index: An optional index to retrieve a specific result from a result list.
             timeout: An optional parameter that fixes when result retrieval times out. Units are
                 in seconds.
             wait: An optional parameter that sets the interval to check for Superstaq job results.
                 Units are in seconds. Defaults to 5.
+            qubit_indices: The qubit indices to return the results of individually.
 
         Returns:
             A qiskit result object containing job information.
         """
+        if index is not None:
+            gss.validation.validate_integer_param(index, min_val=0)
         timeout = timeout or self._backend._provider._client.max_retry_seconds
-        results = self._wait_for_results(timeout, wait)
+        job_results = self._wait_for_results(timeout, wait)
+        results = job_results if index is None else [job_results[index]]
 
         # create list of result dictionaries
         results_list = []
@@ -138,7 +149,6 @@ class SuperstaqJob(qiskit.providers.JobV1):
                     "data": {"counts": counts},
                 }
             )
-
         return qiskit.result.Result.from_dict(
             {
                 "results": results_list,
@@ -156,7 +166,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         raises an exception if it is.
 
         Raises:
-            SuperstaqUnsuccessfulJobException: If the job been cancelled or has
+            SuperstaqUnsuccessfulJobException: If the job has been cancelled or has
         failed.
             SuperstaqServerException: If unable to get the status of the job from the API.
         """
@@ -197,15 +207,26 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 self._overall_status = temp_status
                 return
 
-    def _get_circuits(self, circuit_type: str) -> List[qiskit.QuantumCircuit]:
-        """Retrieves the corresponding circuits to `circuit_type`.
+    @overload
+    def _get_circuits(self, circuit_type: str, index: int) -> qiskit.QuantumCircuit:
+        ...
+
+    @overload
+    def _get_circuits(self, circuit_type: str, index: None = None) -> List[qiskit.QuantumCircuit]:
+        ...
+
+    def _get_circuits(
+        self, circuit_type: str, index: Optional[int] = None
+    ) -> Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]:
+        """Retrieves the corresponding circuit(s) to `circuit_type`.
 
         Args:
-            circuit_type: The kind of circuits to retrieve. Either "input_circuit" or
+            circuit_type: The kind of circuit(s) to retrieve. Either "input_circuit" or
                 "compiled_circuit".
+            index: An optional index of the specific circuit to retrieve.
 
         Returns:
-            A list of circuits.
+            A single circuit or list of circuits.
         """
         if circuit_type not in ("input_circuit", "compiled_circuit"):
             raise ValueError("The circuit type requested is invalid.")
@@ -217,29 +238,65 @@ class SuperstaqJob(qiskit.providers.JobV1):
         ):
             self._refresh_job()
 
-        serialized_circuits = [self._job_info[job_id][circuit_type] for job_id in job_ids]
-        return [qss.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
+        if index is None:
+            serialized_circuits = [self._job_info[job_id][circuit_type] for job_id in job_ids]
+            return [qss.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
 
-    def compiled_circuits(self) -> List[qiskit.QuantumCircuit]:
-        """Gets the compiled circuits that were submitted for this job.
+        gss.validation.validate_integer_param(index, min_val=0)
+        serialized_circuit = self._job_info[job_ids[index]][circuit_type]
+        return qss.deserialize_circuits(serialized_circuit)[0]
+
+    @overload
+    def compiled_circuits(self, index: int) -> qiskit.QuantumCircuit:
+        ...
+
+    @overload
+    def compiled_circuits(self, index: None = None) -> List[qiskit.QuantumCircuit]:
+        ...
+
+    def compiled_circuits(
+        self, index: Optional[int] = None
+    ) -> Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]:
+        """Gets the compiled circuits that were processed for this job.
+
+        Args:
+            index: An optional index of the specific circuit to retrieve.
 
         Returns:
-            A list of compiled circuits.
+            A single compiled circuit or list of compiled circuits.
         """
-        compiled_circuits = self._get_circuits("compiled_circuit")
-        input_circuits = self._get_circuits("input_circuit")
-        for compiled_qc, in_qc in zip(compiled_circuits, input_circuits):
-            compiled_qc.metadata = in_qc.metadata
+        if index is None:
+            compiled_circuits = self._get_circuits("compiled_circuit")
+            input_circuits = self._get_circuits("input_circuit")
+            for compiled_qc, in_qc in zip(compiled_circuits, input_circuits):
+                compiled_qc.metadata = in_qc.metadata
+            return compiled_circuits
 
-        return compiled_circuits
+        compiled_circuit = self._get_circuits("compiled_circuit", index)
+        input_circuit = self._get_circuits("input_circuit", index)
+        compiled_circuit.metadata = input_circuit.metadata
+        return compiled_circuit
 
-    def input_circuits(self) -> List[qiskit.QuantumCircuit]:
+    @overload
+    def input_circuits(self, index: int) -> qiskit.QuantumCircuit:
+        ...
+
+    @overload
+    def input_circuits(self, index: None = None) -> List[qiskit.QuantumCircuit]:
+        ...
+
+    def input_circuits(
+        self, index: Optional[int] = None
+    ) -> Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]:
         """Gets the original circuits that were submitted for this job.
 
+        Args:
+            index: An optional index of the specific circuit to retrieve.
+
         Returns:
-            A list of the submitted input circuits.
+            The input circuit or list of submitted input circuits.
         """
-        return self._get_circuits("input_circuit")
+        return self._get_circuits("input_circuit", index)
 
     def status(self) -> qiskit.providers.jobstatus.JobStatus:
         """Query for the equivalent qiskit job status.
@@ -269,11 +326,11 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """Unsupported submission call.
 
         Raises:
-            NotImplementedError: If a job is submitted via SuperstaqJob.
+            NotImplementedError: If a job is submitted via `SuperstaqJob`.
         """
         raise NotImplementedError("Submit through SuperstaqBackend, not through SuperstaqJob")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, gss.typing.Job]:
         """Refreshes and returns job information.
 
         Note:

@@ -46,9 +46,55 @@ def test_superstaq_client_str_and_repr() -> None:
     assert str(eval(repr(client))) == str(client)
 
 
+def test_superstaq_client_args() -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        cq_token="cq_token",
+        ibmq_channel="ibm_quantum",
+        ibmq_instance="instance",
+        ibmq_token="ibmq_token",
+    )
+    assert client.client_kwargs == dict(
+        cq_token="cq_token",
+        ibmq_channel="ibm_quantum",
+        ibmq_instance="instance",
+        ibmq_token="ibmq_token",
+    )
+
+    with pytest.raises(ValueError, match="must be either 'ibm_cloud' or 'ibm_quantum'"):
+        _ = gss.superstaq_client._SuperstaqClient(
+            client_name="general-superstaq",
+            remote_host="http://example.com",
+            api_key="to_my_heart",
+            ibmq_channel="foo",
+        )
+
+
 def test_general_superstaq_exception_str() -> None:
     ex = gss.SuperstaqServerException("err.", status_code=501)
     assert str(ex) == "err. (Status code: 501)"
+
+
+def test_warning_from_server() -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+
+    warning = {"message": "WARNING!", "category": "SuperstaqWarning"}
+
+    with mock.patch("requests.get", ok=True) as mock_request:
+        mock_request.return_value.json = lambda: {"abc": 123, "warnings": [warning]}
+        with pytest.warns(gss.SuperstaqWarning, match="WARNING!"):
+            assert client.get_request("/endpoint") == {"abc": 123}
+
+    with mock.patch("requests.post", ok=True) as mock_request:
+        mock_request.return_value.json = lambda: {"abc": 123, "warnings": [warning, warning]}
+        with pytest.warns(gss.SuperstaqWarning, match="WARNING!"):
+            assert client.post_request("/endpoint", {}) == {"abc": 123}
 
 
 @pytest.mark.parametrize("invalid_url", ("url", "http://", "ftp://", "http://"))
@@ -121,7 +167,7 @@ def test_superstaq_client_needs_accept_terms_of_use(
     fake_get_response.ok = False
     fake_get_response.status_code = requests.codes.unauthorized
     fake_get_response.json.return_value = (
-        "You must accept the Terms of Use (superstaq.super.tech/terms_of_use)."
+        "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
     )
     mock_get.return_value = fake_get_response
 
@@ -140,6 +186,31 @@ def test_superstaq_client_needs_accept_terms_of_use(
     with mock.patch("builtins.input"):
         client.get_balance()
         assert capsys.readouterr().out == "Accepted. You can now continue using Superstaq.\n"
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_validate_email_error(
+    mock_post: mock.MagicMock,
+) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+
+    mock_post.return_value.ok = False
+    mock_post.return_value.status_code = requests.codes.unauthorized
+    mock_post.return_value.json.return_value = "You must validate your registered email."
+
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    with pytest.raises(
+        gss.SuperstaqServerException, match="You must validate your registered email."
+    ):
+        _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
 
 
 @mock.patch("requests.post")

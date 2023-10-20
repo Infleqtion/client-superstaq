@@ -11,11 +11,11 @@ import qiskit
 import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
-    from qisskit_superstaq.conftest import MockSuperstaqProvider
+    from qiskit_superstaq.conftest import MockSuperstaqProvider
 
 
 def mock_response(status_str: str) -> Dict[str, Union[str, int, Dict[str, int]]]:
-    return {"status": status_str, "samples": {"10": 100}, "shots": 100}
+    return {"status": status_str, "samples": {"11": 50, "10": 50}, "shots": 100}
 
 
 @pytest.fixture
@@ -283,6 +283,7 @@ def test_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
 
     # After fetching the job info once it shouldn't be refreshed again (so no need to mock)
     assert job.compiled_circuits() == [qiskit.QuantumCircuit(2)]
+    assert job.compiled_circuits(index=0) == qiskit.QuantumCircuit(2)
 
     job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz")
     with mock.patch(
@@ -292,6 +293,49 @@ def test_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
         mocked_get_job.assert_called_once()
 
     assert job.compiled_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
+
+
+def test_index_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
+    response = mock_response("Done")
+    single_qc = qiskit.QuantumCircuit(2, metadata={"test_label": "test_data"})
+    qc_list = [single_qc, single_qc, single_qc]
+
+    response["compiled_circuit"] = qss.serialize_circuits(single_qc)
+    response["input_circuit"] = qss.serialize_circuits(single_qc)
+
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
+    ) as mocked_get_job:
+        assert job.compiled_circuits() == [single_qc]
+        assert job.compiled_circuits()[0].metadata == {"test_label": "test_data"}
+        assert job.compiled_circuits(index=0) == single_qc
+        assert job.compiled_circuits(0).metadata == {"test_label": "test_data"}
+        mocked_get_job.assert_called_once()
+
+    # After fetching the job info once it shouldn't be refreshed again (so no need to mock)
+    assert job.compiled_circuits() == [single_qc]
+    assert job.compiled_circuits()[0].metadata == {"test_label": "test_data"}
+    assert job.compiled_circuits(index=0) == single_qc
+    assert job.compiled_circuits(0).metadata == {"test_label": "test_data"}
+
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz,789cba")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
+    ):
+        assert job.compiled_circuits() == qc_list
+        assert job.compiled_circuits(index=2) == single_qc
+        for circ in job.compiled_circuits():
+            assert circ.metadata == {"test_label": "test_data"}
+        assert job.compiled_circuits(index=2).metadata == {"test_label": "test_data"}
+        mocked_get_job.assert_called_once()
+
+    # After fetching the job info once it shouldn't be refreshed again (so no need to mock)
+    assert job.compiled_circuits() == qc_list
+    assert job.compiled_circuits(index=2) == single_qc
+    for circ in job.compiled_circuits():
+        assert circ.metadata == {"test_label": "test_data"}
+    assert job.compiled_circuits(index=2).metadata == {"test_label": "test_data"}
 
 
 def test_input_circuits(backend: qss.SuperstaqBackend) -> None:
@@ -307,6 +351,7 @@ def test_input_circuits(backend: qss.SuperstaqBackend) -> None:
 
     # After fetching the job info once it shouldn't be refreshed again (so no need to mock)
     assert job.input_circuits() == [qiskit.QuantumCircuit(2)]
+    assert job.input_circuits(index=0) == qiskit.QuantumCircuit(2)
 
     job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz")
     with mock.patch(
@@ -316,6 +361,7 @@ def test_input_circuits(backend: qss.SuperstaqBackend) -> None:
         mocked_get_job.assert_called_once()
 
     assert job.input_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
+    assert job.input_circuits(index=1) == qiskit.QuantumCircuit(2)
 
 
 def test_status(backend: qss.SuperstaqBackend) -> None:
@@ -375,7 +421,7 @@ def test_to_dict(backend: qss.SuperstaqBackend) -> None:
         assert job.to_dict() == {
             "12345": {
                 "status": "Done",
-                "samples": {"10": 100},
+                "samples": {"11": 50, "10": 50},
                 "shots": 100,
             }
         }
