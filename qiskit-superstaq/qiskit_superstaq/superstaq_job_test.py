@@ -54,16 +54,21 @@ def test_timeout(backend: qss.SuperstaqBackend) -> None:
 
 
 def test_result(backend: qss.SuperstaqBackend) -> None:
-    qc = qiskit.QuantumCircuit(2, 2)
+    qc = qiskit.QuantumCircuit(3, 3)
+    qc.h(0)
+    qc.cx(0, 1)
+    qc.h(2)
+    qc.measure([0, 1, 2], [0, 1, 2])
     job = qss.SuperstaqJob(backend=backend, job_id="123abc")
-    job._job_info["123abc"] = {
-        "status": "Done",
-        "samples": {"01": 100},
-        "shots": 100,
-        "input_circuit": qss.serialization.serialize_circuits(qc),
-        "compiled_circuit": qss.serialization.serialize_circuits(qc),
-    }
-    expected_results = [{"success": True, "shots": 100, "data": {"counts": {"01": 100}}}]
+
+    response = mock_response("Done")
+    response["input_circuit"] = qss.serialize_circuits(qc)
+    response["compiled_circuit"] = qss.serialize_circuits(qc)
+    response["samples"] = {"110": 30, "100": 50, "111": 20}
+    expected_results = [
+        {"success": True, "shots": 100, "data": {"counts": {"110": 30, "100": 50, "111": 20}}}
+    ]
+
     expected = qiskit.result.Result.from_dict(
         {
             "results": expected_results,
@@ -77,12 +82,31 @@ def test_result(backend: qss.SuperstaqBackend) -> None:
 
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaqClient.get_job",
+        return_value=response,
+    ):
+        ans = (
+            job.result(index=0),
+            job.result(index=0, qubit_indices=[0]),
+            job.result(index=0, qubit_indices=[2]),
+            job.result(index=0, qubit_indices=[1, 2]),
+        )
+        assert ans[0].backend_name == expected.backend_name
+        assert ans[0].job_id == expected.job_id
+        assert ans[0].get_counts() == {"011": 30, "001": 50, "111": 20}
+        assert ans[1].get_counts() == {"1": 100}
+        assert ans[2].get_counts() == {"0": 80, "1": 20}
+        assert ans[3].get_counts() == {"01": 30, "00": 50, "11": 20}
+
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job",
         return_value=mock_response("Done"),
     ):
-        ans = job.result()
-
-        assert ans.backend_name == expected.backend_name
-        assert ans.job_id == expected.job_id
+        assert job.result().get_counts() == [
+            {"011": 30, "001": 50, "111": 20},
+            {"011": 30, "001": 50, "111": 20},
+        ]
+        assert job.result(index=0).get_counts() == {"011": 30, "001": 50, "111": 20}
 
 
 def test_counts_arranged(backend: qss.SuperstaqBackend) -> None:

@@ -89,7 +89,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
             The specific measurement indices of the circuit with label `index` in
             the job.
         """
-        compiled_circuit = self._get_circuits("compiled_circuit")[index]
+        compiled_circuit = self._get_circuits("compiled_circuit", index=index)
         return qss.compiler_output.measured_qubit_indices(compiled_circuit)
 
     def _get_num_clbits(self, index: int) -> int:
@@ -101,7 +101,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         Returns:
             The number of classical bits for the circuit in the job.
         """
-        return self._get_circuits("input_circuit")[index].num_clbits
+        return self._get_circuits("input_circuit", index=index).num_clbits
 
     def result(self, timeout: Optional[float] = None, wait: float = 5) -> qiskit.result.Result:
         """Retrieves the result data associated with a Superstaq job.
@@ -120,15 +120,16 @@ class SuperstaqJob(qiskit.providers.JobV1):
 
         # create list of result dictionaries
         results_list = []
-        for index, result in enumerate(results):
+        for i, result in enumerate(results):
             counts = result["samples"]
-            if counts:  # change endianess to match Qiskit
-                num_clbits = self._get_num_clbits(index)
-                circ_meas_bit_indices = self._get_meas_bit_info(index)
+            if counts:
+                num_clbits = self._get_num_clbits(i)
+                circ_meas_bit_indices = self._get_meas_bit_info(i)
                 if len(circ_meas_bit_indices) != num_clbits:
                     counts = self._arrange_counts(counts, circ_meas_bit_indices, num_clbits)
-                counts = dict((key[::-1], value) for (key, value) in counts.items())
-
+                counts = dict((key[::-1], value) for (key, value) in counts.items()) # change endianess to match Qiskit
+                if qubit_indices:
+                    counts = qiskit.result.marginal_counts(counts, indices=qubit_indices[::-1])
             results_list.append(
                 {
                     "success": result["status"] == "Done",
