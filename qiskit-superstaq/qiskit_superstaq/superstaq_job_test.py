@@ -97,16 +97,16 @@ def test_result(backend: qss.SuperstaqBackend) -> None:
         assert ans[2].get_counts() == {"0": 80, "1": 20}
         assert ans[3].get_counts() == {"01": 30, "00": 50, "11": 20}
 
-    job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz")
+    multi_job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz")
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaqClient.get_job",
-        return_value=mock_response("Done"),
+        return_value=response,
     ):
-        assert job.result().get_counts() == [
+        assert multi_job.result().get_counts() == [
             {"011": 30, "001": 50, "111": 20},
             {"011": 30, "001": 50, "111": 20},
         ]
-        assert job.result(index=0).get_counts() == {"011": 30, "001": 50, "111": 20}
+        assert multi_job.result(index=0).get_counts() == {"011": 30, "001": 50, "111": 20}
 
 
 def test_counts_arranged(backend: qss.SuperstaqBackend) -> None:

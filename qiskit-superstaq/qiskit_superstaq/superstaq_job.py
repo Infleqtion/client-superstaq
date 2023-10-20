@@ -138,7 +138,9 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 circ_meas_bit_indices = self._get_meas_bit_info(i)
                 if len(circ_meas_bit_indices) != num_clbits:
                     counts = self._arrange_counts(counts, circ_meas_bit_indices, num_clbits)
-                counts = dict((key[::-1], value) for (key, value) in counts.items()) # change endianess to match Qiskit
+                counts = dict(
+                    (key[::-1], value) for (key, value) in counts.items()
+                )  # change endianess to match Qiskit
                 if qubit_indices:
                     counts = qiskit.result.marginal_counts(counts, indices=qubit_indices[::-1])
             results_list.append(
