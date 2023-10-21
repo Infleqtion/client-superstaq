@@ -661,7 +661,9 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
     }
 
-    assert service.ibmq_compile(circuit, dd_strategy="dynamic", test_options="yes").circuit == circuit
+    assert (
+        service.ibmq_compile(circuit, dd_strategy="dynamic", test_options="yes").circuit == circuit
+    )
 
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
         "dd_strategy": "dynamic",
