@@ -63,7 +63,7 @@ def run(
 
     if returncode_black == 1 or returncode_isort == 1:
         # some files should be reformatted, but there don't seem to be any bona fide errors
-        command = "./check/format_.py --apply"
+        command = "./checks/format_.py --apply"
         text = f"Run '{command}' (from the repo root directory) to format files."
         print(check_utils.warning(text))
         return 1
