@@ -51,7 +51,7 @@ def test_get_balance() -> None:
     mock_client.get_balance.return_value = {"balance": 12345.6789}
     ss_provider._client = mock_client
 
-    assert ss_provider.get_balance() == "$12,345.68"
+    assert ss_provider.get_balance() == "12,345.68 credits"
     assert ss_provider.get_balance(pretty_output=False) == 12345.6789
 
 
@@ -160,6 +160,15 @@ def test_ibmq_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperst
     assert fake_superstaq_provider.ibmq_compile(
         [qiskit.QuantumCircuit()]
     ) == qss.compiler_output.CompilerOutput([qc], [final_logical_to_physical], pulse_sequences=None)
+
+    assert fake_superstaq_provider.ibmq_compile(
+        qiskit.QuantumCircuit(), dd_strategy="static", test_options="yes"
+    ) == qss.compiler_output.CompilerOutput(qc, final_logical_to_physical, pulse_sequences=None)
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "dd_strategy": "static",
+        "dynamical_decoupling": True,
+        "test_options": "yes",
+    }
 
 
 def test_invalid_target_ibmq_compile() -> None:

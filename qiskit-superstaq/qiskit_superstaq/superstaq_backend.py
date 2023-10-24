@@ -262,6 +262,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         dynamical_decoupling: bool = True,
+        dd_strategy: str = "static_context_aware",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
@@ -269,6 +270,8 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         Args:
             circuits: The `qiskit.QuantumCircuit`(s) to compile.
             dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
+            dd_strategy: Method to use for placing dynamical decoupling operations; either
+                "dynamic", "static", or "static_context_aware" (default).
             kwargs: Other desired compile options.
 
         Returns:
@@ -285,6 +288,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         options: Dict[str, Any] = {**kwargs}
 
         options["dynamical_decoupling"] = dynamical_decoupling
+        options["dd_strategy"] = dd_strategy
         request_json = self._get_compile_request_json(circuits, **options)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
