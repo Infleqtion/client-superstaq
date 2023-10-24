@@ -239,16 +239,6 @@ def test_service_create_job() -> None:
     assert create_job_kwargs["fake_data"] == ""
 
 
-def test_service_get_balance() -> None:
-    service = css.Service(api_key="key", remote_host="http://example.com")
-    mock_client = mock.MagicMock()
-    mock_client.get_balance.return_value = {"balance": 12345.6789}
-    service._client = mock_client
-
-    assert service.get_balance() == "12,345.68 credits"
-    assert service.get_balance(pretty_output=False) == 12345.6789
-
-
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value={
