@@ -21,7 +21,10 @@ Modifying Superstaq
 
 Push Edits and Make a Pull Request for Review
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#. Update the main branch (e.g., ``git pull``) and update relevant dependencies (``python3 -m pip install -e .``, ``python3 -m pip install <general-superstaq, qiskit-superstaq, cirq-superstaq. --upgrade``).
+#. Update the main branch (e.g., ``git pull``).
+#. Update relevant dependencies:
+    * **To work on a single package**, navigate to the relevant subdirectory (e.g., ``cd qiskit-superstaq``) and run ``python3 -m pip install -e .``.
+    * **Alternatively, install all Superstaq packages** by navigating to the repository root and run verbatim ``python3 -m pip install -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks`` (packages should be installed in this specific order).
 #. Create a new branch, forked from the up-to-date main branch. E.g., ``git checkout -b new-branch-name``
 #. Add commits for your new code. E.g., ``git status`` to see what files have been changed, ``git add <file_name>``, ``git commit -m "<commit_message>"``.
     NOTE: Avoid using ``git add .`` or ``git add --all|-A`` when staging files to commit, as this will also include any untracked file which might have found its way into your local directory. Instead, add files individually (``git add file1 file2 ...``), or use ``git commit -a`` to stage and commit all changes to tracked files only.
