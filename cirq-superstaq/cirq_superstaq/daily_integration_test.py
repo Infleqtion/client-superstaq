@@ -136,22 +136,25 @@ def test_get_resource_estimate(service: css.Service) -> None:
 
 def test_get_targets(service: css.Service) -> None:
     result = service.get_targets()
-    ibmq_properties = {
-        "supports_submit": True,
-        "supports_submit_qubo": False,
-        "supports_compile": True,
-        "available": True,
-        "retired": False,
-    }
-    aqt_properties = {
-        "supports_submit": False,
-        "supports_submit_qubo": False,
-        "supports_compile": True,
-        "available": True,
-        "retired": False,
-    }
-    assert gss.typing.TargetInfo(target="ibmq_qasm_simulator", **ibmq_properties) in result
-    assert gss.typing.TargetInfo(target="aqt_keysight_qpu", **aqt_properties) in result
+    ibmq_target_info = gss.typing.TargetInfo(
+        target="ibmq_qasm_simulator",
+        supports_submit=True,
+        supports_submit_qubo=False,
+        supports_compile=True,
+        available=True,
+        retired=False,
+    )
+    aqt_target_info = gss.typing.TargetInfo(
+        target="aqt_keysight_qpu",
+        supports_submit=False,
+        supports_submit_qubo=False,
+        supports_compile=True,
+        available=True,
+        retired=False,
+    )
+
+    assert ibmq_target_info in result
+    assert aqt_target_info in result
 
 
 def test_qscout_compile(service: css.Service) -> None:
