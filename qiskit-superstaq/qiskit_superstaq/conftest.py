@@ -63,7 +63,7 @@ class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
                 - retired: Optional boolean flag to only return targets that are or are not retired.
 
         Returns:
-            A list of Superstaq targets (or a filtered set of targets).
+            A list of Superstaq targets matching all provided criteria.
         """
         return gss.testing.RETURNED_TARGETS
 
