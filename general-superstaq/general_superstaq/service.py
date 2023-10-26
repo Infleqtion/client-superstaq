@@ -144,7 +144,7 @@ class Service:
             kwargs: Any addtional, supported flags to restrict/filter returned targets.
 
         Returns:
-            A list of Superstaq targets (or a filtered set of targets).
+            A list of Superstaq targets matching all provided criteria.
         """
         filters = dict(
             simulator=simulator,
