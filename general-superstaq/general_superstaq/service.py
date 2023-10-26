@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 import qubovert as qv
 
 import general_superstaq as gss
-from general_superstaq import superstaq_client, typing
 
 
 class Service:
@@ -25,7 +24,7 @@ class Service:
             client: The Superstaq client to use.
         """
 
-        self._client = superstaq_client._SuperstaqClient(
+        self._client = gss.superstaq_client._SuperstaqClient(
             client_name="general-superstaq",
             remote_host=remote_host,
             api_key=api_key,
@@ -127,7 +126,7 @@ class Service:
         available: Optional[bool] = None,
         retired: Optional[bool] = None,
         **kwargs: bool,
-    ) -> List[typing.TargetInfo]:
+    ) -> List[gss.TargetInfo]:
         """Gets a list of Superstaq targets along with their status information.
 
         Args:
