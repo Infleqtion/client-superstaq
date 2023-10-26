@@ -22,6 +22,7 @@ import qubovert as qv
 import requests
 
 import general_superstaq as gss
+from general_superstaq.testing import RETURNED_TARGETS, TARGET_LIST
 
 API_VERSION = gss.API_VERSION
 EXPECTED_HEADERS = {
@@ -490,14 +491,14 @@ def test_superstaq_client_resource_estimate(mock_post: mock.MagicMock) -> None:
 @mock.patch("requests.post")
 def test_superstaq_client_get_targets(mock_post: mock.MagicMock) -> None:
     mock_post.return_value.ok = True
-    mock_post.return_value.json.return_value = {"superstaq_targets": gss.testing.TARGET_LIST}
+    mock_post.return_value.json.return_value = {"superstaq_targets": TARGET_LIST}
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
     response = client.get_targets()
-    assert response == gss.testing.RETURNED_TARGETS
+    assert response == RETURNED_TARGETS
 
 
 @mock.patch("requests.post")
