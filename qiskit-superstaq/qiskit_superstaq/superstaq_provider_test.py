@@ -23,13 +23,13 @@ if TYPE_CHECKING:
 @patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
 def test_provider(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     assert str(fake_superstaq_provider) == "<SuperstaqProvider mock_superstaq_provider>"
-
     assert (
         repr(fake_superstaq_provider)
         == "<SuperstaqProvider(api_key=MY_TOKEN, name=mock_superstaq_provider)>"
     )
-
-    assert str(fake_superstaq_provider.backends()[0]) == "aws_dm1_simulator"
+    assert (
+        str(fake_superstaq_provider.backends()[0]) == "aqt_keysight_qpu"
+    )  # First backend alphabetically.
 
 
 def test_provider_args() -> None:
