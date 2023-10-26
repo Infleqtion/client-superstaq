@@ -26,8 +26,8 @@ jobs:
           pip install ./checks-superstaq ./general-superstaq[dev] ./qiskit-superstaq[dev] ./cirq-superstaq[dev]
       - name: Pytest integration check
         run: |
-          pytest cirq-superstaq/cirq_superstaq/daily_integration_test.py::test_submit_to_hilbert_qubit_sorting --run_hilbert_tests
-          pytest qiskit-superstaq/qiskit_superstaq/daily_integration_test.py::test_submit_to_hilbert_qubit_sorting --run_hilbert_tests
+          pytest cirq-superstaq/cirq_superstaq/hilbert_daily_integration_test.py
+          pytest qiskit-superstaq/qiskit_superstaq/hilbert_daily_integration_test.py
       - name: Create issue if integration check failed
         if: ${{ failure() }}
         uses: JasonEtco/create-an-issue@v2
