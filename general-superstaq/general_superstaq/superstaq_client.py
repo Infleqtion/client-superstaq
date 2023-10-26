@@ -245,7 +245,7 @@ class _SuperstaqClient:
             kwargs: Optional flags to restrict/filter returned targets.
 
         Returns:
-            A list of Superstaq targets (or a filtered set of targets).
+            A list of Superstaq targets matching all provided criteria.
         """
         target_filters = {key: value for key, value in kwargs.items() if value is not None}
         superstaq_targets = self.post_request("/targets", target_filters)["superstaq_targets"]
