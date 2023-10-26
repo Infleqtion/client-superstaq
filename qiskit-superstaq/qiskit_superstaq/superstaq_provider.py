@@ -128,11 +128,10 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         Returns:
             A list of Superstaq backends.
         """
-        submit_targets = self._client.get_targets()
+        targets = self._client.get_targets()
         superstaq_backends = []
-        for backend in submit_targets:
-            if backend.supports_submit:
-                superstaq_backends.append(self.get_backend(backend.target))
+        for backend in targets:
+            superstaq_backends.append(self.get_backend(backend.target))
         return superstaq_backends
 
     def resource_estimate(
