@@ -339,10 +339,14 @@ class Job:
 
         if all(self._job[job_id].get("pulse_gate_circuits") for job_id in job_ids):
             serialized_circuits = [self._job[job_id]["pulse_gate_circuits"] for job_id in job_ids]
-            return [
-                css.serialization.deserialize_qiskit_circuits(serialized, len(job_ids))[0]
-                for serialized in serialized_circuits
-            ]
+            deserialized_circuits = []
+            for serialized_circuit in serialized_circuits:
+                deserialized_circuit = css.serialization.deserialize_qiskit_circuits(
+                    serialized_circuit, False
+                )
+                if deserialized_circuit is not None:
+                    deserialized_circuits.append(deserialized_circuit[0])
+            return deserialized_circuits
 
         error = f"Job: {self._job_id} was not submitted to a pulse-enabled device"
         raise ValueError(error)
