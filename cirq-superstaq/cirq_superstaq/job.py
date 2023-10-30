@@ -329,13 +329,20 @@ class Job:
         Raises:
             ValueError: If job was not run on an IBM pulse device.
         """
-        if "pulse_gate_circuits" not in self._job:
+        job_ids = self._job_id.split(",")
+
+        if not all(
+            job_id in self._job and self._job[job_id].get("pulse_gate_circuits")
+            for job_id in job_ids
+        ):
             self._refresh_job()
-        job_dict = self._job[self._job_id]
-        if job_dict.get("pulse_gate_circuits") is not None:
-            return css.serialization.deserialize_qiskit_circuits(
-                job_dict["pulse_gate_circuits"], False
-            )[0]
+
+        if all(self._job[job_id].get("pulse_gate_circuits") for job_id in job_ids):
+            serialized_circuits = [self._job[job_id]["pulse_gate_circuits"] for job_id in job_ids]
+            return [
+                css.serialization.deserialize_qiskit_circuits(serialized, len(job_ids))[0]
+                for serialized in serialized_circuits
+            ]
 
         error = f"Job: {self._job_id} was not submitted to a pulse-enabled device"
         raise ValueError(error)
