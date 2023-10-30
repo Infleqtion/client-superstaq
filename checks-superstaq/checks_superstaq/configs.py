@@ -5,7 +5,7 @@ import sys
 import textwrap
 from typing import List, Tuple
 
-from general_superstaq.check import check_utils
+from checks_superstaq import check_utils
 
 CONFIG_FILE = "pyproject.toml"
 TEMPLATE_FILE = "checks-pyproject.toml"

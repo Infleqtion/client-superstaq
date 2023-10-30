@@ -15,7 +15,6 @@ class Service:
         self,
         api_key: Optional[str] = None,
         remote_host: Optional[str] = None,
-        default_target: Optional[str] = None,
         api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
@@ -49,7 +48,7 @@ class Service:
 
         balance = self._client.get_balance()["balance"]
         if pretty_output:
-            return f"${balance:,.2f}"
+            return f"{balance:,.2f} credits"
         return balance
 
     def _accept_terms_of_use(self, user_input: str) -> str:
