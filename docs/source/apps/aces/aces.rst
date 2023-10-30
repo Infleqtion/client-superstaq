@@ -7,8 +7,8 @@ Below, you will find links to identical tutorials that demonstrate ACES using ei
 .. toctree::
     :maxdepth: 1
     
-    aces_qss
-    aces_css
+    Average Circuit Eigenvalue Sampling (ACES) with Qiskit Superstaq
+    Average Circuit Eigenvalue Sampling (ACES) with Cirq Superstaq
 
 References
 -----------------------
