@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 import fnmatch
 import functools
+import importlib.metadata
 import json
 import os
 import re
-import subprocess
 import sys
 import textwrap
 import urllib.request
-from typing import Dict, Iterable, List, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import packaging.version
 
-import general_superstaq as gss
-from general_superstaq.check import check_utils
+from checks_superstaq import check_utils
 
 
 @check_utils.enable_exit_on_failure
@@ -66,14 +65,11 @@ def run(
 
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
-    # check that we can connect to PyPI
-    can_connect_to_pypi = _check_pypy_connection(silent)
-
     # check all requirements files
     requirements_to_fix = {}
     for req_file in files:
         needs_cleanup, requirements = _inspect_req_file(
-            req_file, parsed_args.only_sort, can_connect_to_pypi, upstream_match, silent
+            req_file, parsed_args.only_sort, upstream_match, silent
         )
         if needs_cleanup:
             requirements_to_fix[req_file] = requirements
@@ -85,19 +81,8 @@ def run(
     return 0 if success else 1
 
 
-def _check_pypy_connection(silent: bool) -> bool:
-    try:
-        urllib.request.urlopen("https://pypi.org/", timeout=1)
-        return True
-    except urllib.error.URLError:
-        if not silent:
-            warning = "Cannot connect to PyPI to identify package versions to pin."
-            print(check_utils.warning(warning))
-        return False
-
-
 def _inspect_req_file(
-    req_file: str, only_sort: bool, can_connect_to_pypi: bool, upstream_match: str, silent: bool
+    req_file: str, only_sort: bool, upstream_match: str, silent: bool
 ) -> Tuple[bool, List[str]]:
     # read in requirements line-by-line
     with open(os.path.join(check_utils.root_dir, req_file), "r") as file:
@@ -115,7 +100,7 @@ def _inspect_req_file(
     if needs_cleanup and not silent:
         print(check_utils.failure(f"{req_file} is not sorted."))
 
-    if not only_sort and can_connect_to_pypi:
+    if not only_sort:
         needs_cleanup |= _check_package_versions(
             req_file, requirements, upstream_match, silent, strict=True
         )
@@ -176,7 +161,7 @@ def _check_package_versions(
             # this is not an upstream package
             continue
 
-        latest_version = _get_latest_version(package)
+        latest_version = _get_latest_version(package, silent)
         desired_req = f"{package}~={latest_version}"
         latest_version_is_required = desired_req == req
         up_to_date &= bool(latest_version_is_required)
@@ -197,34 +182,53 @@ def _check_package_versions(
 
 
 @functools.lru_cache()
-def _get_latest_version(package: str) -> str:
+def _get_latest_version(package: str, silent: bool) -> str:
+    """Retrieve the latest version of a package."""
+    local_version = _get_local_version(package)
+    pypi_version = _get_pypi_version(package, silent)
+    if not local_version and not pypi_version:
+        raise ModuleNotFoundError(f"Package not installed or found on PyPI: {package}")
+    return max(pypi_version or "0.0.0", local_version or "0.0.0", key=packaging.version.parse)
+
+
+def _get_local_version(package: str) -> Optional[str]:
+    """Retrieve the local version of a package (if installed)."""
+    base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
+    sanitized_package_name = base_package.replace("-", "_").lower()
+    try:
+        module = importlib.import_module(sanitized_package_name)
+        if hasattr(module, "__version__"):
+            return module.__version__
+        return importlib.metadata.version(sanitized_package_name)
+    except ModuleNotFoundError:
+        return None
+
+
+def _get_pypi_version(package: str, silent: bool) -> Optional[str]:
+    """Retrieve the latest version of a package on PyPI (if found)."""
     base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
     pypi_url = f"https://pypi.org/pypi/{base_package}/json"
-    pypi_version = json.loads(urllib.request.urlopen(pypi_url).read().decode())["info"]["version"]
-
-    # If the local gss version is newer, return that instead
-    return max(pypi_version, gss.__version__, key=packaging.version.parse)
+    try:
+        package_info = urllib.request.urlopen(pypi_url).read().decode()
+        pypi_version = json.loads(package_info)["info"]["version"]
+        return pypi_version
+    except urllib.error.URLError:
+        if not silent:
+            warning = f"Cannot find package on PyPI: {base_package}."
+            print(check_utils.warning(warning))
+        return None
 
 
 def _inspect_local_version(package: str, latest_version: str) -> None:
-    base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
-    try:
-        installed_info = subprocess.check_output(
-            [sys.executable, "-m", "pip", "show", base_package],
-            cwd=check_utils.root_dir,
-            text=True,
-        ).split()
-        installed_version = installed_info[installed_info.index("Version:") + 1]
-        # check that installed_version and latest_version have the same minor version: X.Y.*
-        assert installed_version.split(".")[:2] == latest_version.split(".")[:2]
-    except AssertionError:
-        warning = f"WARNING: locally installed {package} version is not up to date."
+    """Check that the package is installed with the same minor version (X.Y.*) as latest_version."""
+    local_version = _get_local_version(package)
+    if not local_version or local_version.split(".")[:2] != latest_version.split(".")[:2]:
+        warning = f"WARNING: locally installed version of {package} is not up to date."
+        version_info = f"Local version is {local_version}, but latest version is {latest_version}."
         suggestion = f"Try calling 'python -m pip install --upgrade {package}'."
         print(check_utils.warning(warning))
+        print(check_utils.warning(version_info))
         print(check_utils.warning(suggestion))
-    except subprocess.CalledProcessError:
-        # pip returned a non-zero exit status; let pip print its own error message
-        pass
 
 
 def _cleanup(
@@ -244,7 +248,7 @@ def _cleanup(
                 print(check_utils.success("Requirements files fixed."))
 
         elif not silent:
-            command = "./check/requirements.py --apply"
+            command = "./checks/requirements.py --apply"
             text = f"Run '{command}' (from the repo root directory) to fix requirements files."
             print(check_utils.warning(text))
 

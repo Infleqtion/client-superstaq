@@ -15,7 +15,18 @@ from __future__ import annotations
 
 import numbers
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    overload,
+)
 
 import cirq
 import general_superstaq as gss
@@ -58,7 +69,9 @@ def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
 
 
 def counts_to_results(
-    counter: Dict[str, int], circuit: cirq.AbstractCircuit, param_resolver: cirq.ParamResolver
+    counter: Mapping[str, float],
+    circuit: cirq.AbstractCircuit,
+    param_resolver: cirq.ParamResolver,
 ) -> cirq.ResultDict:
     """Converts a `collections.Counter` to a `cirq.ResultDict`.
 
@@ -77,20 +90,27 @@ def counts_to_results(
     combine_key_names = "".join(measurement_key_names)
 
     samples: List[List[int]] = []
-    for key in counter.keys():
-        keys_as_list: List[int] = []
-
+    if not all(counts == int(counts) for counts in counter.values()):
+        warnings.warn(
+            "The raw counts contain fractional values due to measurement error mitigation; please "
+            "use service.get_counts to see raw results.",
+            stacklevel=2,
+        )
+    if not all(counts >= 0 for counts in counter.values()):
+        warnings.warn(
+            "The raw counts contain negative values due to measurement error mitigation; please "
+            "use service.get_counts to see raw results.",
+            stacklevel=2,
+        )
+    for key, counts_of_key in counter.items():
         # Combines the keys of the counter into a list. If key = "01", keys_as_list = [0, 1]
-        for index in key:
-            keys_as_list.append(int(index))
+        keys_as_list: List[int] = list(map(int, key))
 
-        # Gets the number of counts of the key
-        # counter = collections.Counter({"01": 48, "11": 52})["01"] -> 48
-        counts_of_key = counter[key]
-
-        # Appends all the keys onto 'samples' list number-of-counts-in-the-key times
-        # If collections.Counter({"01": 48, "11": 52}), [0, 1] is appended to 'samples` 48 times and
-        # [1, 1] is appended to 'samples' 52 times
+        # Gets execution counts per bitstring, e.g., collections.Counter({"01": 48, "11": 52})["01"]
+        # = 48. Per execution shot, appends bitstring to `samples` list. E.g., if counter is
+        # collections.Counter({"01": 48, "11": 52}), [0, 1] is appended 48 times and [1, 1] is
+        # appended 52 times.
+        counts_of_key = round(counts_of_key)
         for _ in range(counts_of_key):
             samples.append(keys_as_list)
 
@@ -121,6 +141,10 @@ class Service(gss.service.Service):
         api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
+        cq_token: Optional[str] = None,
+        ibmq_token: Optional[str] = None,
+        ibmq_instance: Optional[str] = None,
+        ibmq_channel: Optional[str] = None,
         **kwargs: object,
     ) -> None:
         """Creates the Service to access Superstaq's API.
@@ -148,10 +172,12 @@ class Service(gss.service.Service):
             api_version: Version of the api.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
             verbose: Whether to print to stdio and stderr on retriable errors.
+            cq_token: Token from CQ cloud.This is required to submit circuits to CQ hardware.
+            ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
+                to IBM hardware, or to access non-public IBM devices you may have access to.
+            ibmq_instance: An optional instance to use when running IBM jobs.
+            ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
             kwargs: Other optimization and execution parameters.
-                - qiskit_pulse: Whether to use Superstaq's pulse-level optimizations for IBMQ
-                devices.
-                - cq_token: Token from CQ cloud.
 
         Raises:
             EnvironmentError: If an API key was not provided and could not be found.
@@ -164,6 +190,10 @@ class Service(gss.service.Service):
             api_version=api_version,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
+            cq_token=cq_token,
+            ibmq_token=ibmq_token,
+            ibmq_instance=ibmq_instance,
+            ibmq_channel=ibmq_channel,
             **kwargs,
         )
 
@@ -177,60 +207,116 @@ class Service(gss.service.Service):
         gss.validation.validate_target(target)
         return target
 
+    @overload
     def get_counts(
         self,
-        circuit: cirq.Circuit,
+        circuits: cirq.Circuit,
         repetitions: int,
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: Optional[str] = None,
         **kwargs: Any,
     ) -> Dict[str, int]:
-        """Runs the given circuit on the Superstaq API and returns the result of the circuit ran as
-        a `collections.Counter`.
+        ...
+
+    @overload
+    def get_counts(
+        self,
+        circuits: Sequence[cirq.Circuit],
+        repetitions: int,
+        target: Optional[str] = None,
+        param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
+        method: Optional[str] = None,
+        **kwargs: Any,
+    ) -> List[Dict[str, int]]:
+        ...
+
+    def get_counts(
+        self,
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        repetitions: int,
+        target: Optional[str] = None,
+        param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
+        method: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Union[Dict[str, int], List[Dict[str, int]]]:
+        """Runs circuit(s) on the Superstaq API and returns the result(s) as a `dict`.
 
         Args:
-            circuit: The circuit to run.
-            repetitions: The number of times to run the circuit.
+            circuits: The circuit(s) to run.
+            repetitions: The number of times to run the circuit(s).
             target: Where to run the job.
-            param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
+            param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuits`.
             method: Optional execution method.
             kwargs: Other optimization and execution parameters.
 
         Returns:
-            A `collection.Counter` for running the circuit.
+            The counts from running the circuit(s).
         """
-        resolved_circuit = cirq.protocols.resolve_parameters(circuit, param_resolver)
-        job = self.create_job(resolved_circuit, int(repetitions), target, method, **kwargs)
-        counts = job.counts()
+        resolved_circuits = cirq.resolve_parameters(circuits, param_resolver)
+        job = self.create_job(resolved_circuits, int(repetitions), target, method, **kwargs)
+        if isinstance(circuits, cirq.Circuit):
+            return job.counts(0)
+        return [job.counts(i) for i in range(len(circuits))]
 
-        return counts
-
+    @overload
     def run(
         self,
-        circuit: cirq.Circuit,
+        circuits: cirq.Circuit,
         repetitions: int,
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
         method: Optional[str] = None,
         **kwargs: Any,
     ) -> cirq.ResultDict:
-        """Runs the given circuit on the Superstaq API and returns the result of the circuit ran as
-        a `cirq.ResultDict`.
+        ...
+
+    @overload
+    def run(
+        self,
+        circuits: Sequence[cirq.Circuit],
+        repetitions: int,
+        target: Optional[str] = None,
+        param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
+        method: Optional[str] = None,
+        **kwargs: Any,
+    ) -> List[cirq.ResultDict]:
+        ...
+
+    def run(
+        self,
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        repetitions: int,
+        target: Optional[str] = None,
+        param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
+        method: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Union[cirq.ResultDict, List[cirq.ResultDict]]:
+        """Runs circuit(s) on the Superstaq API and returns the result(s) as `cirq.ResultDict`.
+
+        WARNING: This may return unexpected results when used with measurement error mitigation. Use
+        `service.create_job()` or `service.get_counts()` instead.
 
         Args:
-            circuit: The circuit to run.
-            repetitions: The number of times to run the circuit.
+            circuits: The circuit(s) to run.
+            repetitions: The number of times to run the circuit(s).
             target: Where to run the job.
-            param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuit`.
+            param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuits`.
             method: Execution method.
             kwargs: Other optimization and execution parameters.
 
         Returns:
-            A `cirq.ResultDict` for running the circuit.
+            The `cirq.ResultDict` object(s) from running the circuit(s).
         """
-        counts = self.get_counts(circuit, repetitions, target, param_resolver, method, **kwargs)
-        return counts_to_results(counts, circuit, param_resolver)
+        resolved_circuits = cirq.resolve_parameters(circuits, param_resolver)
+        job = self.create_job(resolved_circuits, int(repetitions), target, method, **kwargs)
+
+        if isinstance(circuits, cirq.Circuit):
+            return counts_to_results(job.counts(0), circuits, param_resolver)
+        return [
+            counts_to_results(job.counts(i), circuit, param_resolver)
+            for i, circuit in enumerate(circuits)
+        ]
 
     def sampler(self, target: Optional[str] = None) -> cirq.Sampler:
         """Returns a `cirq.Sampler` object for accessing sampler interface.
@@ -246,38 +332,30 @@ class Service(gss.service.Service):
 
     def create_job(
         self,
-        circuit: cirq.AbstractCircuit,
+        circuits: Union[cirq.AbstractCircuit, Sequence[cirq.AbstractCircuit]],
         repetitions: int = 1000,
         target: Optional[str] = None,
         method: Optional[str] = None,
         **kwargs: Any,
     ) -> css.job.Job:
-        """Create a new job to run the given circuit.
+        """Creates a new job to run the given circuit(s).
 
         Args:
-            circuit: The circuit to run.
+            circuits: The circuit or list of circuits to run.
             repetitions: The number of times to repeat the circuit. Defaults to 1000.
             target: Where to run the job.
-            method: Execution method.
+            method: The optional execution method.
             kwargs: Other optimization and execution parameters.
 
         Returns:
             A `css.Job` which can be queried for status or results.
 
         Raises:
-            ValueError: If `circuit` is not a valid `cirq.Circuit` or has no measurements to sample.
+            ValueError: If there are no measurements in `circuits`.
             SuperstaqServerException: If there was an error accessing the API.
         """
-        css.validation.validate_cirq_circuits(circuit)
-        if not isinstance(circuit, cirq.Circuit):
-            raise ValueError("This endpoint does not support the submission of multiple circuits.")
-
-        if not circuit.has_measurements():
-            # TODO: only raise if the run method actually requires samples (and not for e.g. a
-            # statevector simulation)
-            raise ValueError("Circuit has no measurements to sample.")
-
-        serialized_circuits = css.serialization.serialize_circuits(circuit)
+        css.validation.validate_cirq_circuits(circuits, require_measurements=True)
+        serialized_circuits = css.serialization.serialize_circuits(circuits)
 
         target = self._resolve_target(target)
         result = self._client.create_job(
@@ -287,9 +365,13 @@ class Service(gss.service.Service):
             method=method,
             **kwargs,
         )
+        # Make a virtual job_id that aggregates all of the individual jobs
+        # into a single one that comma-separates the individual jobs.
+        job_id = ",".join(result["job_ids"])
+
         # The returned job does not have fully populated fields; they will be filled out by
         # when the new job's status is first queried
-        return self.get_job(result["job_ids"][0])
+        return self.get_job(job_id=job_id)
 
     def get_job(self, job_id: str) -> css.job.Job:
         """Gets a job that has been created on the Superstaq API.
@@ -306,22 +388,6 @@ class Service(gss.service.Service):
         """
         return css.job.Job(client=self._client, job_id=job_id)
 
-    def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
-        """Get the querying user's account balance in USD.
-
-        Args:
-            pretty_output: Whether to return a pretty string or a float of the balance.
-
-        Returns:
-            If pretty_output is `True`, returns the balance as a nicely formatted string ($-prefix,
-                commas on LHS every three digits, and two digits after period). Otherwise, simply
-                returns a float of the balance.
-        """
-        balance = self._client.get_balance()["balance"]
-        if pretty_output:
-            return f"${balance:,.2f}"
-        return balance
-
     def get_targets(self) -> Dict[str, List[str]]:
         """Gets a list of available, unavailable, and retired targets.
 
@@ -336,7 +402,7 @@ class Service(gss.service.Service):
         """Generates resource estimates for circuit(s).
 
         Args:
-            circuits:  The circuit(s) to generate resource estimate.
+            circuits: The circuit(s) to generate resource estimate.
             target: String of target representing target device.
 
         Returns:
@@ -658,6 +724,8 @@ class Service(gss.service.Service):
         self,
         circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
         target: str = "ibmq_qasm_simulator",
+        dynamical_decoupling: bool = True,
+        dd_strategy: str = "static_context_aware",
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) to the target IBMQ device.
@@ -668,6 +736,9 @@ class Service(gss.service.Service):
         Args:
             circuits: The circuit(s) to compile.
             target: String of target IBMQ device.
+            dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
+            dd_strategy: Method to use for placing dynamical decoupling operations; either
+                "dynamic", "static", or "static_context_aware" (default).
             kwargs: Other desired `ibmq_compile` options.
 
         Returns:
@@ -681,6 +752,9 @@ class Service(gss.service.Service):
         target = self._resolve_target(target)
         if not target.startswith("ibmq_"):
             raise ValueError(f"{target!r} is not a valid IBMQ target.")
+
+        options = {"dynamical_decoupling": dynamical_decoupling, "dd_strategy": dd_strategy}
+        kwargs.update(options)
 
         return self.compile(circuits, target=target, **kwargs)
 
@@ -727,8 +801,10 @@ class Service(gss.service.Service):
         request_json = {
             "cirq_circuits": serialized_circuits,
             "target": target,
-            "options": cirq.to_json(kwargs),
         }
+        options = {**self._client.client_kwargs, **kwargs}
+        if options:
+            request_json["options"] = cirq.to_json(options)
         return request_json
 
     def supercheq(
