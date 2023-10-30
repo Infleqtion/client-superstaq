@@ -269,6 +269,8 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
         target: str = "ibmq_qasm_simulator",
+        dynamical_decoupling: bool = True,
+        dd_strategy: str = "static_context_aware",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Returns pulse schedule(s) for the given qiskit circuit(s) and target.
@@ -276,6 +278,9 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         Args:
             circuits: The circuit(s) to compile.
             target: A string containing the name of a target IBMQ backend.
+            dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
+            dd_strategy: Method to use for placing dynamical decoupling operations; either
+                "dynamic", "static", or "static_context_aware" (default).
             kwargs: Other desired ibmq_compile options.
 
         Returns:
@@ -288,6 +293,9 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         """
         if not target.startswith("ibmq_"):
             raise ValueError(f"{target!r} is not a valid IBMQ target.")
+
+        options = {"dynamical_decoupling": dynamical_decoupling, "dd_strategy": dd_strategy}
+        kwargs.update(options)
 
         return self.get_backend(target).compile(circuits, **kwargs)
 

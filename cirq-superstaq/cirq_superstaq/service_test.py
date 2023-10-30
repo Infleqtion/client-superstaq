@@ -245,7 +245,7 @@ def test_service_get_balance() -> None:
     mock_client.get_balance.return_value = {"balance": 12345.6789}
     service._client = mock_client
 
-    assert service.get_balance() == "$12,345.68"
+    assert service.get_balance() == "12,345.68 credits"
     assert service.get_balance(pretty_output=False) == 12345.6789
 
 
@@ -661,7 +661,16 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
     }
 
-    assert service.ibmq_compile(circuit, test_options="yes").circuit == circuit
+    assert (
+        service.ibmq_compile(circuit, dd_strategy="dynamic", test_options="yes").circuit == circuit
+    )
+
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "dd_strategy": "dynamic",
+        "dynamical_decoupling": True,
+        "test_options": "yes",
+    }
+
     assert service.ibmq_compile([circuit]).circuits == [circuit]
     assert service.ibmq_compile(circuit).pulse_sequence == mock.DEFAULT
     assert service.ibmq_compile([circuit]).pulse_sequences == [mock.DEFAULT]

@@ -110,7 +110,7 @@ def test_aqt_compile_eca_regression(service: css.Service) -> None:
 def test_get_balance(service: css.Service) -> None:
     balance_str = service.get_balance()
     assert isinstance(balance_str, str)
-    assert balance_str.startswith("$")
+    assert "credits" in balance_str
 
     assert isinstance(service.get_balance(pretty_output=False), float)
 
