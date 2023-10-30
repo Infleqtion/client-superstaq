@@ -235,15 +235,14 @@ class Job:
     def _get_circuits(
         self, circuit_type: str, index: None = None
     ) -> Union[
-        cirq.Circuit, List[cirq.Circuit], qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]
+        cirq.Circuit,
+        List[cirq.Circuit],
     ]:  # Change return to `List[cirq.Circuit]` after deprecation
         ...
 
     def _get_circuits(
         self, circuit_type: str, index: Optional[int] = None
-    ) -> Union[
-        cirq.Circuit, List[cirq.Circuit], qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]
-    ]:
+    ) -> Union[cirq.Circuit, List[cirq.Circuit],]:
         """Retrieves the corresponding circuit(s) to `circuit_type`.
 
         Args:
@@ -254,7 +253,7 @@ class Job:
         Returns:
             A single circuit or list of circuits.
         """
-        if circuit_type not in ("input_circuit", "compiled_circuit", "pulse_gate_circuits"):
+        if circuit_type not in ("input_circuit", "compiled_circuit"):
             raise ValueError("The circuit type requested is invalid.")
 
         job_ids = self._job_id.split(",")
@@ -263,31 +262,13 @@ class Job:
         ):
             self._refresh_job()
 
-        if circuit_type in ("input_circuit", "compiled_circuit"):
-            if index is None:
-                serialized_circuits = [self._job[job_id][circuit_type] for job_id in job_ids]
-                return [
-                    css.deserialize_circuits(serialized)[0] for serialized in serialized_circuits
-                ]
+        if index is None:
+            serialized_circuits = [self._job[job_id][circuit_type] for job_id in job_ids]
+            return [css.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
 
-            gss.validation.validate_integer_param(index, min_val=0)
-            serialized_circuit = self._job[job_ids[index]][circuit_type]
-            return css.deserialize_circuits(serialized_circuit)[0]
-        elif circuit_type == "pulse_gate_circuits":
-            for job_id in job_ids:
-                if "pulse_gate_circuits" not in self._job[job_id]:
-                    error = f"Job: {job_id} was not submitted to a pulse-enabled device."
-                    raise ValueError(error)
-            if index is None:
-                serialized_circuits = [self._job[job_id][circuit_type] for job_id in job_ids]
-                return [
-                    css.serialization.deserialize_qiskit_circuits(serialized)[0]
-                    for serialized in serialized_circuits
-                ]
-
-            gss.validation.validate_integer_param(index, min_val=0)
-            serialized_circuit = self._job[job_ids[index]][circuit_type]
-            return css.serialization.deserialize_qiskit_circuits(serialized_circuit)[0]
+        gss.validation.validate_integer_param(index, min_val=0)
+        serialized_circuit = self._job[job_ids[index]][circuit_type]
+        return css.deserialize_circuits(serialized_circuit)[0]
 
     @overload
     def compiled_circuits(self, index: int) -> cirq.Circuit:
@@ -339,19 +320,25 @@ class Job:
         """
         return self._get_circuits("input_circuit", index=index)
 
-    @overload
-    def pulse_gate_circuits(self, index: int) -> qiskit.QuantumCircuit:
-        ...
-
-    def pulse_gate_circuits(
-        self, index: Optional[int] = None
-    ) -> Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]:
+    def pulse_gate_circuits(self) -> Any:
         """Gets the pulse gate circuit returned by this job.
 
         Returns:
-            `qiskit.QuantumCircuit` pulse gate circuit(s).
+            The `qiskit.QuantumCircuit` pulse gate circuit.
+
+        Raises:
+            ValueError: If job was not run on an IBM pulse device.
         """
-        return self._get_circuits("pulse_gate_circuits", index=index)
+        if "pulse_gate_circuits" not in self._job:
+            self._refresh_job()
+        job_dict = self._job[self._job_id]
+        if job_dict.get("pulse_gate_circuits") is not None:
+            return css.serialization.deserialize_qiskit_circuits(
+                job_dict["pulse_gate_circuits"], False
+            )[0]
+
+        error = f"Job: {self._job_id} was not submitted to a pulse-enabled device"
+        raise ValueError(error)
 
     @overload
     def counts(

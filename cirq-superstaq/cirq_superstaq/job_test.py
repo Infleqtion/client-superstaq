@@ -20,7 +20,6 @@ from unittest import mock
 import cirq
 import general_superstaq as gss
 import pytest
-import qiskit_superstaq as qss
 
 import cirq_superstaq as css
 
@@ -134,13 +133,8 @@ def test_compiled_circuit(job: css.job.Job) -> None:
     # Shouldn't need to retrieve anything now that `job._job` is populated:
     assert job.compiled_circuits(index=0) == compiled_circuit
 
-    with pytest.raises(
-        ValueError, match=f"Job: {job._job_id} was not submitted to a pulse-enabled device."
-    ):
-        job.pulse_gate_circuits()
 
-
-def test_pulse_gate_circuit(job: css.job.Job) -> None:
+def test_pulse_gate_circuits(job: css.job.Job) -> None:
     import qiskit
 
     qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
@@ -153,11 +147,11 @@ def test_pulse_gate_circuit(job: css.job.Job) -> None:
 
     # The first call will trigger a refresh:
     with mocked_get_job_requests(job_dict) as mocked_get_job:
-        assert job.pulse_gate_circuits(index=0) == pulse_gate_circuit
+        assert job.pulse_gate_circuits() == pulse_gate_circuit
         mocked_get_job.assert_called_once()
 
     # Shouldn't need to retrieve anything now that `job._job` is populated:
-    assert job.pulse_gate_circuits(index=0) == pulse_gate_circuit
+    assert job.pulse_gate_circuits() == pulse_gate_circuit
 
 
 def test_multi_circuit_job() -> None:
