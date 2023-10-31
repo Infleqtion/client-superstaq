@@ -11,4 +11,8 @@ if __name__ == "__main__":
         "--exclude",
         "client-superstaq/cirq-superstaq/cirq_superstaq/hilbert_daily_integration_test.py",
     ]
+    args += [
+        "--exclude",
+        "client-superstaq/qiskit-superstaq/qiskit_superstaq/hilbert_daily_integration_test.py",
+    ]
     exit(checks.pytest_.run(*args))
