@@ -24,7 +24,7 @@ class BitCode(Benchmark):
         if not isinstance(bit_state, List):
             raise ValueError("`bit_state` must be a List[int].")
         else:
-            if not isinstance(bit_state[0], int):
+            if not set(bit_state).issubset({0, 1}):
                 raise ValueError("Entries of `bit_state` must be 0, 1 integers.")
         self.num_data_qubits = num_data_qubits
         self.num_rounds = num_rounds

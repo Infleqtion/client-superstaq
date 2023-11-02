@@ -1,4 +1,6 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
+from typing import cast
+
 import pytest
 
 from supermarq.benchmarks.phase_code import PhaseCode
@@ -21,7 +23,7 @@ def test_invalid_inputs() -> None:
         PhaseCode(3, 1, [0])
 
     with pytest.raises(ValueError, match=r"`phase_state` must be a List\[int\]."):
-        PhaseCode(3, 1, "010")
+        PhaseCode(3, 1, cast("list[int]", "010"))
 
     with pytest.raises(ValueError, match="Entries of `phase_state` must be 0, 1 integers."):
-        PhaseCode(3, 1, ["0", "1", "0"])
+        PhaseCode(3, 1, cast("list[int]", ["0", "1", "0"]))

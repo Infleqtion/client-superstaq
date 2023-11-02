@@ -25,7 +25,7 @@ class PhaseCode(Benchmark):
         if not isinstance(phase_state, List):
             raise ValueError("`phase_state` must be a List[int].")
         else:
-            if not isinstance(phase_state[0], int):
+            if not set(phase_state).issubset({0, 1}):
                 raise ValueError("Entries of `phase_state` must be 0, 1 integers.")
         self.num_data_qubits = num_data_qubits
         self.num_rounds = num_rounds

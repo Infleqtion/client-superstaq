@@ -1,4 +1,6 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
+from typing import cast
+
 import pytest
 
 from supermarq.benchmarks.bit_code import BitCode
@@ -21,7 +23,7 @@ def test_invalid_inputs() -> None:
         BitCode(3, 1, [0])
 
     with pytest.raises(ValueError, match=r"`bit_state` must be a List\[int\]."):
-        BitCode(3, 1, "010")
+        BitCode(3, 1, cast("list[int]", "010"))
 
     with pytest.raises(ValueError, match="Entries of `bit_state` must be 0, 1 integers."):
-        BitCode(3, 1, ["0", "1", "0"])
+        BitCode(3, 1, cast("list[int]", ["0", "1", "0"]))
