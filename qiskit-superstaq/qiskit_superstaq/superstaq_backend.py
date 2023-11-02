@@ -53,7 +53,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             "memory": False,
             "max_shots": None,
             "coupling_map": None,
-            "description": f"{target_info.get('num_qubits')} qubit device"
+            "description": f"{target_info.get('num_qubits')} qubit device",
         }
         target_info.pop("target", None)
         target_info.pop("num_qubits", None)
