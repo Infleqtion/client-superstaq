@@ -161,6 +161,15 @@ def test_ibmq_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperst
         [qiskit.QuantumCircuit()]
     ) == qss.compiler_output.CompilerOutput([qc], [final_logical_to_physical], pulse_sequences=None)
 
+    assert fake_superstaq_provider.ibmq_compile(
+        qiskit.QuantumCircuit(), dd_strategy="static", test_options="yes"
+    ) == qss.compiler_output.CompilerOutput(qc, final_logical_to_physical, pulse_sequences=None)
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "dd_strategy": "static",
+        "dynamical_decoupling": True,
+        "test_options": "yes",
+    }
+
 
 def test_invalid_target_ibmq_compile() -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")

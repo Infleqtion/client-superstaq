@@ -288,6 +288,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         options: Dict[str, Any] = {**kwargs}
 
         options["dynamical_decoupling"] = dynamical_decoupling
+        options["dd_strategy"] = dd_strategy
         request_json = self._get_compile_request_json(circuits, **options)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
