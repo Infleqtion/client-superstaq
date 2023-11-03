@@ -212,7 +212,6 @@ Productivity Tips
 
 .. code-block:: bash
 
-   alias ss='cd /path/to/Superstaq'
    alias py='ipython'
    alias pyr="ipython --InteractiveShellApp.extensions 'autoreload' --InteractiveShellApp.exec_lines '%autoreload 2'"
 
