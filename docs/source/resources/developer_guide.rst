@@ -214,6 +214,7 @@ Productivity Tips
 
    alias py='ipython'
    alias pyr="ipython --InteractiveShellApp.extensions 'autoreload' --InteractiveShellApp.exec_lines '%autoreload 2'"
+alias pygrep="grep -r --color=auto --include='*.py'"
 
 (That last one, ``pyr``, runs an ipython shell with autoreloading already set up.)
 
