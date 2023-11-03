@@ -109,7 +109,7 @@ class Service:
             role: The new role.
 
         Returns:
-             String containing status of update (whether or not it failed).
+            String containing status of update (whether or not it failed).
         """
         return self._client.update_user_role(
             {
@@ -126,21 +126,22 @@ class Service:
         method: Optional[str] = None,
         max_solutions: int = 1000,
     ) -> Dict[str, str]:
-        """Solves the QUBO given via the submit_qubo function in superstaq_client, and returns any
-        number of specified dictionaries that seek the minimum of the energy landscape from the
-        given objective function known as output solutions.
+        """Solves a submitted QUBO problem via annealing.
+
+        This method returns any number of specified dictionaries that seek the minimum of
+        the energy landscape from the given objective function known as output solutions.
 
         Args:
             qubo: A `qv.QUBO` object.
             target: The target to submit the qubo.
             repetitions: Number of times that the execution is repeated before stopping.
             method: The parameter specifying method of QUBO solving execution. Currently,
-            will either be the "dry-run" option which runs on dwave's simulated annealer,
-            or defauls to none and sends it directly to the specified target.
+                    will either be the "dry-run" option which runs on dwave's simulated annealer,
+                    or defaults to none and sends it directly to the specified target.
             max_solutions: A parameter that specifies the max number of output solutions.
 
         Returns:
-            A dictionary returned by the submit_qubo function.
+            A dictionary containing the output solutions.
         """
         return self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
 
@@ -150,8 +151,8 @@ class Service:
         Arguments can be either file paths (in .yaml format) or qtrl Manager instances.
 
         Args:
-            pulses: PulseManager or file path for pulse configuration.
-            variables: VariableManager or file path for variable configuration.
+            pulses: `PulseManager` or file path for pulse configuration.
+            variables: `VariableManager` or file path for variable configuration.
 
         Returns:
             A status of the update (whether or not it failed).
@@ -210,8 +211,8 @@ class Service:
         is required to read the downloaded configs.
 
         Args:
-            pulses_file_path (optional): Where to write the pulse configuration.
-            variables_file_path (optional): Where to write the variable configuration.
+            pulses_file_path: Where to write the pulse configuration.
+            variables_file_path: Where to write the variable configuration.
             overwrite: Whether or not to overwrite existing files.
 
         Returns:
@@ -327,7 +328,7 @@ class Service:
             A string with the job id for the ACES job created.
 
         Raises:
-            ValueError: If the target or noise model is not valid.
+            ValueError: If the target or noise model are not valid.
             SuperstaqServerException: If the request fails.
         """
         noise_dict: Dict[str, object] = {}
