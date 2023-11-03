@@ -98,7 +98,7 @@ Operations can be referred to as ``op``.
 
 ``target`` should always be used to refer to device names (type ``str``) in the Superstaq "<vendor>_<device>_<type>" format, e.g. "ibmq_qasm_simulator".  The same will be used accross all clients. ``backend_name`` should be used for vendor-specific names of particular hardware backends, and ``backend`` for actual instances thereof.
 
-Circuits
+Cirq
 --------
 Prefer ``circuit += op`` to append circuit operations, rather than ``circuit.append(op)``.
 
