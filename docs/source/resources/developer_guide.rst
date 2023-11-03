@@ -198,8 +198,6 @@ Or
 
 Exceptions can be made if the explicit name is extremely long (e.g. ``from qiskit.providers import JobStatus as qjs``) or if the name is used extremely frequently and has low risk of name clash (e.g. ``from typing import Iterable, Union``).
 
-We allow ``web`` to import ``superstaq``, but not the reverse. Similarly, we allow ``dev_tools`` to import ``web``, but not the reverse.
-
 
 Productivity Tips
 =================
