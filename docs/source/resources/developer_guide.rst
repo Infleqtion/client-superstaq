@@ -208,7 +208,6 @@ Productivity Tips
   >>> %autoreload 2
 
   This will enable autoreload.
-* Superstaq/dev_tools/pygrep.sh contains a nice script for grepping python files. Recommendation: alias ``p`` to this script (by adding ``alias p='/path/to/Superstaq/dev_tools/pygrep.sh'`` to ~/.zprofile or wherever aliases should be stored). Then you can type something like ``p AQTDevice``
 * Also recommended: 
 
 .. code-block:: bash
