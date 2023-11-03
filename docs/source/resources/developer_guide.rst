@@ -218,8 +218,6 @@ Productivity Tips
 
 (That last one, ``pyr``, runs an ipython shell with autoreloading already set up.)
 
-* View your AWS credentials with ``cat ~/.aws/credentials``, and store them in environment variables with, e.g., ``export AWS_ACCESS_KEY_ID=...``.
-
 
 DevOps
 =================
