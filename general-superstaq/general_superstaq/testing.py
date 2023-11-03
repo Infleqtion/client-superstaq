@@ -1,5 +1,3 @@
-from general_superstaq.superstaq_client import TargetInfo
-
 TARGET_LIST = {
     "aqt_keysight_qpu": {
         "supports_submit": False,
@@ -240,7 +238,3 @@ TARGET_LIST = {
         "retired": False,
     },
 }
-
-RETURNED_TARGETS = [
-    TargetInfo(target=target_name, **properties) for target_name, properties in TARGET_LIST.items()
-]
