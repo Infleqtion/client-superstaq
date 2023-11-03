@@ -81,7 +81,7 @@ def test_update_user_role(
             {"keys": ["1"], "value": 1.0},
             {"keys": ["0", "1"], "value": -2.0},
         ],
-        "target": "ss_example_qpu",
+        "target": "toshiba_bifurcation_simulator",
         "shots": 10,
         "method": "dry-run",
         "max_solutions": 13,
@@ -91,7 +91,7 @@ def test_submit_qubo(
     mock_post_request: mock.MagicMock,
 ) -> None:
     example_qubo = qv.QUBO({(0,): 1.0, (1,): 1.0, (0, 1): -2.0})
-    target = "ss_example_qpu"
+    target = "toshiba_bifurcation_simulator"
     repetitions = 10
 
     service = gss.service.Service(remote_host="http://example.com", api_key="key")
@@ -101,7 +101,7 @@ def test_submit_qubo(
             {"keys": ["1"], "value": 1.0},
             {"keys": ["0", "1"], "value": -2.0},
         ],
-        "target": "ss_example_qpu",
+        "target": "toshiba_bifurcation_simulator",
         "shots": 10,
         "method": "dry-run",
         "max_solutions": 13,
