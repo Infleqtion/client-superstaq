@@ -320,7 +320,7 @@ class Job:
         """
         return self._get_circuits("input_circuit", index=index)
 
-    def pulse_gate_circuits(self) -> Any:
+    def pulse_gate_circuits(self, index: Optional[int] = None) -> Any:
         """Gets the pulse gate circuit returned by this job.
 
         Returns:
@@ -331,24 +331,38 @@ class Job:
         """
         job_ids = self._job_id.split(",")
 
-        if not all(
-            job_id in self._job and self._job[job_id].get("pulse_gate_circuits")
-            for job_id in job_ids
-        ):
-            self._refresh_job()
+        if index is None:
+            if not all(
+                job_id in self._job and self._job[job_id].get("pulse_gate_circuits") is not None
+                for job_id in job_ids
+            ):
+                self._refresh_job()
+        else:
+            if (
+                not job_ids[index] in self._job
+                and self._job[job_ids[index]].get("pulse_gate_circuits") is not None
+            ):
+                self._refresh_job()
 
-        if all(self._job[job_id].get("pulse_gate_circuits") for job_id in job_ids):
-            serialized_circuits = [self._job[job_id]["pulse_gate_circuits"] for job_id in job_ids]
-            deserialized_circuits = []
-            for serialized_circuit in serialized_circuits:
-                deserialized_circuit = css.serialization.deserialize_qiskit_circuits(
-                    serialized_circuit, False
-                )
-                if deserialized_circuit is not None:
-                    deserialized_circuits.append(deserialized_circuit[0])
-            return deserialized_circuits
+        if index is None:
+            if all(self._job[job_id].get("pulse_gate_circuits") for job_id in job_ids):
+                serialized_circuits = [
+                    self._job[job_id]["pulse_gate_circuits"] for job_id in job_ids
+                ]
+                deserialized_circuits = []
+                for serialized_circuit in serialized_circuits:
+                    deserialized_circuit = css.serialization.deserialize_qiskit_circuits(
+                        serialized_circuit, False
+                    )
+                    if deserialized_circuit is not None:
+                        deserialized_circuits.append(deserialized_circuit[0])
+                return deserialized_circuits
+        else:
+            gss.validation.validate_integer_param(index, min_val=0)
+            serialized_circuit = self._job[job_ids[index]]["pulse_gate_circuits"]
+            return css.serialization.deserialize_qiskit_circuits(serialized_circuit, False)
 
-        error = f"Job: {self._job_id} was not submitted to a pulse-enabled device"
+        error = f"Target '{self.target()}' does not use pulse gate circuits."
         raise ValueError(error)
 
     @overload
