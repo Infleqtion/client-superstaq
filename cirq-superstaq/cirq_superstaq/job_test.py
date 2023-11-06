@@ -143,7 +143,7 @@ def test_compiled_circuit(job: css.job.Job) -> None:
         job.pulse_gate_circuits()
 
 
-def test_pulse_gate_circuits(job1: css.job.Job, job2: css.job.Job) -> None:
+def test_pulse_gate_circuits(job: css.job.Job) -> None:
     import qiskit
 
     qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
@@ -161,14 +161,6 @@ def test_pulse_gate_circuits(job1: css.job.Job, job2: css.job.Job) -> None:
 
     # Shouldn't need to retrieve anything now that `job._job` is populated:
     assert job.pulse_gate_circuits()[0] == pulse_gate_circuit
-
-    # The first call will trigger a refresh:
-    with mocked_get_job_requests(job_dict) as mocked_get_job:
-        assert job2.pulse_gate_circuits(index=0)[0] == pulse_gate_circuit
-        mocked_get_job.assert_called_once()
-
-    # Shouldn't need to retrieve anything now that `job._job` is populated:
-    assert job2.pulse_gate_circuits(index=0)[0] == pulse_gate_circuit
 
 
 def test_pulse_gate_circuits_index(job: css.job.Job) -> None:

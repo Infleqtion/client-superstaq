@@ -331,18 +331,11 @@ class Job:
         """
         job_ids = self._job_id.split(",")
 
-        if index is None:
-            if not all(
-                job_id in self._job and self._job[job_id].get("pulse_gate_circuits") is not None
-                for job_id in job_ids
-            ):
-                self._refresh_job()
-        else:
-            if (
-                not job_ids[index] in self._job
-                and self._job[job_ids[index]].get("pulse_gate_circuits") is not None
-            ):
-                self._refresh_job()
+        if not all(
+            job_id in self._job and self._job[job_id].get("pulse_gate_circuits") is not None
+            for job_id in job_ids
+        ):
+            self._refresh_job()
 
         if index is None:
             if all(self._job[job_id].get("pulse_gate_circuits") for job_id in job_ids):
