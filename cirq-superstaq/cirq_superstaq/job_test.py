@@ -177,6 +177,7 @@ def test_pulse_gate_circuits_index(job: css.job.Job) -> None:
     # The first call will trigger a refresh:
     with mocked_get_job_requests(job_dict) as mocked_get_job:
         assert job.pulse_gate_circuits(index=0)[0] == pulse_gate_circuit
+        mocked_get_job.assert_called_once()
 
     # Shouldn't need to retrieve anything now that `job._job` is populated:
     assert job.pulse_gate_circuits(index=0)[0] == pulse_gate_circuit
