@@ -162,6 +162,18 @@ def test_pulse_gate_circuits(job: css.job.Job) -> None:
     # Shouldn't need to retrieve anything now that `job._job` is populated:
     assert job.pulse_gate_circuits()[0] == pulse_gate_circuit
 
+
+def test_pulse_gate_circuits_index(job: css.job.Job) -> None:
+    import qiskit
+
+    qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
+    pulse_gate_circuit = qiskit.QuantumCircuit(1, 1)
+    pulse_gate = qiskit.circuit.Gate("test_pulse_gate", 1, [3.14, 1])
+    pulse_gate_circuit.append(pulse_gate, [0])
+    pulse_gate_circuit.measure(0, 0)
+
+    job_dict = {"status": "Done", "pulse_gate_circuits": qss.serialize_circuits(pulse_gate_circuit)}
+
     # The first call will trigger a refresh:
     with mocked_get_job_requests(job_dict) as mocked_get_job:
         assert job.pulse_gate_circuits(index=0)[0] == pulse_gate_circuit
