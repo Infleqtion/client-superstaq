@@ -218,8 +218,15 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
         "pulses": gss.serialization.serialize([DEFAULT]),
     }
     assert backend.compile(
-        qiskit.QuantumCircuit(), test_options="yes"
+        qiskit.QuantumCircuit(), dd_strategy="static", test_options="yes"
     ) == qss.compiler_output.CompilerOutput(qc, final_logical_to_physical, pulse_sequences=DEFAULT)
+
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "dd_strategy": "static",
+        "dynamical_decoupling": True,
+        "test_options": "yes",
+    }
+
     assert backend.compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
         [qc], [final_logical_to_physical], pulse_sequences=[DEFAULT]
     )

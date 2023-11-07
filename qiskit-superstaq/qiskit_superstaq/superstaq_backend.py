@@ -53,6 +53,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             "memory": False,
             "max_shots": None,
             "coupling_map": None,
+            "description": f"{target_info.get('num_qubits')} qubit device",
         }
         target_info.pop("target", None)
         target_info.pop("num_qubits", None)
@@ -288,6 +289,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         options: Dict[str, Any] = {**kwargs}
 
         options["dynamical_decoupling"] = dynamical_decoupling
+        options["dd_strategy"] = dd_strategy
         request_json = self._get_compile_request_json(circuits, **options)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
