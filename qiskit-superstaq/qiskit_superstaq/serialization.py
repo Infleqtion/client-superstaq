@@ -91,9 +91,11 @@ def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumC
 
     new_circuit = circuit.copy()
     for inst, _, _ in new_circuit:
-        inst._define()
         if inst.name in qiskit_gates or id(inst) in unique_inst_ids:
             continue
+
+        if not isinstance(inst, qiskit.qasm2.parse._DefinedGate):
+            inst._define()
 
         # save id() in case instruction instance is used more than once
         unique_inst_ids.add(id(inst))
