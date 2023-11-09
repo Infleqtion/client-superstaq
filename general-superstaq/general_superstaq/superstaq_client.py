@@ -27,6 +27,7 @@ import qubovert as qv
 import requests
 
 import general_superstaq as gss
+from general_superstaq.testing import TARGET_LIST
 
 
 class _SuperstaqClient:
@@ -74,7 +75,7 @@ class _SuperstaqClient:
                 which is the most recent version when this client was downloaded.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
-            cq_token: Token from CQ cloud.This is required to submit circuits to CQ hardware.
+            cq_token: Token from CQ cloud. This is required to submit circuits to CQ hardware.
             ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
                 to IBM hardware, or to access non-public IBM devices you may have access to.
             ibmq_instance: An optional instance to use when running IBM jobs.
@@ -126,7 +127,7 @@ class _SuperstaqClient:
         """Gets Superstaq version from response header.
 
         Returns:
-            A dict containing the current Superstaq version.
+            A `dict` containing the current Superstaq version.
         """
 
         response = requests.get(self.url)
@@ -356,6 +357,10 @@ class _SuperstaqClient:
             A dictionary from the POST request.
         """
         gss.validation.validate_target(target)
+        if not (target in TARGET_LIST and TARGET_LIST[target]["supports_submit_qubo"]):
+            raise gss.SuperstaqException(
+                f"The provided target, {target}, does not support QUBO submission."
+            )
         gss.validation.validate_integer_param(repetitions)
         gss.validation.validate_integer_param(max_solutions)
 

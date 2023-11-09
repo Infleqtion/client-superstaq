@@ -174,8 +174,8 @@ class Service:
             target: The target to submit the qubo.
             repetitions: Number of times that the execution is repeated before stopping.
             method: The parameter specifying method of QUBO solving execution. Currently,
-            will either be the "dry-run" option which runs on dwave's simulated annealer,
-            or defauls to none and sends it directly to the specified target.
+                    will either be the "dry-run" option which runs on dwave's simulated annealer,
+                    or defaults to none and sends it directly to the specified target.
             max_solutions: A parameter that specifies the max number of output solutions.
 
         Returns:
@@ -366,7 +366,7 @@ class Service:
             A string with the job id for the ACES job created.
 
         Raises:
-            ValueError: If the target or noise model is not valid.
+            ValueError: If the target or noise model are not valid.
             SuperstaqServerException: If the request fails.
         """
         noise_dict: Dict[str, object] = {}
