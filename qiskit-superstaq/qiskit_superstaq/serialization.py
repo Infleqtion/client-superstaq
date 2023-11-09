@@ -7,7 +7,7 @@ from typing import Dict, List, Sequence, Set, Tuple, TypeVar, Union
 import general_superstaq as gss
 import numpy as np
 import numpy.typing as npt
-import qiskit
+import qiskit.qasm2
 import qiskit.qpy
 from qiskit.converters.ast_to_dag import AstInterpreter
 
@@ -91,9 +91,11 @@ def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumC
 
     new_circuit = circuit.copy()
     for inst, _, _ in new_circuit:
-        inst._define()
         if inst.name in qiskit_gates or id(inst) in unique_inst_ids:
             continue
+
+        if not isinstance(inst, qiskit.qasm2.parse._DefinedGate):
+            inst._define()
 
         # save id() in case instruction instance is used more than once
         unique_inst_ids.add(id(inst))
