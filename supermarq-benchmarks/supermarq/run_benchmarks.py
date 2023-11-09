@@ -7,7 +7,7 @@ import cirq_superstaq as css
 import supermarq
 
 if TYPE_CHECKING:
-    from general_superstaq.typing import TargetInfo
+    from general_superstaq.typing import Target
 
 
 BENCHMARKS: List[Tuple[supermarq.benchmark.Benchmark, str]] = [
@@ -18,7 +18,7 @@ BENCHMARKS: List[Tuple[supermarq.benchmark.Benchmark, str]] = [
 ]
 
 
-def get_qpu_targets(target_list: List[TargetInfo]) -> List[TargetInfo]:
+def get_qpu_targets(target_list: List[Target]) -> List[Target]:
     """Gets real device targets.
 
     Args:

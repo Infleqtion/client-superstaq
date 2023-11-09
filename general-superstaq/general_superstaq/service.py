@@ -126,7 +126,7 @@ class Service:
         available: Optional[bool] = None,
         retired: Optional[bool] = None,
         **kwargs: bool,
-    ) -> List[gss.TargetInfo]:
+    ) -> List[gss.Target]:
         """Gets a list of Superstaq targets along with their status information.
 
         Args:

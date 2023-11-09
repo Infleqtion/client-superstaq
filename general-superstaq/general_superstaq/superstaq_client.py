@@ -239,7 +239,7 @@ class _SuperstaqClient:
         """
         return self.post_request("/accept_terms_of_use", {"user_input": user_input})
 
-    def get_targets(self, **kwargs: Optional[bool]) -> List[gss.TargetInfo]:
+    def get_targets(self, **kwargs: Optional[bool]) -> List[gss.Target]:
         """Makes a GET request to retrieve targets from the Superstaq API.
 
         Args:
@@ -251,7 +251,7 @@ class _SuperstaqClient:
         target_filters = {key: value for key, value in kwargs.items() if value is not None}
         superstaq_targets = self.post_request("/targets", target_filters)["superstaq_targets"]
         target_list = [
-            gss.TargetInfo(target=target_name, **properties)
+            gss.Target(target=target_name, **properties)
             for target_name, properties in superstaq_targets.items()
         ]
         return target_list

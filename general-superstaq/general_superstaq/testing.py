@@ -1,4 +1,4 @@
-from general_superstaq.typing import TargetInfo
+from general_superstaq.typing import Target
 
 TARGET_LIST = {
     "aqt_keysight_qpu": {
@@ -242,5 +242,5 @@ TARGET_LIST = {
 }
 
 RETURNED_TARGETS = [
-    TargetInfo(target=target_name, **properties) for target_name, properties in TARGET_LIST.items()
+    Target(target=target_name, **properties) for target_name, properties in TARGET_LIST.items()
 ]

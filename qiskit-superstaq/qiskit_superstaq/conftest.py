@@ -46,7 +46,7 @@ class MockSuperstaqBackend(qss.SuperstaqBackend):
 class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
     """Stand-in for `_SuperstaqClient` that the tests can call."""
 
-    def get_targets(self, **kwargs: Optional[bool]) -> List[gss.typing.TargetInfo]:
+    def get_targets(self, **kwargs: Optional[bool]) -> List[gss.typing.Target]:
         """Makes a GET request to retrieve targets from the Superstaq API.
 
         Args:

@@ -20,7 +20,7 @@ Job = TypedDict(
 )
 
 
-class TargetInfo(pydantic.BaseModel):
+class Target(pydantic.BaseModel):
     """A data class to store data returned from a `/get_targets` request."""
 
     target: str
