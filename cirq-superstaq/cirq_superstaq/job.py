@@ -347,8 +347,9 @@ class Job:
                     deserialized_circuit = css.serialization.deserialize_qiskit_circuits(
                         serialized_circuit, False
                     )
-                    if deserialized_circuit is not None:
-                        deserialized_circuits.append(deserialized_circuit[0])
+                    if deserialized_circuit is None:
+                        raise ValueError("Some circuits could not be deserialized.")
+                    deserialized_circuits.append(deserialized_circuit[0])
                 return deserialized_circuits
         else:
             gss.validation.validate_integer_param(index, min_val=0)
