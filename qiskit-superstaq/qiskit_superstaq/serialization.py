@@ -7,7 +7,7 @@ from typing import Dict, List, Sequence, Set, Tuple, TypeVar, Union
 import general_superstaq as gss
 import numpy as np
 import numpy.typing as npt
-import qiskit
+import qiskit.qasm2
 import qiskit.qpy
 from qiskit.converters.ast_to_dag import AstInterpreter
 
