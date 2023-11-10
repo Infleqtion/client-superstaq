@@ -25,7 +25,6 @@ extend-ignore = [
 ] # these errors conflict with black and/or isort
 type_checking_exempt_modules = ["collections.abc"]
 
-
 [tool.mypy]
 ignore_missing_imports = true
 show_error_codes = true
