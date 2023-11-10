@@ -7,6 +7,7 @@ from general_superstaq.superstaq_exceptions import (
     SuperstaqUnsuccessfulJobException,
     SuperstaqWarning,
 )
+from general_superstaq.typing import Target
 
 from . import (
     qubo,
@@ -33,5 +34,6 @@ __all__ = [
     "superstaq_client",
     "superstaq_exceptions",
     "typing",
+    "Target",
     "validation",
 ]

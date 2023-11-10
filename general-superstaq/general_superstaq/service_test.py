@@ -8,6 +8,7 @@ import pytest
 import qubovert as qv
 
 import general_superstaq as gss
+from general_superstaq.testing import RETURNED_TARGETS, TARGET_LIST
 
 
 def test_service_get_balance() -> None:
@@ -154,6 +155,15 @@ def test_service_aqt_upload_configs(
     with mock.patch.dict("sys.modules", {"yaml": None}):
         with pytest.raises(ModuleNotFoundError, match="PyYAML"):
             _ = service.aqt_upload_configs({}, {})
+
+
+@mock.patch(
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
+    return_value={"superstaq_targets": TARGET_LIST},
+)
+def test_service_get_targets(mock_get_request: mock.MagicMock) -> None:
+    service = gss.service.Service(api_key="key", remote_host="http://example.com")
+    assert service.get_targets() == RETURNED_TARGETS
 
 
 @mock.patch(

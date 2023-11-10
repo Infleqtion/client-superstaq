@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Client for making requests to Superstaq's API."""
+from __future__ import annotations
+
 import json
 import os
 import pathlib
@@ -237,15 +239,22 @@ class _SuperstaqClient:
         """
         return self.post_request("/accept_terms_of_use", {"user_input": user_input})
 
-    def get_targets(self) -> Dict[str, Dict[str, List[str]]]:
+    def get_targets(self, **kwargs: Optional[bool]) -> List[gss.Target]:
         """Makes a GET request to retrieve targets from the Superstaq API.
 
-        Gets a list of available, unavailable, and retired targets.
+        Args:
+            kwargs: Optional flags to restrict/filter returned targets.
 
         Returns:
-            A dictionary listing the targets.
+            A list of Superstaq targets matching all provided criteria.
         """
-        return self.get_request("/targets")
+        target_filters = {key: value for key, value in kwargs.items() if value is not None}
+        superstaq_targets = self.post_request("/targets", target_filters)["superstaq_targets"]
+        target_list = [
+            gss.Target(target=target_name, **properties)
+            for target_name, properties in superstaq_targets.items()
+        ]
+        return target_list
 
     def add_new_user(self, json_dict: Dict[str, str]) -> str:
         """Makes a POST request to Superstaq API to add a new user.

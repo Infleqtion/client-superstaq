@@ -136,8 +136,25 @@ def test_get_resource_estimate(service: css.Service) -> None:
 
 def test_get_targets(service: css.Service) -> None:
     result = service.get_targets()
-    assert "ibmq_qasm_simulator" in result["compile-and-run"]
-    assert "aqt_keysight_qpu" in result["compile-only"]
+    ibmq_target_info = gss.typing.Target(
+        target="ibmq_qasm_simulator",
+        supports_submit=True,
+        supports_submit_qubo=False,
+        supports_compile=True,
+        available=True,
+        retired=False,
+    )
+    aqt_target_info = gss.typing.Target(
+        target="aqt_keysight_qpu",
+        supports_submit=False,
+        supports_submit_qubo=False,
+        supports_compile=True,
+        available=True,
+        retired=False,
+    )
+
+    assert ibmq_target_info in result
+    assert aqt_target_info in result
 
 
 def test_qscout_compile(service: css.Service) -> None:

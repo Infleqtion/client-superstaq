@@ -22,6 +22,7 @@ import qubovert as qv
 import requests
 
 import general_superstaq as gss
+from general_superstaq.testing import RETURNED_TARGETS, TARGET_LIST
 
 API_VERSION = gss.API_VERSION
 EXPECTED_HEADERS = {
@@ -487,48 +488,17 @@ def test_superstaq_client_resource_estimate(mock_post: mock.MagicMock) -> None:
     assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/resource_estimate"
 
 
-@mock.patch("requests.get")
-def test_superstaq_client_get_targets(mock_get: mock.MagicMock) -> None:
-    mock_get.return_value.ok = True
-    targets = {
-        "superstaq_targets:": {
-            "compile-and-run": [
-                "ibmq_qasm_simulator",
-                "ibmq_armonk_qpu",
-                "ibmq_santiago_qpu",
-                "ibmq_bogota_qpu",
-                "ibmq_lima_qpu",
-                "ibmq_belem_qpu",
-                "ibmq_quito_qpu",
-                "ibmq_statevector_simulator",
-                "ibmq_mps_simulator",
-                "ibmq_extended-stabilizer_simulator",
-                "ibmq_stabilizer_simulator",
-                "ibmq_manila_qpu",
-                "aws_dm1_simulator",
-                "aws_sv1_simulator",
-                "d-wave_advantage-system4.1_qpu",
-                "d-wave_dw-2000q-6_qpu",
-                "aws_tn1_simulator",
-                "rigetti_aspen-9_qpu",
-                "d-wave_advantage-system1.1_qpu",
-                "ionq_ion_qpu",
-            ],
-            "compile-only": ["aqt_keysight_qpu", "sandia_qscout_qpu"],
-        }
-    }
-    mock_get.return_value.json.return_value = targets
+@mock.patch("requests.post")
+def test_superstaq_client_get_targets(mock_post: mock.MagicMock) -> None:
+    mock_post.return_value.ok = True
+    mock_post.return_value.json.return_value = {"superstaq_targets": TARGET_LIST}
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
     response = client.get_targets()
-    assert response == targets
-
-    mock_get.assert_called_with(
-        f"http://example.com/{API_VERSION}/targets", headers=EXPECTED_HEADERS, verify=False
-    )
+    assert response == RETURNED_TARGETS
 
 
 @mock.patch("requests.post")
