@@ -128,7 +128,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         Returns:
             A list of Superstaq backends.
         """
-        targets = self._client.get_targets()
+        targets = self._client.get_targets(supports_submit_qubo=False)
         superstaq_backends = []
         for backend in targets:
             superstaq_backends.append(self.get_backend(backend.target))
