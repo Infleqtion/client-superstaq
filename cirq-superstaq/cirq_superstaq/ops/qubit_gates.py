@@ -485,7 +485,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         if indexed_gate.num_qubits() == 1:
             # find the first instance of the same gate
             first_instance = self.component_gates.index(indexed_gate)
-            return sum(map(cirq.num_qubits, self.component_gates[:first_instance]))
+            return sum(cirq.num_qubits(g) for g in self.component_gates[:first_instance])
         if isinstance(indexed_gate, cirq.InterchangeableQubitsGate):
             gate_key = indexed_gate.qubit_index_to_equivalence_group_key(index_in_gate)
             for i in range(index_in_gate):
