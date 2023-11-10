@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 import qubovert as qv
 
 import general_superstaq as gss
-from general_superstaq import superstaq_client
 
 
 class Service:
@@ -25,7 +24,7 @@ class Service:
             client: The Superstaq client to use.
         """
 
-        self._client = superstaq_client._SuperstaqClient(
+        self._client = gss.superstaq_client._SuperstaqClient(
             client_name="general-superstaq",
             remote_host=remote_host,
             api_key=api_key,
@@ -87,7 +86,7 @@ class Service:
             balance: The new balance.
 
         Returns:
-             String containing status of update (whether or not it failed).
+            String containing status of update (whether or not it failed).
         """
         limit = 2000.0  # If limit modified, must update in server-superstaq
         if balance > limit:
@@ -117,6 +116,45 @@ class Service:
                 "role": role,
             }
         )
+
+    def get_targets(
+        self,
+        simulator: Optional[bool] = None,
+        supports_submit: Optional[bool] = None,
+        supports_submit_qubo: Optional[bool] = None,
+        supports_compile: Optional[bool] = None,
+        available: Optional[bool] = None,
+        retired: Optional[bool] = None,
+        **kwargs: bool,
+    ) -> List[gss.Target]:
+        """Gets a list of Superstaq targets along with their status information.
+
+        Args:
+            simulator: Optional flag to restrict the list of targets to (non-) simulators.
+            supports_submit: Optional boolean flag to only return targets that (don't) allow
+                circuit submissions.
+            supports_submit_qubo: Optional boolean flag to only return targets that (don't)
+                allow qubo submissions.
+            supports_compile: Optional boolean flag to return targets that (don't) support
+                circuit compilation.
+            available: Optional boolean flag to only return targets that are (not) available
+                to use.
+            retired: Optional boolean flag to only return targets that are or are not retired.
+            kwargs: Any additional, supported flags to restrict/filter returned targets.
+
+        Returns:
+            A list of Superstaq targets matching all provided criteria.
+        """
+        filters = dict(
+            simulator=simulator,
+            supports_submit=supports_submit,
+            supports_submit_qubo=supports_submit_qubo,
+            supports_compile=supports_compile,
+            available=available,
+            retired=retired,
+            **kwargs,
+        )
+        return self._client.get_targets(**filters)
 
     def submit_qubo(
         self,
