@@ -343,7 +343,7 @@ def test_superstaq_client_create_job_invalid_json(mock_post: mock.MagicMock) -> 
     mock_post.return_value = response
 
     with mock.patch("requests.post", return_value=response):
-        with pytest.raises(gss.SuperstaqServerException, match="Status code: 501"):
+        with pytest.raises(gss.SuperstaqServerException, match="invalid/json"):
             _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
 
 

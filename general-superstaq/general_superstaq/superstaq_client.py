@@ -673,11 +673,6 @@ class _SuperstaqClient:
                     response.status_code,
                 )
 
-        try:
-            json_content = response.json()
-        except requests.JSONDecodeError:
-            json_content = None
-
         if response.status_code == requests.codes.gateway_timeout:
             # Job took too long. Don't retry, it probably won't be any faster.
             raise gss.SuperstaqServerException(
@@ -687,6 +682,11 @@ class _SuperstaqClient:
             )
 
         if response.status_code not in self.RETRIABLE_STATUS_CODES:
+            try:
+                json_content = response.json()
+            except requests.JSONDecodeError:
+                json_content = None
+
             if isinstance(json_content, dict) and "message" in json_content:
                 message = json_content["message"]
             else:
