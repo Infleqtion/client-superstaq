@@ -140,7 +140,7 @@ class Service:
             available: Optional boolean flag to only return targets that are (not) available
                 to use.
             retired: Optional boolean flag to only return targets that are or are not retired.
-            kwargs: Any addtional, supported flags to restrict/filter returned targets.
+            kwargs: Any additional, supported flags to restrict/filter returned targets.
 
         Returns:
             A list of Superstaq targets matching all provided criteria.
