@@ -330,6 +330,42 @@ def test_superstaq_client_create_job_retry_request_error(mock_post: mock.MagicMo
 
 
 @mock.patch("requests.post")
+def test_superstaq_client_create_job_invalid_json(mock_post: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+
+    response = requests.Response()
+    response.status_code = requests.codes.not_implemented
+    response._content = b"invalid/json"
+    mock_post.return_value = response
+
+    with mock.patch("requests.post", return_value=response):
+        with pytest.raises(gss.SuperstaqServerException, match="Status code: 501"):
+            _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_create_job_dont_retry_on_timeout(mock_post: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+
+    response = requests.Response()
+    response.status_code = requests.codes.gateway_timeout
+    response._content = b"invalid/json"
+    mock_post.return_value = response
+
+    with mock.patch("requests.post", return_value=response):
+        with pytest.raises(gss.SuperstaqServerException, match="timed out"):
+            _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
+
+
+@mock.patch("requests.post")
 def test_superstaq_client_create_job_timeout(mock_post: mock.MagicMock) -> None:
     mock_post.return_value.ok = False
     mock_post.return_value.status_code = requests.codes.service_unavailable
