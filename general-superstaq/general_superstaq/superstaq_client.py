@@ -673,11 +673,25 @@ class _SuperstaqClient:
                     response.status_code,
                 )
 
+        if response.status_code == requests.codes.gateway_timeout:
+            # Job took too long. Don't retry, it probably won't be any faster.
+            raise gss.SuperstaqServerException(
+                "Connection timed out while processing your request. Try submitting a smaller "
+                "batch of circuits.",
+                response.status_code,
+            )
+
         if response.status_code not in self.RETRIABLE_STATUS_CODES:
-            if "message" in response.json():
-                message = response.json()["message"]
+            try:
+                json_content = response.json()
+            except requests.JSONDecodeError:
+                json_content = None
+
+            if isinstance(json_content, dict) and "message" in json_content:
+                message = json_content["message"]
             else:
                 message = str(response.text)
+
             raise gss.SuperstaqServerException(
                 message=message, status_code=response.status_code, contact_info=True
             )
