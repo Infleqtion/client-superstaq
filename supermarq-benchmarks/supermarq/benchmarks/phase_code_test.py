@@ -24,7 +24,7 @@ def test_invalid_inputs() -> None:
     ):
         PhaseCode(3, 1, [0])
 
-    with pytest.raises(ValueError, match=r"`phase_state` must be a List\[int\]."):
+    with pytest.raises(ValueError, match=r"`phase_state` must be a list\[int\]."):
         PhaseCode(3, 1, cast("list[int]", "010"))
 
     with pytest.raises(ValueError, match="Entries of `phase_state` must be 0, 1 integers."):

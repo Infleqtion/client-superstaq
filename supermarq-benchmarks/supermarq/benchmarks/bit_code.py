@@ -22,7 +22,7 @@ class BitCode(Benchmark):
         if len(bit_state) != num_data_qubits:
             raise ValueError("The length of `bit_state` must match the number of data qubits.")
         if not isinstance(bit_state, List):
-            raise ValueError("`bit_state` must be a List[int].")
+            raise ValueError("`bit_state` must be a list[int].")
         else:
             if not set(bit_state).issubset({0, 1}):
                 raise ValueError("Entries of `bit_state` must be 0, 1 integers.")

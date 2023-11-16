@@ -1,4 +1,6 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
+from __future__ import annotations
+
 from typing import cast
 
 import pytest
@@ -22,7 +24,7 @@ def test_invalid_inputs() -> None:
     ):
         BitCode(3, 1, [0])
 
-    with pytest.raises(ValueError, match=r"`bit_state` must be a List\[int\]."):
+    with pytest.raises(ValueError, match=r"`bit_state` must be a list\[int\]."):
         BitCode(3, 1, cast("list[int]", "010"))
 
     with pytest.raises(ValueError, match="Entries of `bit_state` must be 0, 1 integers."):
