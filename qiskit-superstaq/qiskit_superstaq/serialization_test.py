@@ -175,3 +175,20 @@ def test_deserialization_errors() -> None:
 
     with pytest.raises(ValueError, match="Please contact"):
         _ = qss.deserialize_circuits(serialized_circuit)
+
+
+def test_circuit_from_qasm_with_gate_defs() -> None:
+    # Regression test: Calling `operation._define()` breaks gates generated from QASM definitions.
+    circuit = qiskit.circuit.library.QuantumVolume(4)
+    circuit.measure_all()
+
+    new_circuit = qss.deserialize_circuits(qss.serialize_circuits(circuit))[0]
+    assert circuit == new_circuit
+
+    circuit_from_qasm = qiskit.QuantumCircuit.from_qasm_str(circuit.qasm())
+    new_circuit = qss.deserialize_circuits(qss.serialize_circuits(circuit_from_qasm))[0]
+
+    # QASM conversion can change instruction names, so unroll circuits before comparing
+    before = qiskit.transpile(circuit_from_qasm, basis_gates=["cx", "u"])
+    after = qiskit.transpile(new_circuit, basis_gates=["cx", "u"])
+    assert before == after

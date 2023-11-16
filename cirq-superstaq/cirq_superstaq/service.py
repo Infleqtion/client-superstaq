@@ -388,14 +388,6 @@ class Service(gss.service.Service):
         """
         return css.job.Job(client=self._client, job_id=job_id)
 
-    def get_targets(self) -> Dict[str, List[str]]:
-        """Gets a list of available, unavailable, and retired targets.
-
-        Returns:
-            A list of Superstaq targets.
-        """
-        return self._client.get_targets()["superstaq_targets"]
-
     def resource_estimate(
         self, circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]], target: Optional[str] = None
     ) -> Union[ResourceEstimate, List[ResourceEstimate]]:

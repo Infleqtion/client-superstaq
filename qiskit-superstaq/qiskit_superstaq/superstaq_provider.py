@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, List, Mapping, Optional, Sequence, Tuple, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -122,17 +122,45 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         """
         return qss.SuperstaqBackend(provider=self, target=target)
 
-    def backends(self) -> List[qss.SuperstaqBackend]:
+    def backends(
+        self,
+        simulator: Optional[bool] = None,
+        supports_submit: Optional[bool] = None,
+        supports_compile: Optional[bool] = None,
+        available: Optional[bool] = None,
+        retired: Optional[bool] = None,
+        **kwargs: bool,
+    ) -> List[qss.SuperstaqBackend]:
         """Lists the backends available from this provider.
+
+        Args:
+            simulator: Optional flag to restrict the list of targets to (non-) simulators.
+            supports_submit: Optional boolean flag to only return targets that (don't) allow
+                circuit submissions.
+            supports_compile: Optional boolean flag to return targets that (don't) support
+                circuit compilation.
+            available: Optional boolean flag to only return targets that are (not) available
+                to use.
+            retired: Optional boolean flag to only return targets that are or are not retired.
+            kwargs: Any additional, supported flags to restrict/filter returned targets.
 
         Returns:
             A list of Superstaq backends.
         """
-        targets = self._client.get_targets()["superstaq_targets"]
-        backends = []
-        for target in targets["compile-and-run"]:
-            backends.append(self.get_backend(target))
-        return backends
+        filters = dict(
+            simulator=simulator,
+            supports_submit=supports_submit,
+            supports_submit_qubo=False,
+            supports_compile=supports_compile,
+            available=available,
+            retired=retired,
+            **kwargs,
+        )
+        targets = self._client.get_targets(**filters)
+        superstaq_backends = []
+        for backend in targets:
+            superstaq_backends.append(self.get_backend(backend.target))
+        return superstaq_backends
 
     def resource_estimate(
         self, circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]], target: str
@@ -517,11 +545,3 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
                 through `submit_dfe` have not finished running.
         """
         return self._client.process_dfe(ids)
-
-    def get_targets(self) -> Dict[str, Any]:
-        """Gets list of targets.
-
-        Returns:
-            A dictionary sorted by "compile-only", "compile-and-run", "unavailable", and "retired".
-        """
-        return self._client.get_targets()["superstaq_targets"]
