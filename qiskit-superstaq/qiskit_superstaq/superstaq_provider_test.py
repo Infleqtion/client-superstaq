@@ -12,7 +12,7 @@ import general_superstaq as gss
 import numpy as np
 import pytest
 import qiskit
-from general_superstaq import ResourceEstimate
+from general_superstaq import ResourceEstimate, testing
 
 import qiskit_superstaq as qss
 
@@ -23,13 +23,13 @@ if TYPE_CHECKING:
 @patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
 def test_provider(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     assert str(fake_superstaq_provider) == "<SuperstaqProvider mock_superstaq_provider>"
-
     assert (
         repr(fake_superstaq_provider)
         == "<SuperstaqProvider(api_key=MY_TOKEN, name=mock_superstaq_provider)>"
     )
-
-    assert str(fake_superstaq_provider.backends()[0]) == "ibmq_qasm_simulator"
+    assert (
+        str(fake_superstaq_provider.backends()[0]) == "aqt_keysight_qpu"
+    )  # First backend alphabetically.
 
 
 def test_provider_args() -> None:
@@ -433,37 +433,7 @@ def test_dfe(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvide
     assert fake_superstaq_provider.process_dfe(["1", "2"]) == 1
 
 
-def test_get_targets() -> None:
-    provider = qss.SuperstaqProvider(api_key="key", remote_host="http://example.com")
-    mock_client = mock.MagicMock()
-    targets = {
-        "superstaq_targets": {
-            "compile-and-run": [
-                "ibmq_qasm_simulator",
-                "ibmq_armonk_qpu",
-                "ibmq_santiago_qpu",
-                "ibmq_bogota_qpu",
-                "ibmq_lima_qpu",
-                "ibmq_belem_qpu",
-                "ibmq_quito_qpu",
-                "ibmq_statevector_simulator",
-                "ibmq_mps_simulator",
-                "ibmq_extended-stabilizer_simulator",
-                "ibmq_stabilizer_simulator",
-                "ibmq_manila_qpu",
-                "aws_dm1_simulator",
-                "aws_sv1_simulator",
-                "d-wave_advantage-system4.1_qpu",
-                "d-wave_dw-2000q-6_qpu",
-                "aws_tn1_simulator",
-                "rigetti_aspen-9_qpu",
-                "d-wave_advantage-system1.1_qpu",
-                "ionq_ion_qpu",
-            ],
-            "compile-only": ["aqt_keysight_qpu", "aqt_zurich_qpu", "sandia_qscout_qpu"],
-        }
-    }
-    mock_client.get_targets.return_value = targets
-    provider._client = mock_client
-
-    assert provider.get_targets() == targets["superstaq_targets"]
+@patch("requests.get")
+def test_get_targets(mock_get: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    mock_get.return_value.json = {"superstaq_targets": testing.TARGET_LIST}
+    assert fake_superstaq_provider.get_targets() == testing.RETURNED_TARGETS

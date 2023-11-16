@@ -272,7 +272,7 @@ def test_submit_to_hilbert_qubit_sorting(provider: qss.SuperstaqProvider) -> Non
 def test_submit_qubo(provider: qss.SuperstaqProvider) -> None:
     test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
     serialized_result = provider.submit_qubo(
-        test_qubo, target="toshiba_bifurcation_qpu", method="dry-run"
+        test_qubo, target="toshiba_bifurcation_simulator", method="dry-run"
     )
     result = gss.qubo.read_json_qubo_result(serialized_result)
     best_result = result[0]

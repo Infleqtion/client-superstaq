@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Client for making requests to Superstaq's API."""
+from __future__ import annotations
+
 import json
 import os
 import pathlib
@@ -25,6 +27,7 @@ import qubovert as qv
 import requests
 
 import general_superstaq as gss
+from general_superstaq.testing import TARGET_LIST
 
 
 class _SuperstaqClient:
@@ -72,7 +75,7 @@ class _SuperstaqClient:
                 which is the most recent version when this client was downloaded.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
-            cq_token: Token from CQ cloud.This is required to submit circuits to CQ hardware.
+            cq_token: Token from CQ cloud. This is required to submit circuits to CQ hardware.
             ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
                 to IBM hardware, or to access non-public IBM devices you may have access to.
             ibmq_instance: An optional instance to use when running IBM jobs.
@@ -124,7 +127,7 @@ class _SuperstaqClient:
         """Gets Superstaq version from response header.
 
         Returns:
-            A dict containing the current Superstaq version.
+            A `dict` containing the current Superstaq version.
         """
 
         response = requests.get(self.url)
@@ -236,15 +239,22 @@ class _SuperstaqClient:
         """
         return self.post_request("/accept_terms_of_use", {"user_input": user_input})
 
-    def get_targets(self) -> Dict[str, Dict[str, List[str]]]:
+    def get_targets(self, **kwargs: Optional[bool]) -> List[gss.Target]:
         """Makes a GET request to retrieve targets from the Superstaq API.
 
-        Gets a list of available, unavailable, and retired targets.
+        Args:
+            kwargs: Optional flags to restrict/filter returned targets.
 
         Returns:
-            A dictionary listing the targets.
+            A list of Superstaq targets matching all provided criteria.
         """
-        return self.get_request("/targets")
+        target_filters = {key: value for key, value in kwargs.items() if value is not None}
+        superstaq_targets = self.post_request("/targets", target_filters)["superstaq_targets"]
+        target_list = [
+            gss.Target(target=target_name, **properties)
+            for target_name, properties in superstaq_targets.items()
+        ]
+        return target_list
 
     def add_new_user(self, json_dict: Dict[str, str]) -> str:
         """Makes a POST request to Superstaq API to add a new user.
@@ -347,6 +357,10 @@ class _SuperstaqClient:
             A dictionary from the POST request.
         """
         gss.validation.validate_target(target)
+        if not (target in TARGET_LIST and TARGET_LIST[target]["supports_submit_qubo"]):
+            raise gss.SuperstaqException(
+                f"The provided target, {target}, does not support QUBO submission."
+            )
         gss.validation.validate_integer_param(repetitions)
         gss.validation.validate_integer_param(max_solutions)
 
@@ -659,11 +673,25 @@ class _SuperstaqClient:
                     response.status_code,
                 )
 
+        if response.status_code == requests.codes.gateway_timeout:
+            # Job took too long. Don't retry, it probably won't be any faster.
+            raise gss.SuperstaqServerException(
+                "Connection timed out while processing your request. Try submitting a smaller "
+                "batch of circuits.",
+                response.status_code,
+            )
+
         if response.status_code not in self.RETRIABLE_STATUS_CODES:
-            if "message" in response.json():
-                message = response.json()["message"]
+            try:
+                json_content = response.json()
+            except requests.JSONDecodeError:
+                json_content = None
+
+            if isinstance(json_content, dict) and "message" in json_content:
+                message = json_content["message"]
             else:
                 message = str(response.text)
+
             raise gss.SuperstaqServerException(
                 message=message, status_code=response.status_code, contact_info=True
             )
