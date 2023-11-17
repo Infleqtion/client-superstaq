@@ -83,17 +83,17 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """Helper method to update the measurement indices from the compiled circuit.
 
         Args:
-            index: The index of the circuit to get indices from.
+            index: The index of the compiled circuit to get indices from.
 
         Returns:
             The specific measurement indices of the circuit with label `index` in
             the job.
         """
-        compiled_circuit = self._get_circuits("compiled_circuit", index=index)
-        return qss.compiler_output.measured_clbit_indices(compiled_circuit)
+        input_circuit = self._get_circuits("input_circuit", index=index)
+        return qss.compiler_output.measured_clbit_indices(input_circuit)
 
     def _get_num_clbits(self, index: int) -> int:
-        """Helper method to get the number of classical bits in the circuit.
+        """Helper to get number of classical bits in the classical register of the input circuit.
 
         Args:
             index: The index of the circuit to get the classical bits from.
