@@ -55,6 +55,36 @@ def test_measured_qubit_indices() -> None:
     assert qss.measured_qubit_indices(circuit) == [0, 1, 3, 4]
 
 
+def test_measured_clbit_indices() -> None:
+    # Test len(qiskit.ClassicalRegister()) < len(qiskit.QuantumRegister())
+    circuit = qiskit.QuantumCircuit(8, 2)
+    circuit.x(0)
+    circuit.measure(1, 0)
+    circuit.cx(1, 2)
+    circuit.measure([6, 5], [0, 1])
+    circuit.measure([1, 3], [0, 1])
+    circuit.measure([5, 1], [0, 1])
+    assert qss.measured_clbit_indices(circuit) == [0, 1]
+
+    # Test len(qiskit.ClassicalRegister()) > len(qiskit.QuantumRegister())
+    circuit = qiskit.QuantumCircuit(3, 5)
+    circuit.h(1)
+    circuit.x(2)
+    circuit.measure([0, 1, 2], [2, 4, 1])
+    assert qss.measured_clbit_indices(circuit) == [1, 2, 4]
+
+    # Test len(qiskit.ClassicalRegister()) = len(qiskit.QuantumRegister())
+    circuit = qiskit.QuantumCircuit(9, 9)
+    circuit.h(1)
+    circuit.x(4)
+    circuit.s(1)
+    circuit.cx(1, 0)
+    circuit.measure([0, 1, 4], [0, 1, 2])
+    assert qss.measured_clbit_indices(circuit) == [0, 1, 2]
+    circuit.measure([0, 1, 4, 2, 3, 5, 6, 7, 8], [0, 1, 2, 8, 7, 6, 5, 3, 4])
+    assert qss.measured_clbit_indices(circuit) == [0, 1, 2, 3, 4, 5, 6, 7, 8]
+
+
 def test_compiler_output_repr() -> None:
     circuit = qiskit.QuantumCircuit(4)
     assert (
