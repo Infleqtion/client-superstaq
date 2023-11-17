@@ -134,7 +134,7 @@ def test_counts_arranged(backend: qss.SuperstaqBackend) -> None:
     assert counts == [{"0000": 70, "1100": 30}, {"10011": 40, "10000": 60}]
 
 
-def test_get_meas_bit_info(backend: qss.SuperstaqBackend) -> None:
+def test_get_clbit_indices(backend: qss.SuperstaqBackend) -> None:
     response = mock_response("Done")
     qc = qiskit.QuantumCircuit(2, 2)
     qc.h(0)
@@ -148,7 +148,7 @@ def test_get_meas_bit_info(backend: qss.SuperstaqBackend) -> None:
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
     ):
-        returned_meas_list = job._get_meas_bit_info(index=0)
+        returned_meas_list = job._get_clbit_indices(index=0)
         assert returned_meas_list == [0, 1]
 
 

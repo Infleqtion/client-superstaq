@@ -79,7 +79,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
 
         return arranged_counts
 
-    def _get_meas_bit_info(self, index: int) -> List[int]:
+    def _get_clbit_indices(self, index: int) -> List[int]:
         """Helper method to update the measurement indices from the compiled circuit.
 
         Args:
@@ -90,7 +90,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
             the job.
         """
         compiled_circuit = self._get_circuits("compiled_circuit", index=index)
-        return qss.compiler_output.measured_qubit_indices(compiled_circuit)
+        return qss.compiler_output.measured_clbit_indices(compiled_circuit)
 
     def _get_num_clbits(self, index: int) -> int:
         """Helper method to get the number of classical bits in the circuit.
@@ -135,7 +135,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
             counts = result["samples"]
             if counts:
                 num_clbits = self._get_num_clbits(i)
-                circ_meas_bit_indices = self._get_meas_bit_info(i)
+                circ_meas_bit_indices = self._get_clbit_indices(i)
                 if len(circ_meas_bit_indices) != num_clbits:
                     counts = self._arrange_counts(counts, circ_meas_bit_indices, num_clbits)
                 counts = {
