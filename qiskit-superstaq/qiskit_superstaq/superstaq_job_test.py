@@ -110,6 +110,7 @@ def test_result(backend: qss.SuperstaqBackend) -> None:
 
 
 def test_counts_arranged(backend: qss.SuperstaqBackend) -> None:
+    # Test case: len(qiskit.ClassicalRegister()) = len(qiskit.QuantumRegister())
     qc1 = qiskit.QuantumCircuit(qiskit.QuantumRegister(4), qiskit.ClassicalRegister(4))
     qc1.measure([2, 3], [2, 3])
     qc2 = qiskit.QuantumCircuit(qiskit.QuantumRegister(5), qiskit.ClassicalRegister(5))
@@ -132,6 +133,41 @@ def test_counts_arranged(backend: qss.SuperstaqBackend) -> None:
     }
     counts = job.result().get_counts()
     assert counts == [{"0000": 70, "1100": 30}, {"10011": 40, "10000": 60}]
+
+    # Test case: len(qiskit.ClassicalRegister()) < len(qiskit.QuantumRegister())
+    qc3 = qiskit.QuantumCircuit(qiskit.QuantumRegister(8), qiskit.ClassicalRegister(5))
+    qc3.x(0)
+    qc3.h(1)
+    qc3.measure(1, 1)
+    qc3.h(1)
+    qc3.cx(1, 2)
+    qc3.measure([6, 2, 0], [3, 0, 4])
+    job = qss.SuperstaqJob(backend=backend, job_id="987def")
+    job._job_info["987def"] = {
+        "status": "Done",
+        "samples": {"1101": 26, "0001": 36, "1001": 19, "0101": 19},
+        "shots": 100,
+        "input_circuit": qss.serialization.serialize_circuits(qc3),
+        "compiled_circuit": qss.serialization.serialize_circuits(qc3),
+    }
+    counts = job.result(0).get_counts()
+    assert counts == {"10011": 26, "10010": 19, "10001": 19, "10000": 36}
+
+    # Test case: len(qiskit.ClassicalRegister()) > len(qiskit.QuantumRegister())
+    qc4 = qiskit.QuantumCircuit(qiskit.QuantumRegister(3), qiskit.ClassicalRegister(5))
+    qc4.h(1)
+    qc4.x(2)
+    qc4.measure([0, 1, 2], [2, 4, 1])
+    job = qss.SuperstaqJob(backend=backend, job_id="789cba")
+    job._job_info["789cba"] = {
+        "status": "Done",
+        "samples": {"100": 50, "101": 50},
+        "shots": 100,
+        "input_circuit": qss.serialization.serialize_circuits(qc4),
+        "compiled_circuit": qss.serialization.serialize_circuits(qc4),
+    }
+    counts = job.result(0).get_counts()
+    assert counts == {"00010": 50, "10010": 50}
 
 
 def test_get_clbit_indices(backend: qss.SuperstaqBackend) -> None:
