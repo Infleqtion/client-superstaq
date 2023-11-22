@@ -84,6 +84,18 @@ def test_measured_clbit_indices() -> None:
     circuit.measure([0, 1, 4, 2, 3, 5, 6, 7, 8], [0, 1, 2, 8, 7, 6, 5, 3, 4])
     assert qss.measured_clbit_indices(circuit) == [0, 1, 2, 3, 4, 5, 6, 7, 8]
 
+    # Custom instruction with measurements test
+    circuit_instr = qiskit.QuantumCircuit(2, 2)
+    circuit_instr.h(0)
+    circuit_instr.x(0)
+    circuit_instr.measure([0, 1], [0, 1])
+    custom_instruction = circuit_instr.to_instruction()
+
+    qc = qiskit.QuantumCircuit(2, 2)
+    qc.append(custom_instruction, [0, 1], [0, 1])
+
+    assert qss.measured_clbit_indices(qc) == [0, 1]
+
 
 def test_compiler_output_repr() -> None:
     circuit = qiskit.QuantumCircuit(4)
