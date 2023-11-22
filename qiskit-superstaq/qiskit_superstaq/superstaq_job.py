@@ -71,7 +71,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
             A dictionary with the updated counts keys.
         """
         arranged_counts = {}
-        for key in counts.keys():
+        for key in counts:
             updated_key = "0" * num_clbits
             for counter, index in enumerate(circ_meas_bit_indices):
                 updated_key = updated_key[:index] + key[counter] + updated_key[index + 1 :]
