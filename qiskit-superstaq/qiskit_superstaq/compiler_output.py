@@ -68,7 +68,6 @@ def measured_clbit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
     Returns:
         A list containing the indices of the classical bits.
     """
-
     measured_clbits: Set[qiskit.circuit.Clbit] = set()
 
     for items in circuit:
@@ -76,6 +75,10 @@ def measured_clbit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
         clbits = items[2]
         if isinstance(inst, qiskit.circuit.Measure):
             measured_clbits.update(clbits)
+
+        # Recurse into definition
+        elif clbits and inst.definition is not None:
+            measured_clbits.update(clbits[i] for i in measured_clbit_indices(inst.definition))
 
     return sorted(circuit.find_bit(bit).index for bit in measured_clbits)
 
