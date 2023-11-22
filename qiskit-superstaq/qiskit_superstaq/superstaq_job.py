@@ -89,7 +89,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
             The specific measurement indices of the circuit with label `index` in
             the job.
         """
-        input_circuit = self._get_circuits("input_circuit", index=index)
+        input_circuit = self.input_circuits(index)
         return qss.compiler_output.measured_clbit_indices(input_circuit)
 
     def _get_num_clbits(self, index: int) -> int:
