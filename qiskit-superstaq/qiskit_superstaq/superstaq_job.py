@@ -101,7 +101,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         Returns:
             The number of classical bits for the circuit in the job.
         """
-        return self._get_circuits("input_circuit", index=index).num_clbits
+        return self.input_circuits(index).num_clbits
 
     def result(
         self,
