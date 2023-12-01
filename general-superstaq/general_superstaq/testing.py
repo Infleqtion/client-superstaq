@@ -37,13 +37,20 @@ TARGET_LIST = {
         "retired": False,
     },
     "cq_hilbert_qpu": {
-        "supports_submit": True,
+        "supports_submit": False,
         "supports_submit_qubo": False,
         "supports_compile": True,
         "available": True,
         "retired": False,
     },
     "cq_hilbert_simulator": {
+        "supports_submit": False,
+        "supports_submit_qubo": False,
+        "supports_compile": True,
+        "available": True,
+        "retired": False,
+    },
+    "ibmq_brisbane_qpu": {
         "supports_submit": True,
         "supports_submit_qubo": False,
         "supports_compile": True,
@@ -57,14 +64,21 @@ TARGET_LIST = {
         "available": True,
         "retired": False,
     },
-    "ibmq_guadalupe_qpu": {
+    "ibmq_fake-athens_qpu": {
         "supports_submit": True,
         "supports_submit_qubo": False,
         "supports_compile": True,
         "available": True,
         "retired": False,
     },
-    "ibmq_lagos_qpu": {
+    "ibmq_fake-lima_qpu": {
+        "supports_submit": True,
+        "supports_submit_qubo": False,
+        "supports_compile": True,
+        "available": True,
+        "retired": False,
+    },
+    "ibmq_kyoto_qpu": {
         "supports_submit": True,
         "supports_submit_qubo": False,
         "supports_compile": True,
@@ -72,20 +86,6 @@ TARGET_LIST = {
         "retired": False,
     },
     "ibmq_mps_simulator": {
-        "supports_submit": True,
-        "supports_submit_qubo": False,
-        "supports_compile": True,
-        "available": True,
-        "retired": False,
-    },
-    "ibmq_nairobi_qpu": {
-        "supports_submit": True,
-        "supports_submit_qubo": False,
-        "supports_compile": True,
-        "available": True,
-        "retired": False,
-    },
-    "ibmq_perth_qpu": {
         "supports_submit": True,
         "supports_submit_qubo": False,
         "supports_compile": True,
@@ -114,7 +114,7 @@ TARGET_LIST = {
         "retired": False,
     },
     "ionq_aria-1_qpu": {
-        "supports_submit": True,
+        "supports_submit": False,
         "supports_submit_qubo": False,
         "supports_compile": True,
         "available": False,
@@ -127,11 +127,18 @@ TARGET_LIST = {
         "available": False,
         "retired": False,
     },
-    "ionq_harmony_qpu": {
-        "supports_submit": True,
+    "ionq_forte-1_qpu": {
+        "supports_submit": False,
         "supports_submit_qubo": False,
         "supports_compile": True,
-        "available": True,
+        "available": False,
+        "retired": False,
+    },
+    "ionq_harmony_qpu": {
+        "supports_submit": False,
+        "supports_submit_qubo": False,
+        "supports_compile": True,
+        "available": False,
         "retired": False,
     },
     "ionq_ion_simulator": {
@@ -149,21 +156,21 @@ TARGET_LIST = {
         "retired": False,
     },
     "qtm_h1-1_qpu": {
-        "supports_submit": True,
+        "supports_submit": False,
         "supports_submit_qubo": False,
         "supports_compile": True,
         "available": True,
         "retired": False,
     },
     "qtm_h1-1e_simulator": {
-        "supports_submit": True,
+        "supports_submit": False,
         "supports_submit_qubo": False,
         "supports_compile": True,
         "available": True,
         "retired": False,
     },
     "qtm_h2-1_qpu": {
-        "supports_submit": True,
+        "supports_submit": False,
         "supports_submit_qubo": False,
         "supports_compile": True,
         "available": True,
@@ -212,10 +219,10 @@ TARGET_LIST = {
         "retired": True,
     },
     "rigetti_aspen-m-3_qpu": {
-        "supports_submit": True,
+        "supports_submit": False,
         "supports_submit_qubo": False,
         "supports_compile": True,
-        "available": True,
+        "available": False,
         "retired": False,
     },
     "sandia_qscout_qpu": {

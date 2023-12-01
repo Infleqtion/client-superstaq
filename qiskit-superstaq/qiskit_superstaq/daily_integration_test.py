@@ -27,12 +27,12 @@ def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
     qc.append(qss.AceCR("-+"), [1, 2])
     qc.append(qss.AceCR("-+"), [2, 3])
 
-    out = provider.ibmq_compile(qc, target="ibmq_perth_qpu")
+    out = provider.ibmq_compile(qc, target="ibmq_brisbane_qpu")
     assert isinstance(out, qss.compiler_output.CompilerOutput)
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
     assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
 
-    out = provider.ibmq_compile(qc, target="ibmq_lagos_qpu")
+    out = provider.ibmq_compile(qc, target="ibmq_brisbane_qpu")
     assert isinstance(out, qss.compiler_output.CompilerOutput)
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
     assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
@@ -45,7 +45,7 @@ def test_ibmq_compile_with_token() -> None:
     qc.append(qss.AceCR("-+"), [1, 2])
     qc.append(qss.AceCR("-+"), [2, 3])
 
-    out = provider.ibmq_compile(qc, target="ibmq_perth_qpu")
+    out = provider.ibmq_compile(qc, target="ibmq_brisbane_qpu")
 
     assert isinstance(out, qss.compiler_output.CompilerOutput)
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
