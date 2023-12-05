@@ -560,6 +560,7 @@ class _SuperstaqClient:
 
         json_dict = {
             "target": target,
+            "options": json.dumps(self.client_kwargs),
         }
         return self.post_request("/target_info", json_dict)
 
