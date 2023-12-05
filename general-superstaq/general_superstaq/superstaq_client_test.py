@@ -837,8 +837,27 @@ def test_superstaq_client_target_info(mock_post: mock.MagicMock) -> None:
     )
     client.target_info("ss_example_qpu")
 
-    expected_json = {"target": "ss_example_qpu"}
+    expected_json = {"target": "ss_example_qpu", "options": "{}"}
 
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/target_info",
+        headers=EXPECTED_HEADERS,
+        json=expected_json,
+        verify=False,
+    )
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_target_info_with_credentials(mock_post: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        cq_token="cq-token",
+    )
+    client.target_info("ss_example_qpu")
+
+    expected_json = {"target": "ss_example_qpu", "options": json.dumps({"cq_token": "cq-token"})}
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/target_info",
         headers=EXPECTED_HEADERS,
