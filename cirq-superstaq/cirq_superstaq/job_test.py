@@ -182,6 +182,10 @@ def test_pulse_gate_circuits_index(job: css.job.Job) -> None:
     # Shouldn't need to retrieve anything now that `job._job` is populated:
     assert job.pulse_gate_circuits(index=0)[0] == pulse_gate_circuit
 
+    # Test on invalid index
+    with pytest.raises(ValueError, match="is less than the minimum"):
+        job.pulse_gate_circuits(index=-3)
+
 
 def test_multi_pulse_gate_circuits(job: css.Job) -> None:
     import qiskit
