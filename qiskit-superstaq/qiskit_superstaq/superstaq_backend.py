@@ -406,7 +406,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             kwargs: Other desired compile options.
 
         Returns:
-            An CQ `CompilerOutput` object.
+            A CQ `CompilerOutput` object.
 
         Raises:
             ValueError: If this is not a CQ backend.

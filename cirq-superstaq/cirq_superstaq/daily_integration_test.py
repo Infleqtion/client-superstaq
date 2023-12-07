@@ -24,11 +24,11 @@ def test_ibmq_compile(service: css.Service) -> None:
         css.AceCRMinusPlus(qubits[2], qubits[3]),
     )
 
-    out = service.ibmq_compile(circuit, target="ibmq_perth_qpu")
+    out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
     assert out.pulse_sequence is not None
 
-    out = service.ibmq_compile(circuit, target="ibmq_lagos_qpu")
+    out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
     assert out.pulse_sequence is not None
 
@@ -42,7 +42,7 @@ def test_ibmq_compile_with_token() -> None:
         css.AceCRMinusPlus(qubits[2], qubits[3]),
     )
 
-    out = service.ibmq_compile(circuit, target="ibmq_perth_qpu")
+    out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
 
     assert isinstance(out.circuit, cirq.Circuit)
     assert out.pulse_sequence is not None
@@ -136,8 +136,25 @@ def test_get_resource_estimate(service: css.Service) -> None:
 
 def test_get_targets(service: css.Service) -> None:
     result = service.get_targets()
-    assert "ibmq_qasm_simulator" in result["compile-and-run"]
-    assert "aqt_keysight_qpu" in result["compile-only"]
+    ibmq_target_info = gss.typing.Target(
+        target="ibmq_qasm_simulator",
+        supports_submit=True,
+        supports_submit_qubo=False,
+        supports_compile=True,
+        available=True,
+        retired=False,
+    )
+    aqt_target_info = gss.typing.Target(
+        target="aqt_keysight_qpu",
+        supports_submit=False,
+        supports_submit_qubo=False,
+        supports_compile=True,
+        available=True,
+        retired=False,
+    )
+
+    assert ibmq_target_info in result
+    assert aqt_target_info in result
 
 
 def test_qscout_compile(service: css.Service) -> None:
@@ -308,7 +325,7 @@ def test_submit_to_hilbert_qubit_sorting(service: css.Service) -> None:
 def test_submit_qubo(service: css.Service) -> None:
     test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
     serialized_result = service.submit_qubo(
-        test_qubo, target="toshiba_bifurcation_qpu", method="dry-run"
+        test_qubo, target="toshiba_bifurcation_simulator", method="dry-run"
     )
     result = gss.qubo.read_json_qubo_result(serialized_result)
     best_result = result[0]
