@@ -81,6 +81,7 @@ def test_read_json() -> None:
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
         "pulse_gate_circuits": qss.serialization.serialize_circuits(qc_pulse),
         "pulses": gss.serialization.serialize([pulse_sequence]),
@@ -92,6 +93,7 @@ def test_read_json() -> None:
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
+        "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[], []]",
         "pulse_gate_circuits": qss.serialization.serialize_circuits([qc_pulse, qc_pulse]),
         "pulses": gss.serialization.serialize([pulse_sequence, pulse_sequence]),
@@ -114,6 +116,7 @@ def test_read_json_aqt() -> None:
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
+        "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
@@ -135,6 +138,7 @@ def test_read_json_aqt() -> None:
     pulse_lists_str = gss.serialization.serialize([[[]], [[]]])
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
+        "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[], []]",
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
@@ -168,6 +172,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     pulse_lists_str = gss.serialization.serialize([[[]]])
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
+        "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
@@ -207,6 +212,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     pulse_lists_str = gss.serialization.serialize([[[]], [[]]])
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
+        "initial_logical_to_physicals": "[[], []]",
         "final_logical_to_physicals": "[[], []]",
         "state_jp": state_str,
         "pulse_lists_jp": pulse_lists_str,
@@ -243,22 +249,26 @@ def test_read_json_qscout() -> None:
 
     json_dict: Dict[str, Union[str, List[str]]] = {
         "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
+        "final_logical_to_physicals": json.dumps([[(0, 1)]]),
         "final_logical_to_physicals": json.dumps([[(0, 13)]]),
         "jaqal_programs": [jaqal_program],
     }
 
     out = qss.compiler_output.read_json_qscout(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
+    assert out.final_logical_to_physical == {0: 1}
     assert out.final_logical_to_physical == {0: 13}
     assert out.jaqal_program == jaqal_program
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
+        "initial_logical_to_physicals": json.dumps([[(0, 1)], [(0, 1)]]),
         "final_logical_to_physicals": json.dumps([[(0, 13)], [(0, 13)]]),
         "jaqal_programs": [jaqal_program, jaqal_program],
     }
     out = qss.compiler_output.read_json_qscout(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
+    assert out.initial_logical_to_physicals == [{0: 1}, {0: 1}]
     assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
     assert out.jaqal_programs == json_dict["jaqal_programs"]
 
