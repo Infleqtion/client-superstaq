@@ -322,12 +322,16 @@ class Job:
 
     def pulse_gate_circuits(self, index: Optional[int] = None) -> Any:
         """Gets the pulse gate circuit returned by this job.
+        
+        Args:
+            index: An optional index of the pulse gate circuit to retrieve.
 
         Returns:
             The `qiskit.QuantumCircuit` pulse gate circuit.
 
         Raises:
-            ValueError: If job was not run on an IBM pulse device.
+            ValueError: If the job was not run on an IBM pulse device.
+            ValueError: If the job's target does not use pulse gate circuits. 
         """
         job_ids = self._job_id.split(",")
 
