@@ -150,14 +150,16 @@ class CompilerOutput:
     def __repr__(self) -> str:
         if not self.has_multiple_circuits():
             return (
-                f"CompilerOutput({self.circuit!r}, {self.initial_logical_to_physical!r}, {self.final_logical_to_physical!r}, "
-                f"{self.pulse_gate_circuit!r}, {self.pulse_sequence!r}, {self.seq!r}, "
-                f"{self.jaqal_program!r}, {self.pulse_list!r})"
+                f"CompilerOutput({self.circuit!r}, {self.initial_logical_to_physical!r}, "
+                f"{self.final_logical_to_physical!r}, {self.pulse_gate_circuit!r}, "
+                f"{self.pulse_sequence!r}, {self.seq!r}, {self.jaqal_program!r}, "
+                f"{self.pulse_list!r})"
             )
         return (
-            f"CompilerOutput({self.circuits!r}, {self.initial_logical_to_physical!r}, {self.final_logical_to_physicals!r}, "
-            f"{self.pulse_gate_circuits!r}, {self.pulse_sequences!r}, {self.seq!r}, "
-            f"{self.jaqal_programs!r}, {self.pulse_lists!r})"
+            f"CompilerOutput({self.circuits!r}, {self.initial_logical_to_physicals!r}, "
+            f"{self.final_logical_to_physicals!r}, {self.pulse_gate_circuits!r}, "
+            f"{self.pulse_sequences!r}, {self.seq!r}, {self.jaqal_programs!r}, "
+            f"{self.pulse_lists!r})"
         )
 
 
