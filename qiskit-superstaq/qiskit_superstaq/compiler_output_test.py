@@ -59,13 +59,14 @@ def test_compiler_output_repr() -> None:
     circuit = qiskit.QuantumCircuit(4)
     assert (
         repr(qss.compiler_output.CompilerOutput(circuit, {0: 0}, {0: 1}))
-        == f"""CompilerOutput({circuit!r},  {{0: 0}}, {{0: 1}}, None, None, None, None)"""
+        == f"""CompilerOutput({circuit!r}, {{0: 0}}, {{0: 1}}, None, None, None, None)"""
     )
 
     circuits = [circuit, circuit]
     assert (
         repr(qss.compiler_output.CompilerOutput(circuits, [{0: 0}, {1: 1}], [{0: 1}, {1: 0}]))
-        == f"CompilerOutput({circuits!r}, [{{0: 0}}, {{1: 1}}], [{{0: 1}}, {{1: 0}}], None, None, None, None)"
+        == f"CompilerOutput({circuits!r}, [{{0: 0}}, {{1: 1}}], [{{0: 1}}, {{1: 0}}], None, "
+        f"None, None, None)"
     )
 
 
@@ -256,7 +257,7 @@ def test_read_json_qscout() -> None:
 
     out = qss.compiler_output.read_json_qscout(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
-    assert out.final_logical_to_physical == {0: 1}
+    assert out.initial_logical_to_physical == {0: 1}
     assert out.final_logical_to_physical == {0: 13}
     assert out.jaqal_program == jaqal_program
 
