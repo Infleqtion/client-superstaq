@@ -75,7 +75,7 @@ def test_aqt_compile(mock_post: MagicMock, fake_superstaq_provider: MockSupersta
 
     out = fake_superstaq_provider.aqt_compile([qc], atol=1e-2)
     assert out.circuits == [qc]
-    assert out.initial_logical_to_physical == [{0: 1}]
+    assert out.initial_logical_to_physicals == [{0: 1}]
     assert out.final_logical_to_physicals == [{1: 4}]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
@@ -120,6 +120,7 @@ def test_aqt_compile_eca(
     assert out.final_logical_to_physicals == [{}]
     assert not hasattr(out, "circuit")
     assert not hasattr(out, "pulse_list")
+    assert not hasattr(out, "initial_logical_to_physical")
     assert not hasattr(out, "final_logical_to_physical")
 
     out = fake_superstaq_provider.aqt_compile([qc], num_eca_circuits=1, random_seed=1234, atol=1e-2)
@@ -268,7 +269,7 @@ def test_qscout_compile(
 
     out = fake_superstaq_provider.qscout_compile([qc])
     assert out.circuits == [qc]
-    assert out.initial_logical_to_physical == [{0: 1}]
+    assert out.initial_logical_to_physicals == [{0: 1}]
     assert out.final_logical_to_physicals == [{0: 13}]
 
     qc2 = qiskit.QuantumCircuit(2)
@@ -408,7 +409,7 @@ def test_cq_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaq
 
     out = fake_superstaq_provider.cq_compile([qc])
     assert out.circuits == [qc]
-    assert out.initial_logical_to_physical == [{0: 1}]
+    assert out.initial_logical_to_physicals == [{0: 1}]
     assert out.final_logical_to_physicals == [{3: 0}]
 
     mock_post.return_value.json = lambda: {
