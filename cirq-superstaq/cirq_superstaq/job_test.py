@@ -193,7 +193,7 @@ def test_pulse_gate_circuits_invalid_circuit(job: css.job.Job) -> None:
     job_dict = {"status": "Done", "pulse_gate_circuits": "invalid_pulse_gate_circuit_str"}
 
     # The first call will trigger a refresh:
-    with mocked_get_job_requests(job_dict) as mocked_get_job:
+    with mocked_get_job_requests(job_dict) as _:
         with pytest.raises(ValueError, match="circuits could not be deserialized."):
             job.pulse_gate_circuits()
 
