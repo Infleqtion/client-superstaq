@@ -1,5 +1,5 @@
-cirq-superstaq[dev]~=0.5.2
+cirq-superstaq[dev]~=0.5.3
 ipywidgets>=8.0.0
 nbsphinx>=0.9.0
-qiskit-superstaq[dev]~=0.5.2
+qiskit-superstaq[dev]~=0.5.3
 sphinx-rtd-theme>=1.0.0

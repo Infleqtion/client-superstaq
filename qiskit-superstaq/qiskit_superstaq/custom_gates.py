@@ -175,13 +175,13 @@ class StrippedCZGate(qiskit.circuit.Gate):
     into a CZ gate by RZ gates afterwards if the rz angle is nonzero.
     """
 
-    def __init__(self, rz_rads: float) -> None:
+    def __init__(self, rz_rads: float, label: Optional[str] = None) -> None:
         """Initializes a Stripped CZ gate.
 
         Args:
             rz_rads: The RZ-rotation angle in radians.
         """
-        super().__init__("stripped_cz", 2, [rz_rads])
+        super().__init__("stripped_cz", 2, [rz_rads], label=label)
 
     def inverse(self) -> StrippedCZGate:
         """Inverts the stripped CZ gate.
