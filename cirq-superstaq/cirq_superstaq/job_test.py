@@ -196,7 +196,6 @@ def test_pulse_gate_circuits_invalid_circuit(job: css.job.Job) -> None:
     with mocked_get_job_requests(job_dict) as mocked_get_job:
         with pytest.raises(ValueError, match="circuits could not be deserialized."):
             job.pulse_gate_circuits()
-            mocked_get_job.assert_called_once()
 
 
 def test_multi_pulse_gate_circuits(job: css.Job) -> None:
