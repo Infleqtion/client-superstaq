@@ -85,6 +85,11 @@ class CompilerOutput:
     def __init__(
         self,
         circuits: Union[cirq.Circuit, List[cirq.Circuit], List[List[cirq.Circuit]]],
+        initial_logical_to_physicals: Union[
+            Dict[cirq.Qid, cirq.Qid],
+            List[Dict[cirq.Qid, cirq.Qid]],
+            List[List[Dict[cirq.Qid, cirq.Qid]]],
+        ],
         final_logical_to_physicals: Union[
             Dict[cirq.Qid, cirq.Qid],
             List[Dict[cirq.Qid, cirq.Qid]],
@@ -100,6 +105,8 @@ class CompilerOutput:
 
         Args:
             circuits: A list (of at most 2 dimensions) containing `cirq.Circuit` objects.
+            initial_logical_to_physicals: Pre-compilation mapping of logical qubits to physical
+                qubits.
             final_logical_to_physicals: Post-compilation mapping of logical qubits to physical
                 qubits.
             pulse_gate_circuits: Pulse-gate `qiskit.QuantumCircuit` or list thereof specifying the
@@ -112,6 +119,7 @@ class CompilerOutput:
         """
         if isinstance(circuits, cirq.Circuit):
             self.circuit = circuits
+            self.initial_logical_to_physical = initial_logical_to_physicals
             self.final_logical_to_physical = final_logical_to_physicals
             self.pulse_list = pulse_lists
             self.pulse_gate_circuit = pulse_gate_circuits
@@ -119,6 +127,7 @@ class CompilerOutput:
             self.jaqal_program = jaqal_programs
         else:
             self.circuits = circuits
+            self.initial_logical_to_physicals = initial_logical_to_physicals
             self.final_logical_to_physicals = final_logical_to_physicals
             self.pulse_lists = pulse_lists
             self.pulse_gate_circuits = pulse_gate_circuits
@@ -141,14 +150,16 @@ class CompilerOutput:
     def __repr__(self) -> str:
         if not self.has_multiple_circuits():
             return (
-                f"CompilerOutput({self.circuit!r}, {self.final_logical_to_physical!r}, "
-                f"{self.pulse_gate_circuit!r}, {self.pulse_sequence!r}, {self.seq!r}, "
-                f"{self.jaqal_program!r}, {self.pulse_list!r})"
+                f"CompilerOutput({self.circuit!r}, {self.initial_logical_to_physical!r}, "
+                f"{self.final_logical_to_physical!r}, {self.pulse_gate_circuit!r}, "
+                f"{self.pulse_sequence!r}, {self.seq!r}, {self.jaqal_program!r}, "
+                f"{self.pulse_list!r})"
             )
         return (
-            f"CompilerOutput({self.circuits!r}, {self.final_logical_to_physicals!r}, "
-            f"{self.pulse_gate_circuits!r}, {self.pulse_sequences!r}, {self.seq!r}, "
-            f"{self.jaqal_programs!r}, {self.pulse_lists!r})"
+            f"CompilerOutput({self.circuits!r}, {self.initial_logical_to_physicals!r}, "
+            f"{self.final_logical_to_physicals!r}, {self.pulse_gate_circuits!r}, "
+            f"{self.pulse_sequences!r}, {self.seq!r}, {self.jaqal_programs!r}, "
+            f"{self.pulse_lists!r})"
         )
 
 
@@ -217,6 +228,9 @@ def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutp
     """
 
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
+    initial_logical_to_physicals: List[Dict[cirq.Qid, cirq.Qid]] = list(
+        map(dict, cirq.read_json(json_text=json_dict["initial_logical_to_physicals"]))
+    )
     final_logical_to_physicals: List[Dict[cirq.Qid, cirq.Qid]] = list(
         map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
     )
@@ -266,12 +280,14 @@ def read_json(json_dict: Dict[str, Any], circuits_is_list: bool) -> CompilerOutp
     if circuits_is_list:
         return CompilerOutput(
             compiled_circuits,
+            initial_logical_to_physicals,
             final_logical_to_physicals,
             pulse_gate_circuits=pulse_gate_circuits,
             pulse_sequences=pulses,
         )
     return CompilerOutput(
         compiled_circuits[0],
+        initial_logical_to_physicals[0],
         final_logical_to_physicals[0],
         pulse_gate_circuits=None if pulse_gate_circuits is None else pulse_gate_circuits[0],
         pulse_sequences=None if pulses is None else pulses[0],
@@ -298,6 +314,13 @@ def read_json_aqt(
 
     compiled_circuits: Union[List[cirq.Circuit], List[List[cirq.Circuit]]]
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
+
+    initial_logical_to_physicals_list: List[Dict[cirq.Qid, cirq.Qid]] = list(
+        map(dict, cirq.read_json(json_text=json_dict["initial_logical_to_physicals"]))
+    )
+    initial_logical_to_physicals: Union[
+        List[Dict[cirq.Qid, cirq.Qid]], List[List[Dict[cirq.Qid, cirq.Qid]]]
+    ] = initial_logical_to_physicals_list
 
     final_logical_to_physicals_list: List[Dict[cirq.Qid, cirq.Qid]] = list(
         map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
@@ -350,6 +373,10 @@ def read_json_aqt(
             compiled_circuits[i : i + num_eca_circuits]
             for i in range(0, len(compiled_circuits), num_eca_circuits)
         ]
+        initial_logical_to_physicals = [
+            initial_logical_to_physicals_list[i : i + num_eca_circuits]
+            for i in range(0, len(initial_logical_to_physicals_list), num_eca_circuits)
+        ]
         final_logical_to_physicals = [
             final_logical_to_physicals_list[i : i + num_eca_circuits]
             for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
@@ -361,12 +388,20 @@ def read_json_aqt(
 
     if circuits_is_list:
         return CompilerOutput(
-            compiled_circuits, final_logical_to_physicals, seq=seq, pulse_lists=pulse_lists
+            compiled_circuits,
+            initial_logical_to_physicals,
+            final_logical_to_physicals,
+            seq=seq,
+            pulse_lists=pulse_lists,
         )
 
     pulse_lists = pulse_lists[0] if pulse_lists is not None else None
     return CompilerOutput(
-        compiled_circuits[0], final_logical_to_physicals[0], seq=seq, pulse_lists=pulse_lists
+        compiled_circuits[0],
+        initial_logical_to_physicals[0],
+        final_logical_to_physicals[0],
+        seq=seq,
+        pulse_lists=pulse_lists,
     )
 
 
@@ -384,6 +419,9 @@ def read_json_qscout(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compi
     """
 
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
+    initial_logical_to_physicals: List[Dict[cirq.Qid, cirq.Qid]] = list(
+        map(dict, cirq.read_json(json_text=json_dict["initial_logical_to_physicals"]))
+    )
     final_logical_to_physicals: List[Dict[cirq.Qid, cirq.Qid]] = list(
         map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
     )
@@ -391,12 +429,14 @@ def read_json_qscout(json_dict: Dict[str, Any], circuits_is_list: bool) -> Compi
     if circuits_is_list:
         return CompilerOutput(
             circuits=compiled_circuits,
+            initial_logical_to_physicals=initial_logical_to_physicals,
             final_logical_to_physicals=final_logical_to_physicals,
             jaqal_programs=json_dict["jaqal_programs"],
         )
 
     return CompilerOutput(
         circuits=compiled_circuits[0],
+        initial_logical_to_physicals=initial_logical_to_physicals[0],
         final_logical_to_physicals=final_logical_to_physicals[0],
         jaqal_programs=json_dict["jaqal_programs"][0],
     )
