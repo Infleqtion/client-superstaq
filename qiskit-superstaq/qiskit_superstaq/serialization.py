@@ -10,6 +10,7 @@ import general_superstaq as gss
 import numpy as np
 import numpy.typing as npt
 import qiskit.qpy
+import qiskit_ibm_provider
 
 import qiskit_superstaq as qss
 
@@ -112,8 +113,12 @@ def serialize_circuits(
     else:
         circuits = [_prepare_circuit(circuit) for circuit in circuits]
 
+    # Use `qiskit_ibm_provider.qpy` for serialization, which is a delayed copy of `qiskit.qpy`.
+    # Deserialization can't be done with a QPY version older than that used for serialization, so
+    # this prevents us from having to force users to update Qiskit the moment we do (this is what
+    # Qiskit itself does for circuit submission)
     buf = io.BytesIO()
-    qiskit.qpy.dump(circuits, buf)
+    qiskit_ibm_provider.qpy.dump(circuits, buf)
     return gss.serialization.bytes_to_str(buf.getvalue())
 
 
@@ -143,8 +148,8 @@ def deserialize_circuits(serialized_circuits: str) -> List[qiskit.QuantumCircuit
             # If the circuit was serialized with a newer version of QPY, that's probably what caused
             # this error. In this case we should just tell the user to update.
             raise ValueError(
-                "Circuits failed to deserialize. This is likely because your version of "
-                f"qiskit-terra ({qiskit.__version__}) is out of date. Consider updating it."
+                "Circuits failed to deserialize. This is likely because your version of Qiskit "
+                f"({qiskit.__version__}) is out of date. Consider updating it."
             )
         else:
             # Otherwise there is probably a more complicated issue.
@@ -153,7 +158,7 @@ def deserialize_circuits(serialized_circuits: str) -> List[qiskit.QuantumCircuit
                 "report at https://github.com/Infleqtion/client-superstaq/issues containing "
                 "the following information (as well as any other relevant context):\n\n"
                 f"qiskit-superstaq version: {qss.__version__}\n"
-                f"qiskit-terra version: {qiskit.__version__}\n"
+                f"qiskit version: {qiskit.__version__}\n"
                 f"error: {e!r}"
             )
 
