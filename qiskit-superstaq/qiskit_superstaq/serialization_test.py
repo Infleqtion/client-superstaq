@@ -115,7 +115,7 @@ def test_warning_suppression() -> None:
 
     # QPY encodes qiskit.__version__ into the serialized circuit, so mocking a newer version string
     # during serialization will cause a QPY version UserWarning during deserialization
-    with mock.patch("qiskit.qpy.interface.__version__", newer_version):
+    with mock.patch("qiskit_ibm_provider.qpy.interface.__version__", newer_version):
         serialized_circuit = qss.serialization.serialize_circuits(circuit)
 
     # Check that a warning would normally be thrown
@@ -134,7 +134,9 @@ def test_deserialization_errors() -> None:
     circuit.x(0)
 
     # Mock a circuit serialized with a newer version of QPY:
-    with mock.patch("qiskit.qpy.common.QPY_VERSION", qiskit.qpy.common.QPY_VERSION + 1):
+    with mock.patch(
+        "qiskit_ibm_provider.qpy.common.QPY_VERSION", qiskit.qpy.common.QPY_VERSION + 1
+    ):
         serialized_circuit = qss.serialize_circuits(circuit)
 
     # Remove a few bytes to force a deserialization error
@@ -146,7 +148,7 @@ def test_deserialization_errors() -> None:
         _ = qss.deserialize_circuits(serialized_circuit)
 
     # Mock a circuit serialized with an older of QPY:
-    with mock.patch("qiskit.qpy.common.QPY_VERSION", 3):
+    with mock.patch("qiskit_ibm_provider.qpy.common.QPY_VERSION", 3):
         serialized_circuit = qss.serialize_circuits(circuit)
 
     with pytest.raises(ValueError, match="Please contact"):
