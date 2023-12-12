@@ -9,7 +9,7 @@ from unittest import mock
 import general_superstaq as gss
 import numpy as np
 import pytest
-import qiskit.qasm2
+import qiskit
 
 import qiskit_superstaq as qss
 
@@ -161,8 +161,7 @@ def test_circuit_from_qasm_with_gate_defs() -> None:
     new_circuit = qss.deserialize_circuits(qss.serialize_circuits(circuit))[0]
     assert circuit == new_circuit
 
-    qasm_str = qiskit.qasm2.dumps(circuit)
-    circuit_from_qasm = qiskit.QuantumCircuit.from_qasm_str(qasm_str)
+    circuit_from_qasm = qiskit.QuantumCircuit.from_qasm_str(circuit.qasm())
     new_circuit = qss.deserialize_circuits(qss.serialize_circuits(circuit_from_qasm))[0]
 
     # QASM conversion can change instruction names, so unroll circuits before comparing
