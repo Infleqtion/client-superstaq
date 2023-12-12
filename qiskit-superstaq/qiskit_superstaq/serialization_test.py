@@ -144,7 +144,7 @@ def test_deserialization_errors() -> None:
         gss.serialization.str_to_bytes(serialized_circuit)[:-4]
     )
 
-    with pytest.raises(ValueError, match="your version of qiskit-terra"):
+    with pytest.raises(ValueError, match="your version of qiskit"):
         _ = qss.deserialize_circuits(serialized_circuit)
 
     # Mock a circuit serialized with an older of QPY:
