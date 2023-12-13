@@ -218,7 +218,10 @@ def read_json(json_dict: Dict[str, str], circuits_is_list: bool) -> CompilerOutp
         pulse_gate_circuits = qss.deserialize_circuits(json_dict["pulse_gate_circuits"])
 
     if "pulses" in json_dict:
-        pulse_sequences = gss.serialization.deserialize(json_dict["pulses"])
+        try:
+            pulse_sequences = gss.serialization.deserialize(json_dict["pulses"])
+        except Exception:
+            pulse_sequences = None
 
     if circuits_is_list:
         return CompilerOutput(

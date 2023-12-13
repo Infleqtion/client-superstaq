@@ -133,6 +133,7 @@ def test_read_json() -> None:
     out = qss.compiler_output.read_json(json_dict, circuits_is_list=False)
     assert out.circuit == qc
     assert out.pulse_gate_circuit == qc_pulse
+    assert out.pulse_sequence == pulse_sequence
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
@@ -144,6 +145,12 @@ def test_read_json() -> None:
     out = qss.compiler_output.read_json(json_dict, circuits_is_list=True)
     assert out.circuits == [qc, qc]
     assert out.pulse_gate_circuits == [qc_pulse, qc_pulse]
+    assert out.pulse_sequences == [pulse_sequence, pulse_sequence]
+
+    json_dict["pulses"] = "oops"
+    out = qss.compiler_output.read_json(json_dict, circuits_is_list=True)
+    assert out.circuits == [qc, qc]
+    assert out.pulse_sequences is None
 
 
 @mock.patch.dict("sys.modules", {"qtrl": None})
