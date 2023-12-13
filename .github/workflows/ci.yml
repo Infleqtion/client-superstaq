@@ -29,10 +29,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev]
+          pip install -e ./checks-superstaq
       - name: Format
         run: |
-          check/format_.py
+          checks/format_.py
 
   lint:
     name: Lint check
@@ -50,10 +50,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq -e ./qiskit-superstaq -e ./supermarq-benchmarks
+          pip install -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks
       - name: Pylint
         run: |
-          check/pylint_.py --all
+          checks/pylint_.py --all
 
   flake8:
     name: Flake8 check
@@ -71,10 +71,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev]
+          pip install -e ./checks-superstaq
       - name: Flake8
         run: |
-          check/flake8_.py
+          checks/flake8_.py
 
   mypy:
     name: Type check
@@ -92,10 +92,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./supermarq-benchmarks[dev]
+          pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]
       - name: Type check
         run: |
-          check/mypy_.py
+          checks/mypy_.py
 
   coverage:
     name: Pytest and Coverage check
@@ -116,10 +116,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./supermarq-benchmarks[dev]
+          pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]
       - name: Coverage check
         run: |
-          check/coverage_.py
+          checks/coverage_.py
 
   coverage-gss:
     name: Standalone general-superstaq coverage check
@@ -133,13 +133,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev]
+          pip install -e ./checks-superstaq -e ./general-superstaq[dev]
       - name: Coverage check
         run: |
-          check/coverage_.py general-superstaq
+          checks/coverage_.py general-superstaq
 
   coverage-css:
-    name: Standalone cirq-superstaq coverage check
+    name: Minimum cirq version coverage check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -152,10 +152,10 @@ jobs:
           cirq_version=$(sed cirq-superstaq/requirements.txt -ne 's/^cirq.=/cirq==/p')
           echo "Using minimum cirq version: $cirq_version"
           python -m pip install --upgrade pip
-          pip install "$cirq_version" -e ./general-superstaq[dev] -e ./cirq-superstaq[dev]
+          pip install "$cirq_version" -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq[dev]
       - name: Coverage check
         run: |
-          check/coverage_.py cirq-superstaq
+          checks/coverage_.py cirq-superstaq
 
   coverage-qss:
     name: Standalone qiskit-superstaq coverage check
@@ -171,10 +171,10 @@ jobs:
           qiskit_version=$(sed qiskit-superstaq/requirements.txt -ne 's/^qiskit.=/qiskit==/p')
           echo "Using minimum qiskit version: $qiskit_version"
           python -m pip install --upgrade pip
-          pip install "$qiskit_version" -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev]
+          pip install "$qiskit_version" -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq[dev]
       - name: Coverage check
         run: |
-          check/coverage_.py qiskit-superstaq
+          checks/coverage_.py qiskit-superstaq
 
   pytest-mac:
     name: Pytest macOS
@@ -192,10 +192,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./supermarq-benchmarks[dev]
+          pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]
       - name: Pytest-mac check
         run: |
-          check/pytest_.py
+          checks/pytest_.py
 
   pytest-win:
     name: Pytest Windows
@@ -209,10 +209,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./supermarq-benchmarks[dev]
+          pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]
       - name: Pytest-win check
         run: |
-          check/pytest_.py
+          checks/pytest_.py
         shell: bash
 
   requirements:
@@ -232,15 +232,16 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq -e ./qiskit-superstaq -e ./supermarq-benchmarks
+          pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]
       - name: Requirements check
         run: |
-          check/requirements.py
+          checks/requirements.py
 
   notebook:
     name: Notebook check
     env:
       SUPERSTAQ_API_KEY : ${{ secrets.SUPERSTAQ_API_KEY }}
+      IBMQ_TOKEN : ${{ secrets.IBMQ_TOKEN }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -255,15 +256,15 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./supermarq-benchmarks[dev]
+          pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]
       - name: Notebook check
         run: |
-          check/pytest_.py --notebook
+          checks/pytest_.py --notebook
 
   docs:
     name: Build docs
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.11
@@ -277,9 +278,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./general-superstaq[dev] -e ./cirq-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./supermarq-benchmarks[dev]
+          pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]
           pip install -r ./docs/requirements.txt
           sudo apt-get install pandoc
       - name: Build docs
         run: |
-          check/build_docs.py
+          checks/build_docs.py

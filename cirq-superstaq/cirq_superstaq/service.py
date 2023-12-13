@@ -11,9 +11,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to access Superstaqs API."""
+from __future__ import annotations
 
+import numbers
 import warnings
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    overload,
+)
 
 import cirq
 import general_superstaq as gss
@@ -22,6 +35,9 @@ import numpy.typing as npt
 from general_superstaq import ResourceEstimate, superstaq_client
 
 import cirq_superstaq as css
+
+if TYPE_CHECKING:
+    from _typeshed import SupportsItems
 
 
 def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
@@ -53,7 +69,9 @@ def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
 
 
 def counts_to_results(
-    counter: Dict[str, int], circuit: cirq.AbstractCircuit, param_resolver: cirq.ParamResolver
+    counter: Mapping[str, float],
+    circuit: cirq.AbstractCircuit,
+    param_resolver: cirq.ParamResolver,
 ) -> cirq.ResultDict:
     """Converts a `collections.Counter` to a `cirq.ResultDict`.
 
@@ -72,20 +90,27 @@ def counts_to_results(
     combine_key_names = "".join(measurement_key_names)
 
     samples: List[List[int]] = []
-    for key in counter.keys():
-        keys_as_list: List[int] = []
-
+    if not all(counts == int(counts) for counts in counter.values()):
+        warnings.warn(
+            "The raw counts contain fractional values due to measurement error mitigation; please "
+            "use service.get_counts to see raw results.",
+            stacklevel=2,
+        )
+    if not all(counts >= 0 for counts in counter.values()):
+        warnings.warn(
+            "The raw counts contain negative values due to measurement error mitigation; please "
+            "use service.get_counts to see raw results.",
+            stacklevel=2,
+        )
+    for key, counts_of_key in counter.items():
         # Combines the keys of the counter into a list. If key = "01", keys_as_list = [0, 1]
-        for index in key:
-            keys_as_list.append(int(index))
+        keys_as_list: List[int] = list(map(int, key))
 
-        # Gets the number of counts of the key
-        # counter = collections.Counter({"01": 48, "11": 52})["01"] -> 48
-        counts_of_key = counter[key]
-
-        # Appends all the keys onto 'samples' list number-of-counts-in-the-key times
-        # If collections.Counter({"01": 48, "11": 52}), [0, 1] is appended to 'samples` 48 times and
-        # [1, 1] is appended to 'samples' 52 times
+        # Gets execution counts per bitstring, e.g., collections.Counter({"01": 48, "11": 52})["01"]
+        # = 48. Per execution shot, appends bitstring to `samples` list. E.g., if counter is
+        # collections.Counter({"01": 48, "11": 52}), [0, 1] is appended 48 times and [1, 1] is
+        # appended 52 times.
+        counts_of_key = round(counts_of_key)
         for _ in range(counts_of_key):
             samples.append(keys_as_list)
 
@@ -116,6 +141,11 @@ class Service(gss.service.Service):
         api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
+        cq_token: Optional[str] = None,
+        ibmq_token: Optional[str] = None,
+        ibmq_instance: Optional[str] = None,
+        ibmq_channel: Optional[str] = None,
+        **kwargs: object,
     ) -> None:
         """Creates the Service to access Superstaq's API.
 
@@ -142,12 +172,17 @@ class Service(gss.service.Service):
             api_version: Version of the api.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
             verbose: Whether to print to stdio and stderr on retriable errors.
+            cq_token: Token from CQ cloud.This is required to submit circuits to CQ hardware.
+            ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
+                to IBM hardware, or to access non-public IBM devices you may have access to.
+            ibmq_instance: An optional instance to use when running IBM jobs.
+            ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
+            kwargs: Other optimization and execution parameters.
 
         Raises:
             EnvironmentError: If an API key was not provided and could not be found.
         """
         self.default_target = default_target
-
         self._client = superstaq_client._SuperstaqClient(
             client_name="cirq-superstaq",
             remote_host=remote_host,
@@ -155,6 +190,11 @@ class Service(gss.service.Service):
             api_version=api_version,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
+            cq_token=cq_token,
+            ibmq_token=ibmq_token,
+            ibmq_instance=ibmq_instance,
+            ibmq_channel=ibmq_channel,
+            **kwargs,
         )
 
     def _resolve_target(self, target: Union[str, None]) -> str:
@@ -167,60 +207,116 @@ class Service(gss.service.Service):
         gss.validation.validate_target(target)
         return target
 
+    @overload
     def get_counts(
         self,
-        circuit: cirq.Circuit,
+        circuits: cirq.Circuit,
         repetitions: int,
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: Optional[str] = None,
         **kwargs: Any,
     ) -> Dict[str, int]:
-        """Runs the given circuit on the Superstaq API and returns the result of the circuit ran as
-        a `collections.Counter`.
+        ...
+
+    @overload
+    def get_counts(
+        self,
+        circuits: Sequence[cirq.Circuit],
+        repetitions: int,
+        target: Optional[str] = None,
+        param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
+        method: Optional[str] = None,
+        **kwargs: Any,
+    ) -> List[Dict[str, int]]:
+        ...
+
+    def get_counts(
+        self,
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        repetitions: int,
+        target: Optional[str] = None,
+        param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
+        method: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Union[Dict[str, int], List[Dict[str, int]]]:
+        """Runs circuit(s) on the Superstaq API and returns the result(s) as a `dict`.
 
         Args:
-            circuit: The circuit to run.
-            repetitions: The number of times to run the circuit.
+            circuits: The circuit(s) to run.
+            repetitions: The number of times to run the circuit(s).
             target: Where to run the job.
-            param_resolver: A `cirq.ParamResolver` to resolve parameters in  `circuit`.
+            param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuits`.
             method: Optional execution method.
             kwargs: Other optimization and execution parameters.
 
         Returns:
-            A `collection.Counter` for running the circuit.
+            The counts from running the circuit(s).
         """
-        resolved_circuit = cirq.protocols.resolve_parameters(circuit, param_resolver)
-        job = self.create_job(resolved_circuit, int(repetitions), target, method, **kwargs)
-        counts = job.counts()
+        resolved_circuits = cirq.resolve_parameters(circuits, param_resolver)
+        job = self.create_job(resolved_circuits, int(repetitions), target, method, **kwargs)
+        if isinstance(circuits, cirq.Circuit):
+            return job.counts(0)
+        return [job.counts(i) for i in range(len(circuits))]
 
-        return counts
-
+    @overload
     def run(
         self,
-        circuit: cirq.Circuit,
+        circuits: cirq.Circuit,
         repetitions: int,
         target: Optional[str] = None,
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
         method: Optional[str] = None,
         **kwargs: Any,
     ) -> cirq.ResultDict:
-        """Runs the given circuit on the Superstaq API and returns the result of the circuit ran as
-        a `cirq.ResultDict`.
+        ...
+
+    @overload
+    def run(
+        self,
+        circuits: Sequence[cirq.Circuit],
+        repetitions: int,
+        target: Optional[str] = None,
+        param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
+        method: Optional[str] = None,
+        **kwargs: Any,
+    ) -> List[cirq.ResultDict]:
+        ...
+
+    def run(
+        self,
+        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        repetitions: int,
+        target: Optional[str] = None,
+        param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
+        method: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Union[cirq.ResultDict, List[cirq.ResultDict]]:
+        """Runs circuit(s) on the Superstaq API and returns the result(s) as `cirq.ResultDict`.
+
+        WARNING: This may return unexpected results when used with measurement error mitigation. Use
+        `service.create_job()` or `service.get_counts()` instead.
 
         Args:
-            circuit: The circuit to run.
-            repetitions: The number of times to run the circuit.
+            circuits: The circuit(s) to run.
+            repetitions: The number of times to run the circuit(s).
             target: Where to run the job.
-            param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuit`.
+            param_resolver: A `cirq.ParamResolver` to resolve parameters in `circuits`.
             method: Execution method.
             kwargs: Other optimization and execution parameters.
 
         Returns:
-            A `cirq.ResultDict` for running the circuit.
+            The `cirq.ResultDict` object(s) from running the circuit(s).
         """
-        counts = self.get_counts(circuit, repetitions, target, param_resolver, method, **kwargs)
-        return counts_to_results(counts, circuit, param_resolver)
+        resolved_circuits = cirq.resolve_parameters(circuits, param_resolver)
+        job = self.create_job(resolved_circuits, int(repetitions), target, method, **kwargs)
+
+        if isinstance(circuits, cirq.Circuit):
+            return counts_to_results(job.counts(0), circuits, param_resolver)
+        return [
+            counts_to_results(job.counts(i), circuit, param_resolver)
+            for i, circuit in enumerate(circuits)
+        ]
 
     def sampler(self, target: Optional[str] = None) -> cirq.Sampler:
         """Returns a `cirq.Sampler` object for accessing sampler interface.
@@ -236,41 +332,32 @@ class Service(gss.service.Service):
 
     def create_job(
         self,
-        circuit: cirq.AbstractCircuit,
+        circuits: Union[cirq.AbstractCircuit, Sequence[cirq.AbstractCircuit]],
         repetitions: int = 1000,
         target: Optional[str] = None,
         method: Optional[str] = None,
         **kwargs: Any,
     ) -> css.job.Job:
-        """Create a new job to run the given circuit.
+        """Creates a new job to run the given circuit(s).
 
         Args:
-            circuit: The circuit to run.
+            circuits: The circuit or list of circuits to run.
             repetitions: The number of times to repeat the circuit. Defaults to 1000.
             target: Where to run the job.
-            method: Execution method.
+            method: The optional execution method.
             kwargs: Other optimization and execution parameters.
 
         Returns:
             A `css.Job` which can be queried for status or results.
 
         Raises:
-            ValueError: If `circuit` is not a valid `cirq.Circuit` or has no measurements to sample.
+            ValueError: If there are no measurements in `circuits`.
             SuperstaqServerException: If there was an error accessing the API.
         """
-        css.validation.validate_cirq_circuits(circuit)
-        if not isinstance(circuit, cirq.Circuit):
-            raise ValueError("This endpoint does not support the submission of multiple circuits.")
-
-        if not circuit.has_measurements():
-            # TODO: only raise if the run method actually requires samples (and not for e.g. a
-            # statevector simulation)
-            raise ValueError("Circuit has no measurements to sample.")
-
-        serialized_circuits = css.serialization.serialize_circuits(circuit)
+        css.validation.validate_cirq_circuits(circuits, require_measurements=True)
+        serialized_circuits = css.serialization.serialize_circuits(circuits)
 
         target = self._resolve_target(target)
-
         result = self._client.create_job(
             serialized_circuits={"cirq_circuits": serialized_circuits},
             repetitions=repetitions,
@@ -278,9 +365,13 @@ class Service(gss.service.Service):
             method=method,
             **kwargs,
         )
+        # Make a virtual job_id that aggregates all of the individual jobs
+        # into a single one that comma-separates the individual jobs.
+        job_id = ",".join(result["job_ids"])
+
         # The returned job does not have fully populated fields; they will be filled out by
         # when the new job's status is first queried
-        return self.get_job(result["job_ids"][0])
+        return self.get_job(job_id=job_id)
 
     def get_job(self, job_id: str) -> css.job.Job:
         """Gets a job that has been created on the Superstaq API.
@@ -297,37 +388,13 @@ class Service(gss.service.Service):
         """
         return css.job.Job(client=self._client, job_id=job_id)
 
-    def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
-        """Get the querying user's account balance in USD.
-
-        Args:
-            pretty_output: Whether to return a pretty string or a float of the balance.
-
-        Returns:
-            If pretty_output is `True`, returns the balance as a nicely formatted string ($-prefix,
-                commas on LHS every three digits, and two digits after period). Otherwise, simply
-                returns a float of the balance.
-        """
-        balance = self._client.get_balance()["balance"]
-        if pretty_output:
-            return f"${balance:,.2f}"
-        return balance
-
-    def get_targets(self) -> Dict[str, List[str]]:
-        """Gets a list of available, unavailable, and retired targets.
-
-        Returns:
-            A list of Superstaq targets.
-        """
-        return self._client.get_targets()["superstaq_targets"]
-
     def resource_estimate(
         self, circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]], target: Optional[str] = None
     ) -> Union[ResourceEstimate, List[ResourceEstimate]]:
         """Generates resource estimates for circuit(s).
 
         Args:
-            circuits:  The circuit(s) to generate resource estimate.
+            circuits: The circuit(s) to generate resource estimate.
             target: String of target representing target device.
 
         Returns:
@@ -511,6 +578,7 @@ class Service(gss.service.Service):
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
         num_qubits: Optional[int] = None,
+        error_rates: Optional[SupportsItems[tuple[int, ...], float]] = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
@@ -537,6 +605,12 @@ class Service(gss.service.Service):
                 fixed maximally-entangling rotations.
             num_qubits: An optional number of qubits that should be initialized in the returned
                 Jaqal program(s) (by default this will be determined from the input circuits).
+            error_rates: Optional dictionary assigning relative error rates to pairs of physical
+                qubits, in the form `{<qubit_indices>: <error_rate>, ...}` where `<qubit_indices>`
+                is a tuple physical qubit indices (ints) and `<error_rate>` is a relative error rate
+                for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`) . If
+                provided, Superstaq will attempt to map the circuit to minimize the total error on
+                each qubit. Omitted qubit pairs are assumed to be error-free.
             kwargs: Other desired qscout_compile options.
 
         Returns:
@@ -565,9 +639,27 @@ class Service(gss.service.Service):
             **kwargs,
         }
 
-        if num_qubits is not None:
-            gss.validation.validate_integer_param(num_qubits)
-            options_dict["num_qubits"] = num_qubits
+        if circuits_is_list:
+            max_circuit_qubits = max(cirq.num_qubits(c) for c in circuits)
+        else:
+            max_circuit_qubits = cirq.num_qubits(circuits)
+
+        if error_rates is not None:
+            error_rates_list = list(error_rates.items())
+            options_dict["error_rates"] = error_rates_list
+
+            # Use error rate dictionary to set `num_qubits`, if not already specified
+            if num_qubits is None:
+                max_index = max(q for qs, _ in error_rates_list for q in qs)
+                num_qubits = max_index + 1
+
+        elif num_qubits is None:
+            num_qubits = max_circuit_qubits
+
+        gss.validation.validate_integer_param(num_qubits)
+        if num_qubits < max_circuit_qubits:
+            raise ValueError(f"At least {max_circuit_qubits} qubits are required for this input.")
+        options_dict["num_qubits"] = num_qubits
 
         json_dict = self._client.qscout_compile(
             {
@@ -624,6 +716,8 @@ class Service(gss.service.Service):
         self,
         circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
         target: str = "ibmq_qasm_simulator",
+        dynamical_decoupling: bool = True,
+        dd_strategy: str = "static_context_aware",
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) to the target IBMQ device.
@@ -634,11 +728,14 @@ class Service(gss.service.Service):
         Args:
             circuits: The circuit(s) to compile.
             target: String of target IBMQ device.
+            dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
+            dd_strategy: Method to use for placing dynamical decoupling operations; either
+                "dynamic", "static", or "static_context_aware" (default).
             kwargs: Other desired `ibmq_compile` options.
 
         Returns:
             Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s), and whose
-            .pulse_sequence(s) attribute contains the corresponding pulse schedule(s) (when
+            .pulse_gate_circuit(s) attribute contains the corresponding pulse schedule(s) (when
             available).
 
         Raises:
@@ -647,6 +744,9 @@ class Service(gss.service.Service):
         target = self._resolve_target(target)
         if not target.startswith("ibmq_"):
             raise ValueError(f"{target!r} is not a valid IBMQ target.")
+
+        options = {"dynamical_decoupling": dynamical_decoupling, "dd_strategy": dd_strategy}
+        kwargs.update(options)
 
         return self.compile(circuits, target=target, **kwargs)
 
@@ -693,8 +793,10 @@ class Service(gss.service.Service):
         request_json = {
             "cirq_circuits": serialized_circuits,
             "target": target,
-            "options": cirq.to_json(kwargs),
         }
+        options = {**self._client.client_kwargs, **kwargs}
+        if options:
+            request_json["options"] = cirq.to_json(options)
         return request_json
 
     def supercheq(
@@ -803,6 +905,87 @@ class Service(gss.service.Service):
                 through `submit_dfe` have not finished running.
         """
         return self._client.process_dfe(ids)
+
+    def submit_aces(
+        self,
+        target: str,
+        qubits: Sequence[int],
+        shots: int,
+        num_circuits: int,
+        mirror_depth: int,
+        extra_depth: int,
+        method: Optional[str] = None,
+        noise: Optional[Union[str, cirq.NoiseModel]] = None,
+        error_prob: Optional[Union[float, Tuple[float, float, float]]] = None,
+        tag: Optional[str] = None,
+        lifespan: Optional[int] = None,
+    ) -> str:
+        """Submits the jobs to characterize `target` through the ACES protocol.
+
+        The following gate eigenvalues are eestimated. For each qubit in the device, we consider
+        six Clifford gates. These are given by the XZ maps: XZ, ZX, -YZ, -XY, ZY, YX. For each of
+        these gates, three eigenvalues are returned (X, Y, Z, in that order). Then, the two-qubit
+        gate considered here is the CZ in linear connectivity (each qubit n with n + 1). For this
+        gate, 15 eigenvalues are considered: XX, XY, XZ, XI, YX, YY, YZ, YI, ZX, ZY, ZZ, ZI, IX, IY
+        IZ, in that order.
+
+        If n qubits are characterized, the first 18 * n entries of the list returned by
+        `process_aces` will contain the  single-qubit eigenvalues for each gate in the order above.
+        After all the single-qubit eigenvalues, the next 15 * (n - 1) entries will contain for the
+        CZ connections, in ascending order.
+
+        The protocol in detail can be found in: https://arxiv.org/abs/2108.05803.
+
+        Args:
+            target: The device target to characterize.
+            qubits: A list with the qubit indices to characterize.
+            shots: How many shots to use per circuit submitted.
+            num_circuits: How many random circuits to use in the protocol.
+            mirror_depth: The half-depth of the mirror portion of the random circuits.
+            extra_depth: The depth of the fully random portion of the random circuits.
+            method: Which type of method to execute the circuits with.
+            noise: Noise model to simulate the protocol with. It can be either a string or a
+                `cirq.NoiseModel`. Valid strings are "symmetric_depolarize", "phase_flip",
+                "bit_flip" and "asymmetric_depolarize".
+            error_prob: The error probabilities if a string was passed to `noise`.
+                * For "asymmetric_depolarize", `error_prob` will be a three-tuple with the error
+                rates for the X, Y, Z gates in that order. So, a valid argument would be
+                `error_prob = (0.1, 0.1, 0.1)`. Notice that these values must add up to less than
+                or equal to 1.
+                * For the other channels, `error_prob` is one number less than or equal to 1, e.g.,
+                `error_prob = 0.1`.
+            tag: Tag for all jobs submitted for this protocol.
+            lifespan: How long to store the jobs submitted for in days (only works with right
+                permissions).
+
+        Returns:
+            A string with the job id for the ACES job created.
+
+        Raises:
+            ValueError: If the target or noise model is not valid.
+            SuperstaqServerException: If the request fails.
+        """
+        noise_dict: Dict[str, object] = {}
+        if isinstance(noise, str):
+            noise_dict["type"] = noise
+            noise_dict["params"] = (
+                (error_prob,) if isinstance(error_prob, numbers.Number) else error_prob
+            )
+        elif isinstance(noise, cirq.NoiseModel):
+            noise_dict["cirq_noise_model"] = cirq.to_json(noise)
+
+        return self._client.submit_aces(
+            target=target,
+            qubits=qubits,
+            shots=shots,
+            num_circuits=num_circuits,
+            mirror_depth=mirror_depth,
+            extra_depth=extra_depth,
+            method=method,
+            noise=noise_dict,
+            tag=tag,
+            lifespan=lifespan,
+        )
 
     def target_info(self, target: str) -> Dict[str, Any]:
         """Returns information about device specified by `target`.

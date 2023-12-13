@@ -111,12 +111,14 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "initial_logical_to_physicals": "[[[0, 1]]]",
         "final_logical_to_physicals": "[[[1, 4]]]",
         "state_jp": gss.serialization.serialize({}),
         "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     }
     out = backend.compile(qc)
     assert out.circuit == qc
+    assert out.initial_logical_to_physical == {0: 1}
     assert out.final_logical_to_physical == {1: 4}
     assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
     mock_post.assert_called_with(
@@ -126,11 +128,13 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         json={
             "qiskit_circuits": qss.serialize_circuits(qc),
             "target": "aqt_keysight_qpu",
+            "options": "{}",
         },
     )
 
     out = backend.compile([qc], atol=1e-2)
     assert out.circuits == [qc]
+    assert out.initial_logical_to_physicals == [{0: 1}]
     assert out.final_logical_to_physicals == [{1: 4}]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
     mock_post.assert_called_with(
@@ -146,6 +150,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
+        "initial_logical_to_physicals": "[[], []]",
         "final_logical_to_physicals": "[[], []]",
         "state_jp": gss.serialization.serialize({}),
         "pulse_lists_jp": gss.serialization.serialize([[[]], [[]]]),
@@ -153,6 +158,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     matrix = qiskit.circuit.library.CRXGate(1.23).to_matrix()
     out = backend.compile([qc, qc], gate_defs={"CRX": matrix})
     assert out.circuits == [qc, qc]
+    assert out.initial_logical_to_physicals == [{}, {}]
     assert out.final_logical_to_physicals == [{}, {}]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
     mock_post.assert_called_with(
@@ -178,6 +184,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     # AQT ECA compile
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
         "state_jp": gss.serialization.serialize({}),
         "pulse_lists_jp": gss.serialization.serialize([[[]]]),
@@ -185,12 +192,14 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
     out = backend.compile(qc, num_eca_circuits=1, random_seed=1234, atol=1e-2, test_options="yes")
     assert out.circuits == [qc]
+    assert out.initial_logical_to_physicals == [{}]
     assert out.final_logical_to_physicals == [{}]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
     # AQT ECA compile
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
         "state_jp": gss.serialization.serialize({}),
         "pulse_lists_jp": gss.serialization.serialize([[[]]]),
@@ -198,6 +207,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
 
     out = backend.compile(qc, num_eca_circuits=1, random_seed=1234, atol=1e-2, test_options="yes")
     assert out.circuits == [qc]
+    assert out.initial_logical_to_physicals == [{}]
     assert out.final_logical_to_physicals == [{}]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
 
@@ -210,17 +220,28 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
 
+    initial_logical_to_physical = {4: 4, 5: 5}
     final_logical_to_physical = {0: 4, 1: 5}
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "initial_logical_to_physicals": "[[[4, 4], [5, 5]]]",
         "final_logical_to_physicals": "[[[0, 4], [1, 5]]]",
         "pulses": gss.serialization.serialize([DEFAULT]),
     }
     assert backend.compile(
-        qiskit.QuantumCircuit(), test_options="yes"
-    ) == qss.compiler_output.CompilerOutput(qc, final_logical_to_physical, pulse_sequences=DEFAULT)
+        qiskit.QuantumCircuit(), dd_strategy="static", test_options="yes"
+    ) == qss.compiler_output.CompilerOutput(
+        qc, initial_logical_to_physical, final_logical_to_physical, pulse_sequences=DEFAULT
+    )
+
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "dd_strategy": "static",
+        "dynamical_decoupling": True,
+        "test_options": "yes",
+    }
+
     assert backend.compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
-        [qc], [final_logical_to_physical], pulse_sequences=[DEFAULT]
+        [qc], [initial_logical_to_physical], [final_logical_to_physical], pulse_sequences=[DEFAULT]
     )
 
     with pytest.raises(ValueError, match="'ibmq_jakarta_qpu' is not a valid AQT target."):
@@ -245,27 +266,33 @@ def test_qscout_compile(
         measure_all
         """
     )
+    init_logical_to_physical = {0: 1}
     logical_to_physical = {0: 13}
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "initial_logical_to_physicals": json.dumps([list(init_logical_to_physical.items())]),
         "final_logical_to_physicals": json.dumps([list(logical_to_physical.items())]),
         "jaqal_programs": [jaqal_program],
     }
     out = backend.compile(qc, test_options="yes")
     assert out.circuit == qc
+    assert out.initial_logical_to_physical == init_logical_to_physical
     assert out.final_logical_to_physical == logical_to_physical
 
     out = backend.compile([qc])
     assert out.circuits == [qc]
+    assert out.initial_logical_to_physicals == [{0: 1}]
     assert out.final_logical_to_physicals == [{0: 13}]
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
+        "initial_logical_to_physicals": json.dumps([[(0, 1)], [(0, 1)]]),
         "final_logical_to_physicals": json.dumps([[(0, 13)], [(0, 13)]]),
         "jaqal_programs": [jaqal_program, jaqal_program],
     }
     out = fake_superstaq_provider.qscout_compile([qc, qc])
     assert out.circuits == [qc, qc]
+    assert out.initial_logical_to_physicals == [{0: 1}, {0: 1}]
     assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
 
 
@@ -279,10 +306,12 @@ def test_compile(mock_post: MagicMock) -> None:
     qc.h(0)
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits([qc]),
+        "initial_logical_to_physicals": json.dumps([[(0, 0)]]),
         "final_logical_to_physicals": json.dumps([[(0, 0)]]),
     }
     out = backend.compile([qc], test_options="yes")
     assert out.circuits == [qc]
+    assert out.initial_logical_to_physicals == [{0: 0}]
     assert out.final_logical_to_physicals == [{0: 0}]
 
 
@@ -300,11 +329,13 @@ def test_aces(mock_post: MagicMock) -> None:
     mock_post.return_value.json = lambda: "id1"
     assert (
         backend.submit_aces(
-            qubits=qiskit.QuantumRegister(2),
+            qubits=[0, 1],
             shots=100,
             num_circuits=10,
             mirror_depth=5,
             extra_depth=5,
+            noise="phase_flip",
+            error_prob=0.05,
         )
         == "id1"
     )

@@ -13,8 +13,8 @@
 # that they have been altered from the originals.
 from __future__ import annotations
 
-import json
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+import numbers
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -23,12 +23,15 @@ import qiskit
 
 import qiskit_superstaq as qss
 
+if TYPE_CHECKING:
+    from _typeshed import SupportsItems
+
 
 class SuperstaqBackend(qiskit.providers.BackendV1):
     """This class represents a Superstaq backend."""
 
     def __init__(self, provider: qss.SuperstaqProvider, target: str) -> None:
-        """Initializes a SuperstaqBackend.
+        """Initializes a `SuperstaqBackend`.
 
         Args:
             provider: Provider for a Superstaq backend.
@@ -50,6 +53,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             "memory": False,
             "max_shots": None,
             "coupling_map": None,
+            "description": f"{target_info.get('num_qubits')} qubit device",
         }
         target_info.pop("target", None)
         target_info.pop("num_qubits", None)
@@ -149,7 +153,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         """Compiles the given circuit(s) to the backend's native gateset.
 
         Args:
-            circuits: The qiskit QuantumCircuit(s) to compile.
+            circuits: The `qiskit.QuantumCircuit`(s) to compile.
             kwargs: Other desired compile options.
 
         Returns:
@@ -174,7 +178,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         request_json = self._get_compile_request_json(circuits, **kwargs)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
-        return qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
+        return qss.compiler_output.read_json(json_dict, circuits_is_list)
 
     def _get_compile_request_json(
         self,
@@ -185,12 +189,12 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         gss.validation.validate_target(self.name())
 
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
+        options = {**self._provider._client.client_kwargs, **kwargs}
         request_json = {
             "qiskit_circuits": serialized_circuits,
             "target": self.name(),
+            "options": qss.serialization.to_json(options),
         }
-        if kwargs:
-            request_json["options"] = qss.serialization.to_json(kwargs)
         return request_json
 
     def aqt_compile(
@@ -258,17 +262,23 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
     def ibmq_compile(
         self,
         circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
+        dynamical_decoupling: bool = True,
+        dd_strategy: str = "static_context_aware",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
 
         Args:
-            circuits: The qiskit QuantumCircuit(s) to compile.
+            circuits: The `qiskit.QuantumCircuit`(s) to compile.
+            dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
+            dd_strategy: Method to use for placing dynamical decoupling operations; either
+                "dynamic", "static", or "static_context_aware" (default).
             kwargs: Other desired compile options.
 
         Returns:
-            An IBMQ CompilerOutput object whose .circuit(s) attribute is an optimized qiskit
-            QuantumCircuit(s).
+            Object whose .circuit(s) attribute contains the compiled circuits(s), and whose
+            .pulse_gate_circuit(s) attribute contains the corresponding pulse schedule(s) (when
+            available).
 
         Raises:
             ValueError: If this is not an IBMQ backend.
@@ -276,27 +286,14 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         if not self.name().startswith("ibmq_"):
             raise ValueError(f"{self.name()!r} is not a valid IBMQ target.")
 
-        request_json = self._get_compile_request_json(circuits, **kwargs)
+        options: Dict[str, Any] = {**kwargs}
+
+        options["dynamical_decoupling"] = dynamical_decoupling
+        options["dd_strategy"] = dd_strategy
+        request_json = self._get_compile_request_json(circuits, **options)
+        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
-        compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
-
-        pulses = None
-        if "pulses" in json_dict:
-            pulses = gss.serialization.deserialize(json_dict["pulses"])
-        final_logical_to_physicals: List[Dict[int, int]] = list(
-            map(dict, json.loads(json_dict["final_logical_to_physicals"]))
-        )
-        if isinstance(circuits, qiskit.QuantumCircuit):
-            pulse_sequence = None if pulses is None else pulses[0]
-            return qss.compiler_output.CompilerOutput(
-                compiled_circuits[0], final_logical_to_physicals[0], pulse_sequences=pulse_sequence
-            )
-
-        return qss.compiler_output.CompilerOutput(
-            compiled_circuits,
-            final_logical_to_physicals,
-            pulse_sequences=pulses,
-        )
+        return qss.compiler_output.read_json(json_dict, circuits_is_list)
 
     def qscout_compile(
         self,
@@ -305,6 +302,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
         num_qubits: Optional[int] = None,
+        error_rates: Optional[SupportsItems[tuple[int, ...], float]] = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at Sandia
@@ -330,10 +328,16 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
                 fixed maximally-entangling rotations.
             num_qubits: An optional number of qubits that should be present in the compiled
                 circuit(s) and Jaqal program(s) (otherwise this will be determined from the input).
+            error_rates: Optional dictionary assigning relative error rates to pairs of physical
+                qubits, in the form `{<qubit_indices>: <error_rate>, ...}` where `<qubit_indices>`
+                is a tuple physical qubit indices (ints) and `<error_rate>` is a relative error rate
+                for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`) . If
+                provided, Superstaq will attempt to map the circuit to minimize the total error on
+                each qubit.
             kwargs: Other desired qscout_compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains optimized `qiskit QuantumCircuit`(s), and
+            Object whose .circuit(s) attribute contains optimized `qiskit.QuantumCircuit`(s), and
             `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
 
         Raises:
@@ -347,18 +351,37 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
             raise ValueError("base_entangling_gate must be 'xx', 'zz', 'sxx', or 'szz'")
 
+        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
+
         options = {
             **kwargs,
             "mirror_swaps": mirror_swaps,
             "base_entangling_gate": base_entangling_gate,
         }
 
-        if num_qubits is not None:
-            gss.validation.validate_integer_param(num_qubits)
-            options["num_qubits"] = num_qubits
+        if isinstance(circuits, qiskit.QuantumCircuit):
+            max_circuit_qubits = circuits.num_qubits
+        else:
+            max_circuit_qubits = max(c.num_qubits for c in circuits)
+
+        if error_rates is not None:
+            error_rates_list = list(error_rates.items())
+            options["error_rates"] = error_rates_list
+
+            # Use error rate dictionary to set `num_qubits`, if not already specified
+            if num_qubits is None:
+                max_index = max(q for qs, _ in error_rates_list for q in qs)
+                num_qubits = max_index + 1
+
+        elif num_qubits is None:
+            num_qubits = max_circuit_qubits
+
+        gss.validation.validate_integer_param(num_qubits)
+        if num_qubits < max_circuit_qubits:
+            raise ValueError(f"At least {max_circuit_qubits} qubits are required for this input.")
+        options["num_qubits"] = num_qubits
 
         request_json = self._get_compile_request_json(circuits, **options)
-        circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.qscout_compile(request_json)
         return qss.compiler_output.read_json_qscout(json_dict, circuits_is_list)
 
@@ -374,7 +397,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         """Compiles and optimizes the given circuit(s) for CQ devices.
 
         Args:
-            circuits: The qiskit QuantumCircuit(s) to compile.
+            circuits: The `qiskit.QuantumCircuit`(s) to compile.
             grid_shape: Optional fixed dimensions for the rectangular qubit grid (by default the
                 actual qubit layout will be pulled from the hardware provider).
             control_radius: The radius with which qubits remain connected
@@ -383,7 +406,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             kwargs: Other desired compile options.
 
         Returns:
-            An CQ CompilerOutput object.
+            A CQ `CompilerOutput` object.
 
         Raises:
             ValueError: If this is not a CQ backend.
@@ -400,7 +423,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         )
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
-        return qss.compiler_output.read_json_only_circuits(json_dict, circuits_is_list)
+        return qss.compiler_output.read_json(json_dict, circuits_is_list)
 
     def target_info(self) -> Dict[str, Any]:
         """Returns information about this backend.
@@ -419,8 +442,8 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             circuits: The circuit(s) used during resource estimation.
 
         Returns:
-            ResourceEstimate(s) containing resource costs (after compilation) for running circuit(s)
-            on this backend.
+            `ResourceEstimate`(s) containing resource costs (after compilation) for running
+            circuit(s) on this backend.
         """
         request_json = self._get_compile_request_json(circuits)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
@@ -436,46 +459,82 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
     def submit_aces(
         self,
-        qubits: qiskit.QuantumRegister,
+        qubits: Sequence[int],
         shots: int,
         num_circuits: int,
         mirror_depth: int,
         extra_depth: int,
-        **kwargs: Any,
+        method: Optional[str] = None,
+        noise: Optional[str] = None,
+        error_prob: Optional[Union[float, Tuple[float, float, float]]] = None,
+        tag: Optional[str] = None,
+        lifespan: Optional[int] = None,
     ) -> str:
         """Submits the jobs to characterize this target through the ACES protocol.
 
+        The following gate eigenvalues are eestimated. For each qubit in the device, we consider
+        six Clifford gates. These are given by the XZ maps: XZ, ZX, -YZ, -XY, ZY, YX. For each of
+        these gates, three eigenvalues are returned (X, Y, Z, in that order). Then, the two-qubit
+        gate considered here is the CZ in linear connectivity (each qubit n with n + 1). For this
+        gate, 15 eigenvalues are considered: XX, XY, XZ, XI, YX, YY, YZ, YI, ZX, ZY, ZZ, ZI, IX, IY
+        IZ, in that order.
+
+        If n qubits are characterized, the first 18 * n entries of the list returned by
+        `process_aces` will contain the  single-qubit eigenvalues for each gate in the order above.
+        After all the single-qubit eigenvalues, the next 15 * (n - 1) entries will contain for the
+        CZ connections, in ascending order.
+
+        The protocol in detail can be found in: https://arxiv.org/abs/2108.05803.
+
         Args:
-            qubits: Register of qubits to characterize.
+            qubits: A list with the qubit indices to characterize.
             shots: How many shots to use per circuit submitted.
             num_circuits: How many random circuits to use in the protocol.
             mirror_depth: The half-depth of the mirror portion of the random circuits.
             extra_depth: The depth of the fully random portion of the random circuits.
-            kwargs: Other execution parameters.
-                - tag: Tag for all jobs submitted for this protocol.
-                - lifespan: How long to store the jobs submitted for in days (only works with right
+            method: Which type of method to execute the circuits with.
+            noise: Noise model to simulate the protocol with. Valid strings are
+                "symmetric_depolarize", "phase_flip", "bit_flip" and "asymmetric_depolarize".
+            error_prob: The error probabilities if a string was passed to `noise`.
+                * For "asymmetric_depolarize", `error_prob` will be a three-tuple with the error
+                rates for the X, Y, Z gates in that order. So, a valid argument would be
+                `error_prob = (0.1, 0.1, 0.1)`. Notice that these values must add up to less than
+                or equal to 1.
+                * For the other channels, `error_prob` is one number less than or equal to 1, e.g.,
+                `error_prob = 0.1`.
+            tag: Tag for all jobs submitted for this protocol.
+            lifespan: How long to store the jobs submitted for in days (only works with right
                 permissions).
-                - method: Which type of method to execute the circuits with.
 
         Returns:
             A string with the job id for the ACES job created.
 
         Raises:
-            ValueError: If any the target passed are not valid.
-            SuperstaqServerException: if the request fails.
+            ValueError: If the target or noise model is not valid.
+            SuperstaqServerException: If the request fails.
         """
+        noise_dict: Dict[str, object] = {}
+        if noise:
+            noise_dict["type"] = noise
+            noise_dict["params"] = (
+                (error_prob,) if isinstance(error_prob, numbers.Number) else error_prob
+            )
+
         return self._provider._client.submit_aces(
             target=self.name(),
-            qubits=[q._index for q in qubits],
+            qubits=qubits,
             shots=shots,
             num_circuits=num_circuits,
             mirror_depth=mirror_depth,
             extra_depth=extra_depth,
-            **kwargs,
+            method=method,
+            noise=noise_dict,
+            tag=tag,
+            lifespan=lifespan,
         )
 
     def process_aces(self, job_id: str) -> List[float]:
-        """Process the jobs submitted by `submit_aces` and get the gate eigenvalues.
+        """Process a job submitted through `submit_aces`.
 
         Args:
             job_id: The job id returned by `submit_aces`.

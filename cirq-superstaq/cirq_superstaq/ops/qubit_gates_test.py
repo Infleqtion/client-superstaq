@@ -774,8 +774,8 @@ def test_parallel_gates_equivalence_groups() -> None:
     ]
     for permuted_qubits in itertools.permutations(operation.qubits):
         if permuted_qubits in equivalent_targets:
+            # Don't try `cirq.approx_eq` here due to https://github.com/quantumlib/Cirq/issues/6376
             assert operation == gate(*permuted_qubits)
-            assert cirq.approx_eq(operation, gate(*permuted_qubits))
             assert cirq.equal_up_to_global_phase(operation, gate(*permuted_qubits))
         else:
             assert operation != gate(*permuted_qubits)
@@ -803,8 +803,8 @@ def test_parallel_gates_equivalence_groups_nonadjacent() -> None:
     ]
     for permuted_qubits in itertools.permutations(operation.qubits):
         if permuted_qubits in equivalent_targets:
+            # Don't try `cirq.approx_eq` here due to https://github.com/quantumlib/Cirq/issues/6376
             assert operation == gate(*permuted_qubits)
-            assert cirq.approx_eq(operation, gate(*permuted_qubits))
             assert cirq.equal_up_to_global_phase(operation, gate(*permuted_qubits))
         else:
             assert operation != gate(*permuted_qubits)

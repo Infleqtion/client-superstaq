@@ -8,6 +8,7 @@ import pytest
 import qubovert as qv
 
 import general_superstaq as gss
+from general_superstaq.testing import RETURNED_TARGETS, TARGET_LIST
 
 
 def test_service_get_balance() -> None:
@@ -16,7 +17,7 @@ def test_service_get_balance() -> None:
     mock_client.get_balance.return_value = {"balance": 12345.6789}
     service._client = mock_client
 
-    assert service.get_balance() == "$12,345.68"
+    assert service.get_balance() == "12,345.68 credits"
     assert service.get_balance(pretty_output=False) == 12345.6789
 
 
@@ -81,7 +82,7 @@ def test_update_user_role(
             {"keys": ["1"], "value": 1.0},
             {"keys": ["0", "1"], "value": -2.0},
         ],
-        "target": "ss_example_qpu",
+        "target": "toshiba_bifurcation_simulator",
         "shots": 10,
         "method": "dry-run",
         "max_solutions": 13,
@@ -91,7 +92,7 @@ def test_submit_qubo(
     mock_post_request: mock.MagicMock,
 ) -> None:
     example_qubo = qv.QUBO({(0,): 1.0, (1,): 1.0, (0, 1): -2.0})
-    target = "ss_example_qpu"
+    target = "toshiba_bifurcation_simulator"
     repetitions = 10
 
     service = gss.service.Service(remote_host="http://example.com", api_key="key")
@@ -101,33 +102,11 @@ def test_submit_qubo(
             {"keys": ["1"], "value": 1.0},
             {"keys": ["0", "1"], "value": -2.0},
         ],
-        "target": "ss_example_qpu",
+        "target": "toshiba_bifurcation_simulator",
         "shots": 10,
         "method": "dry-run",
         "max_solutions": 13,
     }
-
-
-@mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
-    return_value="Your IBMQ account token has been updated",
-)
-def test_ibmq_set_token(
-    mock_post_request: mock.MagicMock,
-) -> None:
-    service = gss.service.Service(remote_host="http://example.com", api_key="key")
-    assert service.ibmq_set_token("valid token") == "Your IBMQ account token has been updated"
-
-
-@mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
-    return_value="Your CQ account token has been updated",
-)
-def test_cq_set_token(
-    mock_post_request: mock.MagicMock,
-) -> None:
-    service = gss.service.Service(remote_host="http://example.com", api_key="key")
-    assert service.cq_set_token("valid token") == "Your CQ account token has been updated"
 
 
 @mock.patch(
@@ -176,6 +155,15 @@ def test_service_aqt_upload_configs(
     with mock.patch.dict("sys.modules", {"yaml": None}):
         with pytest.raises(ModuleNotFoundError, match="PyYAML"):
             _ = service.aqt_upload_configs({}, {})
+
+
+@mock.patch(
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
+    return_value={"superstaq_targets": TARGET_LIST},
+)
+def test_service_get_targets(mock_get_request: mock.MagicMock) -> None:
+    service = gss.service.Service(api_key="key", remote_host="http://example.com")
+    assert service.get_targets() == RETURNED_TARGETS
 
 
 @mock.patch(
@@ -250,6 +238,8 @@ def test_aces(
             num_circuits=10,
             mirror_depth=5,
             extra_depth=5,
+            noise="bit_flip",
+            error_prob=0.1,
         )
         == "id1"
     )

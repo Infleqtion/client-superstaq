@@ -33,6 +33,7 @@ from .qudit_gates import (
     QutritZ1PowGate,
     QutritZ2,
     QutritZ2PowGate,
+    VirtualZPowGate,
     qubit_subspace_op,
     qudit_swap_op,
 )
@@ -64,6 +65,7 @@ __all__ = [
     "RGate",
     "StrippedCZGate",
     "SWAP3",
+    "VirtualZPowGate",
     "ZX",
     "ZXPowGate",
     "ZZSwapGate",
