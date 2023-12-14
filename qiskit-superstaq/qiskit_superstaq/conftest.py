@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import general_superstaq as gss
 import pytest
 import qiskit
