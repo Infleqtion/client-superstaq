@@ -4,7 +4,7 @@ import io
 import json
 import re
 import warnings
-from collections.abc import Sequence, Callable
+from collections.abc import Callable, Sequence
 from typing import TypeVar
 
 import general_superstaq as gss
