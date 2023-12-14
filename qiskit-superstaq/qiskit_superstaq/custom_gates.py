@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import functools
-from typing import Callable, Dict, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -505,50 +505,3 @@ class AQTiCCXGate(iCCXGate):
 
 
 AQTiToffoliGate = AQTiCCXGate
-
-
-_custom_gate_resolvers: Dict[str, Callable[..., qiskit.circuit.Gate]] = {
-    "acecr": lambda rads: AceCR(rads=rads),
-    "acecr_rx": lambda *rads: AceCR(*rads),
-    "zzswap": ZZSwapGate,
-    "ix": iXGate,
-    "ixdg": iXdgGate,
-    "iccx": iCCXGate,
-    "iccx_o0": AQTiCCXGate,
-    "iccx_o1": lambda: iCCXGate(ctrl_state="01"),
-    "iccx_o2": lambda: iCCXGate(ctrl_state="10"),
-    "iccxdg": iCCXdgGate,
-    "iccxdg_o0": lambda: iCCXdgGate(ctrl_state="00"),
-    "iccxdg_o1": lambda: iCCXdgGate(ctrl_state="01"),
-    "iccxdg_o2": lambda: iCCXdgGate(ctrl_state="10"),
-}
-
-
-def custom_resolver(gate: qiskit.circuit.Instruction) -> Optional[qiskit.circuit.Gate]:
-    """Recovers a custom gate type from a generic `qiskit.circuit.Gate`.
-
-    The resolution is done using `gate.definition.name` rather than `gate.name`, as the former
-    is set by all `qiskit-superstaq` custom gates and the latter may be modified by calls
-    such as `qiskit.QuantumCircuit.qasm()`.
-
-    Args:
-        gate: The input gate instruction from which to recover a custom gate type.
-
-    Returns:
-        A `qiskit.circuit.Gate` if the gate definition name is in the `_custom_gate_resolver`
-        dictionary (or the definition name is "parallel_gates").
-    """
-
-    if gate.definition and gate.definition.name == "parallel_gates":
-        component_gates = [custom_resolver(inst) or inst for inst, _, _ in gate.definition]
-        return ParallelGates(*component_gates, label=gate.label)
-
-    if gate.definition and gate.definition.name in _custom_gate_resolvers:
-        new_gate = _custom_gate_resolvers[gate.definition.name](*gate.params)
-    elif gate.name in _custom_gate_resolvers:
-        new_gate = _custom_gate_resolvers[gate.name](*gate.params)
-    else:
-        return None
-
-    new_gate.label = gate.label
-    return new_gate
