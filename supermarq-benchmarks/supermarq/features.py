@@ -33,7 +33,7 @@ def compute_liveness(circuit: cirq.Circuit) -> float:
         The value of the liveness feature for this circuit.
     """
     return supermarq.converters.compute_liveness_with_qiskit(
-        (supermarq.converters.cirq_to_qiskit(circuit))
+        supermarq.converters.cirq_to_qiskit(circuit)
     )
 
 

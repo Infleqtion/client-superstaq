@@ -1,4 +1,5 @@
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from collections.abc import Iterable
+from typing import Any
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -11,7 +12,7 @@ from sklearn.linear_model import LinearRegression
 
 
 def plot_results(
-    scores: List[float], tick_labels: List[str], savefn: Optional[str] = None, show: bool = True
+    scores: list[float], tick_labels: list[str], savefn: str | None = None, show: bool = True
 ) -> None:
     """Plot a simple bar chart of the benchmark results.
 
@@ -47,9 +48,9 @@ def plot_results(
 
 
 def plot_volumetric_results(
-    benchmark_data: Iterable[Tuple[int, int, float]],
-    savefn: Optional[str] = None,
-    title: Optional[str] = None,
+    benchmark_data: Iterable[tuple[int, int, float]],
+    savefn: str | None = None,
+    title: str | None = None,
     show: bool = True,
     xmax: float = 60,
     ymax: float = 7,
@@ -108,11 +109,11 @@ def plot_volumetric_results(
 
 
 def plot_correlations(
-    benchmark_features: Dict[str, List[float]],
-    device_scores: Union[Dict[str, float], Iterable[Dict[str, float]]],
-    feature_labels: List[str],
-    device_name: Union[str, List[str]],
-    savefn: Optional[str] = None,
+    benchmark_features: dict[str, list[float]],
+    device_scores: dict[str, float] | Iterable[dict[str, float]],
+    feature_labels: list[str],
+    device_name: str | list[str],
+    savefn: str | None = None,
     show: bool = True,
 ) -> None:
     """Plot a correlation heatmap of the features for one or multiple devices.
@@ -130,7 +131,7 @@ def plot_correlations(
     """
 
     temp_correlations = []
-    if isinstance(device_scores, Dict):
+    if isinstance(device_scores, dict):
         device_scores = [device_scores]
     for cur_device_scores in device_scores:
         device_correlations = []
@@ -179,11 +180,11 @@ def plot_correlations(
 
 
 def plot_benchmark(
-    data: List[Union[str, List[str], List[List[float]]]],
+    data: list[str | list[str] | list[list[float]]],
     show: bool = True,
-    savefn: Optional[str] = None,
-    spoke_labels: Optional[List[str]] = None,
-    legend_loc: Tuple[float, float] = (0.75, 0.85),
+    savefn: str | None = None,
+    spoke_labels: list[str] | None = None,
+    legend_loc: tuple[float, float] = (0.75, 0.85),
 ) -> None:
     """Create a radar plot showing the feature vectors of the given benchmarks.
 
@@ -235,12 +236,12 @@ def plot_benchmark(
 def heatmap(
     data: npt.NDArray[np.float_],
     ax: matplotlib.axes.Axes,
-    row_labels: List[str],
-    col_labels: List[str],
-    cbar_kw: Optional[Dict[str, Any]] = None,
+    row_labels: list[str],
+    col_labels: list[str],
+    cbar_kw: dict[str, Any] | None = None,
     cbarlabel: str = "",
     **kwargs: Any
-) -> Tuple[matplotlib.image.AxesImage, Any]:
+) -> tuple[matplotlib.image.AxesImage, Any]:
     """Create a heatmap from a numpy array and two lists of labels.
 
     Args:
@@ -297,12 +298,12 @@ def heatmap(
 
 def annotate_heatmap(
     im: matplotlib.image.AxesImage,
-    data: Optional[npt.NDArray[np.float_]] = None,
+    data: npt.NDArray[np.float_] | None = None,
     valfmt: Any = "{x:.2f}",
-    textcolors: Tuple[str, str] = ("black", "white"),
-    threshold: Optional[float] = None,
+    textcolors: tuple[str, str] = ("black", "white"),
+    threshold: float | None = None,
     **textkw: Any
-) -> List[matplotlib.text.Text]:
+) -> list[matplotlib.text.Text]:
     """Annotate the given heatmap.
 
     Args:
@@ -395,7 +396,7 @@ class RadarAxesMeta(PolarAxes):
 
     def fill(
         self, *args: Any, closed: bool = True, **kwargs: Any
-    ) -> List[matplotlib.patches.Polygon]:
+    ) -> list[matplotlib.patches.Polygon]:
         """Method to override fill so that line is closed by default.
 
         Args:
@@ -433,7 +434,7 @@ class RadarAxesMeta(PolarAxes):
             y = np.append(y, y[0])
             line.set_data(x, y)
 
-    def set_varlabels(self, labels: List[str]) -> None:
+    def set_varlabels(self, labels: list[str]) -> None:
         """Sets the spoke labels at the appropriate points on the radar plot.
 
         Args:

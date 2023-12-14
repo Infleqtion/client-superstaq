@@ -1,5 +1,4 @@
 import copy
-from typing import Dict, List, Tuple, Union
 
 import cirq
 import numpy as np
@@ -27,7 +26,7 @@ class VQEProxy(supermarq.benchmark.Benchmark):
         self.hamiltonian = self._gen_tfim_hamiltonian()
         self._params = self._gen_angles()
 
-    def _gen_tfim_hamiltonian(self) -> List[Tuple[str, Union[int, Tuple[int, int]], int]]:
+    def _gen_tfim_hamiltonian(self) -> list[tuple[str, int | tuple[int, int], int]]:
         r"""Generate an n-qubit Hamiltonian for a transverse-field Ising model (TFIM).
 
             $H = \sum_i^n(X_i) + \sum_i^n(Z_i Z_{i+1})$
@@ -37,7 +36,7 @@ class VQEProxy(supermarq.benchmark.Benchmark):
             $H_6 = XIIIII + IXIIII + IIXIII + IIIXII + IIIIXI + IIIIIX + ZZIIII
                   + IZZIII + IIZZII + IIIZZI + IIIIZZ + ZIIIIZ$
         """
-        hamiltonian: List[Tuple[str, Union[int, Tuple[int, int]], int]] = []
+        hamiltonian: list[tuple[str, int | tuple[int, int], int]] = []
         for i in range(self.num_qubits):
             hamiltonian.append(("X", i, 1))  # [Pauli type, qubit idx, weight]
         for i in range(self.num_qubits - 1):
@@ -45,7 +44,7 @@ class VQEProxy(supermarq.benchmark.Benchmark):
         hamiltonian.append(("ZZ", (self.num_qubits - 1, 0), 1))
         return hamiltonian
 
-    def _gen_ansatz(self, params: npt.NDArray[np.float_]) -> List[cirq.Circuit]:
+    def _gen_ansatz(self, params: npt.NDArray[np.float_]) -> list[cirq.Circuit]:
         qubits = cirq.LineQubit.range(self.num_qubits)
         z_circuit = cirq.Circuit()
 
@@ -87,7 +86,7 @@ class VQEProxy(supermarq.benchmark.Benchmark):
                 one_count += 1
         return one_count % 2
 
-    def _calc(self, bit_list: List[str], bitstr: str, probs: Dict[str, float]) -> float:
+    def _calc(self, bit_list: list[str], bitstr: str, probs: dict[str, float]) -> float:
         energy = 0.0
         for item in bit_list:
             if self._parity_ones(item) == 0:
@@ -97,7 +96,7 @@ class VQEProxy(supermarq.benchmark.Benchmark):
         return energy
 
     def _get_expectation_value_from_probs(
-        self, probs_z: Dict[str, float], probs_x: Dict[str, float]
+        self, probs_z: dict[str, float], probs_x: dict[str, float]
     ) -> float:
         avg_energy = 0.0
 
@@ -116,7 +115,7 @@ class VQEProxy(supermarq.benchmark.Benchmark):
 
         return avg_energy
 
-    def _get_opt_angles(self) -> Tuple[npt.NDArray[np.float_], float]:
+    def _get_opt_angles(self) -> tuple[npt.NDArray[np.float_], float]:
         def f(params: npt.NDArray[np.float_]) -> float:
             """The objective function to minimize.
 
@@ -147,7 +146,7 @@ class VQEProxy(supermarq.benchmark.Benchmark):
         params, _ = self._get_opt_angles()
         return params
 
-    def circuit(self) -> List[cirq.Circuit]:
+    def circuit(self) -> list[cirq.Circuit]:
         """Construct a parameterized ansatz.
 
         The counts obtained from evaluating these two circuits should be passed to `score` in the
@@ -159,7 +158,7 @@ class VQEProxy(supermarq.benchmark.Benchmark):
         """
         return self._gen_ansatz(self._params)
 
-    def score(self, counts: List[Dict[str, float]]) -> float:
+    def score(self, counts: list[dict[str, float]]) -> float:
         """Compare the average energy measured by the experiments to the ideal value.
 
         The ideal value is obtained via noiseless simulation. In principle the ideal value can be

@@ -1,4 +1,4 @@
-from typing import Dict, Iterator, List
+from collections.abc import Iterator
 
 import cirq
 from qiskit.quantum_info import hellinger_fidelity
@@ -19,10 +19,10 @@ class PhaseCode(Benchmark):
         A `cirq.Circuit` for the phase-flip error correcting code.
     """
 
-    def __init__(self, num_data_qubits: int, num_rounds: int, phase_state: List[int]) -> None:
+    def __init__(self, num_data_qubits: int, num_rounds: int, phase_state: list[int]) -> None:
         if len(phase_state) != num_data_qubits:
             raise ValueError("The length of `phase_state` must match the number of data qubits.")
-        if not isinstance(phase_state, List):
+        if not isinstance(phase_state, list):
             raise ValueError("`phase_state` must be a list[int].")
         else:
             if not set(phase_state).issubset({0, 1}):
@@ -32,7 +32,7 @@ class PhaseCode(Benchmark):
         self.phase_state = phase_state
 
     def _measurement_round_cirq(
-        self, qubits: List[cirq.LineQubit], round_idx: int
+        self, qubits: list[cirq.LineQubit], round_idx: int
     ) -> Iterator[cirq.Operation]:
         """Generates `cirq.Operation`s for a single measurement round.
 
@@ -79,7 +79,7 @@ class PhaseCode(Benchmark):
 
         return circuit
 
-    def _get_ideal_dist(self) -> Dict[str, float]:
+    def _get_ideal_dist(self) -> dict[str, float]:
         """Return the ideal probability distribution of `self.circuit()`.
 
         Since the initial states of the data qubits are either |+> or |->, and we measure the final
@@ -99,7 +99,7 @@ class PhaseCode(Benchmark):
         ideal_bitstring = [ancilla_state] * self.num_rounds + [final_state]
         return {"".join(ideal_bitstring): 1.0}
 
-    def score(self, counts: Dict[str, float]) -> float:
+    def score(self, counts: dict[str, float]) -> float:
         """Compute benchmark score.
 
         Device performance is given by the Hellinger fidelity between the experimental results and

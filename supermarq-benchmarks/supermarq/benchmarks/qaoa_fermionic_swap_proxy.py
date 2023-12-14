@@ -1,5 +1,5 @@
 """Definition of the Fermionic SWAP QAOA benchmark within the Supermarq suite."""
-from typing import List, Mapping, Tuple
+from collections.abc import Mapping
 
 import cirq
 import numpy as np
@@ -39,7 +39,7 @@ class QAOAFermionicSwapProxy(Benchmark):
         self.hamiltonian = self._gen_sk_hamiltonian()
         self.params = self._gen_angles()
 
-    def _gen_sk_hamiltonian(self) -> List[Tuple[int, int, float]]:
+    def _gen_sk_hamiltonian(self) -> list[tuple[int, int, float]]:
         """Randomly pick +1 or -1 for each edge weight."""
         hamiltonian = []
         for i in range(self.num_qubits):
@@ -114,7 +114,7 @@ class QAOAFermionicSwapProxy(Benchmark):
             expectation_value += probability * self._get_energy_for_bitstring(bitstring)
         return expectation_value
 
-    def _get_opt_angles(self) -> Tuple[npt.NDArray[np.float_], float]:
+    def _get_opt_angles(self) -> tuple[npt.NDArray[np.float_], float]:
         def f(params: npt.NDArray[np.float_]) -> float:
             """The objective function to minimize.
 

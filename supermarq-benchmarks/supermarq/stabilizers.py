@@ -1,5 +1,4 @@
 import copy
-from typing import List, Tuple
 
 import cirq
 import numpy as np
@@ -18,7 +17,7 @@ class MeasurementCircuit:
         circuit: cirq.Circuit,
         stabilizer_matrix: npt.NDArray[np.uint8],
         num_qubits: int,
-        qubits: List[cirq.LineQubit],
+        qubits: list[cirq.LineQubit],
     ) -> None:
         """Intializes a `MeasurementCircuit`.
 
@@ -78,8 +77,8 @@ class MeasurementCircuit:
 
 
 def construct_stabilizer(
-    N: int, clique: List[Tuple[float, str]]
-) -> Tuple[npt.NDArray[np.uint8], List[str]]:
+    N: int, clique: list[tuple[float, str]]
+) -> tuple[npt.NDArray[np.uint8], list[str]]:
     """Construct the independent Z+X stabilizer matrix for the given clique.
 
     All of the terms in the input clique can be measured simultaneously. To construct
@@ -185,7 +184,7 @@ def prepare_X_matrix(measurement_circuit: MeasurementCircuit) -> None:
     N = measurement_circuit.num_qubits
     for bitstring in range(2**N):
         measurement_circuit_copy = copy.deepcopy(measurement_circuit)
-        for i, bit in enumerate("{0:b}".format(bitstring).zfill(N)):
+        for i, bit in enumerate(f"{bitstring:b}".zfill(N)):
             if bit == "1":
                 apply_H(measurement_circuit_copy, i)
         if (
