@@ -2,7 +2,8 @@ import io
 import json
 import re
 import warnings
-from typing import Dict, List, Sequence, Set, Tuple, TypeVar, Union
+from collections.abc import Sequence
+from typing import TypeVar, Union
 
 import general_superstaq as gss
 import numpy as np
@@ -14,10 +15,10 @@ from qiskit.converters.ast_to_dag import AstInterpreter
 import qiskit_superstaq as qss
 
 T = TypeVar("T")
-RealArray = Union[int, float, List["RealArray"]]
+RealArray = Union[int, float, list["RealArray"]]
 
 
-def json_encoder(val: object) -> Dict[str, Union[str, RealArray]]:
+def json_encoder(val: object) -> dict[str, str | RealArray]:
     """Convert (real or complex) arrays to a JSON-serializable format.
 
     Args:
@@ -39,7 +40,7 @@ def json_encoder(val: object) -> Dict[str, Union[str, RealArray]]:
     raise TypeError(f"Object of type {type(val)} is not JSON serializable.")
 
 
-def json_resolver(val: T) -> Union[T, npt.NDArray[np.complex_]]:
+def json_resolver(val: T) -> T | npt.NDArray[np.complex_]:
     """Hook to deserialize objects that were serialized via `json_encoder()`.
 
     Args:
@@ -83,9 +84,9 @@ def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumC
         A copy of the input circuit with unique custom instruction names.
     """
 
-    unique_insts_by_name: Dict[str, List[qiskit.circuit.Instruction]] = {}
-    insts_to_update: List[Tuple[int, int]] = []
-    unique_inst_ids: Set[int] = set()
+    unique_insts_by_name: dict[str, list[qiskit.circuit.Instruction]] = {}
+    insts_to_update: list[tuple[int, int]] = []
+    unique_inst_ids: set[int] = set()
 
     qiskit_gates = set(AstInterpreter.standard_extension) | {"measure"}
 
@@ -120,9 +121,7 @@ def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumC
     return new_circuit
 
 
-def serialize_circuits(
-    circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]]
-) -> str:
+def serialize_circuits(circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit]) -> str:
     """Serialize QuantumCircuit(s) into a single string.
 
     Args:
@@ -141,7 +140,7 @@ def serialize_circuits(
     return gss.serialization.bytes_to_str(buf.getvalue())
 
 
-def deserialize_circuits(serialized_circuits: str) -> List[qiskit.QuantumCircuit]:
+def deserialize_circuits(serialized_circuits: str) -> list[qiskit.QuantumCircuit]:
     """Deserialize serialized `qiskit.QuantumCircuit`(s).
 
     Args:

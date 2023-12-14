@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import warnings
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any
 
 import general_superstaq as gss
 import qiskit
@@ -16,7 +16,7 @@ except ModuleNotFoundError:
     pass
 
 
-def active_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
+def active_qubit_indices(circuit: qiskit.QuantumCircuit) -> list[int]:
     """Returns the indices of the non-idle qubits in the input quantum circuit.
 
     Args:
@@ -26,7 +26,7 @@ def active_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
         A list containing the indices of the non-idle qubits.
     """
 
-    qubit_indices: Set[int] = set()
+    qubit_indices: set[int] = set()
 
     for inst, qubits, _ in circuit:
         if inst.name != "barrier":
@@ -36,7 +36,7 @@ def active_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
     return sorted(qubit_indices)
 
 
-def measured_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
+def measured_qubit_indices(circuit: qiskit.QuantumCircuit) -> list[int]:
     """Returns the indices of the measured qubits in the input quantum circuit.
 
     Args:
@@ -46,7 +46,7 @@ def measured_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
         A list containing the indices of the measured qubits.
     """
 
-    measured_qubits: Set[qiskit.circuit.Qubit] = set()
+    measured_qubits: set[qiskit.circuit.Qubit] = set()
 
     for inst, qubits, clbits in circuit:
         if isinstance(inst, qiskit.circuit.Measure):
@@ -59,7 +59,7 @@ def measured_qubit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
     return sorted(circuit.find_bit(qubit).index for qubit in measured_qubits)
 
 
-def measured_clbit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
+def measured_clbit_indices(circuit: qiskit.QuantumCircuit) -> list[int]:
     """Returns the indices of the classical bits in the input quantum circuit.
 
     Args:
@@ -68,7 +68,7 @@ def measured_clbit_indices(circuit: qiskit.QuantumCircuit) -> List[int]:
     Returns:
         A list containing the indices of the classical bits.
     """
-    measured_clbits: Set[qiskit.circuit.Clbit] = set()
+    measured_clbits: set[qiskit.circuit.Clbit] = set()
 
     for items in circuit:
         inst = items[0]
@@ -88,20 +88,20 @@ class CompilerOutput:
 
     def __init__(
         self,
-        circuits: Union[
-            qiskit.QuantumCircuit, List[qiskit.QuantumCircuit], List[List[qiskit.QuantumCircuit]]
-        ],
-        initial_logical_to_physicals: Union[
-            Dict[int, int], List[Dict[int, int]], List[List[Dict[int, int]]]
-        ],
-        final_logical_to_physicals: Union[
-            Dict[int, int], List[Dict[int, int]], List[List[Dict[int, int]]]
-        ],
-        pulse_gate_circuits: Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]] = None,
-        pulse_sequences: Optional[Union[qiskit.pulse.Schedule, List[qiskit.pulse.Schedule]]] = None,
-        seq: Optional[qtrl.sequencer.Sequence] = None,
-        jaqal_programs: Optional[Union[str, List[str]]] = None,
-        pulse_lists: Optional[Union[List[List[List[Any]]], List[List[List[List[Any]]]]]] = None,
+        circuits: (
+            qiskit.QuantumCircuit | list[qiskit.QuantumCircuit] | list[list[qiskit.QuantumCircuit]]
+        ),
+        initial_logical_to_physicals: (
+            dict[int, int] | list[dict[int, int]] | list[list[dict[int, int]]]
+        ),
+        final_logical_to_physicals: (
+            dict[int, int] | list[dict[int, int]] | list[list[dict[int, int]]]
+        ),
+        pulse_gate_circuits: qiskit.QuantumCircuit | list[qiskit.QuantumCircuit] = None,
+        pulse_sequences: qiskit.pulse.Schedule | list[qiskit.pulse.Schedule] | None = None,
+        seq: qtrl.sequencer.Sequence | None = None,
+        jaqal_programs: str | list[str] | None = None,
+        pulse_lists: list[list[list[Any]]] | list[list[list[list[Any]]]] | None = None,
     ) -> None:
         """Constructs a `CompilerOutput` object.
 
@@ -191,7 +191,7 @@ class CompilerOutput:
         )
 
 
-def read_json(json_dict: Dict[str, str], circuits_is_list: bool) -> CompilerOutput:
+def read_json(json_dict: dict[str, str], circuits_is_list: bool) -> CompilerOutput:
     """Reads out returned JSON from Superstaq API's compilation endpoints.
 
     Args:
@@ -205,10 +205,10 @@ def read_json(json_dict: Dict[str, str], circuits_is_list: bool) -> CompilerOutp
     """
     compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
 
-    initial_logical_to_physicals: List[Dict[int, int]] = list(
+    initial_logical_to_physicals: list[dict[int, int]] = list(
         map(dict, json.loads(json_dict["initial_logical_to_physicals"]))
     )
-    final_logical_to_physicals: List[Dict[int, int]] = list(
+    final_logical_to_physicals: list[dict[int, int]] = list(
         map(dict, json.loads(json_dict["final_logical_to_physicals"]))
     )
 
@@ -241,7 +241,7 @@ def read_json(json_dict: Dict[str, str], circuits_is_list: bool) -> CompilerOutp
 
 
 def read_json_aqt(
-    json_dict: Dict[str, str], circuits_is_list: bool, num_eca_circuits: Optional[int] = None
+    json_dict: dict[str, str], circuits_is_list: bool, num_eca_circuits: int | None = None
 ) -> CompilerOutput:
     """Reads out the returned JSON from Superstaq API's AQT compilation endpoint.
 
@@ -258,22 +258,22 @@ def read_json_aqt(
         list(s) of cycles in the .pulse_list(s) attribute.
     """
 
-    compiled_circuits: Union[List[qiskit.QuantumCircuit], List[List[qiskit.QuantumCircuit]]]
+    compiled_circuits: list[qiskit.QuantumCircuit] | list[list[qiskit.QuantumCircuit]]
     compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
 
-    initial_logical_to_physicals_list: List[Dict[int, int]] = list(
+    initial_logical_to_physicals_list: list[dict[int, int]] = list(
         map(dict, json.loads(json_dict["initial_logical_to_physicals"]))
     )
-    initial_logical_to_physicals: Union[
-        List[Dict[int, int]], List[List[Dict[int, int]]]
-    ] = initial_logical_to_physicals_list
+    initial_logical_to_physicals: (
+        list[dict[int, int]] | list[list[dict[int, int]]]
+    ) = initial_logical_to_physicals_list
 
-    final_logical_to_physicals_list: List[Dict[int, int]] = list(
+    final_logical_to_physicals_list: list[dict[int, int]] = list(
         map(dict, json.loads(json_dict["final_logical_to_physicals"]))
     )
-    final_logical_to_physicals: Union[
-        List[Dict[int, int]], List[List[Dict[int, int]]]
-    ] = final_logical_to_physicals_list
+    final_logical_to_physicals: (
+        list[dict[int, int]] | list[list[dict[int, int]]]
+    ) = final_logical_to_physicals_list
 
     seq = None
     pulse_lists = None
@@ -291,7 +291,7 @@ def read_json_aqt(
         )
     else:  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
 
-        def _sequencer_from_state(state: Dict[str, Any]) -> qtrl.sequencer.Sequence:
+        def _sequencer_from_state(state: dict[str, Any]) -> qtrl.sequencer.Sequence:
             seq = qtrl.sequencer.Sequence(n_elements=1)
             seq.__setstate__(state)
             seq.compile()
@@ -353,7 +353,7 @@ def read_json_aqt(
 
 
 def read_json_qscout(
-    json_dict: Dict[str, Union[str, List[str]]],
+    json_dict: dict[str, str | list[str]],
     circuits_is_list: bool,
 ) -> CompilerOutput:
     """Reads out the returned JSON from Superstaq API's QSCOUT compilation endpoint.
@@ -372,13 +372,13 @@ def read_json_qscout(
 
     initial_logical_to_physicals_str = json_dict["initial_logical_to_physicals"]
     assert isinstance(initial_logical_to_physicals_str, str)
-    initial_logical_to_physicals: List[Dict[int, int]] = list(
+    initial_logical_to_physicals: list[dict[int, int]] = list(
         map(dict, json.loads(initial_logical_to_physicals_str))
     )
 
     final_logical_to_physicals_str = json_dict["final_logical_to_physicals"]
     assert isinstance(final_logical_to_physicals_str, str)
-    final_logical_to_physicals: List[Dict[int, int]] = list(
+    final_logical_to_physicals: list[dict[int, int]] = list(
         map(dict, json.loads(final_logical_to_physicals_str))
     )
 

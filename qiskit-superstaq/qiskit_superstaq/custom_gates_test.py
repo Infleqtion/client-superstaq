@@ -1,5 +1,4 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
-from typing import List, Set
 
 import numpy as np
 import pytest
@@ -105,7 +104,7 @@ def test_parallel_gates() -> None:
     _check_gate_definition(gate)
 
     # confirm gates are applied to disjoint qubits
-    all_qargs: Set[qiskit.circuit.Qubit] = set()
+    all_qargs: set[qiskit.circuit.Qubit] = set()
     for _, qargs, _ in gate.definition:
         assert all_qargs.isdisjoint(qargs)
         all_qargs.update(qargs)
@@ -222,7 +221,7 @@ def test_aqticcx() -> None:
 
 
 def test_custom_resolver() -> None:
-    custom_gates: List[qiskit.circuit.Gate] = [
+    custom_gates: list[qiskit.circuit.Gate] = [
         qss.AceCR("+-"),
         qss.AceCR("-+"),
         qss.AceCR("+-", sandwich_rx_rads=1.23),
