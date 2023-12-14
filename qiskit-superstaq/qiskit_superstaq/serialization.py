@@ -17,11 +17,11 @@ from qiskit.converters.ast_to_dag import AstInterpreter
 import qiskit_superstaq as qss
 
 T = TypeVar("T")
-RealArray = int | float | list["RealArray"]
+RealArray = TypeVar("RealArray")
 
 
-def json_encoder(val: object) -> dict[str, str | RealArray]:
-    """Convert (real or complex) arrays to a JSON-serializable format.
+def json_encoder(val: object) -> dict[str, str | (int | float | list[RealArray])]:
+    """Converts (real or complex) arrays to a JSON-serializable format.
 
     Args:
         val: The value to be serialized.
@@ -124,7 +124,7 @@ def _assign_unique_inst_names(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumC
 
 
 def serialize_circuits(circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit]) -> str:
-    """Serialize QuantumCircuit(s) into a single string.
+    """Serializes `qiskit.QuantumCircuit`(s) into a single string.
 
     Args:
         circuits: A `qiskit.QuantumCircuit` or list of `qiskit.QuantumCircuit`s to be serialized.
@@ -143,7 +143,7 @@ def serialize_circuits(circuits: qiskit.QuantumCircuit | Sequence[qiskit.Quantum
 
 
 def deserialize_circuits(serialized_circuits: str) -> list[qiskit.QuantumCircuit]:
-    """Deserialize serialized `qiskit.QuantumCircuit`(s).
+    """Deserializes serialized `qiskit.QuantumCircuit`(s).
 
     Args:
         serialized_circuits: String generated via `qss.serialization.serialize_circuit()`.
