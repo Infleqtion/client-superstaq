@@ -1,4 +1,6 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
+from __future__ import annotations
+
 import functools
 import textwrap
 from typing import cast
