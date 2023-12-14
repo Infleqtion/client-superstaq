@@ -1,6 +1,5 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 import re
-from typing import Dict, List
 
 import numpy as np
 import pytest
@@ -46,7 +45,7 @@ def test_validate_integer_param() -> None:
 
 
 def test_validate_noise_type() -> None:
-    valid_inputs: List[Dict[str, object]] = [
+    valid_inputs: list[dict[str, object]] = [
         {"type": "symmetric_depolarize", "params": (0.1,)},
         {"type": "bit_flip", "params": (0.1,)},
         {"type": "phase_flip", "params": (0.1,)},

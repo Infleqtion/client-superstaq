@@ -1,17 +1,16 @@
 from dataclasses import InitVar, dataclass
-from typing import Dict, Optional
 
 
 @dataclass
 class ResourceEstimate:
     """A class to store data returned from a /resource_estimate request."""
 
-    num_single_qubit_gates: Optional[int] = None
-    num_two_qubit_gates: Optional[int] = None
-    depth: Optional[int] = None
-    json_data: InitVar[Dict[str, int]] = None
+    num_single_qubit_gates: int | None = None
+    num_two_qubit_gates: int | None = None
+    depth: int | None = None
+    json_data: InitVar[dict[str, int]] = None
 
-    def __post_init__(self, json_data: Optional[Dict[str, int]] = None) -> None:
+    def __post_init__(self, json_data: dict[str, int] | None = None) -> None:
         """Initializes `ResourceEstimate` object with JSON data, if specified.
 
         Args:

@@ -1,9 +1,7 @@
-from typing import Dict, List, Tuple
-
 import general_superstaq as gss
 
 
-def read_json_qubo_result(json_dict: Dict[str, str]) -> List[Dict[Tuple[int], int]]:
+def read_json_qubo_result(json_dict: dict[str, str]) -> list[dict[tuple[int], int]]:
     """Reads out returned JSON from Superstaq API's QUBO endpoint.
 
     Args:

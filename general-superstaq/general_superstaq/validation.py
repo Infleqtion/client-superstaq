@@ -1,5 +1,5 @@
 import re
-from typing import Dict, Sequence
+from collections.abc import Sequence
 
 
 def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
@@ -75,7 +75,7 @@ def validate_target(target: str) -> None:
         )
 
 
-def validate_noise_type(noise: Dict[str, object], n_qubits: int) -> None:
+def validate_noise_type(noise: dict[str, object], n_qubits: int) -> None:
     """Validates that an ACES noise model is valid.
 
     Args:

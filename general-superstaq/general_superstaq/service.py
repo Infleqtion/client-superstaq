@@ -1,6 +1,7 @@
 import numbers
 import os
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Any
 
 import qubovert as qv
 
@@ -12,8 +13,8 @@ class Service:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        remote_host: Optional[str] = None,
+        api_key: str | None = None,
+        remote_host: str | None = None,
         api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
@@ -33,7 +34,7 @@ class Service:
             verbose=verbose,
         )
 
-    def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
+    def get_balance(self, pretty_output: bool = True) -> str | float:
         """Get the querying user's account balance in USD.
 
         Args:
@@ -119,14 +120,14 @@ class Service:
 
     def get_targets(
         self,
-        simulator: Optional[bool] = None,
-        supports_submit: Optional[bool] = None,
-        supports_submit_qubo: Optional[bool] = None,
-        supports_compile: Optional[bool] = None,
-        available: Optional[bool] = None,
-        retired: Optional[bool] = None,
+        simulator: bool | None = None,
+        supports_submit: bool | None = None,
+        supports_submit_qubo: bool | None = None,
+        supports_compile: bool | None = None,
+        available: bool | None = None,
+        retired: bool | None = None,
         **kwargs: bool,
-    ) -> List[gss.Target]:
+    ) -> list[gss.Target]:
         """Gets a list of Superstaq targets along with their status information.
 
         Args:
@@ -161,9 +162,9 @@ class Service:
         qubo: qv.QUBO,
         target: str,
         repetitions: int = 1000,
-        method: Optional[str] = None,
+        method: str | None = None,
         max_solutions: int = 1000,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Solves a submitted QUBO problem via annealing.
 
         This method returns any number of specified dictionaries that seek the minimum of
@@ -228,7 +229,7 @@ class Service:
 
         return self._client.aqt_upload_configs({"pulses": pulses_yaml, "variables": variables_yaml})
 
-    def aqt_get_configs(self) -> Dict[str, str]:
+    def aqt_get_configs(self) -> dict[str, str]:
         """Retrieves the raw AQT config files that had previously been uploaded to Superstaq.
 
         Returns:
@@ -239,10 +240,10 @@ class Service:
 
     def aqt_download_configs(
         self,
-        pulses_file_path: Optional[str] = None,
-        variables_file_path: Optional[str] = None,
+        pulses_file_path: str | None = None,
+        variables_file_path: str | None = None,
         overwrite: bool = False,
-    ) -> Optional[Tuple[Dict[str, Any], Dict[str, Any]]]:
+    ) -> tuple[dict[str, Any], dict[str, Any]] | None:
         """Downloads AQT configs that had previously been uploaded to Superstaq.
 
         Optionally saves configs to disk as YAML configuration files. Otherwise, the PyYAML package
@@ -319,11 +320,11 @@ class Service:
         num_circuits: int,
         mirror_depth: int,
         extra_depth: int,
-        method: Optional[str] = None,
-        noise: Optional[str] = None,
-        error_prob: Optional[Union[float, Tuple[float, float, float]]] = None,
-        tag: Optional[str] = None,
-        lifespan: Optional[int] = None,
+        method: str | None = None,
+        noise: str | None = None,
+        error_prob: float | tuple[float, float, float] | None = None,
+        tag: str | None = None,
+        lifespan: int | None = None,
     ) -> str:
         """Submits the jobs to characterize `target` through the ACES protocol.
 
@@ -369,7 +370,7 @@ class Service:
             ValueError: If the target or noise model are not valid.
             SuperstaqServerException: If the request fails.
         """
-        noise_dict: Dict[str, object] = {}
+        noise_dict: dict[str, object] = {}
         if noise:
             noise_dict["type"] = noise
             noise_dict["params"] = (
@@ -389,7 +390,7 @@ class Service:
             lifespan=lifespan,
         )
 
-    def process_aces(self, job_id: str) -> List[float]:
+    def process_aces(self, job_id: str) -> list[float]:
         """Process a job submitted through `submit_aces`.
 
         Args:
