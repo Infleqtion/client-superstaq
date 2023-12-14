@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Iterable
 from typing import Any
 
@@ -240,7 +242,7 @@ def heatmap(
     col_labels: list[str],
     cbar_kw: dict[str, Any] | None = None,
     cbarlabel: str = "",
-    **kwargs: Any
+    **kwargs: Any,
 ) -> tuple[matplotlib.image.AxesImage, Any]:
     """Create a heatmap from a numpy array and two lists of labels.
 
@@ -302,7 +304,7 @@ def annotate_heatmap(
     valfmt: Any = "{x:.2f}",
     textcolors: tuple[str, str] = ("black", "white"),
     threshold: float | None = None,
-    **textkw: Any
+    **textkw: Any,
 ) -> list[matplotlib.text.Text]:
     """Annotate the given heatmap.
 

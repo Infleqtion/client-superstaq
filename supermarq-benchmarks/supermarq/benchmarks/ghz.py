@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import cirq
 from qiskit.quantum_info import hellinger_fidelity
 

@@ -1,4 +1,6 @@
 """Definition of the Fermionic SWAP QAOA benchmark within the Supermarq suite."""
+from __future__ import annotations
+
 from collections.abc import Mapping
 
 import cirq
