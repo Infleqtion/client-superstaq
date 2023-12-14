@@ -5,7 +5,7 @@ import json
 import re
 import warnings
 from collections.abc import Sequence
-from typing import TypeVar, Union
+from typing import TypeVar
 
 import general_superstaq as gss
 import numpy as np
@@ -17,7 +17,7 @@ from qiskit.converters.ast_to_dag import AstInterpreter
 import qiskit_superstaq as qss
 
 T = TypeVar("T")
-RealArray = Union[int, float, list["RealArray"]]
+RealArray = int | float | list["RealArray"]
 
 
 def json_encoder(val: object) -> dict[str, str | RealArray]:
