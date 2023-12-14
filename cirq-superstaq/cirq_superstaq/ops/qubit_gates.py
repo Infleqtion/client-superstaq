@@ -1,7 +1,8 @@
 """Miscellaneous custom gates that we encounter and want to explicitly define."""
 from __future__ import annotations
 
-from typing import AbstractSet, Any, Dict, Iterator, List, Optional, Set, Tuple, Type, Union
+from collections.abc import Iterator
+from typing import AbstractSet, Any
 
 import cirq
 import numpy as np
@@ -64,7 +65,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     def _num_qubits_(self) -> int:
         return 2
 
-    def _unitary_(self) -> Optional[npt.NDArray[np.complex_]]:
+    def _unitary_(self) -> npt.NDArray[np.complex_] | None:
         if self._is_parameterized_():
             return None
         return np.array(
@@ -87,7 +88,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
 
     def __pow__(
         self, exponent: cirq.TParamVal
-    ) -> Union[ZZSwapGate, cirq.ZZPowGate, cirq.type_workarounds.NotImplementedType]:
+    ) -> ZZSwapGate | cirq.ZZPowGate | cirq.type_workarounds.NotImplementedType:
         if exponent % 2 == 1:
             return ZZSwapGate(exponent * self.theta)
         if exponent % 2 == 0:
@@ -100,7 +101,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     def __repr__(self) -> str:
         return f"css.ZZSwapGate({self.theta})"
 
-    def _decompose_(self, qubits: Tuple[cirq.Qid, cirq.Qid]) -> Iterator[cirq.Operation]:
+    def _decompose_(self, qubits: tuple[cirq.Qid, cirq.Qid]) -> Iterator[cirq.Operation]:
         yield cirq.CX(qubits[0], qubits[1])
         yield cirq.CX(qubits[1], qubits[0])
         yield cirq.Z(qubits[1]) ** (self.theta / _pi(self.theta))
@@ -136,7 +137,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
 
     def _pauli_expansion_(
         self,
-    ) -> Union[cirq.value.LinearDict[str], cirq.type_workarounds.NotImplementedType]:
+    ) -> cirq.value.LinearDict[str] | cirq.type_workarounds.NotImplementedType:
         if cirq.is_parameterized(self):
             return NotImplemented
         return cirq.value.LinearDict(
@@ -148,7 +149,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
             }
         )
 
-    def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, cirq.Qid]) -> Optional[str]:
+    def _qasm_(self, args: cirq.QasmArgs, qubits: tuple[cirq.Qid, cirq.Qid]) -> str | None:
         if approx_eq_mod(self.theta, 0.0, 2 * np.pi):
             return cirq.SWAP._qasm_(args, qubits)
 
@@ -159,7 +160,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
             qubits[1],
         )
 
-    def _json_dict_(self) -> Dict[str, Any]:
+    def _json_dict_(self) -> dict[str, Any]:
         return cirq.obj_to_dict_helper(self, ["theta"])
 
 
@@ -182,7 +183,7 @@ class ZXPowGate(cirq.EigenGate, cirq.Gate):
 
     """
 
-    def _eigen_components(self) -> List[Tuple[float, npt.NDArray[np.float_]]]:
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
         return [
             (
                 0.0,
@@ -198,7 +199,7 @@ class ZXPowGate(cirq.EigenGate, cirq.Gate):
             ),
         ]
 
-    def _eigen_shifts(self) -> List[float]:
+    def _eigen_shifts(self) -> list[float]:
         return [0, 1]
 
     def _num_qubits_(self) -> int:
@@ -209,7 +210,7 @@ class ZXPowGate(cirq.EigenGate, cirq.Gate):
             wire_symbols=("Z", "X"), exponent=self._diagram_exponent(args)
         )
 
-    def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, ...]) -> Optional[str]:
+    def _qasm_(self, args: cirq.QasmArgs, qubits: tuple[cirq.Qid, ...]) -> str | None:
         return args.format(
             "rzx({0:half_turns}) {1},{2};\n",
             self.exponent,
@@ -243,7 +244,7 @@ class AceCR(cirq.Gate):
     """
 
     def __init__(
-        self, rads: Union[str, cirq.TParamVal] = np.pi / 2, sandwich_rx_rads: cirq.TParamVal = 0
+        self, rads: str | cirq.TParamVal = np.pi / 2, sandwich_rx_rads: cirq.TParamVal = 0
     ) -> None:
         """Initializes an AceCR gate.
 
@@ -269,7 +270,7 @@ class AceCR(cirq.Gate):
         return 2
 
     def _decompose_(
-        self, qubits: Tuple[cirq.LineQubit, cirq.LineQubit]
+        self, qubits: tuple[cirq.LineQubit, cirq.LineQubit]
     ) -> Iterator[cirq.Operation]:
         frac = self.rads / (2 * _pi(self.rads))
         yield css.CR(*qubits) ** frac
@@ -290,7 +291,7 @@ class AceCR(cirq.Gate):
             bottom += f"|Rx({args.format_radians(self.sandwich_rx_rads)})|"
         return cirq.CircuitDiagramInfo(wire_symbols=(top, bottom))
 
-    def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, cirq.Qid]) -> Optional[str]:
+    def _qasm_(self, args: cirq.QasmArgs, qubits: tuple[cirq.Qid, cirq.Qid]) -> str | None:
         """QASM symbol for AceCR, "acecr(rads)".
 
         If there is a sandwich, it comes last. For example, AceCR(sandwich_rx_rads=np.pi / 2) has
@@ -322,7 +323,7 @@ class AceCR(cirq.Gate):
             sandwich_rx_rads=cirq.resolve_parameters(self.sandwich_rx_rads, resolver, recursive),
         )
 
-    def _value_equality_values_(self) -> Tuple[cirq.TParamVal, cirq.TParamVal]:
+    def _value_equality_values_(self) -> tuple[cirq.TParamVal, cirq.TParamVal]:
         if cirq.is_parameterized(self.rads):
             rads = self.rads
         else:
@@ -335,13 +336,13 @@ class AceCR(cirq.Gate):
 
         return rads, sandwich_rx_rads
 
-    def _value_equality_approximate_values_(self) -> Tuple[cirq.PeriodicValue, cirq.PeriodicValue]:
+    def _value_equality_approximate_values_(self) -> tuple[cirq.PeriodicValue, cirq.PeriodicValue]:
         return (
             cirq.PeriodicValue(self.rads, 4 * np.pi),
             cirq.PeriodicValue(self.sandwich_rx_rads, 4 * np.pi),
         )
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
+    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
         if not isinstance(other, AceCR):
             return NotImplemented
 
@@ -367,7 +368,7 @@ class AceCR(cirq.Gate):
             return f"AceCR|{cirq.rx(self.sandwich_rx_rads)}|"
         return f"AceCR({self.rads})|{cirq.rx(self.sandwich_rx_rads)}|"
 
-    def _json_dict_(self) -> Dict[str, Any]:
+    def _json_dict_(self) -> dict[str, Any]:
         return cirq.obj_to_dict_helper(self, ["rads", "sandwich_rx_rads"])
 
 
@@ -383,13 +384,13 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
     Otherwise equivalent to the identity gate.
     """
 
-    def _decompose_(self, qubits: Tuple[cirq.Qid, ...]) -> cirq.type_workarounds.NotImplementedType:
+    def _decompose_(self, qubits: tuple[cirq.Qid, ...]) -> cirq.type_workarounds.NotImplementedType:
         return NotImplemented
 
     def _trace_distance_bound_(self) -> float:
         return 1.0
 
-    def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, ...]) -> str:
+    def _qasm_(self, args: cirq.QasmArgs, qubits: tuple[cirq.Qid, ...]) -> str:
         indices_str = ",".join([f"{{{i}}}" for i in range(len(qubits))])
         format_str = f"barrier {indices_str};\n"
         return args.format(format_str, *qubits)
@@ -402,7 +403,7 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
     def __repr__(self) -> str:
         return f"css.{self}"
 
-    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> Tuple[str, ...]:
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> tuple[str, ...]:
         if args.use_unicode_characters:
             return ("│",) * self.num_qubits()
         return ("|",) * self.num_qubits()
@@ -436,7 +437,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             ValueError: If `component_gates` contains measurements.
         """
 
-        self.component_gates: Tuple[cirq.Gate, ...] = ()
+        self.component_gates: tuple[cirq.Gate, ...] = ()
 
         # unroll any ParallelGate(s) instances in component_gates
         for gate in component_gates:
@@ -451,7 +452,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             else:
                 self.component_gates += (gate,)
 
-    def qubit_index_to_gate_and_index(self, index: int) -> Tuple[cirq.Gate, int]:
+    def qubit_index_to_gate_and_index(self, index: int) -> tuple[cirq.Gate, int]:
         """Gets gate (and index) for the corresponding index.
 
         Args:
@@ -496,7 +497,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
     def _is_parameterized_(self) -> bool:
         return any(cirq.is_parameterized(gate) for gate in self.component_gates)
 
-    def _parameter_names_(self) -> Set[str]:
+    def _parameter_names_(self) -> set[str]:
         component_param_names = [set(cirq.parameter_names(gate)) for gate in self.component_gates]
         return set.union(*component_param_names)
 
@@ -505,10 +506,10 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             *(cirq.resolve_parameters(gate, resolver, recursive) for gate in self.component_gates)
         )
 
-    def _value_equality_values_(self) -> Tuple[cirq.Gate, ...]:
+    def _value_equality_values_(self) -> tuple[cirq.Gate, ...]:
         return self.component_gates
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
+    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
         if not isinstance(other, ParallelGates):
             return NotImplemented
 
@@ -523,13 +524,13 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             for gate, other_gate in zip(self.component_gates, other.component_gates)
         )
 
-    def _qid_shape_(self) -> Tuple[int, ...]:
-        qid_shape: Tuple[int, ...] = ()
+    def _qid_shape_(self) -> tuple[int, ...]:
+        qid_shape: tuple[int, ...] = ()
         for gate in self.component_gates:
             qid_shape += cirq.qid_shape(gate)
         return qid_shape
 
-    def _decompose_(self, qubits: Tuple[cirq.Qid, ...]) -> Iterator[cirq.Operation]:
+    def _decompose_(self, qubits: tuple[cirq.Qid, ...]) -> Iterator[cirq.Operation]:
         """Decompose into each component gate"""
         for gate in self.component_gates:
             num_qubits = gate.num_qubits()
@@ -542,7 +543,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         Symbols belonging to separate gates are differentiated via subscripts, with groups of
         symbols sharing the same subscript indicating multi-qubit operations.
         """
-        wire_symbols_with_subscripts: List[str] = []
+        wire_symbols_with_subscripts: list[str] = []
         for i, gate in enumerate(self.component_gates):
             qubit_index = len(wire_symbols_with_subscripts)
             num_qubits = gate.num_qubits()
@@ -577,11 +578,11 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
 
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols_with_subscripts)
 
-    def _json_dict_(self) -> Dict[str, Any]:
+    def _json_dict_(self) -> dict[str, Any]:
         return cirq.obj_to_dict_helper(self, ["component_gates"])
 
     @classmethod
-    def _from_json_dict_(cls, component_gates: List[cirq.Gate], **kwargs: Any) -> ParallelGates:
+    def _from_json_dict_(cls, component_gates: list[cirq.Gate], **kwargs: Any) -> ParallelGates:
         return cls(*component_gates)
 
     def __pow__(self, exponent: cirq.TParamVal) -> ParallelGates:
@@ -613,8 +614,8 @@ def parallel_gates_operation(*ops: cirq.Operation) -> cirq.Operation:
         ValueError: If the operation has no `.gate` attribute.
         ValueError: If the operation has tags.
     """
-    gates: List[cirq.Gate] = []
-    qubits: List[cirq.Qid] = []
+    gates: list[cirq.Gate] = []
+    qubits: list[cirq.Qid] = []
     for op in ops:
         if not op.gate:
             raise ValueError(f"Invalid operation: {op} has no .gate attribute")
@@ -663,7 +664,7 @@ class RGate(cirq.PhasedXPowGate):
     def __pow__(self, power: cirq.TParamVal) -> RGate:
         return RGate(power * self.theta, self.phi)
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
+    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
         """Implemented here because it isn't in cirq.PhasedXPowGate"""
         if not isinstance(other, cirq.PhasedXPowGate):
             return NotImplemented
@@ -683,7 +684,7 @@ class RGate(cirq.PhasedXPowGate):
         gate_str = f"RGate({theta_str}, {phi_str})"
         return cirq.CircuitDiagramInfo(wire_symbols=(gate_str,))
 
-    def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, ...]) -> Optional[str]:
+    def _qasm_(self, args: cirq.QasmArgs, qubits: tuple[cirq.Qid, ...]) -> str | None:
         return args.format(
             "r({0:half_turns},{1:half_turns}) {2};\n",
             self.exponent,
@@ -697,7 +698,7 @@ class RGate(cirq.PhasedXPowGate):
     def __repr__(self) -> str:
         return f"css.RGate({self.theta}, {self.phi})"
 
-    def _json_dict_(self) -> Dict[str, Any]:
+    def _json_dict_(self) -> dict[str, Any]:
         return cirq.obj_to_dict_helper(self, ["theta", "phi"])
 
 
@@ -765,7 +766,7 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
     def __pow__(self, power: cirq.TParamVal) -> ParallelRGate:
         return ParallelRGate(power * self.theta, self.phi, self.num_copies)
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
+    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
         """Implemented here because it isn't in cirq.ParallelGate"""
         if not isinstance(other, cirq.ParallelGate):
             return NotImplemented
@@ -782,7 +783,7 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
         )
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def _qasm_(self, args: cirq.QasmArgs, qubits: Tuple[cirq.Qid, ...]) -> str:
+    def _qasm_(self, args: cirq.QasmArgs, qubits: tuple[cirq.Qid, ...]) -> str:
         gate_str = "gate_GR({0:half_turns},{1:half_turns})"
         qubits_str = ",".join([f"{{{idx + 2}}}" for idx in range(len(qubits))])
         return args.format(
@@ -795,7 +796,7 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
     def __repr__(self) -> str:
         return f"css.ParallelRGate({self.theta}, {self.phi}, {self.num_copies})"
 
-    def _json_dict_(self) -> Dict[str, Any]:
+    def _json_dict_(self) -> dict[str, Any]:
         return cirq.obj_to_dict_helper(self, ["theta", "phi", "num_copies"])
 
 
@@ -806,7 +807,7 @@ class IXGate(cirq.XPowGate):
         """Initializes an iXGate."""
         super().__init__(exponent=1, global_shift=0.5)
 
-    def _with_exponent(self, exponent: cirq.value.TParamVal) -> Union[cirq.Rx, IXGate]:
+    def _with_exponent(self, exponent: cirq.value.TParamVal) -> cirq.Rx | IXGate:
         if approx_eq_mod(exponent, 1.0, 4):
             return IXGate()
         return cirq.rx(-exponent * _pi(exponent))
@@ -864,7 +865,7 @@ class StrippedCZGate(cirq.Gate):
     def _num_qubits_(self) -> int:
         return 2
 
-    def _unitary_(self) -> Optional[npt.NDArray[np.complex_]]:
+    def _unitary_(self) -> npt.NDArray[np.complex_] | None:
         if self._is_parameterized_():
             return None
         return np.diag(
@@ -886,7 +887,7 @@ class StrippedCZGate(cirq.Gate):
 
     def __pow__(
         self, exponent: cirq.TParamVal
-    ) -> Union[StrippedCZGate, cirq.IdentityGate, ParallelGates, cirq.DiagonalGate]:
+    ) -> StrippedCZGate | cirq.IdentityGate | ParallelGates | cirq.DiagonalGate:
         if exponent == 0:
             return cirq.IdentityGate(2)
 
@@ -910,7 +911,7 @@ class StrippedCZGate(cirq.Gate):
     def __repr__(self) -> str:
         return f"css.StrippedCZGate({self.rz_rads!r})"
 
-    def _decompose_(self, qubits: Tuple[cirq.Qid, cirq.Qid]) -> Iterator[cirq.Operation]:
+    def _decompose_(self, qubits: tuple[cirq.Qid, cirq.Qid]) -> Iterator[cirq.Operation]:
         yield cirq.rz(self.rz_rads).on(qubits[0])
         yield cirq.rz(self.rz_rads).on(qubits[1])
         yield cirq.CZ(*qubits)
@@ -933,11 +934,11 @@ class StrippedCZGate(cirq.Gate):
         p = args.format_radians(self.rz_rads)
         return cirq.CircuitDiagramInfo(wire_symbols=(f"@({p})", f"@({p})"))
 
-    def _json_dict_(self) -> Dict[str, Any]:
+    def _json_dict_(self) -> dict[str, Any]:
         return cirq.obj_to_dict_helper(self, ["rz_rads"])
 
 
-def custom_resolver(cirq_type: str) -> Union[Type[cirq.Gate], None]:
+def custom_resolver(cirq_type: str) -> type[cirq.Gate] | None:
     """Tells `cirq.read_json` how to deserialize `cirq-superstaq`'s custom gates.
 
     Changes to gate names in this file should be reflected in this resolver.
@@ -949,7 +950,7 @@ def custom_resolver(cirq_type: str) -> Union[Type[cirq.Gate], None]:
     Returns:
         The resolved `cirq.Gate` matching the input, or None if no match.
     """
-    type_to_gate_map: Dict[str, Type[cirq.Gate]] = {
+    type_to_gate_map: dict[str, type[cirq.Gate]] = {
         "ZZSwapGate": ZZSwapGate,
         "Barrier": Barrier,
         "ZXPowGate": ZXPowGate,
