@@ -266,7 +266,7 @@ def test_custom_resolver() -> None:
         qiskit.circuit.library.RXGate(4.56),
         qiskit.circuit.library.CXGate(),
         *generic_gates,
-        label="label-1",
+        label="label-1"
     )
     resolved_gate = qss.custom_gates.custom_resolver(parallel_generic_gates)
     assert parallel_generic_gates != parallel_gates
