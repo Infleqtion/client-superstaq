@@ -171,7 +171,7 @@ class Job:
     @overload
     def num_qubits(
         self, index: None = None
-    ) -> int | list[int]:  # Change return to `List[int]` after deprecation
+    ) -> int | list[int]:  # Change return to `list[int]` after deprecation
         ...
 
     def num_qubits(self, index: int | None = None) -> int | list[int]:
@@ -237,7 +237,7 @@ class Job:
         self, circuit_type: str, index: None = None
     ) -> (
         cirq.Circuit | list[cirq.Circuit]
-    ):  # Change return to `List[cirq.Circuit]` after deprecation
+    ):  # Change return to `list[cirq.Circuit]` after deprecation
         ...
 
     def _get_circuits(
@@ -279,7 +279,7 @@ class Job:
         self, index: None = None
     ) -> (
         cirq.Circuit | list[cirq.Circuit]
-    ):  # Change return to `List[cirq.Circuit]` after deprecation
+    ):  # Change return to `list[cirq.Circuit]` after deprecation
         ...
 
     def compiled_circuits(self, index: int | None = None) -> cirq.Circuit | list[cirq.Circuit]:
@@ -302,7 +302,7 @@ class Job:
         self, index: None = None
     ) -> (
         cirq.Circuit | list[cirq.Circuit]
-    ):  # Change return to `List[cirq.Circuit]` after deprecation
+    ):  # Change return to `list[cirq.Circuit]` after deprecation
         ...
 
     def input_circuits(self, index: int | None = None) -> cirq.Circuit | list[cirq.Circuit]:
@@ -335,7 +335,7 @@ class Job:
         qubit_indices: Sequence[int] | None = None,
     ) -> (
         dict[str, int] | list[dict[str, int]]
-    ):  # Change return to just `List[Dict[str, int]]` after deprecation
+    ):  # Change return to just `list[Dict[str, int]]` after deprecation
         ...
 
     def counts(

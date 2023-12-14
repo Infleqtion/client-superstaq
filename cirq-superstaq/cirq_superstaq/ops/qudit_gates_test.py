@@ -1,7 +1,7 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 import functools
 import textwrap
-from typing import Type, cast
+from typing import cast
 from unittest import mock
 
 import cirq
@@ -378,7 +378,7 @@ def test_virtual_z_pow_gate_protocols(dimension: int, level: int) -> None:
 
     gate_type = functools.partial(css.VirtualZPowGate, dimension=dimension, level=level)
     cirq.testing.assert_eigengate_implements_consistent_protocols(
-        cast("Type[cirq.EigenGate]", gate_type),
+        cast("type[cirq.EigenGate]", gate_type),
         setup_code="import cirq_superstaq as css, sympy",
         ignore_decompose_to_default_gateset=True,
     )
