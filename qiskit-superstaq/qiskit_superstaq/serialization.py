@@ -16,7 +16,6 @@ import qiskit_ibm_provider
 import qiskit_superstaq as qss
 
 T = TypeVar("T")
-RealArray = TypeVar("RealArray")
 
 # Custom gate types to resolve when deserializing circuits
 # MSGate included as a workaround for https://github.com/Qiskit/qiskit/issues/11378
@@ -47,7 +46,7 @@ _custom_resolvers: dict[
 }
 
 
-def json_encoder(val: object) -> dict[str, str | (int | float | list[RealArray])]:
+def json_encoder(val: object) -> dict[str, object]:
     """Converts (real or complex) arrays to a JSON-serializable format.
 
     Args:
