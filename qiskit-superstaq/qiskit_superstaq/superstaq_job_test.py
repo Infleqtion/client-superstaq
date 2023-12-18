@@ -1,7 +1,7 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Union
+from typing import TYPE_CHECKING
 from unittest import mock
 
 import general_superstaq as gss
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from qiskit_superstaq.conftest import MockSuperstaqProvider
 
 
-def mock_response(status_str: str) -> Dict[str, Union[str, int, Dict[str, int]]]:
+def mock_response(status_str: str) -> dict[str, str | int | dict[str, int]]:
     return {"status": status_str, "samples": {"11": 50, "10": 50}, "shots": 100}
 
 
