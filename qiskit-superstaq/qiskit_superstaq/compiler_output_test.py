@@ -1,9 +1,10 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
+from __future__ import annotations
+
 import importlib
 import json
 import pickle
 import textwrap
-from typing import Dict, List, Union
 from unittest import mock
 
 import general_superstaq as gss
@@ -297,7 +298,7 @@ def test_read_json_qscout() -> None:
         """
     )
 
-    json_dict: Dict[str, Union[str, List[str]]] = {
+    json_dict: dict[str, str | list[str]] = {
         "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
         "initial_logical_to_physicals": json.dumps([[(0, 1)]]),
         "final_logical_to_physicals": json.dumps([[(0, 13)]]),

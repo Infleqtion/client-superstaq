@@ -1,4 +1,4 @@
-from typing import List, Optional
+from __future__ import annotations
 
 import general_superstaq as gss
 import pytest
@@ -46,7 +46,7 @@ class MockSuperstaqBackend(qss.SuperstaqBackend):
 class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
     """Stand-in for `_SuperstaqClient` that the tests can call."""
 
-    def get_targets(self, **kwargs: Optional[bool]) -> List[gss.typing.Target]:
+    def get_targets(self, **kwargs: bool | None) -> list[gss.typing.Target]:
         """Makes a GET request to retrieve targets from the Superstaq API.
 
         Args:
@@ -73,8 +73,8 @@ class MockSuperstaqProvider(qss.SuperstaqProvider):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        remote_host: Optional[str] = None,
+        api_key: str | None = None,
+        remote_host: str | None = None,
         api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,

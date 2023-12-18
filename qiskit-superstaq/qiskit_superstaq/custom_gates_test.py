@@ -1,5 +1,5 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
-from typing import Set
+from __future__ import annotations
 
 import numpy as np
 import pytest
@@ -105,7 +105,7 @@ def test_parallel_gates() -> None:
     _check_gate_definition(gate)
 
     # confirm gates are applied to disjoint qubits
-    all_qargs: Set[qiskit.circuit.Qubit] = set()
+    all_qargs: set[qiskit.circuit.Qubit] = set()
     for _, qargs, _ in gate.definition:
         assert all_qargs.isdisjoint(qargs)
         all_qargs.update(qargs)

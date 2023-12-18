@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import functools
-from typing import Optional, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -17,9 +16,9 @@ class AceCR(qiskit.circuit.Gate):
 
     def __init__(
         self,
-        rads: Union[str, float] = np.pi / 2,
+        rads: str | float = np.pi / 2,
         sandwich_rx_rads: float = 0,
-        label: Optional[str] = None,
+        label: str | None = None,
     ) -> None:
         """Initializes an AceCR gate.
 
@@ -67,7 +66,7 @@ class AceCR(qiskit.circuit.Gate):
         qc.rzx(-self.rads / 2, 0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.bool_]:
+    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
         """Returns an array for the AceCR gate."""
         return qiskit.quantum_info.Operator(self.definition).data
 
@@ -119,7 +118,7 @@ class ZZSwapGate(qiskit.circuit.Gate):
     For :math:`\theta = 0`, the ZZ-SWAP gate is just an ordinary SWAP.
     """
 
-    def __init__(self, theta: float, label: Optional[str] = None) -> None:
+    def __init__(self, theta: float, label: str | None = None) -> None:
         """Initializes a ZZ-SWAP gate.
 
         Args:
@@ -145,7 +144,7 @@ class ZZSwapGate(qiskit.circuit.Gate):
         qc.cx(0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.bool_]:
+    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
         """Returns a numpy array for the ZZ-SWAP gate."""
         return np.array(
             [
@@ -175,7 +174,7 @@ class StrippedCZGate(qiskit.circuit.Gate):
     into a CZ gate by RZ gates afterwards if the rz angle is nonzero.
     """
 
-    def __init__(self, rz_rads: float, label: Optional[str] = None) -> None:
+    def __init__(self, rz_rads: float, label: str | None = None) -> None:
         """Initializes a Stripped CZ gate.
 
         Args:
@@ -199,7 +198,7 @@ class StrippedCZGate(qiskit.circuit.Gate):
         qc.cz(0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.complex_]:
+    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.complex_]:
         """Returns a numpy array of the Stripped CZ gate."""
         return np.array(
             [
@@ -222,7 +221,7 @@ class StrippedCZGate(qiskit.circuit.Gate):
 class ParallelGates(qiskit.circuit.Gate):
     """A single gate combining a collection of concurrent gate(s) acting on different qubits."""
 
-    def __init__(self, *component_gates: qiskit.circuit.Gate, label: Optional[str] = None) -> None:
+    def __init__(self, *component_gates: qiskit.circuit.Gate, label: str | None = None) -> None:
         """Initializes the `ParallelGates` class.
 
         Args:
@@ -232,7 +231,7 @@ class ParallelGates(qiskit.circuit.Gate):
         Raises:
             ValueError: If `component_gates` are not `qiskit.circuit.Gate` instances.
         """
-        self.component_gates: Tuple[qiskit.circuit.Gate, ...] = ()
+        self.component_gates: tuple[qiskit.circuit.Gate, ...] = ()
         num_qubits = 0
 
         for gate in component_gates:
@@ -266,7 +265,7 @@ class ParallelGates(qiskit.circuit.Gate):
             qubits = qubits[num_qubits:]
         self.definition = qc
 
-    def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.bool_]:
+    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
         """Returns a numpy array for `ParallelGates`."""
         mat = functools.reduce(np.kron, (gate.to_matrix() for gate in self.component_gates[::-1]))
         return np.asarray(mat, dtype=dtype)
@@ -292,7 +291,7 @@ class iXGate(qiskit.circuit.Gate):
         \end{bmatrix}
     """
 
-    def __init__(self, label: Optional[str] = None) -> None:
+    def __init__(self, label: str | None = None) -> None:
         """Initializes an iXGate.
 
         Args:
@@ -306,7 +305,7 @@ class iXGate(qiskit.circuit.Gate):
         qc.rx(-np.pi, 0)
         self.definition = qc
 
-    def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.bool_]:
+    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
         """Returns a numpy array of the iX gate."""
         return np.array([[0, 1j], [1j, 0]])
 
@@ -321,8 +320,8 @@ class iXGate(qiskit.circuit.Gate):
     def control(
         self,
         num_ctrl_qubits: int = 1,
-        label: Optional[str] = None,
-        ctrl_state: Optional[Union[str, int]] = None,
+        label: str | None = None,
+        ctrl_state: str | int | None = None,
     ) -> qiskit.circuit.ControlledGate:
         """Method to return a controlled version of the gate.
 
@@ -350,7 +349,7 @@ class iXGate(qiskit.circuit.Gate):
 class iXdgGate(qiskit.circuit.Gate):
     r"""The conjugate transpose of the `iXGate` (:math:`iXGate^{\dagger} = iXdgGate`)."""
 
-    def __init__(self, label: Optional[str] = None) -> None:
+    def __init__(self, label: str | None = None) -> None:
         """Initializes an iXdgGate.
 
         Args:
@@ -364,7 +363,7 @@ class iXdgGate(qiskit.circuit.Gate):
         qc.rx(np.pi, 0)
         self.definition = qc
 
-    def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.complex_]:
+    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.complex_]:
         """Returns a numpy array of the inverse iX gate."""
         return np.array([[0, -1j], [-1j, 0]])
 
@@ -378,8 +377,8 @@ class iXdgGate(qiskit.circuit.Gate):
     def control(
         self,
         num_ctrl_qubits: int = 1,
-        label: Optional[str] = None,
-        ctrl_state: Optional[Union[str, int]] = None,
+        label: str | None = None,
+        ctrl_state: str | int | None = None,
     ) -> qiskit.circuit.ControlledGate:
         """Method to return a controlled version of the gate.
 
@@ -421,9 +420,7 @@ class iCCXGate(qiskit.circuit.ControlledGate):
              └───┘
     """
 
-    def __init__(
-        self, label: Optional[str] = None, ctrl_state: Optional[Union[str, int]] = None
-    ) -> None:
+    def __init__(self, label: str | None = None, ctrl_state: str | int | None = None) -> None:
         """Initializes an iCCXGate.
 
         Args:
@@ -441,7 +438,7 @@ class iCCXGate(qiskit.circuit.ControlledGate):
         qc.cp(np.pi / 2, 0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.complex_]:
+    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.complex_]:
         """Returns a numpy array of the iCCX gate."""
         mat = qiskit.circuit._utils._compute_control_matrix(
             self.base_gate.to_matrix(), self.num_ctrl_qubits, ctrl_state=self.ctrl_state
@@ -458,9 +455,7 @@ class iCCXGate(qiskit.circuit.ControlledGate):
 class iCCXdgGate(qiskit.circuit.ControlledGate):
     r"""The conjugate transpose of the `iCCXGate` (:math:`iCCXGate^{\dagger} = iCCXdgGate`)."""
 
-    def __init__(
-        self, label: Optional[str] = None, ctrl_state: Optional[Union[str, int]] = None
-    ) -> None:
+    def __init__(self, label: str | None = None, ctrl_state: str | int | None = None) -> None:
         """Initializes an iCCXdgGate.
 
         Args:
@@ -478,7 +473,7 @@ class iCCXdgGate(qiskit.circuit.ControlledGate):
         qc.cp(-np.pi / 2, 0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: Optional[type] = None) -> npt.NDArray[np.complex_]:
+    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.complex_]:
         """Returns a numpy array of the `iCCXdgGate`."""
         mat = qiskit.circuit._utils._compute_control_matrix(
             self.base_gate.to_matrix(), self.num_ctrl_qubits, ctrl_state=self.ctrl_state
@@ -495,7 +490,7 @@ class iCCXdgGate(qiskit.circuit.ControlledGate):
 class AQTiCCXGate(iCCXGate):
     """A subclass of the iCCXGate for AQT where the control state is "00"."""
 
-    def __init__(self, label: Optional[str] = None) -> None:
+    def __init__(self, label: str | None = None) -> None:
         """Initializes an AQTiCCXGate.
 
         Args:
