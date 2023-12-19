@@ -242,7 +242,7 @@ class Job:
 
     def _get_circuits(
         self, circuit_type: str, index: Optional[int] = None
-    ) -> Union[cirq.Circuit, List[cirq.Circuit],]:
+    ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
         """Retrieves the corresponding circuit(s) to `circuit_type`.
 
         Args:
