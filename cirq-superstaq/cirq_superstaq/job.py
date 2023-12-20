@@ -318,6 +318,49 @@ class Job:
         """
         return self._get_circuits("input_circuit", index=index)
 
+    def pulse_gate_circuits(self, index: int | None = None) -> Any:
+        """Gets the pulse gate circuit returned by this job.
+
+        Args:
+            index: An optional index of the pulse gate circuit to retrieve.
+
+        Returns:
+            The `qiskit.QuantumCircuit` pulse gate circuit.
+
+        Raises:
+            ValueError: If the job was not run on an IBM pulse device.
+            ValueError: If the job's target does not use pulse gate circuits.
+        """
+        job_ids = self._job_id.split(",")
+
+        if not all(
+            job_id in self._job and self._job[job_id].get("pulse_gate_circuits") is not None
+            for job_id in job_ids
+        ):
+            self._refresh_job()
+
+        if index is None:
+            if all(self._job[job_id].get("pulse_gate_circuits") for job_id in job_ids):
+                serialized_circuits = [
+                    self._job[job_id]["pulse_gate_circuits"] for job_id in job_ids
+                ]
+                deserialized_circuits = []
+                for serialized_circuit in serialized_circuits:
+                    deserialized_circuit = css.serialization.deserialize_qiskit_circuits(
+                        serialized_circuit, False
+                    )
+                    if deserialized_circuit is None:
+                        raise ValueError("Some circuits could not be deserialized.")
+                    deserialized_circuits.append(deserialized_circuit[0])
+                return deserialized_circuits
+        else:
+            gss.validation.validate_integer_param(index, min_val=0)
+            serialized_circuit = self._job[job_ids[index]]["pulse_gate_circuits"]
+            return css.serialization.deserialize_qiskit_circuits(serialized_circuit, False)
+
+        error = f"Target '{self.target()}' does not use pulse gate circuits."
+        raise ValueError(error)
+
     @overload
     def counts(
         self,
@@ -337,7 +380,7 @@ class Job:
         qubit_indices: Sequence[int] | None = None,
     ) -> (
         dict[str, int] | list[dict[str, int]]
-    ):  # Change return to just `list[Dict[str, int]]` after deprecation
+    ):  # Change return to just `list[dict[str, int]]` after deprecation
         ...
 
     def counts(
