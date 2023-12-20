@@ -1,4 +1,6 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
+from __future__ import annotations
+
 from collections.abc import Mapping
 
 import cirq
