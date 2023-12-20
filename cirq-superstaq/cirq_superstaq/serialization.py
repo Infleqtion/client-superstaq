@@ -1,4 +1,6 @@
-from typing import List, Sequence, Union
+from __future__ import annotations
+
+from collections.abc import Sequence
 
 import cirq
 
@@ -10,9 +12,7 @@ SUPERSTAQ_RESOLVERS = [
 ]
 
 
-def serialize_circuits(
-    circuits: Union[cirq.AbstractCircuit, Sequence[cirq.AbstractCircuit]]
-) -> str:
+def serialize_circuits(circuits: cirq.AbstractCircuit | Sequence[cirq.AbstractCircuit]) -> str:
     """Serialize circuit(s) into a json string.
 
     Args:
@@ -24,7 +24,7 @@ def serialize_circuits(
     return cirq.to_json(circuits)
 
 
-def deserialize_circuits(serialized_circuits: str) -> List[cirq.Circuit]:
+def deserialize_circuits(serialized_circuits: str) -> list[cirq.Circuit]:
     """Deserialize serialized circuit(s).
 
     Args:

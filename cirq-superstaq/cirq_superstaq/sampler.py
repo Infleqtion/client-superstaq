@@ -13,8 +13,6 @@
 """A `cirq.Sampler` implementation for the Superstaq API."""
 from __future__ import annotations
 
-from typing import List
-
 import cirq
 
 import cirq_superstaq as css
@@ -64,7 +62,7 @@ class Sampler(cirq.Sampler):
         program: cirq.AbstractCircuit,
         params: cirq.Sweepable,
         repetitions: int = 1,
-    ) -> List[cirq.ResultDict]:
+    ) -> list[cirq.ResultDict]:
         """Runs a sweep for the given circuit.
 
         Note:
