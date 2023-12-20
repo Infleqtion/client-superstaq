@@ -3,7 +3,9 @@ from __future__ import annotations
 import importlib.util
 import warnings
 from collections.abc import Sequence
+
 import cirq
+
 import cirq_superstaq as css
 
 SUPERSTAQ_RESOLVERS = [
