@@ -123,7 +123,11 @@ def test_get_circuit(job: css.job.Job) -> None:
 
 def test_compiled_circuit(job: css.job.Job) -> None:
     compiled_circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
-    job_dict = {"status": "Done", "compiled_circuit": css.serialize_circuits(compiled_circuit)}
+    job_dict = {
+        "status": "Done",
+        "target": "fake_target",
+        "compiled_circuit": css.serialize_circuits(compiled_circuit),
+    }
 
     # The first call will trigger a refresh:
     with mocked_get_job_requests(job_dict) as mocked_get_job:
@@ -132,6 +136,100 @@ def test_compiled_circuit(job: css.job.Job) -> None:
 
     # Shouldn't need to retrieve anything now that `job._job` is populated:
     assert job.compiled_circuits(index=0) == compiled_circuit
+
+    with pytest.raises(
+        ValueError, match=f"Target '{job.target()}' does not use pulse gate circuits."
+    ):
+        job.pulse_gate_circuits()
+
+
+def test_pulse_gate_circuits(job: css.job.Job) -> None:
+    import qiskit
+
+    qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
+    pulse_gate_circuit = qiskit.QuantumCircuit(1, 1)
+    pulse_gate = qiskit.circuit.Gate("test_pulse_gate", 1, [3.14, 1])
+    pulse_gate_circuit.append(pulse_gate, [0])
+    pulse_gate_circuit.measure(0, 0)
+
+    job_dict = {"status": "Done", "pulse_gate_circuits": qss.serialize_circuits(pulse_gate_circuit)}
+
+    # The first call will trigger a refresh:
+    with mocked_get_job_requests(job_dict) as mocked_get_job:
+        assert job.pulse_gate_circuits()[0] == pulse_gate_circuit
+        mocked_get_job.assert_called_once()
+
+    # Shouldn't need to retrieve anything now that `job._job` is populated:
+    assert job.pulse_gate_circuits()[0] == pulse_gate_circuit
+
+
+def test_pulse_gate_circuits_index(job: css.job.Job) -> None:
+    import qiskit
+
+    qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
+    pulse_gate_circuit = qiskit.QuantumCircuit(1, 1)
+    pulse_gate = qiskit.circuit.Gate("test_pulse_gate", 1, [3.14, 1])
+    pulse_gate_circuit.append(pulse_gate, [0])
+    pulse_gate_circuit.measure(0, 0)
+
+    job_dict = {"status": "Done", "pulse_gate_circuits": qss.serialize_circuits(pulse_gate_circuit)}
+
+    # The first call will trigger a refresh:
+    with mocked_get_job_requests(job_dict) as mocked_get_job:
+        assert job.pulse_gate_circuits(index=0)[0] == pulse_gate_circuit
+        mocked_get_job.assert_called_once()
+
+    # Shouldn't need to retrieve anything now that `job._job` is populated:
+    assert job.pulse_gate_circuits(index=0)[0] == pulse_gate_circuit
+
+    # Test on invalid index
+    with pytest.raises(ValueError, match="is less than the minimum"):
+        job.pulse_gate_circuits(index=-3)
+
+
+def test_pulse_gate_circuits_invalid_circuit(job: css.job.Job) -> None:
+    # Invalid pulse gate circuit
+
+    job_dict = {"status": "Done", "pulse_gate_circuits": "invalid_pulse_gate_circuit_str"}
+
+    # The first call will trigger a refresh:
+    with mocked_get_job_requests(job_dict) as _:
+        with pytest.raises(ValueError, match="circuits could not be deserialized."):
+            job.pulse_gate_circuits()
+
+
+def test_multi_pulse_gate_circuits(job: css.Job) -> None:
+    import qiskit
+
+    qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
+
+    job = css.Job(
+        gss.superstaq_client._SuperstaqClient(
+            client_name="cirq-superstaq",
+            remote_host="http://example.com",
+            api_key="to_my_heart",
+        ),
+        "abc123,def456,ghi789",
+    )
+
+    pulse_gate_circuit = qiskit.QuantumCircuit(1, 1)
+    pulse_gate = qiskit.circuit.Gate("test_pulse_gate", 1, [3.14, 1])
+    pulse_gate_circuit.append(pulse_gate, [0])
+    pulse_gate_circuit.measure(0, 0)
+
+    job_dict = {
+        "status": "Done",
+        "pulse_gate_circuits": qss.serialize_circuits(pulse_gate_circuit),
+    }
+
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=job_dict
+    ):
+        assert job.pulse_gate_circuits() == [
+            pulse_gate_circuit,
+            pulse_gate_circuit,
+            pulse_gate_circuit,
+        ]
 
 
 def test_multi_circuit_job() -> None:
