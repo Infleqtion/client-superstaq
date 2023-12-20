@@ -44,7 +44,7 @@ def deserialize_circuits(serialized_circuits: str) -> list[cirq.Circuit]:
 
 def deserialize_qiskit_circuits(
     serialized_qiskit_circuits: str, circuits_is_list: bool
-) -> Optional[List[Any]]:
+) -> list[object] | None:
     """Deserializes `qiskit.QuantumCircuit` objects, if possible; otherwise warns the user.
 
     Args:

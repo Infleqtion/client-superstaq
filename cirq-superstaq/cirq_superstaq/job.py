@@ -318,7 +318,7 @@ class Job:
         """
         return self._get_circuits("input_circuit", index=index)
 
-    def pulse_gate_circuits(self, index: Optional[int] = None) -> Any:
+    def pulse_gate_circuits(self, index: int | None = None) -> Any:
         """Gets the pulse gate circuit returned by this job.
 
         Args:
@@ -380,7 +380,7 @@ class Job:
         qubit_indices: Sequence[int] | None = None,
     ) -> (
         dict[str, int] | list[dict[str, int]]
-    ):  # Change return to just `list[Dict[str, int]]` after deprecation
+    ):  # Change return to just `list[dict[str, int]]` after deprecation
         ...
 
     def counts(
