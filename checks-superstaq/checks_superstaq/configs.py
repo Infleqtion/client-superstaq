@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 import difflib
 import os
 import sys
 import textwrap
-from typing import List, Tuple
 
 from checks_superstaq import check_utils
 
@@ -40,8 +41,8 @@ def run(*args: str, silent: bool = False) -> int:
     # identify the "original" config file, and the file that is supposed to be a copy
     file_orig = os.path.join(os.path.abspath(os.path.dirname(__file__)), TEMPLATE_FILE)
     file_copy = os.path.join(check_utils.root_dir, CONFIG_FILE)
-    lines_orig = open(file_orig, "r").read().splitlines()
-    lines_copy = open(file_copy, "r").read().splitlines()
+    lines_orig = open(file_orig).read().splitlines()
+    lines_copy = open(file_copy).read().splitlines()
 
     # trim package-specific configuration
     lines_orig, orig_offset = _trim_lines(lines_orig)
@@ -49,7 +50,7 @@ def run(*args: str, silent: bool = False) -> int:
 
     # collect differences between config files, ignoring lines in file_copy that match IGNORE_MATCH
     matcher = difflib.SequenceMatcher(a=lines_orig, b=lines_copy)
-    deltas: List[Tuple[str, int, int, int, int]] = []
+    deltas: list[tuple[str, int, int, int, int]] = []
     for tag, orig_start, orig_end, copy_start, copy_end in matcher.get_opcodes():
         if tag == "equal":
             continue
@@ -82,7 +83,7 @@ def run(*args: str, silent: bool = False) -> int:
     return 0
 
 
-def _trim_lines(lines: List[str]) -> Tuple[List[str], int]:
+def _trim_lines(lines: list[str]) -> tuple[list[str], int]:
     """Remove package-specific configuration text, and identify the starting lines to compare."""
     for start_line, line in enumerate(lines):
         if START_MATCH in line:
