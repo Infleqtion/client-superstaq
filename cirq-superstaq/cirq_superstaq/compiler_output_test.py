@@ -1,8 +1,9 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
+from __future__ import annotations
+
 import importlib
 import pickle
 import textwrap
-from typing import Dict
 from unittest import mock
 
 import cirq
@@ -78,7 +79,7 @@ def test_measured_qubit_indices_with_circuit_operations() -> None:
 
 def test_compiler_output_repr() -> None:
     circuit = cirq.Circuit()
-    qubit_map: Dict[cirq.Qid, cirq.Qid] = {}
+    qubit_map: dict[cirq.Qid, cirq.Qid] = {}
     assert (
         repr(css.compiler_output.CompilerOutput(circuit, qubit_map, qubit_map))
         == f"CompilerOutput({circuit!r}, {{}}, {{}}, None, None, None, None, None)"

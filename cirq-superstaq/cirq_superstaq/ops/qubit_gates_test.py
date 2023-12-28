@@ -116,7 +116,7 @@ def test_stripped_cz_gate() -> None:
     assert repr(gate) == "css.StrippedCZGate(0.123)"
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq as css")
     expected = np.diag(
-        ([1.0, np.exp(1j * rz_rads), np.exp(1j * rz_rads), np.exp(1j * (2 * rz_rads - np.pi))])
+        [1.0, np.exp(1j * rz_rads), np.exp(1j * rz_rads), np.exp(1j * (2 * rz_rads - np.pi))]
     )
     assert np.allclose(cirq.unitary(gate), expected)
 

@@ -1,5 +1,6 @@
 black[jupyter,colorama]>=23.1.0
 flake8>=6.0.0
+flake8-modern-annotations>=1.5.0
 flake8-pyproject>=1.2.3
 flake8-type-checking>=2.2.0
 isort[colors]>=5.10.1

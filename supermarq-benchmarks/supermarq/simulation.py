@@ -1,10 +1,10 @@
-from typing import Dict
+from __future__ import annotations
 
 import cirq
 import numpy as np
 
 
-def get_ideal_counts(circuit: cirq.Circuit) -> Dict[str, float]:
+def get_ideal_counts(circuit: cirq.Circuit) -> dict[str, float]:
     """Noiseless statevector simulation.
 
     Note that the qubits in the returned bitstrings are in big-endian order.
