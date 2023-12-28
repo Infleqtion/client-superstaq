@@ -14,7 +14,7 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 from unittest import mock
 
 import cirq
@@ -43,7 +43,7 @@ def new_job() -> css.Job:
     return css.Job(client, "new_job_id")
 
 
-def mocked_get_job_requests(*job_dicts: Dict[str, Any]) -> mock._patch[mock.Mock]:
+def mocked_get_job_requests(*job_dicts: dict[str, Any]) -> mock._patch[mock.Mock]:
     """Mocks the server's response to `get_job` requests using the given sequence of job_dicts.
     Return type is wrapped in a string because "'type' object is not subscriptable"
     is thrown at runtime

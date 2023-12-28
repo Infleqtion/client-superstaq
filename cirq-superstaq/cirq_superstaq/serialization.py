@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import importlib.util
 import warnings
-from typing import Any, List, Optional, Sequence, Union
+from collections.abc import Sequence
 
 import cirq
 
@@ -12,9 +14,7 @@ SUPERSTAQ_RESOLVERS = [
 ]
 
 
-def serialize_circuits(
-    circuits: Union[cirq.AbstractCircuit, Sequence[cirq.AbstractCircuit]]
-) -> str:
+def serialize_circuits(circuits: cirq.AbstractCircuit | Sequence[cirq.AbstractCircuit]) -> str:
     """Serialize circuit(s) into a json string.
 
     Args:
@@ -26,7 +26,7 @@ def serialize_circuits(
     return cirq.to_json(circuits)
 
 
-def deserialize_circuits(serialized_circuits: str) -> List[cirq.Circuit]:
+def deserialize_circuits(serialized_circuits: str) -> list[cirq.Circuit]:
     """Deserialize serialized circuit(s).
 
     Args:
@@ -44,7 +44,7 @@ def deserialize_circuits(serialized_circuits: str) -> List[cirq.Circuit]:
 
 def deserialize_qiskit_circuits(
     serialized_qiskit_circuits: str, circuits_is_list: bool
-) -> Optional[List[Any]]:
+) -> list[object] | None:
     """Deserializes `qiskit.QuantumCircuit` objects, if possible; otherwise warns the user.
 
     Args:
