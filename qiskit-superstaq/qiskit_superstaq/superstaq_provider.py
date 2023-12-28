@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
@@ -11,9 +9,11 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+from __future__ import annotations
 
 import warnings
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
 import numpy as np
@@ -21,6 +21,9 @@ import numpy.typing as npt
 import qiskit
 
 import qiskit_superstaq as qss
+
+if TYPE_CHECKING:
+    from _typeshed import SupportsItems
 
 
 class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
@@ -42,13 +45,18 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        remote_host: Optional[str] = None,
+        api_key: str | None = None,
+        remote_host: str | None = None,
         api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
+        cq_token: str | None = None,
+        ibmq_token: str | None = None,
+        ibmq_instance: str | None = None,
+        ibmq_channel: str | None = None,
+        **kwargs: Any,
     ) -> None:
-        """Initializes a SuperstaqProvider.
+        """Initializes a `SuperstaqProvider`.
 
         Args:
             api_key: A string that allows access to the Superstaq API. If no key is provided, then
@@ -65,11 +73,17 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             remote_host: The location of the API in the form of a URL. If this is None,
                 then this instance will use the environment variable `SUPERSTAQ_REMOTE_HOST`.
                 If that variable is not set, then this uses
-                `https://superstaq.super.tech/{api_version}`,
+                `https://superstaq.infleqtion.com/{api_version}`,
                 where `{api_version}` is the `api_version` specified below.
             api_version: The version of the API.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
             verbose: Whether to print to stdio and stderr on retriable errors.
+            cq_token: Token from CQ cloud.This is required to submit circuits to CQ hardware.
+            ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
+                to IBM hardware, or to access non-public IBM devices you may have access to.
+            ibmq_instance: An optional instance to use when running IBM jobs.
+            ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
+            kwargs: Other optimization and execution parameters.
 
         Raises:
             EnvironmentError: If an API key was not provided and could not be found.
@@ -83,6 +97,11 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             api_version=api_version,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
+            cq_token=cq_token,
+            ibmq_token=ibmq_token,
+            ibmq_instance=ibmq_instance,
+            ibmq_channel=ibmq_channel,
+            **kwargs,
         )
 
     def __str__(self) -> str:
@@ -102,21 +121,49 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         """
         return qss.SuperstaqBackend(provider=self, target=target)
 
-    def backends(self) -> List[qss.SuperstaqBackend]:
+    def backends(
+        self,
+        simulator: bool | None = None,
+        supports_submit: bool | None = None,
+        supports_compile: bool | None = None,
+        available: bool | None = None,
+        retired: bool | None = None,
+        **kwargs: bool,
+    ) -> list[qss.SuperstaqBackend]:
         """Lists the backends available from this provider.
+
+        Args:
+            simulator: Optional flag to restrict the list of targets to (non-) simulators.
+            supports_submit: Optional boolean flag to only return targets that (don't) allow
+                circuit submissions.
+            supports_compile: Optional boolean flag to return targets that (don't) support
+                circuit compilation.
+            available: Optional boolean flag to only return targets that are (not) available
+                to use.
+            retired: Optional boolean flag to only return targets that are or are not retired.
+            kwargs: Any additional, supported flags to restrict/filter returned targets.
 
         Returns:
             A list of Superstaq backends.
         """
-        targets = self._client.get_targets()["superstaq_targets"]
-        backends = []
-        for target in targets["compile-and-run"]:
-            backends.append(self.get_backend(target))
-        return backends
+        filters = dict(
+            simulator=simulator,
+            supports_submit=supports_submit,
+            supports_submit_qubo=False,
+            supports_compile=supports_compile,
+            available=available,
+            retired=retired,
+            **kwargs,
+        )
+        targets = self._client.get_targets(**filters)
+        superstaq_backends = []
+        for backend in targets:
+            superstaq_backends.append(self.get_backend(backend.target))
+        return superstaq_backends
 
     def resource_estimate(
-        self, circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]], target: str
-    ) -> Union[gss.ResourceEstimate, List[gss.ResourceEstimate]]:
+        self, circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit], target: str
+    ) -> gss.ResourceEstimate | list[gss.ResourceEstimate]:
         """Generates resource estimates for qiskit circuit(s).
 
         Args:
@@ -124,20 +171,20 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             target: A string containing the name of a target backend.
 
         Returns:
-            ResourceEstimate(s) containing resource costs (after compilation) for running circuit(s)
-            on a backend.
+            `ResourceEstimate`(s) containing resource costs (after compilation) for running
+            circuit(s) on a backend.
         """
         return self.get_backend(target).resource_estimate(circuits)
 
     def aqt_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
+        circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         target: str = "aqt_keysight_qpu",
         *,
-        num_eca_circuits: Optional[int] = None,
-        random_seed: Optional[int] = None,
-        atol: Optional[float] = None,
-        gate_defs: Optional[Mapping[str, Union[str, npt.NDArray[np.complex_], None]]] = None,
+        num_eca_circuits: int | None = None,
+        random_seed: int | None = None,
+        atol: float | None = None,
+        gate_defs: Mapping[str, str | npt.NDArray[np.complex_] | None] | None = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
@@ -187,12 +234,12 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
 
     def aqt_compile_eca(
         self,
-        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
+        circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         num_equivalent_circuits: int,
-        random_seed: Optional[int] = None,
+        random_seed: int | None = None,
         target: str = "aqt_keysight_qpu",
-        atol: Optional[float] = None,
-        gate_defs: Optional[Mapping[str, Union[str, npt.NDArray[np.complex_], None]]] = None,
+        atol: float | None = None,
+        gate_defs: Mapping[str, str | npt.NDArray[np.complex_] | None] | None = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
@@ -247,8 +294,10 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
 
     def ibmq_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
+        circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         target: str = "ibmq_qasm_simulator",
+        dynamical_decoupling: bool = True,
+        dd_strategy: str = "static_context_aware",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Returns pulse schedule(s) for the given qiskit circuit(s) and target.
@@ -256,10 +305,15 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         Args:
             circuits: The circuit(s) to compile.
             target: A string containing the name of a target IBMQ backend.
+            dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
+            dd_strategy: Method to use for placing dynamical decoupling operations; either
+                "dynamic", "static", or "static_context_aware" (default).
             kwargs: Other desired ibmq_compile options.
 
         Returns:
-            object whose .circuit(s) attribute is an optimized qiskit circuit(s).
+            Object whose .circuit(s) attribute contains the compiled circuits(s), and whose
+            .pulse_gate_circuit(s) attribute contains the corresponding pulse schedule(s) (when
+            available).
 
         Raises:
             ValueError: If `target` is not a valid IBMQ target.
@@ -267,16 +321,20 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         if not target.startswith("ibmq_"):
             raise ValueError(f"{target!r} is not a valid IBMQ target.")
 
+        options = {"dynamical_decoupling": dynamical_decoupling, "dd_strategy": dd_strategy}
+        kwargs.update(options)
+
         return self.get_backend(target).compile(circuits, **kwargs)
 
     def qscout_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
+        circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         target: str = "sandia_qscout_qpu",
         *,
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
-        num_qubits: Optional[int] = None,
+        num_qubits: int | None = None,
+        error_rates: SupportsItems[tuple[int, ...], float] | None = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
@@ -303,10 +361,16 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
                 fixed maximally-entangling rotations.
             num_qubits: An optional number of qubits that should be present in the compiled
                 circuit(s) and Jaqal program(s) (otherwise this will be determined from the input).
+            error_rates: Optional dictionary assigning relative error rates to pairs of physical
+                qubits, in the form `{<qubit_indices>: <error_rate>, ...}` where `<qubit_indices>`
+                is a tuple physical qubit indices (ints) and `<error_rate>` is a relative error rate
+                for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`) . If
+                provided, Superstaq will attempt to map the circuit to minimize the total error on
+                each qubit.
             kwargs: Other desired qscout_compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains optimized `qiskit QuantumCircuit`(s), and
+            Object whose .circuit(s) attribute contains optimized `qiskit.QuantumCircuit`(s), and
             `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
 
         Raises:
@@ -316,20 +380,23 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         if not target.startswith("sandia_"):
             raise ValueError(f"{target!r} is not a valid Sandia target.")
 
-        return self.get_backend(target).compile(
+        return self.get_backend(target).qscout_compile(
             circuits,
             mirror_swaps=mirror_swaps,
             base_entangling_gate=base_entangling_gate,
             num_qubits=num_qubits,
+            error_rates=error_rates,
             **kwargs,
         )
 
     def cq_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
+        circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         target: str = "cq_hilbert_qpu",
         *,
-        grid_shape: Optional[Tuple[int, int]] = None,
+        grid_shape: tuple[int, int] | None = None,
+        control_radius: float = 1.0,
+        stripped_cz_rads: float = 0.0,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to CQ device, optimized to its native gate set.
@@ -339,6 +406,9 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             target: String of target CQ device.
             grid_shape: Optional fixed dimensions for the rectangular qubit grid (by default the
                 actual qubit layout will be pulled from the hardware provider).
+            control_radius: The radius with which qubits remain connected
+                (ie 1.0 indicates nearest neighbor connectivity).
+            stripped_cz_rads: The angle in radians of the stripped cz gate.
             kwargs: Other desired cq_compile options.
 
         Returns:
@@ -350,11 +420,17 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         if not target.startswith("cq_"):
             raise ValueError(f"{target!r} is not a valid CQ target.")
 
-        return self.get_backend(target).compile(circuits, grid_shape=grid_shape, **kwargs)
+        return self.get_backend(target).compile(
+            circuits,
+            grid_shape=grid_shape,
+            control_radius=control_radius,
+            stripped_cz_rads=stripped_cz_rads,
+            **kwargs,
+        )
 
     def supercheq(
-        self, files: List[List[int]], num_qubits: int, depth: int
-    ) -> Tuple[List[qiskit.QuantumCircuit], npt.NDArray[np.float_]]:
+        self, files: list[list[int]], num_qubits: int, depth: int
+    ) -> tuple[list[qiskit.QuantumCircuit], npt.NDArray[np.float_]]:
         """Returns Supercheq randomly generated circuits and the corresponding fidelity matrices.
 
         References:
@@ -378,12 +454,12 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
 
     def submit_dfe(
         self,
-        rho_1: Tuple[qiskit.QuantumCircuit, str],
-        rho_2: Tuple[qiskit.QuantumCircuit, str],
+        rho_1: tuple[qiskit.QuantumCircuit, str],
+        rho_2: tuple[qiskit.QuantumCircuit, str],
         num_random_bases: int,
         shots: int,
         **kwargs: Any,
-    ) -> List[str]:
+    ) -> list[str]:
         """Executes the circuits neccessary for the DFE protocol.
 
         The circuits used to prepare the desired states should not contain final measurements, but
@@ -453,7 +529,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
 
         return ids
 
-    def process_dfe(self, ids: List[str]) -> float:
+    def process_dfe(self, ids: list[str]) -> float:
         """Process the results of a DFE protocol.
 
         Args:
@@ -468,11 +544,3 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
                 through `submit_dfe` have not finished running.
         """
         return self._client.process_dfe(ids)
-
-    def get_targets(self) -> Dict[str, Any]:
-        """Gets list of targets.
-
-        Returns:
-            A dictionary sorted by "compile-only", "compile-and-run", "unavailable", and "retired".
-        """
-        return self._client.get_targets()["superstaq_targets"]

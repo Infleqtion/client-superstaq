@@ -1,10 +1,13 @@
+from __future__ import annotations
+
+import numbers
 import os
-from typing import Any, Dict, List, Optional, Tuple, Union
+from collections.abc import Sequence
+from typing import Any
 
 import qubovert as qv
 
 import general_superstaq as gss
-from general_superstaq import superstaq_client
 
 
 class Service:
@@ -12,9 +15,8 @@ class Service:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        remote_host: Optional[str] = None,
-        default_target: Optional[str] = None,
+        api_key: str | None = None,
+        remote_host: str | None = None,
         api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
@@ -25,7 +27,7 @@ class Service:
             client: The Superstaq client to use.
         """
 
-        self._client = superstaq_client._SuperstaqClient(
+        self._client = gss.superstaq_client._SuperstaqClient(
             client_name="general-superstaq",
             remote_host=remote_host,
             api_key=api_key,
@@ -34,7 +36,7 @@ class Service:
             verbose=verbose,
         )
 
-    def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
+    def get_balance(self, pretty_output: bool = True) -> str | float:
         """Get the querying user's account balance in USD.
 
         Args:
@@ -48,11 +50,11 @@ class Service:
 
         balance = self._client.get_balance()["balance"]
         if pretty_output:
-            return f"${balance:,.2f}"
+            return f"{balance:,.2f} credits"
         return balance
 
     def _accept_terms_of_use(self, user_input: str) -> str:
-        """Send acceptance of terms of use at https://superstaq.super.tech/terms_of_use.
+        """Send acceptance of terms of use at https://superstaq.infleqtion.com/terms_of_use.
 
         Args:
             user_input: If "YES", server will mark user as having accepted terms of use.
@@ -87,7 +89,7 @@ class Service:
             balance: The new balance.
 
         Returns:
-             String containing status of update (whether or not it failed).
+            String containing status of update (whether or not it failed).
         """
         limit = 2000.0  # If limit modified, must update in server-superstaq
         if balance > limit:
@@ -109,7 +111,7 @@ class Service:
             role: The new role.
 
         Returns:
-             String containing status of update (whether or not it failed).
+            String containing status of update (whether or not it failed).
         """
         return self._client.update_user_role(
             {
@@ -118,53 +120,71 @@ class Service:
             }
         )
 
+    def get_targets(
+        self,
+        simulator: bool | None = None,
+        supports_submit: bool | None = None,
+        supports_submit_qubo: bool | None = None,
+        supports_compile: bool | None = None,
+        available: bool | None = None,
+        retired: bool | None = None,
+        **kwargs: bool,
+    ) -> list[gss.Target]:
+        """Gets a list of Superstaq targets along with their status information.
+
+        Args:
+            simulator: Optional flag to restrict the list of targets to (non-) simulators.
+            supports_submit: Optional boolean flag to only return targets that (don't) allow
+                circuit submissions.
+            supports_submit_qubo: Optional boolean flag to only return targets that (don't)
+                allow qubo submissions.
+            supports_compile: Optional boolean flag to return targets that (don't) support
+                circuit compilation.
+            available: Optional boolean flag to only return targets that are (not) available
+                to use.
+            retired: Optional boolean flag to only return targets that are or are not retired.
+            kwargs: Any additional, supported flags to restrict/filter returned targets.
+
+        Returns:
+            A list of Superstaq targets matching all provided criteria.
+        """
+        filters = dict(
+            simulator=simulator,
+            supports_submit=supports_submit,
+            supports_submit_qubo=supports_submit_qubo,
+            supports_compile=supports_compile,
+            available=available,
+            retired=retired,
+            **kwargs,
+        )
+        return self._client.get_targets(**filters)
+
     def submit_qubo(
         self,
         qubo: qv.QUBO,
         target: str,
         repetitions: int = 1000,
-        method: Optional[str] = None,
+        method: str | None = None,
         max_solutions: int = 1000,
-    ) -> Dict[str, str]:
-        """Solves the QUBO given via the submit_qubo function in superstaq_client, and returns any
-        number of specified dictionaries that seek the minimum of the energy landscape from the
-        given objective function known as output solutions.
+    ) -> dict[str, str]:
+        """Solves a submitted QUBO problem via annealing.
+
+        This method returns any number of specified dictionaries that seek the minimum of
+        the energy landscape from the given objective function known as output solutions.
 
         Args:
             qubo: A `qv.QUBO` object.
             target: The target to submit the qubo.
             repetitions: Number of times that the execution is repeated before stopping.
             method: The parameter specifying method of QUBO solving execution. Currently,
-            will either be the "dry-run" option which runs on dwave's simulated annealer,
-            or defauls to none and sends it directly to the specified target.
+                    will either be the "dry-run" option which runs on dwave's simulated annealer,
+                    or defaults to none and sends it directly to the specified target.
             max_solutions: A parameter that specifies the max number of output solutions.
 
         Returns:
-            A dictionary returned by the submit_qubo function.
+            A dictionary containing the output solutions.
         """
         return self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
-
-    def ibmq_set_token(self, token: str) -> str:
-        """Sets IBMQ token field.
-
-        Args:
-            token: IBMQ token string.
-
-        Returns:
-            String containing status of update (whether or not it failed).
-        """
-        return self._client.ibmq_set_token({"ibmq_token": token})
-
-    def cq_set_token(self, token: str) -> str:
-        """Sets CQ token field.
-
-        Args:
-            token: CQ token string.
-
-        Returns:
-            String containing status of update (whether or not it failed).
-        """
-        return self._client.cq_set_token({"cq_token": token})
 
     def aqt_upload_configs(self, pulses: Any, variables: Any) -> str:
         """Uploads configs for AQT.
@@ -172,8 +192,8 @@ class Service:
         Arguments can be either file paths (in .yaml format) or qtrl Manager instances.
 
         Args:
-            pulses: PulseManager or file path for pulse configuration.
-            variables: VariableManager or file path for variable configuration.
+            pulses: `PulseManager` or file path for pulse configuration.
+            variables: `VariableManager` or file path for variable configuration.
 
         Returns:
             A status of the update (whether or not it failed).
@@ -211,7 +231,7 @@ class Service:
 
         return self._client.aqt_upload_configs({"pulses": pulses_yaml, "variables": variables_yaml})
 
-    def aqt_get_configs(self) -> Dict[str, str]:
+    def aqt_get_configs(self) -> dict[str, str]:
         """Retrieves the raw AQT config files that had previously been uploaded to Superstaq.
 
         Returns:
@@ -222,18 +242,18 @@ class Service:
 
     def aqt_download_configs(
         self,
-        pulses_file_path: Optional[str] = None,
-        variables_file_path: Optional[str] = None,
+        pulses_file_path: str | None = None,
+        variables_file_path: str | None = None,
         overwrite: bool = False,
-    ) -> Optional[Tuple[Dict[str, Any], Dict[str, Any]]]:
+    ) -> tuple[dict[str, Any], dict[str, Any]] | None:
         """Downloads AQT configs that had previously been uploaded to Superstaq.
 
         Optionally saves configs to disk as YAML configuration files. Otherwise, the PyYAML package
         is required to read the downloaded configs.
 
         Args:
-            pulses_file_path (optional): Where to write the pulse configuration.
-            variables_file_path (optional): Where to write the variable configuration.
+            pulses_file_path: Where to write the pulse configuration.
+            variables_file_path: Where to write the variable configuration.
             overwrite: Whether or not to overwrite existing files.
 
         Returns:
@@ -297,14 +317,32 @@ class Service:
     def submit_aces(
         self,
         target: str,
-        qubits: List[int],
+        qubits: Sequence[int],
         shots: int,
         num_circuits: int,
         mirror_depth: int,
         extra_depth: int,
-        **kwargs: Any,
+        method: str | None = None,
+        noise: str | None = None,
+        error_prob: float | tuple[float, float, float] | None = None,
+        tag: str | None = None,
+        lifespan: int | None = None,
     ) -> str:
-        """Performs a POST request on the `/aces` endpoint.
+        """Submits the jobs to characterize `target` through the ACES protocol.
+
+        The following gate eigenvalues are eestimated. For each qubit in the device, we consider
+        six Clifford gates. These are given by the XZ maps: XZ, ZX, -YZ, -XY, ZY, YX. For each of
+        these gates, three eigenvalues are returned (X, Y, Z, in that order). Then, the two-qubit
+        gate considered here is the CZ in linear connectivity (each qubit n with n + 1). For this
+        gate, 15 eigenvalues are considered: XX, XY, XZ, XI, YX, YY, YZ, YI, ZX, ZY, ZZ, ZI, IX, IY
+        IZ, in that order.
+
+        If n qubits are characterized, the first 18 * n entries of the list returned by
+        `process_aces` will contain the  single-qubit eigenvalues for each gate in the order above.
+        After all the single-qubit eigenvalues, the next 15 * (n - 1) entries will contain for the
+        CZ connections, in ascending order.
+
+        The protocol in detail can be found in: https://arxiv.org/abs/2108.05803.
 
         Args:
             target: The device target to characterize.
@@ -313,19 +351,34 @@ class Service:
             num_circuits: How many random circuits to use in the protocol.
             mirror_depth: The half-depth of the mirror portion of the random circuits.
             extra_depth: The depth of the fully random portion of the random circuits.
-            kwargs: Other execution parameters.
-                - tag: Tag for all jobs submitted for this protocol.
-                - lifespan: How long to store the jobs submitted for in days (only works with right
+            method: Which type of method to execute the circuits with.
+            noise: Noise model to simulate the protocol with. Valid strings are
+                "symmetric_depolarize", "phase_flip", "bit_flip" and "asymmetric_depolarize".
+            error_prob: The error probabilities if a string was passed to `noise`.
+                * For "asymmetric_depolarize", `error_prob` will be a three-tuple with the error
+                rates for the X, Y, Z gates in that order. So, a valid argument would be
+                `error_prob = (0.1, 0.1, 0.1)`. Notice that these values must add up to less than
+                or equal to 1.
+                * For the other channels, `error_prob` is one number less than or equal to 1, e.g.,
+                `error_prob = 0.1`.
+            tag: Tag for all jobs submitted for this protocol.
+            lifespan: How long to store the jobs submitted for in days (only works with right
                 permissions).
-                - method: Which type of method to execute the circuits with.
 
         Returns:
             A string with the job id for the ACES job created.
 
         Raises:
-            ValueError: If any the target passed are not valid.
-            SuperstaqServerException: if the request fails.
+            ValueError: If the target or noise model are not valid.
+            SuperstaqServerException: If the request fails.
         """
+        noise_dict: dict[str, object] = {}
+        if noise:
+            noise_dict["type"] = noise
+            noise_dict["params"] = (
+                (error_prob,) if isinstance(error_prob, numbers.Number) else error_prob
+            )
+
         return self._client.submit_aces(
             target=target,
             qubits=qubits,
@@ -333,11 +386,14 @@ class Service:
             num_circuits=num_circuits,
             mirror_depth=mirror_depth,
             extra_depth=extra_depth,
-            **kwargs,
+            method=method,
+            noise=noise_dict,
+            tag=tag,
+            lifespan=lifespan,
         )
 
-    def process_aces(self, job_id: str) -> List[float]:
-        """Makes a POST request to the "/aces_fetch" endpoint.
+    def process_aces(self, job_id: str) -> list[float]:
+        """Process a job submitted through `submit_aces`.
 
         Args:
             job_id: The job id returned by `submit_aces`.

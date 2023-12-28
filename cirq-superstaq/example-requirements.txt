@@ -1,2 +1,2 @@
-notebook~=6.4.12
-qiskit-terra>=0.24.2
+notebook~=6.5.5
+qiskit-superstaq~=0.5.4

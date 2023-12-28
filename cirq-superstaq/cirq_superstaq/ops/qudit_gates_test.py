@@ -1,6 +1,9 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
+from __future__ import annotations
+
+import functools
 import textwrap
-from typing import List, Optional, Tuple, Type
+from typing import cast
 from unittest import mock
 
 import cirq
@@ -57,7 +60,7 @@ def test_qudit_swap_gate(dimension: int) -> None:
     # Check the unitary by commuting through random single-qudit gates:
     one_qb_gate0 = cirq.MatrixGate(cirq.testing.random_unitary(dimension), qid_shape=(dimension,))
     one_qb_gate1 = cirq.MatrixGate(cirq.testing.random_unitary(dimension), qid_shape=(dimension,))
-    assert np.array_equal(
+    assert np.allclose(
         cirq.Circuit(one_qb_gate0(q0), one_qb_gate1(q1), swap_op).unitary(),
         cirq.Circuit(swap_op, one_qb_gate0(q1), one_qb_gate1(q0)).unitary(),
     )
@@ -262,7 +265,7 @@ def test_qutrit_z_pow_gate() -> None:
 @pytest.mark.parametrize(
     "gate_type", [css.QutritZ0PowGate, css.QutritZ1PowGate, css.QutritZ2PowGate]
 )
-def test_qutrit_z_pow_gate_protocols(gate_type: Type[css.ops.qudit_gates._QutritZPowGate]) -> None:
+def test_qutrit_z_pow_gate_protocols(gate_type: type[css.ops.qudit_gates._QutritZPowGate]) -> None:
     cirq.testing.assert_eigengate_implements_consistent_protocols(
         gate_type,
         setup_code="import cirq_superstaq as css, sympy",
@@ -292,6 +295,119 @@ def test_qutrit_z_pow_gate_protocols(gate_type: Type[css.ops.qudit_gates._Qutrit
 
     expected_unitary = np.eye(3, dtype=complex)
     expected_unitary[gate._target_state, gate._target_state] = np.exp(1.23j * np.pi)
+
+    np.testing.assert_allclose(cirq.unitary(gate), expected_unitary)
+    cirq.testing.assert_allclose_up_to_global_phase(
+        cirq.unitary(shifted_gate), expected_unitary, atol=1e-10
+    )
+
+    cirq.testing.assert_json_roundtrip_works(
+        gate,
+        resolvers=css.SUPERSTAQ_RESOLVERS,
+    )
+    cirq.testing.assert_json_roundtrip_works(
+        shifted_gate**1.23,
+        resolvers=css.SUPERSTAQ_RESOLVERS,
+    )
+
+
+def test_virtual_z_pow_gate() -> None:
+    fixed_gates = [
+        css.VirtualZPowGate(dimension=2, level=1),
+        css.VirtualZPowGate(dimension=3, level=1),
+        css.VirtualZPowGate(dimension=3, level=2),
+        css.VirtualZPowGate(dimension=4, level=1),
+        css.VirtualZPowGate(dimension=4, level=2),
+        css.VirtualZPowGate(dimension=4, level=3),
+    ]
+    for i, gate in enumerate(fixed_gates):
+        for other_gate in fixed_gates[:i]:
+            assert not cirq.equal_up_to_global_phase(gate, other_gate)
+            assert not cirq.approx_eq(gate, other_gate)
+
+    assert repr(css.VirtualZPowGate(dimension=3, level=1)) == "css.VirtualZPowGate(dimension=3)"
+    assert (
+        repr(css.VirtualZPowGate(dimension=4, level=3))
+        == "css.VirtualZPowGate(dimension=4, level=3)"
+    )
+    assert (
+        repr(css.VirtualZPowGate(dimension=3, global_shift=0.5))
+        == "css.VirtualZPowGate(dimension=3, global_shift=0.5)"
+    )
+    assert (
+        repr(css.VirtualZPowGate(dimension=5, global_shift=0.5) ** 1.23)
+        == "css.VirtualZPowGate(dimension=5, exponent=1.23, global_shift=0.5)"
+    )
+
+    assert str(css.VirtualZPowGate(dimension=2)) == "VZ(1+)"
+    assert str(css.VirtualZPowGate(dimension=3)) == "VZ(1+)"
+    assert str(css.VirtualZPowGate(dimension=3, level=2)) == "VZ(2+)"
+    assert str(css.VirtualZPowGate(dimension=4, level=2) ** 1.2) == "VZ(2+)**1.2"
+    assert str(css.VirtualZPowGate(dimension=4, global_shift=0.5)) == "VZ(1+)"
+    assert str(css.VirtualZPowGate(dimension=5, global_shift=0.5) ** 2.3) == "VZ(1+)**2.3"
+
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(css.VirtualZPowGate(dimension=3, level=1)(cirq.LineQid(0, 3))),
+        "0 (d=3): ───VZ₁₊───",
+    )
+
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(css.VirtualZPowGate(dimension=4, level=3)(cirq.LineQid(0, 4)) ** 1.2),
+        "0 (d=4): ───VZ₃₊^-0.8───",
+    )
+
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(css.VirtualZPowGate(dimension=4, level=2)(cirq.LineQid(0, 4))),
+        "0 (d=4): ---VZ(2+)---",
+        use_unicode_characters=False,
+    )
+
+    with pytest.raises(ValueError, match="Invalid dimension"):
+        _ = css.VirtualZPowGate(dimension=1)
+
+    with pytest.raises(ValueError, match="Invalid energy level"):
+        _ = css.VirtualZPowGate(dimension=3, level=3)
+
+    with pytest.raises(ValueError, match="Invalid energy level"):
+        _ = css.VirtualZPowGate(dimension=3, level=0)
+
+
+@pytest.mark.parametrize("level", [1, 2, 3])
+@pytest.mark.parametrize("dimension", [2, 3, 4])
+def test_virtual_z_pow_gate_protocols(dimension: int, level: int) -> None:
+    if level >= dimension:
+        return
+
+    gate_type = functools.partial(css.VirtualZPowGate, dimension=dimension, level=level)
+    cirq.testing.assert_eigengate_implements_consistent_protocols(
+        cast("type[cirq.EigenGate]", gate_type),
+        setup_code="import cirq_superstaq as css, sympy",
+        ignore_decompose_to_default_gateset=True,
+    )
+
+    gate = css.VirtualZPowGate(dimension, level=level, exponent=1.23)
+    same_gate = css.VirtualZPowGate(dimension, level=level - dimension) ** (gate.exponent + 2)
+    similar_gate = css.VirtualZPowGate(dimension, level=level, exponent=1.23 + 1e-10)
+    shifted_gate = css.VirtualZPowGate(dimension, level=level, exponent=1.23, global_shift=0.5)
+    another_gate = cirq.Y
+
+    assert gate == same_gate
+    assert gate != similar_gate
+    assert gate != shifted_gate
+    assert gate != another_gate
+
+    assert cirq.approx_eq(gate, same_gate)
+    assert cirq.approx_eq(gate, similar_gate)
+    assert not cirq.approx_eq(gate, shifted_gate)
+    assert not cirq.approx_eq(gate, another_gate)
+
+    assert cirq.equal_up_to_global_phase(gate, same_gate)
+    assert cirq.equal_up_to_global_phase(gate, similar_gate)
+    assert cirq.equal_up_to_global_phase(gate, shifted_gate)
+    assert not cirq.equal_up_to_global_phase(gate, another_gate)
+
+    expected_unitary = np.eye(dimension, dtype=complex)
+    expected_unitary[level:, level:] *= np.exp(1.23j * np.pi)
 
     np.testing.assert_allclose(cirq.unitary(gate), expected_unitary)
     cirq.testing.assert_allclose_up_to_global_phase(
@@ -347,9 +463,9 @@ def test_qubit_subspace_gate() -> None:
     ],
 )
 def test_qubit_subspace_gate_protocols(
-    sub_gate_type: Type[cirq.EigenGate],
-    qid_shape: Tuple[int, ...],
-    subspaces: Optional[List[Tuple[int, int]]],
+    sub_gate_type: type[cirq.EigenGate],
+    qid_shape: tuple[int, ...],
+    subspaces: list[tuple[int, int]] | None,
 ) -> None:
     sub_gate = sub_gate_type(exponent=1.23, global_shift=0.0)
 

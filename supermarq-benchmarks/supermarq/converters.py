@@ -145,7 +145,7 @@ def compute_depth_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
     dag = qiskit.converters.circuit_to_dag(circuit)
     dag.remove_all_ops_named("barrier")
     n_ed = 0
-    two_q_gates = set([op.name for op in dag.two_qubit_ops()])
+    two_q_gates = {op.name for op in dag.two_qubit_ops()}
     for name in two_q_gates:
         try:
             n_ed += dag.count_ops_longest_path()[name]

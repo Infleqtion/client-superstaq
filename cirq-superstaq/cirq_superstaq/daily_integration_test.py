@@ -1,13 +1,12 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 """Integration checks that run daily (via Github action) between client and prod server."""
-
-
 import os
 
 import cirq
 import general_superstaq as gss
+import numpy as np
 import pytest
-from general_superstaq import ResourceEstimate, SuperstaqServerException
+from general_superstaq import ResourceEstimate
 
 import cirq_superstaq as css
 
@@ -18,19 +17,6 @@ def service() -> css.Service:
 
 
 def test_ibmq_compile(service: css.Service) -> None:
-    qubits = cirq.LineQubit.range(2)
-    circuit = cirq.Circuit(css.AceCRPlusMinus(qubits[0], qubits[1]))
-    out = service.ibmq_compile(circuit, target="ibmq_jakarta_qpu")
-    assert isinstance(out.circuit, cirq.Circuit)
-    assert out.pulse_sequence is not None
-
-
-def test_acecr_ibmq_compile(service: css.Service) -> None:
-    """Tests ibmq_compile method running without error.
-
-    This test was originally written to make sure compilation to ibmq_casablanca would not fail, but
-    IBM has since taken casablanca down.
-    """
     qubits = cirq.LineQubit.range(4)
     circuit = cirq.Circuit(
         css.AceCRMinusPlus(qubits[0], qubits[1]),
@@ -38,15 +24,26 @@ def test_acecr_ibmq_compile(service: css.Service) -> None:
         css.AceCRMinusPlus(qubits[2], qubits[3]),
     )
 
-    out = service.ibmq_compile(circuit, target="ibmq_jakarta_qpu")
+    out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
     assert out.pulse_sequence is not None
 
-    out = service.ibmq_compile(circuit, target="ibmq_perth_qpu")
+    out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
     assert out.pulse_sequence is not None
 
-    out = service.ibmq_compile(circuit, target="ibmq_lagos_qpu")
+
+def test_ibmq_compile_with_token() -> None:
+    service = css.Service(ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"])
+    qubits = cirq.LineQubit.range(4)
+    circuit = cirq.Circuit(
+        css.AceCRMinusPlus(qubits[0], qubits[1]),
+        css.AceCRMinusPlus(qubits[1], qubits[2]),
+        css.AceCRMinusPlus(qubits[2], qubits[3]),
+    )
+
+    out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
+
     assert isinstance(out.circuit, cirq.Circuit)
     assert out.pulse_sequence is not None
 
@@ -113,7 +110,7 @@ def test_aqt_compile_eca_regression(service: css.Service) -> None:
 def test_get_balance(service: css.Service) -> None:
     balance_str = service.get_balance()
     assert isinstance(balance_str, str)
-    assert balance_str.startswith("$")
+    assert "credits" in balance_str
 
     assert isinstance(service.get_balance(pretty_output=False), float)
 
@@ -137,22 +134,27 @@ def test_get_resource_estimate(service: css.Service) -> None:
     assert resource_estimates == [ResourceEstimate(2, 1, 3), ResourceEstimate(2, 2, 4)]
 
 
-def test_ibmq_set_token(service: css.Service) -> None:
-    try:
-        ibmq_token = os.environ["TEST_USER_IBMQ_TOKEN"]
-    except KeyError as key:
-        raise KeyError(f"To run the integration tests, please export to {key} a valid IBMQ token")
-
-    assert service.ibmq_set_token(ibmq_token) == "Your IBMQ account token has been updated"
-
-    with pytest.raises(SuperstaqServerException, match="IBMQ token is invalid."):
-        assert service.ibmq_set_token("INVALID_TOKEN")
-
-
 def test_get_targets(service: css.Service) -> None:
     result = service.get_targets()
-    assert "ibmq_qasm_simulator" in result["compile-and-run"]
-    assert "aqt_keysight_qpu" in result["compile-only"]
+    ibmq_target_info = gss.typing.Target(
+        target="ibmq_qasm_simulator",
+        supports_submit=True,
+        supports_submit_qubo=False,
+        supports_compile=True,
+        available=True,
+        retired=False,
+    )
+    aqt_target_info = gss.typing.Target(
+        target="aqt_keysight_qpu",
+        supports_submit=False,
+        supports_submit_qubo=False,
+        supports_compile=True,
+        available=True,
+        retired=False,
+    )
+
+    assert ibmq_target_info in result
+    assert aqt_target_info in result
 
 
 def test_qscout_compile(service: css.Service) -> None:
@@ -253,13 +255,29 @@ def test_dfe(service: css.Service) -> None:
     assert isinstance(result, float)
 
 
+def test_aces(service: css.Service) -> None:
+    noise_model = cirq.NoiseModel.from_noise_model_like(cirq.depolarize(0.1))
+    job_id = service.submit_aces(
+        target="ss_unconstrained_simulator",
+        qubits=[0],
+        shots=100,
+        num_circuits=10,
+        mirror_depth=5,
+        extra_depth=7,
+        method="noise-sim",
+        noise=noise_model,
+    )
+    result = service.process_aces(job_id)
+    assert len(result) == 18
+
+
 def test_job(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
     job = service.create_job(circuit, target="ibmq_qasm_simulator", repetitions=10)
 
     job_id = job.job_id()  # To test for https://github.com/Infleqtion/client-superstaq/issues/452
 
-    assert job.counts() == {"0": 10}
+    assert job.counts(0) == {"0": 10}
     assert job.status() == "Done"
     assert job.job_id() == job_id
 
@@ -268,7 +286,7 @@ def test_job(service: css.Service) -> None:
     job._job["status"] = "Running"
 
     # State retrieved from the server should be the same:
-    assert job.counts() == {"0": 10}
+    assert job.counts(0) == {"0": 10}
     assert job.status() == "Done"
     assert job.job_id() == job_id
 
@@ -281,14 +299,33 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
     q1 = cirq.LineQubit(1)
     circuit = cirq.Circuit(cirq.X(q0), cirq.CNOT(q0, q1), cirq.measure(q0, q1))
 
-    job = service.create_job(circuit=circuit, repetitions=1, target=target)
-    assert job.counts() == {"11": 1}
+    job = service.create_job(circuit, repetitions=1, target=target)
+    assert job.counts(0) == {"11": 1}
+
+
+@pytest.mark.skip(reason="Can't be executed when Hilbert is set to not accept jobs")
+def test_submit_to_hilbert_qubit_sorting(service: css.Service) -> None:
+    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776"""
+    target = "cq_hilbert_qpu"
+    num_qubits = service.target_info(target)["num_qubits"]
+    qubits = cirq.LineQubit.range(num_qubits)
+    circuit = cirq.Circuit(
+        css.ParallelRGate(np.pi / 2, 0.0, 24).on(*qubits),
+        cirq.rz(np.pi).on(qubits[2]),
+        css.ParallelRGate(-np.pi / 2, 0.0, 24).on(*qubits),
+        cirq.measure(*qubits),
+    )
+
+    job = service.create_job(circuit, repetitions=100, verbatim=True, route=False, target=target)
+    counts = job.counts(0)
+    assert sum(counts.values()) == 100
+    assert max(counts, key=counts.__getitem__) == "001" + ("0" * (num_qubits - 3))
 
 
 def test_submit_qubo(service: css.Service) -> None:
     test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
     serialized_result = service.submit_qubo(
-        test_qubo, target="toshiba_bifurcation_qpu", method="dry-run"
+        test_qubo, target="toshiba_bifurcation_simulator", method="dry-run"
     )
     result = gss.qubo.read_json_qubo_result(serialized_result)
     best_result = result[0]

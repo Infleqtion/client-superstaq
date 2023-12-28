@@ -1,13 +1,12 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 """Integration checks that run daily (via Github action) between client and prod server."""
-
 import os
 
 import general_superstaq as gss
 import numpy as np
 import pytest
 import qiskit
-from general_superstaq import ResourceEstimate, SuperstaqServerException
+from general_superstaq import ResourceEstimate
 
 import qiskit_superstaq as qss
 
@@ -22,48 +21,32 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
     assert provider.get_backend("ibmq_qasm_simulator") in result
 
 
-def test_ibmq_set_token(provider: qss.SuperstaqProvider) -> None:
-    try:
-        ibmq_token = os.environ["TEST_USER_IBMQ_TOKEN"]
-    except KeyError as key:
-        raise KeyError(f"To run the integration tests, please export to {key} a valid IBMQ token")
-
-    assert provider.ibmq_set_token(ibmq_token) == "Your IBMQ account token has been updated"
-
-    with pytest.raises(SuperstaqServerException, match="IBMQ token is invalid."):
-        assert provider.ibmq_set_token("INVALID_TOKEN")
-
-
 def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
-    qc = qiskit.QuantumCircuit(2)
-    qc.append(qss.AceCR("+-"), [0, 1])
-    out = provider.ibmq_compile(qc, target="ibmq_jakarta_qpu")
-    assert isinstance(out, qss.compiler_output.CompilerOutput)
-    assert isinstance(out.circuit, qiskit.QuantumCircuit)
-    assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
-
-
-def test_acecr_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
-    """Tests ibmq_compile method running without error.
-
-    This test was originally written to make sure compilation to ibmq_casablanca would not fail, but
-    IBM has since taken casablanca down.
-    """
     qc = qiskit.QuantumCircuit(4)
     qc.append(qss.AceCR("-+"), [0, 1])
     qc.append(qss.AceCR("-+"), [1, 2])
     qc.append(qss.AceCR("-+"), [2, 3])
-    out = provider.ibmq_compile(qc, target="ibmq_jakarta_qpu")
+
+    out = provider.ibmq_compile(qc, target="ibmq_brisbane_qpu")
     assert isinstance(out, qss.compiler_output.CompilerOutput)
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
     assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
 
-    out = provider.ibmq_compile(qc, target="ibmq_perth_qpu")
+    out = provider.ibmq_compile(qc, target="ibmq_brisbane_qpu")
     assert isinstance(out, qss.compiler_output.CompilerOutput)
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
     assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
 
-    out = provider.ibmq_compile(qc, target="ibmq_lagos_qpu")
+
+def test_ibmq_compile_with_token() -> None:
+    provider = qss.SuperstaqProvider(ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"])
+    qc = qiskit.QuantumCircuit(4)
+    qc.append(qss.AceCR("-+"), [0, 1])
+    qc.append(qss.AceCR("-+"), [1, 2])
+    qc.append(qss.AceCR("-+"), [2, 3])
+
+    out = provider.ibmq_compile(qc, target="ibmq_brisbane_qpu")
+
     assert isinstance(out, qss.compiler_output.CompilerOutput)
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
     assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
@@ -118,7 +101,7 @@ def test_aqt_compile_eca_regression(provider: qss.SuperstaqProvider) -> None:
 def test_get_balance(provider: qss.SuperstaqProvider) -> None:
     balance_str = provider.get_balance()
     assert isinstance(balance_str, str)
-    assert balance_str.startswith("$")
+    assert "credits" in balance_str
 
     assert isinstance(provider.get_balance(pretty_output=False), float)
 
@@ -234,6 +217,22 @@ def test_dfe(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     assert isinstance(result, float)
 
 
+def test_aces(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
+    backend = provider.get_backend("ss_unconstrained_simulator")
+    job_id = backend.submit_aces(
+        qubits=[0],
+        shots=100,
+        num_circuits=10,
+        mirror_depth=5,
+        extra_depth=7,
+        method="dry-run",
+        noise="bit_flip",
+        error_prob=0.1,
+    )
+    result = backend.process_aces(job_id)
+    assert len(result) == 18
+
+
 @pytest.mark.parametrize(
     "target", ["cq_hilbert_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
 )
@@ -248,10 +247,32 @@ def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvi
     assert job.result().get_counts() == {"11": 1}
 
 
+@pytest.mark.skip(reason="Can't be executed when Hilbert is set to not accept jobs")
+def test_submit_to_hilbert_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
+    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776"""
+    backend = provider.get_backend("cq_hilbert_qpu")
+
+    num_qubits = backend.configuration().n_qubits
+
+    gr = qiskit.circuit.library.GR(num_qubits, np.pi / 2, 0)
+    grdg = qiskit.circuit.library.GR(num_qubits, -np.pi / 2, 0)
+
+    qc = qiskit.QuantumCircuit(num_qubits)
+    qc.append(gr, range(num_qubits))
+    qc.rz(np.pi, 2)
+    qc.append(grdg, range(num_qubits))
+    qc.measure_all()
+
+    job = backend.run(qc, 100, verbatim=True, route=False)
+    counts = job.result().get_counts()
+    assert sum(counts.values()) == 100
+    assert max(counts, key=counts.__getitem__) == ("0" * (num_qubits - 3)) + "100"
+
+
 def test_submit_qubo(provider: qss.SuperstaqProvider) -> None:
     test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
     serialized_result = provider.submit_qubo(
-        test_qubo, target="toshiba_bifurcation_qpu", method="dry-run"
+        test_qubo, target="toshiba_bifurcation_simulator", method="dry-run"
     )
     result = gss.qubo.read_json_qubo_result(serialized_result)
     best_result = result[0]

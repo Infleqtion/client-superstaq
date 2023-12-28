@@ -22,6 +22,7 @@ import qubovert as qv
 import requests
 
 import general_superstaq as gss
+from general_superstaq.testing import RETURNED_TARGETS, TARGET_LIST
 
 API_VERSION = gss.API_VERSION
 EXPECTED_HEADERS = {
@@ -46,9 +47,55 @@ def test_superstaq_client_str_and_repr() -> None:
     assert str(eval(repr(client))) == str(client)
 
 
+def test_superstaq_client_args() -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        cq_token="cq_token",
+        ibmq_channel="ibm_quantum",
+        ibmq_instance="instance",
+        ibmq_token="ibmq_token",
+    )
+    assert client.client_kwargs == dict(
+        cq_token="cq_token",
+        ibmq_channel="ibm_quantum",
+        ibmq_instance="instance",
+        ibmq_token="ibmq_token",
+    )
+
+    with pytest.raises(ValueError, match="must be either 'ibm_cloud' or 'ibm_quantum'"):
+        _ = gss.superstaq_client._SuperstaqClient(
+            client_name="general-superstaq",
+            remote_host="http://example.com",
+            api_key="to_my_heart",
+            ibmq_channel="foo",
+        )
+
+
 def test_general_superstaq_exception_str() -> None:
     ex = gss.SuperstaqServerException("err.", status_code=501)
     assert str(ex) == "err. (Status code: 501)"
+
+
+def test_warning_from_server() -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+
+    warning = {"message": "WARNING!", "category": "SuperstaqWarning"}
+
+    with mock.patch("requests.get", ok=True) as mock_request:
+        mock_request.return_value.json = lambda: {"abc": 123, "warnings": [warning]}
+        with pytest.warns(gss.SuperstaqWarning, match="WARNING!"):
+            assert client.get_request("/endpoint") == {"abc": 123}
+
+    with mock.patch("requests.post", ok=True) as mock_request:
+        mock_request.return_value.json = lambda: {"abc": 123, "warnings": [warning, warning]}
+        with pytest.warns(gss.SuperstaqWarning, match="WARNING!"):
+            assert client.post_request("/endpoint", {}) == {"abc": 123}
 
 
 @pytest.mark.parametrize("invalid_url", ("url", "http://", "ftp://", "http://"))
@@ -121,7 +168,7 @@ def test_superstaq_client_needs_accept_terms_of_use(
     fake_get_response.ok = False
     fake_get_response.status_code = requests.codes.unauthorized
     fake_get_response.json.return_value = (
-        "You must accept the Terms of Use (superstaq.super.tech/terms_of_use)."
+        "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
     )
     mock_get.return_value = fake_get_response
 
@@ -143,6 +190,31 @@ def test_superstaq_client_needs_accept_terms_of_use(
 
 
 @mock.patch("requests.post")
+def test_superstaq_client_validate_email_error(
+    mock_post: mock.MagicMock,
+) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+
+    mock_post.return_value.ok = False
+    mock_post.return_value.status_code = requests.codes.unauthorized
+    mock_post.return_value.json.return_value = "You must validate your registered email."
+
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    with pytest.raises(
+        gss.SuperstaqServerException, match="You must validate your registered email."
+    ):
+        _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
+
+
+@mock.patch("requests.post")
 def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
     mock_post.return_value.status_code = requests.codes.ok
     mock_post.return_value.json.return_value = {"foo": "bar"}
@@ -152,12 +224,14 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
+
     response = client.create_job(
         serialized_circuits={"Hello": "World"},
         repetitions=200,
         target="ss_example_qpu",
         method="dry-run",
         qiskit_pulse=True,
+        cq_token={"@type": "RefreshFlowState", "access_token": "123"},
     )
     assert response == {"foo": "bar"}
 
@@ -166,7 +240,9 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         "target": "ss_example_qpu",
         "shots": 200,
         "method": "dry-run",
-        "options": json.dumps({"qiskit_pulse": True}),
+        "options": json.dumps(
+            {"qiskit_pulse": True, "cq_token": {"@type": "RefreshFlowState", "access_token": "123"}}
+        ),
     }
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/jobs",
@@ -254,6 +330,42 @@ def test_superstaq_client_create_job_retry_request_error(mock_post: mock.MagicMo
 
 
 @mock.patch("requests.post")
+def test_superstaq_client_create_job_invalid_json(mock_post: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+
+    response = requests.Response()
+    response.status_code = requests.codes.not_implemented
+    response._content = b"invalid/json"
+    mock_post.return_value = response
+
+    with mock.patch("requests.post", return_value=response):
+        with pytest.raises(gss.SuperstaqServerException, match="invalid/json"):
+            _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_create_job_dont_retry_on_timeout(mock_post: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+
+    response = requests.Response()
+    response.status_code = requests.codes.gateway_timeout
+    response._content = b"invalid/json"
+    mock_post.return_value = response
+
+    with mock.patch("requests.post", return_value=response):
+        with pytest.raises(gss.SuperstaqServerException, match="timed out"):
+            _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
+
+
+@mock.patch("requests.post")
 def test_superstaq_client_create_job_timeout(mock_post: mock.MagicMock) -> None:
     mock_post.return_value.ok = False
     mock_post.return_value.status_code = requests.codes.service_unavailable
@@ -287,20 +399,25 @@ def test_superstaq_client_create_job_json(mock_post: mock.MagicMock) -> None:
         )
 
 
-@mock.patch("requests.get")
-def test_superstaq_client_get_job(mock_get: mock.MagicMock) -> None:
-    mock_get.return_value.ok = True
-    mock_get.return_value.json.return_value = {"foo": "bar"}
+@mock.patch("requests.post")
+def test_superstaq_client_fetch_jobs(mock_post: mock.MagicMock) -> None:
+    mock_post.return_value.ok = True
+    mock_post.return_value.json.return_value = {"my_id": {"foo": "bar"}}
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
-    response = client.get_job(job_id="job_id")
-    assert response == {"foo": "bar"}
-
-    mock_get.assert_called_with(
-        f"http://example.com/{API_VERSION}/job/job_id", headers=EXPECTED_HEADERS, verify=False
+    response = client.fetch_jobs(job_ids=["job_id"], cq_token={"access_token": "token"})
+    assert response == {"my_id": {"foo": "bar"}}
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/fetch_jobs",
+        json={
+            "job_ids": ["job_id"],
+            "options": '{"cq_token": {"access_token": "token"}}',
+        },
+        headers=EXPECTED_HEADERS,
+        verify=False,
     )
 
 
@@ -407,54 +524,23 @@ def test_superstaq_client_resource_estimate(mock_post: mock.MagicMock) -> None:
     assert mock_post.call_args[0][0] == f"http://example.com/{API_VERSION}/resource_estimate"
 
 
-@mock.patch("requests.get")
-def test_superstaq_client_get_targets(mock_get: mock.MagicMock) -> None:
-    mock_get.return_value.ok = True
-    targets = {
-        "superstaq_targets:": {
-            "compile-and-run": [
-                "ibmq_qasm_simulator",
-                "ibmq_armonk_qpu",
-                "ibmq_santiago_qpu",
-                "ibmq_bogota_qpu",
-                "ibmq_lima_qpu",
-                "ibmq_belem_qpu",
-                "ibmq_quito_qpu",
-                "ibmq_statevector_simulator",
-                "ibmq_mps_simulator",
-                "ibmq_extended-stabilizer_simulator",
-                "ibmq_stabilizer_simulator",
-                "ibmq_manila_qpu",
-                "aws_dm1_simulator",
-                "aws_sv1_simulator",
-                "d-wave_advantage-system4.1_qpu",
-                "d-wave_dw-2000q-6_qpu",
-                "aws_tn1_simulator",
-                "rigetti_aspen-9_qpu",
-                "d-wave_advantage-system1.1_qpu",
-                "ionq_ion_qpu",
-            ],
-            "compile-only": ["aqt_keysight_qpu", "sandia_qscout_qpu"],
-        }
-    }
-    mock_get.return_value.json.return_value = targets
+@mock.patch("requests.post")
+def test_superstaq_client_get_targets(mock_post: mock.MagicMock) -> None:
+    mock_post.return_value.ok = True
+    mock_post.return_value.json.return_value = {"superstaq_targets": TARGET_LIST}
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
     response = client.get_targets()
-    assert response == targets
-
-    mock_get.assert_called_with(
-        f"http://example.com/{API_VERSION}/targets", headers=EXPECTED_HEADERS, verify=False
-    )
+    assert response == RETURNED_TARGETS
 
 
-@mock.patch("requests.get")
-def test_superstaq_client_get_job_unauthorized(mock_get: mock.MagicMock) -> None:
-    mock_get.return_value.ok = False
-    mock_get.return_value.status_code = requests.codes.unauthorized
+@mock.patch("requests.post")
+def test_superstaq_client_get_job_unauthorized(mock_post: mock.MagicMock) -> None:
+    mock_post.return_value.ok = False
+    mock_post.return_value.status_code = requests.codes.unauthorized
 
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
@@ -465,10 +551,10 @@ def test_superstaq_client_get_job_unauthorized(mock_get: mock.MagicMock) -> None
         _ = client.get_job("job_id")
 
 
-@mock.patch("requests.get")
-def test_superstaq_client_get_job_not_found(mock_get: mock.MagicMock) -> None:
-    (mock_get.return_value).ok = False
-    (mock_get.return_value).status_code = requests.codes.not_found
+@mock.patch("requests.post")
+def test_superstaq_client_get_job_not_found(mock_post: mock.MagicMock) -> None:
+    (mock_post.return_value).ok = False
+    (mock_post.return_value).status_code = requests.codes.not_found
 
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
@@ -479,10 +565,10 @@ def test_superstaq_client_get_job_not_found(mock_get: mock.MagicMock) -> None:
         _ = client.get_job("job_id")
 
 
-@mock.patch("requests.get")
-def test_superstaq_client_get_job_not_retriable(mock_get: mock.MagicMock) -> None:
-    mock_get.return_value.ok = False
-    mock_get.return_value.status_code = requests.codes.bad_request
+@mock.patch("requests.post")
+def test_superstaq_client_get_job_not_retriable(mock_post: mock.MagicMock) -> None:
+    mock_post.return_value.ok = False
+    mock_post.return_value.status_code = requests.codes.bad_request
 
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
@@ -493,11 +579,11 @@ def test_superstaq_client_get_job_not_retriable(mock_get: mock.MagicMock) -> Non
         _ = client.get_job("job_id")
 
 
-@mock.patch("requests.get")
-def test_superstaq_client_get_job_retry(mock_get: mock.MagicMock) -> None:
+@mock.patch("requests.post")
+def test_superstaq_client_get_job_retry(mock_post: mock.MagicMock) -> None:
     response1 = mock.MagicMock()
     response2 = mock.MagicMock()
-    mock_get.side_effect = [response1, response2]
+    mock_post.side_effect = [response1, response2]
     response1.ok = False
     response1.status_code = requests.codes.service_unavailable
     response2.ok = True
@@ -507,7 +593,7 @@ def test_superstaq_client_get_job_retry(mock_get: mock.MagicMock) -> None:
         api_key="to_my_heart",
     )
     _ = client.get_job("job_id")
-    assert mock_get.call_count == 2
+    assert mock_post.call_count == 2
 
 
 @mock.patch("requests.post")
@@ -560,7 +646,7 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
     )
 
     example_qubo = qv.QUBO({(0,): 1.0, (1,): 1.0, (0, 1): -2.0})
-    target = "ss_example_qpu"
+    target = "toshiba_bifurcation_simulator"
     repetitions = 10
     client.submit_qubo(
         example_qubo, target, repetitions=repetitions, method="dry-run", max_solutions=1
@@ -580,6 +666,15 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
         json=expected_json,
         verify=False,
     )
+
+    with pytest.raises(gss.SuperstaqException, match="not support QUBO submission."):
+        client.submit_qubo(
+            example_qubo,
+            target="cq_hilbert_qpu",
+            repetitions=repetitions,
+            method="dry-run",
+            max_solutions=1,
+        )
 
 
 @mock.patch("requests.post")
@@ -618,6 +713,9 @@ def test_superstaq_client_aces(mock_post: mock.MagicMock) -> None:
         mirror_depth=6,
         extra_depth=4,
         method="dry-run",
+        tag="test-tag",
+        lifespan=10,
+        noise={"type": "symmetric_depolarize", "params": (0.01,)},
     )
 
     expected_json = {
@@ -627,7 +725,10 @@ def test_superstaq_client_aces(mock_post: mock.MagicMock) -> None:
         "num_circuits": 10,
         "mirror_depth": 6,
         "extra_depth": 4,
-        "options": json.dumps({"method": "dry-run"}),
+        "method": "dry-run",
+        "noise": {"type": "symmetric_depolarize", "params": (0.01,)},
+        "tag": "test-tag",
+        "lifespan": 10,
     }
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/aces",
@@ -695,44 +796,6 @@ def test_superstaq_client_dfe(mock_post: mock.MagicMock) -> None:
 
 
 @mock.patch("requests.post")
-def test_superstaq_client_ibmq_set_token(mock_post: mock.MagicMock) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
-        client_name="general-superstaq",
-        remote_host="http://example.com",
-        api_key="to_my_heart",
-    )
-
-    client.ibmq_set_token({"ibmq_token": "token"})
-
-    expected_json = {"ibmq_token": "token"}
-    mock_post.assert_called_with(
-        f"http://example.com/{API_VERSION}/ibmq_token",
-        headers=EXPECTED_HEADERS,
-        json=expected_json,
-        verify=False,
-    )
-
-
-@mock.patch("requests.post")
-def test_superstaq_client_cq_set_token(mock_post: mock.MagicMock) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
-        client_name="general-superstaq",
-        remote_host="http://example.com",
-        api_key="to_my_heart",
-    )
-
-    client.cq_set_token({"cq_token": "token"})
-
-    expected_json = {"cq_token": "token"}
-    mock_post.assert_called_with(
-        f"http://example.com/{API_VERSION}/cq_token",
-        headers=EXPECTED_HEADERS,
-        json=expected_json,
-        verify=False,
-    )
-
-
-@mock.patch("requests.post")
 def test_superstaq_client_aqt_upload_configs(mock_post: mock.MagicMock) -> None:
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
@@ -774,8 +837,27 @@ def test_superstaq_client_target_info(mock_post: mock.MagicMock) -> None:
     )
     client.target_info("ss_example_qpu")
 
-    expected_json = {"target": "ss_example_qpu"}
+    expected_json = {"target": "ss_example_qpu", "options": "{}"}
 
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/target_info",
+        headers=EXPECTED_HEADERS,
+        json=expected_json,
+        verify=False,
+    )
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_target_info_with_credentials(mock_post: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        cq_token="cq-token",
+    )
+    client.target_info("ss_example_qpu")
+
+    expected_json = {"target": "ss_example_qpu", "options": json.dumps({"cq_token": "cq-token"})}
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/target_info",
         headers=EXPECTED_HEADERS,

@@ -5,7 +5,9 @@ from general_superstaq.superstaq_exceptions import (
     SuperstaqException,
     SuperstaqServerException,
     SuperstaqUnsuccessfulJobException,
+    SuperstaqWarning,
 )
+from general_superstaq.typing import Target
 
 from . import (
     qubo,
@@ -25,11 +27,13 @@ __all__ = [
     "SuperstaqException",
     "SuperstaqUnsuccessfulJobException",
     "SuperstaqServerException",
+    "SuperstaqWarning",
     "qubo",
     "serialization",
     "service",
     "superstaq_client",
     "superstaq_exceptions",
     "typing",
+    "Target",
     "validation",
 ]

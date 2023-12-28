@@ -5,21 +5,26 @@
 
 Superstaq Documentation
 =======================
-Welcome to Superstaq's documentation! Here you can find more information about our packages ``cirq-superstaq`` and ``qiskit-superstaq``, which allow access to Superstaq via a Web API through `Cirq <https://github.com/quantumlib/Cirq>`_ and `Qiskit <https://qiskit.org/>`_, respectively.
-
-
-Check out some of our demos to see how Superstaq can help you:
-
+Welcome! Here you can find more about Infleqtion's state-of-the-art quantum software platform that uses proprietary cross-layer optimization techniques to deliver unmatched performance.
+      
 .. raw:: html
 
-   <div class="index-demos">
-      <div class="index-demos-box">
-         <div class="index-demos-headers"><a href="apps/supercheq/supercheq.html">Supercheq</a></div>
-         <div class="index-demos-desc">Supercheq is our novel quantum fingerprinting protocol and can be used with both qiskit-superstaq and cirq-superstaq</div>
+   <div class="container-index">
+      <div class="grid-exec">
+         <img src="_static/icons/EnhancedExecution.png" width=50px style="padding: 0 0 10px 0">
+         <div class="grid-header">Enhanced Execution</div>
+         Can improve performance by ≥ 10x. Read our <a href="https://arxiv.org/abs/2309.05157">white paper</a> to learn more.
       </div>
-      <div class="index-demos-box">
-         <div class="index-demos-headers"><a href="apps/max_sharpe_ratio_optimization.html">Sharpe Ratio Maximization</a></div>
-         <div class="index-demos-desc">An example of portfolio optimization formulated as a QUBO and solved using simulated annealing.</div>
+      <div class="grid-errmit">
+         <img src="_static/icons/Errormitigation.png" width=50px style="padding: 0 0 10px 0">
+         <div class="grid-header">Next-Gen Error Mitigation</div>
+         Incorporates techniques like <a href="./optimizations/ibm/ibmq_dd.html">Dynamical Decoupling</a>.
+      </div>
+      <div class="grid-decomp">
+         <img src="_static/icons/Optimaldecomp.png" width=50px style="padding: 0 0 10px 0">
+         <div class="grid-header">Optimized Decomposition</div>
+         Exploits the hardware's full set of native operations
+         <img src="_static/graphics/stack_cropped.png" style="padding: 5px 0 0 0;">
       </div>
    </div>
    <br>
@@ -56,13 +61,16 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
    apps/supercheq/supercheq
    apps/max_sharpe_ratio_optimization
    apps/dfe/dfe
+   apps/aces/aces
 
 .. toctree::
    :maxdepth: 1
    :hidden:
-   :caption: Contact Us
+   :caption: Additional Resources
 
-   contact
+   resources/contact
+   resources/developer_guide
+   resources/links
 
 .. toctree::
    :maxdepth: 1
@@ -72,4 +80,3 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
    cirq_superstaq
    qiskit_superstaq
    general_superstaq
-   supermarq

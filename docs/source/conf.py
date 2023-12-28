@@ -4,17 +4,17 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 # -- Path setup --------------------------------------------------------------
+from __future__ import annotations
 
 import os
 import sys
-from typing import List
 
 sys.path.insert(0, os.path.abspath("../.."))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "docs-superstaq"
+project = "Superstaq"
 copyright = "2023, ColdQuanta, Inc., DBA Infleqtion"  # pylint: disable=redefined-builtin
 author = "ColdQuanta, Inc., DBA Infleqtion"
 
@@ -43,7 +43,7 @@ templates_path = ["_templates"]
 # Using `modules` in index.rst gets the first package and ignores additional included packages.
 # Listing out modules explicitly causes building docs to throw error looking for `modules.rst`,
 # so add to excluded search patterns as per suggestion here: https://stackoverflow.com/a/15438962
-exclude_patterns: List[str] = [
+exclude_patterns: list[str] = [
     "modules.rst",
     "setup.rst",
     "general_superstaq.check.rst",
