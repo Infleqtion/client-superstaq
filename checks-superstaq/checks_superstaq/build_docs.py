@@ -3,13 +3,12 @@ import os
 import subprocess
 import sys
 import textwrap
-from typing import List, Optional
 
 from checks_superstaq import check_utils
 
 
 @check_utils.enable_exit_on_failure
-def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
+def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
     """Checks that the docs build successfully.
 
     Args:

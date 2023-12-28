@@ -2,7 +2,7 @@
 import subprocess
 import sys
 import textwrap
-from typing import Callable, Iterable, Optional, Union
+from collections.abc import Callable, Iterable
 
 from checks_superstaq import check_utils
 
@@ -10,9 +10,9 @@ from checks_superstaq import check_utils
 @check_utils.enable_exit_on_failure
 def run(
     *args: str,
-    include: Optional[Union[str, Iterable[str]]] = None,
-    exclude: Optional[Union[str, Iterable[str]]] = None,
-    integration_setup: Optional[Callable[[], None]] = None,
+    include: str | Iterable[str] | None = None,
+    exclude: str | Iterable[str] | None = None,
+    integration_setup: Callable[[], None] | None = None,
     silent: bool = False,
 ) -> int:
     """Runs pytest on the repository.

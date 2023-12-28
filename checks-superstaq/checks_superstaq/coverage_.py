@@ -2,7 +2,7 @@
 import subprocess
 import sys
 import textwrap
-from typing import Iterable, Union
+from collections.abc import Iterable
 
 from checks_superstaq import check_utils
 
@@ -10,8 +10,8 @@ from checks_superstaq import check_utils
 @check_utils.enable_exit_on_failure
 def run(
     *args: str,
-    include: Union[str, Iterable[str]] = "*.py",
-    exclude: Union[str, Iterable[str]] = "*_integration_test.py",
+    include: str | Iterable[str] = "*.py",
+    exclude: str | Iterable[str] = "*_integration_test.py",
     silent: bool = False,
 ) -> int:
     """Checks to make sure that all code is covered by unit tests.

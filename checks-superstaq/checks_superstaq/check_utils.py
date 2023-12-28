@@ -6,7 +6,8 @@ import os
 import re
 import subprocess
 import sys
-from typing import Any, Callable, Iterable, List, Union
+from collections.abc import Callable, Iterable
+from typing import Any
 
 # identify the root directory of the "main" script that called this module
 try:
@@ -97,7 +98,7 @@ default_branches = ("upstream/main", "origin/main", "main")
 # methods for identifying files to check
 
 
-def get_tracked_files(include: Union[str, Iterable[str]]) -> List[str]:
+def get_tracked_files(include: str | Iterable[str]) -> list[str]:
     """Identify all files tracked by git (in this repo) that match the given match_patterns.
 
     If no patterns are provided, return a list of all tracked files in the repo.
@@ -112,7 +113,7 @@ def get_tracked_files(include: Union[str, Iterable[str]]) -> List[str]:
     return _check_output("git", "ls-files", "--deduplicate", *include).splitlines()
 
 
-def existing_files(files: Iterable[str]) -> List[str]:
+def existing_files(files: Iterable[str]) -> list[str]:
     """Returns the subset of `files` which actually exist.
 
     Args:
@@ -124,7 +125,7 @@ def existing_files(files: Iterable[str]) -> List[str]:
     return [file for file in files if os.path.isfile(os.path.join(root_dir, file))]
 
 
-def exclude_files(files: Iterable[str], exclude: Union[str, Iterable[str]]) -> List[str]:
+def exclude_files(files: Iterable[str], exclude: str | Iterable[str]) -> list[str]:
     """Returns the files which don't match any of the globs in exclude.
 
     Args:
@@ -143,7 +144,7 @@ def exclude_files(files: Iterable[str], exclude: Union[str, Iterable[str]]) -> L
     return files
 
 
-def select_files(files: Iterable[str], include: Union[str, Iterable[str]]) -> List[str]:
+def select_files(files: Iterable[str], include: str | Iterable[str]) -> list[str]:
     """Returns the files which match at least one of the globs in include.
 
     Args:
@@ -161,7 +162,7 @@ def select_files(files: Iterable[str], include: Union[str, Iterable[str]]) -> Li
 
 def get_changed_files(
     files: Iterable[str], revisions: Iterable[str], silent: bool = False
-) -> List[str]:
+) -> list[str]:
     """Returns the files that have been changed in the current branch.
 
     You can specify git revisions to compare against when determining whether a file is considered
@@ -244,8 +245,8 @@ def _revision_exists(revision: str) -> bool:
 
 
 def get_test_files(
-    files: Iterable[str], exclude: Union[str, Iterable[str]] = (), silent: bool = False
-) -> List[str]:
+    files: Iterable[str], exclude: str | Iterable[str] = (), silent: bool = False
+) -> list[str]:
     """For the given files, identify all associated test files.
 
     I.e. test files are those with the same name, but with a "_test.py" suffix).
@@ -356,10 +357,10 @@ def get_check_parser(no_files: bool = False) -> argparse.ArgumentParser:
 
 def extract_files(
     parsed_args: argparse.Namespace,
-    include: Union[str, Iterable[str]] = (),
-    exclude: Union[str, Iterable[str]] = (),
+    include: str | Iterable[str] = (),
+    exclude: str | Iterable[str] = (),
     silent: bool = False,
-) -> List[str]:
+) -> list[str]:
     """Collect a list of files to test, according to command line arguments and `include`/`exclude`
     values.
 

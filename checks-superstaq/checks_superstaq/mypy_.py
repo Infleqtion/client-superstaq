@@ -2,7 +2,7 @@
 import subprocess
 import sys
 import textwrap
-from typing import Iterable, Union
+from collections.abc import Iterable
 
 from checks_superstaq import check_utils
 
@@ -10,8 +10,8 @@ from checks_superstaq import check_utils
 @check_utils.enable_exit_on_failure
 def run(
     *args: str,
-    include: Union[str, Iterable[str]] = "*.py",
-    exclude: Union[str, Iterable[str]] = (),
+    include: str | Iterable[str] = "*.py",
+    exclude: str | Iterable[str] = (),
     silent: bool = False,
 ) -> int:
     """Runs mypy on the repository (typing check).

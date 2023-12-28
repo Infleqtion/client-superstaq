@@ -8,7 +8,7 @@ import re
 import sys
 import textwrap
 import urllib.request
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from collections.abc import Iterable
 
 import packaging.version
 
@@ -18,8 +18,8 @@ from checks_superstaq import check_utils
 @check_utils.enable_exit_on_failure
 def run(
     *args: str,
-    include: Union[str, Iterable[str]] = "*requirements.txt",
-    exclude: Union[str, Iterable[str]] = "",
+    include: str | Iterable[str] = "*requirements.txt",
+    exclude: str | Iterable[str] = "",
     upstream_match: str = "*superstaq*",
     silent: bool = False,
 ) -> int:
@@ -83,9 +83,9 @@ def run(
 
 def _inspect_req_file(
     req_file: str, only_sort: bool, upstream_match: str, silent: bool
-) -> Tuple[bool, List[str]]:
+) -> tuple[bool, list[str]]:
     # read in requirements line-by-line
-    with open(os.path.join(check_utils.root_dir, req_file), "r") as file:
+    with open(os.path.join(check_utils.root_dir, req_file)) as file:
         requirements = file.read().strip().split("\n")
 
     if not _are_pip_requirements(requirements):
@@ -108,7 +108,7 @@ def _inspect_req_file(
     return needs_cleanup, requirements
 
 
-def _are_pip_requirements(requirements: List[str]) -> bool:
+def _are_pip_requirements(requirements: list[str]) -> bool:
     # "official" regex for pypi package names:
     # https://peps.python.org/pep-0508/#names
     pypi_name = r"[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9]"
@@ -138,14 +138,14 @@ def _get_package_name(requirement: str) -> str:
     return re.split(">|<|~|=", requirement)[0]
 
 
-def _sort_requirements(requirements: List[str]) -> Tuple[bool, List[str]]:
+def _sort_requirements(requirements: list[str]) -> tuple[bool, list[str]]:
     sorted_requirements = sorted(requirements, key=lambda req: _get_package_name(req).lower())
     needs_cleanup = requirements != sorted_requirements
     return needs_cleanup, sorted_requirements
 
 
 def _check_package_versions(
-    req_file: str, requirements: List[str], match: str, silent: bool, strict: bool
+    req_file: str, requirements: list[str], match: str, silent: bool, strict: bool
 ) -> bool:
     """Check whether package requirements matching 'match' are up-to-date with their latest
     versions.
@@ -181,7 +181,7 @@ def _check_package_versions(
     return strict and not up_to_date  # True iff we are *requiring* changes to the requirements file
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def _get_latest_version(package: str, silent: bool) -> str:
     """Retrieve the latest version of a package."""
     local_version = _get_local_version(package)
@@ -191,7 +191,7 @@ def _get_latest_version(package: str, silent: bool) -> str:
     return max(pypi_version or "0.0.0", local_version or "0.0.0", key=packaging.version.parse)
 
 
-def _get_local_version(package: str) -> Optional[str]:
+def _get_local_version(package: str) -> str | None:
     """Retrieve the local version of a package (if installed)."""
     base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
     sanitized_package_name = base_package.replace("-", "_").lower()
@@ -204,7 +204,7 @@ def _get_local_version(package: str) -> Optional[str]:
         return None
 
 
-def _get_pypi_version(package: str, silent: bool) -> Optional[str]:
+def _get_pypi_version(package: str, silent: bool) -> str | None:
     """Retrieve the latest version of a package on PyPI (if found)."""
     base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
     pypi_url = f"https://pypi.org/pypi/{base_package}/json"
@@ -232,7 +232,7 @@ def _inspect_local_version(package: str, latest_version: str) -> None:
 
 
 def _cleanup(
-    requirements_to_fix: Dict[str, List[str]],
+    requirements_to_fix: dict[str, list[str]],
     apply_changes: bool,
     silent: bool,
 ) -> None:
