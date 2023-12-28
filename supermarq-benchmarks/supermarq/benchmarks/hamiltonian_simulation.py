@@ -1,4 +1,6 @@
-from typing import Mapping
+from __future__ import annotations
+
+from collections.abc import Mapping
 
 import cirq
 import numpy as np

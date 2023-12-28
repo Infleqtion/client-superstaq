@@ -1,4 +1,6 @@
-from typing import Dict, Iterator, List
+from __future__ import annotations
+
+from collections.abc import Iterator
 
 import cirq
 from qiskit.quantum_info import hellinger_fidelity
@@ -18,10 +20,10 @@ class BitCode(Benchmark):
         A `cirq.Circuit` for the bit-flip error correcting code.
     """
 
-    def __init__(self, num_data_qubits: int, num_rounds: int, bit_state: List[int]) -> None:
+    def __init__(self, num_data_qubits: int, num_rounds: int, bit_state: list[int]) -> None:
         if len(bit_state) != num_data_qubits:
             raise ValueError("The length of `bit_state` must match the number of data qubits.")
-        if not isinstance(bit_state, List):
+        if not isinstance(bit_state, list):
             raise ValueError("`bit_state` must be a list[int].")
         else:
             if not set(bit_state).issubset({0, 1}):
@@ -31,7 +33,7 @@ class BitCode(Benchmark):
         self.bit_state = bit_state
 
     def _measurement_round_cirq(
-        self, qubits: List[cirq.LineQubit], round_idx: int
+        self, qubits: list[cirq.LineQubit], round_idx: int
     ) -> Iterator[cirq.Operation]:
         """Generates `cirq.Operation`s for a single measurement round.
 
@@ -71,7 +73,7 @@ class BitCode(Benchmark):
 
         return circuit
 
-    def _get_ideal_dist(self) -> Dict[str, float]:
+    def _get_ideal_dist(self) -> dict[str, float]:
         """Return the ideal probability distribution of `self.circuit()`.
 
         Since the only allowed initial states for this benchmark are single product states, there
@@ -91,7 +93,7 @@ class BitCode(Benchmark):
         ideal_bitstring = [ancilla_state] * self.num_rounds + [final_state]
         return {"".join(ideal_bitstring): 1.0}
 
-    def score(self, counts: Dict[str, float]) -> float:
+    def score(self, counts: dict[str, float]) -> float:
         """Compute benchmark score.
 
         Device performance is given by the Hellinger fidelity between the experimental results and

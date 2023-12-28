@@ -182,10 +182,10 @@ def test_service_aqt_get_configs(
         f"{tempdir}/{pulses_file}.yaml", f"{tempdir}/{variables_file}.yaml"
     )
 
-    with open(f"{tempdir}/{pulses_file}.yaml", "r") as file:
+    with open(f"{tempdir}/{pulses_file}.yaml") as file:
         assert file.read() == "Hello"
 
-    with open(f"{tempdir}/{variables_file}.yaml", "r") as file:
+    with open(f"{tempdir}/{variables_file}.yaml") as file:
         assert file.read() == "World"
 
     with pytest.raises(ValueError, match="exist."):
