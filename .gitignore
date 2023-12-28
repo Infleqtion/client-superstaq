@@ -79,6 +79,9 @@ autoapi
 _build_rtd
 docs/source/modules.rst
 docs/source/setup.rst
+docs/source/general_superstaq.rst
+docs/source/cirq_superstaq.rst
+docs/source/qiskit_superstaq.rst
 docs/_build/
 
 # PyBuilder
