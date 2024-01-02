@@ -1,4 +1,4 @@
-from typing import Dict
+from __future__ import annotations
 
 import cirq
 from qiskit.quantum_info import hellinger_fidelity
@@ -35,7 +35,7 @@ class GHZ(Benchmark):
         circuit.append(cirq.measure(*qubits))
         return circuit
 
-    def score(self, counts: Dict[str, int]) -> float:
+    def score(self, counts: dict[str, int]) -> float:
         r"""Compute the Hellinger fidelity between the experimental and ideal results.
 
         The ideal results are 50% probabilty of measuring the all-zero state and 50% probability

@@ -4,7 +4,8 @@ import io
 import json
 import re
 import warnings
-from typing import Callable, Dict, List, Sequence, TypeVar, Union
+from collections.abc import Callable, Sequence
+from typing import TypeVar
 
 import general_superstaq as gss
 import numpy as np
@@ -15,11 +16,10 @@ import qiskit_ibm_provider
 import qiskit_superstaq as qss
 
 T = TypeVar("T")
-RealArray = Union[int, float, List["RealArray"]]
 
 # Custom gate types to resolve when deserializing circuits
 # MSGate included as a workaround for https://github.com/Qiskit/qiskit/issues/11378
-_custom_gates_by_name: Dict[str, type[qiskit.circuit.Instruction]] = {
+_custom_gates_by_name: dict[str, type[qiskit.circuit.Instruction]] = {
     "acecr": qss.custom_gates.AceCR,
     "parallel": qss.custom_gates.ParallelGates,
     "stripped_cz": qss.custom_gates.StrippedCZGate,
@@ -33,7 +33,7 @@ _custom_gates_by_name: Dict[str, type[qiskit.circuit.Instruction]] = {
 
 # Custom resolvers, necessary when `gate != type(gate)(*gate.params)`
 # MSGate included as a workaround for https://github.com/Qiskit/qiskit/issues/11378
-_custom_resolvers: Dict[
+_custom_resolvers: dict[
     type[qiskit.circuit.Instruction],
     Callable[[qiskit.circuit.Instruction], qiskit.circuit.Instruction],
 ] = {
@@ -46,8 +46,8 @@ _custom_resolvers: Dict[
 }
 
 
-def json_encoder(val: object) -> Dict[str, Union[str, RealArray]]:
-    """Convert (real or complex) arrays to a JSON-serializable format.
+def json_encoder(val: object) -> dict[str, object]:
+    """Converts (real or complex) arrays to a JSON-serializable format.
 
     Args:
         val: The value to be serialized.
@@ -68,7 +68,7 @@ def json_encoder(val: object) -> Dict[str, Union[str, RealArray]]:
     raise TypeError(f"Object of type {type(val)} is not JSON serializable.")
 
 
-def json_resolver(val: T) -> Union[T, npt.NDArray[np.complex_]]:
+def json_resolver(val: T) -> T | npt.NDArray[np.complex_]:
     """Hook to deserialize objects that were serialized via `json_encoder()`.
 
     Args:
@@ -97,10 +97,8 @@ def to_json(val: object) -> str:
     return json.dumps(val, default=json_encoder)
 
 
-def serialize_circuits(
-    circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]]
-) -> str:
-    """Serialize QuantumCircuit(s) into a single string.
+def serialize_circuits(circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit]) -> str:
+    """Serializes `qiskit.QuantumCircuit`(s) into a single string.
 
     Args:
         circuits: A `qiskit.QuantumCircuit` or list of `qiskit.QuantumCircuit`s to be serialized.
@@ -122,8 +120,8 @@ def serialize_circuits(
     return gss.serialization.bytes_to_str(buf.getvalue())
 
 
-def deserialize_circuits(serialized_circuits: str) -> List[qiskit.QuantumCircuit]:
-    """Deserialize serialized `qiskit.QuantumCircuit`(s).
+def deserialize_circuits(serialized_circuits: str) -> list[qiskit.QuantumCircuit]:
+    """Deserializes serialized `qiskit.QuantumCircuit`(s).
 
     Args:
         serialized_circuits: String generated via `qss.serialization.serialize_circuit()`.

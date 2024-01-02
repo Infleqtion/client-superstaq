@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import abc
-from typing import Any, Sequence, Union
+from collections.abc import Sequence
+from typing import Any
 
 import cirq
 
@@ -17,7 +20,7 @@ class Benchmark:
     """
 
     @abc.abstractmethod
-    def circuit(self) -> Union[cirq.Circuit, Sequence[cirq.Circuit]]:
+    def circuit(self) -> cirq.Circuit | Sequence[cirq.Circuit]:
         """Returns the quantum circuit corresponding to the current benchmark parameters."""
 
     @abc.abstractmethod
