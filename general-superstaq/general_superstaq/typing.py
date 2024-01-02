@@ -12,6 +12,7 @@ class Job(TypedDict):
     num_qubits: int
     status: str
     target: str
+    pulse_gate_circuits: str | None
     circuit_type: str
     compiled_circuit: str
     input_circuit: str | None
