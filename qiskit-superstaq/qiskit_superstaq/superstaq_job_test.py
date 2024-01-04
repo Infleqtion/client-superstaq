@@ -328,9 +328,7 @@ def test_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
         assert job.compiled_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
         mocked_get_job.assert_called_once()
 
-        with pytest.raises(
-            ValueError, match=f"Target does not use pulse gate circuits."
-        ):
+        with pytest.raises(ValueError, match=f"Target does not use pulse gate circuits."):
             job.pulse_gate_circuits()
 
     assert job.compiled_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
@@ -470,7 +468,7 @@ def test_multi_pulse_gate_circuits(backend: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz,789cba")
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
-    ) as mocked_get_job:
+    ):
         assert job.pulse_gate_circuits() == pgc_list
 
     # After fetching the job info once it shouldn't be refreshed again (so no need to mock)

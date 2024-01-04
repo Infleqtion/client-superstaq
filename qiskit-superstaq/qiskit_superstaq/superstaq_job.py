@@ -318,7 +318,8 @@ class SuperstaqJob(qiskit.providers.JobV1):
         job_ids = self._job_id.split(",")
 
         if not all(
-            job_id in self._job_info and self._job_info[job_id].get("pulse_gate_circuits") is not None
+            job_id in self._job_info
+            and self._job_info[job_id].get("pulse_gate_circuits") is not None
             for job_id in job_ids
         ):
             self._refresh_job()
