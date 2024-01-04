@@ -1,7 +1,7 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Union
+from typing import TYPE_CHECKING
 from unittest import mock
 
 import general_superstaq as gss
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from qiskit_superstaq.conftest import MockSuperstaqProvider
 
 
-def mock_response(status_str: str) -> Dict[str, Union[str, int, Dict[str, int]]]:
+def mock_response(status_str: str) -> dict[str, str | int | dict[str, int]]:
     return {"status": status_str, "samples": {"11": 50, "10": 50}, "shots": 100}
 
 
@@ -54,9 +54,20 @@ def test_timeout(backend: qss.SuperstaqBackend) -> None:
 
 
 def test_result(backend: qss.SuperstaqBackend) -> None:
+    qc = qiskit.QuantumCircuit(3, 3)
+    qc.h(0)
+    qc.cx(0, 1)
+    qc.h(2)
+    qc.measure([0, 1, 2], [0, 1, 2])
     job = qss.SuperstaqJob(backend=backend, job_id="123abc")
 
-    expected_results = [{"success": True, "shots": 100, "data": {"counts": {"11": 50, "10": 50}}}]
+    response = mock_response("Done")
+    response["input_circuit"] = qss.serialize_circuits(qc)
+    response["compiled_circuit"] = qss.serialize_circuits(qc)
+    response["samples"] = {"110": 30, "100": 50, "111": 20}
+    expected_results = [
+        {"success": True, "shots": 100, "data": {"counts": {"110": 30, "100": 50, "111": 20}}}
+    ]
 
     expected = qiskit.result.Result.from_dict(
         {
@@ -68,23 +79,139 @@ def test_result(backend: qss.SuperstaqBackend) -> None:
             "job_id": "123abc",
         }
     )
+
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaqClient.get_job",
-        return_value=mock_response("Done"),
+        return_value=response,
     ):
-        ans = job.result(qubit_indices=[0])
+        ans = (
+            job.result(index=0),
+            job.result(index=0, qubit_indices=[0]),
+            job.result(index=0, qubit_indices=[2]),
+            job.result(index=0, qubit_indices=[1, 2]),
+        )
+        assert ans[0].backend_name == expected.backend_name
+        assert ans[0].job_id == expected.job_id
+        assert ans[0].get_counts() == {"011": 30, "001": 50, "111": 20}
+        assert ans[1].get_counts() == {"1": 100}
+        assert ans[2].get_counts() == {"0": 80, "1": 20}
+        assert ans[3].get_counts() == {"01": 30, "00": 50, "11": 20}
 
-        assert ans.backend_name == expected.backend_name
-        assert ans.job_id == expected.job_id
-        assert ans.get_counts() == {"1": 100}
-
-    job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz")
+    multi_job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz")
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaqClient.get_job",
-        return_value=mock_response("Done"),
+        return_value=response,
     ):
-        assert job.result().get_counts() == [{"11": 50, "01": 50}, {"11": 50, "01": 50}]
-        assert job.result(index=0).get_counts() == {"11": 50, "01": 50}
+        assert multi_job.result().get_counts() == [
+            {"011": 30, "001": 50, "111": 20},
+            {"011": 30, "001": 50, "111": 20},
+        ]
+        assert multi_job.result(index=0).get_counts() == {"011": 30, "001": 50, "111": 20}
+
+
+def test_counts_arranged(backend: qss.SuperstaqBackend) -> None:
+    # Test case: len(qiskit.ClassicalRegister()) = len(qiskit.QuantumRegister())
+    qc1 = qiskit.QuantumCircuit(qiskit.QuantumRegister(4), qiskit.ClassicalRegister(4))
+    qc1.measure([2, 3], [2, 3])
+    qc2 = qiskit.QuantumCircuit(qiskit.QuantumRegister(5), qiskit.ClassicalRegister(5))
+    qc2.measure([0, 1, 2, 4], [0, 1, 2, 4])
+
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc,456abc")
+    job._job_info["123abc"] = {
+        "status": "Done",
+        "samples": {"00": 70, "11": 30},
+        "shots": 100,
+        "input_circuit": qss.serialization.serialize_circuits(qc1),
+        "compiled_circuit": qss.serialization.serialize_circuits(qc1),
+    }
+    job._job_info["456abc"] = {
+        "status": "Done",
+        "samples": {"1101": 40, "0001": 60},
+        "shots": 100,
+        "input_circuit": qss.serialization.serialize_circuits(qc2),
+        "compiled_circuit": qss.serialization.serialize_circuits(qc2),
+    }
+    counts = job.result().get_counts()
+    assert counts == [{"0000": 70, "1100": 30}, {"10011": 40, "10000": 60}]
+
+    # Test case: len(qiskit.ClassicalRegister()) < len(qiskit.QuantumRegister())
+    qc3 = qiskit.QuantumCircuit(qiskit.QuantumRegister(8), qiskit.ClassicalRegister(5))
+    qc3.x(0)
+    qc3.h(1)
+    qc3.measure(1, 1)
+    qc3.h(1)
+    qc3.cx(1, 2)
+    qc3.measure([6, 2, 0], [3, 0, 4])
+    job = qss.SuperstaqJob(backend=backend, job_id="987def")
+    job._job_info["987def"] = {
+        "status": "Done",
+        "samples": {"1101": 26, "0001": 36, "1001": 19, "0101": 19},
+        "shots": 100,
+        "input_circuit": qss.serialization.serialize_circuits(qc3),
+        "compiled_circuit": qss.serialization.serialize_circuits(qc3),
+    }
+    counts = job.result(0).get_counts()
+    assert counts == {"10011": 26, "10010": 19, "10001": 19, "10000": 36}
+
+    # Test case: len(qiskit.ClassicalRegister()) > len(qiskit.QuantumRegister())
+    qc4 = qiskit.QuantumCircuit(qiskit.QuantumRegister(3), qiskit.ClassicalRegister(5))
+    qc4.h(1)
+    qc4.x(2)
+    qc4.measure([0, 1, 2], [2, 4, 1])
+    job = qss.SuperstaqJob(backend=backend, job_id="789cba")
+    job._job_info["789cba"] = {
+        "status": "Done",
+        "samples": {"100": 50, "101": 50},
+        "shots": 100,
+        "input_circuit": qss.serialization.serialize_circuits(qc4),
+        "compiled_circuit": qss.serialization.serialize_circuits(qc4),
+    }
+    counts = job.result(0).get_counts()
+    assert counts == {"00010": 50, "10010": 50}
+
+
+def test_get_clbit_indices(backend: qss.SuperstaqBackend) -> None:
+    response = mock_response("Done")
+    qc = qiskit.QuantumCircuit(2, 2)
+    qc.h(0)
+    qc.cx(0, 1)
+    qc.measure([0, 1], [0, 1])
+
+    response["input_circuit"] = qss.serialization.serialize_circuits(qc)
+    response["compiled_circuit"] = qss.serialization.serialize_circuits(qc)
+
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
+    ):
+        returned_meas_list = job._get_clbit_indices(index=0)
+        assert returned_meas_list == [0, 1]
+
+
+def test_get_num_clbits(backend: qss.SuperstaqBackend) -> None:
+    response = mock_response("Done")
+    qc = qiskit.QuantumCircuit(1, 2)
+    qc.h(0)
+    qc.measure(0, 0)
+    response["input_circuit"] = qss.serialize_circuits(qc)
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
+    ):
+        assert job._get_num_clbits(index=0) == 2
+
+
+def test_arrange_counts(backend: qss.SuperstaqBackend) -> None:
+    sample_counts = {"011": 100, "001": 25, "111": 100, "101": 25}
+    sample_meas_bit_indices = [0, 2, 4]
+    sample_num_clbits = 5
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc")
+    assert job._arrange_counts(sample_counts, sample_meas_bit_indices, sample_num_clbits) == {
+        "00101": 100,
+        "00001": 25,
+        "10101": 100,
+        "10001": 25,
+    }
 
 
 def test_check_if_stopped(backend: qss.SuperstaqBackend) -> None:

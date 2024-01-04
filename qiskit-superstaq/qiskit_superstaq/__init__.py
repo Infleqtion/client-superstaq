@@ -1,6 +1,6 @@
-from . import compiler_output, serialization, validation
+from . import compiler_output, custom_gates, serialization, validation
 from ._version import __version__
-from .compiler_output import active_qubit_indices, measured_qubit_indices
+from .compiler_output import active_qubit_indices, measured_clbit_indices, measured_qubit_indices
 from .custom_gates import (
     AceCR,
     AQTiCCXGate,
@@ -20,8 +20,10 @@ __all__ = [
     "AQTiCCXGate",
     "AQTiToffoliGate",
     "compiler_output",
+    "custom_gates",
     "deserialize_circuits",
     "measured_qubit_indices",
+    "measured_clbit_indices",
     "ParallelGates",
     "serialization",
     "serialize_circuits",

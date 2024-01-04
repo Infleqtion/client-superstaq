@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import abc
-from typing import AbstractSet, Any, Dict, List, Optional, Sequence, Tuple, Type, Union
+from collections.abc import Sequence, Set
+from typing import Any
 
 import cirq
 import numpy as np
@@ -27,13 +28,13 @@ class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
         """
         return self._dimension
 
-    def _qid_shape_(self) -> Tuple[int, int]:
+    def _qid_shape_(self) -> tuple[int, int]:
         return self.dimension, self.dimension
 
     def _value_equality_values_(self) -> int:
         return self.dimension
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
+    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
         if isinstance(other, QuditSwapGate):
             return other.dimension == self.dimension
 
@@ -47,7 +48,7 @@ class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
     def _has_unitary_(self) -> bool:
         return True
 
-    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> Optional[npt.NDArray[np.complex_]]:
+    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex_] | None:
         for i in range(self._dimension):
             for j in range(i):
                 idx0 = args.subspace_index(i * self._dimension + j)
@@ -67,12 +68,10 @@ class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         return cirq.circuit_diagram_info(cirq.SWAP, args)
 
-    def _json_dict_(self) -> Dict[str, Any]:
+    def _json_dict_(self) -> dict[str, Any]:
         return cirq.obj_to_dict_helper(self, ["dimension"])
 
-    def __pow__(
-        self, exponent: cirq.TParamVal
-    ) -> Optional[Union[QuditSwapGate, cirq.IdentityGate]]:
+    def __pow__(self, exponent: cirq.TParamVal) -> QuditSwapGate | cirq.IdentityGate | None:
         if not cirq.is_parameterized(exponent):
             if exponent % 2 == 1:
                 return self
@@ -104,22 +103,22 @@ class BSwapPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
         return 3
 
     @property
-    def _swapped_states(self) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+    def _swapped_states(self) -> tuple[tuple[int, int], tuple[int, int]]:
         return (1, 1), (2, 2)
 
-    def _qid_shape_(self) -> Tuple[int, int]:
+    def _qid_shape_(self) -> tuple[int, int]:
         return self.dimension, self.dimension
 
-    def _swapped_state_indices(self) -> Tuple[int, int]:
+    def _swapped_state_indices(self) -> tuple[int, int]:
         return (
             cirq.big_endian_digits_to_int(self._swapped_states[0], base=self._qid_shape_()),
             cirq.big_endian_digits_to_int(self._swapped_states[1], base=self._qid_shape_()),
         )
 
-    def _eigen_shifts(self) -> List[float]:
+    def _eigen_shifts(self) -> list[float]:
         return [0.0, 0.5, -0.5]
 
-    def _eigen_components(self) -> List[Tuple[float, npt.NDArray[np.float_]]]:
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
         idx0, idx1 = self._swapped_state_indices()
 
         d = self.dimension**2
@@ -136,7 +135,7 @@ class BSwapPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
 
         return [(0.0, projector_rest), (0.5, projector_p), (-0.5, projector_n)]
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
+    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
         """Workaround for https://github.com/quantumlib/Cirq/issues/5980."""
 
         if not isinstance(other, BSwapPowGate):
@@ -189,10 +188,10 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
         """
         return 3
 
-    def _qid_shape_(self) -> Tuple[int, int]:
+    def _qid_shape_(self) -> tuple[int, int]:
         return self.dimension, self.dimension
 
-    def _eigen_components(self) -> List[Tuple[float, npt.NDArray[np.float_]]]:
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
         eigen_components = []
         exponents = np.kron(range(self.dimension), range(self.dimension)) % self.dimension
         for x in sorted(set(exponents)):
@@ -202,7 +201,7 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
 
         return eigen_components
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
+    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
         """Workaround for https://github.com/quantumlib/Cirq/issues/5980."""
 
         if isinstance(other, QutritCZPowGate):
@@ -287,7 +286,7 @@ class VirtualZPowGate(cirq.EigenGate):
         """
         return self._level
 
-    def _qid_shape_(self) -> Tuple[int]:
+    def _qid_shape_(self) -> tuple[int]:
         return (self._dimension,)
 
     def _with_exponent(self, exponent: cirq.TParamVal) -> VirtualZPowGate:
@@ -298,13 +297,13 @@ class VirtualZPowGate(cirq.EigenGate):
             global_shift=self._global_shift,
         )
 
-    def _eigen_components(self) -> List[Tuple[float, npt.NDArray[np.float_]]]:
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
         projector_phase = np.zeros(self._dimension)
         projector_phase[self._level :] = 1
         projector_rest = 1 - projector_phase
         return [(0.0, np.diag(projector_rest)), (1.0, np.diag(projector_phase))]
 
-    def _eigen_shifts(self) -> List[float]:
+    def _eigen_shifts(self) -> list[float]:
         return [0.0, 1.0]
 
     def _value_equality_values_(self) -> tuple[object, ...]:
@@ -313,7 +312,7 @@ class VirtualZPowGate(cirq.EigenGate):
     def _value_equality_approximate_values_(self) -> tuple[object, ...]:
         return (*super()._value_equality_approximate_values_(), self._dimension, self._level)
 
-    def _equal_up_to_global_phase_(self, other: object, atol: float) -> Optional[bool]:
+    def _equal_up_to_global_phase_(self, other: object, atol: float) -> bool | None:
         if not isinstance(other, VirtualZPowGate):
             return NotImplemented
 
@@ -361,10 +360,10 @@ class _QutritZPowGate(cirq.EigenGate):
     def _target_state(self) -> int:
         """The energy level onto which to apply a phase."""
 
-    def _qid_shape_(self) -> Tuple[int]:
+    def _qid_shape_(self) -> tuple[int]:
         return (3,)
 
-    def _eigen_components(self) -> List[Tuple[float, npt.NDArray[np.float_]]]:
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
         d = self._qid_shape_()[0]
         projector_phase = np.zeros((d, d))
         projector_phase[self._target_state, self._target_state] = 1
@@ -372,7 +371,7 @@ class _QutritZPowGate(cirq.EigenGate):
         projector_rest = np.eye(d) - projector_phase
         return [(0.0, projector_rest), (1.0, projector_phase)]
 
-    def _eigen_shifts(self) -> List[float]:
+    def _eigen_shifts(self) -> list[float]:
         return [0.0, 1.0]
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
@@ -385,7 +384,7 @@ class _QutritZPowGate(cirq.EigenGate):
             wire_symbols=(wire_symbol,), exponent=self._diagram_exponent(args)
         )
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
+    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
         """Workaround for https://github.com/quantumlib/Cirq/issues/5980."""
 
         if not isinstance(other, _QutritZPowGate):
@@ -445,7 +444,7 @@ class QubitSubspaceGate(cirq.Gate):
         self,
         sub_gate: cirq.Gate,
         qid_shape: Sequence[int],
-        subspaces: Optional[Sequence[Tuple[int, int]]] = None,
+        subspaces: Sequence[tuple[int, int]] | None = None,
     ) -> None:
         """Initializes a `QubitSubspaceGate`.
 
@@ -494,7 +493,7 @@ class QubitSubspaceGate(cirq.Gate):
         return self._sub_gate
 
     @property
-    def qid_shape(self) -> Tuple[int, ...]:
+    def qid_shape(self) -> tuple[int, ...]:
         """Specifies the qudit dimension for each of the inputs.
 
         Returns:
@@ -503,7 +502,7 @@ class QubitSubspaceGate(cirq.Gate):
         return self._qid_shape
 
     @property
-    def subspaces(self) -> List[Tuple[int, int]]:
+    def subspaces(self) -> list[tuple[int, int]]:
         """A list of subspace indices acted upon.
 
         For instance, a CX on the 0-1 qubit subspace of two qudits would have subspaces of
@@ -515,13 +514,13 @@ class QubitSubspaceGate(cirq.Gate):
         """
         return self._subspaces
 
-    def _qid_shape_(self) -> Tuple[int, ...]:
+    def _qid_shape_(self) -> tuple[int, ...]:
         return self._qid_shape
 
     def _is_parameterized_(self) -> bool:
         return cirq.is_parameterized(self._sub_gate)
 
-    def _parameter_names_(self) -> AbstractSet[str]:
+    def _parameter_names_(self) -> Set[str]:
         return cirq.parameter_names(self._sub_gate)
 
     def _resolve_parameters_(
@@ -536,7 +535,7 @@ class QubitSubspaceGate(cirq.Gate):
     def _has_unitary_(self) -> bool:
         return cirq.has_unitary(self._sub_gate)
 
-    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> Optional[npt.NDArray[np.complex_]]:
+    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex_] | None:
         if not cirq.has_unitary(self._sub_gate):
             return NotImplemented
 
@@ -551,7 +550,7 @@ class QubitSubspaceGate(cirq.Gate):
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         sub_gate_info = cirq.circuit_diagram_info(self._sub_gate, args)
 
-        new_symbols: List[str] = []
+        new_symbols: list[str] = []
         for symbol, subspace in zip(sub_gate_info.wire_symbols, self.subspaces):
             if args.use_unicode_characters and max(subspace) < 10:
                 subspace_str = f"{ord('₀') + subspace[0]:c}{ord('₀') + subspace[1]:c}"
@@ -564,10 +563,10 @@ class QubitSubspaceGate(cirq.Gate):
 
     def _value_equality_values_(
         self,
-    ) -> Tuple[cirq.Gate, Tuple[int, ...], Tuple[Tuple[int, int], ...]]:
+    ) -> tuple[cirq.Gate, tuple[int, ...], tuple[tuple[int, int], ...]]:
         return self.sub_gate, self.qid_shape, tuple(self.subspaces)
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> Optional[bool]:
+    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
         if not isinstance(other, QubitSubspaceGate):
             return NotImplemented
 
@@ -581,10 +580,10 @@ class QubitSubspaceGate(cirq.Gate):
         # is expanded to higher dimensions
         return cirq.approx_eq(self.sub_gate, other.sub_gate, atol=atol)
 
-    def _json_dict_(self) -> Dict[str, Any]:
+    def _json_dict_(self) -> dict[str, Any]:
         return cirq.obj_to_dict_helper(self, ["sub_gate", "qid_shape", "subspaces"])
 
-    def __pow__(self, exponent: cirq.TParamVal) -> Optional[QubitSubspaceGate]:
+    def __pow__(self, exponent: cirq.TParamVal) -> QubitSubspaceGate | None:
         exp_gate = cirq.pow(self._sub_gate, exponent, None)
         if exp_gate is None:
             return NotImplemented
@@ -634,7 +633,7 @@ def qudit_swap_op(qudit0: cirq.Qid, qudit1: cirq.Qid) -> cirq.Operation:
 def qubit_subspace_op(
     sub_op: cirq.Operation,
     qid_shape: Sequence[int],
-    subspaces: Optional[Sequence[Tuple[int, int]]] = None,
+    subspaces: Sequence[tuple[int, int]] | None = None,
 ) -> cirq.Operation:
     """Embeds a qubit Operation into a given subspace of a higher-dimensional Operation.
 
@@ -673,7 +672,7 @@ QutritZ2 = QutritZ2PowGate()
 
 def custom_resolver(
     cirq_type: str,
-) -> Optional[Type[cirq.Gate]]:
+) -> type[cirq.Gate] | None:
     """Tells `cirq.json` how to deserialize cirq_superstaq's custom gates.
 
     Changes to gate names in this file should be reflected in this resolver.

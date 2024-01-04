@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
@@ -14,7 +12,8 @@
 from __future__ import annotations
 
 import numbers
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
 import numpy as np
@@ -53,6 +52,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             "memory": False,
             "max_shots": None,
             "coupling_map": None,
+            "description": f"{target_info.get('num_qubits')} qubit device",
         }
         target_info.pop("target", None)
         target_info.pop("num_qubits", None)
@@ -83,9 +83,9 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
     def run(
         self,
-        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
+        circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         shots: int,
-        method: Optional[str] = None,
+        method: str | None = None,
         **kwargs: Any,
     ) -> qss.SuperstaqJob:
         """Runs circuits on the stored Superstaq backend.
@@ -146,7 +146,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
     def compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
+        circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to the backend's native gateset.
@@ -181,9 +181,9 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
     def _get_compile_request_json(
         self,
-        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
+        circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         **kwargs: Any,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         qss.validation.validate_qiskit_circuits(circuits)
         gss.validation.validate_target(self.name())
 
@@ -198,12 +198,12 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
     def aqt_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
+        circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         *,
-        num_eca_circuits: Optional[int] = None,
-        random_seed: Optional[int] = None,
-        atol: Optional[float] = None,
-        gate_defs: Optional[Mapping[str, Union[str, npt.NDArray[np.complex_], None]]] = None,
+        num_eca_circuits: int | None = None,
+        random_seed: int | None = None,
+        atol: float | None = None,
+        gate_defs: Mapping[str, str | npt.NDArray[np.complex_] | None] | None = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
@@ -241,7 +241,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         if not self.name().startswith("aqt_"):
             raise ValueError(f"{self.name()!r} is not a valid AQT target.")
 
-        options: Dict[str, Any] = {**kwargs}
+        options: dict[str, Any] = {**kwargs}
         if num_eca_circuits is not None:
             gss.validation.validate_integer_param(num_eca_circuits)
             options["num_eca_circuits"] = int(num_eca_circuits)
@@ -260,7 +260,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
     def ibmq_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
+        circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         dynamical_decoupling: bool = True,
         dd_strategy: str = "static_context_aware",
         **kwargs: Any,
@@ -285,7 +285,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         if not self.name().startswith("ibmq_"):
             raise ValueError(f"{self.name()!r} is not a valid IBMQ target.")
 
-        options: Dict[str, Any] = {**kwargs}
+        options: dict[str, Any] = {**kwargs}
 
         options["dynamical_decoupling"] = dynamical_decoupling
         options["dd_strategy"] = dd_strategy
@@ -296,12 +296,12 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
     def qscout_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
+        circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         *,
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
-        num_qubits: Optional[int] = None,
-        error_rates: Optional[SupportsItems[tuple[int, ...], float]] = None,
+        num_qubits: int | None = None,
+        error_rates: SupportsItems[tuple[int, ...], float] | None = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at Sandia
@@ -386,9 +386,9 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
     def cq_compile(
         self,
-        circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]],
+        circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         *,
-        grid_shape: Optional[Tuple[int, int]] = None,
+        grid_shape: tuple[int, int] | None = None,
         control_radius: float = 1.0,
         stripped_cz_rads: float = 0.0,
         **kwargs: Any,
@@ -405,7 +405,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             kwargs: Other desired compile options.
 
         Returns:
-            An CQ `CompilerOutput` object.
+            A CQ `CompilerOutput` object.
 
         Raises:
             ValueError: If this is not a CQ backend.
@@ -424,7 +424,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         json_dict = self._provider._client.compile(request_json)
         return qss.compiler_output.read_json(json_dict, circuits_is_list)
 
-    def target_info(self) -> Dict[str, Any]:
+    def target_info(self) -> dict[str, Any]:
         """Returns information about this backend.
 
         Returns:
@@ -433,8 +433,8 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         return self.configuration_dict
 
     def resource_estimate(
-        self, circuits: Union[qiskit.QuantumCircuit, Sequence[qiskit.QuantumCircuit]]
-    ) -> Union[gss.ResourceEstimate, List[gss.ResourceEstimate]]:
+        self, circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit]
+    ) -> gss.ResourceEstimate | list[gss.ResourceEstimate]:
         """Generates resource estimates for qiskit circuit(s).
 
         Args:
@@ -463,11 +463,11 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         num_circuits: int,
         mirror_depth: int,
         extra_depth: int,
-        method: Optional[str] = None,
-        noise: Optional[str] = None,
-        error_prob: Optional[Union[float, Tuple[float, float, float]]] = None,
-        tag: Optional[str] = None,
-        lifespan: Optional[int] = None,
+        method: str | None = None,
+        noise: str | None = None,
+        error_prob: float | tuple[float, float, float] | None = None,
+        tag: str | None = None,
+        lifespan: int | None = None,
     ) -> str:
         """Submits the jobs to characterize this target through the ACES protocol.
 
@@ -512,7 +512,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             ValueError: If the target or noise model is not valid.
             SuperstaqServerException: If the request fails.
         """
-        noise_dict: Dict[str, object] = {}
+        noise_dict: dict[str, object] = {}
         if noise:
             noise_dict["type"] = noise
             noise_dict["params"] = (
@@ -532,7 +532,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             lifespan=lifespan,
         )
 
-    def process_aces(self, job_id: str) -> List[float]:
+    def process_aces(self, job_id: str) -> list[float]:
         """Process a job submitted through `submit_aces`.
 
         Args:

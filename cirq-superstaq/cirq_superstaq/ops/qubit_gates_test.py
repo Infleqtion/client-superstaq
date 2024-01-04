@@ -116,7 +116,7 @@ def test_stripped_cz_gate() -> None:
     assert repr(gate) == "css.StrippedCZGate(0.123)"
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq as css")
     expected = np.diag(
-        ([1.0, np.exp(1j * rz_rads), np.exp(1j * rz_rads), np.exp(1j * (2 * rz_rads - np.pi))])
+        [1.0, np.exp(1j * rz_rads), np.exp(1j * rz_rads), np.exp(1j * (2 * rz_rads - np.pi))]
     )
     assert np.allclose(cirq.unitary(gate), expected)
 
@@ -774,8 +774,8 @@ def test_parallel_gates_equivalence_groups() -> None:
     ]
     for permuted_qubits in itertools.permutations(operation.qubits):
         if permuted_qubits in equivalent_targets:
+            # Don't try `cirq.approx_eq` here due to https://github.com/quantumlib/Cirq/issues/6376
             assert operation == gate(*permuted_qubits)
-            assert cirq.approx_eq(operation, gate(*permuted_qubits))
             assert cirq.equal_up_to_global_phase(operation, gate(*permuted_qubits))
         else:
             assert operation != gate(*permuted_qubits)
@@ -803,8 +803,8 @@ def test_parallel_gates_equivalence_groups_nonadjacent() -> None:
     ]
     for permuted_qubits in itertools.permutations(operation.qubits):
         if permuted_qubits in equivalent_targets:
+            # Don't try `cirq.approx_eq` here due to https://github.com/quantumlib/Cirq/issues/6376
             assert operation == gate(*permuted_qubits)
-            assert cirq.approx_eq(operation, gate(*permuted_qubits))
             assert cirq.equal_up_to_global_phase(operation, gate(*permuted_qubits))
         else:
             assert operation != gate(*permuted_qubits)

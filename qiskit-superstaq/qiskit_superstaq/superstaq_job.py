@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
@@ -11,8 +9,10 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
+from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, Union, overload
+from collections.abc import Sequence
+from typing import Any, overload
 
 import general_superstaq as gss
 import qiskit
@@ -36,7 +36,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """
         super().__init__(backend, job_id)
         self._overall_status = "Submitted"
-        self._job_info: Dict[str, Any] = {}
+        self._job_info: dict[str, Any] = {}
 
     def __eq__(self, other: object) -> bool:
         if not (isinstance(other, SuperstaqJob)):
@@ -44,7 +44,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
 
         return self._job_id == other._job_id
 
-    def _wait_for_results(self, timeout: float, wait: float = 5) -> List[Dict[str, Dict[str, int]]]:
+    def _wait_for_results(self, timeout: float, wait: float = 5) -> list[dict[str, dict[str, int]]]:
         """Waits for the results till either the job is done or some error in the job occurs.
 
         Args:
@@ -54,16 +54,61 @@ class SuperstaqJob(qiskit.providers.JobV1):
         Returns:
             Results from the job.
         """
-
         self.wait_for_final_state(timeout, wait)  # should call self.status()
         return [self._job_info[job_id] for job_id in self._job_id.split(",")]
 
+    def _arrange_counts(
+        self, counts: dict[str, int], circ_meas_bit_indices: list[int], num_clbits: int
+    ) -> dict[str, int]:
+        """Arranges the classical bit strings from job counts to match classical register.
+
+        Args:
+            counts: The raw counts from a job result.
+            circ_meas_bit_indices: The indices of the measured qubits.
+            num_clbits: The number of classical bits for the corresponding job circuit.
+
+        Returns:
+            A dictionary with the updated counts keys.
+        """
+        arranged_counts = {}
+        for key in counts:
+            updated_key = "0" * num_clbits
+            for counter, index in enumerate(circ_meas_bit_indices):
+                updated_key = updated_key[:index] + key[counter] + updated_key[index + 1 :]
+            arranged_counts[updated_key] = counts[key]
+
+        return arranged_counts
+
+    def _get_clbit_indices(self, index: int) -> list[int]:
+        """Helper method to update the measurement indices from the compiled circuit.
+
+        Args:
+            index: The index of the compiled circuit to get indices from.
+
+        Returns:
+            The specific measurement indices of the circuit with label `index` in
+            the job.
+        """
+        input_circuit = self.input_circuits(index)
+        return qss.compiler_output.measured_clbit_indices(input_circuit)
+
+    def _get_num_clbits(self, index: int) -> int:
+        """Helper to get number of classical bits in the classical register of the input circuit.
+
+        Args:
+            index: The index of the circuit to get the classical bits from.
+
+        Returns:
+            The number of classical bits for the circuit in the job.
+        """
+        return self.input_circuits(index).num_clbits
+
     def result(
         self,
-        index: Optional[int] = None,
-        timeout: Optional[float] = None,
+        index: int | None = None,
+        timeout: float | None = None,
         wait: float = 5,
-        qubit_indices: Optional[Sequence[int]] = None,
+        qubit_indices: Sequence[int] | None = None,
     ) -> qiskit.result.Result:
         """Retrieves the result data associated with a Superstaq job.
 
@@ -84,11 +129,18 @@ class SuperstaqJob(qiskit.providers.JobV1):
         job_results = self._wait_for_results(timeout, wait)
         results = job_results if index is None else [job_results[index]]
 
-        results_list = []  # create list of result dictionaries
-        for result in results:
+        # create list of result dictionaries
+        results_list = []
+        for i, result in enumerate(results):
             counts = result["samples"]
-            if counts:  # match endianness to Qiskit
-                counts = dict((key[::-1], value) for (key, value) in counts.items())
+            if counts:
+                num_clbits = self._get_num_clbits(i)
+                circ_meas_bit_indices = self._get_clbit_indices(i)
+                if len(circ_meas_bit_indices) != num_clbits:
+                    counts = self._arrange_counts(counts, circ_meas_bit_indices, num_clbits)
+                counts = {
+                    key[::-1]: value for key, value in counts.items()
+                }  # change endianess to match Qiskit
                 if qubit_indices:
                     counts = qiskit.result.marginal_counts(counts, indices=qubit_indices)
             results_list.append(
@@ -162,12 +214,12 @@ class SuperstaqJob(qiskit.providers.JobV1):
         ...
 
     @overload
-    def _get_circuits(self, circuit_type: str, index: None = None) -> List[qiskit.QuantumCircuit]:
+    def _get_circuits(self, circuit_type: str, index: None = None) -> list[qiskit.QuantumCircuit]:
         ...
 
     def _get_circuits(
-        self, circuit_type: str, index: Optional[int] = None
-    ) -> Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]:
+        self, circuit_type: str, index: int | None = None
+    ) -> qiskit.QuantumCircuit | list[qiskit.QuantumCircuit]:
         """Retrieves the corresponding circuit(s) to `circuit_type`.
 
         Args:
@@ -201,12 +253,12 @@ class SuperstaqJob(qiskit.providers.JobV1):
         ...
 
     @overload
-    def compiled_circuits(self, index: None = None) -> List[qiskit.QuantumCircuit]:
+    def compiled_circuits(self, index: None = None) -> list[qiskit.QuantumCircuit]:
         ...
 
     def compiled_circuits(
-        self, index: Optional[int] = None
-    ) -> Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]:
+        self, index: int | None = None
+    ) -> qiskit.QuantumCircuit | list[qiskit.QuantumCircuit]:
         """Gets the compiled circuits that were processed for this job.
 
         Args:
@@ -232,12 +284,12 @@ class SuperstaqJob(qiskit.providers.JobV1):
         ...
 
     @overload
-    def input_circuits(self, index: None = None) -> List[qiskit.QuantumCircuit]:
+    def input_circuits(self, index: None = None) -> list[qiskit.QuantumCircuit]:
         ...
 
     def input_circuits(
-        self, index: Optional[int] = None
-    ) -> Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]:
+        self, index: int | None = None
+    ) -> qiskit.QuantumCircuit | list[qiskit.QuantumCircuit]:
         """Gets the original circuits that were submitted for this job.
 
         Args:
@@ -280,7 +332,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """
         raise NotImplementedError("Submit through SuperstaqBackend, not through SuperstaqJob")
 
-    def to_dict(self) -> Dict[str, gss.typing.Job]:
+    def to_dict(self) -> dict[str, gss.typing.Job]:
         """Refreshes and returns job information.
 
         Note:

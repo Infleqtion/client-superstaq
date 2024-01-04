@@ -239,58 +239,13 @@ def test_service_create_job() -> None:
     assert create_job_kwargs["fake_data"] == ""
 
 
-def test_service_get_balance() -> None:
-    service = css.Service(api_key="key", remote_host="http://example.com")
-    mock_client = mock.MagicMock()
-    mock_client.get_balance.return_value = {"balance": 12345.6789}
-    service._client = mock_client
-
-    assert service.get_balance() == "12,345.68 credits"
-    assert service.get_balance(pretty_output=False) == 12345.6789
-
-
-def test_service_get_targets() -> None:
-    service = css.Service(api_key="key", remote_host="http://example.com")
-    mock_client = mock.MagicMock()
-    targets = {
-        "superstaq_targets": {
-            "compile-and-run": [
-                "ibmq_qasm_simulator",
-                "ibmq_armonk_qpu",
-                "ibmq_santiago_qpu",
-                "ibmq_bogota_qpu",
-                "ibmq_lima_qpu",
-                "ibmq_belem_qpu",
-                "ibmq_quito_qpu",
-                "ibmq_statevector_simulator",
-                "ibmq_mps_simulator",
-                "ibmq_extended-stabilizer_simulator",
-                "ibmq_stabilizer_simulator",
-                "ibmq_manila_qpu",
-                "aws_dm1_simulator",
-                "aws_sv1_simulator",
-                "d-wave_advantage-system4.1_qpu",
-                "d-wave_dw-2000q-6_qpu",
-                "aws_tn1_simulator",
-                "rigetti_aspen-9_qpu",
-                "d-wave_advantage-system1.1_qpu",
-                "ionq_ion_qpu",
-            ],
-            "compile-only": ["aqt_keysight_qpu", "aqt_zurich_qpu", "sandia_qscout_qpu"],
-        }
-    }
-    mock_client.get_targets.return_value = targets
-    service._client = mock_client
-
-    assert service.get_targets() == targets["superstaq_targets"]
-
-
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits(cirq.Circuit()),
         "state_jp": gss.serialization.serialize({}),
         "pulse_lists_jp": gss.serialization.serialize([[[]]]),
+        "initial_logical_to_physicals": cirq.to_json([[]]),
         "final_logical_to_physicals": cirq.to_json([[]]),
     },
 )
@@ -310,8 +265,10 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
 
     for output in [out, alt_out]:
         assert output.circuit == cirq.Circuit()
+        assert output.initial_logical_to_physical == {}
         assert output.final_logical_to_physical == {}
         assert not hasattr(output, "circuits") and not hasattr(output, "pulse_lists")
+        assert not hasattr(output, "initial_logical_to_physicals")
         assert not hasattr(output, "final_logical_to_physicals")
 
     gate_defs = {
@@ -354,6 +311,7 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit(), cirq.Circuit()]),
         "state_jp": gss.serialization.serialize({}),
         "pulse_lists_jp": gss.serialization.serialize([[[]], [[]]]),
+        "initial_logical_to_physicals": cirq.to_json([[], []]),
         "final_logical_to_physicals": cirq.to_json([[], []]),
     },
 )
@@ -362,8 +320,10 @@ def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None
     out = service.aqt_compile([cirq.Circuit(), cirq.Circuit()], atol=1e-2)
     mock_post_request.assert_called_once()
     assert out.circuits == [cirq.Circuit(), cirq.Circuit()]
+    assert out.initial_logical_to_physicals == [{}, {}]
     assert out.final_logical_to_physicals == [{}, {}]
     assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    assert not hasattr(out, "initial_logical_to_physical")
     assert not hasattr(out, "final_logical_to_physical")
 
 
@@ -373,6 +333,7 @@ def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit()]),
         "state_jp": gss.serialization.serialize({}),
         "pulse_lists_jp": gss.serialization.serialize([[[]]]),
+        "initial_logical_to_physicals": cirq.to_json([[]]),
         "final_logical_to_physicals": cirq.to_json([[]]),
     },
 )
@@ -381,13 +342,16 @@ def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
     out = service.aqt_compile(cirq.Circuit(), num_eca_circuits=1, random_seed=1234, atol=1e-2)
     mock_post_request.assert_called_once()
     assert out.circuits == [cirq.Circuit()]
+    assert out.initial_logical_to_physicals == [{}]
     assert out.final_logical_to_physicals == [{}]
     assert not hasattr(out, "circuit")
     assert not hasattr(out, "pulse_list")
+    assert not hasattr(out, "initial_logical_to_physical")
     assert not hasattr(out, "final_logical_to_physical")
 
     out = service.aqt_compile([cirq.Circuit()], num_eca_circuits=1, random_seed=1234, atol=1e-2)
     assert out.circuits == [[cirq.Circuit()]]
+    assert out.initial_logical_to_physicals == [[{}]]
     assert out.final_logical_to_physicals == [[{}]]
 
     with pytest.warns(DeprecationWarning, match="has been deprecated"):
@@ -395,6 +359,7 @@ def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
             [cirq.Circuit()], num_equivalent_circuits=1, random_seed=1234, atol=1e-2
         )
         assert deprecated_out.circuits == out.circuits
+        assert deprecated_out.initial_logical_to_physicals == out.initial_logical_to_physicals
         assert deprecated_out.final_logical_to_physicals == out.final_logical_to_physicals
 
 
@@ -435,6 +400,7 @@ def test_service_resource_estimate_list(mock_resource_estimate: mock.MagicMock) 
 def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> None:
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
+    initial_logical_to_physical = {q0: q0}
     final_logical_to_physical = {q0: q0}
 
     jaqal_program = textwrap.dedent(
@@ -449,6 +415,7 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
 
     mock_qscout_compile.return_value = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "initial_logical_to_physicals": cirq.to_json([list(initial_logical_to_physical.items())]),
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
         "jaqal_programs": [jaqal_program],
     }
@@ -458,9 +425,11 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
     alt_out = service.compile(circuit, target="sandia_qscout_qpu", test_options="yes")
     assert out.circuit == circuit
     assert out.final_logical_to_physical == final_logical_to_physical
+    assert out.initial_logical_to_physical == initial_logical_to_physical
     assert out.jaqal_program == jaqal_program
 
     assert alt_out.circuit == circuit
+    assert alt_out.initial_logical_to_physical == initial_logical_to_physical
     assert alt_out.final_logical_to_physical == final_logical_to_physical
     assert alt_out.jaqal_program == jaqal_program
 
@@ -475,12 +444,16 @@ def test_service_qscout_compile_multiple(mock_qscout_compile: mock.MagicMock) ->
         cirq.Circuit(cirq.H(q0), cirq.measure(q0)),
         cirq.Circuit(cirq.ISWAP(q0, q1)),
     ]
+    initial_logical_to_physicals = [{q0: q0}, {q0: q0, q1: q1}]
     final_logical_to_physicals = [{q0: q0}, {q0: q1, q1: q0}]
 
     jaqal_programs = ["jaqal", "programs"]
 
     mock_qscout_compile.return_value = {
         "cirq_circuits": css.serialization.serialize_circuits(circuits),
+        "initial_logical_to_physicals": cirq.to_json(
+            [list(l2p.items()) for l2p in initial_logical_to_physicals]
+        ),
         "final_logical_to_physicals": cirq.to_json(
             [list(l2p.items()) for l2p in final_logical_to_physicals]
         ),
@@ -490,6 +463,7 @@ def test_service_qscout_compile_multiple(mock_qscout_compile: mock.MagicMock) ->
     service = css.Service(api_key="key", remote_host="http://example.com")
     out = service.qscout_compile(circuits)
     assert out.circuits == circuits
+    assert out.initial_logical_to_physicals == initial_logical_to_physicals
     assert out.final_logical_to_physicals == final_logical_to_physicals
     assert out.jaqal_programs == jaqal_programs
 
@@ -516,6 +490,7 @@ def test_qscout_compile_swap_mirror(
 
     mock_qscout_compile.return_value = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "initial_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
         "jaqal_programs": [jaqal_program],
     }
@@ -523,6 +498,7 @@ def test_qscout_compile_swap_mirror(
     service = css.Service(api_key="key", remote_host="http://example.com")
     out = service.qscout_compile(circuit, mirror_swaps=mirror_swaps)
     assert out.circuit == circuit
+    assert out.initial_logical_to_physical == final_logical_to_physical
     assert out.final_logical_to_physical == final_logical_to_physical
     assert out.jaqal_program == jaqal_program
     mock_qscout_compile.assert_called_once()
@@ -543,6 +519,7 @@ def test_qscout_compile_error_rates(mock_qscout_compile: mock.MagicMock) -> None
 
     mock_qscout_compile.return_value = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "initial_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
         "jaqal_programs": [jaqal_program],
     }
@@ -550,6 +527,7 @@ def test_qscout_compile_error_rates(mock_qscout_compile: mock.MagicMock) -> None
     service = css.Service(api_key="key", remote_host="http://example.com")
     out = service.qscout_compile(circuit, error_rates={(0, 1): 0.3, (0, 2): 0.2, (1,): 0.1})
     assert out.circuit == circuit
+    assert out.initial_logical_to_physical == final_logical_to_physical
     assert out.final_logical_to_physical == final_logical_to_physical
     assert out.jaqal_program == jaqal_program
     mock_qscout_compile.assert_called_once()
@@ -574,6 +552,7 @@ def test_qscout_compile_base_entangling_gate(
 
     mock_qscout_compile.return_value = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "initial_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
         "jaqal_programs": [jaqal_program],
     }
@@ -581,6 +560,7 @@ def test_qscout_compile_base_entangling_gate(
     service = css.Service(api_key="key", remote_host="http://example.com")
     out = service.qscout_compile(circuit, base_entangling_gate=base_entangling_gate)
     assert out.circuit == circuit
+    assert out.initial_logical_to_physical == final_logical_to_physical
     assert out.final_logical_to_physical == final_logical_to_physical
     assert out.jaqal_program == jaqal_program
     mock_qscout_compile.assert_called_once()
@@ -610,6 +590,7 @@ def test_qscout_compile_num_qubits(mock_post: mock.MagicMock) -> None:
 
     mock_post.return_value.json = lambda: {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "initial_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
         "jaqal_programs": [jaqal_program],
     }
@@ -617,6 +598,7 @@ def test_qscout_compile_num_qubits(mock_post: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
     out = service.qscout_compile(circuit, num_qubits=5)
     assert out.circuit == circuit
+    assert out.initial_logical_to_physical == final_logical_to_physical
     assert out.final_logical_to_physical == final_logical_to_physical
     assert out.jaqal_program == jaqal_program
     mock_post.assert_called_once()
@@ -631,16 +613,19 @@ def test_qscout_compile_num_qubits(mock_post: mock.MagicMock) -> None:
 def test_service_cq_compile_single(mock_post: mock.MagicMock) -> None:
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
+    initial_logical_to_physical = {cirq.q(0): cirq.q(0)}
     final_logical_to_physical = {cirq.q(10): cirq.q(0)}
 
     mock_post.return_value.json = lambda: {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "initial_logical_to_physicals": cirq.to_json([list(initial_logical_to_physical.items())]),
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
     }
 
     service = css.Service(api_key="key", remote_host="http://example.com")
     out = service.cq_compile(circuit, test_options="yes")
     assert out.circuit == circuit
+    assert out.initial_logical_to_physical == initial_logical_to_physical
     assert out.final_logical_to_physical == final_logical_to_physical
 
     with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid CQ target."):
@@ -653,11 +638,13 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
 
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
+    initial_logical_to_physical = {cirq.q(0): cirq.q(0)}
     final_logical_to_physical = {cirq.q(4): cirq.q(0)}
 
     mock_post.return_value.json = lambda: {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
         "pulses": gss.serialization.serialize([mock.DEFAULT]),
+        "initial_logical_to_physicals": cirq.to_json([list(initial_logical_to_physical.items())]),
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
     }
 
@@ -674,6 +661,10 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
     assert service.ibmq_compile([circuit]).circuits == [circuit]
     assert service.ibmq_compile(circuit).pulse_sequence == mock.DEFAULT
     assert service.ibmq_compile([circuit]).pulse_sequences == [mock.DEFAULT]
+    assert service.ibmq_compile(circuit).initial_logical_to_physical == initial_logical_to_physical
+    assert service.ibmq_compile([circuit]).initial_logical_to_physicals == [
+        initial_logical_to_physical
+    ]
     assert service.ibmq_compile(circuit).final_logical_to_physical == final_logical_to_physical
     assert service.ibmq_compile([circuit]).final_logical_to_physicals == [final_logical_to_physical]
 

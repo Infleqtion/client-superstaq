@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Represents a job created via the Superstaq API."""
+from __future__ import annotations
+
 import collections
 import time
 import warnings
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, overload
+from collections.abc import Sequence
+from typing import Any, overload
 
 import cirq
 import general_superstaq as gss
@@ -69,7 +72,7 @@ class Job:
         """
         self._client = client
         self._overall_status = "Submitted"
-        self._job: Dict[str, Any] = {}
+        self._job: dict[str, Any] = {}
         self._job_id = job_id
 
     def _refresh_job(self) -> None:
@@ -183,10 +186,10 @@ class Job:
     @overload
     def num_qubits(
         self, index: None = None
-    ) -> Union[int, List[int]]:  # Change return to `List[int]` after deprecation
+    ) -> int | list[int]:  # Change return to `list[int]` after deprecation
         ...
 
-    def num_qubits(self, index: Optional[int] = None) -> Union[int, List[int]]:
+    def num_qubits(self, index: int | None = None) -> int | list[int]:
         """Gets the number of qubits required for each circuit in this job.
 
         Args:
@@ -247,14 +250,14 @@ class Job:
     @overload
     def _get_circuits(
         self, circuit_type: str, index: None = None
-    ) -> Union[
-        cirq.Circuit, List[cirq.Circuit]
-    ]:  # Change return to `List[cirq.Circuit]` after deprecation
+    ) -> (
+        cirq.Circuit | list[cirq.Circuit]
+    ):  # Change return to `list[cirq.Circuit]` after deprecation
         ...
 
     def _get_circuits(
-        self, circuit_type: str, index: Optional[int] = None
-    ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
+        self, circuit_type: str, index: int | None = None
+    ) -> cirq.Circuit | list[cirq.Circuit]:
         """Retrieves the corresponding circuit(s) to `circuit_type`.
 
         Args:
@@ -289,14 +292,12 @@ class Job:
     @overload
     def compiled_circuits(
         self, index: None = None
-    ) -> Union[
-        cirq.Circuit, List[cirq.Circuit]
-    ]:  # Change return to `List[cirq.Circuit]` after deprecation
+    ) -> (
+        cirq.Circuit | list[cirq.Circuit]
+    ):  # Change return to `list[cirq.Circuit]` after deprecation
         ...
 
-    def compiled_circuits(
-        self, index: Optional[int] = None
-    ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
+    def compiled_circuits(self, index: int | None = None) -> cirq.Circuit | list[cirq.Circuit]:
         """Gets the compiled circuits that were processed for this job.
 
         Args:
@@ -314,14 +315,12 @@ class Job:
     @overload
     def input_circuits(
         self, index: None = None
-    ) -> Union[
-        cirq.Circuit, List[cirq.Circuit]
-    ]:  # Change return to `List[cirq.Circuit]` after deprecation
+    ) -> (
+        cirq.Circuit | list[cirq.Circuit]
+    ):  # Change return to `list[cirq.Circuit]` after deprecation
         ...
 
-    def input_circuits(
-        self, index: Optional[int] = None
-    ) -> Union[cirq.Circuit, List[cirq.Circuit]]:
+    def input_circuits(self, index: int | None = None) -> cirq.Circuit | list[cirq.Circuit]:
         """Gets the original circuits that were submitted for this job.
 
         Args:
@@ -332,14 +331,57 @@ class Job:
         """
         return self._get_circuits("input_circuit", index=index)
 
+    def pulse_gate_circuits(self, index: int | None = None) -> Any:
+        """Gets the pulse gate circuit returned by this job.
+
+        Args:
+            index: An optional index of the pulse gate circuit to retrieve.
+
+        Returns:
+            The `qiskit.QuantumCircuit` pulse gate circuit.
+
+        Raises:
+            ValueError: If the job was not run on an IBM pulse device.
+            ValueError: If the job's target does not use pulse gate circuits.
+        """
+        job_ids = self._job_id.split(",")
+
+        if not all(
+            job_id in self._job and self._job[job_id].get("pulse_gate_circuits") is not None
+            for job_id in job_ids
+        ):
+            self._refresh_job()
+
+        if index is None:
+            if all(self._job[job_id].get("pulse_gate_circuits") for job_id in job_ids):
+                serialized_circuits = [
+                    self._job[job_id]["pulse_gate_circuits"] for job_id in job_ids
+                ]
+                deserialized_circuits = []
+                for serialized_circuit in serialized_circuits:
+                    deserialized_circuit = css.serialization.deserialize_qiskit_circuits(
+                        serialized_circuit, False
+                    )
+                    if deserialized_circuit is None:
+                        raise ValueError("Some circuits could not be deserialized.")
+                    deserialized_circuits.append(deserialized_circuit[0])
+                return deserialized_circuits
+        else:
+            gss.validation.validate_integer_param(index, min_val=0)
+            serialized_circuit = self._job[job_ids[index]]["pulse_gate_circuits"]
+            return css.serialization.deserialize_qiskit_circuits(serialized_circuit, False)
+
+        error = f"Target '{self.target()}' does not use pulse gate circuits."
+        raise ValueError(error)
+
     @overload
     def counts(
         self,
         index: int,
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
-        qubit_indices: Optional[Sequence[int]] = None,
-    ) -> Dict[str, int]:
+        qubit_indices: Sequence[int] | None = None,
+    ) -> dict[str, int]:
         ...
 
     @overload
@@ -348,19 +390,19 @@ class Job:
         index: None = None,
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
-        qubit_indices: Optional[Sequence[int]] = None,
-    ) -> Union[
-        Dict[str, int], List[Dict[str, int]]
-    ]:  # Change return to just `List[Dict[str, int]]` after deprecation
+        qubit_indices: Sequence[int] | None = None,
+    ) -> (
+        dict[str, int] | list[dict[str, int]]
+    ):  # Change return to just `list[dict[str, int]]` after deprecation
         ...
 
     def counts(
         self,
-        index: Optional[int] = None,
+        index: int | None = None,
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
-        qubit_indices: Optional[Sequence[int]] = None,
-    ) -> Union[Dict[str, int], List[Dict[str, int]]]:
+        qubit_indices: Sequence[int] | None = None,
+    ) -> dict[str, int] | list[dict[str, int]]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
 
         Args:
@@ -413,7 +455,7 @@ class Job:
             return _get_marginal_counts(single_counts, qubit_indices)
         return single_counts
 
-    def to_dict(self) -> Dict[str, gss.typing.Job]:
+    def to_dict(self) -> dict[str, gss.typing.Job]:
         """Refreshes and returns job information.
 
         Note:
@@ -433,11 +475,11 @@ class Job:
     def __repr__(self) -> str:
         return f"css.Job(client={self._client!r}, job_id={self.job_id()!r})"
 
-    def _value_equality_values_(self) -> Tuple[str, Dict[str, Any]]:
+    def _value_equality_values_(self) -> tuple[str, dict[str, Any]]:
         return self._job_id, self._job
 
 
-def _get_marginal_counts(counts: Dict[str, int], indices: Sequence[int]) -> Dict[str, int]:
+def _get_marginal_counts(counts: dict[str, int], indices: Sequence[int]) -> dict[str, int]:
     """Compute a marginal distribution, accumulating total counts on specific bits (by index).
 
     Args:
@@ -447,7 +489,7 @@ def _get_marginal_counts(counts: Dict[str, int], indices: Sequence[int]) -> Dict
     Returns:
         A dictionary of counts on the target indices.
     """
-    target_counts: Dict[str, int] = collections.defaultdict(int)
+    target_counts: dict[str, int] = collections.defaultdict(int)
     for bitstring, count in counts.items():
         target_key = "".join([bitstring[index] for index in indices])
         target_counts[target_key] += count

@@ -1,7 +1,9 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
+from __future__ import annotations
+
 import functools
 import textwrap
-from typing import List, Optional, Tuple, Type, cast
+from typing import cast
 from unittest import mock
 
 import cirq
@@ -263,7 +265,7 @@ def test_qutrit_z_pow_gate() -> None:
 @pytest.mark.parametrize(
     "gate_type", [css.QutritZ0PowGate, css.QutritZ1PowGate, css.QutritZ2PowGate]
 )
-def test_qutrit_z_pow_gate_protocols(gate_type: Type[css.ops.qudit_gates._QutritZPowGate]) -> None:
+def test_qutrit_z_pow_gate_protocols(gate_type: type[css.ops.qudit_gates._QutritZPowGate]) -> None:
     cirq.testing.assert_eigengate_implements_consistent_protocols(
         gate_type,
         setup_code="import cirq_superstaq as css, sympy",
@@ -378,7 +380,7 @@ def test_virtual_z_pow_gate_protocols(dimension: int, level: int) -> None:
 
     gate_type = functools.partial(css.VirtualZPowGate, dimension=dimension, level=level)
     cirq.testing.assert_eigengate_implements_consistent_protocols(
-        cast("Type[cirq.EigenGate]", gate_type),
+        cast("type[cirq.EigenGate]", gate_type),
         setup_code="import cirq_superstaq as css, sympy",
         ignore_decompose_to_default_gateset=True,
     )
@@ -461,9 +463,9 @@ def test_qubit_subspace_gate() -> None:
     ],
 )
 def test_qubit_subspace_gate_protocols(
-    sub_gate_type: Type[cirq.EigenGate],
-    qid_shape: Tuple[int, ...],
-    subspaces: Optional[List[Tuple[int, int]]],
+    sub_gate_type: type[cirq.EigenGate],
+    qid_shape: tuple[int, ...],
+    subspaces: list[tuple[int, int]] | None,
 ) -> None:
     sub_gate = sub_gate_type(exponent=1.23, global_shift=0.0)
 

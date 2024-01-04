@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import re
-from typing import Dict, Sequence
+from collections.abc import Sequence
 
 
 def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
@@ -55,7 +57,7 @@ def validate_target(target: str) -> None:
     if not match:
         raise ValueError(
             f"{target!r} does not have a valid string format. Valid target strings should be in "
-            "the form '<provider>_<device>_<type>', e.g. 'ibmq_lagos_qpu'."
+            "the form '<provider>_<device>_<type>', e.g. 'ibmq_brisbane_qpu'."
         )
 
     prefix, _, device_type = match.groups()
@@ -75,7 +77,7 @@ def validate_target(target: str) -> None:
         )
 
 
-def validate_noise_type(noise: Dict[str, object], n_qubits: int) -> None:
+def validate_noise_type(noise: dict[str, object], n_qubits: int) -> None:
     """Validates that an ACES noise model is valid.
 
     Args:

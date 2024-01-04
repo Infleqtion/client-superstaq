@@ -1,11 +1,13 @@
+from __future__ import annotations
+
 import numbers
 import os
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Any
 
 import qubovert as qv
 
 import general_superstaq as gss
-from general_superstaq import superstaq_client
 
 
 class Service:
@@ -13,8 +15,8 @@ class Service:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        remote_host: Optional[str] = None,
+        api_key: str | None = None,
+        remote_host: str | None = None,
         api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
@@ -25,7 +27,7 @@ class Service:
             client: The Superstaq client to use.
         """
 
-        self._client = superstaq_client._SuperstaqClient(
+        self._client = gss.superstaq_client._SuperstaqClient(
             client_name="general-superstaq",
             remote_host=remote_host,
             api_key=api_key,
@@ -34,7 +36,7 @@ class Service:
             verbose=verbose,
         )
 
-    def get_balance(self, pretty_output: bool = True) -> Union[str, float]:
+    def get_balance(self, pretty_output: bool = True) -> str | float:
         """Get the querying user's account balance in USD.
 
         Args:
@@ -87,7 +89,7 @@ class Service:
             balance: The new balance.
 
         Returns:
-             String containing status of update (whether or not it failed).
+            String containing status of update (whether or not it failed).
         """
         limit = 2000.0  # If limit modified, must update in server-superstaq
         if balance > limit:
@@ -109,7 +111,7 @@ class Service:
             role: The new role.
 
         Returns:
-             String containing status of update (whether or not it failed).
+            String containing status of update (whether or not it failed).
         """
         return self._client.update_user_role(
             {
@@ -118,29 +120,69 @@ class Service:
             }
         )
 
+    def get_targets(
+        self,
+        simulator: bool | None = None,
+        supports_submit: bool | None = None,
+        supports_submit_qubo: bool | None = None,
+        supports_compile: bool | None = None,
+        available: bool | None = None,
+        retired: bool | None = None,
+        **kwargs: bool,
+    ) -> list[gss.Target]:
+        """Gets a list of Superstaq targets along with their status information.
+
+        Args:
+            simulator: Optional flag to restrict the list of targets to (non-) simulators.
+            supports_submit: Optional boolean flag to only return targets that (don't) allow
+                circuit submissions.
+            supports_submit_qubo: Optional boolean flag to only return targets that (don't)
+                allow qubo submissions.
+            supports_compile: Optional boolean flag to return targets that (don't) support
+                circuit compilation.
+            available: Optional boolean flag to only return targets that are (not) available
+                to use.
+            retired: Optional boolean flag to only return targets that are or are not retired.
+            kwargs: Any additional, supported flags to restrict/filter returned targets.
+
+        Returns:
+            A list of Superstaq targets matching all provided criteria.
+        """
+        filters = dict(
+            simulator=simulator,
+            supports_submit=supports_submit,
+            supports_submit_qubo=supports_submit_qubo,
+            supports_compile=supports_compile,
+            available=available,
+            retired=retired,
+            **kwargs,
+        )
+        return self._client.get_targets(**filters)
+
     def submit_qubo(
         self,
         qubo: qv.QUBO,
         target: str,
         repetitions: int = 1000,
-        method: Optional[str] = None,
+        method: str | None = None,
         max_solutions: int = 1000,
-    ) -> Dict[str, str]:
-        """Solves the QUBO given via the submit_qubo function in superstaq_client, and returns any
-        number of specified dictionaries that seek the minimum of the energy landscape from the
-        given objective function known as output solutions.
+    ) -> dict[str, str]:
+        """Solves a submitted QUBO problem via annealing.
+
+        This method returns any number of specified dictionaries that seek the minimum of
+        the energy landscape from the given objective function known as output solutions.
 
         Args:
             qubo: A `qv.QUBO` object.
             target: The target to submit the qubo.
             repetitions: Number of times that the execution is repeated before stopping.
             method: The parameter specifying method of QUBO solving execution. Currently,
-            will either be the "dry-run" option which runs on dwave's simulated annealer,
-            or defauls to none and sends it directly to the specified target.
+                    will either be the "dry-run" option which runs on dwave's simulated annealer,
+                    or defaults to none and sends it directly to the specified target.
             max_solutions: A parameter that specifies the max number of output solutions.
 
         Returns:
-            A dictionary returned by the submit_qubo function.
+            A dictionary containing the output solutions.
         """
         return self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
 
@@ -150,8 +192,8 @@ class Service:
         Arguments can be either file paths (in .yaml format) or qtrl Manager instances.
 
         Args:
-            pulses: PulseManager or file path for pulse configuration.
-            variables: VariableManager or file path for variable configuration.
+            pulses: `PulseManager` or file path for pulse configuration.
+            variables: `VariableManager` or file path for variable configuration.
 
         Returns:
             A status of the update (whether or not it failed).
@@ -189,7 +231,7 @@ class Service:
 
         return self._client.aqt_upload_configs({"pulses": pulses_yaml, "variables": variables_yaml})
 
-    def aqt_get_configs(self) -> Dict[str, str]:
+    def aqt_get_configs(self) -> dict[str, str]:
         """Retrieves the raw AQT config files that had previously been uploaded to Superstaq.
 
         Returns:
@@ -200,18 +242,18 @@ class Service:
 
     def aqt_download_configs(
         self,
-        pulses_file_path: Optional[str] = None,
-        variables_file_path: Optional[str] = None,
+        pulses_file_path: str | None = None,
+        variables_file_path: str | None = None,
         overwrite: bool = False,
-    ) -> Optional[Tuple[Dict[str, Any], Dict[str, Any]]]:
+    ) -> tuple[dict[str, Any], dict[str, Any]] | None:
         """Downloads AQT configs that had previously been uploaded to Superstaq.
 
         Optionally saves configs to disk as YAML configuration files. Otherwise, the PyYAML package
         is required to read the downloaded configs.
 
         Args:
-            pulses_file_path (optional): Where to write the pulse configuration.
-            variables_file_path (optional): Where to write the variable configuration.
+            pulses_file_path: Where to write the pulse configuration.
+            variables_file_path: Where to write the variable configuration.
             overwrite: Whether or not to overwrite existing files.
 
         Returns:
@@ -280,11 +322,11 @@ class Service:
         num_circuits: int,
         mirror_depth: int,
         extra_depth: int,
-        method: Optional[str] = None,
-        noise: Optional[str] = None,
-        error_prob: Optional[Union[float, Tuple[float, float, float]]] = None,
-        tag: Optional[str] = None,
-        lifespan: Optional[int] = None,
+        method: str | None = None,
+        noise: str | None = None,
+        error_prob: float | tuple[float, float, float] | None = None,
+        tag: str | None = None,
+        lifespan: int | None = None,
     ) -> str:
         """Submits the jobs to characterize `target` through the ACES protocol.
 
@@ -327,10 +369,10 @@ class Service:
             A string with the job id for the ACES job created.
 
         Raises:
-            ValueError: If the target or noise model is not valid.
+            ValueError: If the target or noise model are not valid.
             SuperstaqServerException: If the request fails.
         """
-        noise_dict: Dict[str, object] = {}
+        noise_dict: dict[str, object] = {}
         if noise:
             noise_dict["type"] = noise
             noise_dict["params"] = (
@@ -350,7 +392,7 @@ class Service:
             lifespan=lifespan,
         )
 
-    def process_aces(self, job_id: str) -> List[float]:
+    def process_aces(self, job_id: str) -> list[float]:
         """Process a job submitted through `submit_aces`.
 
         Args:

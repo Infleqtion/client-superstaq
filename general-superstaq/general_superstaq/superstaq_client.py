@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Client for making requests to Superstaq's API."""
+from __future__ import annotations
+
 import json
 import os
 import pathlib
@@ -19,12 +21,14 @@ import textwrap
 import time
 import urllib
 import warnings
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Union
+from collections.abc import Callable, Mapping, Sequence
+from typing import Any
 
 import qubovert as qv
 import requests
 
 import general_superstaq as gss
+from general_superstaq.testing import TARGET_LIST
 
 
 class _SuperstaqClient:
@@ -44,15 +48,15 @@ class _SuperstaqClient:
     def __init__(
         self,
         client_name: str,
-        api_key: Optional[str] = None,
-        remote_host: Optional[str] = None,
+        api_key: str | None = None,
+        remote_host: str | None = None,
         api_version: str = gss.API_VERSION,
         max_retry_seconds: float = 60,  # 1 minute
         verbose: bool = False,
-        cq_token: Optional[str] = None,
-        ibmq_token: Optional[str] = None,
-        ibmq_instance: Optional[str] = None,
-        ibmq_channel: Optional[str] = None,
+        cq_token: str | None = None,
+        ibmq_token: str | None = None,
+        ibmq_instance: str | None = None,
+        ibmq_channel: str | None = None,
         **kwargs: Any,
     ):
         """Creates the SuperstaqClient.
@@ -72,7 +76,7 @@ class _SuperstaqClient:
                 which is the most recent version when this client was downloaded.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
-            cq_token: Token from CQ cloud.This is required to submit circuits to CQ hardware.
+            cq_token: Token from CQ cloud. This is required to submit circuits to CQ hardware.
             ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
                 to IBM hardware, or to access non-public IBM devices you may have access to.
             ibmq_instance: An optional instance to use when running IBM jobs.
@@ -120,11 +124,11 @@ class _SuperstaqClient:
 
         self.client_kwargs = kwargs
 
-    def get_superstaq_version(self) -> Dict[str, Optional[str]]:
+    def get_superstaq_version(self) -> dict[str, str | None]:
         """Gets Superstaq version from response header.
 
         Returns:
-            A dict containing the current Superstaq version.
+            A `dict` containing the current Superstaq version.
         """
 
         response = requests.get(self.url)
@@ -134,12 +138,12 @@ class _SuperstaqClient:
 
     def create_job(
         self,
-        serialized_circuits: Dict[str, str],
+        serialized_circuits: dict[str, str],
         repetitions: int = 1,
         target: str = "ss_unconstrained_simulator",
-        method: Optional[str] = None,
+        method: str | None = None,
         **kwargs: Any,
-    ) -> Dict[str, List[str]]:
+    ) -> dict[str, list[str]]:
         """Create a job.
 
         Args:
@@ -164,7 +168,7 @@ class _SuperstaqClient:
         gss.validation.validate_target(target)
         gss.validation.validate_integer_param(repetitions)
 
-        json_dict: Dict[str, Any] = {
+        json_dict: dict[str, Any] = {
             **serialized_circuits,
             "target": target,
             "shots": int(repetitions),
@@ -176,7 +180,7 @@ class _SuperstaqClient:
 
         return self.post_request("/jobs", json_dict)
 
-    def get_job(self, job_id: str) -> Dict[str, str]:
+    def get_job(self, job_id: str) -> dict[str, str]:
         """Get the job from the Superstaq API.
 
         Args:
@@ -192,9 +196,9 @@ class _SuperstaqClient:
 
     def fetch_jobs(
         self,
-        job_ids: List[str],
+        job_ids: list[str],
         **kwargs: Any,
-    ) -> Dict[str, Dict[str, str]]:
+    ) -> dict[str, dict[str, str]]:
         """Get the job from the Superstaq API.
 
         Args:
@@ -209,7 +213,7 @@ class _SuperstaqClient:
             SuperstaqServerException: For other API call failures.
         """
 
-        json_dict: Dict[str, Any] = {
+        json_dict: dict[str, Any] = {
             "job_ids": job_ids,
         }
         if kwargs or self.client_kwargs:
@@ -217,7 +221,7 @@ class _SuperstaqClient:
 
         return self.post_request("/fetch_jobs", json_dict)
 
-    def get_balance(self) -> Dict[str, float]:
+    def get_balance(self) -> dict[str, float]:
         """Get the querying user's account balance in USD.
 
         Returns:
@@ -236,17 +240,24 @@ class _SuperstaqClient:
         """
         return self.post_request("/accept_terms_of_use", {"user_input": user_input})
 
-    def get_targets(self) -> Dict[str, Dict[str, List[str]]]:
+    def get_targets(self, **kwargs: bool | None) -> list[gss.Target]:
         """Makes a GET request to retrieve targets from the Superstaq API.
 
-        Gets a list of available, unavailable, and retired targets.
+        Args:
+            kwargs: Optional flags to restrict/filter returned targets.
 
         Returns:
-            A dictionary listing the targets.
+            A list of Superstaq targets matching all provided criteria.
         """
-        return self.get_request("/targets")
+        target_filters = {key: value for key, value in kwargs.items() if value is not None}
+        superstaq_targets = self.post_request("/targets", target_filters)["superstaq_targets"]
+        target_list = [
+            gss.Target(target=target_name, **properties)
+            for target_name, properties in superstaq_targets.items()
+        ]
+        return target_list
 
-    def add_new_user(self, json_dict: Dict[str, str]) -> str:
+    def add_new_user(self, json_dict: dict[str, str]) -> str:
         """Makes a POST request to Superstaq API to add a new user.
 
         Args:
@@ -257,7 +268,7 @@ class _SuperstaqClient:
         """
         return self.post_request("/add_new_user", json_dict)
 
-    def update_user_balance(self, json_dict: Dict[str, Union[float, str]]) -> str:
+    def update_user_balance(self, json_dict: dict[str, float | str]) -> str:
         """Makes a POST request to Superstaq API to update a user's balance in the database.
 
         Args:
@@ -268,7 +279,7 @@ class _SuperstaqClient:
         """
         return self.post_request("/update_user_balance", json_dict)
 
-    def update_user_role(self, json_dict: Dict[str, Union[int, str]]) -> str:
+    def update_user_role(self, json_dict: dict[str, int | str]) -> str:
         """Makes a POST request to Superstaq API to update a user's role.
 
         Args:
@@ -279,7 +290,7 @@ class _SuperstaqClient:
         """
         return self.post_request("/update_user_role", json_dict)
 
-    def resource_estimate(self, json_dict: Dict[str, str]) -> Dict[str, List[Dict[str, int]]]:
+    def resource_estimate(self, json_dict: dict[str, str]) -> dict[str, list[dict[str, int]]]:
         """POSTs the given payload to the `/resource_estimate` endpoint.
 
         Args:
@@ -290,7 +301,7 @@ class _SuperstaqClient:
         """
         return self.post_request("/resource_estimate", json_dict)
 
-    def aqt_compile(self, json_dict: Dict[str, str]) -> Dict[str, str]:
+    def aqt_compile(self, json_dict: dict[str, str]) -> dict[str, str]:
         """Makes a POST request to Superstaq API to compile a list of circuits for Berkeley-AQT.
 
         Args:
@@ -301,7 +312,7 @@ class _SuperstaqClient:
         """
         return self.post_request("/aqt_compile", json_dict)
 
-    def qscout_compile(self, json_dict: Dict[str, str]) -> Dict[str, Union[str, List[str]]]:
+    def qscout_compile(self, json_dict: dict[str, str]) -> dict[str, str | list[str]]:
         """Makes a POST request to Superstaq API to compile a list of circuits for QSCOUT.
 
         Args:
@@ -312,7 +323,7 @@ class _SuperstaqClient:
         """
         return self.post_request("/qscout_compile", json_dict)
 
-    def compile(self, json_dict: Dict[str, str]) -> Dict[str, str]:
+    def compile(self, json_dict: dict[str, str]) -> dict[str, str]:
         """Makes a POST request to Superstaq API to compile a list of circuits.
 
         Args:
@@ -328,9 +339,9 @@ class _SuperstaqClient:
         qubo: qv.QUBO,
         target: str,
         repetitions: int = 1000,
-        method: Optional[str] = None,
-        max_solutions: Optional[int] = 1000,
-    ) -> Dict[str, str]:
+        method: str | None = None,
+        max_solutions: int | None = 1000,
+    ) -> dict[str, str]:
         """Makes a POST request to Superstaq API to submit a QUBO problem to the
         given target.
 
@@ -347,6 +358,10 @@ class _SuperstaqClient:
             A dictionary from the POST request.
         """
         gss.validation.validate_target(target)
+        if not (target in TARGET_LIST and TARGET_LIST[target]["supports_submit_qubo"]):
+            raise gss.SuperstaqException(
+                f"The provided target, {target}, does not support QUBO submission."
+            )
         gss.validation.validate_integer_param(repetitions)
         gss.validation.validate_integer_param(max_solutions)
 
@@ -361,7 +376,7 @@ class _SuperstaqClient:
 
     def supercheq(
         self,
-        files: List[List[int]],
+        files: list[list[int]],
         num_qubits: int,
         depth: int,
         circuit_return_type: str,
@@ -391,14 +406,14 @@ class _SuperstaqClient:
 
     def submit_dfe(
         self,
-        circuit_1: Dict[str, str],
+        circuit_1: dict[str, str],
         target_1: str,
-        circuit_2: Dict[str, str],
+        circuit_2: dict[str, str],
         target_2: str,
         num_random_bases: int,
         shots: int,
         **kwargs: Any,
-    ) -> List[str]:
+    ) -> list[str]:
         """Performs a POST request on the `/dfe_post` endpoint.
 
         Args:
@@ -428,7 +443,7 @@ class _SuperstaqClient:
         state_1 = {**circuit_1, "target": target_1}
         state_2 = {**circuit_2, "target": target_2}
 
-        json_dict: Dict[str, Any] = {
+        json_dict: dict[str, Any] = {
             "state_1": state_1,
             "state_2": state_2,
             "shots": int(shots),
@@ -439,7 +454,7 @@ class _SuperstaqClient:
             json_dict["options"] = json.dumps(kwargs)
         return self.post_request("/dfe_post", json_dict)
 
-    def process_dfe(self, job_ids: List[str]) -> float:
+    def process_dfe(self, job_ids: list[str]) -> float:
         """Performs a POST request on the `/dfe_fetch` endpoint.
 
         Args:
@@ -469,10 +484,10 @@ class _SuperstaqClient:
         num_circuits: int,
         mirror_depth: int,
         extra_depth: int,
-        method: Optional[str] = None,
-        noise: Optional[Dict[str, object]] = None,
-        tag: Optional[str] = None,
-        lifespan: Optional[int] = None,
+        method: str | None = None,
+        noise: dict[str, object] | None = None,
+        tag: str | None = None,
+        lifespan: int | None = None,
     ) -> str:
         """Performs a POST request on the `/aces` endpoint.
 
@@ -520,7 +535,7 @@ class _SuperstaqClient:
 
         return self.post_request("/aces", json_dict)
 
-    def process_aces(self, job_id: str) -> List[float]:
+    def process_aces(self, job_id: str) -> list[float]:
         """Makes a POST request to the "/aces_fetch" endpoint.
 
         Args:
@@ -531,7 +546,7 @@ class _SuperstaqClient:
         """
         return self.post_request("/aces_fetch", {"job_id": job_id})
 
-    def target_info(self, target: str) -> Dict[str, Any]:
+    def target_info(self, target: str) -> dict[str, Any]:
         """Makes a POST request to the /target_info endpoint.
 
         Uses the Superstaq API to request information about `target`.
@@ -546,10 +561,11 @@ class _SuperstaqClient:
 
         json_dict = {
             "target": target,
+            "options": json.dumps(self.client_kwargs),
         }
         return self.post_request("/target_info", json_dict)
 
-    def aqt_upload_configs(self, aqt_configs: Dict[str, str]) -> str:
+    def aqt_upload_configs(self, aqt_configs: dict[str, str]) -> str:
         """Makes a POST request to Superstaq API to upload configurations.
 
         Args:
@@ -560,7 +576,7 @@ class _SuperstaqClient:
         """
         return self.post_request("/aqt_configs", aqt_configs)
 
-    def aqt_get_configs(self) -> Dict[str, str]:
+    def aqt_get_configs(self) -> dict[str, str]:
         """Writes AQT configs from the AQT system onto the given file path.
 
         Returns:
@@ -659,11 +675,25 @@ class _SuperstaqClient:
                     response.status_code,
                 )
 
+        if response.status_code == requests.codes.gateway_timeout:
+            # Job took too long. Don't retry, it probably won't be any faster.
+            raise gss.SuperstaqServerException(
+                "Connection timed out while processing your request. Try submitting a smaller "
+                "batch of circuits.",
+                response.status_code,
+            )
+
         if response.status_code not in self.RETRIABLE_STATUS_CODES:
-            if "message" in response.json():
-                message = response.json()["message"]
+            try:
+                json_content = response.json()
+            except requests.JSONDecodeError:
+                json_content = None
+
+            if isinstance(json_content, dict) and "message" in json_content:
+                message = json_content["message"]
             else:
                 message = str(response.text)
+
             raise gss.SuperstaqServerException(
                 message=message, status_code=response.status_code, contact_info=True
             )
@@ -766,10 +796,10 @@ def find_api_key() -> str:
     ]:
         path = directory.joinpath("superstaq_api_key")
         if path.is_file():
-            with open(path, "r") as file:
+            with open(path) as file:
                 return file.readline()
 
-    raise EnvironmentError(
+    raise OSError(
         "Superstaq API key not specified and not found.\n"
         "Try passing an 'api_key' variable, or setting your API key in the command line "
         "with SUPERSTAQ_API_KEY=..."
