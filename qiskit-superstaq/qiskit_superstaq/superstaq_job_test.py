@@ -328,6 +328,11 @@ def test_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
         assert job.compiled_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
         mocked_get_job.assert_called_once()
 
+        with pytest.raises(
+            ValueError, match=f"Target does not use pulse gate circuits."
+        ):
+            job.pulse_gate_circuits()
+
     assert job.compiled_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
 
 
@@ -398,6 +403,78 @@ def test_input_circuits(backend: qss.SuperstaqBackend) -> None:
 
     assert job.input_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
     assert job.input_circuits(index=1) == qiskit.QuantumCircuit(2)
+
+
+def test_pulse_gate_circuits(backend: qss.SuperstaqBackend) -> None:
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc")
+    response = mock_response("Done")
+
+    pulse_gate_circuit = qiskit.QuantumCircuit(1, 1)
+    pulse_gate = qiskit.circuit.Gate("test_pulse_gate", 1, [3.14, 1])
+    pulse_gate_circuit.append(pulse_gate, [0])
+    pulse_gate_circuit.measure(0, 0)
+
+    response["pulse_gate_circuits"] = qss.serialize_circuits(pulse_gate_circuit)
+
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
+    ) as mocked_get_job:
+        assert job.pulse_gate_circuits()[0] == pulse_gate_circuit
+        mocked_get_job.assert_called_once()
+
+    # Shouldn't need to retrieve anything now that `job._job` is populated:
+    assert job.pulse_gate_circuits()[0] == pulse_gate_circuit
+
+
+def test_pulse_gate_circuits_index(backend: qss.SuperstaqBackend) -> None:
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc")
+    response = mock_response("Done")
+
+    pulse_gate_circuit = qiskit.QuantumCircuit(1, 1)
+    pulse_gate = qiskit.circuit.Gate("test_pulse_gate", 1, [3.14, 1])
+    pulse_gate_circuit.append(pulse_gate, [0])
+    pulse_gate_circuit.measure(0, 0)
+
+    response["pulse_gate_circuits"] = qss.serialize_circuits(pulse_gate_circuit)
+
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
+    ) as mocked_get_job:
+        assert job.pulse_gate_circuits()[0] == pulse_gate_circuit
+        mocked_get_job.assert_called_once()
+
+    # Shouldn't need to retrieve anything now that `job._job` is populated:
+    assert job.pulse_gate_circuits(index=0)[0] == pulse_gate_circuit
+
+    # Test on invalid index
+    with pytest.raises(ValueError, match="is less than the minimum"):
+        job.pulse_gate_circuits(index=-3)
+
+
+def test_multi_pulse_gate_circuits(backend: qss.SuperstaqBackend) -> None:
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc")
+    response = mock_response("Done")
+    pulse_gate_circuit = qiskit.QuantumCircuit(1, 1)
+    pulse_gate = qiskit.circuit.Gate("test_pulse_gate", 1, [3.14, 1])
+    pulse_gate_circuit.append(pulse_gate, [0])
+    pulse_gate_circuit.measure(0, 0)
+
+    response["pulse_gate_circuits"] = qss.serialize_circuits(pulse_gate_circuit)
+
+    pgc_list = [
+        pulse_gate_circuit,
+        pulse_gate_circuit,
+        pulse_gate_circuit,
+    ]
+
+    job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz,789cba")
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
+    ) as mocked_get_job:
+        assert job.pulse_gate_circuits() == pgc_list
+
+    # After fetching the job info once it shouldn't be refreshed again (so no need to mock)
+    assert job.pulse_gate_circuits() == pgc_list
 
 
 def test_status(backend: qss.SuperstaqBackend) -> None:

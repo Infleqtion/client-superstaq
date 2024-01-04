@@ -300,6 +300,49 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """
         return self._get_circuits("input_circuit", index)
 
+    def pulse_gate_circuits(
+        self, index: int | None = None
+    ) -> qiskit.QuantumCircuit | list[qiskit.QuantumCircuit]:
+        """Gets the pulse gate circuit returned by this job.
+
+        Args:
+            index: An optional index of the pulse gate circuit to retrieve.
+
+        Returns:
+            The `qiskit.QuantumCircuit` pulse gate circuit.
+
+        Raises:
+            ValueError: If the job was not run on an IBM pulse device.
+            ValueError: If the job's target does not use pulse gate circuits.
+        """
+        job_ids = self._job_id.split(",")
+
+        if not all(
+            job_id in self._job_info and self._job_info[job_id].get("pulse_gate_circuits") is not None
+            for job_id in job_ids
+        ):
+            self._refresh_job()
+
+        if index is None:
+            if all(self._job_info[job_id].get("pulse_gate_circuits") for job_id in job_ids):
+                serialized_circuits = [
+                    self._job_info[job_id]["pulse_gate_circuits"] for job_id in job_ids
+                ]
+                deserialized_circuits = []
+                for serialized_circuit in serialized_circuits:
+                    deserialized_circuit = qss.serialization.deserialize_circuits(
+                        serialized_circuit
+                    )
+                    deserialized_circuits.append(deserialized_circuit[0])
+                return deserialized_circuits
+        else:
+            gss.validation.validate_integer_param(index, min_val=0)
+            serialized_circuit = self._job_info[job_ids[index]]["pulse_gate_circuits"]
+            return qss.serialization.deserialize_circuits(serialized_circuit)
+
+        error = "Target does not use pulse gate circuits."
+        raise ValueError(error)
+
     def status(self) -> qiskit.providers.jobstatus.JobStatus:
         """Query for the equivalent qiskit job status.
 
