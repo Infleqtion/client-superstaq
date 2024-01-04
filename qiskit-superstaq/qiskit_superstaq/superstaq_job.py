@@ -309,10 +309,9 @@ class SuperstaqJob(qiskit.providers.JobV1):
             index: An optional index of the pulse gate circuit to retrieve.
 
         Returns:
-            The `qiskit.QuantumCircuit` pulse gate circuit.
+            A single pulse gate circuit or list of pulse gate circuits.
 
         Raises:
-            ValueError: If the job was not run on an IBM pulse device.
             ValueError: If the job's target does not use pulse gate circuits.
         """
         job_ids = self._job_id.split(",")

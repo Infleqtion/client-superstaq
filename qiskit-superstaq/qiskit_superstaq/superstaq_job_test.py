@@ -328,7 +328,7 @@ def test_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
         assert job.compiled_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
         mocked_get_job.assert_called_once()
 
-        with pytest.raises(ValueError, match=f"Target does not use pulse gate circuits."):
+        with pytest.raises(ValueError, match="Target does not use pulse gate circuits."):
             job.pulse_gate_circuits()
 
     assert job.compiled_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
