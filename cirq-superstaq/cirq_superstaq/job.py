@@ -115,7 +115,7 @@ class Job:
                 self._overall_status = temp_status
                 return
 
-    def _check_if_unsuccessful(self, index: Optional[int] = None) -> None:
+    def _check_if_unsuccessful(self, index: int | None = None) -> None:
         status = self.status(index)
         if status in self.UNSUCCESSFUL_STATES:
             for job_id in self._job_id.split(","):
@@ -135,7 +135,7 @@ class Job:
         """
         return self._job_id
 
-    def status(self, index: Optional[int] = None) -> str:
+    def status(self, index: int | None = None) -> str:
         """Gets the current status of the job.
 
         If the current job is in a non-terminal state, this will update the job and return the
