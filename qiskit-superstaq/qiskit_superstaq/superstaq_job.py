@@ -300,6 +300,14 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """
         return self._get_circuits("input_circuit", index)
 
+    @overload
+    def pulse_gate_circuits(self, index: int) -> qiskit.QuantumCircuit:
+        ...
+
+    @overload
+    def pulse_gate_circuits(self, index: None = None) -> list[qiskit.QuantumCircuit]:
+        ...
+
     def pulse_gate_circuits(
         self, index: int | None = None
     ) -> qiskit.QuantumCircuit | list[qiskit.QuantumCircuit]:
