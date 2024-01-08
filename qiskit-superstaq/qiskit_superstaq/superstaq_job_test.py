@@ -328,7 +328,10 @@ def test_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
         assert job.compiled_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
         mocked_get_job.assert_called_once()
 
-        with pytest.raises(ValueError, match="Target does not use pulse gate circuits."):
+        with pytest.raises(
+            ValueError,
+            match="The circuit type 'pulse_gate_circuits' is not supported on this device.",
+        ):
             job.pulse_gate_circuits()
 
     assert job.compiled_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
@@ -424,7 +427,7 @@ def test_pulse_gate_circuits(backend: qss.SuperstaqBackend) -> None:
     assert job.pulse_gate_circuits()[0] == pulse_gate_circuit
 
 
-def test_pulse_gate_circuits_index(backend: qss.SuperstaqBackend) -> None:
+def test_index_pulse_gate_circuits(backend: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJob(backend=backend, job_id="123abc")
     response = mock_response("Done")
 
@@ -438,11 +441,11 @@ def test_pulse_gate_circuits_index(backend: qss.SuperstaqBackend) -> None:
     with mock.patch(
         "general_superstaq.superstaq_client._SuperstaqClient.get_job", return_value=response
     ) as mocked_get_job:
-        assert job.pulse_gate_circuits()[0] == pulse_gate_circuit
+        assert job.pulse_gate_circuits(index=0) == pulse_gate_circuit
         mocked_get_job.assert_called_once()
 
     # Shouldn't need to retrieve anything now that `job._job` is populated:
-    assert job.pulse_gate_circuits(index=0)[0] == pulse_gate_circuit
+    assert job.pulse_gate_circuits(index=0) == pulse_gate_circuit
 
     # Test on invalid index
     with pytest.raises(ValueError, match="is less than the minimum"):

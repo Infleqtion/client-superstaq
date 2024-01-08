@@ -230,7 +230,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         Returns:
             A single circuit or list of circuits.
         """
-        if circuit_type not in ("input_circuit", "compiled_circuit"):
+        if circuit_type not in ("input_circuit", "compiled_circuit", "pulse_gate_circuits"):
             raise ValueError("The circuit type requested is invalid.")
 
         job_ids = self._job_id.split(",")
@@ -239,6 +239,9 @@ class SuperstaqJob(qiskit.providers.JobV1):
             for job_id in job_ids
         ):
             self._refresh_job()
+
+        if not all(self._job_info[job_id].get(circuit_type) is not None for job_id in job_ids):
+            raise ValueError(f"The circuit type '{circuit_type}' is not supported on this device.")
 
         if index is None:
             serialized_circuits = [self._job_info[job_id][circuit_type] for job_id in job_ids]
@@ -318,38 +321,8 @@ class SuperstaqJob(qiskit.providers.JobV1):
 
         Returns:
             A single pulse gate circuit or list of pulse gate circuits.
-
-        Raises:
-            ValueError: If the job's target does not use pulse gate circuits.
         """
-        job_ids = self._job_id.split(",")
-
-        if not all(
-            job_id in self._job_info
-            and self._job_info[job_id].get("pulse_gate_circuits") is not None
-            for job_id in job_ids
-        ):
-            self._refresh_job()
-
-        if index is None:
-            if all(self._job_info[job_id].get("pulse_gate_circuits") for job_id in job_ids):
-                serialized_circuits = [
-                    self._job_info[job_id]["pulse_gate_circuits"] for job_id in job_ids
-                ]
-                deserialized_circuits = []
-                for serialized_circuit in serialized_circuits:
-                    deserialized_circuit = qss.serialization.deserialize_circuits(
-                        serialized_circuit
-                    )
-                    deserialized_circuits.append(deserialized_circuit[0])
-                return deserialized_circuits
-        else:
-            gss.validation.validate_integer_param(index, min_val=0)
-            serialized_circuit = self._job_info[job_ids[index]]["pulse_gate_circuits"]
-            return qss.serialization.deserialize_circuits(serialized_circuit)
-
-        error = "Target does not use pulse gate circuits."
-        raise ValueError(error)
+        return self._get_circuits("pulse_gate_circuits", index)
 
     def status(self) -> qiskit.providers.jobstatus.JobStatus:
         """Query for the equivalent qiskit job status.
