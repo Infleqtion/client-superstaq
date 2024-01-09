@@ -168,8 +168,8 @@ jobs:
           python-version: 3.8
       - name: Install dependencies, using minimum supported qiskit version
         run: |
-          qiskit_version=$(sed qiskit-superstaq/requirements.txt -ne 's/^qiskit.=/qiskit==/p')
-          echo "Using minimum qiskit version: $qiskit_version"
+          qiskit_version=$(sed qiskit-superstaq/requirements.txt -ne 's/^qiskit-ibm-provider.=/qiskit-ibm-provider==/p')
+          echo "Using minimum qiskit-ibm-provider version: $qiskit_version"
           python -m pip install --upgrade pip
           pip install "$qiskit_version" -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq[dev]
       - name: Coverage check
