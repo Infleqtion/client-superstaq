@@ -213,7 +213,7 @@ jobs:
       - name: Pytest-win check
         run: |
           checks/pytest_.py
-        shell: bash
+        shell: cmd
 
   requirements:
     name: Requirements check
