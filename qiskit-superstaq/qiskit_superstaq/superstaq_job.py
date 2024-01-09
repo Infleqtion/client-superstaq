@@ -230,15 +230,19 @@ class SuperstaqJob(qiskit.providers.JobV1):
         Returns:
             A single circuit or list of circuits.
         """
-        if circuit_type not in ("input_circuit", "compiled_circuit"):
+        if circuit_type not in ("input_circuit", "compiled_circuit", "pulse_gate_circuits"):
             raise ValueError("The circuit type requested is invalid.")
 
         job_ids = self._job_id.split(",")
+
         if not all(
-            job_id in self._job_info and self._job_info[job_id].get(circuit_type)
+            job_id in self._job_info and circuit_type in self._job_info[job_id]
             for job_id in job_ids
         ):
             self._refresh_job()
+
+        if any(self._job_info[job_id].get(circuit_type) is None for job_id in job_ids):
+            raise ValueError(f"The circuit type '{circuit_type}' is not supported on this device.")
 
         if index is None:
             serialized_circuits = [self._job_info[job_id][circuit_type] for job_id in job_ids]
@@ -299,6 +303,27 @@ class SuperstaqJob(qiskit.providers.JobV1):
             The input circuit or list of submitted input circuits.
         """
         return self._get_circuits("input_circuit", index)
+
+    @overload
+    def pulse_gate_circuits(self, index: int) -> qiskit.QuantumCircuit:
+        ...
+
+    @overload
+    def pulse_gate_circuits(self, index: None = None) -> list[qiskit.QuantumCircuit]:
+        ...
+
+    def pulse_gate_circuits(
+        self, index: int | None = None
+    ) -> qiskit.QuantumCircuit | list[qiskit.QuantumCircuit]:
+        """Gets the pulse gate circuit(s) returned by this job.
+
+        Args:
+            index: An optional index of the pulse gate circuit to retrieve.
+
+        Returns:
+            A single pulse gate circuit or list of pulse gate circuits.
+        """
+        return self._get_circuits("pulse_gate_circuits", index)
 
     def status(self) -> qiskit.providers.jobstatus.JobStatus:
         """Query for the equivalent qiskit job status.
