@@ -315,7 +315,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
     def pulse_gate_circuits(
         self, index: int | None = None
     ) -> qiskit.QuantumCircuit | list[qiskit.QuantumCircuit]:
-        """Gets the pulse gate circuit returned by this job.
+        """Gets the pulse gate circuit(s) returned by this job.
 
         Args:
             index: An optional index of the pulse gate circuit to retrieve.
