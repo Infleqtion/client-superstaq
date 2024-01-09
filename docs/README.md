@@ -1,31 +1,30 @@
-docs-superstaq: Home of documentation for Superstaq
+docs: Home of documentation for Superstaq
 ===================================================
-This repository contains materials that support the [Superstaq documentation site](https://docs-superstaq.readthedocs.io/).
+This repository contains materials that support the [Superstaq documentation site](https://superstaq.readthedocs.io/en/latest/).
 
-## How to build docs-superstaq locally
+## How to build the docs locally
 ### Setup your environment
 
-Clone the repository, set up your virtual environment, install requirements, and make sure submodules are up-to-date.
+Clone the repository, set up your virtual environment, and install requirements.
 
-    git clone git@github.com:Infleqtion/docs-superstaq.git
-    python3 -m venv docs-superstaq-env
-    source docs-superstaq-env/bin/activate
-    cd docs-superstaq
+    git clone git@github.com:Infleqtion/client-superstaq.git
+    python3 -m venv venv_superstaq
+    source venv_superstaq/bin/activate
+    cd client-superstaq/docs
     pip install -r requirements.txt
-    git submodule update --init --recursive
+    
 
 ### Build the docs
 1. `cd` into the `docs` folder
 0. `make clean`
 0. `make html`
+    Note: After this step you may encounter an error telling you to install pandocs. This means you need to do a systems-level install of pandocs. You can do so by following the directions [here](https://pandoc.org/installing.html). Once done, repeat steps 2-3.
 0. `open build/html/index.html`
-
-## How to update docs-superstaq
-1. Make sure you are on the `main` branch in `docs-superstaq` as well as the client submodules.
-0. Make sure submodules are updated with `git pull --recurse-submodules`. Additionally, update relevant dependencies within the submodules (`pip install -e .`, `pip install general-superstaq --upgrade`).
+ 
+## How to update the docs
+1. Make sure you are on the `main` branch in `client-superstaq`.
 0. Create a new branch off of `main` in which to make your updates.
 0. Make any relevant updates.
-0. If any updates were made in the client submodules (e.g., `qiskit-superstaq`), run `build_docs.py`.
 0. Push all commits and create a Pull Request.
 0. Request the relevant people to review your Pull Request.
 0. After your Pull Request has been reviewed, merge in your branch.
@@ -33,7 +32,6 @@ Clone the repository, set up your virtual environment, install requirements, and
 ## How this repository was setup
 1. Create repository.
 0. Create `.gitignore`, `requirements.txt`, and `.readthedocs.yaml`.
-0. Run `git submodule add <GitHub repository URL>` for each submodule you would like to add.
 0. Create `docs` folder and `cd docs`. Run `sphinx-quickstart`.
     - Select `y` for `Separate source and build directories`.
     - Enter project and author names. Hit `Enter` on remaining options to select default options.
