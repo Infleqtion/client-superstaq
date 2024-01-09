@@ -241,7 +241,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         ):
             self._refresh_job()
 
-        if not any(self._job_info[job_id].get(circuit_type) is None for job_id in job_ids):
+        if any(self._job_info[job_id].get(circuit_type) is None for job_id in job_ids):
             raise ValueError(f"The circuit type '{circuit_type}' is not supported on this device.")
 
         if index is None:
