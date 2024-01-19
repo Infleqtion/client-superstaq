@@ -31,6 +31,8 @@ def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
     if "build_docs" in parsed_args.skip:
         return 0
 
+    print('here')
+
     docs_dir = os.path.join(check_utils.root_dir, "docs")
     if sphinx_paths:
         for path in sphinx_paths:
