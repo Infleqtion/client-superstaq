@@ -12,6 +12,7 @@ if __name__ == "__main__":
                 "../qiskit-superstaq",
                 "../general-superstaq",
                 "../supermarq-benchmarks",
+                "../docs",
             ]
         )
     )

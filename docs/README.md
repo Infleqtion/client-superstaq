@@ -15,10 +15,10 @@ Clone the repository, set up your virtual environment, and install requirements.
     
 
 ### Build the docs
-1. `cd` into the `docs` folder
-0. `make clean`
-0. `make html`
-    Note: After this step you may encounter an error telling you to install pandocs. This means you need to do a systems-level install of pandocs. You can do so by following the directions [here](https://pandoc.org/installing.html). Once done, repeat steps 2-3.
+1. `cd` into the `checks` folder
+0.  Run the script `build_docs.py`
+    Note: You may encounter an error telling you to install pandoc. This means you need to do a systems-level install of pandoc. You can do so by following the directions [here](https://pandoc.org/installing.html). Once done, repeat steps 2-3.
+0. `cd ../docs/`
 0. `open build/html/index.html`
  
 ## How to update the docs
@@ -28,13 +28,3 @@ Clone the repository, set up your virtual environment, and install requirements.
 0. Push all commits and create a Pull Request.
 0. Request the relevant people to review your Pull Request.
 0. After your Pull Request has been reviewed, merge in your branch.
-
-## How this repository was setup
-1. Create repository.
-0. Create `.gitignore`, `requirements.txt`, and `.readthedocs.yaml`.
-0. Create `docs` folder and `cd docs`. Run `sphinx-quickstart`.
-    - Select `y` for `Separate source and build directories`.
-    - Enter project and author names. Hit `Enter` on remaining options to select default options.
-0. Update `conf.py` in `docs/source`.
-0. Run `sphinx_apidoc` with relevant options for modules you want to autodoc.
-0. Update `index.rst` in `docs/source`.
