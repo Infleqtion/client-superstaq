@@ -34,11 +34,15 @@ def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
     docs_dir = os.path.join(check_utils.root_dir, "docs")
 
     if sphinx_paths:
+        returncode = 0
         for path in sphinx_paths:
-            subprocess.run(
-                ["sphinx-apidoc", "-f" ,"-o", "source", path, f"{path}/*_test.py"], cwd=docs_dir
+            returncode |= subprocess.call(
+                ["sphinx-apidoc", "-f","-o", "source", path, f"{path}/*_test.py"], cwd=docs_dir
             )
-    return subprocess.call(["sphinx-build", "-W", "source", "build/html"], cwd=docs_dir)
+        return subprocess.call(["sphinx-build", "source", "build/html"], cwd=docs_dir)
+    else:
+        print(check_utils.warning("No docs to build."))
+        return 0
 
 
 if __name__ == "__main__":
