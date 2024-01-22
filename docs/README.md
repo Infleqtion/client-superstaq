@@ -5,21 +5,20 @@ This repository contains materials that support the [Superstaq documentation sit
 ## How to build the docs locally
 ### Setup your environment
 
-Clone the repository, set up your virtual environment, and install requirements.
+Clone the repository and set up your virtual environment
 
     git clone git@github.com:Infleqtion/client-superstaq.git
     python3 -m venv venv_superstaq
     source venv_superstaq/bin/activate
-    cd client-superstaq/docs
-    pip install -r requirements.txt
+    python3 -m pip install -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks 
+    Note: Packages should be installed in the order above.
     
 
 ### Build the docs
-1. `cd` into the `checks` folder
-0.  Run the script `build_docs.py`
+1.  From the the parent `client-superstaq` directory. Run `./checks/build_docs.py`
     Note: You may encounter an error telling you to install pandoc. This means you need to do a systems-level install of pandoc. You can do so by following the directions [here](https://pandoc.org/installing.html). Once done, repeat steps 2-3.
-0. `cd ../docs/`
-0. `open build/html/index.html`
+0. `cd` into the `docs` folder.
+0. Run `open build/html/index.html`
  
 ## How to update the docs
 1. Make sure you are on the `main` branch in `client-superstaq`.

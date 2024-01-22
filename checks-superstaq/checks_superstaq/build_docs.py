@@ -36,9 +36,9 @@ def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
     if sphinx_paths:
         for path in sphinx_paths:
             subprocess.run(
-                f"sphinx-apidoc -f -o source {path} {path}/*_test.py", shell=True, cwd=docs_dir
+                ["sphinx-apidoc", "-f" ,"-o", "source", path, f"{path}/*_test.py"], cwd=docs_dir
             )
-    return subprocess.call(["sphinx-build", "source", "build/html"], cwd=docs_dir)
+    return subprocess.call(["sphinx-build", "-W", "source", "build/html"], cwd=docs_dir)
 
 
 if __name__ == "__main__":
