@@ -37,7 +37,7 @@ def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
         returncode = 0
         for path in sphinx_paths:
             returncode |= subprocess.call(
-                ["sphinx-apidoc", "-f","-o", "source", path, f"{path}/*_test.py"], cwd=docs_dir
+                ["sphinx-apidoc", "-f", "-o", "source", path, f"{path}/*_test.py"], cwd=docs_dir
             )
         return subprocess.call(["sphinx-build", "source", "build/html"], cwd=docs_dir)
     else:
