@@ -38,7 +38,10 @@ def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
             subprocess.run(
                 f"sphinx-apidoc -f -o source {path} {path}/*_test.py", shell=True, cwd=docs_dir
             )
-    return subprocess.call(["sphinx-build", "source", "build/html"], cwd=docs_dir)
+        return subprocess.call(["sphinx-build", "source", "build/html"], cwd=docs_dir)
+    else:
+        print(check_utils.warning("No docs to build."))
+        return 0
 
 
 if __name__ == "__main__":
