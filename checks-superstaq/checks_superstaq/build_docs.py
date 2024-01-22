@@ -34,8 +34,9 @@ def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
     docs_dir = os.path.join(check_utils.root_dir, "docs")
 
     if sphinx_paths:
+        returncode = 0
         for path in sphinx_paths:
-            subprocess.run(
+            returncode |= subprocess.call(
                 f"sphinx-apidoc -f -o source {path} {path}/*_test.py", shell=True, cwd=docs_dir
             )
         return subprocess.call(["sphinx-build", "source", "build/html"], cwd=docs_dir)
