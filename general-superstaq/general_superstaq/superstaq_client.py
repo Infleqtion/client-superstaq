@@ -546,6 +546,41 @@ class _SuperstaqClient:
         """
         return self.post_request("/aces_fetch", {"job_id": job_id})
 
+    def submit_cb(
+        self,
+        target: str,
+        shots: int,
+        serialized_circuits: dict[str, str],
+        num_channels: int,
+        num_sequences: int,
+        depths: list[int],
+        method: str | None = None,
+        noise: dict[str, object] | None = None,
+    ) -> str:
+        gss.validation.validate_target(target)
+
+        json_dict: dict[str, Any] = {
+            **serialized_circuits,
+            "target": target,
+            "shots": shots,
+            "num_channels": num_channels,
+            "num_sequences": num_sequences,
+            "depths": depths,
+        }
+
+        if method:
+            json_dict["method"] = method
+        if noise:
+            if "type" in noise.keys():
+                gss.validation.validate_noise_type(noise, len(qubits))
+            json_dict["noise"] = noise
+
+        return self.post_request("/cycle_benchmarking", json_dict)
+
+    def process_cb(self, job_id: str) -> list[float]:
+        return self.post_request("/cb_fetch", {"job_id": job_id})
+
+
     def target_info(self, target: str) -> dict[str, Any]:
         """Makes a POST request to the /target_info endpoint.
 

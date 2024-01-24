@@ -975,6 +975,42 @@ class Service(gss.service.Service):
             lifespan=lifespan,
         )
 
+
+    def submit_cb(
+        self,
+        target: str,
+        shots: int,
+        circuits: cirq.Circuit,
+        num_channels: int,
+        num_sequences: int,
+        depths: list[int],
+        method: str | None = None,
+        noise: str | cirq.NoiseModel | None = None,
+        error_prob: float | tuple[float, float, float] | None = None,
+    ) -> str:
+        noise_dict: dict[str, object] = {}
+        if isinstance(noise, str):
+            noise_dict["type"] = noise
+            noise_dict["params"] = (
+                (error_prob,) if isinstance(error_prob, numbers.Number) else error_prob
+            )
+        elif isinstance(noise, cirq.NoiseModel):
+            noise_dict["cirq_noise_model"] = cirq.to_json(noise)
+
+        serialized_circuits = css.serialization.serialize_circuits(circuits)
+
+        return self._client.submit_cb(
+            target,
+            shots,
+            {'cirq_circuits': serialized_circuits},
+            num_channels,
+            num_sequences,
+            depths,
+            method,
+            noise,
+        )
+ 
+
     def target_info(self, target: str) -> dict[str, Any]:
         """Returns information about device specified by `target`.
 
