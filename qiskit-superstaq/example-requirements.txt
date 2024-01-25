@@ -1,2 +1,2 @@
-notebook~=6.5.5
-pylatexenc
+notebook>=6.5.5
+pylatexenc>=2.0
