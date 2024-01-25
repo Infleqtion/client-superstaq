@@ -149,8 +149,8 @@ jobs:
           python-version: 3.8
       - name: Install dependencies, using minimum supported cirq version
         run: |
-          cirq_version=$(sed cirq-superstaq/requirements.txt -ne 's/^cirq.=/cirq==/p')
-          echo "Using minimum cirq version: $cirq_version"
+          cirq_version=$(sed cirq-superstaq/requirements.txt -ne 's/^cirq-core.=/cirq-core==/p')
+          echo "Using minimum cirq-core version: $cirq_version"
           python -m pip install --upgrade pip
           pip install "$cirq_version" -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq[dev]
       - name: Coverage check
