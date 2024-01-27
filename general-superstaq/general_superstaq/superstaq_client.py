@@ -577,7 +577,7 @@ class _SuperstaqClient:
 
         return self.post_request("/cycle_benchmarking", json_dict)
 
-    def process_cb(self, job_id: str) -> list[float]:
+    def process_cb(self, job_id: str) -> dict[str, Any]:
         return self.post_request("/cb_fetch", {"job_id": job_id})
 
 

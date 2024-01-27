@@ -25,6 +25,9 @@ import numpy.typing as npt
 from general_superstaq import ResourceEstimate, superstaq_client
 
 import cirq_superstaq as css
+import json
+import matplotlib.pyplot as plt
+import json
 
 if TYPE_CHECKING:
     from _typeshed import SupportsItems
@@ -1009,7 +1012,18 @@ class Service(gss.service.Service):
             method,
             noise,
         )
- 
+
+    def process_cb(self, id: str) -> dict[str, Any]:
+        return self._client.process_cb(id)
+
+    
+    def plot_data_cb(self, content: dict[str, Any]):
+        plot_data = {}
+        json_load = json.loads(content['figure_data'])
+        plot_data['averages'] = json_load['averages']
+        plot_data['evs'] = json_load['evs']
+        plot_data['std_devs'] = json_load['std_devs']
+        return plot_data
 
     def target_info(self, target: str) -> dict[str, Any]:
         """Returns information about device specified by `target`.
