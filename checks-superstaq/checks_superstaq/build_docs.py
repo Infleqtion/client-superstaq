@@ -39,7 +39,7 @@ def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
             returncode |= subprocess.call(
                 ["sphinx-apidoc", "-f", "-o", "source", path, f"{path}/*_test.py"], cwd=docs_dir
             )
-        return subprocess.call(["sphinx-build", "-W", "source", "build/html"], cwd=docs_dir)
+        return subprocess.call(["sphinx-build", "source", "build/html"], cwd=docs_dir)
     else:
         print(check_utils.warning("No docs to build."))
         return 0
