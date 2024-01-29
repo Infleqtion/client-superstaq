@@ -1,4 +1,5 @@
 """Miscellaneous custom gates that we encounter and want to explicitly define."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator, Set
