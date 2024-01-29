@@ -206,8 +206,7 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: str | None = None,
         **kwargs: Any,
-    ) -> dict[str, int]:
-        ...
+    ) -> dict[str, int]: ...
 
     @overload
     def get_counts(
@@ -218,8 +217,7 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: str | None = None,
         **kwargs: Any,
-    ) -> list[dict[str, int]]:
-        ...
+    ) -> list[dict[str, int]]: ...
 
     def get_counts(
         self,
@@ -258,8 +256,7 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
         method: str | None = None,
         **kwargs: Any,
-    ) -> cirq.ResultDict:
-        ...
+    ) -> cirq.ResultDict: ...
 
     @overload
     def run(
@@ -270,8 +267,7 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
         method: str | None = None,
         **kwargs: Any,
-    ) -> list[cirq.ResultDict]:
-        ...
+    ) -> list[cirq.ResultDict]: ...
 
     def run(
         self,
@@ -419,8 +415,9 @@ class Service(gss.service.Service):
         random_seed: int | None = None,
         target: str = "aqt_keysight_qpu",
         atol: float | None = None,
-        gate_defs: None
-        | (Mapping[str, npt.NDArray[np.complex_] | cirq.Gate | cirq.Operation | None]) = None,
+        gate_defs: None | (
+            Mapping[str, npt.NDArray[np.complex_] | cirq.Gate | cirq.Operation | None]
+        ) = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for AQT using ECA.
@@ -483,8 +480,9 @@ class Service(gss.service.Service):
         num_eca_circuits: int | None = None,
         random_seed: int | None = None,
         atol: float | None = None,
-        gate_defs: None
-        | (Mapping[str, npt.NDArray[np.complex_] | cirq.Gate | cirq.Operation | None]) = None,
+        gate_defs: None | (
+            Mapping[str, npt.NDArray[np.complex_] | cirq.Gate | cirq.Operation | None]
+        ) = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
