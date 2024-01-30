@@ -7,7 +7,7 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - 'general-superstaq/general_superstaq/_version.py'
+      - "general-superstaq/general_superstaq/_version.py"
   pull_request:
     branches: [main]
   workflow_call: null
@@ -101,7 +101,7 @@ jobs:
     name: Pytest and Coverage check
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -238,11 +238,23 @@ jobs:
           checks/requirements.py
 
   notebook:
-    name: Notebook check
     env:
-      SUPERSTAQ_API_KEY : ${{ secrets.SUPERSTAQ_API_KEY }}
-      IBMQ_TOKEN : ${{ secrets.IBMQ_TOKEN }}
+      SUPERSTAQ_API_KEY: ${{ secrets.SUPERSTAQ_API_KEY }}
+      IBMQ_TOKEN: ${{ secrets.IBMQ_TOKEN }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - type: "qiskit_superstaq"
+            pattern: "*_qss.ipynb"
+            dependencies: "-e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev]"
+          - type: "cirq_superstaq"
+            pattern: "*_css.ipynb"
+            dependencies: "-e ./checks-superstaq -e ./general-superstaq[dev] -e ./cirq-superstaq[dev]"
+          - type: "other_docs"
+            pattern: "--ignore-glob=*_qss.ipynb --ignore-glob=*_css.ipynb"
+            dependencies: "-e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]"
+    name: Notebook check for ${{ matrix.type }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.8
@@ -256,10 +268,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]
+          pip install ${{ matrix.dependencies }}
       - name: Notebook check
         run: |
-          checks/pytest_.py --notebook
+          checks/pytest_.py --notebook ${{ matrix.pattern }}
 
   docs:
     name: Build docs
@@ -270,7 +282,7 @@ jobs:
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - uses: actions/cache@v3
         with:
           path: ${{ env.pythonLocation }}
