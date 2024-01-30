@@ -252,7 +252,7 @@ jobs:
             pattern: "*_css.ipynb"
             dependencies: "-e ./checks-superstaq -e ./general-superstaq[dev] -e ./cirq-superstaq[dev]"
           - type: "other docs"
-            pattern: "--ignore-glob=**/*_css.ipynb --ignore-glob=**/*_qss.ipynb"
+            pattern: "--exclude=**/*_css.ipynb --exclude=**/*_qss.ipynb"
             dependencies: "-e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]"
     name: Notebook check for ${{ matrix.type }}
     steps:
@@ -269,7 +269,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install ${{ matrix.dependencies }}
-      - name: Notebook check
+      - name: Check notebooks
         run: |
           checks/pytest_.py --notebook ${{ matrix.pattern }}
 
