@@ -245,14 +245,14 @@ jobs:
     strategy:
       matrix:
         include:
-          - type: "qiskit_superstaq"
+          - type: "qiskit-superstaq"
             pattern: "*_qss.ipynb"
             dependencies: "-e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev]"
-          - type: "cirq_superstaq"
+          - type: "cirq-superstaq"
             pattern: "*_css.ipynb"
             dependencies: "-e ./checks-superstaq -e ./general-superstaq[dev] -e ./cirq-superstaq[dev]"
-          - type: "other_docs"
-            pattern: "--ignore-glob=*_qss.ipynb --ignore-glob=*_css.ipynb"
+          - type: "other docs"
+            pattern: "--ignore-glob=**/*_css.ipynb --ignore-glob=**/*_qss.ipynb"
             dependencies: "-e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]"
     name: Notebook check for ${{ matrix.type }}
     steps:
