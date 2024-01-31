@@ -73,14 +73,6 @@ class BitCode(Benchmark):
 
         return circuit
 
-    def qiskit_circuit(self) -> qiskit.QuantumCircuit:
-        """Generates bit code circuit.
-
-        Returns:
-            A `qiskit.QuantumCircuit`.
-        """
-        raise NotImplementedError("Use circuit() method instead.")
-
     def _get_ideal_dist(self) -> dict[str, float]:
         """Return the ideal probability distribution of `self.circuit()`.
 

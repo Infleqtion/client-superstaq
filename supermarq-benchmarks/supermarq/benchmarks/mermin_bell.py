@@ -4,7 +4,6 @@ from typing import cast
 
 import cirq
 import numpy as np
-import qiskit
 import sympy
 
 from supermarq import stabilizers
@@ -50,14 +49,6 @@ class MerminBell(Benchmark):
         circuit.append(measurement_circuit.get_circuit())
 
         return circuit
-
-    def qiskit_circuit(self) -> qiskit.QuantumCircuit:
-        """The Mermin-Bell circuit, simultaneously measuring Mermin terms in a GHZ circuit.
-
-        Returns:
-            A `qiskit.QuantumCircuit`.
-        """
-        raise NotImplementedError("Use circuit() method instead.")
 
     def score(self, counts: dict[str, float]) -> float:
         """Compute the score for the N-qubit Mermin-Bell benchmark.

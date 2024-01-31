@@ -50,7 +50,7 @@ class GHZ(Benchmark):
             circuit.measure(i, i)
         return circuit
 
-    def score(self, counts: dict[str, int]) -> float:
+    def score(self, counts: dict[str, float]) -> float:
         r"""Compute the Hellinger fidelity between the experimental and ideal results.
 
         The ideal results are 50% probabilty of measuring the all-zero state and 50% probability

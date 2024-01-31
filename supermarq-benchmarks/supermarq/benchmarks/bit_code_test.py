@@ -29,9 +29,3 @@ def test_invalid_inputs() -> None:
 
     with pytest.raises(ValueError, match="Entries of `bit_state` must be 0, 1 integers."):
         BitCode(3, 1, cast("list[int]", ["0", "1", "0"]))
-
-
-def test_invalid_circuit() -> None:
-    bc = BitCode(3, 1, [1, 1, 1])
-    with pytest.raises(NotImplementedError, match="method instead."):
-        bc.qiskit_circuit()
