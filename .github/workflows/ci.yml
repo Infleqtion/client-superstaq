@@ -249,7 +249,7 @@ jobs:
             pattern: "*_qss.ipynb qiskit-superstaq"
             dependencies: "-e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev]"
           - type: "cirq-superstaq"
-            pattern: "*_css.ipynb"
+            pattern: "*_css.ipynb cirq-superstaq"
             dependencies: "-e ./checks-superstaq -e ./general-superstaq[dev] -e ./cirq-superstaq[dev]"
           - type: "other docs"
             pattern: "--exclude=**/*_css.ipynb --exclude=**/*_qss.ipynb"
