@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+from typing import Any
 
 import cirq
 import qiskit
@@ -36,9 +37,9 @@ class Benchmark:
         return [supermarq.converters.cirq_to_qiskit(c) for c in cirq_circuit]
 
     @abc.abstractmethod
-    def score(self, counts: dict[str, float]) -> float:
+    def score(self, counts: Any) -> float:
         """Returns a normalized [0,1] score reflecting device performance.
 
         Args:
-            counts: A dictionary containing the measurement counts from execution.
+            counts: Dictionary(s) containing the measurement counts from execution.
         """
