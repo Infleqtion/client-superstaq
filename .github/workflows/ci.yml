@@ -246,7 +246,7 @@ jobs:
       matrix:
         include:
           - type: "qiskit-superstaq"
-            pattern: "*_qss.ipynb"
+            pattern: "*_qss.ipynb qiskit-superstaq"
             dependencies: "-e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev]"
           - type: "cirq-superstaq"
             pattern: "*_css.ipynb"
