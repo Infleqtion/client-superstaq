@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Sequence
-from typing import Any
 
 import cirq
+import qiskit
+
+import supermarq
 
 
 class Benchmark:
@@ -19,12 +20,23 @@ class Benchmark:
     and compute the final score.
     """
 
-    @abc.abstractmethod
-    def circuit(self) -> cirq.Circuit | Sequence[cirq.Circuit]:
-        """Returns the quantum circuit corresponding to the current benchmark parameters."""
+    def cirq_circuit(self) -> cirq.Circuit | list[cirq.Circuit]:
+        """Returns the cirq circuit(s) corresponding to the current benchmark parameters."""
+        return self.circuit()
 
     @abc.abstractmethod
-    def score(self, counts: Any) -> float:
+    def circuit(self) -> cirq.Circuit | list[cirq.Circuit]:
+        """Returns the quantum circuit(s) corresponding to the current benchmark parameters."""
+
+    def qiskit_circuit(self) -> qiskit.QuantumCircuit | list[qiskit.QuantumCircuit]:
+        """Returns the qiskit circuit(s) corresponding to the current benchmark parameters."""
+        cirq_circuit = self.cirq_circuit()
+        if isinstance(cirq_circuit, cirq.Circuit):
+            return supermarq.converters.cirq_to_qiskit(cirq_circuit)
+        return [supermarq.converters.cirq_to_qiskit(c) for c in cirq_circuit]
+
+    @abc.abstractmethod
+    def score(self, counts: dict[str, float]) -> float:
         """Returns a normalized [0,1] score reflecting device performance.
 
         Args:
