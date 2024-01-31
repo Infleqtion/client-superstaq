@@ -18,7 +18,7 @@ The Supermarq package is available via `pip` and can be installed in your curren
 pip install supermarq
 ```
 
-## Install Dev Requirements 
+## Install Dev Requirements
 
 This is required if you intend to run checks locally
 
@@ -36,7 +36,7 @@ after execution on hardware.
 The quantum benchmarks within Supermarq are designed to be scalable, meaning that the benchmarks can be
 instantiated and generated for a wide range of circuit sizes and depths.
 
-The [`examples/ghz_example.py`](examples/ghz_example.py) file contains an end-to-end example of how to execute the GHZ benchmark
+The [Supermarq tutorial](examples/Supermarq_HPCA_Tutorial_css.ipynb) notebook contains an end-to-end example of how to execute the GHZ benchmark
 using [Superstaq](https://superstaq.infleqtion.com/). The general workflow is as follows:
 
 ```python
