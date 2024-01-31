@@ -21,13 +21,13 @@ class Benchmark:
     and compute the final score.
     """
 
-    def cirq_circuit(self) -> cirq.Circuit | list[cirq.Circuit]:
-        """Returns the cirq circuit(s) corresponding to the current benchmark parameters."""
-        return self.circuit()
-
     @abc.abstractmethod
     def circuit(self) -> cirq.Circuit | list[cirq.Circuit]:
         """Returns the quantum circuit(s) corresponding to the current benchmark parameters."""
+
+    def cirq_circuit(self) -> cirq.Circuit | list[cirq.Circuit]:
+        """Returns the cirq circuit(s) corresponding to the current benchmark parameters."""
+        return self.circuit()
 
     def qiskit_circuit(self) -> qiskit.QuantumCircuit | list[qiskit.QuantumCircuit]:
         """Returns the qiskit circuit(s) corresponding to the current benchmark parameters."""
