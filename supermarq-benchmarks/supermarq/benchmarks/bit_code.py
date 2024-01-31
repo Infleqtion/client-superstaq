@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 
 import cirq
-from qiskit.quantum_info import hellinger_fidelity
+import qiskit
 
 from supermarq.benchmark import Benchmark
 
@@ -73,6 +73,14 @@ class BitCode(Benchmark):
 
         return circuit
 
+    def qiskit_circuit(self) -> qiskit.QuantumCircuit:
+        """Generates bit code circuit.
+
+        Returns:
+            A `qiskit.QuantumCircuit`.
+        """
+        raise NotImplementedError("Use circuit() method instead.")
+
     def _get_ideal_dist(self) -> dict[str, float]:
         """Return the ideal probability distribution of `self.circuit()`.
 
@@ -108,4 +116,4 @@ class BitCode(Benchmark):
         ideal_dist = self._get_ideal_dist()
         total_shots = sum(counts.values())
         experimental_dist = {bitstr: shots / total_shots for bitstr, shots in counts.items()}
-        return hellinger_fidelity(ideal_dist, experimental_dist)
+        return qiskit.quantum_info.hellinger_fidelity(ideal_dist, experimental_dist)

@@ -4,6 +4,7 @@ from typing import cast
 
 import cirq
 import numpy as np
+import qiskit
 import sympy
 
 from supermarq import stabilizers
@@ -18,6 +19,11 @@ class MerminBell(Benchmark):
     """
 
     def __init__(self, num_qubits: int) -> None:
+        """Initializes a `MerminBell`.
+
+        Args:
+            num_qubits: The number of qubits.
+        """
         self.num_qubits = num_qubits
         self.qubits = cirq.LineQubit.range(self.num_qubits)
 
@@ -32,7 +38,6 @@ class MerminBell(Benchmark):
         Returns:
             The Mermin-Bell `cirq.Circuit`.
         """
-
         circuit = cirq.Circuit()
 
         # Create a GHZ state
@@ -45,6 +50,14 @@ class MerminBell(Benchmark):
         circuit.append(measurement_circuit.get_circuit())
 
         return circuit
+
+    def qiskit_circuit(self) -> qiskit.QuantumCircuit:
+        """The Mermin-Bell circuit, simultaneously measuring Mermin terms in a GHZ circuit.
+
+        Returns:
+            A `qiskit.QuantumCircuit`.
+        """
+        raise NotImplementedError("Use circuit() method instead.")
 
     def score(self, counts: dict[str, float]) -> float:
         """Compute the score for the N-qubit Mermin-Bell benchmark.
