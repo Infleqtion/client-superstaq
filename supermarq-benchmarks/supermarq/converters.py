@@ -151,7 +151,7 @@ def compute_depth_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
             for name in {op.name for op in dag.two_qubit_ops()}
             if name in longest_paths
         ]
-   )
+    )
     n_e = len(dag.two_qubit_ops())
 
     if n_ed == 0:
