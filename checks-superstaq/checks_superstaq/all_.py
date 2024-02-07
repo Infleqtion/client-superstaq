@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 import sys
 import textwrap
-from typing import List, Optional
 
 from checks_superstaq import (
     build_docs,
@@ -16,7 +17,7 @@ from checks_superstaq import (
 )
 
 
-def run(*args: str, sphinx_paths: Optional[List[str]] = None) -> int:
+def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
     """Runs all checks on the repository.
 
     Args:

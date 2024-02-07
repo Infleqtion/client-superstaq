@@ -19,6 +19,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["supermarq*"]
 
+[tool.setuptools.package-dir]
+"" = "."
+
 [tool.setuptools.package-data]
 supermarq = ["py.typed"]
 

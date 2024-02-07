@@ -15,18 +15,8 @@ from __future__ import annotations
 
 import numbers
 import warnings
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-    overload,
-)
+from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING, Any, overload
 
 import cirq
 import general_superstaq as gss
@@ -89,7 +79,7 @@ def counts_to_results(
     # Combines all the measurement key names into a string: {'0', '1'} -> "01"
     combine_key_names = "".join(measurement_key_names)
 
-    samples: List[List[int]] = []
+    samples: list[list[int]] = []
     if not all(counts == int(counts) for counts in counter.values()):
         warnings.warn(
             "The raw counts contain fractional values due to measurement error mitigation; please "
@@ -104,7 +94,7 @@ def counts_to_results(
         )
     for key, counts_of_key in counter.items():
         # Combines the keys of the counter into a list. If key = "01", keys_as_list = [0, 1]
-        keys_as_list: List[int] = list(map(int, key))
+        keys_as_list: list[int] = list(map(int, key))
 
         # Gets execution counts per bitstring, e.g., collections.Counter({"01": 48, "11": 52})["01"]
         # = 48. Per execution shot, appends bitstring to `samples` list. E.g., if counter is
@@ -135,16 +125,16 @@ class Service(gss.service.Service):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        remote_host: Optional[str] = None,
-        default_target: Optional[str] = None,
+        api_key: str | None = None,
+        remote_host: str | None = None,
+        default_target: str | None = None,
         api_version: str = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
-        cq_token: Optional[str] = None,
-        ibmq_token: Optional[str] = None,
-        ibmq_instance: Optional[str] = None,
-        ibmq_channel: Optional[str] = None,
+        cq_token: str | None = None,
+        ibmq_token: str | None = None,
+        ibmq_instance: str | None = None,
+        ibmq_channel: str | None = None,
         **kwargs: object,
     ) -> None:
         """Creates the Service to access Superstaq's API.
@@ -197,7 +187,7 @@ class Service(gss.service.Service):
             **kwargs,
         )
 
-    def _resolve_target(self, target: Union[str, None]) -> str:
+    def _resolve_target(self, target: str | None) -> str:
         target = target or self.default_target
         if not target:
             raise ValueError(
@@ -212,34 +202,32 @@ class Service(gss.service.Service):
         self,
         circuits: cirq.Circuit,
         repetitions: int,
-        target: Optional[str] = None,
+        target: str | None = None,
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
-        method: Optional[str] = None,
+        method: str | None = None,
         **kwargs: Any,
-    ) -> Dict[str, int]:
-        ...
+    ) -> dict[str, int]: ...
 
     @overload
     def get_counts(
         self,
         circuits: Sequence[cirq.Circuit],
         repetitions: int,
-        target: Optional[str] = None,
+        target: str | None = None,
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
-        method: Optional[str] = None,
+        method: str | None = None,
         **kwargs: Any,
-    ) -> List[Dict[str, int]]:
-        ...
+    ) -> list[dict[str, int]]: ...
 
     def get_counts(
         self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        circuits: cirq.Circuit | Sequence[cirq.Circuit],
         repetitions: int,
-        target: Optional[str] = None,
+        target: str | None = None,
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
-        method: Optional[str] = None,
+        method: str | None = None,
         **kwargs: Any,
-    ) -> Union[Dict[str, int], List[Dict[str, int]]]:
+    ) -> dict[str, int] | list[dict[str, int]]:
         """Runs circuit(s) on the Superstaq API and returns the result(s) as a `dict`.
 
         Args:
@@ -264,34 +252,32 @@ class Service(gss.service.Service):
         self,
         circuits: cirq.Circuit,
         repetitions: int,
-        target: Optional[str] = None,
+        target: str | None = None,
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
-        method: Optional[str] = None,
+        method: str | None = None,
         **kwargs: Any,
-    ) -> cirq.ResultDict:
-        ...
+    ) -> cirq.ResultDict: ...
 
     @overload
     def run(
         self,
         circuits: Sequence[cirq.Circuit],
         repetitions: int,
-        target: Optional[str] = None,
+        target: str | None = None,
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
-        method: Optional[str] = None,
+        method: str | None = None,
         **kwargs: Any,
-    ) -> List[cirq.ResultDict]:
-        ...
+    ) -> list[cirq.ResultDict]: ...
 
     def run(
         self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        circuits: cirq.Circuit | Sequence[cirq.Circuit],
         repetitions: int,
-        target: Optional[str] = None,
+        target: str | None = None,
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
-        method: Optional[str] = None,
+        method: str | None = None,
         **kwargs: Any,
-    ) -> Union[cirq.ResultDict, List[cirq.ResultDict]]:
+    ) -> cirq.ResultDict | list[cirq.ResultDict]:
         """Runs circuit(s) on the Superstaq API and returns the result(s) as `cirq.ResultDict`.
 
         WARNING: This may return unexpected results when used with measurement error mitigation. Use
@@ -318,7 +304,7 @@ class Service(gss.service.Service):
             for i, circuit in enumerate(circuits)
         ]
 
-    def sampler(self, target: Optional[str] = None) -> cirq.Sampler:
+    def sampler(self, target: str | None = None) -> cirq.Sampler:
         """Returns a `cirq.Sampler` object for accessing sampler interface.
 
         Args:
@@ -332,10 +318,10 @@ class Service(gss.service.Service):
 
     def create_job(
         self,
-        circuits: Union[cirq.AbstractCircuit, Sequence[cirq.AbstractCircuit]],
+        circuits: cirq.AbstractCircuit | Sequence[cirq.AbstractCircuit],
         repetitions: int = 1000,
-        target: Optional[str] = None,
-        method: Optional[str] = None,
+        target: str | None = None,
+        method: str | None = None,
         **kwargs: Any,
     ) -> css.job.Job:
         """Creates a new job to run the given circuit(s).
@@ -389,8 +375,8 @@ class Service(gss.service.Service):
         return css.job.Job(client=self._client, job_id=job_id)
 
     def resource_estimate(
-        self, circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]], target: Optional[str] = None
-    ) -> Union[ResourceEstimate, List[ResourceEstimate]]:
+        self, circuits: cirq.Circuit | Sequence[cirq.Circuit], target: str | None = None
+    ) -> ResourceEstimate | list[ResourceEstimate]:
         """Generates resource estimates for circuit(s).
 
         Args:
@@ -424,14 +410,14 @@ class Service(gss.service.Service):
 
     def aqt_compile_eca(
         self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        circuits: cirq.Circuit | Sequence[cirq.Circuit],
         num_equivalent_circuits: int,
-        random_seed: Optional[int] = None,
+        random_seed: int | None = None,
         target: str = "aqt_keysight_qpu",
-        atol: Optional[float] = None,
-        gate_defs: Optional[
-            Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
-        ] = None,
+        atol: float | None = None,
+        gate_defs: None | (
+            Mapping[str, npt.NDArray[np.complex_] | cirq.Gate | cirq.Operation | None]
+        ) = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for AQT using ECA.
@@ -488,15 +474,15 @@ class Service(gss.service.Service):
 
     def aqt_compile(
         self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        circuits: cirq.Circuit | Sequence[cirq.Circuit],
         target: str = "aqt_keysight_qpu",
         *,
-        num_eca_circuits: Optional[int] = None,
-        random_seed: Optional[int] = None,
-        atol: Optional[float] = None,
-        gate_defs: Optional[
-            Mapping[str, Union[npt.NDArray[np.complex_], cirq.Gate, cirq.Operation, None]]
-        ] = None,
+        num_eca_circuits: int | None = None,
+        random_seed: int | None = None,
+        atol: float | None = None,
+        gate_defs: None | (
+            Mapping[str, npt.NDArray[np.complex_] | cirq.Gate | cirq.Operation | None]
+        ) = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
@@ -545,7 +531,7 @@ class Service(gss.service.Service):
             "target": target,
         }
 
-        options_dict: Dict[str, object]
+        options_dict: dict[str, object]
         options_dict = {**kwargs}
 
         if num_eca_circuits is not None:
@@ -572,13 +558,13 @@ class Service(gss.service.Service):
 
     def qscout_compile(
         self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        circuits: cirq.Circuit | Sequence[cirq.Circuit],
         target: str = "sandia_qscout_qpu",
         *,
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
-        num_qubits: Optional[int] = None,
-        error_rates: Optional[SupportsItems[tuple[int, ...], float]] = None,
+        num_qubits: int | None = None,
+        error_rates: SupportsItems[tuple[int, ...], float] | None = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
@@ -673,10 +659,10 @@ class Service(gss.service.Service):
 
     def cq_compile(
         self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        circuits: cirq.Circuit | Sequence[cirq.Circuit],
         target: str = "cq_hilbert_qpu",
         *,
-        grid_shape: Optional[Tuple[int, int]] = None,
+        grid_shape: tuple[int, int] | None = None,
         control_radius: float = 1.0,
         stripped_cz_rads: float = 0.0,
         **kwargs: Any,
@@ -714,7 +700,7 @@ class Service(gss.service.Service):
 
     def ibmq_compile(
         self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        circuits: cirq.Circuit | Sequence[cirq.Circuit],
         target: str = "ibmq_qasm_simulator",
         dynamical_decoupling: bool = True,
         dd_strategy: str = "static_context_aware",
@@ -752,7 +738,7 @@ class Service(gss.service.Service):
 
     def compile(
         self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        circuits: cirq.Circuit | Sequence[cirq.Circuit],
         target: str,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
@@ -782,10 +768,10 @@ class Service(gss.service.Service):
 
     def _get_compile_request_json(
         self,
-        circuits: Union[cirq.Circuit, Sequence[cirq.Circuit]],
+        circuits: cirq.Circuit | Sequence[cirq.Circuit],
         target: str,
         **kwargs: Any,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Helper method to compile json dictionary."""
 
         css.validation.validate_cirq_circuits(circuits)
@@ -800,8 +786,8 @@ class Service(gss.service.Service):
         return request_json
 
     def supercheq(
-        self, files: List[List[int]], num_qubits: int, depth: int
-    ) -> Tuple[List[cirq.Circuit], npt.NDArray[np.float_]]:
+        self, files: list[list[int]], num_qubits: int, depth: int
+    ) -> tuple[list[cirq.Circuit], npt.NDArray[np.float_]]:
         """Returns the randomly generated circuits and the fidelity matrix for inputted files.
 
         Args:
@@ -820,12 +806,12 @@ class Service(gss.service.Service):
 
     def submit_dfe(
         self,
-        rho_1: Tuple[cirq.AbstractCircuit, str],
-        rho_2: Tuple[cirq.AbstractCircuit, str],
+        rho_1: tuple[cirq.AbstractCircuit, str],
+        rho_2: tuple[cirq.AbstractCircuit, str],
         num_random_bases: int,
         shots: int,
         **kwargs: Any,
-    ) -> List[str]:
+    ) -> list[str]:
         """Executes the circuits neccessary for the DFE protocol.
 
         The circuits used to prepare the desired states should not contain final measurements, but
@@ -890,7 +876,7 @@ class Service(gss.service.Service):
 
         return ids
 
-    def process_dfe(self, ids: List[str]) -> float:
+    def process_dfe(self, ids: list[str]) -> float:
         """Process the results of a DFE protocol.
 
         Args:
@@ -914,11 +900,11 @@ class Service(gss.service.Service):
         num_circuits: int,
         mirror_depth: int,
         extra_depth: int,
-        method: Optional[str] = None,
-        noise: Optional[Union[str, cirq.NoiseModel]] = None,
-        error_prob: Optional[Union[float, Tuple[float, float, float]]] = None,
-        tag: Optional[str] = None,
-        lifespan: Optional[int] = None,
+        method: str | None = None,
+        noise: str | cirq.NoiseModel | None = None,
+        error_prob: float | tuple[float, float, float] | None = None,
+        tag: str | None = None,
+        lifespan: int | None = None,
     ) -> str:
         """Submits the jobs to characterize `target` through the ACES protocol.
 
@@ -965,7 +951,7 @@ class Service(gss.service.Service):
             ValueError: If the target or noise model is not valid.
             SuperstaqServerException: If the request fails.
         """
-        noise_dict: Dict[str, object] = {}
+        noise_dict: dict[str, object] = {}
         if isinstance(noise, str):
             noise_dict["type"] = noise
             noise_dict["params"] = (
@@ -987,7 +973,7 @@ class Service(gss.service.Service):
             lifespan=lifespan,
         )
 
-    def target_info(self, target: str) -> Dict[str, Any]:
+    def target_info(self, target: str) -> dict[str, Any]:
         """Returns information about device specified by `target`.
 
         Args:

@@ -44,9 +44,7 @@ def test_zz_swap_gate() -> None:
     assert gate**-1 == css.ZZSwapGate(-0.123)
 
     for exponent in range(-4, 5):
-        assert np.allclose(
-            cirq.unitary(gate**exponent), np.linalg.matrix_power(expected, exponent)
-        )
+        assert np.allclose(cirq.unitary(gate**exponent), np.linalg.matrix_power(expected, exponent))
         if exponent % 2:
             assert isinstance(gate**exponent, css.ZZSwapGate)
         else:
@@ -116,7 +114,7 @@ def test_stripped_cz_gate() -> None:
     assert repr(gate) == "css.StrippedCZGate(0.123)"
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq as css")
     expected = np.diag(
-        ([1.0, np.exp(1j * rz_rads), np.exp(1j * rz_rads), np.exp(1j * (2 * rz_rads - np.pi))])
+        [1.0, np.exp(1j * rz_rads), np.exp(1j * rz_rads), np.exp(1j * (2 * rz_rads - np.pi))]
     )
     assert np.allclose(cirq.unitary(gate), expected)
 

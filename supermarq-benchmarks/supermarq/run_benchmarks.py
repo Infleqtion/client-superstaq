@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING
 
 import cirq
 import cirq_superstaq as css
@@ -10,7 +12,7 @@ if TYPE_CHECKING:
     from general_superstaq.typing import Target
 
 
-BENCHMARKS: List[Tuple[supermarq.benchmark.Benchmark, str]] = [
+BENCHMARKS: list[tuple[supermarq.benchmark.Benchmark, str]] = [
     (supermarq.ghz.GHZ(5), "ghz5"),
     (supermarq.hamiltonian_simulation.HamiltonianSimulation(4), "hsim4"),
     (supermarq.mermin_bell.MerminBell(3), "mb3"),
@@ -18,7 +20,7 @@ BENCHMARKS: List[Tuple[supermarq.benchmark.Benchmark, str]] = [
 ]
 
 
-def get_qpu_targets(target_list: List[Target]) -> List[Target]:
+def get_qpu_targets(target_list: list[Target]) -> list[Target]:
     """Gets real device targets.
 
     Args:

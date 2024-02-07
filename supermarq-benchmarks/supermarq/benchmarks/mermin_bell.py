@@ -1,4 +1,6 @@
-from typing import Dict, List, Optional, Tuple, cast
+from __future__ import annotations
+
+from typing import cast
 
 import cirq
 import numpy as np
@@ -16,6 +18,11 @@ class MerminBell(Benchmark):
     """
 
     def __init__(self, num_qubits: int) -> None:
+        """Initializes a `MerminBell`.
+
+        Args:
+            num_qubits: The number of qubits.
+        """
         self.num_qubits = num_qubits
         self.qubits = cirq.LineQubit.range(self.num_qubits)
 
@@ -30,7 +37,6 @@ class MerminBell(Benchmark):
         Returns:
             The Mermin-Bell `cirq.Circuit`.
         """
-
         circuit = cirq.Circuit()
 
         # Create a GHZ state
@@ -44,7 +50,7 @@ class MerminBell(Benchmark):
 
         return circuit
 
-    def score(self, counts: Dict[str, float]) -> float:
+    def score(self, counts: dict[str, float]) -> float:
         """Compute the score for the N-qubit Mermin-Bell benchmark.
 
         This function assumes the regular big endian ordering of bitstring results.
@@ -62,7 +68,7 @@ class MerminBell(Benchmark):
         # The typing here was added to satisfy mypy. Declaring this dict without the explicit
         # typing gets created as Dict[EigenGate, Dict[str, str]], but iterating through a
         # cirq.Circuit and passing op.gate as the key yields type Optional[Gate].
-        conjugation_rules: Dict[Optional[cirq.Gate], Dict[str, str]] = {
+        conjugation_rules: dict[cirq.Gate | None, dict[str, str]] = {
             cirq.ops.H: {"I": "I", "X": "Z", "Y": "-Y", "Z": "X"},
             cirq.ops.S: {"I": "I", "X": "Y", "Y": "-X", "Z": "Z"},
             cirq.ops.CNOT: {
@@ -159,13 +165,13 @@ class MerminBell(Benchmark):
 
         return (expect_val + 2 ** (self.num_qubits - 1)) / 2**self.num_qubits
 
-    def _mermin_operator(self, num_qubits: int) -> List[Tuple[float, str]]:
+    def _mermin_operator(self, num_qubits: int) -> list[tuple[float, str]]:
         """Generate the Mermin operator
         (https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.65.1838), or M_n
         (Eq. 2.8) in https://arxiv.org/pdf/2005.11271.pdf
         """
-        x = sympy.symbols("x_1:{}".format(num_qubits + 1))
-        y = sympy.symbols("y_1:{}".format(num_qubits + 1))
+        x = sympy.symbols(f"x_1:{num_qubits + 1}")
+        y = sympy.symbols(f"y_1:{num_qubits + 1}")
 
         term1 = 1
         term2 = 1
