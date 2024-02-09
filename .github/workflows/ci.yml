@@ -250,7 +250,7 @@ jobs:
             dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq[examples] -e ./cirq-superstaq -e ./supermarq-benchmarks"
           - type: "cirq-superstaq"
             pattern: "*_css.ipynb cirq-superstaq"
-            dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./cirq-superstaq[examples] -e ./supermarq-benchmarks"
+            dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks"
     name: Notebook check for ${{ matrix.type }}
     steps:
       - uses: actions/checkout@v3
