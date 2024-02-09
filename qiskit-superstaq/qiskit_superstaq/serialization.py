@@ -11,7 +11,7 @@ import general_superstaq as gss
 import numpy as np
 import numpy.typing as npt
 import qiskit.qpy
-import qiskit_ibm_provider
+import qiskit_ibm_provider.qpy
 
 import qiskit_superstaq as qss
 
