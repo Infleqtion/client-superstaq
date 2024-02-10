@@ -752,6 +752,45 @@ def test_aces(
 
 
 @mock.patch("requests.post")
+def test_cb(
+    mock_post: mock.MagicMock,
+) -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    mock_post.return_value.json = lambda: "id1"
+    assert (
+        service.submit_cb(
+            target="ss_unconstrained_simulator",
+            shots=50,
+            circuits=cirq.Circuit(),
+            num_channels=6,
+            num_sequences=30,
+            depths=[1, 2, 3],
+            method="dry-run",
+            noise=cirq.NoiseModel.from_noise_model_like(cirq.depolarize(0.1)),
+            error_prob=(0.1, 0.1, 0.1),
+        )
+        == "id1"
+    )
+
+    assert (
+        service.submit_cb(
+            target="ss_unconstrained_simulator",
+            shots=50,
+            circuits=cirq.Circuit(),
+            num_channels=6,
+            num_sequences=30,
+            depths=[1, 2, 3],
+            method="dry-run",
+            noise="asymmetric_depolarize",
+        )
+        == "id1"
+    )
+
+    mock_post.return_value.json = lambda: {"test_data": "123"}
+    assert service.process_cb("id1") == {"test_data": "123"}
+
+
+@mock.patch("requests.post")
 def test_service_target_info(mock_post: mock.MagicMock) -> None:
     fake_data = {"target_info": {"backend_name": "ss_example_qpu", "max_experiments": 1234}}
     mock_post.return_value.json = lambda: fake_data
