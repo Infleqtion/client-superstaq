@@ -25,9 +25,6 @@ import numpy.typing as npt
 from general_superstaq import ResourceEstimate, superstaq_client
 
 import cirq_superstaq as css
-import json
-import matplotlib.pyplot as plt
-import json
 
 if TYPE_CHECKING:
     from _typeshed import SupportsItems
@@ -978,7 +975,6 @@ class Service(gss.service.Service):
             lifespan=lifespan,
         )
 
-
     def submit_cb(
         self,
         target: str,
@@ -991,6 +987,37 @@ class Service(gss.service.Service):
         noise: str | cirq.NoiseModel | None = None,
         error_prob: float | tuple[float, float, float] | None = None,
     ) -> str:
+        """Submits the jobs to characterize `target` through the Cycle Benchmarking protocol.
+
+        The protocol in detail can be found in: https://arxiv.org/abs/1902.08543.
+
+        Args:
+            target: The device target to characterize.
+            shots: How many shots to use per circuit submitted.
+            circuits: The process circuit to use in the protocol.
+            num_channels: The number of random Pauli decay channels to approximate error.
+            num_sequences: Number of circuits to generate per depth.
+            depths: Lists of depths representing the depths of Cycle Benchmarking
+                circuits to generate.
+            method: Optional method to use in device submission (e.g. "dry-run").
+            noise: Noise model to simulate the protocol with. It can be either a string or a
+                `cirq.NoiseModel`. Valid strings are "symmetric_depolarize", "phase_flip",
+                "bit_flip" and "asymmetric_depolarize".
+            error_prob: The error probabilities if a string was passed to `noise`.
+                * For "asymmetric_depolarize", `error_prob` will be a three-tuple with the error
+                rates for the X, Y, Z gates in that order. So, a valid argument would be
+                `error_prob = (0.1, 0.1, 0.1)`. Notice that these values must add up to less than
+                or equal to 1.
+                * For the other channels, `error_prob` is one number less than or equal to 1, e.g.,
+                `error_prob = 0.1`.
+        Returns:
+            A string with the job id for the Cycle Benchmarking job created.
+
+        Raises:
+            ValueError: If the target or noise model is not valid.
+            SuperstaqServerException: If the request fails.
+        """
+
         noise_dict: dict[str, object] = {}
         if isinstance(noise, str):
             noise_dict["type"] = noise
@@ -1005,25 +1032,28 @@ class Service(gss.service.Service):
         return self._client.submit_cb(
             target,
             shots,
-            {'cirq_circuits': serialized_circuits},
+            {"cirq_circuits": serialized_circuits},
             num_channels,
             num_sequences,
             depths,
             method,
-            noise,
+            noise=noise_dict,
         )
 
-    def process_cb(self, id: str) -> dict[str, Any]:
-        return self._client.process_cb(id)
+    def process_cb(self, job_id: str) -> dict[str, Any]:
+        """Processes the data from the Cycle Benchmarking protocol.
+        Generates SPAM and decay parameter estimations in addition to the process infidelity.
 
-    
-    def plot_data_cb(self, content: dict[str, Any]):
-        plot_data = {}
-        json_load = json.loads(content['figure_data'])
-        plot_data['averages'] = json_load['averages']
-        plot_data['evs'] = json_load['evs']
-        plot_data['std_devs'] = json_load['std_devs']
-        return plot_data
+        Args:
+            job_id: String corresponding to the CB job id.
+
+        Returns:
+            A string with the job id for the Cycle Benchmarking job created.
+
+        Raises:
+            SuperstaqServerException: If the request fails.
+        """
+        return self._client.process_cb(job_id)
 
     def target_info(self, target: str) -> dict[str, Any]:
         """Returns information about device specified by `target`.
