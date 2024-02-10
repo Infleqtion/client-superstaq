@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import cirq
+import qiskit
 from qiskit.quantum_info import hellinger_fidelity
 
 from supermarq.benchmark import Benchmark
@@ -22,7 +23,7 @@ class GHZ(Benchmark):
         self.num_qubits = num_qubits
 
     def circuit(self) -> cirq.Circuit:
-        """Generate an n-qubit GHZ circuit.
+        """Generate an n-qubit GHZ cirq circuit.
 
         Returns:
             A `cirq.Circuit`.
@@ -35,7 +36,21 @@ class GHZ(Benchmark):
         circuit.append(cirq.measure(*qubits))
         return circuit
 
-    def score(self, counts: dict[str, int]) -> float:
+    def qiskit_circuit(self) -> qiskit.QuantumCircuit:
+        """Generate an n-qubit GHZ qiskit circuit.
+
+        Returns:
+            A `qiskit.QuantumCircuit`.
+        """
+        circuit = qiskit.QuantumCircuit(self.num_qubits, self.num_qubits)
+        circuit.h(0)
+        for i in range(self.num_qubits - 1):
+            circuit.cx(i, i + 1)
+        for i in range(self.num_qubits):
+            circuit.measure(i, i)
+        return circuit
+
+    def score(self, counts: dict[str, float]) -> float:
         r"""Compute the Hellinger fidelity between the experimental and ideal results.
 
         The ideal results are 50% probabilty of measuring the all-zero state and 50% probability

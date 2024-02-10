@@ -264,16 +264,16 @@ def read_json_aqt(
     initial_logical_to_physicals_list: list[dict[int, int]] = list(
         map(dict, json.loads(json_dict["initial_logical_to_physicals"]))
     )
-    initial_logical_to_physicals: (
-        list[dict[int, int]] | list[list[dict[int, int]]]
-    ) = initial_logical_to_physicals_list
+    initial_logical_to_physicals: list[dict[int, int]] | list[list[dict[int, int]]] = (
+        initial_logical_to_physicals_list
+    )
 
     final_logical_to_physicals_list: list[dict[int, int]] = list(
         map(dict, json.loads(json_dict["final_logical_to_physicals"]))
     )
-    final_logical_to_physicals: (
-        list[dict[int, int]] | list[list[dict[int, int]]]
-    ) = final_logical_to_physicals_list
+    final_logical_to_physicals: list[dict[int, int]] | list[list[dict[int, int]]] = (
+        final_logical_to_physicals_list
+    )
 
     seq = None
     pulse_lists = None

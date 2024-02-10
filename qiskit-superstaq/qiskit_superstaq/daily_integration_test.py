@@ -17,8 +17,17 @@ def provider() -> qss.SuperstaqProvider:
 
 
 def test_backends(provider: qss.SuperstaqProvider) -> None:
-    result = provider.backends()
-    assert provider.get_backend("ibmq_qasm_simulator") in result
+    result = provider.get_targets()
+    ibmq_backend_info = gss.typing.Target(
+        target="ibmq_qasm_simulator",
+        supports_submit=True,
+        supports_submit_qubo=False,
+        supports_compile=True,
+        available=True,
+        retired=False,
+    )
+    assert ibmq_backend_info in result
+    assert provider.get_backend("ibmq_qasm_simulator").name == "ibmq_qasm_simulator"
 
 
 def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:

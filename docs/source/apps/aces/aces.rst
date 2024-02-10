@@ -1,5 +1,5 @@
 ACES: Average Circuit Eigenvalue Sampling
-=========
+=========================================
 This tutorial demonstrates how to characterize a device using average circuit eigenvalue sampling through Superstaq.
 
 Below, you will find links to identical tutorials that demonstrate ACES using either Qiskit or Cirq.

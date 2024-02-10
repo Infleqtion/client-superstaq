@@ -1,5 +1,5 @@
 DFE: Direct Fidelity Estimation
-=========
+===============================
 This tutorial demonstrates how to perform a direct fidelity estimation protocol through Superstaq.
 
 Below, you will find links to identical tutorials that demonstrate DFE using either Qiskit or Cirq.
