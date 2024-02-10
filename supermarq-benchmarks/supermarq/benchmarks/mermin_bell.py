@@ -18,6 +18,11 @@ class MerminBell(Benchmark):
     """
 
     def __init__(self, num_qubits: int) -> None:
+        """Initializes a `MerminBell`.
+
+        Args:
+            num_qubits: The number of qubits.
+        """
         self.num_qubits = num_qubits
         self.qubits = cirq.LineQubit.range(self.num_qubits)
 
@@ -32,7 +37,6 @@ class MerminBell(Benchmark):
         Returns:
             The Mermin-Bell `cirq.Circuit`.
         """
-
         circuit = cirq.Circuit()
 
         # Create a GHZ state

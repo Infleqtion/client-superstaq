@@ -4,7 +4,7 @@ import numpy as np
 import qiskit
 
 
-def cirq_to_qiskit(circuit: cirq.Circuit) -> qiskit.circuit.QuantumCircuit:
+def cirq_to_qiskit(circuit: cirq.Circuit) -> qiskit.QuantumCircuit:
     """Convert a circuit from cirq to qiskit.
 
     Args:
@@ -17,7 +17,7 @@ def cirq_to_qiskit(circuit: cirq.Circuit) -> qiskit.circuit.QuantumCircuit:
     return qiskit.circuit.QuantumCircuit().from_qasm_str(str(qasm))
 
 
-def compute_communication_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
+def compute_communication_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
     """Compute the program communication of the given quantum circuit.
 
     Program communication = circuit's average qubit degree / degree of a complete graph.
@@ -42,7 +42,7 @@ def compute_communication_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) ->
     return degree_sum / (num_qubits * (num_qubits - 1))
 
 
-def compute_liveness_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
+def compute_liveness_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
     """Compute the liveness of the given quantum circuit.
 
     Liveness feature = sum of all entries in the liveness matrix / (num_qubits * depth).
@@ -68,7 +68,7 @@ def compute_liveness_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> floa
     return np.sum(activity_matrix) / (num_qubits * dag.depth())
 
 
-def compute_parallelism_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
+def compute_parallelism_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
     """Compute the parallelism of the given quantum circuit.
 
     Parallelism feature = max(1 - depth / # of gates, 0).
@@ -84,7 +84,7 @@ def compute_parallelism_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> f
     return max(1 - (circuit.depth() / len(dag.gate_nodes())), 0)
 
 
-def compute_measurement_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
+def compute_measurement_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
     """Compute the measurement feature of the given quantum circuit.
 
     Measurement feature = # of layers of mid-circuit measurement / circuit depth.
@@ -113,7 +113,7 @@ def compute_measurement_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> f
     return reset_moments / gate_depth
 
 
-def compute_entanglement_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
+def compute_entanglement_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
     """Compute the entanglement-ratio of the given quantum circuit.
 
     Entanglement-ratio = ratio between # of 2-qubit gates and total number of gates in the
@@ -131,7 +131,7 @@ def compute_entanglement_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> 
     return len(dag.two_qubit_ops()) / len(dag.gate_nodes())
 
 
-def compute_depth_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
+def compute_depth_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
     """Compute the critical depth of the given quantum circuit.
 
     Critical depth = # of 2-qubit gates along the critical path / total # of 2-qubit gates.
@@ -144,13 +144,14 @@ def compute_depth_with_qiskit(circuit: qiskit.circuit.QuantumCircuit) -> float:
     """
     dag = qiskit.converters.circuit_to_dag(circuit)
     dag.remove_all_ops_named("barrier")
-    n_ed = 0
-    two_q_gates = {op.name for op in dag.two_qubit_ops()}
-    for name in two_q_gates:
-        try:
-            n_ed += dag.count_ops_longest_path()[name]
-        except KeyError:
-            continue
+    longest_paths = dag.count_ops_longest_path()
+    n_ed = sum(
+        [
+            longest_paths[name]
+            for name in {op.name for op in dag.two_qubit_ops()}
+            if name in longest_paths
+        ]
+    )
     n_e = len(dag.two_qubit_ops())
 
     if n_ed == 0:

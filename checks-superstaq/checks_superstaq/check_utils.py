@@ -1,4 +1,5 @@
 """Dumping ground for check script utilities."""
+
 from __future__ import annotations
 
 import argparse
