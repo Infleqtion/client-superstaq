@@ -1,8 +1,4 @@
 general-superstaq~=0.5.9
-<<<<<<< HEAD
-matplotlib~=3.0
-=======
->>>>>>> 5cd73d0513be41f84a6caee72654725d8e8deb3f
 qiskit>=0.44.1
 qiskit-ibm-provider>=0.7.2
 symengine~=0.11.0
