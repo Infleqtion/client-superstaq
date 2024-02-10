@@ -44,9 +44,7 @@ def test_zz_swap_gate() -> None:
     assert gate**-1 == css.ZZSwapGate(-0.123)
 
     for exponent in range(-4, 5):
-        assert np.allclose(
-            cirq.unitary(gate**exponent), np.linalg.matrix_power(expected, exponent)
-        )
+        assert np.allclose(cirq.unitary(gate**exponent), np.linalg.matrix_power(expected, exponent))
         if exponent % 2:
             assert isinstance(gate**exponent, css.ZZSwapGate)
         else:

@@ -6,6 +6,7 @@ from supermarq.benchmarks.hamiltonian_simulation import HamiltonianSimulation
 def test_hamiltonian_simulation_circuit() -> None:
     hs = HamiltonianSimulation(4, 1, 1)
     assert len(hs.circuit().all_qubits()) == 4
+    assert hs.qiskit_circuit().num_qubits == 4
 
 
 def test_hamiltonian_simulation_score() -> None:
