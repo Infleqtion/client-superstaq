@@ -1,6 +1,5 @@
 from typing import Union
 import os
-import qcaas_client
 import qiskit
 from IPython.display import display
 import matplotlib.pyplot as plt
