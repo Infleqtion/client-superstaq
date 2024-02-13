@@ -760,8 +760,8 @@ def test_cb(
     assert (
         service.submit_cb(
             target="ss_unconstrained_simulator",
-            shots=50,
-            circuits=cirq.Circuit(),
+            repetitions=50,
+            process_circuit=cirq.Circuit(),
             num_channels=6,
             num_sequences=30,
             depths=[1, 2, 3],
@@ -775,8 +775,8 @@ def test_cb(
     assert (
         service.submit_cb(
             target="ss_unconstrained_simulator",
-            shots=50,
-            circuits=cirq.Circuit(),
+            repetitions=50,
+            process_circuit=cirq.Circuit(),
             num_channels=6,
             num_sequences=30,
             depths=[1, 2, 3],

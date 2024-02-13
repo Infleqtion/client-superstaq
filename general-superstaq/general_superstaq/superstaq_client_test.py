@@ -774,7 +774,7 @@ def test_superstaq_client_cb(mock_post: mock.MagicMock) -> None:
     }
 
     mock_post.assert_called_with(
-        f"http://example.com/{API_VERSION}/cycle_benchmarking",
+        f"http://example.com/{API_VERSION}/cb_submit",
         headers=EXPECTED_HEADERS,
         json=expected_json,
         verify=False,

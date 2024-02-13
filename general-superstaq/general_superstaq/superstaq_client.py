@@ -553,25 +553,25 @@ class _SuperstaqClient:
         serialized_circuits: dict[str, str],
         num_channels: int,
         num_sequences: int,
-        depths: list[int],
+        depths: Sequence[int],
         method: str | None = None,
         noise: dict[str, object] | None = None,
     ) -> str:
         """Makes a POST request to the `/cycle_benchmarking` endpoint.
 
         Args:
-            target: The device target to characterize.
+            target: The target device to characterize.
             shots: How many shots to use per circuit submitted.
             serialized_circuits: The serialized process circuits to use in the protocol.
             num_channels: The number of random Pauli decay channels to approximate error.
             num_sequences: Number of circuits to generate per depth.
-            depths: Lists of depths representing the depths of Cycle Benchmarking
-                circuits to generate.
+            depths: Lists of depths representing the depths of Cycle Benchmarking circuits
+                to generate.
             method: Optional method to use in device submission (e.g. "dry-run").
             noise: Dictionary representing noise model to simulate the protocol with.
 
         Returns:
-            A string with the job id for the ACES job created.
+            A string with the job id for the Cycle Benchmarking job created.
 
         Raises:
             ValueError: If the target or noise model is not valid.
@@ -593,7 +593,7 @@ class _SuperstaqClient:
         if noise:
             json_dict["noise"] = noise
 
-        return self.post_request("/cycle_benchmarking", json_dict)
+        return self.post_request("/cb_submit", json_dict)
 
     def process_cb(self, job_id: str) -> dict[str, Any]:
         """Makes a POST request to the "/cb_fetch" endpoint.

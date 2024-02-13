@@ -206,7 +206,8 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: str | None = None,
         **kwargs: Any,
-    ) -> dict[str, int]: ...
+    ) -> dict[str, int]:
+        ...
 
     @overload
     def get_counts(
@@ -217,7 +218,8 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: str | None = None,
         **kwargs: Any,
-    ) -> list[dict[str, int]]: ...
+    ) -> list[dict[str, int]]:
+        ...
 
     def get_counts(
         self,
@@ -256,7 +258,8 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
         method: str | None = None,
         **kwargs: Any,
-    ) -> cirq.ResultDict: ...
+    ) -> cirq.ResultDict:
+        ...
 
     @overload
     def run(
@@ -267,7 +270,8 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolver = cirq.ParamResolver({}),
         method: str | None = None,
         **kwargs: Any,
-    ) -> list[cirq.ResultDict]: ...
+    ) -> list[cirq.ResultDict]:
+        ...
 
     def run(
         self,
@@ -415,9 +419,8 @@ class Service(gss.service.Service):
         random_seed: int | None = None,
         target: str = "aqt_keysight_qpu",
         atol: float | None = None,
-        gate_defs: None | (
-            Mapping[str, npt.NDArray[np.complex_] | cirq.Gate | cirq.Operation | None]
-        ) = None,
+        gate_defs: None
+        | (Mapping[str, npt.NDArray[np.complex_] | cirq.Gate | cirq.Operation | None]) = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for AQT using ECA.
@@ -480,9 +483,8 @@ class Service(gss.service.Service):
         num_eca_circuits: int | None = None,
         random_seed: int | None = None,
         atol: float | None = None,
-        gate_defs: None | (
-            Mapping[str, npt.NDArray[np.complex_] | cirq.Gate | cirq.Operation | None]
-        ) = None,
+        gate_defs: None
+        | (Mapping[str, npt.NDArray[np.complex_] | cirq.Gate | cirq.Operation | None]) = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
@@ -975,12 +977,12 @@ class Service(gss.service.Service):
 
     def submit_cb(
         self,
+        repetitions: int,
+        process_circuit: cirq.Circuit,
         target: str,
-        shots: int,
-        circuits: cirq.Circuit,
         num_channels: int,
         num_sequences: int,
-        depths: list[int],
+        depths: Sequence[int],
         method: str | None = None,
         noise: str | cirq.NoiseModel | None = None,
         error_prob: float | tuple[float, float, float] | None = None,
@@ -990,13 +992,13 @@ class Service(gss.service.Service):
         The protocol in detail can be found in: https://arxiv.org/abs/1902.08543.
 
         Args:
-            target: The device target to characterize.
-            shots: How many shots to use per circuit submitted.
-            circuits: The process circuit to use in the protocol.
+            repetitions: How many shots to use per circuit submitted.
+            process_circuit: The process circuit to use in the protocol.
+            target: The target device to characterize.
             num_channels: The number of random Pauli decay channels to approximate error.
             num_sequences: Number of circuits to generate per depth.
-            depths: Lists of depths representing the depths of Cycle Benchmarking
-                circuits to generate.
+            depths: Lists of depths representing the depths of Cycle Benchmarking circuits
+                to generate.
             method: Optional method to use in device submission (e.g. "dry-run").
             noise: Noise model to simulate the protocol with. It can be either a string or a
                 `cirq.NoiseModel`. Valid strings are "symmetric_depolarize", "phase_flip",
@@ -1008,6 +1010,7 @@ class Service(gss.service.Service):
                 or equal to 1.
                 * For the other channels, `error_prob` is one number less than or equal to 1, e.g.,
                 `error_prob = 0.1`.
+
         Returns:
             A string with the job id for the Cycle Benchmarking job created.
 
@@ -1025,11 +1028,11 @@ class Service(gss.service.Service):
         elif isinstance(noise, cirq.NoiseModel):
             noise_dict["cirq_noise_model"] = cirq.to_json(noise)
 
-        serialized_circuits = css.serialization.serialize_circuits(circuits)
+        serialized_circuits = css.serialization.serialize_circuits(process_circuit)
 
         return self._client.submit_cb(
-            target,
-            shots,
+            self._resolve_target(target),
+            repetitions,
             {"cirq_circuits": serialized_circuits},
             num_channels,
             num_sequences,
@@ -1046,7 +1049,7 @@ class Service(gss.service.Service):
             job_id: String corresponding to the CB job id.
 
         Returns:
-            A string with the job id for the Cycle Benchmarking job created.
+            A dict containing the Cycle Benchmarking process data.
 
         Raises:
             SuperstaqServerException: If the request fails.
