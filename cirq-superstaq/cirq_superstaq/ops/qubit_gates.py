@@ -406,8 +406,11 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> tuple[str, ...]:
         if args.use_unicode_characters:
-            return ("│",) * self.num_qubits()
-        return ("|",) * self.num_qubits()
+            wire_symbol = "─" if args.transpose else "│"
+        else:
+            wire_symbol = "-" if args.transpose else "|"
+
+        return (wire_symbol,) * self.num_qubits()
 
 
 def barrier(*qubits: cirq.Qid) -> cirq.Operation:
