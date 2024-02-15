@@ -180,8 +180,7 @@ class Job:
         return self._job[first_job_id]["target"]
 
     @overload
-    def num_qubits(self, index: int) -> int:
-        ...
+    def num_qubits(self, index: int) -> int: ...
 
     @overload
     def num_qubits(
@@ -244,8 +243,7 @@ class Job:
         return self._job[first_job_id]["shots"]
 
     @overload
-    def _get_circuits(self, circuit_type: str, index: int) -> cirq.Circuit:
-        ...
+    def _get_circuits(self, circuit_type: str, index: int) -> cirq.Circuit: ...
 
     @overload
     def _get_circuits(
@@ -286,8 +284,7 @@ class Job:
         return css.deserialize_circuits(serialized_circuit)[0]
 
     @overload
-    def compiled_circuits(self, index: int) -> cirq.Circuit:
-        ...
+    def compiled_circuits(self, index: int) -> cirq.Circuit: ...
 
     @overload
     def compiled_circuits(
@@ -309,8 +306,7 @@ class Job:
         return self._get_circuits("compiled_circuit", index=index)
 
     @overload
-    def input_circuits(self, index: int) -> cirq.Circuit:
-        ...
+    def input_circuits(self, index: int) -> cirq.Circuit: ...
 
     @overload
     def input_circuits(
@@ -381,8 +377,7 @@ class Job:
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
         qubit_indices: Sequence[int] | None = None,
-    ) -> dict[str, int]:
-        ...
+    ) -> dict[str, int]: ...
 
     @overload
     def counts(

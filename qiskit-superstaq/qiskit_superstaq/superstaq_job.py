@@ -210,12 +210,12 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 return
 
     @overload
-    def _get_circuits(self, circuit_type: str, index: int) -> qiskit.QuantumCircuit:
-        ...
+    def _get_circuits(self, circuit_type: str, index: int) -> qiskit.QuantumCircuit: ...
 
     @overload
-    def _get_circuits(self, circuit_type: str, index: None = None) -> list[qiskit.QuantumCircuit]:
-        ...
+    def _get_circuits(
+        self, circuit_type: str, index: None = None
+    ) -> list[qiskit.QuantumCircuit]: ...
 
     def _get_circuits(
         self, circuit_type: str, index: int | None = None
@@ -253,12 +253,10 @@ class SuperstaqJob(qiskit.providers.JobV1):
         return qss.deserialize_circuits(serialized_circuit)[0]
 
     @overload
-    def compiled_circuits(self, index: int) -> qiskit.QuantumCircuit:
-        ...
+    def compiled_circuits(self, index: int) -> qiskit.QuantumCircuit: ...
 
     @overload
-    def compiled_circuits(self, index: None = None) -> list[qiskit.QuantumCircuit]:
-        ...
+    def compiled_circuits(self, index: None = None) -> list[qiskit.QuantumCircuit]: ...
 
     def compiled_circuits(
         self, index: int | None = None
@@ -284,12 +282,10 @@ class SuperstaqJob(qiskit.providers.JobV1):
         return compiled_circuit
 
     @overload
-    def input_circuits(self, index: int) -> qiskit.QuantumCircuit:
-        ...
+    def input_circuits(self, index: int) -> qiskit.QuantumCircuit: ...
 
     @overload
-    def input_circuits(self, index: None = None) -> list[qiskit.QuantumCircuit]:
-        ...
+    def input_circuits(self, index: None = None) -> list[qiskit.QuantumCircuit]: ...
 
     def input_circuits(
         self, index: int | None = None
@@ -305,12 +301,10 @@ class SuperstaqJob(qiskit.providers.JobV1):
         return self._get_circuits("input_circuit", index)
 
     @overload
-    def pulse_gate_circuits(self, index: int) -> qiskit.QuantumCircuit:
-        ...
+    def pulse_gate_circuits(self, index: int) -> qiskit.QuantumCircuit: ...
 
     @overload
-    def pulse_gate_circuits(self, index: None = None) -> list[qiskit.QuantumCircuit]:
-        ...
+    def pulse_gate_circuits(self, index: None = None) -> list[qiskit.QuantumCircuit]: ...
 
     def pulse_gate_circuits(
         self, index: int | None = None

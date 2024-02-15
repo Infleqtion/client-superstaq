@@ -44,9 +44,7 @@ def test_zz_swap_gate() -> None:
     assert gate**-1 == css.ZZSwapGate(-0.123)
 
     for exponent in range(-4, 5):
-        assert np.allclose(
-            cirq.unitary(gate**exponent), np.linalg.matrix_power(expected, exponent)
-        )
+        assert np.allclose(cirq.unitary(gate**exponent), np.linalg.matrix_power(expected, exponent))
         if exponent % 2:
             assert isinstance(gate**exponent, css.ZZSwapGate)
         else:
@@ -571,6 +569,34 @@ def test_barrier() -> None:
             """
         ),
         use_unicode_characters=False,
+    )
+
+    cirq.testing.assert_has_diagram(
+        circuit,
+        textwrap.dedent(
+            """
+            0 1 2
+            │ │ │
+            ─────
+            │ │ │
+            """
+        ),
+        use_unicode_characters=True,
+        transpose=True,
+    )
+
+    cirq.testing.assert_has_diagram(
+        circuit,
+        textwrap.dedent(
+            """
+            0 1 2
+            | | |
+            -----
+            | | |
+            """
+        ),
+        use_unicode_characters=False,
+        transpose=True,
     )
 
     # make sure optimizations don't drop Barriers:
