@@ -201,7 +201,7 @@ def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutp
             except Exception as e:
                 s = "s" if circuits_is_list else ""
                 qiskit_version = qiskit.__version__
-                if qiskit_version < "0.24":
+                if qiskit_version < "1.0":
                     warnings.warn(
                         f"Your compiled pulse sequence{s} could not be deserialized, likely "
                         f"because your Qiskit installation (version {qiskit_version}) is "
