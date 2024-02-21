@@ -20,8 +20,8 @@ def active_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
     """Returns the indices of the non-idle qubits in a quantum circuit.
 
     Note:
-        The "index" refers to the argument of a LineQubit (so e.g. `cirq.LineQubit(5)`
-        has index 5 regardless of the total number of qubits in the circuit.
+        The "index" refers to the argument of a `LineQubit` (so e.g. `cirq.LineQubit(5)`
+        has index 5 regardless of the total number of qubits in the circuit).
 
     Args:
         circuit: The input quantum circuit.
@@ -200,10 +200,12 @@ def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutp
                 pulses = gss.serialization.deserialize(json_dict["pulses"])
             except Exception as e:
                 s = "s" if circuits_is_list else ""
-                if qiskit.__version__ < "0.24":
+                qiskit_version = qiskit.__version__
+                package_name = "qiskit" if qiskit_version >= "1.0.0" else "qiskit-terra"
+                if qiskit_version < "0.24":
                     warnings.warn(
                         f"Your compiled pulse sequence{s} could not be deserialized, likely "
-                        f"because your Qiskit Terra installation (version {qiskit.__version__}) is "
+                        f"because your {package_name} installation (version {qiskit_version}) is "
                         "out of date. Please try again after installing a more recent version.\n\n"
                         f"You can still access your compiled circuit{s} using the .circuit{s} "
                         "attribute of this output."
@@ -215,7 +217,7 @@ def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutp
                         "https://github.com/Infleqtion/client-superstaq/issues containing "
                         "the following information (as well as any other relevant context):\n\n"
                         f"cirq-superstaq version: {css.__version__}\n"
-                        f"qiskit-terra version: {qiskit.__version__}\n"
+                        f"{package_name} version: {qiskit.__version__}\n"
                         f"error: {e!r}\n\n"
                         f"You can still access your compiled circuit{s} using the .circuit{s} "
                         "attribute of this output."
@@ -223,7 +225,7 @@ def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutp
         else:
             s = "s" if circuits_is_list else ""
             warnings.warn(
-                f"Qiskit Terra is required to deserialize compiled pulse sequence{s}. You can "
+                f"Qiskit is required to deserialize compiled pulse sequence{s}. You can "
                 f"still access your compiled circuit{s} using the .circuit{s} attribute of this "
                 "output."
             )
