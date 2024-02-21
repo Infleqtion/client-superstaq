@@ -201,11 +201,10 @@ def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutp
             except Exception as e:
                 s = "s" if circuits_is_list else ""
                 qiskit_version = qiskit.__version__
-                package_name = "qiskit" if qiskit_version >= "1.0.0" else "qiskit-terra"
                 if qiskit_version < "0.24":
                     warnings.warn(
                         f"Your compiled pulse sequence{s} could not be deserialized, likely "
-                        f"because your {package_name} installation (version {qiskit_version}) is "
+                        f"because your Qiskit installation (version {qiskit_version}) is "
                         "out of date. Please try again after installing a more recent version.\n\n"
                         f"You can still access your compiled circuit{s} using the .circuit{s} "
                         "attribute of this output."
@@ -217,7 +216,7 @@ def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutp
                         "https://github.com/Infleqtion/client-superstaq/issues containing "
                         "the following information (as well as any other relevant context):\n\n"
                         f"cirq-superstaq version: {css.__version__}\n"
-                        f"{package_name} version: {qiskit.__version__}\n"
+                        f"qiskit version: {qiskit_version}\n"
                         f"error: {e!r}\n\n"
                         f"You can still access your compiled circuit{s} using the .circuit{s} "
                         "attribute of this output."
