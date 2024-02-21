@@ -188,8 +188,6 @@ def _is_qiskit_gate(gate: qiskit.circuit.Instruction) -> bool:
         and (
             hasattr(qiskit.circuit.library, base_class.__name__)
             or hasattr(qiskit.circuit, base_class.__name__)
-            or hasattr(qiskit.extensions, base_class.__name__)
-            or hasattr(qiskit.extensions.quantum_initializer, base_class.__name__)
             or hasattr(qiskit.circuit.controlflow, base_class.__name__)
         )
     )
