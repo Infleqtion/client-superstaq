@@ -117,7 +117,7 @@ def test_get_balance(provider: qss.SuperstaqProvider) -> None:
 
 def test_get_resource_estimate(provider: qss.SuperstaqProvider) -> None:
     circuit1 = qiskit.QuantumCircuit(2)
-    circuit1.cnot(0, 1)
+    circuit1.cx(0, 1)
     circuit1.h(1)
 
     resource_estimate = provider.resource_estimate(circuit1, "ss_unconstrained_simulator")
@@ -126,7 +126,7 @@ def test_get_resource_estimate(provider: qss.SuperstaqProvider) -> None:
 
     circuit2 = qiskit.QuantumCircuit(2)
     circuit2.h(1)
-    circuit2.cnot(0, 1)
+    circuit2.cx(0, 1)
     circuit2.cz(1, 0)
 
     resource_estimates = provider.resource_estimate(

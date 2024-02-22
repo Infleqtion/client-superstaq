@@ -123,9 +123,9 @@ class HamiltonianSimulation(Benchmark):
             # Coupling terms
             psi2 = -2.0 * jz * self.time_step / hbar
             for i in range(self.num_qubits - 1):
-                circuit.cnot(i, i + 1)
+                circuit.cx(i, i + 1)
                 circuit.rz(psi2, i + 1)
-                circuit.cnot(i, i + 1)
+                circuit.cx(i, i + 1)
 
         # End the circuit with measurements of every qubit in the Z-basis
         for i in range(self.num_qubits):
