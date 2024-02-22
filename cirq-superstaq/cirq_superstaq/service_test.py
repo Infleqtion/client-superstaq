@@ -17,6 +17,7 @@ import json
 import os
 import textwrap
 from unittest import mock
+from unittest.mock import patch
 
 import cirq
 import general_superstaq as gss
@@ -749,6 +750,115 @@ def test_aces(
 
     mock_post.return_value.json = lambda: [1] * 51
     assert service.process_aces("id1") == [1] * 51
+
+
+@mock.patch("requests.post")
+def test_cb(
+    mock_post: mock.MagicMock,
+) -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    mock_post.return_value.json = lambda: "id1"
+    assert (
+        service.submit_cb(
+            target="ss_unconstrained_simulator",
+            repetitions=50,
+            process_circuit=cirq.Circuit(),
+            n_channels=6,
+            n_sequences=30,
+            depths=[1, 2, 3],
+            method="dry-run",
+            noise=cirq.NoiseModel.from_noise_model_like(cirq.depolarize(0.1)),
+            error_prob=(0.1, 0.1, 0.1),
+        )
+        == "id1"
+    )
+
+    assert (
+        service.submit_cb(
+            target="ss_unconstrained_simulator",
+            repetitions=50,
+            process_circuit=cirq.Circuit(),
+            n_channels=6,
+            n_sequences=30,
+            depths=[1, 2, 3],
+            method="dry-run",
+            noise="asymmetric_depolarize",
+        )
+        == "id1"
+    )
+
+    test_data = {
+        "circuit_data": {
+            "ps": {
+                "depth_1": {
+                    "seq": {
+                        "result": "{}",
+                        "c_of_p": "{}",
+                        "circuit": "{}",
+                        "compiled_circuit": "{}",
+                    }
+                }
+            }
+        },
+        "instance_information": cirq.to_json(
+            {"target": "ss_unconstrained_simulator", "depths": [1, 2], "n_channels": 2}
+        ),
+        "process_fidelity_data": {
+            "averages": {"test": [1.0, 1.0], "test2": [1.0, 1.0], "test3": [1.0, 1.0]},
+            "std_devs": {
+                "test": {"depth=1": 0.0, "depth=2": 0.0},
+                "test2": {"depth=1": 0.0, "depth=2": 0.0},
+                "test3": {"depth=1": 0.0, "depth=2": 0.0},
+            },
+            "evs": {
+                "test": {"depth=1": [1.0], "depth=2": [1.0]},
+                "test2": {"depth=1": [1.0], "depth=2": [1.0]},
+                "test3": {"depth=1": [1.0], "depth=2": [1.0]},
+            },
+        },
+    }
+    processed_test_data = {
+        "circuit_data": {
+            "ps": {
+                "depth_1": {
+                    "seq": {"result": {}, "c_of_p": {}, "circuit": {}, "compiled_circuit": "{}"}
+                }
+            }
+        },
+        "instance_information": {
+            "target": "ss_unconstrained_simulator",
+            "depths": [1, 2],
+            "n_channels": 2,
+        },
+        "process_fidelity_data": test_data["process_fidelity_data"],
+        "fit_data": {
+            "A_test": 1.0,
+            "p_test": 1.0,
+            "A_test2": 1.0,
+            "p_test2": 1.0,
+            "A_test3": 1.0,
+            "p_test3": 1.0,
+            "e_f": -0.5,
+        },
+    }
+
+    mock_post.return_value.json = lambda: test_data
+    assert service.process_cb("id1") == processed_test_data
+
+    with patch(
+        "matplotlib.pyplot.show",
+        return_value={"test": 123},
+    ):
+        service.plot(processed_test_data)
+
+    # Test truncated labels
+    processed_test_data["instance_information"] = {"depths": [1, 2], "n_channels": 11}
+
+    with patch(
+        "matplotlib.pyplot.show",
+        return_value={"test": 123},
+    ):
+        service.plot(processed_test_data)
 
 
 @mock.patch("requests.post")
