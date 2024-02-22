@@ -571,6 +571,34 @@ def test_barrier() -> None:
         use_unicode_characters=False,
     )
 
+    cirq.testing.assert_has_diagram(
+        circuit,
+        textwrap.dedent(
+            """
+            0 1 2
+            │ │ │
+            ─────
+            │ │ │
+            """
+        ),
+        use_unicode_characters=True,
+        transpose=True,
+    )
+
+    cirq.testing.assert_has_diagram(
+        circuit,
+        textwrap.dedent(
+            """
+            0 1 2
+            | | |
+            -----
+            | | |
+            """
+        ),
+        use_unicode_characters=False,
+        transpose=True,
+    )
+
     # make sure optimizations don't drop Barriers:
     circuit = cirq.drop_negligible_operations(circuit)
     assert circuit == cirq.Circuit(operation)
