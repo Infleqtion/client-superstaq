@@ -747,6 +747,49 @@ def test_superstaq_client_aces(mock_post: mock.MagicMock) -> None:
 
 
 @mock.patch("requests.post")
+def test_superstaq_client_cb(mock_post: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq", remote_host="http://example.com", api_key="to_my_heart"
+    )
+    client.submit_cb(
+        target="ss_unconstrained_simulator",
+        shots=100,
+        serialized_circuits={"circuits": "test_circuit_data"},
+        n_channels=6,
+        n_sequences=30,
+        depths=[2, 4, 6],
+        method="dry-run",
+        noise={"type": "symmetric_depolarize", "params": (0.01,)},
+    )
+
+    expected_json = {
+        "target": "ss_unconstrained_simulator",
+        "shots": 100,
+        "circuits": "test_circuit_data",
+        "n_channels": 6,
+        "n_sequences": 30,
+        "depths": [2, 4, 6],
+        "method": "dry-run",
+        "noise": {"type": "symmetric_depolarize", "params": (0.01,)},
+    }
+
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/cb_submit",
+        headers=EXPECTED_HEADERS,
+        json=expected_json,
+        verify=False,
+    )
+
+    client.process_cb("id", counts="[{" "}]")
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/cb_fetch",
+        headers=EXPECTED_HEADERS,
+        json={"job_id": "id", "counts": "[{}]"},
+        verify=False,
+    )
+
+
+@mock.patch("requests.post")
 def test_superstaq_client_dfe(mock_post: mock.MagicMock) -> None:
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",

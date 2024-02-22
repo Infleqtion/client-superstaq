@@ -546,6 +546,73 @@ class _SuperstaqClient:
         """
         return self.post_request("/aces_fetch", {"job_id": job_id})
 
+    def submit_cb(
+        self,
+        target: str,
+        shots: int,
+        serialized_circuits: dict[str, str],
+        n_channels: int,
+        n_sequences: int,
+        depths: Sequence[int],
+        method: str | None = None,
+        noise: dict[str, object] | None = None,
+    ) -> str:
+        """Makes a POST request to the `/cycle_benchmarking` endpoint.
+
+        Args:
+            target: The target device to characterize.
+            shots: How many shots to use per circuit submitted.
+            serialized_circuits: The serialized process circuits to use in the protocol.
+            n_channels: The number of random Pauli decay channels to approximate error.
+            n_sequences: Number of circuits to generate per depth.
+            depths: Lists of depths representing the depths of Cycle Benchmarking circuits
+                to generate.
+            method: Optional method to use in device submission (e.g. "dry-run").
+            noise: Dictionary representing noise model to simulate the protocol with.
+
+        Returns:
+            A string with the job id for the Cycle Benchmarking job created.
+
+        Raises:
+            ValueError: If the target or noise model is not valid.
+            SuperstaqServerException: If the request fails.
+        """
+        gss.validation.validate_target(target)
+
+        json_dict: dict[str, Any] = {
+            "target": target,
+            "shots": shots,
+            **serialized_circuits,
+            "n_channels": n_channels,
+            "n_sequences": n_sequences,
+            "depths": depths,
+        }
+
+        if method:
+            json_dict["method"] = method
+        if noise:
+            json_dict["noise"] = noise
+
+        return self.post_request("/cb_submit", json_dict)
+
+    def process_cb(self, job_id: str, counts: str | None = None) -> dict[str, Any]:
+        """Makes a POST request to the "/cb_fetch" endpoint.
+
+        Args:
+            job_id: The job id returned by `submit_cb`.
+            counts: Optional dict representing result counts.
+
+        Returns:
+            Characterization data including process fidelity
+            and parameter estimates.
+        """
+        json_dict: dict[str, Any] = {
+            "job_id": job_id,
+        }
+        if counts:
+            json_dict["counts"] = counts
+        return self.post_request("/cb_fetch", json_dict)
+
     def target_info(self, target: str) -> dict[str, Any]:
         """Makes a POST request to the /target_info endpoint.
 
