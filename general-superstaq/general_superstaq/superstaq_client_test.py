@@ -755,22 +755,24 @@ def test_superstaq_client_cb(mock_post: mock.MagicMock) -> None:
         target="ss_unconstrained_simulator",
         shots=100,
         serialized_circuits={"circuits": "test_circuit_data"},
-        num_channels=6,
-        num_sequences=30,
+        n_channels=6,
+        n_sequences=30,
         depths=[2, 4, 6],
         method="dry-run",
         noise={"type": "symmetric_depolarize", "params": (0.01,)},
+        counts={"100": 50, "001": 50},
     )
 
     expected_json = {
         "target": "ss_unconstrained_simulator",
         "shots": 100,
         "circuits": "test_circuit_data",
-        "num_channels": 6,
-        "num_sequences": 30,
+        "n_channels": 6,
+        "n_sequences": 30,
         "depths": [2, 4, 6],
         "method": "dry-run",
         "noise": {"type": "symmetric_depolarize", "params": (0.01,)},
+        "counts": {"100": 50, "001": 50},
     }
 
     mock_post.assert_called_with(

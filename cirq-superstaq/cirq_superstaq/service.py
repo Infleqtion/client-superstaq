@@ -15,14 +15,17 @@ from __future__ import annotations
 
 import numbers
 import warnings
+from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any, overload
 
 import cirq
 import general_superstaq as gss
+import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 from general_superstaq import ResourceEstimate, superstaq_client
+from scipy.optimize import curve_fit
 
 import cirq_superstaq as css
 
@@ -980,8 +983,8 @@ class Service(gss.service.Service):
         repetitions: int,
         process_circuit: cirq.Circuit,
         target: str,
-        num_channels: int,
-        num_sequences: int,
+        n_channels: int,
+        n_sequences: int,
         depths: Sequence[int],
         method: str | None = None,
         noise: str | cirq.NoiseModel | None = None,
@@ -995,8 +998,8 @@ class Service(gss.service.Service):
             repetitions: How many shots to use per circuit submitted.
             process_circuit: The process circuit to use in the protocol.
             target: The target device to characterize.
-            num_channels: The number of random Pauli decay channels to approximate error.
-            num_sequences: Number of circuits to generate per depth.
+            n_channels: The number of random Pauli decay channels to approximate error.
+            n_sequences: Number of circuits to generate per depth.
             depths: Lists of depths representing the depths of Cycle Benchmarking circuits
                 to generate.
             method: Optional method to use in device submission (e.g. "dry-run").
@@ -1034,8 +1037,8 @@ class Service(gss.service.Service):
             self._resolve_target(target),
             repetitions,
             {"cirq_circuits": serialized_circuits},
-            num_channels,
-            num_sequences,
+            n_channels,
+            n_sequences,
             depths,
             method,
             noise=noise_dict,
@@ -1054,7 +1057,130 @@ class Service(gss.service.Service):
         Raises:
             SuperstaqServerException: If the request fails.
         """
-        return self._client.process_cb(job_id)
+        cb_data = self._client.process_cb(job_id)
+        circuit_data = {}
+        for pauli_string, channel_data in cb_data["circuit_data"].items():
+            channel_data_new = {}
+            for depth, depth_data in channel_data.items():
+                depth_data_new = {}
+                for sequence, sequence_data in depth_data.items():
+                    sequence_data_new = {
+                        "result": cirq.read_json(json_text=sequence_data["result"]),
+                        "c_of_p": cirq.read_json(json_text=sequence_data["c_of_p"]),
+                        "circuit": css.deserialize_circuits(sequence_data["circuit"]),
+                        "compiled_circuit": cirq.read_json(
+                            json_text=sequence_data["compiled_circuit"]
+                        ),
+                    }
+                    depth_data_new[sequence] = sequence_data_new
+                channel_data_new[depth] = depth_data_new
+            circuit_data[pauli_string] = channel_data_new
+
+        instance_information = cirq.read_json(json_text=cb_data["instance_information"])
+
+        def objective(
+            x: np.typing.NDArray[np.int_], A: float, p: float
+        ) -> np.typing.NDArray[np.float_]:
+            return A * p**x
+
+        fit_data: defaultdict[str, float] = defaultdict(float)
+
+        e_f = 0.0
+        for ps, y_vals in cb_data["process_fidelity_data"]["averages"].items():
+            popt, _ = curve_fit(objective, instance_information["depths"], y_vals)
+            A, p = popt
+            A = round(A, 2)
+            fit_data["A_" + str(ps)] = A
+            fit_data["p_" + str(ps)] = p
+            e_f += p
+        e_f /= instance_information["n_channels"]
+        e_f = 1 - e_f
+        fit_data["e_f"] = e_f
+
+        circuits_and_metadata = {
+            "process_fidelity_data": cb_data["process_fidelity_data"],
+            "instance_information": instance_information,
+            "circuit_data": circuit_data,
+            "fit_data": fit_data,
+        }
+        return circuits_and_metadata
+
+    def plot(self, circuits_and_metadata: dict[str, Any]) -> None:
+        """Generates plot and fit data estimating decay parameters.
+
+        Args:
+            circuits_and_metadata: Dictionary containing cycle benchmarking data.
+        """
+
+        instance_information = circuits_and_metadata["instance_information"]
+        fit_data = circuits_and_metadata["fit_data"]
+        x_values = instance_information["depths"]
+        evs = circuits_and_metadata["process_fidelity_data"]["evs"]
+        std_devs = circuits_and_metadata["process_fidelity_data"]["std_devs"]
+        averages = circuits_and_metadata["process_fidelity_data"]["averages"]
+
+        max_legend_labels = 4
+        legend_labels_count = 0
+        legend_labels = []
+        custom_handles = []
+        legend_colors = []
+        plt.xlim(0, x_values[-1] + 4)
+
+        def objective(
+            x: np.typing.NDArray[np.int_], A: float, p: float
+        ) -> np.typing.NDArray[np.float_]:
+            return A * p**x
+
+        e_f = 0.0
+        for ps, _ in averages.items():
+            A = fit_data["A_" + str(ps)]
+            p = fit_data["p_" + str(ps)]
+            for depth in x_values:
+                depth_str = "depth=" + str(depth)
+                for ev in np.asarray(evs[ps][depth_str]):
+                    plt.scatter(depth, ev)
+                    plt.errorbar(
+                        depth,
+                        ev,
+                        yerr=std_devs[ps][depth_str],
+                        capsize=5,
+                        elinewidth=2,
+                        markeredgewidth=2,
+                    )
+            plt.plot(
+                np.arange(0, x_values[-1] + 4),
+                objective(np.arange(0, x_values[-1] + 4), A, p),
+            )
+            e_f += p
+            if legend_labels_count < max_legend_labels:
+                truncated_label = "A_" + str(ps) + "=%.2f \np_%s=%.2f" % (A, ps, p)
+                legend_labels.append(truncated_label)
+                legend_labels_count += 1
+                legend_colors.append(plt.gca().lines[-1].get_color())
+            plt.xlabel("Sequence Length")
+            plt.ylabel("Expectation Value")
+
+        # Truncate legend labels
+        if instance_information["n_channels"] > 10:
+            truncated_legend_labels = (
+                legend_labels[:2] + ["..."] + legend_labels[-2:]
+                if len(legend_labels) > 2
+                else legend_labels
+            )
+            for t, c in zip(truncated_legend_labels, legend_colors):
+                if t == "...":
+                    linestyle = ""
+                else:
+                    linestyle = "-"
+                custom_handles.append(plt.Line2D([], [], linestyle=linestyle, label=t, color=c))
+        else:
+            for t, c in zip(legend_labels, legend_colors):
+                custom_handles.append(plt.Line2D([], [], linestyle="-", label=t, color=c))
+
+        # Display the legend with truncated labels
+        plt.legend(handles=custom_handles, loc="lower right")
+
+        plt.show()
 
     def target_info(self, target: str) -> dict[str, Any]:
         """Returns information about device specified by `target`.

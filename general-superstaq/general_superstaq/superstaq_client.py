@@ -551,11 +551,12 @@ class _SuperstaqClient:
         target: str,
         shots: int,
         serialized_circuits: dict[str, str],
-        num_channels: int,
-        num_sequences: int,
+        n_channels: int,
+        n_sequences: int,
         depths: Sequence[int],
         method: str | None = None,
         noise: dict[str, object] | None = None,
+        counts: dict[str, int] | None = None,
     ) -> str:
         """Makes a POST request to the `/cycle_benchmarking` endpoint.
 
@@ -563,12 +564,13 @@ class _SuperstaqClient:
             target: The target device to characterize.
             shots: How many shots to use per circuit submitted.
             serialized_circuits: The serialized process circuits to use in the protocol.
-            num_channels: The number of random Pauli decay channels to approximate error.
-            num_sequences: Number of circuits to generate per depth.
+            n_channels: The number of random Pauli decay channels to approximate error.
+            n_sequences: Number of circuits to generate per depth.
             depths: Lists of depths representing the depths of Cycle Benchmarking circuits
                 to generate.
             method: Optional method to use in device submission (e.g. "dry-run").
             noise: Dictionary representing noise model to simulate the protocol with.
+            counts: Optional dictionary containing results counts.
 
         Returns:
             A string with the job id for the Cycle Benchmarking job created.
@@ -580,11 +582,11 @@ class _SuperstaqClient:
         gss.validation.validate_target(target)
 
         json_dict: dict[str, Any] = {
-            **serialized_circuits,
             "target": target,
             "shots": shots,
-            "num_channels": num_channels,
-            "num_sequences": num_sequences,
+            **serialized_circuits,
+            "n_channels": n_channels,
+            "n_sequences": n_sequences,
             "depths": depths,
         }
 
@@ -592,6 +594,8 @@ class _SuperstaqClient:
             json_dict["method"] = method
         if noise:
             json_dict["noise"] = noise
+        if counts:
+            json_dict["counts"] = counts
 
         return self.post_request("/cb_submit", json_dict)
 
