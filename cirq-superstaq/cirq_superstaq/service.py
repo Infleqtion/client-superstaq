@@ -1044,12 +1044,14 @@ class Service(gss.service.Service):
             noise=noise_dict,
         )
 
-    def process_cb(self, job_id: str) -> dict[str, Any]:
+    def process_cb(self, job_id: str, counts: list[dict[str, int]] | None = None) -> dict[str, Any]:
         """Processes the data from the Cycle Benchmarking protocol.
         Generates SPAM and decay parameter estimations in addition to the process infidelity.
 
         Args:
             job_id: String corresponding to the CB job id.
+            counts: Optional list of dictionaries containing results counts to
+        compute fidelities for.
 
         Returns:
             A dict containing the Cycle Benchmarking process data.
@@ -1057,52 +1059,56 @@ class Service(gss.service.Service):
         Raises:
             SuperstaqServerException: If the request fails.
         """
-        cb_data = self._client.process_cb(job_id)
+        serialized_counts = cirq.to_json(counts) if counts else None
+        cb_data = self._client.process_cb(job_id, serialized_counts)
+        instance_information = cirq.read_json(json_text=cb_data["instance_information"])
+        target = instance_information["target"]
+        no_submit_target = "aqt" in target
         circuit_data = {}
         for pauli_string, channel_data in cb_data["circuit_data"].items():
             channel_data_new = {}
             for depth, depth_data in channel_data.items():
                 depth_data_new = {}
                 for sequence, sequence_data in depth_data.items():
+                    compiled_circult = sequence_data["compiled_circuit"]
                     sequence_data_new = {
                         "result": cirq.read_json(json_text=sequence_data["result"]),
                         "c_of_p": cirq.read_json(json_text=sequence_data["c_of_p"]),
                         "circuit": css.deserialize_circuits(sequence_data["circuit"]),
-                        "compiled_circuit": cirq.read_json(
-                            json_text=sequence_data["compiled_circuit"]
-                        ),
+                        "compiled_circuit": compiled_circult,
                     }
                     depth_data_new[sequence] = sequence_data_new
                 channel_data_new[depth] = depth_data_new
             circuit_data[pauli_string] = channel_data_new
 
-        instance_information = cirq.read_json(json_text=cb_data["instance_information"])
-
-        def objective(
-            x: np.typing.NDArray[np.int_], A: float, p: float
-        ) -> np.typing.NDArray[np.float_]:
-            return A * p**x
-
-        fit_data: defaultdict[str, float] = defaultdict(float)
-
-        e_f = 0.0
-        for ps, y_vals in cb_data["process_fidelity_data"]["averages"].items():
-            popt, _ = curve_fit(objective, instance_information["depths"], y_vals)
-            A, p = popt
-            A = round(A, 2)
-            fit_data["A_" + str(ps)] = A
-            fit_data["p_" + str(ps)] = p
-            e_f += p
-        e_f /= instance_information["n_channels"]
-        e_f = 1 - e_f
-        fit_data["e_f"] = e_f
-
         circuits_and_metadata = {
-            "process_fidelity_data": cb_data["process_fidelity_data"],
             "instance_information": instance_information,
             "circuit_data": circuit_data,
-            "fit_data": fit_data,
         }
+
+        if not no_submit_target:
+
+            def objective(
+                x: np.typing.NDArray[np.int_], A: float, p: float
+            ) -> np.typing.NDArray[np.float_]:
+                return A * p**x
+
+            fit_data: defaultdict[str, float] = defaultdict(float)
+
+            e_f = 0.0
+            for ps, y_vals in cb_data["process_fidelity_data"]["averages"].items():
+                popt, _ = curve_fit(objective, instance_information["depths"], y_vals)
+                A, p = popt
+                A = round(A, 2)
+                fit_data["A_" + str(ps)] = A
+                fit_data["p_" + str(ps)] = p
+                e_f += p
+            e_f /= instance_information["n_channels"]
+            e_f = 1 - e_f
+            fit_data["e_f"] = e_f
+            circuits_and_metadata["fit_data"] = fit_data
+            circuits_and_metadata["process_fidelity_data"] = cb_data["process_fidelity_data"]
+
         return circuits_and_metadata
 
     def plot(self, circuits_and_metadata: dict[str, Any]) -> None:

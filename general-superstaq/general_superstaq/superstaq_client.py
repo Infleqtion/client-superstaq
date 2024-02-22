@@ -556,7 +556,6 @@ class _SuperstaqClient:
         depths: Sequence[int],
         method: str | None = None,
         noise: dict[str, object] | None = None,
-        counts: dict[str, int] | None = None,
     ) -> str:
         """Makes a POST request to the `/cycle_benchmarking` endpoint.
 
@@ -570,7 +569,6 @@ class _SuperstaqClient:
                 to generate.
             method: Optional method to use in device submission (e.g. "dry-run").
             noise: Dictionary representing noise model to simulate the protocol with.
-            counts: Optional dictionary containing results counts.
 
         Returns:
             A string with the job id for the Cycle Benchmarking job created.
@@ -594,22 +592,26 @@ class _SuperstaqClient:
             json_dict["method"] = method
         if noise:
             json_dict["noise"] = noise
-        if counts:
-            json_dict["counts"] = counts
 
         return self.post_request("/cb_submit", json_dict)
 
-    def process_cb(self, job_id: str) -> dict[str, Any]:
+    def process_cb(self, job_id: str, counts: str | None = None) -> dict[str, Any]:
         """Makes a POST request to the "/cb_fetch" endpoint.
 
         Args:
             job_id: The job id returned by `submit_cb`.
+            counts: Optional dict representing result counts.
 
         Returns:
             Characterization data including process fidelity
             and parameter estimates.
         """
-        return self.post_request("/cb_fetch", {"job_id": job_id})
+        json_dict: dict[str, Any] = {
+            "job_id": job_id,
+        }
+        if counts:
+            json_dict["counts"] = counts
+        return self.post_request("/cb_fetch", json_dict)
 
     def target_info(self, target: str) -> dict[str, Any]:
         """Makes a POST request to the /target_info endpoint.

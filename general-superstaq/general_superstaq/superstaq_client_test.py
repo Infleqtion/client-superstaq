@@ -760,7 +760,6 @@ def test_superstaq_client_cb(mock_post: mock.MagicMock) -> None:
         depths=[2, 4, 6],
         method="dry-run",
         noise={"type": "symmetric_depolarize", "params": (0.01,)},
-        counts={"100": 50, "001": 50},
     )
 
     expected_json = {
@@ -772,7 +771,6 @@ def test_superstaq_client_cb(mock_post: mock.MagicMock) -> None:
         "depths": [2, 4, 6],
         "method": "dry-run",
         "noise": {"type": "symmetric_depolarize", "params": (0.01,)},
-        "counts": {"100": 50, "001": 50},
     }
 
     mock_post.assert_called_with(
@@ -782,11 +780,11 @@ def test_superstaq_client_cb(mock_post: mock.MagicMock) -> None:
         verify=False,
     )
 
-    client.process_cb("id")
+    client.process_cb("id", counts="[{" "}]")
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/cb_fetch",
         headers=EXPECTED_HEADERS,
-        json={"job_id": "id"},
+        json={"job_id": "id", "counts": "[{}]"},
         verify=False,
     )
 

@@ -800,7 +800,9 @@ def test_cb(
                 }
             }
         },
-        "instance_information": cirq.to_json({"depths": [1, 2], "n_channels": 2}),
+        "instance_information": cirq.to_json(
+            {"target": "ss_unconstrained_simulator", "depths": [1, 2], "n_channels": 2}
+        ),
         "process_fidelity_data": {
             "averages": {"test": [1.0, 1.0], "test2": [1.0, 1.0], "test3": [1.0, 1.0]},
             "std_devs": {
@@ -819,11 +821,15 @@ def test_cb(
         "circuit_data": {
             "ps": {
                 "depth_1": {
-                    "seq": {"result": {}, "c_of_p": {}, "circuit": {}, "compiled_circuit": {}}
+                    "seq": {"result": {}, "c_of_p": {}, "circuit": {}, "compiled_circuit": "{}"}
                 }
             }
         },
-        "instance_information": {"depths": [1, 2], "n_channels": 2},
+        "instance_information": {
+            "target": "ss_unconstrained_simulator",
+            "depths": [1, 2],
+            "n_channels": 2,
+        },
         "process_fidelity_data": test_data["process_fidelity_data"],
         "fit_data": {
             "A_test": 1.0,
