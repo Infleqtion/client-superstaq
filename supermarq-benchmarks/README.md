@@ -36,7 +36,7 @@ after execution on hardware.
 The quantum benchmarks within Supermarq are designed to be scalable, meaning that the benchmarks can be
 instantiated and generated for a wide range of circuit sizes and depths.
 
-The [Supermarq tutorial](examples/Supermarq_HPCA_Tutorial_css.ipynb) notebook contains an end-to-end example of how to execute the GHZ benchmark
+The [Supermarq tutorial](https://github.com/Infleqtion/client-superstaq/tree/main/supermarq-benchmarks/examples) notebooks contain an end-to-end example of how to execute the GHZ benchmark
 using [Superstaq](https://superstaq.infleqtion.com/). The general workflow is as follows:
 
 ```python
