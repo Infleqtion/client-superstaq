@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import numbers
 import os
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any
-
-import qubovert as qv
 
 import general_superstaq as gss
 
@@ -161,7 +159,7 @@ class Service:
 
     def submit_qubo(
         self,
-        qubo: qv.QUBO,
+        qubo: Mapping[tuple[int, ...], int | float],
         target: str,
         repetitions: int = 1000,
         method: str | None = None,
@@ -173,7 +171,7 @@ class Service:
         the energy landscape from the given objective function known as output solutions.
 
         Args:
-            qubo: A `qv.QUBO` object.
+            qubo: A dictionary representing the QUBO object.
             target: The target to submit the qubo.
             repetitions: Number of times that the execution is repeated before stopping.
             method: The parameter specifying method of QUBO solving execution. Currently,
