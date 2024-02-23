@@ -18,7 +18,6 @@ import os
 from unittest import mock
 
 import pytest
-import qubovert as qv
 import requests
 
 import general_superstaq as gss
@@ -645,7 +644,7 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
         api_key="to_my_heart",
     )
 
-    example_qubo = qv.QUBO({(0,): 1.0, (1,): 1.0, (0, 1): -2.0})
+    example_qubo = {(0,): 1.0, (1,): 1.0, (0, 1): -2.0}
     target = "toshiba_bifurcation_simulator"
     repetitions = 10
     client.submit_qubo(

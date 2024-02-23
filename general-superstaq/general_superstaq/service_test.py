@@ -5,7 +5,6 @@ import tempfile
 from unittest import mock
 
 import pytest
-import qubovert as qv
 
 import general_superstaq as gss
 from general_superstaq.testing import RETURNED_TARGETS, TARGET_LIST
@@ -91,7 +90,7 @@ def test_update_user_role(
 def test_submit_qubo(
     mock_post_request: mock.MagicMock,
 ) -> None:
-    example_qubo = qv.QUBO({(0,): 1.0, (1,): 1.0, (0, 1): -2.0})
+    example_qubo = {(0,): 1.0, (1,): 1.0, (0, 1): -2.0}
     target = "toshiba_bifurcation_simulator"
     repetitions = 10
 
