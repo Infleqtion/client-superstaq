@@ -345,12 +345,16 @@ class _SuperstaqClient:
         given target.
 
         Args:
-            qubo: A dictionary representing the QUBO object.
-            target: The target to submit the qubo.
+            qubo: A dictionary representing the QUBO object. The tuple keys represent the
+                boolean variables of the QUBO and the values represent the coefficients.
+                As an example, for a QUBO = 2*a + a*b - 5*b*c - 3 (where a, b, and c are boolean
+                variables), the corresponding dictionary format would be
+                {('a',): 2, ('a', 'b'): 1, ('b', 'c'): -5, (): -3}.
+            target: The target to submit the QUBO.
             repetitions: Number of times that the execution is repeated before stopping.
             method: The parameter specifying method of QUBO solving execution. Currently,
-            will either be the "dry-run" option which runs on dwave's simulated annealer,
-            or defauls to none and sends it directly to the specified target.
+                will either be the "dry-run" option which runs on dwave's simulated annealer,
+                or defauls to `None` and sends it directly to the specified target.
             max_solutions: A parameter that specifies the max number of output solutions.
 
         Returns:
@@ -383,7 +387,7 @@ class _SuperstaqClient:
         """Performs a POST request on the `/supercheq` endpoint.
 
         Args:
-            files: List of files specified as binary using ints.
+            files: List of files specified as binary using integers.
                 For example: [[1, 0, 1], [1, 1, 1]].
             num_qubits: Number of qubits to run Supercheq on.
             depth: The depth of the circuits to run Supercheq on.
