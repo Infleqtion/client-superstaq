@@ -180,7 +180,7 @@ class Service:
             repetitions: Number of times that the execution is repeated before stopping.
             method: The parameter specifying method of QUBO solving execution. Currently,
                 will either be the "dry-run" option which runs on dwave's simulated annealer,
-                or defauls to `None` and sends it directly to the specified target.
+                or defaults to `None` and sends it directly to the specified target.
             max_solutions: A parameter that specifies the max number of output solutions.
 
         Returns:
