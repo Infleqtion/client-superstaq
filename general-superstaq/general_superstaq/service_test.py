@@ -1,4 +1,6 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
+from __future__ import annotations
+
 import os
 import secrets
 import tempfile
@@ -90,7 +92,11 @@ def test_update_user_role(
 def test_submit_qubo(
     mock_post_request: mock.MagicMock,
 ) -> None:
-    example_qubo = {(0,): 1.0, (1,): 1.0, (0, 1): -2.0}
+    example_qubo: dict[tuple[()] | tuple[str | int] | tuple[str | int, str | int], int | float] = {
+        (0,): 1.0,
+        (1,): 1.0,
+        (0, 1): -2.0,
+    }
     target = "toshiba_bifurcation_simulator"
     repetitions = 10
 

@@ -335,7 +335,7 @@ class _SuperstaqClient:
 
     def submit_qubo(
         self,
-        qubo: Mapping[tuple[int, ...], int | float],
+        qubo: dict[tuple[()] | tuple[str | int] | tuple[str | int, str | int], int | float],
         target: str,
         repetitions: int = 1000,
         method: str | None = None,
@@ -347,9 +347,9 @@ class _SuperstaqClient:
         Args:
             qubo: A dictionary representing the QUBO object. The tuple keys represent the
                 boolean variables of the QUBO and the values represent the coefficients.
-                As an example, for a QUBO = 2*a + a*b - 5*b*c - 3 (where a, b, and c are boolean
-                variables), the corresponding dictionary format would be
-                {('a',): 2, ('a', 'b'): 1, ('b', 'c'): -5, (): -3}.
+                As an example, for a QUBO with integer coefficients = 2*a + a*b - 5*b*c - 3
+                (where a, b, and c are boolean variables), the corresponding dictionary format
+                would be {('a',): 2, ('a', 'b'): 1, ('b', 'c'): -5, (): -3}.
             target: The target to submit the QUBO.
             repetitions: Number of times that the execution is repeated before stopping.
             method: The parameter specifying method of QUBO solving execution. Currently,
