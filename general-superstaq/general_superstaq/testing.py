@@ -225,7 +225,7 @@ TARGET_LIST = {
         "available": False,
         "retired": False,
     },
-    "sandia_qscout_qpu": {
+    "qscout_peregrine_qpu": {
         "supports_submit": False,
         "supports_submit_qubo": False,
         "supports_compile": True,
