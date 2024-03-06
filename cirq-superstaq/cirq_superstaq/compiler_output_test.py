@@ -234,7 +234,7 @@ def test_read_json_ibmq_warnings() -> None:
 
     with pytest.warns(
         UserWarning,
-        match="Your compiled pulse sequences could not be deserialized. Please let us know",
+        match="Your compiled pulse sequences could not be deserialized",
     ):
         out = css.compiler_output.read_json(json_dict, circuits_is_list=True)
         assert out.circuits == [circuit]

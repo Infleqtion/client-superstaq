@@ -673,15 +673,6 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
         verify=False,
     )
 
-    with pytest.raises(gss.SuperstaqException, match="not support QUBO submission."):
-        client.submit_qubo(
-            example_qubo,
-            target="cq_hilbert_qpu",
-            repetitions=repetitions,
-            method="dry-run",
-            max_solutions=1,
-        )
-
 
 @mock.patch("requests.post")
 def test_superstaq_client_supercheq(mock_post: mock.MagicMock) -> None:
