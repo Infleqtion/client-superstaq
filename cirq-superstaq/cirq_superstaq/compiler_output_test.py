@@ -219,7 +219,7 @@ def test_read_json_ibmq_warnings() -> None:
     }
 
     with mock.patch.dict("sys.modules", {"qiskit": None}), pytest.warns(
-        UserWarning, match="Qiskit Terra is required"
+        UserWarning, match="Qiskit is required"
     ):
         out = css.compiler_output.read_json(json_dict, circuits_is_list=False)
         assert out.circuit == circuit

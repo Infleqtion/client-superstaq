@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=missing-function-docstring,missing-class-docstring
+from __future__ import annotations
+
 import contextlib
 import io
 import json
@@ -18,7 +20,6 @@ import os
 from unittest import mock
 
 import pytest
-import qubovert as qv
 import requests
 
 import general_superstaq as gss
@@ -645,7 +646,12 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
         api_key="to_my_heart",
     )
 
-    example_qubo = qv.QUBO({(0,): 1.0, (1,): 1.0, (0, 1): -2.0})
+    example_qubo: dict[tuple[()] | tuple[str | int] | tuple[str | int, str | int], int | float] = {
+        ("a",): 2.0,
+        ("a", "b"): 1.0,
+        ("b", 0): -5,
+        (): -3.0,
+    }
     target = "toshiba_bifurcation_simulator"
     repetitions = 10
     client.submit_qubo(
@@ -653,7 +659,7 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
     )
 
     expected_json = {
-        "qubo": [((0,), 1.0), ((1,), 1.0), ((0, 1), -2.0)],
+        "qubo": [(("a",), 2.0), (("a", "b"), 1.0), (("b", 0), -5), ((), -3.0)],
         "target": target,
         "shots": repetitions,
         "method": "dry-run",
@@ -742,6 +748,49 @@ def test_superstaq_client_aces(mock_post: mock.MagicMock) -> None:
         f"http://example.com/{API_VERSION}/aces_fetch",
         headers=EXPECTED_HEADERS,
         json={"job_id": "id"},
+        verify=False,
+    )
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_cb(mock_post: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq", remote_host="http://example.com", api_key="to_my_heart"
+    )
+    client.submit_cb(
+        target="ss_unconstrained_simulator",
+        shots=100,
+        serialized_circuits={"circuits": "test_circuit_data"},
+        n_channels=6,
+        n_sequences=30,
+        depths=[2, 4, 6],
+        method="dry-run",
+        noise={"type": "symmetric_depolarize", "params": (0.01,)},
+    )
+
+    expected_json = {
+        "target": "ss_unconstrained_simulator",
+        "shots": 100,
+        "circuits": "test_circuit_data",
+        "n_channels": 6,
+        "n_sequences": 30,
+        "depths": [2, 4, 6],
+        "method": "dry-run",
+        "noise": {"type": "symmetric_depolarize", "params": (0.01,)},
+    }
+
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/cb_submit",
+        headers=EXPECTED_HEADERS,
+        json=expected_json,
+        verify=False,
+    )
+
+    client.process_cb("id", counts="[{" "}]")
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/cb_fetch",
+        headers=EXPECTED_HEADERS,
+        json={"job_id": "id", "counts": "[{}]"},
         verify=False,
     )
 

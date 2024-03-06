@@ -1,5 +1,7 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 """Integration checks that run daily (via Github action) between client and prod server."""
+from __future__ import annotations
+
 import os
 
 import cirq
@@ -323,7 +325,13 @@ def test_submit_to_hilbert_qubit_sorting(service: css.Service) -> None:
 
 
 def test_submit_qubo(service: css.Service) -> None:
-    test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
+    test_qubo: dict[tuple[()] | tuple[str | int] | tuple[str | int, str | int], int | float] = {
+        (0,): -1,
+        (1,): -1,
+        (2,): -1,
+        (0, 1): 2,
+        (1, 2): 2,
+    }
     serialized_result = service.submit_qubo(
         test_qubo, target="toshiba_bifurcation_simulator", method="dry-run"
     )
