@@ -332,7 +332,7 @@ def test_submit_qubo(service: css.Service) -> None:
         (0, 1): 2,
         (1, 2): 2,
     }
-    result_result = service.submit_qubo(
+    result = service.submit_qubo(
         test_qubo, target="ss_unconstrained_simulator", repetitions=10
     )
     assert len(result) == 10
