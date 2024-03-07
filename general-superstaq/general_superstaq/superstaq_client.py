@@ -338,7 +338,7 @@ class _SuperstaqClient:
         self,
         qubo: Mapping[tuple[TQuboKey, ...], float],
         target: str,
-        repetitions: int = 1000,
+        repetitions: int,
         method: str | None = None,
         max_solutions: int | None = 1000,
     ) -> dict[str, str]:
