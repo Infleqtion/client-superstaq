@@ -74,3 +74,24 @@ def test_validate_noise_type() -> None:
         gss.validation.validate_noise_type(
             ({"type": "asymmetric_depolarize", "params": (0.5, 0.5, 0.5)}), 1
         )
+
+
+def test_validate_qubo() -> None:
+    with pytest.raises(ValueError, match="QUBOs must be"):
+        gss.validation.validate_qubo("not-a-dict")
+
+    with pytest.raises(ValueError, match="not a valid key"):
+        gss.validation.validate_qubo({"abc": 123})
+
+    with pytest.raises(ValueError, match="must be real numbers"):
+        gss.validation.validate_qubo({(1, 2): 12 + 3j})
+
+    with pytest.raises(ValueError, match="must be real numbers"):
+        gss.validation.validate_qubo({(1, 2): "abc"})
+
+    with pytest.raises(ValueError, match="must be quadratic"):
+        gss.validation.validate_qubo({(1, 2, 3): 123})
+
+    gss.validation.validate_qubo({(1,): 1.2, (2,): 2.3, (1, 2): -3.4})
+    gss.validation.validate_qubo({("a",): 1, ("b",): 2, ("a", "b"): -3})
+    gss.validation.validate_qubo({(): 123})
