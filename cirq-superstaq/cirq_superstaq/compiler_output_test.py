@@ -232,7 +232,7 @@ def test_read_json_ibmq_warnings() -> None:
         assert out.circuits == [circuit]
         assert out.pulse_sequences is None
 
-    with mock.patch("qiskit.__version__", "2.0.0"),  pytest.warns(
+    with mock.patch("qiskit.__version__", "2.0.0"), pytest.warns(
         UserWarning,
         match="Your compiled pulse sequences could not be deserialized. Please let us know",
     ):

@@ -164,7 +164,7 @@ class Service:
         repetitions: int = 1000,
         method: str | None = None,
         max_solutions: int = 1000,
-    ) -> list[dict[tuple[int, ...], int]]:
+    ) -> list[dict[int, int]]:
         """Solves a submitted QUBO problem via annealing.
 
         This method returns any number of specified dictionaries that seek the minimum of

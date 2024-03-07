@@ -77,22 +77,12 @@ def test_update_user_role(
 
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaqClient.post_request",
-    return_value={
-        "qubo": [
-            {"keys": ["0"], "value": 1.0},
-            {"keys": ["1"], "value": 1.0},
-            {"keys": ["0", "1"], "value": -2.0},
-        ],
-        "target": "toshiba_bifurcation_simulator",
-        "shots": 10,
-        "method": "dry-run",
-        "max_solutions": 13,
-    },
+    return_value={"solution": gss.serialization.serialize([{0: 1, 1: 1}] * 10)},
 )
 def test_submit_qubo(
     mock_post_request: mock.MagicMock,
 ) -> None:
-    example_qubo: dict[tuple[()] | tuple[str | int] | tuple[str | int, str | int], int | float] = {
+    example_qubo: dict[tuple[int, ...], float] = {
         (0,): 1.0,
         (1,): 1.0,
         (0, 1): -2.0,
@@ -101,17 +91,10 @@ def test_submit_qubo(
     repetitions = 10
 
     service = gss.service.Service(remote_host="http://example.com", api_key="key")
-    assert service.submit_qubo(example_qubo, target, repetitions=repetitions, method="dry-run") == {
-        "qubo": [
-            {"keys": ["0"], "value": 1.0},
-            {"keys": ["1"], "value": 1.0},
-            {"keys": ["0", "1"], "value": -2.0},
-        ],
-        "target": "toshiba_bifurcation_simulator",
-        "shots": 10,
-        "method": "dry-run",
-        "max_solutions": 13,
-    }
+    assert (
+        service.submit_qubo(example_qubo, target, repetitions=repetitions, method="dry-run")
+        == [{0: 1, 1: 1}] * 10
+    )
 
 
 @mock.patch(
