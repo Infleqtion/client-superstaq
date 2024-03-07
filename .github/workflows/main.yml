@@ -9,9 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python 3.8
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.8
       - name: Install dependencies
@@ -31,7 +31,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v3 # allows workflow to access repo
+      - uses: actions/checkout@v4 # allows workflow to access repo
       - name: Set date for release title
         run: echo today=$(date +"%B %d, %Y") >> $GITHUB_ENV # format date and append to env
       - name: Set version number to most recent change
