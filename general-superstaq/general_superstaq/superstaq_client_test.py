@@ -660,7 +660,7 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
         "qubo": [(("a",), 2.0), (("a", "b"), 1.0), (("b", 0), -5), ((), -3.0)],
         "target": target,
         "shots": repetitions,
-        "method": "dry-run",
+        "method": None,
         "max_solutions": 1,
     }
 
