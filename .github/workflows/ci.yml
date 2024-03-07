@@ -9,6 +9,7 @@ on:
     paths-ignore:
       - "general-superstaq/general_superstaq/_version.py"
   pull_request:
+    types: [review_requested, ready_for_review]
     branches: [main]
   workflow_call: null
 
