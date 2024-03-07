@@ -27,7 +27,6 @@ from typing import Any
 import requests
 
 import general_superstaq as gss
-from general_superstaq.testing import TARGET_LIST
 
 
 class _SuperstaqClient:
@@ -361,10 +360,6 @@ class _SuperstaqClient:
             A dictionary from the POST request.
         """
         gss.validation.validate_target(target)
-        if not (target in TARGET_LIST and TARGET_LIST[target]["supports_submit_qubo"]):
-            raise gss.SuperstaqException(
-                f"The provided target, {target}, does not support QUBO submission."
-            )
         gss.validation.validate_integer_param(repetitions)
         gss.validation.validate_integer_param(max_solutions)
 

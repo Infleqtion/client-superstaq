@@ -29,7 +29,7 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
         retired=False,
     )
     assert ibmq_backend_info in result
-    assert provider.get_backend("ibmq_qasm_simulator").name == "ibmq_qasm_simulator"
+    assert provider.get_backend("ibmq_qasm_simulator").name() == "ibmq_qasm_simulator"
 
 
 def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
