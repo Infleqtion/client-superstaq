@@ -10,7 +10,6 @@ from general_superstaq.superstaq_exceptions import (
 from general_superstaq.typing import Target
 
 from . import (
-    qubo,
     serialization,
     service,
     superstaq_client,
@@ -28,7 +27,6 @@ __all__ = [
     "SuperstaqUnsuccessfulJobException",
     "SuperstaqServerException",
     "SuperstaqWarning",
-    "qubo",
     "serialization",
     "service",
     "superstaq_client",

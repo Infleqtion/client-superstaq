@@ -164,7 +164,7 @@ class Service:
         repetitions: int = 1000,
         method: str | None = None,
         max_solutions: int = 1000,
-    ) -> dict[str, str]:
+    ) -> list[dict[tuple[int, ...], int]]:
         """Solves a submitted QUBO problem via annealing.
 
         This method returns any number of specified dictionaries that seek the minimum of
@@ -186,7 +186,8 @@ class Service:
         Returns:
             A dictionary containing the output solutions.
         """
-        return self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
+        result_dict = self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
+        return gss.serialization.deserialize(result_dict["solution"])
 
     def aqt_upload_configs(self, pulses: Any, variables: Any) -> str:
         """Uploads configs for AQT.

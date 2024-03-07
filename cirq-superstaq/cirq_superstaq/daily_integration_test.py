@@ -332,9 +332,8 @@ def test_submit_qubo(service: css.Service) -> None:
         (0, 1): 2,
         (1, 2): 2,
     }
-    serialized_result = service.submit_qubo(
+    result = service.submit_qubo(
         test_qubo, target="toshiba_bifurcation_simulator", method="dry-run"
     )
-    result = gss.qubo.read_json_qubo_result(serialized_result)
     best_result = result[0]
     assert best_result == {0: 1, 1: 0, 2: 1}
