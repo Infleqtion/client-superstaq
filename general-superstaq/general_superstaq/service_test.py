@@ -76,7 +76,7 @@ def test_update_user_role(
 
 
 @mock.patch(
-    "requests.post",
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value={"solution": gss.serialization.serialize([{0: 1, 1: 1}] * 10)},
 )
 def test_submit_qubo(
