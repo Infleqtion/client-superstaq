@@ -76,7 +76,7 @@ def test_update_user_role(
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
+    "requests.post",
     return_value={"solution": gss.serialization.serialize([{0: 1, 1: 1}] * 10)},
 )
 def test_submit_qubo(
@@ -87,7 +87,7 @@ def test_submit_qubo(
         (1,): 1.0,
         (0, 1): -2.0,
     }
-    target = "toshiba_bifurcation_simulator"
+    target = "ss_unconstrained_simulator"
     repetitions = 10
 
     service = gss.service.Service(remote_host="http://example.com", api_key="key")

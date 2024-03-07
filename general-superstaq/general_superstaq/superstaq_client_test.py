@@ -652,17 +652,15 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
         ("b", 0): -5,
         (): -3.0,
     }
-    target = "toshiba_bifurcation_simulator"
+    target = "ss_unconstrained_simulator"
     repetitions = 10
-    client.submit_qubo(
-        example_qubo, target, repetitions=repetitions, method="dry-run", max_solutions=1
-    )
+    client.submit_qubo(example_qubo, target, repetitions=repetitions, max_solutions=1)
 
     expected_json = {
         "qubo": [(("a",), 2.0), (("a", "b"), 1.0), (("b", 0), -5), ((), -3.0)],
         "target": target,
         "shots": repetitions,
-        "method": "dry-run",
+        "method": None,
         "max_solutions": 1,
     }
 

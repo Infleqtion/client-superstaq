@@ -162,8 +162,8 @@ class Service:
     def submit_qubo(
         self,
         qubo: Mapping[tuple[TQuboKey, ...], float],
-        target: str,
-        repetitions: int = 1000,
+        target: str = "ss_unconstrained_simulator",
+        repetitions: int = 10,
         method: str | None = None,
         max_solutions: int = 1000,
     ) -> list[dict[TQuboKey, int]]:
