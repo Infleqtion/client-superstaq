@@ -294,7 +294,7 @@ def test_qscout_compile(
 
 
 def test_invalid_target_qscout_compile(fake_superstaq_provider: MockSuperstaqProvider) -> None:
-    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid Sandia target."):
+    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid QSCOUT target."):
         fake_superstaq_provider.qscout_compile(qiskit.QuantumCircuit(), target="ss_example_qpu")
 
 

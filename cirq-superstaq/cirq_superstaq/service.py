@@ -562,7 +562,7 @@ class Service(gss.service.Service):
     def qscout_compile(
         self,
         circuits: cirq.Circuit | Sequence[cirq.Circuit],
-        target: str = "sandia_qscout_qpu",
+        target: str = "qscout_peregrine_qpu",
         *,
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
@@ -608,11 +608,11 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If `base_entangling_gate` is not a valid gate option.
-            ValueError: If `target` is not a valid Sandia target.
+            ValueError: If `target` is not a valid QSCOUT target.
         """
         target = self._resolve_target(target)
-        if not target.startswith("sandia_"):
-            raise ValueError(f"{target!r} is not a valid Sandia target.")
+        if not target.startswith("qscout_"):
+            raise ValueError(f"{target!r} is not a valid QSCOUT target.")
 
         base_entangling_gate = base_entangling_gate.lower()
         if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
@@ -761,7 +761,7 @@ class Service(gss.service.Service):
 
         if target.startswith("aqt_"):
             return self.aqt_compile(circuits, **kwargs)
-        elif target.startswith("sandia_"):
+        elif target.startswith("qscout_"):
             return self.qscout_compile(circuits, **kwargs)
 
         request_json = self._get_compile_request_json(circuits, target, **kwargs)
