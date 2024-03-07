@@ -97,7 +97,7 @@ def test_submit_qubo(
         (1,): 1.0,
         (0, 1): -2.0,
     }
-    target = "toshiba_bifurcation_simulator"
+    target = "ss_unconstrained_simulator"
     repetitions = 10
 
     service = gss.service.Service(remote_host="http://example.com", api_key="key")

@@ -333,7 +333,7 @@ def test_submit_qubo(service: css.Service) -> None:
         (1, 2): 2,
     }
     serialized_result = service.submit_qubo(
-        test_qubo, target="ss_unconstrained_simulator", method="dry-run", repetitions=10
+        test_qubo, target="ss_unconstrained_simulator", repetitions=10
     )
     result = gss.qubo.read_json_qubo_result(serialized_result)
     assert len(result) == 10
