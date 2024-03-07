@@ -22,11 +22,13 @@ import time
 import urllib
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any
+from typing import Any, TypeVar
 
 import requests
 
 import general_superstaq as gss
+
+TQuboKey = TypeVar("TQuboKey")
 
 
 class _SuperstaqClient:
@@ -334,7 +336,7 @@ class _SuperstaqClient:
 
     def submit_qubo(
         self,
-        qubo: dict[tuple[()] | tuple[str | int] | tuple[str | int, str | int], int | float],
+        qubo: Mapping[tuple[TQuboKey, ...], float],
         target: str,
         repetitions: int = 1000,
         method: str | None = None,

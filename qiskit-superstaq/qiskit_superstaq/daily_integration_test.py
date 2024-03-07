@@ -281,7 +281,7 @@ def test_submit_to_hilbert_qubit_sorting(provider: qss.SuperstaqProvider) -> Non
 
 
 def test_submit_qubo(provider: qss.SuperstaqProvider) -> None:
-    test_qubo: dict[tuple[()] | tuple[str | int] | tuple[str | int, str | int], int | float] = {
+    test_qubo = {
         (0,): -1,
         (1,): -1,
         (2,): -1,

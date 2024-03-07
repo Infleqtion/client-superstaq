@@ -82,7 +82,7 @@ def test_update_user_role(
 def test_submit_qubo(
     mock_post_request: mock.MagicMock,
 ) -> None:
-    example_qubo: dict[tuple[int, ...], float] = {
+    example_qubo = {
         (0,): 1.0,
         (1,): 1.0,
         (0, 1): -2.0,
