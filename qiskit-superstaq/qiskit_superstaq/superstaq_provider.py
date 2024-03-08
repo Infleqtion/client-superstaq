@@ -134,7 +134,6 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         """Lists the backends available from this provider.
 
         Args:
-            Args:
             simulator: Optional flag to restrict the list of targets to (non-) simulators.
             supports_submit: Optional boolean flag to only return targets that (don't) allow
                 circuit submissions.
