@@ -225,7 +225,7 @@ TARGET_LIST = {
         "available": False,
         "retired": False,
     },
-    "sandia_qscout_qpu": {
+    "qscout_peregrine_qpu": {
         "supports_submit": False,
         "supports_submit_qubo": False,
         "supports_compile": True,
@@ -234,15 +234,8 @@ TARGET_LIST = {
     },
     "ss_unconstrained_simulator": {
         "supports_submit": True,
-        "supports_submit_qubo": False,
-        "supports_compile": True,
-        "available": True,
-        "retired": False,
-    },
-    "toshiba_bifurcation_simulator": {
-        "supports_submit": False,
         "supports_submit_qubo": True,
-        "supports_compile": False,
+        "supports_compile": True,
         "available": True,
         "retired": False,
     },

@@ -329,7 +329,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
     def qscout_compile(
         self,
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
-        target: str = "sandia_qscout_qpu",
+        target: str = "qscout_peregrine_qpu",
         *,
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
@@ -374,11 +374,11 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
 
         Raises:
-            ValueError: If `target` is not a valid Sandia target.
+            ValueError: If `target` is not a valid QSCOUT target.
             ValueError: If `base_entangling_gate` is not a valid gate option.
         """
-        if not target.startswith("sandia_"):
-            raise ValueError(f"{target!r} is not a valid Sandia target.")
+        if not target.startswith("qscout_"):
+            raise ValueError(f"{target!r} is not a valid QSCOUT target.")
 
         return self.get_backend(target).qscout_compile(
             circuits,

@@ -646,23 +646,21 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
         api_key="to_my_heart",
     )
 
-    example_qubo: dict[tuple[()] | tuple[str | int] | tuple[str | int, str | int], int | float] = {
+    example_qubo = {
         ("a",): 2.0,
         ("a", "b"): 1.0,
         ("b", 0): -5,
         (): -3.0,
     }
-    target = "toshiba_bifurcation_simulator"
+    target = "ss_unconstrained_simulator"
     repetitions = 10
-    client.submit_qubo(
-        example_qubo, target, repetitions=repetitions, method="dry-run", max_solutions=1
-    )
+    client.submit_qubo(example_qubo, target, repetitions=repetitions, max_solutions=1)
 
     expected_json = {
         "qubo": [(("a",), 2.0), (("a", "b"), 1.0), (("b", 0), -5), ((), -3.0)],
         "target": target,
         "shots": repetitions,
-        "method": "dry-run",
+        "method": None,
         "max_solutions": 1,
     }
 
@@ -672,15 +670,6 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
         json=expected_json,
         verify=False,
     )
-
-    with pytest.raises(gss.SuperstaqException, match="not support QUBO submission."):
-        client.submit_qubo(
-            example_qubo,
-            target="cq_hilbert_qpu",
-            repetitions=repetitions,
-            method="dry-run",
-            max_solutions=1,
-        )
 
 
 @mock.patch("requests.post")

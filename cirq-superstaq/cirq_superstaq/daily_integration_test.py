@@ -325,16 +325,13 @@ def test_submit_to_hilbert_qubit_sorting(service: css.Service) -> None:
 
 
 def test_submit_qubo(service: css.Service) -> None:
-    test_qubo: dict[tuple[()] | tuple[str | int] | tuple[str | int, str | int], int | float] = {
+    test_qubo = {
         (0,): -1,
         (1,): -1,
         (2,): -1,
         (0, 1): 2,
         (1, 2): 2,
     }
-    serialized_result = service.submit_qubo(
-        test_qubo, target="toshiba_bifurcation_simulator", method="dry-run"
-    )
-    result = gss.qubo.read_json_qubo_result(serialized_result)
-    best_result = result[0]
-    assert best_result == {0: 1, 1: 0, 2: 1}
+    result = service.submit_qubo(test_qubo, target="ss_unconstrained_simulator", repetitions=10)
+    assert len(result) == 10
+    assert {0: 1, 1: 0, 2: 1} in result
