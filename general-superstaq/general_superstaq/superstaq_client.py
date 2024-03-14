@@ -22,12 +22,13 @@ import time
 import urllib
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any
+from typing import Any, TypeVar
 
 import requests
 
 import general_superstaq as gss
-from general_superstaq.testing import TARGET_LIST
+
+TQuboKey = TypeVar("TQuboKey")
 
 
 class _SuperstaqClient:
@@ -335,9 +336,9 @@ class _SuperstaqClient:
 
     def submit_qubo(
         self,
-        qubo: dict[tuple[()] | tuple[str | int] | tuple[str | int, str | int], int | float],
+        qubo: Mapping[tuple[TQuboKey, ...], float],
         target: str,
-        repetitions: int = 1000,
+        repetitions: int,
         method: str | None = None,
         max_solutions: int | None = 1000,
     ) -> dict[str, str]:
@@ -361,10 +362,7 @@ class _SuperstaqClient:
             A dictionary from the POST request.
         """
         gss.validation.validate_target(target)
-        if not (target in TARGET_LIST and TARGET_LIST[target]["supports_submit_qubo"]):
-            raise gss.SuperstaqException(
-                f"The provided target, {target}, does not support QUBO submission."
-            )
+        gss.validation.validate_qubo(qubo)
         gss.validation.validate_integer_param(repetitions)
         gss.validation.validate_integer_param(max_solutions)
 

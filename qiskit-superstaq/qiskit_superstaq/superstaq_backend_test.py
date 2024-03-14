@@ -175,7 +175,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     with pytest.raises(ValueError, match="'aqt_keysight_qpu' is not a valid IBMQ target."):
         backend.ibmq_compile([qc])
 
-    with pytest.raises(ValueError, match="'aqt_keysight_qpu' is not a valid Sandia target."):
+    with pytest.raises(ValueError, match="'aqt_keysight_qpu' is not a valid QSCOUT target."):
         backend.qscout_compile([qc])
 
     with pytest.raises(ValueError, match="'aqt_keysight_qpu' is not a valid CQ target."):
@@ -252,7 +252,7 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
 def test_qscout_compile(
     mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
-    backend = fake_superstaq_provider.get_backend("sandia_qscout_qpu")
+    backend = fake_superstaq_provider.get_backend("qscout_peregrine_qpu")
 
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)

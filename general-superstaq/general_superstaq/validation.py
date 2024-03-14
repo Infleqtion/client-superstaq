@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import numbers
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 
 def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
@@ -45,7 +46,7 @@ def validate_target(target: str) -> None:
         "oxford",
         "quera",
         "rigetti",
-        "sandia",
+        "qscout",
         "ss",
         "toshiba",
     ]
@@ -136,3 +137,26 @@ def validate_noise_type(noise: dict[str, object], n_qubits: int) -> None:
                 f"{params} must be of the form (p_x, p_y, p_z) such that p_x + p_y + p_z <= 1 "
                 f'for "asymmetric_depolarize".'
             )
+
+
+def validate_qubo(qubo: object) -> None:
+    """Validates that the input can be converted into a valid QUBO.
+
+    Args:
+        qubo: The input value to validate.
+
+    Raises:
+        ValueError: If the provided object cannot be converted into a valid QUBO.
+    """
+    if not isinstance(qubo, Mapping):
+        raise ValueError("QUBOs must be provided as dict-like objects.")
+
+    for key, val in qubo.items():
+        if not isinstance(key, Sequence) or isinstance(key, str):
+            raise ValueError(f"{key!r} is not a valid key for a QUBO.")
+
+        if len(key) > 2:
+            raise ValueError(f"QUBOs must be quadratic, but key {key!r} has length {len(key)}.")
+
+        if not isinstance(val, numbers.Real):
+            raise ValueError("QUBO values must be real numbers.")

@@ -168,7 +168,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         elif self.name().startswith("aqt_"):
             return self.aqt_compile(circuits, **kwargs)
 
-        elif self.name().startswith("sandia_"):
+        elif self.name().startswith("qscout_"):
             return self.qscout_compile(circuits, **kwargs)
 
         elif self.name().startswith("cq_"):
@@ -340,11 +340,11 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
 
         Raises:
-            ValueError: If this is not a Sandia backend.
+            ValueError: If this is not a QSCOUT backend.
             ValueError: If `base_entangling_gate` is not a valid entangling basis.
         """
-        if not self.name().startswith("sandia_"):
-            raise ValueError(f"{self.name()!r} is not a valid Sandia target.")
+        if not self.name().startswith("qscout_"):
+            raise ValueError(f"{self.name()!r} is not a valid QSCOUT target.")
 
         base_entangling_gate = base_entangling_gate.lower()
         if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):

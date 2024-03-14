@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import numbers
 import os
-from collections.abc import Sequence
-from typing import Any
+from collections.abc import Mapping, Sequence
+from typing import Any, TypeVar
 
 import general_superstaq as gss
+
+TQuboKey = TypeVar("TQuboKey")
 
 
 class Service:
@@ -159,12 +161,12 @@ class Service:
 
     def submit_qubo(
         self,
-        qubo: dict[tuple[()] | tuple[str | int] | tuple[str | int, str | int], int | float],
-        target: str,
-        repetitions: int = 1000,
+        qubo: Mapping[tuple[TQuboKey, ...], float],
+        target: str = "ss_unconstrained_simulator",
+        repetitions: int = 10,
         method: str | None = None,
         max_solutions: int = 1000,
-    ) -> dict[str, str]:
+    ) -> list[dict[TQuboKey, int]]:
         """Solves a submitted QUBO problem via annealing.
 
         This method returns any number of specified dictionaries that seek the minimum of
@@ -186,7 +188,8 @@ class Service:
         Returns:
             A dictionary containing the output solutions.
         """
-        return self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
+        result_dict = self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
+        return gss.serialization.deserialize(result_dict["solution"])
 
     def aqt_upload_configs(self, pulses: Any, variables: Any) -> str:
         """Uploads configs for AQT.

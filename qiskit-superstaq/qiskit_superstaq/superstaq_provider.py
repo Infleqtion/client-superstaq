@@ -78,7 +78,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             api_version: The version of the API.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
             verbose: Whether to print to stdio and stderr on retriable errors.
-            cq_token: Token from CQ cloud.This is required to submit circuits to CQ hardware.
+            cq_token: Token from CQ cloud. This is required to submit circuits to CQ hardware.
             ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
                 to IBM hardware, or to access non-public IBM devices you may have access to.
             ibmq_instance: An optional instance to use when running IBM jobs.
@@ -125,6 +125,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         self,
         simulator: bool | None = None,
         supports_submit: bool | None = None,
+        supports_submit_qubo: bool | None = None,
         supports_compile: bool | None = None,
         available: bool | None = None,
         retired: bool | None = None,
@@ -136,6 +137,8 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             simulator: Optional flag to restrict the list of targets to (non-) simulators.
             supports_submit: Optional boolean flag to only return targets that (don't) allow
                 circuit submissions.
+            supports_submit_qubo: Optional boolean flag to only return targets that (don't)
+                allow qubo submissions.
             supports_compile: Optional boolean flag to return targets that (don't) support
                 circuit compilation.
             available: Optional boolean flag to only return targets that are (not) available
@@ -149,7 +152,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         filters = dict(
             simulator=simulator,
             supports_submit=supports_submit,
-            supports_submit_qubo=False,
+            supports_submit_qubo=supports_submit_qubo,
             supports_compile=supports_compile,
             available=available,
             retired=retired,
@@ -329,7 +332,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
     def qscout_compile(
         self,
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
-        target: str = "sandia_qscout_qpu",
+        target: str = "qscout_peregrine_qpu",
         *,
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
@@ -364,7 +367,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             error_rates: Optional dictionary assigning relative error rates to pairs of physical
                 qubits, in the form `{<qubit_indices>: <error_rate>, ...}` where `<qubit_indices>`
                 is a tuple physical qubit indices (ints) and `<error_rate>` is a relative error rate
-                for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`) . If
+                for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`). If
                 provided, Superstaq will attempt to map the circuit to minimize the total error on
                 each qubit.
             kwargs: Other desired qscout_compile options.
@@ -374,11 +377,11 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
             `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
 
         Raises:
-            ValueError: If `target` is not a valid Sandia target.
+            ValueError: If `target` is not a valid QSCOUT target.
             ValueError: If `base_entangling_gate` is not a valid gate option.
         """
-        if not target.startswith("sandia_"):
-            raise ValueError(f"{target!r} is not a valid Sandia target.")
+        if not target.startswith("qscout_"):
+            raise ValueError(f"{target!r} is not a valid QSCOUT target.")
 
         return self.get_backend(target).qscout_compile(
             circuits,
@@ -460,7 +463,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
         shots: int,
         **kwargs: Any,
     ) -> list[str]:
-        """Executes the circuits neccessary for the DFE protocol.
+        """Executes the circuits necessary for the DFE protocol.
 
         The circuits used to prepare the desired states should not contain final measurements, but
         can contain mid-circuit measurements (as long as the intended target supports them). For
@@ -540,7 +543,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
 
         Raises:
             ValueError: If `ids` is not of size two.
-            SuperstaqServerException: If there was an error accesing the API or the jobs submitted
+            SuperstaqServerException: If there was an error accessing the API or the jobs submitted
                 through `submit_dfe` have not finished running.
         """
         return self._client.process_dfe(ids)

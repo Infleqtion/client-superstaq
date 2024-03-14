@@ -1,1 +1,1 @@
-checks-superstaq~=0.5.11
+checks-superstaq~=0.5.12
