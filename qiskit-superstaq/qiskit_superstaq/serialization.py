@@ -253,9 +253,7 @@ def _prepare_circuit(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:
     return new_circuit
 
 
-def _prepare_gate(
-    gate: qiskit.circuit.Instruction, force_wrapper: bool = False
-) -> qiskit.circuit.Instruction:
+def _prepare_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instruction:
     # Check if this is a gate QPY already handles
     if _is_qiskit_gate(gate):
         return gate
