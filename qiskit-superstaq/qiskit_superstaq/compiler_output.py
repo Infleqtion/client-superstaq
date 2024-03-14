@@ -62,7 +62,7 @@ def measured_qubit_indices(circuit: qiskit.QuantumCircuit) -> list[int]:
 def classical_bit_mapping(circuit: qiskit.QuantumCircuit) -> dict[int, int]:
     """Returns the index of the (final) measured qubit associated with each classical bit.
 
-    If more than one measurements are assigned to the same classical bit, only the final measurement
+    If more than one measurement is assigned to the same classical bit, only the final measurement
     is considered.
 
     Args:
