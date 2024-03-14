@@ -65,14 +65,14 @@ def test_measured_clbit_indices() -> None:
     circuit.measure([6, 5], [0, 1])
     circuit.measure([1, 3], [0, 1])
     circuit.measure([5, 1], [0, 1])
-    assert qss.measured_clbit_indices(circuit) == [0, 1]
+    assert qss.classical_bit_mapping(circuit) == {0: 5, 1: 1}
 
     # Test len(qiskit.ClassicalRegister()) > len(qiskit.QuantumRegister())
     circuit = qiskit.QuantumCircuit(3, 5)
     circuit.h(1)
     circuit.x(2)
     circuit.measure([0, 1, 2], [2, 4, 1])
-    assert qss.measured_clbit_indices(circuit) == [1, 2, 4]
+    assert qss.classical_bit_mapping(circuit) == {2: 0, 4: 1, 1: 2}
 
     # Test len(qiskit.ClassicalRegister()) = len(qiskit.QuantumRegister())
     circuit = qiskit.QuantumCircuit(9, 9)
@@ -81,9 +81,10 @@ def test_measured_clbit_indices() -> None:
     circuit.s(1)
     circuit.cx(1, 0)
     circuit.measure([0, 1, 4], [0, 1, 2])
-    assert qss.measured_clbit_indices(circuit) == [0, 1, 2]
-    circuit.measure([0, 1, 4, 2, 3, 5, 6, 7, 8], [0, 1, 2, 8, 7, 6, 5, 3, 4])
-    assert qss.measured_clbit_indices(circuit) == [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    assert qss.classical_bit_mapping(circuit) == {0: 0, 1: 1, 2: 4}
+
+    circuit.measure([0, 1, 4, 2, 3, 5, 6, 7], [0, 1, 2, 8, 7, 6, 5, 3])
+    assert qss.classical_bit_mapping(circuit) == {0: 0, 1: 1, 2: 4, 8: 2, 7: 3, 6: 5, 5: 6, 3: 7}
 
     # Custom instruction with measurements test
     circuit_instr = qiskit.QuantumCircuit(2, 2)
@@ -92,10 +93,13 @@ def test_measured_clbit_indices() -> None:
     circuit_instr.measure([0, 1], [0, 1])
     custom_instruction = circuit_instr.to_instruction()
 
-    qc = qiskit.QuantumCircuit(2, 2)
-    qc.append(custom_instruction, [0, 1], [0, 1])
+    circuit = qiskit.QuantumCircuit(4, 4)
+    circuit.append(custom_instruction, [1, 2], [2, 3])
 
-    assert qss.measured_clbit_indices(qc) == [0, 1]
+    assert qss.classical_bit_mapping(circuit) == {2: 1, 3: 2}
+
+    circuit.append(custom_instruction, [2, 1], [2, 3])
+    assert qss.classical_bit_mapping(circuit) == {2: 2, 3: 1}
 
 
 def test_compiler_output_repr() -> None:

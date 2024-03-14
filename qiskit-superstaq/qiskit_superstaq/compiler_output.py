@@ -59,28 +59,33 @@ def measured_qubit_indices(circuit: qiskit.QuantumCircuit) -> list[int]:
     return sorted(circuit.find_bit(qubit).index for qubit in measured_qubits)
 
 
-def measured_clbit_indices(circuit: qiskit.QuantumCircuit) -> list[int]:
-    """Returns the indices of the classical bits in the input quantum circuit.
+def classical_bit_mapping(circuit: qiskit.QuantumCircuit) -> dict[int, int]:
+    """Returns the index of the (final) measured qubit associated with each classical bit.
+
+    If more than one measurement is assigned to the same classical bit, only the final measurement
+    is considered.
 
     Args:
         circuit: A `qiskit.QuantumCircuit` circuit.
 
     Returns:
-        A list containing the indices of the classical bits.
+        A dictionary mapping classical bit indices to the indices of the measured qubits.
     """
-    measured_clbits: set[qiskit.circuit.Clbit] = set()
 
-    for items in circuit:
-        inst = items[0]
-        clbits = items[2]
-        if isinstance(inst, qiskit.circuit.Measure):
-            measured_clbits.update(clbits)
+    clbit_map: dict[qiskit.circuit.Clbit, qiskit.circuit.Qubit] = {}
 
-        # Recurse into definition
-        elif clbits and inst.definition is not None:
-            measured_clbits.update(clbits[i] for i in measured_clbit_indices(inst.definition))
+    for inst in circuit:
+        if isinstance(inst.operation, qiskit.circuit.Measure):
+            clbit_map[inst.clbits[0]] = inst.qubits[0]
 
-    return sorted(circuit.find_bit(bit).index for bit in measured_clbits)
+        # Recurse into definition if it involves classical bits
+        elif inst.clbits and inst.operation.definition is not None:
+            inst_clbit_map = classical_bit_mapping(inst.operation.definition)
+            clbit_map.update(
+                {inst.clbits[ci]: inst.qubits[qi] for ci, qi in inst_clbit_map.items()}
+            )
+
+    return {circuit.find_bit(c).index: circuit.find_bit(q).index for c, q in clbit_map.items()}
 
 
 class CompilerOutput:

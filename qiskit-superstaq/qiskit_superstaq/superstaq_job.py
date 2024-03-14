@@ -90,7 +90,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
             the job.
         """
         input_circuit = self.input_circuits(index)
-        return qss.compiler_output.measured_clbit_indices(input_circuit)
+        return sorted(qss.classical_bit_mapping(input_circuit))
 
     def _get_num_clbits(self, index: int) -> int:
         """Helper to get number of classical bits in the classical register of the input circuit.
