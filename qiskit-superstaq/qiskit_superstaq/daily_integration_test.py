@@ -1,5 +1,6 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 """Integration checks that run daily (via Github action) between client and prod server."""
+
 from __future__ import annotations
 
 import os
@@ -49,6 +50,9 @@ def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
     assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
 
 
+@pytest.mark.skip(
+    reason="Consistently failing due to https://github.com/Qiskit/qiskit-ibm-runtime/issues/1518."
+)
 def test_ibmq_compile_with_token() -> None:
     provider = qss.SuperstaqProvider(ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"])
     qc = qiskit.QuantumCircuit(4)
