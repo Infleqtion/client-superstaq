@@ -25,6 +25,8 @@ def test_compute_parallelism() -> None:
     feature = supermarq.features.compute_parallelism(CIRCUIT)
     assert feature >= 0 and feature <= 1
 
+    assert supermarq.features.compute_parallelism(cirq.Circuit()) == 0
+
 
 def test_compute_measurement() -> None:
     feature = supermarq.features.compute_measurement(CIRCUIT)
