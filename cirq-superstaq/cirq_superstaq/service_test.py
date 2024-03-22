@@ -245,7 +245,6 @@ def test_service_create_job() -> None:
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits(cirq.Circuit()),
         "state_jp": gss.serialization.serialize({}),
-        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
         "initial_logical_to_physicals": cirq.to_json([[]]),
         "final_logical_to_physicals": cirq.to_json([[]]),
     },
@@ -268,7 +267,7 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
         assert output.circuit == cirq.Circuit()
         assert output.initial_logical_to_physical == {}
         assert output.final_logical_to_physical == {}
-        assert not hasattr(output, "circuits") and not hasattr(output, "pulse_lists")
+        assert not hasattr(output, "circuits")
         assert not hasattr(output, "initial_logical_to_physicals")
         assert not hasattr(output, "final_logical_to_physicals")
 
@@ -300,7 +299,7 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
         },
     )
     assert out.circuit == cirq.Circuit()
-    assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
+    assert not hasattr(out, "circuits")
 
     with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid AQT target."):
         service.aqt_compile(cirq.Circuit(), target="ss_example_qpu")
@@ -311,7 +310,6 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit(), cirq.Circuit()]),
         "state_jp": gss.serialization.serialize({}),
-        "pulse_lists_jp": gss.serialization.serialize([[[]], [[]]]),
         "initial_logical_to_physicals": cirq.to_json([[], []]),
         "final_logical_to_physicals": cirq.to_json([[], []]),
     },
@@ -323,7 +321,7 @@ def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None
     assert out.circuits == [cirq.Circuit(), cirq.Circuit()]
     assert out.initial_logical_to_physicals == [{}, {}]
     assert out.final_logical_to_physicals == [{}, {}]
-    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    assert not hasattr(out, "circuit")
     assert not hasattr(out, "initial_logical_to_physical")
     assert not hasattr(out, "final_logical_to_physical")
 
@@ -333,7 +331,6 @@ def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit()]),
         "state_jp": gss.serialization.serialize({}),
-        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
         "initial_logical_to_physicals": cirq.to_json([[]]),
         "final_logical_to_physicals": cirq.to_json([[]]),
     },
@@ -346,7 +343,6 @@ def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
     assert out.initial_logical_to_physicals == [{}]
     assert out.final_logical_to_physicals == [{}]
     assert not hasattr(out, "circuit")
-    assert not hasattr(out, "pulse_list")
     assert not hasattr(out, "initial_logical_to_physical")
     assert not hasattr(out, "final_logical_to_physical")
 
