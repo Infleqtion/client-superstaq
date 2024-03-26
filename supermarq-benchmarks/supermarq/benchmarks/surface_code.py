@@ -147,22 +147,3 @@ class SurfaceCode(Benchmark):
     def score(self, counts: dict[str, float]) -> float:
         """Benchmark score."""
         return NotImplemented
-
-
-code = SurfaceCode(3, 3, xzzx=False)
-
-circuit = code.prepare_logical_state()
-state = circuit.final_state_vector()
-
-for pauli, checks in [(cirq.X, code.code.matrix_x), (cirq.Z, code.code.matrix_z)]:
-    checks = checks.reshape((-1, code.rows, code.cols))
-    for idx, check in enumerate(checks):
-        targets = [cirq.GridQubit(row, col) for row, col in zip(*np.where(check))]
-        pauli_ops = {qubit: pauli for qubit in targets}
-        check_circuit = circuit + cirq.PauliString(pauli_ops)
-
-        check_state = check_circuit.final_state_vector()
-
-        print(pauli, idx)
-        print(check)
-        assert np.allclose(state, check_state)
