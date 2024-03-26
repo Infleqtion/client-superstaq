@@ -37,13 +37,6 @@ class SurfaceCode(Benchmark):
     - Tiles with a cross (×) denote X-type parity checks (12 total).
     - Tiles with a dot (⋅) denote Z-type parity checks (12 total).
 
-    All are indexed by integer (row, column) from the top left corner of the patch above, such that:
-    - The top left data qubit is at (1, 1).
-    - The next data qubit below (1, 1) is at (3, 1).
-    - The leftmost X-type ancilla in the top row is at (0, 4).
-    - The upper left Z-type ancilla is at (2, 0).
-    Altogether, data qubits are at on odd rows and columns, and ancilla at even rows and columns.
-
     In the XZZX variant of the surface code, we hadamard-transform every other data qubit.
     """
 
