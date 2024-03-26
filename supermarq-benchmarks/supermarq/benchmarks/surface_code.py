@@ -95,6 +95,11 @@ class SurfaceCode(Benchmark):
         circuit += hadamards
         return circuit
 
+    @classmethod
+    def get_qubit_parity(cls, qubit: cirq.GridQubit) -> bool:
+        """Should this data qubit be hadamard-transformed in the XZZX code?"""
+        return bool((qubit.row + qubit.col) % 2)
+
     def get_ancilla_qubits(
         self, pauli: Literal[cirq.X, cirq.Z] | None = None
     ) -> list[cirq.NamedQubit]:
@@ -104,11 +109,6 @@ class SurfaceCode(Benchmark):
         num_checks = self.code.num_checks_x if pauli == cirq.X else self.code.num_checks_z
         return cirq.NamedQubit.range(num_checks, prefix=str(pauli))
 
-    @classmethod
-    def get_qubit_parity(cls, qubit: cirq.GridQubit) -> bool:
-        """Should this data qubit be hadamard-transformed in the XZZX code?"""
-        return bool((qubit.row + qubit.col) % 2)
-
     def prepare_logical_state(self) -> cirq.Circuit:
         """Prepare a logical |0> state of the rotated surface code.
 
@@ -116,30 +116,24 @@ class SurfaceCode(Benchmark):
         """
         circuit = cirq.Circuit()
 
-        # prepare a GHZ state on the first column
+        # prepare a GHZ state on the first row
         circuit += cirq.H(cirq.GridQubit(0, 0))
-        for row in range(self.rows - 1):
-            circuit += cirq.CX(cirq.GridQubit(row, 0), cirq.GridQubit(row + 1, 0))
+        for col in range(self.cols - 1):
+            circuit += cirq.CX(cirq.GridQubit(0, col), cirq.GridQubit(0, col + 1))
 
-        # extend the GHZ state column by column
-        for col in range(1, self.cols):
-            for row in range(col % 2, self.rows, 2):
+        # extend the GHZ state row by row
+        for row in range(1, self.rows):
+            for col in range(row % 2, self.cols, 2):
                 qubit = cirq.GridQubit(row, col)
                 circuit += cirq.H(qubit)
-                circuit += cirq.CX(qubit, qubit - (0, 1))
-                if row > 0:
-                    circuit += cirq.CX(qubit, qubit - (1, 0))
+                circuit += cirq.CX(qubit, qubit - (1, 0))
+                if col > 0:
+                    circuit += cirq.CX(qubit, qubit - (0, 1))
                     circuit += cirq.CX(qubit, qubit - (1, 1))
-            if (col % 2) == (self.rows % 2):
-                qubit = cirq.GridQubit(self.rows - 1, col)
+            if (row % 2) == (self.cols % 2):
+                qubit = cirq.GridQubit(row, self.cols - 1)
                 circuit += cirq.H(qubit)
-                circuit += cirq.CX(qubit, qubit - (0, 1))
-
-        qubit_map = {
-            qubit: cirq.GridQubit(qubit.col, qubit.row)
-            for qubit in cirq.GridQubit.rect(self.rows, self.cols)
-        }
-        circuit = circuit.transform_qubits(qubit_map)
+                circuit += cirq.CX(qubit, qubit - (1, 0))
 
         if self.xzzx:
             # hadamard transform every other data qubit
