@@ -1,5 +1,3 @@
-from typing import Dict
-
 import cirq
 
 from supermarq.benchmark import Benchmark
@@ -69,6 +67,6 @@ class BaconShorCode(Benchmark):
                 circuit += cirq.CX(cirq.GridQubit(row, col), cirq.GridQubit(row, col + 1))
         return circuit
 
-    def score(self, counts: Dict[str, float]) -> float:
+    def score(self, counts: dict[str, float]) -> float:
         """Benchmark score."""
         return NotImplemented

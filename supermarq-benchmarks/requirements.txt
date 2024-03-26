@@ -1,3 +1,4 @@
 cirq-superstaq~=0.5.14
 qiskit-superstaq~=0.5.14
 scikit-learn>=1.0
+qldpc==0.0.9
