@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import numbers
 import os
-from collections.abc import Sequence
-from typing import Any
-
-import qubovert as qv
+from collections.abc import Mapping, Sequence
+from typing import Any, TypeVar
 
 import general_superstaq as gss
+
+TQuboKey = TypeVar("TQuboKey")
 
 
 class Service:
@@ -161,30 +161,35 @@ class Service:
 
     def submit_qubo(
         self,
-        qubo: qv.QUBO,
-        target: str,
-        repetitions: int = 1000,
+        qubo: Mapping[tuple[TQuboKey, ...], float],
+        target: str = "ss_unconstrained_simulator",
+        repetitions: int = 10,
         method: str | None = None,
         max_solutions: int = 1000,
-    ) -> dict[str, str]:
+    ) -> list[dict[TQuboKey, int]]:
         """Solves a submitted QUBO problem via annealing.
 
         This method returns any number of specified dictionaries that seek the minimum of
         the energy landscape from the given objective function known as output solutions.
 
         Args:
-            qubo: A `qv.QUBO` object.
-            target: The target to submit the qubo.
+            qubo: A dictionary representing the QUBO object. The tuple keys represent the
+                boolean variables of the QUBO and the values represent the coefficients.
+                As an example, for a QUBO with integer coefficients = 2*a + a*b - 5*b*c - 3
+                (where a, b, and c are boolean variables), the corresponding dictionary format
+                would be {('a',): 2, ('a', 'b'): 1, ('b', 'c'): -5, (): -3}.
+            target: The target to submit the QUBO.
             repetitions: Number of times that the execution is repeated before stopping.
             method: The parameter specifying method of QUBO solving execution. Currently,
-                    will either be the "dry-run" option which runs on dwave's simulated annealer,
-                    or defaults to none and sends it directly to the specified target.
+                will either be the "dry-run" option which runs on dwave's simulated annealer,
+                or defaults to `None` and sends it directly to the specified target.
             max_solutions: A parameter that specifies the max number of output solutions.
 
         Returns:
             A dictionary containing the output solutions.
         """
-        return self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
+        result_dict = self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
+        return gss.serialization.deserialize(result_dict["solution"])
 
     def aqt_upload_configs(self, pulses: Any, variables: Any) -> str:
         """Uploads configs for AQT.

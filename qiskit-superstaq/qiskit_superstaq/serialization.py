@@ -11,7 +11,7 @@ import general_superstaq as gss
 import numpy as np
 import numpy.typing as npt
 import qiskit.qpy
-import qiskit_ibm_provider
+import qiskit_ibm_provider.qpy
 
 import qiskit_superstaq as qss
 
@@ -188,8 +188,6 @@ def _is_qiskit_gate(gate: qiskit.circuit.Instruction) -> bool:
         and (
             hasattr(qiskit.circuit.library, base_class.__name__)
             or hasattr(qiskit.circuit, base_class.__name__)
-            or hasattr(qiskit.extensions, base_class.__name__)
-            or hasattr(qiskit.extensions.quantum_initializer, base_class.__name__)
             or hasattr(qiskit.circuit.controlflow, base_class.__name__)
         )
     )

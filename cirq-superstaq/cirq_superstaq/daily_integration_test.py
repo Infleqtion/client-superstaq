@@ -1,5 +1,8 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 """Integration checks that run daily (via Github action) between client and prod server."""
+
+from __future__ import annotations
+
 import os
 
 import cirq
@@ -33,6 +36,9 @@ def test_ibmq_compile(service: css.Service) -> None:
     assert out.pulse_sequence is not None
 
 
+@pytest.mark.skip(
+    reason="Consistently failing due to https://github.com/Qiskit/qiskit-ibm-runtime/issues/1518."
+)
 def test_ibmq_compile_with_token() -> None:
     service = css.Service(ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"])
     qubits = cirq.LineQubit.range(4)
@@ -323,10 +329,13 @@ def test_submit_to_hilbert_qubit_sorting(service: css.Service) -> None:
 
 
 def test_submit_qubo(service: css.Service) -> None:
-    test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
-    serialized_result = service.submit_qubo(
-        test_qubo, target="toshiba_bifurcation_simulator", method="dry-run"
-    )
-    result = gss.qubo.read_json_qubo_result(serialized_result)
-    best_result = result[0]
-    assert best_result == {0: 1, 1: 0, 2: 1}
+    test_qubo = {
+        (0,): -1,
+        (1,): -1,
+        (2,): -1,
+        (0, 1): 2,
+        (1, 2): 2,
+    }
+    result = service.submit_qubo(test_qubo, target="ss_unconstrained_simulator", repetitions=10)
+    assert len(result) == 10
+    assert {0: 1, 1: 0, 2: 1} in result

@@ -71,7 +71,7 @@ def compute_liveness_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
 def compute_parallelism_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
     """Compute the parallelism of the given quantum circuit.
 
-    Parallelism feature = max(1 - depth / # of gates, 0).
+    Parallelism feature = max((((# of gates / depth) - 1) /(# of qubits - 1)), 0).
 
     Args:
         circuit: A quantum circuit.
@@ -81,7 +81,12 @@ def compute_parallelism_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
     """
     dag = qiskit.converters.circuit_to_dag(circuit)
     dag.remove_all_ops_named("barrier")
-    return max(1 - (circuit.depth() / len(dag.gate_nodes())), 0)
+    if circuit.num_qubits <= 1:
+        return 0
+    depth = dag.depth()
+    if depth == 0:
+        return 0
+    return max(((len(dag.gate_nodes()) / depth) - 1) / (circuit.num_qubits - 1), 0)
 
 
 def compute_measurement_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:

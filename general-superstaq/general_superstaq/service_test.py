@@ -1,11 +1,12 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
+from __future__ import annotations
+
 import os
 import secrets
 import tempfile
 from unittest import mock
 
 import pytest
-import qubovert as qv
 
 import general_superstaq as gss
 from general_superstaq.testing import RETURNED_TARGETS, TARGET_LIST
@@ -76,37 +77,24 @@ def test_update_user_role(
 
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaqClient.post_request",
-    return_value={
-        "qubo": [
-            {"keys": ["0"], "value": 1.0},
-            {"keys": ["1"], "value": 1.0},
-            {"keys": ["0", "1"], "value": -2.0},
-        ],
-        "target": "toshiba_bifurcation_simulator",
-        "shots": 10,
-        "method": "dry-run",
-        "max_solutions": 13,
-    },
+    return_value={"solution": gss.serialization.serialize([{0: 1, 1: 1}] * 10)},
 )
 def test_submit_qubo(
     mock_post_request: mock.MagicMock,
 ) -> None:
-    example_qubo = qv.QUBO({(0,): 1.0, (1,): 1.0, (0, 1): -2.0})
-    target = "toshiba_bifurcation_simulator"
+    example_qubo = {
+        (0,): 1.0,
+        (1,): 1.0,
+        (0, 1): -2.0,
+    }
+    target = "ss_unconstrained_simulator"
     repetitions = 10
 
     service = gss.service.Service(remote_host="http://example.com", api_key="key")
-    assert service.submit_qubo(example_qubo, target, repetitions=repetitions, method="dry-run") == {
-        "qubo": [
-            {"keys": ["0"], "value": 1.0},
-            {"keys": ["1"], "value": 1.0},
-            {"keys": ["0", "1"], "value": -2.0},
-        ],
-        "target": "toshiba_bifurcation_simulator",
-        "shots": 10,
-        "method": "dry-run",
-        "max_solutions": 13,
-    }
+    assert (
+        service.submit_qubo(example_qubo, target, repetitions=repetitions, method="dry-run")
+        == [{0: 1, 1: 1}] * 10
+    )
 
 
 @mock.patch(

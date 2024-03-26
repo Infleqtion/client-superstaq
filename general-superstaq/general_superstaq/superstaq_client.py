@@ -22,13 +22,13 @@ import time
 import urllib
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any
+from typing import Any, TypeVar
 
-import qubovert as qv
 import requests
 
 import general_superstaq as gss
-from general_superstaq.testing import TARGET_LIST
+
+TQuboKey = TypeVar("TQuboKey")
 
 
 class _SuperstaqClient:
@@ -336,9 +336,9 @@ class _SuperstaqClient:
 
     def submit_qubo(
         self,
-        qubo: qv.QUBO,
+        qubo: Mapping[tuple[TQuboKey, ...], float],
         target: str,
-        repetitions: int = 1000,
+        repetitions: int,
         method: str | None = None,
         max_solutions: int | None = 1000,
     ) -> dict[str, str]:
@@ -346,22 +346,23 @@ class _SuperstaqClient:
         given target.
 
         Args:
-            qubo: A `qv.QUBO` object.
-            target: The target to submit the qubo.
+            qubo: A dictionary representing the QUBO object. The tuple keys represent the
+                boolean variables of the QUBO and the values represent the coefficients.
+                As an example, for a QUBO with integer coefficients = 2*a + a*b - 5*b*c - 3
+                (where a, b, and c are boolean variables), the corresponding dictionary format
+                would be {('a',): 2, ('a', 'b'): 1, ('b', 'c'): -5, (): -3}.
+            target: The target to submit the QUBO.
             repetitions: Number of times that the execution is repeated before stopping.
             method: The parameter specifying method of QUBO solving execution. Currently,
-            will either be the "dry-run" option which runs on dwave's simulated annealer,
-            or defauls to none and sends it directly to the specified target.
+                will either be the "dry-run" option which runs on dwave's simulated annealer,
+                or defaults to `None` and sends it directly to the specified target.
             max_solutions: A parameter that specifies the max number of output solutions.
 
         Returns:
             A dictionary from the POST request.
         """
         gss.validation.validate_target(target)
-        if not (target in TARGET_LIST and TARGET_LIST[target]["supports_submit_qubo"]):
-            raise gss.SuperstaqException(
-                f"The provided target, {target}, does not support QUBO submission."
-            )
+        gss.validation.validate_qubo(qubo)
         gss.validation.validate_integer_param(repetitions)
         gss.validation.validate_integer_param(max_solutions)
 
@@ -384,7 +385,7 @@ class _SuperstaqClient:
         """Performs a POST request on the `/supercheq` endpoint.
 
         Args:
-            files: List of files specified as binary using ints.
+            files: List of files specified as binary using integers.
                 For example: [[1, 0, 1], [1, 1, 1]].
             num_qubits: Number of qubits to run Supercheq on.
             depth: The depth of the circuits to run Supercheq on.
@@ -545,6 +546,73 @@ class _SuperstaqClient:
             The estimated eigenvalues.
         """
         return self.post_request("/aces_fetch", {"job_id": job_id})
+
+    def submit_cb(
+        self,
+        target: str,
+        shots: int,
+        serialized_circuits: dict[str, str],
+        n_channels: int,
+        n_sequences: int,
+        depths: Sequence[int],
+        method: str | None = None,
+        noise: dict[str, object] | None = None,
+    ) -> str:
+        """Makes a POST request to the `/cycle_benchmarking` endpoint.
+
+        Args:
+            target: The target device to characterize.
+            shots: How many shots to use per circuit submitted.
+            serialized_circuits: The serialized process circuits to use in the protocol.
+            n_channels: The number of random Pauli decay channels to approximate error.
+            n_sequences: Number of circuits to generate per depth.
+            depths: Lists of depths representing the depths of Cycle Benchmarking circuits
+                to generate.
+            method: Optional method to use in device submission (e.g. "dry-run").
+            noise: Dictionary representing noise model to simulate the protocol with.
+
+        Returns:
+            A string with the job id for the Cycle Benchmarking job created.
+
+        Raises:
+            ValueError: If the target or noise model is not valid.
+            SuperstaqServerException: If the request fails.
+        """
+        gss.validation.validate_target(target)
+
+        json_dict: dict[str, Any] = {
+            "target": target,
+            "shots": shots,
+            **serialized_circuits,
+            "n_channels": n_channels,
+            "n_sequences": n_sequences,
+            "depths": depths,
+        }
+
+        if method:
+            json_dict["method"] = method
+        if noise:
+            json_dict["noise"] = noise
+
+        return self.post_request("/cb_submit", json_dict)
+
+    def process_cb(self, job_id: str, counts: str | None = None) -> dict[str, Any]:
+        """Makes a POST request to the "/cb_fetch" endpoint.
+
+        Args:
+            job_id: The job id returned by `submit_cb`.
+            counts: Optional dict representing result counts.
+
+        Returns:
+            Characterization data including process fidelity
+            and parameter estimates.
+        """
+        json_dict: dict[str, Any] = {
+            "job_id": job_id,
+        }
+        if counts:
+            json_dict["counts"] = counts
+        return self.post_request("/cb_fetch", json_dict)
 
     def target_info(self, target: str) -> dict[str, Any]:
         """Makes a POST request to the /target_info endpoint.

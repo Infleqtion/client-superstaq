@@ -1,5 +1,8 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 """Integration checks that run daily (via Github action) between client and prod server."""
+
+from __future__ import annotations
+
 import os
 
 import general_superstaq as gss
@@ -17,8 +20,17 @@ def provider() -> qss.SuperstaqProvider:
 
 
 def test_backends(provider: qss.SuperstaqProvider) -> None:
-    result = provider.backends()
-    assert provider.get_backend("ibmq_qasm_simulator") in result
+    result = provider.get_targets()
+    ibmq_backend_info = gss.typing.Target(
+        target="ibmq_qasm_simulator",
+        supports_submit=True,
+        supports_submit_qubo=False,
+        supports_compile=True,
+        available=True,
+        retired=False,
+    )
+    assert ibmq_backend_info in result
+    assert provider.get_backend("ibmq_qasm_simulator").name() == "ibmq_qasm_simulator"
 
 
 def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
@@ -38,6 +50,9 @@ def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
     assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
 
 
+@pytest.mark.skip(
+    reason="Consistently failing due to https://github.com/Qiskit/qiskit-ibm-runtime/issues/1518."
+)
 def test_ibmq_compile_with_token() -> None:
     provider = qss.SuperstaqProvider(ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"])
     qc = qiskit.QuantumCircuit(4)
@@ -108,7 +123,7 @@ def test_get_balance(provider: qss.SuperstaqProvider) -> None:
 
 def test_get_resource_estimate(provider: qss.SuperstaqProvider) -> None:
     circuit1 = qiskit.QuantumCircuit(2)
-    circuit1.cnot(0, 1)
+    circuit1.cx(0, 1)
     circuit1.h(1)
 
     resource_estimate = provider.resource_estimate(circuit1, "ss_unconstrained_simulator")
@@ -117,7 +132,7 @@ def test_get_resource_estimate(provider: qss.SuperstaqProvider) -> None:
 
     circuit2 = qiskit.QuantumCircuit(2)
     circuit2.h(1)
-    circuit2.cnot(0, 1)
+    circuit2.cx(0, 1)
     circuit2.cz(1, 0)
 
     resource_estimates = provider.resource_estimate(
@@ -270,10 +285,13 @@ def test_submit_to_hilbert_qubit_sorting(provider: qss.SuperstaqProvider) -> Non
 
 
 def test_submit_qubo(provider: qss.SuperstaqProvider) -> None:
-    test_qubo = {(0,): -1, (1,): -1, (2,): -1, (0, 1): 2, (1, 2): 2}
-    serialized_result = provider.submit_qubo(
-        test_qubo, target="toshiba_bifurcation_simulator", method="dry-run"
-    )
-    result = gss.qubo.read_json_qubo_result(serialized_result)
-    best_result = result[0]
-    assert best_result == {0: 1, 1: 0, 2: 1}
+    test_qubo = {
+        (0,): -1,
+        (1,): -1,
+        (2,): -1,
+        (0, 1): 2,
+        (1, 2): 2,
+    }
+    result = provider.submit_qubo(test_qubo, target="ss_unconstrained_simulator", repetitions=10)
+    assert len(result) == 10
+    assert {0: 1, 1: 0, 2: 1} in result

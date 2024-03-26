@@ -59,28 +59,33 @@ def measured_qubit_indices(circuit: qiskit.QuantumCircuit) -> list[int]:
     return sorted(circuit.find_bit(qubit).index for qubit in measured_qubits)
 
 
-def measured_clbit_indices(circuit: qiskit.QuantumCircuit) -> list[int]:
-    """Returns the indices of the classical bits in the input quantum circuit.
+def classical_bit_mapping(circuit: qiskit.QuantumCircuit) -> dict[int, int]:
+    """Returns the index of the (final) measured qubit associated with each classical bit.
+
+    If more than one measurement is assigned to the same classical bit, only the final measurement
+    is considered.
 
     Args:
         circuit: A `qiskit.QuantumCircuit` circuit.
 
     Returns:
-        A list containing the indices of the classical bits.
+        A dictionary mapping classical bit indices to the indices of the measured qubits.
     """
-    measured_clbits: set[qiskit.circuit.Clbit] = set()
 
-    for items in circuit:
-        inst = items[0]
-        clbits = items[2]
-        if isinstance(inst, qiskit.circuit.Measure):
-            measured_clbits.update(clbits)
+    clbit_map: dict[qiskit.circuit.Clbit, qiskit.circuit.Qubit] = {}
 
-        # Recurse into definition
-        elif clbits and inst.definition is not None:
-            measured_clbits.update(clbits[i] for i in measured_clbit_indices(inst.definition))
+    for inst in circuit:
+        if isinstance(inst.operation, qiskit.circuit.Measure):
+            clbit_map[inst.clbits[0]] = inst.qubits[0]
 
-    return sorted(circuit.find_bit(bit).index for bit in measured_clbits)
+        # Recurse into definition if it involves classical bits
+        elif inst.clbits and inst.operation.definition is not None:
+            inst_clbit_map = classical_bit_mapping(inst.operation.definition)
+            clbit_map.update(
+                {inst.clbits[ci]: inst.qubits[qi] for ci, qi in inst_clbit_map.items()}
+            )
+
+    return {circuit.find_bit(c).index: circuit.find_bit(q).index for c, q in clbit_map.items()}
 
 
 class CompilerOutput:
@@ -101,7 +106,6 @@ class CompilerOutput:
         pulse_sequences: qiskit.pulse.Schedule | list[qiskit.pulse.Schedule] | None = None,
         seq: qtrl.sequencer.Sequence | None = None,
         jaqal_programs: str | list[str] | None = None,
-        pulse_lists: list[list[list[Any]]] | list[list[list[list[Any]]]] | None = None,
     ) -> None:
         """Constructs a `CompilerOutput` object.
 
@@ -118,7 +122,6 @@ class CompilerOutput:
             seq: `qtrl.sequencer.Sequence` pulse sequence if `qtrl` is available locally.
             jaqal_programs: Optional string or list of strings specifying Jaqal programs (for
                 QSCOUT).
-            pulse_lists: Optional list of pulse cycles if `qtrl` is available locally.
         """
         if isinstance(circuits, qiskit.QuantumCircuit):
             self.circuit = circuits
@@ -126,7 +129,6 @@ class CompilerOutput:
             self.final_logical_to_physical = final_logical_to_physicals
             self.pulse_gate_circuit = pulse_gate_circuits
             self.pulse_sequence = pulse_sequences
-            self.pulse_list = pulse_lists
             self.jaqal_program = jaqal_programs
         else:
             self.circuits = circuits
@@ -134,16 +136,14 @@ class CompilerOutput:
             self.final_logical_to_physicals = final_logical_to_physicals
             self.pulse_gate_circuits = pulse_gate_circuits
             self.pulse_sequences = pulse_sequences
-            self.pulse_lists = pulse_lists
             self.jaqal_programs = jaqal_programs
 
         self.seq = seq
 
     def has_multiple_circuits(self) -> bool:
-        """Checks if this object represents multiple circuits.
+        """Checks if this object has plural attributes (e.g. `.circuits`).
 
-        If so, this object has .circuits and .pulse_lists attributes. Otherwise, this object
-        represents a single circuit, and has .circuit and .pulse_list attributes.
+        Otherwise, the object represents a single circuit, and has singular attributes (`.circuit`).
 
         Returns:
             A boolean indicating whether this object represents multiple circuits.
@@ -155,12 +155,12 @@ class CompilerOutput:
             return (
                 f"CompilerOutput({self.circuit!r}, {self.initial_logical_to_physical!r}, "
                 f"{self.final_logical_to_physical!r}, {self.pulse_gate_circuit!r}, "
-                f"{self.seq!r}, {self.jaqal_program!r}, {self.pulse_list!r})"
+                f"{self.seq!r}, {self.jaqal_program!r})"
             )
         return (
             f"CompilerOutput({self.circuits!r}, {self.initial_logical_to_physicals!r}, "
             f"{self.final_logical_to_physicals!r}, {self.pulse_gate_circuits!r}, "
-            f"{self.seq!r}, {self.jaqal_programs!r}, {self.pulse_lists!r})"
+            f"{self.seq!r}, {self.jaqal_programs!r})"
         )
 
     def __eq__(self, other: Any) -> bool:
@@ -176,7 +176,6 @@ class CompilerOutput:
                 and self.final_logical_to_physicals == other.final_logical_to_physicals
                 and self.pulse_gate_circuits == other.pulse_gate_circuits
                 and self.jaqal_programs == other.jaqal_programs
-                and self.pulse_lists == other.pulse_lists
                 and self.seq == other.seq
             )
 
@@ -186,7 +185,6 @@ class CompilerOutput:
             and self.final_logical_to_physical == other.final_logical_to_physical
             and self.pulse_gate_circuit == other.pulse_gate_circuit
             and self.jaqal_program == other.jaqal_program
-            and self.pulse_list == other.pulse_list
             and self.seq == other.seq
         )
 
@@ -254,8 +252,7 @@ def read_json_aqt(
 
     Returns:
         A `CompilerOutput` object with the compiled circuit(s). If `qtrl` is available locally,
-        the returned object also stores the pulse sequence in the .seq attribute and the
-        list(s) of cycles in the .pulse_list(s) attribute.
+        the returned object also stores the pulse sequence in the .seq attribute.
     """
 
     compiled_circuits: list[qiskit.QuantumCircuit] | list[list[qiskit.QuantumCircuit]]
@@ -276,7 +273,6 @@ def read_json_aqt(
     )
 
     seq = None
-    pulse_lists = None
 
     if "state_jp" not in json_dict:
         warnings.warn(
@@ -297,7 +293,6 @@ def read_json_aqt(
             seq.compile()
             return seq
 
-        pulse_lists = gss.serialization.deserialize(json_dict["pulse_lists_jp"])
         state = gss.serialization.deserialize(json_dict["state_jp"])
 
         if "readout_jp" in json_dict:
@@ -320,10 +315,6 @@ def read_json_aqt(
             for i in range(0, len(compiled_circuits), num_eca_circuits)
         ]
 
-        pulse_lists = pulse_lists and [
-            pulse_lists[i : i + num_eca_circuits]
-            for i in range(0, len(pulse_lists), num_eca_circuits)
-        ]
         initial_logical_to_physicals = [
             initial_logical_to_physicals_list[i : i + num_eca_circuits]
             for i in range(0, len(initial_logical_to_physicals_list), num_eca_circuits)
@@ -339,16 +330,13 @@ def read_json_aqt(
             initial_logical_to_physicals,
             final_logical_to_physicals,
             seq=seq,
-            pulse_lists=pulse_lists,
         )
 
-    pulse_lists = pulse_lists[0] if pulse_lists is not None else None
     return CompilerOutput(
         compiled_circuits[0],
         initial_logical_to_physicals[0],
         final_logical_to_physicals[0],
         seq=seq,
-        pulse_lists=pulse_lists,
     )
 
 

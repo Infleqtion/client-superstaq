@@ -17,6 +17,7 @@ import json
 import os
 import textwrap
 from unittest import mock
+from unittest.mock import patch
 
 import cirq
 import general_superstaq as gss
@@ -244,7 +245,6 @@ def test_service_create_job() -> None:
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits(cirq.Circuit()),
         "state_jp": gss.serialization.serialize({}),
-        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
         "initial_logical_to_physicals": cirq.to_json([[]]),
         "final_logical_to_physicals": cirq.to_json([[]]),
     },
@@ -267,7 +267,7 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
         assert output.circuit == cirq.Circuit()
         assert output.initial_logical_to_physical == {}
         assert output.final_logical_to_physical == {}
-        assert not hasattr(output, "circuits") and not hasattr(output, "pulse_lists")
+        assert not hasattr(output, "circuits")
         assert not hasattr(output, "initial_logical_to_physicals")
         assert not hasattr(output, "final_logical_to_physicals")
 
@@ -299,7 +299,7 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
         },
     )
     assert out.circuit == cirq.Circuit()
-    assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
+    assert not hasattr(out, "circuits")
 
     with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid AQT target."):
         service.aqt_compile(cirq.Circuit(), target="ss_example_qpu")
@@ -310,7 +310,6 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit(), cirq.Circuit()]),
         "state_jp": gss.serialization.serialize({}),
-        "pulse_lists_jp": gss.serialization.serialize([[[]], [[]]]),
         "initial_logical_to_physicals": cirq.to_json([[], []]),
         "final_logical_to_physicals": cirq.to_json([[], []]),
     },
@@ -322,7 +321,7 @@ def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None
     assert out.circuits == [cirq.Circuit(), cirq.Circuit()]
     assert out.initial_logical_to_physicals == [{}, {}]
     assert out.final_logical_to_physicals == [{}, {}]
-    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    assert not hasattr(out, "circuit")
     assert not hasattr(out, "initial_logical_to_physical")
     assert not hasattr(out, "final_logical_to_physical")
 
@@ -332,7 +331,6 @@ def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit()]),
         "state_jp": gss.serialization.serialize({}),
-        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
         "initial_logical_to_physicals": cirq.to_json([[]]),
         "final_logical_to_physicals": cirq.to_json([[]]),
     },
@@ -345,7 +343,6 @@ def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
     assert out.initial_logical_to_physicals == [{}]
     assert out.final_logical_to_physicals == [{}]
     assert not hasattr(out, "circuit")
-    assert not hasattr(out, "pulse_list")
     assert not hasattr(out, "initial_logical_to_physical")
     assert not hasattr(out, "final_logical_to_physical")
 
@@ -422,7 +419,7 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
 
     service = css.Service(api_key="key", remote_host="http://example.com")
     out = service.qscout_compile(circuit, test_options="yes")
-    alt_out = service.compile(circuit, target="sandia_qscout_qpu", test_options="yes")
+    alt_out = service.compile(circuit, target="qscout_peregrine_qpu", test_options="yes")
     assert out.circuit == circuit
     assert out.final_logical_to_physical == final_logical_to_physical
     assert out.initial_logical_to_physical == initial_logical_to_physical
@@ -433,7 +430,7 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
     assert alt_out.final_logical_to_physical == final_logical_to_physical
     assert alt_out.jaqal_program == jaqal_program
 
-    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid Sandia target."):
+    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid QSCOUT target."):
         service.qscout_compile(cirq.Circuit(), target="ss_example_qpu")
 
 
@@ -749,6 +746,115 @@ def test_aces(
 
     mock_post.return_value.json = lambda: [1] * 51
     assert service.process_aces("id1") == [1] * 51
+
+
+@mock.patch("requests.post")
+def test_cb(
+    mock_post: mock.MagicMock,
+) -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    mock_post.return_value.json = lambda: "id1"
+    assert (
+        service.submit_cb(
+            target="ss_unconstrained_simulator",
+            repetitions=50,
+            process_circuit=cirq.Circuit(),
+            n_channels=6,
+            n_sequences=30,
+            depths=[1, 2, 3],
+            method="dry-run",
+            noise=cirq.NoiseModel.from_noise_model_like(cirq.depolarize(0.1)),
+            error_prob=(0.1, 0.1, 0.1),
+        )
+        == "id1"
+    )
+
+    assert (
+        service.submit_cb(
+            target="ss_unconstrained_simulator",
+            repetitions=50,
+            process_circuit=cirq.Circuit(),
+            n_channels=6,
+            n_sequences=30,
+            depths=[1, 2, 3],
+            method="dry-run",
+            noise="asymmetric_depolarize",
+        )
+        == "id1"
+    )
+
+    test_data = {
+        "circuit_data": {
+            "ps": {
+                "depth_1": {
+                    "seq": {
+                        "result": "{}",
+                        "c_of_p": "{}",
+                        "circuit": "{}",
+                        "compiled_circuit": "{}",
+                    }
+                }
+            }
+        },
+        "instance_information": cirq.to_json(
+            {"target": "ss_unconstrained_simulator", "depths": [1, 2], "n_channels": 2}
+        ),
+        "process_fidelity_data": {
+            "averages": {"test": [1.0, 1.0], "test2": [1.0, 1.0], "test3": [1.0, 1.0]},
+            "std_devs": {
+                "test": {"depth=1": 0.0, "depth=2": 0.0},
+                "test2": {"depth=1": 0.0, "depth=2": 0.0},
+                "test3": {"depth=1": 0.0, "depth=2": 0.0},
+            },
+            "evs": {
+                "test": {"depth=1": [1.0], "depth=2": [1.0]},
+                "test2": {"depth=1": [1.0], "depth=2": [1.0]},
+                "test3": {"depth=1": [1.0], "depth=2": [1.0]},
+            },
+        },
+    }
+    processed_test_data = {
+        "circuit_data": {
+            "ps": {
+                "depth_1": {
+                    "seq": {"result": {}, "c_of_p": {}, "circuit": {}, "compiled_circuit": "{}"}
+                }
+            }
+        },
+        "instance_information": {
+            "target": "ss_unconstrained_simulator",
+            "depths": [1, 2],
+            "n_channels": 2,
+        },
+        "process_fidelity_data": test_data["process_fidelity_data"],
+        "fit_data": {
+            "A_test": 1.0,
+            "p_test": 1.0,
+            "A_test2": 1.0,
+            "p_test2": 1.0,
+            "A_test3": 1.0,
+            "p_test3": 1.0,
+            "e_f": -0.5,
+        },
+    }
+
+    mock_post.return_value.json = lambda: test_data
+    assert service.process_cb("id1") == processed_test_data
+
+    with patch(
+        "matplotlib.pyplot.show",
+        return_value={"test": 123},
+    ):
+        service.plot(processed_test_data)
+
+    # Test truncated labels
+    processed_test_data["instance_information"] = {"depths": [1, 2], "n_channels": 11}
+
+    with patch(
+        "matplotlib.pyplot.show",
+        return_value={"test": 123},
+    ):
+        service.plot(processed_test_data)
 
 
 @mock.patch("requests.post")

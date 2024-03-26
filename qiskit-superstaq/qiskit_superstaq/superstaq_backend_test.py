@@ -114,13 +114,12 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         "initial_logical_to_physicals": "[[[0, 1]]]",
         "final_logical_to_physicals": "[[[1, 4]]]",
         "state_jp": gss.serialization.serialize({}),
-        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     }
     out = backend.compile(qc)
     assert out.circuit == qc
     assert out.initial_logical_to_physical == {0: 1}
     assert out.final_logical_to_physical == {1: 4}
-    assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
+    assert not hasattr(out, "circuits")
     mock_post.assert_called_with(
         f"{provider._client.url}/aqt_compile",
         headers=provider._client.headers,
@@ -136,7 +135,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     assert out.circuits == [qc]
     assert out.initial_logical_to_physicals == [{0: 1}]
     assert out.final_logical_to_physicals == [{1: 4}]
-    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    assert not hasattr(out, "circuit")
     mock_post.assert_called_with(
         f"{provider._client.url}/aqt_compile",
         headers=provider._client.headers,
@@ -153,14 +152,13 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         "initial_logical_to_physicals": "[[], []]",
         "final_logical_to_physicals": "[[], []]",
         "state_jp": gss.serialization.serialize({}),
-        "pulse_lists_jp": gss.serialization.serialize([[[]], [[]]]),
     }
     matrix = qiskit.circuit.library.CRXGate(1.23).to_matrix()
     out = backend.compile([qc, qc], gate_defs={"CRX": matrix})
     assert out.circuits == [qc, qc]
     assert out.initial_logical_to_physicals == [{}, {}]
     assert out.final_logical_to_physicals == [{}, {}]
-    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    assert not hasattr(out, "circuit")
     mock_post.assert_called_with(
         f"{provider._client.url}/aqt_compile",
         headers=provider._client.headers,
@@ -175,7 +173,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     with pytest.raises(ValueError, match="'aqt_keysight_qpu' is not a valid IBMQ target."):
         backend.ibmq_compile([qc])
 
-    with pytest.raises(ValueError, match="'aqt_keysight_qpu' is not a valid Sandia target."):
+    with pytest.raises(ValueError, match="'aqt_keysight_qpu' is not a valid QSCOUT target."):
         backend.qscout_compile([qc])
 
     with pytest.raises(ValueError, match="'aqt_keysight_qpu' is not a valid CQ target."):
@@ -187,14 +185,13 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
         "state_jp": gss.serialization.serialize({}),
-        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     }
 
     out = backend.compile(qc, num_eca_circuits=1, random_seed=1234, atol=1e-2, test_options="yes")
     assert out.circuits == [qc]
     assert out.initial_logical_to_physicals == [{}]
     assert out.final_logical_to_physicals == [{}]
-    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    assert not hasattr(out, "circuit")
 
     # AQT ECA compile
     mock_post.return_value.json = lambda: {
@@ -202,14 +199,13 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
         "state_jp": gss.serialization.serialize({}),
-        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     }
 
     out = backend.compile(qc, num_eca_circuits=1, random_seed=1234, atol=1e-2, test_options="yes")
     assert out.circuits == [qc]
     assert out.initial_logical_to_physicals == [{}]
     assert out.final_logical_to_physicals == [{}]
-    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    assert not hasattr(out, "circuit")
 
 
 @patch("requests.post")
@@ -252,7 +248,7 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
 def test_qscout_compile(
     mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
-    backend = fake_superstaq_provider.get_backend("sandia_qscout_qpu")
+    backend = fake_superstaq_provider.get_backend("qscout_peregrine_qpu")
 
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)

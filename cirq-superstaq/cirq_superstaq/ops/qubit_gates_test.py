@@ -1,5 +1,6 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 import itertools
+import json
 import textwrap
 
 import cirq
@@ -571,6 +572,34 @@ def test_barrier() -> None:
         use_unicode_characters=False,
     )
 
+    cirq.testing.assert_has_diagram(
+        circuit,
+        textwrap.dedent(
+            """
+            0 1 2
+            │ │ │
+            ─────
+            │ │ │
+            """
+        ),
+        use_unicode_characters=True,
+        transpose=True,
+    )
+
+    cirq.testing.assert_has_diagram(
+        circuit,
+        textwrap.dedent(
+            """
+            0 1 2
+            | | |
+            -----
+            | | |
+            """
+        ),
+        use_unicode_characters=False,
+        transpose=True,
+    )
+
     # make sure optimizations don't drop Barriers:
     circuit = cirq.drop_negligible_operations(circuit)
     assert circuit == cirq.Circuit(operation)
@@ -1065,3 +1094,19 @@ def test_custom_resolver() -> None:
     json_text = cirq.to_json(circuit)
     resolvers = [*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
     assert cirq.read_json(json_text=json_text, resolvers=resolvers) == circuit
+
+
+def test_custom_resolver_ms() -> None:
+    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/927."""
+    gate = cirq.ms(1.23)
+
+    json_text = cirq.to_json(gate)
+    assert cirq.read_json(json_text=json_text, resolvers=css.SUPERSTAQ_RESOLVERS) == gate
+
+    # Serialized MSGate emitted from cirq <= 1.3.0
+    json_text = json.dumps({"cirq_type": "MSGate", "rads": 1.23})
+    assert cirq.read_json(json_text=json_text, resolvers=css.SUPERSTAQ_RESOLVERS) == gate
+
+    # Serialized MSGate emitted from cirq > 1.3.0
+    json_text = json.dumps({"cirq_type": "cirq.MSGate", "rads": 1.23})
+    assert cirq.read_json(json_text=json_text, resolvers=css.SUPERSTAQ_RESOLVERS) == gate

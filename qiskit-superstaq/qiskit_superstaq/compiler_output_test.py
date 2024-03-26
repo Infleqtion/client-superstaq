@@ -65,14 +65,14 @@ def test_measured_clbit_indices() -> None:
     circuit.measure([6, 5], [0, 1])
     circuit.measure([1, 3], [0, 1])
     circuit.measure([5, 1], [0, 1])
-    assert qss.measured_clbit_indices(circuit) == [0, 1]
+    assert qss.classical_bit_mapping(circuit) == {0: 5, 1: 1}
 
     # Test len(qiskit.ClassicalRegister()) > len(qiskit.QuantumRegister())
     circuit = qiskit.QuantumCircuit(3, 5)
     circuit.h(1)
     circuit.x(2)
     circuit.measure([0, 1, 2], [2, 4, 1])
-    assert qss.measured_clbit_indices(circuit) == [1, 2, 4]
+    assert qss.classical_bit_mapping(circuit) == {2: 0, 4: 1, 1: 2}
 
     # Test len(qiskit.ClassicalRegister()) = len(qiskit.QuantumRegister())
     circuit = qiskit.QuantumCircuit(9, 9)
@@ -81,9 +81,10 @@ def test_measured_clbit_indices() -> None:
     circuit.s(1)
     circuit.cx(1, 0)
     circuit.measure([0, 1, 4], [0, 1, 2])
-    assert qss.measured_clbit_indices(circuit) == [0, 1, 2]
-    circuit.measure([0, 1, 4, 2, 3, 5, 6, 7, 8], [0, 1, 2, 8, 7, 6, 5, 3, 4])
-    assert qss.measured_clbit_indices(circuit) == [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    assert qss.classical_bit_mapping(circuit) == {0: 0, 1: 1, 2: 4}
+
+    circuit.measure([0, 1, 4, 2, 3, 5, 6, 7], [0, 1, 2, 8, 7, 6, 5, 3])
+    assert qss.classical_bit_mapping(circuit) == {0: 0, 1: 1, 2: 4, 8: 2, 7: 3, 6: 5, 5: 6, 3: 7}
 
     # Custom instruction with measurements test
     circuit_instr = qiskit.QuantumCircuit(2, 2)
@@ -92,24 +93,27 @@ def test_measured_clbit_indices() -> None:
     circuit_instr.measure([0, 1], [0, 1])
     custom_instruction = circuit_instr.to_instruction()
 
-    qc = qiskit.QuantumCircuit(2, 2)
-    qc.append(custom_instruction, [0, 1], [0, 1])
+    circuit = qiskit.QuantumCircuit(4, 4)
+    circuit.append(custom_instruction, [1, 2], [2, 3])
 
-    assert qss.measured_clbit_indices(qc) == [0, 1]
+    assert qss.classical_bit_mapping(circuit) == {2: 1, 3: 2}
+
+    circuit.append(custom_instruction, [2, 1], [2, 3])
+    assert qss.classical_bit_mapping(circuit) == {2: 2, 3: 1}
 
 
 def test_compiler_output_repr() -> None:
     circuit = qiskit.QuantumCircuit(4)
     assert (
         repr(qss.compiler_output.CompilerOutput(circuit, {0: 0}, {0: 1}))
-        == f"""CompilerOutput({circuit!r}, {{0: 0}}, {{0: 1}}, None, None, None, None)"""
+        == f"""CompilerOutput({circuit!r}, {{0: 0}}, {{0: 1}}, None, None, None)"""
     )
 
     circuits = [circuit, circuit]
     assert (
         repr(qss.compiler_output.CompilerOutput(circuits, [{0: 0}, {1: 1}], [{0: 1}, {1: 0}]))
         == f"CompilerOutput({circuits!r}, [{{0: 0}}, {{1: 1}}], [{{0: 1}}, {{1: 0}}], None, "
-        f"None, None, None)"
+        f"None, None)"
     )
 
 
@@ -163,14 +167,12 @@ def test_read_json_aqt() -> None:
         circuit.h(i)
 
     state_str = gss.serialization.serialize({})
-    pulse_lists_str = gss.serialization.serialize([[[]]])
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
         "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
         "state_jp": state_str,
-        "pulse_lists_jp": pulse_lists_str,
     }
 
     with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
@@ -186,13 +188,11 @@ def test_read_json_aqt() -> None:
     assert not hasattr(out, "circuit")
 
     # multiple circuits
-    pulse_lists_str = gss.serialization.serialize([[[]], [[]]])
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
         "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[], []]",
         "state_jp": state_str,
-        "pulse_lists_jp": pulse_lists_str,
     }
 
     with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
@@ -220,29 +220,25 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     circuit.measure_all()
 
     state_str = gss.serialization.serialize(seq.__getstate__())
-    pulse_lists_str = gss.serialization.serialize([[[]]])
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
         "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
         "state_jp": state_str,
-        "pulse_lists_jp": pulse_lists_str,
     }
 
     out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
     assert isinstance(out.seq, qtrl.sequencer.Sequence)
     assert pickle.dumps(out.seq) == pickle.dumps(seq)
-    assert out.pulse_list == [[]]
     assert not hasattr(out.seq, "_readout")
-    assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
+    assert not hasattr(out, "circuits")
 
     # Serialized readout attribute for aqt_zurich_qpu:
     json_dict["readout_jp"] = state_str
     json_dict["readout_qubits"] = "[4, 5, 6, 7]"
     out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
-    assert out.pulse_list == [[]]
     assert isinstance(out.seq, qtrl.sequencer.Sequence)
     assert isinstance(out.seq._readout, qtrl.sequencer.Sequence)
     assert isinstance(out.seq._readout._readout, qtrl.sequence_utils.readout._ReadoutInfo)
@@ -250,37 +246,33 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     assert out.seq._readout._readout.qubits == [4, 5, 6, 7]
     assert out.seq._readout._readout.n_readouts == 1
     assert pickle.dumps(out.seq._readout) == pickle.dumps(out.seq) == pickle.dumps(seq)
-    assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
+    assert not hasattr(out, "circuits")
 
     # Multiple circuits:
     out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit]
 
     assert pickle.dumps(out.seq) == pickle.dumps(seq)
-    assert out.pulse_lists == [[[]]]
-    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    assert not hasattr(out, "circuit")
 
-    pulse_lists_str = gss.serialization.serialize([[[]], [[]]])
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
         "initial_logical_to_physicals": "[[], []]",
         "final_logical_to_physicals": "[[], []]",
         "state_jp": state_str,
-        "pulse_lists_jp": pulse_lists_str,
         "readout_jp": state_str,
         "readout_qubits": "[4, 5, 6, 7]",
     }
     out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
     assert pickle.dumps(out.seq) == pickle.dumps(seq)
-    assert out.pulse_lists == [[[]], [[]]]
     assert isinstance(out.seq, qtrl.sequencer.Sequence)
     assert isinstance(out.seq._readout, qtrl.sequencer.Sequence)
     assert isinstance(out.seq._readout._readout, qtrl.sequence_utils.readout._ReadoutInfo)
     assert out.seq._readout._readout.sequence is out.seq._readout
     assert out.seq._readout._readout.qubits == [4, 5, 6, 7]
     assert out.seq._readout._readout.n_readouts == 2
-    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    assert not hasattr(out, "circuit")
 
 
 def test_read_json_qscout() -> None:
