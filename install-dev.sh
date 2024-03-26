@@ -1,3 +1,3 @@
 #!/usr/bin/env sh
 cd $(dirname $0)
-pip install -e $(ls ./*/pyproject.toml | sed 's/\/pyproject.toml/\[dev\]/')
+pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./superstaq-benchmarks[dev]
