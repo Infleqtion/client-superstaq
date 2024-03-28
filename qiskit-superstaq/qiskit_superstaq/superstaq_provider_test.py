@@ -65,32 +65,30 @@ def test_aqt_compile(mock_post: MagicMock, fake_superstaq_provider: MockSupersta
         "initial_logical_to_physicals": "[[[0, 1]]]",
         "final_logical_to_physicals": "[[[1, 4]]]",
         "state_jp": gss.serialization.serialize({}),
-        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     }
     out = fake_superstaq_provider.aqt_compile(qc)
     assert out.circuit == qc
     assert out.initial_logical_to_physical == {0: 1}
     assert out.final_logical_to_physical == {1: 4}
-    assert not hasattr(out, "circuits") and not hasattr(out, "pulse_lists")
+    assert not hasattr(out, "circuits")
 
     out = fake_superstaq_provider.aqt_compile([qc], atol=1e-2)
     assert out.circuits == [qc]
     assert out.initial_logical_to_physicals == [{0: 1}]
     assert out.final_logical_to_physicals == [{1: 4}]
-    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    assert not hasattr(out, "circuit")
 
     mock_post.return_value.json = lambda: {
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
         "initial_logical_to_physicals": "[[], []]",
         "final_logical_to_physicals": "[[], []]",
         "state_jp": gss.serialization.serialize({}),
-        "pulse_lists_jp": gss.serialization.serialize([[[]], [[]]]),
     }
     out = fake_superstaq_provider.aqt_compile([qc, qc], test_options="yes")
     assert out.circuits == [qc, qc]
     assert out.initial_logical_to_physicals == [{}, {}]
     assert out.final_logical_to_physicals == [{}, {}]
-    assert not hasattr(out, "circuit") and not hasattr(out, "pulse_list")
+    assert not hasattr(out, "circuit")
 
 
 def test_invalid_target_aqt_compile() -> None:
@@ -111,7 +109,6 @@ def test_aqt_compile_eca(
         "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
         "state_jp": gss.serialization.serialize({}),
-        "pulse_lists_jp": gss.serialization.serialize([[[]]]),
     }
 
     out = fake_superstaq_provider.aqt_compile(qc, num_eca_circuits=1, random_seed=1234, atol=1e-2)
@@ -119,7 +116,6 @@ def test_aqt_compile_eca(
     assert out.initial_logical_to_physicals == [{}]
     assert out.final_logical_to_physicals == [{}]
     assert not hasattr(out, "circuit")
-    assert not hasattr(out, "pulse_list")
     assert not hasattr(out, "initial_logical_to_physical")
     assert not hasattr(out, "final_logical_to_physical")
 

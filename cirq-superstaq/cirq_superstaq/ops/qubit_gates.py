@@ -961,6 +961,7 @@ def custom_resolver(cirq_type: str) -> type[cirq.Gate] | None:
         "AceCR": AceCR,
         "ParallelGates": ParallelGates,
         "MSGate": cirq.ops.MSGate,
+        "cirq.MSGate": cirq.ops.MSGate,
         "RGate": RGate,
         "IXGate": IXGate,
         "ParallelRGate": ParallelRGate,
