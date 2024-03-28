@@ -870,5 +870,7 @@ def find_api_key() -> str:
     raise OSError(
         "Superstaq API key not specified and not found.\n"
         "Try passing an 'api_key' variable, or setting your API key in the command line "
-        "with SUPERSTAQ_API_KEY=..."
+        "with SUPERSTAQ_API_KEY=...\n"
+        "Please visit https://superstaq.readthedocs.io/en/latest/get_started/credentials.html to "
+        "access your API key."
     )
