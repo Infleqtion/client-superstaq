@@ -49,7 +49,7 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
    :caption: Optimizations
 
    optimizations/aqt/aqt
-   optimizations/hilbert/hilbert
+   optimizations/sqorpius/sqorpius
    optimizations/ibm/ibm
    optimizations/qscout/qscout
 

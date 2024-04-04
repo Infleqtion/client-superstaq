@@ -845,7 +845,7 @@ AQTICCX = AQTITOFFOLI = IX.controlled(2, [0, 0])
 class StrippedCZGate(cirq.Gate):
     """The Stripped CZ gate is a regular CZ gate when the rz angle = 0.
 
-    It is the gate that is actually being performed by Hilbert, and it is corrected
+    It is the gate that is actually being performed by Sqorpius, and it is corrected
     into a CZ gate by RZ gates afterwards if the rz angle is nonzero.
     """
 

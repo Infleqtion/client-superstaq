@@ -36,14 +36,14 @@ TARGET_LIST = {
         "available": True,
         "retired": False,
     },
-    "cq_hilbert_qpu": {
+    "cq_sqorpius_qpu": {
         "supports_submit": False,
         "supports_submit_qubo": False,
         "supports_compile": True,
         "available": True,
         "retired": False,
     },
-    "cq_hilbert_simulator": {
+    "cq_sqorpius_simulator": {
         "supports_submit": False,
         "supports_submit_qubo": False,
         "supports_compile": True,
