@@ -154,6 +154,27 @@ jobs:
         run: |
           checks/coverage_.py ${{ matrix.type }}
 
+  pytest-mac:
+    name: Pytest macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.8
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]
+      - name: Pytest-mac check
+        run: |
+          checks/pytest_.py
+
   pytest-win:
     name: Pytest Windows
     runs-on: windows-latest
