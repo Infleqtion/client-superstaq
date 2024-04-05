@@ -126,7 +126,6 @@ jobs:
           checks/coverage_.py
 
   coverage-gss:
-    name: Minimum version coverage checks
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -156,7 +155,6 @@ jobs:
           checks/coverage_.py ${{ matrix.type }}
 
   coverage-css:
-    name: Minimum version integration checks
     runs-on: ubuntu-latest
     strategy:
       matrix:
