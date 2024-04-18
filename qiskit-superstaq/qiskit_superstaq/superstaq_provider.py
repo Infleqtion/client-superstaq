@@ -393,7 +393,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
     def cq_compile(
         self,
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
-        target: str = "cq_hilbert_qpu",
+        target: str = "cq_sqorpius_qpu",
         *,
         grid_shape: tuple[int, int] | None = None,
         control_radius: float = 1.0,

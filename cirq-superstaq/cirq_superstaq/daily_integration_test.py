@@ -298,7 +298,7 @@ def test_job(service: css.Service) -> None:
 
 
 @pytest.mark.parametrize(
-    "target", ["cq_hilbert_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
+    "target", ["cq_sqorpius_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
 )
 def test_submit_to_provider_simulators(target: str, service: css.Service) -> None:
     q0 = cirq.LineQubit(0)
@@ -309,10 +309,10 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
     assert job.counts(0) == {"11": 1}
 
 
-@pytest.mark.skip(reason="Can't be executed when Hilbert is set to not accept jobs")
-def test_submit_to_hilbert_qubit_sorting(service: css.Service) -> None:
+@pytest.mark.skip(reason="Can't be executed when Sqorpius is set to not accept jobs")
+def test_submit_to_sqorpius_qubit_sorting(service: css.Service) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776"""
-    target = "cq_hilbert_qpu"
+    target = "cq_sqorpius_qpu"
     num_qubits = service.target_info(target)["num_qubits"]
     qubits = cirq.LineQubit.range(num_qubits)
     circuit = cirq.Circuit(
