@@ -125,60 +125,34 @@ jobs:
         run: |
           checks/coverage_.py
 
-  coverage-gss:
-    name: Standalone general-superstaq coverage check
+  coverage-standalone:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - type: "general-superstaq"
+            dependencies: "-e ./general-superstaq[dev]"
+          - type: "qiskit-superstaq"
+            dependencies: "-e ./general-superstaq -e ./qiskit-superstaq[dev]"
+          - type: "cirq-superstaq"
+            dependencies: "-e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq[dev]"
+          - type: "supermarq-benchmarks"
+            dependencies: "-e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks[dev]"
+    name: ${{ matrix.type }} standalone coverage check with minimum dependency versions
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.8
         uses: actions/setup-python@v5
         with:
           python-version: 3.8
-      - name: Install dependencies
+      - name: Install dependencies, using minimum supported versions
         run: |
+          min_versions=$(sed ${{ matrix.type }}/*requirements.txt -e 's/[~>]=\([0-9]\)/==\1/')
           python -m pip install --upgrade pip
-          pip install -e ./checks-superstaq -e ./general-superstaq[dev]
+          pip install ${{ matrix.dependencies }} $min_versions
       - name: Coverage check
         run: |
-          checks/coverage_.py general-superstaq
-
-  coverage-css:
-    name: Minimum cirq version coverage check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.8
-      - name: Install dependencies, using minimum supported cirq version
-        run: |
-          cirq_version=$(sed cirq-superstaq/requirements.txt -ne 's/^cirq-core.=/cirq-core==/p')
-          echo "Using minimum cirq-core version: $cirq_version"
-          python -m pip install --upgrade pip
-          pip install "$cirq_version" -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq[dev]
-      - name: Coverage check
-        run: |
-          checks/coverage_.py cirq-superstaq
-
-  coverage-qss:
-    name: Standalone qiskit-superstaq coverage check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.8
-      - name: Install dependencies, using minimum supported qiskit version
-        run: |
-          qiskit_version=$(sed qiskit-superstaq/requirements.txt -ne 's/^qiskit-ibm-provider.=/qiskit-ibm-provider==/p')
-          echo "Using minimum qiskit-ibm-provider version: $qiskit_version"
-          python -m pip install --upgrade pip
-          pip install "$qiskit_version" -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq[dev]
-      - name: Coverage check
-        run: |
-          checks/coverage_.py qiskit-superstaq
+          checks/coverage_.py ${{ matrix.type }}
 
   pytest-mac:
     name: Pytest macOS
