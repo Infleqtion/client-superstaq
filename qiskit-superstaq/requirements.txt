@@ -1,4 +1,4 @@
-general-superstaq~=0.5.14
+general-superstaq~=0.5.15
 qiskit>=0.45.1
 qiskit-ibm-provider>=0.9.0
 symengine~=0.11.0
