@@ -147,7 +147,7 @@ jobs:
           python-version: 3.8
       - name: Install dependencies, using minimum supported versions
         run: |
-          min_versions=$(sed ${{ matrix.type }}/*requirements.txt -e 's/[~>]=\([0-9]\)/==\1/' -e '/checks-superstaq/d' -e '/general-superstaq/d' -e '/qiskit-superstaq/d' -e '/cirq-superstaq/d')
+          min_versions=$(sed ${{ matrix.type }}/*requirements.txt -e 's/[~>]=\([0-9]\)/==\1/' -e '/superstaq/d')
           python -m pip install --upgrade pip
           pip install -e ./checks-superstaq ${{ matrix.dependencies }} $min_versions
       - name: Coverage check
