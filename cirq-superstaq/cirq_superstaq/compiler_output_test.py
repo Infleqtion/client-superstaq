@@ -172,21 +172,32 @@ def test_read_json_pulse_gate_circuits() -> None:
         "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
         "pulse_gate_circuits": qss.serialization.serialize_circuits(qc_pulse),
+        "pulse_durations": [[10, 20]],
+        "pulse_start_times": [[0, 10]],
     }
 
     out = css.compiler_output.read_json(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
     assert out.pulse_gate_circuit == qc_pulse
+    assert out.pulse_gate_circuit.duration == 30
+    assert out.pulse_gate_circuit[0].operation.duration == 10
+    assert out.pulse_gate_circuit.op_start_times == [0, 10]
 
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits([circuit, circuit]),
         "initial_logical_to_physicals": "[[], []]",
         "final_logical_to_physicals": "[[], []]",
         "pulse_gate_circuits": qss.serialization.serialize_circuits([qc_pulse, qc_pulse]),
+        "pulse_durations": [[10, 20], [100, 200]],
+        "pulse_start_times": [[0, 10], [0, 100]],
     }
     out = css.compiler_output.read_json(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
     assert out.pulse_gate_circuits == [qc_pulse, qc_pulse]
+    assert out.pulse_gate_circuits[0].duration == 30
+    assert out.pulse_gate_circuits[1].duration == 300
+    assert out.pulse_gate_circuits[1][0].operation.duration == 100
+    assert out.pulse_gate_circuits[1].op_start_times == [0, 100]
 
     with mock.patch.dict("sys.modules", {"qiskit_superstaq": None}), pytest.warns(
         UserWarning, match="qiskit-superstaq is required"

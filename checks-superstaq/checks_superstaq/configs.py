@@ -50,7 +50,7 @@ def run(*args: str, silent: bool = False) -> int:
 
     # collect differences between config files, ignoring lines in file_copy that match IGNORE_MATCH
     matcher = difflib.SequenceMatcher(a=lines_orig, b=lines_copy)
-    deltas: list[tuple[str, int, int, int, int]] = []
+    deltas = []
     for tag, orig_start, orig_end, copy_start, copy_end in matcher.get_opcodes():
         if tag == "equal":
             continue

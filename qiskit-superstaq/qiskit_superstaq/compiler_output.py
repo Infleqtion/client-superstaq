@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import warnings
+from collections.abc import Mapping
 from typing import Any
 
 import general_superstaq as gss
@@ -189,7 +190,7 @@ class CompilerOutput:
         )
 
 
-def read_json(json_dict: dict[str, str], circuits_is_list: bool) -> CompilerOutput:
+def read_json(json_dict: Mapping[str, Any], circuits_is_list: bool) -> CompilerOutput:
     """Reads out returned JSON from Superstaq API's compilation endpoints.
 
     Args:
@@ -214,6 +215,15 @@ def read_json(json_dict: dict[str, str], circuits_is_list: bool) -> CompilerOutp
 
     if "pulse_gate_circuits" in json_dict:
         pulse_gate_circuits = qss.deserialize_circuits(json_dict["pulse_gate_circuits"])
+        pulse_durations = json_dict.get("pulse_durations")
+        pulse_start_times = json_dict.get("pulse_start_times")
+        if pulse_durations and pulse_start_times:
+            pulse_gate_circuits = [
+                qss.serialization.insert_times_and_durations(circuit, durations, start_times)
+                for circuit, durations, start_times in zip(
+                    pulse_gate_circuits, pulse_durations, pulse_start_times
+                )
+            ]
 
     if "pulses" in json_dict:
         try:

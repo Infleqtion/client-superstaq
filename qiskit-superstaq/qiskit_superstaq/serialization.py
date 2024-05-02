@@ -163,6 +163,40 @@ def deserialize_circuits(serialized_circuits: str) -> list[qiskit.QuantumCircuit
     return [_resolve_circuit(circuit) for circuit in circuits]
 
 
+def insert_times_and_durations(
+    circuit: qiskit.QuantumCircuit,
+    durations: Sequence[int],
+    start_times: Sequence[int],
+) -> qiskit.QuantumCircuit:
+    """Adds timing info to a circuit.
+
+    This is a workaround for https://github.com/Qiskit/qiskit/issues/11879.
+
+    Args:
+        circuit: The circuit to add timing information to.
+        durations: A list containing the duration of every instruction in `circuit`.
+        start_times: A list containing the start_time of every instruction in `circuit`.
+
+    Returns:
+        A new circuit, in which the `.duration` attribute of every gate has been filled-in, as well
+        as the `.duration` `.op_start_times` attributes of the circuit itself.
+    """
+    new_circuit = circuit.copy_empty_like()
+    for inst, duration in zip(circuit, durations):
+        operation = inst.operation
+        if inst.operation.duration != duration:
+            operation = inst.operation.to_mutable()
+            operation.duration = duration
+            inst = inst.replace(operation=operation)
+        new_circuit.append(inst)
+
+    new_circuit._op_start_times = start_times
+    new_circuit.duration = max(
+        start_time + duration for start_time, duration in zip(start_times, durations)
+    )
+    return new_circuit
+
+
 def _is_qiskit_gate(gate: qiskit.circuit.Instruction) -> bool:
     """Returns True if `gate` will be correctly resolved by QPY."""
     base_class = getattr(gate, "base_class", type(gate))
