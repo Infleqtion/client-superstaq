@@ -106,6 +106,21 @@ def test_circuit_serialization() -> None:
     assert qss.serialization.deserialize_circuits(serialized_circuits) == circuits
 
 
+def test_insert_times_and_durations() -> None:
+    circuit = qiskit.QuantumCircuit(2)
+    circuit.x(0)
+    circuit.cx(0, 1)
+    circuit.measure_all()
+
+    durations = [10, 100, 0, 50, 50]
+    start_times = [0, 10, 110, 110, 110]
+    new_circuit = qss.serialization.insert_times_and_durations(circuit, durations, start_times)
+    assert new_circuit == circuit
+    assert new_circuit.op_start_times == start_times
+    assert [inst.operation.duration for inst in new_circuit] == durations
+    assert new_circuit.duration == 160
+
+
 def test_warning_suppression() -> None:
     circuit = qiskit.QuantumCircuit(3)
     circuit.cx(2, 1)

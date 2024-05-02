@@ -182,7 +182,10 @@ def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutp
 
     if "pulse_gate_circuits" in json_dict:
         pulse_gate_circuits = css.serialization.deserialize_qiskit_circuits(
-            json_dict["pulse_gate_circuits"], circuits_is_list
+            json_dict["pulse_gate_circuits"],
+            circuits_is_list,
+            pulse_durations=json_dict.get("pulse_durations"),
+            pulse_start_times=json_dict.get("pulse_start_times"),
         )
 
     if "pulses" in json_dict:
