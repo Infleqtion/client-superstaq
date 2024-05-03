@@ -174,10 +174,9 @@ class MerminBell(Benchmark):
         for num_y in range(1, num_qubits + 1, 2):
             coef = (-1.0) ** (num_y // 2)
 
-            for y_indices in itertools.combinations(range(num_qubits), num_y):
-                pauli = ["X"] * num_qubits
-                for i in y_indices:
-                    pauli[i] = "Y"
+            for x_indices in itertools.combinations(range(num_qubits), num_qubits - num_y):
+                pauli = np.array(["Y"] * num_qubits)
+                pauli.put(x_indices, "X")
                 mermin_op.append((coef, "".join(pauli)))
 
         return mermin_op
