@@ -75,8 +75,9 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
 .. toctree::
    :maxdepth: 1
    :hidden:
-   :caption: Clients
+   :caption: API Guide
 
    cirq_superstaq
    qiskit_superstaq
    general_superstaq
+   supermarq
