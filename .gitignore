@@ -77,8 +77,11 @@ _build
 _readthedocs_build
 autoapi
 _build_rtd
+docs/source/cirq_superstaq.ops.rst
+docs/source/general_superstaq.check.rst
 docs/source/modules.rst
 docs/source/setup.rst
+docs/source/supermarq.benchmarks.rst
 docs/_build/
 
 # PyBuilder
