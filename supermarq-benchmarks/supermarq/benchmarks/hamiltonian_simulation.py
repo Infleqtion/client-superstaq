@@ -133,7 +133,7 @@ class HamiltonianSimulation(Benchmark):
 
         return circuit
 
-    def _average_magnetization(self, result: Mapping[str, float], shots: int) -> float:
+    def _average_magnetization(self, result: Mapping[str, float], shots: float) -> float:
         mag = 0.0
         for spin_str, count in result.items():
             spin_int = [1 - 2 * int(s) for s in spin_str]
@@ -157,7 +157,7 @@ class HamiltonianSimulation(Benchmark):
         """
         ideal_counts = supermarq.simulation.get_ideal_counts(self.circuit())
 
-        total_shots = int(sum(counts.values()))
+        total_shots = sum(counts.values())
 
         mag_ideal = self._average_magnetization(ideal_counts, 1)
         mag_experimental = self._average_magnetization(counts, total_shots)

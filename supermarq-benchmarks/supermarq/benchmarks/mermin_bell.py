@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import itertools
 from typing import cast
 
 import cirq
 import numpy as np
-import sympy
 
 from supermarq import stabilizers
 from supermarq.benchmark import Benchmark
@@ -170,31 +170,14 @@ class MerminBell(Benchmark):
         (https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.65.1838), or M_n
         (Eq. 2.8) in https://arxiv.org/pdf/2005.11271.pdf
         """
-        x = sympy.symbols(f"x_1:{num_qubits + 1}")
-        y = sympy.symbols(f"y_1:{num_qubits + 1}")
-
-        term1 = 1
-        term2 = 1
-        for j in range(num_qubits):
-            term1 = term1 * (x[j] + sympy.I * y[j])
-            term2 = term2 * (x[j] - sympy.I * y[j])
-        term1 = sympy.expand(term1)
-        term2 = sympy.expand(term2)
-
-        M_n = (1 / (2 * sympy.I)) * (term1 - term2)
-        M_n = sympy.simplify(M_n)
-
-        variables = M_n.as_terms()[1]
         mermin_op = []
-        for term in M_n.as_terms()[0]:
-            coef = term[1][0][0]
-            pauli = [""] * num_qubits
-            for i, v in enumerate(term[1][1]):
-                if v == 1:
-                    char, idx = str(variables[i]).split("_")
-                    pauli[int(idx) - 1] = char.upper()
+        for num_y in range(1, num_qubits + 1, 2):
+            coef = (-1.0) ** (num_y // 2)
 
-            mermin_op.append((coef, "".join(pauli)))
+            for x_indices in itertools.combinations(range(num_qubits), num_qubits - num_y):
+                pauli = np.array(["Y"] * num_qubits)
+                pauli.put(x_indices, "X")
+                mermin_op.append((coef, "".join(pauli)))
 
         return mermin_op
 
