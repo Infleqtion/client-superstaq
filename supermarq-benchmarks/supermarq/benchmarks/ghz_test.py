@@ -7,7 +7,7 @@ import qiskit.quantum_info
 from supermarq.benchmarks.ghz import GHZ
 
 
-@pytest.mark.parametrize("method", ["ladder", "star", "fanout"])
+@pytest.mark.parametrize("method", ["ladder", "star", "logdepth"])
 @pytest.mark.parametrize("num_qubits", [3, 4, 7])
 def test_ghz_circuit(method: str, num_qubits: int) -> None:
     ghz = GHZ(num_qubits, method=method)
@@ -39,8 +39,8 @@ def test_ghz_circuit(method: str, num_qubits: int) -> None:
 def test_ghz_circuit_methods() -> None:
     star = GHZ(8, method="star").circuit()
     ladder = GHZ(8, method="ladder").circuit()
-    fanout = GHZ(8, method="fanout").circuit()
-    assert len(fanout) < len(ladder) == len(star)
+    logdepth = GHZ(8, method="logdepth").circuit()
+    assert len(logdepth) < len(ladder) == len(star)
 
 
 def test_ghz_invalid_method() -> None:

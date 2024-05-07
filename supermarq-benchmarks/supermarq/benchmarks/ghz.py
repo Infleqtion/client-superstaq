@@ -21,15 +21,15 @@ class GHZ(Benchmark):
 
         Args:
             num_qubits: Number of qubits in GHZ circuit.
-            method: Circuit construction method to use. Must be "ladder", "star", or "fanout". The
+            method: Circuit construction method to use. Must be "ladder", "star", or "logdepth". The
                 "ladder" method uses a linear-depth CNOT ladder, appropriate for nearest-neighbor
                 architectures. The "star" method is also linear depth, but with all CNOTs sharing
-                the same control qubit. The "fanout" method uses a log-depth CNOT fanout.
+                the same control qubit. The "logdepth" method uses a log-depth CNOT fanout circuit.
         """
-        if method not in ("ladder", "star", "fanout"):
+        if method not in ("ladder", "star", "logdepth"):
             raise ValueError(
                 f"'{method}' is not a valid GHZ circuit construction method. Valid options are "
-                "'ladder', 'star', and 'fanout'."
+                "'ladder', 'star', and 'logdepth'."
             )
         self.num_qubits = num_qubits
         self.method = method
