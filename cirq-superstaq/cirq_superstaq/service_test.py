@@ -372,7 +372,9 @@ def test_service_resource_estimate(mock_resource_estimate: mock.MagicMock) -> No
         "resource_estimates": [{"num_single_qubit_gates": 0, "num_two_qubit_gates": 1, "depth": 2}]
     }
 
-    assert service.resource_estimate(cirq.Circuit(), "ss_unconstrained_simulator") == resource_estimate
+    assert (
+        service.resource_estimate(cirq.Circuit(), "ss_unconstrained_simulator") == resource_estimate
+    )
 
 
 @mock.patch(
@@ -390,7 +392,10 @@ def test_service_resource_estimate_list(mock_resource_estimate: mock.MagicMock) 
         ]
     }
 
-    assert service.resource_estimate([cirq.Circuit()], "ss_unconstrained_simulator") == resource_estimates
+    assert (
+        service.resource_estimate([cirq.Circuit()], "ss_unconstrained_simulator")
+        == resource_estimates
+    )
 
 
 @mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
@@ -646,7 +651,10 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
     }
 
     assert (
-        service.ibmq_compile(circuit, dd_strategy="dynamic", test_options="yes").circuit == circuit
+        service.ibmq_compile(
+            circuit, dd_strategy="dynamic", test_options="yes", target="ibmq_fake_qpu"
+        ).circuit
+        == circuit
     )
 
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
@@ -655,19 +663,29 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
         "test_options": "yes",
     }
 
-    assert service.ibmq_compile([circuit]).circuits == [circuit]
-    assert service.ibmq_compile(circuit).pulse_sequence == mock.DEFAULT
-    assert service.ibmq_compile([circuit]).pulse_sequences == [mock.DEFAULT]
-    assert service.ibmq_compile(circuit).initial_logical_to_physical == initial_logical_to_physical
-    assert service.ibmq_compile([circuit]).initial_logical_to_physicals == [
+    assert service.ibmq_compile([circuit], target="ibmq_fake_qpu").circuits == [circuit]
+    assert service.ibmq_compile(circuit, target="ibmq_fake_qpu").pulse_sequence == mock.DEFAULT
+    assert service.ibmq_compile([circuit], target="ibmq_fake_qpu").pulse_sequences == [mock.DEFAULT]
+    assert (
+        service.ibmq_compile(circuit, target="ibmq_fake_qpu").initial_logical_to_physical
+        == initial_logical_to_physical
+    )
+    assert service.ibmq_compile([circuit], target="ibmq_fake_qpu").initial_logical_to_physicals == [
         initial_logical_to_physical
     ]
-    assert service.ibmq_compile(circuit).final_logical_to_physical == final_logical_to_physical
-    assert service.ibmq_compile([circuit]).final_logical_to_physicals == [final_logical_to_physical]
+    assert (
+        service.ibmq_compile(circuit, target="ibmq_fake_qpu").final_logical_to_physical
+        == final_logical_to_physical
+    )
+    assert service.ibmq_compile([circuit], target="ibmq_fake_qpu").final_logical_to_physicals == [
+        final_logical_to_physical
+    ]
 
     with mock.patch.dict("sys.modules", {"qiskit": None}):
-        assert service.ibmq_compile(cirq.Circuit()).pulse_sequence is None
-        assert service.ibmq_compile([cirq.Circuit()]).pulse_sequences is None
+        assert service.ibmq_compile(cirq.Circuit(), target="ibmq_fake_qpu").pulse_sequence is None
+        assert (
+            service.ibmq_compile([cirq.Circuit()], target="ibmq_fake_qpu").pulse_sequences is None
+        )
 
     with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid IBMQ target."):
         service.ibmq_compile(cirq.Circuit(), target="ss_example_qpu")

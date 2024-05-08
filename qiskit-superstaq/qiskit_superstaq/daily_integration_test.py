@@ -248,9 +248,7 @@ def test_aces(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     assert len(result) == 18
 
 
-@pytest.mark.parametrize(
-    "target", ["cq_sqorpius_simulator", "aws_sv1_simulator"]
-)
+@pytest.mark.parametrize("target", ["cq_sqorpius_simulator", "aws_sv1_simulator"])
 def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2, 2)
     qc.x(0)

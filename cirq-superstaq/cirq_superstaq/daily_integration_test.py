@@ -297,9 +297,7 @@ def test_job(service: css.Service) -> None:
     assert job.job_id() == job_id
 
 
-@pytest.mark.parametrize(
-    "target", ["cq_sqorpius_simulator", "aws_sv1_simulator"]
-)
+@pytest.mark.parametrize("target", ["cq_sqorpius_simulator", "aws_sv1_simulator"])
 def test_submit_to_provider_simulators(target: str, service: css.Service) -> None:
     q0 = cirq.LineQubit(0)
     q1 = cirq.LineQubit(1)
