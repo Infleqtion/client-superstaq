@@ -702,7 +702,7 @@ class Service(gss.service.Service):
     def ibmq_compile(
         self,
         circuits: cirq.Circuit | Sequence[cirq.Circuit],
-        target: str = "ibmq_qasm_simulator",
+        target: str,
         dynamical_decoupling: bool = True,
         dd_strategy: str = "static_context_aware",
         **kwargs: Any,

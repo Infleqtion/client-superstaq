@@ -57,13 +57,6 @@ TARGET_LIST = {
         "available": True,
         "retired": False,
     },
-    "ibmq_extended-stabilizer_simulator": {
-        "supports_submit": True,
-        "supports_submit_qubo": False,
-        "supports_compile": True,
-        "available": True,
-        "retired": False,
-    },
     "ibmq_fake-athens_qpu": {
         "supports_submit": True,
         "supports_submit_qubo": False,
@@ -79,34 +72,6 @@ TARGET_LIST = {
         "retired": False,
     },
     "ibmq_kyoto_qpu": {
-        "supports_submit": True,
-        "supports_submit_qubo": False,
-        "supports_compile": True,
-        "available": True,
-        "retired": False,
-    },
-    "ibmq_mps_simulator": {
-        "supports_submit": True,
-        "supports_submit_qubo": False,
-        "supports_compile": True,
-        "available": True,
-        "retired": False,
-    },
-    "ibmq_qasm_simulator": {
-        "supports_submit": True,
-        "supports_submit_qubo": False,
-        "supports_compile": True,
-        "available": True,
-        "retired": False,
-    },
-    "ibmq_stabilizer_simulator": {
-        "supports_submit": True,
-        "supports_submit_qubo": False,
-        "supports_compile": True,
-        "available": True,
-        "retired": False,
-    },
-    "ibmq_statevector_simulator": {
         "supports_submit": True,
         "supports_submit_qubo": False,
         "supports_compile": True,

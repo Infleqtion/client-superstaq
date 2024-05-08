@@ -143,7 +143,7 @@ def test_get_resource_estimate(service: css.Service) -> None:
 def test_get_targets(service: css.Service) -> None:
     result = service.get_targets()
     ibmq_target_info = gss.typing.Target(
-        target="ibmq_qasm_simulator",
+        target="ibmq_brisbane_qpu",
         supports_submit=True,
         supports_submit_qubo=False,
         supports_compile=True,
@@ -279,7 +279,7 @@ def test_aces(service: css.Service) -> None:
 
 def test_job(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
-    job = service.create_job(circuit, target="ibmq_qasm_simulator", repetitions=10)
+    job = service.create_job(circuit, target="ibmq_brisbane_qpu", repetitions=10, method="dry-run")
 
     job_id = job.job_id()  # To test for https://github.com/Infleqtion/client-superstaq/issues/452
 
@@ -297,9 +297,7 @@ def test_job(service: css.Service) -> None:
     assert job.job_id() == job_id
 
 
-@pytest.mark.parametrize(
-    "target", ["cq_sqorpius_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
-)
+@pytest.mark.parametrize("target", ["cq_sqorpius_simulator", "aws_sv1_simulator"])
 def test_submit_to_provider_simulators(target: str, service: css.Service) -> None:
     q0 = cirq.LineQubit(0)
     q1 = cirq.LineQubit(1)

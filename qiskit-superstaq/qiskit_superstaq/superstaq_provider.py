@@ -296,7 +296,7 @@ class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
     def ibmq_compile(
         self,
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
-        target: str = "ibmq_qasm_simulator",
+        target: str,
         dynamical_decoupling: bool = True,
         dd_strategy: str = "static_context_aware",
         **kwargs: Any,
