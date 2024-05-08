@@ -125,7 +125,7 @@ def test_service_run_and_get_counts() -> None:
     counts = service.get_counts(
         circuits=circuit,
         repetitions=4,
-        target="ibmq_qasm_simulator",
+        target="ss_unconstrained_simulator",
         param_resolver=params,
     )
     assert counts == {"11": 1}
@@ -133,7 +133,7 @@ def test_service_run_and_get_counts() -> None:
     results = service.run(
         circuits=circuit,
         repetitions=4,
-        target="ibmq_qasm_simulator",
+        target="ss_unconstrained_simulator",
         param_resolver=params,
     )
     assert results.histogram(key="a") == collections.Counter({3: 1})
@@ -149,7 +149,7 @@ def test_service_run_and_get_counts() -> None:
     multi_results = service.run(
         circuits=[circuit, circuit],
         repetitions=10,
-        target="ibmq_qasm_simulator",
+        target="ss_unconstrained_simulator",
         param_resolver=params,
     )
 
@@ -160,7 +160,7 @@ def test_service_run_and_get_counts() -> None:
     multi_counts = service.get_counts(
         circuits=[circuit, circuit],
         repetitions=4,
-        target="ibmq_qasm_simulator",
+        target="ss_unconstrained_simulator",
         param_resolver=params,
     )
     assert multi_counts == [{"11": 1}, {"11": 1}]
@@ -185,10 +185,10 @@ def test_service_sampler() -> None:
             }
         ],
         "status": "Done",
-        "target": "ibmq_qasm_simulator",
+        "target": "ss_unconstrained_simulator",
     }
 
-    sampler = service.sampler(target="ibmq_qasm_simulator")
+    sampler = service.sampler(target="ss_unconstrained_simulator")
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.X(q0), cirq.measure(q0, key="a"))
     results = sampler.sample(program=circuit, repetitions=4)
@@ -372,7 +372,7 @@ def test_service_resource_estimate(mock_resource_estimate: mock.MagicMock) -> No
         "resource_estimates": [{"num_single_qubit_gates": 0, "num_two_qubit_gates": 1, "depth": 2}]
     }
 
-    assert service.resource_estimate(cirq.Circuit(), "ibmq_qasm_simulator") == resource_estimate
+    assert service.resource_estimate(cirq.Circuit(), "ss_unconstrained_simulator") == resource_estimate
 
 
 @mock.patch(
@@ -390,7 +390,7 @@ def test_service_resource_estimate_list(mock_resource_estimate: mock.MagicMock) 
         ]
     }
 
-    assert service.resource_estimate([cirq.Circuit()], "ibmq_qasm_simulator") == resource_estimates
+    assert service.resource_estimate([cirq.Circuit()], "ss_unconstrained_simulator") == resource_estimates
 
 
 @mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")

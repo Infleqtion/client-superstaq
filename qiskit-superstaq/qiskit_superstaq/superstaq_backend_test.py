@@ -80,7 +80,7 @@ def test_retrieve_job(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc.h(0)
     qc.cx(0, 1)
     qc.measure([0, 0], [1, 1])
-    backend = fake_superstaq_provider.get_backend("ibmq_qasm_simulator")
+    backend = fake_superstaq_provider.get_backend("ibmq_brisbane_qpu")
     with patch(
         "general_superstaq.superstaq_client._SuperstaqClient.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
@@ -90,13 +90,13 @@ def test_retrieve_job(fake_superstaq_provider: MockSuperstaqProvider) -> None:
 
 
 def test_eq(fake_superstaq_provider: MockSuperstaqProvider) -> None:
-    backend1 = fake_superstaq_provider.get_backend("ibmq_qasm_simulator")
+    backend1 = fake_superstaq_provider.get_backend("ibmq_brisbane_qpu")
     assert backend1 != 3
 
     backend2 = fake_superstaq_provider.get_backend("ibmq_athens_qpu")
     assert backend1 != backend2
 
-    backend3 = fake_superstaq_provider.get_backend("ibmq_qasm_simulator")
+    backend3 = fake_superstaq_provider.get_backend("ibmq_brisbane_qpu")
     assert backend1 == backend3
 
 
@@ -312,7 +312,7 @@ def test_compile(mock_post: MagicMock) -> None:
 
 
 def test_target_info(fake_superstaq_provider: MockSuperstaqProvider) -> None:
-    target = "ibmq_qasm_simulator"
+    target = "ibmq_brisbane_qpu"
     backend = fake_superstaq_provider.get_backend(target)
     assert backend.target_info()["backend_name"] == target
 

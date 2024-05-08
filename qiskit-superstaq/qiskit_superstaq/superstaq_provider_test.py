@@ -208,7 +208,7 @@ def test_resource_estimate(
     }
 
     assert (
-        fake_superstaq_provider.resource_estimate(qiskit.QuantumCircuit(), "ibmq_qasm_simulator")
+        fake_superstaq_provider.resource_estimate(qiskit.QuantumCircuit(), "ibmq_brisbane_qpu")
         == resource_estimate
     )
 
@@ -229,7 +229,7 @@ def test_resource_estimate_list(
     }
 
     assert (
-        fake_superstaq_provider.resource_estimate([qiskit.QuantumCircuit()], "ibmq_qasm_simulator")
+        fake_superstaq_provider.resource_estimate([qiskit.QuantumCircuit()], "ibmq_brisbane_qpu")
         == resource_estimates
     )
 

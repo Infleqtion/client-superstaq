@@ -22,7 +22,7 @@ def provider() -> qss.SuperstaqProvider:
 def test_backends(provider: qss.SuperstaqProvider) -> None:
     result = provider.get_targets()
     ibmq_backend_info = gss.typing.Target(
-        target="ibmq_qasm_simulator",
+        target="ibmq_brisbane_qpu",
         supports_submit=True,
         supports_submit_qubo=False,
         supports_compile=True,
@@ -30,7 +30,7 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
         retired=False,
     )
     assert ibmq_backend_info in result
-    assert provider.get_backend("ibmq_qasm_simulator").name() == "ibmq_qasm_simulator"
+    assert provider.get_backend("ibmq_brisbane_qpu").name() == "ibmq_brisbane_qpu"
 
 
 def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
@@ -249,7 +249,7 @@ def test_aces(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
 
 
 @pytest.mark.parametrize(
-    "target", ["cq_sqorpius_simulator", "aws_sv1_simulator", "ibmq_qasm_simulator"]
+    "target", ["cq_sqorpius_simulator", "aws_sv1_simulator"]
 )
 def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2, 2)
@@ -259,6 +259,21 @@ def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvi
     qc.measure(1, 1)
 
     job = provider.get_backend(target).run(qc, shots=1)
+    assert job.result().get_counts() == {"11": 1}
+
+
+@pytest.mark.parametrize(
+    "target", ["qscout_peregrine_qpu", "aqt_keysight_qpu", "ibmq_brisbane_qpu"]
+)
+def test_submit_dry_run(target: str, provider: qss.SuperstaqProvider) -> None:
+    qc = qiskit.QuantumCircuit(2, 2)
+    qc.x(0)
+    qc.cx(0, 1)
+    qc.measure(0, 0)
+    qc.measure(1, 1)
+
+    job = provider.get_backend(target).run(qc, shots=1, method="dry-run")
+    assert job.status() == qiskit.providers.JobStatus.DONE
     assert job.result().get_counts() == {"11": 1}
 
 
