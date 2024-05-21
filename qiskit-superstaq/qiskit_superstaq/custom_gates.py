@@ -45,8 +45,7 @@ class AceCR(qiskit.circuit.Gate):
             params.append(sandwich_rx_rads)
         super().__init__(name, 2, params, label=label)
 
-        self.rads = rads
-        self.sandwich_rx_rads = sandwich_rx_rads
+        self.params = params
 
     def inverse(self) -> AceCR:
         """Inverts the AceCR gate.
@@ -54,16 +53,18 @@ class AceCR(qiskit.circuit.Gate):
         Returns:
             The inverse AceCR gate.
         """
-        return AceCR(self.rads, -self.sandwich_rx_rads, label=self.label)
+        if len(self.params) > 1:
+            return AceCR(self.params[0], -self.params[1], label=self.label)
+        return AceCR(self.params[0], label=self.label)
 
     def _define(self) -> None:
         """Stores the qiskit circuit definition of the AceCR gate."""
         qc = qiskit.QuantumCircuit(2, name=self.name)
-        qc.rzx(self.rads / 2, 0, 1)
+        qc.rzx(self.params[0] / 2, 0, 1)
         qc.x(0)
-        if self.sandwich_rx_rads:
-            qc.rx(self.sandwich_rx_rads, 1)
-        qc.rzx(-self.rads / 2, 0, 1)
+        if len(self.params) > 1:
+            qc.rx(self.params[1], 1)
+        qc.rzx(-self.params[0] / 2, 0, 1)
         self.definition = qc
 
     def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
@@ -71,26 +72,32 @@ class AceCR(qiskit.circuit.Gate):
         return qiskit.quantum_info.Operator(self.definition).data
 
     def __repr__(self) -> str:
+        rads = self.params[0]
+        sandwich_rx_rads = 0 if len(self.params) < 2 else self.params[1]
         args = []
-        if self.rads != np.pi / 2:
-            args.append(f"rads={self.rads!r}")
-        if self.sandwich_rx_rads != 0:
-            args.append(f"sandwich_rx_rads={self.sandwich_rx_rads!r}")
+        if rads != np.pi / 2:
+            args.append(f"rads={rads!r}")
+        if sandwich_rx_rads != 0:
+            args.append(f"sandwich_rx_rads={sandwich_rx_rads!r}")
         if self.label:
             args.append(f"label={self.label!r}")
         return f"qss.AceCR({', '.join(args)})"
 
     def __str__(self) -> str:
-        rads_str = f"{self.rads}"
-        if np.isclose(round(self.rads / np.pi, 5) * np.pi, self.rads):
-            rads_str = f"{round(self.rads / np.pi, 5)}π"
-        if self.sandwich_rx_rads == 0 and self.rads == np.pi / 2:
+        rads = self.params[0]
+        rads_str = f"{rads}"
+        if np.isclose(round(rads / np.pi, ndigits=5) * np.pi, rads):
+            rads_str = f"{round(rads / np.pi, ndigits=5)}π"
+        sandwich_rx_rads = 0.0
+        if len(self.params) > 1:
+            sandwich_rx_rads = self.params[1]
+        if sandwich_rx_rads == 0 and rads == np.pi / 2:
             return "AceCR"
-        elif self.sandwich_rx_rads != 0 and self.rads not in [0, np.pi / 2]:
-            arg = qiskit.circuit.tools.pi_check(self.sandwich_rx_rads, ndigits=8)
+        elif sandwich_rx_rads != 0 and rads not in [0, np.pi / 2]:
+            arg = qiskit.circuit.tools.pi_check(sandwich_rx_rads, ndigits=8)
             return f"AceCR({rads_str})|RXGate({arg})|"
-        elif self.sandwich_rx_rads != 0:
-            arg = qiskit.circuit.tools.pi_check(self.sandwich_rx_rads, ndigits=8)
+        elif sandwich_rx_rads != 0:
+            arg = qiskit.circuit.tools.pi_check(sandwich_rx_rads, ndigits=8)
             return f"AceCR|RXGate({arg})|"
         else:
             return f"AceCR({rads_str})"
