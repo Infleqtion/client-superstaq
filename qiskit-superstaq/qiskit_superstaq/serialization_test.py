@@ -108,17 +108,29 @@ def test_circuit_serialization() -> None:
 
 def test_insert_times_and_durations() -> None:
     circuit = qiskit.QuantumCircuit(2)
+
+    # Test an empty circuit
+    new_circuit = qss.serialization.insert_times_and_durations(circuit, [], [])
+    assert new_circuit.duration == 0
+    assert new_circuit.op_start_times == []
+
     circuit.x(0)
     circuit.cx(0, 1)
     circuit.measure_all()
 
     durations = [10, 100, 0, 50, 50]
     start_times = [0, 10, 110, 110, 110]
+
     new_circuit = qss.serialization.insert_times_and_durations(circuit, durations, start_times)
     assert new_circuit == circuit
     assert new_circuit.op_start_times == start_times
     assert [inst.operation.duration for inst in new_circuit] == durations
     assert new_circuit.duration == 160
+
+    # Test fallback when timing information is not provided
+    new_circuit = qss.serialization.insert_times_and_durations(circuit, [], [])
+    assert new_circuit is circuit
+    assert new_circuit.duration is None
 
 
 def test_warning_suppression() -> None:
