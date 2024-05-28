@@ -231,7 +231,6 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         repetitions=200,
         target="ss_example_qpu",
         method="dry-run",
-        qiskit_pulse=True,
         cq_token={"@type": "RefreshFlowState", "access_token": "123"},
     )
     assert response == {"foo": "bar"}
@@ -242,7 +241,7 @@ def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
         "shots": 200,
         "method": "dry-run",
         "options": json.dumps(
-            {"qiskit_pulse": True, "cq_token": {"@type": "RefreshFlowState", "access_token": "123"}}
+            {"cq_token": {"@type": "RefreshFlowState", "access_token": "123"}}
         ),
     }
     mock_post.assert_called_with(
