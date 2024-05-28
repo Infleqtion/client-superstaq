@@ -170,6 +170,42 @@ def test_read_json() -> None:
     assert out.pulse_sequences is None
 
 
+def test_read_json_empty_circuit() -> None:
+    """Checks for common bugs when deserializing empty circuits."""
+    qc = qiskit.QuantumCircuit(2)
+
+    json_dict = {
+        "qiskit_circuits": qss.serialization.serialize_circuits(qc),
+        "initial_logical_to_physicals": "[[]]",
+        "final_logical_to_physicals": "[[]]",
+        "pulse_gate_circuits": qss.serialization.serialize_circuits(qc),
+        "pulse_durations": [[]],
+        "pulse_start_times": [[]],
+    }
+
+    out = qss.compiler_output.read_json(json_dict, circuits_is_list=False)
+    assert out.circuit == qc
+    assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
+    assert out.pulse_gate_circuit == qc
+    assert out.pulse_gate_circuit.duration == 0
+    assert out.pulse_gate_circuit.op_start_times == []
+
+    json_dict = {
+        "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
+        "initial_logical_to_physicals": "[[]]",
+        "final_logical_to_physicals": "[[], []]",
+        "pulse_gate_circuits": qss.serialization.serialize_circuits([qc, qc]),
+        "pulse_durations": [[], []],
+        "pulse_start_times": [[], []],
+    }
+    out = qss.compiler_output.read_json(json_dict, circuits_is_list=True)
+    assert out.circuits == [qc, qc]
+    assert out.pulse_gate_circuits == [qc, qc]
+    assert out.pulse_gate_circuits[0].duration == 0
+    assert out.pulse_gate_circuits[1].duration == 0
+    assert out.pulse_gate_circuits[1].op_start_times == []
+
+
 @mock.patch.dict("sys.modules", {"qtrl": None})
 def test_read_json_aqt() -> None:
     importlib.reload(qss.compiler_output)

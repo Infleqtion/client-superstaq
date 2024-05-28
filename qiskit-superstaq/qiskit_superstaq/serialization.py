@@ -182,19 +182,22 @@ def insert_times_and_durations(
         as the `.duration` `.op_start_times` attributes of the circuit itself.
     """
     new_circuit = circuit.copy_empty_like()
-    for inst, duration in zip(circuit, durations):
+    circuit_duration = 0
+    for inst, duration, start_time in zip(circuit, durations, start_times):
         operation = inst.operation
         if inst.operation.duration != duration:
             operation = inst.operation.to_mutable()
             operation.duration = duration
             inst = inst.replace(operation=operation)
+        circuit_duration = max(circuit_duration, start_time + duration)
         new_circuit.append(inst)
 
-    new_circuit._op_start_times = start_times
-    new_circuit.duration = max(
-        start_time + duration for start_time, duration in zip(start_times, durations)
-    )
-    return new_circuit
+    if len(new_circuit) == len(circuit):
+        new_circuit._op_start_times = start_times
+        new_circuit.duration = circuit_duration
+        return new_circuit
+
+    return circuit
 
 
 def _is_qiskit_gate(gate: qiskit.circuit.Instruction) -> bool:
