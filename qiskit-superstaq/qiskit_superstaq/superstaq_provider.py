@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from _typeshed import SupportsItems
 
 
-class SuperstaqProvider(qiskit.providers.ProviderV1, gss.service.Service):
+class SuperstaqProvider(gss.service.Service):
     """Provider for Superstaq backend.
 
     Typical usage is:

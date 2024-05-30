@@ -155,8 +155,6 @@ class _SuperstaqClient:
             method: Which type of method to execute the circuits (noisy simulator,
             non-noisy simulator, hardware, e.t.c)
             kwargs: Other optimization and execution parameters.
-                - qiskit_pulse: Whether to use Superstaq's pulse-level optimizations for IBMQ
-                devices.
 
         Returns:
             The json body of the response as a dict. This does not contain populated information
