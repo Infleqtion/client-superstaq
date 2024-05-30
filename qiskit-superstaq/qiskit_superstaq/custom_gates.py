@@ -45,8 +45,6 @@ class AceCR(qiskit.circuit.Gate):
             params.append(sandwich_rx_rads)
         super().__init__(name, 2, params, label=label)
 
-        self.params = params
-
     def inverse(self) -> AceCR:
         """Inverts the AceCR gate.
 
