@@ -48,6 +48,7 @@ def validate_target(target: str) -> None:
         "rigetti",
         "qscout",
         "ss",
+        "iqm",
         "toshiba",
     ]
 
