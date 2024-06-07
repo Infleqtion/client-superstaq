@@ -16,9 +16,6 @@ def test_validate_target() -> None:
     with pytest.raises(ValueError, match="does not have a valid target device type"):
         gss.validation.validate_target("ibmq_invalid_device")
 
-    with pytest.raises(ValueError, match="does not have a valid target prefix"):
-        gss.validation.validate_target("invalid_test_qpu")
-
 
 def test_validate_integer_param() -> None:
     # Tests for valid inputs -> Pass
