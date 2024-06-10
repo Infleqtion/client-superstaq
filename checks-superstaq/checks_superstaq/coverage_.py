@@ -84,5 +84,30 @@ def run(
     return 0
 
 
+def run_modular(
+    *args: str,
+    include: str | Iterable[str] = "*.py",
+    exclude: str | Iterable[str] = "*_integration_test.py",
+    silent: bool = False,
+) -> int:
+    """Check that each file is covered by its own data file."""
+
+    # start by identifying files that should be covered
+    tracked_files = check_utils.get_tracked_files(include)
+    coverage_files = check_utils.exclude_files(tracked_files, exclude)
+
+    # run checks on individual files
+    exit_codes = {}
+    for file in coverage_files:
+        exit_codes[file] = run(*args, file, silent=silent)
+
+    # print warnings for files that are not covered
+    for file, exit_code in exit_codes.items():
+        if exit_code:
+            check_utils.warning(f"Coverage failed for {file}.")
+
+    return sum(exit_codes.values())
+
+
 if __name__ == "__main__":
     exit(run(*sys.argv[1:]))
