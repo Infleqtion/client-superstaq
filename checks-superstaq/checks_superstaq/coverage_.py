@@ -61,7 +61,7 @@ def run(
     else:
         # run checks on individual files, skipping repeats
         exit_codes = {}
-        checked_test_files = []
+        checked_test_files: list[str] = []
         for file in files:
             test_files = check_utils.get_test_files([file], exclude=exclude, silent=silent)
             if not test_files or set(test_files).issubset(checked_test_files):
