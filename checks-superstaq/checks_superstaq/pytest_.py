@@ -53,8 +53,6 @@ def run(
         help="Run pytest on *_integration_test.py files.",
     )
 
-    parser.add_argument("--enable-socket", action="store_true", help="Force-enable socket.")
-
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
     if "pytest" in parsed_args.skip:
         return 0
@@ -63,7 +61,6 @@ def run(
     if parsed_args.notebook:
         include = include or "*.ipynb"
     elif parsed_args.integration:
-        args_to_pass += ["--force-enable-socket"]
         include = include or "*_integration_test.py"
     else:
         include = include or "*.py"
@@ -72,12 +69,10 @@ def run(
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     if parsed_args.notebook:
-        args_to_pass += ["--nbmake"]
+        args_to_pass += ["--nbmake", "--force-enable-socket"]
     elif not parsed_args.integration:
+        args_to_pass += ["--force-enable-socket"]
         files = check_utils.get_test_files(files, exclude=exclude, silent=silent)
-
-    if not parsed_args.integration and not parsed_args.enable_socket:
-        args_to_pass += ["--disable-socket"]
 
     if not files:
         return 0
