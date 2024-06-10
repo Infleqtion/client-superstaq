@@ -63,6 +63,7 @@ def run(
     if parsed_args.notebook:
         include = include or "*.ipynb"
     elif parsed_args.integration:
+        args_to_pass += ["--force-enable-socket"]
         include = include or "*_integration_test.py"
     else:
         include = include or "*.py"
