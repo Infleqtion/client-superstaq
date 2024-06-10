@@ -1,5 +1,13 @@
 # Check script configuration:
 
+[tool.pytest.ini_options]
+addopts = "--disable-socket"
+filterwarnings = [
+  "ignore::UserWarning:qtrl.*",
+  "ignore::PendingDeprecationWarning:qtrl.utils.config",
+  "ignore::PendingDeprecationWarning:ruamel.yaml.main",
+]
+
 [tool.black]
 color = true
 line_length = 100
