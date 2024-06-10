@@ -29,6 +29,11 @@ def run(
     """
 
     parser = check_utils.get_check_parser()
+    parser.add_argument(
+        "--modular",
+        action="store_true",
+        help="Check that each file is covered by its own test file.",
+    )
     parser.description = textwrap.dedent(
         """
         Checks to make sure that all code is covered by unit tests.
@@ -43,13 +48,44 @@ def run(
         return 0
 
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
-
     silent = silent or not (parsed_args.files or parsed_args.revisions)
-    test_files = check_utils.get_test_files(files, exclude=exclude, silent=silent)
 
-    if not test_files:
-        print("No test files to check for pytest and coverage.")
-        return 0
+    if not parsed_args.modular:
+        test_files = check_utils.get_test_files(files, exclude=exclude, silent=silent)
+        if not test_files:
+            print("No test files to check for pytest and coverage.")
+            return 0
+        return _run_on_files(files, test_files, pytest_args, exclude, silent)
+
+    else:
+        # run checks on individual files
+        exit_codes = {}
+        for file in files:
+            test_files = check_utils.get_test_files([file], exclude=exclude, silent=silent)
+            if not test_files:
+                continue
+            exit_codes[file] = _run_on_files([file], test_files, pytest_args, exclude, silent)
+
+        if not exit_codes:
+            print("No test files to check for pytest and coverage.")
+            return 0
+
+        # print warnings for files that are not covered
+        for file, exit_code in exit_codes.items():
+            if exit_code:
+                check_utils.warning(f"Coverage failed for {file}.")
+
+        return sum(exit_codes.values())
+
+
+def _run_on_files(
+    files: list[str],
+    test_files: list[str],
+    pytest_args: list[str],
+    exclude: str | Iterable[str],
+    silent: bool,
+) -> int:
+    """Run coverage tests on the specified files."""
 
     coverage_arg = "--include=" + ",".join(files)
     test_returncode = subprocess.call(
@@ -82,31 +118,6 @@ def run(
 
     print(check_utils.success("TEST AND COVERAGE SUCCESS!"))
     return 0
-
-
-def run_modular(
-    *args: str,
-    include: str | Iterable[str] = "*.py",
-    exclude: str | Iterable[str] = "*_integration_test.py",
-    silent: bool = False,
-) -> int:
-    """Check that each file is covered by its own data file."""
-
-    # start by identifying files that should be covered
-    tracked_files = check_utils.get_tracked_files(include)
-    coverage_files = check_utils.exclude_files(tracked_files, exclude)
-
-    # run checks on individual files
-    exit_codes = {}
-    for file in coverage_files:
-        exit_codes[file] = run(*args, file, silent=silent)
-
-    # print warnings for files that are not covered
-    for file, exit_code in exit_codes.items():
-        if exit_code:
-            check_utils.warning(f"Coverage failed for {file}.")
-
-    return sum(exit_codes.values())
 
 
 if __name__ == "__main__":
