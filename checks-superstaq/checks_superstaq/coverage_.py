@@ -50,21 +50,24 @@ def run(
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
     silent = silent or not (parsed_args.files or parsed_args.revisions)
 
+    test_files = check_utils.get_test_files(files, exclude=exclude, silent=silent)
+    if not test_files:
+        print("No test files to check for pytest and coverage.")
+        return 0
+
     if not parsed_args.modular:
-        test_files = check_utils.get_test_files(files, exclude=exclude, silent=silent)
-        if not test_files:
-            print("No test files to check for pytest and coverage.")
-            return 0
         return _run_on_files(files, test_files, pytest_args, exclude, silent)
 
     else:
-        # run checks on individual files
+        # run checks on individual files, skipping repeats
         exit_codes = {}
+        checked_test_files = []
         for file in files:
             test_files = check_utils.get_test_files([file], exclude=exclude, silent=silent)
-            if not test_files:
+            if not test_files or set(test_files).issubset(checked_test_files):
                 continue
             exit_codes[file] = _run_on_files([file], test_files, pytest_args, exclude, silent)
+            checked_test_files.extend(test_files)
 
         if not exit_codes:
             print("No test files to check for pytest and coverage.")
@@ -85,7 +88,7 @@ def _run_on_files(
     exclude: str | Iterable[str],
     silent: bool,
 ) -> int:
-    """Run coverage tests on the specified files."""
+    """Helper function to run coverage tests on the specified files."""
 
     coverage_arg = "--include=" + ",".join(files)
     test_returncode = subprocess.call(
