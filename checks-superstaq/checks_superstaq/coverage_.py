@@ -56,7 +56,7 @@ def run(
         return 0
 
     if not parsed_args.modular:
-        return _run_on_files(files, test_files, pytest_args, exclude, silent)
+        return _run_on_files(files, test_files, pytest_args)
 
     else:
         # run checks on individual files, skipping repeats
@@ -66,7 +66,7 @@ def run(
             test_files = check_utils.get_test_files([file], exclude=exclude, silent=silent)
             if not test_files or set(test_files).issubset(checked_test_files):
                 continue
-            exit_codes[file] = _run_on_files([file], test_files, pytest_args, exclude, silent)
+            exit_codes[file] = _run_on_files([file], test_files, pytest_args)
             checked_test_files.extend(test_files)
 
         if not exit_codes:
@@ -81,14 +81,8 @@ def run(
         return sum(exit_codes.values())
 
 
-def _run_on_files(
-    files: list[str],
-    test_files: list[str],
-    pytest_args: list[str],
-    exclude: str | Iterable[str],
-    silent: bool,
-) -> int:
-    """Helper function to run coverage tests on the specified files."""
+def _run_on_files(files: list[str], test_files: list[str], pytest_args: list[str]) -> int:
+    """Helper function to run coverage tests on the specified files with the specified arguments."""
 
     coverage_arg = "--include=" + ",".join(files)
     test_returncode = subprocess.call(
