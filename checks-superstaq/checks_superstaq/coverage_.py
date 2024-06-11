@@ -82,7 +82,7 @@ def run(
 
 
 def _run_on_files(files: list[str], test_files: list[str], pytest_args: list[str]) -> int:
-    """Helper function to run coverage tests on the specified files with the specified arguments."""
+    """Helper function to run coverage tests on the given files with the given pytest arguments."""
 
     coverage_arg = "--include=" + ",".join(files)
     test_returncode = subprocess.call(
