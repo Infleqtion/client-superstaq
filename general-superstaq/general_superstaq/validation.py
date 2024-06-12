@@ -28,29 +28,14 @@ def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
 
 
 def validate_target(target: str) -> None:
-    """Checks that a target contains a valid format, vendor prefix, and device type.
+    """Checks that `target` conforms to a valid Superstaq format and device type.
 
     Args:
         target: A string containing the name of a target device.
 
     Raises:
-        ValueError: If `target` has an invalid format, vendor prefix, or device type.
+        ValueError: If `target` has an invalid format or device type.
     """
-    vendor_prefixes = [
-        "aqt",
-        "aws",
-        "cq",
-        "qtm",
-        "ibmq",
-        "ionq",
-        "oxford",
-        "quera",
-        "rigetti",
-        "qscout",
-        "ss",
-        "toshiba",
-    ]
-
     target_device_types = ["qpu", "simulator"]
 
     # Check valid format
@@ -61,14 +46,7 @@ def validate_target(target: str) -> None:
             "the form '<provider>_<device>_<type>', e.g. 'ibmq_brisbane_qpu'."
         )
 
-    prefix, _, device_type = match.groups()
-
-    # Check valid prefix
-    if prefix not in vendor_prefixes:
-        raise ValueError(
-            f"{target!r} does not have a valid target prefix. Valid prefixes are: "
-            f"{vendor_prefixes}."
-        )
+    _, _, device_type = match.groups()
 
     # Check for valid device type
     if device_type not in target_device_types:

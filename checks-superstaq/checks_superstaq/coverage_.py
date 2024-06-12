@@ -38,8 +38,6 @@ def run(
         """
     )
 
-    parser.add_argument("--enable-socket", action="store_true", help="Force-enable socket.")
-
     parsed_args, pytest_args = parser.parse_known_intermixed_args(args)
     if "coverage" in parsed_args.skip:
         return 0
@@ -52,9 +50,6 @@ def run(
     if not test_files:
         print("No test files to check for pytest and coverage.")
         return 0
-
-    if not parsed_args.enable_socket:
-        pytest_args.append("--disable-socket")
 
     coverage_arg = "--include=" + ",".join(files)
     test_returncode = subprocess.call(
