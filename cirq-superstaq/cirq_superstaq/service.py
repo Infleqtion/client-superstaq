@@ -16,7 +16,7 @@ from __future__ import annotations
 import numbers
 import warnings
 from collections import defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, overload
 
 import cirq
@@ -906,6 +906,7 @@ class Service(gss.service.Service):
         error_prob: float | tuple[float, float, float] | None = None,
         tag: str | None = None,
         lifespan: int | None = None,
+        weights: Iterable[int] | None = None,
     ) -> str:
         """Submits the jobs to characterize `target` through the ACES protocol.
 
@@ -944,11 +945,13 @@ class Service(gss.service.Service):
             tag: Tag for all jobs submitted for this protocol.
             lifespan: How long to store the jobs submitted for in days (only works with right
                 permissions).
+            weights: The weights of the Pauli strings.
 
         Returns:
             A string with the job id for the ACES job created.
 
         Raises:
+            TypeError: If the weights are not an Iterable type.
             ValueError: If the target or noise model is not valid.
             SuperstaqServerException: If the request fails.
         """
@@ -961,6 +964,14 @@ class Service(gss.service.Service):
         elif isinstance(noise, cirq.NoiseModel):
             noise_dict["cirq_noise_model"] = cirq.to_json(noise)
 
+        if weights is not None:
+            if not isinstance(weights, Iterable):
+                raise TypeError(
+                    f"Expected weights to be of type Iterable. Received {type(weights)}"
+                )
+            else:
+                weights = list(weights)
+
         return self._client.submit_aces(
             target=target,
             qubits=qubits,
@@ -972,6 +983,7 @@ class Service(gss.service.Service):
             noise=noise_dict,
             tag=tag,
             lifespan=lifespan,
+            weights=weights,
         )
 
     def submit_cb(

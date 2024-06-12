@@ -12,7 +12,7 @@
 from __future__ import annotations
 
 import numbers
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
@@ -467,6 +467,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         error_prob: float | tuple[float, float, float] | None = None,
         tag: str | None = None,
         lifespan: int | None = None,
+        weights: Iterable[int] | None = None,
     ) -> str:
         """Submits the jobs to characterize this target through the ACES protocol.
 
@@ -503,11 +504,12 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             tag: Tag for all jobs submitted for this protocol.
             lifespan: How long to store the jobs submitted for in days (only works with right
                 permissions).
-
+            weights: The weights of the Pauli strings.
         Returns:
             A string with the job id for the ACES job created.
 
         Raises:
+            TypeError: If the weights are not an Iterable type.
             ValueError: If the target or noise model is not valid.
             SuperstaqServerException: If the request fails.
         """
@@ -517,6 +519,14 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             noise_dict["params"] = (
                 (error_prob,) if isinstance(error_prob, numbers.Number) else error_prob
             )
+
+        if weights is not None:
+            if not isinstance(weights, Iterable):
+                raise TypeError(
+                    f"Expected weights to be of type Iterable. Received {type(weights)}"
+                )
+            else:
+                weights = list(weights)
 
         return self._provider._client.submit_aces(
             target=self.name(),
@@ -529,6 +539,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             noise=noise_dict,
             tag=tag,
             lifespan=lifespan,
+            weights=weights,
         )
 
     def process_aces(self, job_id: str) -> list[float]:
