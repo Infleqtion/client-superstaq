@@ -16,7 +16,7 @@ from __future__ import annotations
 import numbers
 import warnings
 from collections import defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, overload
 
 import cirq
@@ -906,6 +906,7 @@ class Service(gss.service.Service):
         error_prob: float | tuple[float, float, float] | None = None,
         tag: str | None = None,
         lifespan: int | None = None,
+        weights: Iterable[int] | None = None,
     ) -> str:
         """Submits the jobs to characterize `target` through the ACES protocol.
 
@@ -944,6 +945,7 @@ class Service(gss.service.Service):
             tag: Tag for all jobs submitted for this protocol.
             lifespan: How long to store the jobs submitted for in days (only works with right
                 permissions).
+            weights: Valid Pauli string weights for probes.
 
         Returns:
             A string with the job id for the ACES job created.
@@ -961,6 +963,11 @@ class Service(gss.service.Service):
         elif isinstance(noise, cirq.NoiseModel):
             noise_dict["cirq_noise_model"] = cirq.to_json(noise)
 
+        if weights is not None:
+            weights = list(weights)
+            for weight in weights:
+                gss.validation.validate_integer_param(weight, min_val=1)
+
         return self._client.submit_aces(
             target=target,
             qubits=qubits,
@@ -972,6 +979,7 @@ class Service(gss.service.Service):
             noise=noise_dict,
             tag=tag,
             lifespan=lifespan,
+            weights=weights,
         )
 
     def submit_cb(
