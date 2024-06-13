@@ -330,6 +330,20 @@ def test_aces(mock_post: MagicMock) -> None:
             num_circuits=10,
             mirror_depth=5,
             extra_depth=5,
+            weights=[1, 2],
+            noise="phase_flip",
+            error_prob=0.05,
+        )
+        == "id1"
+    )
+
+    assert (
+        backend.submit_aces(
+            qubits=[0, 1],
+            shots=100,
+            num_circuits=10,
+            mirror_depth=5,
+            extra_depth=5,
             noise="phase_flip",
             error_prob=0.05,
         )
