@@ -945,7 +945,7 @@ class Service(gss.service.Service):
             tag: Tag for all jobs submitted for this protocol.
             lifespan: How long to store the jobs submitted for in days (only works with right
                 permissions).
-            weights: The weights of the Pauli strings.
+            weights: Valid Pauli string weights for probes.
 
         Returns:
             A string with the job id for the ACES job created.
