@@ -63,7 +63,7 @@ def run(
         exit_codes = {}
         checked_test_files: list[str] = []
         for file in files:
-            test_files = check_utils.get_test_files([file], exclude=exclude, silent=silent)
+            test_files = check_utils.get_test_files([file], exclude=exclude, silent=True)
             if not test_files or set(test_files).issubset(checked_test_files):
                 continue
             exit_codes[file] = _run_on_files([file], test_files, pytest_args)
