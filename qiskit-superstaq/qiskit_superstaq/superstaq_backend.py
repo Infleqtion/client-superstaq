@@ -521,13 +521,11 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             )
 
         if weights is not None:
-            if not isinstance(weights, Iterable):
-                raise TypeError(
-                    f"Expected weights to be of type Iterable. Received {type(weights)}"
-                )
-            else:
-                weights = list(weights)
-
+            assert( (isinstance(weights, Iterable) or weights is None),                  
+                f"Expected weights to be of type Iterable. Received {type(weights)}"                
+            )                                                                                     
+            weights = list(weights)
+            
         return self._provider._client.submit_aces(
             target=self.name(),
             qubits=qubits,

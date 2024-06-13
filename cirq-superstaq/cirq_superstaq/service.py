@@ -965,13 +965,11 @@ class Service(gss.service.Service):
             noise_dict["cirq_noise_model"] = cirq.to_json(noise)
 
         if weights is not None:
-            if not isinstance(weights, Iterable):
-                raise TypeError(
-                    f"Expected weights to be of type Iterable. Received {type(weights)}"
-                )
-            else:
-                weights = list(weights)
-
+            assert( (isinstance(weights, Iterable) or weights is None),
+                f"Expected weights to be of type Iterable. Received {type(weights)}"
+            )
+            weights = list(weights)
+            
         return self._client.submit_aces(
             target=target,
             qubits=qubits,
