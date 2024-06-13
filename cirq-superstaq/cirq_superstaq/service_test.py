@@ -756,13 +756,13 @@ def test_aces(
             num_circuits=10,
             mirror_depth=5,
             extra_depth=5,
-            weights=[1,2],
+            weights=[1, 2],
             noise="asymmetric_depolarize",
             error_prob=(0.1, 0.1, 0.1),
         )
         == "id1"
     )
-    
+
     mock_post.return_value.json = lambda: [1] * 51
     assert service.process_aces("id1") == [1] * 51
 
