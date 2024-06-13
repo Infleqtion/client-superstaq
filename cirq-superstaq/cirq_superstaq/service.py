@@ -951,7 +951,7 @@ class Service(gss.service.Service):
             A string with the job id for the ACES job created.
 
         Raises:
-            TypeError: If the weights are not an Iterable type.
+            AssertionError: If the weights are not an Iterable type.
             ValueError: If the target or noise model is not valid.
             SuperstaqServerException: If the request fails.
         """

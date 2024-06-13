@@ -503,7 +503,7 @@ class _SuperstaqClient:
             tag: Tag for all jobs submitted for this protocol.
             lifespan: How long to store the jobs submitted for in days (only works with right
                 permissions).
-            weights: The weights of the Puali strings.
+            weights: The weights of the Pauli strings.
         Returns:
             A string with the job id for the ACES job created.
 
@@ -526,7 +526,6 @@ class _SuperstaqClient:
             json_dict["weights"] = weights
         if method:
             json_dict["method"] = method
-
         if noise:
             if "type" in noise.keys():
                 gss.validation.validate_noise_type(noise, len(qubits))
