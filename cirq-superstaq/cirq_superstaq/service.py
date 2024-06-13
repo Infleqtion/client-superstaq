@@ -951,7 +951,6 @@ class Service(gss.service.Service):
             A string with the job id for the ACES job created.
 
         Raises:
-            AssertionError: If the weights are not an Iterable type.
             ValueError: If the target or noise model is not valid.
             SuperstaqServerException: If the request fails.
         """
@@ -965,10 +964,9 @@ class Service(gss.service.Service):
             noise_dict["cirq_noise_model"] = cirq.to_json(noise)
 
         if weights is not None:
-            assert isinstance(
-                weights, Iterable
-            ), f"Expected weights to be of type Iterable. Received {type(weights)}"
             weights = list(weights)
+            for weight in weights:
+                gss.validation.validate_integer_param(weight, min_val=1)
 
         return self._client.submit_aces(
             target=target,

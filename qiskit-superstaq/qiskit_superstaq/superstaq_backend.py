@@ -521,11 +521,9 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             )
 
         if weights is not None:
-            assert isinstance(
-                weights, Iterable
-            ), f"Expected weights to be of type Iterable. Received {type(weights)}"
-
             weights = list(weights)
+            for weight in weights:
+                gss.validation.validate_integer_param(weight, min_val=1)
 
         return self._provider._client.submit_aces(
             target=self.name(),
