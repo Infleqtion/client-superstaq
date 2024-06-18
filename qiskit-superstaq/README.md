@@ -23,7 +23,7 @@ token = "Insert superstaq token that you received from https://superstaq.infleqt
 
 superstaq = qss.superstaq_provider.SuperstaqProvider(token)
 
-backend = superstaq.get_backend("ibmq_qasm_simulator")
+backend = superstaq.get_backend("ibmq_brisbane_qpu")
 qc = qiskit.QuantumCircuit(2, 2)
 qc.h(0)
 qc.cx(0, 1)
@@ -32,7 +32,7 @@ qc.measure(1, 1)
 
 print(qc)
 
-# Submitting a circuit to "ibmq_qasm_simulator". Providing the "dry-run" method parameter instructs Superstaq to simulate the circuit, and is available to free trial users.
+# Submitting a circuit to IBM's Brisbane QPU. Providing the "dry-run" method parameter instructs Superstaq to simulate the circuit, and is available to free trial users.
 job = backend.run(qc, shots=100, method="dry-run")
 print(job.result().get_counts())
 ```
