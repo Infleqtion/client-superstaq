@@ -173,15 +173,15 @@
       }
 
       .c-m {
-        color: #368fc8;
+        color: #00b199;
       }
 
       .c-i {
-        color: #5AB8DD;
+        color: #77d673;
       }
 
       .c-o {
-        color: #5AB8DD;
+        color: #58cd7d;
       }
 
       .c-c {
