@@ -56,12 +56,13 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
 .. toctree::
    :maxdepth: 1
    :hidden:
-   :caption: Applications
+   :caption: Demos
 
-   apps/supercheq/supercheq
-   apps/max_sharpe_ratio_optimization
-   apps/dfe/dfe
-   apps/aces/aces
+   demos/supercheq/supercheq
+   demos/supermarq/supermarq
+   demos/max_sharpe_ratio_optimization
+   demos/dfe/dfe
+   demos/aces/aces
 
 .. toctree::
    :maxdepth: 1
