@@ -77,7 +77,7 @@ def plot_volumetric_results(
     """
     _, ax = plt.subplots(figsize=[4, 4])
 
-    cmap = matplotlib.cm.RdBu
+    cmap = matplotlib.colormaps["RdBu"]
     norm = matplotlib.colors.Normalize(vmin=0, vmax=1)
 
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
@@ -265,7 +265,10 @@ def heatmap(
     # Create colorbar
     if cbar_kw is None:
         cbar_kw = {}  # pragma: no cover
-    cbar = ax.figure.colorbar(im, ax=ax, orientation="horizontal", **cbar_kw)
+
+    figure = ax.get_figure()
+    assert figure
+    cbar = figure.colorbar(im, ax=ax, orientation="horizontal", **cbar_kw)
     cbar.ax.set_xlabel(cbarlabel, labelpad=10, va="bottom", fontsize=8)
     cbar.ax.tick_params(labelsize=10)
 
@@ -325,7 +328,7 @@ def annotate_heatmap(
     """
 
     if data is None:
-        data = im.get_array()
+        data = np.asarray(im.get_array())
 
     # Normalize the threshold to the images color range.
     if threshold is not None:
@@ -335,7 +338,7 @@ def annotate_heatmap(
 
     # Set default alignment to center, but allow it to be
     # overwritten by textkw.
-    kw = dict(horizontalalignment="center", verticalalignment="center")
+    kw: dict[str, Any] = dict(horizontalalignment="center", verticalalignment="center")
     kw.update(textkw)
 
     # Get the formatter in case a string is supplied
@@ -392,6 +395,10 @@ class RadarAxesMeta(PolarAxes):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initializes the `RadarAxesMeta` class."""
+        self.theta: npt.NDArray[np.float_]
+        self.num_vars: int
+        self.frame: str
+
         super().__init__(*args, **kwargs)
         # rotate plot such that the first axis is at the top
         self.set_theta_zero_location("N")
@@ -411,7 +418,7 @@ class RadarAxesMeta(PolarAxes):
         """
         return super().fill(closed=closed, *args, **kwargs)
 
-    def plot(self, *args: Any, **kwargs: Any) -> None:
+    def plot(self, *args: Any, **kwargs: Any) -> list[matplotlib.lines.Line2D]:
         """Overrides plot so that line is closed by default.
 
         Args:
@@ -422,13 +429,15 @@ class RadarAxesMeta(PolarAxes):
         for line in lines:
             self._close_line(line)
 
+        return lines
+
     def _close_line(self, line: matplotlib.lines.Line2D) -> None:
         """A method to close the input line.
 
         Args:
             line: The line to close.
         """
-        x, y = line.get_data()
+        x, y = map(np.asarray, line.get_data())
         # FIXME: markers at x[0], y[0] get doubled-up.
         # See issue https://github.com/Infleqtion/client-superstaq/issues/27
         if x[0] != x[-1]:
@@ -448,6 +457,3 @@ class RadarAxesMeta(PolarAxes):
         # The Axes patch must be centered at (0.5, 0.5) and of radius 0.5
         # in axes coordinates.
         return Circle((0.5, 0.5), 0.5)
-
-    def _gen_axes_spines(self) -> matplotlib.spines.Spine:
-        return super()._gen_axes_spines()
