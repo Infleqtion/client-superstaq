@@ -39,6 +39,7 @@ modern-annotations-union = "always"
 modern-annotations-optional = "always"
 
 [tool.mypy]
+pretty = true
 ignore_missing_imports = true
 show_error_codes = true
 disallow_any_generics = true
@@ -48,7 +49,7 @@ warn_unused_ignores = true
 install_types = true
 non_interactive = true
 no_implicit_optional = true
-plugins = ["numpy.typing.mypy_plugin"]
+plugins = ["numpy.typing.mypy_plugin", "pydantic.mypy"]
 
 [tool.coverage.report]
 fail_under = 100
