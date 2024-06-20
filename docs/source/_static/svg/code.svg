@@ -201,7 +201,7 @@
             <span class="line-02"><span class="c-i">import</span> qiskit_superstaq <span class="c-i">as</span> qss</span></p>
             
             <p><span class="line-03">superstaq = qss.<span class="c-o">SuperstaqProvider</span>()</span><br/>
-            <span class="line-04">backend = superstaq.<span class="c-m">get_backend</span>("ibmq_qasm_simulator")</span></p>
+            <span class="line-04">backend = superstaq.<span class="c-m">get_backend</span>("ibmq_brisbane_qpu")</span></p>
 
             <p><span class="line-05"><span class="c-c"># Standard bell circuit</span></span><br/>
             <span class="line-06">qc = qiskit.<span class="c-o">QuantumCircuit</span>(2, 2)</span><br/>
