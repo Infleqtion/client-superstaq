@@ -34,6 +34,11 @@ def run(
         action="store_true",
         help="Check that each file is covered by its own test file.",
     )
+    parser.add_argument(
+        "--branch",
+        action="store_true",
+        help="Also require all branches to be covered (same as `coverage run --branch`).",
+    )
     parser.description = textwrap.dedent(
         """
         Checks to make sure that all code is covered by unit tests.
@@ -47,6 +52,10 @@ def run(
     if "coverage" in parsed_args.skip:
         return 0
 
+    coverage_args = []
+    if parsed_args.branch:
+        coverage_args.append("--branch")
+
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
     silent = silent or not (parsed_args.files or parsed_args.revisions)
 
@@ -56,42 +65,60 @@ def run(
         return 0
 
     if not parsed_args.modular:
-        return _run_on_files(files, test_files, pytest_args)
+        test_returncode = _run_on_files(files, test_files, coverage_args, pytest_args)
+        return _report(test_returncode)
 
-    else:
-        # run checks on individual files, skipping repeats
-        exit_codes = {}
-        checked_test_files: list[str] = []
-        for file in files:
-            test_files = check_utils.get_test_files([file], exclude=exclude, silent=True)
-            if not test_files or set(test_files).issubset(checked_test_files):
-                continue
-            exit_codes[file] = _run_on_files([file], test_files, pytest_args)
-            checked_test_files.extend(test_files)
+    # Run checks on individual files, skipping repeats
+    subprocess.check_call(["python", "-m", "coverage", "erase"])
 
-        if not exit_codes:
-            print("No test files to check for pytest and coverage.")
-            return 0
+    # Move test files to the end of the file list, so if both "x.py" and "x_test.py" are in `files`
+    # both will be included in the coverage report
+    files.sort(key=lambda file: file.endswith("_test.py"))
+    coverage_args.append("--append")
+    test_returncode = 0
 
-        # print warnings for files that are not covered
-        for file, exit_code in exit_codes.items():
-            if exit_code:
-                check_utils.warning(f"Coverage failed for {file}.")
+    while files:
+        file = files.pop(0)
+        test_files = check_utils.get_test_files([file], exclude=exclude, silent=True)
 
-        return sum(exit_codes.values())
+        if not test_files:
+            # Arguably we should fail the modular coverage check if no test file exists, but for now
+            # just skip
+            continue
+
+        # File(s) to include in coverage report. If both "x.py" and "x_test.py" are passed, require
+        # full coverage on each; otherwise only require coverage on whichever was passed (even
+        # though both are used to run the test)
+        files_requiring_coverage = [file]
+        for test_file in test_files:
+            if test_file in files:
+                files_requiring_coverage.append(test_file)
+                files.remove(test_file)
+
+        test_returncode |= _run_on_files(
+            files_requiring_coverage, test_files, coverage_args, pytest_args
+        )
+
+    return _report(test_returncode)
 
 
-def _run_on_files(files: list[str], test_files: list[str], pytest_args: list[str]) -> int:
+def _run_on_files(
+    files_requiring_coverage: list[str],
+    test_files: list[str],
+    coverage_args: list[str],
+    pytest_args: list[str],
+) -> int:
     """Helper function to run coverage tests on the given files with the given pytest arguments."""
 
-    coverage_arg = "--include=" + ",".join(files)
+    coverage_args = ["--include=" + ",".join(files_requiring_coverage), *coverage_args]
+
     test_returncode = subprocess.call(
         [
             "python",
             "-m",
             "coverage",
             "run",
-            coverage_arg,
+            *coverage_args,
             "-m",
             "pytest",
             *test_files,
@@ -99,7 +126,10 @@ def _run_on_files(files: list[str], test_files: list[str], pytest_args: list[str
         ],
         cwd=check_utils.root_dir,
     )
+    return test_returncode
 
+
+def _report(test_returncode: int) -> int:
     coverage_returncode = subprocess.call(
         ["python", "-m", "coverage", "report", "--precision=2"],
         cwd=check_utils.root_dir,
