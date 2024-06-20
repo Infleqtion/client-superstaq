@@ -1,3 +1,3 @@
-cirq-superstaq~=0.5.18
-qiskit-superstaq~=0.5.18
+cirq-superstaq~=0.5.19
+qiskit-superstaq~=0.5.19
 scikit-learn>=1.0
