@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 import textwrap
@@ -54,6 +55,13 @@ def run(
     )
 
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
+
+    # Check if any argument matches the pattern *_integration_test.py and append --integration if needed
+    if "--integration" not in args and any(
+        re.match(r".*_integration_test\.py$", arg) for arg in args
+    ):
+        args_to_pass.append("--integration")
+
     if "pytest" in parsed_args.skip:
         return 0
 
