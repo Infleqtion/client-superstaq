@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 import textwrap
@@ -70,7 +71,10 @@ def run(
 
     if parsed_args.notebook:
         args_to_pass += ["--nbmake", "--force-enable-socket"]
-    elif parsed_args.integration:
+    elif (parsed_args.integration) or (
+        "--integration" not in args
+        and any(re.match(r".*_integration_test\.py$", arg) for arg in args)
+    ):
         args_to_pass += ["--force-enable-socket"]
     else:
         files = check_utils.get_test_files(files, exclude=exclude, silent=silent)
