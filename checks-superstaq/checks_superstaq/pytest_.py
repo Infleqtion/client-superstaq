@@ -56,7 +56,7 @@ def run(
 
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
 
-    # Check if any argument matches the pattern *_integration_test.py and append --integration if needed
+    # Check if any argument matches the pattern *_integration_test.py and append --integration
     if "--integration" not in args and any(
         re.match(r".*_integration_test\.py$", arg) for arg in args
     ):
