@@ -55,13 +55,6 @@ def run(
     )
 
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
-
-    # Check if any argument matches the pattern *_integration_test.py and append --integration
-    if "--integration" not in args and any(
-        re.match(r".*_integration_test\.py$", arg) for arg in args
-    ):
-        args_to_pass.append("--integration")
-
     if "pytest" in parsed_args.skip:
         return 0
 
@@ -78,7 +71,10 @@ def run(
 
     if parsed_args.notebook:
         args_to_pass += ["--nbmake", "--force-enable-socket"]
-    elif parsed_args.integration:
+    elif (parsed_args.integration) or (
+        "--integration" not in args
+        and any(re.match(r".*_integration_test\.py$", arg) for arg in args)
+    ):
         args_to_pass += ["--force-enable-socket"]
     else:
         files = check_utils.get_test_files(files, exclude=exclude, silent=silent)
