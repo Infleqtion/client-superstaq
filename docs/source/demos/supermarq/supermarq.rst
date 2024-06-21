@@ -1,15 +1,15 @@
-Supercheq
+Supermarq
 =========
-This tutorial demonstrates how to use Supercheq, a novel quantum fingerprinting protocol developed by Infleqtion. We will go over the process of setting up a Superstaq provider, fingerprinting files by generating random circuits, and analyzing the results of fingerprinting.
+This tutorial demonstrates how to use Supermarq, a scalable, hardware-agnostic quantum benchmark suite developed by Infleqtion. 
 
-Below, you will find links to identical tutorials that demonstrate Supercheq using either Qiskit or Cirq.
+Below, you will find links to identical tutorials that demonstrate Supermarq using either Qiskit or Cirq.
 
 .. toctree::
     :maxdepth: 1
 
-    Supercheq_qss
-    Supercheq_css
+    supermarq_qss
+    supermarq_css
 
 References
------------------------
-More details about Supercheq can be found in this paper: https://arxiv.org/abs/2212.03850.
+----------
+More details about Supermarq can be found in this paper: https://arxiv.org/abs/2202.11045.
