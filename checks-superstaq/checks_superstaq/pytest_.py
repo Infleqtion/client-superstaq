@@ -58,13 +58,7 @@ def run(
     if "pytest" in parsed_args.skip:
         return 0
 
-    exclude = (
-        [exclude]
-        if isinstance(exclude, str)
-        else []
-        if exclude is None
-        else list(exclude)
-    )
+    exclude = [exclude] if isinstance(exclude, str) else [] if exclude is None else list(exclude)
     if parsed_args.notebook:
         include = include or "*.ipynb"
     elif parsed_args.integration:
