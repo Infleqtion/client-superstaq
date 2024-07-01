@@ -1,4 +1,4 @@
-"""Check return type annotation of __init__ functions"""
+"""Check return type annotation of __init__ functions."""
 
 from __future__ import annotations
 
