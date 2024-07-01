@@ -66,7 +66,7 @@ disable = "all"
 load-plugins = [
   "pylint.extensions.docparams", 
   "pylint.extensions.docstyle", 
-  "checks_superstaq.init_return",
+  "checks_superstaq.pylint_init_return",
 ]
 output-format = "colorized"
 score = false

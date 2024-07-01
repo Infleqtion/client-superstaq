@@ -1,4 +1,4 @@
-"""Check type type annotation of __init__ functions"""
+"""Check return type annotation of __init__ functions"""
 
 from __future__ import annotations
 
@@ -33,10 +33,11 @@ class InitChecker(BaseChecker):
 
     def visit_functiondef(self, node: nodes.FunctionDef) -> None:
         """Called for function and method definitions (def).
+
         Checks if the return type annotation for __init__ is explicity None or incorrect.
 
         Args:
-            node: Node for a function or method definition in the AST
+            node: Node for a function or method definition in the AST.
         """
         if node.name == "__init__":
             if not node.returns:
@@ -50,9 +51,9 @@ class InitChecker(BaseChecker):
 
 
 def register(linter: PyLinter) -> None:
-    """Registers plugin to be accessed by pylint
+    """Registers plugin to be accessed by pylint.
 
     Args:
-        linter: The base pylinter which the custom checker will inherit from
+        linter: The base pylinter which the custom checker will inherit from.
     """
     linter.register_checker(InitChecker(linter))
