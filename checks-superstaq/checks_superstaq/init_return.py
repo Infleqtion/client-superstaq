@@ -50,4 +50,9 @@ class InitChecker(BaseChecker):
 
 
 def register(linter: PyLinter) -> None:
+    """Registers plugin to be accessed by pylint
+
+    Args:
+        linter: The base pylinter which the custom checker will inherit from
+    """
     linter.register_checker(InitChecker(linter))
