@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-import sys
+
 from astroid import Const, nodes
 from pylint.checkers import BaseChecker
 from pylint.checkers.utils import only_required_for_messages
-import pylint.lint
+
 if TYPE_CHECKING:
     from pylint.lint import PyLinter
 
@@ -31,7 +31,7 @@ class InitChecker(BaseChecker):
             "__init__ functions should only have return type None.",
         ),
     }
-    
+
     @only_required_for_messages("init-return-check")
     def visit_functiondef(self, node: nodes.FunctionDef) -> None:
         """Called for function and method definitions (def).
@@ -58,7 +58,4 @@ def register(linter: PyLinter) -> None:
     Args:
         linter: The base pylinter which the custom checker will inherit from.
     """
-    x = pylint.lint.PyLinter()
-    for i in x.msgs.keys():
-        sys.stdout.write(i + " ")
     linter.register_checker(InitChecker(linter))
