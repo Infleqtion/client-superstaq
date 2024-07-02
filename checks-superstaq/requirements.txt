@@ -16,5 +16,6 @@ pytest>=6.2.5
 pytest-cov>=2.11.1
 pytest-randomly>=3.10.1
 pytest-socket>=0.7.0
+pytest-xdist>=3.6.1
 setuptools>=67.0.0
 sphinx-rtd-theme>=1.0.0
