@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-
+import sys
 from astroid import Const, nodes
 from pylint.checkers import BaseChecker
-
+from pylint.checkers.utils import only_required_for_messages
+import pylint.lint
 if TYPE_CHECKING:
     from pylint.lint import PyLinter
 
@@ -19,18 +20,19 @@ class InitChecker(BaseChecker):
 
     name = "init-return-check"
     msgs = {
-        "W9022": (
+        "W6061": (
             "Missing -> None return type annotation for __init__ method",
             "missing-return-type-annotation-init",
             "Missing type annotation for __init__ causes mypy check inconsistentcies.",
         ),
-        "W9023": (
+        "W6062": (
             "Incorrect return type annotation for __init__ method. Expected None but found '%s'",
             "incorrect-return-type-annotation-init",
             "__init__ functions should only have return type None.",
         ),
     }
-
+    
+    @only_required_for_messages("init-return-check")
     def visit_functiondef(self, node: nodes.FunctionDef) -> None:
         """Called for function and method definitions (def).
 
@@ -56,4 +58,7 @@ def register(linter: PyLinter) -> None:
     Args:
         linter: The base pylinter which the custom checker will inherit from.
     """
+    x = pylint.lint.PyLinter()
+    for i in x.msgs.keys():
+        sys.stdout.write(i + " ")
     linter.register_checker(InitChecker(linter))
