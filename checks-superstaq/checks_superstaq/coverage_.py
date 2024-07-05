@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import subprocess
+import random
 import sys
 import textwrap
 from collections.abc import Iterable
@@ -39,6 +40,11 @@ def run(
         action="store_true",
         help="Also require all branches to be covered (same as `coverage run --branch`).",
     )
+    parser.add_argument(
+        "--randomly-seed",
+        type=int,
+        help="Random seed to pass to pytest.",
+    )
     parser.description = textwrap.dedent(
         """
         Checks to make sure that all code is covered by unit tests.
@@ -65,6 +71,8 @@ def run(
         return 0
 
     if not parsed_args.modular:
+        if parsed_args.randomly_seed:
+            pytest_args.append(f"--randomly-seed={parsed_args.randomly_seed}")
         test_returncode = _run_on_files(files, test_files, coverage_args, pytest_args)
         return _report(test_returncode)
 
@@ -94,6 +102,9 @@ def run(
             if test_file in files:
                 files_requiring_coverage.append(test_file)
                 files.remove(test_file)
+
+        if parsed_args.randomly_seed:
+            pytest_args.append(f"--randomly-seed={parsed_args.randomly_seed}")
 
         test_returncode |= _run_on_files(
             files_requiring_coverage, test_files, coverage_args, pytest_args
