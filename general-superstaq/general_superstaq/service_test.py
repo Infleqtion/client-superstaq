@@ -40,6 +40,7 @@ def test_accept_terms_of_use() -> None:
 def test_add_new_user(
     mock_post_request: mock.MagicMock,
 ) -> None:
+    # pylint: disable=unused-argument
     service = gss.service.Service(remote_host="http://example.com", api_key="key")
     assert service.add_new_user("Marie Curie", "mc@gmail.com") == "The user has been added"
 
@@ -51,6 +52,7 @@ def test_add_new_user(
 def test_update_user_balance(
     mock_post_request: mock.MagicMock,
 ) -> None:
+    # pylint: disable=unused-argument
     service = gss.service.Service(remote_host="http://example.com", api_key="key")
     assert (
         service.update_user_balance("mc@gmail.com", 5.00)
@@ -71,6 +73,7 @@ def test_update_user_balance_limit() -> None:
 def test_update_user_role(
     mock_post_request: mock.MagicMock,
 ) -> None:
+    # pylint: disable=unused-argument
     service = gss.service.Service(remote_host="http://example.com", api_key="key")
     assert service.update_user_role("mc@gmail.com", 5) == "The account's role has been updated"
 
@@ -82,6 +85,7 @@ def test_update_user_role(
 def test_submit_qubo(
     mock_post_request: mock.MagicMock,
 ) -> None:
+    # pylint: disable=unused-argument
     example_qubo = {
         (0,): 1.0,
         (1,): 1.0,
@@ -150,6 +154,7 @@ def test_service_aqt_upload_configs(
     return_value={"superstaq_targets": TARGET_LIST},
 )
 def test_service_get_targets(mock_get_request: mock.MagicMock) -> None:
+    # pylint: disable=unused-argument
     service = gss.service.Service(api_key="key", remote_host="http://example.com")
     assert service.get_targets() == RETURNED_TARGETS
 
@@ -161,6 +166,7 @@ def test_service_get_targets(mock_get_request: mock.MagicMock) -> None:
 def test_service_aqt_get_configs(
     mock_aqt_compile: mock.MagicMock,
 ) -> None:
+    # pylint: disable=unused-argument
     service = gss.service.Service(remote_host="http://example.com", api_key="key")
     tempdir = tempfile.gettempdir()
     pulses_file = secrets.token_hex(nbytes=16)

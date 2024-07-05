@@ -276,6 +276,7 @@ class SuperstaqProvider(gss.service.Service):
         Raises:
             ValueError: If `target` is not a valid AQT target.
         """
+        # pylint: disable=unused-argument
         warnings.warn(
             "The `aqt_compile_eca()` method has been deprecated, and will be removed in a future "
             "version of qiskit-superstaq. Instead, use the `num_eca_circuits` argument of "

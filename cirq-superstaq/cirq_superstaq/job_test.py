@@ -414,6 +414,7 @@ def test_job_counts_poll(mock_sleep: mock.MagicMock, job: css.job.Job) -> None:
 def test_job_counts_poll_timeout(
     mock_time: mock.MagicMock, mock_sleep: mock.MagicMock, job: css.job.Job
 ) -> None:
+    # pylint: disable=unused-argument
     ready_job = {
         "status": "Ready",
     }

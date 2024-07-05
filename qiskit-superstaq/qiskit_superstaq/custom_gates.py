@@ -67,6 +67,7 @@ class AceCR(qiskit.circuit.Gate):
 
     def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
         """Returns an array for the AceCR gate."""
+        # pylint: disable=unused-argument
         return qiskit.quantum_info.Operator(self.definition).data
 
     def __repr__(self) -> str:
@@ -312,6 +313,7 @@ class iXGate(qiskit.circuit.Gate):
 
     def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
         """Returns a numpy array of the iX gate."""
+        # pylint: disable=unused-argument
         return np.array([[0, 1j], [1j, 0]])
 
     def inverse(self) -> iXdgGate:
@@ -370,6 +372,7 @@ class iXdgGate(qiskit.circuit.Gate):
 
     def __array__(self, dtype: type | None = None) -> npt.NDArray[np.complex_]:
         """Returns a numpy array of the inverse iX gate."""
+        # pylint: disable=unused-argument
         return np.array([[0, -1j], [-1j, 0]])
 
     def inverse(self) -> iXGate:
