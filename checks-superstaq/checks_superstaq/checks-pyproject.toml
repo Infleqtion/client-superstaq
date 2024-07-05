@@ -110,6 +110,7 @@ enable = [
   "unnecessary-pass",
   "unreachable",
   "unrecognized-inline-option",
+  "unused-argument",
   "unused-import",
   "unnecessary-semicolon",
   "unused-variable",
