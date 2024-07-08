@@ -58,7 +58,7 @@ class _SuperstaqClient:
         ibmq_instance: str | None = None,
         ibmq_channel: str | None = None,
         **kwargs: Any,
-    ):
+    ) -> None:
         """Creates the SuperstaqClient.
 
         Users should use `$client_superstaq.Service` instead of this class directly.
