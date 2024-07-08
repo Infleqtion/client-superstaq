@@ -35,13 +35,16 @@ class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
         return self.dimension
 
     def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
-        # pylint: disable=unused-argument
         if isinstance(other, QuditSwapGate):
             return other.dimension == self.dimension
 
         elif self.dimension == 2:
-            return cirq.equal_up_to_global_phase(other, cirq.SWAP) or cirq.equal_up_to_global_phase(
-                cirq.SWAP, other
+            return cirq.equal_up_to_global_phase(
+                other, cirq.SWAP, atol=atol
+            ) or cirq.equal_up_to_global_phase(
+                cirq.SWAP,
+                other,
+                atol=atol,
             )
 
         return NotImplemented

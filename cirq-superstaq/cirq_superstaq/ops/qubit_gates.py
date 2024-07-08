@@ -586,8 +586,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         return cirq.obj_to_dict_helper(self, ["component_gates"])
 
     @classmethod
-    def _from_json_dict_(cls, component_gates: list[cirq.Gate], **kwargs: Any) -> ParallelGates:
-        # pylint: disable=unused-argument
+    def _from_json_dict_(cls, component_gates: list[cirq.Gate], **_kwargs: Any) -> ParallelGates:
         return cls(*component_gates)
 
     def __pow__(self, exponent: cirq.TParamVal) -> ParallelGates:
@@ -773,14 +772,13 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
 
     def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
         """Implemented here because it isn't in cirq.ParallelGate"""
-        # pylint: disable=unused-argument
         if not isinstance(other, cirq.ParallelGate):
             return NotImplemented
 
         if self.num_copies != other.num_copies:
             return False
 
-        return cirq.equal_up_to_global_phase(self.sub_gate, other.sub_gate)
+        return cirq.equal_up_to_global_phase(self.sub_gate, other.sub_gate, atol=atol)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         diagram_info = cirq.circuit_diagram_info(self.sub_gate, args)
@@ -828,8 +826,7 @@ class IXGate(cirq.XPowGate):
         return f"css.ops.qubit_gates.{str(self)}"
 
     @classmethod
-    def _from_json_dict_(cls, **kwargs: Any) -> IXGate:
-        # pylint: disable=unused-argument
+    def _from_json_dict_(cls, **_kwargs: Any) -> IXGate:
         return IXGate()
 
 
