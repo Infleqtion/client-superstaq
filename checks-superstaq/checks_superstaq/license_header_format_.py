@@ -40,20 +40,23 @@ with open("pyproject.toml", "rb") as pyproject:
  header that should be added to source code files in the repository."
         )
 
+
 class HeaderType(enum.Enum):
     """Enum used to store the types of licence headers that be found in source code files.
-    
-        - VALID: valid Infleqtion license header.
-        - OTHER_APACHE: An Apache license header that is not Infleqtion's.
-        - OUTDATED: A license belonging to ColdQuanta Inc.
-        - OTHER: Any other licenses.
+
+    - VALID: valid Infleqtion license header.
+    - OTHER_APACHE: An Apache license header that is not Infleqtion's.
+    - OUTDATED: A license belonging to ColdQuanta Inc.
+    - OTHER: Any other licenses.
     """
+
     VALID = 1
     OTHER_APACHE = 2
     OUTDATED = 3
     OTHER = 4
 
-class LicenseHeader():
+
+class LicenseHeader:
     """Class to describe license headers found in files including the header itself, the line
     numbers where it is found in a file, and the type of the license header."""
 
@@ -89,7 +92,7 @@ def _extract_license_header(file: str) -> list[LicenseHeader]:
     Args:
         file: The file name/path.
 
-    Returns a list of LicenseHeader object each for being the distinct license headers found in 
+    Returns a list of LicenseHeader object each for being the distinct license headers found in
     the file.
     """
     license_header_lst: list[LicenseHeader] = []
@@ -111,21 +114,23 @@ def _extract_license_header(file: str) -> list[LicenseHeader]:
                 if not license_header:
                     license_header_lst.append(LicenseHeader(line_num + 1))
 
-                if(line == "\n"):
+                if line == "\n":
                     # set the line number for the last line of the license_header
                     license_header_lst[-1].license_header = license_header
                     license_header_lst[-1].end_line_num = line_num + 1
                     license_header = ""
                 else:
                     license_header += line
-    license_header_lst = [header for header in license_header_lst if "Copyright" in header.license_header]
-    
+    license_header_lst = [
+        header for header in license_header_lst if "Copyright" in header.license_header
+    ]
+
     return license_header_lst
 
 
 def _validate_license_header(license_header_lst: list[LicenseHeader]) -> bool:
     """Returns whether there is a valid Infleqtion license header in a file and for each license
-    header in a file, it assigns each theiir type. 
+    header in a file, it assigns each theiir type.
         - VALID: if the header contains a Copyright Infleqtion line.
         - OUTDATED: if the header is for ColdQuanta Inc.
         - OTHER_APACHE: if the header is an Apache license but not from Infleqtion
@@ -140,7 +145,7 @@ def _validate_license_header(license_header_lst: list[LicenseHeader]) -> bool:
     valid_header_regex = re.compile(r"(.*)Copyright(.*)Infleqtion")
     outdated_header_regex = re.compile(r"(.*)Copyright(.*)ColdQuanta Inc\.")
     valid = False
-        
+
     for license_header in license_header_lst:
         if re.search(outdated_header_regex, license_header.license_header):
             license_header.header_type = HeaderType.OUTDATED
@@ -150,9 +155,10 @@ def _validate_license_header(license_header_lst: list[LicenseHeader]) -> bool:
         elif in_server or "Apache" not in license_header.license_header:
             license_header.header_type = HeaderType.OTHER
         else:
-            license_header.header_type = HeaderType.OTHER_APACHE 
+            license_header.header_type = HeaderType.OTHER_APACHE
 
     return valid
+
 
 def _append_to_header(file: str, license_header: LicenseHeader) -> None:
     """Appends Infleqtion to existing Apache license that is not from Infleqtion.
@@ -168,8 +174,10 @@ def _append_to_header(file: str, license_header: LicenseHeader) -> None:
     with open(file, "r+") as f:
         for line_num, line in enumerate(f):
             char_count += len(line)
-            if ("Copyright" in line and 
-                license_header.start_line_num <= line_num + 1 < license_header.end_line_num):
+            if (
+                "Copyright" in line
+                and license_header.start_line_num <= line_num + 1 < license_header.end_line_num
+            ):
                 if line[-2] == ",":
                     prepend += line[:-1] + " 2024 Infleqtion.\n"
                 else:
@@ -180,7 +188,7 @@ def _append_to_header(file: str, license_header: LicenseHeader) -> None:
         f.seek(char_count)
         content = f.read()
         f.seek(0)
-        f.write(prepend+ content)
+        f.write(prepend + content)
         f.truncate()
 
 
@@ -189,7 +197,7 @@ def _remove_header(file: str, license_header: LicenseHeader) -> None:
 
     Args:
         file: The file name/path from which the bad license header is removed.
-        license_header: The specific license header that is being removed. 
+        license_header: The specific license header that is being removed.
 
     Returns nothing.
     """
@@ -198,10 +206,10 @@ def _remove_header(file: str, license_header: LicenseHeader) -> None:
 
     with open(file, "r+") as f:
         for line_num, line in enumerate(f):
-            if line_num + 1 < license_header.start_line_num: 
+            if line_num + 1 < license_header.start_line_num:
                 prepend += line
             if line_num + 1 == license_header.end_line_num:
-                break 
+                break
             char_count += len(line)
 
         f.seek(char_count)
@@ -237,6 +245,7 @@ def _add_license_header(file: str) -> None:
         f.write(exception_lines + expected_license_header + content)
         f.truncate()
 
+
 def run_checker(file: str, apply: bool, silent: bool, no_header: bool, bad_header: bool) -> int:
     """For a given file, checks if it has the correct license header. If apply is set to True,
     it removes any bad license headers that have been found and replaces them with the correct
@@ -257,7 +266,7 @@ def run_checker(file: str, apply: bool, silent: bool, no_header: bool, bad_heade
 
     if len(license_header_lst) == 0:
         # check if the --no-header flag is set or neither --no-header or --bad-header are set
-        if ((not no_header and not bad_header) or no_header):
+        if (not no_header and not bad_header) or no_header:
             print(f"{file_name}: {check_utils.warning('No license header found.')}")
             if apply:
                 _add_license_header(file)
@@ -266,17 +275,17 @@ def run_checker(file: str, apply: bool, silent: bool, no_header: bool, bad_heade
         else:
             return 0
 
-    if (no_header and not bad_header): # if the --no-header flag is set
+    if no_header and not bad_header:  # if the --no-header flag is set
         return 0
 
     valid = _validate_license_header(license_header_lst)
-    append_flag = False # used to make sure Infleqtion is not appended to multiple Apace headers
+    append_flag = False  # used to make sure Infleqtion is not appended to multiple Apace headers
     exit_code = 0
 
     # A file has an incorrect license header if it has no valid Infleqtion license header or
     # has an outdated ColdQuanta Inc license.
     if not valid or any(header.header_type == HeaderType.OUTDATED for header in license_header_lst):
-        exit_code = 1 
+        exit_code = 1
         print(f"{file_name}: {check_utils.warning('Incorrect license header found.')}")
 
     for license_header in license_header_lst:
@@ -289,7 +298,7 @@ def run_checker(file: str, apply: bool, silent: bool, no_header: bool, bad_heade
                 # don't append Infleqtion to Apache license if there is a valid Infleqtion
                 # license header already or it has already been appended to a license.
                 if not append_flag and apply and not valid:
-                    _append_to_header(file, license_header) 
+                    _append_to_header(file, license_header)
                     append_flag = True
                     print(f"{file_name}: {check_utils.success('License header fixed.')}")
             case HeaderType.OUTDATED:
@@ -305,7 +314,7 @@ def run_checker(file: str, apply: bool, silent: bool, no_header: bool, bad_heade
                     print("----------")
                     print(check_utils.warning(str(license_header)))
                     print("----------")
-        
+
     if not valid and not append_flag:
         if apply:
             _add_license_header(file)
