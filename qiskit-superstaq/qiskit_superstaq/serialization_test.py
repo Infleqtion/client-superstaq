@@ -172,8 +172,6 @@ def test_deserialization_errors() -> None:
     # Mock a circuit serialized with a newer version of QPY:
     with mock.patch("qiskit_superstaq.serialization.QPY_SERIALIZATION_VERSION", None):
         with mock.patch("qiskit.qpy.common.QPY_VERSION", qiskit.qpy.common.QPY_VERSION + 1):
-            print(qss.serialization.QPY_SERIALIZATION_VERSION)
-            print(qiskit.qpy.common.QPY_VERSION)
             serialized_circuit = qss.serialize_circuits(circuit)
 
     # Remove a few bytes to force a deserialization error
