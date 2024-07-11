@@ -246,6 +246,58 @@ def _add_license_header(file: str) -> None:
         f.truncate()
 
 
+def handle_bad_header(
+    file: str,
+    styled_file_name: str,
+    license_header: LicenseHeader,
+    apply: bool,
+    valid: bool,
+    silent: bool,
+    append_flag: bool,
+) -> bool:
+    """Function handles bad headers in files. The cases are handled according to the HeaderType:
+        - VALID and OTHER: no change.
+        - OTHER_APACHE: the first of this type will have Infleqtion appended to license header.
+        - OUTDATED: will be removed
+
+    Args:
+        file: The file name/path from which the bad license header is removed.
+        styled_file_name: Styled file name.
+        license_header: The LicenseHeader object of the currect header being handled.
+        apply: Whether to fix the license header if it is incorrect.
+        valid: Whether there is a valid header in the file.
+        silent: Whether to print out any incorrect license headers that have been found.
+        append_flag: Whether Infleqtion has already been appended to an Apache License in the file.
+
+    Returns the updated append_flag.
+    """
+    if license_header.header_type == HeaderType.OTHER_APACHE:
+        if not valid and not silent:
+            print("----------")
+            print(check_utils.warning(str(license_header)))
+            print("----------")
+        # don't append Infleqtion to Apache license if there is a valid Infleqtion
+        # license header already or it has already been appended to a license.
+        if not append_flag and apply and not valid:
+            _append_to_header(file, license_header)
+            append_flag = True
+            print(f"{styled_file_name}: {check_utils.success('License header fixed.')}")
+    elif license_header.header_type == HeaderType.OUTDATED:
+        if not silent:
+            print("----------")
+            print(check_utils.warning(str(license_header)))
+            print("----------")
+        if apply:
+            _remove_header(file, license_header)
+            print(f"{styled_file_name}: {check_utils.success('License header removed.')}")
+    elif license_header.header_type == HeaderType.OTHER:
+        if not silent and not valid:
+            print("----------")
+            print(check_utils.warning(str(license_header)))
+            print("----------")
+    return append_flag
+
+
 def run_checker(file: str, apply: bool, silent: bool, no_header: bool, bad_header: bool) -> int:
     """For a given file, checks if it has the correct license header. If apply is set to True,
     it removes any bad license headers that have been found and replaces them with the correct
@@ -259,21 +311,20 @@ def run_checker(file: str, apply: bool, silent: bool, no_header: bool, bad_heade
         bad_header: Whether to only handle files with incorrect headers.
 
     Returns the exit code. 1 if an incorrect or no license header is found. 0 if correct.
-
     """
     license_header_lst: list[LicenseHeader] = _extract_license_header(file)
-    file_name = check_utils.styled(file, check_utils.Style.BOLD)
+    styled_file_name = check_utils.styled(file, check_utils.Style.BOLD)
 
     if len(license_header_lst) == 0:
-        # check if the --no-header flag is set or neither --no-header or --bad-header are set
         if (not no_header and not bad_header) or no_header:
-            print(f"{file_name}: {check_utils.warning('No license header found.')}")
+            print(f"{styled_file_name}: {check_utils.warning('No license header found.')}")
             if apply:
                 _add_license_header(file)
-                print(f"{file_name}: {check_utils.success('License header added.')}")
+                print(f"{styled_file_name}: {check_utils.success('License header added.')}")
             return 1
         else:
             return 0
+        # return handle_no_header(file, apply, no_header, bad_header)
 
     if no_header and not bad_header:  # if the --no-header flag is set
         return 0
@@ -286,38 +337,22 @@ def run_checker(file: str, apply: bool, silent: bool, no_header: bool, bad_heade
     # has an outdated ColdQuanta Inc license.
     if not valid or any(header.header_type == HeaderType.OUTDATED for header in license_header_lst):
         exit_code = 1
-        print(f"{file_name}: {check_utils.warning('Incorrect license header found.')}")
+        print(f"{styled_file_name}: {check_utils.warning('Incorrect license header found.')}")
 
     for license_header in license_header_lst:
-        if license_header.header_type == HeaderType.OTHER_APACHE:
-            if not valid and not silent:
-                print("----------")
-                print(check_utils.warning(str(license_header)))
-                print("----------")
-            # don't append Infleqtion to Apache license if there is a valid Infleqtion
-            # license header already or it has already been appended to a license.
-            if not append_flag and apply and not valid:
-                _append_to_header(file, license_header)
-                append_flag = True
-                print(f"{file_name}: {check_utils.success('License header fixed.')}")
-        elif license_header.header_type == HeaderType.OUTDATED:
-            if not silent:
-                print("----------")
-                print(check_utils.warning(str(license_header)))
-                print("----------")
-            if apply:
-                _remove_header(file, license_header)
-                print(f"{file_name}: {check_utils.success('License header removed.')}")
-        elif license_header.header_type == HeaderType.OTHER:
-            if not silent and not valid:
-                print("----------")
-                print(check_utils.warning(str(license_header)))
-                print("----------")
+        append_flag = handle_bad_header(
+            file,
+            styled_file_name,
+            license_header,
+            apply,
+            valid,
+            silent,
+            append_flag,
+        )
 
-    if not valid and not append_flag:
-        if apply:
-            _add_license_header(file)
-            print(f"{file_name}: {check_utils.success('License header added.')}")
+    if not valid and not append_flag and apply:
+        _add_license_header(file)
+        print(f"{styled_file_name}: {check_utils.success('License header added.')}")
 
     return exit_code
 
