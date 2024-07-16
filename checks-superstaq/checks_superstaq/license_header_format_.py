@@ -181,11 +181,10 @@ def _append_to_header(file: str, license_header: LicenseHeader) -> None:
             ):
                 if line[-2] == ",":
                     prepend += line[:-1] + " 2024 Infleqtion.\n"
-                    break
-                if line[-2].isalpha():
+                elif line[-2].isalpha():
                     prepend += line[:-1] + ", 2024 Infleqtion.\n"
                 else:
-                    prepend += line[:-2] + " 2024 Infleqtion.\n"
+                    prepend += line[:-2] + ", 2024 Infleqtion.\n"
                 break
             prepend += line
 
