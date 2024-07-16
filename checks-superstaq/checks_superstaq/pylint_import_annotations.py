@@ -25,8 +25,11 @@ class ImportAnnotationsChecker(BaseChecker):
         ),
     }
 
-    def __init__(self, linter: PyLinter) -> None:
-        super().__init__(linter)
+    def visit_module(self, _: nodes.Module) -> None:
+        """Function sets the flag for import annoutations found to false for each module.
+        
+        Returns nothing.
+        """
         self.found_import_annotations = False
 
     @only_required_for_messages("import-future-annotations")
