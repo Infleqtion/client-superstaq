@@ -418,7 +418,7 @@ def run(
 
     exit_code = 0
     for file in files:
-        exit_code |= run_checker(
+        exit_code += run_checker(
             file,
             parsed_args.apply,
             parsed_args.silent or silent,
@@ -431,6 +431,7 @@ def run(
     elif not parsed_args.apply:
         print(
             check_utils.warning(
+                f"{exit_code} issues found.\n"
                 "Run './checks/license_header_format_.py --apply' (from the repo root directory) to"
                 " fix the license headers."
             )
