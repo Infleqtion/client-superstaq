@@ -40,9 +40,9 @@ class IRBResults(NamedTuple):
     """Layer fidelity estimate with the interleaving gate."""
     irb_layer_fidelity_std: float
     """Standard deviation of the layer fidelity estimate with the interleaving gate."""
-    interleaved_gate_error: float
+    average_interleaved_gate_error: float
     """Estimate of the interleaving gate error."""
-    interleaved_gate_error_std: float
+    average_interleaved_gate_error_std: float
     """Standard deviation of the estimate for the interleaving gate error."""
 
 
@@ -257,7 +257,7 @@ class IRB(BenchmarkingExperiment):
         irb_layer_fidelity = np.exp(irb_model.slope)
         irb_layer_fidelity_std = irb_model.stderr * irb_layer_fidelity
 
-        interleaved_gate_error = 1 - irb_layer_fidelity / rb_layer_fidelity
+        interleaved_gate_error = (1 - irb_layer_fidelity / rb_layer_fidelity) / 2
         interleaved_gate_error_std = interleaved_gate_error * np.sqrt(
             (rb_layer_fidelity_std / rb_layer_fidelity) ** 2
             + (irb_layer_fidelity_std / irb_layer_fidelity) ** 2
@@ -268,8 +268,8 @@ class IRB(BenchmarkingExperiment):
             rb_layer_fidelity_std=rb_layer_fidelity_std,
             irb_layer_fidelity=irb_layer_fidelity,
             irb_layer_fidelity_std=irb_layer_fidelity_std,
-            interleaved_gate_error=interleaved_gate_error,
-            interleaved_gate_error_std=interleaved_gate_error_std,
+            average_interleaved_gate_error=interleaved_gate_error,
+            average_interleaved_gate_error_std=interleaved_gate_error_std,
         )
 
         if plot_results:

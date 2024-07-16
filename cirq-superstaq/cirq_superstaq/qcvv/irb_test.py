@@ -255,7 +255,9 @@ def test_analyse_results(irb_experiment: IRB) -> None:
 
     assert irb_experiment.results.rb_layer_fidelity == pytest.approx(0.95)
     assert irb_experiment.results.irb_layer_fidelity == pytest.approx(0.8)
-    assert irb_experiment.results.interleaved_gate_error == pytest.approx(1 - 0.8 / 0.95)
+    assert irb_experiment.results.average_interleaved_gate_error == pytest.approx(
+        0.5 * (1 - 0.8 / 0.95)
+    )
 
     # Test that plotting results doesn't introduce any errors.
     irb_experiment.plot_results()
