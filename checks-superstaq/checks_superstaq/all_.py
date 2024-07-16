@@ -11,6 +11,7 @@ from checks_superstaq import (
     coverage_,
     flake8_,
     format_,
+    license_header_format_,
     mypy_,
     pylint_,
     requirements,
@@ -69,6 +70,11 @@ def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
     checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
     checks_failed |= flake8_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
     checks_failed |= pylint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+    checks_failed |= license_header_format_.run(
+        *args_to_pass,
+        exit_on_failure=exit_on_failure,
+        silent=True,
+    )
 
     # run typing and coverage checks
     exit_on_failure = not parsed_args.force_all
