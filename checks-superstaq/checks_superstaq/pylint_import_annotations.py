@@ -27,7 +27,7 @@ class ImportAnnotationsChecker(BaseChecker):
 
     def visit_module(self, _: nodes.Module) -> None:
         """Function sets the flag for import annoutations found to false for each module.
-        
+
         Returns nothing.
         """
         self.found_import_annotations = False
