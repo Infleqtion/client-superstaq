@@ -20,25 +20,25 @@ import enum
 import re
 import sys
 import textwrap
-import tomllib
 from collections.abc import Iterable
+from pathlib import Path
+
+import tomlkit
 
 from checks_superstaq import check_utils
 
 # The license header that should be added to the files with no license headers is read from
 # the pyproject.toml file. It should be under [tool.license_header_format] assigned to the variable
 # license_header
-with open("pyproject.toml", "rb") as pyproject:
-    try:
-        data = tomllib.load(pyproject)
-        expected_license_header = data["tool"]["license_header_format"]["license_header"]
-        in_server = "Apache" not in expected_license_header
-        # print(expected_license_header)
-    except KeyError:
-        raise KeyError(
-            "Under [tool.license_header_format] add a license_header field with the license\
- header that should be added to source code files in the repository."
-        )
+try:
+    data = tomlkit.loads(Path("pyproject.toml").read_text())
+    expected_license_header = data["tool"]["license_header_format"]["license_header"]
+    in_server = "Apache" not in expected_license_header
+except KeyError:
+    raise KeyError(
+        "Under [tool.license_header_format] add a license_header field with the license\
+ heder that should be added to source code files in the repository."
+    )
 
 
 class HeaderType(enum.Enum):
@@ -272,7 +272,7 @@ def handle_bad_header(
     Returns the updated append_flag.
     """
     if license_header.header_type == HeaderType.OTHER_APACHE:
-        if not valid and not silent:
+        if not valid and not silent and not apply:
             print("----------")
             print(check_utils.warning(str(license_header)))
             print("----------")
@@ -283,7 +283,7 @@ def handle_bad_header(
             append_flag = True
             print(f"{styled_file_name}: {check_utils.success('License header fixed.')}")
     elif license_header.header_type == HeaderType.OUTDATED:
-        if not silent:
+        if not silent and not apply:
             print("----------")
             print(check_utils.warning(str(license_header)))
             print("----------")
@@ -291,7 +291,7 @@ def handle_bad_header(
             _remove_header(file, license_header)
             print(f"{styled_file_name}: {check_utils.success('License header removed.')}")
     elif license_header.header_type == HeaderType.OTHER:
-        if not silent and not valid:
+        if not silent and not valid and not apply:
             print("----------")
             print(check_utils.warning(str(license_header)))
             print("----------")
@@ -317,10 +317,11 @@ def run_checker(file: str, apply: bool, silent: bool, no_header: bool, bad_heade
 
     if len(license_header_lst) == 0:
         if (not no_header and not bad_header) or no_header:
-            print(f"{styled_file_name}: {check_utils.warning('No license header found.')}")
             if apply:
                 _add_license_header(file)
                 print(f"{styled_file_name}: {check_utils.success('License header added.')}")
+            else:
+                print(f"{styled_file_name}: {check_utils.warning('No license header found.')}")
             return 1
         else:
             return 0
@@ -420,13 +421,20 @@ def run(
         exit_code |= run_checker(
             file,
             parsed_args.apply,
-            parsed_args.silent,
+            parsed_args.silent or silent,
             parsed_args.no_header,
             parsed_args.bad_header,
         )
 
     if not exit_code:
-        print(check_utils.success("All license headers correct!"))
+        print(check_utils.success("All license headers are correct!"))
+    elif not parsed_args.apply:
+        print(
+            check_utils.warning(
+                "Run './checks/license_header_format_.py --apply' (from the repo root directory) to"
+                " fix the license headers."
+            )
+        )
 
     return exit_code
 
