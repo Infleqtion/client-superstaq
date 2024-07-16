@@ -80,7 +80,7 @@ class IRB(BenchmarkingExperiment):
         self,
         interleaved_gate: cirq.ops.SingleQubitCliffordGate = cirq.ops.SingleQubitCliffordGate.Z,
         num_qubits: int = 1,
-    ):
+    ) -> None:
         """Args:
         interleaved_gate: The Clifford gate to measure the gate error of.
         num_qubits: The number of qubits to experiment on
