@@ -6,7 +6,7 @@
 Superstaq Documentation
 =======================
 Welcome! Here you can find more about Infleqtion's state-of-the-art quantum software platform that uses proprietary cross-layer optimization techniques to deliver unmatched performance.
-      
+
 .. raw:: html
 
    <div class="container-index">
@@ -62,6 +62,7 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
    apps/max_sharpe_ratio_optimization
    apps/dfe/dfe
    apps/aces/aces
+   apps/qcvv/qcvv
 
 .. toctree::
    :maxdepth: 1
