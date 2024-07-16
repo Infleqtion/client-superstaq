@@ -22,6 +22,7 @@ import sys
 import textwrap
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
 
 import tomlkit
 
@@ -31,8 +32,8 @@ from checks_superstaq import check_utils
 # the pyproject.toml file. It should be under [tool.license_header_format] assigned to the variable
 # license_header
 try:
-    data = tomlkit.loads(Path("pyproject.toml").read_text())
-    expected_license_header = data["tool"]["license_header_format"]["license_header"]
+    data: dict[str, Any] = tomlkit.parse(Path("pyproject.toml").read_text())
+    expected_license_header = str(data["tool"]["license_header_format"]["license_header"])
     in_server = "Apache" not in expected_license_header
 except KeyError:
     raise KeyError(
