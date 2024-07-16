@@ -11,11 +11,16 @@ import general_superstaq as gss
 import numpy as np
 import numpy.typing as npt
 import qiskit.qpy
-import qiskit_ibm_provider.qpy
 
 import qiskit_superstaq as qss
 
 T = TypeVar("T")
+
+# Version to use for serialization. Deserialization can't be done with a QPY version older than that
+# used for serialization, so using a slightly lower version prevents us from having to force users
+# to update Qiskit the moment we do.
+# Should always be QPY_COMPATIBILITY_VERSION <= QPY_SERIALIZATION_VERSION <= QPY_VERSION
+QPY_SERIALIZATION_VERSION = 11
 
 # Custom gate types to resolve when deserializing circuits
 # MSGate included as a workaround for https://github.com/Qiskit/qiskit/issues/11378
@@ -111,12 +116,11 @@ def serialize_circuits(circuits: qiskit.QuantumCircuit | Sequence[qiskit.Quantum
     else:
         circuits = [_prepare_circuit(circuit) for circuit in circuits]
 
-    # Use `qiskit_ibm_provider.qpy` for serialization, which is a delayed copy of `qiskit.qpy`.
-    # Deserialization can't be done with a QPY version older than that used for serialization, so
-    # this prevents us from having to force users to update Qiskit the moment we do (this is what
-    # Qiskit itself does for circuit submission)
+    # Use the lowest compatible QPY version for serialization. Deserialization can't be done with a
+    # QPY version older than that used for serialization, so this prevents us from having to force
+    # users to update Qiskit the moment we do
     buf = io.BytesIO()
-    qiskit_ibm_provider.qpy.dump(circuits, buf)
+    qiskit.qpy.dump(circuits, buf, version=QPY_SERIALIZATION_VERSION)
     return gss.serialization.bytes_to_str(buf.getvalue())
 
 

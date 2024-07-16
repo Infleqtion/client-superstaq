@@ -15,6 +15,14 @@ import qiskit.qasm2
 import qiskit_superstaq as qss
 
 
+def test_qpy_serialization_version() -> None:
+    assert (
+        qiskit.qpy.common.QPY_COMPATIBILITY_VERSION
+        <= qss.serialization.QPY_SERIALIZATION_VERSION
+        <= qiskit.qpy.common.QPY_VERSION
+    )
+
+
 def test_to_json() -> None:
     real_part = np.random.uniform(-1, 1, size=(4, 4))
     imag_part = np.random.uniform(-1, 1, size=(4, 4))
@@ -143,7 +151,7 @@ def test_warning_suppression() -> None:
 
     # QPY encodes qiskit.__version__ into the serialized circuit, so mocking a newer version string
     # during serialization will cause a QPY version UserWarning during deserialization
-    with mock.patch("qiskit_ibm_provider.qpy.interface.__version__", newer_version):
+    with mock.patch("qiskit.qpy.interface.__version__", newer_version):
         serialized_circuit = qss.serialization.serialize_circuits(circuit)
 
     # Check that a warning would normally be thrown
@@ -162,10 +170,9 @@ def test_deserialization_errors() -> None:
     circuit.x(0)
 
     # Mock a circuit serialized with a newer version of QPY:
-    with mock.patch(
-        "qiskit_ibm_provider.qpy.common.QPY_VERSION", qiskit.qpy.common.QPY_VERSION + 1
-    ):
-        serialized_circuit = qss.serialize_circuits(circuit)
+    with mock.patch("qiskit_superstaq.serialization.QPY_SERIALIZATION_VERSION", None):
+        with mock.patch("qiskit.qpy.common.QPY_VERSION", qiskit.qpy.common.QPY_VERSION + 1):
+            serialized_circuit = qss.serialize_circuits(circuit)
 
     # Remove a few bytes to force a deserialization error
     serialized_circuit = gss.serialization.bytes_to_str(
@@ -173,11 +180,13 @@ def test_deserialization_errors() -> None:
     )
 
     with pytest.raises(ValueError, match="your version of Qiskit"):
-        _ = qss.deserialize_circuits(serialized_circuit)
+        with mock.patch("qiskit.qpy.common.QPY_VERSION", qiskit.qpy.common.QPY_VERSION - 3):
+            _ = qss.deserialize_circuits(serialized_circuit)
 
     # Mock a circuit serialized with an older of QPY:
-    with mock.patch("qiskit_ibm_provider.qpy.common.QPY_VERSION", 3):
-        serialized_circuit = qss.serialize_circuits(circuit)
+    with mock.patch("qiskit_superstaq.serialization.QPY_SERIALIZATION_VERSION", None):
+        with mock.patch("qiskit.qpy.common.QPY_VERSION", 3):
+            serialized_circuit = qss.serialize_circuits(circuit)
 
     with pytest.raises(ValueError, match="Please contact"):
         _ = qss.deserialize_circuits(serialized_circuit)

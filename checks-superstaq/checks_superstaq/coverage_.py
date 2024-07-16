@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import textwrap
@@ -73,7 +74,9 @@ def run(
 
     # Move test files to the end of the file list, so if both "x.py" and "x_test.py" are in `files`
     # both will be included in the coverage report
-    files.sort(key=lambda file: file.endswith("_test.py"))
+    files.sort(
+        key=lambda file: file.endswith("_test.py") or os.path.basename(file).startswith("test_")
+    )
     coverage_args.append("--append")
     test_returncode = 0
 
