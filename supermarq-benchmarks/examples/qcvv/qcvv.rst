@@ -10,3 +10,14 @@ For a demonstration of how to implement a new experiment take a look at the foll
     :maxdepth: 1
 
     qcvv_css
+
+Alternatively for pre-built experiments that can be used out of the box see
+
+.. toctree::
+    :maxdepth: 1
+
+    qcvv_irb_css
+
+.. note::
+
+    At present the QCVV library is only available in :code:`cirq-superstaq`.
