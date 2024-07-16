@@ -338,7 +338,8 @@ def run_checker(file: str, apply: bool, silent: bool, no_header: bool, bad_heade
     # has an outdated ColdQuanta Inc license.
     if not valid or any(header.header_type == HeaderType.OUTDATED for header in license_header_lst):
         exit_code = 1
-        print(f"{styled_file_name}: {check_utils.warning('Incorrect license header found.')}")
+        if not apply:
+            print(f"{styled_file_name}: {check_utils.warning('Incorrect license header found.')}")
 
     for license_header in license_header_lst:
         append_flag = handle_bad_header(
