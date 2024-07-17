@@ -18,7 +18,7 @@ class ImportAnnotationsChecker(BaseChecker):
 
     name = "import-future-annotations"
     msgs = {
-        "W6071": (
+        "W6063": (
             "Missing from __future__ import annotations",
             "missing-annotations-import",
             "Missing annotations import causes compatibility issues with older python versions.",
