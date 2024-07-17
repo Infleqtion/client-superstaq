@@ -64,8 +64,8 @@ include = ["./*"]
 max-line-length = 100
 disable = "all"
 load-plugins = [
-  "pylint.extensions.docparams", 
-  "pylint.extensions.docstyle", 
+  "pylint.extensions.docparams",
+  "pylint.extensions.docstyle",
   "checks_superstaq.pylint_init_return",
   "checks_superstaq.pylint_import_annotations",
 ]

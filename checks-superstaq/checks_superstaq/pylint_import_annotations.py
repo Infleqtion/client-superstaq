@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class ImportAnnotationsChecker(BaseChecker):
-    """Checker for whether future annotations is imported in python file."""
+    """Checker for whether future annotations is imported in python files."""
 
     name = "import-future-annotations"
     msgs = {
@@ -26,19 +26,15 @@ class ImportAnnotationsChecker(BaseChecker):
     }
 
     def visit_module(self, _: nodes.Module) -> None:
-        """Function sets the flag for import annoutations found to false for each module.
-
-        Returns nothing.
-        """
+        """Sets the flag for import annotations found to False for each module."""
         self.found_import_annotations = False
 
     @only_required_for_messages("import-future-annotations")
     def visit_importfrom(self, node: nodes.ImportFrom) -> None:
         """Checks if 'from __future__ import annotations' is one of the imports in a module.
+
         Args:
             node: All the ImportFrom nodes in a module.
-
-        Returns nothing.
         """
         self.found_import_annotations = (
             self.found_import_annotations
@@ -51,9 +47,7 @@ class ImportAnnotationsChecker(BaseChecker):
         start with '_'.
 
         Args:
-            node: The currect module
-
-        Returns nothing.
+            node: The current module.
         """
         if os.path.basename(node.file).startswith("_") or self.found_import_annotations:
             return
