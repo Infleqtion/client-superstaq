@@ -49,9 +49,6 @@ def test_ibmq_compile(service: css.Service) -> None:
     assert out.pulse_sequence is not None
 
 
-@pytest.mark.skip(
-    reason="Consistently failing due to https://github.com/Qiskit/qiskit-ibm-runtime/issues/1518."
-)
 def test_ibmq_compile_with_token() -> None:
     service = css.Service(ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"])
     qubits = cirq.LineQubit.range(4)
