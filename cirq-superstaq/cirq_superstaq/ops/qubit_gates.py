@@ -586,7 +586,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         return cirq.obj_to_dict_helper(self, ["component_gates"])
 
     @classmethod
-    def _from_json_dict_(cls, component_gates: list[cirq.Gate], **_kwargs: Any) -> ParallelGates:
+    def _from_json_dict_(cls, component_gates: list[cirq.Gate], **_kwargs: object) -> ParallelGates:
         return cls(*component_gates)
 
     def __pow__(self, exponent: cirq.TParamVal) -> ParallelGates:
