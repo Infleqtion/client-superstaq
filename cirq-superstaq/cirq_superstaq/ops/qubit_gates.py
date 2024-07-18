@@ -826,8 +826,8 @@ class IXGate(cirq.XPowGate):
         return f"css.ops.qubit_gates.{str(self)}"
 
     @classmethod
-    def _from_json_dict_(cls, **_kwargs: Any) -> IXGate:
-        return IXGate()
+    def _from_json_dict_(cls, **_kwargs: object) -> IXGate:
+        return cls()
 
 
 CR = ZX = ZXPowGate()  # standard CR is a full turn of ZX, i.e. exponent = 1
