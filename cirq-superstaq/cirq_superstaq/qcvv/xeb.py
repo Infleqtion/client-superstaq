@@ -287,13 +287,25 @@ class XEB(BenchmarkingExperiment):
         plot_2 = sns.lmplot(
             data=self.circuit_fidelities,
             x="cycle_depth",
-            y="log_fidelity_estimate",
+            y="circuit_fidelity_estimate",
+            hue="cycle_depth",
+            palette="dark:r",
         )
         ax_2 = plot_2.axes.item()
         plot_2.tight_layout()
         ax_2.set_xlabel(r"Cycle depth", fontsize=15)
-        ax_2.set_ylabel(r"Log Circuit fidelity", fontsize=15)
+        ax_2.set_ylabel(r"Circuit fidelity", fontsize=15)
         ax_2.set_title(r"Exponential decay of circuit fidelity", fontsize=15)
+
+        # Add fit line
+        x = np.linspace(
+            self.circuit_fidelities.cycle_depth.min(), self.circuit_fidelities.cycle_depth.max()
+        )
+        y = self.results.layer_fidelity_estimate**x
+        y_p = (self.results.layer_fidelity_estimate + self.results.layer_fidelity_estimate_std) ** x
+        y_m = (self.results.layer_fidelity_estimate - self.results.layer_fidelity_estimate_std) ** x
+        ax_2.plot(x, y, color="tab:red", linewidth=2)
+        ax_2.fill_between(x, y_m, y_p, alpha=0.2, color="tab:red")
 
     def analyse_results(self, plot_results: bool = True) -> XEBResults:
         """Analyse the results and calculate the estimated circuit fidelity.
