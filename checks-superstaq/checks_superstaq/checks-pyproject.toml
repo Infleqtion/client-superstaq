@@ -64,9 +64,10 @@ include = ["./*"]
 max-line-length = 100
 disable = "all"
 load-plugins = [
-  "pylint.extensions.docparams", 
-  "pylint.extensions.docstyle", 
+  "pylint.extensions.docparams",
+  "pylint.extensions.docstyle",
   "checks_superstaq.pylint_init_return",
+  "checks_superstaq.pylint_import_annotations",
 ]
 output-format = "colorized"
 score = false
@@ -85,6 +86,7 @@ enable = [
   "duplicate-argument-name",
   "expression-not-assigned",
   "function-redefined",
+  "import-future-annotations",
   "inconsistent-mro",
   "init-return-check",
   "init-is-generator",
