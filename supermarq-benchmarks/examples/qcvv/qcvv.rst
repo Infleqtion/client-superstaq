@@ -1,7 +1,7 @@
 QCVV: Quantum Characterisation, Validation and Verification
 ===========================================================
 
-The Superstaq QCVV library provides a customizable toolkit for testing and characterizing
+The Supermarq QCVV library provides a customizable toolkit for testing and characterizing
 quantum devices. The toolkit can either be used with simulators or on live devices.
 
 For a demonstration of how to implement a new experiment take a look at the following notebook
@@ -10,8 +10,3 @@ For a demonstration of how to implement a new experiment take a look at the foll
     :maxdepth: 1
 
     qcvv_css
-
-
-.. note::
-
-    At present the QCVV library is only available in :code:`cirq-superstaq`.

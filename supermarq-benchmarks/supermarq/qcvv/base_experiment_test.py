@@ -26,7 +26,7 @@ import pandas as pd
 import pytest
 from general_superstaq.superstaq_exceptions import SuperstaqException
 
-from cirq_superstaq.qcvv.base_experiment import BenchmarkingExperiment, Sample
+from supermarq.qcvv.base_experiment import BenchmarkingExperiment, Sample
 
 
 @pytest.fixture(scope="session", autouse=True)
