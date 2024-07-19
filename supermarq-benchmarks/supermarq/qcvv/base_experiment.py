@@ -22,10 +22,9 @@ from dataclasses import dataclass, field
 from typing import Any, NamedTuple
 
 import cirq
+import cirq_superstaq as css
 import numpy as np
 import pandas as pd
-from cirq_superstaq.job import Job
-from cirq_superstaq.service import Service
 from general_superstaq.superstaq_exceptions import SuperstaqServerException
 from tqdm.notebook import tqdm
 
@@ -131,7 +130,7 @@ class BenchmarkingExperiment(ABC):
         self._samples: Sequence[Sample] | None = None
         """The attribute to store the experimental samples in."""
 
-        self._service: Service = Service(**kwargs)
+        self._service: css.service.Service = css.service.Service(**kwargs)
 
     @property
     def results(self) -> NamedTuple:
@@ -296,7 +295,7 @@ class BenchmarkingExperiment(ABC):
             if sample.job is None:
                 continue
             job = self._service.get_job(sample.job)
-            if job.status() in Job.NON_TERMINAL_STATES + Job.UNSUCCESSFUL_STATES:
+            if job.status() in css.job.Job.NON_TERMINAL_STATES + css.job.Job.UNSUCCESSFUL_STATES:
                 statuses[job.job_id()] = job.status()
             else:
                 sample.probabilities = self._process_device_counts(job.counts(0))
