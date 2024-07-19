@@ -86,7 +86,7 @@ def run(
         integration_setup()
 
     return subprocess.call(
-        ["python", "-m", "pytest", *files, *args_to_pass, "-n=auto"],
+        ["python", "-m", "pytest", "-n=auto", *files, *args_to_pass],
         cwd=check_utils.root_dir,
     )
 
