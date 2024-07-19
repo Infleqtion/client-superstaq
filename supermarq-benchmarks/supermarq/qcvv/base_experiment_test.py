@@ -37,7 +37,8 @@ def patch_tqdm() -> None:
 @pytest.fixture
 @patch.multiple(BenchmarkingExperiment, __abstractmethods__=set())
 def abc_experiment() -> BenchmarkingExperiment:
-    return BenchmarkingExperiment(num_qubits=2)  # type: ignore[abstract]
+    with patch("cirq_superstaq.service.Service"):
+        return BenchmarkingExperiment(num_qubits=2)  # type: ignore[abstract]
 
 
 @pytest.fixture
