@@ -1,5 +1,7 @@
 """Exceptions for the Superstaq API."""
 
+from __future__ import annotations
+
 
 class SuperstaqException(Exception):
     """An exception for errors coming from Superstaq's API."""

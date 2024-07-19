@@ -1,4 +1,6 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
+from __future__ import annotations
+
 import itertools
 import json
 import textwrap
