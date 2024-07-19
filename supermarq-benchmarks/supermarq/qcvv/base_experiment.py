@@ -24,10 +24,8 @@ from typing import Any, NamedTuple
 import cirq
 import numpy as np
 import pandas as pd
-
-# from cirq_superstaq.job import Job  # noqa: TC002
 from cirq_superstaq.service import Service
-from general_superstaq.superstaq_exceptions import SuperstaqException
+from general_superstaq.superstaq_exceptions import SuperstaqServerException
 from tqdm.notebook import tqdm
 
 
@@ -43,6 +41,9 @@ class Sample:
     """The corresponding data about the circuit"""
     probabilities: dict[str, float] = field(init=False)
     """The probabilities of the computational basis states"""
+    job: str | None = None
+    """The superstaq job UUID corresponding to the sample. Defaults to None if no job is
+    associated with the sample."""
 
 
 class BenchmarkingExperiment(ABC):
@@ -68,12 +69,13 @@ class BenchmarkingExperiment(ABC):
 
     #. Then we analyse the results. If the target was a local simulator this will be available as
        soon as the :code:`run()` method has finished executing. On the other hand if a real device
-       was accessed via Superstaq then this method will not execute until the job has finished
-       on the Superstaq server.
+       was accessed via Superstaq then it may take time for the data to be available from the
+       server. The :code:`collect_data()` will return :code:`True` when all data has been collected
+       and is ready to be analysed.
 
        .. code::
-
-            results = experiment.analyse_results(<<args>>)
+            if self.collect_data():
+                results = experiment.analyse_results(<<args>>)
 
     #. The final results of the experiment will be stored in the :code:`results` attribute as a
        :class:`~typing.NamedTuple` of values, while all the data from the experiment will be
@@ -97,10 +99,10 @@ class BenchmarkingExperiment(ABC):
 
     #. :meth:`process_probabilities`: Take the probability distribution over the
         computational basis resulting from running each circuit and combine the relevant details
-        into the :attr:`_raw_data` dataframe.
+        into a :class:`pandas.DataFrame`.
 
-    #. :meth:`analyse_results`: Analyse the data in the :attr:`_raw_data` dataframe and return a
-        :class:`~typing.NamedTuple` like object containing the results of the experiment.
+    #. :meth:`analyse_results`: Analyse the data in the :attr:`raw_data` dataframe and return a
+        :class:`~typing.NamedTuple`-like object containing the results of the experiment.
 
     #. :meth:`plot_results`: Produce any relevant plots that are useful for understanding the
         results of the experiment.
@@ -110,6 +112,7 @@ class BenchmarkingExperiment(ABC):
     def __init__(
         self,
         num_qubits: int,
+        **kwargs: Any,
     ) -> None:
         """Args:
         num_qubits: The number of qubits used during the experiment. Most subclasses
@@ -126,6 +129,8 @@ class BenchmarkingExperiment(ABC):
 
         self._samples: Sequence[Sample] | None = None
         """The attribute to store the experimental samples in."""
+
+        self._service: Service = Service(**kwargs)
 
     @property
     def results(self) -> NamedTuple:
@@ -177,7 +182,6 @@ class BenchmarkingExperiment(ABC):
         target: cirq.SimulatorBase | str | None = None,  # type: ignore [type-arg]
         shots: int = 10_000,
         dry_run: bool = False,
-        **service_kwargs: Any,
     ) -> None:
         """Run the benchmarking experiment and analyse the results.
 
@@ -189,10 +193,8 @@ class BenchmarkingExperiment(ABC):
             shots: The number of shots to sample. Defaults to 10,000.
             dry_run: If the circuits are submitted to the Superstaq server then
                 using :code:`dry-run=True` will run the circuits in :code:`dry-run` mode.
-            service_kwargs: Key word arguments to be passed to
-                the :class:`~cirq_superstaq.service.Service` instance.
         """
-        if self._results is not None:
+        if self._samples is not None:
             warnings.warn("Existing results will be overwritten.")
 
         if any(depth <= 0 for depth in layers):
@@ -205,11 +207,9 @@ class BenchmarkingExperiment(ABC):
             target = cirq.Simulator()
 
         if isinstance(target, str):
-            self.run_ss_jobs(target, shots, dry_run, **service_kwargs)
+            self.submit_ss_jobs(target, shots, dry_run)
         else:
             self.sample_circuits_with_simulator(target, shots)
-
-        self.process_probabilities()
 
     def _clean_circuits(self) -> None:
         """Removes any terminal measurements that have been added to the circuit and replaces
@@ -221,13 +221,11 @@ class BenchmarkingExperiment(ABC):
             # Add measurement of qubit state in computational basis.
             sample.circuit += cirq.measure(sample.circuit.all_qubits())
 
-    def run_ss_jobs(
+    def submit_ss_jobs(
         self,
         target: str,
         shots: int = 10_000,
         dry_run: bool = False,
-        all_samples: bool = True,
-        **service_kwargs: Any,
     ) -> None:
         """Submit the circuit samples to the desired target device and store the resulting
         probabilities.
@@ -241,13 +239,7 @@ class BenchmarkingExperiment(ABC):
             shots: The number of shots to use. Defaults to 10,000
             dry_run: Whether to perform a dry run on the Superstaq server instead of submitting
                 to the real device.
-            all_samples: If False then only sample circuits without saved results are submitted.
-                Defaults to True.
-            service_kwargs: Key word arguments to be passed to
-                the :class:`~cirq_superstaq.service.Service` instance.
         """
-        # Initialise the service
-        service = Service(**service_kwargs)
 
         # Configure dry-runs
         if dry_run:
@@ -255,42 +247,60 @@ class BenchmarkingExperiment(ABC):
         else:
             method = None
 
-        if all_samples:
-            indexes = list(range(len(self.samples)))
-        else:
-            indexes = [
-                idx
-                for idx in range(len(self.samples))
-                if not hasattr(self.samples[idx], "probabilities")
-            ]
-
-        # Get maximum number of targets
-        max_circuits = service.target_info(target=target).get("max_experiments", len(self.samples))
-        partitioned_samples = [
-            indexes[i : i + max_circuits] for i in range(0, len(indexes), max_circuits)
-        ]
-
-        for partition in tqdm(partitioned_samples, desc="Submitting jobs to server."):
-            job = service.create_job(
-                [self.samples[idx].circuit for idx in partition],
-                target=target,
-                method=method,
-                repetitions=shots,
-            )
+        for sample in tqdm(self.samples):
+            if sample.job is not None:
+                continue
             try:
-                counts = job.counts()
-                if not isinstance(counts, list):
-                    raise TypeError("Expected the counts returned from the `job` to be a list.")
-                for k, idx in enumerate(partition):
-                    self.samples[idx].probabilities = self._process_device_counts(counts[k])
-
-            except SuperstaqException as error:
-                warnings.warn(
-                    "An exception occurred while running the experiment on "
-                    "the Superstaq server. As a result not all circuits have been sampled."
-                    "Suggest re-running `run_ss_jobs()` with `all_samples=False` to sample "
-                    f"the missing circuits. Exception message: {error.message}"
+                job = self._service.create_job(
+                    sample.circuit, target=target, method=method, repetitions=shots
                 )
+                sample.job = job.job_id()
+            except SuperstaqServerException as error:
+                print(
+                    "The following error ocurred when submitting the jobs to the server and not\n"
+                    "all jobs have been submitted. If this is a timeout or limit based error\n"
+                    "consider running `submit_ss_jobs(args)` again to continue submitting\n"
+                    "the outstanding jobs.\n"
+                    f"{error.message}"
+                )
+
+    def sample_statuses(self) -> list[str | None]:
+        """Returns:
+        Get the statuses of the jobs associated with each sample. If no job is associated
+        with a sample then :code:`None` is listed instead.
+        """
+        statuses: list[str | None] = []
+        for sample in self.samples:
+            if sample.job is None:
+                statuses.append(None)
+            else:
+                statuses.append(self._service.get_job(sample.job).status())
+        return statuses
+
+    def retrieve_ss_jobs(self) -> dict[str, str]:
+        """Retrieve the jobs from the server.
+
+        Returns:
+            A dictionary of the statuses of any jobs that have not been successfully completed.
+        """
+        # If no jobs then return empty dictionary
+        if not [sample for sample in self.samples if sample.job is not None]:
+            return {}
+
+        statuses = {}
+        waiting_samples = [
+            sample for sample in self.samples if not hasattr(sample, "probabilities")
+        ]
+        for sample in tqdm(waiting_samples, "Retrieving jobs"):
+            if sample.job is None:
+                continue
+            job = self._service.get_job(sample.job)
+            if job.status() in job.NON_TERMINAL_STATES + job.UNSUCCESSFUL_STATES:
+                statuses[job.job_id()] = job.status()
+            else:
+                sample.probabilities = self._process_device_counts(job.counts(0))
+
+        return statuses
 
     def sample_circuits_with_simulator(
         self, target: cirq.SimulatorBase, shots: int = 10_000  # type: ignore [type-arg]
@@ -308,6 +318,55 @@ class BenchmarkingExperiment(ABC):
             output_probabilities = np.bincount(samples, minlength=2**self.num_qubits) / len(samples)
 
             sample.probabilities = self._state_probs_to_dict(output_probabilities)
+
+    def collect_data(self, force: bool = False) -> bool:
+        """Collect the data from the samples and process it into the :attr:`raw_data` attribute.
+
+        If the data is successfully stored in the :attr:`raw_data` attribute then the function will
+        return :code:`True`
+
+        If either not all jobs submitted to the server have completed, or not all samples have
+        probability results then no data will be saved in :attr:`raw_data` and the function will
+        return :code:`False`. This check can be overridden with :code:`force=True` in which case
+        only the samples which have probability results will be used to generate the results
+        dataframe.
+
+        Args:
+            force: Whether to override the check that all data is present. Defaults to False.
+
+        Raises:
+            RuntimeError: If :code:`force=True` but there are no samples with any data.
+            RuntimeError: If the experiment has not yet been run.
+
+        Returns:
+            Whether the results dataframe has been successfully created.
+        """
+        if not self.samples:
+            raise RuntimeError("The experiment has not yet ben run.")
+
+        # Retrieve jobs from server (if needed)
+        outstanding_statuses = self.retrieve_ss_jobs()
+        if outstanding_statuses:
+            print(
+                f"Not all circuits have been sampled.\n"
+                f"Please wait and try again.\n"
+                f"Outstanding Superstaq jobs:\n{outstanding_statuses}"
+            )
+            if not force:
+                return False
+
+        completed_samples = [sample for sample in self.samples if hasattr(sample, "probabilities")]
+
+        if not len(completed_samples) == len(self.samples):
+            print("Some samples do not have probability results")
+            if not force:
+                return False
+
+        if len(completed_samples) == 0:
+            raise RuntimeError("Cannot force data collection when there are no completed samples.")
+
+        self._raw_data = self.process_probabilities(completed_samples)
+        return True
 
     @abstractmethod
     def build_circuits(
@@ -327,22 +386,10 @@ class BenchmarkingExperiment(ABC):
         """
 
     @abstractmethod
-    def process_probabilities(self) -> None:
-        """Processes the probabilities generated by sampling the circuits into the data structures
-        needed for analyzing the results. Uses the data saved in the :attr:`_samples` attribute and
-        saves the raw data in the :attr:`_raw_data` attribute ready to
-        be analyzed when the :meth:`analyse_results` method is called.
-
-        .. note::
-
-            Any subclasses should call this base method.
-
-        Raises:
-            RuntimeError: If not all circuits have been sampled.
+    def process_probabilities(self, samples: Sequence[Sample]) -> pd.DataFrame:
+        """Processes the probabilities generated by sampling the circuits into a data frame
+        needed for analyzing the results.
         """
-        missing_data = [sample for sample in self.samples if not hasattr(sample, "probabilities")]
-        if missing_data:
-            raise RuntimeError("Not all circuits have been successfully sampled.")
 
     @abstractmethod
     def plot_results(self) -> None:
