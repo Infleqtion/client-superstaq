@@ -24,7 +24,7 @@ import cirq
 import numpy as np
 import pandas as pd
 import pytest
-from general_superstaq.superstaq_exceptions import SuperstaqException
+from general_superstaq.superstaq_exceptions import SuperstaqServerException
 
 from supermarq.qcvv.base_experiment import BenchmarkingExperiment, Sample
 
@@ -91,9 +91,8 @@ def test_empty_samples_error(abc_experiment: BenchmarkingExperiment) -> None:
 
 
 def test_run_results_overwrite_warning(abc_experiment: BenchmarkingExperiment) -> None:
-    abc_experiment._results = pd.DataFrame([{"example": 1234}])
+    abc_experiment._samples = [Sample(circuit=MagicMock(), data={})]
     abc_experiment.build_circuits = MagicMock()
-    abc_experiment.run_ss_jobs = MagicMock()
     abc_experiment.sample_circuits_with_simulator = MagicMock()
     abc_experiment.process_probabilities = MagicMock()
 
@@ -109,12 +108,10 @@ def test_run_with_bad_layers(abc_experiment: BenchmarkingExperiment) -> None:
 
 def test_run_local(abc_experiment: BenchmarkingExperiment) -> None:
     abc_experiment.build_circuits = (mock_build_circuits := MagicMock())
-    abc_experiment.run_ss_jobs = (mock_run_ss_jobs := MagicMock())
+    abc_experiment.submit_ss_jobs = (mock_submit_ss_jobs := MagicMock())
     abc_experiment.sample_circuits_with_simulator = (
         mock_sample_circuits_with_simulator := MagicMock()
     )
-    abc_experiment.process_probabilities = (mock_process_probabilities := MagicMock())
-
     abc_experiment.run(50, [1, 50, 100], shots=50)
 
     mock_build_circuits.assert_called_once_with(50, [1, 50, 100])
@@ -124,17 +121,15 @@ def test_run_local(abc_experiment: BenchmarkingExperiment) -> None:
     assert call_args[1] == 50
     assert isinstance(call_args[0], cirq.Simulator)  # Test simulated on a default target
 
-    mock_process_probabilities.assert_called_once_with()
-    mock_run_ss_jobs.assert_not_called()
+    mock_submit_ss_jobs.assert_not_called()
 
 
 def test_run_local_defined_sim(abc_experiment: BenchmarkingExperiment) -> None:
     abc_experiment.build_circuits = (mock_build_circuits := MagicMock())
-    abc_experiment.run_ss_jobs = (mock_run_ss_jobs := MagicMock())
+    abc_experiment.submit_ss_jobs = (mock_submit_ss_jobs := MagicMock())
     abc_experiment.sample_circuits_with_simulator = (
         mock_sample_circuits_with_simulator := MagicMock()
     )
-    abc_experiment.process_probabilities = (mock_process_probabilities := MagicMock())
 
     abc_experiment.run(
         50, [1, 50, 100], shots=50, target=(target_sim := cirq.DensityMatrixSimulator())
@@ -147,26 +142,22 @@ def test_run_local_defined_sim(abc_experiment: BenchmarkingExperiment) -> None:
     assert call_args[1] == 50
     assert call_args[0] == target_sim  # Test simulated on the given target
 
-    mock_process_probabilities.assert_called_once_with()
-    mock_run_ss_jobs.assert_not_called()
+    mock_submit_ss_jobs.assert_not_called()
 
 
 def test_run_on_ss_server(abc_experiment: BenchmarkingExperiment) -> None:
     abc_experiment.build_circuits = (mock_build_circuits := MagicMock())
-    abc_experiment.run_ss_jobs = (mock_run_ss_jobs := MagicMock())
+    abc_experiment.submit_ss_jobs = (mock_submit_ss_jobs := MagicMock())
     abc_experiment.sample_circuits_with_simulator = (
         mock_sample_circuits_with_simulator := MagicMock()
     )
-    abc_experiment.process_probabilities = (mock_process_probabilities := MagicMock())
-
     abc_experiment.run(50, [1, 50, 100], shots=50, target="example_ss_target")
 
     mock_build_circuits.assert_called_once_with(50, [1, 50, 100])
 
     mock_sample_circuits_with_simulator.assert_not_called()
 
-    mock_process_probabilities.assert_called_once_with()
-    mock_run_ss_jobs.assert_called_once_with("example_ss_target", 50, False)
+    mock_submit_ss_jobs.assert_called_once_with("example_ss_target", 50, False)
 
 
 def test_run_with_simulator(
@@ -193,110 +184,100 @@ def test_run_with_simulator(
     assert sample_circuits[1].probabilities == {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
 
 
-def test_run_ss_jobs(abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]) -> None:
-
-    abc_experiment._samples = sample_circuits
-    with patch("supermarq.qcvv.base_experiment.Service") as mock_service:
-        mock_service().create_job.return_value = MagicMock(
-            counts=MagicMock(
-                return_value=[
-                    {"00": 5, "01": 5, "10": 5, "11": 10},
-                    {"00": 5, "01": 5, "10": 5, "11": 10},
-                ]
-            )
-        )
-        mock_service().target_info.return_value = {}
-        abc_experiment.run_ss_jobs("example_target", shots=100)
-
-    for sample in sample_circuits:
-        assert sample.probabilities == {"00": 0.2, "01": 0.2, "10": 0.2, "11": 0.4}
-
-    mock_service().create_job.assert_called_once_with(
-        [sample.circuit for sample in sample_circuits],
-        target="example_target",
-        method=None,
-        repetitions=100,
-    )
-
-
-def test_run_ss_jobs_not_all_samples(
+def test_submit_ss_jobs(
     abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
 ) -> None:
 
     abc_experiment._samples = sample_circuits
-    abc_experiment._samples[0].probabilities = {"example": 0.7}
-    with patch("supermarq.qcvv.base_experiment.Service") as mock_service:
-        mock_service().create_job.return_value = MagicMock(
-            counts=MagicMock(
-                return_value=[
-                    {"00": 5, "01": 5, "10": 5, "11": 10},
-                    {"00": 5, "01": 5, "10": 5, "11": 10},
-                ]
-            )
-        )
-        mock_service().target_info.return_value = {}
-        abc_experiment.run_ss_jobs("example_target", shots=100, all_samples=False)
+    abc_experiment._service = (mock_service := MagicMock())
+    mock_service().create_job.side_effect = [MagicMock(job_id="job_1"), MagicMock(job_id="job_2")]
 
-    assert sample_circuits[1].probabilities == {"00": 0.2, "01": 0.2, "10": 0.2, "11": 0.4}
+    mock_service().target_info.return_value = {}
+    abc_experiment.submit_ss_jobs("example_target", shots=100)
 
-    mock_service().create_job.assert_called_once_with(
-        [sample_circuits[1].circuit],
-        target="example_target",
-        method=None,
-        repetitions=100,
-    )
-
-
-def test_run_ss_jobs_dry_run_partitioning(
-    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
-) -> None:
-
-    abc_experiment._samples = sample_circuits
-    with patch("supermarq.qcvv.base_experiment.Service") as mock_service:
-        mock_service().create_job.return_value = MagicMock(
-            counts=MagicMock(
-                return_value=[
-                    {"00": 5, "01": 5, "10": 5, "11": 10},
-                    {"00": 5, "01": 5, "10": 5, "11": 10},
-                ]
-            )
-        )
-        mock_service().target_info.return_value = {"max_experiments": 1}
-        abc_experiment.run_ss_jobs("example_target", shots=100, dry_run=True)
-
-    for sample in sample_circuits:
-        assert sample.probabilities == {"00": 0.2, "01": 0.2, "10": 0.2, "11": 0.4}
-
-    mock_service().create_job.assert_has_calls(
+    mock_service.create_job.assert_has_calls(
         [
             call(
-                [sample_circuits[0].circuit],
+                sample_circuits[0].circuit,
                 target="example_target",
-                method="dry-run",
+                method=None,
                 repetitions=100,
             ),
-            call().counts(),
             call(
-                [sample_circuits[1].circuit],
+                sample_circuits[1].circuit,
                 target="example_target",
-                method="dry-run",
+                method=None,
                 repetitions=100,
             ),
-            call().counts(),
-        ]
+        ],
+        any_order=True,
     )
 
 
-def test_run_ss_jobs_with_exception(
+def test_submit_ss_jobs_dry_run(
+    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+) -> None:
+
+    abc_experiment._samples = sample_circuits
+    abc_experiment._service = (mock_service := MagicMock())
+    mock_service().create_job.side_effect = [MagicMock(job_id="job_1"), MagicMock(job_id="job_2")]
+
+    mock_service().target_info.return_value = {}
+    abc_experiment.submit_ss_jobs("example_target", shots=100, dry_run=True)
+
+    mock_service.create_job.assert_has_calls(
+        [
+            call(
+                sample_circuits[0].circuit,
+                target="example_target",
+                method="dry-run",
+                repetitions=100,
+            ),
+            call(
+                sample_circuits[1].circuit,
+                target="example_target",
+                method="dry-run",
+                repetitions=100,
+            ),
+        ],
+        any_order=True,
+    )
+
+
+def test_submit_ss_jobs_job_already_has_id(
+    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+) -> None:
+
+    abc_experiment._samples = sample_circuits
+    sample_circuits[0].job = "example_job_id"
+    abc_experiment._service = (mock_service := MagicMock())
+    mock_service().create_job.side_effect = [MagicMock(job_id="job_1"), MagicMock(job_id="job_2")]
+
+    mock_service().target_info.return_value = {}
+    abc_experiment.submit_ss_jobs("example_target", shots=100, dry_run=True)
+
+    mock_service.create_job.assert_has_calls(
+        [
+            call(
+                sample_circuits[1].circuit,
+                target="example_target",
+                method="dry-run",
+                repetitions=100,
+            ),
+        ],
+        any_order=True,
+    )
+
+
+def test_submit_ss_jobs_with_exception(
     abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
-    with patch("supermarq.qcvv.base_experiment.Service") as mock_service:
-        mock_service().create_job.return_value = MagicMock(
-            counts=MagicMock(side_effect=SuperstaqException("example_exception"))
-        )
-        with pytest.warns(UserWarning):
-            abc_experiment.run_ss_jobs("example_target", shots=100, dry_run=True)
+    abc_experiment._service = (mock_service := MagicMock())
+
+    mock_service.create_job.side_effect = SuperstaqServerException("example_exception")
+    with pytest.warns(UserWarning):
+        abc_experiment.submit_ss_jobs("example_target", shots=100, dry_run=True)
 
 
 def test_state_probs_to_dict(abc_experiment: BenchmarkingExperiment) -> None:
@@ -350,6 +331,20 @@ def test_interleave_circuit() -> None:
     )
 
 
+def test_sample_statuses(
+    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment._samples = sample_circuits
+    sample_circuits[0].job = "example_job_id"
+    abc_experiment._service = (mock_service := MagicMock())
+    mock_service.get_job.return_value.status.side_effect = ["example_status"]
+
+    statuses = abc_experiment.sample_statuses()
+    assert statuses == ["example_status", None]
+
+    mock_service.get_job.assert_called_once_with("example_job_id")
+
+
 def test_clean_circuit(
     abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
 ) -> None:
@@ -360,24 +355,176 @@ def test_clean_circuit(
         assert sample.circuit[-1] == cirq.Moment(cirq.measure(*sample.circuit.all_qubits()))
 
 
-def test_process_probabilities(
+def test_process_device_counts(abc_experiment: BenchmarkingExperiment) -> None:
+    counts = {
+        "00": 20,
+        "01": 5,
+        "11": 10,
+    }
+    probs = abc_experiment._process_device_counts(counts)
+
+    assert probs == {"00": 20 / 35, "01": 5 / 35, "10": 0.0, "11": 10 / 35}
+
+
+def test_retrieve_ss_jobs_not_all_submitted(
     abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
-    with pytest.raises(RuntimeError, match="Not all circuits have been successfully sampled."):
-        abc_experiment.process_probabilities()
+    abc_experiment._samples[0].job = "example_job_id"
+    mock_job_1 = MagicMock()
+    mock_job_1.status.return_value = "Queued"
+    mock_job_1.job_id.return_value = "example_job_id"
+
+    abc_experiment._service = MagicMock()
+    abc_experiment._service.get_job.return_value = mock_job_1
+
+    statuses = abc_experiment.retrieve_ss_jobs()
+
+    abc_experiment._service.get_job.assert_called_once_with("example_job_id")
+
+    assert statuses == {"example_job_id": "Queued"}
+    assert not hasattr(sample_circuits[0], "probabilities")
+    assert not hasattr(sample_circuits[1], "probabilities")
 
 
-def test_run_ss_jobs_counts_not_list(
+def test_retrieve_ss_jobs_nothing_to_retrieve(
     abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
-    with patch("supermarq.qcvv.base_experiment.Service") as mock_service:
-        mock_service().create_job.return_value = MagicMock(
-            counts=MagicMock(return_value={"00": 5, "01": 5, "10": 5, "11": 10})
-        )
-        mock_service().target_info.return_value = {}
-        with pytest.raises(
-            TypeError, match="Expected the counts returned from the `job` to be a list."
-        ):
-            abc_experiment.run_ss_jobs("example_target", shots=100)
+    statuses = abc_experiment.retrieve_ss_jobs()
+    assert statuses == {}
+
+
+def test_retrieve_ss_jobs_all_submitted(
+    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment._samples = sample_circuits
+    abc_experiment._samples[0].job = "example_job_id_1"
+    mock_job_1 = MagicMock()
+    mock_job_1.status.return_value = "Queued"
+    mock_job_1.job_id.return_value = "example_job_id_1"
+
+    abc_experiment._samples[1].job = "example_job_id_2"
+    mock_job_2 = MagicMock()
+    mock_job_2.status.return_value = "Done"
+    mock_job_2.job_id.return_value = "example_job_id_2"
+    mock_job_2.counts.return_value = {"00": 5, "11": 10}
+
+    abc_experiment._service = MagicMock()
+    abc_experiment._service.get_job.side_effect = [mock_job_1, mock_job_2]
+
+    statuses = abc_experiment.retrieve_ss_jobs()
+
+    # Check get job calls
+    abc_experiment._service.get_job.assert_has_calls(
+        [call("example_job_id_1"), call("example_job_id_2")]
+    )
+
+    # Check counts call
+    mock_job_2.counts.assert_called_once_with(0)
+
+    assert statuses == {"example_job_id_1": "Queued"}
+
+    # Check probabilities correctly updated
+    assert sample_circuits[1].probabilities == {"00": 5 / 15, "01": 0.0, "10": 0.0, "11": 10 / 15}
+    assert not hasattr(sample_circuits[0], "probabilities")
+
+
+def test_collect_data_no_samples(abc_experiment: BenchmarkingExperiment) -> None:
+    with pytest.raises(RuntimeError, match="The experiment has not yet ben run."):
+        abc_experiment.collect_data()
+
+
+def test_collect_data_no_jobs_to_retrieve(
+    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+) -> None:
+    sample_circuits[0].probabilities = {"00": 1.0, "10": 0.0, "01": 0.0, "11": 0.0}
+    sample_circuits[1].probabilities = {"00": 0.0, "10": 0.0, "01": 0.0, "11": 1.0}
+    abc_experiment._samples = sample_circuits
+    abc_experiment.process_probabilities = MagicMock()
+
+    assert abc_experiment.collect_data()
+    abc_experiment.process_probabilities.assert_called_once_with(sample_circuits)
+
+
+def test_collect_data_no_jobs_to_retrieve_not_all_probabilities(
+    abc_experiment: BenchmarkingExperiment,
+    sample_circuits: list[Sample],
+    capfd: pytest.CaptureFixture[str],
+) -> None:
+    sample_circuits[0].probabilities = {"00": 1.0, "10": 0.0, "01": 0.0, "11": 0.0}
+    abc_experiment._samples = sample_circuits
+    abc_experiment.process_probabilities = MagicMock()
+
+    assert not abc_experiment.collect_data()
+    out, _ = capfd.readouterr()
+    assert out == "Some samples do not have probability results.\n"
+    abc_experiment.process_probabilities.assert_not_called()
+
+
+def test_collect_data_no_jobs_to_retrieve_not_all_probabilities_forced(
+    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+) -> None:
+    sample_circuits[0].probabilities = {"00": 1.0, "10": 0.0, "01": 0.0, "11": 0.0}
+    abc_experiment._samples = sample_circuits
+    abc_experiment.process_probabilities = MagicMock()
+
+    assert abc_experiment.collect_data(force=True)
+    abc_experiment.process_probabilities.assert_called_once_with([sample_circuits[0]])
+
+
+def test_collect_data_cannot_force(
+    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment._samples = sample_circuits
+    abc_experiment.process_probabilities = MagicMock()
+
+    with pytest.raises(
+        RuntimeError, match="Cannot force data collection when there are no completed samples."
+    ):
+        abc_experiment.collect_data(force=True)
+
+    abc_experiment.process_probabilities.assert_not_called()
+
+
+def test_collect_data_outstanding_jobs(
+    abc_experiment: BenchmarkingExperiment,
+    sample_circuits: list[Sample],
+    capfd: pytest.CaptureFixture[str],
+) -> None:
+    abc_experiment._samples = sample_circuits
+    abc_experiment.process_probabilities = MagicMock()
+    abc_experiment.retrieve_ss_jobs = MagicMock(return_value={"example_id": "some_status"})
+    assert not abc_experiment.collect_data()
+    out, _ = capfd.readouterr()
+    assert out == (
+        "Not all circuits have been sampled.\n"
+        "Please wait and try again.\n"
+        "Outstanding Superstaq jobs:\n"
+        "{'example_id': 'some_status'}\n"
+    )
+    abc_experiment.process_probabilities.assert_not_called()
+
+
+def test_collect_data_outstanding_jobs_force(
+    abc_experiment: BenchmarkingExperiment,
+    sample_circuits: list[Sample],
+    capfd: pytest.CaptureFixture[str],
+) -> None:
+    abc_experiment._samples = sample_circuits
+    abc_experiment.process_probabilities = MagicMock(return_value=pd.DataFrame([{"data": 1.0}]))
+    abc_experiment.samples[0].probabilities = {"00": 1.0, "10": 0.0, "01": 0.0, "11": 0.0}
+    abc_experiment.retrieve_ss_jobs = MagicMock(return_value={"example_id": "some_status"})
+    assert abc_experiment.collect_data(force=True)
+    out, _ = capfd.readouterr()
+    assert out == (
+        "Not all circuits have been sampled.\n"
+        "Please wait and try again.\n"
+        "Outstanding Superstaq jobs:\n"
+        "{'example_id': 'some_status'}\n"
+        "Some samples do not have probability results.\n"
+    )
+
+    abc_experiment.process_probabilities.assert_called_once_with([abc_experiment.samples[0]])
+
+    pd.testing.assert_frame_equal(pd.DataFrame([{"data": 1.0}]), abc_experiment.raw_data)

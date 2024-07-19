@@ -24,6 +24,7 @@ from typing import Any, NamedTuple
 import cirq
 import numpy as np
 import pandas as pd
+from cirq_superstaq.job import Job
 from cirq_superstaq.service import Service
 from general_superstaq.superstaq_exceptions import SuperstaqServerException
 from tqdm.notebook import tqdm
@@ -256,7 +257,7 @@ class BenchmarkingExperiment(ABC):
                 )
                 sample.job = job.job_id()
             except SuperstaqServerException as error:
-                print(
+                warnings.warn(
                     "The following error ocurred when submitting the jobs to the server and not\n"
                     "all jobs have been submitted. If this is a timeout or limit based error\n"
                     "consider running `submit_ss_jobs(args)` again to continue submitting\n"
@@ -295,7 +296,7 @@ class BenchmarkingExperiment(ABC):
             if sample.job is None:
                 continue
             job = self._service.get_job(sample.job)
-            if job.status() in job.NON_TERMINAL_STATES + job.UNSUCCESSFUL_STATES:
+            if job.status() in Job.NON_TERMINAL_STATES + Job.UNSUCCESSFUL_STATES:
                 statuses[job.job_id()] = job.status()
             else:
                 sample.probabilities = self._process_device_counts(job.counts(0))
@@ -341,15 +342,15 @@ class BenchmarkingExperiment(ABC):
         Returns:
             Whether the results dataframe has been successfully created.
         """
-        if not self.samples:
+        if not self._samples:
             raise RuntimeError("The experiment has not yet ben run.")
 
         # Retrieve jobs from server (if needed)
         outstanding_statuses = self.retrieve_ss_jobs()
         if outstanding_statuses:
             print(
-                f"Not all circuits have been sampled.\n"
-                f"Please wait and try again.\n"
+                "Not all circuits have been sampled.\n"
+                "Please wait and try again.\n"
                 f"Outstanding Superstaq jobs:\n{outstanding_statuses}"
             )
             if not force:
@@ -358,7 +359,7 @@ class BenchmarkingExperiment(ABC):
         completed_samples = [sample for sample in self.samples if hasattr(sample, "probabilities")]
 
         if not len(completed_samples) == len(self.samples):
-            print("Some samples do not have probability results")
+            print("Some samples do not have probability results.")
             if not force:
                 return False
 
