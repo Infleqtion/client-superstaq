@@ -24,11 +24,11 @@ from typing import Any, NamedTuple
 import cirq
 import numpy as np
 import pandas as pd
-from general_superstaq.superstaq_exceptions import SuperstaqException
-from tqdm.notebook import tqdm
 
 # from cirq_superstaq.job import Job  # noqa: TC002
 from cirq_superstaq.service import Service
+from general_superstaq.superstaq_exceptions import SuperstaqException
+from tqdm.notebook import tqdm
 
 
 @dataclass

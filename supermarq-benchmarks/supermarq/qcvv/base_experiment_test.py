@@ -196,7 +196,7 @@ def test_run_with_simulator(
 def test_run_ss_jobs(abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]) -> None:
 
     abc_experiment._samples = sample_circuits
-    with patch("cirq_superstaq.qcvv.base_experiment.Service") as mock_service:
+    with patch("supermarq.qcvv.base_experiment.Service") as mock_service:
         mock_service().create_job.return_value = MagicMock(
             counts=MagicMock(
                 return_value=[
@@ -225,7 +225,7 @@ def test_run_ss_jobs_not_all_samples(
 
     abc_experiment._samples = sample_circuits
     abc_experiment._samples[0].probabilities = {"example": 0.7}
-    with patch("cirq_superstaq.qcvv.base_experiment.Service") as mock_service:
+    with patch("supermarq.qcvv.base_experiment.Service") as mock_service:
         mock_service().create_job.return_value = MagicMock(
             counts=MagicMock(
                 return_value=[
@@ -252,7 +252,7 @@ def test_run_ss_jobs_dry_run_partitioning(
 ) -> None:
 
     abc_experiment._samples = sample_circuits
-    with patch("cirq_superstaq.qcvv.base_experiment.Service") as mock_service:
+    with patch("supermarq.qcvv.base_experiment.Service") as mock_service:
         mock_service().create_job.return_value = MagicMock(
             counts=MagicMock(
                 return_value=[
@@ -291,7 +291,7 @@ def test_run_ss_jobs_with_exception(
     abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
-    with patch("cirq_superstaq.qcvv.base_experiment.Service") as mock_service:
+    with patch("supermarq.qcvv.base_experiment.Service") as mock_service:
         mock_service().create_job.return_value = MagicMock(
             counts=MagicMock(side_effect=SuperstaqException("example_exception"))
         )
@@ -372,7 +372,7 @@ def test_run_ss_jobs_counts_not_list(
     abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
-    with patch("cirq_superstaq.qcvv.base_experiment.Service") as mock_service:
+    with patch("supermarq.qcvv.base_experiment.Service") as mock_service:
         mock_service().create_job.return_value = MagicMock(
             counts=MagicMock(return_value={"00": 5, "01": 5, "10": 5, "11": 10})
         )
