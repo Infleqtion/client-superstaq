@@ -412,7 +412,7 @@ def test_job_counts_poll(mock_sleep: mock.MagicMock, job: css.job.Job) -> None:
 @mock.patch("time.sleep", return_value=None)
 @mock.patch("time.time", side_effect=range(20))
 def test_job_counts_poll_timeout(
-    mock_time: mock.MagicMock, mock_sleep: mock.MagicMock, job: css.job.Job
+    _mock_time: mock.MagicMock, mock_sleep: mock.MagicMock, job: css.job.Job
 ) -> None:
     ready_job = {
         "status": "Ready",
