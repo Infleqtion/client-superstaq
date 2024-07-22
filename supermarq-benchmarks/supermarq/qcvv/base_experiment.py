@@ -14,6 +14,7 @@
 """
 from __future__ import annotations
 
+import pprint
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
@@ -181,7 +182,8 @@ class BenchmarkingExperiment(ABC):
         layers: Iterable[int],
         target: cirq.SimulatorBase | str | None = None,  # type: ignore [type-arg]
         shots: int = 10_000,
-        dry_run: bool = False,
+        method: str | None = None,
+        target_options: dict[str, Any] | None = None,
     ) -> None:
         """Run the benchmarking experiment and analyse the results.
 
@@ -191,8 +193,9 @@ class BenchmarkingExperiment(ABC):
             target: Either a local :class:`~cirq.SimulatorBase` to use or the name of a Superstaq
                 target. If None then a local simulator is used. Defaults to None.
             shots: The number of shots to sample. Defaults to 10,000.
-            dry_run: If the circuits are submitted to the Superstaq server then
-                using :code:`dry-run=True` will run the circuits in :code:`dry-run` mode.
+            method: Optional method to use on the Superstaq device. Defaults to None corresponding
+                to normal running.
+            target_options: Optional configuration dictionary passed when submitting the job.
         """
         if self._samples is not None:
             warnings.warn("Existing results will be overwritten.")
@@ -207,7 +210,7 @@ class BenchmarkingExperiment(ABC):
             target = cirq.Simulator()
 
         if isinstance(target, str):
-            self.submit_ss_jobs(target, shots, dry_run)
+            self.submit_ss_jobs(target, shots, method, **(target_options or {}))
         else:
             self.sample_circuits_with_simulator(target, shots)
 
@@ -225,7 +228,8 @@ class BenchmarkingExperiment(ABC):
         self,
         target: str,
         shots: int = 10_000,
-        dry_run: bool = False,
+        method: str | None = None,
+        **target_options: Any,
     ) -> None:
         """Submit the circuit samples to the desired target device and store the resulting
         probabilities.
@@ -237,22 +241,20 @@ class BenchmarkingExperiment(ABC):
         Args:
             target: The name of the target device.
             shots: The number of shots to use. Defaults to 10,000
-            dry_run: Whether to perform a dry run on the Superstaq server instead of submitting
-                to the real device.
+            method: Optional method to use on the Superstaq device. Defaults to None corresponding
+                to normal running.
+            target_options: Optional configuration kwargs passed when submitting the job.
         """
-
-        # Configure dry-runs
-        if dry_run:
-            method = "dry-run"
-        else:
-            method = None
-
         for sample in tqdm(self.samples):
             if sample.job is not None:
                 continue
             try:
                 job = self._service.create_job(
-                    sample.circuit, target=target, method=method, repetitions=shots
+                    sample.circuit,
+                    target=target,
+                    method=method,
+                    repetitions=shots,
+                    **target_options,
                 )
                 sample.job = job.job_id()
             except SuperstaqServerException as error:
@@ -348,9 +350,9 @@ class BenchmarkingExperiment(ABC):
         outstanding_statuses = self.retrieve_ss_jobs()
         if outstanding_statuses:
             print(
-                "Not all circuits have been sampled.\n"
+                "Not all circuits have been sampled. "
                 "Please wait and try again.\n"
-                f"Outstanding Superstaq jobs:\n{outstanding_statuses}"
+                f"Outstanding Superstaq jobs:\n{pprint.pformat(outstanding_statuses)}"
             )
             if not force:
                 return False

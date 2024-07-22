@@ -152,13 +152,17 @@ def test_run_on_ss_server(abc_experiment: BenchmarkingExperiment) -> None:
     abc_experiment.sample_circuits_with_simulator = (
         mock_sample_circuits_with_simulator := MagicMock()
     )
-    abc_experiment.run(50, [1, 50, 100], shots=50, target="example_ss_target")
+    abc_experiment.run(
+        50, [1, 50, 100], shots=50, target="example_ss_target", target_options={"some": "options"}
+    )
 
     mock_build_circuits.assert_called_once_with(50, [1, 50, 100])
 
     mock_sample_circuits_with_simulator.assert_not_called()
 
-    mock_submit_ss_jobs.assert_called_once_with("example_ss_target", 50, False)
+    mock_submit_ss_jobs.assert_called_once_with(
+        "example_ss_target", 50, None, **{"some": "options"}
+    )
 
 
 def test_run_with_simulator(
@@ -224,7 +228,7 @@ def test_submit_ss_jobs_dry_run(
     mock_service().create_job.side_effect = [MagicMock(job_id="job_1"), MagicMock(job_id="job_2")]
 
     mock_service().target_info.return_value = {}
-    abc_experiment.submit_ss_jobs("example_target", shots=100, dry_run=True)
+    abc_experiment.submit_ss_jobs("example_target", shots=100, method="dry-run")
 
     mock_service.create_job.assert_has_calls(
         [
@@ -255,14 +259,14 @@ def test_submit_ss_jobs_job_already_has_id(
     mock_service().create_job.side_effect = [MagicMock(job_id="job_1"), MagicMock(job_id="job_2")]
 
     mock_service().target_info.return_value = {}
-    abc_experiment.submit_ss_jobs("example_target", shots=100, dry_run=True)
+    abc_experiment.submit_ss_jobs("example_target", shots=100, method="example_method")
 
     mock_service.create_job.assert_has_calls(
         [
             call(
                 sample_circuits[1].circuit,
                 target="example_target",
-                method="dry-run",
+                method="example_method",
                 repetitions=100,
             ),
         ],
@@ -278,7 +282,7 @@ def test_submit_ss_jobs_with_exception(
 
     mock_service.create_job.side_effect = SuperstaqServerException("example_exception")
     with pytest.warns(UserWarning):
-        abc_experiment.submit_ss_jobs("example_target", shots=100, dry_run=True)
+        abc_experiment.submit_ss_jobs("example_target", shots=100)
 
 
 def test_state_probs_to_dict(abc_experiment: BenchmarkingExperiment) -> None:
@@ -499,8 +503,7 @@ def test_collect_data_outstanding_jobs(
     assert not abc_experiment.collect_data()
     out, _ = capfd.readouterr()
     assert out == (
-        "Not all circuits have been sampled.\n"
-        "Please wait and try again.\n"
+        "Not all circuits have been sampled. Please wait and try again.\n"
         "Outstanding Superstaq jobs:\n"
         "{'example_id': 'some_status'}\n"
     )
@@ -519,8 +522,7 @@ def test_collect_data_outstanding_jobs_force(
     assert abc_experiment.collect_data(force=True)
     out, _ = capfd.readouterr()
     assert out == (
-        "Not all circuits have been sampled.\n"
-        "Please wait and try again.\n"
+        "Not all circuits have been sampled. Please wait and try again.\n"
         "Outstanding Superstaq jobs:\n"
         "{'example_id': 'some_status'}\n"
         "Some samples do not have probability results.\n"
