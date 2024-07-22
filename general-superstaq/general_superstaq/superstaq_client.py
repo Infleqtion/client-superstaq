@@ -192,6 +192,32 @@ class _SuperstaqClient:
         """
         return self.fetch_jobs([job_id])[job_id]
 
+    def cancel_jobs(
+        self,
+        job_ids: list[str],
+        **kwargs: Any,
+    ) -> None:
+        """Cancel jobs associated with given job ids.
+        
+        Args:
+            job_ids: The UUID of the job (returned when the job was created).
+            kwargs:  Extra options needed to fetch jobs.
+                - cq_token: CQ Cloud credentials.
+
+        Returns:
+            The json body of the response as a dict.
+
+        Raises:
+            SuperstaqServerException: For other API call failures.
+        """
+        json_dict: dict[str, Any] = {
+            "job_ids": job_ids,
+        }
+        if kwargs or self.client_kwargs:
+            json_dict["options"] = json.dumps({**self.client_kwargs, **kwargs})
+
+        return self.post_request("/cancel_jobs", json_dict)
+
     def fetch_jobs(
         self,
         job_ids: list[str],
