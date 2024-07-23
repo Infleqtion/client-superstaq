@@ -153,7 +153,7 @@ class Job:
 
     def cancel(self, **kwargs: Any) -> None:
         """Cancel the current job if it is not in a terminal state.
-        
+
         Raises:
             SuperstaqServerException: If unable to get the status of the job from the API.
         """
