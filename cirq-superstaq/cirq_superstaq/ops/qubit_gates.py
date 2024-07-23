@@ -586,7 +586,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         return cirq.obj_to_dict_helper(self, ["component_gates"])
 
     @classmethod
-    def _from_json_dict_(cls, component_gates: list[cirq.Gate], **kwargs: Any) -> ParallelGates:
+    def _from_json_dict_(cls, component_gates: list[cirq.Gate], **_kwargs: object) -> ParallelGates:
         return cls(*component_gates)
 
     def __pow__(self, exponent: cirq.TParamVal) -> ParallelGates:
@@ -778,7 +778,7 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
         if self.num_copies != other.num_copies:
             return False
 
-        return cirq.equal_up_to_global_phase(self.sub_gate, other.sub_gate)
+        return cirq.equal_up_to_global_phase(self.sub_gate, other.sub_gate, atol=atol)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         diagram_info = cirq.circuit_diagram_info(self.sub_gate, args)
@@ -826,8 +826,8 @@ class IXGate(cirq.XPowGate):
         return f"css.ops.qubit_gates.{str(self)}"
 
     @classmethod
-    def _from_json_dict_(cls, **kwargs: Any) -> IXGate:
-        return IXGate()
+    def _from_json_dict_(cls, **_kwargs: object) -> IXGate:
+        return cls()
 
 
 CR = ZX = ZXPowGate()  # standard CR is a full turn of ZX, i.e. exponent = 1

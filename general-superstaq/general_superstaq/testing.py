@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from general_superstaq.typing import Target
 
 TARGET_LIST = {

@@ -286,6 +286,7 @@ class SuperstaqProvider(gss.service.Service):
 
         return self.aqt_compile(
             circuits,
+            target=target,
             num_eca_circuits=num_equivalent_circuits,
             random_seed=random_seed,
             atol=atol,

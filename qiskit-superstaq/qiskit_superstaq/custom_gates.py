@@ -4,6 +4,7 @@ import functools
 
 import numpy as np
 import numpy.typing as npt
+import qiskit.quantum_info
 import qiskit.visualization
 
 
@@ -67,7 +68,8 @@ class AceCR(qiskit.circuit.Gate):
 
     def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
         """Returns an array for the AceCR gate."""
-        return qiskit.quantum_info.Operator(self.definition).data
+        matrix = qiskit.quantum_info.Operator(self.definition).to_matrix()
+        return np.asarray(matrix, dtype=dtype)
 
     def __repr__(self) -> str:
         rads = self.params[0]
@@ -312,7 +314,7 @@ class iXGate(qiskit.circuit.Gate):
 
     def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
         """Returns a numpy array of the iX gate."""
-        return np.array([[0, 1j], [1j, 0]])
+        return np.array([[0, 1j], [1j, 0]], dtype=dtype)
 
     def inverse(self) -> iXdgGate:
         """Inverts iX gate.
@@ -370,7 +372,7 @@ class iXdgGate(qiskit.circuit.Gate):
 
     def __array__(self, dtype: type | None = None) -> npt.NDArray[np.complex_]:
         """Returns a numpy array of the inverse iX gate."""
-        return np.array([[0, -1j], [-1j, 0]])
+        return np.array([[0, -1j], [-1j, 0]], dtype=dtype)
 
     def inverse(self) -> iXGate:
         """Inverts the `iXdgGate`.
