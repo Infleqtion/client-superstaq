@@ -9,6 +9,7 @@ from unittest.mock import DEFAULT, MagicMock, patch
 import general_superstaq as gss
 import pytest
 import qiskit
+import yaml
 
 import qiskit_superstaq as qss
 
@@ -131,11 +132,18 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         },
     )
 
-    out = backend.compile([qc], atol=1e-2)
+    out = backend.compile([qc], atol=1e-2, pulses={"foo": "bar"}, variables={"abc": 123})
     assert out.circuits == [qc]
     assert out.initial_logical_to_physicals == [{0: 1}]
     assert out.final_logical_to_physicals == [{1: 4}]
     assert not hasattr(out, "circuit")
+    expected_options = {
+        "atol": 1e-2,
+        "qtrl_configs": {
+            "pulses": yaml.dump({"foo": "bar"}),
+            "variables": yaml.dump({"abc": 123}),
+        },
+    }
     mock_post.assert_called_with(
         f"{provider._client.url}/aqt_compile",
         headers=provider._client.headers,
@@ -143,7 +151,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         json={
             "qiskit_circuits": qss.serialize_circuits(qc),
             "target": "aqt_keysight_qpu",
-            "options": json.dumps({"atol": 1e-2}),
+            "options": json.dumps(expected_options),
         },
     )
 

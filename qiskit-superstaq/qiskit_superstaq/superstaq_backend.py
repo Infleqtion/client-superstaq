@@ -204,6 +204,8 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         random_seed: int | None = None,
         atol: float | None = None,
         gate_defs: Mapping[str, str | npt.NDArray[np.complex_] | None] | None = None,
+        pulses: object = None,
+        variables: object = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
@@ -226,6 +228,8 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
                 `<matrix1>` for all "SWAP" calibrations except "SWAP/C5C4" (which will instead be
                 mapped to `<matrix2>` applied to qubits 4 and 5). Setting any calibration to None
                 will disable that calibration.
+            pulses: Qtrl `PulseManager` or file path for pulse configuration.
+            variables: Qtrl `VariableManager` or file path for variable configuration.
             kwargs: Other desired compile options.
 
         Returns:
@@ -251,6 +255,11 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             options["atol"] = float(atol)
         if gate_defs is not None:
             options["gate_defs"] = gate_defs
+        if pulses or variables:
+            options["qtrl_configs"] = {
+                "pulses": self._provider._qtrl_config_to_yaml_str(pulses),
+                "variables": self._provider._qtrl_config_to_yaml_str(variables),
+            }
 
         request_json = self._get_compile_request_json(circuits, **options)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)

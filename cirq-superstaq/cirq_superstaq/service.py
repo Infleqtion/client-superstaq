@@ -485,6 +485,8 @@ class Service(gss.service.Service):
         gate_defs: None | (
             Mapping[str, npt.NDArray[np.complex_] | cirq.Gate | cirq.Operation | None]
         ) = None,
+        pulses: object = None,
+        variables: object = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
@@ -508,6 +510,8 @@ class Service(gss.service.Service):
                 "SWAP/C5C4": cirq.SQRT_ISWAP_INV}` implies `SQRT_ISWAP` for all "SWAP" calibrations
                 except "SWAP/C5C4" (which will instead be mapped to a `SQRT_ISWAP_INV` gate on
                 qubits 4 and 5). Setting any calibration to None will disable that calibration.
+            pulses: Qtrl `PulseManager` or file path for pulse configuration.
+            variables: Qtrl `VariableManager` or file path for variable configuration.
             kwargs: Other desired compile options.
 
         Returns:
@@ -550,6 +554,11 @@ class Service(gss.service.Service):
                     val = _to_matrix_gate(val)
                 gate_defs_cirq[key] = val
             options_dict["gate_defs"] = gate_defs_cirq
+        if pulses or variables:
+            options_dict["qtrl_configs"] = {
+                "pulses": self._qtrl_config_to_yaml_str(pulses),
+                "variables": self._qtrl_config_to_yaml_str(variables),
+            }
 
         if options_dict:
             request_json["options"] = cirq.to_json(options_dict)
