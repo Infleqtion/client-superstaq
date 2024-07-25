@@ -4,6 +4,7 @@ from __future__ import annotations
 import itertools
 import json
 import textwrap
+from unittest import mock
 
 import cirq
 import numpy as np
@@ -182,6 +183,19 @@ def test_stripped_cz_gate_parameterized() -> None:
         _ = cirq.pauli_expansion(gate)
 
 
+def test_zx_protocols() -> None:
+    with mock.patch("cirq.testing.consistent_protocols.assert_qasm_is_consistent_with_unitary"):
+        cirq.testing.assert_eigengate_implements_consistent_protocols(
+            css.ZXPowGate,
+            setup_code="import cirq_superstaq as css; import sympy",
+        )
+
+    assert cirq.has_stabilizer_effect(css.ZX)
+    assert cirq.has_stabilizer_effect(css.ZX**1.5)
+    assert not cirq.has_stabilizer_effect(css.ZX**1.3)
+    assert not cirq.has_stabilizer_effect(css.ZX ** sympy.var("x"))
+
+
 def test_zx_matrix() -> None:
     np.testing.assert_allclose(
         cirq.unitary(css.ZX),
@@ -250,6 +264,16 @@ def test_acecr_init() -> None:
     css.AceCR(rads=np.pi / 3)
     css.AceCR(rads=np.pi / 4)
     css.AceCR(rads=np.pi / 3, sandwich_rx_rads=np.pi)
+
+
+@pytest.mark.parametrize("rads", ["+-", "-+", np.pi / 3])
+@pytest.mark.parametrize("sandwich_rx_rads", [0, np.pi / 2, np.pi, 3 * np.pi / 2])
+def test_acecr_protocols(rads: str | float, sandwich_rx_rads: float) -> None:
+    with mock.patch("cirq.testing.consistent_protocols.assert_qasm_is_consistent_with_unitary"):
+        cirq.testing.assert_implements_consistent_protocols(
+            css.AceCR(rads, sandwich_rx_rads),
+            setup_code="import cirq_superstaq as css; import sympy",
+        )
 
 
 def test_acecr_circuit_diagram_info() -> None:
