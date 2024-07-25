@@ -139,7 +139,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     assert not hasattr(out, "circuit")
     expected_options = {
         "atol": 1e-2,
-        "qtrl_configs": {
+        "aqt_configs": {
             "pulses": yaml.dump({"foo": "bar"}),
             "variables": yaml.dump({"abc": 123}),
         },

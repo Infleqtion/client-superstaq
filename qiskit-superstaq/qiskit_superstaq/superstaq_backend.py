@@ -256,7 +256,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         if gate_defs is not None:
             options["gate_defs"] = gate_defs
         if pulses or variables:
-            options["qtrl_configs"] = {
+            options["aqt_configs"] = {
                 "pulses": self._provider._qtrl_config_to_yaml_str(pulses),
                 "variables": self._provider._qtrl_config_to_yaml_str(variables),
             }

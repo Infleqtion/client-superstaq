@@ -555,7 +555,7 @@ class Service(gss.service.Service):
                 gate_defs_cirq[key] = val
             options_dict["gate_defs"] = gate_defs_cirq
         if pulses or variables:
-            options_dict["qtrl_configs"] = {
+            options_dict["aqt_configs"] = {
                 "pulses": self._qtrl_config_to_yaml_str(pulses),
                 "variables": self._qtrl_config_to_yaml_str(variables),
             }

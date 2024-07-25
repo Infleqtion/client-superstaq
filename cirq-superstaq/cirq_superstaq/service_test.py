@@ -297,7 +297,7 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
             "CS2": cirq.MatrixGate(cirq.unitary(cirq.CZ**0.49)),
             "CS3": cirq.MatrixGate(cirq.unitary(css.CZ3**0.5), qid_shape=(3, 3)),
         },
-        "qtrl_configs": {
+        "aqt_configs": {
             "pulses": yaml.dump({"foo": "bar"}),
             "variables": yaml.dump({"abc": 123}),
         },
