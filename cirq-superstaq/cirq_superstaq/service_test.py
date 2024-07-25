@@ -26,6 +26,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import sympy
+import yaml
 from general_superstaq import ResourceEstimate
 
 import cirq_superstaq as css
@@ -279,7 +280,13 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
         "CS2": cirq.unitary(cirq.CZ**0.49),
         "CS3": cirq.unitary(css.CZ3**0.5),
     }
-    out = service.aqt_compile(cirq.Circuit(), gate_defs=gate_defs, atol=1e-3)
+    out = service.aqt_compile(
+        cirq.Circuit(),
+        gate_defs=gate_defs,
+        atol=1e-3,
+        pulses={"foo": "bar"},
+        variables={"abc": 123},
+    )
 
     expected_options = {
         "atol": 1e-3,
@@ -289,6 +296,10 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
             "CS/simul": css.ParallelGates(cirq.CZ, cirq.CZ).on(*cirq.LineQubit.range(4, 8)),
             "CS2": cirq.MatrixGate(cirq.unitary(cirq.CZ**0.49)),
             "CS3": cirq.MatrixGate(cirq.unitary(css.CZ3**0.5), qid_shape=(3, 3)),
+        },
+        "aqt_configs": {
+            "pulses": yaml.dump({"foo": "bar"}),
+            "variables": yaml.dump({"abc": 123}),
         },
     }
     mock_post_request.assert_called_with(
