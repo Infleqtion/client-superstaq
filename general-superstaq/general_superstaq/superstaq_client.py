@@ -175,7 +175,6 @@ class _SuperstaqClient:
             json_dict["method"] = method
         if kwargs or self.client_kwargs:
             json_dict["options"] = json.dumps({**self.client_kwargs, **kwargs})
-
         return self.post_request("/jobs", json_dict)
 
     def get_job(self, job_id: str) -> dict[str, str]:
@@ -196,7 +195,7 @@ class _SuperstaqClient:
         self,
         job_ids: list[str],
         **kwargs: Any,
-    ) -> str:
+    ) -> dict[str, list[str] | dict[str, str]] | str:
         """Cancel jobs associated with given job ids.
 
         Args:
@@ -205,12 +204,10 @@ class _SuperstaqClient:
                 - cq_token: CQ Cloud credentials.
 
         Returns:
-            The message from the json body of the response.
+            A dictionary mapping the job id to the cancellation attempt result or an error message.
 
         Raises:
-            SuperstaqWarning: If the job status is terminal or unrecognized.
-            SuperstaqServerException: For other API call failures including if vendor throws error
-                when trying to cancel.
+            SuperstaqServerException: For other API call failures.
         """
         json_dict: dict[str, Any] = {
             "job_ids": job_ids,
@@ -218,7 +215,7 @@ class _SuperstaqClient:
         if kwargs or self.client_kwargs:
             json_dict["options"] = json.dumps({**self.client_kwargs, **kwargs})
 
-        return self.post_request("/cancel_jobs", json_dict)["message"]
+        return self.post_request("/cancel_jobs", json_dict)
 
     def fetch_jobs(
         self,
@@ -703,8 +700,7 @@ class _SuperstaqClient:
                 verify=self.verify_https,
             )
 
-        response = self._make_request(request)
-        return self._handle_response(response)
+        return self._make_request(request)
 
     def post_request(self, endpoint: str, json_dict: Mapping[str, object]) -> Any:
         """Performs a POST request on a given endpoint with a given payload.
@@ -730,11 +726,13 @@ class _SuperstaqClient:
                 verify=self.verify_https,
             )
 
-        response = self._make_request(request)
-        return self._handle_response(response)
+        return self._make_request(request)
 
     def _handle_response(self, response: requests.Response) -> object:
-        response_json = response.json()
+        try:
+            response_json = response.json()
+        except requests.JSONDecodeError:
+            response_json = None
         if isinstance(response_json, dict) and "warnings" in response_json:
             for warning in response_json["warnings"]:
                 warnings.warn(warning["message"], gss.SuperstaqWarning, stacklevel=3)
@@ -752,6 +750,7 @@ class _SuperstaqClient:
             gss.SuperstaqServerException: If an error has occurred in making a request
                 to the Superstaq API.
         """
+
         if response.status_code == requests.codes.unauthorized:
             if response.json() == (
                 "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
@@ -814,7 +813,7 @@ class _SuperstaqClient:
                 requests.codes.unauthorized,
             )
 
-    def _make_request(self, request: Callable[[], requests.Response]) -> requests.Response:
+    def _make_request(self, request: Callable[[], requests.Response]) -> object:
         """Make a request to the API, retrying if necessary.
 
         Args:
@@ -825,15 +824,17 @@ class _SuperstaqClient:
             TimeoutError: If the requests retried for more than `max_retry_seconds`.
 
         Returns:
-            The `request.Response` from the final successful request call.
+            The response from the final successful request call.
         """
         # Initial backoff of 100ms.
         delay_seconds = 0.1
         while True:
             try:
                 response = request()
+
+                response_content = self._handle_response(response)
                 if response.ok:
-                    return response
+                    return response_content
 
                 self._handle_status_codes(response)
                 message = response.reason

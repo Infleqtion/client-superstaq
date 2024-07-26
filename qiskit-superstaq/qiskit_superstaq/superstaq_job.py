@@ -181,9 +181,8 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """Cancel the current job if it is not in a terminal state.
 
         Raises:
-            SuperstaqWarning: If the job status is terminal or unrecognized.
-            SuperstaqServerException: If unable to get the status of the job from the API or if
-                vendor throws error when trying to cancel.
+            SuperstaqServerException: If unable to get the status of the job from the API or
+                cancellations were unsuccessful.
         """
         job_ids = self._job_id.split(",")
         self._backend._provider._client.cancel_jobs(job_ids, kwargs=kwargs)

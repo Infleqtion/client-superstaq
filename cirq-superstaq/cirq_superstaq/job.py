@@ -155,7 +155,8 @@ class Job:
         """Cancel the current job if it is not in a terminal state.
 
         Raises:
-            SuperstaqServerException: If unable to get the status of the job from the API.
+            SuperstaqServerException: If unable to get the status of the job from the API or
+                cancellations were unsuccessful.
         """
         job_ids = self._job_id.split(",")
         self._client.cancel_jobs(job_ids, kwargs=kwargs)
