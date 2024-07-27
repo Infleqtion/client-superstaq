@@ -195,7 +195,7 @@ class _SuperstaqClient:
         self,
         job_ids: Sequence[str],
         **kwargs: object,
-    ) -> dict[str, list[str] | dict[str, str]] | str:
+    ) -> list[str]:
         """Cancel jobs associated with given job ids.
 
         Args:
