@@ -159,7 +159,7 @@ class Job:
                 cancellations were unsuccessful.
         """
         job_ids = self._job_id.split(",")
-        self._client.cancel_jobs(job_ids, kwargs=kwargs)
+        self._client.cancel_jobs(job_ids, **kwargs)
 
     def target(self) -> str:
         """Gets the Superstaq target associated with this job.

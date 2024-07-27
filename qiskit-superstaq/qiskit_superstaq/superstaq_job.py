@@ -185,7 +185,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 cancellations were unsuccessful.
         """
         job_ids = self._job_id.split(",")
-        self._backend._provider._client.cancel_jobs(job_ids, kwargs=kwargs)
+        self._backend._provider._client.cancel_jobs(job_ids, **kwargs)
 
     def _refresh_job(self) -> None:
         """Queries the server for an updated job result."""
