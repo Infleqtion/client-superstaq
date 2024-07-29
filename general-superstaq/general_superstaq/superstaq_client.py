@@ -821,7 +821,7 @@ class _SuperstaqClient:
             TimeoutError: If the requests retried for more than `max_retry_seconds`.
 
         Returns:
-            The 'requests.Response' from the final successful request call.
+            The `requests.Response` from the final successful request call.
         """
         # Initial backoff of 100ms.
         delay_seconds = 0.1
