@@ -1101,7 +1101,7 @@ class Service(gss.service.Service):
 
         if not no_submit_target:
 
-            def objective(
+            def _objective(
                 x: np.typing.NDArray[np.int_], A: float, p: float
             ) -> np.typing.NDArray[np.float_]:
                 return A * p**x
@@ -1110,7 +1110,7 @@ class Service(gss.service.Service):
 
             e_f = 0.0
             for ps, y_vals in cb_data["process_fidelity_data"]["averages"].items():
-                popt, _ = curve_fit(objective, instance_information["depths"], y_vals)
+                popt, _ = curve_fit(_objective, instance_information["depths"], y_vals)
                 A, p = popt
                 A = round(A, 2)
                 fit_data["A_" + str(ps)] = A
@@ -1145,7 +1145,7 @@ class Service(gss.service.Service):
         legend_colors = []
         plt.xlim(0, x_values[-1] + 4)
 
-        def objective(
+        def _objective(
             x: np.typing.NDArray[np.int_], A: float, p: float
         ) -> np.typing.NDArray[np.float_]:
             return A * p**x
@@ -1168,7 +1168,7 @@ class Service(gss.service.Service):
                     )
             plt.plot(
                 np.arange(0, x_values[-1] + 4),
-                objective(np.arange(0, x_values[-1] + 4), A, p),
+                _objective(np.arange(0, x_values[-1] + 4), A, p),
             )
             e_f += p
             if legend_labels_count < max_legend_labels:

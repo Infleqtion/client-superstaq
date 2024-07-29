@@ -15,11 +15,26 @@ if TYPE_CHECKING:
 
 
 def mock_response(status_str: str) -> dict[str, str | int | dict[str, int]]:
+    """Mock response for requests.
+
+    Args:
+        status_str: the value for the status key.
+
+    Returns:
+        A mock response.
+    """
     return {"status": status_str, "samples": {"11": 50, "10": 50}, "shots": 100}
 
 
 @pytest.fixture
 def backend(fake_superstaq_provider: MockSuperstaqProvider) -> qss.SuperstaqBackend:
+    """Fixture for qiskit_superstaq backend.
+
+    Args:
+        fake_superstaq_provider: the mocked SuperstaqProvider.
+
+    Returns:
+        A mocked SuperstaqBackend."""
     return fake_superstaq_provider.get_backend("ss_example_qpu")
 
 
