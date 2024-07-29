@@ -1069,39 +1069,45 @@ class DDGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
         return not self._is_parameterized_()
 
     def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex_]:
-        zo = args.subspace_index(0b01)
-        oz = args.subspace_index(0b10)
-        args.available_buffer[zo] = args.target_tensor[zo]
-        args.target_tensor[zo] = args.target_tensor[oz]
-        args.target_tensor[oz] = args.available_buffer[zo]
-        args.target_tensor[zo] *= np.exp(1j * self.theta)
-        args.target_tensor[oz] *= np.exp(1j * self.theta)
-        return args.target_tensor
+        # Need to update for DD gate (copied from ZZSWAPGate)
+        # zo = args.subspace_index(0b01)
+        # oz = args.subspace_index(0b10)
+        # args.available_buffer[zo] = args.target_tensor[zo]
+        # args.target_tensor[zo] = args.target_tensor[oz]
+        # args.target_tensor[oz] = args.available_buffer[zo]
+        # args.target_tensor[zo] *= np.exp(1j * self.theta)
+        # args.target_tensor[oz] *= np.exp(1j * self.theta)
+        # return args.target_tensor
+        return NotImplemented
 
     def _pauli_expansion_(
         self,
     ) -> cirq.value.LinearDict[str] | cirq.type_workarounds.NotImplementedType:
-        if cirq.is_parameterized(self):
-            return NotImplemented
-        return cirq.value.LinearDict(
-            {
-                "II": 0.5,
-                "XX": 0.5 * np.exp(1j * self.theta),
-                "YY": 0.5 * np.exp(1j * self.theta),
-                "ZZ": 0.5,
-            }
-        )
+        # Need to update for DD gate (copied from ZZSWAPGate)
+        # if cirq.is_parameterized(self):
+        #     return NotImplemented
+        # return cirq.value.LinearDict(
+        #     {
+        #         "II": 0.5,
+        #         "XX": 0.5 * np.exp(1j * self.theta),
+        #         "YY": 0.5 * np.exp(1j * self.theta),
+        #         "ZZ": 0.5,
+        #     }
+        # )
+        return NotImplemented
 
     def _qasm_(self, args: cirq.QasmArgs, qubits: tuple[cirq.Qid, cirq.Qid]) -> str | None:
-        if approx_eq_mod(self.theta, 0.0, 2 * np.pi):
-            return cirq.SWAP._qasm_(args, qubits)
+        # Need to update for DD gate (copied from ZZSWAPGate)
+        # if approx_eq_mod(self.theta, 0.0, 2 * np.pi):
+        #     return cirq.SWAP._qasm_(args, qubits)
 
-        return args.format(
-            "zzswap({0:half_turns}) {1},{2};\n",
-            self.theta / np.pi,
-            qubits[0],
-            qubits[1],
-        )
+        # return args.format(
+        #     "zzswap({0:half_turns}) {1},{2};\n",
+        #     self.theta / np.pi,
+        #     qubits[0],
+        #     qubits[1],
+        # )
+        return None
 
     def _json_dict_(self) -> dict[str, Any]:
         return cirq.obj_to_dict_helper(self, ["theta"])
