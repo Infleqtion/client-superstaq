@@ -16,7 +16,7 @@ import cirq_superstaq as css
 
 @pytest.fixture
 def service() -> css.Service:
-    """Fixture for cirq_suerstaq service.
+    """Fixture for cirq_superstaq service.
 
     Return:
         A cirq_superstaq service instance.
