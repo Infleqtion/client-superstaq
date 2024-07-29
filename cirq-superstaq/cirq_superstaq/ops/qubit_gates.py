@@ -1018,10 +1018,10 @@ class DDGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
             return None
         return np.array(
             [
-                [np.exp(-1j * self.phi*2*np.pi), 0, 0, 0],
-                [0, np.exp(1j * self.phi*2*np.pi)*np.cos(self.theta*2*np.pi), 1j*np.exp(1j * self.phi*2*np.pi)*np.sin(self.theta*2*np.pi), 0],
-                [0, 1j*np.exp(1j * self.phi*2*np.pi)*np.sin(self.theta*2*np.pi), np.exp(1j * self.phi*2*np.pi)*np.cos(self.theta*2*np.pi), 0],
-                [0, 0, 0, np.exp(-1j * self.phi*2*np.pi)],
+                [np.exp(-1j * self.phi), 0, 0, 0],
+                [0, np.exp(1j * self.phi)*np.cos(self.theta), 1j*np.exp(1j * self.phi)*np.sin(self.theta), 0],
+                [0, 1j*np.exp(1j * self.phi)*np.sin(self.theta), np.exp(1j * self.phi)*np.cos(self.theta), 0],
+                [0, 0, 0, np.exp(-1j * self.phi)],
             ]
         )
 
