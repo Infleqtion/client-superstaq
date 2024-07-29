@@ -1001,7 +1001,7 @@ class DDGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     r"""The Dipole-Dipole gate for EeroQ hardware
     """
 
-    def __init__(self, theta: cirq.TParamVal, phi: cirq.TParamVal) -> None:
+    def __init__(self, theta: cirq.TParamVal) -> None:
         """Initializes a DD gate.
 
         Args:
@@ -1009,7 +1009,7 @@ class DDGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
             phi: The phase in radians
         """
         self.theta = theta
-        self.phi = phi
+        self.phi = theta
 
     def _num_qubits_(self) -> int:
         return 2
@@ -1020,8 +1020,8 @@ class DDGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
         return np.array(
             [
                 [np.exp(-1j * self.phi), 0, 0, 0],
-                [0, 0, np.exp(1j * self.theta), 0],
-                [0, np.exp(1j * self.theta), 0, 0],
+                [0, np.exp(1j * self.phi)*np.cos(self.theta), 1j*np.exp(1j * self.phi)*np.sin(self.theta), 0],
+                [0, 1j*np.exp(1j * self.phi)*np.sin(self.theta), np.exp(1j * self.phi)*np.cos(self.theta), 0],
                 [0, 0, 0, np.exp(-1j * self.phi)],
             ]
         )
@@ -1037,18 +1037,16 @@ class DDGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
 
     def __pow__(
         self, exponent: cirq.TParamVal
-    ) -> ZZSwapGate | cirq.ZZPowGate | cirq.type_workarounds.NotImplementedType:
-        if exponent % 2 == 1:
-            return ZZSwapGate(exponent * self.theta)
-        if exponent % 2 == 0:
-            return cirq.ZZPowGate(exponent=exponent * self.theta / _pi(self.theta))
+    ) -> DDGate | cirq.type_workarounds.NotImplementedType:
+        if isinstance(exponent, int):
+            return DDGate(exponent*self.theta)
         return NotImplemented
 
     def __str__(self) -> str:
-        return f"ZZSwapGate({self.theta})"
+        return f"DDGate({self.theta})"
 
     def __repr__(self) -> str:
-        return f"css.ZZSwapGate({self.theta})"
+        return f"css.DDGate({self.theta})"
 
     def _decompose_(self, qubits: tuple[cirq.Qid, cirq.Qid]) -> Iterator[cirq.Operation]:
         yield cirq.CX(qubits[0], qubits[1])
@@ -1058,7 +1056,7 @@ class DDGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         t = args.format_radians(self.theta)
-        return cirq.CircuitDiagramInfo(wire_symbols=(f"ZZSwap({t})", f"ZZSwap({t})"))
+        return cirq.CircuitDiagramInfo(wire_symbols=(f"DD({t})", f"DD({t})"))
 
     def _is_parameterized_(self) -> bool:
         return cirq.is_parameterized(self.theta)
@@ -1067,7 +1065,7 @@ class DDGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
         return cirq.parameter_names(self.theta)
 
     def _resolve_parameters_(self, resolver: cirq.ParamResolver, recursive: bool) -> ZZSwapGate:
-        return ZZSwapGate(
+        return DDGate(
             cirq.resolve_parameters(self.theta, resolver, recursive),
         )
 
