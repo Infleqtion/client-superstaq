@@ -56,12 +56,10 @@ def test_wait_for_results(backend: qss.SuperstaqBackend) -> None:
 
 
 def test_cancel(backend: qss.SuperstaqBackend) -> None:
-    with mock.patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.cancel_jobs", return_value=None
-    ) as mock_cancel:
+    with mock.patch("requests.post", return_value=mock.MagicMock(ok=True)) as mock_post:
         qss.SuperstaqJob(backend=backend, job_id="123abc").cancel()
         qss.SuperstaqJob(backend=backend, job_id="123abc,456def").cancel()
-        assert mock_cancel.call_count == 2
+        assert mock_post.call_count == 2
 
 
 def test_timeout(backend: qss.SuperstaqBackend) -> None:
