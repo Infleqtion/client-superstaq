@@ -76,6 +76,79 @@ def test_update_user_role(
 
 
 @mock.patch(
+    "general_superstaq.superstaq_client._SuperstaqClient.get_request",
+    return_value={
+        "example@email.com": {
+            "name": "Alice",
+            "email": "example@email.com",
+            "role": "free_trial",
+            "balance": 30.0,
+        }
+    },
+)
+def test_get_user_info(mock_get_request: mock.MagicMock) -> None:
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
+    user_info = service.get_user_info()
+    assert user_info == {
+        "name": "Alice",
+        "email": "example@email.com",
+        "role": "free_trial",
+        "balance": 30.0,
+    }
+    mock_get_request.assert_called_once_with("/get_user_info", query={})
+
+
+@mock.patch(
+    "general_superstaq.superstaq_client._SuperstaqClient.get_request",
+    return_value={
+        "example@email.com": {
+            "name": "Alice",
+            "email": "example@email.com",
+            "role": "free_trial",
+            "balance": 30.0,
+        }
+    },
+)
+def test_get_user_info_name_query(mock_get_request: mock.MagicMock) -> None:
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
+    user_info = service.get_user_info(name="Alice")
+    assert user_info == {
+        "example@email.com": {
+            "name": "Alice",
+            "email": "example@email.com",
+            "role": "free_trial",
+            "balance": 30.0,
+        }
+    }
+    mock_get_request.assert_called_once_with("/get_user_info", query={"name": "Alice"})
+
+
+@mock.patch(
+    "general_superstaq.superstaq_client._SuperstaqClient.get_request",
+    return_value={
+        "example@email.com": {
+            "name": "Alice",
+            "email": "example@email.com",
+            "role": "free_trial",
+            "balance": 30.0,
+        }
+    },
+)
+def test_get_user_info_email_query(mock_get_request: mock.MagicMock) -> None:
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
+    user_info = service.get_user_info(email="example@email.com")
+    assert user_info == {
+        "example@email.com": {
+            "name": "Alice",
+            "email": "example@email.com",
+            "role": "free_trial",
+            "balance": 30.0,
+        }
+    }
+    mock_get_request.assert_called_once_with("/get_user_info", query={"email": "example@email.com"})
+
+
+@mock.patch(
     "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value={"solution": gss.serialization.serialize([{0: 1, 1: 1}] * 10)},
 )

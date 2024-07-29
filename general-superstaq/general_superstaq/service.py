@@ -3,7 +3,7 @@ from __future__ import annotations
 import numbers
 import os
 from collections.abc import Mapping, Sequence
-from typing import Any, TypeVar
+from typing import Any, TypeVar, overload
 
 import general_superstaq as gss
 
@@ -158,6 +158,43 @@ class Service:
             **kwargs,
         )
         return self._client.get_targets(**filters)
+
+    @overload
+    def get_user_info(self) -> dict[str, object]: ...
+
+    @overload
+    def get_user_info(self, *, name: str) -> dict[str, dict[str, object]]: ...
+
+    @overload
+    def get_user_info(self, *, email: str) -> dict[str, dict[str, object]]: ...
+
+    @overload
+    def get_user_info(self, *, name: str, email: str) -> dict[str, dict[str, object]]: ...
+
+    def get_user_info(
+        self, *, name: str | None = None, email: str | None = None
+    ) -> dict[str, object] | dict[str, dict[str, object]]:
+        """Gets a dictionary of the user's info.
+
+        .. note::
+
+            SUPERTECH users can submit optional :code:`name` and/or :code:`email` keyword only
+            arguments which can be used to search for the info of arbitrary users on the server.
+
+        Args:
+            name: Defaults to None.
+            email: str
+        """
+        if name is None and email is None:
+            return self._client.get_user_info()
+
+        query = {}
+        if name is not None:
+            query["name"] = name
+        if email is not None:
+            query["email"] = email
+
+        return self._client.get_user_info(query=query)
 
     def submit_qubo(
         self,

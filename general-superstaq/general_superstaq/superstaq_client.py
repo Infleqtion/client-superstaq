@@ -22,7 +22,7 @@ import time
 import urllib
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, TypeVar
+from typing import Any, TypeVar, overload
 
 import requests
 
@@ -226,6 +226,38 @@ class _SuperstaqClient:
             The json body of the response as a dict.
         """
         return self.get_request("/balance")
+
+    @overload
+    def get_user_info(self, query: None = None) -> dict[str, object]: ...
+
+    @overload
+    def get_user_info(self, query: Mapping[str, object]) -> dict[str, dict[str, object]]: ...
+
+    def get_user_info(
+        self, query: Mapping[str, object] | None = None
+    ) -> dict[str, object] | dict[str, dict[str, object]]:
+        """Gets a dictionary of the user's info.
+
+        .. note::
+
+            SUPERTECH users can submit an optional :code:`query` argument which can be used
+            to search for the info of arbitrary users on the server.
+
+        Args:
+            query: An optional dictionary of query parameters to use to search for user records.
+                Is only available to SUPERTECH users. Defaults to None.
+        """
+        if query is None:
+            user_info = self.get_request("/get_user_info", query={})
+            try:
+                return list(user_info.values())[0]
+            except IndexError:
+                raise gss.SuperstaqServerException(
+                    "Something has gone wrong, the server has returned an empty response."
+                )
+
+        user_info = self.get_request("/get_user_info", query=query)
+        return user_info
 
     def _accept_terms_of_use(self, user_input: str) -> str:
         """Makes a POST request to Superstaq API to confirm acceptance of terms of use.
@@ -653,11 +685,12 @@ class _SuperstaqClient:
         """
         return self.get_request("/get_aqt_configs")
 
-    def get_request(self, endpoint: str) -> Any:
+    def get_request(self, endpoint: str, query: Mapping[str, object] | None = None) -> Any:
         """Performs a GET request on a given endpoint.
 
         Args:
             endpoint: The endpoint to perform the GET request on.
+            query: An optional query json to include in the get request.
 
         Returns:
             The response of the GET request.
@@ -669,11 +702,19 @@ class _SuperstaqClient:
             Returns:
                 The Flask GET request object.
             """
-            return requests.get(
-                f"{self.url}{endpoint}",
-                headers=self.headers,
-                verify=self.verify_https,
-            )
+            if query is None:
+                return requests.get(
+                    f"{self.url}{endpoint}",
+                    headers=self.headers,
+                    verify=self.verify_https,
+                )
+            else:
+                return requests.get(
+                    f"{self.url}{endpoint}",
+                    headers=self.headers,
+                    verify=self.verify_https,
+                    json=query,
+                )
 
         response = self._make_request(request)
         return self._handle_response(response)

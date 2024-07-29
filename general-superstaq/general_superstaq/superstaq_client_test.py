@@ -919,3 +919,67 @@ def test_find_api_key() -> None:
         with mock.patch.dict(os.environ, SUPERSTAQ_API_KEY=""):
             with mock.patch("pathlib.Path.is_file", return_value=False):
                 gss.superstaq_client.find_api_key()
+
+
+@mock.patch("requests.get")
+def test_get_user_info(mock_get: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        cq_token="cq-token",
+    )
+    mock_get.return_value.json.return_value = {"example@email.com": {"Some": "Data"}}
+
+    user_info = client.get_user_info()
+    mock_get.assert_called_once_with(
+        f"http://example.com/{API_VERSION}/get_user_info",
+        headers=EXPECTED_HEADERS,
+        json={},
+        verify=False,
+    )
+    assert user_info == {"Some": "Data"}
+
+
+@mock.patch("requests.get")
+def test_get_user_info_query(mock_get: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        cq_token="cq-token",
+    )
+    mock_get.return_value.json.return_value = {"example@email.com": {"Some": "Data"}}
+
+    user_info = client.get_user_info({"name": "Alice"})
+    mock_get.assert_called_once_with(
+        f"http://example.com/{API_VERSION}/get_user_info",
+        headers=EXPECTED_HEADERS,
+        json={"name": "Alice"},
+        verify=False,
+    )
+    assert user_info == {"example@email.com": {"Some": "Data"}}
+
+
+@mock.patch("requests.get")
+def test_get_user_info_empty_response(mock_get: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        cq_token="cq-token",
+    )
+    mock_get.return_value.json.return_value = {}
+
+    with pytest.raises(
+        gss.SuperstaqServerException,
+        match="Something has gone wrong, the server has returned an empty response.",
+    ):
+        client.get_user_info()
+
+    mock_get.assert_called_once_with(
+        f"http://example.com/{API_VERSION}/get_user_info",
+        headers=EXPECTED_HEADERS,
+        json={},
+        verify=False,
+    )
