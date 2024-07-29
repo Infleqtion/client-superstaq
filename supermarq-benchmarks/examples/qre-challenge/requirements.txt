@@ -1,0 +1,5 @@
+qsharp
+qsharp-widgets
+scipy
+numpy
+matplotlib

@@ -6,7 +6,7 @@
 This directory was submitted to: [Quantum Resource Estimation Challenge](https://sites.google.com/view/qce2024-qre-workshops/qre-challenge).
 
 #### How to run:
-1. Install dependencies `pip install qsharp qsharp_widgets matplotlib numpy scipy`.
+1. Install dependencies `pip install -r requirements.txt`.
 
 2. Restart, then run `grovers-ksat.ipynb` jupyter notebook. When re-running the entire notebook, you must restart, and then press run-all.
 
