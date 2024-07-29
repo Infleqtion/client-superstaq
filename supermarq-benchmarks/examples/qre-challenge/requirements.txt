@@ -1,5 +1,5 @@
+matplotlib
+numpy
 qsharp
 qsharp-widgets
 scipy
-numpy
-matplotlib
