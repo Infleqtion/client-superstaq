@@ -993,3 +993,121 @@ def custom_resolver(cirq_type: str) -> type[cirq.Gate] | None:
         "StrippedCZGate": StrippedCZGate,
     }
     return type_to_gate_map.get(cirq_type)
+
+
+
+@cirq.value_equality(approximate=True)
+class DDGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
+    r"""The Dipole-Dipole gate for EeroQ hardware
+    """
+
+    def __init__(self, theta: cirq.TParamVal, phi: cirq.TParamVal) -> None:
+        """Initializes a DD gate.
+
+        Args:
+            theta: The DD interaction angle in radians.
+            phi: The phase in radians
+        """
+        self.theta = theta
+        self.phi = phi
+
+    def _num_qubits_(self) -> int:
+        return 2
+
+    def _unitary_(self) -> npt.NDArray[np.complex_] | None:
+        if self._is_parameterized_():
+            return None
+        return np.array(
+            [
+                [np.exp(-1j * self.phi), 0, 0, 0],
+                [0, 0, np.exp(1j * self.theta), 0],
+                [0, np.exp(1j * self.theta), 0, 0],
+                [0, 0, 0, np.exp(-1j * self.phi)],
+            ]
+        )
+
+    def _value_equality_values_(self) -> cirq.TParamVal:
+        if cirq.is_parameterized(self.theta):
+            return self.theta
+
+        return self.theta % (2 * np.pi)
+
+    def _value_equality_approximate_values_(self) -> cirq.PeriodicValue:
+        return cirq.PeriodicValue(self.theta, 2 * np.pi)
+
+    def __pow__(
+        self, exponent: cirq.TParamVal
+    ) -> ZZSwapGate | cirq.ZZPowGate | cirq.type_workarounds.NotImplementedType:
+        if exponent % 2 == 1:
+            return ZZSwapGate(exponent * self.theta)
+        if exponent % 2 == 0:
+            return cirq.ZZPowGate(exponent=exponent * self.theta / _pi(self.theta))
+        return NotImplemented
+
+    def __str__(self) -> str:
+        return f"ZZSwapGate({self.theta})"
+
+    def __repr__(self) -> str:
+        return f"css.ZZSwapGate({self.theta})"
+
+    def _decompose_(self, qubits: tuple[cirq.Qid, cirq.Qid]) -> Iterator[cirq.Operation]:
+        yield cirq.CX(qubits[0], qubits[1])
+        yield cirq.CX(qubits[1], qubits[0])
+        yield cirq.Z(qubits[1]) ** (self.theta / _pi(self.theta))
+        yield cirq.CX(qubits[0], qubits[1])
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        t = args.format_radians(self.theta)
+        return cirq.CircuitDiagramInfo(wire_symbols=(f"ZZSwap({t})", f"ZZSwap({t})"))
+
+    def _is_parameterized_(self) -> bool:
+        return cirq.is_parameterized(self.theta)
+
+    def _parameter_names_(self) -> Set[str]:
+        return cirq.parameter_names(self.theta)
+
+    def _resolve_parameters_(self, resolver: cirq.ParamResolver, recursive: bool) -> ZZSwapGate:
+        return ZZSwapGate(
+            cirq.resolve_parameters(self.theta, resolver, recursive),
+        )
+
+    def _has_unitary_(self) -> bool:
+        return not self._is_parameterized_()
+
+    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex_]:
+        zo = args.subspace_index(0b01)
+        oz = args.subspace_index(0b10)
+        args.available_buffer[zo] = args.target_tensor[zo]
+        args.target_tensor[zo] = args.target_tensor[oz]
+        args.target_tensor[oz] = args.available_buffer[zo]
+        args.target_tensor[zo] *= np.exp(1j * self.theta)
+        args.target_tensor[oz] *= np.exp(1j * self.theta)
+        return args.target_tensor
+
+    def _pauli_expansion_(
+        self,
+    ) -> cirq.value.LinearDict[str] | cirq.type_workarounds.NotImplementedType:
+        if cirq.is_parameterized(self):
+            return NotImplemented
+        return cirq.value.LinearDict(
+            {
+                "II": 0.5,
+                "XX": 0.5 * np.exp(1j * self.theta),
+                "YY": 0.5 * np.exp(1j * self.theta),
+                "ZZ": 0.5,
+            }
+        )
+
+    def _qasm_(self, args: cirq.QasmArgs, qubits: tuple[cirq.Qid, cirq.Qid]) -> str | None:
+        if approx_eq_mod(self.theta, 0.0, 2 * np.pi):
+            return cirq.SWAP._qasm_(args, qubits)
+
+        return args.format(
+            "zzswap({0:half_turns}) {1},{2};\n",
+            self.theta / np.pi,
+            qubits[0],
+            qubits[1],
+        )
+
+    def _json_dict_(self) -> dict[str, Any]:
+        return cirq.obj_to_dict_helper(self, ["theta"])
