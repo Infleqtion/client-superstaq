@@ -177,7 +177,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 self._job_id, self._overall_status
             )
 
-    def cancel(self, **kwargs: Any) -> None:
+    def cancel(self, **kwargs: object) -> None:
         """Cancel the current job if it is not in a terminal state.
 
         Raises:

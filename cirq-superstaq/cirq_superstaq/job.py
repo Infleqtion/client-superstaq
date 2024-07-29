@@ -151,7 +151,7 @@ class Job:
         self._update_status_queue_info()
         return self._overall_status
 
-    def cancel(self, **kwargs: Any) -> None:
+    def cancel(self, **kwargs: object) -> None:
         """Cancel the current job if it is not in a terminal state.
 
         Raises:

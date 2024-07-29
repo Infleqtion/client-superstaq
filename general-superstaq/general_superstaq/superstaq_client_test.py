@@ -294,12 +294,9 @@ def test_superstaq_client_create_job_not_retriable(mock_post: mock.MagicMock) ->
 
 @mock.patch("requests.post")
 def test_superstaq_client_create_job_retry(mock_post: mock.MagicMock) -> None:
-    response1 = mock.MagicMock()
-    response2 = mock.MagicMock()
+    response1 = mock.MagicMock(ok=False, status_code=requests.codes.service_unavailable)
+    response2 = mock.MagicMock(ok=True)
     mock_post.side_effect = [response1, response2]
-    response1.ok = False
-    response1.status_code = requests.codes.service_unavailable
-    response2.ok = True
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
@@ -638,12 +635,10 @@ def test_superstaq_client_get_cancel_jobs_retriable(mock_post: mock.MagicMock) -
 
 @mock.patch("requests.post")
 def test_superstaq_client_cancel_jobs_retry(mock_post: mock.MagicMock) -> None:
-    response1 = mock.MagicMock()
-    response2 = mock.MagicMock()
+    response1 = mock.MagicMock(ok=False, status_code=requests.codes.service_unavailable)
+    response2 = mock.MagicMock(ok=True)
     mock_post.side_effect = [response1, response2]
-    response1.ok = False
-    response1.status_code = requests.codes.service_unavailable
-    response2.ok = True
+
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
