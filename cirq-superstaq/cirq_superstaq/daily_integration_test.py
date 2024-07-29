@@ -16,6 +16,11 @@ import cirq_superstaq as css
 
 @pytest.fixture
 def service() -> css.Service:
+    """Fixture for cirq_suerstaq service.
+
+    Return:
+        A cirq_superstaq service instance.
+    """
     return css.Service()
 
 
@@ -306,7 +311,11 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
 
 @pytest.mark.skip(reason="Can't be executed when Sqorpius is set to not accept jobs")
 def test_submit_to_sqorpius_qubit_sorting(service: css.Service) -> None:
-    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776"""
+    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776
+
+    Args:
+        service: cirq_superstaq service object from fixture.
+    """
     target = "cq_sqorpius_qpu"
     num_qubits = service.target_info(target)["num_qubits"]
     qubits = cirq.LineQubit.range(num_qubits)

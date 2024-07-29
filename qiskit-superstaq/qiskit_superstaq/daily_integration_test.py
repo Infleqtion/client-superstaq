@@ -16,6 +16,11 @@ import qiskit_superstaq as qss
 
 @pytest.fixture
 def provider() -> qss.SuperstaqProvider:
+    """Fixture for the qiskit superstaq provider.
+
+    Returns:
+        A qiskit_superstaq provider instance.
+    """
     return qss.SuperstaqProvider()
 
 
@@ -274,7 +279,10 @@ def test_submit_dry_run(target: str, provider: qss.SuperstaqProvider) -> None:
 
 @pytest.mark.skip(reason="Can't be executed when Sqorpius is set to not accept jobs")
 def test_submit_to_sqorpius_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
-    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776"""
+    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776
+
+    Args:
+        provider: qiskit_superstaq instance from the fixture."""
     backend = provider.get_backend("cq_sqorpius_qpu")
 
     num_qubits = backend.configuration().n_qubits
