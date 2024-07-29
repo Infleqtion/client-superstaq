@@ -995,119 +995,74 @@ def custom_resolver(cirq_type: str) -> type[cirq.Gate] | None:
     return type_to_gate_map.get(cirq_type)
 
 
-
-@cirq.value_equality(approximate=True)
-class DDGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
+class DDPowGate(cirq.EigenGate):
     r"""The Dipole-Dipole gate for EeroQ hardware
     """
 
-    def __init__(self, theta: cirq.TParamVal) -> None:
-        """Initializes a DD gate.
-
-        Args:
-            theta: The DD interaction angle in radians.
-        """
-        self.theta = theta
-        self.phi = theta
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
+        return [
+            (
+                -1.0,
+                np.array(
+                    [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]
+                ),
+            ),
+            (
+                2.0,
+                np.array(
+                    [[0, 0, 0, 0], [0, 0.5, 0.5, 0], [0, 0.5, 0.5, 0], [0, 0, 0, 0]]
+                ),
+            ),
+            (
+                0.0,
+                np.array(
+                    [[0, 0, 0, 0], [0, 0.5, -0.5, 0], [0, -0.5, 0.5, 0], [0, 0, 0, 0]]
+                ),
+            ),
+        ]
 
     def _num_qubits_(self) -> int:
         return 2
 
-    def _unitary_(self) -> npt.NDArray[np.complex_] | None:
-        if self._is_parameterized_():
+    def _decompose_(self, qubits: tuple[cirq.LineQubit, cirq.LineQubit]) -> list[cirq.Operation]:
+        # return [
+        #     cirq.H(qubits[1]),
+        #     cirq.ZZPowGate(exponent=self.exponent, global_shift=self.global_shift).on(*qubits),
+        #     cirq.H(qubits[1]),
+        # ]
+        return None
+
+    def _has_stabilizer_effect_(self) -> bool | None:
+        if cirq.is_parameterized(self):
             return None
-        return np.array(
-            [
-                [np.exp(-1j * self.phi), 0, 0, 0],
-                [0, np.exp(1j * self.phi)*np.cos(self.theta), 1j*np.exp(1j * self.phi)*np.sin(self.theta), 0],
-                [0, 1j*np.exp(1j * self.phi)*np.sin(self.theta), np.exp(1j * self.phi)*np.cos(self.theta), 0],
-                [0, 0, 0, np.exp(-1j * self.phi)],
-            ]
-        )
 
-    def _value_equality_values_(self) -> cirq.TParamVal:
-        if cirq.is_parameterized(self.theta):
-            return self.theta
-
-        return self.theta % (2 * np.pi)
-
-    def _value_equality_approximate_values_(self) -> cirq.PeriodicValue:
-        return cirq.PeriodicValue(self.theta, 2 * np.pi)
-
-    def __pow__(
-        self, exponent: cirq.TParamVal
-    ) -> DDGate | cirq.type_workarounds.NotImplementedType:
-        if isinstance(exponent, int):
-            return DDGate(exponent*self.theta)
-        return NotImplemented
-
-    def __str__(self) -> str:
-        return f"DDGate({self.theta})"
-
-    def __repr__(self) -> str:
-        return f"css.DDGate({self.theta})"
-
-    def _decompose_(self, qubits: tuple[cirq.Qid, cirq.Qid]) -> cirq.type_workarounds.NotImplementedType:
-        return NotImplemented
+        return (2 * self.exponent) % 1 == 0
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        t = args.format_radians(self.theta)
-        return cirq.CircuitDiagramInfo(wire_symbols=(f"DD({t})", f"DD({t})"))
-
-    def _is_parameterized_(self) -> bool:
-        return cirq.is_parameterized(self.theta)
-
-    def _parameter_names_(self) -> Set[str]:
-        return cirq.parameter_names(self.theta)
-
-    def _resolve_parameters_(self, resolver: cirq.ParamResolver, recursive: bool) -> ZZSwapGate:
-        return DDGate(
-            cirq.resolve_parameters(self.theta, resolver, recursive),
+        return cirq.CircuitDiagramInfo(
+            wire_symbols=("DD", "DD"), exponent=self._diagram_exponent(args)
         )
 
-    def _has_unitary_(self) -> bool:
-        return not self._is_parameterized_()
-
-    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex_]:
-        # Need to update for DD gate (copied from ZZSWAPGate)
-        # zo = args.subspace_index(0b01)
-        # oz = args.subspace_index(0b10)
-        # args.available_buffer[zo] = args.target_tensor[zo]
-        # args.target_tensor[zo] = args.target_tensor[oz]
-        # args.target_tensor[oz] = args.available_buffer[zo]
-        # args.target_tensor[zo] *= np.exp(1j * self.theta)
-        # args.target_tensor[oz] *= np.exp(1j * self.theta)
-        # return args.target_tensor
-        return NotImplemented
-
-    def _pauli_expansion_(
-        self,
-    ) -> cirq.value.LinearDict[str] | cirq.type_workarounds.NotImplementedType:
-        # Need to update for DD gate (copied from ZZSWAPGate)
-        # if cirq.is_parameterized(self):
-        #     return NotImplemented
-        # return cirq.value.LinearDict(
-        #     {
-        #         "II": 0.5,
-        #         "XX": 0.5 * np.exp(1j * self.theta),
-        #         "YY": 0.5 * np.exp(1j * self.theta),
-        #         "ZZ": 0.5,
-        #     }
-        # )
-        return NotImplemented
-
-    def _qasm_(self, args: cirq.QasmArgs, qubits: tuple[cirq.Qid, cirq.Qid]) -> str | None:
-        # Need to update for DD gate (copied from ZZSWAPGate)
-        # if approx_eq_mod(self.theta, 0.0, 2 * np.pi):
-        #     return cirq.SWAP._qasm_(args, qubits)
-
+    def _qasm_(self, args: cirq.QasmArgs, qubits: tuple[cirq.Qid, ...]) -> str | None:
         # return args.format(
-        #     "zzswap({0:half_turns}) {1},{2};\n",
-        #     self.theta / np.pi,
+        #     "rzx({0:half_turns}) {1},{2};\n",
+        #     self.exponent,
         #     qubits[0],
         #     qubits[1],
         # )
         return None
 
-    def _json_dict_(self) -> dict[str, Any]:
-        return cirq.obj_to_dict_helper(self, ["theta"])
+    def __str__(self) -> str:
+        if self.exponent == 1:
+            return "DD"
+        return f"DD**{self._exponent!r}"
+
+    def __repr__(self) -> str:
+        if self._global_shift == 0:
+            if self._exponent == 1:
+                return "css.DD"
+            return f"(css.DD**{cirq._compat.proper_repr(self._exponent)})"
+        return (
+            f"css.DDGate(exponent={cirq._compat.proper_repr(self._exponent)},"
+            f" global_shift={self._global_shift!r})"
+        )
