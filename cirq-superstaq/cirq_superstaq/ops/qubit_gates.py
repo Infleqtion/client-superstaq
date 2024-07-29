@@ -1019,10 +1019,10 @@ class DDGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
             return None
         return np.array(
             [
-                [np.exp(-1j * self.phi), 0, 0, 0],
-                [0, np.exp(1j * self.phi)*np.cos(self.theta), 1j*np.exp(1j * self.phi)*np.sin(self.theta), 0],
-                [0, 1j*np.exp(1j * self.phi)*np.sin(self.theta), np.exp(1j * self.phi)*np.cos(self.theta), 0],
-                [0, 0, 0, np.exp(-1j * self.phi)],
+                [np.exp(-1j * self.phi*2*np.pi), 0, 0, 0],
+                [0, np.exp(1j * self.phi*2*np.pi)*np.cos(self.theta*2*np.pi), 1j*np.exp(1j * self.phi*2*np.pi)*np.sin(self.theta*2*np.pi), 0],
+                [0, 1j*np.exp(1j * self.phi*2*np.pi)*np.sin(self.theta*2*np.pi), np.exp(1j * self.phi*2*np.pi)*np.cos(self.theta*2*np.pi), 0],
+                [0, 0, 0, np.exp(-1j * self.phi*2*np.pi)],
             ]
         )
 
@@ -1048,11 +1048,8 @@ class DDGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     def __repr__(self) -> str:
         return f"css.DDGate({self.theta})"
 
-    def _decompose_(self, qubits: tuple[cirq.Qid, cirq.Qid]) -> Iterator[cirq.Operation]:
-        yield cirq.CX(qubits[0], qubits[1])
-        yield cirq.CX(qubits[1], qubits[0])
-        yield cirq.Z(qubits[1]) ** (self.theta / _pi(self.theta))
-        yield cirq.CX(qubits[0], qubits[1])
+    def _decompose_(self, qubits: tuple[cirq.Qid, cirq.Qid]) -> cirq.type_workarounds.NotImplementedType:
+        return NotImplemented
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         t = args.format_radians(self.theta)
