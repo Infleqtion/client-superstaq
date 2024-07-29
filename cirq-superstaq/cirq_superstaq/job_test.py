@@ -26,6 +26,11 @@ import cirq_superstaq as css
 
 @pytest.fixture
 def job() -> css.Job:
+    """Fixture for cirq_superstaq Job.
+
+    Returns:
+        A cirq_superstaq Job instance.
+    """
     client = gss.superstaq_client._SuperstaqClient(
         client_name="cirq-superstaq",
         remote_host="http://example.com",
@@ -35,6 +40,11 @@ def job() -> css.Job:
 
 
 def new_job() -> css.Job:
+    """Creates a new cirq_superstaq Job instance.
+
+    Returns:
+        A cirq_superstaq Job instance.
+    """
     client = gss.superstaq_client._SuperstaqClient(
         client_name="cirq-superstaq",
         remote_host="http://example.com",
@@ -47,6 +57,12 @@ def mocked_get_job_requests(*job_dicts: dict[str, Any]) -> mock._patch[mock.Mock
     """Mocks the server's response to `get_job` requests using the given sequence of job_dicts.
     Return type is wrapped in a string because "'type' object is not subscriptable"
     is thrown at runtime
+
+    Args:
+        job_dicts: stores details about the job.
+
+    Returns:
+        A mock patch that returns the provided job_dicts.
     """
     return mock.patch(
         "general_superstaq.superstaq_client._SuperstaqClient.get_job", side_effect=job_dicts

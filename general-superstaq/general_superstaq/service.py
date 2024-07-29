@@ -88,6 +88,9 @@ class Service:
             email: The new user's email.
             balance: The new balance.
 
+        Raises:
+            SuperstaqException: If requested balance exceeds the limit.
+
         Returns:
             String containing status of update (whether or not it failed).
         """
@@ -191,7 +194,36 @@ class Service:
         result_dict = self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
         return gss.serialization.deserialize(result_dict["solution"])
 
-    def aqt_upload_configs(self, pulses: Any, variables: Any) -> str:
+    @staticmethod
+    def _qtrl_config_to_yaml_str(config: object) -> str:
+        if isinstance(config, str):
+            if not os.path.isfile(config):
+                raise ValueError(f"{config!r} is not a valid file path.")
+
+            with open(config) as config_file:
+                return config_file.read()
+
+        config = getattr(config, "_config_raw", config)  # required to serialize qtrl Managers
+        if isinstance(config, dict):
+            try:
+                import yaml
+
+                return yaml.safe_dump(config)
+
+            except ImportError:
+                raise ModuleNotFoundError(
+                    "The PyYAML package is required to upload AQT configurations from dicts. "
+                    "You can install it using 'pip install pyyaml'."
+                )
+            except yaml.YAMLError:
+                pass
+
+        raise ValueError(
+            "Unable to serialize configuration. AQT configs should be qtrl Manager instances "
+            "or valid file paths."
+        )
+
+    def aqt_upload_configs(self, pulses: object, variables: object) -> str:
         """Uploads configs for AQT.
 
         Arguments can be either file paths (in .yaml format) or qtrl Manager instances.
@@ -203,36 +235,8 @@ class Service:
         Returns:
             A status of the update (whether or not it failed).
         """
-
-        def _config_to_yaml_str(config: Any) -> str:
-            if isinstance(config, str):
-                if not os.path.isfile(config):
-                    raise ValueError(f"{config!r} is not a valid file path.")
-
-                with open(config) as config_file:
-                    return config_file.read()
-
-            config = getattr(config, "_config_raw", config)  # required to serialize qtrl Managers
-            if isinstance(config, dict):
-                try:
-                    import yaml
-
-                    return yaml.safe_dump(config)
-                except ImportError:
-                    raise ModuleNotFoundError(
-                        "The PyYAML package is required to upload AQT configurations from dicts. "
-                        "You can install it using 'pip install pyyaml'."
-                    )
-                except yaml.YAMLError:
-                    pass
-
-            raise ValueError(
-                "Unable to serialize configuration. AQT configs should be qtrl Manager instances "
-                "or valid file paths."
-            )
-
-        pulses_yaml = _config_to_yaml_str(pulses)
-        variables_yaml = _config_to_yaml_str(variables)
+        pulses_yaml = self._qtrl_config_to_yaml_str(pulses)
+        variables_yaml = self._qtrl_config_to_yaml_str(variables)
 
         return self._client.aqt_upload_configs({"pulses": pulses_yaml, "variables": variables_yaml})
 
