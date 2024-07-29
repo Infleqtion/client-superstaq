@@ -1006,7 +1006,6 @@ class DDGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
 
         Args:
             theta: The DD interaction angle in radians.
-            phi: The phase in radians
         """
         self.theta = theta
         self.phi = theta
