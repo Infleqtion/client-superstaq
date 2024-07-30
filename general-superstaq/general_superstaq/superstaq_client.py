@@ -208,7 +208,7 @@ class _SuperstaqClient:
         Raises:
             SuperstaqServerException: For other API call failures.
         """
-        json_dict: dict[str, list[str]] = {
+        json_dict: dict[str, str | Sequence[str]] = {
             "job_ids": job_ids,
         }
         if kwargs or self.client_kwargs:
