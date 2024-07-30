@@ -88,6 +88,9 @@ class Service:
             email: The new user's email.
             balance: The new balance.
 
+        Raises:
+            SuperstaqException: If requested balance exceeds the limit.
+
         Returns:
             String containing status of update (whether or not it failed).
         """

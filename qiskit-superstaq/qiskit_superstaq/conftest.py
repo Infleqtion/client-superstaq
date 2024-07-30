@@ -117,6 +117,13 @@ class MockSuperstaqProvider(qss.SuperstaqProvider):
         )
 
     def get_backend(self, name: str) -> MockSuperstaqBackend:
+        """Mocks the get_backend function of SuperstaqProvider.
+        Args:
+            name: name of the backend.
+
+        Returns:
+            A mock superstaq backend with the given name.
+        """
         return MockSuperstaqBackend(self, name)
 
 
