@@ -245,6 +245,9 @@ class _SuperstaqClient:
             A list of dictionaries corresponding to the user
             information for each user that matches the query. If no :code:`name` or :code:`email`
             parameters are used this dictionary will have length 1.
+
+        Raises:
+            SuperstaqServerException: If the server returns an empty response.
         """
         query = {}
         if name is not None:
