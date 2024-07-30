@@ -112,14 +112,14 @@ def test_get_user_info(mock_get_request: mock.MagicMock) -> None:
 def test_get_user_info_name_query(mock_get_request: mock.MagicMock) -> None:
     service = gss.service.Service(remote_host="http://example.com", api_key="key")
     user_info = service.get_user_info(name="Alice")
-    assert user_info == {
-        "example@email.com": {
+    assert user_info == [
+        {
             "name": "Alice",
             "email": "example@email.com",
             "role": "free_trial",
             "balance": 30.0,
         }
-    }
+    ]
     mock_get_request.assert_called_once_with("/get_user_info", query={"name": "Alice"})
 
 
@@ -137,14 +137,14 @@ def test_get_user_info_name_query(mock_get_request: mock.MagicMock) -> None:
 def test_get_user_info_email_query(mock_get_request: mock.MagicMock) -> None:
     service = gss.service.Service(remote_host="http://example.com", api_key="key")
     user_info = service.get_user_info(email="example@email.com")
-    assert user_info == {
-        "example@email.com": {
+    assert user_info == [
+        {
             "name": "Alice",
             "email": "example@email.com",
             "role": "free_trial",
             "balance": 30.0,
         }
-    }
+    ]
     mock_get_request.assert_called_once_with("/get_user_info", query={"email": "example@email.com"})
 
 

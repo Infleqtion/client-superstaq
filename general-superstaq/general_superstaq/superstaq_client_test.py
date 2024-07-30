@@ -432,7 +432,10 @@ def test_superstaq_client_get_balance(mock_get: mock.MagicMock) -> None:
     assert response == {"balance": 123.4567}
 
     mock_get.assert_called_with(
-        f"http://example.com/{API_VERSION}/balance", headers=EXPECTED_HEADERS, verify=False
+        f"http://example.com/{API_VERSION}/balance",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+        json=None,
     )
 
 
@@ -938,7 +941,7 @@ def test_get_user_info(mock_get: mock.MagicMock) -> None:
         json={},
         verify=False,
     )
-    assert user_info == {"Some": "Data"}
+    assert user_info == [{"Some": "Data"}]
 
 
 @mock.patch("requests.get")
@@ -951,14 +954,14 @@ def test_get_user_info_query(mock_get: mock.MagicMock) -> None:
     )
     mock_get.return_value.json.return_value = {"example@email.com": {"Some": "Data"}}
 
-    user_info = client.get_user_info({"name": "Alice"})
+    user_info = client.get_user_info(name="Alice")
     mock_get.assert_called_once_with(
         f"http://example.com/{API_VERSION}/get_user_info",
         headers=EXPECTED_HEADERS,
         json={"name": "Alice"},
         verify=False,
     )
-    assert user_info == {"example@email.com": {"Some": "Data"}}
+    assert user_info == [{"Some": "Data"}]
 
 
 @mock.patch("requests.get")
@@ -973,7 +976,7 @@ def test_get_user_info_empty_response(mock_get: mock.MagicMock) -> None:
 
     with pytest.raises(
         gss.SuperstaqServerException,
-        match="Something has gone wrong, the server has returned an empty response.",
+        match=("Something went wrong. The server has returned an empty response."),
     ):
         client.get_user_info()
 

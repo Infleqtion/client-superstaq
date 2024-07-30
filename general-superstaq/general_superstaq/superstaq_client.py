@@ -22,7 +22,7 @@ import time
 import urllib
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, TypeVar, overload
+from typing import Any, TypeVar
 
 import requests
 
@@ -227,37 +227,38 @@ class _SuperstaqClient:
         """
         return self.get_request("/balance")
 
-    @overload
-    def get_user_info(self, query: None = None) -> dict[str, object]: ...
-
-    @overload
-    def get_user_info(self, query: Mapping[str, object]) -> dict[str, dict[str, object]]: ...
-
     def get_user_info(
-        self, query: Mapping[str, object] | None = None
-    ) -> dict[str, object] | dict[str, dict[str, object]]:
+        self, name: str | None = None, email: str | None = None
+    ) -> list[dict[str, str | float]]:
         """Gets a dictionary of the user's info.
 
         .. note::
 
-            SUPERTECH users can submit an optional :code:`query` argument which can be used
-            to search for the info of arbitrary users on the server.
+            SUPERTECH users can submit optional :code:`name` or :code:`email`
+            arguments which can be used to search for the info of arbitrary users on the server.
 
         Args:
-            query: An optional dictionary of query parameters to use to search for user records.
-                Is only available to SUPERTECH users. Defaults to None.
-        """
-        if query is None:
-            user_info = self.get_request("/get_user_info", query={})
-            try:
-                return list(user_info.values())[0]
-            except IndexError:
-                raise gss.SuperstaqServerException(
-                    "Something has gone wrong, the server has returned an empty response."
-                )
+            name: A name to search by. Defaults to None.
+            email: An email address to search by. Defaults to None
 
+        Returns:
+            A list of dictionaries corresponding to the user
+            information for each user that matches the query. If no :code:`name` or :code:`email`
+            parameters are used this dictionary will have length 1.
+        """
+        query = {}
+        if name is not None:
+            query["name"] = name
+        if email is not None:
+            query["email"] = email
         user_info = self.get_request("/get_user_info", query=query)
-        return user_info
+        if not user_info:
+            # Catch empty server response. This shouldn't happen as the server should return
+            # an error code if something is wrong with the request.
+            raise gss.SuperstaqServerException(
+                "Something went wrong. The server has returned an empty response."
+            )
+        return list(user_info.values())
 
     def _accept_terms_of_use(self, user_input: str) -> str:
         """Makes a POST request to Superstaq API to confirm acceptance of terms of use.
@@ -702,19 +703,12 @@ class _SuperstaqClient:
             Returns:
                 The Flask GET request object.
             """
-            if query is None:
-                return requests.get(
-                    f"{self.url}{endpoint}",
-                    headers=self.headers,
-                    verify=self.verify_https,
-                )
-            else:
-                return requests.get(
-                    f"{self.url}{endpoint}",
-                    headers=self.headers,
-                    verify=self.verify_https,
-                    json=query,
-                )
+            return requests.get(
+                f"{self.url}{endpoint}",
+                headers=self.headers,
+                verify=self.verify_https,
+                json=query,
+            )
 
         response = self._make_request(request)
         return self._handle_response(response)
