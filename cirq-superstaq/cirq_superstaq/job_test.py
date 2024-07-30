@@ -69,6 +69,13 @@ def mocked_get_job_requests(*job_dicts: dict[str, Any]) -> mock._patch[mock.Mock
     )
 
 
+def test_cancel(job: css.Job) -> None:
+    with mock.patch("requests.post", return_value=mock.MagicMock(ok=True)) as mock_post:
+        job.cancel()
+        new_job().cancel()
+        assert mock_post.call_count == 2
+
+
 def test_job_fields(job: css.job.Job) -> None:
     compiled_circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
     job_dict = {
