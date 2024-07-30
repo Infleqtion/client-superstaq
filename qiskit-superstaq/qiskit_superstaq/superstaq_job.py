@@ -181,7 +181,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """Cancel the current job if it is not in a terminal state.
 
         Args:
-            kwargs:  Extra options needed to fetch jobs.
+            kwargs: Extra options needed to fetch jobs.
 
         Raises:
             SuperstaqServerException: If unable to get the status of the job from the API or

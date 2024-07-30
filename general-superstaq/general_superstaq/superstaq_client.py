@@ -200,7 +200,7 @@ class _SuperstaqClient:
 
         Args:
             job_ids: The UUIDs of the jobs (returned when the jobs were created).
-            kwargs:  Extra options needed to fetch jobs.
+            kwargs: Extra options needed to fetch jobs.
 
         Returns:
             A list of the job ids of the jobs that successfully cancelled.
@@ -208,7 +208,7 @@ class _SuperstaqClient:
         Raises:
             SuperstaqServerException: For other API call failures.
         """
-        json_dict: dict[str, Any] = {
+        json_dict: dict[str, list[str]] = {
             "job_ids": job_ids,
         }
         if kwargs or self.client_kwargs:
