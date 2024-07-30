@@ -24,6 +24,7 @@ from cirq_superstaq.ops import (
     CR,
     CZ3,
     CZ3_INV,
+    DDGate,
     SWAP3,
     ZX,
     AceCR,

@@ -995,20 +995,20 @@ def custom_resolver(cirq_type: str) -> type[cirq.Gate] | None:
     return type_to_gate_map.get(cirq_type)
 
 
-class DDPowGate(cirq.EigenGate):
+class DDGate(cirq.EigenGate):
     r"""The Dipole-Dipole gate for EeroQ hardware
     """
 
     def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
         return [
             (
-                -1.0,
+                -0.5,
                 np.array(
                     [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]
                 ),
             ),
             (
-                2.0,
+                1.0,
                 np.array(
                     [[0, 0, 0, 0], [0, 0.5, 0.5, 0], [0, 0.5, 0.5, 0], [0, 0, 0, 0]]
                 ),
