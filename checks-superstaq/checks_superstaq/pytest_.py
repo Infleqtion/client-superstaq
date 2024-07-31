@@ -57,7 +57,7 @@ def run(
         "--single_core",
         action="store_true",
         help="Run pytest without using xdist.",
-        )
+    )
 
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
     if "pytest" in parsed_args.skip:
