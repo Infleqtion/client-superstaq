@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=missing-function-docstring
+# pylint: disable=missing-return-doc
 # mypy: disable-error-code=method-assign
 
 from __future__ import annotations
@@ -358,7 +359,7 @@ def test_clean_circuit(
     abc_experiment._clean_circuits()
 
     for sample in sample_circuits:
-        assert sample.circuit[-1] == cirq.Moment(cirq.measure(*sample.circuit.all_qubits()))
+        assert sample.circuit[-1] == cirq.Moment(cirq.measure(*sorted(sample.circuit.all_qubits())))
 
 
 def test_process_device_counts(abc_experiment: BenchmarkingExperiment) -> None:
