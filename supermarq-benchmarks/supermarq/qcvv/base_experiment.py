@@ -18,7 +18,6 @@ import pprint
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
-from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any, NamedTuple
 
@@ -42,8 +41,8 @@ class Sample:
     """The corresponding data about the circuit"""
     probabilities: dict[str, float] = field(init=False)
     """The probabilities of the computational basis states"""
-    job: str | None = None
-    """The superstaq job UUID corresponding to the sample. Defaults to None if no job is
+    job: css.Job | None = None
+    """The superstaq job corresponding to the sample. Defaults to None if no job is
     associated with the sample."""
 
 
@@ -176,44 +175,6 @@ class BenchmarkingExperiment(ABC):
         """
         return len(self.qubits)
 
-    def run(
-        self,
-        num_circuits: int,
-        layers: Iterable[int],
-        target: cirq.SimulatorBase | str | None = None,  # type: ignore [type-arg]
-        shots: int = 10_000,
-        method: str | None = None,
-        target_options: dict[str, Any] | None = None,
-    ) -> None:
-        """Run the benchmarking experiment and analyse the results.
-
-        Args:
-            num_circuits: Number of circuits to run.
-            layers: An iterable of the different layer depths to use during the experiment.
-            target: Either a local :class:`~cirq.SimulatorBase` to use or the name of a Superstaq
-                target. If None then a local simulator is used. Defaults to None.
-            shots: The number of shots to sample. Defaults to 10,000.
-            method: Optional method to use on the Superstaq device. Defaults to None corresponding
-                to normal running.
-            target_options: Optional configuration dictionary passed when submitting the job.
-        """
-        if self._samples is not None:
-            warnings.warn("Existing results will be overwritten.")
-
-        if any(depth <= 0 for depth in layers):
-            raise ValueError("The `layers` iterator can only include positive values.")
-
-        self._samples = self.build_circuits(num_circuits, layers)
-        self._clean_circuits()
-
-        if target is None:
-            target = cirq.Simulator()
-
-        if isinstance(target, str):
-            self.submit_ss_jobs(target, shots, method, **(target_options or {}))
-        else:
-            self.sample_circuits_with_simulator(target, shots)
-
     def _clean_circuits(self) -> None:
         """Removes any terminal measurements that have been added to the circuit and replaces
         them with a single measurement of the whole system in the computational basis
@@ -222,13 +183,44 @@ class BenchmarkingExperiment(ABC):
             if sample.circuit.has_measurements():
                 sample.circuit = cirq.drop_terminal_measurements(sample.circuit)
             # Add measurement of qubit state in computational basis.
-            sample.circuit += cirq.measure(sample.circuit.all_qubits())
+            sample.circuit += cirq.measure(sorted(sample.circuit.all_qubits()))
 
-    def submit_ss_jobs(
+    def _prepare_experiment(
+        self, num_circuits: int, cycle_depths: Iterable[int], overwrite: bool = False
+    ) -> None:
+        """Prepares the circuits needed for the experiment
+
+        Args:
+            num_circuits: Number of circuits to run.
+            cycle_depths: An iterable of the different layer depths to use during the experiment.
+            overwrite: Whether to force an experiment run even if there is existing data that would
+                be over written in the process. Defaults to False.
+
+        Raises:
+            RuntimeError: If the experiment has already been run once and the `overwrite` argument
+                is not True
+            ValueError: If any of the cycle depths provided negative or zero.
+        """
+        if self._samples is not None and not overwrite:
+            raise RuntimeError(
+                "This experiment already has existing data which would be overwritten by "
+                "rerunning the experiment. If this is the desired behavior set `overwrite=True`"
+            )
+
+        if any(depth <= 0 for depth in cycle_depths):
+            raise ValueError("The `cycle_depths` iterator can only include positive values.")
+
+        self._samples = self.build_circuits(num_circuits, cycle_depths)
+        self._clean_circuits()
+
+    def run_on_device(
         self,
+        num_circuits: int,
+        cycle_depths: Iterable[int],
         target: str,
         shots: int = 10_000,
         method: str | None = None,
+        overwrite: bool = False,
         **target_options: Any,
     ) -> None:
         """Submit the circuit samples to the desired target device and store the resulting
@@ -239,24 +231,29 @@ class BenchmarkingExperiment(ABC):
         before saving the resulting probability distributions.
 
         Args:
-            target: The name of the target device.
-            shots: The number of shots to use. Defaults to 10,000
+            num_circuits: Number of circuits to run.
+            cycle_depths: An iterable of the different layer depths to use during the experiment.
+            target: The name of a Superstaq target.
+            shots: The number of shots to sample. Defaults to 10,000.
             method: Optional method to use on the Superstaq device. Defaults to None corresponding
                 to normal running.
-            target_options: Optional configuration kwargs passed when submitting the job.
+            target_options: Optional configuration dictionary passed when submitting the job.
+            overwrite: Whether to force an experiment run even if there is existing data that would
+                be over written in the process. Defaults to False.
         """
+        self._prepare_experiment(num_circuits, cycle_depths, overwrite)
+
         for sample in tqdm(self.samples):
             if sample.job is not None:
                 continue
             try:
-                job = self._service.create_job(
+                sample.job = self._service.create_job(
                     sample.circuit,
                     target=target,
                     method=method,
                     repetitions=shots,
                     **target_options,
                 )
-                sample.job = job.job_id()
             except SuperstaqServerException as error:
                 warnings.warn(
                     "The following error ocurred when submitting the jobs to the server and not\n"
@@ -268,7 +265,7 @@ class BenchmarkingExperiment(ABC):
 
     def sample_statuses(self) -> list[str | None]:
         """Returns:
-        Get the statuses of the jobs associated with each sample. If no job is associated
+        The statuses of the jobs associated with each sample. If no job is associated
         with a sample then :code:`None` is listed instead.
         """
         statuses: list[str | None] = []
@@ -276,7 +273,7 @@ class BenchmarkingExperiment(ABC):
             if sample.job is None:
                 statuses.append(None)
             else:
-                statuses.append(self._service.get_job(sample.job).status())
+                statuses.append(sample.job.status())
         return statuses
 
     def retrieve_ss_jobs(self) -> dict[str, str]:
@@ -296,30 +293,46 @@ class BenchmarkingExperiment(ABC):
         for sample in tqdm(waiting_samples, "Retrieving jobs"):
             if sample.job is None:
                 continue
-            job = self._service.get_job(sample.job)
-            if job.status() in css.job.Job.NON_TERMINAL_STATES + css.job.Job.UNSUCCESSFUL_STATES:
-                statuses[job.job_id()] = job.status()
+            if (
+                job_status := sample.job.status()
+            ) in css.job.Job.NON_TERMINAL_STATES + css.job.Job.UNSUCCESSFUL_STATES:
+                statuses[sample.job.job_id()] = job_status
             else:
-                sample.probabilities = self._process_device_counts(job.counts(0))
+                sample.probabilities = self._process_device_counts(sample.job.counts(0))
 
         return statuses
 
-    def sample_circuits_with_simulator(
-        self, target: cirq.SimulatorBase, shots: int = 10_000  # type: ignore [type-arg]
+    def run_with_simulator(
+        self,
+        num_circuits: int,
+        cycle_depths: Iterable[int],
+        target: cirq.SimulatorBase | None = None,  # type: ignore [type-arg]
+        shots: int = 10_000,
+        overwrite: bool = False,
     ) -> None:
         """Use the local simulator to sample the circuits and store the resulting probabilities.
 
         Args:
-            target: The :class:`~cirq.SimulatorBase()` object to use for sampling the circuits with.
-            shots: The number of shots to use. Defaults to 10,000
+            num_circuits: Number of circuits to run.
+            cycle_depths: An iterable of the different layer depths to use during the experiment.
+            target: A local :class:`~cirq.SimulatorBase` to use. If None then the default
+                :class:`cirq.Simulator` simulator is used. Defaults to None.
+            shots: The number of shots to sample. Defaults to 10,000.
+            overwrite: Whether to force an experiment run even if there is existing data that would
+                be over written in the process. Defaults to False.
         """
+        self._prepare_experiment(num_circuits, cycle_depths, overwrite)
+
+        if target is None:
+            target = cirq.Simulator()
 
         for sample in tqdm(self.samples, desc="Simulating circuits"):
             # Use transpose (.T) to reshape samples output from (n x 1) into (1 x n)
-            samples = target.sample(sample.circuit, repetitions=shots).values.T[0]
-            output_probabilities = np.bincount(samples, minlength=2**self.num_qubits) / len(samples)
-
-            sample.probabilities = self._state_probs_to_dict(output_probabilities)
+            result = target.run(sample.circuit, repetitions=shots)
+            hist = result.histogram(key=cirq.measurement_key_name(sample.circuit))
+            sample.probabilities = {
+                f"{i:0{self.num_qubits}b}": count / shots for i, count in hist.items()
+            }
 
     def collect_data(self, force: bool = False) -> bool:
         """Collect the data from the samples and process it into the :attr:`raw_data` attribute.
@@ -374,14 +387,14 @@ class BenchmarkingExperiment(ABC):
     def build_circuits(
         self,
         num_circuits: int,
-        layers: Iterable[int],
+        cycle_depths: Iterable[int],
     ) -> Sequence[Sample]:
         """Build a list of circuits required for the experiment. These circuits are stored in
         :class:`Sample` objects along with any additional data that is needed during the analysis.
 
         Args:
             num_circuits: Number of circuits to generate.
-            layers: An iterable of the different layer depths to use during the experiment.
+            cycle_depths: An iterable of the different cycle depths to use during the experiment.
 
         Returns:
             The list of circuit objects
@@ -435,10 +448,11 @@ class BenchmarkingExperiment(ABC):
         Returns:
             A copy of the original circuit with the provided gate interleaved.
         """
-        qubits = circuit.all_qubits()
-        interleaved_circuit = deepcopy(circuit)
-        for k in range(len(circuit) - int(not include_final), 0, -1):
-            interleaved_circuit.insert(k, gate(*qubits))
+        qubits = sorted(circuit.all_qubits())
+        interleaved_circuit = circuit.copy()
+        interleaved_circuit.batch_insert(
+            [(k, gate(*qubits)) for k in range(len(circuit) - int(not include_final), 0, -1)]
+        )
         return interleaved_circuit
 
     def _process_device_counts(self, counts: dict[str, int]) -> dict[str, float]:

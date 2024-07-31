@@ -21,6 +21,7 @@ from typing import NamedTuple
 from unittest.mock import MagicMock, call, patch
 
 import cirq
+import cirq_superstaq as css
 import numpy as np
 import pandas as pd
 import pytest
@@ -46,7 +47,7 @@ def sample_circuits() -> list[Sample]:
     qubits = cirq.LineQubit.range(2)
     return [
         Sample(
-            circuit=cirq.Circuit(cirq.CZ(*qubits), cirq.MeasurementGate(num_qubits=2)(*qubits)),
+            circuit=cirq.Circuit(cirq.CZ(*qubits), cirq.CZ(*qubits), cirq.measure(*qubits)),
             data={"circuit": 1},
         ),
         Sample(circuit=cirq.Circuit(cirq.CX(*qubits)), data={"circuit": 2}),
@@ -91,114 +92,106 @@ def test_empty_samples_error(abc_experiment: BenchmarkingExperiment) -> None:
         _ = abc_experiment.samples
 
 
-def test_run_results_overwrite_warning(abc_experiment: BenchmarkingExperiment) -> None:
+def test_prepare_experiment_overwrite_error(abc_experiment: BenchmarkingExperiment) -> None:
     abc_experiment._samples = [Sample(circuit=MagicMock(), data={})]
     abc_experiment.build_circuits = MagicMock()
-    abc_experiment.sample_circuits_with_simulator = MagicMock()
-    abc_experiment.process_probabilities = MagicMock()
 
-    print(abc_experiment._results)
-    with pytest.warns(UserWarning, match="Existing results will be overwritten."):
-        abc_experiment.run(100, [1, 50, 100])
-
-
-def test_run_with_bad_layers(abc_experiment: BenchmarkingExperiment) -> None:
-    with pytest.raises(ValueError, match="The `layers` iterator can only include positive values."):
-        abc_experiment.run(20, [0])
+    with pytest.raises(
+        RuntimeError,
+        match="This experiment already has existing data which would be overwritten by "
+        "rerunning the experiment. If this is the desired behavior set `overwrite=True`",
+    ):
+        abc_experiment._prepare_experiment(100, [1, 50, 100])
 
 
-def test_run_local(abc_experiment: BenchmarkingExperiment) -> None:
-    abc_experiment.build_circuits = (mock_build_circuits := MagicMock())
-    abc_experiment.submit_ss_jobs = (mock_submit_ss_jobs := MagicMock())
-    abc_experiment.sample_circuits_with_simulator = (
-        mock_sample_circuits_with_simulator := MagicMock()
-    )
-    abc_experiment.run(50, [1, 50, 100], shots=50)
+def test_prepare_experiment_overwrite(abc_experiment: BenchmarkingExperiment) -> None:
+    abc_experiment._samples = [Sample(circuit=MagicMock(), data={})]
+    abc_experiment.build_circuits = MagicMock()
+    abc_experiment._clean_circuits = MagicMock()
 
-    mock_build_circuits.assert_called_once_with(50, [1, 50, 100])
+    abc_experiment._prepare_experiment(100, [1, 50, 100], overwrite=True)
 
-    mock_sample_circuits_with_simulator.assert_called_once()
-    call_args = mock_sample_circuits_with_simulator.call_args_list[0][0]
-    assert call_args[1] == 50
-    assert isinstance(call_args[0], cirq.Simulator)  # Test simulated on a default target
-
-    mock_submit_ss_jobs.assert_not_called()
+    abc_experiment.build_circuits.assert_called_once_with(100, [1, 50, 100])
+    abc_experiment._clean_circuits.assert_called_once_with()
 
 
-def test_run_local_defined_sim(abc_experiment: BenchmarkingExperiment) -> None:
-    abc_experiment.build_circuits = (mock_build_circuits := MagicMock())
-    abc_experiment.submit_ss_jobs = (mock_submit_ss_jobs := MagicMock())
-    abc_experiment.sample_circuits_with_simulator = (
-        mock_sample_circuits_with_simulator := MagicMock()
-    )
-
-    abc_experiment.run(
-        50, [1, 50, 100], shots=50, target=(target_sim := cirq.DensityMatrixSimulator())
-    )
-
-    mock_build_circuits.assert_called_once_with(50, [1, 50, 100])
-
-    mock_sample_circuits_with_simulator.assert_called_once()
-    call_args = mock_sample_circuits_with_simulator.call_args_list[0][0]
-    assert call_args[1] == 50
-    assert call_args[0] == target_sim  # Test simulated on the given target
-
-    mock_submit_ss_jobs.assert_not_called()
-
-
-def test_run_on_ss_server(abc_experiment: BenchmarkingExperiment) -> None:
-    abc_experiment.build_circuits = (mock_build_circuits := MagicMock())
-    abc_experiment.submit_ss_jobs = (mock_submit_ss_jobs := MagicMock())
-    abc_experiment.sample_circuits_with_simulator = (
-        mock_sample_circuits_with_simulator := MagicMock()
-    )
-    abc_experiment.run(
-        50, [1, 50, 100], shots=50, target="example_ss_target", target_options={"some": "options"}
-    )
-
-    mock_build_circuits.assert_called_once_with(50, [1, 50, 100])
-
-    mock_sample_circuits_with_simulator.assert_not_called()
-
-    mock_submit_ss_jobs.assert_called_once_with(
-        "example_ss_target", 50, None, **{"some": "options"}
-    )
+def test_prepare_experiment_with_bad_layers(abc_experiment: BenchmarkingExperiment) -> None:
+    with pytest.raises(
+        ValueError, match="The `cycle_depths` iterator can only include positive values."
+    ):
+        abc_experiment._prepare_experiment(20, [0])
 
 
 def test_run_with_simulator(
     abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
 ) -> None:
+    cirq.measurement_key_name = MagicMock()
+    abc_experiment._prepare_experiment = MagicMock()
     abc_experiment._samples = sample_circuits
-    test_target = MagicMock(spec=cirq.Simulator)
-    test_target.sample = MagicMock(
-        return_value=MagicMock(values=np.ones(shape=(100, 1), dtype=np.int64))
-    )
+    test_target = MagicMock()
+    mock_result = MagicMock()
+    mock_result.histogram.return_value = {0: 0, 1: 100, 2: 0, 3: 0}
+    test_target.run.return_value = mock_result
 
-    abc_experiment.sample_circuits_with_simulator(test_target, shots=100)
+    abc_experiment.run_with_simulator(10, [5, 10, 20], target=test_target, shots=100)
 
     # Test simulator calls
-    test_target.sample.assert_has_calls(
+    test_target.run.assert_has_calls(
         [
             call(sample_circuits[0].circuit, repetitions=100),
             call(sample_circuits[1].circuit, repetitions=100),
-        ]
+        ],
+        any_order=True,
     )
 
     # Test probabilities
     assert sample_circuits[0].probabilities == {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
     assert sample_circuits[1].probabilities == {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
 
+    abc_experiment._prepare_experiment.assert_called_once_with(10, [5, 10, 20], False)
 
-def test_submit_ss_jobs(
+
+def test_run_with_simulator_default_target(
     abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
 ) -> None:
+    cirq.measurement_key_name = MagicMock()
+    cirq.Simulator = (target := MagicMock())  # type: ignore [misc]
+    abc_experiment._prepare_experiment = MagicMock()
+    abc_experiment._samples = sample_circuits
+    mock_result = MagicMock()
+    mock_result.histogram.return_value = {0: 0, 1: 100, 2: 0, 3: 0}
+    target().run.return_value = mock_result
 
+    abc_experiment.run_with_simulator(10, [5, 10, 20], shots=100)
+
+    # Test simulator calls
+    target().run.assert_has_calls(
+        [
+            call(sample_circuits[0].circuit, repetitions=100),
+            call(sample_circuits[1].circuit, repetitions=100),
+        ],
+        any_order=True,
+    )
+
+    # Test probabilities
+    assert sample_circuits[0].probabilities == {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
+    assert sample_circuits[1].probabilities == {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
+
+    abc_experiment._prepare_experiment.assert_called_once_with(10, [5, 10, 20], False)
+
+
+def test_run_on_device(
+    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment._prepare_experiment = MagicMock()
     abc_experiment._samples = sample_circuits
     abc_experiment._service = (mock_service := MagicMock())
     mock_service().create_job.side_effect = [MagicMock(job_id="job_1"), MagicMock(job_id="job_2")]
 
     mock_service().target_info.return_value = {}
-    abc_experiment.submit_ss_jobs("example_target", shots=100)
+    abc_experiment.run_on_device(
+        10, [5, 10, 20], target="example_target", shots=100, overwrite=False, **{"some": "options"}
+    )
 
     mock_service.create_job.assert_has_calls(
         [
@@ -207,28 +200,34 @@ def test_submit_ss_jobs(
                 target="example_target",
                 method=None,
                 repetitions=100,
+                some="options",
             ),
             call(
                 sample_circuits[1].circuit,
                 target="example_target",
                 method=None,
                 repetitions=100,
+                some="options",
             ),
         ],
         any_order=True,
     )
 
+    abc_experiment._prepare_experiment.assert_called_once_with(10, [5, 10, 20], False)
 
-def test_submit_ss_jobs_dry_run(
+
+def test_run_on_device_dry_run(
     abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
 ) -> None:
-
+    abc_experiment._prepare_experiment = MagicMock()
     abc_experiment._samples = sample_circuits
     abc_experiment._service = (mock_service := MagicMock())
     mock_service().create_job.side_effect = [MagicMock(job_id="job_1"), MagicMock(job_id="job_2")]
 
     mock_service().target_info.return_value = {}
-    abc_experiment.submit_ss_jobs("example_target", shots=100, method="dry-run")
+    abc_experiment.run_on_device(
+        10, [5, 10, 20], target="example_target", shots=100, method="dry-run"
+    )
 
     mock_service.create_job.assert_has_calls(
         [
@@ -249,17 +248,19 @@ def test_submit_ss_jobs_dry_run(
     )
 
 
-def test_submit_ss_jobs_job_already_has_id(
+def test_run_on_device_job_already_has_id(
     abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
 ) -> None:
-
+    abc_experiment._prepare_experiment = MagicMock()
     abc_experiment._samples = sample_circuits
-    sample_circuits[0].job = "example_job_id"
+    sample_circuits[0].job = MagicMock()
     abc_experiment._service = (mock_service := MagicMock())
     mock_service().create_job.side_effect = [MagicMock(job_id="job_1"), MagicMock(job_id="job_2")]
 
     mock_service().target_info.return_value = {}
-    abc_experiment.submit_ss_jobs("example_target", shots=100, method="example_method")
+    abc_experiment.run_on_device(
+        10, [5, 10, 20], target="example_target", shots=100, method="example_method"
+    )
 
     mock_service.create_job.assert_has_calls(
         [
@@ -274,15 +275,16 @@ def test_submit_ss_jobs_job_already_has_id(
     )
 
 
-def test_submit_ss_jobs_with_exception(
+def test_run_on_device_with_exception(
     abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
     abc_experiment._service = (mock_service := MagicMock())
+    abc_experiment._prepare_experiment = MagicMock()
 
     mock_service.create_job.side_effect = SuperstaqServerException("example_exception")
     with pytest.warns(UserWarning):
-        abc_experiment.submit_ss_jobs("example_target", shots=100)
+        abc_experiment.run_on_device(10, [5, 10, 20], target="example_target", shots=100)
 
 
 def test_state_probs_to_dict(abc_experiment: BenchmarkingExperiment) -> None:
@@ -340,14 +342,13 @@ def test_sample_statuses(
     abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
-    sample_circuits[0].job = "example_job_id"
-    abc_experiment._service = (mock_service := MagicMock())
-    mock_service.get_job.return_value.status.side_effect = ["example_status"]
+    mock_job = MagicMock(spec=css.Job)
+    mock_job.status.return_value = "example_status"
+    sample_circuits[0].job = mock_job
 
     statuses = abc_experiment.sample_statuses()
     assert statuses == ["example_status", None]
-
-    mock_service.get_job.assert_called_once_with("example_job_id")
+    mock_job.status.assert_called_once_with()
 
 
 def test_clean_circuit(
@@ -375,17 +376,13 @@ def test_retrieve_ss_jobs_not_all_submitted(
     abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
-    abc_experiment._samples[0].job = "example_job_id"
+
     mock_job_1 = MagicMock()
     mock_job_1.status.return_value = "Queued"
     mock_job_1.job_id.return_value = "example_job_id"
-
-    abc_experiment._service = MagicMock()
-    abc_experiment._service.get_job.return_value = mock_job_1
+    abc_experiment._samples[0].job = mock_job_1
 
     statuses = abc_experiment.retrieve_ss_jobs()
-
-    abc_experiment._service.get_job.assert_called_once_with("example_job_id")
 
     assert statuses == {"example_job_id": "Queued"}
     assert not hasattr(sample_circuits[0], "probabilities")
@@ -404,26 +401,18 @@ def test_retrieve_ss_jobs_all_submitted(
     abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
-    abc_experiment._samples[0].job = "example_job_id_1"
-    mock_job_1 = MagicMock()
+    mock_job_1 = MagicMock(spec=css.Job)
     mock_job_1.status.return_value = "Queued"
     mock_job_1.job_id.return_value = "example_job_id_1"
+    abc_experiment._samples[0].job = mock_job_1
 
-    abc_experiment._samples[1].job = "example_job_id_2"
-    mock_job_2 = MagicMock()
+    mock_job_2 = MagicMock(spec=css.Job)
     mock_job_2.status.return_value = "Done"
     mock_job_2.job_id.return_value = "example_job_id_2"
     mock_job_2.counts.return_value = {"00": 5, "11": 10}
-
-    abc_experiment._service = MagicMock()
-    abc_experiment._service.get_job.side_effect = [mock_job_1, mock_job_2]
+    abc_experiment._samples[1].job = mock_job_2
 
     statuses = abc_experiment.retrieve_ss_jobs()
-
-    # Check get job calls
-    abc_experiment._service.get_job.assert_has_calls(
-        [call("example_job_id_1"), call("example_job_id_2")]
-    )
 
     # Check counts call
     mock_job_2.counts.assert_called_once_with(0)
