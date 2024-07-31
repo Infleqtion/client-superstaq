@@ -53,6 +53,11 @@ def run(
         action="store_true",
         help="Run pytest on *_integration_test.py files.",
     )
+    parser.add_argument(
+        "--single_core",
+        action="store_true",
+        help="Run pytest without using xdist.",
+        )
 
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
     if "pytest" in parsed_args.skip:
@@ -82,11 +87,14 @@ def run(
     if not files:
         return 0
 
+    if not parsed_args.single_core and len(files) != 1:
+        args_to_pass += ["-n=auto"]
+
     if parsed_args.integration and integration_setup:
         integration_setup()
 
     return subprocess.call(
-        ["python", "-m", "pytest", "-n=auto", *files, *args_to_pass],
+        ["python", "-m", "pytest", *files, *args_to_pass],
         cwd=check_utils.root_dir,
     )
 
