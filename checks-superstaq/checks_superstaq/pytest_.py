@@ -87,8 +87,10 @@ def run(
     if not files:
         return 0
 
-    if not (parsed_args.single_core or parsed_args.incremental):
-        args_to_pass += ["-n=auto"]
+    # Dont mulitcore if checking fewer than 4 files
+    if not (parsed_args.single_core or len(files) < 4):
+        # setting before other args so -n can be overwritten
+        args_to_pass = ["-n=auto", *args_to_pass]
 
     if parsed_args.integration and integration_setup:
         integration_setup()
