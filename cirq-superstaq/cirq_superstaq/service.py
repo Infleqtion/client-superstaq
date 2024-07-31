@@ -485,6 +485,8 @@ class Service(gss.service.Service):
         gate_defs: None | (
             Mapping[str, npt.NDArray[np.complex_] | cirq.Gate | cirq.Operation | None]
         ) = None,
+        pulses: object = None,
+        variables: object = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
@@ -508,6 +510,8 @@ class Service(gss.service.Service):
                 "SWAP/C5C4": cirq.SQRT_ISWAP_INV}` implies `SQRT_ISWAP` for all "SWAP" calibrations
                 except "SWAP/C5C4" (which will instead be mapped to a `SQRT_ISWAP_INV` gate on
                 qubits 4 and 5). Setting any calibration to None will disable that calibration.
+            pulses: Qtrl `PulseManager` or file path for pulse configuration.
+            variables: Qtrl `VariableManager` or file path for variable configuration.
             kwargs: Other desired compile options.
 
         Returns:
@@ -550,6 +554,11 @@ class Service(gss.service.Service):
                     val = _to_matrix_gate(val)
                 gate_defs_cirq[key] = val
             options_dict["gate_defs"] = gate_defs_cirq
+        if pulses or variables:
+            options_dict["aqt_configs"] = {
+                "pulses": self._qtrl_config_to_yaml_str(pulses),
+                "variables": self._qtrl_config_to_yaml_str(variables),
+            }
 
         if options_dict:
             request_json["options"] = cirq.to_json(options_dict)
@@ -1092,7 +1101,7 @@ class Service(gss.service.Service):
 
         if not no_submit_target:
 
-            def objective(
+            def _objective(
                 x: np.typing.NDArray[np.int_], A: float, p: float
             ) -> np.typing.NDArray[np.float_]:
                 return A * p**x
@@ -1101,7 +1110,7 @@ class Service(gss.service.Service):
 
             e_f = 0.0
             for ps, y_vals in cb_data["process_fidelity_data"]["averages"].items():
-                popt, _ = curve_fit(objective, instance_information["depths"], y_vals)
+                popt, _ = curve_fit(_objective, instance_information["depths"], y_vals)
                 A, p = popt
                 A = round(A, 2)
                 fit_data["A_" + str(ps)] = A
@@ -1136,7 +1145,7 @@ class Service(gss.service.Service):
         legend_colors = []
         plt.xlim(0, x_values[-1] + 4)
 
-        def objective(
+        def _objective(
             x: np.typing.NDArray[np.int_], A: float, p: float
         ) -> np.typing.NDArray[np.float_]:
             return A * p**x
@@ -1159,7 +1168,7 @@ class Service(gss.service.Service):
                     )
             plt.plot(
                 np.arange(0, x_values[-1] + 4),
-                objective(np.arange(0, x_values[-1] + 4), A, p),
+                _objective(np.arange(0, x_values[-1] + 4), A, p),
             )
             e_f += p
             if legend_labels_count < max_legend_labels:

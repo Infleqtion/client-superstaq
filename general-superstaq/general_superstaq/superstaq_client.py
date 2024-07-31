@@ -227,6 +227,42 @@ class _SuperstaqClient:
         """
         return self.get_request("/balance")
 
+    def get_user_info(
+        self, name: str | None = None, email: str | None = None
+    ) -> list[dict[str, str | float]]:
+        """Gets a dictionary of the user's info.
+
+        .. note::
+
+            SUPERTECH users can submit optional :code:`name` or :code:`email`
+            arguments which can be used to search for the info of arbitrary users on the server.
+
+        Args:
+            name: A name to search by. Defaults to None.
+            email: An email address to search by. Defaults to None
+
+        Returns:
+            A list of dictionaries corresponding to the user
+            information for each user that matches the query. If no :code:`name` or :code:`email`
+            parameters are used this dictionary will have length 1.
+
+        Raises:
+            SuperstaqServerException: If the server returns an empty response.
+        """
+        query = {}
+        if name is not None:
+            query["name"] = name
+        if email is not None:
+            query["email"] = email
+        user_info = self.get_request("/get_user_info", query=query)
+        if not user_info:
+            # Catch empty server response. This shouldn't happen as the server should return
+            # an error code if something is wrong with the request.
+            raise gss.SuperstaqServerException(
+                "Something went wrong. The server has returned an empty response."
+            )
+        return list(user_info.values())
+
     def _accept_terms_of_use(self, user_input: str) -> str:
         """Makes a POST request to Superstaq API to confirm acceptance of terms of use.
 
@@ -653,11 +689,12 @@ class _SuperstaqClient:
         """
         return self.get_request("/get_aqt_configs")
 
-    def get_request(self, endpoint: str) -> Any:
+    def get_request(self, endpoint: str, query: Mapping[str, object] | None = None) -> Any:
         """Performs a GET request on a given endpoint.
 
         Args:
             endpoint: The endpoint to perform the GET request on.
+            query: An optional query json to include in the get request.
 
         Returns:
             The response of the GET request.
@@ -673,6 +710,7 @@ class _SuperstaqClient:
                 f"{self.url}{endpoint}",
                 headers=self.headers,
                 verify=self.verify_https,
+                json=query,
             )
 
         response = self._make_request(request)
