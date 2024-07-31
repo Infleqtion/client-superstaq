@@ -87,7 +87,7 @@ def run(
     if not files:
         return 0
 
-    if not parsed_args.single_core and len(files) != 1:
+    if not (parsed_args.single_core or parsed_args.incremental):
         args_to_pass += ["-n=auto"]
 
     if parsed_args.integration and integration_setup:
