@@ -55,7 +55,7 @@ def sample_circuits() -> list[Sample]:
     ]
 
 
-@dataclass(kw_only=True, frozen=True)
+@dataclass(frozen=True)
 class ExampleResults(QCVVResults):
     """NamedTuple instance to use for testing"""
 

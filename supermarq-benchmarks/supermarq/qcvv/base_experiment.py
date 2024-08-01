@@ -63,7 +63,7 @@ class Sample:
         return "No target"
 
 
-@dataclass(kw_only=True, frozen=True)
+@dataclass(frozen=True)
 class QCVVResults:
     """A dataclass for storing the results of the experiment. Requires subclassing for
     each new experiment type"""
