@@ -87,8 +87,13 @@ def run(
     if not files:
         return 0
 
-    # Dont mulitcore if checking fewer than 4 files
-    if not (parsed_args.single_core or len(files) < 4):
+    if (
+        not parsed_args.files
+        and not parsed_args.single_core
+        and parsed_args.revisions is None
+        and "-s" not in args_to_pass
+    ):
+        # enable threading
         # setting before other args so -n can be overwritten
         args_to_pass = ["-n=auto", *args_to_pass]
 
