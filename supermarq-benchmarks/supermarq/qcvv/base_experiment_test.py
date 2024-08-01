@@ -18,7 +18,7 @@
 from __future__ import annotations
 
 import os
-from typing import NamedTuple
+from dataclasses import dataclass
 from unittest.mock import MagicMock, call, patch
 
 import cirq
@@ -28,7 +28,7 @@ import pandas as pd
 import pytest
 from general_superstaq.superstaq_exceptions import SuperstaqServerException
 
-from supermarq.qcvv.base_experiment import BenchmarkingExperiment, Sample
+from supermarq.qcvv.base_experiment import BenchmarkingExperiment, QCVVResults, Sample
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -55,10 +55,23 @@ def sample_circuits() -> list[Sample]:
     ]
 
 
-class ExampleResults(NamedTuple):
+@dataclass(kw_only=True, frozen=True)
+class ExampleResults(QCVVResults):
     """NamedTuple instance to use for testing"""
 
     example: float
+
+
+def test_sample_target_property() -> None:
+    sample = Sample(circuit=MagicMock(), data={})
+    assert sample.target == "No target"
+
+    sample.probabilities = {"0": 0.25, "1": 0.75}
+    assert sample.target == "Local simulator"
+
+    sample.job = MagicMock()
+    sample.job.target.return_value = "Example target"
+    assert sample.target == "Example target"
 
 
 def test_benchmarking_experiment_init(abc_experiment: BenchmarkingExperiment) -> None:
@@ -68,7 +81,9 @@ def test_benchmarking_experiment_init(abc_experiment: BenchmarkingExperiment) ->
     assert abc_experiment._samples is None
 
     abc_experiment._raw_data = pd.DataFrame([{"Example": 0.1}])
-    abc_experiment._results = ExampleResults(example=5.0)
+    abc_experiment._results = ExampleResults(
+        experiment_name="Example", target="Some target", total_circuits=2, example=5.0
+    )
 
     pd.testing.assert_frame_equal(abc_experiment.raw_data, abc_experiment._raw_data)
     assert abc_experiment.results == abc_experiment._results
@@ -108,12 +123,12 @@ def test_prepare_experiment_overwrite_error(abc_experiment: BenchmarkingExperime
 def test_prepare_experiment_overwrite(abc_experiment: BenchmarkingExperiment) -> None:
     abc_experiment._samples = [Sample(circuit=MagicMock(), data={})]
     abc_experiment.build_circuits = MagicMock()
-    abc_experiment._clean_circuits = MagicMock()
+    abc_experiment._validate_circuits = MagicMock()
 
     abc_experiment._prepare_experiment(100, [1, 50, 100], overwrite=True)
 
     abc_experiment.build_circuits.assert_called_once_with(100, [1, 50, 100])
-    abc_experiment._clean_circuits.assert_called_once_with()
+    abc_experiment._validate_circuits.assert_called_once_with()
 
 
 def test_prepare_experiment_with_bad_layers(abc_experiment: BenchmarkingExperiment) -> None:
@@ -352,14 +367,41 @@ def test_sample_statuses(
     mock_job.status.assert_called_once_with()
 
 
-def test_clean_circuit(
+def test_sample_targets(
+    abc_experiment: BenchmarkingExperiment,
+) -> None:
+    abc_experiment._samples = [mock_sample_0 := MagicMock(), mock_sample_1 := MagicMock()]
+    mock_sample_0.target = "target_0"
+    mock_sample_1.target = "target_1"
+    assert abc_experiment.sample_targets == ["target_0", "target_1"]
+
+    mock_sample_1.target = "target_0"
+    assert abc_experiment.sample_targets == ["target_0"]
+
+
+def test_validate_circuits(
     abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
-    abc_experiment._clean_circuits()
+    # Should't get any errors with the base circuits
+    abc_experiment._validate_circuits()
 
-    for sample in sample_circuits:
-        assert sample.circuit[-1] == cirq.Moment(cirq.measure(*sorted(sample.circuit.all_qubits())))
+    # Add a gate so not all measurements are terminal
+    abc_experiment._samples[0].circuit += cirq.X(abc_experiment.qubits[0])
+    with pytest.raises(
+        ValueError, match="QCVV experiment circuits can only contain terminal measurements"
+    ):
+        abc_experiment._validate_circuits()
+
+    # Remove measurements
+    abc_experiment._samples[0].circuit = abc_experiment._samples[0].circuit[:-2] + cirq.measure(
+        abc_experiment.qubits[0]
+    )
+    with pytest.raises(
+        ValueError,
+        match="The terminal measurement in QCVV experiment circuits must measure all qubits.",
+    ):
+        abc_experiment._validate_circuits()
 
 
 def test_process_device_counts(abc_experiment: BenchmarkingExperiment) -> None:

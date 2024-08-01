@@ -19,7 +19,7 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
-from typing import Any, NamedTuple
+from typing import Any
 
 import cirq
 import cirq_superstaq as css
@@ -44,6 +44,36 @@ class Sample:
     job: css.Job | None = None
     """The superstaq job corresponding to the sample. Defaults to None if no job is
     associated with the sample."""
+
+    @property
+    def target(self) -> str:
+        """Returns:
+        The name of the target that the sample was submitted to
+        """
+        if self.job is not None:
+            # If there is a job then get the target
+            return self.job.target()
+
+        if hasattr(self, "probabilities"):
+            # If no job, but probabilities have been calculated, infer that a local
+            # simulator was used.
+            return "Local simulator"
+
+        # Otherwise the experiment hasn't yet been run so there is no target.
+        return "No target"
+
+
+@dataclass(kw_only=True, frozen=True)
+class QCVVResults:
+    """A dataclass for storing the results of the experiment. Requires subclassing for
+    each new experiment type"""
+
+    experiment_name: str
+    """The name of the experiment."""
+    target: str
+    """The target device that was used."""
+    total_circuits: int
+    """The total number of circuits used in the experiment."""
 
 
 class BenchmarkingExperiment(ABC):
@@ -78,7 +108,7 @@ class BenchmarkingExperiment(ABC):
                 results = experiment.analyse_results(<<args>>)
 
     #. The final results of the experiment will be stored in the :code:`results` attribute as a
-       :class:`~typing.NamedTuple` of values, while all the data from the experiment will be
+       :class:`QCVVResults` of values, while all the data from the experiment will be
        stored in the :code:`raw_data` attribute as a :class:`~pandas.DataFrame`. Some experiments
        may include additional data attributes for data generated during the analysis.
 
@@ -102,10 +132,13 @@ class BenchmarkingExperiment(ABC):
         into a :class:`pandas.DataFrame`.
 
     #. :meth:`analyse_results`: Analyse the data in the :attr:`raw_data` dataframe and return a
-        :class:`~typing.NamedTuple`-like object containing the results of the experiment.
+        :class:`QCVVResults` object containing the results of the experiment.
 
     #. :meth:`plot_results`: Produce any relevant plots that are useful for understanding the
         results of the experiment.
+
+    Additionally the :class:`QCVVResults` dataclass needs subclassing to hold the specific results
+    of the new experiment.
 
     """
 
@@ -117,6 +150,7 @@ class BenchmarkingExperiment(ABC):
         """Args:
         num_qubits: The number of qubits used during the experiment. Most subclasses
             will determine this from their other inputs.
+        kwargs: Additional kwargs passed to the Superstaq service object.
         """
         self.qubits = cirq.LineQubit.range(num_qubits)
         """The qubits used in the experiment."""
@@ -124,16 +158,17 @@ class BenchmarkingExperiment(ABC):
         self._raw_data: pd.DataFrame | None = None
         "The data generated during the experiment"
 
-        self._results: NamedTuple | None = None
+        self._results: QCVVResults | None = None
         """The attribute to store the results in."""
 
         self._samples: Sequence[Sample] | None = None
         """The attribute to store the experimental samples in."""
 
         self._service: css.service.Service = css.service.Service(**kwargs)
+        """The superstaq service for submitting jobs."""
 
     @property
-    def results(self) -> NamedTuple:
+    def results(self) -> QCVVResults:
         """The results from the most recently run experiment.
 
         Raises:
@@ -175,15 +210,22 @@ class BenchmarkingExperiment(ABC):
         """
         return len(self.qubits)
 
-    def _clean_circuits(self) -> None:
-        """Removes any terminal measurements that have been added to the circuit and replaces
-        them with a single measurement of the whole system in the computational basis
+    @property
+    def sample_targets(self) -> list[str]:
+        """Returns:
+        A list of the unique target that each sample was submitted to
         """
+        return sorted(set(sample.target for sample in self.samples))
+
+    def _validate_circuits(self) -> None:
+        """Checks that all circuits contain a terminal measurement of all qubits."""
         for sample in self.samples:
-            if sample.circuit.has_measurements():
-                sample.circuit = cirq.drop_terminal_measurements(sample.circuit)
-            # Add measurement of qubit state in computational basis.
-            sample.circuit += cirq.measure(sorted(sample.circuit.all_qubits()))
+            if not sample.circuit.are_all_measurements_terminal():
+                raise ValueError("QCVV experiment circuits can only contain terminal measurements")
+            if not sorted(sample.circuit[-1].qubits) == sorted(self.qubits):
+                raise ValueError(
+                    "The terminal measurement in QCVV experiment circuits must measure all qubits."
+                )
 
     def _prepare_experiment(
         self, num_circuits: int, cycle_depths: Iterable[int], overwrite: bool = False
@@ -211,7 +253,7 @@ class BenchmarkingExperiment(ABC):
             raise ValueError("The `cycle_depths` iterator can only include positive values.")
 
         self._samples = self.build_circuits(num_circuits, cycle_depths)
-        self._clean_circuits()
+        self._validate_circuits()
 
     def run_on_device(
         self,
@@ -243,7 +285,7 @@ class BenchmarkingExperiment(ABC):
         """
         self._prepare_experiment(num_circuits, cycle_depths, overwrite)
 
-        for sample in tqdm(self.samples):
+        for sample in tqdm(self.samples, desc="Submitting jobs"):
             if sample.job is not None:
                 continue
             try:
@@ -417,7 +459,7 @@ class BenchmarkingExperiment(ABC):
         """Plot the results of the experiment"""
 
     @abstractmethod
-    def analyse_results(self, plot_results: bool = True) -> NamedTuple:
+    def analyse_results(self, plot_results: bool = True) -> QCVVResults:
         """Perform the experiment analysis and store the results in the `results` attribute
 
         Args:
