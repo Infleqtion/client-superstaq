@@ -1,2 +1,2 @@
 cirq-core>=1.0.0
-general-superstaq~=0.5.21
+general-superstaq~=0.5.22
