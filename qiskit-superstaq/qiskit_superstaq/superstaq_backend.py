@@ -63,10 +63,10 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         return self._provider == other._provider and self.configuration() == other.configuration()
 
     def configuration(self) -> qiskit.providers.models.BackendConfiguration:
-        """Lazy-loaded target configuration.
+        """Retrieves configuration information for this target.
 
         Returns:
-            Configuration object
+            A backend configuration object containing various hardware parameters.
         """
         if self._configuration is None:
             target_info = self._provider._client.target_info(self._target)["target_info"]
