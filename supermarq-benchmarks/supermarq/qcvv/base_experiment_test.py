@@ -26,7 +26,6 @@ import cirq_superstaq as css
 import numpy as np
 import pandas as pd
 import pytest
-from general_superstaq.superstaq_exceptions import SuperstaqServerException
 
 from supermarq.qcvv.base_experiment import BenchmarkingExperiment, QCVVResults, Sample
 
@@ -202,32 +201,20 @@ def test_run_on_device(
     abc_experiment._prepare_experiment = MagicMock()
     abc_experiment._samples = sample_circuits
     abc_experiment._service = (mock_service := MagicMock())
-    mock_service().create_job.side_effect = [MagicMock(job_id="job_1"), MagicMock(job_id="job_2")]
 
-    mock_service().target_info.return_value = {}
-    abc_experiment.run_on_device(
+    job = abc_experiment.run_on_device(
         10, [5, 10, 20], target="example_target", shots=100, overwrite=False, **{"some": "options"}
     )
 
-    mock_service.create_job.assert_has_calls(
-        [
-            call(
-                sample_circuits[0].circuit,
-                target="example_target",
-                method=None,
-                repetitions=100,
-                some="options",
-            ),
-            call(
-                sample_circuits[1].circuit,
-                target="example_target",
-                method=None,
-                repetitions=100,
-                some="options",
-            ),
-        ],
-        any_order=True,
+    mock_service.create_job.assert_called_once_with(
+        [sample_circuits[0].circuit, sample_circuits[1].circuit],
+        target="example_target",
+        method=None,
+        repetitions=100,
+        some="options",
     )
+
+    assert job == mock_service.create_job.return_value
 
     abc_experiment._prepare_experiment.assert_called_once_with(10, [5, 10, 20], False)
 
@@ -238,69 +225,18 @@ def test_run_on_device_dry_run(
     abc_experiment._prepare_experiment = MagicMock()
     abc_experiment._samples = sample_circuits
     abc_experiment._service = (mock_service := MagicMock())
-    mock_service().create_job.side_effect = [MagicMock(job_id="job_1"), MagicMock(job_id="job_2")]
 
-    mock_service().target_info.return_value = {}
-    abc_experiment.run_on_device(
+    job = abc_experiment.run_on_device(
         10, [5, 10, 20], target="example_target", shots=100, method="dry-run"
     )
 
-    mock_service.create_job.assert_has_calls(
-        [
-            call(
-                sample_circuits[0].circuit,
-                target="example_target",
-                method="dry-run",
-                repetitions=100,
-            ),
-            call(
-                sample_circuits[1].circuit,
-                target="example_target",
-                method="dry-run",
-                repetitions=100,
-            ),
-        ],
-        any_order=True,
+    mock_service.create_job.assert_called_once_with(
+        [sample_circuits[0].circuit, sample_circuits[1].circuit],
+        target="example_target",
+        method="dry-run",
+        repetitions=100,
     )
-
-
-def test_run_on_device_job_already_has_id(
-    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
-) -> None:
-    abc_experiment._prepare_experiment = MagicMock()
-    abc_experiment._samples = sample_circuits
-    sample_circuits[0].job = MagicMock()
-    abc_experiment._service = (mock_service := MagicMock())
-    mock_service().create_job.side_effect = [MagicMock(job_id="job_1"), MagicMock(job_id="job_2")]
-
-    mock_service().target_info.return_value = {}
-    abc_experiment.run_on_device(
-        10, [5, 10, 20], target="example_target", shots=100, method="example_method"
-    )
-
-    mock_service.create_job.assert_has_calls(
-        [
-            call(
-                sample_circuits[1].circuit,
-                target="example_target",
-                method="example_method",
-                repetitions=100,
-            ),
-        ],
-        any_order=True,
-    )
-
-
-def test_run_on_device_with_exception(
-    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
-) -> None:
-    abc_experiment._samples = sample_circuits
-    abc_experiment._service = (mock_service := MagicMock())
-    abc_experiment._prepare_experiment = MagicMock()
-
-    mock_service.create_job.side_effect = SuperstaqServerException("example_exception")
-    with pytest.warns(UserWarning):
-        abc_experiment.run_on_device(10, [5, 10, 20], target="example_target", shots=100)
+    assert job == mock_service.create_job.return_value
 
 
 def test_state_probs_to_dict(abc_experiment: BenchmarkingExperiment) -> None:

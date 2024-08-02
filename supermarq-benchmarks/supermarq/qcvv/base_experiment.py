@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import pprint
-import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
@@ -25,7 +24,6 @@ import cirq
 import cirq_superstaq as css
 import numpy as np
 import pandas as pd
-from general_superstaq.superstaq_exceptions import SuperstaqServerException
 from tqdm.notebook import tqdm
 
 
@@ -264,7 +262,7 @@ class BenchmarkingExperiment(ABC):
         method: str | None = None,
         overwrite: bool = False,
         **target_options: Any,
-    ) -> None:
+    ) -> css.Job:
         """Submit the circuit samples to the desired target device and store the resulting
         probabilities.
 
@@ -282,28 +280,23 @@ class BenchmarkingExperiment(ABC):
             target_options: Optional configuration dictionary passed when submitting the job.
             overwrite: Whether to force an experiment run even if there is existing data that would
                 be over written in the process. Defaults to False.
+
+        Return:
+            The superstaq job containing all the circuits submitted as part of the experiment.
         """
         self._prepare_experiment(num_circuits, cycle_depths, overwrite)
 
-        for sample in tqdm(self.samples, desc="Submitting jobs"):
-            if sample.job is not None:
-                continue
-            try:
-                sample.job = self._service.create_job(
-                    sample.circuit,
-                    target=target,
-                    method=method,
-                    repetitions=shots,
-                    **target_options,
-                )
-            except SuperstaqServerException as error:
-                warnings.warn(
-                    "The following error ocurred when submitting the jobs to the server and not\n"
-                    "all jobs have been submitted. If this is a timeout or limit based error\n"
-                    "consider running `submit_ss_jobs(args)` again to continue submitting\n"
-                    "the outstanding jobs.\n"
-                    f"{error.message}"
-                )
+        experiment_job = self._service.create_job(
+            [sample.circuit for sample in self.samples],
+            target=target,
+            method=method,
+            repetitions=shots,
+            **target_options,
+        )
+        for k, sample in enumerate(self.samples):
+            sample.job = experiment_job[k]
+
+        return experiment_job
 
     def sample_statuses(self) -> list[str | None]:
         """Returns:

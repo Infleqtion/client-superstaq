@@ -53,6 +53,27 @@ def new_job() -> css.Job:
     return css.Job(client, "new_job_id")
 
 
+@pytest.fixture
+def multi_circuit_job() -> css.Job:
+    """Fixture for a job with multiple circuits submitted
+
+    Returns:
+        A job with multiple subjobs
+    """
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="cirq-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    job = css.Job(client, "job_id1,job_id2,job_id3")
+    job._job = {
+        "job_id1": css.Job(client, "job_id1"),
+        "job_id2": css.Job(client, "job_id2"),
+        "job_id3": css.Job(client, "job_id3"),
+    }
+    return job
+
+
 def mocked_get_job_requests(*job_dicts: dict[str, Any]) -> mock._patch[mock.Mock]:
     """Mocks the server's response to `get_job` requests using the given sequence of job_dicts.
     Return type is wrapped in a string because "'type' object is not subscriptable"
@@ -453,6 +474,12 @@ def test_job_results_poll_failure(mock_sleep: mock.MagicMock, job: css.job.Job) 
         with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="too many qubits"):
             _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
     assert mock_sleep.call_count == 5
+
+
+def test_job_getitem(multi_circuit_job: css.job.Job) -> None:
+    job_1 = multi_circuit_job[0]
+    assert isinstance(job_1, css.Job)
+    assert job_1.job_id() == "job_id1"
 
 
 def test_get_marginal_counts() -> None:
