@@ -44,6 +44,10 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
         super().__init__(None, provider=provider)
 
+    @classmethod
+    def _default_options(cls) -> qiskit.providers.Options:
+        return qiskit.providers.Options(shots=1000)
+
     def name(self) -> str:
         """Gets the target name with which this backend is associated.
 
@@ -51,10 +55,6 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             The target name associated with this backend.
         """
         return self._target
-
-    @classmethod
-    def _default_options(cls) -> qiskit.providers.Options:
-        return qiskit.providers.Options(shots=1000)
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, qss.SuperstaqBackend):
