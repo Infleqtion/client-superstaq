@@ -967,57 +967,22 @@ class StrippedCZGate(cirq.Gate):
         return cirq.obj_to_dict_helper(self, ["rz_rads"])
 
 
-def custom_resolver(cirq_type: str) -> type[cirq.Gate] | None:
-    """Tells `cirq.read_json` how to deserialize `cirq-superstaq`'s custom gates.
-
-    Changes to gate names in this file should be reflected in this resolver.
-    See quantumai.google/cirq/dev/serialization for more information about (de)serialization.
-
-    Args:
-        cirq_type: The string of the gate type for the serializer to resolve.
-
-    Returns:
-        The resolved `cirq.Gate` matching the input, or None if no match.
-    """
-    type_to_gate_map: dict[str, type[cirq.Gate]] = {
-        "ZZSwapGate": ZZSwapGate,
-        "Barrier": Barrier,
-        "ZXPowGate": ZXPowGate,
-        "AceCR": AceCR,
-        "ParallelGates": ParallelGates,
-        "MSGate": cirq.ops.MSGate,
-        "cirq.MSGate": cirq.ops.MSGate,
-        "RGate": RGate,
-        "IXGate": IXGate,
-        "ParallelRGate": ParallelRGate,
-        "StrippedCZGate": StrippedCZGate,
-    }
-    return type_to_gate_map.get(cirq_type)
-
-
-class DDGate(cirq.EigenGate):
-    r"""The Dipole-Dipole gate for EeroQ hardware
-    """
+class DDPowGate(cirq.EigenGate):
+    r"""The Dipole-Dipole gate for EeroQ hardware"""
 
     def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
         return [
             (
                 -0.5,
-                np.array(
-                    [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]
-                ),
+                np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]),
             ),
             (
                 1.0,
-                np.array(
-                    [[0, 0, 0, 0], [0, 0.5, 0.5, 0], [0, 0.5, 0.5, 0], [0, 0, 0, 0]]
-                ),
+                np.array([[0, 0, 0, 0], [0, 0.5, 0.5, 0], [0, 0.5, 0.5, 0], [0, 0, 0, 0]]),
             ),
             (
                 0.0,
-                np.array(
-                    [[0, 0, 0, 0], [0, 0.5, -0.5, 0], [0, -0.5, 0.5, 0], [0, 0, 0, 0]]
-                ),
+                np.array([[0, 0, 0, 0], [0, 0.5, -0.5, 0], [0, -0.5, 0.5, 0], [0, 0, 0, 0]]),
             ),
         ]
 
@@ -1063,6 +1028,109 @@ class DDGate(cirq.EigenGate):
                 return "css.DD"
             return f"(css.DD**{cirq._compat.proper_repr(self._exponent)})"
         return (
-            f"css.DDGate(exponent={cirq._compat.proper_repr(self._exponent)},"
+            f"css.DDPowGate(exponent={cirq._compat.proper_repr(self._exponent)},"
             f" global_shift={self._global_shift!r})"
         )
+
+
+class DDSinglePowGate(cirq.EigenGate):
+    r"""The Dipole-Dipole gate for EeroQ hardware"""
+
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
+        return [
+            (
+                0.5,
+                np.array([[0.5, 0.5], [0.5, 0.5]]),
+            ),
+            (
+                -0.5,
+                np.array([[0.5, -0.5], [-0.5, 0.5]]),
+            ),
+        ]
+
+    def _num_qubits_(self) -> int:
+        return 1
+
+    def _decompose_(self, qubits: tuple[cirq.LineQubit, cirq.LineQubit]) -> list[cirq.Operation]:
+        # return [
+        #     cirq.H(qubits[1]),
+        #     cirq.ZZPowGate(exponent=self.exponent, global_shift=self.global_shift).on(*qubits),
+        #     cirq.H(qubits[1]),
+        # ]
+        return None
+
+    def _has_stabilizer_effect_(self) -> bool | None:
+        if cirq.is_parameterized(self):
+            return None
+
+        return (2 * self.exponent) % 1 == 0
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        return cirq.CircuitDiagramInfo(wire_symbols=("DD"), exponent=self._diagram_exponent(args))
+
+    def _qasm_(self, args: cirq.QasmArgs, qubits: tuple[cirq.Qid, ...]) -> str | None:
+        # return args.format(
+        #     "rzx({0:half_turns}) {1},{2};\n",
+        #     self.exponent,
+        #     qubits[0],
+        #     qubits[1],
+        # )
+        return None
+
+    def __str__(self) -> str:
+        if self.exponent == 1:
+            return "DDSingle"
+        return f"DDSingle**{self._exponent!r}"
+
+    def __repr__(self) -> str:
+        if self._global_shift == 0:
+            if self._exponent == 1:
+                return "css.DDSingle"
+            return f"(css.DDSingle**{cirq._compat.proper_repr(self._exponent)})"
+        return (
+            f"css.DDSinglePowGate(exponent={cirq._compat.proper_repr(self._exponent)},"
+            f" global_shift={self._global_shift!r})"
+        )
+
+
+def rdd(DDSinglePowGate):
+
+    def __init__(self, *, rads: value.TParamVal):
+        """Initialize an Rx (`cirq.XPowGate`).
+
+        Args:
+            rads: Radians to rotate about the X axis of the Bloch sphere.
+        """
+        self._rads = rads
+        super().__init__(exponent=rads / _pi(rads), global_shift=rads / _pi(rads))
+
+    def _with_exponent(self, exponent: value.TParamVal) -> "Rx":
+        return rdd(rads=exponent * _pi(exponent))
+
+
+def custom_resolver(cirq_type: str) -> type[cirq.Gate] | None:
+    """Tells `cirq.read_json` how to deserialize `cirq-superstaq`'s custom gates.
+
+    Changes to gate names in this file should be reflected in this resolver.
+    See quantumai.google/cirq/dev/serialization for more information about (de)serialization.
+
+    Args:
+        cirq_type: The string of the gate type for the serializer to resolve.
+
+    Returns:
+        The resolved `cirq.Gate` matching the input, or None if no match.
+    """
+    type_to_gate_map: dict[str, type[cirq.Gate]] = {
+        "ZZSwapGate": ZZSwapGate,
+        "Barrier": Barrier,
+        "ZXPowGate": ZXPowGate,
+        "AceCR": AceCR,
+        "ParallelGates": ParallelGates,
+        "MSGate": cirq.ops.MSGate,
+        "cirq.MSGate": cirq.ops.MSGate,
+        "RGate": RGate,
+        "IXGate": IXGate,
+        "ParallelRGate": ParallelRGate,
+        "StrippedCZGate": StrippedCZGate,
+    }
+    return type_to_gate_map.get(cirq_type)
