@@ -88,7 +88,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
                 "description": f"{num_qubits} qubit device",
             }
 
-            configuration_dict |= target_info
+            configuration_dict.update(target_info)
             self._configuration = qiskit.providers.models.BackendConfiguration.from_dict(
                 configuration_dict
             )
