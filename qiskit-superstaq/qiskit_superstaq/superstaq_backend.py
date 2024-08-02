@@ -36,37 +36,21 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             provider: Provider for a Superstaq backend.
             target: A string containing the name of a target backend.
         """
-        self._provider = provider
-
-        target_info = self._provider._client.target_info(target)["target_info"]
-        self.configuration_dict = {
-            "backend_name": target,
-            "backend_version": "n/a",
-            "n_qubits": target_info.get("num_qubits"),
-            "basis_gates": target_info.get("native_gate_set"),
-            "gates": [],
-            "local": False,
-            "simulator": False,
-            "conditional": False,
-            "open_pulse": False,
-            "memory": False,
-            "max_shots": None,
-            "coupling_map": None,
-            "description": f"{target_info.get('num_qubits')} qubit device",
-        }
-        target_info.pop("target", None)
-        target_info.pop("num_qubits", None)
-        target_info.pop("native_gate_set", None)
-
-        self.configuration_dict.update(target_info)
         gss.validation.validate_target(target)
 
-        super().__init__(
-            configuration=qiskit.providers.models.BackendConfiguration.from_dict(
-                self.configuration_dict
-            ),
-            provider=provider,
-        )
+        self._configuration: qiskit.providers.models.BackendConfiguration | None
+        self._provider = provider
+        self._target = target
+
+        super().__init__(None, provider=provider)
+
+    def name(self) -> str:
+        """Gets the target name with which this backend is associated.
+
+        Returns:
+            The target name associated with this backend.
+        """
+        return self._target
 
     @classmethod
     def _default_options(cls) -> qiskit.providers.Options:
@@ -76,10 +60,40 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         if not isinstance(other, qss.SuperstaqBackend):
             return False
 
-        return (
-            self._provider == other._provider
-            and self.configuration_dict == other.configuration_dict
-        )
+        return self._provider == other._provider and self.configuration() == other.configuration()
+
+    def configuration(self) -> qiskit.providers.models.BackendConfiguration:
+        """Lazy-loaded target configuration.
+
+        Returns:
+            Configuration object
+        """
+        if self._configuration is None:
+            target_info = self._provider._client.target_info(self._target)["target_info"]
+
+            num_qubits = target_info.pop("num_qubits", None)
+            configuration_dict = {
+                "backend_name": target_info.pop("target", None),
+                "basis_gates": target_info.pop("native_gate_set", []),
+                "backend_version": "n/a",
+                "n_qubits": num_qubits,
+                "gates": [],
+                "local": False,
+                "simulator": False,
+                "conditional": False,
+                "open_pulse": False,
+                "memory": False,
+                "max_shots": None,
+                "coupling_map": None,
+                "description": f"{num_qubits} qubit device",
+            }
+
+            configuration_dict |= target_info
+            self._configuration = qiskit.providers.models.BackendConfiguration.from_dict(
+                configuration_dict
+            )
+
+        return self._configuration
 
     def run(
         self,
@@ -438,7 +452,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         Returns:
             A dictionary of target information.
         """
-        return self.configuration_dict
+        return self.configuration().to_dict()
 
     def resource_estimate(
         self, circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit]
