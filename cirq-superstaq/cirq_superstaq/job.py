@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import collections
 import time
-import warnings
 from collections.abc import Sequence
 from typing import Any, overload
 
@@ -174,10 +173,7 @@ class Job:
     def num_qubits(self, index: int) -> int: ...
 
     @overload
-    def num_qubits(
-        self, index: None = None
-    ) -> int | list[int]:  # Change return to `list[int]` after deprecation
-        ...
+    def num_qubits(self, index: None = None) -> list[int]: ...
 
     def num_qubits(self, index: int | None = None) -> int | list[int]:
         """Gets the number of qubits required for each circuit in this job.
@@ -200,18 +196,7 @@ class Job:
             self._refresh_job()
 
         if index is None:
-            qubit_list = [self._job[job_id]["num_qubits"] for job_id in job_ids]
-            if len(qubit_list) == 1:
-                warnings.warn(
-                    "In the future, calling `num_qubits()` without an argument will return a list "
-                    "of the numbers of qubits in all circuits in this job. Use e.g., "
-                    "`num_qubits(0)` to get the number of qubits in the first (or a single) "
-                    "circuit.",
-                    DeprecationWarning,
-                    stacklevel=2,
-                )
-                return qubit_list[0]
-            return qubit_list
+            return [self._job[job_id]["num_qubits"] for job_id in job_ids]
 
         gss.validation.validate_integer_param(index, min_val=0)
         num_qubits = self._job[job_ids[index]]["num_qubits"]
@@ -237,12 +222,7 @@ class Job:
     def _get_circuits(self, circuit_type: str, index: int) -> cirq.Circuit: ...
 
     @overload
-    def _get_circuits(
-        self, circuit_type: str, index: None = None
-    ) -> (
-        cirq.Circuit | list[cirq.Circuit]
-    ):  # Change return to `list[cirq.Circuit]` after deprecation
-        ...
+    def _get_circuits(self, circuit_type: str, index: None = None) -> list[cirq.Circuit]: ...
 
     def _get_circuits(
         self, circuit_type: str, index: int | None = None
@@ -278,12 +258,7 @@ class Job:
     def compiled_circuits(self, index: int) -> cirq.Circuit: ...
 
     @overload
-    def compiled_circuits(
-        self, index: None = None
-    ) -> (
-        cirq.Circuit | list[cirq.Circuit]
-    ):  # Change return to `list[cirq.Circuit]` after deprecation
-        ...
+    def compiled_circuits(self, index: None = None) -> list[cirq.Circuit]: ...
 
     def compiled_circuits(self, index: int | None = None) -> cirq.Circuit | list[cirq.Circuit]:
         """Gets the compiled circuits that were processed for this job.
@@ -300,12 +275,7 @@ class Job:
     def input_circuits(self, index: int) -> cirq.Circuit: ...
 
     @overload
-    def input_circuits(
-        self, index: None = None
-    ) -> (
-        cirq.Circuit | list[cirq.Circuit]
-    ):  # Change return to `list[cirq.Circuit]` after deprecation
-        ...
+    def input_circuits(self, index: None = None) -> list[cirq.Circuit]: ...
 
     def input_circuits(self, index: int | None = None) -> cirq.Circuit | list[cirq.Circuit]:
         """Gets the original circuits that were submitted for this job.
@@ -377,10 +347,7 @@ class Job:
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
         qubit_indices: Sequence[int] | None = None,
-    ) -> (
-        dict[str, int] | list[dict[str, int]]
-    ):  # Change return to just `list[dict[str, int]]` after deprecation
-        ...
+    ) -> list[dict[str, int]]: ...
 
     def counts(
         self,
@@ -424,15 +391,6 @@ class Job:
                 counts_list = [
                     _get_marginal_counts(counts, qubit_indices) for counts in counts_list
                 ]
-            if len(counts_list) == 1:
-                warnings.warn(
-                    "In the future, calling `counts()` without an argument will return a list of "
-                    "the counts in all circuits in this job. Use e.g., `counts(0)` to get the "
-                    "counts for the first (or a single) circuit.",
-                    DeprecationWarning,
-                    stacklevel=2,
-                )
-                return counts_list[0]
             return counts_list
 
         gss.validation.validate_integer_param(index, min_val=0)
