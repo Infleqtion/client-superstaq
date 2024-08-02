@@ -78,12 +78,17 @@ class Job:
     def _refresh_job(self) -> None:
         """If the last fetched job is not terminal, gets the job from the API."""
 
+        jobs_to_fetch: list[str] = []
+
         for job_id in self._job_id.split(","):
-            if (job_id not in self._job) or (
-                self._job[job_id]["status"] not in self.TERMINAL_STATES
-            ):
-                result = self._client.get_job(job_id)
-                self._job[job_id] = result
+            if job_id not in self._job or self._job[job_id]["status"] not in self.TERMINAL_STATES:
+                jobs_to_fetch.append(job_id)
+
+        if jobs_to_fetch:
+            result = self._client.fetch_jobs(jobs_to_fetch)
+            self._job.update(result)
+
+        self._update_status_queue_info()
 
     def _update_status_queue_info(self) -> None:
         """Updates the overall status based on status queue info.
@@ -148,7 +153,6 @@ class Job:
             The job status.
         """
         self._refresh_job()
-        self._update_status_queue_info()
         return self._overall_status
 
     def target(self) -> str:
