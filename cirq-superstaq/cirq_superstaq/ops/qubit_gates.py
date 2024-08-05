@@ -1108,6 +1108,9 @@ def rdd(DDSinglePowGate):
         return rdd(rads=exponent * _pi(exponent))
 
 
+DD = DDPowGate()
+
+
 def custom_resolver(cirq_type: str) -> type[cirq.Gate] | None:
     """Tells `cirq.read_json` how to deserialize `cirq-superstaq`'s custom gates.
 

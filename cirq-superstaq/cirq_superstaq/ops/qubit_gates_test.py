@@ -1112,19 +1112,19 @@ def test_itoffoli() -> None:
 
 def test_dd_matrix() -> None:
     np.testing.assert_allclose(
-        cirq.unitary(css.DDPowGate()),
+        cirq.unitary(css.DD),
         np.array([[-1j, 0, 0, 0], [0, 0, -1, 0], [0, -1, 0, 0], [0, 0, 0, -1j]]),
     )
 
 
 def test_dd_str() -> None:
-    assert str(css.DDPowGate()) == "DD"
-    assert str(css.DDPowGate() ** 0.5) == "DD**0.5"
+    assert str(css.DD) == "DD"
+    assert str(css.DD**0.5) == "DD**0.5"
     assert str(css.DDPowGate(global_shift=0.1)) == "DD"
 
 
 def test_dd_repr() -> None:
-    assert repr(css.DDPowGate()) == "css.DD"
+    assert repr(css.DD) == "css.DD"
     assert repr(css.DDPowGate(exponent=0.5)) == "(css.DD**0.5)"
     assert (
         repr(css.DDPowGate(exponent=0.5, global_shift=0.123))
