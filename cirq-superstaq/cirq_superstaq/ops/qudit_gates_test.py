@@ -223,7 +223,10 @@ def test_qutrit_cz_pow_gate() -> None:
 
 @pytest.mark.parametrize("dimension", [2, 3, 4, 5, 6])
 def test_qutrit_cz_pow_gate_implementation_for_other_qudits(dimension: int) -> None:
-    """Confirm that QutritCZPowGate._eigen_components_() would work for any dimension."""
+    """Confirm that QutritCZPowGate._eigen_components_() would work for any dimension.
+    Args:
+        dimension: The gate dimension for the current test.
+    """
     with mock.patch("cirq_superstaq.QutritCZPowGate.dimension", dimension):
         gate = css.QutritCZPowGate()
         assert gate.dimension == dimension

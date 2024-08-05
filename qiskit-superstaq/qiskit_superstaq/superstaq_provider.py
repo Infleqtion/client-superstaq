@@ -188,6 +188,8 @@ class SuperstaqProvider(gss.service.Service):
         random_seed: int | None = None,
         atol: float | None = None,
         gate_defs: Mapping[str, str | npt.NDArray[np.complex_] | None] | None = None,
+        pulses: object = None,
+        variables: object = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
@@ -211,6 +213,8 @@ class SuperstaqProvider(gss.service.Service):
                 `<matrix1>` for all "SWAP" calibrations except "SWAP/C5C4" (which will instead be
                 mapped to `<matrix2>` applied to qubits 4 and 5). Setting any calibration to None
                 will disable that calibration.
+            pulses: Qtrl `PulseManager` or file path for pulse configuration.
+            variables: Qtrl `VariableManager` or file path for variable configuration.
             kwargs: Other desired compile options.
 
         Returns:
@@ -231,6 +235,8 @@ class SuperstaqProvider(gss.service.Service):
             random_seed=random_seed,
             atol=atol,
             gate_defs=gate_defs,
+            pulses=pulses,
+            variables=variables,
             **kwargs,
         )
 
@@ -286,6 +292,7 @@ class SuperstaqProvider(gss.service.Service):
 
         return self.aqt_compile(
             circuits,
+            target=target,
             num_eca_circuits=num_equivalent_circuits,
             random_seed=random_seed,
             atol=atol,

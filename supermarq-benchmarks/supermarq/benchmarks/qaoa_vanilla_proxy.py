@@ -112,6 +112,7 @@ class QAOAVanillaProxy(Benchmark):
             """The objective function to minimize.
 
             Args:
+                params: parameters for objective.
 
             Returns:
                 Evaluation of objective given parameters.

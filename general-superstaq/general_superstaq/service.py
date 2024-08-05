@@ -16,7 +16,7 @@ from __future__ import annotations
 import numbers
 import os
 from collections.abc import Mapping, Sequence
-from typing import Any, TypeVar
+from typing import Any, TypeVar, overload
 
 import general_superstaq as gss
 
@@ -101,6 +101,9 @@ class Service:
             email: The new user's email.
             balance: The new balance.
 
+        Raises:
+            SuperstaqException: If requested balance exceeds the limit.
+
         Returns:
             String containing status of update (whether or not it failed).
         """
@@ -172,6 +175,45 @@ class Service:
         )
         return self._client.get_targets(**filters)
 
+    @overload
+    def get_user_info(self) -> dict[str, str | float]: ...
+
+    @overload
+    def get_user_info(self, *, name: str) -> list[dict[str, str | float]]: ...
+
+    @overload
+    def get_user_info(self, *, email: str) -> list[dict[str, str | float]]: ...
+
+    @overload
+    def get_user_info(self, *, name: str, email: str) -> list[dict[str, str | float]]: ...
+
+    def get_user_info(
+        self, *, name: str | None = None, email: str | None = None
+    ) -> dict[str, str | float] | list[dict[str, str | float]]:
+        """Gets a dictionary of the user's info.
+
+        .. note::
+
+            SUPERTECH users can submit optional :code:`name` and/or :code:`email` keyword only
+            arguments which can be used to search for the info of arbitrary users on the server.
+
+        Args:
+            name: A name to search by. Defaults to None.
+            email: An email address to search by. Defaults to None
+
+        Returns:
+            A dictionary of the user information. In the case that either the name or email
+            query kwarg is used, a list of dictionaries is returned, corresponding to the user
+            information for each user that matches the query.
+        """
+        user_info = self._client.get_user_info(name=name, email=email)
+
+        if name is None and email is None:
+            # If no query then return the only element in the list.
+            return user_info[0]
+
+        return user_info
+
     def submit_qubo(
         self,
         qubo: Mapping[tuple[TQuboKey, ...], float],
@@ -204,7 +246,36 @@ class Service:
         result_dict = self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
         return gss.serialization.deserialize(result_dict["solution"])
 
-    def aqt_upload_configs(self, pulses: Any, variables: Any) -> str:
+    @staticmethod
+    def _qtrl_config_to_yaml_str(config: object) -> str:
+        if isinstance(config, str):
+            if not os.path.isfile(config):
+                raise ValueError(f"{config!r} is not a valid file path.")
+
+            with open(config) as config_file:
+                return config_file.read()
+
+        config = getattr(config, "_config_raw", config)  # required to serialize qtrl Managers
+        if isinstance(config, dict):
+            try:
+                import yaml
+
+                return yaml.safe_dump(config)
+
+            except ImportError:
+                raise ModuleNotFoundError(
+                    "The PyYAML package is required to upload AQT configurations from dicts. "
+                    "You can install it using 'pip install pyyaml'."
+                )
+            except yaml.YAMLError:
+                pass
+
+        raise ValueError(
+            "Unable to serialize configuration. AQT configs should be qtrl Manager instances "
+            "or valid file paths."
+        )
+
+    def aqt_upload_configs(self, pulses: object, variables: object) -> str:
         """Uploads configs for AQT.
 
         Arguments can be either file paths (in .yaml format) or qtrl Manager instances.
@@ -216,36 +287,8 @@ class Service:
         Returns:
             A status of the update (whether or not it failed).
         """
-
-        def _config_to_yaml_str(config: Any) -> str:
-            if isinstance(config, str):
-                if not os.path.isfile(config):
-                    raise ValueError(f"{config!r} is not a valid file path.")
-
-                with open(config) as config_file:
-                    return config_file.read()
-
-            config = getattr(config, "_config_raw", config)  # required to serialize qtrl Managers
-            if isinstance(config, dict):
-                try:
-                    import yaml
-
-                    return yaml.safe_dump(config)
-                except ImportError:
-                    raise ModuleNotFoundError(
-                        "The PyYAML package is required to upload AQT configurations from dicts. "
-                        "You can install it using 'pip install pyyaml'."
-                    )
-                except yaml.YAMLError:
-                    pass
-
-            raise ValueError(
-                "Unable to serialize configuration. AQT configs should be qtrl Manager instances "
-                "or valid file paths."
-            )
-
-        pulses_yaml = _config_to_yaml_str(pulses)
-        variables_yaml = _config_to_yaml_str(variables)
+        pulses_yaml = self._qtrl_config_to_yaml_str(pulses)
+        variables_yaml = self._qtrl_config_to_yaml_str(variables)
 
         return self._client.aqt_upload_configs({"pulses": pulses_yaml, "variables": variables_yaml})
 

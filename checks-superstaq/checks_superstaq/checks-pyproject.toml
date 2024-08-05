@@ -83,9 +83,10 @@ include = ["./*"]
 max-line-length = 100
 disable = "all"
 load-plugins = [
-  "pylint.extensions.docparams", 
-  "pylint.extensions.docstyle", 
+  "pylint.extensions.docparams",
+  "pylint.extensions.docstyle",
   "checks_superstaq.pylint_init_return",
+  "checks_superstaq.pylint_import_annotations",
 ]
 output-format = "colorized"
 score = false
@@ -104,6 +105,7 @@ enable = [
   "duplicate-argument-name",
   "expression-not-assigned",
   "function-redefined",
+  "import-future-annotations",
   "inconsistent-mro",
   "init-return-check",
   "init-is-generator",
@@ -134,6 +136,7 @@ enable = [
   "unnecessary-pass",
   "unreachable",
   "unrecognized-inline-option",
+  "unused-argument",
   "unused-import",
   "unnecessary-semicolon",
   "unused-variable",
@@ -143,6 +146,13 @@ enable = [
   "wrong-import-position",
   "yield-outside-function",
 ]
+
+# Enable the optional checks by parameter_documentation
+[tool.pylint.parameter_documentation]
+accept-no-param-doc=false # Do not accept totally missing parameter documentation.
+accept-no-raise-doc=false # Do not accept totally missing raises documentation.
+accept-no-return-doc=false # Do not accept totally missing return documentation.
+accept-no-yield-doc=false # Do not accept missing yields annotations.
 
 # Ignore long lines containing urls or pylint directives.
 [tool.pylint.format]

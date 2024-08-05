@@ -437,6 +437,9 @@ class RadarAxesMeta(PolarAxes):
         Args:
             args: Desired arguments for plotting.
             kwargs: Other desired keyword arguments for plotting.
+
+        Returns:
+            New closed lines.
         """
         lines = super().plot(*args, **kwargs)
         for line in lines:
