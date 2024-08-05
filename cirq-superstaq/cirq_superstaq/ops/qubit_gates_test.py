@@ -1097,6 +1097,73 @@ def test_itoffoli() -> None:
     )
 
 
+# def test_zx_protocols() -> None:
+#     with mock.patch("cirq.testing.consistent_protocols.assert_qasm_is_consistent_with_unitary"):
+#         cirq.testing.assert_eigengate_implements_consistent_protocols(
+#             css.ZXPowGate,
+#             setup_code="import cirq_superstaq as css; import sympy",
+#         )
+
+#     assert cirq.has_stabilizer_effect(css.ZX)
+#     assert cirq.has_stabilizer_effect(css.ZX**1.5)
+#     assert not cirq.has_stabilizer_effect(css.ZX**1.3)
+#     assert not cirq.has_stabilizer_effect(css.ZX ** sympy.var("x"))
+
+
+def test_dd_matrix() -> None:
+    np.testing.assert_allclose(
+        cirq.unitary(css.DDPowGate()),
+        np.array([[-1j, 0, 0, 0], [0, 0, -1, 0], [0, -1, 0, 0], [0, 0, 0, -1j]]),
+    )
+
+
+def test_dd_str() -> None:
+    assert str(css.DDPowGate()) == "DD"
+    assert str(css.DDPowGate() ** 0.5) == "DD**0.5"
+    assert str(css.DDPowGate(global_shift=0.1)) == "DD"
+
+
+def test_dd_repr() -> None:
+    assert repr(css.DDPowGate()) == "css.DD"
+    assert repr(css.DDPowGate(exponent=0.5)) == "(css.DD**0.5)"
+    assert (
+        repr(css.DDPowGate(exponent=0.5, global_shift=0.123))
+        == "css.DDPowGate(exponent=0.5, global_shift=0.123)"
+    )
+
+    cirq.testing.assert_equivalent_repr(css.DDPowGate(), setup_code="import cirq_superstaq as css")
+
+
+def test_dd_circuit() -> None:
+    a, b = cirq.LineQubit.range(2)
+
+    op = css.DDPowGate()(a, b)
+
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(op),
+        textwrap.dedent(
+            """
+            0: ───DD───
+                  │
+            1: ───DD───
+            """
+        ),
+    )
+
+    # assert cirq.Circuit(op, op**0.25).to_qasm(header="") == textwrap.dedent(
+    #     """\
+    #     OPENQASM 2.0;
+    #     include "qelib1.inc";
+
+    #     // Qubits: [q(0), q(1)]
+    #     qreg q[2];
+
+    #     rzx(pi*1.0) q[0],q[1];
+    #     rzx(pi*0.25) q[0],q[1];
+    #     """
+    # )
+
+
 def test_custom_resolver() -> None:
     circuit = cirq.Circuit()
     qubits = cirq.LineQubit.range(4)

@@ -1104,7 +1104,7 @@ def rdd(DDSinglePowGate):
         self._rads = rads
         super().__init__(exponent=rads / _pi(rads), global_shift=rads / _pi(rads))
 
-    def _with_exponent(self, exponent: value.TParamVal) -> "Rx":
+    def _with_exponent(self, exponent: value.TParamVal) -> "rdd":
         return rdd(rads=exponent * _pi(exponent))
 
 
@@ -1132,5 +1132,8 @@ def custom_resolver(cirq_type: str) -> type[cirq.Gate] | None:
         "IXGate": IXGate,
         "ParallelRGate": ParallelRGate,
         "StrippedCZGate": StrippedCZGate,
+        "DDPowGate": DDPowGate,
+        "DDSinglePowGate": DDSinglePowGate,
+        "rdd": rdd,
     }
     return type_to_gate_map.get(cirq_type)
