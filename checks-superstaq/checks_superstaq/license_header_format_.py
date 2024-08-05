@@ -160,7 +160,11 @@ def _extract_license_header(file: str) -> list[LicenseHeader]:
 
 
 def _validate_license_header(
-    license_header_lst: list[LicenseHeader], licensee: str, license_name: str, editable: bool
+    license_header_lst: list[LicenseHeader],
+    expected_license_header: str,
+    licensee: str,
+    license_name: str,
+    editable: bool,
 ) -> bool:
     """Returns whether there is a valid license header in a file and for each license
     header in a file, it assigns each theiir type.
@@ -177,12 +181,20 @@ def _validate_license_header(
 
     Returns: Whether there is a valid license header in a file or not.
     """
-    valid_header_regex = re.compile(rf"(.*)Copyright(.*){licensee}")
+    target = (
+        expected_license_header.replace("{YEAR}", ".*")
+        .replace("{LICENSEE}", licensee)
+        .replace("\n", "")
+    )
+    print(target)
+    valid_header_regex = re.compile(rf"{target}")
     valid = False
 
     for license_header in license_header_lst:
+        print(re.match(valid_header_regex, license_header.license_header.replace("\n", "")))
+        print(license_header.license_header.replace("\n", ""))
         if (
-            re.search(valid_header_regex, license_header.license_header)
+            re.match(valid_header_regex, license_header.license_header)
             and license_name in license_header.license_header
         ):
             license_header.header_type = HeaderType.VALID
@@ -393,7 +405,9 @@ def run_checker(
     if no_header and not bad_header:  # if the --no-header flag is set
         return 0
 
-    valid = _validate_license_header(license_header_lst, licensee, license_name, editable)
+    valid = _validate_license_header(
+        license_header_lst, expected_license_header, licensee, license_name, editable
+    )
     append_flag = False  # ensure the licensee is not appended to multiple headers
     exit_code = 0
 
