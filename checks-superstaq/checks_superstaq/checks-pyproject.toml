@@ -13,6 +13,10 @@ license_header = """# Copyright 2024 Infleqtion
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
+license_name = "Apache"
+licensee = "Infleqtion"
+editable = true
+
 # Check script configuration:
 
 [tool.pytest.ini_options]

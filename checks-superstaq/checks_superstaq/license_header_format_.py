@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import enum
 import re
 import sys
@@ -28,18 +29,54 @@ import tomlkit
 
 from checks_superstaq import check_utils
 
-# The license header that should be added to the files with no license headers is read from
-# the pyproject.toml file. It should be under [tool.license_header_format] assigned to the variable
-# license_header
-try:
+
+def read_toml() -> tuple[str, str, str, bool] | None:
+    """Reads the pyproject.toml file to get license information. Fields should be under
+    [tool.license_header_format] and named `license_header`, `license_name`, `licensee` and
+    `editable`.
+
+    Returns tuple containing the exptected license header, license name, license owner, and
+    whether similar licenses are editable.
+    """
+
     data: dict[str, Any] = tomlkit.parse(Path("pyproject.toml").read_text())
-    expected_license_header = str(data["tool"]["license_header_format"]["license_header"])
-    in_server = "Apache" not in expected_license_header
-except KeyError:
-    raise KeyError(
-        "Under [tool.license_header_format] add a license_header field with the license\
- heder that should be added to source code files in the repository."
-    )
+    try:
+        expected_license_header = str(data["tool"]["license_header_format"]["license_header"])
+    except KeyError:
+        print(
+            "Under [tool.license_header_format] add a `license_header` field filled with the license"
+            " header that should be added to source code files in the repository."
+        )
+        return
+
+    try:
+        license_name = str(data["tool"]["license_header_format"]["license_name"])
+    except KeyError:
+        print(
+            "Under [tool.license_header_format] add a `license_name` field filled with the"
+            " license's name."
+        )
+        return
+
+    try:
+        licensee = str(data["tool"]["license_header_format"]["licensee"])
+    except KeyError:
+        print(
+            "Under [tool.license_header_format] add a `licensee` field filled with the "
+            " name of the licensee."
+        )
+        return
+
+    try:
+        editable = bool(data["tool"]["license_header_format"]["editable"])
+    except KeyError:
+        print(
+            "Under [tool.license_header_format] add an `editable` boolean field set to True if the"
+            " license owner can be appended to similar license and False otherwise."
+        )
+        return
+
+    return expected_license_header, license_name, licensee, editable
 
 
 class HeaderType(enum.Enum):
@@ -52,36 +89,28 @@ class HeaderType(enum.Enum):
     """
 
     VALID = 1
-    OTHER_APACHE = 2
+    SIMILAR_LICENSE = 2
     OUTDATED = 3
     OTHER = 4
 
 
+@dataclasses.dataclass
 class LicenseHeader:
     """Class to describe license headers found in files including the header itself, the line
     numbers where it is found in a file, and the type of the license header."""
 
-    def __init__(self, start_line_num: int) -> None:
-        self.start_line_num = start_line_num
-        self.license_header = ""
-        self.end_line_num = 0
-
-    @property
-    def header_type(self) -> HeaderType:
-        """Returns the type of the license header."""
-        return self._header_type
-
-    @header_type.setter
-    def header_type(self, header_type: HeaderType) -> None:
-        """Sets the type of the license header."""
-        self._header_type = header_type
+    start_line_num: int
+    header_type: HeaderType | None = None
+    end_line_num: int = 0
+    license_header: str = ""
 
     def __str__(self) -> str:
         """The string representation of a license header used later for printing."""
-        return f"""
-    Beginning at line: {self.start_line_num}
-    Ending at line   : {self.end_line_num}\n
-{self.license_header}\n"""
+        return (
+            f"Beginning at line: {self.start_line_num}\n"
+            f"Ending at line   : {self.end_line_num}\n\n"
+            f"{self.license_header}\n"
+        )
 
 
 def _extract_license_header(file: str) -> list[LicenseHeader]:
@@ -100,7 +129,7 @@ def _extract_license_header(file: str) -> list[LicenseHeader]:
     license_header = ""
     exceptions = ["# pylint:", "#!/", "# mypy:"]
 
-    with open(file, "r+") as f:
+    with open(file, "r") as f:
         for line_num, line in enumerate(f):
             if not license_header and line[0] == "\n":
                 continue
@@ -129,44 +158,58 @@ def _extract_license_header(file: str) -> list[LicenseHeader]:
     return license_header_lst
 
 
-def _validate_license_header(license_header_lst: list[LicenseHeader]) -> bool:
+def _validate_license_header(
+    license_header_lst: list[LicenseHeader], licensee: str, license_name: str, editable: bool
+) -> bool:
     """Returns whether there is a valid Infleqtion license header in a file and for each license
     header in a file, it assigns each theiir type.
         - VALID: if the header contains a Copyright Infleqtion line.
         - OUTDATED: if the header is for ColdQuanta Inc.
-        - OTHER_APACHE: if the header is an Apache license but not from Infleqtion
+        - SIMILAR_LICENSE: if the header is license but not from Infleqtion
                 for client-superstaq.
         - OTHER: if the header is any other one. Also includes Apache license headers for
                 server-superstaq.
     Args:
         license_header_lst: List of the license_header objects for each header in a file.
+        licensee: The owner of the expected license.
+        license_name: The name of the expected license.
+        editable: Whether similar licenses can be edited to include the license owner instead
+            adding the entire license to the file.
 
     Returns: Whether there is a valid license header in a file or not.
     """
-    valid_header_regex = re.compile(r"(.*)Copyright(.*)Infleqtion")
-    outdated_header_regex = re.compile(r"(.*)Copyright(.*)ColdQuanta Inc\.")
+    valid_header_regex = re.compile(rf"(.*)Copyright(.*){licensee}")
+    outdated_header_regex = re.compile(
+        r"(.*)Copyright(.*)ColdQuanta Inc\."
+    )  # remove after first iteration
     valid = False
 
     for license_header in license_header_lst:
-        if re.search(outdated_header_regex, license_header.license_header):
-            license_header.header_type = HeaderType.OUTDATED
-        elif re.search(valid_header_regex, license_header.license_header):
+        if (
+            re.search(valid_header_regex, license_header.license_header)
+            and license_name in license_header.license_header
+        ):
             license_header.header_type = HeaderType.VALID
             valid = True
-        elif in_server or "Apache" not in license_header.license_header:
+        elif re.search(
+            outdated_header_regex, license_header.license_header
+        ):  # replace with re.search(valid_header_regex, license_header.license_header) and license_name not in license_header.license_header
+            license_header.header_type = HeaderType.OUTDATED
+        elif not editable or license_name not in license_header.license_header:
             license_header.header_type = HeaderType.OTHER
         else:
-            license_header.header_type = HeaderType.OTHER_APACHE
+            license_header.header_type = HeaderType.SIMILAR_LICENSE
 
     return valid
 
 
-def _append_to_header(file: str, license_header: LicenseHeader) -> None:
+def _append_to_header(file: str, license_header: LicenseHeader, licensee: str) -> None:
     """Appends Infleqtion to existing Apache license that is not from Infleqtion.
 
     Args:
         file: The name/path for the file whose license header will have Infleqtion added to it.
         license_header: The specific license header that Infleqtion is being appended to.
+        licensee: The licensee of the target license header.
 
     Returns nothing.
     """
@@ -180,11 +223,11 @@ def _append_to_header(file: str, license_header: LicenseHeader) -> None:
                 and license_header.start_line_num <= line_num + 1 < license_header.end_line_num
             ):
                 if line[-2] == ",":
-                    prepend += line[:-1] + " 2024 Infleqtion.\n"
+                    prepend += line[:-1] + " 2024 {licensee}.\n"
                 elif line[-2].isalpha():
-                    prepend += line[:-1] + ", 2024 Infleqtion.\n"
+                    prepend += line[:-1] + ", 2024 {licensee}.\n"
                 else:
-                    prepend += line[:-2] + ", 2024 Infleqtion.\n"
+                    prepend += line[:-2] + ", 2024 {licensee}.\n"
                 break
             prepend += line
 
@@ -223,11 +266,12 @@ def _remove_header(file: str, license_header: LicenseHeader) -> None:
         f.truncate()
 
 
-def _add_license_header(file: str) -> None:
+def _add_license_header(file: str, expected_license_header: str) -> None:
     """Adds the correct license header to a file.
 
     Args:
         file: The file name/path to which license header is added.
+        expected_license_header: The target license header.
 
     Returns nothing.
     """
@@ -257,6 +301,7 @@ def handle_bad_header(
     valid: bool,
     silent: bool,
     append_flag: bool,
+    licensee: str,
 ) -> bool:
     """Function handles bad headers in files. The cases are handled according to the HeaderType:
         - VALID and OTHER: no change.
@@ -271,10 +316,11 @@ def handle_bad_header(
         valid: Whether there is a valid header in the file.
         silent: Whether to print out any incorrect license headers that have been found.
         append_flag: Whether Infleqtion has already been appended to an Apache License in the file.
+        licensee: The owner of the expected license.
 
     Returns the updated append_flag.
     """
-    if license_header.header_type == HeaderType.OTHER_APACHE:
+    if license_header.header_type == HeaderType.SIMILAR_LICENSE:
         if not valid and not silent and not apply:
             print("----------")
             print(check_utils.warning(str(license_header)))
@@ -282,7 +328,7 @@ def handle_bad_header(
         # don't append Infleqtion to Apache license if there is a valid Infleqtion
         # license header already or it has already been appended to a license.
         if not append_flag and apply and not valid:
-            _append_to_header(file, license_header)
+            _append_to_header(file, license_header, licensee)
             append_flag = True
             print(f"{styled_file_name}: {check_utils.success('License header fixed.')}")
     elif license_header.header_type == HeaderType.OUTDATED:
@@ -301,7 +347,17 @@ def handle_bad_header(
     return append_flag
 
 
-def run_checker(file: str, apply: bool, silent: bool, no_header: bool, bad_header: bool) -> int:
+def run_checker(
+    file: str,
+    apply: bool,
+    silent: bool,
+    no_header: bool,
+    bad_header: bool,
+    expected_license_header: str,
+    license_name: str,
+    licensee: str,
+    editable: bool,
+) -> int:
     """For a given file, checks if it has the correct license header. If apply is set to True,
     it removes any bad license headers that have been found and replaces them with the correct
     license header.
@@ -312,28 +368,33 @@ def run_checker(file: str, apply: bool, silent: bool, no_header: bool, bad_heade
         silent: Whether to print out any incorrect license headers that have been found.
         no_header: Whether to only handle files with no license headers.
         bad_header: Whether to only handle files with incorrect headers.
+        expected_license_header: The target license header.
+        license_name: The name of the expected license.
+        licensee: The owner of the expected license.
+        editable: Whether similar licenses can be edited to include the license owner instead
+            adding the entire license to the file.
 
     Returns the exit code. 1 if an incorrect or no license header is found. 0 if correct.
     """
+
     license_header_lst: list[LicenseHeader] = _extract_license_header(file)
     styled_file_name = check_utils.styled(file, check_utils.Style.BOLD)
 
     if len(license_header_lst) == 0:
         if (not no_header and not bad_header) or no_header:
             if apply:
-                _add_license_header(file)
+                _add_license_header(file, expected_license_header)
                 print(f"{styled_file_name}: {check_utils.success('License header added.')}")
             else:
                 print(f"{styled_file_name}: {check_utils.warning('No license header found.')}")
             return 1
         else:
             return 0
-        # return handle_no_header(file, apply, no_header, bad_header)
 
     if no_header and not bad_header:  # if the --no-header flag is set
         return 0
 
-    valid = _validate_license_header(license_header_lst)
+    valid = _validate_license_header(license_header_lst, licensee, license_name, editable)
     append_flag = False  # used to make sure Infleqtion is not appended to multiple Apace headers
     exit_code = 0
 
@@ -353,10 +414,11 @@ def run_checker(file: str, apply: bool, silent: bool, no_header: bool, bad_heade
             valid,
             silent,
             append_flag,
+            licensee,
         )
 
     if not valid and not append_flag and apply:
-        _add_license_header(file)
+        _add_license_header(file, expected_license_header)
         print(f"{styled_file_name}: {check_utils.success('License header added.')}")
 
     return exit_code
@@ -388,7 +450,9 @@ def run(
         """
     )
     parser.add_argument(
-        "--apply", action="store_true", help="Add the license header to files.", default=False
+        "--apply",
+        action="store_true",
+        help="Add the license header to files.",
     )
 
     target_case = parser.add_mutually_exclusive_group()
@@ -396,19 +460,16 @@ def run(
         "--no-header",
         action="store_true",
         help="Hanlde only files with no license header.",
-        default=False,
     )
     target_case.add_argument(
         "--bad-header",
         action="store_true",
         help="Handle only files with incorrect license headers.",
-        default=False,
     )
     parser.add_argument(
         "--silent",
         action="store_true",
         help="Do not show incorrect license headers.",
-        default=False,
     )
 
     parsed_args, _ = parser.parse_known_intermixed_args(args)
@@ -420,6 +481,11 @@ def run(
         print("No files selected.\n")
         return 0
 
+    if (toml_data := read_toml()) is not None:
+        expected_license_header, licensee, license_name, editable = toml_data
+    else:
+        return 0
+
     exit_code = 0
     for file in files:
         exit_code += run_checker(
@@ -428,6 +494,10 @@ def run(
             parsed_args.silent or silent,
             parsed_args.no_header,
             parsed_args.bad_header,
+            expected_license_header,
+            licensee,
+            license_name,
+            editable,
         )
 
     if not exit_code:
