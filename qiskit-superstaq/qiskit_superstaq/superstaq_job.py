@@ -155,8 +155,8 @@ class SuperstaqJob(qiskit.providers.JobV1):
             {
                 "results": results_list,
                 "qobj_id": -1,
-                "backend_name": self._backend._configuration.backend_name,
-                "backend_version": self._backend._configuration.backend_version,
+                "backend_name": self._backend.configuration().backend_name,
+                "backend_version": self._backend.configuration().backend_version,
                 "success": self._overall_status == "Done",
                 "status": self._overall_status,
                 "job_id": self._job_id,
@@ -180,12 +180,18 @@ class SuperstaqJob(qiskit.providers.JobV1):
     def _refresh_job(self) -> None:
         """Queries the server for an updated job result."""
 
+        jobs_to_fetch: list[str] = []
+
         for job_id in self._job_id.split(","):
-            if (job_id not in self._job_info) or (
-                self._job_info[job_id]["status"] not in self.TERMINAL_STATES
+            if (
+                job_id not in self._job_info
+                or self._job_info[job_id]["status"] not in self.TERMINAL_STATES
             ):
-                result = self._backend._provider._client.get_job(job_id)
-                self._job_info[job_id] = result
+                jobs_to_fetch.append(job_id)
+
+        if jobs_to_fetch:
+            result = self._backend._provider._client.fetch_jobs(jobs_to_fetch)
+            self._job_info.update(result)
 
         self._update_status_queue_info()
 
