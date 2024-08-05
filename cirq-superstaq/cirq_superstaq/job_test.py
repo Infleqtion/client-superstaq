@@ -119,10 +119,7 @@ def test_num_qubits(job: css.job.Job) -> None:
 
     # Shouldn't need to retrieve anything now that `job._job` is populated:
     assert job.num_qubits(index=0) == 2
-
-    # Deprecation warning test
-    with pytest.warns(DeprecationWarning, match="the numbers of qubits in all circuits"):
-        assert job.num_qubits() == 2
+    assert job.num_qubits() == [2]
 
 
 def test_repetitions(job: css.job.Job) -> None:
@@ -385,10 +382,7 @@ def test_job_counts(job: css.job.Job) -> None:
     with patched_requests({"job_id": job_dict}):
         assert job.counts(index=0) == {"10": 1}
         assert job.counts(index=0, qubit_indices=[0]) == ({"1": 1})
-
-    # Deprecation warning test
-    with pytest.warns(DeprecationWarning, match="the counts in all circuits in this"):
-        assert job.counts() == {"10": 1}
+        assert job.counts() == [{"10": 1}]
 
 
 def test_job_counts_failed(job: css.job.Job) -> None:
