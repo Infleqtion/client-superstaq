@@ -35,7 +35,8 @@ def read_toml() -> tuple[str, str, str, bool] | None:
     [tool.license_header_format] and named `license_header`, `license_name`, `licensee` and
     `editable`.
 
-    Returns tuple containing the exptected license header, license name, license owner, and
+    Returns:
+        Tuple containing the exptected license header, license name, licensee, and
     whether similar licenses are editable.
     """
 
@@ -44,10 +45,10 @@ def read_toml() -> tuple[str, str, str, bool] | None:
         expected_license_header = str(data["tool"]["license_header_format"]["license_header"])
     except KeyError:
         print(
-            "Under [tool.license_header_format] add a `license_header` field filled with the license"
-            " header that should be added to source code files in the repository."
+            "Under [tool.license_header_format] add a `license_header` field filled with the"
+            "license header that should be added to source code files in the repository."
         )
-        return
+        return None
 
     try:
         license_name = str(data["tool"]["license_header_format"]["license_name"])
@@ -56,7 +57,7 @@ def read_toml() -> tuple[str, str, str, bool] | None:
             "Under [tool.license_header_format] add a `license_name` field filled with the"
             " license's name."
         )
-        return
+        return None
 
     try:
         licensee = str(data["tool"]["license_header_format"]["licensee"])
@@ -65,7 +66,7 @@ def read_toml() -> tuple[str, str, str, bool] | None:
             "Under [tool.license_header_format] add a `licensee` field filled with the "
             " name of the licensee."
         )
-        return
+        return None
 
     try:
         editable = bool(data["tool"]["license_header_format"]["editable"])
@@ -74,7 +75,7 @@ def read_toml() -> tuple[str, str, str, bool] | None:
             "Under [tool.license_header_format] add an `editable` boolean field set to True if the"
             " license owner can be appended to similar license and False otherwise."
         )
-        return
+        return None
 
     return expected_license_header, license_name, licensee, editable
 
@@ -82,9 +83,9 @@ def read_toml() -> tuple[str, str, str, bool] | None:
 class HeaderType(enum.Enum):
     """Enum used to store the types of licence headers that be found in source code files.
 
-    - VALID: valid Infleqtion license header.
-    - OTHER_APACHE: An Apache license header that is not Infleqtion's.
-    - OUTDATED: A license belonging to ColdQuanta Inc.
+    - VALID: valid license header.
+    - SIMILAR_LICENSE: Matching license type but different licensee.
+    - OUTDATED: A license belonging to the same licensee but different type than the target.
     - OTHER: Any other licenses.
     """
 
@@ -161,14 +162,12 @@ def _extract_license_header(file: str) -> list[LicenseHeader]:
 def _validate_license_header(
     license_header_lst: list[LicenseHeader], licensee: str, license_name: str, editable: bool
 ) -> bool:
-    """Returns whether there is a valid Infleqtion license header in a file and for each license
+    """Returns whether there is a valid license header in a file and for each license
     header in a file, it assigns each theiir type.
-        - VALID: if the header contains a Copyright Infleqtion line.
-        - OUTDATED: if the header is for ColdQuanta Inc.
-        - SIMILAR_LICENSE: if the header is license but not from Infleqtion
-                for client-superstaq.
-        - OTHER: if the header is any other one. Also includes Apache license headers for
-                server-superstaq.
+        - VALID: if the header contains a Copyright line.
+        - OUTDATED: if the header has the correct licensee but different type.
+        - SIMILAR_LICENSE: if the header is a valid license but not from the licensee.
+        - OTHER: if the header is any other one.
     Args:
         license_header_lst: List of the license_header objects for each header in a file.
         licensee: The owner of the expected license.
@@ -191,9 +190,9 @@ def _validate_license_header(
         ):
             license_header.header_type = HeaderType.VALID
             valid = True
-        elif re.search(
-            outdated_header_regex, license_header.license_header
-        ):  # replace with re.search(valid_header_regex, license_header.license_header) and license_name not in license_header.license_header
+        elif re.search(outdated_header_regex, license_header.license_header):
+            # replace with re.search(valid_header_regex, license_header.license_header)
+            # and license_name not in license_header.license_header
             license_header.header_type = HeaderType.OUTDATED
         elif not editable or license_name not in license_header.license_header:
             license_header.header_type = HeaderType.OTHER
@@ -204,11 +203,11 @@ def _validate_license_header(
 
 
 def _append_to_header(file: str, license_header: LicenseHeader, licensee: str) -> None:
-    """Appends Infleqtion to existing Apache license that is not from Infleqtion.
+    """Appends licensee to existing license header.
 
     Args:
-        file: The name/path for the file whose license header will have Infleqtion added to it.
-        license_header: The specific license header that Infleqtion is being appended to.
+        file: The name/path for the file whose license header will have the licensee added to it.
+        license_header: The specific license header that the licensee is being appended to.
         licensee: The licensee of the target license header.
 
     Returns nothing.
@@ -223,11 +222,11 @@ def _append_to_header(file: str, license_header: LicenseHeader, licensee: str) -
                 and license_header.start_line_num <= line_num + 1 < license_header.end_line_num
             ):
                 if line[-2] == ",":
-                    prepend += line[:-1] + " 2024 {licensee}.\n"
+                    prepend += line[:-1] + f" 2024 {licensee}.\n"
                 elif line[-2].isalpha():
-                    prepend += line[:-1] + ", 2024 {licensee}.\n"
+                    prepend += line[:-1] + f", 2024 {licensee}.\n"
                 else:
-                    prepend += line[:-2] + ", 2024 {licensee}.\n"
+                    prepend += line[:-2] + f", 2024 {licensee}.\n"
                 break
             prepend += line
 
@@ -305,7 +304,7 @@ def handle_bad_header(
 ) -> bool:
     """Function handles bad headers in files. The cases are handled according to the HeaderType:
         - VALID and OTHER: no change.
-        - OTHER_APACHE: the first of this type will have Infleqtion appended to license header.
+        - SIMILAR_LICENSE: if the header is a valid license but not from the licensee.
         - OUTDATED: will be removed
 
     Args:
@@ -315,18 +314,19 @@ def handle_bad_header(
         apply: Whether to fix the license header if it is incorrect.
         valid: Whether there is a valid header in the file.
         silent: Whether to print out any incorrect license headers that have been found.
-        append_flag: Whether Infleqtion has already been appended to an Apache License in the file.
+        append_flag: Whether the licensee has already been appended to a header in the file.
         licensee: The owner of the expected license.
 
-    Returns the updated append_flag.
+    Returns:
+        The updated append_flag.
     """
     if license_header.header_type == HeaderType.SIMILAR_LICENSE:
         if not valid and not silent and not apply:
             print("----------")
             print(check_utils.warning(str(license_header)))
             print("----------")
-        # don't append Infleqtion to Apache license if there is a valid Infleqtion
-        # license header already or it has already been appended to a license.
+        # don't append licensee to license header if there is a valid license header already or
+        # it has already been appended to another license header.
         if not append_flag and apply and not valid:
             _append_to_header(file, license_header, licensee)
             append_flag = True
@@ -374,7 +374,8 @@ def run_checker(
         editable: Whether similar licenses can be edited to include the license owner instead
             adding the entire license to the file.
 
-    Returns the exit code. 1 if an incorrect or no license header is found. 0 if correct.
+    Returns:
+        The exit code. 1 if an incorrect or no license header is found. 0 if correct.
     """
 
     license_header_lst: list[LicenseHeader] = _extract_license_header(file)
@@ -395,11 +396,10 @@ def run_checker(
         return 0
 
     valid = _validate_license_header(license_header_lst, licensee, license_name, editable)
-    append_flag = False  # used to make sure Infleqtion is not appended to multiple Apace headers
+    append_flag = False  # ensure the licensee is not appended to multiple headers
     exit_code = 0
 
-    # A file has an incorrect license header if it has no valid Infleqtion license header or
-    # has an outdated ColdQuanta Inc license.
+    # Incorrect license header if it has no valid license header or has an outdated one.
     if not valid or any(header.header_type == HeaderType.OUTDATED for header in license_header_lst):
         exit_code = 1
         if not apply:
