@@ -32,16 +32,17 @@ def patch_tqdm() -> None:
 
 
 def test_irb_init() -> None:
-    experiment = IRB()
-    assert experiment.num_qubits == 1
-    assert experiment.interleaved_gate == cirq.ops.SingleQubitCliffordGate.Z
+    with patch("cirq_superstaq.service.Service"):
+        experiment = IRB()
+        assert experiment.num_qubits == 1
+        assert experiment.interleaved_gate == cirq.ops.SingleQubitCliffordGate.Z
 
-    experiment = IRB(interleaved_gate=cirq.ops.SingleQubitCliffordGate.X)
-    assert experiment.num_qubits == 1
-    assert experiment.interleaved_gate == cirq.ops.SingleQubitCliffordGate.X
+        experiment = IRB(interleaved_gate=cirq.ops.SingleQubitCliffordGate.X)
+        assert experiment.num_qubits == 1
+        assert experiment.interleaved_gate == cirq.ops.SingleQubitCliffordGate.X
 
-    with pytest.raises(NotImplementedError):
-        IRB(num_qubits=2)
+        with pytest.raises(NotImplementedError):
+            IRB(num_qubits=2)
 
 
 @pytest.fixture
