@@ -178,9 +178,6 @@ def _validate_license_header(
     Returns: Whether there is a valid license header in a file or not.
     """
     valid_header_regex = re.compile(rf"(.*)Copyright(.*){licensee}")
-    outdated_header_regex = re.compile(
-        r"(.*)Copyright(.*)ColdQuanta Inc\."
-    )  # remove after first iteration
     valid = False
 
     for license_header in license_header_lst:
@@ -190,9 +187,10 @@ def _validate_license_header(
         ):
             license_header.header_type = HeaderType.VALID
             valid = True
-        elif re.search(outdated_header_regex, license_header.license_header):
-            # replace with re.search(valid_header_regex, license_header.license_header)
-            # and license_name not in license_header.license_header
+        elif (
+            re.search(valid_header_regex, license_header.license_header)
+            and license_name not in license_header.license_header
+        ):
             license_header.header_type = HeaderType.OUTDATED
         elif not editable or license_name not in license_header.license_header:
             license_header.header_type = HeaderType.OTHER
