@@ -11,12 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=missing-function-docstring
+# pylint: disable=missing-return-doc
 # mypy: disable-error-code=method-assign
 from __future__ import annotations
 
 import itertools
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import cirq
 import numpy as np
@@ -123,7 +124,7 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
                 cirq.CZ(*qbs),
                 cirq.Y(qbs[0]),
                 cirq.Y(qbs[1]),
-                cirq.measure(qbs)
+                cirq.measure(qbs),
             ]
         ),
     )
