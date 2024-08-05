@@ -16,14 +16,14 @@ from __future__ import annotations
 
 import itertools
 import os
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import cirq
 import numpy as np
 import pandas as pd
 import pytest
 
-from cirq_superstaq.qcvv.xeb import XEB, XEBSample
+from supermarq.qcvv import XEB, XEBSample
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -32,51 +32,55 @@ def patch_tqdm() -> None:
 
 
 def test_xeb_init() -> None:
-    experiment = XEB()
-    assert experiment.num_qubits == 2
-    assert experiment.two_qubit_gate == cirq.CZ
-    assert experiment.single_qubit_gate_set == [
-        cirq.PhasedXZGate(
-            z_exponent=z,
-            x_exponent=0.5,
-            axis_phase_exponent=a,
-        )
-        for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
-    ]
+    with patch("cirq_superstaq.service.Service"):
+        experiment = XEB()
+        assert experiment.num_qubits == 2
+        assert experiment.two_qubit_gate == cirq.CZ
+        assert experiment.single_qubit_gate_set == [
+            cirq.PhasedXZGate(
+                z_exponent=z,
+                x_exponent=0.5,
+                axis_phase_exponent=a,
+            )
+            for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
+        ]
 
-    with pytest.raises(
-        RuntimeError, match="No samples to retrieve. The experiment has not been run."
-    ):
-        experiment.samples  # pylint: disable=W0104
+        with pytest.raises(
+            RuntimeError, match="No samples to retrieve. The experiment has not been run."
+        ):
+            experiment.samples  # pylint: disable=W0104
 
-    with pytest.raises(RuntimeError, match="No data to retrieve. The experiment has not been run."):
-        experiment.circuit_fidelities  # pylint: disable=W0104
+        with pytest.raises(
+            RuntimeError, match="No data to retrieve. The experiment has not been run."
+        ):
+            experiment.circuit_fidelities  # pylint: disable=W0104
 
-    experiment = XEB(two_qubit_gate=cirq.CX)
-    assert experiment.num_qubits == 2
-    assert experiment.two_qubit_gate == cirq.CX
-    assert experiment.single_qubit_gate_set == [
-        cirq.PhasedXZGate(
-            z_exponent=z,
-            x_exponent=0.5,
-            axis_phase_exponent=a,
-        )
-        for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
-    ]
+        experiment = XEB(two_qubit_gate=cirq.CX)
+        assert experiment.num_qubits == 2
+        assert experiment.two_qubit_gate == cirq.CX
+        assert experiment.single_qubit_gate_set == [
+            cirq.PhasedXZGate(
+                z_exponent=z,
+                x_exponent=0.5,
+                axis_phase_exponent=a,
+            )
+            for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
+        ]
 
-    experiment = XEB(single_qubit_gate_set=[cirq.X])
-    assert experiment.num_qubits == 2
-    assert experiment.two_qubit_gate == cirq.CZ
-    assert experiment.single_qubit_gate_set == [cirq.X]
+        experiment = XEB(single_qubit_gate_set=[cirq.X])
+        assert experiment.num_qubits == 2
+        assert experiment.two_qubit_gate == cirq.CZ
+        assert experiment.single_qubit_gate_set == [cirq.X]
 
 
 @pytest.fixture
 def xeb_experiment() -> XEB:
-    return XEB(single_qubit_gate_set=[cirq.X, cirq.Y, cirq.Z])
+    with patch("cirq_superstaq.service.Service"):
+        return XEB(single_qubit_gate_set=[cirq.X, cirq.Y, cirq.Z])
 
 
 def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
-    with patch("cirq_superstaq.qcvv.xeb.random.choices") as random_choice:
+    with patch("supermarq.qcvv.xeb.random.choices") as random_choice:
         random_choice.side_effect = [
             [cirq.X, cirq.Y],
             [cirq.Z, cirq.Y],
@@ -85,7 +89,7 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
             [cirq.X, cirq.X],
             [cirq.Y, cirq.Y],
         ]
-        circuits = xeb_experiment.build_circuits(num_circuits=2, layers=[2])
+        circuits = xeb_experiment.build_circuits(num_circuits=2, cycle_depths=[2])
 
     assert len(circuits) == 2
 
@@ -102,6 +106,7 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
                 cirq.CZ(*qbs),
                 cirq.Y(qbs[0]),
                 cirq.Z(qbs[1]),
+                cirq.measure(qbs),
             ]
         ),
     )
@@ -118,6 +123,7 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
                 cirq.CZ(*qbs),
                 cirq.Y(qbs[0]),
                 cirq.Y(qbs[1]),
+                cirq.measure(qbs)
             ]
         ),
     )
@@ -125,7 +131,7 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
 
 
 def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
-
+    xeb_experiment._samples = MagicMock()
     # Choose example data to give perfect fit with fidelity=0.95
     xeb_experiment._raw_data = pd.DataFrame(
         [
@@ -181,7 +187,7 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
 def test_xeb_process_probabilities(xeb_experiment: XEB) -> None:
     qubits = cirq.LineQubit.range(2)
 
-    xeb_experiment._samples = [
+    samples = [
         XEBSample(
             circuit=cirq.Circuit(
                 [
@@ -196,9 +202,9 @@ def test_xeb_process_probabilities(xeb_experiment: XEB) -> None:
             data={"circuit_depth": 3, "num_cycles": 1, "two_qubit_gate": "CX"},
         )
     ]
-    xeb_experiment._samples[0].probabilities = {"00": 0.1, "01": 0.3, "10": 0.4, "11": 0.2}
+    samples[0].probabilities = {"00": 0.1, "01": 0.3, "10": 0.4, "11": 0.2}
 
-    xeb_experiment.process_probabilities()
+    data = xeb_experiment.process_probabilities(samples)
 
     expected_data = pd.DataFrame(
         [
@@ -219,7 +225,7 @@ def test_xeb_process_probabilities(xeb_experiment: XEB) -> None:
         ]
     )
 
-    pd.testing.assert_frame_equal(expected_data, xeb_experiment.raw_data)
+    pd.testing.assert_frame_equal(expected_data, data)
 
 
 def test_xebsample_sum_probs_square_no_values() -> None:
