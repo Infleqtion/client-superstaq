@@ -128,6 +128,13 @@ enable = [
   "yield-outside-function",
 ]
 
+# Enable the optional checks by parameter_documentation
+[tool.pylint.parameter_documentation]
+accept-no-param-doc=false # Do not accept totally missing parameter documentation.
+accept-no-raise-doc=false # Do not accept totally missing raises documentation.
+accept-no-return-doc=false # Do not accept totally missing return documentation.
+accept-no-yield-doc=false # Do not accept missing yields annotations.
+
 # Ignore long lines containing urls or pylint directives.
 [tool.pylint.format]
 ignore-long-lines = '^(.*#\w*pylint: disable.*|\s*(# )?<?https?://\S+>?)$'
