@@ -26,7 +26,7 @@ import seaborn as sns
 from scipy.stats import linregress
 from tqdm.contrib.itertools import product
 
-from supermarq.qcvv.base_experiment import BenchmarkingExperiment, Sample, BenchmarkingResults
+from supermarq.qcvv.base_experiment import BenchmarkingExperiment, BenchmarkingResults, Sample
 
 
 @dataclass(frozen=True)

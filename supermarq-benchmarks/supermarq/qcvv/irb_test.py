@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 import os
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import cirq
 import pandas as pd
@@ -46,7 +46,8 @@ def test_irb_init() -> None:
 
 @pytest.fixture
 def irb_experiment() -> IRB:
-    return IRB()
+    with patch("cirq_superstaq.service.Service"):
+        return IRB()
 
 
 def test_reduce_clifford_sequence() -> None:
