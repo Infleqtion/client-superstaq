@@ -30,6 +30,15 @@ import pytest
 from supermarq.qcvv.base_experiment import BenchmarkingExperiment, BenchmarkingResults, Sample
 
 
+@dataclass(frozen=True)
+class ExampleResults(BenchmarkingResults):
+    """NamedTuple instance to use for testing"""
+
+    example: float
+
+    experiment_name = "Example results"
+
+
 @pytest.fixture(scope="session", autouse=True)
 def patch_tqdm() -> None:
     os.environ["TQDM_DISABLE"] = "1"
@@ -37,7 +46,7 @@ def patch_tqdm() -> None:
 
 @pytest.fixture
 @patch.multiple(BenchmarkingExperiment, __abstractmethods__=set())
-def abc_experiment() -> BenchmarkingExperiment:
+def abc_experiment() -> BenchmarkingExperiment[ExampleResults]:
     with patch("cirq_superstaq.service.Service"):
         return BenchmarkingExperiment(num_qubits=2)  # type: ignore[abstract]
 
@@ -54,15 +63,6 @@ def sample_circuits() -> list[Sample]:
     ]
 
 
-@dataclass(frozen=True)
-class ExampleResults(BenchmarkingResults):
-    """NamedTuple instance to use for testing"""
-
-    example: float
-
-    experiment_name = "Example results"
-
-
 def test_sample_target_property() -> None:
     sample = Sample(circuit=MagicMock(), data={})
     assert sample.target == "No target"
@@ -75,7 +75,9 @@ def test_sample_target_property() -> None:
     assert sample.target == "Example target"
 
 
-def test_benchmarking_experiment_init(abc_experiment: BenchmarkingExperiment) -> None:
+def test_benchmarking_experiment_init(
+    abc_experiment: BenchmarkingExperiment[ExampleResults],
+) -> None:
     assert abc_experiment.num_qubits == 2
     assert abc_experiment._raw_data is None
     assert abc_experiment._results is None
@@ -88,26 +90,28 @@ def test_benchmarking_experiment_init(abc_experiment: BenchmarkingExperiment) ->
     assert abc_experiment.results == abc_experiment._results
 
 
-def test_empty_results_error(abc_experiment: BenchmarkingExperiment) -> None:
+def test_empty_results_error(abc_experiment: BenchmarkingExperiment[ExampleResults]) -> None:
     with pytest.raises(
         RuntimeError, match="No results to retrieve. The experiment has not been run."
     ):
         _ = abc_experiment.results
 
 
-def test_empty_data_error(abc_experiment: BenchmarkingExperiment) -> None:
+def test_empty_data_error(abc_experiment: BenchmarkingExperiment[ExampleResults]) -> None:
     with pytest.raises(RuntimeError, match="No data to retrieve. The experiment has not been run."):
         _ = abc_experiment.raw_data
 
 
-def test_empty_samples_error(abc_experiment: BenchmarkingExperiment) -> None:
+def test_empty_samples_error(abc_experiment: BenchmarkingExperiment[ExampleResults]) -> None:
     with pytest.raises(
         RuntimeError, match="No samples to retrieve. The experiment has not been run."
     ):
         _ = abc_experiment.samples
 
 
-def test_prepare_experiment_overwrite_error(abc_experiment: BenchmarkingExperiment) -> None:
+def test_prepare_experiment_overwrite_error(
+    abc_experiment: BenchmarkingExperiment[ExampleResults],
+) -> None:
     abc_experiment._samples = [Sample(circuit=MagicMock(), data={})]
     abc_experiment.build_circuits = MagicMock()
 
@@ -119,7 +123,9 @@ def test_prepare_experiment_overwrite_error(abc_experiment: BenchmarkingExperime
         abc_experiment._prepare_experiment(100, [1, 50, 100])
 
 
-def test_prepare_experiment_overwrite(abc_experiment: BenchmarkingExperiment) -> None:
+def test_prepare_experiment_overwrite(
+    abc_experiment: BenchmarkingExperiment[ExampleResults],
+) -> None:
     abc_experiment._samples = [Sample(circuit=MagicMock(), data={})]
     abc_experiment.build_circuits = MagicMock()
     abc_experiment._validate_circuits = MagicMock()
@@ -130,7 +136,9 @@ def test_prepare_experiment_overwrite(abc_experiment: BenchmarkingExperiment) ->
     abc_experiment._validate_circuits.assert_called_once_with()
 
 
-def test_prepare_experiment_with_bad_layers(abc_experiment: BenchmarkingExperiment) -> None:
+def test_prepare_experiment_with_bad_layers(
+    abc_experiment: BenchmarkingExperiment[ExampleResults],
+) -> None:
     with pytest.raises(
         ValueError, match="The `cycle_depths` iterator can only include positive values."
     ):
@@ -138,7 +146,7 @@ def test_prepare_experiment_with_bad_layers(abc_experiment: BenchmarkingExperime
 
 
 def test_run_with_simulator(
-    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     cirq.measurement_key_name = MagicMock()
     abc_experiment._prepare_experiment = MagicMock()
@@ -167,7 +175,7 @@ def test_run_with_simulator(
 
 
 def test_run_with_simulator_default_target(
-    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     cirq.measurement_key_name = MagicMock()
     cirq.Simulator = (target := MagicMock())  # type: ignore [misc]
@@ -196,7 +204,7 @@ def test_run_with_simulator_default_target(
 
 
 def test_run_on_device(
-    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._prepare_experiment = MagicMock()
     abc_experiment._samples = sample_circuits
@@ -220,7 +228,7 @@ def test_run_on_device(
 
 
 def test_run_on_device_dry_run(
-    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._prepare_experiment = MagicMock()
     abc_experiment._samples = sample_circuits
@@ -239,7 +247,7 @@ def test_run_on_device_dry_run(
     assert job == mock_service.create_job.return_value
 
 
-def test_state_probs_to_dict(abc_experiment: BenchmarkingExperiment) -> None:
+def test_state_probs_to_dict(abc_experiment: BenchmarkingExperiment[ExampleResults]) -> None:
     probabilities = np.array([0.1, 0.2, 0.3, 0.4])
     out_dict = abc_experiment._state_probs_to_dict(probabilities)
     assert out_dict == {
@@ -291,7 +299,7 @@ def test_interleave_circuit() -> None:
 
 
 def test_sample_statuses(
-    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
     mock_job = MagicMock(spec=css.Job)
@@ -304,7 +312,7 @@ def test_sample_statuses(
 
 
 def test_sample_targets(
-    abc_experiment: BenchmarkingExperiment,
+    abc_experiment: BenchmarkingExperiment[ExampleResults],
 ) -> None:
     abc_experiment._samples = [mock_sample_0 := MagicMock(), mock_sample_1 := MagicMock()]
     mock_sample_0.target = "target_0"
@@ -316,7 +324,7 @@ def test_sample_targets(
 
 
 def test_validate_circuits(
-    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
     # Should't get any errors with the base circuits
@@ -348,7 +356,7 @@ def test_validate_circuits(
         abc_experiment._validate_circuits()
 
 
-def test_process_device_counts(abc_experiment: BenchmarkingExperiment) -> None:
+def test_process_device_counts(abc_experiment: BenchmarkingExperiment[ExampleResults]) -> None:
     counts = {
         "00": 20,
         "01": 5,
@@ -360,7 +368,7 @@ def test_process_device_counts(abc_experiment: BenchmarkingExperiment) -> None:
 
 
 def test_retrieve_ss_jobs_not_all_submitted(
-    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
 
@@ -377,7 +385,7 @@ def test_retrieve_ss_jobs_not_all_submitted(
 
 
 def test_retrieve_ss_jobs_nothing_to_retrieve(
-    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
     statuses = abc_experiment.retrieve_ss_jobs()
@@ -385,7 +393,7 @@ def test_retrieve_ss_jobs_nothing_to_retrieve(
 
 
 def test_retrieve_ss_jobs_all_submitted(
-    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
     mock_job_1 = MagicMock(spec=css.Job)
@@ -411,13 +419,13 @@ def test_retrieve_ss_jobs_all_submitted(
     assert not hasattr(sample_circuits[0], "probabilities")
 
 
-def test_collect_data_no_samples(abc_experiment: BenchmarkingExperiment) -> None:
+def test_collect_data_no_samples(abc_experiment: BenchmarkingExperiment[ExampleResults]) -> None:
     with pytest.raises(RuntimeError, match="The experiment has not yet ben run."):
         abc_experiment.collect_data()
 
 
 def test_collect_data_no_jobs_to_retrieve(
-    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     sample_circuits[0].probabilities = {"00": 1.0, "10": 0.0, "01": 0.0, "11": 0.0}
     sample_circuits[1].probabilities = {"00": 0.0, "10": 0.0, "01": 0.0, "11": 1.0}
@@ -429,7 +437,7 @@ def test_collect_data_no_jobs_to_retrieve(
 
 
 def test_collect_data_no_jobs_to_retrieve_not_all_probabilities(
-    abc_experiment: BenchmarkingExperiment,
+    abc_experiment: BenchmarkingExperiment[ExampleResults],
     sample_circuits: list[Sample],
     capfd: pytest.CaptureFixture[str],
 ) -> None:
@@ -444,7 +452,7 @@ def test_collect_data_no_jobs_to_retrieve_not_all_probabilities(
 
 
 def test_collect_data_no_jobs_to_retrieve_not_all_probabilities_forced(
-    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     sample_circuits[0].probabilities = {"00": 1.0, "10": 0.0, "01": 0.0, "11": 0.0}
     abc_experiment._samples = sample_circuits
@@ -455,7 +463,7 @@ def test_collect_data_no_jobs_to_retrieve_not_all_probabilities_forced(
 
 
 def test_collect_data_cannot_force(
-    abc_experiment: BenchmarkingExperiment, sample_circuits: list[Sample]
+    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
     abc_experiment.process_probabilities = MagicMock()
@@ -469,7 +477,7 @@ def test_collect_data_cannot_force(
 
 
 def test_collect_data_outstanding_jobs(
-    abc_experiment: BenchmarkingExperiment,
+    abc_experiment: BenchmarkingExperiment[ExampleResults],
     sample_circuits: list[Sample],
     capfd: pytest.CaptureFixture[str],
 ) -> None:
@@ -487,7 +495,7 @@ def test_collect_data_outstanding_jobs(
 
 
 def test_collect_data_outstanding_jobs_force(
-    abc_experiment: BenchmarkingExperiment,
+    abc_experiment: BenchmarkingExperiment[ExampleResults],
     sample_circuits: list[Sample],
     capfd: pytest.CaptureFixture[str],
 ) -> None:

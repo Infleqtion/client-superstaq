@@ -18,7 +18,7 @@ import pprint
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 import cirq
 import cirq_superstaq as css
@@ -75,7 +75,10 @@ class BenchmarkingResults(ABC):
     """The name of the experiment"""
 
 
-class BenchmarkingExperiment(ABC):
+ResultsT = TypeVar("ResultsT", bound="BenchmarkingResults")
+
+
+class BenchmarkingExperiment(ABC, Generic[ResultsT]):
     """Base class for gate benchmarking experiments.
 
     The interface for implementing these experiments is as follows:
@@ -156,7 +159,7 @@ class BenchmarkingExperiment(ABC):
         self._raw_data: pd.DataFrame | None = None
         "The data generated during the experiment"
 
-        self._results: BenchmarkingResults | None = None
+        self._results: ResultsT | None = None
         """The attribute to store the results in."""
 
         self._samples: Sequence[Sample] | None = None
@@ -166,7 +169,7 @@ class BenchmarkingExperiment(ABC):
         """The superstaq service for submitting jobs."""
 
     @property
-    def results(self) -> BenchmarkingResults:
+    def results(self) -> ResultsT:
         """The results from the most recently run experiment.
 
         Raises:
@@ -454,7 +457,7 @@ class BenchmarkingExperiment(ABC):
         """Plot the results of the experiment"""
 
     @abstractmethod
-    def analyse_results(self, plot_results: bool = True) -> BenchmarkingResults:
+    def analyse_results(self, plot_results: bool = True) -> ResultsT:
         """Perform the experiment analysis and store the results in the `results` attribute
 
         Args:
