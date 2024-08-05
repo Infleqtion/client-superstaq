@@ -979,6 +979,154 @@ class StrippedCZGate(cirq.Gate):
         return cirq.obj_to_dict_helper(self, ["rz_rads"])
 
 
+class DDPowGate(cirq.EigenGate):
+    r"""The Dipole-Dipole gate for EeroQ hardware"""
+
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
+        return [
+            (
+                -0.5,
+                np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]),
+            ),
+            (
+                1.0,
+                np.array([[0, 0, 0, 0], [0, 0.5, 0.5, 0], [0, 0.5, 0.5, 0], [0, 0, 0, 0]]),
+            ),
+            (
+                0.0,
+                np.array([[0, 0, 0, 0], [0, 0.5, -0.5, 0], [0, -0.5, 0.5, 0], [0, 0, 0, 0]]),
+            ),
+        ]
+
+    def _num_qubits_(self) -> int:
+        return 2
+
+    def _decompose_(self, qubits: tuple[cirq.LineQubit, cirq.LineQubit]) -> list[cirq.Operation]:
+        print(self, self.exponent, self.global_shift)
+        return [
+            cirq.ZPowGate(exponent=self.exponent).on(qubits[0]),
+            cirq.ZPowGate(exponent=self.exponent).on(qubits[1]),
+            cirq.ISwapPowGate(exponent=self.exponent, global_shift=self.global_shift).on(*qubits),
+            cirq.CZPowGate(exponent=-2 * self.exponent).on(*qubits),
+            # cirq.MatrixGate(np.diag([1, 1, 1, 1])*np.exp(1j * -0.5 *self.exponent *np.pi)).on(*qubits)
+        ]
+        return None
+
+    def _has_stabilizer_effect_(self) -> bool | None:
+        if cirq.is_parameterized(self):
+            return None
+
+        return (2 * self.exponent) % 1 == 0
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        return cirq.CircuitDiagramInfo(
+            wire_symbols=("DD", "DD"), exponent=self._diagram_exponent(args)
+        )
+
+    def _qasm_(self, args: cirq.QasmArgs, qubits: tuple[cirq.Qid, ...]) -> str | None:
+        # return args.format(
+        #     "rzx({0:half_turns}) {1},{2};\n",
+        #     self.exponent,
+        #     qubits[0],
+        #     qubits[1],
+        # )
+        return None
+
+    def __str__(self) -> str:
+        if self.exponent == 1:
+            return "DD"
+        return f"DD**{self._exponent!r}"
+
+    def __repr__(self) -> str:
+        if self._global_shift == 0:
+            if self._exponent == 1:
+                return "css.DD"
+            return f"(css.DD**{cirq._compat.proper_repr(self._exponent)})"
+        return (
+            f"css.DDPowGate(exponent={cirq._compat.proper_repr(self._exponent)},"
+            f" global_shift={self._global_shift!r})"
+        )
+
+
+class DDSinglePowGate(cirq.EigenGate):
+    r"""The Dipole-Dipole gate for EeroQ hardware"""
+
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
+        return [
+            (
+                0.5,
+                np.array([[0.5, 0.5], [0.5, 0.5]]),
+            ),
+            (
+                -0.5,
+                np.array([[0.5, -0.5], [-0.5, 0.5]]),
+            ),
+        ]
+
+    def _num_qubits_(self) -> int:
+        return 1
+
+    def _decompose_(self, qubits: tuple[cirq.LineQubit]) -> list[cirq.Operation]:
+        return [
+            cirq.Z(qubits[0]),
+            cirq.XPowGate(exponent=self.exponent, global_shift=self.global_shift).on(*qubits),
+            cirq.Z(qubits[0]),
+        ]
+        return None
+
+    def _has_stabilizer_effect_(self) -> bool | None:
+        if cirq.is_parameterized(self):
+            return None
+
+        return (2 * self.exponent) % 1 == 0
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        return cirq.CircuitDiagramInfo(wire_symbols=("DD",), exponent=self._diagram_exponent(args))
+
+    def _qasm_(self, args: cirq.QasmArgs, qubits: tuple[cirq.Qid, ...]) -> str | None:
+        # return args.format(
+        #     "rzx({0:half_turns}) {1},{2};\n",
+        #     self.exponent,
+        #     qubits[0],
+        #     qubits[1],
+        # )
+        return None
+
+    def __str__(self) -> str:
+        if self.exponent == 1:
+            return "DDSingle"
+        return f"DDSingle**{self._exponent!r}"
+
+    def __repr__(self) -> str:
+        if self._global_shift == 0:
+            if self._exponent == 1:
+                return "css.DDSingle"
+            return f"(css.DDSingle**{cirq._compat.proper_repr(self._exponent)})"
+        return (
+            f"css.DDSinglePowGate(exponent={cirq._compat.proper_repr(self._exponent)},"
+            f" global_shift={self._global_shift!r})"
+        )
+
+
+class rdd(DDSinglePowGate):
+
+    def __init__(self, *, rads: cirq.value.TParamVal):
+        """Initialize an Rx (`cirq.XPowGate`).
+
+        Args:
+            rads: Radians to rotate about the X axis of the Bloch sphere.
+        """
+        self._rads = rads
+        super().__init__(exponent=rads / _pi(rads), global_shift=2)
+
+    def _with_exponent(self, exponent: cirq.value.TParamVal) -> "rdd":
+        return rdd(rads=exponent * _pi(exponent))
+
+
+DD = DDPowGate()
+DDSingle = DDSinglePowGate()
+
+
 def custom_resolver(cirq_type: str) -> type[cirq.Gate] | None:
     """Tells `cirq.read_json` how to deserialize `cirq-superstaq`'s custom gates.
 
@@ -1003,5 +1151,8 @@ def custom_resolver(cirq_type: str) -> type[cirq.Gate] | None:
         "IXGate": IXGate,
         "ParallelRGate": ParallelRGate,
         "StrippedCZGate": StrippedCZGate,
+        "DDPowGate": DDPowGate,
+        "DDSinglePowGate": DDSinglePowGate,
+        "rdd": rdd,
     }
     return type_to_gate_map.get(cirq_type)
