@@ -49,7 +49,7 @@ class IRBResults(BenchmarkingResults):
     experiment_name = "IRB"
 
 
-class IRB(BenchmarkingExperiment):
+class IRB(BenchmarkingExperiment[IRBResults]):
     r"""Interleaved random benchmarking (IRB) experiment.
 
     IRB estimates the gate error of specified Clifford gate, :math:`\mathcal{C}^*`.
@@ -272,7 +272,7 @@ class IRB(BenchmarkingExperiment):
         )
 
         self._results = IRBResults(
-            target=self.sample_targets,
+            target="& ".join(self.sample_targets),
             total_circuits=len(self.samples),
             rb_layer_fidelity=rb_layer_fidelity,
             rb_layer_fidelity_std=rb_layer_fidelity_std,
