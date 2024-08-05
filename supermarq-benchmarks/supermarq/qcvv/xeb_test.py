@@ -205,7 +205,9 @@ def test_xeb_process_probabilities(xeb_experiment: XEB) -> None:
     ]
     samples[0].probabilities = {"00": 0.1, "01": 0.3, "10": 0.4, "11": 0.2}
 
-    data = xeb_experiment.process_probabilities(samples)
+    with patch("cirq.Simulator") as mock_simulator:
+        mock_simulator.return_value.simulate.return_value.final_state_vector = [0.0, 1.0, 0.0, 0.0]
+        data = xeb_experiment.process_probabilities(samples)
 
     expected_data = pd.DataFrame(
         [
@@ -225,7 +227,6 @@ def test_xeb_process_probabilities(xeb_experiment: XEB) -> None:
             }
         ]
     )
-
     pd.testing.assert_frame_equal(expected_data, data)
 
 

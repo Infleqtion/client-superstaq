@@ -225,8 +225,7 @@ class XEB(BenchmarkingExperiment[XEBResults]):
 
         return random_circuits
 
-    @staticmethod
-    def simulate_sample(sample: XEBSample) -> dict[str, float]:
+    def simulate_sample(self, sample: XEBSample) -> dict[str, float]:
         """Simulates the exact probabilities of measuring all possible bitstrings
         with a given sample.
 
@@ -238,13 +237,13 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         """
         sim = cirq.Simulator()
 
-        result = sim.compute_amplitudes(
+        result = sim.simulate(
             cirq.drop_terminal_measurements(sample.circuit),
-            range(2 ** len(sample.circuit.all_qubits())),
+            qubit_order=sorted(sample.circuit.all_qubits()),
         )
         return {
-            f"{i:0{len(sample.circuit.all_qubits())}b}": np.abs(amp) ** 2
-            for i, amp in enumerate(result)
+            f"{i:0{self.num_qubits}b}": np.abs(amp) ** 2
+            for i, amp in enumerate(result.final_state_vector)
         }
 
     def process_probabilities(
