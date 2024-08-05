@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=missing-function-docstring
+# pylint: disable=missing-return-doc
 # mypy: disable-error-code=method-assign
 from __future__ import annotations
 
@@ -21,8 +22,8 @@ import cirq
 import pandas as pd
 import pytest
 
-from cirq_superstaq.qcvv.base_experiment import Sample
-from cirq_superstaq.qcvv.irb import IRB
+from supermarq.qcvv.base_experiment import Sample
+from supermarq.qcvv.irb import IRB
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -90,9 +91,8 @@ def test_irb_process_probabilities(irb_experiment: IRB) -> None:
         )
     ]
     samples[0].probabilities = {"00": 0.1, "01": 0.2, "10": 0.3, "11": 0.4}
-    irb_experiment._samples = samples
 
-    irb_experiment.process_probabilities()
+    data = irb_experiment.process_probabilities(samples)
 
     expected_data = pd.DataFrame(
         [
@@ -108,7 +108,7 @@ def test_irb_process_probabilities(irb_experiment: IRB) -> None:
         ]
     )
 
-    pd.testing.assert_frame_equal(expected_data, irb_experiment.raw_data)
+    pd.testing.assert_frame_equal(expected_data, data)
 
 
 def test_irb_build_circuit(irb_experiment: IRB) -> None:
@@ -131,6 +131,7 @@ def test_irb_build_circuit(irb_experiment: IRB) -> None:
                     cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits),
                     cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits),
                     cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits),
+                    cirq.measure(irb_experiment.qubits),
                 ]
             ),
             data={
@@ -149,6 +150,7 @@ def test_irb_build_circuit(irb_experiment: IRB) -> None:
                     cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits),
                     cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits),
                     cirq.ops.SingleQubitCliffordGate.I(*irb_experiment.qubits),
+                    cirq.measure(irb_experiment.qubits),
                 ]
             ),
             data={
@@ -164,6 +166,7 @@ def test_irb_build_circuit(irb_experiment: IRB) -> None:
                     cirq.ops.SingleQubitCliffordGate.X(*irb_experiment.qubits),
                     cirq.ops.SingleQubitCliffordGate.X(*irb_experiment.qubits),
                     cirq.ops.SingleQubitCliffordGate.X(*irb_experiment.qubits),
+                    cirq.measure(irb_experiment.qubits),
                 ]
             ),
             data={
@@ -182,6 +185,7 @@ def test_irb_build_circuit(irb_experiment: IRB) -> None:
                     cirq.ops.SingleQubitCliffordGate.X(*irb_experiment.qubits),
                     cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits),
                     cirq.ops.SingleQubitCliffordGate.Y(*irb_experiment.qubits),
+                    cirq.measure(irb_experiment.qubits),
                 ]
             ),
             data={
@@ -205,6 +209,7 @@ def test_irb_build_circuit(irb_experiment: IRB) -> None:
 
 
 def test_analyse_results(irb_experiment: IRB) -> None:
+    irb_experiment._samples = MagicMock()
     irb_experiment._raw_data = pd.DataFrame(
         [
             {

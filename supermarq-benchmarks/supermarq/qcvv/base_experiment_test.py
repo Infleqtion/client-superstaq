@@ -27,7 +27,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from supermarq.qcvv.base_experiment import BenchmarkingExperiment, QCVVResults, Sample
+from supermarq.qcvv.base_experiment import BenchmarkingExperiment, BenchmarkingResults, Sample
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -50,15 +50,17 @@ def sample_circuits() -> list[Sample]:
             circuit=cirq.Circuit(cirq.CZ(*qubits), cirq.CZ(*qubits), cirq.measure(*qubits)),
             data={"circuit": 1},
         ),
-        Sample(circuit=cirq.Circuit(cirq.CX(*qubits)), data={"circuit": 2}),
+        Sample(circuit=cirq.Circuit(cirq.CX(*qubits), cirq.measure(*qubits)), data={"circuit": 2}),
     ]
 
 
 @dataclass(frozen=True)
-class ExampleResults(QCVVResults):
+class ExampleResults(BenchmarkingResults):
     """NamedTuple instance to use for testing"""
 
     example: float
+
+    experiment_name = "Example results"
 
 
 def test_sample_target_property() -> None:
@@ -80,9 +82,7 @@ def test_benchmarking_experiment_init(abc_experiment: BenchmarkingExperiment) ->
     assert abc_experiment._samples is None
 
     abc_experiment._raw_data = pd.DataFrame([{"Example": 0.1}])
-    abc_experiment._results = ExampleResults(
-        experiment_name="Example", target="Some target", total_circuits=2, example=5.0
-    )
+    abc_experiment._results = ExampleResults(target="Some target", total_circuits=2, example=5.0)
 
     pd.testing.assert_frame_equal(abc_experiment.raw_data, abc_experiment._raw_data)
     assert abc_experiment.results == abc_experiment._results
@@ -325,7 +325,7 @@ def test_validate_circuits(
     # Add a gate so not all measurements are terminal
     abc_experiment._samples[0].circuit += cirq.X(abc_experiment.qubits[0])
     with pytest.raises(
-        ValueError, match="QCVV experiment circuits can only contain terminal measurements"
+        ValueError, match="QCVV experiment circuits can only contain terminal measurements."
     ):
         abc_experiment._validate_circuits()
 
@@ -336,6 +336,14 @@ def test_validate_circuits(
     with pytest.raises(
         ValueError,
         match="The terminal measurement in QCVV experiment circuits must measure all qubits.",
+    ):
+        abc_experiment._validate_circuits()
+
+    # Remove all measurements
+    abc_experiment._samples[0].circuit = abc_experiment._samples[0].circuit[:-2]
+    with pytest.raises(
+        ValueError,
+        match="QCVV experiment circuits must contain measurements.",
     ):
         abc_experiment._validate_circuits()
 

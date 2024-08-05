@@ -62,16 +62,17 @@ class Sample:
 
 
 @dataclass(frozen=True)
-class QCVVResults:
+class BenchmarkingResults(ABC):
     """A dataclass for storing the results of the experiment. Requires subclassing for
     each new experiment type"""
 
-    experiment_name: str
-    """The name of the experiment."""
     target: str
     """The target device that was used."""
     total_circuits: int
     """The total number of circuits used in the experiment."""
+
+    experiment_name: str = field(init=False)
+    """The name of the experiment"""
 
 
 class BenchmarkingExperiment(ABC):
@@ -106,7 +107,7 @@ class BenchmarkingExperiment(ABC):
                 results = experiment.analyse_results(<<args>>)
 
     #. The final results of the experiment will be stored in the :code:`results` attribute as a
-       :class:`QCVVResults` of values, while all the data from the experiment will be
+       :class:`BenchmarkingResults` of values, while all the data from the experiment will be
        stored in the :code:`raw_data` attribute as a :class:`~pandas.DataFrame`. Some experiments
        may include additional data attributes for data generated during the analysis.
 
@@ -130,14 +131,13 @@ class BenchmarkingExperiment(ABC):
         into a :class:`pandas.DataFrame`.
 
     #. :meth:`analyse_results`: Analyse the data in the :attr:`raw_data` dataframe and return a
-        :class:`QCVVResults` object containing the results of the experiment.
+        :class:`BenchmarkingResults` object containing the results of the experiment.
 
     #. :meth:`plot_results`: Produce any relevant plots that are useful for understanding the
         results of the experiment.
 
-    Additionally the :class:`QCVVResults` dataclass needs subclassing to hold the specific results
-    of the new experiment.
-
+    Additionally the :class:`BenchmarkingResults` dataclass needs subclassing to hold the specific
+    results of the new experiment.
     """
 
     def __init__(
@@ -156,7 +156,7 @@ class BenchmarkingExperiment(ABC):
         self._raw_data: pd.DataFrame | None = None
         "The data generated during the experiment"
 
-        self._results: QCVVResults | None = None
+        self._results: BenchmarkingResults | None = None
         """The attribute to store the results in."""
 
         self._samples: Sequence[Sample] | None = None
@@ -166,7 +166,7 @@ class BenchmarkingExperiment(ABC):
         """The superstaq service for submitting jobs."""
 
     @property
-    def results(self) -> QCVVResults:
+    def results(self) -> BenchmarkingResults:
         """The results from the most recently run experiment.
 
         Raises:
@@ -218,8 +218,10 @@ class BenchmarkingExperiment(ABC):
     def _validate_circuits(self) -> None:
         """Checks that all circuits contain a terminal measurement of all qubits."""
         for sample in self.samples:
+            if not sample.circuit.has_measurements():
+                raise ValueError("QCVV experiment circuits must contain measurements.")
             if not sample.circuit.are_all_measurements_terminal():
-                raise ValueError("QCVV experiment circuits can only contain terminal measurements")
+                raise ValueError("QCVV experiment circuits can only contain terminal measurements.")
             if not sorted(sample.circuit[-1].qubits) == sorted(self.qubits):
                 raise ValueError(
                     "The terminal measurement in QCVV experiment circuits must measure all qubits."
@@ -432,7 +434,7 @@ class BenchmarkingExperiment(ABC):
             cycle_depths: An iterable of the different cycle depths to use during the experiment.
 
         Returns:
-            The list of circuit objects
+           The list of experiment samples.
         """
 
     @abstractmethod
@@ -452,7 +454,7 @@ class BenchmarkingExperiment(ABC):
         """Plot the results of the experiment"""
 
     @abstractmethod
-    def analyse_results(self, plot_results: bool = True) -> QCVVResults:
+    def analyse_results(self, plot_results: bool = True) -> BenchmarkingResults:
         """Perform the experiment analysis and store the results in the `results` attribute
 
         Args:
