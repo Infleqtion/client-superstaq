@@ -15,7 +15,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Set
+from collections.abc import Iterator, Sequence, Set
 from typing import Any
 
 import cirq
@@ -425,6 +425,18 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
 
     def _decompose_(self, qubits: tuple[cirq.Qid, ...]) -> cirq.type_workarounds.NotImplementedType:
         return NotImplemented
+
+    def _commutes_(self, other: object, atol: float = 1e-8) -> bool:
+        """By definition nothing commutes with a barrier."""
+        _, _ = other, atol
+        return False
+
+    def _commutes_on_qids_(
+        self, qids: Sequence[cirq.Qid], other: object, atol: float = 1e-8
+    ) -> bool:
+        """By definition nothing commutes with a barrier."""
+        _, _, _ = qids, other, atol
+        return False
 
     def _trace_distance_bound_(self) -> float:
         return 1.0
