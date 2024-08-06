@@ -155,8 +155,8 @@ class SuperstaqJob(qiskit.providers.JobV1):
             {
                 "results": results_list,
                 "qobj_id": -1,
-                "backend_name": self._backend._configuration.backend_name,
-                "backend_version": self._backend._configuration.backend_version,
+                "backend_name": self._backend.configuration().backend_name,
+                "backend_version": self._backend.configuration().backend_version,
                 "success": self._overall_status == "Done",
                 "status": self._overall_status,
                 "job_id": self._job_id,
