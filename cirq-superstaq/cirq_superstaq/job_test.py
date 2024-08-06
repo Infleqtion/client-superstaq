@@ -68,9 +68,9 @@ def multi_circuit_job() -> css.Job:
     )
     job = css.Job(client, "job_id1,job_id2,job_id3")
     job._job = {
-        "job_id1": css.Job(client, "job_id1"),
-        "job_id2": css.Job(client, "job_id2"),
-        "job_id3": css.Job(client, "job_id3"),
+        "job_id1": {"status": "Done"},
+        "job_id2": {"status": "Running"},
+        "job_id3": {"status": "Submitted"},
     }
     return job
 
@@ -475,6 +475,7 @@ def test_job_getitem(multi_circuit_job: css.job.Job) -> None:
     job_1 = multi_circuit_job[0]
     assert isinstance(job_1, css.Job)
     assert job_1.job_id() == "job_id1"
+    assert job_1.status() == "Done"
 
 
 def test_get_marginal_counts() -> None:

@@ -23,7 +23,6 @@ from unittest.mock import MagicMock, call, patch
 
 import cirq
 import cirq_superstaq as css
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -113,7 +112,7 @@ def test_prepare_experiment_overwrite_error(
     abc_experiment: BenchmarkingExperiment[ExampleResults],
 ) -> None:
     abc_experiment._samples = [Sample(circuit=MagicMock(), data={})]
-    abc_experiment.build_circuits = MagicMock()
+    abc_experiment._build_circuits = MagicMock()
 
     with pytest.raises(
         RuntimeError,
@@ -127,12 +126,12 @@ def test_prepare_experiment_overwrite(
     abc_experiment: BenchmarkingExperiment[ExampleResults],
 ) -> None:
     abc_experiment._samples = [Sample(circuit=MagicMock(), data={})]
-    abc_experiment.build_circuits = MagicMock()
+    abc_experiment._build_circuits = MagicMock()
     abc_experiment._validate_circuits = MagicMock()
 
     abc_experiment._prepare_experiment(100, [1, 50, 100], overwrite=True)
 
-    abc_experiment.build_circuits.assert_called_once_with(100, [1, 50, 100])
+    abc_experiment._build_circuits.assert_called_once_with(100, [1, 50, 100])
     abc_experiment._validate_circuits.assert_called_once_with()
 
 
@@ -151,15 +150,15 @@ def test_run_with_simulator(
     cirq.measurement_key_name = MagicMock()
     abc_experiment._prepare_experiment = MagicMock()
     abc_experiment._samples = sample_circuits
-    test_target = MagicMock()
+    test_sim = MagicMock()
     mock_result = MagicMock()
     mock_result.histogram.return_value = {0: 0, 1: 100, 2: 0, 3: 0}
-    test_target.run.return_value = mock_result
+    test_sim.run.return_value = mock_result
 
-    abc_experiment.run_with_simulator(10, [5, 10, 20], target=test_target, shots=100)
+    abc_experiment.run_with_simulator(10, [5, 10, 20], simulator=test_sim, shots=100)
 
     # Test simulator calls
-    test_target.run.assert_has_calls(
+    test_sim.run.assert_has_calls(
         [
             call(sample_circuits[0].circuit, repetitions=100),
             call(sample_circuits[1].circuit, repetitions=100),
@@ -247,24 +246,13 @@ def test_run_on_device_dry_run(
     assert job == mock_service.create_job.return_value
 
 
-def test_state_probs_to_dict(abc_experiment: BenchmarkingExperiment[ExampleResults]) -> None:
-    probabilities = np.array([0.1, 0.2, 0.3, 0.4])
-    out_dict = abc_experiment._state_probs_to_dict(probabilities)
-    assert out_dict == {
-        "00": 0.1,
-        "01": 0.2,
-        "10": 0.3,
-        "11": 0.4,
-    }
-
-
 def test_interleave_circuit() -> None:
     qubit = cirq.LineQubit(0)
     circuit = cirq.Circuit(*[cirq.X(qubit) for _ in range(4)])
 
     # With last gate
-    interleaved_circuit = BenchmarkingExperiment._interleave_gate(
-        circuit, cirq.Z, include_final=True
+    interleaved_circuit = BenchmarkingExperiment._interleave_op(
+        circuit, cirq.Z(qubit), include_final=True
     )
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
@@ -281,8 +269,8 @@ def test_interleave_circuit() -> None:
     )
 
     # Without last gate
-    interleaved_circuit = BenchmarkingExperiment._interleave_gate(
-        circuit, cirq.Z, include_final=False
+    interleaved_circuit = BenchmarkingExperiment._interleave_op(
+        circuit, cirq.Z(qubit), include_final=False
     )
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
@@ -306,21 +294,21 @@ def test_sample_statuses(
     mock_job.status.return_value = "example_status"
     sample_circuits[0].job = mock_job
 
-    statuses = abc_experiment.sample_statuses()
+    statuses = abc_experiment._sample_statuses()
     assert statuses == ["example_status", None]
     mock_job.status.assert_called_once_with()
 
 
-def test_sample_targets(
+def test_targets(
     abc_experiment: BenchmarkingExperiment[ExampleResults],
 ) -> None:
     abc_experiment._samples = [mock_sample_0 := MagicMock(), mock_sample_1 := MagicMock()]
     mock_sample_0.target = "target_0"
     mock_sample_1.target = "target_1"
-    assert abc_experiment.sample_targets == ["target_0", "target_1"]
+    assert abc_experiment.targets == frozenset(["target_0", "target_1"])
 
     mock_sample_1.target = "target_0"
-    assert abc_experiment.sample_targets == ["target_0"]
+    assert abc_experiment.targets == frozenset(["target_0"])
 
 
 def test_validate_circuits(
@@ -367,7 +355,7 @@ def test_process_device_counts(abc_experiment: BenchmarkingExperiment[ExampleRes
     assert probs == {"00": 20 / 35, "01": 5 / 35, "10": 0.0, "11": 10 / 35}
 
 
-def test_retrieve_ss_jobs_not_all_submitted(
+def test_retrieve_jobs_not_all_submitted(
     abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
@@ -377,22 +365,22 @@ def test_retrieve_ss_jobs_not_all_submitted(
     mock_job_1.job_id.return_value = "example_job_id"
     abc_experiment._samples[0].job = mock_job_1
 
-    statuses = abc_experiment.retrieve_ss_jobs()
+    statuses = abc_experiment._retrieve_jobs()
 
     assert statuses == {"example_job_id": "Queued"}
     assert not hasattr(sample_circuits[0], "probabilities")
     assert not hasattr(sample_circuits[1], "probabilities")
 
 
-def test_retrieve_ss_jobs_nothing_to_retrieve(
+def test_retrieve_jobs_nothing_to_retrieve(
     abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
-    statuses = abc_experiment.retrieve_ss_jobs()
+    statuses = abc_experiment._retrieve_jobs()
     assert statuses == {}
 
 
-def test_retrieve_ss_jobs_all_submitted(
+def test_retrieve_jobs_all_submitted(
     abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
@@ -407,7 +395,7 @@ def test_retrieve_ss_jobs_all_submitted(
     mock_job_2.counts.return_value = {"00": 5, "11": 10}
     abc_experiment._samples[1].job = mock_job_2
 
-    statuses = abc_experiment.retrieve_ss_jobs()
+    statuses = abc_experiment._retrieve_jobs()
 
     # Check counts call
     mock_job_2.counts.assert_called_once_with(0)
@@ -430,10 +418,10 @@ def test_collect_data_no_jobs_to_retrieve(
     sample_circuits[0].probabilities = {"00": 1.0, "10": 0.0, "01": 0.0, "11": 0.0}
     sample_circuits[1].probabilities = {"00": 0.0, "10": 0.0, "01": 0.0, "11": 1.0}
     abc_experiment._samples = sample_circuits
-    abc_experiment.process_probabilities = MagicMock()
+    abc_experiment._process_probabilities = MagicMock()
 
     assert abc_experiment.collect_data()
-    abc_experiment.process_probabilities.assert_called_once_with(sample_circuits)
+    abc_experiment._process_probabilities.assert_called_once_with(sample_circuits)
 
 
 def test_collect_data_no_jobs_to_retrieve_not_all_probabilities(
@@ -443,12 +431,12 @@ def test_collect_data_no_jobs_to_retrieve_not_all_probabilities(
 ) -> None:
     sample_circuits[0].probabilities = {"00": 1.0, "10": 0.0, "01": 0.0, "11": 0.0}
     abc_experiment._samples = sample_circuits
-    abc_experiment.process_probabilities = MagicMock()
+    abc_experiment._process_probabilities = MagicMock()
 
     assert not abc_experiment.collect_data()
     out, _ = capfd.readouterr()
     assert out == "Some samples do not have probability results.\n"
-    abc_experiment.process_probabilities.assert_not_called()
+    abc_experiment._process_probabilities.assert_not_called()
 
 
 def test_collect_data_no_jobs_to_retrieve_not_all_probabilities_forced(
@@ -456,24 +444,24 @@ def test_collect_data_no_jobs_to_retrieve_not_all_probabilities_forced(
 ) -> None:
     sample_circuits[0].probabilities = {"00": 1.0, "10": 0.0, "01": 0.0, "11": 0.0}
     abc_experiment._samples = sample_circuits
-    abc_experiment.process_probabilities = MagicMock()
+    abc_experiment._process_probabilities = MagicMock()
 
     assert abc_experiment.collect_data(force=True)
-    abc_experiment.process_probabilities.assert_called_once_with([sample_circuits[0]])
+    abc_experiment._process_probabilities.assert_called_once_with([sample_circuits[0]])
 
 
 def test_collect_data_cannot_force(
     abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
-    abc_experiment.process_probabilities = MagicMock()
+    abc_experiment._process_probabilities = MagicMock()
 
     with pytest.raises(
         RuntimeError, match="Cannot force data collection when there are no completed samples."
     ):
         abc_experiment.collect_data(force=True)
 
-    abc_experiment.process_probabilities.assert_not_called()
+    abc_experiment._process_probabilities.assert_not_called()
 
 
 def test_collect_data_outstanding_jobs(
@@ -482,8 +470,8 @@ def test_collect_data_outstanding_jobs(
     capfd: pytest.CaptureFixture[str],
 ) -> None:
     abc_experiment._samples = sample_circuits
-    abc_experiment.process_probabilities = MagicMock()
-    abc_experiment.retrieve_ss_jobs = MagicMock(return_value={"example_id": "some_status"})
+    abc_experiment._process_probabilities = MagicMock()
+    abc_experiment._retrieve_jobs = MagicMock(return_value={"example_id": "some_status"})
     assert not abc_experiment.collect_data()
     out, _ = capfd.readouterr()
     assert out == (
@@ -491,7 +479,7 @@ def test_collect_data_outstanding_jobs(
         "Outstanding Superstaq jobs:\n"
         "{'example_id': 'some_status'}\n"
     )
-    abc_experiment.process_probabilities.assert_not_called()
+    abc_experiment._process_probabilities.assert_not_called()
 
 
 def test_collect_data_outstanding_jobs_force(
@@ -500,9 +488,9 @@ def test_collect_data_outstanding_jobs_force(
     capfd: pytest.CaptureFixture[str],
 ) -> None:
     abc_experiment._samples = sample_circuits
-    abc_experiment.process_probabilities = MagicMock(return_value=pd.DataFrame([{"data": 1.0}]))
+    abc_experiment._process_probabilities = MagicMock(return_value=pd.DataFrame([{"data": 1.0}]))
     abc_experiment.samples[0].probabilities = {"00": 1.0, "10": 0.0, "01": 0.0, "11": 0.0}
-    abc_experiment.retrieve_ss_jobs = MagicMock(return_value={"example_id": "some_status"})
+    abc_experiment._retrieve_jobs = MagicMock(return_value={"example_id": "some_status"})
     assert abc_experiment.collect_data(force=True)
     out, _ = capfd.readouterr()
     assert out == (
@@ -512,6 +500,6 @@ def test_collect_data_outstanding_jobs_force(
         "Some samples do not have probability results.\n"
     )
 
-    abc_experiment.process_probabilities.assert_called_once_with([abc_experiment.samples[0]])
+    abc_experiment._process_probabilities.assert_called_once_with([abc_experiment.samples[0]])
 
     pd.testing.assert_frame_equal(pd.DataFrame([{"data": 1.0}]), abc_experiment.raw_data)
