@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 # Copyright 2024 Infleqtion
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +12,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from __future__ import annotations
 
 import dataclasses
+import datetime
+import difflib
 import enum
 import re
 import sys
@@ -30,9 +30,9 @@ import tomlkit
 from checks_superstaq import check_utils
 
 
-def read_toml() -> tuple[str, str, str, bool] | None:
+def read_toml() -> tuple[str, str, bool] | None:
     """Reads the pyproject.toml file to get license information. Fields should be under
-    [tool.license_header_format] and named `license_header`, `license_name`, `licensee` and
+    [tool.license_header_format] and named `license_header`, `licensee` and
     `editable`.
 
     Returns:
@@ -47,15 +47,6 @@ def read_toml() -> tuple[str, str, str, bool] | None:
         print(
             "Under [tool.license_header_format] add a `license_header` field filled with the"
             "license header that should be added to source code files in the repository."
-        )
-        return None
-
-    try:
-        license_name = str(data["tool"]["license_header_format"]["license_name"])
-    except KeyError:
-        print(
-            "Under [tool.license_header_format] add a `license_name` field filled with the"
-            " license's name."
         )
         return None
 
@@ -77,7 +68,7 @@ def read_toml() -> tuple[str, str, str, bool] | None:
         )
         return None
 
-    return expected_license_header, license_name, licensee, editable
+    return expected_license_header, licensee, editable
 
 
 class HeaderType(enum.Enum):
@@ -147,7 +138,7 @@ def _extract_license_header(file: str) -> list[LicenseHeader]:
 
                 if line == "\n":
                     # set the line number for the last line of the license_header
-                    license_header_lst[-1].license_header = license_header
+                    license_header_lst[-1].license_header = license_header.strip()
                     license_header_lst[-1].end_line_num = line_num + 1
                     license_header = ""
                 else:
@@ -163,7 +154,6 @@ def _validate_license_header(
     license_header_lst: list[LicenseHeader],
     expected_license_header: str,
     licensee: str,
-    license_name: str,
     editable: bool,
 ) -> bool:
     """Returns whether there is a valid license header in a file and for each license
@@ -175,39 +165,59 @@ def _validate_license_header(
     Args:
         license_header_lst: List of the license_header objects for each header in a file.
         licensee: The owner of the expected license.
-        license_name: The name of the expected license.
         editable: Whether similar licenses can be edited to include the license owner instead
             adding the entire license to the file.
 
     Returns: Whether there is a valid license header in a file or not.
     """
+    copyright_line = ""
+    body = ""
+    copyright_pattern = re.compile(r"Copyright .*")
+    header_as_lst = expected_license_header.split("\n")
+
+    for idx, line in enumerate(header_as_lst):
+        if re.search(copyright_pattern, line):
+            copyright_line += line
+            body = "\n".join(header_as_lst[idx + 1 :]).strip("#")
+            break
+        else:
+            copyright_line += line
+    copyright_line = copyright_line.replace("{YEAR}", r"20\d{2}").replace("{LICENSEE}", licensee)
+
     target = (
-        expected_license_header.replace("{YEAR}", ".*")
+        expected_license_header.replace("{YEAR}", r"20\d{2}")
         .replace("{LICENSEE}", licensee)
         .replace("\n", "")
+        .replace("(", r"\(")
+        .replace(")", r"\)")
+        .replace(".", r"\.")
+        .replace("'", r"\'")
+        .replace('"', r"\"")
+        .strip()
     )
-    print(target)
-    valid_header_regex = re.compile(rf"{target}")
-    valid = False
 
+    pattern = re.compile(target)
+    valid = False
     for license_header in license_header_lst:
-        print(re.match(valid_header_regex, license_header.license_header.replace("\n", "")))
-        print(license_header.license_header.replace("\n", ""))
-        if (
-            re.match(valid_header_regex, license_header.license_header)
-            and license_name in license_header.license_header
+        if re.match(pattern, license_header.license_header.replace("\n", "")):
+            license_header.header_type = HeaderType.VALID
+            valid = True
+        elif (
+            difflib.SequenceMatcher(None, body, license_header.license_header).ratio() > 0.94
+            and licensee in license_header.license_header
         ):
             license_header.header_type = HeaderType.VALID
             valid = True
         elif (
-            re.search(valid_header_regex, license_header.license_header)
-            and license_name not in license_header.license_header
+            editable
+            and difflib.SequenceMatcher(None, body, license_header.license_header).ratio() > 0.94
+            and licensee not in license_header.license_header
         ):
-            license_header.header_type = HeaderType.OUTDATED
-        elif not editable or license_name not in license_header.license_header:
-            license_header.header_type = HeaderType.OTHER
-        else:
             license_header.header_type = HeaderType.SIMILAR_LICENSE
+        elif re.search(re.compile(copyright_line), license_header.license_header):
+            license_header.header_type = HeaderType.OUTDATED
+        else:
+            license_header.header_type = HeaderType.OTHER
 
     return valid
 
@@ -232,11 +242,11 @@ def _append_to_header(file: str, license_header: LicenseHeader, licensee: str) -
                 and license_header.start_line_num <= line_num + 1 < license_header.end_line_num
             ):
                 if line[-2] == ",":
-                    prepend += line[:-1] + f" 2024 {licensee}.\n"
+                    prepend += line[:-1] + f" {datetime.datetime.now().year} {licensee}.\n"
                 elif line[-2].isalpha():
-                    prepend += line[:-1] + f", 2024 {licensee}.\n"
+                    prepend += line[:-1] + f", {datetime.datetime.now().year} {licensee}.\n"
                 else:
-                    prepend += line[:-2] + f", 2024 {licensee}.\n"
+                    prepend += line[:-2] + f", {datetime.datetime.now().year} {licensee}.\n"
                 break
             prepend += line
 
@@ -275,18 +285,24 @@ def _remove_header(file: str, license_header: LicenseHeader) -> None:
         f.truncate()
 
 
-def _add_license_header(file: str, expected_license_header: str) -> None:
+def _add_license_header(file: str, expected_license_header: str, licensee: str) -> None:
     """Adds the correct license header to a file.
 
     Args:
         file: The file name/path to which license header is added.
         expected_license_header: The target license header.
+        licensee: The owner of the expected license.
 
     Returns nothing.
     """
     exceptions = ["# pylint:", "#!/", "# mypy:"]
     exception_lines = ""
     char_count = 0
+    license_header = (
+        expected_license_header.replace("{YEAR}", str(datetime.datetime.now().year))
+        .replace("{LICENSEE}", licensee)
+        .strip()
+    )
     with open(file, "r+") as f:
         for line in f:
             if any(line.startswith(exception) for exception in exceptions):
@@ -298,7 +314,7 @@ def _add_license_header(file: str, expected_license_header: str) -> None:
         f.seek(char_count)
         content = f.read()
         f.seek(0)
-        f.write(exception_lines + expected_license_header + content)
+        f.write(exception_lines + license_header + "\n\n" + content.lstrip("\n"))
         f.truncate()
 
 
@@ -364,7 +380,6 @@ def run_checker(
     no_header: bool,
     bad_header: bool,
     expected_license_header: str,
-    license_name: str,
     licensee: str,
     editable: bool,
 ) -> int:
@@ -379,7 +394,6 @@ def run_checker(
         no_header: Whether to only handle files with no license headers.
         bad_header: Whether to only handle files with incorrect headers.
         expected_license_header: The target license header.
-        license_name: The name of the expected license.
         licensee: The owner of the expected license.
         editable: Whether similar licenses can be edited to include the license owner instead
             adding the entire license to the file.
@@ -394,7 +408,7 @@ def run_checker(
     if len(license_header_lst) == 0:
         if (not no_header and not bad_header) or no_header:
             if apply:
-                _add_license_header(file, expected_license_header)
+                _add_license_header(file, expected_license_header, licensee)
                 print(f"{styled_file_name}: {check_utils.success('License header added.')}")
             else:
                 print(f"{styled_file_name}: {check_utils.warning('No license header found.')}")
@@ -406,7 +420,7 @@ def run_checker(
         return 0
 
     valid = _validate_license_header(
-        license_header_lst, expected_license_header, licensee, license_name, editable
+        license_header_lst, expected_license_header, licensee, editable
     )
     append_flag = False  # ensure the licensee is not appended to multiple headers
     exit_code = 0
@@ -430,7 +444,7 @@ def run_checker(
         )
 
     if not valid and not append_flag and apply:
-        _add_license_header(file, expected_license_header)
+        _add_license_header(file, expected_license_header, licensee)
         print(f"{styled_file_name}: {check_utils.success('License header added.')}")
 
     return exit_code
@@ -494,7 +508,7 @@ def run(
         return 0
 
     if (toml_data := read_toml()) is not None:
-        expected_license_header, licensee, license_name, editable = toml_data
+        expected_license_header, licensee, editable = toml_data
     else:
         return 0
 
@@ -508,7 +522,6 @@ def run(
             parsed_args.bad_header,
             expected_license_header,
             licensee,
-            license_name,
             editable,
         )
 
