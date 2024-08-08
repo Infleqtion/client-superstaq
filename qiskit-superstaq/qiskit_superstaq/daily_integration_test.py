@@ -49,6 +49,7 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
     )
     assert ibmq_backend_info in result
     assert provider.get_backend("ibmq_brisbane_qpu").name() == "ibmq_brisbane_qpu"
+    assert len(provider.backends()) == len(result)
 
 
 def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:

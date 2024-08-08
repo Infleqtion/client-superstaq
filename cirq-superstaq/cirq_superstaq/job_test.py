@@ -212,7 +212,9 @@ def test_pulse_gate_circuits_invalid_circuit(job: css.job.Job) -> None:
 
     # The first call will trigger a refresh:
     with patched_requests({"job_id": job_dict}):
-        with pytest.raises(ValueError, match="circuits could not be deserialized."):
+        with pytest.raises(ValueError, match="circuits could not be deserialized."), pytest.warns(
+            match="pulse gate circuit could not be deserialized"
+        ):
             job.pulse_gate_circuits()
 
 

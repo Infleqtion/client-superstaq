@@ -558,6 +558,11 @@ def test_barrier() -> None:
     assert str(gate) == "Barrier(3)"
     assert repr(gate) == "css.Barrier(3)"
 
+    assert not cirq.commutes(css.Barrier(1), cirq.I)
+    assert not cirq.commutes(cirq.Z, css.Barrier(1))
+    assert not cirq.commutes(css.barrier(*qubits), cirq.I(qubits[1]))
+    assert not cirq.commutes(cirq.Z(qubits[2]), css.barrier(*qubits))
+
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq as css")
 
     operation = gate.on(*qubits)
