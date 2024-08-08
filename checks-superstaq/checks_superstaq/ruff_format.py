@@ -48,8 +48,7 @@ def run(
 
     if files:
         return subprocess.call(
-            ["python", "-m", "ruff", "format", *files, *args_to_pass],
-            cwd=check_utils.root_dir,
+            ["python", "-m", "ruff", "format", *files, *args_to_pass], cwd=check_utils.root_dir
         )
 
     return 0
