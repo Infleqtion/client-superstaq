@@ -212,7 +212,7 @@ def _validate_license_header(
         elif (
             editable
             and difflib.SequenceMatcher(None, body, license_header.license_header).ratio() > 0.94
-            and licensee not in license_header.license_header
+            and not re.search(appended_pattern, license_header.license_header)
         ):
             license_header.header_type = HeaderType.SIMILAR_LICENSE
         elif re.search(re.compile(copyright_line), license_header.license_header):
