@@ -100,7 +100,7 @@ def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
         checks_failed |= flake8_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
         checks_failed |= pylint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 
-   checks_failed |= license_header_format_.run(
+    checks_failed |= license_header_format_.run(
         *args_to_pass,
         exit_on_failure=exit_on_failure,
         silent=True,
