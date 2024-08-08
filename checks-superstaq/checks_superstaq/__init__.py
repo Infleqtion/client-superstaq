@@ -12,7 +12,8 @@ from . import (
     pylint_,
     pytest_,
     requirements,
-    ruff_,
+    ruff_check,
+    ruff_format,
 )
 
 __all__ = [
@@ -28,5 +29,6 @@ __all__ = [
     "pylint_",
     "pytest_",
     "requirements",
-    "ruff_",
+    "ruff_check",
+    "ruff_format",
 ]

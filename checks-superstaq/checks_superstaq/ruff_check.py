@@ -16,7 +16,7 @@ def run(
     exclude: str | Iterable[str] = (),
     silent: bool = False,
 ) -> int:
-    """Runs ruff on the repository (formatting check).
+    """Runs 'ruff check' on the repository (formatting check).
 
     Args:
         *args: Command line arguments.
@@ -31,7 +31,7 @@ def run(
     parser = check_utils.get_check_parser()
     parser.description = textwrap.dedent(
         """
-        Runs ruff on the repository (formatting check).
+        Runs 'ruff check' on the repository (formatting check).
         """
     )
 
