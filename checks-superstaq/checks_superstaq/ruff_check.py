@@ -36,7 +36,7 @@ def run(
     )
 
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
-    if "ruff" in parsed_args.skip:
+    if "ruff_check" in parsed_args.skip:
         return 0
 
     files = check_utils.extract_files(parsed_args, include, exclude, silent)

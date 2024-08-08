@@ -12,7 +12,7 @@ from checks_superstaq import check_utils
 @check_utils.enable_exit_on_failure
 def run(
     *args: str,
-    include: str | Iterable[str] = "*.py",
+    include: str | Iterable[str] = ("*.py", "*.ipynb"),
     exclude: str | Iterable[str] = (),
     silent: bool = False,
 ) -> int:
@@ -35,15 +35,21 @@ def run(
         """
     )
 
+    parser.add_argument("--fix", action="store_true", help="Apply changes to files.")
+
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
-    if "ruff" in parsed_args.skip:
+    if "ruff_format" in parsed_args.skip:
         return 0
+
+    if not parsed_args.fix:
+        args_to_pass.append("--diff")
 
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     if files:
         return subprocess.call(
-            ["python", "-m", "ruff", "format", *files, *args_to_pass], cwd=check_utils.root_dir
+            ["python", "-m", "ruff", "format", *files, *args_to_pass],
+            cwd=check_utils.root_dir,
         )
 
     return 0
