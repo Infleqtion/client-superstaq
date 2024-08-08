@@ -61,7 +61,26 @@ class SU2Results(BenchmarkingResults):
 
 class SU2(BenchmarkingExperiment[SU2Results]):
     r"""SU2 benchmarking experiment.
-    TODO - Full description
+
+    SU2 benchmarking extracts the fidelity of a given two qubit gate, even in the presence of
+    additional single qubit errors. The method works by sampling circuits of the form
+
+    .. code::
+
+        0: ──|─Rr───Q───X───Q──|─ ^{n} ... ─|─Rr───X─|─ ^{N-n} ... ──Rf───M───
+             |      │       │  |            |        |                    │
+        1: ──|─Rr───Q───X───Q──|─      ... ─|─Rr───X─|─        ... ──Rf───M───
+
+    Where each :code:`Rr` gate is a randomly chosen :math:`SU(2)` rotation and the :code:`Rf` gates
+    are single qubit :math:`SU(2)` rotations that in the absence of noise invert the preceding
+    circuit so that the final qubit state should be :code:`00`.
+
+    An exponential fi decay is then fitted to the observed 00 state probability as it decays with
+    the number of two qubit gates included. Note that all circuits contain a fixed number of single
+    qubit gates, so that the contribution for single qubit noise is constant.
+
+    See Fig. 3 of :ref:`https://www.nature.com/articles/s41586-023-06481-y#Fig3` for further
+    details.
     """
 
     def __init__(
