@@ -28,6 +28,10 @@ filterwarnings = [
   "ignore::PendingDeprecationWarning:ruamel.yaml.main",
 ]
 
+[tool.ruff]
+line-length = 100
+lint.extend-select = ["I"]
+
 [tool.black]
 color = true
 line_length = 100
