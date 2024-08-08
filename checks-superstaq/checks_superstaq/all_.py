@@ -14,10 +14,12 @@ from checks_superstaq import (
     mypy_,
     pylint_,
     requirements,
+    ruff_format_,
+    ruff_lint_,
 )
 
 
-def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
+def run(*args: str, sphinx_paths: list[str] | None = None, use_ruff: bool = False) -> int:
     """Runs all checks on the repository.
 
     Args:
@@ -66,6 +68,12 @@ def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
     # silencing does not affect warnings and errors
     exit_on_failure = not (parsed_args.force_formats or parsed_args.force_all)
     checks_failed |= configs.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+    if use_ruff:
+        checks_failed |= ruff_format_.run(
+            *args_to_pass, exit_on_failure=exit_on_failure, silent=True
+        )
+        checks_failed |= ruff_lint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+
     checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
     checks_failed |= flake8_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
     checks_failed |= pylint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)

@@ -6,4 +6,4 @@ import sys
 import checks_superstaq as checks
 
 if __name__ == "__main__":
-    exit(checks.ruff_check.run(*sys.argv[1:]))
+    exit(checks.ruff_lint_.run(*sys.argv[1:]))
