@@ -208,6 +208,7 @@ def plot_benchmark(
     theta = radar_factory(num_spokes)
 
     _, ax = plt.subplots(dpi=150, subplot_kw=dict(projection="radar"))
+    assert isinstance(ax, RadarAxesMeta)
 
     title, labels, case_data = data
     if not isinstance(title, str):
