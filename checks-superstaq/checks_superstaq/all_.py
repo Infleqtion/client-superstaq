@@ -73,10 +73,10 @@ def run(*args: str, sphinx_paths: list[str] | None = None, use_ruff: bool = Fals
             *args_to_pass, exit_on_failure=exit_on_failure, silent=True
         )
         checks_failed |= ruff_lint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
-
-    checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
-    checks_failed |= flake8_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
-    checks_failed |= pylint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+    else:
+        checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+        checks_failed |= flake8_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+        checks_failed |= pylint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 
     # run typing and coverage checks
     exit_on_failure = not parsed_args.force_all
