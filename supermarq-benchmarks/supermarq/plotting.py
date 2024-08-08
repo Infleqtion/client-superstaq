@@ -197,6 +197,9 @@ def plot_benchmark(
         savefn: Path to save the plot, if `None`, the plot is not saved.
         spoke_labels: Optional labels for the feature vector dimensions.
         legend_loc: Optional argument to fine tune the legend placement.
+
+    Raises:
+        ValueError: If the first element of `data`, the title, is not a string.
     """
     if spoke_labels is None:
         spoke_labels = ["Connectivity", "Liveness", "Parallelism", "Measurement", "Entanglement"]
@@ -207,6 +210,8 @@ def plot_benchmark(
     _, ax = plt.subplots(dpi=150, subplot_kw=dict(projection="radar"))
 
     title, labels, case_data = data
+    if not isinstance(title, str):
+        raise ValueError(f"Invalid plot title provided: {title}")
     ax.set_rgrids([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
     ax.set_title(
         title,
