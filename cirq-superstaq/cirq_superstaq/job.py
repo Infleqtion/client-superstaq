@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Represents a job created via the Superstaq API."""
+
 from __future__ import annotations
 
 import collections
