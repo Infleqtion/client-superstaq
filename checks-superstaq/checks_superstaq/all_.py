@@ -19,7 +19,7 @@ from checks_superstaq import (
 )
 
 
-def run(*args: str, sphinx_paths: list[str] | None = None, use_ruff: bool = False) -> int:
+def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
     """Runs all checks on the repository.
 
     Args:
@@ -52,6 +52,11 @@ def run(*args: str, sphinx_paths: list[str] | None = None, use_ruff: bool = Fals
         action="store_true",
         help="'Hard force' ~ continue past (i.e. do not exit after) all failing checks.",
     )
+    parser.add_argument(
+        "--ruff",
+        action="store_true",
+        help="Use ruff for formatting and linting (replaces black, isort, flake8, and pylint).",
+    )
 
     parsed_args, _ = parser.parse_known_intermixed_args(args)
     if parsed_args.revisions is not None:
@@ -61,14 +66,16 @@ def run(*args: str, sphinx_paths: list[str] | None = None, use_ruff: bool = Fals
     default_mode = not parsed_args.files and parsed_args.revisions is None
     checks_failed = 0
 
-    args_to_pass = [arg for arg in args if arg not in ("-f", "--force-formats", "-F", "--force")]
+    args_to_pass = [
+        arg for arg in args if arg not in ("-f", "--force-formats", "-F", "--force", "--ruff")
+    ]
 
     # run formatting checks
     # silence most checks to avoid printing duplicate info about incremental files
     # silencing does not affect warnings and errors
     exit_on_failure = not (parsed_args.force_formats or parsed_args.force_all)
     checks_failed |= configs.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
-    if use_ruff:
+    if parsed_args.ruff:
         checks_failed |= ruff_format_.run(
             *args_to_pass, exit_on_failure=exit_on_failure, silent=True
         )
