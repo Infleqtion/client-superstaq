@@ -183,6 +183,7 @@ def _validate_license_header(
         else:
             copyright_line += line
     copyright_line = copyright_line.replace("{YEAR}", r"20\d{2}").replace("{LICENSEE}", licensee)
+    appended_pattern = re.compile(rf"Copyright .* 20\d{{2}} {licensee}")
 
     target = (
         expected_license_header.replace("{YEAR}", r"20\d{2}")
@@ -198,14 +199,14 @@ def _validate_license_header(
 
     pattern = re.compile(target)
     valid = False
+
     for license_header in license_header_lst:
         if re.match(pattern, license_header.license_header.replace("\n", "")):
             license_header.header_type = HeaderType.VALID
             valid = True
-        elif (
-            difflib.SequenceMatcher(None, body, license_header.license_header).ratio() > 0.94
-            and licensee in license_header.license_header
-        ):
+        elif difflib.SequenceMatcher(
+            None, body, license_header.license_header
+        ).ratio() > 0.94 and re.search(appended_pattern, license_header.license_header):
             license_header.header_type = HeaderType.VALID
             valid = True
         elif (
