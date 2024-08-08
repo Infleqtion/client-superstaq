@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tooling for interleaved randomised benchmarking
+"""Tooling for SU(2) benchmarking
 """
 
 from __future__ import annotations
@@ -19,20 +19,15 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
 import cirq
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from scipy.stats import linregress
 from tqdm.contrib.itertools import product
 
-from supermarq.qcvv.base_experiment import (
-    BenchmarkingExperiment,
-    BenchmarkingResults,
-    Sample,
-    ResultsT,
-)
+from supermarq.qcvv.base_experiment import BenchmarkingExperiment, BenchmarkingResults, Sample
 
 
 @dataclass(frozen=True)
@@ -79,6 +74,10 @@ class SU2(BenchmarkingExperiment[SU2Results]):
         """
         super().__init__(num_qubits=2)
 
+        if two_qubit_gate.num_qubits() != 2:
+            raise ValueError(
+                "The `two_qubit_gate` parameter must be a gate that acts on exactly two qubits."
+            )
         self.two_qubit_gate = two_qubit_gate
         """The two qubit gate to be benchmarked"""
 
@@ -102,10 +101,7 @@ class SU2(BenchmarkingExperiment[SU2Results]):
         for depth, _ in product(cycle_depths, range(num_circuits), desc="Building circuits"):
             circuit = cirq.Circuit(
                 *[self._component(include_two_qubit_gate=True) for _ in range(depth)],
-                *[
-                    self._component(include_two_qubit_gate=False)
-                    for _ in range(2 * max_depth - depth)
-                ],
+                *[self._component(include_two_qubit_gate=False) for _ in range(max_depth - depth)],
             )
             circuit_inv = cirq.inverse(circuit)
             # Decompose circuit inverse into a pair of single qubit rotation gates
@@ -143,7 +139,7 @@ class SU2(BenchmarkingExperiment[SU2Results]):
 
         return pd.DataFrame(records)
 
-    def analyse_results(self, plot_results: bool = True) -> ResultsT:
+    def analyse_results(self, plot_results: bool = True) -> SU2Results:
         """Perform the experiment analysis and store the results in the `results` attribute.
 
         Args:
@@ -160,8 +156,8 @@ class SU2(BenchmarkingExperiment[SU2Results]):
         gate_fid = np.exp(fit.slope)
         gate_fid_std = fit.stderr * gate_fid
 
-        single_qubit_noise = np.exp(fit.intercept)
-        single_qubit_noise_std = np.exp(fit.intercept_stderr)
+        single_qubit_noise = 1 - 4 / 3 * np.exp(fit.intercept)
+        single_qubit_noise_std = fit.intercept_stderr * (1 - single_qubit_noise)
 
         self._results = SU2Results(
             target="& ".join(self.targets),
@@ -177,7 +173,8 @@ class SU2(BenchmarkingExperiment[SU2Results]):
 
         return self.results
 
-    def _haar_random_rotation(self) -> cirq.Gate:
+    @staticmethod
+    def _haar_random_rotation() -> cirq.Gate:
         """Returns:
         Haar randomly sampled SU(2) rotation.
         """
