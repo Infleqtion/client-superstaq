@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+# Copyright 2024 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import sys
@@ -11,6 +24,7 @@ from checks_superstaq import (
     coverage_,
     flake8_,
     format_,
+    license_header_format_,
     mypy_,
     pylint_,
     requirements,
@@ -75,6 +89,7 @@ def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
     # silencing does not affect warnings and errors
     exit_on_failure = not (parsed_args.force_formats or parsed_args.force_all)
     checks_failed |= configs.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+
     if parsed_args.ruff:
         checks_failed |= ruff_format_.run(
             *args_to_pass, exit_on_failure=exit_on_failure, silent=True
@@ -85,6 +100,11 @@ def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
         checks_failed |= flake8_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
         checks_failed |= pylint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 
+    checks_failed |= license_header_format_.run(
+        *args_to_pass,
+        exit_on_failure=exit_on_failure,
+        silent=True,
+    )
     # run typing and coverage checks
     exit_on_failure = not parsed_args.force_all
     checks_failed |= mypy_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
