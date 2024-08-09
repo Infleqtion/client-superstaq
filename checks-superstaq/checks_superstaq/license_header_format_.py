@@ -201,21 +201,23 @@ def _validate_license_header(
     valid = False
 
     for license_header in license_header_lst:
-        similarity = difflib.SequenceMatcher(None, body, license_header.license_header).ratio()
-        if re.match(pattern, license_header.license_header.replace("\n", "")) and similarity > 0.94:
+        similar_body = (
+            difflib.SequenceMatcher(None, body, license_header.license_header).ratio() > 0.94
+            or not body
+        )
+        if re.match(pattern, license_header.license_header.replace("\n", "")) and similar_body:
             license_header.header_type = HeaderType.VALID
             valid = True
-        elif similarity > 0.94 and re.search(appended_pattern, license_header.license_header):
+        elif similar_body and re.search(appended_pattern, license_header.license_header):
             license_header.header_type = HeaderType.VALID
             valid = True
         elif (
             editable
-            and similarity > 0.94
+            and similar_body
             and not re.search(appended_pattern, license_header.license_header)
         ):
             license_header.header_type = HeaderType.SIMILAR_LICENSE
         elif re.search(re.compile(copyright_line), license_header.license_header):
-            print("h")
             license_header.header_type = HeaderType.OUTDATED
         else:
             license_header.header_type = HeaderType.OTHER
