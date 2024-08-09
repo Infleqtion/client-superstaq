@@ -24,7 +24,6 @@ import general_superstaq as gss
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-import pydantic
 from general_superstaq import ResourceEstimate, superstaq_client
 from scipy.optimize import curve_fit
 
@@ -116,26 +115,6 @@ def counts_to_results(
     )
 
     return result
-
-
-class AQTOptions(pydantic.BaseModel):
-    """Options supported by the `aqt_compile` endpoint."""
-
-    model_config = pydantic.ConfigDict(
-        arbitrary_types_allowed=True,
-        validate_assignment=True,
-        extra="allow",
-    )
-
-    dimension: int | None = pydantic.Field(None, ge=2)
-    num_qubits: int | None = pydantic.Field(None, gt=0)
-
-    num_eca_circuits: int | None = pydantic.Field(None, gt=0)
-    random_seed: int | None = pydantic.Field(None, gt=0)
-    atol: float | None = pydantic.Field(None, gt=0)
-    gate_defs: dict[str, cirq.Gate | cirq.Operation | None] | None = None
-    gateset: dict[str, list[list[int]]] | None = None
-    aqt_configs: dict[str, str] | None = None
 
 
 class Service(gss.service.Service):
@@ -507,7 +486,6 @@ class Service(gss.service.Service):
             Mapping[str, npt.NDArray[np.complex_] | cirq.Gate | cirq.Operation | None]
         ) = None,
         gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
-        use_qtrl: bool = True,
         pulses: object = None,
         variables: object = None,
         **kwargs: Any,
@@ -536,10 +514,6 @@ class Service(gss.service.Service):
             gateset: Which gates to use for compilation. Should be a dictionary with entries in the
                 for `gate_name: [[1, 2], [3, 4]`, where the keys refer to specific gates, and the
                 values indicate which qubit(s) they act upon.
-            use_qtrl: Whether to compile using (stored or passed-in) Qtrl configs. Note the use of
-                stored qtrl configurations is deprecated, and once it is removed this option will
-                be unnecessary (instead, the use of Qtrl will be determined by the presence of
-                passed-in configs).
             pulses: Qtrl `PulseManager` or file path for pulse configuration.
             variables: Qtrl `VariableManager` or file path for variable configuration.
             kwargs: Other desired compile options.
@@ -566,45 +540,33 @@ class Service(gss.service.Service):
             "target": target,
         }
 
-        aqt_options = AQTOptions(
-            num_eca_circuits=num_eca_circuits,
-            random_seed=random_seed,
-            atol=atol,
-            gateset=gateset,
-            **kwargs,
-        )
+        options_dict: dict[str, object]
+        options_dict = {**kwargs}
 
+        if num_eca_circuits is not None:
+            gss.validation.validate_integer_param(num_eca_circuits)
+            options_dict["num_eca_circuits"] = int(num_eca_circuits)
+        if random_seed is not None:
+            gss.validation.validate_integer_param(random_seed)
+            options_dict["random_seed"] = int(random_seed)
+        if atol is not None:
+            options_dict["atol"] = float(atol)
         if gate_defs is not None:
             gate_defs_cirq = {}
             for key, val in gate_defs.items():
                 if val is not None and not isinstance(val, (cirq.Gate, cirq.Operation)):
                     val = _to_matrix_gate(val)
                 gate_defs_cirq[key] = val
-
-            aqt_options.gate_defs = gate_defs_cirq
-
+            options_dict["gate_defs"] = gate_defs_cirq
+        if gateset is not None:
+            options_dict["gateset"] = gateset
         if pulses or variables:
-            aqt_options.aqt_configs = {
+            options_dict["aqt_configs"] = {
                 "pulses": self._qtrl_config_to_yaml_str(pulses),
                 "variables": self._qtrl_config_to_yaml_str(variables),
             }
 
-        elif use_qtrl:
-            warnings.warn(
-                "The use of stored Qtrl configs is deprecated, and will soon be removed. "
-                "Instead, pass your pulses and variables configs to `aqt_compile()` directly, or "
-                "pass `use_qtrl=False` to disable Qtrl (and this message) entirely.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
-        options_dict = aqt_options.model_dump(exclude_none=True)
-        if not use_qtrl:
-            options_dict["aqt_configs"] = None
-
-        if options_dict:
-            request_json["options"] = cirq.to_json(options_dict)
-
+        request_json["options"] = cirq.to_json(options_dict)
         json_dict = self._client.post_request("/aqt_compile", request_json)
         return css.compiler_output.read_json_aqt(json_dict, circuits_is_list, num_eca_circuits)
 

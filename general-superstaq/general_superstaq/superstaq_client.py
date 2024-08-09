@@ -733,7 +733,7 @@ class _SuperstaqClient:
         response_json = response.json()
         if isinstance(response_json, dict) and "warnings" in response_json:
             for warning in response_json["warnings"]:
-                warnings.warn(warning["message"], gss.SuperstaqWarning, stacklevel=3)
+                warnings.warn(warning["message"], gss.SuperstaqWarning, stacklevel=4)
             del response_json["warnings"]
         return response_json
 

@@ -116,9 +116,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         "final_logical_to_physicals": "[[[1, 4]]]",
         "state_jp": gss.serialization.serialize({}),
     }
-    with pytest.warns(DeprecationWarning, match="use of stored Qtrl configs is deprecated"):
-        out = backend.compile(qc)
-
+    out = backend.compile(qc)
     assert out.circuit == qc
     assert out.initial_logical_to_physical == {0: 1}
     assert out.final_logical_to_physical == {1: 4}
@@ -134,21 +132,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         },
     )
 
-    out = backend.compile(qc, use_qtrl=False)
-    mock_post.assert_called_with(
-        f"{provider._client.url}/aqt_compile",
-        headers=provider._client.headers,
-        verify=provider._client.verify_https,
-        json={
-            "qiskit_circuits": qss.serialize_circuits(qc),
-            "target": "aqt_keysight_qpu",
-            "options": json.dumps({"aqt_configs": None}),
-        },
-    )
-
-    out = backend.compile(
-        [qc], atol=1e-2, pulses={"foo": "bar"}, variables={"abc": 123}, use_qtrl=True
-    )
+    out = backend.compile([qc], atol=1e-2, pulses={"foo": "bar"}, variables={"abc": 123})
     assert out.circuits == [qc]
     assert out.initial_logical_to_physicals == [{0: 1}]
     assert out.final_logical_to_physicals == [{1: 4}]
@@ -159,6 +143,27 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
             "pulses": yaml.dump({"foo": "bar"}),
             "variables": yaml.dump({"abc": 123}),
         },
+    }
+    mock_post.assert_called_with(
+        f"{provider._client.url}/aqt_compile",
+        headers=provider._client.headers,
+        verify=provider._client.verify_https,
+        json={
+            "qiskit_circuits": qss.serialize_circuits(qc),
+            "target": "aqt_keysight_qpu",
+            "options": json.dumps(expected_options),
+        },
+    )
+
+    out = backend.compile([qc], atol=1e-2, aqt_configs={}, gateset={"X90": [[0], [1]]})
+    assert out.circuits == [qc]
+    assert out.initial_logical_to_physicals == [{0: 1}]
+    assert out.final_logical_to_physicals == [{1: 4}]
+    assert not hasattr(out, "circuit")
+    expected_options = {
+        "aqt_configs": {},
+        "atol": 1e-2,
+        "gateset": {"X90": [[0], [1]]},
     }
     mock_post.assert_called_with(
         f"{provider._client.url}/aqt_compile",

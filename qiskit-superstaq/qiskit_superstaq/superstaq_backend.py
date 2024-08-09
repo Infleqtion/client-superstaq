@@ -12,40 +12,18 @@
 from __future__ import annotations
 
 import numbers
-import warnings
 from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
 import numpy as np
 import numpy.typing as npt
-import pydantic
 import qiskit
 
 import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
     from _typeshed import SupportsItems
-
-
-class AQTOptions(pydantic.BaseModel):
-    """Options supported by the `aqt_compile` endpoint."""
-
-    model_config = pydantic.ConfigDict(
-        arbitrary_types_allowed=True,
-        validate_assignment=True,
-        extra="allow",
-    )
-
-    dimension: int | None = pydantic.Field(None, ge=2)
-    num_qubits: int | None = pydantic.Field(None, gt=0)
-
-    num_eca_circuits: int | None = pydantic.Field(None, gt=0)
-    random_seed: int | None = pydantic.Field(None, gt=0)
-    atol: float | None = pydantic.Field(None, gt=0)
-    gate_defs: dict[str, npt.NDArray[np.complex_] | None] | None = None
-    gateset: dict[str, list[list[int]]] | None = None
-    aqt_configs: dict[str, str] | None = None
 
 
 class SuperstaqBackend(qiskit.providers.BackendV1):
@@ -239,9 +217,8 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         num_eca_circuits: int | None = None,
         random_seed: int | None = None,
         atol: float | None = None,
-        gate_defs: Mapping[str, npt.NDArray[np.complex_] | None] | None = None,
+        gate_defs: Mapping[str, str | npt.NDArray[np.complex_] | None] | None = None,
         gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
-        use_qtrl: bool = True,
         pulses: object = None,
         variables: object = None,
         **kwargs: Any,
@@ -269,10 +246,6 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             gateset: Which gates to use for compilation. Should be a dictionary with entries in the
                 for `gate_name: [[1, 2], [3, 4]`, where the keys refer to specific gates, and the
                 values indicate which qubit(s) they act upon.
-            use_qtrl: Whether to compile using (stored or passed-in) Qtrl configs. Note the use of
-                stored qtrl configurations is deprecated - once it is removed this option will be
-                as well (instead, the use of Qtrl will be determined automatically by the `pulses`
-                and `variables` arguments).
             pulses: Qtrl `PulseManager` or file path for pulse configuration.
             variables: Qtrl `VariableManager` or file path for variable configuration.
             kwargs: Other desired compile options.
@@ -289,34 +262,24 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         if not self.name().startswith("aqt_"):
             raise ValueError(f"{self.name()!r} is not a valid AQT target.")
 
-        aqt_options = AQTOptions(
-            num_eca_circuits=num_eca_circuits,
-            random_seed=random_seed,
-            atol=atol,
-            gateset=gateset,
-            gate_defs=gate_defs,
-            **kwargs,
-        )
-
+        options: dict[str, Any] = {**kwargs}
+        if num_eca_circuits is not None:
+            gss.validation.validate_integer_param(num_eca_circuits)
+            options["num_eca_circuits"] = int(num_eca_circuits)
+        if random_seed is not None:
+            gss.validation.validate_integer_param(random_seed)
+            options["random_seed"] = int(random_seed)
+        if atol is not None:
+            options["atol"] = float(atol)
+        if gate_defs is not None:
+            options["gate_defs"] = gate_defs
+        if gateset is not None:
+            options["gateset"] = gateset
         if pulses or variables:
-            aqt_options.aqt_configs = {
+            options["aqt_configs"] = {
                 "pulses": self._provider._qtrl_config_to_yaml_str(pulses),
                 "variables": self._provider._qtrl_config_to_yaml_str(variables),
             }
-
-        elif use_qtrl:
-            warnings.warn(
-                "The use of stored Qtrl configs is deprecated, and will soon be removed. "
-                "Instead, pass your pulses and variables configs to `aqt_compile()` directly, or "
-                "pass `use_qtrl=False` to disable Qtrl (and this message) entirely.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
-        options = aqt_options.model_dump(exclude_none=True)
-        if not use_qtrl:
-            # Temporary workaround 
-            options["aqt_configs"] = None
 
         request_json = self._get_compile_request_json(circuits, **options)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
