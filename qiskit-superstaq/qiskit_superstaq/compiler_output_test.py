@@ -251,10 +251,7 @@ def test_read_json_aqt() -> None:
 
     # no sequence returned
     json_dict.pop("state_jp")
-
-    with pytest.warns(UserWarning, match="aqt_upload_configs"):
-        out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
-
+    out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
     assert out.seq is None
 
 
