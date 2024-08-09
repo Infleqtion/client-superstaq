@@ -257,17 +257,20 @@ def test_service_create_job() -> None:
 )
 def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    out = service.aqt_compile(cirq.Circuit(), test_options="yes")
-    mock_post_request.assert_called_once_with(
+    out = service.aqt_compile(cirq.Circuit(), test_options="yes", use_qtrl=False)
+    mock_post_request.assert_called_with(
         "/aqt_compile",
         {
             "cirq_circuits": css.serialization.serialize_circuits(cirq.Circuit()),
             "target": "aqt_keysight_qpu",
-            "options": '{\n  "test_options": "yes"\n}',
+            "options": cirq.to_json({"test_options": "yes", "aqt_configs": None}),
         },
     )
 
-    alt_out = service.compile(cirq.Circuit(), target="aqt_keysight_qpu", test_options="yes")
+    alt_out = service.compile(
+        cirq.Circuit(), target="aqt_keysight_qpu", test_options="yes", use_qtrl=False
+    )
+    assert mock_post_request.call_args_list[0] == mock_post_request.call_args_list[1]
 
     for output in [out, alt_out]:
         assert output.circuit == cirq.Circuit()
@@ -276,6 +279,17 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
         assert not hasattr(output, "circuits")
         assert not hasattr(output, "initial_logical_to_physicals")
         assert not hasattr(output, "final_logical_to_physicals")
+
+    with pytest.warns(DeprecationWarning, match="use of stored Qtrl configs is deprecated"):
+        out = service.aqt_compile(cirq.Circuit(), test_options="yes")
+        mock_post_request.assert_called_with(
+            "/aqt_compile",
+            {
+                "cirq_circuits": css.serialization.serialize_circuits(cirq.Circuit()),
+                "target": "aqt_keysight_qpu",
+                "options": '{\n  "test_options": "yes"\n}',
+            },
+        )
 
     gate_defs = {
         "CZ3": css.CZ3,
@@ -332,7 +346,7 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
 )
 def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    out = service.aqt_compile([cirq.Circuit(), cirq.Circuit()], atol=1e-2)
+    out = service.aqt_compile([cirq.Circuit(), cirq.Circuit()], atol=1e-2, use_qtrl=False)
     mock_post_request.assert_called_once()
     assert out.circuits == [cirq.Circuit(), cirq.Circuit()]
     assert out.initial_logical_to_physicals == [{}, {}]
@@ -353,7 +367,9 @@ def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None
 )
 def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    out = service.aqt_compile(cirq.Circuit(), num_eca_circuits=1, random_seed=1234, atol=1e-2)
+    out = service.aqt_compile(
+        cirq.Circuit(), num_eca_circuits=1, random_seed=1234, atol=1e-2, use_qtrl=False
+    )
     mock_post_request.assert_called_once()
     assert out.circuits == [cirq.Circuit()]
     assert out.initial_logical_to_physicals == [{}]
@@ -362,14 +378,16 @@ def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
     assert not hasattr(out, "initial_logical_to_physical")
     assert not hasattr(out, "final_logical_to_physical")
 
-    out = service.aqt_compile([cirq.Circuit()], num_eca_circuits=1, random_seed=1234, atol=1e-2)
+    out = service.aqt_compile(
+        [cirq.Circuit()], num_eca_circuits=1, random_seed=1234, atol=1e-2, use_qtrl=False
+    )
     assert out.circuits == [[cirq.Circuit()]]
     assert out.initial_logical_to_physicals == [[{}]]
     assert out.final_logical_to_physicals == [[{}]]
 
     with pytest.warns(DeprecationWarning, match="has been deprecated"):
         deprecated_out = service.aqt_compile_eca(
-            [cirq.Circuit()], num_equivalent_circuits=1, random_seed=1234, atol=1e-2
+            [cirq.Circuit()], num_equivalent_circuits=1, random_seed=1234, atol=1e-2, use_qtrl=False
         )
         assert deprecated_out.circuits == out.circuits
         assert deprecated_out.initial_logical_to_physicals == out.initial_logical_to_physicals

@@ -188,6 +188,8 @@ class SuperstaqProvider(gss.service.Service):
         random_seed: int | None = None,
         atol: float | None = None,
         gate_defs: Mapping[str, str | npt.NDArray[np.complex_] | None] | None = None,
+        gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
+        use_qtrl: bool = True,
         pulses: object = None,
         variables: object = None,
         **kwargs: Any,
@@ -213,6 +215,13 @@ class SuperstaqProvider(gss.service.Service):
                 `<matrix1>` for all "SWAP" calibrations except "SWAP/C5C4" (which will instead be
                 mapped to `<matrix2>` applied to qubits 4 and 5). Setting any calibration to None
                 will disable that calibration.
+            gateset: Which gates to use for compilation. Should be a dictionary with entries in the
+                for `gate_name: [[1, 2], [3, 4]`, where the keys refer to specific gates, and the
+                values indicate which qubit(s) they act upon.
+            use_qtrl: Whether to compile using (stored or passed-in) Qtrl configs. Note the use of
+                stored qtrl configurations is deprecated, and once it is removed this option will
+                be unnecessary (instead, the use of Qtrl will be determined by the presence of
+                passed-in configs).
             pulses: Qtrl `PulseManager` or file path for pulse configuration.
             variables: Qtrl `VariableManager` or file path for variable configuration.
             kwargs: Other desired compile options.
@@ -235,6 +244,8 @@ class SuperstaqProvider(gss.service.Service):
             random_seed=random_seed,
             atol=atol,
             gate_defs=gate_defs,
+            gateset=gateset,
+            use_qtrl=use_qtrl,
             pulses=pulses,
             variables=variables,
             **kwargs,
