@@ -182,7 +182,9 @@ def plot_correlations(
 
 
 def plot_benchmark(
-    data: list[str | list[str] | list[list[float]]],
+    title: str,
+    labels: list[str],
+    features: list[list[float]],
     show: bool = True,
     savefn: str | None = None,
     spoke_labels: list[str] | None = None,
@@ -191,15 +193,13 @@ def plot_benchmark(
     """Create a radar plot showing the feature vectors of the given benchmarks.
 
     Args:
-        data: Contains the title, feature data, and labels in the format:
-            [title, [benchmark labels], [[features_1], [features_2], ...]].
-        show: Display the plot using `plt.show`.
+        title: The string title of the plot.
+        labels: A list of the plot labels.
+        features: A list of feature data in format: [[features_1], [features_2], ...]].
+        show: Boolena flag to display the plot using `plt.show`.
         savefn: Path to save the plot, if `None`, the plot is not saved.
         spoke_labels: Optional labels for the feature vector dimensions.
         legend_loc: Optional argument to fine tune the legend placement.
-
-    Raises:
-        ValueError: If the first element of `data`, the title, is not a string.
     """
     if spoke_labels is None:
         spoke_labels = ["Connectivity", "Liveness", "Parallelism", "Measurement", "Entanglement"]
@@ -210,19 +210,16 @@ def plot_benchmark(
     _, ax = plt.subplots(dpi=150, subplot_kw=dict(projection="radar"))
     assert isinstance(ax, RadarAxesMeta)
 
-    title, labels, case_data = data
-    if not isinstance(title, str):
-        raise ValueError(f"Invalid plot title provided: {title}")
     ax.set_rgrids([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
     ax.set_title(
-        title,
+        str(title),
         weight="bold",
         size="medium",
         position=(0.5, 1.1),
         horizontalalignment="center",
         verticalalignment="center",
     )
-    for d, label in zip(case_data, labels):
+    for d, label in zip(features, labels):
         ax.plot(theta, d, label=label)
         ax.fill(theta, d, alpha=0.25)
     ax.set_varlabels(spoke_labels)
