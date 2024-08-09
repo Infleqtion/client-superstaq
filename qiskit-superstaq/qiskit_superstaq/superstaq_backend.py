@@ -270,9 +270,9 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
                 for `gate_name: [[1, 2], [3, 4]`, where the keys refer to specific gates, and the
                 values indicate which qubit(s) they act upon.
             use_qtrl: Whether to compile using (stored or passed-in) Qtrl configs. Note the use of
-                stored qtrl configurations is deprecated, and once it is removed this option will
-                be unnecessary (instead, the use of Qtrl will be determined by the presence of
-                passed-in configs).
+                stored qtrl configurations is deprecated - once it is removed this option will be
+                as well (instead, the use of Qtrl will be determined automatically by the `pulses`
+                and `variables` arguments).
             pulses: Qtrl `PulseManager` or file path for pulse configuration.
             variables: Qtrl `VariableManager` or file path for variable configuration.
             kwargs: Other desired compile options.
@@ -315,6 +315,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
 
         options = aqt_options.model_dump(exclude_none=True)
         if not use_qtrl:
+            # Temporary workaround 
             options["aqt_configs"] = None
 
         request_json = self._get_compile_request_json(circuits, **options)
