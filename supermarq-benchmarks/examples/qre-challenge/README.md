@@ -13,4 +13,4 @@ This directory was submitted to: [Quantum Resource Estimation Challenge](https:/
 Note: Received special permission from Michał Stęchły to extend to a 4th page.
 
 # License
-MIT  under Copyright (c) Microsoft Corporation. All rights reserved. Inspired by (QuantumKatas)[https://github.com/microsoft/QuantumKatas/blob/main/SolveSATWithGrover/ReferenceImplementation.qs]
+MIT  under Copyright (c) Microsoft Corporation. All rights reserved. Inspired by[QuantumKatas](https://github.com/microsoft/QuantumKatas/blob/main/SolveSATWithGrover/ReferenceImplementation.qs)
