@@ -194,8 +194,8 @@ def plot_benchmark(
 
     Args:
         title: The string title of the plot.
-        labels: A list of the plot labels.
-        features: A list of feature data in format: [[features_1], [features_2], ...]].
+        labels: A list of string benchmark labels for the plot.
+        features: A list of feature data in the format: [[features_1], [features_2], ...]].
         show: Boolean flag to display the plot using `plt.show`.
         savefn: Path to save the plot, if `None`, the plot is not saved.
         spoke_labels: Optional labels for the feature vector dimensions.
