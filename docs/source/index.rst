@@ -6,7 +6,7 @@
 Superstaq Documentation
 =======================
 Welcome! Here you can find more about Infleqtion's state-of-the-art quantum software platform that uses proprietary cross-layer optimization techniques to deliver unmatched performance.
-      
+
 .. raw:: html
 
    <div class="container-index">
