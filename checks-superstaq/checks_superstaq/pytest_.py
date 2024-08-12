@@ -91,8 +91,7 @@ def run(
         # These tests spend most of their time waiting for the server, so allow more threads than we
         # have physical processors (within reason)
         nthreads = min(len(files), 16)
-        if nthreads <= 1:
-            nthreads = 0
+        nthreads = 0 if nthreads <= 1 else nthreads
 
         # Setting before other args so -n can be overwritten
         args_to_pass = [f"-n{nthreads}", *args_to_pass]
