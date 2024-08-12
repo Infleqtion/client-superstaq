@@ -246,7 +246,7 @@ jobs:
           pip install ${{ matrix.dependencies }}
       - name: Check notebooks
         run: |
-          checks/pytest_.py --notebook ${{ matrix.pattern }}
+          checks/pytest_.py --notebook ${{ matrix.pattern }} -v
 
   docs:
     name: Build docs
