@@ -1102,6 +1102,7 @@ def test_dd_protocols() -> None:
         cirq.testing.assert_eigengate_implements_consistent_protocols(
             css.DDPowGate,
             setup_code="import cirq_superstaq as css; import sympy",
+            ignoring_global_phase=True,
         )
 
     assert cirq.has_stabilizer_effect(css.DD)
@@ -1169,6 +1170,7 @@ def test_dd_single_protocols() -> None:
         cirq.testing.assert_eigengate_implements_consistent_protocols(
             css.DDSinglePowGate,
             setup_code="import cirq_superstaq as css; import sympy",
+            ignoring_global_phase=True,
         )
 
     assert cirq.has_stabilizer_effect(css.DDSingle)

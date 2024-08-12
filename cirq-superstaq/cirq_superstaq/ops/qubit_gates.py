@@ -990,13 +990,10 @@ class DDPowGate(cirq.EigenGate):
         return 2
 
     def _decompose_(self, qubits: tuple[cirq.LineQubit, cirq.LineQubit]) -> list[cirq.Operation]:
-        print(self, self.exponent, self.global_shift)
+        print(self, self.exponent, self.global_shift, "Update")
         return [
-            cirq.ZPowGate(exponent=self.exponent).on(qubits[0]),
-            cirq.ZPowGate(exponent=self.exponent).on(qubits[1]),
-            cirq.ISwapPowGate(exponent=self.exponent, global_shift=self.global_shift).on(*qubits),
-            cirq.CZPowGate(exponent=-2 * self.exponent).on(*qubits),
-            # cirq.MatrixGate(np.diag([1, 1, 1, 1])*np.exp(1j * -0.5 *self.exponent *np.pi)).on(*qubits)
+            cirq.ZZPowGate(exponent = self.exponent, global_shift=self.global_shift - 0.5).on(*qubits),
+            cirq.ISwapPowGate(exponent=self.exponent).on(*qubits),
         ]
         return None
 
@@ -1057,7 +1054,7 @@ class DDSinglePowGate(cirq.EigenGate):
     def _decompose_(self, qubits: tuple[cirq.LineQubit]) -> list[cirq.Operation]:
         return [
             cirq.Z(qubits[0]),
-            cirq.XPowGate(exponent=self.exponent, global_shift=self.global_shift).on(*qubits),
+            cirq.XPowGate(exponent=self.exponent).on(*qubits),
             cirq.Z(qubits[0]),
         ]
         return None
@@ -1071,6 +1068,9 @@ class DDSinglePowGate(cirq.EigenGate):
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         return cirq.CircuitDiagramInfo(wire_symbols=("DD",), exponent=self._diagram_exponent(args))
 
+    # def _unitary_(self) -> Union[np.ndarray, NotImplementedType]:
+    #     return super()._unitary_()*(-1j)
+   
     def _qasm_(self, args: cirq.QasmArgs, qubits: tuple[cirq.Qid, ...]) -> str | None:
         # return args.format(
         #     "rzx({0:half_turns}) {1},{2};\n",
@@ -1096,7 +1096,7 @@ class DDSinglePowGate(cirq.EigenGate):
         )
 
 
-class rdd(DDSinglePowGate):
+class rdd(cirq.ops.XPowGate):
 
     def __init__(self, *, rads: cirq.value.TParamVal):
         """Initialize an Rx (`cirq.XPowGate`).
@@ -1105,7 +1105,7 @@ class rdd(DDSinglePowGate):
             rads: Radians to rotate about the X axis of the Bloch sphere.
         """
         self._rads = rads
-        super().__init__(exponent=rads / _pi(rads), global_shift=2)
+        super().__init__(exponent= -rads / _pi(rads), global_shift=rads / _pi(rads))
 
     def _with_exponent(self, exponent: cirq.value.TParamVal) -> "rdd":
         return rdd(rads=exponent * _pi(exponent))
