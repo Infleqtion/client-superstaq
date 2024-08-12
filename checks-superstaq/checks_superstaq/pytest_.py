@@ -87,7 +87,17 @@ def run(
     if not files:
         return 0
 
-    if (
+    if parsed_args.notebook:
+        # These tests spend most of their time waiting for the server, so allow more threads than we
+        # have physical processors (within reason)
+        nthreads = min(len(files), 16)
+        if nthreads <= 1:
+            nthreads = 0
+
+        # Setting before other args so -n can be overwritten
+        args_to_pass = [f"-n{nthreads}", *args_to_pass]
+
+    elif (
         not parsed_args.files
         and not parsed_args.single_core
         and parsed_args.revisions is None
