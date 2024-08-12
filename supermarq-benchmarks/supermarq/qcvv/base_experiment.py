@@ -14,9 +14,10 @@
 """
 from __future__ import annotations
 
+import math
 import pprint
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Generic, TypeVar
 
@@ -41,6 +42,9 @@ class Sample:
     job: css.Job | None = None
     """The superstaq job corresponding to the sample. Defaults to None if no job is
     associated with the sample."""
+    raw_circuit: cirq.Circuit = field(init=False)
+    """The raw (pre-compiled) circuit. Only used if the circuits are compiled for a specific
+    target."""
 
     @property
     def target(self) -> str:
@@ -88,14 +92,15 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
 
             experiment = ExampleExperiment(<<args/kwargs>>)
 
-    #. Run the experiment on the desired target. This can either be a custom simulator
-       or a real device name. For example
+    #. Prepare the circuits and run the experiment on the desired target. This can either be a
+       custom simulator or a real device name. For example:
 
         .. code::
 
             noise_model = cirq.depolarize(p=0.01, n_qubits=1)
             sim = cirq.DensityMatrixSimulator(noise=noise_model)
 
+            experiment.prepare_experiment(<<args/kwargs>>)
             experiment.run_with_simulator(simulator=sim, <<args/kwargs>>)
 
     #. Then we analyse the results. If the target was a local simulator this will be available as
@@ -118,6 +123,19 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             results = experiment.results
             data = experiment.raw_data
 
+    Additionally it is possible to pre-compile the experimental circuits for a given device using
+
+    .. code::
+        experiment.prepare_experiment(<<args/kwargs>>)
+        experiment.compile_circuits(target=<<target_name>>)
+
+    And then to run the experiment using a custom callable function for evaluating the circuits.
+    For example this could be a function that uses a connection to a local device.
+
+    .. code::
+
+        experiment.run_with_callable(<<function_name>>)
+
     When implementing a new experiment, 4 methods need to be implemented:
 
     #. :meth:`_build_circuits`: Given a number of circuits and an iterable of the different numbers
@@ -131,7 +149,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
     #. :meth:`analyse_results`: Analyse the data in the :attr:`raw_data` dataframe and return a
         :class:`BenchmarkingResults` object containing the results of the experiment.
 
-    #. :meth:`_plot_results`: Produce any relevant plots that are useful for understanding the
+    #. :meth:`plot_results`: Produce any relevant plots that are useful for understanding the
         results of the experiment.
 
     Additionally the :class:`BenchmarkingResults` dataclass needs subclassing to hold the specific
@@ -251,43 +269,12 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         Returns:
             A copy of the original circuit with the provided gate interleaved.
         """
+        operation = operation.with_tags("no_compile")
         interleaved_circuit = circuit.copy()
         interleaved_circuit.batch_insert(
             [(k, operation) for k in range(len(circuit) - int(not include_final), 0, -1)]
         )
         return interleaved_circuit
-
-    @abstractmethod
-    def _plot_results(self) -> None:
-        """Plot the results of the experiment"""
-
-    def _prepare_experiment(
-        self, num_circuits: int, cycle_depths: Iterable[int], overwrite: bool = False
-    ) -> None:
-        """Prepares the circuits needed for the experiment
-
-        Args:
-            num_circuits: Number of circuits to run.
-            cycle_depths: An iterable of the different layer depths to use during the experiment.
-            overwrite: Whether to force an experiment run even if there is existing data that would
-                be over written in the process. Defaults to False.
-
-        Raises:
-            RuntimeError: If the experiment has already been run once and the `overwrite` argument
-                is not True
-            ValueError: If any of the cycle depths provided negative or zero.
-        """
-        if self._samples is not None and not overwrite:
-            raise RuntimeError(
-                "This experiment already has existing data which would be overwritten by "
-                "rerunning the experiment. If this is the desired behavior set `overwrite=True`"
-            )
-
-        if any(depth <= 0 for depth in cycle_depths):
-            raise ValueError("The `cycle_depths` iterator can only include positive values.")
-
-        self._samples = self._build_circuits(num_circuits, cycle_depths)
-        self._validate_circuits()
 
     def _process_device_counts(self, counts: dict[str, int]) -> dict[str, float]:
         """Process the counts returned by the server into a dictionary of probabilities.
@@ -346,6 +333,21 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
                 sample.probabilities = self._process_device_counts(sample.job.counts(0))
 
         return statuses
+
+    def _run_check(self) -> None:
+        """Checks if any of the samples already have probabilities stored. If so raises a runtime
+        error to prevent them from being overwritten.
+
+        To be used within all `run` methods to prevent data being overwritten
+
+        Raises:
+            RuntimeError: If any samples already have probabilities stored.
+        """
+        if any(hasattr(sample, "probabilities") for sample in self.samples):
+            raise RuntimeError(
+                "Some samples have already been run. Re-running the experiment will"
+                "overwrite these results. If this is the desired behaviour use `overwrite=True`"
+            )
 
     def _sample_statuses(self) -> list[str | None]:
         """Returns:
@@ -435,10 +437,56 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         self._raw_data = self._process_probabilities(completed_samples)
         return True
 
+    def compile_circuits(self, target: str, **kwargs: Any) -> None:
+        """Compiles the experiment circuits for the given device. Useful if the samples
+        are not going to be run via Superstaq.
+
+        Args:
+            target: The device to compile to.
+            kwargs: Additional desired compile options.
+        """
+        compiled_circuits = self._service.compile(
+            [sample.circuit for sample in self.samples], target=target, **kwargs
+        ).circuits
+
+        for k, sample in enumerate(self.samples):
+            sample.raw_circuit = sample.circuit.copy()
+            sample.circuit = compiled_circuits[k]  # type: ignore[assignment]
+
+    @abstractmethod
+    def plot_results(self) -> None:
+        """Plot the results of the experiment"""
+
+    def prepare_experiment(
+        self, num_circuits: int, cycle_depths: Iterable[int], overwrite: bool = False
+    ) -> None:
+        """Prepares the circuits needed for the experiment
+
+        Args:
+            num_circuits: Number of circuits to run.
+            cycle_depths: An iterable of the different layer depths to use during the experiment.
+            overwrite: Whether to force an experiment run even if there is existing data that would
+                be over written in the process. Defaults to False.
+
+        Raises:
+            RuntimeError: If the experiment has already been run once and the `overwrite` argument
+                is not True
+            ValueError: If any of the cycle depths provided negative or zero.
+        """
+        if self._samples is not None and not overwrite:
+            raise RuntimeError(
+                "This experiment already has existing data which would be overwritten by "
+                "rerunning the experiment. If this is the desired behavior set `overwrite=True`"
+            )
+
+        if any(depth <= 0 for depth in cycle_depths):
+            raise ValueError("The `cycle_depths` iterator can only include positive values.")
+
+        self._samples = self._build_circuits(num_circuits, cycle_depths)
+        self._validate_circuits()
+
     def run_on_device(
         self,
-        num_circuits: int,
-        cycle_depths: Iterable[int],
         target: str,
         shots: int = 10_000,
         method: str | None = None,
@@ -453,8 +501,6 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         before saving the resulting probability distributions.
 
         Args:
-            num_circuits: Number of circuits to run.
-            cycle_depths: An iterable of the different layer depths to use during the experiment.
             target: The name of a Superstaq target.
             shots: The number of shots to sample. Defaults to 10,000.
             method: Optional method to use on the Superstaq device. Defaults to None corresponding
@@ -466,7 +512,8 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         Return:
             The superstaq job containing all the circuits submitted as part of the experiment.
         """
-        self._prepare_experiment(num_circuits, cycle_depths, overwrite)
+        if not overwrite:
+            self._run_check()
 
         experiment_job = self._service.create_job(
             [sample.circuit for sample in self.samples],
@@ -482,8 +529,6 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
 
     def run_with_simulator(
         self,
-        num_circuits: int,
-        cycle_depths: Iterable[int],
         simulator: cirq.Sampler | None = None,
         shots: int = 10_000,
         overwrite: bool = False,
@@ -491,15 +536,14 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         """Use the local simulator to sample the circuits and store the resulting probabilities.
 
         Args:
-            num_circuits: Number of circuits to run.
-            cycle_depths: An iterable of the different layer depths to use during the experiment.
             simulator: A local :class:`~cirq.Sampler` to use. If None then the default
                 :class:`cirq.Simulator` simulator is used. Defaults to None.
             shots: The number of shots to sample. Defaults to 10,000.
             overwrite: Whether to force an experiment run even if there is existing data that would
                 be over written in the process. Defaults to False.
         """
-        self._prepare_experiment(num_circuits, cycle_depths, overwrite)
+        if not overwrite:
+            self._run_check()
 
         if simulator is None:
             simulator = cirq.Simulator()
@@ -510,3 +554,36 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             sample.probabilities = {
                 f"{i:0{self.num_qubits}b}": count / shots for i, count in hist.items()
             }
+
+    def run_with_callable(
+        self,
+        circuit_eval_func: Callable[[cirq.Circuit], dict[str, float]],
+        overwrite: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        """Evaluates the probabilities for each circuit using a user provided callable function.
+        This function should take a circuit as input and return a dictionary of probabilities for
+        each bitstring (including states with zero probability).
+
+        Args:
+            circuit_eval_func: The custom function to use when evaluating circuit probabilities.
+            overwrite: Whether to force an experiment run even if there is existing data that would
+                be over written in the process. Defaults to False.
+            kwargs: Additional arguments to pass to the custom function.
+
+        Raises:
+            RuntimeError: If the returned probabilities dictionary keys is missing bitstrings.
+            RuntimeError: If the returned probabilities dictionary values do not sum to 1.0.
+        """
+        if not overwrite:
+            self._run_check()
+        for sample in tqdm(self.samples, desc="Running circuits"):
+            probability = circuit_eval_func(sample.circuit, **kwargs)
+            if sorted(probability.keys()) != sorted(
+                f"{i:0{self.num_qubits}b}" for i in range(2**self.num_qubits)
+            ):
+                raise RuntimeError("Returned probabilities are missing bitstrings.")
+            if not math.isclose(sum(probability.values()), 1.0):
+                raise RuntimeError("Returned probabilities do not sum to 1.0.")
+
+            sample.probabilities = probability

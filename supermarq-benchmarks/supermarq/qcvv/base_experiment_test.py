@@ -119,7 +119,7 @@ def test_prepare_experiment_overwrite_error(
         match="This experiment already has existing data which would be overwritten by "
         "rerunning the experiment. If this is the desired behavior set `overwrite=True`",
     ):
-        abc_experiment._prepare_experiment(100, [1, 50, 100])
+        abc_experiment.prepare_experiment(100, [1, 50, 100])
 
 
 def test_prepare_experiment_overwrite(
@@ -129,7 +129,7 @@ def test_prepare_experiment_overwrite(
     abc_experiment._build_circuits = MagicMock()
     abc_experiment._validate_circuits = MagicMock()
 
-    abc_experiment._prepare_experiment(100, [1, 50, 100], overwrite=True)
+    abc_experiment.prepare_experiment(100, [1, 50, 100], overwrite=True)
 
     abc_experiment._build_circuits.assert_called_once_with(100, [1, 50, 100])
     abc_experiment._validate_circuits.assert_called_once_with()
@@ -141,21 +141,20 @@ def test_prepare_experiment_with_bad_layers(
     with pytest.raises(
         ValueError, match="The `cycle_depths` iterator can only include positive values."
     ):
-        abc_experiment._prepare_experiment(20, [0])
+        abc_experiment.prepare_experiment(20, [0])
 
 
 def test_run_with_simulator(
     abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     cirq.measurement_key_name = MagicMock()
-    abc_experiment._prepare_experiment = MagicMock()
     abc_experiment._samples = sample_circuits
     test_sim = MagicMock()
     mock_result = MagicMock()
     mock_result.histogram.return_value = {0: 0, 1: 100, 2: 0, 3: 0}
     test_sim.run.return_value = mock_result
 
-    abc_experiment.run_with_simulator(10, [5, 10, 20], simulator=test_sim, shots=100)
+    abc_experiment.run_with_simulator(simulator=test_sim, shots=100)
 
     # Test simulator calls
     test_sim.run.assert_has_calls(
@@ -170,7 +169,22 @@ def test_run_with_simulator(
     assert sample_circuits[0].probabilities == {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
     assert sample_circuits[1].probabilities == {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
 
-    abc_experiment._prepare_experiment.assert_called_once_with(10, [5, 10, 20], False)
+
+def test_run_with_simulator_existing_probabilties(
+    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
+) -> None:
+    sample_circuits[0].probabilities = {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
+    sample_circuits[1].probabilities = {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
+
+    abc_experiment._samples = sample_circuits
+    with pytest.raises(
+        RuntimeError,
+        match=(
+            "Some samples have already been run. Re-running the experiment will"
+            "overwrite these results. If this is the desired behaviour use `overwrite=True`"
+        ),
+    ):
+        abc_experiment.run_with_simulator()
 
 
 def test_run_with_simulator_default_target(
@@ -178,13 +192,12 @@ def test_run_with_simulator_default_target(
 ) -> None:
     cirq.measurement_key_name = MagicMock()
     cirq.Simulator = (target := MagicMock())  # type: ignore [misc]
-    abc_experiment._prepare_experiment = MagicMock()
     abc_experiment._samples = sample_circuits
     mock_result = MagicMock()
     mock_result.histogram.return_value = {0: 0, 1: 100, 2: 0, 3: 0}
     target().run.return_value = mock_result
 
-    abc_experiment.run_with_simulator(10, [5, 10, 20], shots=100)
+    abc_experiment.run_with_simulator(shots=100)
 
     # Test simulator calls
     target().run.assert_has_calls(
@@ -199,18 +212,15 @@ def test_run_with_simulator_default_target(
     assert sample_circuits[0].probabilities == {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
     assert sample_circuits[1].probabilities == {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
 
-    abc_experiment._prepare_experiment.assert_called_once_with(10, [5, 10, 20], False)
-
 
 def test_run_on_device(
     abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
-    abc_experiment._prepare_experiment = MagicMock()
     abc_experiment._samples = sample_circuits
     abc_experiment._service = (mock_service := MagicMock())
 
     job = abc_experiment.run_on_device(
-        10, [5, 10, 20], target="example_target", shots=100, overwrite=False, **{"some": "options"}
+        target="example_target", shots=100, overwrite=False, **{"some": "options"}
     )
 
     mock_service.create_job.assert_called_once_with(
@@ -223,19 +233,32 @@ def test_run_on_device(
 
     assert job == mock_service.create_job.return_value
 
-    abc_experiment._prepare_experiment.assert_called_once_with(10, [5, 10, 20], False)
+
+def test_run_on_device_existing_probabilties(
+    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
+) -> None:
+    abc_experiment._service = MagicMock()
+    sample_circuits[0].probabilities = {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
+    sample_circuits[1].probabilities = {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
+
+    abc_experiment._samples = sample_circuits
+    with pytest.raises(
+        RuntimeError,
+        match=(
+            "Some samples have already been run. Re-running the experiment will"
+            "overwrite these results. If this is the desired behaviour use `overwrite=True`"
+        ),
+    ):
+        abc_experiment.run_on_device(target="example")
 
 
 def test_run_on_device_dry_run(
     abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
-    abc_experiment._prepare_experiment = MagicMock()
     abc_experiment._samples = sample_circuits
     abc_experiment._service = (mock_service := MagicMock())
 
-    job = abc_experiment.run_on_device(
-        10, [5, 10, 20], target="example_target", shots=100, method="dry-run"
-    )
+    job = abc_experiment.run_on_device(target="example_target", shots=100, method="dry-run")
 
     mock_service.create_job.assert_called_once_with(
         [sample_circuits[0].circuit, sample_circuits[1].circuit],
@@ -258,13 +281,13 @@ def test_interleave_circuit() -> None:
         interleaved_circuit,
         cirq.Circuit(
             cirq.X(qubit),
-            cirq.Z(qubit),
+            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
             cirq.X(qubit),
-            cirq.Z(qubit),
+            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
             cirq.X(qubit),
-            cirq.Z(qubit),
+            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
             cirq.X(qubit),
-            cirq.Z(qubit),
+            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
         ),
     )
 
@@ -276,11 +299,11 @@ def test_interleave_circuit() -> None:
         interleaved_circuit,
         cirq.Circuit(
             cirq.X(qubit),
-            cirq.Z(qubit),
+            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
             cirq.X(qubit),
-            cirq.Z(qubit),
+            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
             cirq.X(qubit),
-            cirq.Z(qubit),
+            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
             cirq.X(qubit),
         ),
     )
@@ -503,3 +526,66 @@ def test_collect_data_outstanding_jobs_force(
     abc_experiment._process_probabilities.assert_called_once_with([abc_experiment.samples[0]])
 
     pd.testing.assert_frame_equal(pd.DataFrame([{"data": 1.0}]), abc_experiment.raw_data)
+
+
+def test_compile_circuit(
+    abc_experiment: BenchmarkingExperiment[ExampleResults],
+    sample_circuits: list[Sample],
+) -> None:
+    abc_experiment._samples = sample_circuits
+
+    abc_experiment._service = (mock_service := MagicMock())
+    mock_service.compile.return_value.circuits = (mock_compiled_circuits := MagicMock())
+    abc_experiment.compile_circuits("example_target", additional="kwargs")
+
+    mock_service.compile.assert_called_once_with(
+        [sample_circuits[0].raw_circuit, sample_circuits[1].raw_circuit],
+        target="example_target",
+        additional="kwargs",
+    )
+    assert sample_circuits[0].circuit == mock_compiled_circuits[0]
+    assert sample_circuits[1].circuit == mock_compiled_circuits[1]
+
+
+def test_run_with_callable(
+    abc_experiment: BenchmarkingExperiment[ExampleResults],
+    sample_circuits: list[Sample],
+) -> None:
+    abc_experiment._samples = sample_circuits
+    test_callable = MagicMock()
+    test_callable.return_value = {"00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1}
+
+    abc_experiment.run_with_callable(test_callable, some="kwargs")
+
+    test_callable.assert_has_calls(
+        [
+            call(sample_circuits[0].circuit, some="kwargs"),
+            call(sample_circuits[1].circuit, some="kwargs"),
+        ]
+    )
+    assert sample_circuits[0].probabilities == {"00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1}
+    assert sample_circuits[1].probabilities == {"00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1}
+
+
+def test_run_with_callable_missing_bitstring(
+    abc_experiment: BenchmarkingExperiment[ExampleResults],
+    sample_circuits: list[Sample],
+) -> None:
+    abc_experiment._samples = sample_circuits
+    test_callable = MagicMock()
+    test_callable.return_value = {"00": 0.0, "01": 0.2, "10": 0.8}
+
+    with pytest.raises(RuntimeError, match="Returned probabilities are missing bitstrings."):
+        abc_experiment.run_with_callable(test_callable, some="kwargs")
+
+
+def test_run_with_callable_bad_probabilities(
+    abc_experiment: BenchmarkingExperiment[ExampleResults],
+    sample_circuits: list[Sample],
+) -> None:
+    abc_experiment._samples = sample_circuits
+    test_callable = MagicMock()
+    test_callable.return_value = {"00": 0.0, "01": 0.2, "10": 0.7, "11": 0.09}
+
+    with pytest.raises(RuntimeError, match="Returned probabilities do not sum to 1.0."):
+        abc_experiment.run_with_callable(test_callable, some="kwargs")
