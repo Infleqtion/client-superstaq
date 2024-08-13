@@ -278,40 +278,35 @@ def read_json_aqt(
 
     seq = None
 
-    if "state_jp" not in json_dict:
-        warnings.warn(
-            "This output only contains compiled circuits (using a default AQT gate set). To "
-            "get back the corresponding pulse sequence, you must first upload your `qtrl` configs "
-            "using `service.aqt_upload_configs`."
-        )
-    elif not importlib.util.find_spec("qtrl"):
-        warnings.warn(
-            "This output only contains compiled circuits. The `qtrl` package must be installed in "
-            "order to deserialize compiled pulse sequences."
-        )
-    else:  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
+    if "state_jp" in json_dict:
+        if not importlib.util.find_spec("qtrl"):
+            warnings.warn(
+                "This output only contains compiled circuits. The `qtrl` package must be installed "
+                "in order to deserialize compiled pulse sequences."
+            )
+        else:  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
 
-        def _sequencer_from_state(state: dict[str, Any]) -> qtrl.sequencer.Sequence:
-            seq = qtrl.sequencer.Sequence(n_elements=1)
-            seq.__setstate__(state)
-            seq.compile()
-            return seq
+            def _sequencer_from_state(state: dict[str, Any]) -> qtrl.sequencer.Sequence:
+                seq = qtrl.sequencer.Sequence(n_elements=1)
+                seq.__setstate__(state)
+                seq.compile()
+                return seq
 
-        state = gss.serialization.deserialize(json_dict["state_jp"])
+            state = gss.serialization.deserialize(json_dict["state_jp"])
 
-        if "readout_jp" in json_dict:
-            readout_state = gss.serialization.deserialize(json_dict["readout_jp"])
-            readout_seq = _sequencer_from_state(readout_state)
+            if "readout_jp" in json_dict:
+                readout_state = gss.serialization.deserialize(json_dict["readout_jp"])
+                readout_seq = _sequencer_from_state(readout_state)
 
-            if "readout_qubits" in json_dict:
-                readout_qubits = json.loads(json_dict["readout_qubits"])
-                readout_seq._readout = qtrl.sequence_utils.readout._ReadoutInfo(
-                    readout_seq, readout_qubits, n_readouts=len(compiled_circuits)
-                )
+                if "readout_qubits" in json_dict:
+                    readout_qubits = json.loads(json_dict["readout_qubits"])
+                    readout_seq._readout = qtrl.sequence_utils.readout._ReadoutInfo(
+                        readout_seq, readout_qubits, n_readouts=len(compiled_circuits)
+                    )
 
-            state["_readout"] = readout_seq
+                state["_readout"] = readout_seq
 
-        seq = _sequencer_from_state(state)
+            seq = _sequencer_from_state(state)
 
     if num_eca_circuits is not None:
         compiled_circuits = [

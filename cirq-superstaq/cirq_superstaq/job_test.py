@@ -54,6 +54,27 @@ def new_job() -> css.Job:
     return css.Job(client, "new_job_id")
 
 
+@pytest.fixture
+def multi_circuit_job() -> css.Job:
+    """Fixture for a job with multiple circuits submitted
+
+    Returns:
+        A job with multiple subjobs
+    """
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="cirq-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    job = css.Job(client, "job_id1,job_id2,job_id3")
+    job._job = {
+        "job_id1": {"status": "Done"},
+        "job_id2": {"status": "Running"},
+        "job_id3": {"status": "Submitted"},
+    }
+    return job
+
+
 def _mocked_request_response(content: object) -> requests.Response:
     response = requests.Response()
     response.status_code = requests.codes.OK
@@ -212,7 +233,9 @@ def test_pulse_gate_circuits_invalid_circuit(job: css.job.Job) -> None:
 
     # The first call will trigger a refresh:
     with patched_requests({"job_id": job_dict}):
-        with pytest.raises(ValueError, match="circuits could not be deserialized."):
+        with pytest.raises(ValueError, match="circuits could not be deserialized."), pytest.warns(
+            match="pulse gate circuit could not be deserialized"
+        ):
             job.pulse_gate_circuits()
 
 
@@ -448,6 +471,13 @@ def test_job_results_poll_failure(mock_sleep: mock.MagicMock, job: css.job.Job) 
         with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="too many qubits"):
             _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
     assert mock_sleep.call_count == 5
+
+
+def test_job_getitem(multi_circuit_job: css.job.Job) -> None:
+    job_1 = multi_circuit_job[0]
+    assert isinstance(job_1, css.Job)
+    assert job_1.job_id() == "job_id1"
+    assert job_1.status() == "Done"
 
 
 def test_get_marginal_counts() -> None:
