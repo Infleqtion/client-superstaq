@@ -422,6 +422,20 @@ class Job:
     def _value_equality_values_(self) -> tuple[str, dict[str, Any]]:
         return self._job_id, self._job
 
+    def __getitem__(self, index: int) -> css.Job:
+        """Args:
+            idx: The index of the sub-job to return. Each sub-job corresponds to the a single
+                circuit.
+
+        Returns:
+            A sub-job at the given index.
+        """
+        job_id = self._job_id.split(",")[index]
+        sub_job = css.Job(self._client, job_id)
+        if job_id in self._job:
+            sub_job._job[job_id] = self._job[job_id]
+        return sub_job
+
 
 def _get_marginal_counts(counts: dict[str, int], indices: Sequence[int]) -> dict[str, int]:
     """Compute a marginal distribution, accumulating total counts on specific bits (by index).
