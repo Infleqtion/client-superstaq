@@ -55,15 +55,17 @@ def sample_circuits() -> list[Sample]:
     qubits = cirq.LineQubit.range(2)
     return [
         Sample(
-            circuit=cirq.Circuit(cirq.CZ(*qubits), cirq.CZ(*qubits), cirq.measure(*qubits)),
+            raw_circuit=cirq.Circuit(cirq.CZ(*qubits), cirq.CZ(*qubits), cirq.measure(*qubits)),
             data={"circuit": 1},
         ),
-        Sample(circuit=cirq.Circuit(cirq.CX(*qubits), cirq.measure(*qubits)), data={"circuit": 2}),
+        Sample(
+            raw_circuit=cirq.Circuit(cirq.CX(*qubits), cirq.measure(*qubits)), data={"circuit": 2}
+        ),
     ]
 
 
 def test_sample_target_property() -> None:
-    sample = Sample(circuit=MagicMock(), data={})
+    sample = Sample(raw_circuit=MagicMock(), data={})
     assert sample.target == "No target"
 
     sample.probabilities = {"0": 0.25, "1": 0.75}
@@ -111,7 +113,7 @@ def test_empty_samples_error(abc_experiment: BenchmarkingExperiment[ExampleResul
 def test_prepare_experiment_overwrite_error(
     abc_experiment: BenchmarkingExperiment[ExampleResults],
 ) -> None:
-    abc_experiment._samples = [Sample(circuit=MagicMock(), data={})]
+    abc_experiment._samples = [Sample(raw_circuit=MagicMock(), data={})]
     abc_experiment._build_circuits = MagicMock()
 
     with pytest.raises(
@@ -125,7 +127,7 @@ def test_prepare_experiment_overwrite_error(
 def test_prepare_experiment_overwrite(
     abc_experiment: BenchmarkingExperiment[ExampleResults],
 ) -> None:
-    abc_experiment._samples = [Sample(circuit=MagicMock(), data={})]
+    abc_experiment._samples = [Sample(raw_circuit=MagicMock(), data={})]
     abc_experiment._build_circuits = MagicMock()
     abc_experiment._validate_circuits = MagicMock()
 
@@ -154,7 +156,7 @@ def test_run_with_simulator(
     mock_result.histogram.return_value = {0: 0, 1: 100, 2: 0, 3: 0}
     test_sim.run.return_value = mock_result
 
-    abc_experiment.run_with_simulator(simulator=test_sim, shots=100)
+    abc_experiment.run_with_simulator(simulator=test_sim, repetitions=100)
 
     # Test simulator calls
     test_sim.run.assert_has_calls(
@@ -197,7 +199,7 @@ def test_run_with_simulator_default_target(
     mock_result.histogram.return_value = {0: 0, 1: 100, 2: 0, 3: 0}
     target().run.return_value = mock_result
 
-    abc_experiment.run_with_simulator(shots=100)
+    abc_experiment.run_with_simulator(repetitions=100)
 
     # Test simulator calls
     target().run.assert_has_calls(
@@ -220,11 +222,11 @@ def test_run_on_device(
     abc_experiment._service = (mock_service := MagicMock())
 
     job = abc_experiment.run_on_device(
-        target="example_target", shots=100, overwrite=False, **{"some": "options"}
+        target="example_target", repetitions=100, overwrite=False, **{"some": "options"}
     )
 
     mock_service.create_job.assert_called_once_with(
-        [sample_circuits[0].circuit, sample_circuits[1].circuit],
+        [sample_circuits[0].raw_circuit, sample_circuits[1].raw_circuit],
         target="example_target",
         method=None,
         repetitions=100,
@@ -232,6 +234,14 @@ def test_run_on_device(
     )
 
     assert job == mock_service.create_job.return_value
+    assert (
+        sample_circuits[0].compiled_circuit
+        == mock_service.create_job.return_value.compiled_circuits.return_value[0]
+    )
+    assert (
+        sample_circuits[1].compiled_circuit
+        == mock_service.create_job.return_value.compiled_circuits.return_value[1]
+    )
 
 
 def test_run_on_device_existing_probabilties(
@@ -258,15 +268,23 @@ def test_run_on_device_dry_run(
     abc_experiment._samples = sample_circuits
     abc_experiment._service = (mock_service := MagicMock())
 
-    job = abc_experiment.run_on_device(target="example_target", shots=100, method="dry-run")
+    job = abc_experiment.run_on_device(target="example_target", repetitions=100, method="dry-run")
 
     mock_service.create_job.assert_called_once_with(
-        [sample_circuits[0].circuit, sample_circuits[1].circuit],
+        [sample_circuits[0].raw_circuit, sample_circuits[1].raw_circuit],
         target="example_target",
         method="dry-run",
         repetitions=100,
     )
     assert job == mock_service.create_job.return_value
+    assert (
+        sample_circuits[0].compiled_circuit
+        == mock_service.create_job.return_value.compiled_circuits.return_value[0]
+    )
+    assert (
+        sample_circuits[1].compiled_circuit
+        == mock_service.create_job.return_value.compiled_circuits.return_value[1]
+    )
 
 
 def test_interleave_circuit() -> None:
@@ -342,14 +360,14 @@ def test_validate_circuits(
     abc_experiment._validate_circuits()
 
     # Add a gate so not all measurements are terminal
-    abc_experiment._samples[0].circuit += cirq.X(abc_experiment.qubits[0])
+    abc_experiment._samples[0].raw_circuit += cirq.X(abc_experiment.qubits[0])
     with pytest.raises(
         ValueError, match="QCVV experiment circuits can only contain terminal measurements."
     ):
         abc_experiment._validate_circuits()
 
     # Remove measurements
-    abc_experiment._samples[0].circuit = abc_experiment._samples[0].circuit[:-2] + cirq.measure(
+    abc_experiment._samples[0].raw_circuit = abc_experiment._samples[0].circuit[:-2] + cirq.measure(
         abc_experiment.qubits[0]
     )
     with pytest.raises(
@@ -359,7 +377,7 @@ def test_validate_circuits(
         abc_experiment._validate_circuits()
 
     # Remove all measurements
-    abc_experiment._samples[0].circuit = abc_experiment._samples[0].circuit[:-2]
+    abc_experiment._samples[0].raw_circuit = abc_experiment._samples[0].circuit[:-2]
     with pytest.raises(
         ValueError,
         match="QCVV experiment circuits must contain measurements.",
@@ -553,7 +571,7 @@ def test_run_with_callable(
 ) -> None:
     abc_experiment._samples = sample_circuits
     test_callable = MagicMock()
-    test_callable.return_value = {"00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1}
+    test_callable.return_value = {"01": 0.2, "10": 0.7, "11": 0.1}
 
     abc_experiment.run_with_callable(test_callable, some="kwargs")
 
@@ -567,15 +585,17 @@ def test_run_with_callable(
     assert sample_circuits[1].probabilities == {"00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1}
 
 
-def test_run_with_callable_missing_bitstring(
+def test_run_with_callable_bad_bitstring(
     abc_experiment: BenchmarkingExperiment[ExampleResults],
     sample_circuits: list[Sample],
 ) -> None:
     abc_experiment._samples = sample_circuits
     test_callable = MagicMock()
-    test_callable.return_value = {"00": 0.0, "01": 0.2, "10": 0.8}
+    test_callable.return_value = {"000": 0.0, "01": 0.2, "10": 0.8}
 
-    with pytest.raises(RuntimeError, match="Returned probabilities are missing bitstrings."):
+    with pytest.raises(
+        RuntimeError, match="Returned probabilities include an incorrect number of bits."
+    ):
         abc_experiment.run_with_callable(test_callable, some="kwargs")
 
 

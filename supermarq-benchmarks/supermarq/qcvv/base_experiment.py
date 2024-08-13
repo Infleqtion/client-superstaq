@@ -33,8 +33,8 @@ class Sample:
     that is needed for analysis
     """
 
-    circuit: cirq.Circuit
-    """The sample circuit."""
+    raw_circuit: cirq.Circuit
+    """The raw (i.e. pre-compiled) sample circuit."""
     data: dict[str, Any]
     """The corresponding data about the circuit"""
     probabilities: dict[str, float] = field(init=False)
@@ -42,8 +42,8 @@ class Sample:
     job: css.Job | None = None
     """The superstaq job corresponding to the sample. Defaults to None if no job is
     associated with the sample."""
-    raw_circuit: cirq.Circuit = field(init=False)
-    """The raw (pre-compiled) circuit. Only used if the circuits are compiled for a specific
+    compiled_circuit: cirq.Circuit = field(init=False)
+    """The compiled circuit. Only used if the circuits are compiled for a specific
     target."""
 
     @property
@@ -62,6 +62,17 @@ class Sample:
 
         # Otherwise the experiment hasn't yet been run so there is no target.
         return "No target"
+
+    @property
+    def circuit(self) -> cirq.Circuit:
+        """Returns:
+        The circuit used for the experiment. Defaults to the compiled circuit if available
+        and if not returns the raw circuit.
+        """
+        if hasattr(self, "compiled_circuit"):
+            return self.compiled_circuit
+
+        return self.raw_circuit
 
 
 @dataclass(frozen=True)
@@ -111,7 +122,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
 
        .. code::
             if experiment.collect_data():
-                results = experiment.analyse_results(<<args>>)
+                results = experiment.analyze_results(<<args>>)
 
     #. The final results of the experiment will be stored in the :code:`results` attribute as a
        :class:`BenchmarkingResults` of values, while all the data from the experiment will be
@@ -146,7 +157,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         computational basis resulting from running each circuit and combine the relevant details
         into a :class:`pandas.DataFrame`.
 
-    #. :meth:`analyse_results`: Analyse the data in the :attr:`raw_data` dataframe and return a
+    #. :meth:`analyze_results`: Analyse the data in the :attr:`raw_data` dataframe and return a
         :class:`BenchmarkingResults` object containing the results of the experiment.
 
     #. :meth:`plot_results`: Produce any relevant plots that are useful for understanding the
@@ -378,7 +389,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
     # Public Methods  #
     ###################
     @abstractmethod
-    def analyse_results(self, plot_results: bool = True) -> ResultsT:
+    def analyze_results(self, plot_results: bool = True) -> ResultsT:
         """Perform the experiment analysis and store the results in the `results` attribute.
 
         Args:
@@ -450,8 +461,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         ).circuits
 
         for k, sample in enumerate(self.samples):
-            sample.raw_circuit = sample.circuit.copy()
-            sample.circuit = compiled_circuits[k]  # type: ignore[assignment]
+            sample.compiled_circuit = compiled_circuits[k]  # type: ignore[assignment]
 
     @abstractmethod
     def plot_results(self) -> None:
@@ -488,7 +498,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
     def run_on_device(
         self,
         target: str,
-        shots: int = 10_000,
+        repetitions: int = 10_000,
         method: str | None = None,
         overwrite: bool = False,
         **target_options: Any,
@@ -502,7 +512,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
 
         Args:
             target: The name of a Superstaq target.
-            shots: The number of shots to sample. Defaults to 10,000.
+            repetitions: The number of shots to sample. Defaults to 10,000.
             method: Optional method to use on the Superstaq device. Defaults to None corresponding
                 to normal running.
             target_options: Optional configuration dictionary passed when submitting the job.
@@ -519,18 +529,21 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             [sample.circuit for sample in self.samples],
             target=target,
             method=method,
-            repetitions=shots,
+            repetitions=repetitions,
             **target_options,
         )
+        compiled_circuits = experiment_job.compiled_circuits()
+
         for k, sample in enumerate(self.samples):
             sample.job = experiment_job[k]
+            sample.compiled_circuit = compiled_circuits[k]
 
         return experiment_job
 
     def run_with_simulator(
         self,
         simulator: cirq.Sampler | None = None,
-        shots: int = 10_000,
+        repetitions: int = 10_000,
         overwrite: bool = False,
     ) -> None:
         """Use the local simulator to sample the circuits and store the resulting probabilities.
@@ -538,7 +551,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         Args:
             simulator: A local :class:`~cirq.Sampler` to use. If None then the default
                 :class:`cirq.Simulator` simulator is used. Defaults to None.
-            shots: The number of shots to sample. Defaults to 10,000.
+            repetitions: The number of shots to sample. Defaults to 10,000.
             overwrite: Whether to force an experiment run even if there is existing data that would
                 be over written in the process. Defaults to False.
         """
@@ -549,10 +562,10 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             simulator = cirq.Simulator()
 
         for sample in tqdm(self.samples, desc="Simulating circuits"):
-            result = simulator.run(sample.circuit, repetitions=shots)
+            result = simulator.run(sample.circuit, repetitions=repetitions)
             hist = result.histogram(key=cirq.measurement_key_name(sample.circuit))
             sample.probabilities = {
-                f"{i:0{self.num_qubits}b}": count / shots for i, count in hist.items()
+                f"{i:0{self.num_qubits}b}": count / repetitions for i, count in hist.items()
             }
 
     def run_with_callable(
@@ -572,18 +585,21 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             kwargs: Additional arguments to pass to the custom function.
 
         Raises:
-            RuntimeError: If the returned probabilities dictionary keys is missing bitstrings.
+            RuntimeError: If the returned probabilities dictionary keys is missing include
+                an incorrect number of bits.
             RuntimeError: If the returned probabilities dictionary values do not sum to 1.0.
         """
         if not overwrite:
             self._run_check()
         for sample in tqdm(self.samples, desc="Running circuits"):
             probability = circuit_eval_func(sample.circuit, **kwargs)
-            if sorted(probability.keys()) != sorted(
-                f"{i:0{self.num_qubits}b}" for i in range(2**self.num_qubits)
-            ):
-                raise RuntimeError("Returned probabilities are missing bitstrings.")
+            if not all(len(key) == self.num_qubits for key in probability.keys()):
+                raise RuntimeError("Returned probabilities include an incorrect number of bits.")
             if not math.isclose(sum(probability.values()), 1.0):
                 raise RuntimeError("Returned probabilities do not sum to 1.0.")
+
+            for k in range(2**self.num_qubits):
+                if (bitstring := format(k, f"0{self.num_qubits}b")) not in probability:
+                    probability[bitstring] = 0.0
 
             sample.probabilities = probability
