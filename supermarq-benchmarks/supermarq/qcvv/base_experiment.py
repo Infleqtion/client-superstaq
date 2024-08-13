@@ -565,8 +565,11 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             result = simulator.run(sample.circuit, repetitions=repetitions)
             hist = result.histogram(key=cirq.measurement_key_name(sample.circuit))
             sample.probabilities = {
-                f"{i:0{self.num_qubits}b}": count / repetitions for i, count in hist.items()
-            }
+                f"{i:0{self.num_qubits}b}": 0.0 for i in range(2**self.num_qubits)
+            }  # Set all probabilities to zero
+            for val, count in hist.items():
+                # Add in results from the histogram
+                sample.probabilities[f"{val:0{self.num_qubits}b}"] = count / repetitions
 
     def run_with_callable(
         self,
