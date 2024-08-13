@@ -20,7 +20,6 @@ from .qubit_gates import (
     approx_eq_mod,
     barrier,
     parallel_gates_operation,
-    rdd,
 )
 from .qudit_gates import (
     BSWAP,
@@ -71,7 +70,6 @@ __all__ = [
     "QutritZ1PowGate",
     "QutritZ2",
     "QutritZ2PowGate",
-    "rdd",
     "RGate",
     "StrippedCZGate",
     "SWAP3",

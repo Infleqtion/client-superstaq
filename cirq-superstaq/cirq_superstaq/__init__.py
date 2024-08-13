@@ -56,7 +56,6 @@ from cirq_superstaq.ops import (
     parallel_gates_operation,
     qubit_subspace_op,
     qudit_swap_op,
-    rdd,
 )
 from cirq_superstaq.sampler import Sampler
 from cirq_superstaq.serialization import (
@@ -96,7 +95,6 @@ __all__ = [
     "QutritZ1PowGate",
     "QutritZ2",
     "QutritZ2PowGate",
-    "rdd",
     "RGate",
     "SUPERSTAQ_RESOLVERS",
     "Sampler",
