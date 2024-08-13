@@ -1187,19 +1187,6 @@ def test_dd_single_circuit() -> None:
         ),
     )
 
-    # assert cirq.Circuit(op, op**0.25).to_qasm(header="") == textwrap.dedent(
-    #     """\
-    #     OPENQASM 2.0;
-    #     include "qelib1.inc";
-
-    #     // Qubits: [q(0), q(1)]
-    #     qreg q[2];
-
-    #     rzx(pi*1.0) q[0],q[1];
-    #     rzx(pi*0.25) q[0],q[1];
-    #     """
-    # )
-
 
 def test_custom_resolver() -> None:
     circuit = cirq.Circuit()
