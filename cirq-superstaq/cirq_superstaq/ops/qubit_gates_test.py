@@ -1151,33 +1151,6 @@ def test_dd_circuit() -> None:
         ),
     )
 
-    # assert cirq.Circuit(op, op**0.25).to_qasm(header="") == textwrap.dedent(
-    #     """\
-    #     OPENQASM 2.0;
-    #     include "qelib1.inc";
-
-    #     // Qubits: [q(0), q(1)]
-    #     qreg q[2];
-
-    #     rzx(pi*1.0) q[0],q[1];
-    #     rzx(pi*0.25) q[0],q[1];
-    #     """
-    # )
-
-
-# def test_dd_single_protocols() -> None:
-#     with mock.patch("cirq.testing.consistent_protocols.assert_qasm_is_consistent_with_unitary"):
-#         cirq.testing.assert_eigengate_implements_consistent_protocols(
-#             css.DDSinglePowGate,
-#             setup_code="import cirq_superstaq as css; import sympy",
-#             ignoring_global_phase=True,
-#         )
-
-#     assert cirq.has_stabilizer_effect(css.DDSingle)
-#     assert cirq.has_stabilizer_effect(css.DDSingle**1.5)
-#     assert not cirq.has_stabilizer_effect(css.DDSingle**1.3)
-#     assert not cirq.has_stabilizer_effect(css.DDSingle ** sympy.var("x"))
-
 
 def test_dd_single_matrix() -> None:
     np.testing.assert_allclose(

@@ -990,14 +990,12 @@ class DDPowGate(cirq.EigenGate):
         return 2
 
     def _decompose_(self, qubits: tuple[cirq.LineQubit, cirq.LineQubit]) -> list[cirq.Operation]:
-        print(self, self.exponent, self.global_shift, "Update")
         return [
             cirq.ZZPowGate(exponent=self.exponent, global_shift=self.global_shift - 0.5).on(
                 *qubits
             ),
             cirq.ISwapPowGate(exponent=self.exponent).on(*qubits),
         ]
-        return None
 
     def _has_stabilizer_effect_(self) -> bool | None:
         if cirq.is_parameterized(self):
@@ -1026,81 +1024,19 @@ class DDPowGate(cirq.EigenGate):
         )
 
 
-# class DDSinglePowGate(cirq.EigenGate):
-#     r"""The Dipole-Dipole gate for EeroQ hardware"""
-
-#     def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
-#         return [
-#             (
-#                 0.5,
-#                 np.array([[0.5, 0.5], [0.5, 0.5]]),
-#             ),
-#             (
-#                 -0.5,
-#                 np.array([[0.5, -0.5], [-0.5, 0.5]]),
-#             ),
-#         ]
-
-#     def _num_qubits_(self) -> int:
-#         return 1
-
-#     def _decompose_(self, qubits: tuple[cirq.LineQubit]) -> list[cirq.Operation]:
-#         return [
-#             cirq.Z(qubits[0]),
-#             cirq.XPowGate(exponent=self.exponent).on(*qubits),
-#             cirq.Z(qubits[0]),
-#         ]
-#         return None
-
-#     def _has_stabilizer_effect_(self) -> bool | None:
-#         if cirq.is_parameterized(self):
-#             return None
-
-#         return (2 * self.exponent) % 1 == 0
-
-#     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-#         return cirq.CircuitDiagramInfo(wire_symbols=("DD",), exponent=self._diagram_exponent(args))
-
-#     # def _unitary_(self) -> Union[np.ndarray, NotImplementedType]:
-#     #     return super()._unitary_()*(-1j)
-
-#     def _qasm_(self, args: cirq.QasmArgs, qubits: tuple[cirq.Qid, ...]) -> str | None:
-#         # return args.format(
-#         #     "rzx({0:half_turns}) {1},{2};\n",
-#         #     self.exponent,
-#         #     qubits[0],
-#         #     qubits[1],
-#         # )
-#         return None
-
-#     def __str__(self) -> str:
-#         if self.exponent == 1:
-#             return "DDSingle"
-#         return f"DDSingle**{self._exponent!r}"
-
-#     def __repr__(self) -> str:
-#         if self._global_shift == 0:
-#             if self._exponent == 1:
-#                 return "css.DDSingle"
-#             return f"(css.DDSingle**{cirq._compat.proper_repr(self._exponent)})"
-#         return (
-#             f"css.DDSinglePowGate(exponent={cirq._compat.proper_repr(self._exponent)},"
-#             f" global_shift={self._global_shift!r})"
-#         )
-
-
 class DDSinglePowGate(cirq.ops.XPowGate):
+    r"""The Dipole-Dipole single qubit gate for EeroQ hardware"""
 
-    def __init__(self, *, exponent: cirq.value.TParamVal = 1.0):
+    def __init__(self, *, exponent: cirq.value.TParamVal = 1.0) -> None:
         """Initialize an Rx (`cirq.XPowGate`).
 
         Args:
             rads: Radians to rotate about the X axis of the Bloch sphere.
         """
-        super().__init__(exponent= -exponent, global_shift= exponent)
+        super().__init__(exponent=-exponent, global_shift=exponent)
         self._exponent = exponent
 
-    def _with_exponent(self, exponent: value.TParamVal) -> 'DDSinglePowGate':
+    def _with_exponent(self, exponent: cirq.value.TParamVal) -> DDSinglePowGate:
         return DDSinglePowGate(exponent=exponent)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
