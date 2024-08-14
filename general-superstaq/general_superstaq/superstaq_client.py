@@ -177,21 +177,6 @@ class _SuperstaqClient:
             json_dict["options"] = json.dumps({**self.client_kwargs, **kwargs})
         return self.post_request("/jobs", json_dict)
 
-
-    def get_job(self, job_id: str) -> dict[str, str]:
-        """Get the job from the Superstaq API.
-
-        Args:
-            job_id: The UUID of the job (returned when the job was created).
-
-        Returns:
-            The json body of the response as a dict.
-
-        Raises:
-            SuperstaqServerException: For other API call failures.
-        """
-        return self.fetch_jobs([job_id])[job_id]
-
     def cancel_jobs(
         self,
         job_ids: Sequence[str],
