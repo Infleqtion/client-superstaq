@@ -47,51 +47,51 @@ The choice of qubit architecture—synthetic versus neutral atom—has significa
 
 _Functional Requirements_
 
-Movement Analysis: The tool must evaluate the impact of qubit movement within the architecture.
+- **Movement Analysis:** The tool must evaluate the impact of qubit movement within the architecture.
 
-Atom Reloading: Consideration of the frequency and impact of atom reloading within quantum operations.
+- **Atom Reloading:** Consideration of the frequency and impact of atom reloading within quantum operations.
 
-Code Teleportation: Ability to model and assess the implications of code teleportation on qubit resources.
+- **Code Teleportation:** Ability to model and assess the implications of code teleportation on qubit resources.
 
-Connectivity: Analysis of qubit connectivity and its effect on the overall architecture.
+- **Connectivity:** Analysis of qubit connectivity and its effect on the overall architecture.
 
-Degree of Parallelization: Estimation of the impact of parallel operations on qubit usage and efficiency.
+- **Degree of Parallelization:** Estimation of the impact of parallel operations on qubit usage and efficiency.
 
-Custom Assumptions: Flexibility to incorporate various architectural assumptions and parameters.
+- **Custom Assumptions:** Flexibility to incorporate various architectural assumptions and parameters.
 
 _Non-Functional Requirements_
 
-Performance: The tool should provide results in a reasonable timeframe, even for large-scale quantum architectures.
+- **Performance:** The tool should provide results in a reasonable timeframe, even for large-scale quantum architectures.
 
-Scalability: Ability to scale with increasing complexity of quantum systems.
+- **Scalability:** Ability to scale with increasing complexity of quantum systems.
 
-Usability: User-friendly interface for easy input of parameters and interpretation of results.
+- **Usability:** User-friendly interface for easy input of parameters and interpretation of results.
 
-Extensibility: Design should allow for future enhancements and the addition of new features.
+- **Extensibility:** Design should allow for future enhancements and the addition of new features.
 
 ### **System Architecture**
 
 _High-Level Architecture_
 
-Input Module: Accepts user-defined parameters for the quantum architecture, including movement constraints, reloading rates, and connectivity graphs.
+- **Input Module:** Accepts user-defined parameters for the quantum architecture, including movement constraints, reloading rates, and connectivity graphs.
 
-Analysis Engine: Core computational module that performs the QRE calculations, considering all the defined parameters and assumptions.
+- **Analysis Engine:** Core computational module that performs the QRE calculations, considering all the defined parameters and assumptions.
 
-Output Module: Generates reports and visualizations, providing insights into qubit resource usage and architectural trade-offs.
+- **Output Module:** Generates reports and visualizations, providing insights into qubit resource usage and architectural trade-offs.
 
-User Interface: A GUI that allows users to interact with the tool, input data, run simulations, and view results.
+- **User Interface:** A GUI that allows users to interact with the tool, input data, run simulations, and view results.
 
 _Detailed Architecture_
 
-Movement Analysis Subsystem: Implements algorithms to estimate the impact of qubit movement.
+- **Movement Analysis Subsystem:** Implements algorithms to estimate the impact of qubit movement.
 
-Atom Reloading Subsystem: Models the atom reloading process and its effect on qubit availability.
+- **Atom Reloading Subsystem:** Models the atom reloading process and its effect on qubit availability.
 
-Code Teleportation Subsystem: Evaluates teleportation strategies and their resource implications.
+- **Code Teleportation Subsystem:** Evaluates teleportation strategies and their resource implications.
 
-Connectivity Analysis Subsystem: Analyzes qubit connectivity patterns and their impact on the architecture.
+- **Connectivity Analysis Subsystem:** Analyzes qubit connectivity patterns and their impact on the architecture.
 
-Parallelization Analysis Subsystem: Assesses the degree of parallelization and its effect on qubit usage.
+- **Parallelization Analysis Subsystem:** Assesses the degree of parallelization and its effect on qubit usage.
 
 ### **Conclusion**
 
