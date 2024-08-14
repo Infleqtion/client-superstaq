@@ -1036,37 +1036,7 @@ class DDPowGate(cirq.EigenGate):
         )
 
 
-class DDSinglePowGate(cirq.ops.XPowGate):
-    r"""The Dipole-Dipole single qubit gate for EeroQ hardware"""
-
-    def __init__(self, *, exponent: cirq.value.TParamVal = 1.0) -> None:
-        """Initialize an Rx (`cirq.XPowGate`).
-
-        Args:
-            rads: Radians to rotate about the X axis of the Bloch sphere.
-        """
-        super().__init__(exponent=-exponent, global_shift=exponent)
-        self._exponent = exponent
-
-    def _with_exponent(self, exponent: cirq.value.TParamVal) -> DDSinglePowGate:
-        return DDSinglePowGate(exponent=exponent)
-
-    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        return cirq.CircuitDiagramInfo(wire_symbols=("DD",), exponent=self._diagram_exponent(args))
-
-    def __str__(self) -> str:
-        if self._exponent == 1:
-            return "DDSingle"
-        return f"DDSingle**{self._exponent!r}"
-
-    def __repr__(self) -> str:
-        if self._exponent == 1:
-            return "css.DDSingle"
-        return f"(css.DDSingle**{cirq._compat.proper_repr(self._exponent)})"
-
-
 DD = DDPowGate()
-DDSingle = DDSinglePowGate()
 
 
 def custom_resolver(cirq_type: str) -> type[cirq.Gate] | None:
@@ -1094,6 +1064,5 @@ def custom_resolver(cirq_type: str) -> type[cirq.Gate] | None:
         "ParallelRGate": ParallelRGate,
         "StrippedCZGate": StrippedCZGate,
         "DDPowGate": DDPowGate,
-        "DDSinglePowGate": DDSinglePowGate,
     }
     return type_to_gate_map.get(cirq_type)

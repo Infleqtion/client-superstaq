@@ -1157,42 +1157,6 @@ def test_dd_circuit() -> None:
     )
 
 
-def test_dd_single_matrix() -> None:
-    np.testing.assert_allclose(
-        cirq.unitary(css.DDSingle),
-        np.array([[0, -1], [-1, 0]]),
-    )
-
-
-def test_dd_single_str() -> None:
-    assert str(css.DDSingle) == "DDSingle"
-    assert str(css.DDSingle**0.5) == "DDSingle**0.5"
-
-
-def test_dd_single_repr() -> None:
-    assert repr(css.DDSingle) == "css.DDSingle"
-    assert repr(css.DDSinglePowGate(exponent=0.5)) == "(css.DDSingle**0.5)"
-
-    cirq.testing.assert_equivalent_repr(
-        css.DDSinglePowGate(), setup_code="import cirq_superstaq as css"
-    )
-
-
-def test_dd_single_circuit() -> None:
-    a = cirq.LineQubit(0)
-
-    op = css.DDSinglePowGate()(a)
-
-    cirq.testing.assert_has_diagram(
-        cirq.Circuit(op),
-        textwrap.dedent(
-            """
-            0: ───DD───
-            """
-        ),
-    )
-
-
 def test_custom_resolver() -> None:
     circuit = cirq.Circuit()
     qubits = cirq.LineQubit.range(4)
@@ -1212,6 +1176,7 @@ def test_custom_resolver() -> None:
     circuit += css.ops.qubit_gates.ICCX(qubits[0], qubits[1], qubits[2])
     circuit += css.ops.qubit_gates.IX(qubits[0])
     circuit += css.StrippedCZGate(0.123).on(qubits[0], qubits[1])
+    circuit += css.DDPowGate().on(qubits[0], qubits[1])
 
     json_text = cirq.to_json(circuit)
     resolvers = [*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
