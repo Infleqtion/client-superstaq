@@ -28,7 +28,7 @@ In our attempts to push AQRE to its limits, we quickly realized the extent of it
 
 _Hard-Coded Architectures and Inflexibility_
 
-One of the most significant challenges we encountered with these tools is their lack of flexibility. Quantum resource estimators like AQRE and BenchQ are inherently designed to optimize predefined algorithms, and they are not equipped to adjust to the dynamic needs of various quantum architectures. For example, when examining the Alice and Bob architecture, or when dealing with Low-Density Parity-Check (LDPC) codes, the limitations became apparent. The hard-coded nature of these tools meant that any deviation from the predefined architecture resulted in inefficiencies and suboptimal results. The lack of support for critical features such as movement and flip-chip architecture further highlighted the need for a more adaptable tool.
+One of the most significant challenges we encountered with these tools is their lack of flexibility. Quantum resource estimators like AQRE and BenchQ are inherently designed to optimize predefined algorithms, and they are not equipped to adjust to the dynamic needs of various quantum architectures. For example, when examining the [Alice and Bob](https://github.com/Alice-Bob-SW/qsharp-alice-bob-resource-estimator) architecture, or when dealing with Low-Density Parity-Check (LDPC) codes, the limitations became apparent. The hard-coded nature of these tools meant that any deviation from the predefined architecture resulted in inefficiencies and suboptimal results. The lack of support for critical features such as movement and flip-chip architecture further highlighted the need for a more adaptable tool.
 
  
 ### **Qubit Architecture**
