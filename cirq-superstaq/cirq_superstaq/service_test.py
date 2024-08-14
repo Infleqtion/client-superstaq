@@ -102,7 +102,7 @@ def test_service_run_and_get_counts() -> None:
         "job_ids": ["job_id"],
         "status": "Ready",
     }
-    mock_client.get_job.return_value = {
+    job_dict = {
         "data": {"histogram": {"11": 1}},
         "samples": {"11": 1},
         "shots": [
@@ -117,6 +117,7 @@ def test_service_run_and_get_counts() -> None:
         "status": "Done",
         "target": "ss_unconstrained_simulator",
     }
+    mock_client.fetch_jobs.return_value = {"job_id": job_dict}
 
     service._client = mock_client
 
@@ -147,6 +148,8 @@ def test_service_run_and_get_counts() -> None:
         "data": {"histogram": {"11": 1}},
         "samples": {"11": 1},
     }
+    mock_client.fetch_jobs.return_value = {"job_id_1": job_dict, "job_id_2": job_dict}
+
     service._client = mock_client
     multi_results = service.run(
         circuits=[circuit, circuit],
@@ -176,7 +179,7 @@ def test_service_sampler() -> None:
         "job_ids": ["job_id"],
         "status": "Ready",
     }
-    mock_client.get_job.return_value = {
+    job_dict = {
         "data": {"histogram": {"0": 3, "1": 1}},
         "num_qubits": 1,
         "samples": {"0": 3, "1": 1},
@@ -189,6 +192,7 @@ def test_service_sampler() -> None:
         "status": "Done",
         "target": "ss_unconstrained_simulator",
     }
+    mock_client.fetch_jobs.return_value = {"job_id": job_dict}
 
     sampler = service.sampler(target="ss_unconstrained_simulator")
     q0 = cirq.LineQubit(0)
@@ -204,25 +208,25 @@ def test_service_get_job() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
     mock_client = mock.MagicMock()
     job_dict = {"status": "Ready"}
-    mock_client.get_job.return_value = job_dict
+    mock_client.fetch_jobs.return_value = {"job_id": job_dict}
     service._client = mock_client
 
     job = service.get_job("job_id")
 
-    # get_job() should not be called upon construction
+    # fetch_jobs() should not be called upon construction
     assert job.job_id() == "job_id"
-    mock_client.get_job.assert_not_called()
+    mock_client.fetch_jobs.assert_not_called()
 
     # ...but it will be called with the initial query of status()
     assert job.status() == "Ready"
-    mock_client.get_job.assert_called_once_with("job_id")
+    mock_client.fetch_jobs.assert_called_once_with(["job_id"])
 
 
 def test_service_create_job() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
     mock_client = mock.MagicMock()
     mock_client.create_job.return_value = {"job_ids": ["job_id"], "status": "Ready"}
-    mock_client.get_job.return_value = {"status": "Done"}
+    mock_client.fetch_jobs.return_value = {"job_id": {"status": "Done"}}
     service._client = mock_client
 
     circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)), cirq.measure(cirq.LineQubit(0)))

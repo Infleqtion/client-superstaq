@@ -1,4 +1,4 @@
-from . import benchmark, converters, features, plotting, simulation, stabilizers
+from . import benchmark, converters, features, plotting, qcvv, simulation, stabilizers
 from ._version import __version__
 from .benchmarks import (
     bit_code,
@@ -27,4 +27,5 @@ __all__ = [
     "simulation",
     "stabilizers",
     "vqe_proxy",
+    "qcvv",
 ]

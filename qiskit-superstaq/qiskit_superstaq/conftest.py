@@ -2,45 +2,8 @@ from __future__ import annotations
 
 import general_superstaq as gss
 import pytest
-import qiskit
 
 import qiskit_superstaq as qss
-
-
-class MockSuperstaqBackend(qss.SuperstaqBackend):
-    """Stand-in for `SuperstaqBackend` that the tests can call."""
-
-    def __init__(self, provider: qss.SuperstaqProvider, target: str) -> None:
-        """Initializes a `SuperstaqBackend`.
-
-        Args:
-            provider: Provider for a Superstaq backend.
-            target: A string containing the name of a target backend.
-        """
-        self._provider = provider
-        self.configuration_dict = {
-            "backend_name": target,
-            "backend_version": "n/a",
-            "n_qubits": -1,
-            "basis_gates": None,
-            "gates": [],
-            "local": False,
-            "simulator": False,
-            "conditional": False,
-            "open_pulse": False,
-            "memory": False,
-            "max_shots": -1,
-            "coupling_map": None,
-        }
-        gss.validation.validate_target(target)
-
-        qiskit.providers.BackendV1.__init__(
-            self,
-            configuration=qiskit.providers.models.BackendConfiguration.from_dict(
-                self.configuration_dict
-            ),
-            provider=provider,
-        )
 
 
 class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
@@ -66,6 +29,24 @@ class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
             A list of Superstaq targets matching all provided criteria.
         """
         return gss.testing.RETURNED_TARGETS
+
+    def target_info(self, target: str) -> dict[str, object]:
+        """Mocks a request to the /target_info endpoint.
+
+        Args:
+            target: A string representing the device to get information about.
+
+        Returns:
+            The target information.
+        """
+        return {
+            "target_info": {
+                "target": target,
+                "num_qubits": -1,
+                "basis_gates": None,
+                "coupling_map": None,
+            },
+        }
 
 
 class MockSuperstaqProvider(qss.SuperstaqProvider):
@@ -116,7 +97,7 @@ class MockSuperstaqProvider(qss.SuperstaqProvider):
             verbose=verbose,
         )
 
-    def get_backend(self, name: str) -> MockSuperstaqBackend:
+    def get_backend(self, name: str) -> qss.SuperstaqBackend:
         """Mocks the get_backend function of SuperstaqProvider.
         Args:
             name: name of the backend.
@@ -124,7 +105,7 @@ class MockSuperstaqProvider(qss.SuperstaqProvider):
         Returns:
             A mock superstaq backend with the given name.
         """
-        return MockSuperstaqBackend(self, name)
+        return qss.SuperstaqBackend(self, name)
 
 
 @pytest.fixture()
