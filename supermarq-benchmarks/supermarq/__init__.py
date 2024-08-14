@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from . import benchmark, converters, features, plotting, simulation, stabilizers
+
+from . import benchmark, converters, features, plotting, qcvv, simulation, stabilizers
 from ._version import __version__
 from .benchmarks import (
     bit_code,
@@ -40,4 +41,5 @@ __all__ = [
     "simulation",
     "stabilizers",
     "vqe_proxy",
+    "qcvv",
 ]

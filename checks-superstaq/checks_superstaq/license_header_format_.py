@@ -176,12 +176,11 @@ def _validate_license_header(
     header_as_lst = expected_license_header.split("\n")
 
     for idx, line in enumerate(header_as_lst):
+        copyright_line += line
         if re.search(copyright_pattern, line):
-            copyright_line += line
             body = "\n".join(header_as_lst[idx + 1 :]).strip("#")
             break
-        else:
-            copyright_line += line
+
     copyright_line = copyright_line.replace("{YEAR}", r"20\d{2}").replace("{LICENSEE}", licensee)
     appended_pattern = re.compile(rf"Copyright .* 20\d{{2}} {licensee}")
 
@@ -201,23 +200,25 @@ def _validate_license_header(
     valid = False
 
     for license_header in license_header_lst:
+        header = license_header.license_header
         similar_body = (
-            difflib.SequenceMatcher(None, body, license_header.license_header).ratio() > 0.94
+            difflib.SequenceMatcher(
+                None,
+                "".join(line.lstrip("#").strip().lower() for line in header.splitlines()),
+                "".join(line.lstrip("#").strip().lower() for line in body.splitlines()),
+            ).ratio()
+            > 0.94
             or not body
         )
-        if re.match(pattern, license_header.license_header.replace("\n", "")) and similar_body:
+        if re.match(pattern, header.replace("\n", "")) and similar_body:
             license_header.header_type = HeaderType.VALID
             valid = True
-        elif similar_body and re.search(appended_pattern, license_header.license_header):
+        elif editable and similar_body and re.search(appended_pattern, header):
             license_header.header_type = HeaderType.VALID
             valid = True
-        elif (
-            editable
-            and similar_body
-            and not re.search(appended_pattern, license_header.license_header)
-        ):
+        elif editable and similar_body and not re.search(appended_pattern, header):
             license_header.header_type = HeaderType.SIMILAR_LICENSE
-        elif re.search(re.compile(copyright_line), license_header.license_header):
+        elif re.search(re.compile(copyright_line), header):
             license_header.header_type = HeaderType.OUTDATED
         else:
             license_header.header_type = HeaderType.OTHER
