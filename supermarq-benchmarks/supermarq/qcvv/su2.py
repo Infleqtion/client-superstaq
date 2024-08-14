@@ -134,7 +134,7 @@ class SU2(BenchmarkingExperiment[SU2Results]):
 
             circuit += cirq.measure(sorted(circuit.all_qubits()))
 
-            samples.append(Sample(circuit=circuit, data={"num_two_qubit_gates": 2 * depth}))
+            samples.append(Sample(raw_circuit=circuit, data={"num_two_qubit_gates": 2 * depth}))
         return samples
 
     def _process_probabilities(self, samples: Sequence[Sample]) -> pd.DataFrame:
@@ -158,7 +158,7 @@ class SU2(BenchmarkingExperiment[SU2Results]):
 
         return pd.DataFrame(records)
 
-    def analyse_results(self, plot_results: bool = True) -> SU2Results:
+    def analyze_results(self, plot_results: bool = True) -> SU2Results:
         """Perform the experiment analysis and store the results in the `results` attribute.
 
         Args:
@@ -188,7 +188,7 @@ class SU2(BenchmarkingExperiment[SU2Results]):
         )
 
         if plot_results:
-            self._plot_results()
+            self.plot_results()
 
         return self.results
 
@@ -226,12 +226,20 @@ class SU2(BenchmarkingExperiment[SU2Results]):
         return cirq.Circuit(
             self._haar_random_rotation().on(self.qubits[0]),
             self._haar_random_rotation().on(self.qubits[1]),
-            (self.two_qubit_gate(*self.qubits) if include_two_qubit_gate else []),
+            (
+                self.two_qubit_gate(*self.qubits).with_tags("no_compile")
+                if include_two_qubit_gate
+                else []
+            ),
             cirq.X.on_each(*self.qubits),
-            (self.two_qubit_gate(*self.qubits) if include_two_qubit_gate else []),
+            (
+                self.two_qubit_gate(*self.qubits).with_tags("no_compile")
+                if include_two_qubit_gate
+                else []
+            ),
         )
 
-    def _plot_results(self) -> None:
+    def plot_results(self) -> None:
         """Plot the results of the experiment"""
         _, ax = plt.subplots()
         sns.scatterplot(
@@ -247,7 +255,8 @@ class SU2(BenchmarkingExperiment[SU2Results]):
         )
         ax.plot(
             xx := self.raw_data["num_two_qubit_gates"],
-            self.results.single_qubit_noise * self.results.two_qubit_gate_fidelity**xx + 0.25,
+            3 / 4 * (1 - self.results.single_qubit_noise) * self.results.two_qubit_gate_fidelity**xx
+            + 0.25,
             label="00 (fit)",
         )
         ax.set_xlabel("Number of two qubit gates")

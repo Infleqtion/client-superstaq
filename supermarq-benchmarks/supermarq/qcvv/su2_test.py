@@ -72,10 +72,10 @@ def test_build_circuits(su2_experiment: SU2) -> None:
                 sample.circuit,
                 textwrap.dedent(
                     """
-                    0: ───PhXZ───@───X───@───PhXZ───X───PhXZ───X───PhXZ───M───
-                                 │       │                                │
-                    1: ───PhXZ───X───X───X───PhXZ───X───PhXZ───X───PhXZ───M───
-                    """
+                    0: ───PhXZ───@[no_compile]───X───@[no_compile]───PhXZ───X───PhXZ───X───PhXZ───M───
+                                 │                   │                                            │
+                    1: ───PhXZ───X───────────────X───X───────────────PhXZ───X───PhXZ───X───PhXZ───M───
+                    """  # noqa: E501  # pylint: disable=line-too-long
                 ),
             )
         else:
@@ -83,10 +83,10 @@ def test_build_circuits(su2_experiment: SU2) -> None:
                 sample.circuit,
                 textwrap.dedent(
                     """
-                    0: ───PhXZ───@───X───@───PhXZ───@───X───@───PhXZ───@───X───@───PhXZ───M───
-                                 │       │          │       │          │       │          │
-                    1: ───PhXZ───X───X───X───PhXZ───X───X───X───PhXZ───X───X───X───PhXZ───M───
-                    """
+                    0: ───PhXZ───@[no_compile]───X───@[no_compile]───PhXZ───@[no_compile]───X───@[no_compile]───PhXZ───@[no_compile]───X───@[no_compile]───PhXZ───M───
+                                 │                   │                      │                   │                      │                   │                      │
+                    1: ───PhXZ───X───────────────X───X───────────────PhXZ───X───────────────X───X───────────────PhXZ───X───────────────X───X───────────────PhXZ───M───
+                    """  # noqa: E501  # pylint: disable=line-too-long
                 ),
             )
 
@@ -94,15 +94,15 @@ def test_build_circuits(su2_experiment: SU2) -> None:
 def test_process_probabilities(su2_experiment: SU2) -> None:
     samples = [
         Sample(
-            circuit=MagicMock(),
+            raw_circuit=MagicMock(),
             data={"num_two_qubit_gates": 2},
         ),
         Sample(
-            circuit=MagicMock(),
+            raw_circuit=MagicMock(),
             data={"num_two_qubit_gates": 4},
         ),
         Sample(
-            circuit=MagicMock(),
+            raw_circuit=MagicMock(),
             data={"num_two_qubit_gates": 6},
         ),
     ]
@@ -124,19 +124,19 @@ def test_process_probabilities(su2_experiment: SU2) -> None:
 def test_analyse_results(su2_experiment: SU2) -> None:
     su2_experiment._samples = [
         Sample(
-            circuit=MagicMock(),
+            raw_circuit=MagicMock(),
             data={"num_two_qubit_gates": 2},
         ),
         Sample(
-            circuit=MagicMock(),
+            raw_circuit=MagicMock(),
             data={"num_two_qubit_gates": 4},
         ),
         Sample(
-            circuit=MagicMock(),
+            raw_circuit=MagicMock(),
             data={"num_two_qubit_gates": 6},
         ),
         Sample(
-            circuit=MagicMock(),
+            raw_circuit=MagicMock(),
             data={"num_two_qubit_gates": 8},
         ),
     ]
@@ -153,7 +153,7 @@ def test_analyse_results(su2_experiment: SU2) -> None:
             {"num_two_qubit_gates": 8, "00": decay(8), "01": 0.0, "10": 0.0, "11": 1 - decay(8)},
         ]
     )
-    result = su2_experiment.analyse_results(plot_results=True)
+    result = su2_experiment.analyze_results(plot_results=True)
 
     assert result.two_qubit_gate_fidelity == pytest.approx(0.975)
     assert result.two_qubit_gate_fidelity_std == pytest.approx(0.0)
