@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import textwrap
 from unittest.mock import MagicMock, patch
 
@@ -55,6 +56,7 @@ def su2_experiment() -> SU2:
         return SU2(cirq.CNOT)
 
 
+@pytest.mark.skipif(sys.version_info < (3, 10), reason="Python version < 3.10")
 def test_build_circuits(su2_experiment: SU2) -> None:
     # By extension also tests the _component() method
     # Patch the PhasedXZ drawing function to ignore the rotation parameters
@@ -86,6 +88,43 @@ def test_build_circuits(su2_experiment: SU2) -> None:
                     0: ───PhXZ───@[no_compile]───X───@[no_compile]───PhXZ───@[no_compile]───X───@[no_compile]───PhXZ───@[no_compile]───X───@[no_compile]───PhXZ───M───
                                  │                   │                      │                   │                      │                   │                      │
                     1: ───PhXZ───X───────────────X───X───────────────PhXZ───X───────────────X───X───────────────PhXZ───X───────────────X───X───────────────PhXZ───M───
+                    """  # noqa: E501  # pylint: disable=line-too-long
+                ),
+            )
+
+
+@pytest.mark.skipif(sys.version_info > (3, 9), reason="Python version > 3.9")
+def test_build_circuits_old(su2_experiment: SU2) -> None:
+    # By extension also tests the _component() method
+    # Patch the PhasedXZ drawing function to ignore the rotation parameters
+    cirq.PhasedXZGate._circuit_diagram_info_ = MagicMock(
+        return_value=cirq.CircuitDiagramInfo(wire_symbols=["PhXZ"])
+    )
+
+    samples = su2_experiment._build_circuits(2, [1, 3])
+    assert len(samples) == 4
+    for sample in samples:
+        assert "num_two_qubit_gates" in sample.data
+        assert sample.data["num_two_qubit_gates"] in [2, 6]
+        if sample.data["num_two_qubit_gates"] == 2:
+            cirq.testing.assert_has_diagram(
+                sample.circuit,
+                textwrap.dedent(
+                    """
+                    0: ───PhXZ───@['no_compile']───X───@['no_compile']───PhXZ───X───PhXZ───X───PhXZ───M───
+                                 │                     │                                              │
+                    1: ───PhXZ───X─────────────────X───X─────────────────PhXZ───X───PhXZ───X───PhXZ───M───
+                    """  # noqa: E501  # pylint: disable=line-too-long
+                ),
+            )
+        else:
+            cirq.testing.assert_has_diagram(
+                sample.circuit,
+                textwrap.dedent(
+                    """
+                    0: ───PhXZ───@['no_compile']───X───@['no_compile']───PhXZ───@['no_compile']───X───@['no_compile']───PhXZ───@['no_compile']───X───@['no_compile']───PhXZ───M───
+                                 │                     │                        │                     │                        │                     │                        │
+                    1: ───PhXZ───X─────────────────X───X─────────────────PhXZ───X─────────────────X───X─────────────────PhXZ───X─────────────────X───X─────────────────PhXZ───M───
                     """  # noqa: E501  # pylint: disable=line-too-long
                 ),
             )
