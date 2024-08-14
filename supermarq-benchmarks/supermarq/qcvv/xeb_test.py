@@ -90,7 +90,7 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
             [cirq.X, cirq.X],
             [cirq.Y, cirq.Y],
         ]
-        circuits = xeb_experiment.build_circuits(num_circuits=2, cycle_depths=[2])
+        circuits = xeb_experiment._build_circuits(num_circuits=2, cycle_depths=[2])
 
     assert len(circuits) == 2
 
@@ -101,10 +101,10 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
             [
                 cirq.X(qbs[0]),
                 cirq.Y(qbs[1]),
-                cirq.CZ(*qbs),
+                cirq.TaggedOperation(cirq.CZ(*qbs), "no_compile"),
                 cirq.Z(qbs[0]),
                 cirq.Y(qbs[1]),
-                cirq.CZ(*qbs),
+                cirq.TaggedOperation(cirq.CZ(*qbs), "no_compile"),
                 cirq.Y(qbs[0]),
                 cirq.Z(qbs[1]),
                 cirq.measure(qbs),
@@ -118,10 +118,10 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
             [
                 cirq.X(qbs[0]),
                 cirq.Z(qbs[1]),
-                cirq.CZ(*qbs),
+                cirq.TaggedOperation(cirq.CZ(*qbs), "no_compile"),
                 cirq.X(qbs[0]),
                 cirq.X(qbs[1]),
-                cirq.CZ(*qbs),
+                cirq.TaggedOperation(cirq.CZ(*qbs), "no_compile"),
                 cirq.Y(qbs[0]),
                 cirq.Y(qbs[1]),
                 cirq.measure(qbs),
@@ -174,7 +174,7 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
             },
         ]
     )
-    results = xeb_experiment.analyse_results()
+    results = xeb_experiment.analyze_results()
 
     assert xeb_experiment.results.layer_fidelity_estimate == pytest.approx(0.95)
     assert xeb_experiment.results.layer_fidelity_estimate_std == pytest.approx(0.0, abs=1e-8)
@@ -190,7 +190,7 @@ def test_xeb_process_probabilities(xeb_experiment: XEB) -> None:
 
     samples = [
         XEBSample(
-            circuit=cirq.Circuit(
+            raw_circuit=cirq.Circuit(
                 [
                     cirq.X(qubits[0]),
                     cirq.X(qubits[1]),
@@ -207,7 +207,7 @@ def test_xeb_process_probabilities(xeb_experiment: XEB) -> None:
 
     with patch("cirq.Simulator") as mock_simulator:
         mock_simulator.return_value.simulate.return_value.final_state_vector = [0.0, 1.0, 0.0, 0.0]
-        data = xeb_experiment.process_probabilities(samples)
+        data = xeb_experiment._process_probabilities(samples)
 
     expected_data = pd.DataFrame(
         [
@@ -231,13 +231,13 @@ def test_xeb_process_probabilities(xeb_experiment: XEB) -> None:
 
 
 def test_xebsample_sum_probs_square_no_values() -> None:
-    sample = XEBSample(circuit=cirq.Circuit(), data={})
+    sample = XEBSample(raw_circuit=cirq.Circuit(), data={})
     with pytest.raises(RuntimeError, match="`target_probabilities` have not yet been initialised"):
         sample.sum_target_probs_square()
 
 
 def test_xebsample_sum_cross_sample_probs_no_values() -> None:
-    sample = XEBSample(circuit=cirq.Circuit(), data={})
+    sample = XEBSample(raw_circuit=cirq.Circuit(), data={})
     with pytest.raises(RuntimeError, match="`target_probabilities` have not yet been initialised"):
         sample.sum_target_cross_sample_probs()
 
