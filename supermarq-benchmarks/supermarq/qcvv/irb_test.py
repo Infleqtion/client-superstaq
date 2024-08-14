@@ -84,7 +84,7 @@ def test_irb_process_probabilities(irb_experiment: IRB) -> None:
 
     samples = [
         Sample(
-            circuit=cirq.Circuit(),
+            raw_circuit=cirq.Circuit(),
             data={
                 "num_cycles": 20,
                 "circuit_depth": 23,
@@ -94,7 +94,7 @@ def test_irb_process_probabilities(irb_experiment: IRB) -> None:
     ]
     samples[0].probabilities = {"00": 0.1, "01": 0.2, "10": 0.3, "11": 0.4}
 
-    data = irb_experiment.process_probabilities(samples)
+    data = irb_experiment._process_probabilities(samples)
 
     expected_data = pd.DataFrame(
         [
@@ -124,10 +124,10 @@ def test_irb_build_circuit(irb_experiment: IRB) -> None:
         cirq.ops.SingleQubitCliffordGate.X,
     ]
 
-    circuits = irb_experiment.build_circuits(2, [3])
+    circuits = irb_experiment._build_circuits(2, [3])
     expected_circuits = [
         Sample(
-            circuit=cirq.Circuit(
+            raw_circuit=cirq.Circuit(
                 [
                     cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits),
                     cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits),
@@ -143,14 +143,20 @@ def test_irb_build_circuit(irb_experiment: IRB) -> None:
             },
         ),
         Sample(
-            circuit=cirq.Circuit(
+            raw_circuit=cirq.Circuit(
                 [
                     cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits),
+                    cirq.TaggedOperation(
+                        cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
+                    ),
                     cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits),
+                    cirq.TaggedOperation(
+                        cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
+                    ),
                     cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits),
-                    cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits),
-                    cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits),
-                    cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits),
+                    cirq.TaggedOperation(
+                        cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
+                    ),
                     cirq.ops.SingleQubitCliffordGate.I(*irb_experiment.qubits),
                     cirq.measure(irb_experiment.qubits),
                 ]
@@ -162,7 +168,7 @@ def test_irb_build_circuit(irb_experiment: IRB) -> None:
             },
         ),
         Sample(
-            circuit=cirq.Circuit(
+            raw_circuit=cirq.Circuit(
                 [
                     cirq.ops.SingleQubitCliffordGate.X(*irb_experiment.qubits),
                     cirq.ops.SingleQubitCliffordGate.X(*irb_experiment.qubits),
@@ -178,14 +184,20 @@ def test_irb_build_circuit(irb_experiment: IRB) -> None:
             },
         ),
         Sample(
-            circuit=cirq.Circuit(
+            raw_circuit=cirq.Circuit(
                 [
                     cirq.ops.SingleQubitCliffordGate.X(*irb_experiment.qubits),
-                    cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits),
+                    cirq.TaggedOperation(
+                        cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
+                    ),
                     cirq.ops.SingleQubitCliffordGate.X(*irb_experiment.qubits),
-                    cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits),
+                    cirq.TaggedOperation(
+                        cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
+                    ),
                     cirq.ops.SingleQubitCliffordGate.X(*irb_experiment.qubits),
-                    cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits),
+                    cirq.TaggedOperation(
+                        cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
+                    ),
                     cirq.ops.SingleQubitCliffordGate.Y(*irb_experiment.qubits),
                     cirq.measure(irb_experiment.qubits),
                 ]
@@ -258,7 +270,7 @@ def test_analyse_results(irb_experiment: IRB) -> None:
             },
         ]
     )
-    irb_experiment.analyse_results()
+    irb_experiment.analyze_results()
 
     assert irb_experiment.results.rb_layer_fidelity == pytest.approx(0.95)
     assert irb_experiment.results.irb_layer_fidelity == pytest.approx(0.8)
