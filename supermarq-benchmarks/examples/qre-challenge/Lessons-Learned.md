@@ -16,7 +16,9 @@ Existing QRE tools are limited in their ability to provide insights at the archi
 
 _Limitations of Azure Quantum Resource Estimator and Qualtran_
 
-Both the Azure Quantum Resource Estimator (AQRE) and Qualtran are leading tools used in quantum resource estimation. However, despite their popularity, these tools are predominantly algorithm-centric. This narrow focus on algorithms presents a significant limitation when attempting to produce realistic estimations for specific and more complex quantum systems, as they largely disregard the hardware-specific characteristics that are crucial.
+Both the Azure Quantum Resource Estimator (AQRE) and Qualtran are prominent tools in quantum resource estimation. Despite their widespread use, these tools are primarily algorithm-centric, with limited flexibility. By default, they assume a surface quantum error correction code with lattice surgery and magic state distillation, offering no customization of these parameters. In our research, we identified alternative QEC configurations that diverge from MSD and lattice surgery; however, testing these configurations was not feasible due to the tools’ rigid, hard-coded options.
+
+This algorithmic focus imposes a significant constraint, particularly when aiming to generate realistic estimations for specific and complex quantum systems. These tools often overlook the critical hardware-specific characteristics essential for accurate resource estimation.
 
 _Algorithmic Focus and Lack of Customizability_
 
@@ -31,13 +33,17 @@ One of the most significant challenges we encountered with these tools is their 
  
 ### **Qubit Architecture**
 
-_Synthetic Qubits (Superconducting)_
+_Superconducting_
 
 Synthetic qubits, particularly those based on superconducting circuits, are one of the leading platforms in quantum computing. These qubits are realized using Josephson junctions, which allow for the creation of a two-level quantum system with low decoherence times and high controllability. The architecture for superconducting qubits is highly developed, with established techniques for qubit manipulation, readout, and error correction. However, the physical infrastructure required, such as dilution refrigerators, makes scalability and qubit connectivity challenging, especially when dealing with large numbers of qubits.
 
-_Neutral Atom Simulations_
+_Trapped Ions_
 
-Neutral atom qubits, on the other hand, use individual atoms trapped in optical lattices or tweezers as qubits. These qubits are manipulated using laser pulses to perform quantum gates and entanglement operations. Neutral atom simulations are a promising avenue for large-scale quantum computing due to their natural scalability and the ability to arrange atoms in highly connected, flexible geometries. However, challenges remain in terms of maintaining coherence over long periods and achieving high-fidelity operations across large numbers of qubits.
+Trapped-ion qubits leverage ions confined in electromagnetic fields as qubits, with quantum operations performed via laser pulses or microwave fields. This platform is known for high-fidelity operations and long coherence times, making it a robust option for quantum computing. The precise control over qubit interactions and the ability to implement complex algorithms are key strengths. However, scalability remains a challenge due to the physical limitations of ion trapping and the complexity of managing large ion chains.
+
+_Optical Tweezer_
+
+Optical tweezer qubits involve neutral atoms individually trapped by tightly focused laser beams. These atoms can be arranged in customizable patterns, allowing for flexible and highly connected qubit geometries. Optical tweezers are promising for large-scale quantum computing due to their natural scalability and the ease of reconfiguring qubit layouts. Despite these advantages, maintaining long-term coherence and achieving consistent high-fidelity operations across many qubits are significant challenges that need to be addressed.
 
 _Comparison and Implications for QRE_
 
@@ -59,15 +65,13 @@ _Functional Requirements_
 
 - **Custom Assumptions:** Flexibility to incorporate various architectural assumptions and parameters.
 
-_Non-Functional Requirements_
+- **Universal Gateset Configuration:** The tool must support the ability to implement a universal gateset without relying on magic state distillation, allowing for more versatile quantum operations.
 
-- **Performance:** The tool should provide results in a reasonable timeframe, even for large-scale quantum architectures.
+- **Flexible QEC Code Switching:** Users should be able to switch between different quantum error correction codes, such as 3D codes, subsystem codes, concatenated codes, and piece-able fault tolerance, providing a broader range of options for optimizing quantum systems.
 
-- **Scalability:** Ability to scale with increasing complexity of quantum systems.
+- **QEC Customization:** The tool should allow for the customization of quantum error correction mechanisms, enabling the use of alternative configurations beyond the standard options.
 
-- **Usability:** User-friendly interface for easy input of parameters and interpretation of results.
-
-- **Extensibility:** Design should allow for future enhancements and the addition of new features.
+- **Seamless Integration:** The design should facilitate easy integration of new quantum error correction codes as they are developed, maintaining the tool’s relevance as the field advances.
 
 ### **System Architecture**
 
