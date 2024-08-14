@@ -57,7 +57,7 @@ def su2_experiment() -> SU2:
 
 
 @pytest.mark.skipif(sys.version_info < (3, 10), reason="Python version < 3.10")
-def test_build_circuits(su2_experiment: SU2) -> None:
+def test_build_circuits(su2_experiment: SU2) -> None:  # pragma: no cover
     # By extension also tests the _component() method
     # Patch the PhasedXZ drawing function to ignore the rotation parameters
     cirq.PhasedXZGate._circuit_diagram_info_ = MagicMock(
@@ -94,7 +94,7 @@ def test_build_circuits(su2_experiment: SU2) -> None:
 
 
 @pytest.mark.skipif(sys.version_info >= (3, 10), reason="Python version >= 3.10")
-def test_build_circuits_old(su2_experiment: SU2) -> None:
+def test_build_circuits_old(su2_experiment: SU2) -> None:  # pragma: no cover
     # By extension also tests the _component() method
     # Patch the PhasedXZ drawing function to ignore the rotation parameters
     cirq.PhasedXZGate._circuit_diagram_info_ = MagicMock(
