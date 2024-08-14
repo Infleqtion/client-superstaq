@@ -93,7 +93,7 @@ def test_build_circuits(su2_experiment: SU2) -> None:
             )
 
 
-@pytest.mark.skipif(sys.version_info > (3, 9), reason="Python version > 3.9")
+@pytest.mark.skipif(sys.version_info >= (3, 10), reason="Python version >= 3.10")
 def test_build_circuits_old(su2_experiment: SU2) -> None:
     # By extension also tests the _component() method
     # Patch the PhasedXZ drawing function to ignore the rotation parameters
