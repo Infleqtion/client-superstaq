@@ -69,8 +69,6 @@ _Functional Requirements_
 
 - **Flexible QEC Code Switching:** Users should be able to switch between different quantum error correction codes, such as 3D codes, subsystem codes, concatenated codes, and piece-able fault tolerance, providing a broader range of options for optimizing quantum systems.
 
-- **QEC Customization:** The tool should allow for the customization of quantum error correction mechanisms, enabling the use of alternative configurations beyond the standard options.
-
 - **Seamless Integration:** The design should facilitate easy integration of new quantum error correction codes as they are developed, maintaining the tool’s relevance as the field advances.
 
 ### **System Architecture**
