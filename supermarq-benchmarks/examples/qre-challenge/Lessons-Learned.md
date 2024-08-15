@@ -47,9 +47,9 @@ _Trapped Ions_
 
 Trapped-ion qubits leverage ions confined in electromagnetic fields as qubits, with quantum operations performed via laser pulses or microwave fields. This platform is known for high-fidelity operations and long coherence times, making it a robust option for quantum computing. The precise control over qubit interactions and the ability to implement complex algorithms are key strengths. However, scalability remains a challenge due to the physical limitations of ion trapping and the complexity of managing large ion chains.
 
-_Optical Tweezer_
+_Cold Atoms_
 
-Optical tweezer qubits involve neutral atoms individually trapped by tightly focused laser beams. These atoms can be arranged in customizable patterns, allowing for flexible and highly connected qubit geometries. Optical tweezers are promising for large-scale quantum computing due to their natural scalability and the ease of reconfiguring qubit layouts. Despite these advantages, maintaining long-term coherence and achieving consistent high-fidelity operations across many qubits are significant challenges that need to be addressed.
+Cold atom qubits are trapped by tightly focused laser beams. These atoms can be arranged in customizable patterns, allowing for flexible and highly connected qubit geometries. Optical tweezers are promising for large-scale quantum computing due to their natural scalability and the ease of reconfiguring qubit layouts. Despite these advantages, maintaining long-term coherence and achieving consistent high-fidelity operations across many qubits are significant challenges that need to be addressed.
 
 _Comparison and Implications for QRE_
 
@@ -61,7 +61,7 @@ _Functional Requirements_
 
 - **Movement Analysis:** The tool must evaluate the impact of qubit movement within the architecture.
 
-- **Atom Reloading:** Consideration of the frequency and impact of atom reloading within quantum operations.
+- **Reloading:** Consideration of the frequency and impact of atom and ion reloading within quantum operations.
 
 - **Code Teleportation:** Ability to model and assess the implications of code teleportation on qubit resources.
 
@@ -69,13 +69,17 @@ _Functional Requirements_
 
 - **Degree of Parallelization:** Estimation of the impact of parallel operations on qubit usage and efficiency.
 
-- **Custom Assumptions:** Flexibility to incorporate various architectural assumptions and parameters.
+- **Universal Gateset Configuration:** The tool must accomodate the ability to implement a universal gateset using a variety of techniques, including:
+    - Magic State Distillation
+    - Code Switching
+    - Piece-able Fault Tolerance
+    - Lattice Surgery
 
-- **Universal Gateset Configuration:** The tool must support the ability to implement a universal gateset without relying on magic state distillation, allowing for more versatile quantum operations.
-
-- **Flexible QEC Code Switching:** Users should be able to switch between different quantum error correction codes, such as 3D codes, subsystem codes, concatenated codes, and piece-able fault tolerance, providing a broader range of options for optimizing quantum systems.
+- **Flexible QEC Code Configuration:** Users should be able to use a variety of different quantum error correction codes, such as surface, concatenated, LDPC, etc. providing a broader range of options for optimizing quantum systems.
 
 - **Seamless Integration:** The design should facilitate easy integration of new quantum error correction codes as they are developed, maintaining the tool’s relevance as the field advances.
+
+- **Custom Assumptions:** Flexibility to incorporate various architectural assumptions and parameters.
 
 ### **System Architecture**
 
@@ -91,15 +95,23 @@ _High-Level Architecture_
 
 _Detailed Architecture_
 
-- **Movement Analysis Subsystem:** Implements algorithms to estimate the impact of qubit movement.
+- **Gateset Implementation Subsystem:** Handles the implementation and execution of quantum gates, optimizing the overall gate performance by incorporating:
 
-- **Atom Reloading Subsystem:** Models the atom reloading process and its effect on qubit availability.
+	- **Gateset Selection and Optimization:** Determines the optimal gateset for specific algorithms, ensuring gate operations are executed efficiently and with high fidelity.
 
-- **Code Teleportation Subsystem:** Evaluates teleportation strategies and their resource implications.
+	- **Error Correction and Fidelity:** Implements error correction codes and monitors gate fidelity to reduce quantum error rates.
 
-- **Connectivity Analysis Subsystem:** Analyzes qubit connectivity patterns and their impact on the architecture.
+	- **Gate Scheduling:** Manages the scheduling and order of quantum gate operations to minimize idle qubit times and align with architectural constraints.
 
-- **Parallelization Analysis Subsystem:** Assesses the degree of parallelization and its effect on qubit usage.
+	- **Movement Submodule:** Implements algorithms to estimate the impact of qubit movement and optimizes it within the context of gate operations. It ensures that qubit transitions do not introduce significant delays or errors during gate execution.
+
+	- **Code Teleportation Submodule:** Evaluates teleportation strategies, focusing on how they can reduce qubit movement and resource consumption. This submodule ensures that teleportation is seamlessly integrated into gate operations to maintain efficiency.
+
+- **Atom Reloading Subsystem:** Models the atom reloading process and its effect on qubit availability, ensuring that qubits are properly aligned for gate operations.
+
+- **Connectivity Analysis Subsystem:** Analyzes qubit connectivity patterns and their impact on the architecture, ensuring that qubits are efficiently connected for optimized gate execution and reduced latency.
+
+- **Parallelization Analysis Subsystem:** Assesses the degree of parallelization and its effect on qubit usage, ensuring that multiple gate operations can occur simultaneously, thus increasing computational throughput.
 
 ### **Conclusion**
 
