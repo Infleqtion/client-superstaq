@@ -14,9 +14,9 @@ Existing QRE tools are limited in their ability to provide insights at the archi
  
 ### **Current Resource Estimation Limitations**
 
-_Limitations of Azure Quantum Resource Estimator and Qualtran_
+_Limitations of Current Quantum Resource Estimators_
 
-Both the Azure Quantum Resource Estimator (AQRE) and Qualtran are prominent tools in quantum resource estimation. Despite their widespread use, these tools are primarily algorithm-centric, with limited flexibility. By default, they assume a surface quantum error correction code with lattice surgery and magic state distillation, offering no customization of these parameters. In our research, we identified alternative QEC configurations that diverge from MSD and lattice surgery; however, testing these configurations was not feasible due to the tools’ rigid, hard-coded options.
+The Azure Quantum Resource Estimator (AQRE), Qualtran, BenchQ, and pyLIQTR are prominent tools in quantum resource estimation. Despite their widespread use, these tools are primarily algorithm-centric, with limited flexibility. By default, they assume a surface quantum error correction code with lattice surgery and magic state distillation, offering no customization of these parameters. In our research, we identified alternative QEC configurations that diverge from MSD and lattice surgery; however, testing these configurations was not feasible due to the tools’ rigid, hard-coded options.
 
 This algorithmic focus imposes a significant constraint, particularly when aiming to generate realistic estimations for specific and complex quantum systems. These tools often overlook the critical hardware-specific characteristics essential for accurate resource estimation.
 
