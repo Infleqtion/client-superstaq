@@ -11,6 +11,12 @@ This document outlines the design and development of an architecture-level Quant
 
 Existing QRE tools are limited in their ability to provide insights at the architecture level, particularly when comparing Surface Codes with LRESC. Current tools just highlight the inherent advantage of LRESC in saving qubits, a conclusion that can be reached without extensive QRE analysis. This project aims to build a more advanced QRE tool that considers other factors such as Movement, Atom Reloading, Code Teleportation, Connectivity, Degree of Parallelization, and other architectural assumptions, providing more meaningful and actionable insights.
 
+While there are existing software implementations that perform architecture-level resource estimations, a centralized, hardware-agnostic tool is needed to consolidate these efforts. Some examples of architecture-level estimations can be found in the following papers:
+- [How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits](https://scirate.com/arxiv/1905.09749)
+- [Building a fault-tolerant quantum computer using concatenated cat codes](https://scirate.com/arxiv/2012.04108)
+- [LDPC-cat codes for low-overhead quantum computing in 2D](https://scirate.com/arxiv/2401.09541)
+- [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://scirate.com/arxiv/2306.08585)
+
  
 ### **Current Resource Estimation Limitations**
 
