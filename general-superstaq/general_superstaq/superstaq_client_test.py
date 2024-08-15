@@ -294,12 +294,9 @@ def test_superstaq_client_create_job_not_retriable(mock_post: mock.MagicMock) ->
 
 @mock.patch("requests.post")
 def test_superstaq_client_create_job_retry(mock_post: mock.MagicMock) -> None:
-    response1 = mock.MagicMock()
-    response2 = mock.MagicMock()
+    response1 = mock.MagicMock(ok=False, status_code=requests.codes.service_unavailable)
+    response2 = mock.MagicMock(ok=True)
     mock_post.side_effect = [response1, response2]
-    response1.ok = False
-    response1.status_code = requests.codes.service_unavailable
-    response2.ok = True
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
@@ -594,6 +591,63 @@ def test_superstaq_client_fetch_jobs_retry(mock_post: mock.MagicMock) -> None:
         api_key="to_my_heart",
     )
     _ = client.fetch_jobs(["job_id"])
+    assert mock_post.call_count == 2
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_cancel_jobs_unauthorized(mock_post: mock.MagicMock) -> None:
+    mock_post.return_value.ok = False
+    mock_post.return_value.status_code = requests.codes.unauthorized
+
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    with pytest.raises(gss.SuperstaqServerException, match="Not authorized"):
+        _ = client.cancel_jobs(["job_id"])
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_cancel_jobs_not_found(mock_post: mock.MagicMock) -> None:
+    (mock_post.return_value).ok = False
+    (mock_post.return_value).status_code = requests.codes.not_found
+
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    with pytest.raises(gss.SuperstaqServerException):
+        _ = client.cancel_jobs(["job_id"])
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_get_cancel_jobs_retriable(mock_post: mock.MagicMock) -> None:
+    mock_post.return_value.ok = False
+    mock_post.return_value.status_code = requests.codes.bad_request
+
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    with pytest.raises(gss.SuperstaqServerException, match="Status code: 400"):
+        _ = client.cancel_jobs(["job_id"], cq_token=1)
+
+
+@mock.patch("requests.post")
+def test_superstaq_client_cancel_jobs_retry(mock_post: mock.MagicMock) -> None:
+    response1 = mock.MagicMock(ok=False, status_code=requests.codes.service_unavailable)
+    response2 = mock.MagicMock(ok=True)
+    mock_post.side_effect = [response1, response2]
+
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    _ = client.cancel_jobs(["job_id"])
     assert mock_post.call_count == 2
 
 
