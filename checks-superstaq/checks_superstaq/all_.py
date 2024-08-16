@@ -19,12 +19,11 @@ from checks_superstaq import (
 )
 
 
-def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
+def run(*args: str) -> int:
     """Runs all checks on the repository.
 
     Args:
         *args: Command line arguments.
-        sphinx_paths: List of sphinx paths strings (used for building docs).
 
     Returns:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
@@ -96,7 +95,8 @@ def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
     if default_mode:
         # checks that the docs build
         checks_failed |= build_docs.run(
-            *args_to_pass, exit_on_failure=exit_on_failure, sphinx_paths=sphinx_paths
+            *args_to_pass,
+            exit_on_failure=exit_on_failure,
         )
 
     return checks_failed

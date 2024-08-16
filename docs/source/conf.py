@@ -23,11 +23,10 @@ author = "ColdQuanta, Inc., DBA Infleqtion"
 
 extensions = [
     "nbsphinx",
-    "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
     "sphinx.ext.mathjax",  # math rendering in html
     "sphinx.ext.napoleon",  # allows google- and numpy- style docstrings
     "IPython.sphinxext.ipython_console_highlighting",
+    "autoapi.extension",
 ]
 
 # since our notebooks can involve network I/O (or even costing $), we don't want them to be
@@ -36,18 +35,30 @@ nbsphinx_execute = "never"
 
 # In addition, we set the mathjax path to v3, which allows \ket{} (and other commands) to render
 mathjax_path = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
-autosummary_generate = True
+autosummary_generate = False
 
 templates_path = ["_templates"]
 
-# Using `modules` in index.rst gets the first package and ignores additional included packages.
-# Listing out modules explicitly causes building docs to throw error looking for `modules.rst`,
-# so add to excluded search patterns as per suggestion here: https://stackoverflow.com/a/15438962
-exclude_patterns: list[str] = [
-    "modules.rst",
-    "setup.rst",
-    "general_superstaq.check.rst",
-    "cirq_superstaq.ops.rst",
+autoapi_dirs = [
+    "../../cirq-superstaq/cirq_superstaq",
+    "../../general-superstaq/general_superstaq",
+    "../../qiskit-superstaq/qiskit_superstaq",
+    "../../supermarq-benchmarks/supermarq",
+]
+autoapi_type = "python"
+
+autoapi_options = [
+    "members",
+    "undoc-members",
+    "show-inheritance",
+    "show-module-summary",
+    "special-members",
+    "imported-members",
+]
+
+autoapi_ignore = [
+    "*_test.py",
+    "*/checks/*.py",
 ]
 
 
