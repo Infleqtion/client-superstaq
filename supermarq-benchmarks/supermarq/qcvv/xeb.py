@@ -22,10 +22,11 @@ from dataclasses import dataclass, field
 import cirq
 import numpy as np
 import pandas as pd
+import scipy
 import seaborn as sns
-from scipy.stats import linregress
-from tqdm.contrib.itertools import product
-from tqdm.notebook import tqdm
+import tqdm
+import tqdm.contrib
+import tqdm.contrib.itertools
 
 from supermarq.qcvv import BenchmarkingExperiment, BenchmarkingResults, Sample
 
@@ -79,10 +80,10 @@ class XEBSample(Sample):
 class XEBResults(BenchmarkingResults):
     """Results from an XEB experiment."""
 
-    layer_fidelity_estimate: float
-    """Estimated layer fidelity."""
-    layer_fidelity_estimate_std: float
-    """Standard deviation for the layer fidelity estimate."""
+    cycle_fidelity_estimate: float
+    """Estimated cycle fidelity."""
+    cycle_fidelity_estimate_std: float
+    """Standard deviation for the cycle fidelity estimate."""
 
     experiment_name = "IRB"
 
@@ -91,16 +92,16 @@ class XEB(BenchmarkingExperiment[XEBResults]):
     r"""Cross-entropy benchmarking (XEB) experiment.
 
     The XEB experiment can be used to estimate the combined fidelity of a repeating
-    layer of gates. In our case, where we restrict ourselves to two qubits, we use
-    layers made up of two randomly selected single qubit phased XZ gates and a constant
+    cycle of gates. In our case, where we restrict ourselves to two qubits, we use
+    cycles made up of two randomly selected single qubit phased XZ gates and a constant
     two qubit gate. This is illustrated as follows:
 
     .. image:: ../../superstaq/qcvv/XEB_Random_Circuit.png
 
-    For each randomly generated circuit, with a given number of layers, we compare the
+    For each randomly generated circuit, with a given number of cycle, we compare the
     simulated state probabilities, :math:`p(x)` with those achieved by running the circuit
     on a given target, :math:`\hat{p}(x)`. The fidelity of a circuit containing :math:`d`
-    layers, :math:`f_d` can then be estimated as
+    cycles, :math:`f_d` can then be estimated as
 
     .. math::
 
@@ -108,14 +109,14 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         f_d \left(\sum_{x \in \{0, 1\}^n} p(x)^2 -  \frac{1}{2^n}\right)
 
     We can therefore fit a linear model to estimate the value of :math:`f_d`. We the estimate
-    the fidelity of the layer, :math:`f_{\mathrm{layer}}` as
+    the fidelity of the cycle, :math:`f_{\mathrm{cycle}}` as
 
     .. math::
 
-        f_d = A(f_{layer})^d
+        f_d = A(f_{cycle})^d
 
     Thus fitting another linear model to :math:`\log(f_d) \sim d` provides us with an estimate
-    of the layer fidelity.
+    of the cycle fidelity.
     """
 
     def __init__(
@@ -126,8 +127,7 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         """Args:
         single_qubit_gate_set: Optional list of single qubit gates to randomly sample
             from when generating random circuits. If not provided defaults to phased
-            XZ gates with
-            1/4 pi intervals.
+            XZ gates with 1/4 pi intervals.
         two_qubit_gate: The two qubit gate to interleave between the single qubit gates. If
             None then no two qubit gate is used. Defaults to control-Z gate.
         """
@@ -138,7 +138,7 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         self._samples: Sequence[XEBSample] | None = None  # Overwrite with modified sampled object
 
         self.two_qubit_gate: cirq.Gate | None = two_qubit_gate
-        """The two qubit get to use for interleaving"""
+        """The two qubit gate to use for interleaving."""
 
         self.single_qubit_gate_set: list[cirq.Gate]
         """The single qubit gates to randomly sample from"""
@@ -193,17 +193,19 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         num_circuits: int,
         cycle_depths: Iterable[int],
     ) -> Sequence[XEBSample]:
-        """Build a list of random circuits to perform the XEB experiment with
+        """Build a list of random circuits to perform the XEB experiment with.
 
         Args:
             num_circuits: Number of circuits to generate.
-            cycle_depths: An iterable of the different numbers of layers to include in each circuit.
+            cycle_depths: An iterable of the different numbers of cycles to include in each circuit.
 
         Returns:
             The list of experiment samples.
         """
         random_circuits = []
-        for _, depth in product(range(num_circuits), cycle_depths, desc="Building circuits"):
+        for _, depth in tqdm.contrib.itertools.product(
+            range(num_circuits), cycle_depths, desc="Building circuits"
+        ):
             circuit = cirq.Circuit()
             for _ in range(depth + int(self.two_qubit_gate is not None)):
                 circuit.append(
@@ -248,7 +250,7 @@ class XEB(BenchmarkingExperiment[XEBResults]):
             sample.sample_probabilities = sample.probabilities
             sample.probabilities = {}
 
-        for sample in tqdm(samples, desc="Evaluating circuits"):
+        for sample in tqdm.notebook.tqdm(samples, desc="Evaluating circuits"):
             sample.target_probabilities = self._simulate_sample(sample)
 
         records = []
@@ -309,7 +311,7 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         records = []
         for depth in set(self.raw_data.cycle_depth):
             df = self.raw_data[self.raw_data.cycle_depth == depth]
-            fit = linregress(
+            fit = scipy.stats.linregress(
                 x=df["sum_p(x)p(x)"] - 1 / 2**self.num_qubits,
                 y=df["sum_p(x)p^(x)"] - 1 / 2**self.num_qubits,
             )
@@ -328,19 +330,19 @@ class XEB(BenchmarkingExperiment[XEBResults]):
             self.circuit_fidelities.circuit_fidelity_estimate
         )
 
-        # Fit a linear model to the depth ~ log(fidelity) to approximate the layer fidelity
-        layer_fit = linregress(
+        # Fit a linear model to the depth ~ log(fidelity) to approximate the cycle fidelity
+        cycle_fit = scipy.stats.linregress(
             x=self.circuit_fidelities.cycle_depth,
             y=np.log(self.circuit_fidelities.circuit_fidelity_estimate),
         )
-        layer_fidelity_estimate = np.exp(layer_fit.slope)
-        layer_fidelity_estimate_std = layer_fidelity_estimate * layer_fit.stderr
+        cycle_fidelity_estimate = np.exp(cycle_fit.slope)
+        cycle_fidelity_estimate_std = cycle_fidelity_estimate * cycle_fit.stderr
 
         self._results = XEBResults(
             target="$ ".join(self.targets),
             total_circuits=len(self.samples),
-            layer_fidelity_estimate=layer_fidelity_estimate,
-            layer_fidelity_estimate_std=layer_fidelity_estimate_std,
+            cycle_fidelity_estimate=cycle_fidelity_estimate,
+            cycle_fidelity_estimate_std=cycle_fidelity_estimate_std,
         )
 
         if plot_results:
@@ -383,8 +385,8 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         x = np.linspace(
             self.circuit_fidelities.cycle_depth.min(), self.circuit_fidelities.cycle_depth.max()
         )
-        y = self.results.layer_fidelity_estimate**x
-        y_p = (self.results.layer_fidelity_estimate + self.results.layer_fidelity_estimate_std) ** x
-        y_m = (self.results.layer_fidelity_estimate - self.results.layer_fidelity_estimate_std) ** x
+        y = self.results.cycle_fidelity_estimate**x
+        y_p = (self.results.cycle_fidelity_estimate + self.results.cycle_fidelity_estimate_std) ** x
+        y_m = (self.results.cycle_fidelity_estimate - self.results.cycle_fidelity_estimate_std) ** x
         ax_2.plot(x, y, color="tab:red", linewidth=2)
         ax_2.fill_between(x, y_m, y_p, alpha=0.2, color="tab:red")

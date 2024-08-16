@@ -176,8 +176,8 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
     )
     results = xeb_experiment.analyze_results()
 
-    assert xeb_experiment.results.layer_fidelity_estimate == pytest.approx(0.95)
-    assert xeb_experiment.results.layer_fidelity_estimate_std == pytest.approx(0.0, abs=1e-8)
+    assert xeb_experiment.results.cycle_fidelity_estimate == pytest.approx(0.95)
+    assert xeb_experiment.results.cycle_fidelity_estimate_std == pytest.approx(0.0, abs=1e-8)
 
     assert results == xeb_experiment.results
 
