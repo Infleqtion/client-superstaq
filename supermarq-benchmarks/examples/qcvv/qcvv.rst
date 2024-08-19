@@ -11,12 +11,13 @@ For a demonstration of how to implement a new experiment take a look at the foll
 
     qcvv_css
 
-Alternatively for pre-built experiments that can be used out of the box see
+Alternatively for pre-build experiments that can be used out of the box see
 
 .. toctree::
     :maxdepth: 1
-
+    
     qcvv_irb_css
+    qcvv_xeb_css
 
 .. note::
 
