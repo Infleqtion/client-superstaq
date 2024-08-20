@@ -154,6 +154,19 @@ class Job:
         self._refresh_job()
         return self._overall_status
 
+    def cancel(self, **kwargs: object) -> None:
+        """Cancel the current job if it is not in a terminal state.
+
+        Args:
+            kwargs: Extra options needed to fetch jobs.
+
+        Raises:
+            SuperstaqServerException: If unable to get the status of the job from the API or
+                cancellations were unsuccessful.
+        """
+        job_ids = self._job_id.split(",")
+        self._client.cancel_jobs(job_ids, **kwargs)
+
     def target(self) -> str:
         """Gets the Superstaq target associated with this job.
 
