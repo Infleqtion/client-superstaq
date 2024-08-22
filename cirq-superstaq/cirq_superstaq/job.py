@@ -62,7 +62,7 @@ class Job:
     def __init__(self, client: gss.superstaq_client._SuperstaqClient, job_id: str) -> None:
         """Constructs a `Job`.
 
-        Users should not call this themselves. If you only know the `job_id`, use `get_job`
+        Users should not call this themselves. If you only know the `job_id`, use `fetch_jobs`
         on `css.Service`.
 
         Args:
@@ -100,7 +100,7 @@ class Job:
             overall status of the entire batch.
         """
 
-        job_id_list = self._job_id.split(",")  # separate aggregated job ids
+        job_id_list = self._job_id.split(",")  # Separate aggregated job ids
 
         status_occurrence = {self._job[job_id]["status"] for job_id in job_id_list}
         status_priority_order = (
@@ -130,9 +130,11 @@ class Job:
         """
         status = self.status(index)
         if status in self.UNSUCCESSFUL_STATES:
-            for job_id in self._job_id.split(","):
+            job_ids = self._job_id.split(",")
+            ids_to_check = [job_ids[index]] if index else job_ids
+            for job_id in ids_to_check:
                 if "failure" in self._job[job_id] and "error" in self._job[job_id]["failure"]:
-                    # if possible append a message to the failure status, e.g. "Failed (<message>)"
+                    # If possible append a message to the failure status, e.g. "Failed (<message>)"
                     error = self._job[job_id]["failure"]["error"]
                     status += f" ({error})"
                 raise gss.SuperstaqUnsuccessfulJobException(job_id, status)
@@ -157,7 +159,7 @@ class Job:
             index: The index of the specific job status.
 
         Returns:
-            The job status.
+            The status of the job indexed by `index` or the overall job status if `index` is `None`.
 
         Raises:
             gss.SuperstaqServerException: If unable to retrieve the status of the job from the API.
@@ -167,11 +169,14 @@ class Job:
             return self._overall_status
 
         gss.validation.validate_integer_param(index, min_val=0)
-        requested_job_id = self._job_id.split(",")[index]
-        if (requested_job_id not in self._job) or (
-            self._job[requested_job_id]["status"] not in self.TERMINAL_STATES
+
+        job_ids = self._job_id.split(",")
+        requested_job_id = job_ids[index]
+        if (
+            requested_job_id not in self._job
+            or self._job[requested_job_id]["status"] not in self.TERMINAL_STATES
         ):
-            self._job[requested_job_id] = self._client.get_job(requested_job_id)
+            self._job.update(self._client.fetch_jobs([requested_job_id]))
         requested_job_status = self._job[requested_job_id]["status"]
         return requested_job_status
 
@@ -403,7 +408,8 @@ class Job:
             qubit_indices: If provided, only include measurements counts of these qubits.
 
         Returns:
-            A dictionary containing the frequency counts of the measurements.
+            A dictionary containing the frequency counts of the measurements the job indexed by
+            `index` or a list of such dictionaries for each respective sub-job.
 
         Raises:
             gss.SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or
