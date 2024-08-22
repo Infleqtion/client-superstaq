@@ -30,7 +30,7 @@ def job() -> css.Job:
     """Fixture for cirq_superstaq Job.
 
     Returns:
-        A cirq_superstaq Job instance.
+        A `cirq_superstaq` Job instance.
     """
     client = gss.superstaq_client._SuperstaqClient(
         client_name="cirq-superstaq",
@@ -40,11 +40,41 @@ def job() -> css.Job:
     return css.Job(client, "job_id")
 
 
-def new_job() -> css.Job:
-    """Creates a new cirq_superstaq Job instance.
+@pytest.fixture
+def job_dict() -> dict[str, object]:
+    """Fixture for a standard, completed single job result.
 
     Returns:
-        A cirq_superstaq Job instance.
+        A dictionary containing commonly expected job data.
+    """
+    return {
+        "data": {"histogram": {"11": 1}},
+        "num_qubits": 2,
+        "samples": {"11": 1},
+        "shots": 1,
+        "status": "Done",
+        "target": "ss_unconstrained_simulator",
+    }
+
+
+def modifiy_job_result(base_result: dict[str, object], **kwargs: object) -> dict[str, object]:
+    """Extends and updates `base_result` with passed `kwargs`.
+
+    Args:
+        base_result: Base job result to modify.
+        kwargs: Additional keyword args to add or update existing values in `base_result`.
+
+    Returns:
+        An updated dictionary based on the `kwargs` passed.
+    """
+    return {**base_result, **kwargs}
+
+
+def new_job() -> css.Job:
+    """Creates a new `cirq_superstaq` Job instance.
+
+    Returns:
+        A `cirq_superstaq` Job instance.
     """
     client = gss.superstaq_client._SuperstaqClient(
         client_name="cirq-superstaq",
@@ -102,21 +132,15 @@ def test_cancel(job: css.Job) -> None:
         assert mock_post.call_count == 2
 
 
-def test_job_fields(job: css.job.Job) -> None:
+def test_job_fields(job: css.Job, job_dict: dict[str, object]) -> None:
     compiled_circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
-    job_dict = {
-        "data": {"histogram": {"11": 1}},
-        "num_qubits": 2,
-        "samples": {"11": 1},
-        "shots": 1,
-        "status": "Done",
-        "target": "ss_unconstrained_simulator",
-        "compiled_circuit": css.serialize_circuits(compiled_circuit),
-    }
+    job_result = modifiy_job_result(
+        job_dict, compiled_circuit=css.serialize_circuits(compiled_circuit)
+    )
 
     assert job.job_id() == "job_id"
 
-    with patched_requests({"job_id": job_dict}) as mocked_get_job:
+    with patched_requests({"job_id": job_result}) as mocked_get_job:
         assert job.target() == "ss_unconstrained_simulator"
         assert job.num_qubits(index=0) == 2
         assert job.repetitions() == 1
@@ -124,9 +148,7 @@ def test_job_fields(job: css.job.Job) -> None:
         mocked_get_job.assert_called_once()  # Only refreshed once
 
 
-def test_target(job: css.job.Job) -> None:
-    job_dict = {"status": "Done", "target": "ss_unconstrained_simulator"}
-
+def test_target(job: css.Job, job_dict: dict[str, object]) -> None:
     # The first call will trigger a refresh:
     with patched_requests({"job_id": job_dict}) as mocked_get_job:
         assert job.target() == "ss_unconstrained_simulator"
@@ -136,9 +158,7 @@ def test_target(job: css.job.Job) -> None:
     assert job.target() == "ss_unconstrained_simulator"
 
 
-def test_num_qubits(job: css.job.Job) -> None:
-    job_dict = {"status": "Done", "num_qubits": 2}
-
+def test_num_qubits(job: css.Job, job_dict: dict[str, object]) -> None:
     # The first call will trigger a refresh:
     with patched_requests({"job_id": job_dict}) as mocked_get_job:
         # Test case: index -> int
@@ -150,9 +170,7 @@ def test_num_qubits(job: css.job.Job) -> None:
     assert job.num_qubits() == [2]
 
 
-def test_repetitions(job: css.job.Job) -> None:
-    job_dict = {"status": "Done", "shots": 1}
-
+def test_repetitions(job: css.Job, job_dict: dict[str, object]) -> None:
     # The first call will trigger a refresh:
     with patched_requests({"job_id": job_dict}) as mocked_get_job:
         assert job.repetitions() == 1
@@ -162,12 +180,12 @@ def test_repetitions(job: css.job.Job) -> None:
     assert job.repetitions() == 1
 
 
-def test_get_circuit(job: css.job.Job) -> None:
+def test_get_circuit(job: css.Job) -> None:
     with pytest.raises(ValueError, match="The circuit type requested is invalid."):
         job._get_circuits("invalid_type")
 
 
-def test_compiled_circuit(job: css.job.Job) -> None:
+def test_compiled_circuit(job: css.Job) -> None:
     compiled_circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
     job_dict = {
         "status": "Done",
@@ -189,7 +207,7 @@ def test_compiled_circuit(job: css.job.Job) -> None:
         job.pulse_gate_circuits()
 
 
-def test_pulse_gate_circuits(job: css.job.Job) -> None:
+def test_pulse_gate_circuits(job: css.Job) -> None:
     import qiskit
 
     qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
@@ -209,7 +227,7 @@ def test_pulse_gate_circuits(job: css.job.Job) -> None:
     assert job.pulse_gate_circuits()[0] == pulse_gate_circuit
 
 
-def test_pulse_gate_circuits_index(job: css.job.Job) -> None:
+def test_pulse_gate_circuits_index(job: css.Job) -> None:
     import qiskit
 
     qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
@@ -233,7 +251,7 @@ def test_pulse_gate_circuits_index(job: css.job.Job) -> None:
         job.pulse_gate_circuits(index=-3)
 
 
-def test_pulse_gate_circuits_invalid_circuit(job: css.job.Job) -> None:
+def test_pulse_gate_circuits_invalid_circuit(job: css.Job) -> None:
     # Invalid pulse gate circuit
 
     job_dict = {"status": "Done", "pulse_gate_circuits": "invalid_pulse_gate_circuit_str"}
@@ -246,20 +264,10 @@ def test_pulse_gate_circuits_invalid_circuit(job: css.job.Job) -> None:
             job.pulse_gate_circuits()
 
 
-def test_multi_pulse_gate_circuits(job: css.Job) -> None:
+def test_multi_pulse_gate_circuits(multi_circuit_job: css.Job) -> None:
     import qiskit
 
     qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
-
-    job = css.Job(
-        gss.superstaq_client._SuperstaqClient(
-            client_name="cirq-superstaq",
-            remote_host="http://example.com",
-            api_key="to_my_heart",
-        ),
-        "abc123,def456,ghi789",
-    )
-
     pulse_gate_circuit = qiskit.QuantumCircuit(1, 1)
     pulse_gate = qiskit.circuit.Gate("test_pulse_gate", 1, [3.14, 1])
     pulse_gate_circuit.append(pulse_gate, [0])
@@ -270,24 +278,18 @@ def test_multi_pulse_gate_circuits(job: css.Job) -> None:
         "pulse_gate_circuits": qss.serialize_circuits(pulse_gate_circuit),
     }
 
-    with patched_requests({"abc123": job_dict, "def456": job_dict, "ghi789": job_dict}):
-        assert job.pulse_gate_circuits() == [
+    job_info = {f"job_id{i}": job_dict for i in range(1, 4)}
+    multi_circuit_job._job = job_info
+
+    with patched_requests(job_info):
+        assert multi_circuit_job.pulse_gate_circuits() == [
             pulse_gate_circuit,
             pulse_gate_circuit,
             pulse_gate_circuit,
         ]
 
 
-def test_multi_circuit_job() -> None:
-    job = css.Job(
-        gss.superstaq_client._SuperstaqClient(
-            client_name="cirq-superstaq",
-            remote_host="http://example.com",
-            api_key="to_my_heart",
-        ),
-        "abc123,def456,ghi789",
-    )
-
+def test_multi_circuit_job(multi_circuit_job: css.Job) -> None:
     compiled_circuit = cirq.Circuit(
         cirq.H(cirq.q(0)),
         cirq.CNOT(cirq.q(2), cirq.q(0)),
@@ -303,30 +305,36 @@ def test_multi_circuit_job() -> None:
         "compiled_circuit": css.serialize_circuits(compiled_circuit),
         "input_circuit": css.serialize_circuits(compiled_circuit),
     }
+    job_info = {f"job_id{i}": job_dict for i in range(1, 4)}
+    multi_circuit_job._job = job_info
 
-    with patched_requests({"abc123": job_dict, "def456": job_dict, "ghi789": job_dict}):
+    with patched_requests(job_info):
         # Test case: No index
-        assert job.compiled_circuits() == [compiled_circuit, compiled_circuit, compiled_circuit]
-        assert job.num_qubits(index=None) == [3, 3, 3]
-        assert job.counts() == [
+        assert multi_circuit_job.compiled_circuits() == [
+            compiled_circuit,
+            compiled_circuit,
+            compiled_circuit,
+        ]
+        assert multi_circuit_job.num_qubits(index=None) == [3, 3, 3]
+        assert multi_circuit_job.counts() == [
             {"000": 8, "010": 18, "100": 15, "110": 9},
             {"000": 8, "010": 18, "100": 15, "110": 9},
             {"000": 8, "010": 18, "100": 15, "110": 9},
         ]
-        assert job.counts(qubit_indices=[0]) == [
+        assert multi_circuit_job.counts(qubit_indices=[0]) == [
             {"0": 26, "1": 24},
             {"0": 26, "1": 24},
             {"0": 26, "1": 24},
         ]
 
-        # Test case: index
-        assert job.compiled_circuits(index=2) == compiled_circuit
-        assert job.num_qubits(index=2) == 3
-        assert job.counts(index=2) == {"000": 8, "010": 18, "100": 15, "110": 9}
-        assert job.counts(index=2, qubit_indices=[0]) == {"0": 26, "1": 24}
+        # Test case: with index
+        assert multi_circuit_job.compiled_circuits(index=2) == compiled_circuit
+        assert multi_circuit_job.num_qubits(index=2) == 3
+        assert multi_circuit_job.counts(index=2) == {"000": 8, "010": 18, "100": 15, "110": 9}
+        assert multi_circuit_job.counts(index=2, qubit_indices=[0]) == {"0": 26, "1": 24}
 
 
-def test_input_circuit(job: css.job.Job) -> None:
+def test_input_circuit(job: css.Job) -> None:
     input_circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
     job_dict = {
         "status": "Done",
@@ -367,13 +375,13 @@ def test_job_status_refresh() -> None:
             assert mocked_request.call_args.kwargs["json"] == {"job_ids": ["new_job_id"]}
 
 
-def test_value_equality(job: css.job.Job) -> None:
+def test_value_equality(job: css.Job) -> None:
     eq = cirq.testing.EqualsTester()
     eq.add_equality_group(job, job)
     eq.add_equality_group(new_job())
 
 
-def test_job_str_repr_eq(job: css.job.Job) -> None:
+def test_job_str_repr_eq(job: css.Job) -> None:
     assert str(job) == "Job with job_id=job_id"
     cirq.testing.assert_equivalent_repr(
         job, setup_code="import cirq_superstaq as css\nimport general_superstaq as gss"
@@ -382,68 +390,37 @@ def test_job_str_repr_eq(job: css.job.Job) -> None:
     assert not job == 1
 
 
-def test_job_to_dict(job: css.job.Job) -> None:
-    job_result = {
-        "job_id": {
-            "data": {"histogram": {"11": 1}},
-            "num_qubits": 2,
-            "samples": {"11": 1},
-            "shots": 1,
-            "status": "Done",
-            "target": "ss_unconstrained_simulator",
-        }
-    }
+def test_job_to_dict(job: css.Job, job_dict: dict[str, object]) -> None:
+    job_result = {"job_id": job_dict}
     job._job = {}
     with patched_requests(job_result):
         assert job.to_dict() == job_result
 
 
-def test_job_counts(job: css.job.Job) -> None:
-    job_dict = {
-        "data": {"histogram": {"10": 1}},
-        "num_qubits": 2,
-        "samples": {"10": 1},
-        "shots": 1,
-        "status": "Done",
-        "target": "ss_unconstrained_simulator",
-    }
-    with patched_requests({"job_id": job_dict}):
+def test_job_counts(job: css.Job, job_dict: dict[str, object]) -> None:
+    job_result = modifiy_job_result(job_dict, data={"histogram": {"10": 1}}, samples={"10": 1})
+    with patched_requests({"job_id": job_result}):
         assert job.counts(index=0) == {"10": 1}
         assert job.counts(index=0, qubit_indices=[0]) == ({"1": 1})
         assert job.counts() == [{"10": 1}]
 
 
-def test_job_counts_failed(job: css.job.Job) -> None:
-    job_dict = {
-        "data": {"histogram": {"11": 1}},
-        "num_qubits": 2,
-        "samples": {"11": 1},
-        "shots": 1,
-        "status": "Failed",
-        "failure": {"error": "too many qubits"},
-        "target": "ss_unconstrained_simulator",
-    }
-    with patched_requests({"job_id": job_dict}):
+def test_job_counts_failed(job: css.Job, job_dict: dict[str, object]) -> None:
+    job_result = modifiy_job_result(job_dict, status="Failed", failure={"error": "too many qubits"})
+    with patched_requests({"job_id": job_result}):
         with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="too many qubits"):
             _ = job.counts()
         assert job.status() == "Failed"
 
 
 @mock.patch("time.sleep", return_value=None)
-def test_job_counts_poll(mock_sleep: mock.MagicMock, job: css.job.Job) -> None:
+def test_job_counts_poll(
+    mock_sleep: mock.MagicMock, job: css.Job, job_dict: dict[str, object]
+) -> None:
     ready_job = {
         "status": "Ready",
     }
-    completed_job = {
-        "data": {"histogram": {"11": 1}},
-        "num_qubits": 2,
-        "samples": {"11": 1},
-        "shots": 1,
-        "status": "Done",
-        "target": "ss_unconstrained_simulator",
-    }
-
-    with patched_requests({"job_id": ready_job}, {"job_id": completed_job}) as mocked_requests:
+    with patched_requests({"job_id": ready_job}, {"job_id": job_dict}) as mocked_requests:
         results = job.counts(index=0, polling_seconds=0)
         assert results == {"11": 1}
         assert mocked_requests.call_count == 2
@@ -465,7 +442,7 @@ def test_job_counts_poll_timeout(
 
 
 @mock.patch("time.sleep", return_value=None)
-def test_job_results_poll_failure(mock_sleep: mock.MagicMock, job: css.job.Job) -> None:
+def test_job_results_poll_failure(mock_sleep: mock.MagicMock, job: css.Job) -> None:
     running_job = {
         "status": "Running",
     }
@@ -480,7 +457,34 @@ def test_job_results_poll_failure(mock_sleep: mock.MagicMock, job: css.job.Job) 
     assert mock_sleep.call_count == 5
 
 
-def test_job_getitem(multi_circuit_job: css.job.Job) -> None:
+@mock.patch("time.sleep", return_value=None)
+def test_status_with_index(
+    mock_sleep: mock.MagicMock, multi_circuit_job: css.Job, job_dict: dict[str, int]
+) -> None:
+    running_job = {
+        "status": "Running",
+    }
+    failed_job = {
+        "status": "Failed",
+        "failure": {"error": "too many qubits"},
+    }
+
+    job_info = {"job_id1": running_job, "job_id2": job_dict, "job_id3": failed_job}
+    multi_circuit_job._job = job_info
+
+    with patched_requests(job_info):
+        # Overall status
+        assert multi_circuit_job.status() == "Running"
+
+        # Specific job status
+        assert multi_circuit_job.status(index=1) == "Done"
+        assert multi_circuit_job.counts(index=1, timeout_seconds=1, polling_seconds=0.5) == {
+            "11": 1
+        }
+        assert mock_sleep.call_count == 0
+
+
+def test_job_getitem(multi_circuit_job: css.Job) -> None:
     job_1 = multi_circuit_job[0]
     assert isinstance(job_1, css.Job)
     assert job_1.job_id() == "job_id1"
