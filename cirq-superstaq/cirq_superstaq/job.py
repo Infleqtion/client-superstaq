@@ -119,13 +119,16 @@ class Job:
                 self._overall_status = temp_status
                 return
 
-    def _check_if_unsuccessful(self) -> None:
+    def _check_if_unsuccessful(self, index: int | None = None) -> None:
         """Helper method to check if the current job status has any failure.
 
+        Args:
+            index: The index of the specific job status.
+
         Raises:
-            gss.SuperstaqUnsuccessfulJobException: If a failure status is encountered.
+            gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
-        status = self.status()
+        status = self.status(index)
         if status in self.UNSUCCESSFUL_STATES:
             for job_id in self._job_id.split(","):
                 if "failure" in self._job[job_id] and "error" in self._job[job_id]["failure"]:
@@ -144,20 +147,33 @@ class Job:
         """
         return self._job_id
 
-    def status(self) -> str:
+    def status(self, index: int | None = None) -> str:
         """Gets the current status of the job.
 
         If the current job is in a non-terminal state, this will update the job and return the
         current status. A full list of states is given in `cirq_superstaq.Job.ALL_STATES`.
 
-        Raises:
-            gss.SuperstaqServerException: If unable to get the status of the job from the API.
+        Args:
+            index: The index of the specific job status.
 
         Returns:
             The job status.
+
+        Raises:
+            gss.SuperstaqServerException: If unable to retrieve the status of the job from the API.
         """
-        self._refresh_job()
-        return self._overall_status
+        if index is None:
+            self._refresh_job()
+            return self._overall_status
+
+        gss.validation.validate_integer_param(index, min_val=0)
+        requested_job_id = self._job_id.split(",")[index]
+        if (requested_job_id not in self._job) or (
+            self._job[requested_job_id]["status"] not in self.TERMINAL_STATES
+        ):
+            self._job[requested_job_id] = self._client.get_job(requested_job_id)
+        requested_job_status = self._job[requested_job_id]["status"]
+        return requested_job_status
 
     def cancel(self, **kwargs: object) -> None:
         """Cancel the current job if it is not in a terminal state.
@@ -396,16 +412,16 @@ class Job:
             TimeoutError: If no results are available in the provided timeout interval.
         """
         time_waited_seconds: float = 0.0
-        while self.status() not in self.TERMINAL_STATES:
+        while self.status(index) not in self.TERMINAL_STATES:
             # Status does a refresh.
             if time_waited_seconds > timeout_seconds:
                 raise TimeoutError(
-                    f"Timed out while waiting for results. Final status was {self.status()}"
+                    f"Timed out while waiting for results. Final status was {self.status(index)}"
                 )
             time.sleep(polling_seconds)
             time_waited_seconds += polling_seconds
 
-        self._check_if_unsuccessful()
+        self._check_if_unsuccessful(index)
         job_ids = self._job_id.split(",")
 
         if index is None:
