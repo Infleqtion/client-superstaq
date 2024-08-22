@@ -60,7 +60,7 @@ class Job:
     )
 
     def __init__(self, client: gss.superstaq_client._SuperstaqClient, job_id: str) -> None:
-        """Construct a `Job`.
+        """Constructs a `Job`.
 
         Users should not call this themselves. If you only know the `job_id`, use `get_job`
         on `css.Service`.
@@ -120,6 +120,11 @@ class Job:
                 return
 
     def _check_if_unsuccessful(self) -> None:
+        """Helper method to check if the current job status has any failure.
+
+        Raises:
+            gss.SuperstaqUnsuccessfulJobException: If a failure status is encountered.
+        """
         status = self.status()
         if status in self.UNSUCCESSFUL_STATES:
             for job_id in self._job_id.split(","):
@@ -146,7 +151,7 @@ class Job:
         current status. A full list of states is given in `cirq_superstaq.Job.ALL_STATES`.
 
         Raises:
-            SuperstaqServerException: If unable to get the status of the job from the API.
+            gss.SuperstaqServerException: If unable to get the status of the job from the API.
 
         Returns:
             The job status.
@@ -161,7 +166,7 @@ class Job:
             kwargs: Extra options needed to fetch jobs.
 
         Raises:
-            SuperstaqServerException: If unable to get the status of the job from the API or
+            gss.SuperstaqServerException: If unable to get the status of the job from the API or
                 cancellations were unsuccessful.
         """
         job_ids = self._job_id.split(",")
@@ -174,8 +179,9 @@ class Job:
             The target to which this job was submitted.
 
         Raises:
-            SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqServerException: If unable to get the status of the job from the API.
+            gss.SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or
+                deleted.
+            gss.SuperstaqServerException: If unable to get the status of the job from the API.
         """
         first_job_id = self._job_id.split(",")[0]
         if (first_job_id not in self._job) or "target" not in self._job[first_job_id]:
@@ -199,8 +205,9 @@ class Job:
             number for the given circuit index.
 
         Raises:
-            SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqServerException: If unable to get the status of the job from the API.
+            gss.SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or
+                deleted.
+            gss.SuperstaqServerException: If unable to get the status of the job from the API.
         """
         job_ids = self._job_id.split(",")
         if not all(
@@ -222,8 +229,9 @@ class Job:
             The number of repetitions for this job.
 
         Raises:
-            SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqServerException: If unable to get the status of the job from the API.
+            gss.SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or
+                deleted.
+            gss.SuperstaqServerException: If unable to get the status of the job from the API.
         """
         first_job_id = self._job_id.split(",")[0]
         if (first_job_id not in self._job) or "shots" not in self._job[first_job_id]:
@@ -302,13 +310,14 @@ class Job:
         return self._get_circuits("input_circuit", index=index)
 
     def pulse_gate_circuits(self, index: int | None = None) -> Any:
-        """Gets the pulse gate circuit returned by this job.
+        """Gets the pulse gate circuit(s) returned by this job.
 
         Args:
             index: An optional index of the pulse gate circuit to retrieve.
 
         Returns:
-            The `qiskit.QuantumCircuit` pulse gate circuit.
+            A `qiskit.QuantumCircuit` pulse gate circuit or list of `qiskit.QuantumCircuit` pulse
+            gate circuits.
 
         Raises:
             ValueError: If the job was not run on an IBM pulse device.
@@ -381,8 +390,9 @@ class Job:
             A dictionary containing the frequency counts of the measurements.
 
         Raises:
-            SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqServerException: If unable to get the results from the API.
+            gss.SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or
+                deleted.
+            gss.SuperstaqServerException: If unable to get the results from the API.
             TimeoutError: If no results are available in the provided timeout interval.
         """
         time_waited_seconds: float = 0.0
@@ -435,15 +445,17 @@ class Job:
     def _value_equality_values_(self) -> tuple[str, dict[str, Any]]:
         return self._job_id, self._job
 
-    def __getitem__(self, index: int) -> css.Job:
-        """Args:
+    def __getitem__(self, idx: int) -> css.Job:
+        """Customized indexing operations for `css.Job`.
+
+        Args:
             idx: The index of the sub-job to return. Each sub-job corresponds to the a single
                 circuit.
 
         Returns:
-            A sub-job at the given index.
+            A sub-job at the given `idx`.
         """
-        job_id = self._job_id.split(",")[index]
+        job_id = self._job_id.split(",")[idx]
         sub_job = css.Job(self._client, job_id)
         if job_id in self._job:
             sub_job._job[job_id] = self._job[job_id]
