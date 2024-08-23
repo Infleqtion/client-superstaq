@@ -35,7 +35,7 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
         retired=False,
     )
     assert ibmq_backend_info in result
-    assert provider.get_backend("ibmq_brisbane_qpu").name() == "ibmq_brisbane_qpu"
+    assert provider.get_backend("ibmq_brisbane_qpu").name == "ibmq_brisbane_qpu"
     assert len(provider.backends()) == len(result)
 
 
@@ -286,7 +286,7 @@ def test_submit_to_sqorpius_qubit_sorting(provider: qss.SuperstaqProvider) -> No
         provider: qiskit_superstaq instance from the fixture."""
     backend = provider.get_backend("cq_sqorpius_qpu")
 
-    num_qubits = backend.configuration().n_qubits
+    num_qubits = backend.num_qubits
 
     gr = qiskit.circuit.library.GR(num_qubits, np.pi / 2, 0)
     grdg = qiskit.circuit.library.GR(num_qubits, -np.pi / 2, 0)

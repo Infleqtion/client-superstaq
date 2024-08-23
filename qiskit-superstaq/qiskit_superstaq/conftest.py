@@ -42,9 +42,9 @@ class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
         return {
             "target_info": {
                 "target": target,
-                "num_qubits": -1,
+                "num_qubits": 4,
                 "basis_gates": None,
-                "coupling_map": None,
+                "coupling_map": [[0, 1], [1, 2]],
             },
         }
 

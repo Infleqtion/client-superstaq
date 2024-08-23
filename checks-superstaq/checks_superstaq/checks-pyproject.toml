@@ -138,6 +138,7 @@ accept-no-param-doc=false # Do not accept totally missing parameter documentatio
 accept-no-raise-doc=false # Do not accept totally missing raises documentation.
 accept-no-return-doc=false # Do not accept totally missing return documentation.
 accept-no-yield-doc=false # Do not accept missing yields annotations.
+default-docstring-type = "google"
 
 # Ignore long lines containing urls or pylint directives.
 [tool.pylint.format]
