@@ -101,7 +101,7 @@ def test_eq(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     assert backend1 == backend3
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_aqt_compile(mock_post: MagicMock) -> None:
     # AQT compile
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
@@ -237,7 +237,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     assert not hasattr(out, "circuit")
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_ibmq_compile(mock_post: MagicMock) -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
     backend = provider.get_backend("ibmq_jakarta_qpu")
@@ -273,7 +273,7 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
         backend.aqt_compile([qc])
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_qscout_compile(
     mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
@@ -321,7 +321,7 @@ def test_qscout_compile(
     assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_compile(mock_post: MagicMock) -> None:
     # Compilation to a simulator (e.g., AWS)
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
@@ -346,7 +346,7 @@ def test_target_info(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     assert backend.target_info()["backend_name"] == target
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_aces(mock_post: MagicMock) -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
     backend = provider.get_backend("ss_unconstrained_simulator")

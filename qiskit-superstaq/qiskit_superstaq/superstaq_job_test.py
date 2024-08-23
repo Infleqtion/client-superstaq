@@ -45,7 +45,7 @@ def patched_requests(*contents: object) -> mock._patch[mock.Mock]:
         A mock patch that returns the provided content.
     """
     responses = [_mocked_request_response(val) for val in contents]
-    return mock.patch("requests.api.request", side_effect=responses)
+    return mock.patch("requests.Session.request", side_effect=responses)
 
 
 @pytest.fixture
@@ -76,7 +76,7 @@ def test_wait_for_results(backend: qss.SuperstaqBackend) -> None:
 
 
 def test_cancel(backend: qss.SuperstaqBackend) -> None:
-    with mock.patch("requests.post", return_value=mock.MagicMock(ok=True)) as mock_post:
+    with mock.patch("requests.Session.post", return_value=mock.MagicMock(ok=True)) as mock_post:
         qss.SuperstaqJob(backend=backend, job_id="123abc").cancel()
         qss.SuperstaqJob(backend=backend, job_id="123abc,456def").cancel()
         assert mock_post.call_count == 2
