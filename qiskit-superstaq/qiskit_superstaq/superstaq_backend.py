@@ -116,7 +116,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         """A `qiskit.transpiler.Target` object for this backend."""
         target_info = self.target_info()
         num_qubits = target_info.get("num_qubits")
-        return qiskit.transpiler.Target(num_qubits=num_qubits)
+        return qiskit.transpiler.Target(description=f"Superstaq '{self.name}' backend", num_qubits=num_qubits)
 
     def run(
         self,
