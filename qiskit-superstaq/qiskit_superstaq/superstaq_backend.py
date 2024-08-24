@@ -66,6 +66,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             "removed in a future version of qiskit-superstaq. Instead, use attributes of the "
             "backend itself (e.g. `backend.num_qubits`), or of its `.target` attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
 
         target_info = self.target_info()
