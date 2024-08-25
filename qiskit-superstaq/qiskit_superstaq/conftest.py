@@ -97,16 +97,6 @@ class MockSuperstaqProvider(qss.SuperstaqProvider):
             verbose=verbose,
         )
 
-    def get_backend(self, name: str) -> qss.SuperstaqBackend:
-        """Mocks the get_backend function of SuperstaqProvider.
-        Args:
-            name: name of the backend.
-
-        Returns:
-            A mock superstaq backend with the given name.
-        """
-        return qss.SuperstaqBackend(self, name)
-
 
 @pytest.fixture()
 def fake_superstaq_provider() -> MockSuperstaqProvider:
