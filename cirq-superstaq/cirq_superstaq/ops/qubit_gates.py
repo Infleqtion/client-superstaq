@@ -979,6 +979,66 @@ class StrippedCZGate(cirq.Gate):
         return cirq.obj_to_dict_helper(self, ["rz_rads"])
 
 
+class DDPowGate(cirq.EigenGate):
+    r"""The Dipole-Dipole gate for EeroQ hardware"""
+
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
+        return [
+            (
+                -0.5,
+                np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]),
+            ),
+            (
+                1.0,
+                np.array([[0, 0, 0, 0], [0, 0.5, 0.5, 0], [0, 0.5, 0.5, 0], [0, 0, 0, 0]]),
+            ),
+            (
+                0.0,
+                np.array([[0, 0, 0, 0], [0, 0.5, -0.5, 0], [0, -0.5, 0.5, 0], [0, 0, 0, 0]]),
+            ),
+        ]
+
+    def _num_qubits_(self) -> int:
+        return 2
+
+    def _decompose_(self, qubits: tuple[cirq.LineQubit, cirq.LineQubit]) -> list[cirq.Operation]:
+        return [
+            cirq.ZZPowGate(exponent=self.exponent, global_shift=self.global_shift - 0.5).on(
+                *qubits
+            ),
+            cirq.ISwapPowGate(exponent=self.exponent).on(*qubits),
+        ]
+
+    def _has_stabilizer_effect_(self) -> bool | None:
+        if cirq.is_parameterized(self):
+            return None
+
+        return (2 * self.exponent) % 1 == 0
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        return cirq.CircuitDiagramInfo(
+            wire_symbols=("DD", "DD"), exponent=self._diagram_exponent(args)
+        )
+
+    def __str__(self) -> str:
+        if self.exponent == 1:
+            return "DD"
+        return f"DD**{self._exponent}"
+
+    def __repr__(self) -> str:
+        if self._global_shift == 0:
+            if self._exponent == 1:
+                return "css.DD"
+            return f"(css.DD**{cirq._compat.proper_repr(self._exponent)})"
+        return (
+            f"css.DDPowGate(exponent={cirq._compat.proper_repr(self._exponent)},"
+            f" global_shift={self._global_shift!r})"
+        )
+
+
+DD = DDPowGate()
+
+
 def custom_resolver(cirq_type: str) -> type[cirq.Gate] | None:
     """Tells `cirq.read_json` how to deserialize `cirq-superstaq`'s custom gates.
 
@@ -1003,5 +1063,6 @@ def custom_resolver(cirq_type: str) -> type[cirq.Gate] | None:
         "IXGate": IXGate,
         "ParallelRGate": ParallelRGate,
         "StrippedCZGate": StrippedCZGate,
+        "DDPowGate": DDPowGate,
     }
     return type_to_gate_map.get(cirq_type)
