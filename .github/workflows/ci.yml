@@ -222,7 +222,6 @@ jobs:
   notebook:
     env:
       SUPERSTAQ_API_KEY: ${{ secrets.SUPERSTAQ_API_KEY }}
-      IBMQ_TOKEN: ${{ secrets.IBMQ_TOKEN }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
