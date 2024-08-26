@@ -131,7 +131,7 @@ jobs:
       matrix:
         include:
           - type: "general-superstaq"
-            dependencies: "./general-superstaq"
+            dependencies: "./general-superstaq[dev]"
           - type: "qiskit-superstaq"
             dependencies: "./general-superstaq ./qiskit-superstaq[dev]"
           - type: "cirq-superstaq"
