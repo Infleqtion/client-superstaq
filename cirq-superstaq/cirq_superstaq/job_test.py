@@ -92,11 +92,11 @@ def patched_requests(*contents: object) -> mock._patch[mock.Mock]:
         A mock patch that returns the provided content.
     """
     responses = [_mocked_request_response(val) for val in contents]
-    return mock.patch("requests.post", side_effect=responses)
+    return mock.patch("requests.Session.post", side_effect=responses)
 
 
 def test_cancel(job: css.Job) -> None:
-    with mock.patch("requests.post", return_value=mock.MagicMock(ok=True)) as mock_post:
+    with mock.patch("requests.Session.post", return_value=mock.MagicMock(ok=True)) as mock_post:
         job.cancel()
         new_job().cancel()
         assert mock_post.call_count == 2
