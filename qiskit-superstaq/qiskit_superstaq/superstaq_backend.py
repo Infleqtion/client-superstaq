@@ -218,6 +218,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         random_seed: int | None = None,
         atol: float | None = None,
         gate_defs: Mapping[str, str | npt.NDArray[np.complex_] | None] | None = None,
+        gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
         pulses: object = None,
         variables: object = None,
         **kwargs: Any,
@@ -242,6 +243,9 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
                 `<matrix1>` for all "SWAP" calibrations except "SWAP/C5C4" (which will instead be
                 mapped to `<matrix2>` applied to qubits 4 and 5). Setting any calibration to None
                 will disable that calibration.
+            gateset: Which gates to use for compilation. Should be a dictionary with entries in the
+                for `gate_name: [[1, 2], [3, 4]`, where the keys refer to specific gates, and the
+                values indicate which qubit(s) they act upon.
             pulses: Qtrl `PulseManager` or file path for pulse configuration.
             variables: Qtrl `VariableManager` or file path for variable configuration.
             kwargs: Other desired compile options.
@@ -269,6 +273,8 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             options["atol"] = float(atol)
         if gate_defs is not None:
             options["gate_defs"] = gate_defs
+        if gateset is not None:
+            options["gateset"] = gateset
         if pulses or variables:
             options["aqt_configs"] = {
                 "pulses": self._provider._qtrl_config_to_yaml_str(pulses),

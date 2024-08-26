@@ -188,6 +188,7 @@ class SuperstaqProvider(gss.service.Service):
         random_seed: int | None = None,
         atol: float | None = None,
         gate_defs: Mapping[str, str | npt.NDArray[np.complex_] | None] | None = None,
+        gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
         pulses: object = None,
         variables: object = None,
         **kwargs: Any,
@@ -213,6 +214,9 @@ class SuperstaqProvider(gss.service.Service):
                 `<matrix1>` for all "SWAP" calibrations except "SWAP/C5C4" (which will instead be
                 mapped to `<matrix2>` applied to qubits 4 and 5). Setting any calibration to None
                 will disable that calibration.
+            gateset: Which gates to use for compilation. Should be a dictionary with entries in the
+                for `gate_name: [[1, 2], [3, 4]`, where the keys refer to specific gates, and the
+                values indicate which qubit(s) they act upon.
             pulses: Qtrl `PulseManager` or file path for pulse configuration.
             variables: Qtrl `VariableManager` or file path for variable configuration.
             kwargs: Other desired compile options.
@@ -235,6 +239,7 @@ class SuperstaqProvider(gss.service.Service):
             random_seed=random_seed,
             atol=atol,
             gate_defs=gate_defs,
+            gateset=gateset,
             pulses=pulses,
             variables=variables,
             **kwargs,

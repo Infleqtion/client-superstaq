@@ -317,6 +317,36 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
     assert out.circuit == cirq.Circuit()
     assert not hasattr(out, "circuits")
 
+    out = service.aqt_compile(
+        cirq.Circuit(),
+        gate_defs=gate_defs,
+        gateset={"CZ3": [[5, 6]], "X90": [[5], [6]], "EFX90": [[5], [6]]},
+        atol=1e-3,
+        aqt_configs={},
+    )
+    expected_options = {
+        "aqt_configs": {},
+        "atol": 1e-3,
+        "gate_defs": {
+            "CZ3": css.CZ3,
+            "CZ3/T5C4": None,
+            "CS/simul": css.ParallelGates(cirq.CZ, cirq.CZ).on(*cirq.LineQubit.range(4, 8)),
+            "CS2": cirq.MatrixGate(cirq.unitary(cirq.CZ**0.49)),
+            "CS3": cirq.MatrixGate(cirq.unitary(css.CZ3**0.5), qid_shape=(3, 3)),
+        },
+        "gateset": {"CZ3": [[5, 6]], "X90": [[5], [6]], "EFX90": [[5], [6]]},
+    }
+    mock_post_request.assert_called_with(
+        "/aqt_compile",
+        {
+            "cirq_circuits": css.serialization.serialize_circuits(cirq.Circuit()),
+            "target": "aqt_keysight_qpu",
+            "options": cirq.to_json(expected_options),
+        },
+    )
+    assert out.circuit == cirq.Circuit()
+    assert not hasattr(out, "circuits")
+
     with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid AQT target."):
         service.aqt_compile(cirq.Circuit(), target="ss_example_qpu")
 
