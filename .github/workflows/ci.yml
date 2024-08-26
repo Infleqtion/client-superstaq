@@ -122,7 +122,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-        include:
+        package:
           - type: "general-superstaq"
             dependencies: "./general-superstaq[dev]"
           - type: "qiskit-superstaq"
@@ -131,7 +131,7 @@ jobs:
             dependencies: "./general-superstaq ./qiskit-superstaq ./cirq-superstaq[dev]"
           - type: "supermarq-benchmarks"
             dependencies: "./general-superstaq ./qiskit-superstaq ./cirq-superstaq ./supermarq-benchmarks[dev]"
-    name: ${{ matrix.type }} standalone coverage check with minimum dependency versions
+    name: ${{ matrix.package.type }} standalone coverage check with minimum dependency versions (${{ matrix.python-version }})
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
@@ -141,10 +141,10 @@ jobs:
       - name: Install dependencies, using minimum supported versions
         run: |
           python -m pip install --upgrade pip
-          pip install ./checks-superstaq ${{ matrix.dependencies }}
+          pip install ./checks-superstaq ${{ matrix.package.dependencies }}
       - name: Coverage check
         run: |
-          checks/coverage_.py ${{ matrix.type }}
+          checks/coverage_.py ${{ matrix.package.type }}
 
   coverage-standalone:
     runs-on: ubuntu-latest
