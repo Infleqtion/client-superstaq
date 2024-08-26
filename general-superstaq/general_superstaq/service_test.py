@@ -285,7 +285,7 @@ def test_service_aqt_get_configs(
             _ = service.aqt_download_configs()
 
 
-@mock.patch("requests.post")
+@mock.patch("requests.Session.post")
 def test_aces(
     mock_post: mock.MagicMock,
 ) -> None:
