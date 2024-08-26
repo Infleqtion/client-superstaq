@@ -29,7 +29,7 @@ def test_provider(fake_superstaq_provider: MockSuperstaqProvider) -> None:
         == "<SuperstaqProvider(api_key=MY_TOKEN, name=mock_superstaq_provider)>"
     )
     assert (
-        str(fake_superstaq_provider.backends()[0]) == "aqt_keysight_qpu"
+        fake_superstaq_provider.backends()[0].name == "aqt_keysight_qpu"
     )  # First backend alphabetically.
 
 
