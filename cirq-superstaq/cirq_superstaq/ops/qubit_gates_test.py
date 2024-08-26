@@ -1103,7 +1103,6 @@ def test_itoffoli() -> None:
 
 
 def test_dd_protocols() -> None:
-    # with mock.patch("cirq.testing.consistent_protocols.assert_qasm_is_consistent_with_unitary"):
     cirq.testing.assert_eigengate_implements_consistent_protocols(
         css.DDPowGate,
         setup_code="import cirq_superstaq as css; import sympy",
