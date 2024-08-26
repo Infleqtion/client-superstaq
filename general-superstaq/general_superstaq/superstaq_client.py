@@ -109,6 +109,7 @@ class _SuperstaqClient:
             "X-Client-Name": self.client_name,
             "X-Client-Version": self.api_version,
         }
+        self.session = requests.Session()
 
         if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
             raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
@@ -131,7 +132,7 @@ class _SuperstaqClient:
             A `dict` containing the current Superstaq version.
         """
 
-        response = requests.get(self.url)
+        response = self.session.get(self.url)
         version = response.headers.get("superstaq_version")
 
         return {"superstaq_version": version}
@@ -715,7 +716,7 @@ class _SuperstaqClient:
             Returns:
                 The Flask GET request object.
             """
-            return requests.get(
+            return self.session.get(
                 f"{self.url}{endpoint}",
                 headers=self.headers,
                 verify=self.verify_https,
@@ -742,7 +743,7 @@ class _SuperstaqClient:
             Returns:
                 The Flask GET request object.
             """
-            return requests.post(
+            return self.session.post(
                 f"{self.url}{endpoint}",
                 json=json_dict,
                 headers=self.headers,
