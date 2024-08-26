@@ -627,7 +627,7 @@ def test_qscout_compile_wrong_base_entangling_gate() -> None:
         _ = service.qscout_compile(circuit, base_entangling_gate="yy")
 
 
-@mock.patch("requests.post")
+@mock.patch("requests.Session.post")
 def test_qscout_compile_num_qubits(mock_post: mock.MagicMock) -> None:
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.measure(q0))
@@ -656,7 +656,7 @@ def test_qscout_compile_num_qubits(mock_post: mock.MagicMock) -> None:
     }
 
 
-@mock.patch("requests.post")
+@mock.patch("requests.Session.post")
 def test_service_cq_compile_single(mock_post: mock.MagicMock) -> None:
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
@@ -679,7 +679,7 @@ def test_service_cq_compile_single(mock_post: mock.MagicMock) -> None:
         service.cq_compile(cirq.Circuit(), target="ss_example_qpu")
 
 
-@mock.patch("requests.post")
+@mock.patch("requests.Session.post")
 def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
 
@@ -750,7 +750,7 @@ def test_service_supercheq(mock_supercheq: mock.MagicMock) -> None:
     assert service.supercheq([[0]], 1, 1) == (circuits, fidelities)
 
 
-@mock.patch("requests.post")
+@mock.patch("requests.Session.post")
 def test_service_dfe(mock_post: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
     circuit = cirq.Circuit(cirq.X(cirq.q(0)))
@@ -774,7 +774,7 @@ def test_service_dfe(mock_post: mock.MagicMock) -> None:
     assert service.process_dfe(["1", "2"]) == 1
 
 
-@mock.patch("requests.post")
+@mock.patch("requests.Session.post")
 def test_aces(
     mock_post: mock.MagicMock,
 ) -> None:
@@ -812,7 +812,7 @@ def test_aces(
     assert service.process_aces("id1") == [1] * 51
 
 
-@mock.patch("requests.post")
+@mock.patch("requests.Session.post")
 def test_cb(
     mock_post: mock.MagicMock,
 ) -> None:
@@ -921,7 +921,7 @@ def test_cb(
         service.plot(processed_test_data)
 
 
-@mock.patch("requests.post")
+@mock.patch("requests.Session.post")
 def test_service_target_info(mock_post: mock.MagicMock) -> None:
     fake_data = {"target_info": {"backend_name": "ss_example_qpu", "max_experiments": 1234}}
     mock_post.return_value.json = lambda: fake_data

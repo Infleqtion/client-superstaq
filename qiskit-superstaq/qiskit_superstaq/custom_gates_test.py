@@ -106,9 +106,9 @@ def test_parallel_gates() -> None:
 
     # confirm gates are applied to disjoint qubits
     all_qargs: set[qiskit.circuit.Qubit] = set()
-    for _, qargs, _ in gate.definition:
-        assert all_qargs.isdisjoint(qargs)
-        all_qargs.update(qargs)
+    for inst in gate.definition:
+        assert all_qargs.isdisjoint(inst.qubits)
+        all_qargs.update(inst.qubits)
     assert len(all_qargs) == gate.num_qubits
 
     # double check qubit ordering
@@ -132,9 +132,9 @@ def test_parallel_gates() -> None:
 
     # confirm gates are applied to disjoint qubits
     all_qargs.clear()
-    for _, qargs, _ in gate.definition:
-        assert all_qargs.isdisjoint(qargs)
-        all_qargs.update(qargs)
+    for inst in gate.definition:
+        assert all_qargs.isdisjoint(inst.qubits)
+        all_qargs.update(inst.qubits)
     assert len(all_qargs) == gate.num_qubits
 
     gate = qss.ParallelGates(
