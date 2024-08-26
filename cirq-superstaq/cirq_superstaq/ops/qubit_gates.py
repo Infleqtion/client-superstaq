@@ -1023,7 +1023,7 @@ class DDPowGate(cirq.EigenGate):
     def __str__(self) -> str:
         if self.exponent == 1:
             return "DD"
-        return f"DD**{self._exponent!r}"
+        return f"DD**{self._exponent}"
 
     def __repr__(self) -> str:
         if self._global_shift == 0:
