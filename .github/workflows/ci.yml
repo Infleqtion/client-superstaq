@@ -131,7 +131,7 @@ jobs:
             dependencies: "./general-superstaq ./qiskit-superstaq ./cirq-superstaq[dev]"
           - type: "supermarq-benchmarks"
             dependencies: "./general-superstaq ./qiskit-superstaq ./cirq-superstaq ./supermarq-benchmarks[dev]"
-    name: ${{ matrix.package.type }} standalone coverage check with minimum dependency versions (${{ matrix.python-version }})
+    name: Coverage: ${{ matrix.package.type }} (python ${{ matrix.python-version }})
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
