@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./checks-superstaq
+          pip install -e ./checks-superstaq
       - name: Format
         run: |
           checks/format_.py
@@ -54,7 +54,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./checks-superstaq ./general-superstaq ./qiskit-superstaq ./cirq-superstaq ./supermarq-benchmarks
+          pip install -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks
       - name: Pylint
         run: |
           checks/pylint_.py --all
@@ -75,7 +75,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./checks-superstaq
+          pip install -e ./checks-superstaq
       - name: Flake8
         run: |
           checks/flake8_.py
@@ -96,7 +96,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./checks-superstaq ./general-superstaq[dev] ./qiskit-superstaq[dev] ./cirq-superstaq[dev] ./supermarq-benchmarks[dev]
+          pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]
       - name: Type check
         run: |
           checks/mypy_.py
@@ -120,7 +120,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./checks-superstaq ./general-superstaq[dev] ./qiskit-superstaq[dev] ./cirq-superstaq[dev] ./supermarq-benchmarks[dev]
+          pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]
       - name: Coverage check
         run: |
           checks/coverage_.py
@@ -131,13 +131,13 @@ jobs:
       matrix:
         include:
           - type: "general-superstaq"
-            dependencies: "./general-superstaq[dev]"
+            dependencies: "-e ./general-superstaq[dev]"
           - type: "qiskit-superstaq"
-            dependencies: "./general-superstaq ./qiskit-superstaq[dev]"
+            dependencies: "-e ./general-superstaq -e ./qiskit-superstaq[dev]"
           - type: "cirq-superstaq"
-            dependencies: "./general-superstaq ./qiskit-superstaq ./cirq-superstaq[dev]"
+            dependencies: "-e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq[dev]"
           - type: "supermarq-benchmarks"
-            dependencies: "./general-superstaq ./qiskit-superstaq ./cirq-superstaq ./supermarq-benchmarks[dev]"
+            dependencies: "-e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks[dev]"
     name: ${{ matrix.type }} standalone coverage check with minimum dependency versions
     steps:
       - uses: actions/checkout@v4
@@ -149,7 +149,7 @@ jobs:
         run: |
           min_versions=$(sed ${{ matrix.type }}/requirements.txt ${{ matrix.type }}/dev-requirements.txt -e 's/[~>]=\([0-9]\)/==\1/')
           python -m pip install --upgrade pip
-          pip install ./checks-superstaq ${{ matrix.dependencies }} $min_versions
+          pip install -e ./checks-superstaq ${{ matrix.dependencies }} $min_versions
       - name: Coverage check
         run: |
           checks/coverage_.py ${{ matrix.type }}
@@ -170,7 +170,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./checks-superstaq ./general-superstaq[dev] ./qiskit-superstaq[dev] ./cirq-superstaq[dev] ./supermarq-benchmarks[dev]
+          pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]
       - name: Pytest-mac check
         run: |
           checks/pytest_.py
@@ -191,7 +191,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./checks-superstaq ./general-superstaq[dev] ./qiskit-superstaq[dev] ./cirq-superstaq[dev] ./supermarq-benchmarks[dev]
+          pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]
       - name: Pytest-win check
         run: |
           checks/pytest_.py
@@ -214,7 +214,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./checks-superstaq ./general-superstaq ./qiskit-superstaq ./cirq-superstaq ./supermarq-benchmarks
+          pip install -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks
       - name: Requirements check
         run: |
           checks/requirements.py
@@ -229,10 +229,10 @@ jobs:
         include:
           - type: "qiskit-superstaq"
             pattern: "*_qss.ipynb qiskit-superstaq"
-            dependencies: "./checks-superstaq ./general-superstaq ./qiskit-superstaq[examples] ./cirq-superstaq"
+            dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq[examples] -e ./cirq-superstaq"
           - type: "cirq-superstaq"
             pattern: "*_css.ipynb cirq-superstaq"
-            dependencies: "./checks-superstaq ./general-superstaq ./qiskit-superstaq ./cirq-superstaq[examples]"
+            dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq[examples]"
     name: Notebook check for ${{ matrix.type }}
     steps:
       - uses: actions/checkout@v4
@@ -265,8 +265,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ./checks-superstaq ./general-superstaq ./qiskit-superstaq ./cirq-superstaq ./supermarq-benchmarks
-          pip install -r ./docs/requirements.txt
+          pip install -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks
           sudo apt-get install pandoc
       - name: Build docs
         run: |
