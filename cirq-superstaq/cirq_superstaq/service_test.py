@@ -26,6 +26,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import sympy
+import yaml
 from general_superstaq import ResourceEstimate
 
 import cirq_superstaq as css
@@ -301,8 +302,8 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
             "CS3": cirq.MatrixGate(cirq.unitary(css.CZ3**0.5), qid_shape=(3, 3)),
         },
         "aqt_configs": {
-            "pulses": "foo: bar\n",
-            "variables": "abc: 123\n",
+            "pulses": yaml.dump({"foo": "bar"}),
+            "variables": yaml.dump({"abc": 123}),
         },
     }
     mock_post_request.assert_called_with(

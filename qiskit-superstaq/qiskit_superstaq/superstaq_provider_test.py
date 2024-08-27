@@ -12,6 +12,7 @@ import general_superstaq as gss
 import numpy as np
 import pytest
 import qiskit
+import yaml
 from general_superstaq import ResourceEstimate, testing
 
 import qiskit_superstaq as qss
@@ -82,8 +83,8 @@ def test_aqt_compile(mock_post: MagicMock, fake_superstaq_provider: MockSupersta
     expected_options = {
         "atol": 1e-2,
         "aqt_configs": {
-            "pulses": "foo: bar\n",
-            "variables": "abc: 123\n",
+            "pulses": yaml.dump({"foo": "bar"}),
+            "variables": yaml.dump({"abc": 123}),
         },
     }
     mock_post.assert_called_with(
