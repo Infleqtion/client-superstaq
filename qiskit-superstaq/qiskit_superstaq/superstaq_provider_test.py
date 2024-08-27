@@ -65,7 +65,6 @@ def test_aqt_compile(mock_post: MagicMock, fake_superstaq_provider: MockSupersta
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "initial_logical_to_physicals": "[[[0, 1]]]",
         "final_logical_to_physicals": "[[[1, 4]]]",
-        "state_jp": gss.serialization.serialize({}),
     }
     out = fake_superstaq_provider.aqt_compile(qc)
     assert out.circuit == qc
@@ -102,7 +101,6 @@ def test_aqt_compile(mock_post: MagicMock, fake_superstaq_provider: MockSupersta
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
         "initial_logical_to_physicals": "[[], []]",
         "final_logical_to_physicals": "[[], []]",
-        "state_jp": gss.serialization.serialize({}),
     }
     out = fake_superstaq_provider.aqt_compile([qc, qc], test_options="yes")
     assert out.circuits == [qc, qc]
@@ -128,7 +126,6 @@ def test_aqt_compile_eca(
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
-        "state_jp": gss.serialization.serialize({}),
     }
 
     out = fake_superstaq_provider.aqt_compile(qc, num_eca_circuits=1, random_seed=1234, atol=1e-2)

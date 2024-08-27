@@ -114,7 +114,6 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "initial_logical_to_physicals": "[[[0, 1]]]",
         "final_logical_to_physicals": "[[[1, 4]]]",
-        "state_jp": gss.serialization.serialize({}),
     }
     out = backend.compile(qc)
     assert out.circuit == qc
@@ -132,28 +131,8 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         },
     )
 
-    out = backend.compile([qc], atol=1e-2, pulses={"foo": "bar"}, variables={"abc": 123})
-    assert out.circuits == [qc]
-    assert out.initial_logical_to_physicals == [{0: 1}]
-    assert out.final_logical_to_physicals == [{1: 4}]
-    assert not hasattr(out, "circuit")
-    expected_options = {
-        "atol": 1e-2,
-        "aqt_configs": {
-            "pulses": yaml.dump({"foo": "bar"}),
-            "variables": yaml.dump({"abc": 123}),
-        },
-    }
-    mock_post.assert_called_with(
-        f"{provider._client.url}/aqt_compile",
-        headers=provider._client.headers,
-        verify=provider._client.verify_https,
-        json={
-            "qiskit_circuits": qss.serialize_circuits(qc),
-            "target": "aqt_keysight_qpu",
-            "options": json.dumps(expected_options),
-        },
-    )
+    with pytest.raises(ValueError, match="Unable to serialize configuration"):
+        _ = backend.compile([qc], atol=1e-2, pulses=123, variables=456)
 
     out = backend.compile([qc], atol=1e-2, aqt_configs={}, gateset={"X90": [[0], [1]]})
     assert out.circuits == [qc]
@@ -180,7 +159,6 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
         "initial_logical_to_physicals": "[[], []]",
         "final_logical_to_physicals": "[[], []]",
-        "state_jp": gss.serialization.serialize({}),
     }
     matrix = qiskit.circuit.library.CRXGate(1.23).to_matrix()
     out = backend.compile([qc, qc], gate_defs={"CRX": matrix})
@@ -213,7 +191,6 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
-        "state_jp": gss.serialization.serialize({}),
     }
 
     out = backend.compile(qc, num_eca_circuits=1, random_seed=1234, atol=1e-2, test_options="yes")
@@ -227,7 +204,6 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
-        "state_jp": gss.serialization.serialize({}),
     }
 
     out = backend.compile(qc, num_eca_circuits=1, random_seed=1234, atol=1e-2, test_options="yes")
