@@ -77,6 +77,7 @@ class IRB(BenchmarkingExperiment[IRBResults]):
 
         e_{\mathcal{C}^*} = \frac{1}{2} \left(1 - \frac{\tilde{\alpha}}{\alpha}\right)
 
+    For more details see: https://arxiv.org/abs/1203.4550
     """
 
     def __init__(
