@@ -1,2 +1,2 @@
-general-superstaq[dev]~=0.5.24
+checks-superstaq~=0.5.24
 qiskit-superstaq~=0.5.24
