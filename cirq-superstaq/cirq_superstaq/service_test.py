@@ -26,7 +26,6 @@ import numpy as np
 import pandas as pd
 import pytest
 import sympy
-import yaml
 from general_superstaq import ResourceEstimate
 
 import cirq_superstaq as css

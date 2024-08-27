@@ -9,7 +9,6 @@ from unittest.mock import DEFAULT, MagicMock, patch
 import general_superstaq as gss
 import pytest
 import qiskit
-import yaml
 
 import qiskit_superstaq as qss
 
