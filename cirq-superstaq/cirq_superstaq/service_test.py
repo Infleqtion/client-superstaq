@@ -249,7 +249,6 @@ def test_service_create_job() -> None:
     "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits(cirq.Circuit()),
-        "state_jp": gss.serialization.serialize({}),
         "initial_logical_to_physicals": cirq.to_json([[]]),
         "final_logical_to_physicals": cirq.to_json([[]]),
     },
@@ -324,7 +323,6 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
     "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit(), cirq.Circuit()]),
-        "state_jp": gss.serialization.serialize({}),
         "initial_logical_to_physicals": cirq.to_json([[], []]),
         "final_logical_to_physicals": cirq.to_json([[], []]),
     },
@@ -345,7 +343,6 @@ def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None
     "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit()]),
-        "state_jp": gss.serialization.serialize({}),
         "initial_logical_to_physicals": cirq.to_json([[]]),
         "final_logical_to_physicals": cirq.to_json([[]]),
     },
