@@ -29,7 +29,7 @@ def test_provider(fake_superstaq_provider: MockSuperstaqProvider) -> None:
         == "<SuperstaqProvider(api_key=MY_TOKEN, name=mock_superstaq_provider)>"
     )
     assert (
-        str(fake_superstaq_provider.backends()[0]) == "aqt_keysight_qpu"
+        fake_superstaq_provider.backends()[0].name == "aqt_keysight_qpu"
     )  # First backend alphabetically.
 
 
@@ -56,7 +56,7 @@ def test_get_balance() -> None:
     assert ss_provider.get_balance(pretty_output=False) == 12345.6789
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_aqt_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
@@ -117,7 +117,7 @@ def test_invalid_target_aqt_compile() -> None:
         provider.aqt_compile(qiskit.QuantumCircuit(), target="ss_example_qpu")
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_aqt_compile_eca(
     mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
@@ -153,7 +153,7 @@ def test_aqt_compile_eca(
         assert deprecated_out.final_logical_to_physicals == out.final_logical_to_physicals
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_ibmq_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
@@ -254,7 +254,7 @@ def test_resource_estimate_list(
     )
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_qscout_compile(
     mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
@@ -314,7 +314,7 @@ def test_invalid_target_qscout_compile(fake_superstaq_provider: MockSuperstaqPro
         fake_superstaq_provider.qscout_compile(qiskit.QuantumCircuit(), target="ss_example_qpu")
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 @pytest.mark.parametrize("mirror_swaps", (True, False))
 def test_qscout_compile_swap_mirror(
     mock_post: MagicMock, mirror_swaps: bool, fake_superstaq_provider: MockSuperstaqProvider
@@ -344,7 +344,7 @@ def test_qscout_compile_swap_mirror(
     }
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 @pytest.mark.parametrize("base_entangling_gate", ("xx", "zz"))
 def test_qscout_compile_change_entangler(
     mock_post: MagicMock, base_entangling_gate: str, fake_superstaq_provider: MockSuperstaqProvider
@@ -383,7 +383,7 @@ def test_qscout_compile_wrong_entangler(fake_superstaq_provider: MockSuperstaqPr
         _ = fake_superstaq_provider.qscout_compile(qc, base_entangling_gate="yy")
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_qscout_compile_error_rates(
     mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
@@ -408,7 +408,7 @@ def test_qscout_compile_error_rates(
     }
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_cq_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)
@@ -461,7 +461,7 @@ def test_supercheq(
     assert fake_superstaq_provider.supercheq([[0]], 1, 1) == (circuits, fidelities)
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_dfe(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)
@@ -485,7 +485,7 @@ def test_dfe(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvide
     assert fake_superstaq_provider.process_dfe(["1", "2"]) == 1
 
 
-@patch("requests.get")
+@patch("requests.Session.get")
 def test_get_targets(mock_get: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
     mock_get.return_value.json = {"superstaq_targets": testing.TARGET_LIST}
     assert fake_superstaq_provider.get_targets() == testing.RETURNED_TARGETS
