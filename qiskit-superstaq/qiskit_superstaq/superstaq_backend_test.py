@@ -101,7 +101,7 @@ def test_eq(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     assert backend1 == backend3
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_aqt_compile(mock_post: MagicMock) -> None:
     # AQT compile
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
@@ -143,6 +143,27 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
             "pulses": yaml.dump({"foo": "bar"}),
             "variables": yaml.dump({"abc": 123}),
         },
+    }
+    mock_post.assert_called_with(
+        f"{provider._client.url}/aqt_compile",
+        headers=provider._client.headers,
+        verify=provider._client.verify_https,
+        json={
+            "qiskit_circuits": qss.serialize_circuits(qc),
+            "target": "aqt_keysight_qpu",
+            "options": json.dumps(expected_options),
+        },
+    )
+
+    out = backend.compile([qc], atol=1e-2, aqt_configs={}, gateset={"X90": [[0], [1]]})
+    assert out.circuits == [qc]
+    assert out.initial_logical_to_physicals == [{0: 1}]
+    assert out.final_logical_to_physicals == [{1: 4}]
+    assert not hasattr(out, "circuit")
+    expected_options = {
+        "aqt_configs": {},
+        "atol": 1e-2,
+        "gateset": {"X90": [[0], [1]]},
     }
     mock_post.assert_called_with(
         f"{provider._client.url}/aqt_compile",
@@ -216,7 +237,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     assert not hasattr(out, "circuit")
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_ibmq_compile(mock_post: MagicMock) -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
     backend = provider.get_backend("ibmq_jakarta_qpu")
@@ -252,7 +273,7 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
         backend.aqt_compile([qc])
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_qscout_compile(
     mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
@@ -300,7 +321,7 @@ def test_qscout_compile(
     assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_compile(mock_post: MagicMock) -> None:
     # Compilation to a simulator (e.g., AWS)
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
@@ -322,10 +343,43 @@ def test_compile(mock_post: MagicMock) -> None:
 def test_target_info(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     target = "ibmq_brisbane_qpu"
     backend = fake_superstaq_provider.get_backend(target)
-    assert backend.target_info()["backend_name"] == target
+    assert backend.target_info()["target"] == target
 
 
-@patch("requests.post")
+def test_configuration(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    target = "ibmq_brisbane_qpu"
+    backend = fake_superstaq_provider.get_backend(target)
+    with pytest.warns(DeprecationWarning):
+        configuration = backend.configuration()
+    assert configuration.backend_name == target
+    assert configuration.num_qubits == backend.num_qubits
+
+
+def test_target(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    target = "ibmq_brisbane_qpu"
+    backend = fake_superstaq_provider.get_backend(target)
+    assert backend.target.num_qubits == 4
+
+
+def test_max_circuits(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    target = "ibmq_brisbane_qpu"
+    backend = fake_superstaq_provider.get_backend(target)
+    assert backend.max_circuits is None
+
+
+def test_coupling_map(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    target = "ibmq_brisbane_qpu"
+    backend = fake_superstaq_provider.get_backend(target)
+
+    assert isinstance(backend.coupling_map, qiskit.transpiler.CouplingMap)
+    assert backend.coupling_map.get_edges() == [(0, 1), (1, 2)]
+    assert backend.coupling_map.physical_qubits == [0, 1, 2, 3]
+
+    backend._target_info = {}
+    assert backend.coupling_map is None
+
+
+@patch("requests.Session.post")
 def test_aces(mock_post: MagicMock) -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
     backend = provider.get_backend("ss_unconstrained_simulator")

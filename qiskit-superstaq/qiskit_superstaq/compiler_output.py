@@ -29,9 +29,9 @@ def active_qubit_indices(circuit: qiskit.QuantumCircuit) -> list[int]:
 
     qubit_indices: set[int] = set()
 
-    for inst, qubits, _ in circuit:
-        if inst.name != "barrier":
-            indices = [circuit.find_bit(q).index for q in qubits]
+    for inst in circuit:
+        if inst.operation.name != "barrier":
+            indices = [circuit.find_bit(q).index for q in inst.qubits]
             qubit_indices.update(indices)
 
     return sorted(qubit_indices)
@@ -49,13 +49,15 @@ def measured_qubit_indices(circuit: qiskit.QuantumCircuit) -> list[int]:
 
     measured_qubits: set[qiskit.circuit.Qubit] = set()
 
-    for inst, qubits, clbits in circuit:
-        if isinstance(inst, qiskit.circuit.Measure):
-            measured_qubits.update(qubits)
+    for inst in circuit:
+        if isinstance(inst.operation, qiskit.circuit.Measure):
+            measured_qubits.update(inst.qubits)
 
         # Recurse into definition if it involves classical bits
-        elif clbits and inst.definition is not None:
-            measured_qubits.update(qubits[i] for i in measured_qubit_indices(inst.definition))
+        elif inst.clbits and inst.operation.definition is not None:
+            measured_qubits.update(
+                inst.qubits[i] for i in measured_qubit_indices(inst.operation.definition)
+            )
 
     return sorted(circuit.find_bit(qubit).index for qubit in measured_qubits)
 
