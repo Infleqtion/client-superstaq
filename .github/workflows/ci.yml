@@ -131,13 +131,13 @@ jobs:
       matrix:
         include:
           - type: "general-superstaq"
-            dependencies: "-e ./general-superstaq[dev]"
+            dependencies: "./general-superstaq[dev]"
           - type: "qiskit-superstaq"
-            dependencies: "-e ./general-superstaq -e ./qiskit-superstaq[dev]"
+            dependencies: "./general-superstaq ./qiskit-superstaq[dev]"
           - type: "cirq-superstaq"
-            dependencies: "-e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq[dev]"
+            dependencies: "./general-superstaq ./qiskit-superstaq ./cirq-superstaq[dev]"
           - type: "supermarq-benchmarks"
-            dependencies: "-e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks[dev]"
+            dependencies: "./general-superstaq ./qiskit-superstaq ./cirq-superstaq ./supermarq-benchmarks[dev]"
     name: ${{ matrix.type }} standalone coverage check with minimum dependency versions
     steps:
       - uses: actions/checkout@v4
@@ -229,10 +229,10 @@ jobs:
         include:
           - type: "qiskit-superstaq"
             pattern: "*_qss.ipynb qiskit-superstaq"
-            dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq[examples] -e ./cirq-superstaq"
+            dependencies: "./checks-superstaq ./general-superstaq ./qiskit-superstaq[examples] ./cirq-superstaq"
           - type: "cirq-superstaq"
             pattern: "*_css.ipynb cirq-superstaq"
-            dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq[examples]"
+            dependencies: "./checks-superstaq ./general-superstaq ./qiskit-superstaq ./cirq-superstaq[examples]"
     name: Notebook check for ${{ matrix.type }}
     steps:
       - uses: actions/checkout@v4
