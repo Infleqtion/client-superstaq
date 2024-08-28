@@ -547,8 +547,8 @@ class DDGate(qiskit.circuit.Gate):
     def _define(self) -> None:
         """Stores the qiskit circuit definition of the DD gate."""
         qc = qiskit.QuantumCircuit(2, name="dd")
-        qc.rzz(2*self.params[0], 0, 1)
-        qc.append(qiskit.circuit.library.XXPlusYYGate(-2*self.params[0], 0), [0, 1])
+        qc.rzz(2 * self.params[0], 0, 1)
+        qc.append(qiskit.circuit.library.XXPlusYYGate(-2 * self.params[0], 0), [0, 1])
         self.definition = qc
 
     def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
