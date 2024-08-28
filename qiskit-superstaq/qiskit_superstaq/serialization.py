@@ -385,7 +385,6 @@ def _resolve_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
 
     elif type(gate) is qiskit.circuit.ControlledGate:
         gate.base_gate = _resolve_gate(gate.base_gate)
-        gate.name = gate._name.rsplit("_", 1)[0]  # https://github.com/Qiskit/qiskit/issues/8549
 
         if gate.definition is not None and gate._definition is not None:
             gate.definition = _resolve_circuit(gate._definition)
