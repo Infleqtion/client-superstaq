@@ -228,10 +228,10 @@ jobs:
       matrix:
         include:
           - type: "qiskit-superstaq"
-            pattern: "*_qss.ipynb qiskit-superstaq -x docs/source/apps"
+            pattern: "*_qss.ipynb qiskit-superstaq -x docs/source/apps/*"
             dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq[examples] -e ./cirq-superstaq"
           - type: "cirq-superstaq"
-            pattern: "*_css.ipynb cirq-superstaq -x docs/source/apps"
+            pattern: "*_css.ipynb cirq-superstaq -x docs/source/apps/*"
             dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq[examples]"
           - type: "supermarq"
             pattern: "docs/source/apps/supermarq"
