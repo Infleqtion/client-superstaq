@@ -507,3 +507,78 @@ class AQTiCCXGate(iCCXGate):
 
 
 AQTiToffoliGate = AQTiCCXGate
+
+
+class DDGate(qiskit.circuit.Gate):
+    r"""The Dipole-Dipole (DD) gate, which performs the dipole-dipole interaction between two
+    electrons. Part of the EeroQ native gateset.
+
+    The unitary for a DD gate parametrized by angle :math:`\theta` is:
+
+     .. math::
+
+        \begin{bmatrix}
+        e^{-i \theta} & . & . & . \\
+        . & e^{i \theta}cos{theta} ie^{i \theta}sin{theta} & . \\
+        . & ie^{i \theta}sin{theta} e^{i \theta}cos{theta} & . \\
+        . & . & . & e^{-i \theta} \\
+        \end{bmatrix}
+
+    where '.' means '0'.
+    """
+
+    def __init__(self, theta: float, label: str | None = None) -> None:
+        """Initializes a DD gate.
+
+        Args:
+            theta: The DD angle in radians.
+            label: An optional label for the constructed gate. Defaults to None.
+        """
+        super().__init__("dd", 2, [theta], label=label)
+
+    def inverse(self) -> DDGate:
+        """Inverts the DD gate.
+
+        Returns:
+            The inverse DD gate.
+        """
+        return DDGate(-self.params[0])
+
+    def _define(self) -> None:
+        """Stores the qiskit circuit definition of the DD gate."""
+        qc = qiskit.QuantumCircuit(2, name="dd")
+        qc.rzz(2*self.params[0], 0, 1)
+        qc.append(qiskit.circuit.library.XXPlusYYGate(-2*self.params[0], 0), [0, 1])
+        self.definition = qc
+
+    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
+        """Returns a numpy array for the DD gate."""
+        return np.array(
+            [
+                [np.exp(-1j * self.params[0]), 0, 0, 0],
+                [
+                    0,
+                    np.exp(1j * self.params[0]) * np.cos(self.params[0]),
+                    1j * np.exp(1j * self.params[0]) * np.sin(self.params[0]),
+                    0,
+                ],
+                [
+                    0,
+                    1j * np.exp(1j * self.params[0]) * np.sin(self.params[0]),
+                    np.exp(1j * self.params[0]) * np.cos(self.params[0]),
+                    0,
+                ],
+                [0, 0, 0, np.exp(-1j * self.params[0])],
+            ],
+            dtype=dtype,
+        )
+
+    def __repr__(self) -> str:
+        args = f"{self.params[0]}"
+        if self.label:
+            args += f", label='{self.label}'"
+        return f"qss.DDGate({args})"
+
+    def __str__(self) -> str:
+        args = qiskit.circuit.tools.pi_check(self.params[0], ndigits=8)
+        return f"DDGate({args})"
