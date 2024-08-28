@@ -697,7 +697,7 @@ class Service(gss.service.Service):
             Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s).
 
         Raises:
-            ValueError: If `target` is not a valid IBMQ target.
+            ValueError: If `target` is not a valid EeroQ target.
         """
         target = self._resolve_target(target)
         if not target.startswith("cq_"):
@@ -749,6 +749,35 @@ class Service(gss.service.Service):
         kwargs.update(options)
 
         return self.compile(circuits, target=target, **kwargs)
+
+    def eeroq_compile(
+        self,
+        circuits: cirq.Circuit | Sequence[cirq.Circuit],
+        target: str = "eeroq_wonderlake_qpu",
+        **kwargs: Any,
+    ) -> css.compiler_output.CompilerOutput:
+        """Compiles and optimizes the given circuit(s) to the target EeroQ device.
+
+        Args:
+            circuits: The circuit(s) to compile.
+            target: String of target EeroQ device.
+            kwargs: Other desired `eeroq_compile` options.
+
+        Returns:
+            Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s).
+
+        Raises:
+            ValueError: If `target` is not a valid EeroQ target.
+        """
+        target = self._resolve_target(target)
+        if not target.startswith("eeroq_"):
+            raise ValueError(f"{target!r} is not a valid EeroQ target.")
+
+        return self.compile(
+            circuits,
+            target=target,
+            **kwargs,
+        )
 
     def compile(
         self,

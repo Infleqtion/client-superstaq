@@ -647,6 +647,29 @@ def test_service_cq_compile_single(mock_post: mock.MagicMock) -> None:
 
 
 @mock.patch("requests.Session.post")
+def test_service_eeroq_compile_single(mock_post: mock.MagicMock) -> None:
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
+    initial_logical_to_physical = {cirq.q(0): cirq.q(0)}
+    final_logical_to_physical = {cirq.q(10): cirq.q(0)}
+
+    mock_post.return_value.json = lambda: {
+        "cirq_circuits": css.serialization.serialize_circuits(circuit),
+        "initial_logical_to_physicals": cirq.to_json([list(initial_logical_to_physical.items())]),
+        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
+    }
+
+    service = css.Service(api_key="key", remote_host="http://example.com")
+    out = service.eeroq_compile(circuit, test_options="yes")
+    assert out.circuit == circuit
+    assert out.initial_logical_to_physical == initial_logical_to_physical
+    assert out.final_logical_to_physical == final_logical_to_physical
+
+    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid EeroQ target."):
+        service.eeroq_compile(cirq.Circuit(), target="ss_example_qpu")
+
+
+@mock.patch("requests.Session.post")
 def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
 
