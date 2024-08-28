@@ -32,6 +32,7 @@ class CB(BenchmarkingExperiment[CBResults]):
     def __init__(
         self,
         process_circuit: cirq.Circuit,
+        dressed_measurement: bool = True,
         num_channels: int | None = None,
         pauli_channels: list[str] | None = None,
     ) -> None:
@@ -39,6 +40,7 @@ class CB(BenchmarkingExperiment[CBResults]):
         super().__init__(num_qubits=cirq.num_qubits(process_circuit))
         self.qubits = process_circuit.all_qubits()
 
+        # TODO: Add check for Clifford process
         self._process_circuit = cirq.Circuit()
         # Prevent internal compiler optimizations
         for op in process_circuit.all_operations():
@@ -64,6 +66,8 @@ class CB(BenchmarkingExperiment[CBResults]):
             ]
         else:
             raise RuntimeError("Cannot have both `num_channels` and `pauli_channels` be None.")
+
+        self._dressed_measurement = dressed_measurement
 
     ##############
     # Properties #
@@ -105,14 +109,30 @@ class CB(BenchmarkingExperiment[CBResults]):
                         "pauli_channel": channel[0],
                         "cycle_depth": depth * self._matrix_root,
                         "c_of_p": c_of_p,
+                        "circuit": "process",
                     },
                 )
             )
+            if not self._dressed_measurement:
+                circuit, c_of_p = self._generate_full_cb_circuit(
+                    channel=channel[0], depth=depth * self._matrix_root, process=False
+                )
+                samples.append(
+                    Sample(
+                        raw_circuit=circuit,
+                        data={
+                            "pauli_channel": channel[0],
+                            "cycle_depth": depth * self._matrix_root,
+                            "c_of_p": c_of_p,
+                            "circuit": "identity",
+                        },
+                    )
+                )
 
         return samples
 
     def _cb_bulk_circuit(
-        self, depth: int
+        self, depth: int, process: bool = True
     ) -> tuple[cirq.Circuit, cirq.MutablePauliString[cirq.Qid]]:
         """TODO"""
         # Create new bulk circuit
@@ -129,17 +149,32 @@ class CB(BenchmarkingExperiment[CBResults]):
 
         # Loop over interleaving Pauli layers
         for ii in range(0, depth):
-            bulk_circuit += self._process_circuit
+            if process:
+                bulk_circuit += self._process_circuit
 
             moment = self._generate_n_qubit_pauli_moment()[1]
             bulk_circuit.append(moment, strategy=cirq.circuits.InsertStrategy.NEW_THEN_INLINE)
 
             # Pauli string operations
             ith_pauli_string: cirq.MutablePauliString[cirq.Qid] = cirq.MutablePauliString(moment)
-            ith_pauli_string.inplace_before((ii + 1) * self._process_circuit)
+            if process:
+                ith_pauli_string.inplace_before((ii + 1) * self._process_circuit)
             aggregate_pauli_string.inplace_right_multiply_by(ith_pauli_string)
 
         return bulk_circuit, aggregate_pauli_string
+
+    @staticmethod
+    def _fit_exponential(x, y) -> tuple[float, float, float, float]:
+        fit = scipy.stats.linregress(
+                x=x,
+                y=y,
+            )
+
+        base = np.exp(fit.slope)
+        base_std = np.exp(fit.slope) * fit.stderr
+        coef = np.exp(fit.intercept)
+        coef_std = np.exp(fit.intercept) * fit.intercept_stderr
+        return base, base_std, coef, coef_std
 
     @staticmethod
     def _find_process_identity_min_depth(circuit, max_depth: int = 50) -> int:
@@ -154,7 +189,7 @@ class CB(BenchmarkingExperiment[CBResults]):
         raise RuntimeError(f"Could not find a circuit root less than {max_depth}")
 
     def _generate_full_cb_circuit(
-        self, channel: str, depth: int
+        self, channel: str, depth: int, process=True
     ) -> tuple[cirq.Circuit, cirq.MutablePauliString[cirq.Qid]]:
         """Creates the full Cycle Benchmarking circuit.
 
@@ -170,7 +205,7 @@ class CB(BenchmarkingExperiment[CBResults]):
         """
         state_prep_circuit, pauli_matrix = self._state_prep_circuit(channel)
 
-        bulk_circuit, c_superoperator = self._cb_bulk_circuit(depth)
+        bulk_circuit, c_superoperator = self._cb_bulk_circuit(depth, process)
 
         inverse_circuit, c_of_p = self._inversion_circuit(pauli_matrix, c_superoperator)
 
@@ -267,6 +302,7 @@ class CB(BenchmarkingExperiment[CBResults]):
                         sample.data["c_of_p"],
                         sample.probabilities,
                     ),
+                    "circuit": sample.data["circuit"],
                 }
             )
         return pd.DataFrame(records)
@@ -311,21 +347,38 @@ class CB(BenchmarkingExperiment[CBResults]):
         """
         results = []
         for channel in self.raw_data.pauli_channel.unique():
-            df = self.raw_data[self.raw_data.pauli_channel == channel].copy()
-            df["log_expectation"] = np.log(df["expectation"])
-            df.dropna(axis=0, inplace=True)
-            fit = scipy.stats.linregress(
-                x=df["cycle_depth"],
-                y=df["log_expectation"],
+            df = self.raw_data[
+                (self.raw_data.pauli_channel == channel)
+            ].copy()
+            df["log_expectation"] = np.log(np.abs(df["expectation"]))
+            df.dropna(inplace=True)  # Introduces slight bias - consider fixing?
+
+            fidelity, fidelity_std, spam, spam_std = CB._fit_exponential(
+                x=df[df.circuit == "process"]["cycle_depth"],
+                y=df[df.circuit == "process"]["log_expectation"],
             )
+            f_ratio = fidelity_std / fidelity
+
+            # If not calculating the dressed fidelity, correct by the identity circuits.
+            if not self._dressed_measurement:
+                id_fidelity, id_fidelity_std, id_spam, id_spam_std = CB._fit_exponential(
+                    x=df[df.circuit == "identity"]["cycle_depth"],
+                    y=df[df.circuit == "identity"]["log_expectation"],
+                )
+                id_f_ratio = id_fidelity_std / id_fidelity
+
+                fidelity = fidelity / id_fidelity
+                fidelity_std = fidelity * np.sqrt(f_ratio**2 + id_f_ratio ** 2)
+                spam = (spam + id_spam) / 2
+                spam_std = 0.5 * spam_std + 0.5 * id_spam_std
 
             results.append(
                 {
                     "channel": channel,
-                    "decay": np.exp(fit.slope),
-                    "decay_std": np.exp(fit.slope) * fit.stderr,
-                    "const": np.exp(fit.intercept),
-                    "const_std": np.exp(fit.intercept) * fit.intercept_stderr,
+                    "p_error": 1 - fidelity,
+                    "p_error_std": fidelity_std,
+                    "p_spam": 1 - spam,
+                    "p_spam_std": spam_std,
                 }
             )
         if plot_results:
