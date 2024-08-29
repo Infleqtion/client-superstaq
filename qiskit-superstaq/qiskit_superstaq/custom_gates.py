@@ -574,7 +574,7 @@ class DDGate(qiskit.circuit.Gate):
         )
 
     def __repr__(self) -> str:
-        args = f"{self.params[0]}"
+        args = f"{self.params[0]!r}"
         if self.label:
             args += f", label='{self.label}'"
         return f"qss.DDGate({args})"
