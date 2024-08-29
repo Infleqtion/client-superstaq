@@ -11,7 +11,7 @@ Below, you will find links to identical tutorials that demonstrate Superstaq for
 
     ibmq_compile_qss
     ibmq_compile_css
-    ibmq_dd
+    ibmq_dd_strategies
 
 References
 -----------------------
