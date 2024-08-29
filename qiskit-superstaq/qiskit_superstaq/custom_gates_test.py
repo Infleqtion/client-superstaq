@@ -221,7 +221,7 @@ def test_aqticcx() -> None:
     np.allclose(qiskit.quantum_info.Operator(qc), correct_unitary)
 
 
-def test_dd_swap() -> None:
+def test_dd_gate() -> None:
     gate = qss.DDGate(1.23)
     _check_gate_definition(gate)
     assert repr(gate) == "qss.DDGate(1.23)"
