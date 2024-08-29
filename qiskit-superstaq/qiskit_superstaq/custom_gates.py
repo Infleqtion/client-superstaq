@@ -547,28 +547,28 @@ class DDGate(qiskit.circuit.Gate):
     def _define(self) -> None:
         """Stores the qiskit circuit definition of the DD gate."""
         qc = qiskit.QuantumCircuit(2, name="dd")
-        qc.rzz(2 * self.params[0], 0, 1)
-        qc.append(qiskit.circuit.library.XXPlusYYGate(-2 * self.params[0], 0), [0, 1])
+        qc.rzz(self.params[0], 0, 1)
+        qc.append(qiskit.circuit.library.XXPlusYYGate(-1 * self.params[0], 0), [0, 1])
         self.definition = qc
 
     def __array__(self, dtype: type | None = None) -> npt.NDArray[np.complex_]:
         """Returns a numpy array for the DD gate."""
         return np.array(
             [
-                [np.exp(-1j * self.params[0]), 0, 0, 0],
+                [np.exp(-1j * self.params[0] / 2), 0, 0, 0],
                 [
                     0,
-                    np.exp(1j * self.params[0]) * np.cos(self.params[0]),
-                    1j * np.exp(1j * self.params[0]) * np.sin(self.params[0]),
+                    np.exp(1j * self.params[0] / 2) * np.cos(self.params[0] / 2),
+                    1j * np.exp(1j * self.params[0] / 2) * np.sin(self.params[0] / 2),
                     0,
                 ],
                 [
                     0,
-                    1j * np.exp(1j * self.params[0]) * np.sin(self.params[0]),
-                    np.exp(1j * self.params[0]) * np.cos(self.params[0]),
+                    1j * np.exp(1j * self.params[0] / 2) * np.sin(self.params[0] / 2),
+                    np.exp(1j * self.params[0] / 2) * np.cos(self.params[0] / 2),
                     0,
                 ],
-                [0, 0, 0, np.exp(-1j * self.params[0])],
+                [0, 0, 0, np.exp(-1j * self.params[0] / 2)],
             ],
             dtype=dtype,
         )
