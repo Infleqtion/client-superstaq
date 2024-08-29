@@ -1,6 +1,9 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
+import re
+from unittest.mock import MagicMock, create_autospec
+
 import cirq
 import pytest
 
@@ -27,3 +30,23 @@ def test_validate_cirq_circuits() -> None:
 
     with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
         css.validation.validate_cirq_circuits(circuit, require_measurements=True)
+
+
+def test_validate_qubit_type() -> None:
+    invalid_qubit_type = MagicMock(spec=str)  # E.g., in practice, `cirq_rigetti.AspenQubit`
+    mock_cirq_circuit = create_autospec(cirq.Circuit, spec_set=True)
+    mock_cirq_circuit.all_qubits.return_value = frozenset({invalid_qubit_type, cirq.LineQubit(0)})
+    q0 = cirq.LineQubit(0)
+    q1, q2 = cirq.NamedQubit.range(2, prefix="q")
+    q3 = cirq.GridQubit(0, 0)
+    q4 = cirq.q(4)
+    valid_qubits = frozenset({q0, q1, q2, q3, q4})
+    valid_circuit = cirq.Circuit(cirq.H(q) for q in valid_qubits)
+    valid_circuit += cirq.measure(*valid_qubits)
+
+    css.validation.validate_cirq_circuits(valid_circuit, require_measurements=True)
+    with pytest.raises(
+        TypeError,
+        match=re.escape("Input circuit(s) contain unsupported qubit types. Valid"),
+    ):
+        css.validation.validate_cirq_circuits([mock_cirq_circuit, valid_circuit])
