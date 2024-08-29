@@ -125,11 +125,12 @@ def patched_requests(*contents: object) -> mock._patch[mock.Mock]:
     return mock.patch("requests.Session.post", side_effect=responses)
 
 
-def test_cancel(job: css.Job) -> None:
+def test_cancel(job: css.Job, multi_circuit_job: css.Job) -> None:
     with mock.patch("requests.Session.post", return_value=mock.MagicMock(ok=True)) as mock_post:
         job.cancel()
         new_job().cancel()
-        assert mock_post.call_count == 2
+        multi_circuit_job.cancel(index=2)
+        assert mock_post.call_count == 3
 
 
 def test_job_fields(job: css.Job, job_dict: dict[str, object]) -> None:

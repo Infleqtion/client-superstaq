@@ -180,10 +180,11 @@ class Job:
         requested_job_status = self._job[requested_job_id]["status"]
         return requested_job_status
 
-    def cancel(self, **kwargs: object) -> None:
+    def cancel(self, index: int | None = None, **kwargs: object) -> None:
         """Cancel the current job if it is not in a terminal state.
 
         Args:
+            index: An optional index of the specific sub-job to cancel.
             kwargs: Extra options needed to fetch jobs.
 
         Raises:
@@ -191,7 +192,8 @@ class Job:
                 cancellations were unsuccessful.
         """
         job_ids = self._job_id.split(",")
-        self._client.cancel_jobs(job_ids, **kwargs)
+        ids_to_cancel = [job_ids[index]] if index else job_ids
+        self._client.cancel_jobs(ids_to_cancel, **kwargs)
 
     def target(self) -> str:
         """Gets the Superstaq target associated with this job.
