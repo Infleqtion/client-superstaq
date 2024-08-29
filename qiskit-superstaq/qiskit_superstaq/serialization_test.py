@@ -272,6 +272,7 @@ test_gates = {
     qiskit.circuit.library.CUGate: 4,
     qss.AceCR: 2,
     qss.AQTiCCXGate: 0,
+    qss.DDGate: 1,
     qss.StrippedCZGate: 1,
     qss.ZZSwapGate: 1,
     qss.custom_gates.iXGate: 0,

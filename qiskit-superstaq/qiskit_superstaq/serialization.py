@@ -26,6 +26,7 @@ QPY_SERIALIZATION_VERSION = 11
 # MSGate included as a workaround for https://github.com/Qiskit/qiskit/issues/11378
 _custom_gates_by_name: dict[str, type[qiskit.circuit.Instruction]] = {
     "acecr": qss.custom_gates.AceCR,
+    "dd": qss.custom_gates.DDGate,
     "parallel": qss.custom_gates.ParallelGates,
     "stripped_cz": qss.custom_gates.StrippedCZGate,
     "zzswap": qss.custom_gates.ZZSwapGate,
