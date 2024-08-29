@@ -169,7 +169,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
 
         Raises:
             SuperstaqUnsuccessfulJobException: If the job has been cancelled or has
-        failed.
+                failed.
             SuperstaqServerException: If unable to get the status of the job from the API.
         """
         if self._overall_status in ("Cancelled", "Failed"):
@@ -177,10 +177,11 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 self._job_id, self._overall_status
             )
 
-    def cancel(self, **kwargs: object) -> None:
+    def cancel(self, index: int | None = None, **kwargs: object) -> None:
         """Cancel the current job if it is not in a terminal state.
 
         Args:
+            index: The index of the specific sub-job.
             kwargs: Extra options needed to fetch jobs.
 
         Raises:
@@ -188,14 +189,21 @@ class SuperstaqJob(qiskit.providers.JobV1):
                 cancellations were unsuccessful.
         """
         job_ids = self._job_id.split(",")
-        self._backend._provider._client.cancel_jobs(job_ids, **kwargs)
+        ids_to_cancel = [job_ids[index]] if index else job_ids
+        self._backend._provider._client.cancel_jobs(ids_to_cancel, **kwargs)
 
-    def _refresh_job(self) -> None:
-        """Queries the server for an updated job result."""
+    def _refresh_job(self, index: int | None = None) -> None:
+        """Queries the server for an updated job result.
 
+        Args:
+            index: The index of the specific sub-job.
+        """
         jobs_to_fetch: list[str] = []
 
-        for job_id in self._job_id.split(","):
+        job_ids = self._job_id.split(",")
+        ids_to_check = [job_ids[index]] if index else job_ids
+
+        for job_id in ids_to_check:
             if (
                 job_id not in self._job_info
                 or self._job_info[job_id]["status"] not in self.TERMINAL_STATES
@@ -206,7 +214,8 @@ class SuperstaqJob(qiskit.providers.JobV1):
             result = self._backend._provider._client.fetch_jobs(jobs_to_fetch)
             self._job_info.update(result)
 
-        self._update_status_queue_info()
+        if index is None:
+            self._update_status_queue_info()
 
     def _update_status_queue_info(self) -> None:
         """Updates the overall status based on status queue info.
@@ -219,7 +228,6 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """
 
         job_id_list = self._job_id.split(",")  # separate aggregated job ids
-
         status_occurrence = {self._job_info[job_id]["status"] for job_id in job_id_list}
         status_priority_order = ("Submitted", "Queued", "Running", "Failed", "Cancelled", "Done")
 
@@ -338,8 +346,11 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """
         return self._get_circuits("pulse_gate_circuits", index)
 
-    def status(self) -> qiskit.providers.jobstatus.JobStatus:
+    def status(self, index: int | None = None) -> qiskit.providers.jobstatus.JobStatus:
         """Query for the equivalent qiskit job status.
+
+        Args:
+            index: The index of the specific job status.
 
         Returns:
             The equivalent `qiskit.providers.jobstatus.JobStatus` type.
@@ -354,12 +365,17 @@ class SuperstaqJob(qiskit.providers.JobV1):
             "Done": qiskit.providers.jobstatus.JobStatus.DONE,
         }
 
-        if self._overall_status in self.TERMINAL_STATES:
-            return status_match.get(self._overall_status)
+        if index is None:
+            if self._overall_status in self.TERMINAL_STATES:
+                return status_match.get(self._overall_status)
 
-        self._refresh_job()
-        status = self._overall_status
+            self._refresh_job()
+            status = self._overall_status
+            return status_match.get(status)
 
+        id_to_check = self._job_id.split(",")[index]
+        self._refresh_job(index)
+        status = self._job_info[id_to_check]["status"]
         return status_match.get(status)
 
     def submit(self) -> None:
