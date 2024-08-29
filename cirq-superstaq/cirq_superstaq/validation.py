@@ -4,10 +4,46 @@ from collections.abc import Sequence
 
 import cirq
 
+SUPPORTED_QID_TYPES = (
+    cirq.LineQubit,
+    cirq.LineQid,
+    cirq.GridQubit,
+    cirq.GridQid,
+    cirq.NamedQubit,
+    cirq.NamedQid,
+)
+
+
+def validate_qubit_types(circuits: object) -> None:
+    """Verifies that `circuit` consists of valid qubit types only.
+
+    Args:
+        circuits: The input circuits to validate.
+
+    Raises:
+        TypeError: If an invalid qubit type is found in `circuit`.
+    """
+    circuits_to_check = [circuits] if isinstance(circuits, cirq.Circuit) else circuits
+    assert isinstance(circuits_to_check, Sequence)
+
+    all_qubits_present: set[cirq.Qid] = set()
+    for circuit in circuits_to_check:
+        all_qubits_present.update(circuit.all_qubits())
+
+    if not all(isinstance(q, SUPPORTED_QID_TYPES) for q in all_qubits_present):
+        raise TypeError(
+            "Input circuit(s) contain unsupported qubit types. Valid qubit types are: "
+            "`cirq.LineQubit`, `cirq.LineQid`, `cirq.GridQubit`, `cirq.GridQid`, "
+            "`cirq.NamedQubit`, and `cirq.NamedQid`."
+        )
+
 
 def validate_cirq_circuits(circuits: object, require_measurements: bool = False) -> None:
-    """Validates that the input is either a single `cirq.Circuit` or a list of `cirq.Circuit`
-    instances.
+    """Validates that the input is an acceptable `cirq` object for `cirq-superstaq`.
+
+    In particular, this function verfies that `circuits` is either a single `cirq.Circuit`
+    or a list of `cirq.Circuit` instances. Additionally, also validates that `circuits` only
+    contains valid qubit types.
 
     Args:
         circuits: The circuit(s) to run.
@@ -16,6 +52,7 @@ def validate_cirq_circuits(circuits: object, require_measurements: bool = False)
 
     Raises:
         ValueError: If the input is not a `cirq.Circuit` or a list of `cirq.Circuit` instances.
+        TypeError: If an invalid qubit type is found in `circuits`.
     """
 
     if not (
@@ -37,3 +74,5 @@ def validate_cirq_circuits(circuits: object, require_measurements: bool = False)
                 # TODO: only raise if the run method actually requires samples (and not for e.g. a
                 # statevector simulation)
                 raise ValueError("Circuit has no measurements to sample.")
+
+    validate_qubit_types(circuits)
