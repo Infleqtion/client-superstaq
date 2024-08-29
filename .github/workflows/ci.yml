@@ -29,7 +29,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt', '.github/workflows/ci.yml') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -50,7 +50,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt', '.github/workflows/ci.yml') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -71,7 +71,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt', '.github/workflows/ci.yml') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -92,7 +92,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt', '.github/workflows/ci.yml') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -116,7 +116,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt', '.github/workflows/ci.yml') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -166,7 +166,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt', '.github/workflows/ci.yml') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -187,7 +187,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt', '.github/workflows/ci.yml') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -210,11 +210,11 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt', '.github/workflows/ci.yml') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]
+          pip install -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks
       - name: Requirements check
         run: |
           checks/requirements.py
@@ -227,11 +227,14 @@ jobs:
       matrix:
         include:
           - type: "qiskit-superstaq"
-            pattern: "*_qss.ipynb qiskit-superstaq"
-            dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq[examples] -e ./cirq-superstaq -e ./supermarq-benchmarks"
+            pattern: "'*_qss.ipynb' qiskit-superstaq -x 'docs/source/apps/*'"
+            dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq[examples] -e ./cirq-superstaq"
           - type: "cirq-superstaq"
-            pattern: "*_css.ipynb cirq-superstaq"
-            dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq[examples] -e ./supermarq-benchmarks"
+            pattern: "'*_css.ipynb' cirq-superstaq -x 'docs/source/apps/*'"
+            dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq[examples]"
+          - type: "supermarq"
+            pattern: "docs/source/apps/supermarq"
+            dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks"
     name: Notebook check for ${{ matrix.type }}
     steps:
       - uses: actions/checkout@v4
@@ -260,12 +263,11 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt') }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt', '.github/workflows/ci.yml') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]
-          pip install -r ./docs/requirements.txt
+          pip install -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks
           sudo apt-get install pandoc
       - name: Build docs
         run: |
