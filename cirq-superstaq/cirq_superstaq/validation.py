@@ -15,13 +15,13 @@ SUPPORTED_QID_TYPES = (
 
 
 def validate_qubit_types(circuits: object) -> None:
-    """Verifies that `circuit` consists of valid qubit types only.
+    """Verifies that `circuits` consists of valid qubit types only.
 
     Args:
-        circuits: The input circuits to validate.
+        circuits: The input circuit(s) to validate.
 
     Raises:
-        TypeError: If an invalid qubit type is found in `circuit`.
+        TypeError: If an invalid qubit type is found in `circuits`.
     """
     circuits_to_check = [circuits] if isinstance(circuits, cirq.Circuit) else circuits
     assert isinstance(circuits_to_check, Sequence)
