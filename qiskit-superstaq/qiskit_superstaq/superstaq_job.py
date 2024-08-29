@@ -181,7 +181,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """Cancel the current job if it is not in a terminal state.
 
         Args:
-            index: The index of the specific sub-job.
+            index: An optional index of the specific sub-job to cancel.
             kwargs: Extra options needed to fetch jobs.
 
         Raises:
@@ -196,7 +196,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """Queries the server for an updated job result.
 
         Args:
-            index: The index of the specific sub-job.
+            index: An optional index to check a specific sub-job.
         """
         jobs_to_fetch: list[str] = []
 
@@ -350,7 +350,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """Query for the equivalent qiskit job status.
 
         Args:
-            index: The index of the specific job status.
+            index: An optional index to retreive a specific job status.
 
         Returns:
             The equivalent `qiskit.providers.jobstatus.JobStatus` type.
