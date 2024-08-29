@@ -551,7 +551,7 @@ class DDGate(qiskit.circuit.Gate):
         qc.append(qiskit.circuit.library.XXPlusYYGate(-2 * self.params[0], 0), [0, 1])
         self.definition = qc
 
-    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
+    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.complex_]:
         """Returns a numpy array for the DD gate."""
         return np.array(
             [
