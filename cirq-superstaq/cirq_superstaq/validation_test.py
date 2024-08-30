@@ -44,7 +44,7 @@ def test_validate_qubit_type() -> None:
     valid_circuit = cirq.Circuit(cirq.H(q) for q in valid_qubits)
     valid_circuit += cirq.measure(*valid_qubits)
 
-    css.validation.validate_cirq_circuits(valid_circuit, require_measurements=True)
+    css.validation.validate_qubit_types(valid_circuit)
     with pytest.raises(
         TypeError,
         match=re.escape("Input circuit(s) contain unsupported qubit types:"),
