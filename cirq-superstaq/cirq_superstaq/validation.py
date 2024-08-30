@@ -14,7 +14,7 @@ SUPPORTED_QID_TYPES = (
 )
 
 
-def validate_qubit_types(circuits: object) -> None:
+def validate_qubit_types(circuits: cirq.Circuit | Sequence[cirq.Circuit]) -> None:
     """Verifies that `circuits` consists of valid qubit types only.
 
     Args:
