@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import re
-from unittest.mock import MagicMock, create_autospec, patch
+from unittest.mock import MagicMock, create_autospec
 
 import cirq
 import pytest
@@ -14,26 +14,22 @@ def test_validate_cirq_circuits() -> None:
     qubits = [cirq.LineQubit(i) for i in range(2)]
     circuit = cirq.Circuit(cirq.H(qubits[0]), cirq.CNOT(qubits[0], qubits[1]))
 
-    with patch("cirq_superstaq.validation.validate_qubit_types") as mock_qubit_validator:
-        with pytest.raises(
-            ValueError,
-            match="Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
-            "sequence of `cirq.Circuit` instances.",
-        ):
-            css.validation.validate_cirq_circuits("circuit_invalid")
-            mock_qubit_validator.assert_not_called()
+    with pytest.raises(
+        ValueError,
+        match="Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
+        "sequence of `cirq.Circuit` instances.",
+    ):
+        css.validation.validate_cirq_circuits("circuit_invalid")
 
-        with pytest.raises(
-            ValueError,
-            match="Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
-            "sequence of `cirq.Circuit` instances.",
-        ):
-            css.validation.validate_cirq_circuits([circuit, "circuit_invalid"])
-            mock_qubit_validator.assert_not_called()
+    with pytest.raises(
+        ValueError,
+        match="Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
+        "sequence of `cirq.Circuit` instances.",
+    ):
+        css.validation.validate_cirq_circuits([circuit, "circuit_invalid"])
 
-        with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
-            css.validation.validate_cirq_circuits(circuit, require_measurements=True)
-            mock_qubit_validator.assert_not_called()
+    with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
+        css.validation.validate_cirq_circuits(circuit, require_measurements=True)
 
 
 def test_validate_qubit_type() -> None:
@@ -48,7 +44,7 @@ def test_validate_qubit_type() -> None:
     valid_circuit = cirq.Circuit(cirq.H(q) for q in valid_qubits)
     valid_circuit += cirq.measure(*valid_qubits)
 
-    css.validation.validate_qubit_types(valid_circuit)
+    css.validation.validate_cirq_circuits(valid_circuit, require_measurements=True)
     with pytest.raises(
         TypeError,
         match=re.escape("Input circuit(s) contain unsupported qubit types:"),
