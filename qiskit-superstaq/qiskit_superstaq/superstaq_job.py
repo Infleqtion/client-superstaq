@@ -365,9 +365,8 @@ class SuperstaqJob(qiskit.providers.JobV1):
             "Done": qiskit.providers.jobstatus.JobStatus.DONE,
         }
 
-        if index is None:
-            if self._overall_status in self.TERMINAL_STATES:
-                return status_match.get(self._overall_status)
+        if index is None and self._overall_status in self.TERMINAL_STATES:
+            return status_match.get(self._overall_status)
 
         self._refresh_job(index)
         if index is None:
