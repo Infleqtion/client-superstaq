@@ -228,7 +228,9 @@ class SuperstaqJob(qiskit.providers.JobV1):
         """
 
         job_id_list = self._job_id.split(",")  # separate aggregated job ids
-        status_occurrence = {self._job_info[job_id]["status"] for job_id in job_id_list}
+        status_occurrence = {
+            self._job_info[job_id].get("status", "Submitted") for job_id in job_id_list
+        }
         status_priority_order = ("Submitted", "Queued", "Running", "Failed", "Cancelled", "Done")
 
         for temp_status in status_priority_order:
