@@ -214,8 +214,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
             result = self._backend._provider._client.fetch_jobs(jobs_to_fetch)
             self._job_info.update(result)
 
-        if index is None:
-            self._update_status_queue_info()
+        self._update_status_queue_info()
 
     def _update_status_queue_info(self) -> None:
         """Updates the overall status based on status queue info.
