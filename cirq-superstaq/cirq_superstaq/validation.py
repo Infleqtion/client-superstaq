@@ -31,10 +31,13 @@ def validate_qubit_types(circuits: object) -> None:
         all_qubits_present.update(circuit.all_qubits())
 
     if not all(isinstance(q, SUPPORTED_QID_TYPES) for q in all_qubits_present):
+        invalid_qubit_types = ", ".join(
+            map(str, (set(type(q) for q in all_qubits_present) - set(SUPPORTED_QID_TYPES)))
+        )
         raise TypeError(
-            "Input circuit(s) contain unsupported qubit types. Valid qubit types are: "
-            "`cirq.LineQubit`, `cirq.LineQid`, `cirq.GridQubit`, `cirq.GridQid`, "
-            "`cirq.NamedQubit`, and `cirq.NamedQid`."
+            f"Input circuit(s) contain unsupported qubit types: {invalid_qubit_types}. "
+            "Valid qubit types are: `cirq.LineQubit`, `cirq.LineQid`, `cirq.Grid>Qubit`, "
+            "`cirq.GridQid`, `cirq.NamedQubit`, and `cirq.NamedQid`."
         )
 
 
