@@ -39,9 +39,9 @@ def validate_qubit_types(circuits: object) -> None:
 
 
 def validate_cirq_circuits(circuits: object, require_measurements: bool = False) -> None:
-    """Validates that the input is an acceptable `cirq` object for `cirq-superstaq`.
+    """Validates that the input is an acceptable `cirq-core` object for `cirq-superstaq`.
 
-    In particular, this function verfies that `circuits` is either a single `cirq.Circuit`
+    In particular, this function verifies that `circuits` is either a single `cirq.Circuit`
     or a list of `cirq.Circuit` instances. Additionally, also validates that `circuits` only
     contains valid qubit types.
 
