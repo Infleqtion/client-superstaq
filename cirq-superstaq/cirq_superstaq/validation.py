@@ -35,7 +35,7 @@ def validate_qubit_types(circuits: cirq.Circuit | Sequence[cirq.Circuit]) -> Non
         )
         raise TypeError(
             f"Input circuit(s) contain unsupported qubit types: {invalid_qubit_types}. "
-            "Valid qubit types are: `cirq.LineQubit`, `cirq.LineQid`, `cirq.Grid>Qubit`, "
+            "Valid qubit types are: `cirq.LineQubit`, `cirq.LineQid`, `cirq.GridQubit`, "
             "`cirq.GridQid`, `cirq.NamedQubit`, and `cirq.NamedQid`."
         )
 
