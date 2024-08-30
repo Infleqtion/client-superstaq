@@ -47,6 +47,6 @@ def test_validate_qubit_type() -> None:
     css.validation.validate_qubit_types(valid_circuit)
     with pytest.raises(
         TypeError,
-        match=re.escape("Input circuit(s) contain unsupported qubit types:"),
+        match=re.escape("Input circuit(s) contains unsupported qubit types:"),
     ):
         css.validation.validate_cirq_circuits([mock_cirq_circuit, valid_circuit])

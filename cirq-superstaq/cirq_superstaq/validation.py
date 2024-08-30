@@ -34,7 +34,7 @@ def validate_qubit_types(circuits: cirq.Circuit | Sequence[cirq.Circuit]) -> Non
             map(str, (set(type(q) for q in all_qubits_present) - set(SUPPORTED_QID_TYPES)))
         )
         raise TypeError(
-            f"Input circuit(s) contain unsupported qubit types: {invalid_qubit_types}. "
+            f"Input circuit(s) contains unsupported qubit types: {invalid_qubit_types}. "
             "Valid qubit types are: `cirq.LineQubit`, `cirq.LineQid`, `cirq.GridQubit`, "
             "`cirq.GridQid`, `cirq.NamedQubit`, and `cirq.NamedQid`."
         )
