@@ -24,7 +24,6 @@ def validate_qubit_types(circuits: object) -> None:
         TypeError: If an invalid qubit type is found in `circuits`.
     """
     circuits_to_check = [circuits] if isinstance(circuits, cirq.Circuit) else circuits
-    assert isinstance(circuits_to_check, Sequence)
 
     all_qubits_present: set[cirq.Qid] = set()
     for circuit in circuits_to_check:
