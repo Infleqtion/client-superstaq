@@ -54,7 +54,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         Returns:
             Results from the job.
         """
-        self.wait_for_final_state(timeout, wait)  # should call self.status()
+        self.wait_for_final_state(timeout, wait)  # Should call self.status()
         return [self._job_info[job_id] for job_id in self._job_id.split(",")]
 
     def _arrange_counts(
@@ -225,7 +225,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
             some are done), we report 'Queued' as the overall status of the entire batch.
         """
 
-        job_id_list = self._job_id.split(",")  # separate aggregated job ids
+        job_id_list = self._job_id.split(",")  # Separate aggregated job ids
         status_occurrence = {
             self._job_info[job_id].get("status", "Submitted") for job_id in job_id_list
         }
@@ -369,13 +369,12 @@ class SuperstaqJob(qiskit.providers.JobV1):
             if self._overall_status in self.TERMINAL_STATES:
                 return status_match.get(self._overall_status)
 
-            self._refresh_job()
-            status = self._overall_status
-            return status_match.get(status)
-
-        id_to_check = self._job_id.split(",")[index]
         self._refresh_job(index)
-        status = self._job_info[id_to_check]["status"]
+        if index is None:
+            status = self._overall_status
+        else:
+            id_to_check = self._job_id.split(",")[index]
+            status = self._job_info[id_to_check]["status"]
         return status_match.get(status)
 
     def submit(self) -> None:
