@@ -4,14 +4,12 @@
 from __future__ import annotations
 
 import random
-from collections.abc import Iterable, Sequence
-from dataclasses import dataclass, field
+from collections.abc import Sequence
+from dataclasses import dataclass
 
 import cirq
 import numpy as np
 import pandas as pd
-import scipy
-import seaborn as sns
 import tqdm.contrib.itertools
 
 from supermarq.qcvv import BenchmarkingExperiment, BenchmarkingResults, Sample
@@ -25,6 +23,9 @@ STRING_TO_PAULI = {"I": cirq.I, "X": cirq.X, "Y": cirq.Y, "Z": cirq.Z}
 class CBResults(BenchmarkingResults):
     """Results from an CB experiment."""
 
+    channel_fidelities: pd.DataFrame
+    process_fidelity: float
+    dressed_process: bool
     experiment_name = "CB"
 
 
@@ -82,7 +83,7 @@ class CB(BenchmarkingExperiment[CBResults]):
     def _build_circuits(
         self,
         num_circuits: int,
-        cycle_depths: Iterable[int],
+        cycle_depths: list[int],
     ) -> Sequence[Sample]:
         """Build a list of random circuits to perform the XEB experiment with.
 
@@ -95,6 +96,9 @@ class CB(BenchmarkingExperiment[CBResults]):
         Returns:
             The list of experiment samples.
         """
+        if len(cycle_depths) != 2:
+            raise ValueError("")  # Only needs two cycle depths.
+
         samples = []
         for channel, depth, _ in tqdm.contrib.itertools.product(
             self.pauli_channels, cycle_depths, range(num_circuits), desc="Building circuits"
@@ -113,7 +117,7 @@ class CB(BenchmarkingExperiment[CBResults]):
                     },
                 )
             )
-            if not self._dressed_measurement:
+            if not self._dressed_measurement:  # Compare with identity process
                 circuit, c_of_p = self._generate_full_cb_circuit(
                     channel=channel[0], depth=depth * self._matrix_root, process=False
                 )
@@ -162,19 +166,6 @@ class CB(BenchmarkingExperiment[CBResults]):
             aggregate_pauli_string.inplace_right_multiply_by(ith_pauli_string)
 
         return bulk_circuit, aggregate_pauli_string
-
-    @staticmethod
-    def _fit_exponential(x, y) -> tuple[float, float, float, float]:
-        fit = scipy.stats.linregress(
-                x=x,
-                y=y,
-            )
-
-        base = np.exp(fit.slope)
-        base_std = np.exp(fit.slope) * fit.stderr
-        coef = np.exp(fit.intercept)
-        coef_std = np.exp(fit.intercept) * fit.intercept_stderr
-        return base, base_std, coef, coef_std
 
     @staticmethod
     def _find_process_identity_min_depth(circuit, max_depth: int = 50) -> int:
@@ -303,6 +294,7 @@ class CB(BenchmarkingExperiment[CBResults]):
                         sample.probabilities,
                     ),
                     "circuit": sample.data["circuit"],
+                    **sample.probabilities,
                 }
             )
         return pd.DataFrame(records)
@@ -345,46 +337,31 @@ class CB(BenchmarkingExperiment[CBResults]):
         Returns:
            The final results from the experiment.
         """
-        results = []
-        for channel in self.raw_data.pauli_channel.unique():
-            df = self.raw_data[
-                (self.raw_data.pauli_channel == channel)
-            ].copy()
-            df["log_expectation"] = np.log(np.abs(df["expectation"]))
-            df.dropna(inplace=True)  # Introduces slight bias - consider fixing?
+        m = self.raw_data.cycle_depth.unique()
+        df = (
+            self.raw_data.groupby(["pauli_channel", "circuit", "cycle_depth"])
+            .sum()
+            .reset_index()
+            .pivot(columns=["cycle_depth", "circuit"], values="expectation", index="pauli_channel")
+        )
+        fidelities = (
+            ((df[m[0]] / df[m[1]]) ** (1 / (m[0] - m[1]))).reset_index().rename_axis("", axis=1)
+        )
+        if self._dressed_measurement:
+            fidelities.rename(columns={"process": "fidelity"}, inplace=True)
+        else:
+            fidelities["fidelity"] = fidelities["process"] / fidelities["identity"]
+            fidelities.drop(columns=["process", "identity"], inplace=True)
 
-            fidelity, fidelity_std, spam, spam_std = CB._fit_exponential(
-                x=df[df.circuit == "process"]["cycle_depth"],
-                y=df[df.circuit == "process"]["log_expectation"],
-            )
-            f_ratio = fidelity_std / fidelity
+        process_fidelity = fidelities["fidelity"].mean()
 
-            # If not calculating the dressed fidelity, correct by the identity circuits.
-            if not self._dressed_measurement:
-                id_fidelity, id_fidelity_std, id_spam, id_spam_std = CB._fit_exponential(
-                    x=df[df.circuit == "identity"]["cycle_depth"],
-                    y=df[df.circuit == "identity"]["log_expectation"],
-                )
-                id_f_ratio = id_fidelity_std / id_fidelity
-
-                fidelity = fidelity / id_fidelity
-                fidelity_std = fidelity * np.sqrt(f_ratio**2 + id_f_ratio ** 2)
-                spam = (spam + id_spam) / 2
-                spam_std = 0.5 * spam_std + 0.5 * id_spam_std
-
-            results.append(
-                {
-                    "channel": channel,
-                    "p_error": 1 - fidelity,
-                    "p_error_std": fidelity_std,
-                    "p_spam": 1 - spam,
-                    "p_spam_std": spam_std,
-                }
-            )
-        if plot_results:
-            self.plot_results()
-
-        return pd.DataFrame(results)
+        return CBResults(
+            "$ ".join(self.targets),
+            total_circuits=len(self.samples),
+            channel_fidelities=fidelities,
+            process_fidelity=process_fidelity,
+            dressed_process=self._dressed_measurement,
+        )
 
     def plot_results(self) -> None:
         """Plot the experiment data and the corresponding fits."""
