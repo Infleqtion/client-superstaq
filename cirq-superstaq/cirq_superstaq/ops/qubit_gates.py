@@ -422,8 +422,11 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
         self, qids: Sequence[cirq.Qid], other: object, atol: float = 1e-8
     ) -> bool:
         """By definition nothing commutes with a barrier."""
-        _, _, _ = qids, other, atol
-        return False
+        _ = atol
+        if isinstance(other, cirq.Operation):
+            return set(qids).isdisjoint(other.qubits)
+
+        return NotImplemented
 
     def _trace_distance_bound_(self) -> float:
         return 1.0
