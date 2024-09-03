@@ -15,13 +15,13 @@ SUPPORTED_QID_TYPES = (
 
 
 def validate_qubit_types(circuits: cirq.Circuit | Sequence[cirq.Circuit]) -> None:
-    """Verifies that `circuits` consists of valid qubit types only.
+    """Verifies that `circuits` consists of valid (`cirq-core`) qubit types only.
 
     Args:
         circuits: The input circuit(s) to validate.
 
     Raises:
-        TypeError: If an invalid qubit type is found in `circuits`.
+        TypeError: If an unsupported qubit type is found in `circuits`.
     """
     circuits_to_check = [circuits] if isinstance(circuits, cirq.Circuit) else circuits
 
@@ -44,8 +44,8 @@ def validate_cirq_circuits(circuits: object, require_measurements: bool = False)
     """Validates that the input is an acceptable `cirq-core` object for `cirq-superstaq`.
 
     In particular, this function verifies that `circuits` is either a single `cirq.Circuit`
-    or a list of `cirq.Circuit` instances. Additionally, also validates that `circuits` only
-    contains valid qubit types.
+    or a list of `cirq.Circuit` instances. Additionally, also validates that `circuits`
+    contains supported qubit types only.
 
     Args:
         circuits: The circuit(s) to run.
@@ -54,7 +54,7 @@ def validate_cirq_circuits(circuits: object, require_measurements: bool = False)
 
     Raises:
         ValueError: If the input is not a `cirq.Circuit` or a list of `cirq.Circuit` instances.
-        TypeError: If an invalid qubit type is found in `circuits`.
+        TypeError: If an unsupported qubit type is found in `circuits`.
     """
 
     if not (
