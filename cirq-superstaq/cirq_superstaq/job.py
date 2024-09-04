@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Represents a job created via the Superstaq API."""
+
 from __future__ import annotations
 
 import collections
@@ -469,17 +470,17 @@ class Job:
     def _value_equality_values_(self) -> tuple[str, dict[str, Any]]:
         return self._job_id, self._job
 
-    def __getitem__(self, idx: int) -> css.Job:
+    def __getitem__(self, index: int) -> css.Job:
         """Customized indexing operations for `css.Job`.
 
         Args:
-            idx: The index of the sub-job to return. Each sub-job corresponds to the a single
+            index: The index of the sub-job to return. Each sub-job corresponds to the a single
                 circuit.
 
         Returns:
-            A sub-job at the given `idx`.
+            A sub-job at the given `index`.
         """
-        job_id = self._job_id.split(",")[idx]
+        job_id = self._job_id.split(",")[index]
         sub_job = css.Job(self._client, job_id)
         if job_id in self._job:
             sub_job._job[job_id] = self._job[job_id]
