@@ -4,13 +4,14 @@ For this tutorial, we will go over how to get started with using Superstaq to co
 
 This tutorial will also show you how to utilize the various features offered by Superstaq, such as generating compiled circuit Qiskit Pulse schedules. By the end, we will provide a step-by-step guide to simulate a given circuit for an IBM Quantum backend and get back the results from the simulation!
 
-Below, you will find links to identical tutorials that demonstrate Superstaq for IBM Quantum using either Qiskit or Cirq.
+Below, you will find links to identical tutorials that demonstrate Superstaq for IBM Quantum using either Qiskit or Cirq, followed by two more digging deeper into our Superstaq's dynamical decoupling capabilities.
 
 .. toctree::
     :maxdepth: 1
 
     ibmq_compile_qss
     ibmq_compile_css
+    ibmq_dd_strategies
     ibmq_dd
 
 References
