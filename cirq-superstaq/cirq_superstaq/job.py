@@ -420,7 +420,7 @@ class Job:
             TimeoutError: If no results are available in the provided timeout interval.
         """
         time_waited_seconds: float = 0.0
-        while self.status(index) not in self.TERMINAL_STATES:
+        while (status := self.status(index)) not in self.TERMINAL_STATES:
             # Status does a refresh.
             if time_waited_seconds > timeout_seconds:
                 raise TimeoutError(
