@@ -697,7 +697,7 @@ class Service(gss.service.Service):
             Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s).
 
         Raises:
-            ValueError: If `target` is not a valid IBMQ target.
+            ValueError: If `target` is not a valid CQ target.
         """
         target = self._resolve_target(target)
         if not target.startswith("cq_"):
