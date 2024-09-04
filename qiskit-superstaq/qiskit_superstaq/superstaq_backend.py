@@ -55,6 +55,9 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
 
         return self._provider == other._provider and self.target_info() == other.target_info()
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}('{self.name}')"
+
     def configuration(self) -> BackendConfiguration:
         """Retrieves configuration information for this target.
 
