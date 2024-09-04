@@ -1,4 +1,4 @@
 matplotlib>=3.7.0
 notebook>=6.5.5
 pylatexenc>=2.0
-qiskit-ibm-provider>=0.11.0
+qiskit-ibm-runtime>=0.27.0
