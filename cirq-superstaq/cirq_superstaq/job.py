@@ -424,7 +424,7 @@ class Job:
             # Status does a refresh.
             if time_waited_seconds > timeout_seconds:
                 raise TimeoutError(
-                    f"Timed out while waiting for results. Final status was {self.status(index)}"
+                    f"Timed out while waiting for results. Final status was '{status}'"
                 )
             time.sleep(polling_seconds)
             time_waited_seconds += polling_seconds
