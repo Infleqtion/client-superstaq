@@ -16,6 +16,11 @@ if TYPE_CHECKING:
     from qiskit_superstaq.conftest import MockSuperstaqProvider
 
 
+def test_repr(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    backend = fake_superstaq_provider.get_backend("ss_example_qpu")
+    assert repr(backend) == "SuperstaqBackend('ss_example_qpu')"
+
+
 def test_run(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2, 2)
     qc.h(0)
