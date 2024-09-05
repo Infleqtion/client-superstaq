@@ -664,18 +664,22 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
 
     assert (
         service.ibmq_compile(
-            circuit, dd_strategy="dynamic", test_options="yes", target="ibmq_fake_qpu"
+            circuit, dd_strategy="standard", test_options="yes", target="ibmq_fake_qpu"
         ).circuit
         == circuit
     )
 
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
-        "dd_strategy": "dynamic",
+        "dd_strategy": "standard",
         "dynamical_decoupling": True,
         "test_options": "yes",
     }
 
     assert service.ibmq_compile([circuit], target="ibmq_fake_qpu").circuits == [circuit]
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "dd_strategy": "adaptive",
+        "dynamical_decoupling": True,
+    }
     assert service.ibmq_compile(circuit, target="ibmq_fake_qpu").pulse_sequence == mock.DEFAULT
     assert service.ibmq_compile([circuit], target="ibmq_fake_qpu").pulse_sequences == [mock.DEFAULT]
     assert (
