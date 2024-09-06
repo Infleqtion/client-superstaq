@@ -697,7 +697,7 @@ class Service(gss.service.Service):
             Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s).
 
         Raises:
-            ValueError: If `target` is not a valid IBMQ target.
+            ValueError: If `target` is not a valid CQ target.
         """
         target = self._resolve_target(target)
         if not target.startswith("cq_"):
@@ -716,8 +716,9 @@ class Service(gss.service.Service):
         self,
         circuits: cirq.Circuit | Sequence[cirq.Circuit],
         target: str,
+        *,
         dynamical_decoupling: bool = True,
-        dd_strategy: str = "static_context_aware",
+        dd_strategy: str = "adaptive",
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) to the target IBMQ device.
@@ -725,13 +726,23 @@ class Service(gss.service.Service):
         Qiskit Terra must be installed to correctly deserialize pulse schedules for pulse-enabled
         targets.
 
+        Superstaq currently supports the following dynamical decoupling strategies:
+        * "standard": Places a single DD sequence in each idle window.
+        * "syncopated": Places DD pulses at fixed time intervals, alternating between pulses on
+          neighboring qubits in order to mitigate parasitic ZZ coupling errors.
+        * "adaptive" (default): Dynamically spaces DD pulses across idle windows with awareness of
+          neighboring qubits to achieve the parasitic ZZ coupling mitigation of the "syncopated"
+          strategy with fewer pulses and less discretization error.
+        See https://superstaq.readthedocs.io/en/latest/optimizations/ibm/ibmq_dd_strategies_qss.html
+        for an example of each strategy.
+
         Args:
             circuits: The circuit(s) to compile.
             target: String of target IBMQ device.
             dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
-            dd_strategy: Method to use for placing dynamical decoupling operations; either
-                "dynamic", "static", or "static_context_aware" (default).
-            kwargs: Other desired `ibmq_compile` options.
+            dd_strategy: Method to use for placing dynamical decoupling operations; should be either
+                "standard", "syncopated", or "adaptive" (default). See above.
+            kwargs: Other desired compile options.
 
         Returns:
             Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s), and whose
