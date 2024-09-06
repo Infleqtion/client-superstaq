@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 def test_repr(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     backend = fake_superstaq_provider.get_backend("ss_example_qpu")
-    assert repr(backend) == "SuperstaqBackend('ss_example_qpu')"
+    assert repr(backend) == "<SuperstaqBackend('ss_example_qpu')>"
 
 
 def test_run(fake_superstaq_provider: MockSuperstaqProvider) -> None:
