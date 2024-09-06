@@ -16,6 +16,11 @@ if TYPE_CHECKING:
     from qiskit_superstaq.conftest import MockSuperstaqProvider
 
 
+def test_repr(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    backend = fake_superstaq_provider.get_backend("ss_example_qpu")
+    assert repr(backend) == "<SuperstaqBackend('ss_example_qpu')>"
+
+
 def test_run(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2, 2)
     qc.h(0)
@@ -229,13 +234,13 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
         "pulses": gss.serialization.serialize([DEFAULT]),
     }
     assert backend.compile(
-        qiskit.QuantumCircuit(), dd_strategy="static", test_options="yes"
+        qiskit.QuantumCircuit(), dd_strategy="standard", test_options="yes"
     ) == qss.compiler_output.CompilerOutput(
         qc, initial_logical_to_physical, final_logical_to_physical, pulse_sequences=DEFAULT
     )
 
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
-        "dd_strategy": "static",
+        "dd_strategy": "standard",
         "dynamical_decoupling": True,
         "test_options": "yes",
     }
@@ -243,6 +248,10 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
     assert backend.compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
         [qc], [initial_logical_to_physical], [final_logical_to_physical], pulse_sequences=[DEFAULT]
     )
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "dd_strategy": "adaptive",
+        "dynamical_decoupling": True,
+    }
 
     with pytest.raises(ValueError, match="'ibmq_jakarta_qpu' is not a valid AQT target."):
         backend.aqt_compile([qc])
