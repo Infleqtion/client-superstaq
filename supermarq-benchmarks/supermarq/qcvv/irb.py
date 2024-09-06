@@ -68,7 +68,7 @@ class IRB(BenchmarkingExperiment[IRBResults]):
 
         f(m) = 2p(0...0) - 1
 
-    We can then fit and exponential decay :math:`\log(f) \sim m` to this circuit fidelity
+    We can then fit an exponential decay :math:`\log(f) \sim m` to this circuit fidelity
     for each circuit, with decay rates :math:`\alpha` and :math:`\tilde{\alpha}` for the circuit
     without and with interleaving respectively. Finally the gate error of the
     specified gate, :math:`\mathcal{C}^*` is estimated as
@@ -85,9 +85,11 @@ class IRB(BenchmarkingExperiment[IRBResults]):
         interleaved_gate: cirq.ops.SingleQubitCliffordGate = cirq.ops.SingleQubitCliffordGate.Z,
         num_qubits: int = 1,
     ) -> None:
-        """Args:
-        interleaved_gate: The Clifford gate to measure the gate error of.
-        num_qubits: The number of qubits to experiment on
+        """Constructs an IRB experiment.
+
+        Args:
+            interleaved_gate: The single qubit Clifford gate to measure the gate error of.
+            num_qubits: The number of qubits to experiment on
         """
         if num_qubits != 1:
             raise NotImplementedError(
@@ -106,7 +108,7 @@ class IRB(BenchmarkingExperiment[IRBResults]):
 
         Args:
             gate_seq: The list of gates.
-
+            The single reduced gate.
         Returns:
             The single reduced gate
         """
@@ -117,7 +119,7 @@ class IRB(BenchmarkingExperiment[IRBResults]):
 
     @classmethod
     def _random_single_qubit_clifford(cls) -> cirq.ops.SingleQubitCliffordGate:
-        """Choose a random singe qubit clifford gate.
+        """Choose a random single qubit clifford gate.
 
         Returns:
             The random clifford gate.
@@ -143,7 +145,7 @@ class IRB(BenchmarkingExperiment[IRBResults]):
         return cls._reduce_clifford_seq([random.choice(set_A), random.choice(set_B)])
 
     def _invert_clifford_circuit(self, circuit: cirq.Circuit) -> cirq.Circuit:
-        """Given a Clifford circuit find and append the corresponding inverse Clifford gate
+        """Given a Clifford circuit find and append the corresponding inverse Clifford gate.
 
         Args:
             circuit: The Clifford circuit to invert.
@@ -224,9 +226,7 @@ class IRB(BenchmarkingExperiment[IRBResults]):
         return pd.DataFrame(records)
 
     def plot_results(self) -> None:
-        """Plot the exponential decay of the circuit fidelity with
-        cycle depth.
-        """
+        """Plot the exponential decay of the circuit fidelity with cycle depth."""
         plot = sns.lmplot(
             data=self.raw_data,
             x="clifford_depth",

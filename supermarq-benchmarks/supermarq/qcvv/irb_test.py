@@ -81,7 +81,6 @@ def test_invert_clifford_circuit(irb_experiment: IRB) -> None:
 
 
 def test_irb_process_probabilities(irb_experiment: IRB) -> None:
-
     samples = [
         Sample(
             raw_circuit=cirq.Circuit(),
