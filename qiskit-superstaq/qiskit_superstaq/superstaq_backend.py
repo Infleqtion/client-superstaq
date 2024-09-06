@@ -316,17 +316,28 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
     def ibmq_compile(
         self,
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
+        *,
         dynamical_decoupling: bool = True,
-        dd_strategy: str = "static_context_aware",
+        dd_strategy: str = "adaptive",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
 
+        Superstaq currently supports the following dynamical decoupling strategies:
+        * "standard": Places a single DD sequence in each idle window.
+        * "syncopated": Places DD pulses at fixed time intervals, alternating between pulses on
+          neighboring qubits in order to mitigate parasitic ZZ coupling errors.
+        * "adaptive" (default): Dynamically spaces DD pulses across idle windows with awareness of
+          neighboring qubits to achieve the parasitic ZZ coupling mitigation of the "syncopated"
+          strategy with fewer pulses and less discretization error.
+        See https://superstaq.readthedocs.io/en/latest/optimizations/ibm/ibmq_dd_strategies_qss.html
+        for an example of each strategy.
+
         Args:
             circuits: The `qiskit.QuantumCircuit`(s) to compile.
             dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
-            dd_strategy: Method to use for placing dynamical decoupling operations; either
-                "dynamic", "static", or "static_context_aware" (default).
+            dd_strategy: Method to use for placing dynamical decoupling operations; should be either
+                "standard", "syncopated", or "adaptive" (default). See above.
             kwargs: Other desired compile options.
 
         Returns:
