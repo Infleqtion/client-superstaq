@@ -183,14 +183,18 @@ def test_ibmq_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperst
     ) == qss.compiler_output.CompilerOutput(
         [qc], [initial_logical_to_physical], [final_logical_to_physical], pulse_sequences=None
     )
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "dd_strategy": "adaptive",
+        "dynamical_decoupling": True,
+    }
 
     assert fake_superstaq_provider.ibmq_compile(
-        qiskit.QuantumCircuit(), dd_strategy="static", test_options="yes", target="ibmq_fake_qpu"
+        qiskit.QuantumCircuit(), dd_strategy="standard", test_options="yes", target="ibmq_fake_qpu"
     ) == qss.compiler_output.CompilerOutput(
         qc, initial_logical_to_physical, final_logical_to_physical, pulse_sequences=None
     )
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
-        "dd_strategy": "static",
+        "dd_strategy": "standard",
         "dynamical_decoupling": True,
         "test_options": "yes",
     }
