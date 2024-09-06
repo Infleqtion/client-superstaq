@@ -117,6 +117,8 @@ class XEB(BenchmarkingExperiment[XEBResults]):
 
     Thus fitting another linear model to :math:`\log(f_d) \sim d` provides us with an estimate
     of the cycle fidelity.
+
+    For more details see: https://www.nature.com/articles/s41586-019-1666-5
     """
 
     def __init__(
