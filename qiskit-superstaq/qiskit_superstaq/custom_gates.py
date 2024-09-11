@@ -66,7 +66,7 @@ class AceCR(qiskit.circuit.Gate):
         qc.rzx(-self.params[0] / 2, 0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
+    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.complex_]:
         """Returns an array for the AceCR gate."""
         matrix = qiskit.quantum_info.Operator(self.definition).to_matrix()
         return np.asarray(matrix, dtype=dtype)
@@ -151,7 +151,7 @@ class ZZSwapGate(qiskit.circuit.Gate):
         qc.cx(0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
+    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.complex_]:
         """Returns a numpy array for the ZZ-SWAP gate."""
         return np.array(
             [
@@ -272,7 +272,7 @@ class ParallelGates(qiskit.circuit.Gate):
             qubits = qubits[num_qubits:]
         self.definition = qc
 
-    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
+    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.complex_]:
         """Returns a numpy array for `ParallelGates`."""
         mat = functools.reduce(np.kron, (gate.to_matrix() for gate in self.component_gates[::-1]))
         return np.asarray(mat, dtype=dtype)
@@ -312,7 +312,7 @@ class iXGate(qiskit.circuit.Gate):
         qc.rx(-np.pi, 0)
         self.definition = qc
 
-    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
+    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.complex_]:
         """Returns a numpy array of the iX gate."""
         return np.array([[0, 1j], [1j, 0]], dtype=dtype)
 
