@@ -281,13 +281,27 @@ def test_aces(service: css.Service) -> None:
 
 def test_job(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
+    circuit_alt = cirq.Circuit(cirq.X(cirq.q(0)), cirq.measure(cirq.q(0)))
+
     job = service.create_job(circuit, target="ibmq_brisbane_qpu", repetitions=10, method="dry-run")
+    multi_job = service.create_job(
+        [circuit, circuit_alt], target="ibmq_brisbane_qpu", repetitions=10, method="dry-run"
+    )
 
     job_id = job.job_id()  # To test for https://github.com/Infleqtion/client-superstaq/issues/452
+    multi_job_id = multi_job.job_id()
 
     assert job.counts(0) == {"0": 10}
+    assert multi_job.counts(0) == {"0": 10}
+    assert multi_job.counts(1) == {"1": 10}
+
     assert job.status() == "Done"
+    assert multi_job.status(0) == "Done"
+    assert multi_job.status(1) == "Done"
+
     assert job.job_id() == job_id
+    assert multi_job.job_id() == multi_job_id
+    assert list(multi_job._job.keys()) == multi_job_id.split(",")
 
     # Force job to refresh when queried:
     job._job.clear()
