@@ -272,3 +272,24 @@ jobs:
       - name: Build docs
         run: |
           checks/build_docs.py
+
+  integration-check:
+    name: Integration check
+    env:
+      SUPERSTAQ_API_KEY: ${{ secrets.SUPERSTAQ_API_KEY }}
+      TEST_USER_IBMQ_TOKEN: ${{ secrets.TEST_USER_IBMQ_TOKEN }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq
+      - name: Pytest integration check
+        run: |
+          checks/pytest_.py --integration
