@@ -545,10 +545,18 @@ def test_barrier() -> None:
     assert str(gate) == "Barrier(3)"
     assert repr(gate) == "css.Barrier(3)"
 
+    # Barriers don't commute with other gates
     assert not cirq.commutes(css.Barrier(1), cirq.I)
     assert not cirq.commutes(cirq.Z, css.Barrier(1))
+    # Barrier operations don't commute with operations on the same qubits
     assert not cirq.commutes(css.barrier(*qubits), cirq.I(qubits[1]))
     assert not cirq.commutes(cirq.Z(qubits[2]), css.barrier(*qubits))
+    # Barrier operations do commute with operations on different qubits
+    assert cirq.commutes(css.barrier(*qubits[::2]), cirq.I(qubits[1]))
+    assert cirq.commutes(cirq.Z(qubits[2]), css.barrier(*qubits[:2]))
+    # Undefined behavior when commuting operations with gates
+    assert cirq.commutes(css.barrier(*qubits), cirq.I, default=None) is None
+    assert cirq.commutes(cirq.Z, css.barrier(*qubits), default=None) is None
 
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq as css")
 
@@ -1102,6 +1110,60 @@ def test_itoffoli() -> None:
     )
 
 
+def test_dd_protocols() -> None:
+    cirq.testing.assert_eigengate_implements_consistent_protocols(
+        css.DDPowGate,
+        setup_code="import cirq_superstaq as css; import sympy",
+        ignoring_global_phase=True,
+    )
+
+    assert cirq.has_stabilizer_effect(css.DD)
+    assert cirq.has_stabilizer_effect(css.DD**1.5)
+    assert not cirq.has_stabilizer_effect(css.DD**1.3)
+    assert not cirq.has_stabilizer_effect(css.DD ** sympy.var("x"))
+
+
+def test_dd_matrix() -> None:
+    np.testing.assert_allclose(
+        cirq.unitary(css.DD),
+        np.array([[-1j, 0, 0, 0], [0, 0, -1, 0], [0, -1, 0, 0], [0, 0, 0, -1j]]),
+    )
+
+
+def test_dd_str() -> None:
+    assert str(css.DD) == "DD"
+    assert str(css.DD**0.5) == "DD**0.5"
+    assert str(css.DDPowGate(global_shift=0.1)) == "DD"
+
+
+def test_dd_repr() -> None:
+    assert repr(css.DD) == "css.DD"
+    assert repr(css.DDPowGate(exponent=0.5)) == "(css.DD**0.5)"
+    assert (
+        repr(css.DDPowGate(exponent=0.5, global_shift=0.123))
+        == "css.DDPowGate(exponent=0.5, global_shift=0.123)"
+    )
+
+    cirq.testing.assert_equivalent_repr(css.DDPowGate(), setup_code="import cirq_superstaq as css")
+
+
+def test_dd_circuit() -> None:
+    a, b = cirq.LineQubit.range(2)
+
+    op = css.DDPowGate()(a, b)
+
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(op),
+        textwrap.dedent(
+            """
+            0: ───DD───
+                  │
+            1: ───DD───
+            """
+        ),
+    )
+
+
 def test_custom_resolver() -> None:
     circuit = cirq.Circuit()
     qubits = cirq.LineQubit.range(4)
@@ -1121,6 +1183,7 @@ def test_custom_resolver() -> None:
     circuit += css.ops.qubit_gates.ICCX(qubits[0], qubits[1], qubits[2])
     circuit += css.ops.qubit_gates.IX(qubits[0])
     circuit += css.StrippedCZGate(0.123).on(qubits[0], qubits[1])
+    circuit += css.DDPowGate().on(qubits[0], qubits[1])
 
     json_text = cirq.to_json(circuit)
     resolvers = [*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]

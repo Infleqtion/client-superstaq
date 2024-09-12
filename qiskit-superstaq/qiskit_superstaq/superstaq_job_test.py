@@ -45,7 +45,7 @@ def patched_requests(*contents: object) -> mock._patch[mock.Mock]:
         A mock patch that returns the provided content.
     """
     responses = [_mocked_request_response(val) for val in contents]
-    return mock.patch("requests.api.request", side_effect=responses)
+    return mock.patch("requests.Session.request", side_effect=responses)
 
 
 @pytest.fixture
@@ -73,6 +73,15 @@ def test_wait_for_results(backend: qss.SuperstaqBackend) -> None:
             mock_response("Done"),
             mock_response("Done"),
         ]
+
+
+def test_cancel(backend: qss.SuperstaqBackend) -> None:
+    multi_job = qss.SuperstaqJob(backend=backend, job_id="123abc,456def,789abc")
+    with mock.patch("requests.Session.post", return_value=mock.MagicMock(ok=True)) as mock_post:
+        qss.SuperstaqJob(backend=backend, job_id="123abc").cancel()
+        multi_job.cancel(0)
+        multi_job.cancel()
+        assert mock_post.call_count == 3
 
 
 def test_timeout(backend: qss.SuperstaqBackend) -> None:
@@ -300,13 +309,16 @@ def test_status(backend: qss.SuperstaqBackend) -> None:
     }
     with patched_requests(response):
         assert job.status() == qiskit.providers.JobStatus.INITIALIZING
+        assert job.status(index=2) == qiskit.providers.JobStatus.DONE
 
     response["456abc"] = mock_response("Queued")
     with patched_requests(response):
+        assert job.status(index=2) == qiskit.providers.JobStatus.DONE
         assert job.status() == qiskit.providers.JobStatus.QUEUED
 
     response["456abc"] = mock_response("Done")
     with patched_requests(response):
+        assert job.status(index=2) == qiskit.providers.JobStatus.DONE
         assert job.status() == qiskit.providers.JobStatus.RUNNING
 
     response["123abc"] = mock_response("Done")
@@ -324,6 +336,7 @@ def test_status(backend: qss.SuperstaqBackend) -> None:
     response["123abc"] = mock_response("Cancelled")
     with patched_requests(response):
         assert job.status() == qiskit.providers.JobStatus.CANCELLED
+        assert job.status(0) == qiskit.providers.JobStatus.CANCELLED
 
 
 def test_update_status_queue_info(backend: qss.SuperstaqBackend) -> None:

@@ -109,6 +109,7 @@ class _SuperstaqClient:
             "X-Client-Name": self.client_name,
             "X-Client-Version": self.api_version,
         }
+        self.session = requests.Session()
 
         if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
             raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
@@ -131,7 +132,7 @@ class _SuperstaqClient:
             A `dict` containing the current Superstaq version.
         """
 
-        response = requests.get(self.url)
+        response = self.session.get(self.url)
         version = response.headers.get("superstaq_version")
 
         return {"superstaq_version": version}
@@ -175,20 +176,43 @@ class _SuperstaqClient:
             json_dict["method"] = method
         if kwargs or self.client_kwargs:
             json_dict["options"] = json.dumps({**self.client_kwargs, **kwargs})
-
         return self.post_request("/jobs", json_dict)
+
+    def cancel_jobs(
+        self,
+        job_ids: Sequence[str],
+        **kwargs: object,
+    ) -> list[str]:
+        """Cancel jobs associated with given job ids.
+
+        Args:
+            job_ids: The UUIDs of the jobs (returned when the jobs were created).
+            kwargs: Extra options needed to fetch jobs.
+
+        Returns:
+            A list of the job ids of the jobs that successfully cancelled.
+
+        Raises:
+            SuperstaqServerException: For other API call failures.
+        """
+        json_dict: dict[str, str | Sequence[str]] = {
+            "job_ids": job_ids,
+        }
+        if kwargs or self.client_kwargs:
+            json_dict["options"] = json.dumps({**self.client_kwargs, **kwargs})
+
+        return self.post_request("/cancel_jobs", json_dict)["succeeded"]
 
     def fetch_jobs(
         self,
         job_ids: list[str],
-        **kwargs: Any,
+        **kwargs: object,
     ) -> dict[str, dict[str, str]]:
         """Get the job from the Superstaq API.
 
         Args:
-            job_ids: The UUID of the job (returned when the job was created).
+            job_ids: The UUIDs of the jobs (returned when the jobs were created).
             kwargs:  Extra options needed to fetch jobs.
-                - cq_token: CQ Cloud credentials.
 
         Returns:
             The json body of the response as a dict.
@@ -692,7 +716,7 @@ class _SuperstaqClient:
             Returns:
                 The Flask GET request object.
             """
-            return requests.get(
+            return self.session.get(
                 f"{self.url}{endpoint}",
                 headers=self.headers,
                 verify=self.verify_https,
@@ -719,7 +743,7 @@ class _SuperstaqClient:
             Returns:
                 The Flask GET request object.
             """
-            return requests.post(
+            return self.session.post(
                 f"{self.url}{endpoint}",
                 json=json_dict,
                 headers=self.headers,
@@ -733,7 +757,7 @@ class _SuperstaqClient:
         response_json = response.json()
         if isinstance(response_json, dict) and "warnings" in response_json:
             for warning in response_json["warnings"]:
-                warnings.warn(warning["message"], gss.SuperstaqWarning, stacklevel=3)
+                warnings.warn(warning["message"], gss.SuperstaqWarning, stacklevel=4)
             del response_json["warnings"]
         return response_json
 
@@ -748,6 +772,7 @@ class _SuperstaqClient:
             gss.SuperstaqServerException: If an error has occurred in making a request
                 to the Superstaq API.
         """
+
         if response.status_code == requests.codes.unauthorized:
             if response.json() == (
                 "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
@@ -778,7 +803,7 @@ class _SuperstaqClient:
 
         if response.status_code not in self.RETRIABLE_STATUS_CODES:
             try:
-                json_content = response.json()
+                json_content = self._handle_response(response)
             except requests.JSONDecodeError:
                 json_content = None
 
@@ -821,13 +846,14 @@ class _SuperstaqClient:
             TimeoutError: If the requests retried for more than `max_retry_seconds`.
 
         Returns:
-            The `request.Response` from the final successful request call.
+            The `requests.Response` from the final successful request call.
         """
         # Initial backoff of 100ms.
         delay_seconds = 0.1
         while True:
             try:
                 response = request()
+
                 if response.ok:
                     return response
 

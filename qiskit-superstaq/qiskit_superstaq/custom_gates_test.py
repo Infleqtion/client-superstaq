@@ -106,9 +106,9 @@ def test_parallel_gates() -> None:
 
     # confirm gates are applied to disjoint qubits
     all_qargs: set[qiskit.circuit.Qubit] = set()
-    for _, qargs, _ in gate.definition:
-        assert all_qargs.isdisjoint(qargs)
-        all_qargs.update(qargs)
+    for inst in gate.definition:
+        assert all_qargs.isdisjoint(inst.qubits)
+        all_qargs.update(inst.qubits)
     assert len(all_qargs) == gate.num_qubits
 
     # double check qubit ordering
@@ -132,9 +132,9 @@ def test_parallel_gates() -> None:
 
     # confirm gates are applied to disjoint qubits
     all_qargs.clear()
-    for _, qargs, _ in gate.definition:
-        assert all_qargs.isdisjoint(qargs)
-        all_qargs.update(qargs)
+    for inst in gate.definition:
+        assert all_qargs.isdisjoint(inst.qubits)
+        all_qargs.update(inst.qubits)
     assert len(all_qargs) == gate.num_qubits
 
     gate = qss.ParallelGates(
@@ -219,3 +219,17 @@ def test_aqticcx() -> None:
     )
 
     np.allclose(qiskit.quantum_info.Operator(qc), correct_unitary)
+
+
+def test_dd_gate() -> None:
+    gate = qss.DDGate(1.23)
+    _check_gate_definition(gate)
+    assert repr(gate) == "qss.DDGate(1.23)"
+    assert str(gate) == "DDGate(1.23)"
+
+    gate = qss.DDGate(4.56, label="label")
+    assert repr(gate) == "qss.DDGate(4.56, label='label')"
+    assert str(gate) == "DDGate(4.56)"
+
+    gate = qss.DDGate(np.pi / 3)
+    assert str(gate) == "DDGate(π/3)"

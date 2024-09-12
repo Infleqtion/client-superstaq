@@ -66,7 +66,7 @@ class AceCR(qiskit.circuit.Gate):
         qc.rzx(-self.params[0] / 2, 0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
+    def __array__(self, dtype: npt.DTypeLike | None = None) -> npt.NDArray[np.generic]:
         """Returns an array for the AceCR gate."""
         matrix = qiskit.quantum_info.Operator(self.definition).to_matrix()
         return np.asarray(matrix, dtype=dtype)
@@ -151,7 +151,7 @@ class ZZSwapGate(qiskit.circuit.Gate):
         qc.cx(0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
+    def __array__(self, dtype: npt.DTypeLike | None = None) -> npt.NDArray[np.generic]:
         """Returns a numpy array for the ZZ-SWAP gate."""
         return np.array(
             [
@@ -205,7 +205,7 @@ class StrippedCZGate(qiskit.circuit.Gate):
         qc.cz(0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.complex_]:
+    def __array__(self, dtype: npt.DTypeLike | None = None) -> npt.NDArray[np.generic]:
         """Returns a numpy array of the Stripped CZ gate."""
         return np.array(
             [
@@ -272,7 +272,7 @@ class ParallelGates(qiskit.circuit.Gate):
             qubits = qubits[num_qubits:]
         self.definition = qc
 
-    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
+    def __array__(self, dtype: npt.DTypeLike | None = None) -> npt.NDArray[np.generic]:
         """Returns a numpy array for `ParallelGates`."""
         mat = functools.reduce(np.kron, (gate.to_matrix() for gate in self.component_gates[::-1]))
         return np.asarray(mat, dtype=dtype)
@@ -312,7 +312,7 @@ class iXGate(qiskit.circuit.Gate):
         qc.rx(-np.pi, 0)
         self.definition = qc
 
-    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.bool_]:
+    def __array__(self, dtype: npt.DTypeLike | None = None) -> npt.NDArray[np.generic]:
         """Returns a numpy array of the iX gate."""
         return np.array([[0, 1j], [1j, 0]], dtype=dtype)
 
@@ -370,7 +370,7 @@ class iXdgGate(qiskit.circuit.Gate):
         qc.rx(np.pi, 0)
         self.definition = qc
 
-    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.complex_]:
+    def __array__(self, dtype: npt.DTypeLike | None = None) -> npt.NDArray[np.generic]:
         """Returns a numpy array of the inverse iX gate."""
         return np.array([[0, -1j], [-1j, 0]], dtype=dtype)
 
@@ -445,7 +445,7 @@ class iCCXGate(qiskit.circuit.ControlledGate):
         qc.cp(np.pi / 2, 0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.complex_]:
+    def __array__(self, dtype: npt.DTypeLike | None = None) -> npt.NDArray[np.generic]:
         """Returns a numpy array of the iCCX gate."""
         mat = qiskit.circuit._utils._compute_control_matrix(
             self.base_gate.to_matrix(), self.num_ctrl_qubits, ctrl_state=self.ctrl_state
@@ -480,7 +480,7 @@ class iCCXdgGate(qiskit.circuit.ControlledGate):
         qc.cp(-np.pi / 2, 0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.complex_]:
+    def __array__(self, dtype: npt.DTypeLike | None = None) -> npt.NDArray[np.generic]:
         """Returns a numpy array of the `iCCXdgGate`."""
         mat = qiskit.circuit._utils._compute_control_matrix(
             self.base_gate.to_matrix(), self.num_ctrl_qubits, ctrl_state=self.ctrl_state
@@ -507,3 +507,78 @@ class AQTiCCXGate(iCCXGate):
 
 
 AQTiToffoliGate = AQTiCCXGate
+
+
+class DDGate(qiskit.circuit.Gate):
+    r"""The Dipole-Dipole (DD) gate, which performs the dipole-dipole interaction between two
+    electrons. Part of the EeroQ native gateset.
+
+    The unitary for a DD gate parametrized by angle :math:`\theta` is:
+
+     .. math::
+
+        \begin{bmatrix}
+        e^{-i \theta} & . & . & . \\
+        . & e^{i \theta}cos{theta} ie^{i \theta}sin{theta} & . \\
+        . & ie^{i \theta}sin{theta} e^{i \theta}cos{theta} & . \\
+        . & . & . & e^{-i \theta} \\
+        \end{bmatrix}
+
+    where '.' means '0'.
+    """
+
+    def __init__(self, theta: float, label: str | None = None) -> None:
+        """Initializes a DD gate.
+
+        Args:
+            theta: The DD angle in radians.
+            label: An optional label for the constructed gate. Defaults to None.
+        """
+        super().__init__("dd", 2, [theta], label=label)
+
+    def inverse(self) -> DDGate:
+        """Inverts the DD gate.
+
+        Returns:
+            The inverse DD gate.
+        """
+        return DDGate(-self.params[0])
+
+    def _define(self) -> None:
+        """Stores the qiskit circuit definition of the DD gate."""
+        qc = qiskit.QuantumCircuit(2, name="dd")
+        qc.rzz(self.params[0], 0, 1)
+        qc.append(qiskit.circuit.library.XXPlusYYGate(-1 * self.params[0], 0), [0, 1])
+        self.definition = qc
+
+    def __array__(self, dtype: npt.DTypeLike | None = None) -> npt.NDArray[np.generic]:
+        """Returns a numpy array for the DD gate."""
+        return np.array(
+            [
+                [np.exp(-1j * self.params[0] / 2), 0, 0, 0],
+                [
+                    0,
+                    np.exp(1j * self.params[0] / 2) * np.cos(self.params[0] / 2),
+                    1j * np.exp(1j * self.params[0] / 2) * np.sin(self.params[0] / 2),
+                    0,
+                ],
+                [
+                    0,
+                    1j * np.exp(1j * self.params[0] / 2) * np.sin(self.params[0] / 2),
+                    np.exp(1j * self.params[0] / 2) * np.cos(self.params[0] / 2),
+                    0,
+                ],
+                [0, 0, 0, np.exp(-1j * self.params[0] / 2)],
+            ],
+            dtype=dtype,
+        )
+
+    def __repr__(self) -> str:
+        args = f"{self.params[0]!r}"
+        if self.label:
+            args += f", label='{self.label}'"
+        return f"qss.DDGate({args})"
+
+    def __str__(self) -> str:
+        args = qiskit.circuit.tools.pi_check(self.params[0], ndigits=8)
+        return f"DDGate({args})"

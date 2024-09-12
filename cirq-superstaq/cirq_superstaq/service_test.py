@@ -26,7 +26,6 @@ import numpy as np
 import pandas as pd
 import pytest
 import sympy
-import yaml
 from general_superstaq import ResourceEstimate
 
 import cirq_superstaq as css
@@ -79,7 +78,7 @@ def test_counts_to_results() -> None:
 
     with pytest.warns(UserWarning, match="raw counts contain negative"):
         result = css.service.counts_to_results(
-            {"00": -50.1, "11": 99.9}, circuit, cirq.ParamResolver({})
+            {"00": -50, "11": 100}, circuit, cirq.ParamResolver({})
         )
         assert result.histogram(key="01") == collections.Counter({3: 100})
 
@@ -250,7 +249,6 @@ def test_service_create_job() -> None:
     "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits(cirq.Circuit()),
-        "state_jp": gss.serialization.serialize({}),
         "initial_logical_to_physicals": cirq.to_json([[]]),
         "final_logical_to_physicals": cirq.to_json([[]]),
     },
@@ -277,6 +275,9 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
         assert not hasattr(output, "initial_logical_to_physicals")
         assert not hasattr(output, "final_logical_to_physicals")
 
+    with pytest.raises(ValueError, match="Unable to serialize configuration"):
+        _ = service.aqt_compile(cirq.Circuit(), atol=1e-2, pulses=123, variables=456)
+
     gate_defs = {
         "CZ3": css.CZ3,
         "CZ3/T5C4": None,
@@ -287,12 +288,12 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
     out = service.aqt_compile(
         cirq.Circuit(),
         gate_defs=gate_defs,
+        gateset={"CZ3": [[5, 6]], "X90": [[5], [6]], "EFX90": [[5], [6]]},
         atol=1e-3,
-        pulses={"foo": "bar"},
-        variables={"abc": 123},
+        aqt_configs={},
     )
-
     expected_options = {
+        "aqt_configs": {},
         "atol": 1e-3,
         "gate_defs": {
             "CZ3": css.CZ3,
@@ -301,10 +302,7 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
             "CS2": cirq.MatrixGate(cirq.unitary(cirq.CZ**0.49)),
             "CS3": cirq.MatrixGate(cirq.unitary(css.CZ3**0.5), qid_shape=(3, 3)),
         },
-        "aqt_configs": {
-            "pulses": yaml.dump({"foo": "bar"}),
-            "variables": yaml.dump({"abc": 123}),
-        },
+        "gateset": {"CZ3": [[5, 6]], "X90": [[5], [6]], "EFX90": [[5], [6]]},
     }
     mock_post_request.assert_called_with(
         "/aqt_compile",
@@ -325,7 +323,6 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
     "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit(), cirq.Circuit()]),
-        "state_jp": gss.serialization.serialize({}),
         "initial_logical_to_physicals": cirq.to_json([[], []]),
         "final_logical_to_physicals": cirq.to_json([[], []]),
     },
@@ -346,7 +343,6 @@ def test_service_aqt_compile_multiple(mock_post_request: mock.MagicMock) -> None
     "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value={
         "cirq_circuits": css.serialization.serialize_circuits([cirq.Circuit()]),
-        "state_jp": gss.serialization.serialize({}),
         "initial_logical_to_physicals": cirq.to_json([[]]),
         "final_logical_to_physicals": cirq.to_json([[]]),
     },
@@ -598,7 +594,7 @@ def test_qscout_compile_wrong_base_entangling_gate() -> None:
         _ = service.qscout_compile(circuit, base_entangling_gate="yy")
 
 
-@mock.patch("requests.post")
+@mock.patch("requests.Session.post")
 def test_qscout_compile_num_qubits(mock_post: mock.MagicMock) -> None:
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.measure(q0))
@@ -627,7 +623,7 @@ def test_qscout_compile_num_qubits(mock_post: mock.MagicMock) -> None:
     }
 
 
-@mock.patch("requests.post")
+@mock.patch("requests.Session.post")
 def test_service_cq_compile_single(mock_post: mock.MagicMock) -> None:
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
@@ -650,7 +646,7 @@ def test_service_cq_compile_single(mock_post: mock.MagicMock) -> None:
         service.cq_compile(cirq.Circuit(), target="ss_example_qpu")
 
 
-@mock.patch("requests.post")
+@mock.patch("requests.Session.post")
 def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
 
@@ -668,18 +664,22 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
 
     assert (
         service.ibmq_compile(
-            circuit, dd_strategy="dynamic", test_options="yes", target="ibmq_fake_qpu"
+            circuit, dd_strategy="standard", test_options="yes", target="ibmq_fake_qpu"
         ).circuit
         == circuit
     )
 
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
-        "dd_strategy": "dynamic",
+        "dd_strategy": "standard",
         "dynamical_decoupling": True,
         "test_options": "yes",
     }
 
     assert service.ibmq_compile([circuit], target="ibmq_fake_qpu").circuits == [circuit]
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "dd_strategy": "adaptive",
+        "dynamical_decoupling": True,
+    }
     assert service.ibmq_compile(circuit, target="ibmq_fake_qpu").pulse_sequence == mock.DEFAULT
     assert service.ibmq_compile([circuit], target="ibmq_fake_qpu").pulse_sequences == [mock.DEFAULT]
     assert (
@@ -697,7 +697,9 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
         final_logical_to_physical
     ]
 
-    with mock.patch.dict("sys.modules", {"qiskit": None}):
+    with mock.patch.dict("sys.modules", {"qiskit": None}), pytest.warns(
+        UserWarning, match="Qiskit is required"
+    ):
         assert service.ibmq_compile(cirq.Circuit(), target="ibmq_fake_qpu").pulse_sequence is None
         assert (
             service.ibmq_compile([cirq.Circuit()], target="ibmq_fake_qpu").pulse_sequences is None
@@ -721,7 +723,7 @@ def test_service_supercheq(mock_supercheq: mock.MagicMock) -> None:
     assert service.supercheq([[0]], 1, 1) == (circuits, fidelities)
 
 
-@mock.patch("requests.post")
+@mock.patch("requests.Session.post")
 def test_service_dfe(mock_post: mock.MagicMock) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
     circuit = cirq.Circuit(cirq.X(cirq.q(0)))
@@ -745,7 +747,7 @@ def test_service_dfe(mock_post: mock.MagicMock) -> None:
     assert service.process_dfe(["1", "2"]) == 1
 
 
-@mock.patch("requests.post")
+@mock.patch("requests.Session.post")
 def test_aces(
     mock_post: mock.MagicMock,
 ) -> None:
@@ -783,7 +785,7 @@ def test_aces(
     assert service.process_aces("id1") == [1] * 51
 
 
-@mock.patch("requests.post")
+@mock.patch("requests.Session.post")
 def test_cb(
     mock_post: mock.MagicMock,
 ) -> None:
@@ -832,19 +834,23 @@ def test_cb(
             }
         },
         "instance_information": cirq.to_json(
-            {"target": "ss_unconstrained_simulator", "depths": [1, 2], "n_channels": 2}
+            {"target": "ss_unconstrained_simulator", "depths": [1, 2, 3], "n_channels": 2}
         ),
         "process_fidelity_data": {
-            "averages": {"test": [1.0, 1.0], "test2": [1.0, 1.0], "test3": [1.0, 1.0]},
+            "averages": {
+                "test1": [1.0, 1.0, 1.0],
+                "test2": [1.0, 1.0, 1.0],
+                "test3": [1.0, 1.0, 1.0],
+            },
             "std_devs": {
-                "test": {"depth=1": 0.0, "depth=2": 0.0},
-                "test2": {"depth=1": 0.0, "depth=2": 0.0},
-                "test3": {"depth=1": 0.0, "depth=2": 0.0},
+                "test1": {"depth=1": 0.0, "depth=2": 0.0, "depth=3": 0.0},
+                "test2": {"depth=1": 0.0, "depth=2": 0.0, "depth=3": 0.0},
+                "test3": {"depth=1": 0.0, "depth=2": 0.0, "depth=3": 0.0},
             },
             "evs": {
-                "test": {"depth=1": [1.0], "depth=2": [1.0]},
-                "test2": {"depth=1": [1.0], "depth=2": [1.0]},
-                "test3": {"depth=1": [1.0], "depth=2": [1.0]},
+                "test1": {"depth=1": [1.0], "depth=2": [1.0], "depth=3": [1.0]},
+                "test2": {"depth=1": [1.0], "depth=2": [1.0], "depth=3": [1.0]},
+                "test3": {"depth=1": [1.0], "depth=2": [1.0], "depth=3": [1.0]},
             },
         },
     }
@@ -858,13 +864,13 @@ def test_cb(
         },
         "instance_information": {
             "target": "ss_unconstrained_simulator",
-            "depths": [1, 2],
+            "depths": [1, 2, 3],
             "n_channels": 2,
         },
         "process_fidelity_data": test_data["process_fidelity_data"],
         "fit_data": {
-            "A_test": 1.0,
-            "p_test": 1.0,
+            "A_test1": 1.0,
+            "p_test1": 1.0,
             "A_test2": 1.0,
             "p_test2": 1.0,
             "A_test3": 1.0,
@@ -892,7 +898,7 @@ def test_cb(
         service.plot(processed_test_data)
 
 
-@mock.patch("requests.post")
+@mock.patch("requests.Session.post")
 def test_service_target_info(mock_post: mock.MagicMock) -> None:
     fake_data = {"target_info": {"backend_name": "ss_example_qpu", "max_experiments": 1234}}
     mock_post.return_value.json = lambda: fake_data
