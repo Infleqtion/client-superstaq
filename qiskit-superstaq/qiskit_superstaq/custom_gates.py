@@ -66,7 +66,7 @@ class AceCR(qiskit.circuit.Gate):
         qc.rzx(-self.params[0] / 2, 0, 1)
         self.definition = qc
 
-    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.complex_]:
+    def __array__(self, dtype: type | None = None) -> npt.NDArray[np.generic]:
         """Returns an array for the AceCR gate."""
         matrix = qiskit.quantum_info.Operator(self.definition).to_matrix()
         return np.asarray(matrix, dtype=dtype)
