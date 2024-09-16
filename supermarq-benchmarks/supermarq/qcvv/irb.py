@@ -18,6 +18,7 @@ from __future__ import annotations
 import random
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import Union  # noqa: MDA400
 
 import cirq
 import numpy as np
@@ -33,23 +34,39 @@ from supermarq.qcvv.base_experiment import BenchmarkingExperiment, BenchmarkingR
 class IRBResults(BenchmarkingResults):
     """Data structure for the IRB experiment results."""
 
-    rb_layer_fidelity: float
-    """Layer fidelity estimate without the interleaving gate."""
-    rb_layer_fidelity_std: float
-    """Standard deviation of the layer fidelity estimate without the interleaving gate."""
-    irb_layer_fidelity: float
-    """Layer fidelity estimate with the interleaving gate."""
-    irb_layer_fidelity_std: float
-    """Standard deviation of the layer fidelity estimate with the interleaving gate."""
-    average_interleaved_gate_error: float
+    rb_decay_coefficient: float
+    """Decay coefficient estimate without the interleaving gate."""
+    rb_decay_coefficient_std: float
+    """Standard deviation of the decay coefficient estimate without the interleaving gate."""
+    irb_decay_coefficient: float | None
+    """Decay coefficient estimate with the interleaving gate."""
+    irb_decay_coefficient_std: float | None
+    """Standard deviation of the decay coefficient estimate with the interleaving gate."""
+    average_interleaved_gate_error: float | None
     """Estimate of the interleaving gate error."""
-    average_interleaved_gate_error_std: float
+    average_interleaved_gate_error_std: float | None
     """Standard deviation of the estimate for the interleaving gate error."""
 
     experiment_name = "IRB"
 
 
-class IRB(BenchmarkingExperiment[IRBResults]):
+@dataclass(frozen=True)
+class RBResults(BenchmarkingResults):
+    """Data structure for the RB experiment results."""
+
+    rb_decay_coefficient: float
+    """Decay coefficient estimate without the interleaving gate."""
+    rb_decay_coefficient_std: float
+    """Standard deviation of the decay coefficient estimate without the interleaving gate."""
+    average_gate_error: float | None
+    """Estimate of the average gate error."""
+    average_gate_error_std: float | None
+    """Standard deviation of the estimate for the average gate error."""
+
+    experiment_name = "RB"
+
+
+class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
     r"""Interleaved random benchmarking (IRB) experiment.
 
     IRB estimates the gate error of specified Clifford gate, :math:`\mathcal{C}^*`.
@@ -82,13 +99,17 @@ class IRB(BenchmarkingExperiment[IRBResults]):
 
     def __init__(
         self,
-        interleaved_gate: cirq.ops.SingleQubitCliffordGate = cirq.ops.SingleQubitCliffordGate.Z,
+        interleaved_gate: (
+            cirq.ops.SingleQubitCliffordGate | None
+        ) = cirq.ops.SingleQubitCliffordGate.Z,
         num_qubits: int = 1,
     ) -> None:
         """Constructs an IRB experiment.
 
         Args:
-            interleaved_gate: The single qubit Clifford gate to measure the gate error of.
+            interleaved_gate: The single qubit Clifford gate to measure the gate error of. If None
+                then no interleaving is performed and instead vanilla Randomize benchmarking is
+                performed.
             num_qubits: The number of qubits to experiment on
         """
         if num_qubits != 1:
@@ -175,12 +196,7 @@ class IRB(BenchmarkingExperiment[IRBResults]):
                 *[self._random_single_qubit_clifford()(*self.qubits) for _ in range(depth)]
             )
             rb_circuit = self._invert_clifford_circuit(base_circuit)
-            irb_circuit = self._invert_clifford_circuit(
-                self._interleave_op(
-                    base_circuit, self.interleaved_gate(*self.qubits), include_final=True
-                )
-            )
-            samples += [
+            samples.append(
                 Sample(
                     raw_circuit=rb_circuit + cirq.measure(sorted(rb_circuit.all_qubits())),
                     data={
@@ -189,16 +205,23 @@ class IRB(BenchmarkingExperiment[IRBResults]):
                         "experiment": "RB",
                     },
                 ),
-                Sample(
-                    raw_circuit=irb_circuit + cirq.measure(sorted(irb_circuit.all_qubits())),
-                    data={
-                        "num_cycles": depth,
-                        "circuit_depth": len(irb_circuit),
-                        "experiment": "IRB",
-                    },
-                ),
-            ]
-
+            )
+            if self.interleaved_gate is not None:
+                irb_circuit = self._invert_clifford_circuit(
+                    self._interleave_op(
+                        base_circuit, self.interleaved_gate(*self.qubits), include_final=True
+                    )
+                )
+                samples.append(
+                    Sample(
+                        raw_circuit=irb_circuit + cirq.measure(sorted(irb_circuit.all_qubits())),
+                        data={
+                            "num_cycles": depth,
+                            "circuit_depth": len(irb_circuit),
+                            "experiment": "IRB",
+                        },
+                    ),
+                )
         return samples
 
     def _process_probabilities(self, samples: Sequence[Sample]) -> pd.DataFrame:
@@ -230,16 +253,16 @@ class IRB(BenchmarkingExperiment[IRBResults]):
         plot = sns.lmplot(
             data=self.raw_data,
             x="clifford_depth",
-            y="log_fidelity",
+            y="log_survival_prob",
             hue="experiment",
         )
         ax = plot.axes.item()
         plot.tight_layout()
         ax.set_xlabel(r"Cycle depth", fontsize=15)
-        ax.set_ylabel(r"Log Circuit fidelity", fontsize=15)
-        ax.set_title(r"Exponential decay of circuit fidelity", fontsize=15)
+        ax.set_ylabel(r"Log survival probability", fontsize=15)
+        ax.set_title(r"Exponential decay of survival probability", fontsize=15)
 
-    def analyze_results(self, plot_results: bool = True) -> IRBResults:
+    def analyze_results(self, plot_results: bool = True) -> IRBResults | RBResults:
         """Analyse the experiment results and estimate the interleaved gate error.
 
         Args:
@@ -249,44 +272,67 @@ class IRB(BenchmarkingExperiment[IRBResults]):
             A named tuple of the final results from the experiment.
         """
 
-        self.raw_data["fidelity"] = 2 * self.raw_data["0"] - 1
-        self.raw_data["log_fidelity"] = np.log(self.raw_data["fidelity"])
+        self.raw_data["survival_prob"] = 2 * self.raw_data["0"] - 1
+        self.raw_data["log_survival_prob"] = np.log(self.raw_data["survival_prob"])
         self.raw_data.dropna(axis=0, inplace=True)  # Remove any NaNs coming from the P(0) < 0.5
 
         rb_model = linregress(
             self.raw_data.query("experiment == 'RB'")["clifford_depth"],
-            np.log(self.raw_data.query("experiment == 'RB'")["fidelity"]),
+            np.log(self.raw_data.query("experiment == 'RB'")["survival_prob"]),
         )
-        irb_model = linregress(
-            self.raw_data.query("experiment == 'IRB'")["clifford_depth"],
-            np.log(self.raw_data.query("experiment == 'IRB'")["fidelity"]),
-        )
+        rb_decay_coefficient = np.exp(rb_model.slope)
+        rb_decay_coefficient_std = rb_model.stderr * rb_decay_coefficient
 
-        # Extract fit values.
-        rb_layer_fidelity = np.exp(rb_model.slope)
-        rb_layer_fidelity_std = rb_model.stderr * rb_layer_fidelity
-        irb_layer_fidelity = np.exp(irb_model.slope)
-        irb_layer_fidelity_std = irb_model.stderr * irb_layer_fidelity
+        if self.interleaved_gate is None:
+            self._results = RBResults(
+                target="& ".join(self.targets),
+                total_circuits=len(self.samples),
+                rb_decay_coefficient=rb_decay_coefficient,
+                rb_decay_coefficient_std=rb_decay_coefficient_std,
+                average_gate_error=(1 - 2**-self.num_qubits) * (1 - rb_decay_coefficient),
+                average_gate_error_std=(1 - 2**-self.num_qubits) * rb_decay_coefficient_std,
+            )
 
-        interleaved_gate_error = (1 - irb_layer_fidelity / rb_layer_fidelity) / 2
+            if plot_results:
+                self.plot_results()
 
-        interleaved_gate_error_std = np.sqrt(
-            (irb_layer_fidelity_std / (2 * rb_layer_fidelity)) ** 2
-            + ((irb_layer_fidelity * rb_layer_fidelity_std) / (2 * rb_layer_fidelity**2)) ** 2
-        )
+            return self.results
 
-        self._results = IRBResults(
-            target="& ".join(self.targets),
-            total_circuits=len(self.samples),
-            rb_layer_fidelity=rb_layer_fidelity,
-            rb_layer_fidelity_std=rb_layer_fidelity_std,
-            irb_layer_fidelity=irb_layer_fidelity,
-            irb_layer_fidelity_std=irb_layer_fidelity_std,
-            average_interleaved_gate_error=interleaved_gate_error,
-            average_interleaved_gate_error_std=interleaved_gate_error_std,
-        )
+        else:
+            irb_model = linregress(
+                self.raw_data.query("experiment == 'IRB'")["clifford_depth"],
+                np.log(self.raw_data.query("experiment == 'IRB'")["survival_prob"]),
+            )
 
-        if plot_results:
-            self.plot_results()
+            # Extract fit values.
+            irb_decay_coefficient = np.exp(irb_model.slope)
+            irb_decay_coefficient_std = irb_model.stderr * irb_decay_coefficient
 
-        return self.results
+            interleaved_gate_error = (1 - irb_decay_coefficient / rb_decay_coefficient) * (
+                1 - 2**-self.num_qubits
+            )
+
+            interleaved_gate_error_std = np.sqrt(
+                (irb_decay_coefficient_std / (2 * rb_decay_coefficient)) ** 2
+                + (
+                    (irb_decay_coefficient * rb_decay_coefficient_std)
+                    / (2 * rb_decay_coefficient**2)
+                )
+                ** 2
+            )
+
+            self._results = IRBResults(
+                target="& ".join(self.targets),
+                total_circuits=len(self.samples),
+                rb_decay_coefficient=rb_decay_coefficient,
+                rb_decay_coefficient_std=rb_decay_coefficient_std,
+                irb_decay_coefficient=irb_decay_coefficient,
+                irb_decay_coefficient_std=irb_decay_coefficient_std,
+                average_interleaved_gate_error=interleaved_gate_error,
+                average_interleaved_gate_error_std=interleaved_gate_error_std,
+            )
+
+            if plot_results:
+                self.plot_results()
+
+            return self.results

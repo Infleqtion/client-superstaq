@@ -13,6 +13,7 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=missing-return-doc
 # mypy: disable-error-code=method-assign
+# mypy: disable-error-code="union-attr"
 from __future__ import annotations
 
 import os
@@ -113,7 +114,9 @@ def test_irb_process_probabilities(irb_experiment: IRB) -> None:
 
 
 def test_irb_build_circuit(irb_experiment: IRB) -> None:
-    irb_experiment._random_single_qubit_clifford = (mock_random_clifford := MagicMock())
+    irb_experiment._random_single_qubit_clifford = (  # type: ignore[method-assign]
+        mock_random_clifford := MagicMock()
+    )
     mock_random_clifford.side_effect = [
         cirq.ops.SingleQubitCliffordGate.Z,
         cirq.ops.SingleQubitCliffordGate.Z,
@@ -271,11 +274,50 @@ def test_analyse_results(irb_experiment: IRB) -> None:
     )
     irb_experiment.analyze_results()
 
-    assert irb_experiment.results.rb_layer_fidelity == pytest.approx(0.95)
-    assert irb_experiment.results.irb_layer_fidelity == pytest.approx(0.8)
+    assert irb_experiment.results.rb_decay_coefficient == pytest.approx(0.95)
+    assert irb_experiment.results.irb_decay_coefficient == pytest.approx(0.8)
     assert irb_experiment.results.average_interleaved_gate_error == pytest.approx(
         0.5 * (1 - 0.8 / 0.95)
     )
 
     # Test that plotting results doesn't introduce any errors.
     irb_experiment.plot_results()
+
+
+def test_analyse_results_rb() -> None:
+    with patch("cirq_superstaq.service.Service"):
+        rb_experiment = IRB(interleaved_gate=None)
+
+    rb_experiment._samples = MagicMock()
+    rb_experiment._raw_data = pd.DataFrame(
+        [
+            {
+                "clifford_depth": 1,
+                "circuit_depth": 2,
+                "experiment": "RB",
+                "0": 0.5 * 0.95**1 + 0.5,
+                "1": 0.5 - 0.5 * 0.95**1,
+            },
+            {
+                "clifford_depth": 5,
+                "circuit_depth": 6,
+                "experiment": "RB",
+                "0": 0.5 * 0.95**5 + 0.5,
+                "1": 0.5 - 0.5 * 0.95**5,
+            },
+            {
+                "clifford_depth": 10,
+                "circuit_depth": 11,
+                "experiment": "RB",
+                "0": 0.5 * 0.95**10 + 0.5,
+                "1": 0.5 - 0.5 * 0.95**10,
+            },
+        ]
+    )
+    rb_experiment.analyze_results()
+
+    assert rb_experiment.results.rb_decay_coefficient == pytest.approx(0.95)
+    assert rb_experiment.results.average_gate_error == pytest.approx(0.5 * (1 - 0.95))
+
+    # Test that plotting results doesn't introduce any errors.
+    rb_experiment.plot_results()
