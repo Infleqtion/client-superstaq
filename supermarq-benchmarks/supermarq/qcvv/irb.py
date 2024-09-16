@@ -18,6 +18,7 @@ from __future__ import annotations
 import random
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import Union
 
 import cirq
 import numpy as np
@@ -65,7 +66,7 @@ class RBResults(BenchmarkingResults):
     experiment_name = "RB"
 
 
-class IRB(BenchmarkingExperiment[RBResults | IRBResults]):
+class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
     r"""Interleaved random benchmarking (IRB) experiment.
 
     IRB estimates the gate error of specified Clifford gate, :math:`\mathcal{C}^*`.
