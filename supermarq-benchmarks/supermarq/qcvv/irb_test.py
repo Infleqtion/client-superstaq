@@ -84,14 +84,15 @@ def test_random_single_qubit_clifford() -> None:
 
 
 def test_irb_random_clifford() -> None:
-    exp = IRB()
-    gate = exp.random_clifford()
-    assert isinstance(gate, cirq.SingleQubitCliffordGate)
+    with patch("cirq_superstaq.service.Service"):
+        exp = IRB()
+        gate = exp.random_clifford()
+        assert isinstance(gate, cirq.SingleQubitCliffordGate)
 
-    exp = IRB(interleaved_gate=cirq.CZ)
-    gate = exp.random_clifford()
-    assert isinstance(gate, cirq.CliffordGate)
-    assert gate.num_qubits() == 2
+        exp = IRB(interleaved_gate=cirq.CZ)
+        gate = exp.random_clifford()
+        assert isinstance(gate, cirq.CliffordGate)
+        assert gate.num_qubits() == 2
 
 
 def test_random_two_qubit_clifford() -> None:
