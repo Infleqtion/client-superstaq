@@ -105,15 +105,16 @@ def test_random_two_qubit_clifford() -> None:
 
 
 def test_gates_per_clifford() -> None:
-    exp = IRB()
-    gates = exp.gates_per_clifford(samples=1000)
-    assert gates["single_qubit_gates"] == pytest.approx(0.95, abs=0.1)
-    assert gates["two_qubit_gates"] == 0.0
+    with patch("cirq_superstaq.service.Service"):
+        exp = IRB()
+        gates = exp.gates_per_clifford(samples=1000)
+        assert gates["single_qubit_gates"] == pytest.approx(0.95, abs=0.1)
+        assert gates["two_qubit_gates"] == 0.0
 
-    exp = IRB(interleaved_gate=cirq.CZ)
-    gates = exp.gates_per_clifford(samples=1000)
-    assert gates["single_qubit_gates"] == pytest.approx(4.5, abs=0.25)
-    assert gates["two_qubit_gates"] == pytest.approx(1.5, abs=0.1)
+        exp = IRB(interleaved_gate=cirq.CZ)
+        gates = exp.gates_per_clifford(samples=1000)
+        assert gates["single_qubit_gates"] == pytest.approx(4.5, abs=0.25)
+        assert gates["two_qubit_gates"] == pytest.approx(1.5, abs=0.1)
 
 
 def test_invert_clifford_circuit(irb_experiment: IRB) -> None:
