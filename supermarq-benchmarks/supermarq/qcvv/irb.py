@@ -24,8 +24,8 @@ import cirq
 import cirq.circuits
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import scipy
+import seaborn as sns
 from tqdm.contrib.itertools import product
 from tqdm.notebook import tqdm
 
@@ -260,7 +260,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         self,
         interleaved_gate: cirq.Gate | None = cirq.Z,
         num_qubits: int | None = 1,
-        clifford_op_gateset=cirq.CZTargetGateset(),
+        clifford_op_gateset: cirq.CompilationTargetGateset = cirq.CZTargetGateset(),
     ) -> None:
         """Constructs an IRB experiment.
 
@@ -270,6 +270,8 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
                 performed.
             num_qubits: The number of qubits to experiment on. Must either be 1 or 2 but is ignored.
                 if a gate is provided - the number of qubits is instead inferred from the gate.
+            clifford_op_gateset: The gateset to use when implementing the clifford operations.
+                Defaults to the CZ/GR set.
         """
         if interleaved_gate is not None:
             num_qubits = interleaved_gate.num_qubits()
@@ -289,15 +291,23 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
             self.interleaved_gate = None
 
         self.clifford_op_gateset = clifford_op_gateset
+        """The gateset to use when implementing Clifford operations."""
 
     def _clifford_gate_to_circuit(
         self,
-        clifford,
-        qubits,
+        clifford: cirq.CliffordGate,
     ) -> cirq.Circuit:
+        """Converts a Clifford gate to a circuit using the desired gateset for the experiment.
+
+        Args:
+            clifford: The clifford operation to convert.
+
+        Returns:
+            A circuit implementing the desired Clifford gate.
+        """
         circuit = cirq.Circuit(
             cirq.decompose_clifford_tableau_to_operations(
-                qubits, clifford.clifford_tableau  # type: ignore[arg-type]
+                self.qubits, clifford.clifford_tableau  # type: ignore[arg-type]
             )
         )
         return cirq.optimize_for_target_gateset(circuit, gateset=self.clifford_op_gateset)
@@ -310,9 +320,19 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
             return random_single_qubit_clifford()
         return random_two_qubit_clifford()
 
-    def gates_per_clifford(self, samples=500) -> dict[str, float]:
+    def gates_per_clifford(self, samples: int = 500) -> dict[str, float]:
+        """Samples a number of random Clifford operation and calculates the average number of
+        single and two qubit gates used to implement them. Note this depends on the gateset chosen
+        for the experiment.
+
+        Args:
+            samples: Number of samples to use. Defaults to 500.
+
+        Returns:
+            A dictionary with the average number of one and two qubit gates used.
+        """
         sample = [
-            self._clifford_gate_to_circuit(self.random_clifford(), self.qubits)
+            self._clifford_gate_to_circuit(self.random_clifford())
             for _ in tqdm(range(samples), desc="Sampling Clifford operations")
         ]
         return {
@@ -321,13 +341,13 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
                     sum(1 for op in circuit.all_operations() if len(op.qubits) == 1)
                     for circuit in sample
                 ]
-            ),
+            ).item(),
             "two_qubit_gates": np.mean(
                 [
                     sum(1 for op in circuit.all_operations() if len(op.qubits) == 2)
                     for circuit in sample
                 ]
-            ),
+            ).item(),
         }
 
     def _invert_clifford_circuit(self, circuit: cirq.Circuit) -> cirq.Circuit:
@@ -359,10 +379,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
             rb_sequence = base_sequence + [
                 _reduce_clifford_seq(cirq.inverse(base_sequence))  # type: ignore[arg-type]
             ]
-            rb_circuit = cirq.Circuit(
-                self._clifford_gate_to_circuit(gate, self.qubits)  # type: ignore[arg-type]
-                for gate in rb_sequence
-            )
+            rb_circuit = cirq.Circuit(self._clifford_gate_to_circuit(gate) for gate in rb_sequence)
             samples.append(
                 Sample(
                     raw_circuit=rb_circuit + cirq.measure(sorted(self.qubits)),
@@ -388,15 +405,11 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
 
                 irb_circuit = cirq.Circuit()
                 for gate in base_sequence:
-                    irb_circuit += self._clifford_gate_to_circuit(
-                        gate,
-                        self.qubits,  # type: ignore[arg-type]
-                    )
+                    irb_circuit += self._clifford_gate_to_circuit(gate)
                     irb_circuit += self._interleaved_op.with_tags("no_compile")
                 # Add the final inverting gate
                 irb_circuit += self._clifford_gate_to_circuit(
                     irb_sequence_final_gate,
-                    self.qubits,  # type: ignore[arg-type]
                 )
 
                 samples.append(
@@ -545,7 +558,17 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
 
             return self.results
 
-    def _fit_decay(self, experiment="RB") -> tuple[float, float, float, float]:
+    def _fit_decay(
+        self, experiment: str = "RB"
+    ) -> tuple[np.typing.NDArray[np.float_], np.typing.NDArray[np.float_]]:
+        """Fits the exponential decay function to either the RB or IRB results.
+
+        Args:
+            experiment: Either `RB` or `IRB` referring to which data to filter by. Defaults to "RB".
+
+        Returns:
+            Tuple of the decay fit parameters and their standard deviations.
+        """
 
         xx = self.raw_data.query(f"experiment == '{experiment}'")["clifford_depth"]
         yy = self.raw_data.query(f"experiment == '{experiment}'")["0" * self.num_qubits]
@@ -562,5 +585,22 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         return popt, np.sqrt(np.diag(pcov))
 
     @staticmethod
-    def exp_decay(x, A, alpha, B):
+    def exp_decay(
+        x: np.typing.NDArray[np.float_], A: float, alpha: float, B: float
+    ) -> np.typing.NDArray[np.float_]:
+        r"""Exponential decay of the form
+
+        .. math::
+
+            A \alpha^x + B
+
+        Args:
+            x: x
+            A: Decay constant
+            alpha: Decay coefficient
+            B: Additive constant
+
+        Returns:
+            Exponential decay applied to x.
+        """
         return A * (alpha**x) + B
