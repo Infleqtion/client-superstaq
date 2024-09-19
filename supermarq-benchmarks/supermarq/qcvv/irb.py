@@ -69,39 +69,110 @@ def _reduce_clifford_seq(
     return cirq.CliffordGate.from_clifford_tableau(cur)
 
 
+####################################################################################################
+# The sets `S1`, `S1_X` and `S1_Y` of single qubit Clifford operations are used to generate
+# random two qubit Clifford operations. For details see: https://arxiv.org/abs/2008.06011
+# The implementation is adapted from:
+# https://github.com/quantumlib/Cirq/blob/main/cirq-core/cirq/experiments/qubit_characterizations.py
+####################################################################################################
 _S1 = [
-    _reduce_single_qubit_clifford_seq([cirq.SingleQubitCliffordGate.X**0.0]),
-    _reduce_single_qubit_clifford_seq(
-        [cirq.SingleQubitCliffordGate.Y**0.5, cirq.SingleQubitCliffordGate.X**0.5]
+    # X
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([False, False], dtype=np.dtype("bool")),
+            xs=np.array([[True], [False]], dtype=np.dtype("bool")),
+            zs=np.array([[False], [True]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
     ),
-    _reduce_single_qubit_clifford_seq(
-        [cirq.SingleQubitCliffordGate.X**-0.5, cirq.SingleQubitCliffordGate.Y**-0.5]
+    # Y**0.5 X**0.5
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([False, False], dtype=np.dtype("bool")),
+            xs=np.array([[True], [True]], dtype=np.dtype("bool")),
+            zs=np.array([[True], [False]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
+    ),
+    # X**-0.5 Y**-0.5
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([False, False], dtype=np.dtype("bool")),
+            xs=np.array([[False], [True]], dtype=np.dtype("bool")),
+            zs=np.array([[True], [True]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
     ),
 ]
+
 
 _S1_X = [
-    _reduce_single_qubit_clifford_seq([cirq.SingleQubitCliffordGate.X**0.5]),
-    _reduce_single_qubit_clifford_seq(
-        [
-            cirq.SingleQubitCliffordGate.X**0.5,
-            cirq.SingleQubitCliffordGate.Y**0.5,
-            cirq.SingleQubitCliffordGate.X**0.5,
-        ]
+    # X**0.5
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([False, True], dtype=np.dtype("bool")),
+            xs=np.array([[True], [True]], dtype=np.dtype("bool")),
+            zs=np.array([[False], [True]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
     ),
-    _reduce_single_qubit_clifford_seq([cirq.SingleQubitCliffordGate.Y**-0.5]),
+    # X**0.5, Y**0.5, X**0.5
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([False, True], dtype=np.dtype("bool")),
+            xs=np.array([[True], [False]], dtype=np.dtype("bool")),
+            zs=np.array([[True], [True]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
+    ),
+    # Y**-0.5
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([False, True], dtype=np.dtype("bool")),
+            xs=np.array([[False], [True]], dtype=np.dtype("bool")),
+            zs=np.array([[True], [False]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
+    ),
 ]
 
+
 _S1_Y = [
-    _reduce_single_qubit_clifford_seq([cirq.SingleQubitCliffordGate.Y**0.5]),
-    _reduce_single_qubit_clifford_seq(
-        [
-            cirq.SingleQubitCliffordGate.X**-0.5,
-            cirq.SingleQubitCliffordGate.Y**-0.5,
-            cirq.SingleQubitCliffordGate.X**0.5,
-        ]
+    # Y**0.5
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([True, False], dtype=np.dtype("bool")),
+            xs=np.array([[False], [True]], dtype=np.dtype("bool")),
+            zs=np.array([[True], [False]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
     ),
-    _reduce_single_qubit_clifford_seq(
-        [cirq.SingleQubitCliffordGate.Y, cirq.SingleQubitCliffordGate.X**0.5]
+    # X**-0.5 Y**-0.5 X**0.5
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([True, False], dtype=np.dtype("bool")),
+            xs=np.array([[True], [False]], dtype=np.dtype("bool")),
+            zs=np.array([[True], [True]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
+    ),
+    # Y X**0.5
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([True, False], dtype=np.dtype("bool")),
+            xs=np.array([[True], [True]], dtype=np.dtype("bool")),
+            zs=np.array([[False], [True]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
     ),
 ]
 
