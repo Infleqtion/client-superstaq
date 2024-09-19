@@ -32,6 +32,9 @@ from tqdm.notebook import tqdm
 from supermarq.qcvv.base_experiment import BenchmarkingExperiment, BenchmarkingResults, Sample
 
 
+####################################################################################################
+# Some handy functions for 1 and 2 qubit Clifford operations
+####################################################################################################
 def _reduce_single_qubit_clifford_seq(
     gate_seq: list[cirq.SingleQubitCliffordGate],
 ) -> cirq.SingleQubitCliffordGate:
