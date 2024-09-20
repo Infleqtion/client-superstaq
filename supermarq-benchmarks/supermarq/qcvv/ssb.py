@@ -15,10 +15,9 @@ See https://arxiv.org/pdf/2407.20184
 """
 from __future__ import annotations
 
-import itertools
 import random
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import cirq
 import numpy as np
@@ -30,6 +29,23 @@ import tqdm.contrib
 import tqdm.contrib.itertools
 
 from supermarq.qcvv import BenchmarkingExperiment, BenchmarkingResults, Sample
+
+
+def _parallel(
+    x: np.typing.NDArray[np.float_], y: np.typing.NDArray[np.float_], tol: float = 1e-5
+) -> bool:
+    """Checks whether two numpy arrays are parallel, as determined by the cosine distance between
+    them.
+
+    Args:
+        x: Array 1
+        y: Array 2
+        tol: The tolerance to accept. Defaults to 1E-5.
+
+    Returns:
+        Wether the two arrays are parallel
+    """
+    return np.abs(np.dot(x, np.conj(y)) / (np.linalg.norm(x) * np.linalg.norm(y))) >= 1.0 - tol
 
 
 @dataclass(frozen=True)
@@ -45,20 +61,66 @@ class SSBResults(BenchmarkingResults):
 
 
 class SSB(BenchmarkingExperiment[SSBResults]):
-    """Symmetric Stabilizer Benchmarking
-    """
+    """Symmetric Stabilizer Benchmarking"""
 
     def __init__(
         self,
     ) -> None:
-        """Args:
-        single_qubit_gate_set: Optional list of single qubit gates to randomly sample
-            from when generating random circuits. If not provided defaults to phased
-            XZ gates with 1/4 pi intervals.
-        two_qubit_gate: The two qubit gate to interleave between the single qubit gates. If
-            None then no two qubit gate is used. Defaults to control-Z gate.
-        """
-        super().__init__(num_qubits=1)
+        super().__init__(num_qubits=2)
+
+        # Moments containing parallel rotations. Used to construst the init and rec circuit.
+        # Note we avoid using the `cirq.ParallelGate` as this can lead to single qubit gates
+        # looking like two qubit gates when building custom noise models.
+        X = cirq.Moment(cirq.rx(np.pi / 2)(self.qubits[0]), cirq.rx(np.pi / 2)(self.qubits[1]))
+        _X = cirq.Moment(cirq.rx(-np.pi / 2)(self.qubits[0]), cirq.rx(-np.pi / 2)(self.qubits[1]))
+        Y = cirq.Moment(cirq.ry(np.pi / 2)(self.qubits[0]), cirq.ry(np.pi / 2)(self.qubits[1]))
+        _Y = cirq.Moment(cirq.ry(-np.pi / 2)(self.qubits[0]), cirq.ry(-np.pi / 2)(self.qubits[1]))
+
+        # Table I of https://arxiv.org/pdf/2407.20184
+        self._stabilizer_states = [
+            np.array([1, 1, 1, 1]),
+            np.array([1, -1, -1, 1]),
+            np.array([1, 1j, 1j, -1]),
+            np.array([1, -1j, -1j, -1]),
+            np.array([1, 0, 0, 0]),
+            np.array([0, 0, 0, 1]),
+            np.array([1, 1, 1, -1]),
+            np.array([1, -1, -1, -1]),
+            np.array([1, 1j, 1j, 1]),
+            np.array([1, -1j, -1j, 1]),
+            np.array([1, 0, 0, 1j]),
+            np.array([1, 0, 0, -1j]),
+        ]
+        # Table II of https://arxiv.org/pdf/2407.20184
+        self._init_rotations = [
+            [X, X, Y, _Y, Y],
+            [X, _X, Y, _Y, Y],
+            [X, _X, X, _X, X],
+            [X, X, X, _X, X],
+            [X, X, X, _Y, _X],
+            [X, _X, X, _Y, _X],
+            [_X, _Y, X, _Y, _X],
+            [X, Y, X, _Y, _X],
+            [_X, _Y, X, _X, _X],
+            [X, Y, X, _X, X],
+            [X, Y, Y, _Y, Y],
+            [_X, _Y, Y, _Y, Y],
+        ]
+        # Table III of https://arxiv.org/pdf/2407.20184
+        self._reconciliation_rotation = [
+            [X, _Y, X, X],
+            [X, Y, X, X],
+            [Y, X, X, X],
+            [Y, _X, X, X],
+            [_X, X, X, X],
+            [X, X, X, X],
+            [_X, Y, Y, X],
+            [X, Y, Y, X],
+            [Y, Y, Y, X],
+            [X, X, Y, X],
+            [_Y, X, Y, X],
+            [Y, X, Y, X],
+        ]
 
     ###################
     # Private Methods #
@@ -77,10 +139,35 @@ class SSB(BenchmarkingExperiment[SSBResults]):
         Returns:
             The list of experiment samples.
         """
+        random_circuits = []
+        min_depth = min(cycle_depths)
+        max_depth = max(cycle_depths)
+        assert min_depth >= 2
 
-    def _process_probabilities(
-        self, samples: Sequence[Sample]
-    ) -> pd.DataFrame:
+        for _, depth in tqdm.contrib.itertools.product(
+            range(num_circuits), cycle_depths, desc="Building circuits"
+        ):
+            sss_idx = random.randint(0, 11)
+            circuit = self._sss_init_circuits(sss_idx)
+            for _ in range(depth - 2):
+                circuit += self._random_parallel_qubit_rotation()
+                circuit += cirq.CZ(*self.qubits).with_tags("no_compile")
+            for _ in range(max_depth - depth + 2):
+                circuit += self._random_parallel_qubit_rotation()
+            circuit += self._sss_reconciliation_circuit(circuit) + cirq.measure(self.qubits)
+
+            random_circuits.append(
+                Sample(
+                    raw_circuit=circuit,
+                    data={
+                        "num_cz_gates": depth,
+                        "initial_sss_index": sss_idx,
+                    },
+                )
+            )
+        return random_circuits
+
+    def _process_probabilities(self, samples: Sequence[Sample]) -> pd.DataFrame:
         """Processes the probabilities generated by sampling the circuits into the data structures
         needed for analyzing the results.
 
@@ -90,13 +177,124 @@ class SSB(BenchmarkingExperiment[SSBResults]):
         Returns:
             A data frame of the full results needed to analyse the experiment.
         """
+        records = []
+        for sample in samples:
+            records.append(
+                {
+                    **sample.data,
+                    **sample.probabilities,
+                }
+            )
+        return pd.DataFrame(records)
 
+    def _random_parallel_qubit_rotation(self) -> cirq.Moment:
+        """Chooses randomly from {X, Y, -X, -Y} and return a moment with this gate acting on both
+        quits. Note we don't use `cirq.ParallelGate` as when modelling noise Cirq treats this as
+        a two qubit gate.
+
+        Returns:
+            The randomly chosen rotation gate acting on both qubits.
+        """
+        gate = random.choice(
+            [cirq.rx(np.pi / 2), cirq.rx(-np.pi / 2), cirq.ry(np.pi / 2), cirq.ry(-np.pi / 2)]
+        )
+        return cirq.Moment(gate(self.qubits[0]), gate(self.qubits[1]))
+
+    def _sss_init_circuits(self, idx: int) -> cirq.Circuit:
+        """Creates the initialisation circuit for the provided symmetric-stabiliser state index.
+        See appendix of https://arxiv.org/pdf/2407.20184 for details.
+
+        Args:
+            idx: The index of the desired symmetric-stabiliser state
+        Returns:
+            A circuit that maps the |00> state to the desired symmetric-stabiliser state.
+        """
+        init_circuit = cirq.Circuit(
+            cirq.X(self.qubits[0]),
+            cirq.X(self.qubits[1]),
+            self._init_rotations[idx][0],
+            self._init_rotations[idx][1],
+            cirq.CZ(*self.qubits),
+            self._init_rotations[idx][2],
+            self._init_rotations[idx][3],
+            self._init_rotations[idx][4],
+        )
+        return init_circuit
+
+    def _sss_reconciliation_circuit(self, circuit: cirq.Circuit) -> cirq.Circuit:
+        """Given a randomly generated circuit, return the appropriate reconciliation circuit.
+        See appendix of https://arxiv.org/pdf/2407.20184 for details.
+
+        Args:
+            circuit: The randomly generated circuit
+
+        Returns:
+            The appropriate reconciliation circuit
+        """
+        # Calculate which state the provided circuit maps the |00> state to.
+        state = cirq.unitary(circuit)[:, 0]
+        # Find the index of this state by checking which symmetric-stabiliser
+        # state it is parallel to.
+        idx = [_parallel(state, stab_state) for stab_state in self._stabilizer_states].index(True)
+
+        # Return the reconciliation circuit. See table III of https://arxiv.org/pdf/2407.20184
+        return cirq.Circuit(
+            self._reconciliation_rotation[idx][0],
+            self._reconciliation_rotation[idx][1],
+            cirq.CZ(*self.qubits),
+            self._reconciliation_rotation[idx][2],
+            self._reconciliation_rotation[idx][3],
+            cirq.X(self.qubits[0]),
+            cirq.X(self.qubits[1]),
+        )
+
+    def _fit_decay(self) -> tuple[np.typing.NDArray[np.float_], np.typing.NDArray[np.float_]]:
+        """Fits the exponential decay function to the survivial probability as a function of
+        the number of CZ gates.
+
+        Returns:
+            Tuple of the decay fit parameters and their standard deviations.
+        """
+
+        xx = self.raw_data["num_cz_gates"]
+        yy = self.raw_data["0" * self.num_qubits]
+
+        popt, pcov = scipy.optimize.curve_fit(
+            self.exp_decay,
+            xx,
+            yy,
+            p0=(1.0 - 2**-self.num_qubits, 0.99, 2**-self.num_qubits),
+            bounds=(0, 1),
+            max_nfev=2000,
+        )
+
+        return popt, np.sqrt(np.diag(pcov))
+
+    @staticmethod
+    def exp_decay(
+        x: np.typing.NDArray[np.float_], A: float, alpha: float, B: float
+    ) -> np.typing.NDArray[np.float_]:
+        r"""Exponential decay of the form
+
+        .. math::
+
+            A \alpha^x + B
+
+        Args:
+            x: x
+            A: Decay constant
+            alpha: Decay coefficient
+            B: Additive constant
+        Returns:
+            Exponential decay applied to x.
+        """
+        return A * (alpha**x) + B
 
     ###################
     # Public Methods  #
     ###################
     def analyze_results(self, plot_results: bool = True) -> SSBResults:
-        """Analyse the results and calculate the estimated circuit fidelity.
+        """Analyse the results and calculate the estimated CZ gate fidelity.
 
         Args:
             plot_results (optional): Whether to generate the data plots. Defaults to True.
@@ -104,6 +302,41 @@ class SSB(BenchmarkingExperiment[SSBResults]):
         Returns:
            The final results from the experiment.
         """
+        fit = self._fit_decay()
+        cz_fidelity = fit[0][1]
+        cz_fidelity_std = fit[1][1]
+
+        if plot_results:
+            self.plot_results()
+
+        return SSBResults(
+            target="& ".join(self.targets),
+            total_circuits=len(self.samples),
+            cz_fidelity_estimate=cz_fidelity,
+            cz_fidelity_estimate_std=cz_fidelity_std,
+        )
 
     def plot_results(self) -> None:
-        """Plot the experiment data and the corresponding fits."""
+        """Plot the experiment data and the corresponding fits. The shaded upper and lower limits
+        of the shaded region indicate the fits at +/- 1 standard deviation in all fitted parameters.
+        """
+        plot = sns.scatterplot(
+            data=self.raw_data,
+            x="num_cz_gates",
+            y="0" * self.num_qubits,
+        )
+        fit = self._fit_decay()
+        xx = np.linspace(0, np.max(self.raw_data.num_cz_gates))
+        plot.plot(
+            xx,
+            self.exp_decay(xx, *fit[0]),
+            color="tab:blue",
+            linestyle="--",
+        )
+        plot.fill_between(
+            xx,
+            self.exp_decay(xx, *(fit[0] - fit[1])),
+            self.exp_decay(xx, *(fit[0] + fit[1])),
+            alpha=0.5,
+            color="tab:blue",
+        )
