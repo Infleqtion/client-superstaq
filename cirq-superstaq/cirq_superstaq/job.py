@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Represents a job created via the Superstaq API."""
+
 from __future__ import annotations
 
 import collections
@@ -60,9 +61,9 @@ class Job:
     )
 
     def __init__(self, client: gss.superstaq_client._SuperstaqClient, job_id: str) -> None:
-        """Construct a `Job`.
+        """Constructs a `Job`.
 
-        Users should not call this themselves. If you only know the `job_id`, use `get_job`
+        Users should not call this themselves. If you only know the `job_id`, use `fetch_jobs`
         on `css.Service`.
 
         Args:
@@ -100,7 +101,7 @@ class Job:
             overall status of the entire batch.
         """
 
-        job_id_list = self._job_id.split(",")  # separate aggregated job ids
+        job_id_list = self._job_id.split(",")  # Separate aggregated job ids
 
         status_occurrence = {self._job[job_id]["status"] for job_id in job_id_list}
         status_priority_order = (
@@ -119,12 +120,22 @@ class Job:
                 self._overall_status = temp_status
                 return
 
-    def _check_if_unsuccessful(self) -> None:
-        status = self.status()
+    def _check_if_unsuccessful(self, index: int | None = None) -> None:
+        """Helper method to check if the current job status has any failure.
+
+        Args:
+            index: The index of the specific job status.
+
+        Raises:
+            gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
+        """
+        status = self.status(index)
         if status in self.UNSUCCESSFUL_STATES:
-            for job_id in self._job_id.split(","):
+            job_ids = self._job_id.split(",")
+            ids_to_check = [job_ids[index]] if index else job_ids
+            for job_id in ids_to_check:
                 if "failure" in self._job[job_id] and "error" in self._job[job_id]["failure"]:
-                    # if possible append a message to the failure status, e.g. "Failed (<message>)"
+                    # If possible append a message to the failure status, e.g. "Failed (<message>)"
                     error = self._job[job_id]["failure"]["error"]
                     status += f" ({error})"
                 raise gss.SuperstaqUnsuccessfulJobException(job_id, status)
@@ -139,7 +150,7 @@ class Job:
         """
         return self._job_id
 
-    def status(self) -> str:
+    def status(self, index: int | None = None) -> str:
         """Gets the current status of the job.
 
         If the current job is in a non-terminal state, this will update the job and return the
@@ -150,15 +161,32 @@ class Job:
                from the API.
 
         Returns:
-            The job status.
-        """
-        self._refresh_job()
-        return self._overall_status
+            The status of the job indexed by `index` or the overall job status if `index` is `None`.
 
-    def cancel(self, **kwargs: object) -> None:
+        Raises:
+            gss.SuperstaqServerException: If unable to retrieve the status of the job from the API.
+        """
+        if index is None:
+            self._refresh_job()
+            return self._overall_status
+
+        gss.validation.validate_integer_param(index, min_val=0)
+
+        job_ids = self._job_id.split(",")
+        requested_job_id = job_ids[index]
+        if (
+            requested_job_id not in self._job
+            or self._job[requested_job_id]["status"] not in self.TERMINAL_STATES
+        ):
+            self._job.update(self._client.fetch_jobs([requested_job_id]))
+        requested_job_status = self._job[requested_job_id]["status"]
+        return requested_job_status
+
+    def cancel(self, index: int | None = None, **kwargs: object) -> None:
         """Cancel the current job if it is not in a terminal state.
 
         Args:
+            index: An optional index of the specific sub-job to cancel.
             kwargs: Extra options needed to fetch jobs.
 
         Raises:
@@ -166,7 +194,8 @@ class Job:
                from the API orcancellations were unsuccessful.
         """
         job_ids = self._job_id.split(",")
-        self._client.cancel_jobs(job_ids, **kwargs)
+        ids_to_cancel = [job_ids[index]] if index else job_ids
+        self._client.cancel_jobs(ids_to_cancel, **kwargs)
 
     def target(self) -> str:
         """Gets the Superstaq target associated with this job.
@@ -309,13 +338,14 @@ class Job:
         return self._get_circuits("input_circuit", index=index)
 
     def pulse_gate_circuits(self, index: int | None = None) -> Any:
-        """Gets the pulse gate circuit returned by this job.
+        """Gets the pulse gate circuit(s) returned by this job.
 
         Args:
             index: An optional index of the pulse gate circuit to retrieve.
 
         Returns:
-            The `qiskit.QuantumCircuit` pulse gate circuit.
+            A `qiskit.QuantumCircuit` pulse gate circuit or list of `qiskit.QuantumCircuit` pulse
+            gate circuits.
 
         Raises:
             ValueError: If the job was not run on an IBM pulse device.
@@ -385,7 +415,8 @@ class Job:
             qubit_indices: If provided, only include measurements counts of these qubits.
 
         Returns:
-            A dictionary containing the frequency counts of the measurements.
+            A dictionary containing the frequency counts of the measurements the job indexed by
+            `index` or a list of such dictionaries for each respective sub-job.
 
         Raises:
             general_superstaq.SuperstaqUnsuccessfulJobException: If the job failed or has been
@@ -394,16 +425,16 @@ class Job:
             TimeoutError: If no results are available in the provided timeout interval.
         """
         time_waited_seconds: float = 0.0
-        while self.status() not in self.TERMINAL_STATES:
+        while (status := self.status(index)) not in self.TERMINAL_STATES:
             # Status does a refresh.
             if time_waited_seconds > timeout_seconds:
                 raise TimeoutError(
-                    f"Timed out while waiting for results. Final status was {self.status()}"
+                    f"Timed out while waiting for results. Final status was '{status}'"
                 )
             time.sleep(polling_seconds)
             time_waited_seconds += polling_seconds
 
-        self._check_if_unsuccessful()
+        self._check_if_unsuccessful(index)
         job_ids = self._job_id.split(",")
 
         if index is None:
@@ -444,12 +475,14 @@ class Job:
         return self._job_id, self._job
 
     def __getitem__(self, index: int) -> css.Job:
-        """Args:
-            idx: The index of the sub-job to return. Each sub-job corresponds to the a single
+        """Customized indexing operations for `css.Job`.
+
+        Args:
+            index: The index of the sub-job to return. Each sub-job corresponds to the a single
                 circuit.
 
         Returns:
-            A sub-job at the given index.
+            A sub-job at the given `index`.
         """
         job_id = self._job_id.split(",")[index]
         sub_job = css.Job(self._client, job_id)

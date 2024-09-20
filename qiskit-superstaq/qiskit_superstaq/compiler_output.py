@@ -29,9 +29,9 @@ def active_qubit_indices(circuit: qiskit.QuantumCircuit) -> list[int]:
 
     qubit_indices: set[int] = set()
 
-    for inst, qubits, _ in circuit:
-        if inst.name != "barrier":
-            indices = [circuit.find_bit(q).index for q in qubits]
+    for inst in circuit:
+        if inst.operation.name != "barrier":
+            indices = [circuit.find_bit(q).index for q in inst.qubits]
             qubit_indices.update(indices)
 
     return sorted(qubit_indices)
@@ -49,13 +49,15 @@ def measured_qubit_indices(circuit: qiskit.QuantumCircuit) -> list[int]:
 
     measured_qubits: set[qiskit.circuit.Qubit] = set()
 
-    for inst, qubits, clbits in circuit:
-        if isinstance(inst, qiskit.circuit.Measure):
-            measured_qubits.update(qubits)
+    for inst in circuit:
+        if isinstance(inst.operation, qiskit.circuit.Measure):
+            measured_qubits.update(inst.qubits)
 
         # Recurse into definition if it involves classical bits
-        elif clbits and inst.definition is not None:
-            measured_qubits.update(qubits[i] for i in measured_qubit_indices(inst.definition))
+        elif inst.clbits and inst.operation.definition is not None:
+            measured_qubits.update(
+                inst.qubits[i] for i in measured_qubit_indices(inst.operation.definition)
+            )
 
     return sorted(circuit.find_bit(qubit).index for qubit in measured_qubits)
 
@@ -104,7 +106,6 @@ class CompilerOutput:
             dict[int, int] | list[dict[int, int]] | list[list[dict[int, int]]]
         ),
         pulse_gate_circuits: qiskit.QuantumCircuit | list[qiskit.QuantumCircuit] = None,
-        pulse_sequences: qiskit.pulse.Schedule | list[qiskit.pulse.Schedule] | None = None,
         seq: qtrl.sequencer.Sequence | None = None,
         jaqal_programs: str | list[str] | None = None,
     ) -> None:
@@ -118,8 +119,6 @@ class CompilerOutput:
                 from logical to physical qubits.
             pulse_gate_circuits: Pulse-gate `qiskit.QuantumCircuit` or list thereof specifying the
                 pulse compilation.
-            pulse_sequences: `qiskit.pulse.Schedule` or list thereof specifying the pulse
-                compilation.
             seq: `qtrl.sequencer.Sequence` pulse sequence if `qtrl` is available locally.
             jaqal_programs: Optional string or list of strings specifying Jaqal programs (for
                 QSCOUT).
@@ -129,14 +128,12 @@ class CompilerOutput:
             self.initial_logical_to_physical = initial_logical_to_physicals
             self.final_logical_to_physical = final_logical_to_physicals
             self.pulse_gate_circuit = pulse_gate_circuits
-            self.pulse_sequence = pulse_sequences
             self.jaqal_program = jaqal_programs
         else:
             self.circuits = circuits
             self.initial_logical_to_physicals = initial_logical_to_physicals
             self.final_logical_to_physicals = final_logical_to_physicals
             self.pulse_gate_circuits = pulse_gate_circuits
-            self.pulse_sequences = pulse_sequences
             self.jaqal_programs = jaqal_programs
 
         self.seq = seq
@@ -211,7 +208,7 @@ def read_json(json_dict: Mapping[str, Any], circuits_is_list: bool) -> CompilerO
         map(dict, json.loads(json_dict["final_logical_to_physicals"]))
     )
 
-    pulse_gate_circuits = pulse_sequences = None
+    pulse_gate_circuits = None
 
     if "pulse_gate_circuits" in json_dict:
         pulse_gate_circuits = qss.deserialize_circuits(json_dict["pulse_gate_circuits"])
@@ -225,26 +222,18 @@ def read_json(json_dict: Mapping[str, Any], circuits_is_list: bool) -> CompilerO
                 )
             ]
 
-    if "pulses" in json_dict:
-        try:
-            pulse_sequences = gss.serialization.deserialize(json_dict["pulses"])
-        except Exception:
-            pulse_sequences = None
-
     if circuits_is_list:
         return CompilerOutput(
             compiled_circuits,
             initial_logical_to_physicals,
             final_logical_to_physicals,
             pulse_gate_circuits=pulse_gate_circuits,
-            pulse_sequences=pulse_sequences,
         )
     return CompilerOutput(
         compiled_circuits[0],
         initial_logical_to_physicals[0],
         final_logical_to_physicals[0],
         pulse_gate_circuits=None if pulse_gate_circuits is None else pulse_gate_circuits[0],
-        pulse_sequences=None if pulse_sequences is None else pulse_sequences[0],
     )
 
 

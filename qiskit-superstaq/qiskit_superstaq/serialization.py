@@ -26,6 +26,7 @@ QPY_SERIALIZATION_VERSION = 11
 # MSGate included as a workaround for https://github.com/Qiskit/qiskit/issues/11378
 _custom_gates_by_name: dict[str, type[qiskit.circuit.Instruction]] = {
     "acecr": qss.custom_gates.AceCR,
+    "dd": qss.custom_gates.DDGate,
     "parallel": qss.custom_gates.ParallelGates,
     "stripped_cz": qss.custom_gates.StrippedCZGate,
     "zzswap": qss.custom_gates.ZZSwapGate,
@@ -385,7 +386,6 @@ def _resolve_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
 
     elif type(gate) is qiskit.circuit.ControlledGate:
         gate.base_gate = _resolve_gate(gate.base_gate)
-        gate.name = gate._name.rsplit("_", 1)[0]  # https://github.com/Qiskit/qiskit/issues/8549
 
         if gate.definition is not None and gate._definition is not None:
             gate.definition = _resolve_circuit(gate._definition)

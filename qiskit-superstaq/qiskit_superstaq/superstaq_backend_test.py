@@ -4,17 +4,20 @@ from __future__ import annotations
 import json
 import textwrap
 from typing import TYPE_CHECKING
-from unittest.mock import DEFAULT, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
-import general_superstaq as gss
 import pytest
 import qiskit
-import yaml
 
 import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
     from qiskit_superstaq.conftest import MockSuperstaqProvider
+
+
+def test_repr(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    backend = fake_superstaq_provider.get_backend("ss_example_qpu")
+    assert repr(backend) == "<SuperstaqBackend('ss_example_qpu')>"
 
 
 def test_run(fake_superstaq_provider: MockSuperstaqProvider) -> None:
@@ -101,7 +104,7 @@ def test_eq(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     assert backend1 == backend3
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_aqt_compile(mock_post: MagicMock) -> None:
     # AQT compile
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
@@ -114,7 +117,6 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "initial_logical_to_physicals": "[[[0, 1]]]",
         "final_logical_to_physicals": "[[[1, 4]]]",
-        "state_jp": gss.serialization.serialize({}),
     }
     out = backend.compile(qc)
     assert out.circuit == qc
@@ -132,17 +134,18 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         },
     )
 
-    out = backend.compile([qc], atol=1e-2, pulses={"foo": "bar"}, variables={"abc": 123})
+    with pytest.raises(ValueError, match="Unable to serialize configuration"):
+        _ = backend.compile([qc], atol=1e-2, pulses=123, variables=456)
+
+    out = backend.compile([qc], atol=1e-2, aqt_configs={}, gateset={"X90": [[0], [1]]})
     assert out.circuits == [qc]
     assert out.initial_logical_to_physicals == [{0: 1}]
     assert out.final_logical_to_physicals == [{1: 4}]
     assert not hasattr(out, "circuit")
     expected_options = {
+        "aqt_configs": {},
         "atol": 1e-2,
-        "aqt_configs": {
-            "pulses": yaml.dump({"foo": "bar"}),
-            "variables": yaml.dump({"abc": 123}),
-        },
+        "gateset": {"X90": [[0], [1]]},
     }
     mock_post.assert_called_with(
         f"{provider._client.url}/aqt_compile",
@@ -159,7 +162,6 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
         "initial_logical_to_physicals": "[[], []]",
         "final_logical_to_physicals": "[[], []]",
-        "state_jp": gss.serialization.serialize({}),
     }
     matrix = qiskit.circuit.library.CRXGate(1.23).to_matrix()
     out = backend.compile([qc, qc], gate_defs={"CRX": matrix})
@@ -192,7 +194,6 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
-        "state_jp": gss.serialization.serialize({}),
     }
 
     out = backend.compile(qc, num_eca_circuits=1, random_seed=1234, atol=1e-2, test_options="yes")
@@ -206,7 +207,6 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
-        "state_jp": gss.serialization.serialize({}),
     }
 
     out = backend.compile(qc, num_eca_circuits=1, random_seed=1234, atol=1e-2, test_options="yes")
@@ -216,7 +216,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
     assert not hasattr(out, "circuit")
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_ibmq_compile(mock_post: MagicMock) -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
     backend = provider.get_backend("ibmq_jakarta_qpu")
@@ -230,29 +230,33 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "initial_logical_to_physicals": "[[[4, 4], [5, 5]]]",
         "final_logical_to_physicals": "[[[0, 4], [1, 5]]]",
-        "pulses": gss.serialization.serialize([DEFAULT]),
+        "pulse_gate_circuits": qss.serialization.serialize_circuits(qc),
     }
     assert backend.compile(
-        qiskit.QuantumCircuit(), dd_strategy="static", test_options="yes"
+        qiskit.QuantumCircuit(), dd_strategy="standard", test_options="yes"
     ) == qss.compiler_output.CompilerOutput(
-        qc, initial_logical_to_physical, final_logical_to_physical, pulse_sequences=DEFAULT
+        qc, initial_logical_to_physical, final_logical_to_physical, pulse_gate_circuits=qc
     )
 
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
-        "dd_strategy": "static",
+        "dd_strategy": "standard",
         "dynamical_decoupling": True,
         "test_options": "yes",
     }
 
     assert backend.compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
-        [qc], [initial_logical_to_physical], [final_logical_to_physical], pulse_sequences=[DEFAULT]
+        [qc], [initial_logical_to_physical], [final_logical_to_physical], pulse_gate_circuits=[qc]
     )
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "dd_strategy": "adaptive",
+        "dynamical_decoupling": True,
+    }
 
     with pytest.raises(ValueError, match="'ibmq_jakarta_qpu' is not a valid AQT target."):
         backend.aqt_compile([qc])
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_qscout_compile(
     mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
@@ -300,7 +304,7 @@ def test_qscout_compile(
     assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
 
 
-@patch("requests.post")
+@patch("requests.Session.post")
 def test_compile(mock_post: MagicMock) -> None:
     # Compilation to a simulator (e.g., AWS)
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
@@ -322,10 +326,43 @@ def test_compile(mock_post: MagicMock) -> None:
 def test_target_info(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     target = "ibmq_brisbane_qpu"
     backend = fake_superstaq_provider.get_backend(target)
-    assert backend.target_info()["backend_name"] == target
+    assert backend.target_info()["target"] == target
 
 
-@patch("requests.post")
+def test_configuration(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    target = "ibmq_brisbane_qpu"
+    backend = fake_superstaq_provider.get_backend(target)
+    with pytest.warns(DeprecationWarning):
+        configuration = backend.configuration()
+    assert configuration.backend_name == target
+    assert configuration.num_qubits == backend.num_qubits
+
+
+def test_target(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    target = "ibmq_brisbane_qpu"
+    backend = fake_superstaq_provider.get_backend(target)
+    assert backend.target.num_qubits == 4
+
+
+def test_max_circuits(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    target = "ibmq_brisbane_qpu"
+    backend = fake_superstaq_provider.get_backend(target)
+    assert backend.max_circuits is None
+
+
+def test_coupling_map(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    target = "ibmq_brisbane_qpu"
+    backend = fake_superstaq_provider.get_backend(target)
+
+    assert isinstance(backend.coupling_map, qiskit.transpiler.CouplingMap)
+    assert backend.coupling_map.get_edges() == [(0, 1), (1, 2)]
+    assert backend.coupling_map.physical_qubits == [0, 1, 2, 3]
+
+    backend._target_info = {}
+    assert backend.coupling_map is None
+
+
+@patch("requests.Session.post")
 def test_aces(mock_post: MagicMock) -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
     backend = provider.get_backend("ss_unconstrained_simulator")

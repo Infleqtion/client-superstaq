@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import numbers
+import warnings
 from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
@@ -24,9 +25,10 @@ import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
     from _typeshed import SupportsItems
+    from qiskit.providers.models import BackendConfiguration
 
 
-class SuperstaqBackend(qiskit.providers.BackendV1):
+class SuperstaqBackend(qiskit.providers.BackendV2):
     """This class represents a Superstaq backend."""
 
     def __init__(self, provider: qss.SuperstaqProvider, target: str) -> None:
@@ -37,63 +39,88 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             target: A string containing the name of a target backend.
         """
         gss.validation.validate_target(target)
+        description = f"Superstaq '{target}' backend"
 
-        self._configuration: qiskit.providers.models.BackendConfiguration | None
-        self._provider = provider
-        self._target = target
+        self._target_info: dict[str, object] | None = None
 
-        super().__init__(None, provider=provider)
+        super().__init__(provider=provider, name=target, description=description)
 
     @classmethod
     def _default_options(cls) -> qiskit.providers.Options:
         return qiskit.providers.Options(shots=1000)
 
-    def name(self) -> str:
-        """Gets the target name with which this backend is associated.
-
-        Returns:
-            The target name associated with this backend.
-        """
-        return self._target
-
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, qss.SuperstaqBackend):
             return False
 
-        return self._provider == other._provider and self.configuration() == other.configuration()
+        return self._provider == other._provider and self.target_info() == other.target_info()
 
-    def configuration(self) -> qiskit.providers.models.BackendConfiguration:
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__}('{self.name}')>"
+
+    def configuration(self) -> BackendConfiguration:
         """Retrieves configuration information for this target.
 
         Returns:
             A backend configuration object containing various hardware parameters.
         """
-        if self._configuration is None:
-            target_info = self._provider._client.target_info(self._target)["target_info"]
+        warnings.warn(
+            "The `.configuration()` method of `SuperstaqBackend` has been deprecated, and will be "
+            "removed in a future version of qiskit-superstaq. Instead, use attributes of the "
+            "backend itself (e.g. `backend.num_qubits`), or of its `.target` attribute.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
-            num_qubits = target_info.pop("num_qubits", None)
-            configuration_dict = {
-                "backend_name": target_info.pop("target", None),
-                "basis_gates": target_info.pop("native_gate_set", []),
-                "backend_version": "n/a",
-                "n_qubits": num_qubits,
-                "gates": [],
-                "local": False,
-                "simulator": False,
-                "conditional": False,
-                "open_pulse": False,
-                "memory": False,
-                "max_shots": None,
-                "coupling_map": None,
-                "description": f"{num_qubits} qubit device",
-            }
+        target_info = self.target_info()
 
-            configuration_dict.update(target_info)
-            self._configuration = qiskit.providers.models.BackendConfiguration.from_dict(
-                configuration_dict
-            )
+        num_qubits = target_info.get("num_qubits")
+        configuration_dict = {
+            "backend_name": target_info.get("target"),
+            "basis_gates": target_info.get("native_gate_set", []),
+            "backend_version": "n/a",
+            "n_qubits": num_qubits,
+            "gates": [],
+            "local": False,
+            "simulator": False,
+            "conditional": False,
+            "open_pulse": False,
+            "memory": False,
+            "max_shots": None,
+            "coupling_map": None,
+            "description": f"{num_qubits} qubit device",
+        }
 
-        return self._configuration
+        return qiskit.providers.models.BackendConfiguration.from_dict(configuration_dict)
+
+    @property
+    def max_circuits(self) -> int | None:
+        """The maximum number of circuits that can be submitted to this backend."""
+        return self.target_info().get("max_circuits")
+
+    @property
+    def coupling_map(self) -> qiskit.transpiler.CouplingMap | None:
+        """A coupling map generated from the two-qubit gates supported by this backend."""
+        target_info = self.target_info()
+        if target_info.get("coupling_map") is None:
+            return None
+
+        coupling_map = qiskit.transpiler.CouplingMap()
+        if target_info.get("num_qubits") is not None:
+            for qubit in range(target_info["num_qubits"]):
+                coupling_map.add_physical_qubit(qubit)
+
+        for edge in target_info["coupling_map"]:
+            coupling_map.add_edge(*edge)
+
+        return coupling_map
+
+    @property
+    def target(self) -> qiskit.transpiler.Target:
+        """A `qiskit.transpiler.Target` object for this backend."""
+        target_info = self.target_info()
+        num_qubits = target_info.get("num_qubits")
+        return qiskit.transpiler.Target(description=self.description, num_qubits=num_qubits)
 
     def run(
         self,
@@ -131,7 +158,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         result = self._provider._client.create_job(
             serialized_circuits={"qiskit_circuits": qiskit_circuits},
             repetitions=shots,
-            target=self.name(),
+            target=self.name,
             method=method,
             **kwargs,
         )
@@ -176,16 +203,16 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         Raises:
             ValueError: If this backend does not support compilation.
         """
-        if self.name().startswith("ibmq_"):
+        if self.name.startswith("ibmq_"):
             return self.ibmq_compile(circuits, **kwargs)
 
-        elif self.name().startswith("aqt_"):
+        elif self.name.startswith("aqt_"):
             return self.aqt_compile(circuits, **kwargs)
 
-        elif self.name().startswith("qscout_"):
+        elif self.name.startswith("qscout_"):
             return self.qscout_compile(circuits, **kwargs)
 
-        elif self.name().startswith("cq_"):
+        elif self.name.startswith("cq_"):
             return self.cq_compile(circuits, **kwargs)
 
         request_json = self._get_compile_request_json(circuits, **kwargs)
@@ -199,13 +226,13 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         **kwargs: Any,
     ) -> dict[str, str]:
         qss.validation.validate_qiskit_circuits(circuits)
-        gss.validation.validate_target(self.name())
+        gss.validation.validate_target(self.name)
 
         serialized_circuits = qss.serialization.serialize_circuits(circuits)
         options = {**self._provider._client.client_kwargs, **kwargs}
         request_json = {
             "qiskit_circuits": serialized_circuits,
-            "target": self.name(),
+            "target": self.name,
             "options": qss.serialization.to_json(options),
         }
         return request_json
@@ -218,6 +245,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         random_seed: int | None = None,
         atol: float | None = None,
         gate_defs: Mapping[str, str | npt.NDArray[np.complex_] | None] | None = None,
+        gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
         pulses: object = None,
         variables: object = None,
         **kwargs: Any,
@@ -242,6 +270,9 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
                 `<matrix1>` for all "SWAP" calibrations except "SWAP/C5C4" (which will instead be
                 mapped to `<matrix2>` applied to qubits 4 and 5). Setting any calibration to None
                 will disable that calibration.
+            gateset: Which gates to use for compilation. Should be a dictionary with entries in the
+                for `gate_name: [[1, 2], [3, 4]`, where the keys refer to specific gates, and the
+                values indicate which qubit(s) they act upon.
             pulses: Qtrl `PulseManager` or file path for pulse configuration.
             variables: Qtrl `VariableManager` or file path for variable configuration.
             kwargs: Other desired compile options.
@@ -255,8 +286,8 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         Raises:
             ValueError: If this is not an AQT backend.
         """
-        if not self.name().startswith("aqt_"):
-            raise ValueError(f"{self.name()!r} is not a valid AQT target.")
+        if not self.name.startswith("aqt_"):
+            raise ValueError(f"{self.name!r} is not a valid AQT target.")
 
         options: dict[str, Any] = {**kwargs}
         if num_eca_circuits is not None:
@@ -269,6 +300,8 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             options["atol"] = float(atol)
         if gate_defs is not None:
             options["gate_defs"] = gate_defs
+        if gateset is not None:
+            options["gateset"] = gateset
         if pulses or variables:
             options["aqt_configs"] = {
                 "pulses": self._provider._qtrl_config_to_yaml_str(pulses),
@@ -283,17 +316,28 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
     def ibmq_compile(
         self,
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
+        *,
         dynamical_decoupling: bool = True,
-        dd_strategy: str = "static_context_aware",
+        dd_strategy: str = "adaptive",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
 
+        Superstaq currently supports the following dynamical decoupling strategies:
+        * "standard": Places a single DD sequence in each idle window.
+        * "syncopated": Places DD pulses at fixed time intervals, alternating between pulses on
+          neighboring qubits in order to mitigate parasitic ZZ coupling errors.
+        * "adaptive" (default): Dynamically spaces DD pulses across idle windows with awareness of
+          neighboring qubits to achieve the parasitic ZZ coupling mitigation of the "syncopated"
+          strategy with fewer pulses and less discretization error.
+        See https://superstaq.readthedocs.io/en/latest/optimizations/ibm/ibmq_dd_strategies_qss.html
+        for an example of each strategy.
+
         Args:
             circuits: The qiskit.QuantumCircuit(s) to compile.
             dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
-            dd_strategy: Method to use for placing dynamical decoupling operations; either
-                "dynamic", "static", or "static_context_aware" (default).
+            dd_strategy: Method to use for placing dynamical decoupling operations; should be either
+                "standard", "syncopated", or "adaptive" (default). See above.
             kwargs: Other desired compile options.
 
         Returns:
@@ -304,8 +348,8 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         Raises:
             ValueError: If this is not an IBMQ backend.
         """
-        if not self.name().startswith("ibmq_"):
-            raise ValueError(f"{self.name()!r} is not a valid IBMQ target.")
+        if not self.name.startswith("ibmq_"):
+            raise ValueError(f"{self.name!r} is not a valid IBMQ target.")
 
         options: dict[str, Any] = {**kwargs}
 
@@ -365,8 +409,8 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             ValueError: If this is not a QSCOUT backend.
             ValueError: If `base_entangling_gate` is not a valid entangling basis.
         """
-        if not self.name().startswith("qscout_"):
-            raise ValueError(f"{self.name()!r} is not a valid QSCOUT target.")
+        if not self.name.startswith("qscout_"):
+            raise ValueError(f"{self.name!r} is not a valid QSCOUT target.")
 
         base_entangling_gate = base_entangling_gate.lower()
         if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
@@ -432,8 +476,8 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         Raises:
             ValueError: If this is not a CQ backend.
         """
-        if not self.name().startswith("cq_"):
-            raise ValueError(f"{self.name()!r} is not a valid CQ target.")
+        if not self.name.startswith("cq_"):
+            raise ValueError(f"{self.name!r} is not a valid CQ target.")
 
         request_json = self._get_compile_request_json(
             circuits,
@@ -447,12 +491,15 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         return qss.compiler_output.read_json(json_dict, circuits_is_list)
 
     def target_info(self) -> dict[str, Any]:
-        """Returns information about this backend.
+        """Retrieves configuration information for this target.
 
         Returns:
-            A dictionary of target information.
+            A dictionary containing various hardware parameters.
         """
-        return self.configuration().to_dict()
+        if self._target_info is None:
+            self._target_info = self._provider._client.target_info(self.name)["target_info"]
+
+        return self._target_info
 
     def resource_estimate(
         self, circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit]
@@ -550,7 +597,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
                 gss.validation.validate_integer_param(weight, min_val=1)
 
         return self._provider._client.submit_aces(
-            target=self.name(),
+            target=self.name,
             qubits=qubits,
             shots=shots,
             num_circuits=num_circuits,

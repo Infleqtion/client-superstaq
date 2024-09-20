@@ -347,7 +347,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
 
         return statuses
 
-    def _run_check(self) -> None:
+    def _has_raw_data(self) -> None:
         """Checks if any of the samples already have probabilities stored. If so raises a runtime
         error to prevent them from being overwritten.
 
@@ -525,7 +525,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             The superstaq job containing all the circuits submitted as part of the experiment.
         """
         if not overwrite:
-            self._run_check()
+            self._has_raw_data()
 
         experiment_job = self._service.create_job(
             [sample.circuit for sample in self.samples],
@@ -558,7 +558,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
                 be over written in the process. Defaults to False.
         """
         if not overwrite:
-            self._run_check()
+            self._has_raw_data()
 
         if simulator is None:
             simulator = cirq.Simulator()
@@ -595,7 +595,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             RuntimeError: If the returned probabilities dictionary values do not sum to 1.0.
         """
         if not overwrite:
-            self._run_check()
+            self._has_raw_data()
         for sample in tqdm(self.samples, desc="Running circuits"):
             probability = circuit_eval_func(sample.circuit, **kwargs)
             if not all(len(key) == self.num_qubits for key in probability.keys()):

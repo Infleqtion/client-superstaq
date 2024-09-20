@@ -42,9 +42,9 @@ class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
         return {
             "target_info": {
                 "target": target,
-                "num_qubits": -1,
+                "num_qubits": 4,
                 "basis_gates": None,
-                "coupling_map": None,
+                "coupling_map": [[0, 1], [1, 2]],
             },
         }
 
@@ -96,16 +96,6 @@ class MockSuperstaqProvider(qss.SuperstaqProvider):
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
         )
-
-    def get_backend(self, name: str) -> qss.SuperstaqBackend:
-        """Mocks the get_backend function of SuperstaqProvider.
-        Args:
-            name: name of the backend.
-
-        Returns:
-            A mock superstaq backend with the given name.
-        """
-        return qss.SuperstaqBackend(self, name)
 
 
 @pytest.fixture()

@@ -62,6 +62,7 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
    apps/max_sharpe_ratio_optimization
    apps/dfe/dfe
    apps/aces/aces
+   apps/supermarq/supermarq
 
 .. toctree::
    :maxdepth: 1
