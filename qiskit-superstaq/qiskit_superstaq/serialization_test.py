@@ -146,7 +146,7 @@ def test_warning_suppression() -> None:
     circuit.cx(2, 1)
     circuit.h(0)
 
-    major, minor, patch = qiskit.__version__.split(".")
+    major, minor, patch, *_ = qiskit.__version__.split(".")
     newer_version = f"{major}.{minor}.{int(patch) + 1}"
 
     # QPY encodes qiskit.__version__ into the serialized circuit, so mocking a newer version string
@@ -203,10 +203,14 @@ def test_circuit_from_qasm_with_gate_defs() -> None:
     circuit_from_qasm = qiskit.QuantumCircuit.from_qasm_str(qiskit.qasm2.dumps(circuit))
     new_circuit = qss.deserialize_circuits(qss.serialize_circuits(circuit_from_qasm))[0]
 
-    # QASM conversion can change instruction names, so unroll circuits before comparing
-    before = qiskit.transpile(circuit_from_qasm, basis_gates=["cx", "u"])
-    after = qiskit.transpile(new_circuit, basis_gates=["cx", "u"])
-    assert before == after
+    # QASM conversion can change instruction names, so compare by unitary
+    new_circuit.remove_final_measurements()
+    circuit_from_qasm.remove_final_measurements()
+    assert np.allclose(
+        qiskit.quantum_info.Operator(new_circuit).to_matrix(),
+        qiskit.quantum_info.Operator(circuit_from_qasm).to_matrix(),
+        atol=1e-8,
+    )
 
 
 # Gate classes and corresponding numbers of parameters
@@ -268,6 +272,7 @@ test_gates = {
     qiskit.circuit.library.CUGate: 4,
     qss.AceCR: 2,
     qss.AQTiCCXGate: 0,
+    qss.DDGate: 1,
     qss.StrippedCZGate: 1,
     qss.ZZSwapGate: 1,
     qss.custom_gates.iXGate: 0,
@@ -310,6 +315,7 @@ def _check_serialization(*gates: qiskit.circuit.Instruction) -> None:
             gate, qiskit.circuit.ControlledGate
         ):
             circuit.append(gate.control(1, ctrl_state=0), range(gate.num_qubits + 1))
+            circuit.append(gate.control(1), range(gate.num_qubits + 1))
 
     # Make sure resolution recurses into component gates
     if all(isinstance(gate, qiskit.circuit.Gate) for gate in gates):
@@ -353,8 +359,6 @@ def test_qiskit_gate_workarounds() -> None:
     circuit = qiskit.QuantumCircuit(5)
     circuit.append(qiskit.circuit.library.MCXGate(3, ctrl_state=1), range(4))
     circuit.append(qiskit.circuit.library.MCXGrayCode(4, ctrl_state=2), range(5))
-    circuit.append(qiskit.circuit.library.MCXRecursive(3, ctrl_state=3), range(4))
-    circuit.append(qiskit.circuit.library.MCXVChain(3, ctrl_state=4), range(5))
     circuit.append(qiskit.circuit.library.MCU1Gate(1.1, 3, ctrl_state=5), range(4))
     circuit.append(qiskit.circuit.library.MCU1Gate(2.2, 3, ctrl_state=6), range(4))
     circuit.append(qiskit.circuit.library.MCPhaseGate(1.1, 3), range(4))
