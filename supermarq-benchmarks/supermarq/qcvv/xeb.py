@@ -85,7 +85,7 @@ class XEBResults(BenchmarkingResults):
     cycle_fidelity_estimate_std: float
     """Standard deviation for the cycle fidelity estimate."""
 
-    experiment_name = "IRB"
+    experiment_name = "XEB"
 
 
 class XEB(BenchmarkingExperiment[XEBResults]):

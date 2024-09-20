@@ -21,13 +21,247 @@ from dataclasses import dataclass
 from typing import Union  # noqa: MDA400
 
 import cirq
+import cirq.circuits
 import numpy as np
 import pandas as pd
+import scipy
 import seaborn as sns
-from scipy.stats import linregress
 from tqdm.contrib.itertools import product
+from tqdm.notebook import tqdm
 
 from supermarq.qcvv.base_experiment import BenchmarkingExperiment, BenchmarkingResults, Sample
+
+
+####################################################################################################
+# Some handy functions for 1 and 2 qubit Clifford operations
+####################################################################################################
+def _reduce_single_qubit_clifford_seq(
+    gate_seq: list[cirq.SingleQubitCliffordGate],
+) -> cirq.SingleQubitCliffordGate:
+    """Reduces a list of single qubit clifford gates to a single gate.
+
+    Args:
+        gate_seq: The list of gates.
+    Returns:
+        The single reduced gate.
+    """
+    cur = gate_seq[0]
+    for gate in gate_seq[1:]:
+        cur = cur.merged_with(gate)
+    return cur
+
+
+def _reduce_clifford_seq(
+    gate_seq: list[cirq.CliffordGate],
+) -> cirq.CliffordGate:
+    """Reduces a list of multi qubit clifford gates to a single gate.
+
+    Args:
+        gate_seq: The list of gates.
+    Returns:
+        The single reduced gate.
+    """
+    cur = gate_seq[0].clifford_tableau
+    for gate in gate_seq[1:]:
+        cur = cur.then(gate.clifford_tableau)
+    return cirq.CliffordGate.from_clifford_tableau(cur)
+
+
+####################################################################################################
+# The sets `S1`, `S1_X` and `S1_Y` of single qubit Clifford operations are used to generate
+# random two qubit Clifford operations. For details see: https://arxiv.org/pdf/1210.7011 &
+# https://arxiv.org/pdf/1402.4848.
+# The implementation is adapted from:
+# https://github.com/quantumlib/Cirq/blob/main/cirq-core/cirq/experiments/qubit_characterizations.py
+####################################################################################################
+_S1 = [
+    # I
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([False, False], dtype=np.dtype("bool")),
+            xs=np.array([[True], [False]], dtype=np.dtype("bool")),
+            zs=np.array([[False], [True]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
+    ),
+    # Y**0.5 X**0.5
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([False, False], dtype=np.dtype("bool")),
+            xs=np.array([[True], [True]], dtype=np.dtype("bool")),
+            zs=np.array([[True], [False]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
+    ),
+    # X**-0.5 Y**-0.5
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([False, False], dtype=np.dtype("bool")),
+            xs=np.array([[False], [True]], dtype=np.dtype("bool")),
+            zs=np.array([[True], [True]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
+    ),
+]
+
+
+_S1_X = [
+    # X**0.5
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([False, True], dtype=np.dtype("bool")),
+            xs=np.array([[True], [True]], dtype=np.dtype("bool")),
+            zs=np.array([[False], [True]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
+    ),
+    # X**0.5, Y**0.5, X**0.5
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([False, True], dtype=np.dtype("bool")),
+            xs=np.array([[True], [False]], dtype=np.dtype("bool")),
+            zs=np.array([[True], [True]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
+    ),
+    # Y**-0.5
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([False, True], dtype=np.dtype("bool")),
+            xs=np.array([[False], [True]], dtype=np.dtype("bool")),
+            zs=np.array([[True], [False]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
+    ),
+]
+
+
+_S1_Y = [
+    # Y**0.5
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([True, False], dtype=np.dtype("bool")),
+            xs=np.array([[False], [True]], dtype=np.dtype("bool")),
+            zs=np.array([[True], [False]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
+    ),
+    # X**-0.5 Y**-0.5 X**0.5
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([True, False], dtype=np.dtype("bool")),
+            xs=np.array([[True], [False]], dtype=np.dtype("bool")),
+            zs=np.array([[True], [True]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
+    ),
+    # Y X**0.5
+    cirq.CliffordGate.from_clifford_tableau(
+        cirq.CliffordTableau(
+            1,
+            rs=np.array([True, False], dtype=np.dtype("bool")),
+            xs=np.array([[True], [True]], dtype=np.dtype("bool")),
+            zs=np.array([[False], [True]], dtype=np.dtype("bool")),
+            initial_state=0,
+        )
+    ),
+]
+
+
+def random_single_qubit_clifford() -> cirq.SingleQubitCliffordGate:
+    """Choose a random single qubit clifford gate.
+
+    Returns:
+        The random clifford gate.
+    """
+    Id = cirq.SingleQubitCliffordGate.I
+    H = cirq.SingleQubitCliffordGate.H
+    S = cirq.SingleQubitCliffordGate.Z_sqrt
+    X = cirq.SingleQubitCliffordGate.X
+    Y = cirq.SingleQubitCliffordGate.Y
+    Z = cirq.SingleQubitCliffordGate.Z
+
+    set_A = [
+        Id,
+        S,
+        H,
+        _reduce_single_qubit_clifford_seq([H, S]),
+        _reduce_single_qubit_clifford_seq([S, H]),
+        _reduce_single_qubit_clifford_seq([H, S, H]),
+    ]
+
+    set_B = [Id, X, Y, Z]
+
+    return _reduce_single_qubit_clifford_seq([random.choice(set_A), random.choice(set_B)])
+
+
+def random_two_qubit_clifford() -> cirq.CliffordGate:
+    """Choose a random two qubit clifford gate.
+
+    For details of algorithm see: https://arxiv.org/pdf/1402.4848 & https://arxiv.org/pdf/1210.7011.
+
+    Returns:
+        The random clifford gate.
+    """
+    qubits = cirq.LineQubit.range(2)
+    a = random_single_qubit_clifford()
+    b = random_single_qubit_clifford()
+    idx = random.randint(0, 19)
+    if idx == 0:
+        return cirq.CliffordGate.from_op_list([a(qubits[0]), b(qubits[1])], qubits)
+    elif idx == 1:
+        return cirq.CliffordGate.from_op_list(
+            [
+                a(qubits[0]),
+                b(qubits[1]),
+                cirq.CZ(*qubits),
+                cirq.Y(qubits[0]) ** -0.5,
+                cirq.Y(qubits[1]) ** 0.5,
+                cirq.CZ(*qubits),
+                cirq.Y(qubits[0]) ** 0.5,
+                cirq.Y(qubits[1]) ** -0.5,
+                cirq.CZ(*qubits),
+                cirq.Y(qubits[1]) ** 0.5,
+            ],
+            qubits,
+        )
+    elif 2 <= idx <= 10:
+        idx_a = int((idx - 2) / 3)
+        idx_b = (idx - 2) % 3
+        return cirq.CliffordGate.from_op_list(
+            [
+                a(qubits[0]),
+                b(qubits[1]),
+                cirq.CZ(*qubits),
+                _S1[idx_a](qubits[0]),
+                _S1_Y[idx_b](qubits[1]),
+            ],
+            qubits,
+        )
+
+    idx_a = int((idx - 11) / 3)
+    idx_b = (idx - 11) % 3
+    return cirq.CliffordGate.from_op_list(
+        [
+            a(qubits[0]),
+            b(qubits[1]),
+            cirq.CZ(*qubits),
+            cirq.Y(qubits[0]) ** 0.5,
+            cirq.X(qubits[1]) ** -0.5,
+            cirq.CZ(*qubits),
+            _S1_Y[idx_a](qubits[0]),
+            _S1_X[idx_b](qubits[1]),
+        ],
+        qubits,
+    )
 
 
 @dataclass(frozen=True)
@@ -58,10 +292,10 @@ class RBResults(BenchmarkingResults):
     """Decay coefficient estimate without the interleaving gate."""
     rb_decay_coefficient_std: float
     """Standard deviation of the decay coefficient estimate without the interleaving gate."""
-    average_gate_error: float | None
-    """Estimate of the average gate error."""
-    average_gate_error_std: float | None
-    """Standard deviation of the estimate for the average gate error."""
+    average_error_per_clifford: float | None
+    """Estimate of the average error per Clifford operation."""
+    average_error_per_clifford_std: float | None
+    """Standard deviation of the the average error per Clifford operation."""
 
     experiment_name = "RB"
 
@@ -99,86 +333,97 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
 
     def __init__(
         self,
-        interleaved_gate: (
-            cirq.ops.SingleQubitCliffordGate | None
-        ) = cirq.ops.SingleQubitCliffordGate.Z,
-        num_qubits: int = 1,
+        interleaved_gate: cirq.Gate | None = cirq.Z,
+        num_qubits: int | None = 1,
+        clifford_op_gateset: cirq.CompilationTargetGateset = cirq.CZTargetGateset(),
     ) -> None:
         """Constructs an IRB experiment.
 
         Args:
-            interleaved_gate: The single qubit Clifford gate to measure the gate error of. If None
-                then no interleaving is performed and instead vanilla Randomize benchmarking is
+            interleaved_gate: The Clifford gate to measure the gate error of. If None
+                then no interleaving is performed and instead vanilla randomized benchmarking is
                 performed.
-            num_qubits: The number of qubits to experiment on
+            num_qubits: The number of qubits to experiment on. Must either be 1 or 2 but is ignored
+                if a gate is provided - the number of qubits is instead inferred from the gate.
+            clifford_op_gateset: The gateset to use when implementing the clifford operations.
+                Defaults to the CZ/GR set.
         """
-        if num_qubits != 1:
+        if interleaved_gate is not None:
+            num_qubits = interleaved_gate.num_qubits()
+        if num_qubits not in [1, 2]:
             raise NotImplementedError(
-                "IRB experiment is currently only implemented for single qubit use"
+                "IRB experiment is currently only implemented for single or two qubit use."
             )
-        super().__init__(num_qubits=1)
+        super().__init__(num_qubits=num_qubits)
 
-        self.interleaved_gate = interleaved_gate
-        """The gate being interleaved"""
+        if interleaved_gate is not None:
+            self.interleaved_gate: cirq.CliffordGate | None = cirq.CliffordGate.from_op_list(
+                [interleaved_gate(*self.qubits)], self.qubits
+            )
+            self._interleaved_op = interleaved_gate(*self.qubits)
+            """The operation being interleaved"""
+        else:
+            self.interleaved_gate = None
 
-    @staticmethod
-    def _reduce_clifford_seq(
-        gate_seq: list[cirq.ops.SingleQubitCliffordGate],
-    ) -> cirq.ops.SingleQubitCliffordGate:
-        """Reduces a list of single qubit clifford gates to a single gate.
+        self.clifford_op_gateset = clifford_op_gateset
+        """The gateset to use when implementing Clifford operations."""
 
-        Args:
-            gate_seq: The list of gates.
-            The single reduced gate.
-        Returns:
-            The single reduced gate
-        """
-        cur = gate_seq[0]
-        for gate in gate_seq[1:]:
-            cur = cur.merged_with(gate)
-        return cur
-
-    @classmethod
-    def _random_single_qubit_clifford(cls) -> cirq.ops.SingleQubitCliffordGate:
-        """Choose a random single qubit clifford gate.
-
-        Returns:
-            The random clifford gate.
-        """
-        Id = cirq.ops.SingleQubitCliffordGate.I
-        H = cirq.ops.SingleQubitCliffordGate.H
-        S = cirq.ops.SingleQubitCliffordGate.Z_sqrt
-        X = cirq.ops.SingleQubitCliffordGate.X
-        Y = cirq.ops.SingleQubitCliffordGate.Y
-        Z = cirq.ops.SingleQubitCliffordGate.Z
-
-        set_A = [
-            Id,
-            S,
-            H,
-            cls._reduce_clifford_seq([H, S]),
-            cls._reduce_clifford_seq([S, H]),
-            cls._reduce_clifford_seq([H, S, H]),
-        ]
-
-        set_B = [Id, X, Y, Z]
-
-        return cls._reduce_clifford_seq([random.choice(set_A), random.choice(set_B)])
-
-    def _invert_clifford_circuit(self, circuit: cirq.Circuit) -> cirq.Circuit:
-        """Given a Clifford circuit find and append the corresponding inverse Clifford gate.
+    def _clifford_gate_to_circuit(
+        self,
+        clifford: cirq.CliffordGate,
+    ) -> cirq.Circuit:
+        """Converts a Clifford gate to a circuit using the desired gateset for the experiment.
 
         Args:
-            circuit: The Clifford circuit to invert.
+            clifford: The clifford operation to convert.
 
         Returns:
-            A copy of the original Clifford circuit with the inverse element appended.
+            A circuit implementing the desired Clifford gate.
         """
-        clifford_gates = [op.gate for op in circuit.all_operations()]
-        inv_element = self._reduce_clifford_seq(
-            cirq.inverse(clifford_gates)  # type: ignore[arg-type]
+        circuit = cirq.Circuit(
+            cirq.decompose_clifford_tableau_to_operations(
+                self.qubits, clifford.clifford_tableau  # type: ignore[arg-type]
+            )
         )
-        return circuit + inv_element(*self.qubits)
+        return cirq.optimize_for_target_gateset(circuit, gateset=self.clifford_op_gateset)
+
+    def random_clifford(self) -> cirq.CliffordGate:
+        """Returns:
+        A random clifford gate with the correct number of qubits for the current experiment.
+        """
+        if self.num_qubits == 1:
+            return random_single_qubit_clifford()
+        return random_two_qubit_clifford()
+
+    def gates_per_clifford(self, samples: int = 500) -> dict[str, float]:
+        """Samples a number of random Clifford operations and calculates the average number of
+        single and two qubit gates used to implement them. Note this depends on the gateset chosen
+        for the experiment.
+
+        Args:
+            samples: Number of samples to use. Defaults to 500.
+
+        Returns:
+            A dictionary with the average number of one and two qubit gates used.
+        """
+        sample = [
+            self._clifford_gate_to_circuit(self.random_clifford())
+            for _ in tqdm(range(samples), desc="Sampling Clifford operations")
+        ]
+        return {
+            "single_qubit_gates": np.mean(
+                [
+                    sum(1 for op in circuit.all_operations() if len(op.qubits) == 1)
+                    for circuit in sample
+                ]
+            ).item(),
+            "two_qubit_gates": np.mean(
+                [
+                    sum(1 for op in circuit.all_operations() if len(op.qubits) == 2)
+                    for circuit in sample
+                ]
+            ).item(),
+        }
 
     def _build_circuits(self, num_circuits: int, cycle_depths: Iterable[int]) -> Sequence[Sample]:
         """Build a list of randomised circuits required for the IRB experiment.
@@ -192,32 +437,55 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         """
         samples = []
         for _, depth in product(range(num_circuits), cycle_depths, desc="Building circuits"):
-            base_circuit = cirq.Circuit(
-                *[self._random_single_qubit_clifford()(*self.qubits) for _ in range(depth)]
-            )
-            rb_circuit = self._invert_clifford_circuit(base_circuit)
+            base_sequence = [self.random_clifford() for _ in range(depth)]
+            rb_sequence = base_sequence + [
+                _reduce_clifford_seq(cirq.inverse(base_sequence))  # type: ignore[arg-type]
+            ]
+            rb_circuit = cirq.Circuit(self._clifford_gate_to_circuit(gate) for gate in rb_sequence)
             samples.append(
                 Sample(
-                    raw_circuit=rb_circuit + cirq.measure(sorted(rb_circuit.all_qubits())),
+                    raw_circuit=rb_circuit + cirq.measure(sorted(self.qubits)),
                     data={
                         "num_cycles": depth,
                         "circuit_depth": len(rb_circuit),
+                        "single_qubit_gates": sum(
+                            1 for op in rb_circuit.all_operations() if len(op.qubits) == 1
+                        ),
+                        "two_qubit_gates": sum(
+                            1 for op in rb_circuit.all_operations() if len(op.qubits) == 2
+                        ),
                         "experiment": "RB",
                     },
                 ),
             )
             if self.interleaved_gate is not None:
-                irb_circuit = self._invert_clifford_circuit(
-                    self._interleave_op(
-                        base_circuit, self.interleaved_gate(*self.qubits), include_final=True
-                    )
+                # Find final gate
+                irb_sequence = [elem for x in base_sequence for elem in (x, self.interleaved_gate)]
+                irb_sequence_final_gate = _reduce_clifford_seq(
+                    cirq.inverse(irb_sequence)  # type: ignore[arg-type]
                 )
+
+                irb_circuit = cirq.Circuit()
+                for gate in base_sequence:
+                    irb_circuit += self._clifford_gate_to_circuit(gate)
+                    irb_circuit += self._interleaved_op.with_tags("no_compile")
+                # Add the final inverting gate
+                irb_circuit += self._clifford_gate_to_circuit(
+                    irb_sequence_final_gate,
+                )
+
                 samples.append(
                     Sample(
-                        raw_circuit=irb_circuit + cirq.measure(sorted(irb_circuit.all_qubits())),
+                        raw_circuit=irb_circuit + cirq.measure(sorted(self.qubits)),
                         data={
                             "num_cycles": depth,
                             "circuit_depth": len(irb_circuit),
+                            "single_qubit_gates": sum(
+                                1 for op in irb_circuit.all_operations() if len(op.qubits) == 1
+                            ),
+                            "two_qubit_gates": sum(
+                                1 for op in irb_circuit.all_operations() if len(op.qubits) == 2
+                            ),
                             "experiment": "IRB",
                         },
                     ),
@@ -242,6 +510,8 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
                     "clifford_depth": sample.data["num_cycles"],
                     "circuit_depth": sample.data["circuit_depth"],
                     "experiment": sample.data["experiment"],
+                    "single_qubit_gates": sample.data["single_qubit_gates"],
+                    "two_qubit_gates": sample.data["two_qubit_gates"],
                     **sample.probabilities,
                 }
             )
@@ -250,17 +520,47 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
 
     def plot_results(self) -> None:
         """Plot the exponential decay of the circuit fidelity with cycle depth."""
-        plot = sns.lmplot(
+        plot = sns.scatterplot(
             data=self.raw_data,
             x="clifford_depth",
-            y="log_survival_prob",
+            y="0" * self.num_qubits,
             hue="experiment",
         )
-        ax = plot.axes.item()
-        plot.tight_layout()
-        ax.set_xlabel(r"Cycle depth", fontsize=15)
-        ax.set_ylabel(r"Log survival probability", fontsize=15)
-        ax.set_title(r"Exponential decay of survival probability", fontsize=15)
+        plot.set_xlabel(r"Cycle depth", fontsize=15)
+        plot.set_ylabel(r"Survival probability", fontsize=15)
+        plot.set_title(r"Exponential decay of survival probability", fontsize=15)
+
+        rb_fit = self._fit_decay()
+        xx = np.linspace(0, np.max(self.raw_data.clifford_depth))
+        plot.plot(
+            xx,
+            self.exp_decay(xx, *rb_fit[0]),
+            color="tab:blue",
+            linestyle="--",
+        )
+        plot.fill_between(
+            xx,
+            self.exp_decay(xx, *(rb_fit[0] - rb_fit[1])),
+            self.exp_decay(xx, *(rb_fit[0] + rb_fit[1])),
+            alpha=0.5,
+            color="tab:blue",
+        )
+        if self.interleaved_gate is not None:
+            irb_fit = self._fit_decay("IRB")
+            xx = np.linspace(0, np.max(self.raw_data.clifford_depth))
+            plot.plot(
+                xx,
+                self.exp_decay(xx, *irb_fit[0]),
+                color="tab:orange",
+                linestyle="--",
+            )
+            plot.fill_between(
+                xx,
+                self.exp_decay(xx, *(irb_fit[0] - irb_fit[1])),
+                self.exp_decay(xx, *(irb_fit[0] + irb_fit[1])),
+                alpha=0.5,
+                color="tab:orange",
+            )
 
     def analyze_results(self, plot_results: bool = True) -> IRBResults | RBResults:
         """Analyse the experiment results and estimate the interleaved gate error.
@@ -272,16 +572,8 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
             A named tuple of the final results from the experiment.
         """
 
-        self.raw_data["survival_prob"] = 2 * self.raw_data["0"] - 1
-        self.raw_data["log_survival_prob"] = np.log(self.raw_data["survival_prob"])
-        self.raw_data.dropna(axis=0, inplace=True)  # Remove any NaNs coming from the P(0) < 0.5
-
-        rb_model = linregress(
-            self.raw_data.query("experiment == 'RB'")["clifford_depth"],
-            np.log(self.raw_data.query("experiment == 'RB'")["survival_prob"]),
-        )
-        rb_decay_coefficient = np.exp(rb_model.slope)
-        rb_decay_coefficient_std = rb_model.stderr * rb_decay_coefficient
+        rb_fit = self._fit_decay("RB")
+        rb_decay_coefficient, rb_decay_coefficient_std = rb_fit[0][1], rb_fit[1][1]
 
         if self.interleaved_gate is None:
             self._results = RBResults(
@@ -289,8 +581,8 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
                 total_circuits=len(self.samples),
                 rb_decay_coefficient=rb_decay_coefficient,
                 rb_decay_coefficient_std=rb_decay_coefficient_std,
-                average_gate_error=(1 - 2**-self.num_qubits) * (1 - rb_decay_coefficient),
-                average_gate_error_std=(1 - 2**-self.num_qubits) * rb_decay_coefficient_std,
+                average_error_per_clifford=(1 - 2**-self.num_qubits) * (1 - rb_decay_coefficient),
+                average_error_per_clifford_std=(1 - 2**-self.num_qubits) * rb_decay_coefficient_std,
             )
 
             if plot_results:
@@ -299,26 +591,17 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
             return self.results
 
         else:
-            irb_model = linregress(
-                self.raw_data.query("experiment == 'IRB'")["clifford_depth"],
-                np.log(self.raw_data.query("experiment == 'IRB'")["survival_prob"]),
-            )
-
-            # Extract fit values.
-            irb_decay_coefficient = np.exp(irb_model.slope)
-            irb_decay_coefficient_std = irb_model.stderr * irb_decay_coefficient
-
+            irb_fit = self._fit_decay("IRB")
+            irb_decay_coefficient, irb_decay_coefficient_std = irb_fit[0][1], irb_fit[1][1]
             interleaved_gate_error = (1 - irb_decay_coefficient / rb_decay_coefficient) * (
                 1 - 2**-self.num_qubits
             )
 
-            interleaved_gate_error_std = np.sqrt(
-                (irb_decay_coefficient_std / (2 * rb_decay_coefficient)) ** 2
-                + (
-                    (irb_decay_coefficient * rb_decay_coefficient_std)
-                    / (2 * rb_decay_coefficient**2)
-                )
-                ** 2
+            interleaved_gate_error_std = (
+                (1 - 2**-self.num_qubits) / rb_decay_coefficient
+            ) * np.sqrt(
+                irb_decay_coefficient_std**2
+                + irb_decay_coefficient**2 * rb_decay_coefficient_std**2
             )
 
             self._results = IRBResults(
@@ -336,3 +619,50 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
                 self.plot_results()
 
             return self.results
+
+    def _fit_decay(
+        self, experiment: str = "RB"
+    ) -> tuple[np.typing.NDArray[np.float_], np.typing.NDArray[np.float_]]:
+        """Fits the exponential decay function to either the RB or IRB results.
+
+        Args:
+            experiment: Either `RB` or `IRB` referring to which data to filter by. Defaults to "RB".
+
+        Returns:
+            Tuple of the decay fit parameters and their standard deviations.
+        """
+
+        xx = self.raw_data.query(f"experiment == '{experiment}'")["clifford_depth"]
+        yy = self.raw_data.query(f"experiment == '{experiment}'")["0" * self.num_qubits]
+
+        popt, pcov = scipy.optimize.curve_fit(
+            self.exp_decay,
+            xx,
+            yy,
+            p0=(1.0 - 2**-self.num_qubits, 0.99, 2**-self.num_qubits),
+            bounds=(0, 1),
+            max_nfev=2000,
+        )
+
+        return popt, np.sqrt(np.diag(pcov))
+
+    @staticmethod
+    def exp_decay(
+        x: np.typing.NDArray[np.float_], A: float, alpha: float, B: float
+    ) -> np.typing.NDArray[np.float_]:
+        r"""Exponential decay of the form
+
+        .. math::
+
+            A \alpha^x + B
+
+        Args:
+            x: x
+            A: Decay constant
+            alpha: Decay coefficient
+            B: Additive constant
+
+        Returns:
+            Exponential decay applied to x.
+        """
+        return A * (alpha**x) + B
