@@ -42,9 +42,8 @@ def _reduce_single_qubit_clifford_seq(
 
     Args:
         gate_seq: The list of gates.
-        The single reduced gate.
     Returns:
-        The single reduced gate
+        The single reduced gate.
     """
     cur = gate_seq[0]
     for gate in gate_seq[1:]:
@@ -59,9 +58,8 @@ def _reduce_clifford_seq(
 
     Args:
         gate_seq: The list of gates.
-        The single reduced gate.
     Returns:
-        The single reduced gate
+        The single reduced gate.
     """
     cur = gate_seq[0].clifford_tableau
     for gate in gate_seq[1:]:
@@ -343,9 +341,9 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
 
         Args:
             interleaved_gate: The Clifford gate to measure the gate error of. If None
-                then no interleaving is performed and instead vanilla Randomize benchmarking is
+                then no interleaving is performed and instead vanilla randomized benchmarking is
                 performed.
-            num_qubits: The number of qubits to experiment on. Must either be 1 or 2 but is ignored.
+            num_qubits: The number of qubits to experiment on. Must either be 1 or 2 but is ignored
                 if a gate is provided - the number of qubits is instead inferred from the gate.
             clifford_op_gateset: The gateset to use when implementing the clifford operations.
                 Defaults to the CZ/GR set.
@@ -354,7 +352,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
             num_qubits = interleaved_gate.num_qubits()
         if num_qubits not in [1, 2]:
             raise NotImplementedError(
-                "IRB experiment is currently only implemented for single or two qubit qubit use."
+                "IRB experiment is currently only implemented for single or two qubit use."
             )
         super().__init__(num_qubits=num_qubits)
 
@@ -363,7 +361,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
                 [interleaved_gate(*self.qubits)], self.qubits
             )
             self._interleaved_op = interleaved_gate(*self.qubits)
-            """The gate being interleaved"""
+            """The operation being interleaved"""
         else:
             self.interleaved_gate = None
 
@@ -398,7 +396,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         return random_two_qubit_clifford()
 
     def gates_per_clifford(self, samples: int = 500) -> dict[str, float]:
-        """Samples a number of random Clifford operation and calculates the average number of
+        """Samples a number of random Clifford operations and calculates the average number of
         single and two qubit gates used to implement them. Note this depends on the gateset chosen
         for the experiment.
 
