@@ -393,7 +393,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         return random_two_qubit_clifford()
 
     def gates_per_clifford(self, samples: int = 500) -> dict[str, float]:
-        """Samples a number of random Clifford operation and calculates the average number of
+        """Samples a number of random Clifford operations and calculates the average number of
         single and two qubit gates used to implement them. Note this depends on the gateset chosen
         for the experiment.
 
