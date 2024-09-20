@@ -14,7 +14,7 @@ def get_ideal_counts(circuit: cirq.Circuit) -> dict[str, float]:
         q0 ------
         q1 ------
         q2 ------
-        
+
     the bitstrings are written as `q0q1q2`.
 
     Args:

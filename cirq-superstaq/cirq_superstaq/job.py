@@ -156,15 +156,15 @@ class Job:
         If the current job is in a non-terminal state, this will update the job and return the
         current status. A full list of states is given in `cirq_superstaq.Job.ALL_STATES`.
 
+        Args:
+            index: An optional index of the specific sub-job to cancel.
+
         Raises:
             general_superstaq.SuperstaqServerException: If unable to get the status of the job
                from the API.
 
         Returns:
             The status of the job indexed by `index` or the overall job status if `index` is `None`.
-
-        Raises:
-            gss.SuperstaqServerException: If unable to retrieve the status of the job from the API.
         """
         if index is None:
             self._refresh_job()

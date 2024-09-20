@@ -29,7 +29,7 @@ class QAOAVanillaProxy(Benchmark):
     be initialized by:
 
     #. Generating a random instance of an SK graph
-    
+
     #. Finding approximately optimal angles (rather than random values)
     """
 
