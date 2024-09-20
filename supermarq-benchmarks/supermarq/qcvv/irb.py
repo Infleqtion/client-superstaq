@@ -71,12 +71,13 @@ def _reduce_clifford_seq(
 
 ####################################################################################################
 # The sets `S1`, `S1_X` and `S1_Y` of single qubit Clifford operations are used to generate
-# random two qubit Clifford operations. For details see: https://arxiv.org/abs/2008.06011
+# random two qubit Clifford operations. For details see: https://arxiv.org/pdf/1210.7011 &
+# https://arxiv.org/pdf/1402.4848.
 # The implementation is adapted from:
 # https://github.com/quantumlib/Cirq/blob/main/cirq-core/cirq/experiments/qubit_characterizations.py
 ####################################################################################################
 _S1 = [
-    # X
+    # I
     cirq.CliffordGate.from_clifford_tableau(
         cirq.CliffordTableau(
             1,
@@ -207,6 +208,8 @@ def random_single_qubit_clifford() -> cirq.SingleQubitCliffordGate:
 def random_two_qubit_clifford() -> cirq.CliffordGate:
     """Choose a random two qubit clifford gate.
 
+    For details of algorithm see: https://arxiv.org/pdf/1402.4848 & https://arxiv.org/pdf/1210.7011.
+
     Returns:
         The random clifford gate.
     """
@@ -245,22 +248,22 @@ def random_two_qubit_clifford() -> cirq.CliffordGate:
             ],
             qubits,
         )
-    else:
-        idx_a = int((idx - 11) / 3)
-        idx_b = (idx - 11) % 3
-        return cirq.CliffordGate.from_op_list(
-            [
-                a(qubits[0]),
-                b(qubits[1]),
-                cirq.CZ(*qubits),
-                cirq.Y(qubits[0]) ** 0.5,
-                cirq.X(qubits[1]) ** -0.5,
-                cirq.CZ(*qubits),
-                _S1_Y[idx_a](qubits[0]),
-                _S1_X[idx_b](qubits[1]),
-            ],
-            qubits,
-        )
+
+    idx_a = int((idx - 11) / 3)
+    idx_b = (idx - 11) % 3
+    return cirq.CliffordGate.from_op_list(
+        [
+            a(qubits[0]),
+            b(qubits[1]),
+            cirq.CZ(*qubits),
+            cirq.Y(qubits[0]) ** 0.5,
+            cirq.X(qubits[1]) ** -0.5,
+            cirq.CZ(*qubits),
+            _S1_Y[idx_a](qubits[0]),
+            _S1_X[idx_b](qubits[1]),
+        ],
+        qubits,
+    )
 
 
 @dataclass(frozen=True)
@@ -423,19 +426,6 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
                 ]
             ).item(),
         }
-
-    def _invert_clifford_circuit(self, circuit: cirq.Circuit) -> cirq.Circuit:
-        """Given a Clifford circuit find and append the corresponding inverse Clifford gate.
-
-        Args:
-            circuit: The Clifford circuit to invert.
-
-        Returns:
-            A copy of the original Clifford circuit with the inverse element appended.
-        """
-        clifford_gates = [op.gate for op in circuit.all_operations()]
-        inv_element = _reduce_clifford_seq(cirq.inverse(clifford_gates))  # type: ignore[arg-type]
-        return circuit + inv_element(*self.qubits)
 
     def _build_circuits(self, num_circuits: int, cycle_depths: Iterable[int]) -> Sequence[Sample]:
         """Build a list of randomised circuits required for the IRB experiment.
