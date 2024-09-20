@@ -324,12 +324,16 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
 
         Superstaq currently supports the following dynamical decoupling strategies:
+
         * "standard": Places a single DD sequence in each idle window.
+
         * "syncopated": Places DD pulses at fixed time intervals, alternating between pulses on
-          neighboring qubits in order to mitigate parasitic ZZ coupling errors.
+           neighboring qubits in order to mitigate parasitic ZZ coupling errors.
+
         * "adaptive" (default): Dynamically spaces DD pulses across idle windows with awareness of
-          neighboring qubits to achieve the parasitic ZZ coupling mitigation of the "syncopated"
-          strategy with fewer pulses and less discretization error.
+           neighboring qubits to achieve the parasitic ZZ coupling mitigation of the "syncopated"
+           strategy with fewer pulses and less discretization error.
+           
         See https://superstaq.readthedocs.io/en/latest/optimizations/ibm/ibmq_dd_strategies_qss.html
         for an example of each strategy.
 
