@@ -41,7 +41,7 @@ class SU2Results(BenchmarkingResults):
     single_qubit_noise: float
     single_qubit_noise_std: float
 
-    experiment_name = "IRB"
+    experiment_name = "SU2"
 
     @property
     def two_qubit_gate_error(self) -> float:
@@ -75,7 +75,7 @@ class SU2(BenchmarkingExperiment[SU2Results]):
     are single qubit :math:`SU(2)` rotations that in the absence of noise invert the preceding
     circuit so that the final qubit state should be :code:`00`.
 
-    An exponential fi decay is then fitted to the observed 00 state probability as it decays with
+    An exponential fit decay is then fitted to the observed 00 state probability as it decays with
     the number of two qubit gates included. Note that all circuits contain a fixed number of single
     qubit gates, so that the contribution for single qubit noise is constant.
 
@@ -105,8 +105,10 @@ class SU2(BenchmarkingExperiment[SU2Results]):
         num_circuits: int,
         cycle_depths: Iterable[int],
     ) -> Sequence[Sample]:
-        """Build a list of circuits required for the experiment. These circuits are stored in
-        :class:`Sample` objects along with any additional data that is needed during the analysis.
+        """Build a list of circuits required for the experiment.
+
+        These circuits are stored in :class:`Sample` objects along with any additional data that is
+        needed during the analysis.
 
         Args:
             num_circuits: Number of circuits to generate.
@@ -203,8 +205,10 @@ class SU2(BenchmarkingExperiment[SU2Results]):
         return gate
 
     def _component(self, include_two_qubit_gate: bool) -> cirq.Circuit:
-        """The core component of the experimental circuits that are repeated to create the full
-        circuit. Can optionally include the two qubit gate being measaured, as is required for the
+        """Core component of the experimental circuits.
+
+        These circuits that are repeated to create the full circuit. Can optionally include the
+        two qubit gate being measured, as is required for the
         first half of the full circuit, but not for the second half.
 
         The component looks like:
