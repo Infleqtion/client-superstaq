@@ -340,7 +340,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
             interleaved_gate: The Clifford gate to measure the gate error of. If None
                 then no interleaving is performed and instead vanilla Randomize benchmarking is
                 performed.
-            num_qubits: The number of qubits to experiment on. Must either be 1 or 2 but is ignored.
+            num_qubits: The number of qubits to experiment on. Must either be 1 or 2 but is ignored
                 if a gate is provided - the number of qubits is instead inferred from the gate.
             clifford_op_gateset: The gateset to use when implementing the clifford operations.
                 Defaults to the CZ/GR set.
