@@ -23,6 +23,7 @@ from typing import Any, Generic, TypeVar
 
 import cirq
 import cirq_superstaq as css
+import numpy as np
 import pandas as pd
 from tqdm.notebook import tqdm
 
@@ -170,12 +171,17 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
     def __init__(
         self,
         num_qubits: int,
+        *,
+        random_seed: int | np.random.Generator | None = None,
         **kwargs: Any,
     ) -> None:
-        """Args:
-        num_qubits: The number of qubits used during the experiment. Most subclasses
-            will determine this from their other inputs.
-        kwargs: Additional kwargs passed to the Superstaq service object.
+        """Initializes a benchmarking experiment.
+
+        Args:
+            num_qubits: The number of qubits used during the experiment. Most subclasses
+                will determine this from their other inputs.
+            random_seed: An optional seed to use for randomization.
+            kwargs: Additional kwargs passed to the Superstaq service object.
         """
         self.qubits = cirq.LineQubit.range(num_qubits)
         """The qubits used in the experiment."""
@@ -191,6 +197,8 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
 
         self._service: css.service.Service = css.service.Service(**kwargs)
         """The superstaq service for submitting jobs."""
+
+        self._rng = np.random.default_rng(random_seed)
 
     ##############
     # Properties #

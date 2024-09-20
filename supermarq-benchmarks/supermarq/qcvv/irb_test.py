@@ -79,7 +79,8 @@ def test_reduce_clifford_sequence() -> None:
 
 
 def test_random_single_qubit_clifford() -> None:
-    gate = supermarq.qcvv.irb.random_single_qubit_clifford()
+    exp = IRB()
+    gate = exp.random_single_qubit_clifford()
     assert isinstance(gate, cirq.ops.SingleQubitCliffordGate)
 
 
@@ -96,10 +97,11 @@ def test_irb_random_clifford() -> None:
 
 
 def test_random_two_qubit_clifford() -> None:
-    with patch("random.randint") as random_int:
-        random_int.side_effect = range(20)
+    exp = IRB()
+    with patch("numpy.random.default_rng") as rng:
+        rng.return_value.integers.side_effect = range(20)
         for _ in range(20):
-            gate = supermarq.qcvv.irb.random_two_qubit_clifford()
+            gate = exp.random_two_qubit_clifford()
             assert isinstance(gate, cirq.ops.CliffordGate)
             assert gate.num_qubits() == 2
 
@@ -154,7 +156,7 @@ def test_irb_process_probabilities(irb_experiment: IRB) -> None:
 
 
 def test_irb_build_circuit(irb_experiment: IRB) -> None:
-    with patch("supermarq.qcvv.irb.random_single_qubit_clifford") as mock_random_clifford:
+    with patch("supermarq.qcvv.irb.IRB.random_single_qubit_clifford") as mock_random_clifford:
         mock_random_clifford.side_effect = [
             cirq.ops.SingleQubitCliffordGate.Z,
             cirq.ops.SingleQubitCliffordGate.Z,

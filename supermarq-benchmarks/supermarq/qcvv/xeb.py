@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import itertools
-import random
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 
@@ -208,16 +207,19 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         for _, depth in tqdm.contrib.itertools.product(
             range(num_circuits), cycle_depths, desc="Building circuits"
         ):
-            circuit = cirq.Circuit()
-            for _ in range(depth + int(self.two_qubit_gate is not None)):
-                circuit.append(
-                    [
-                        gate(qubit)
-                        for gate, qubit in zip(
-                            random.choices(self.single_qubit_gate_set, k=2), self.qubits
-                        )
-                    ]
-                )
+            chosen_gate_indices = self._rng.choice(
+                len(self.single_qubit_gate_set),
+                size=(depth + int(self.two_qubit_gate is not None), len(self.qubits)),
+            )
+            print(chosen_gate_indices)
+            print(next(iter(chosen_gate_indices)))
+            print(dict(size=(depth + int(self.two_qubit_gate is not None), len(self.qubits))))
+
+            circuit = cirq.Circuit(
+                self.single_qubit_gate_set[idx].on(qubit)
+                for chosen_indices in chosen_gate_indices
+                for idx, qubit in zip(chosen_indices, self.qubits)
+            )
 
             if self.two_qubit_gate is not None:
                 circuit = self._interleave_op(circuit, self.two_qubit_gate(*self.qubits))

@@ -15,7 +15,6 @@
 
 from __future__ import annotations
 
-import random
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Union  # noqa: MDA400
@@ -176,94 +175,6 @@ _S1_Y = [
 ]
 
 
-def random_single_qubit_clifford() -> cirq.SingleQubitCliffordGate:
-    """Choose a random single qubit clifford gate.
-
-    Returns:
-        The random clifford gate.
-    """
-    Id = cirq.SingleQubitCliffordGate.I
-    H = cirq.SingleQubitCliffordGate.H
-    S = cirq.SingleQubitCliffordGate.Z_sqrt
-    X = cirq.SingleQubitCliffordGate.X
-    Y = cirq.SingleQubitCliffordGate.Y
-    Z = cirq.SingleQubitCliffordGate.Z
-
-    set_A = [
-        Id,
-        S,
-        H,
-        _reduce_single_qubit_clifford_seq([H, S]),
-        _reduce_single_qubit_clifford_seq([S, H]),
-        _reduce_single_qubit_clifford_seq([H, S, H]),
-    ]
-
-    set_B = [Id, X, Y, Z]
-
-    return _reduce_single_qubit_clifford_seq([random.choice(set_A), random.choice(set_B)])
-
-
-def random_two_qubit_clifford() -> cirq.CliffordGate:
-    """Choose a random two qubit clifford gate.
-
-    For details of algorithm see: https://arxiv.org/pdf/1402.4848 & https://arxiv.org/pdf/1210.7011.
-
-    Returns:
-        The random clifford gate.
-    """
-    qubits = cirq.LineQubit.range(2)
-    a = random_single_qubit_clifford()
-    b = random_single_qubit_clifford()
-    idx = random.randint(0, 19)
-    if idx == 0:
-        return cirq.CliffordGate.from_op_list([a(qubits[0]), b(qubits[1])], qubits)
-    elif idx == 1:
-        return cirq.CliffordGate.from_op_list(
-            [
-                a(qubits[0]),
-                b(qubits[1]),
-                cirq.CZ(*qubits),
-                cirq.Y(qubits[0]) ** -0.5,
-                cirq.Y(qubits[1]) ** 0.5,
-                cirq.CZ(*qubits),
-                cirq.Y(qubits[0]) ** 0.5,
-                cirq.Y(qubits[1]) ** -0.5,
-                cirq.CZ(*qubits),
-                cirq.Y(qubits[1]) ** 0.5,
-            ],
-            qubits,
-        )
-    elif 2 <= idx <= 10:
-        idx_a = int((idx - 2) / 3)
-        idx_b = (idx - 2) % 3
-        return cirq.CliffordGate.from_op_list(
-            [
-                a(qubits[0]),
-                b(qubits[1]),
-                cirq.CZ(*qubits),
-                _S1[idx_a](qubits[0]),
-                _S1_Y[idx_b](qubits[1]),
-            ],
-            qubits,
-        )
-
-    idx_a = int((idx - 11) / 3)
-    idx_b = (idx - 11) % 3
-    return cirq.CliffordGate.from_op_list(
-        [
-            a(qubits[0]),
-            b(qubits[1]),
-            cirq.CZ(*qubits),
-            cirq.Y(qubits[0]) ** 0.5,
-            cirq.X(qubits[1]) ** -0.5,
-            cirq.CZ(*qubits),
-            _S1_Y[idx_a](qubits[0]),
-            _S1_X[idx_b](qubits[1]),
-        ],
-        qubits,
-    )
-
-
 @dataclass(frozen=True)
 class IRBResults(BenchmarkingResults):
     """Data structure for the IRB experiment results."""
@@ -387,13 +298,103 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         )
         return cirq.optimize_for_target_gateset(circuit, gateset=self.clifford_op_gateset)
 
+    def random_single_qubit_clifford(self) -> cirq.SingleQubitCliffordGate:
+        """Choose a random single qubit clifford gate.
+
+        Returns:
+            The random clifford gate.
+        """
+        Id = cirq.SingleQubitCliffordGate.I
+        H = cirq.SingleQubitCliffordGate.H
+        S = cirq.SingleQubitCliffordGate.Z_sqrt
+        X = cirq.SingleQubitCliffordGate.X
+        Y = cirq.SingleQubitCliffordGate.Y
+        Z = cirq.SingleQubitCliffordGate.Z
+
+        set_A = [
+            Id,
+            S,
+            H,
+            _reduce_single_qubit_clifford_seq([H, S]),
+            _reduce_single_qubit_clifford_seq([S, H]),
+            _reduce_single_qubit_clifford_seq([H, S, H]),
+        ]
+
+        set_B = [Id, X, Y, Z]
+
+        chosen_A = set_A[self._rng.choice(len(set_A))]
+        chosen_B = set_B[self._rng.choice(len(set_B))]
+        return _reduce_single_qubit_clifford_seq([chosen_A, chosen_B])
+
+
+    def random_two_qubit_clifford(self) -> cirq.CliffordGate:
+        """Choose a random two qubit clifford gate.
+
+        For details of algorithm see: https://arxiv.org/pdf/1402.4848 & https://arxiv.org/pdf/1210.7011.
+
+        Returns:
+            The random clifford gate.
+        """
+        qubits = cirq.LineQubit.range(2)
+        a = self.random_single_qubit_clifford()
+        b = self.random_single_qubit_clifford()
+        idx = self._rng.integers(20)
+        if idx == 0:
+            return cirq.CliffordGate.from_op_list([a(qubits[0]), b(qubits[1])], qubits)
+        elif idx == 1:
+            return cirq.CliffordGate.from_op_list(
+                [
+                    a(qubits[0]),
+                    b(qubits[1]),
+                    cirq.CZ(*qubits),
+                    cirq.Y(qubits[0]) ** -0.5,
+                    cirq.Y(qubits[1]) ** 0.5,
+                    cirq.CZ(*qubits),
+                    cirq.Y(qubits[0]) ** 0.5,
+                    cirq.Y(qubits[1]) ** -0.5,
+                    cirq.CZ(*qubits),
+                    cirq.Y(qubits[1]) ** 0.5,
+                ],
+                qubits,
+            )
+        elif 2 <= idx <= 10:
+            idx_a = int((idx - 2) / 3)
+            idx_b = (idx - 2) % 3
+            return cirq.CliffordGate.from_op_list(
+                [
+                    a(qubits[0]),
+                    b(qubits[1]),
+                    cirq.CZ(*qubits),
+                    _S1[idx_a](qubits[0]),
+                    _S1_Y[idx_b](qubits[1]),
+                ],
+                qubits,
+            )
+
+        idx_a = int((idx - 11) / 3)
+        idx_b = (idx - 11) % 3
+        return cirq.CliffordGate.from_op_list(
+            [
+                a(qubits[0]),
+                b(qubits[1]),
+                cirq.CZ(*qubits),
+                cirq.Y(qubits[0]) ** 0.5,
+                cirq.X(qubits[1]) ** -0.5,
+                cirq.CZ(*qubits),
+                _S1_Y[idx_a](qubits[0]),
+                _S1_X[idx_b](qubits[1]),
+            ],
+            qubits,
+        )
+
+
     def random_clifford(self) -> cirq.CliffordGate:
         """Returns:
         A random clifford gate with the correct number of qubits for the current experiment.
         """
         if self.num_qubits == 1:
-            return random_single_qubit_clifford()
-        return random_two_qubit_clifford()
+            return self.random_single_qubit_clifford()
+        return self.random_two_qubit_clifford()
 
     def gates_per_clifford(self, samples: int = 500) -> dict[str, float]:
         """Samples a number of random Clifford operations and calculates the average number of
