@@ -117,19 +117,6 @@ def test_gates_per_clifford() -> None:
         assert gates["two_qubit_gates"] == pytest.approx(1.5, abs=0.1)
 
 
-def test_invert_clifford_circuit(irb_experiment: IRB) -> None:
-    circuit = cirq.Circuit(
-        [
-            cirq.ops.SingleQubitCliffordGate.X(irb_experiment.qubits[0]),
-            cirq.ops.SingleQubitCliffordGate.Y(irb_experiment.qubits[0]),
-        ]
-    )
-    inverse = irb_experiment._invert_clifford_circuit(circuit)
-    expected_inverse = circuit + cirq.ops.SingleQubitCliffordGate.Z(irb_experiment.qubits[0])
-
-    cirq.testing.assert_same_circuits(inverse, expected_inverse)
-
-
 def test_irb_process_probabilities(irb_experiment: IRB) -> None:
     samples = [
         Sample(
