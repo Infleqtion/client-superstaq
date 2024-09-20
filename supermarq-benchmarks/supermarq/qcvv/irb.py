@@ -42,9 +42,8 @@ def _reduce_single_qubit_clifford_seq(
 
     Args:
         gate_seq: The list of gates.
-        The single reduced gate.
     Returns:
-        The single reduced gate
+        The single reduced gate.
     """
     cur = gate_seq[0]
     for gate in gate_seq[1:]:
