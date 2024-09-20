@@ -16,13 +16,13 @@ class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
             kwargs: Optional flags to restrict/filter returned targets.
                 - simulator: Optional flag to restrict the list of targets to (non-) simulators.
                 - supports_submit: Optional boolean flag to only return targets that (don't) allow
-                    circuit submissions.
+                   circuit submissions.
                 - supports_submit_qubo: Optional boolean flag to only return targets that (don't)
-                    allow qubo submissions.
+                   allow qubo submissions.
                 - supports_compile: Optional boolean flag to return targets that (don't) support
-                    circuit compilation.
+                   circuit compilation.
                 - available: Optional boolean flag to only return targets that are (not) available
-                    to use.
+                   to use.
                 - retired: Optional boolean flag to only return targets that are or are not retired.
 
         Returns:

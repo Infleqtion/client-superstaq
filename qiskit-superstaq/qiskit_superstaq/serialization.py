@@ -103,10 +103,10 @@ def to_json(val: object) -> str:
 
 
 def serialize_circuits(circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit]) -> str:
-    """Serializes `qiskit.QuantumCircuit`(s) into a single string.
+    """Serializes qiskit.QuantumCircuit(s) into a single string.
 
     Args:
-        circuits: A `qiskit.QuantumCircuit` or list of `qiskit.QuantumCircuit`s to be serialized.
+        circuits: A `qiskit.QuantumCircuit` or list of `qiskit.QuantumCircuit` to be serialized.
 
     Returns:
         A string representing the serialized circuit(s).
@@ -125,7 +125,7 @@ def serialize_circuits(circuits: qiskit.QuantumCircuit | Sequence[qiskit.Quantum
 
 
 def deserialize_circuits(serialized_circuits: str) -> list[qiskit.QuantumCircuit]:
-    """Deserializes serialized `qiskit.QuantumCircuit`(s).
+    """Deserializes serialized qiskit.QuantumCircuit(s).
 
     Args:
         serialized_circuits: String generated via `qss.serialization.serialize_circuit()`.

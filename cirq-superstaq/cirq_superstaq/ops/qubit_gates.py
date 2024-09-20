@@ -649,7 +649,7 @@ def parallel_gates_operation(*ops: cirq.Operation) -> cirq.Operation:
         ops: Operations to pack into a single `ParallelGates` operation.
 
     Returns:
-        ParallelGates(op.gate, op2.gate, ...).on(*op.qubits, *op2.qubits, ...)
+        `ParallelGates(op.gate, op2.gate, ...).on(*op.qubits, *op2.qubits, ...)`
 
     Raises:
         ValueError: If the operation has no `.gate` attribute.

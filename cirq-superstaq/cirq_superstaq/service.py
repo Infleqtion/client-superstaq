@@ -387,7 +387,7 @@ class Service(gss.service.Service):
             target: String of target representing target device.
 
         Returns:
-            `ResourceEstimate`(s) containing resource costs (after compilation).
+            ResourceEstimate(s) containing resource costs (after compilation).
         """
         css.validation.validate_cirq_circuits(circuits)
         circuit_is_list = not isinstance(circuits, cirq.Circuit)
@@ -584,10 +584,10 @@ class Service(gss.service.Service):
         programs (strings).
 
         References:
-            [1] S. M. Clark et al., *Engineering the Quantum Scientific Computing Open User
-                Testbed*, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
+            [1] S. M. Clark et al., Engineering the Quantum Scientific Computing Open User
+                Testbed, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
                 https://doi.org/10.1109/TQE.2021.3096480.
-            [2] B. Morrison, et al., *Just Another Quantum Assembly Language (Jaqal)*, 2020 IEEE
+            [2] B. Morrison, et al., Just Another Quantum Assembly Language (Jaqal), 2020 IEEE
                 International Conference on Quantum Computing and Engineering (QCE), 402-408 (2020).
                 https://arxiv.org/abs/2008.08042.
 
@@ -690,7 +690,7 @@ class Service(gss.service.Service):
             kwargs: Other desired `cq_compile` options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s).
+            Object whose .circuit(s) attribute contains the compiled cirq.Circuit(s).
 
         Raises:
             ValueError: If `target` is not a valid IBMQ target.
@@ -730,7 +730,7 @@ class Service(gss.service.Service):
             kwargs: Other desired `ibmq_compile` options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s), and whose
+            Object whose .circuit(s) attribute contains the compiled cirq.Circuit(s), and whose
             .pulse_gate_circuit(s) attribute contains the corresponding pulse schedule(s) (when
             available).
 

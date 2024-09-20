@@ -166,7 +166,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         """Compiles the given circuit(s) to the backend's native gateset.
 
         Args:
-            circuits: The `qiskit.QuantumCircuit`(s) to compile.
+            circuits: The qiskit.QuantumCircuit(s) to compile.
             kwargs: Other desired compile options.
 
         Returns:
@@ -290,7 +290,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
 
         Args:
-            circuits: The `qiskit.QuantumCircuit`(s) to compile.
+            circuits: The qiskit.QuantumCircuit(s) to compile.
             dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
             dd_strategy: Method to use for placing dynamical decoupling operations; either
                 "dynamic", "static", or "static_context_aware" (default).
@@ -333,10 +333,10 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         Jaqal [2] programs (strings).
 
         References:
-            [1] S. M. Clark et al., *Engineering the Quantum Scientific Computing Open User
-                Testbed*, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
+            [1] S. M. Clark et al., Engineering the Quantum Scientific Computing Open User
+                Testbed, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
                 https://doi.org/10.1109/TQE.2021.3096480.
-            [2] B. Morrison, et al., *Just Another Quantum Assembly Language (Jaqal)*, 2020 IEEE
+            [2] B. Morrison, et al., Just Another Quantum Assembly Language (Jaqal), 2020 IEEE
                 International Conference on Quantum Computing and Engineering (QCE), 402-408 (2020).
                 https://arxiv.org/abs/2008.08042.
 
@@ -418,7 +418,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
         """Compiles and optimizes the given circuit(s) for CQ devices.
 
         Args:
-            circuits: The `qiskit.QuantumCircuit`(s) to compile.
+            circuits: The qiskit.QuantumCircuit(s) to compile.
             grid_shape: Optional fixed dimensions for the rectangular qubit grid (by default the
                 actual qubit layout will be pulled from the hardware provider).
             control_radius: The radius with which qubits remain connected
@@ -463,7 +463,7 @@ class SuperstaqBackend(qiskit.providers.BackendV1):
             circuits: The circuit(s) used during resource estimation.
 
         Returns:
-            `ResourceEstimate`(s) containing resource costs (after compilation) for running
+            ResourceEstimate(s) containing resource costs (after compilation) for running
             circuit(s) on this backend.
         """
         request_json = self._get_compile_request_json(circuits)

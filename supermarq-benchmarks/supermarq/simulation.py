@@ -9,9 +9,12 @@ def get_ideal_counts(circuit: cirq.Circuit) -> dict[str, float]:
 
     Note that the qubits in the returned bitstrings are in big-endian order.
     For example, for a circuit defined on qubits
+    .. code::
+
         q0 ------
         q1 ------
         q2 ------
+        
     the bitstrings are written as `q0q1q2`.
 
     Args:

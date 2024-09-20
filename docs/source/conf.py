@@ -27,6 +27,7 @@ extensions = [
     "sphinx.ext.napoleon",  # allows google- and numpy- style docstrings
     "IPython.sphinxext.ipython_console_highlighting",
     "autoapi.extension",
+    "sphinx.ext.autodoc",
 ]
 
 # since our notebooks can involve network I/O (or even costing $), we don't want them to be
@@ -52,15 +53,16 @@ autoapi_options = [
     "undoc-members",
     "show-inheritance",
     "show-module-summary",
-    "special-members",
     "imported-members",
 ]
 
 autoapi_ignore = [
     "*_test.py",
     "*/checks/*.py",
+    "*conftest.py"
 ]
 
+autoapi_member_order = "groupwise"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
