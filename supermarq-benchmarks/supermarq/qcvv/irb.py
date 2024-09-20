@@ -358,7 +358,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
                 [interleaved_gate(*self.qubits)], self.qubits
             )
             self._interleaved_op = interleaved_gate(*self.qubits)
-            """The gate being interleaved"""
+            """The operation being interleaved"""
         else:
             self.interleaved_gate = None
 
