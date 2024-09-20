@@ -61,7 +61,7 @@ autoapi_ignore = ["*_test.py", "*/checks/*.py", "*conftest.py"]
 exclude_patterns = [
     "autoapi/index.rst",
     "optimizations/ibm/ibmq_dd_strategies_qss.ipynb",
-    "apps/supermarq/examples/qre-challenge/grovers-ksat.ipynb"
+    "apps/supermarq/examples/qre-challenge/grovers-ksat.ipynb",
 ]
 
 autoapi_member_order = "groupwise"
