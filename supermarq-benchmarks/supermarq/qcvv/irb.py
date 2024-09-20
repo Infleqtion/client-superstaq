@@ -349,7 +349,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
             num_qubits = interleaved_gate.num_qubits()
         if num_qubits not in [1, 2]:
             raise NotImplementedError(
-                "IRB experiment is currently only implemented for single or two qubit qubit use."
+                "IRB experiment is currently only implemented for single or two qubit use."
             )
         super().__init__(num_qubits=num_qubits)
 
