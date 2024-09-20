@@ -59,9 +59,8 @@ def _reduce_clifford_seq(
 
     Args:
         gate_seq: The list of gates.
-        The single reduced gate.
     Returns:
-        The single reduced gate
+        The single reduced gate.
     """
     cur = gate_seq[0].clifford_tableau
     for gate in gate_seq[1:]:
