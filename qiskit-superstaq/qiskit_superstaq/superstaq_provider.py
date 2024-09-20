@@ -504,7 +504,7 @@ class SuperstaqProvider(gss.service.Service):
 
         Raises:
             ValueError: If `circuit` is not a valid `qiskit.QuantumCircuit`.
-            SuperstaqServerException: If there was an error accessing the API.
+            general_superstaq.SuperstaqServerException: If there was an error accessing the API.
         """
         circuit_1 = rho_1[0]
         circuit_2 = rho_2[0]
@@ -548,7 +548,7 @@ class SuperstaqProvider(gss.service.Service):
 
         Raises:
             ValueError: If `ids` is not of size two.
-            SuperstaqServerException: If there was an error accessing the API or the jobs submitted
-                through `submit_dfe` have not finished running.
+            general_superstaq.SuperstaqServerException: If there was an error accessing the API or
+               the jobs submitted through `submit_dfe` have not finished running.
         """
         return self._client.process_dfe(ids)

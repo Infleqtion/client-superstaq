@@ -146,7 +146,8 @@ class Job:
         current status. A full list of states is given in `cirq_superstaq.Job.ALL_STATES`.
 
         Raises:
-            SuperstaqServerException: If unable to get the status of the job from the API.
+            general_superstaq.SuperstaqServerException: If unable to get the status of the job
+               from the API.
 
         Returns:
             The job status.
@@ -161,8 +162,8 @@ class Job:
             kwargs: Extra options needed to fetch jobs.
 
         Raises:
-            SuperstaqServerException: If unable to get the status of the job from the API or
-                cancellations were unsuccessful.
+            general_superstaq.SuperstaqServerException: If unable to get the status of the job
+               from the API orcancellations were unsuccessful.
         """
         job_ids = self._job_id.split(",")
         self._client.cancel_jobs(job_ids, **kwargs)
@@ -174,8 +175,10 @@ class Job:
             The target to which this job was submitted.
 
         Raises:
-            SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqServerException: If unable to get the status of the job from the API.
+            general_superstaq.SuperstaqUnsuccessfulJobException: If the job failed or has been
+               canceled or deleted.
+            general_superstaq.SuperstaqServerException: If unable to get the status of the job
+               from the API.
         """
         first_job_id = self._job_id.split(",")[0]
         if (first_job_id not in self._job) or "target" not in self._job[first_job_id]:
@@ -199,8 +202,10 @@ class Job:
             number for the given circuit index.
 
         Raises:
-            SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqServerException: If unable to get the status of the job from the API.
+            general_superstaq.SuperstaqUnsuccessfulJobException: If the job failed or has been
+               canceled or deleted.
+            general_superstaq.SuperstaqServerException: If unable to get the status of the job
+               from the API.
         """
         job_ids = self._job_id.split(",")
         if not all(
@@ -222,8 +227,10 @@ class Job:
             The number of repetitions for this job.
 
         Raises:
-            SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqServerException: If unable to get the status of the job from the API.
+            general_superstaq.SuperstaqUnsuccessfulJobException: If the job failed or has been
+               canceled or deleted.
+            general_superstaq.SuperstaqServerException: If unable to get the status of the job
+               from the API.
         """
         first_job_id = self._job_id.split(",")[0]
         if (first_job_id not in self._job) or "shots" not in self._job[first_job_id]:
@@ -381,8 +388,9 @@ class Job:
             A dictionary containing the frequency counts of the measurements.
 
         Raises:
-            SuperstaqUnsuccessfulJobException: If the job failed or has been canceled or deleted.
-            SuperstaqServerException: If unable to get the results from the API.
+            general_superstaq.SuperstaqUnsuccessfulJobException: If the job failed or has been
+               canceled or deleted.
+            general_superstaq.SuperstaqServerException: If unable to get the results from the API.
             TimeoutError: If no results are available in the provided timeout interval.
         """
         time_waited_seconds: float = 0.0

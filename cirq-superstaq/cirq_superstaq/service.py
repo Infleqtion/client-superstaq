@@ -341,7 +341,7 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If there are no measurements in `circuits`.
-            SuperstaqServerException: If there was an error accessing the API.
+            general_superstaq.SuperstaqServerException: If there was an error accessing the API.
         """
         css.validation.validate_cirq_circuits(circuits, require_measurements=True)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
@@ -373,7 +373,7 @@ class Service(gss.service.Service):
             A `css.Job` which can be queried for status or results.
 
         Raises:
-            SuperstaqServerException: If there was an error accessing the API.
+            general_superstaq.SuperstaqServerException: If there was an error accessing the API.
         """
         return css.job.Job(client=self._client, job_id=job_id)
 
@@ -858,7 +858,7 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If `circuit` is not a valid `cirq.Circuit`.
-            SuperstaqServerException: If there was an error accessing the API.
+            general_superstaq.SuperstaqServerException: If there was an error accessing the API.
         """
         circuit_1 = rho_1[0]
         circuit_2 = rho_2[0]
@@ -897,7 +897,8 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If `ids` is not of size two.
-            SuperstaqServerException: If there was an error accesing the API or the jobs submitted
+            general_superstaq.SuperstaqServerException: If there was an error accessing the API or
+                the jobs submitted
                 through `submit_dfe` have not finished running.
         """
         return self._client.process_dfe(ids)
@@ -919,7 +920,7 @@ class Service(gss.service.Service):
     ) -> str:
         """Submits the jobs to characterize `target` through the ACES protocol.
 
-        The following gate eigenvalues are eestimated. For each qubit in the device, we consider
+        The following gate eigenvalues are estimated. For each qubit in the device, we consider
         six Clifford gates. These are given by the XZ maps: XZ, ZX, -YZ, -XY, ZY, YX. For each of
         these gates, three eigenvalues are returned (X, Y, Z, in that order). Then, the two-qubit
         gate considered here is the CZ in linear connectivity (each qubit n with n + 1). For this
@@ -961,7 +962,7 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If the target or noise model is not valid.
-            SuperstaqServerException: If the request fails.
+            general_superstaq.SuperstaqServerException: If the request fails.
         """
         noise_dict: dict[str, object] = {}
         if isinstance(noise, str):
@@ -1032,7 +1033,7 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If the target or noise model is not valid.
-            SuperstaqServerException: If the request fails.
+            general_superstaq.SuperstaqServerException: If the request fails.
         """
 
         noise_dict: dict[str, object] = {}
@@ -1070,7 +1071,7 @@ class Service(gss.service.Service):
             A dict containing the Cycle Benchmarking process data.
 
         Raises:
-            SuperstaqServerException: If the request fails.
+            general_superstaq.SuperstaqServerException: If the request fails.
         """
         serialized_counts = cirq.to_json(counts) if counts else None
         cb_data = self._client.process_cb(job_id, serialized_counts)

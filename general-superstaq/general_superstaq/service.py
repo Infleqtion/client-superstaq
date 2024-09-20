@@ -89,7 +89,7 @@ class Service:
             balance: The new balance.
 
         Raises:
-            SuperstaqException: If requested balance exceeds the limit.
+            superstaq.SuperstaqException: If requested balance exceeds the limit.
 
         Returns:
             String containing status of update (whether or not it failed).
@@ -418,7 +418,7 @@ class Service:
 
         Raises:
             ValueError: If the target or noise model are not valid.
-            SuperstaqServerException: If the request fails.
+            general_superstaq.SuperstaqServerException: If the request fails.
         """
         noise_dict: dict[str, object] = {}
         if noise:

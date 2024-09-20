@@ -56,10 +56,11 @@ autoapi_options = [
     "imported-members",
 ]
 
-autoapi_ignore = [
-    "*_test.py",
-    "*/checks/*.py",
-    "*conftest.py"
+autoapi_ignore = ["*_test.py", "*/checks/*.py", "*conftest.py"]
+
+exclude_patterns = [
+    "autoapi/index.rst",
+    "optimizations/ibm/ibmq_dd_strategies_qss.ipynb",
 ]
 
 autoapi_member_order = "groupwise"

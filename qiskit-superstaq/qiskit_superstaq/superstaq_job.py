@@ -168,9 +168,10 @@ class SuperstaqJob(qiskit.providers.JobV1):
         raises an exception if it is.
 
         Raises:
-            SuperstaqUnsuccessfulJobException: If the job has been cancelled or has
-        failed.
-            SuperstaqServerException: If unable to get the status of the job from the API.
+            general_superstaq.SuperstaqUnsuccessfulJobException: If the job has been cancelled or
+               has failed.
+            general_superstaq.SuperstaqServerException: If unable to get the status of the job
+               from the API.
         """
         if self._overall_status in ("Cancelled", "Failed"):
             raise gss.superstaq_exceptions.SuperstaqUnsuccessfulJobException(
@@ -184,8 +185,8 @@ class SuperstaqJob(qiskit.providers.JobV1):
             kwargs: Extra options needed to fetch jobs.
 
         Raises:
-            SuperstaqServerException: If unable to get the status of the job from the API or
-                cancellations were unsuccessful.
+            general_superstaq.SuperstaqServerException: If unable to get the status of the job
+               from the API or cancellations were unsuccessful.
         """
         job_ids = self._job_id.split(",")
         self._backend._provider._client.cancel_jobs(job_ids, **kwargs)
