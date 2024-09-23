@@ -94,34 +94,35 @@ class SSB(BenchmarkingExperiment[SSBResults]):
         ]
         # Table II of https://arxiv.org/pdf/2407.20184
         self._init_rotations = [
-            [X, X, Y, _Y, Y],
-            [X, _X, Y, _Y, Y],
-            [X, _X, X, _X, X],
-            [X, X, X, _X, X],
-            [X, X, X, _Y, _X],
-            [X, _X, X, _Y, _X],
-            [_X, _Y, X, _Y, _X],
-            [X, Y, X, _Y, _X],
-            [_X, _Y, X, _X, _X],
-            [X, Y, X, _X, X],
-            [X, Y, Y, _Y, Y],
-            [_X, _Y, Y, _Y, Y],
+            [_X, X, Y, _Y, Y],
+            [_X, _X, Y, _Y, Y],
+            [_X, _X, X, _X, X],
+            [_X, X, X, _X, X],
+            [_X, X, X, _Y, _X],
+            [_X, _X, X, _Y, _X],
+            [X, _Y, X, _Y, _X],
+            [_X, Y, X, _Y, _X],
+            [X, _Y, X, _X, _X],
+            [_X, Y, X, _X, X],
+            [_X, Y, Y, _Y, Y],
+            [X, _Y, Y, _Y, Y],
         ]
         # Table III of https://arxiv.org/pdf/2407.20184
         self._reconciliation_rotation = [
-            [X, _Y, X, X],
-            [X, Y, X, X],
-            [Y, X, X, X],
-            [Y, _X, X, X],
-            [_X, X, X, X],
-            [X, X, X, X],
-            [_X, Y, Y, X],
-            [X, Y, Y, X],
-            [Y, Y, Y, X],
-            [X, X, Y, X],
-            [_Y, X, Y, X],
-            [Y, X, Y, X],
+            [X, _Y, X, _X],
+            [X, Y, X, _X],
+            [Y, X, X, _X],
+            [Y, _X, X, _X],
+            [_X, X, X, _X],
+            [X, X, X, _X],
+            [_X, Y, Y, _X],
+            [X, Y, Y, _X],
+            [Y, Y, Y, _X],
+            [X, X, Y, _X],
+            [_Y, X, Y, _X],
+            [Y, X, Y, _X],
         ]
+        self._gates = [X, _X, Y, _Y]
 
     ###################
     # Private Methods #
@@ -197,9 +198,10 @@ class SSB(BenchmarkingExperiment[SSBResults]):
             The randomly chosen rotation gate acting on both qubits.
         """
         gate = random.choice(
-            [cirq.rx(np.pi / 2), cirq.rx(-np.pi / 2), cirq.ry(np.pi / 2), cirq.ry(-np.pi / 2)]
+            # [cirq.rx(np.pi / 2), cirq.rx(-np.pi / 2), cirq.ry(np.pi / 2), cirq.ry(-np.pi / 2)]
+            self._gates
         )
-        return cirq.Moment(gate(self.qubits[0]), gate(self.qubits[1]))
+        return gate.on(*self.qubits)
 
     def _sss_init_circuit(self, idx: int) -> cirq.Circuit:
         """Creates the initialisation circuit for the provided symmetric-stabiliser state index.
@@ -233,7 +235,8 @@ class SSB(BenchmarkingExperiment[SSBResults]):
             The appropriate reconciliation circuit
         """
         # Calculate which state the provided circuit maps the |00> state to.
-        state = cirq.unitary(circuit)[:, 0]
+        # state = cirq.unitary(circuit)[:, 0]
+        state = cirq.final_state_vector(circuit, ignore_terminal_measurements=True)
         # Find the index of this state by checking which symmetric-stabiliser
         # state it is parallel to.
         idx = [_parallel(state, stab_state) for stab_state in self._stabilizer_states].index(True)
