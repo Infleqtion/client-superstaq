@@ -20,6 +20,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
 import cirq
+import cirq_superstaq as css
 import numpy as np
 import pandas as pd
 import scipy
@@ -71,10 +72,10 @@ class SSB(BenchmarkingExperiment[SSBResults]):
         # Moments containing parallel rotations. Used to construst the init and rec circuit.
         # Note we avoid using the `cirq.ParallelGate` as this can lead to single qubit gates
         # looking like two qubit gates when building custom noise models.
-        X = cirq.Moment(cirq.rx(np.pi / 2)(self.qubits[0]), cirq.rx(np.pi / 2)(self.qubits[1]))
-        _X = cirq.Moment(cirq.rx(-np.pi / 2)(self.qubits[0]), cirq.rx(-np.pi / 2)(self.qubits[1]))
-        Y = cirq.Moment(cirq.ry(np.pi / 2)(self.qubits[0]), cirq.ry(np.pi / 2)(self.qubits[1]))
-        _Y = cirq.Moment(cirq.ry(-np.pi / 2)(self.qubits[0]), cirq.ry(-np.pi / 2)(self.qubits[1]))
+        X = css.ParallelRGate(np.pi / 2, 0.0, self.num_qubits)
+        Y = css.ParallelRGate(np.pi / 2, np.pi / 2, self.num_qubits)
+        _X = css.ParallelRGate(np.pi / 2, np.pi, self.num_qubits)
+        _Y = css.ParallelRGate(np.pi / 2, -np.pi / 2, self.num_qubits)
 
         # Table I of https://arxiv.org/pdf/2407.20184
         self._stabilizer_states = [
@@ -212,12 +213,12 @@ class SSB(BenchmarkingExperiment[SSBResults]):
         init_circuit = cirq.Circuit(
             cirq.X(self.qubits[0]),
             cirq.X(self.qubits[1]),
-            self._init_rotations[idx][0],
-            self._init_rotations[idx][1],
+            self._init_rotations[idx][0].on(*self.qubits),
+            self._init_rotations[idx][1].on(*self.qubits),
             cirq.CZ(*self.qubits),
-            self._init_rotations[idx][2],
-            self._init_rotations[idx][3],
-            self._init_rotations[idx][4],
+            self._init_rotations[idx][2].on(*self.qubits),
+            self._init_rotations[idx][3].on(*self.qubits),
+            self._init_rotations[idx][4].on(*self.qubits),
         )
         return init_circuit
 
@@ -239,11 +240,11 @@ class SSB(BenchmarkingExperiment[SSBResults]):
 
         # Return the reconciliation circuit. See table III of https://arxiv.org/pdf/2407.20184
         return cirq.Circuit(
-            self._reconciliation_rotation[idx][0],
-            self._reconciliation_rotation[idx][1],
+            self._reconciliation_rotation[idx][0].on(*self.qubits),
+            self._reconciliation_rotation[idx][1].on(*self.qubits),
             cirq.CZ(*self.qubits),
-            self._reconciliation_rotation[idx][2],
-            self._reconciliation_rotation[idx][3],
+            self._reconciliation_rotation[idx][2].on(*self.qubits),
+            self._reconciliation_rotation[idx][3].on(*self.qubits),
             cirq.X(self.qubits[0]),
             cirq.X(self.qubits[1]),
         )
