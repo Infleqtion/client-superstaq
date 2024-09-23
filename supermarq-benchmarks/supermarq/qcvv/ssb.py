@@ -149,7 +149,7 @@ class SSB(BenchmarkingExperiment[SSBResults]):
             range(num_circuits), cycle_depths, desc="Building circuits"
         ):
             sss_idx = random.randint(0, 11)
-            circuit = self._sss_init_circuits(sss_idx)
+            circuit = self._sss_init_circuit(sss_idx)
             for _ in range(depth - 2):
                 circuit += self._random_parallel_qubit_rotation()
                 circuit += cirq.CZ(*self.qubits).with_tags("no_compile")
@@ -201,7 +201,7 @@ class SSB(BenchmarkingExperiment[SSBResults]):
         )
         return cirq.Moment(gate(self.qubits[0]), gate(self.qubits[1]))
 
-    def _sss_init_circuits(self, idx: int) -> cirq.Circuit:
+    def _sss_init_circuit(self, idx: int) -> cirq.Circuit:
         """Creates the initialisation circuit for the provided symmetric-stabiliser state index.
         See appendix of https://arxiv.org/pdf/2407.20184 for details.
 
@@ -211,8 +211,8 @@ class SSB(BenchmarkingExperiment[SSBResults]):
             A circuit that maps the |00> state to the desired symmetric-stabiliser state.
         """
         init_circuit = cirq.Circuit(
-            cirq.X(self.qubits[0]),
-            cirq.X(self.qubits[1]),
+            # cirq.X(self.qubits[0]),
+            # cirq.X(self.qubits[1]),
             self._init_rotations[idx][0].on(*self.qubits),
             self._init_rotations[idx][1].on(*self.qubits),
             cirq.CZ(*self.qubits),
@@ -245,8 +245,8 @@ class SSB(BenchmarkingExperiment[SSBResults]):
             cirq.CZ(*self.qubits),
             self._reconciliation_rotation[idx][2].on(*self.qubits),
             self._reconciliation_rotation[idx][3].on(*self.qubits),
-            cirq.X(self.qubits[0]),
-            cirq.X(self.qubits[1]),
+            # cirq.X(self.qubits[0]),
+            # cirq.X(self.qubits[1]),
         )
 
     def _fit_decay(self) -> tuple[np.typing.NDArray[np.float_], np.typing.NDArray[np.float_]]:
