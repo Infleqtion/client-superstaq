@@ -84,8 +84,8 @@ def test_build_xeb_circuit() -> None:
     with patch("numpy.random.default_rng") as rng:
         xeb_experiment = XEB(single_qubit_gate_set=[cirq.X, cirq.Y, cirq.Z])
         rng.return_value.choice.side_effect = [
-            np.array([[0, 1], [2, 1], [1, 2]]),
-            np.array([[0, 2], [0, 0], [1, 1]]),
+            np.array([[cirq.X, cirq.Y], [cirq.Z, cirq.Y], [cirq.Y, cirq.Z]]),
+            np.array([[cirq.X, cirq.Z], [cirq.X, cirq.X], [cirq.Y, cirq.Y]]),
         ]
         circuits = xeb_experiment._build_circuits(num_circuits=2, cycle_depths=[2])
 

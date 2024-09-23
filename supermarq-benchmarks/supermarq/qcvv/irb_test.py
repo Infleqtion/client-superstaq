@@ -20,6 +20,7 @@ import os
 from unittest.mock import MagicMock, patch
 
 import cirq
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -79,8 +80,7 @@ def test_reduce_clifford_sequence() -> None:
 
 
 def test_random_single_qubit_clifford() -> None:
-    exp = IRB()
-    gate = exp.random_single_qubit_clifford()
+    gate = IRB().random_single_qubit_clifford()
     assert isinstance(gate, cirq.ops.SingleQubitCliffordGate)
 
 
@@ -97,13 +97,17 @@ def test_irb_random_clifford() -> None:
 
 
 def test_random_two_qubit_clifford() -> None:
-    exp = IRB()
-    with patch("numpy.random.default_rng") as rng:
+    with patch("numpy.random.default_rng", side_effect=np.random.default_rng) as rng:
         rng.return_value.integers.side_effect = range(20)
+        exp = IRB()
+
+        gates: set[cirq.Gate] = set()
         for _ in range(20):
             gate = exp.random_two_qubit_clifford()
             assert isinstance(gate, cirq.ops.CliffordGate)
             assert gate.num_qubits() == 2
+            assert gate not in gates
+            gates.add(gate)
 
 
 def test_gates_per_clifford() -> None:

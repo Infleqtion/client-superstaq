@@ -247,6 +247,8 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         interleaved_gate: cirq.Gate | None = cirq.Z,
         num_qubits: int | None = 1,
         clifford_op_gateset: cirq.CompilationTargetGateset = cirq.CZTargetGateset(),
+        *,
+        random_seed: int | np.random.Generator | None = None,
     ) -> None:
         """Constructs an IRB experiment.
 
@@ -258,6 +260,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
                 if a gate is provided - the number of qubits is instead inferred from the gate.
             clifford_op_gateset: The gateset to use when implementing the clifford operations.
                 Defaults to the CZ/GR set.
+            random_seed: An optional seed to use for randomization.
         """
         if interleaved_gate is not None:
             num_qubits = interleaved_gate.num_qubits()
@@ -265,7 +268,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
             raise NotImplementedError(
                 "IRB experiment is currently only implemented for single or two qubit use."
             )
-        super().__init__(num_qubits=num_qubits)
+        super().__init__(num_qubits=num_qubits, random_seed=random_seed)
 
         if interleaved_gate is not None:
             self.interleaved_gate: cirq.CliffordGate | None = cirq.CliffordGate.from_op_list(
@@ -311,26 +314,25 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         Y = cirq.SingleQubitCliffordGate.Y
         Z = cirq.SingleQubitCliffordGate.Z
 
-        set_A = [
-            Id,
-            S,
-            H,
-            _reduce_single_qubit_clifford_seq([H, S]),
-            _reduce_single_qubit_clifford_seq([S, H]),
-            _reduce_single_qubit_clifford_seq([H, S, H]),
-        ]
+        set_A = np.array(
+            [
+                Id,
+                S,
+                H,
+                _reduce_single_qubit_clifford_seq([H, S]),
+                _reduce_single_qubit_clifford_seq([S, H]),
+                _reduce_single_qubit_clifford_seq([H, S, H]),
+            ]
+        )
 
-        set_B = [Id, X, Y, Z]
+        set_B = np.array([Id, X, Y, Z])
 
-        chosen_A = set_A[self._rng.choice(len(set_A))]
-        chosen_B = set_B[self._rng.choice(len(set_B))]
-        return _reduce_single_qubit_clifford_seq([chosen_A, chosen_B])
-
+        return _reduce_single_qubit_clifford_seq([self._rng.choice(set_A), self._rng.choice(set_B)])
 
     def random_two_qubit_clifford(self) -> cirq.CliffordGate:
         """Choose a random two qubit clifford gate.
 
-        For details of algorithm see: https://arxiv.org/pdf/1402.4848 & https://arxiv.org/pdf/1210.7011.
+        For algorithm details see https://arxiv.org/pdf/1402.4848 & https://arxiv.org/pdf/1210.7011.
 
         Returns:
             The random clifford gate.
@@ -338,6 +340,8 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         qubits = cirq.LineQubit.range(2)
         a = self.random_single_qubit_clifford()
         b = self.random_single_qubit_clifford()
+        print(a)
+        print(b)
         idx = self._rng.integers(20)
         if idx == 0:
             return cirq.CliffordGate.from_op_list([a(qubits[0]), b(qubits[1])], qubits)
@@ -386,7 +390,6 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
             ],
             qubits,
         )
-
 
     def random_clifford(self) -> cirq.CliffordGate:
         """Returns:

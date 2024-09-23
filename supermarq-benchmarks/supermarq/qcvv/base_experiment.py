@@ -567,7 +567,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             self._has_raw_data()
 
         if simulator is None:
-            simulator = cirq.Simulator()
+            simulator = cirq.Simulator(seed=self._rng)
 
         for sample in tqdm(self.samples, desc="Simulating circuits"):
             result = simulator.run(sample.circuit, repetitions=repetitions)

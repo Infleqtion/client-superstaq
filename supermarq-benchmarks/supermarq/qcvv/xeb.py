@@ -124,15 +124,20 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         self,
         single_qubit_gate_set: list[cirq.Gate] | None = None,
         two_qubit_gate: cirq.Gate | None = cirq.CZ,
+        *,
+        random_seed: int | np.random.Generator | None = None,
     ) -> None:
-        """Args:
-        single_qubit_gate_set: Optional list of single qubit gates to randomly sample
-            from when generating random circuits. If not provided defaults to phased
-            XZ gates with 1/4 pi intervals.
-        two_qubit_gate: The two qubit gate to interleave between the single qubit gates. If
-            None then no two qubit gate is used. Defaults to control-Z gate.
+        """Initializes a cross-entropy benchmarking experiment.
+
+        Args:
+            single_qubit_gate_set: Optional list of single qubit gates to randomly sample from when
+                generating random circuits. If not provided defaults to phased XZ gates with 1/4 pi
+                intervals.
+            two_qubit_gate: The two qubit gate to interleave between the single qubit gates. If None
+                then no two qubit gate is used. Defaults to control-Z gate.
+            random_seed: An optional seed to use for randomization.
         """
-        super().__init__(num_qubits=2)
+        super().__init__(num_qubits=2, random_seed=random_seed)
 
         self._circuit_fidelities: pd.DataFrame | None = None
 
@@ -207,18 +212,16 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         for _, depth in tqdm.contrib.itertools.product(
             range(num_circuits), cycle_depths, desc="Building circuits"
         ):
-            chosen_gate_indices = self._rng.choice(
-                len(self.single_qubit_gate_set),
-                size=(depth + int(self.two_qubit_gate is not None), len(self.qubits)),
+            num_single_qubit_gate_layers = depth + int(self.two_qubit_gate is not None)
+            chosen_single_qubit_gates = self._rng.choice(
+                np.asarray(self.single_qubit_gate_set),
+                size=(num_single_qubit_gate_layers, self.num_qubits),
             )
-            print(chosen_gate_indices)
-            print(next(iter(chosen_gate_indices)))
-            print(dict(size=(depth + int(self.two_qubit_gate is not None), len(self.qubits))))
 
             circuit = cirq.Circuit(
-                self.single_qubit_gate_set[idx].on(qubit)
-                for chosen_indices in chosen_gate_indices
-                for idx, qubit in zip(chosen_indices, self.qubits)
+                gate.on(qubit)
+                for gates_in_layer in chosen_single_qubit_gates
+                for gate, qubit in zip(gates_in_layer, self.qubits)
             )
 
             if self.two_qubit_gate is not None:
