@@ -122,7 +122,7 @@ class SSB(BenchmarkingExperiment[SSBResults]):
             [_Y, X, Y, _X],
             [Y, X, Y, _X],
         ]
-        self._gates = [X, _X, Y, _Y]
+        self._single_qubit_gate_set = [X, _X, Y, _Y]
 
     ###################
     # Private Methods #
@@ -197,10 +197,7 @@ class SSB(BenchmarkingExperiment[SSBResults]):
         Returns:
             The randomly chosen rotation gate acting on both qubits.
         """
-        gate = random.choice(
-            # [cirq.rx(np.pi / 2), cirq.rx(-np.pi / 2), cirq.ry(np.pi / 2), cirq.ry(-np.pi / 2)]
-            self._gates
-        )
+        gate = random.choice(self._single_qubit_gate_set)
         return gate.on(*self.qubits)
 
     def _sss_init_circuit(self, idx: int) -> cirq.Circuit:
