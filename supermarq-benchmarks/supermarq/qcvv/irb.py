@@ -26,8 +26,8 @@ import numpy as np
 import pandas as pd
 import scipy
 import seaborn as sns
+from tqdm.auto import trange
 from tqdm.contrib.itertools import product
-from tqdm.notebook import tqdm
 
 from supermarq.qcvv.base_experiment import BenchmarkingExperiment, BenchmarkingResults, Sample
 
@@ -408,7 +408,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         """
         sample = [
             self._clifford_gate_to_circuit(self.random_clifford())
-            for _ in tqdm(range(samples), desc="Sampling Clifford operations")
+            for _ in trange(samples, desc="Sampling Clifford operations")
         ]
         return {
             "single_qubit_gates": np.mean(

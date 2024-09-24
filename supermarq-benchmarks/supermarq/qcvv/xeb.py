@@ -24,8 +24,7 @@ import numpy as np
 import pandas as pd
 import scipy
 import seaborn as sns
-import tqdm
-import tqdm.contrib
+import tqdm.auto
 import tqdm.contrib.itertools
 
 from supermarq.qcvv import BenchmarkingExperiment, BenchmarkingResults, Sample
@@ -252,7 +251,7 @@ class XEB(BenchmarkingExperiment[XEBResults]):
             sample.sample_probabilities = sample.probabilities
             sample.probabilities = {}
 
-        for sample in tqdm.notebook.tqdm(samples, desc="Evaluating circuits"):
+        for sample in tqdm.auto.tqdm(samples, desc="Evaluating circuits"):
             sample.target_probabilities = self._simulate_sample(sample)
 
         records = []
