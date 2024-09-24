@@ -25,8 +25,6 @@ import numpy as np
 import pandas as pd
 import scipy
 import seaborn as sns
-import tqdm
-import tqdm.contrib
 import tqdm.contrib.itertools
 
 from supermarq.qcvv import BenchmarkingExperiment, BenchmarkingResults, Sample
@@ -64,9 +62,9 @@ class SSBResults(BenchmarkingResults):
 class SSB(BenchmarkingExperiment[SSBResults]):
     """Symmetric Stabilizer Benchmarking"""
 
-    def __init__(
-        self,
-    ) -> None:
+    def __init__(self) -> None:
+        """Initializes a symmetric stabilizer benchmarking experiment."""
+
         super().__init__(num_qubits=2)
 
         # Moments containing parallel rotations. Used to construst the init and rec circuit.
@@ -76,22 +74,28 @@ class SSB(BenchmarkingExperiment[SSBResults]):
         Y = css.ParallelRGate(np.pi / 2, np.pi / 2, self.num_qubits)
         _X = css.ParallelRGate(np.pi / 2, np.pi, self.num_qubits)
         _Y = css.ParallelRGate(np.pi / 2, -np.pi / 2, self.num_qubits)
+        self._single_qubit_gate_set = [X, _X, Y, _Y]
 
         # Table I of https://arxiv.org/pdf/2407.20184
-        self._stabilizer_states = [
-            np.array([1, 1, 1, 1]),
-            np.array([1, -1, -1, 1]),
-            np.array([1, 1j, 1j, -1]),
-            np.array([1, -1j, -1j, -1]),
-            np.array([1, 0, 0, 0]),
-            np.array([0, 0, 0, 1]),
-            np.array([1, 1, 1, -1]),
-            np.array([1, -1, -1, -1]),
-            np.array([1, 1j, 1j, 1]),
-            np.array([1, -1j, -1j, 1]),
-            np.array([1, 0, 0, 1j]),
-            np.array([1, 0, 0, -1j]),
-        ]
+        stabilizer_states = np.array(
+            [
+                [1, 1, 1, 1],
+                [1, -1, -1, 1],
+                [1, 1j, 1j, -1],
+                [1, -1j, -1j, -1],
+                [1, 0, 0, 0],
+                [0, 0, 0, 1],
+                [1, 1, 1, -1],
+                [1, -1, -1, -1],
+                [1, 1j, 1j, 1],
+                [1, -1j, -1j, 1],
+                [1, 0, 0, 1j],
+                [1, 0, 0, -1j],
+            ]
+        )
+        stabilizer_states /= np.linalg.norm(stabilizer_states, axis=1, keepdims=True)
+        self._stabilizer_states = stabilizer_states
+
         # Table II of https://arxiv.org/pdf/2407.20184
         self._init_rotations = [
             [_X, X, Y, _Y, Y],
@@ -122,7 +126,6 @@ class SSB(BenchmarkingExperiment[SSBResults]):
             [_Y, X, Y, _X],
             [Y, X, Y, _X],
         ]
-        self._single_qubit_gate_set = [X, _X, Y, _Y]
 
     ###################
     # Private Methods #
@@ -189,7 +192,7 @@ class SSB(BenchmarkingExperiment[SSBResults]):
             )
         return pd.DataFrame(records)
 
-    def _random_parallel_qubit_rotation(self) -> cirq.Moment:
+    def _random_parallel_qubit_rotation(self) -> cirq.Operation:
         """Chooses randomly from {X, Y, -X, -Y} and return a moment with this gate acting on both
         quits. Note we don't use `cirq.ParallelGate` as when modelling noise Cirq treats this as
         a two qubit gate.
@@ -210,8 +213,6 @@ class SSB(BenchmarkingExperiment[SSBResults]):
             A circuit that maps the |00> state to the desired symmetric-stabiliser state.
         """
         init_circuit = cirq.Circuit(
-            # cirq.X(self.qubits[0]),
-            # cirq.X(self.qubits[1]),
             self._init_rotations[idx][0].on(*self.qubits),
             self._init_rotations[idx][1].on(*self.qubits),
             cirq.CZ(*self.qubits),
@@ -232,11 +233,11 @@ class SSB(BenchmarkingExperiment[SSBResults]):
             The appropriate reconciliation circuit
         """
         # Calculate which state the provided circuit maps the |00> state to.
-        # state = cirq.unitary(circuit)[:, 0]
         state = cirq.final_state_vector(circuit, ignore_terminal_measurements=True)
+
         # Find the index of this state by checking which symmetric-stabiliser
         # state it is parallel to.
-        idx = [_parallel(state, stab_state) for stab_state in self._stabilizer_states].index(True)
+        idx = abs(self._stabilizer_states @ state.conj()).argmax()
 
         # Return the reconciliation circuit. See table III of https://arxiv.org/pdf/2407.20184
         return cirq.Circuit(
@@ -245,8 +246,6 @@ class SSB(BenchmarkingExperiment[SSBResults]):
             cirq.CZ(*self.qubits),
             self._reconciliation_rotation[idx][2].on(*self.qubits),
             self._reconciliation_rotation[idx][3].on(*self.qubits),
-            # cirq.X(self.qubits[0]),
-            # cirq.X(self.qubits[1]),
         )
 
     def _fit_decay(self) -> tuple[np.typing.NDArray[np.float_], np.typing.NDArray[np.float_]]:
