@@ -230,6 +230,34 @@ def test_xeb_process_probabilities(xeb_experiment: XEB) -> None:
     pd.testing.assert_frame_equal(expected_data, data)
 
 
+def test_xeb_process_probabilities_missing_probs(xeb_experiment: XEB) -> None:
+    qubits = cirq.LineQubit.range(2)
+
+    samples = [
+        XEBSample(
+            raw_circuit=cirq.Circuit(
+                [
+                    cirq.X(qubits[0]),
+                    cirq.X(qubits[1]),
+                    cirq.CX(qubits[0], qubits[1]),
+                    cirq.X(qubits[0]),
+                    cirq.X(qubits[1]),
+                    cirq.measure(qubits),
+                ]
+            ),
+            data={"circuit_depth": 3, "num_cycles": 1, "two_qubit_gate": "CX"},
+        )
+    ]
+
+    with patch("cirq.Simulator") as mock_simulator:
+        mock_simulator.return_value.simulate.return_value.final_state_vector = [0.0, 1.0, 0.0, 0.0]
+        with pytest.warns(
+            UserWarning, match="Sample missing `probabilities`. This sample has been omitted."
+        ):
+            data = xeb_experiment._process_probabilities(samples)
+    pd.testing.assert_frame_equal(data, pd.DataFrame())
+
+
 def test_xebsample_sum_probs_square_no_values() -> None:
     sample = XEBSample(raw_circuit=cirq.Circuit(), data={})
     with pytest.raises(RuntimeError, match="`target_probabilities` have not yet been initialised"):
