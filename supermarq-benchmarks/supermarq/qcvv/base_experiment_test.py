@@ -17,7 +17,6 @@
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from unittest.mock import MagicMock, call, patch
 
@@ -36,11 +35,6 @@ class ExampleResults(BenchmarkingResults):
     example: float
 
     experiment_name = "Example results"
-
-
-@pytest.fixture(scope="session", autouse=True)
-def patch_tqdm() -> None:
-    os.environ["TQDM_DISABLE"] = "1"
 
 
 @pytest.fixture

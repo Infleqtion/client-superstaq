@@ -24,7 +24,7 @@ from typing import Any, Generic, TypeVar
 import cirq
 import cirq_superstaq as css
 import pandas as pd
-from tqdm.notebook import tqdm
+from tqdm.auto import tqdm
 
 
 @dataclass

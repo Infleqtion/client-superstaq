@@ -16,7 +16,6 @@
 # mypy: disable-error-code="union-attr"
 from __future__ import annotations
 
-import os
 from unittest.mock import MagicMock, patch
 
 import cirq
@@ -26,11 +25,6 @@ import pytest
 import supermarq.qcvv.irb
 from supermarq.qcvv.base_experiment import Sample
 from supermarq.qcvv.irb import IRB
-
-
-@pytest.fixture(scope="session", autouse=True)
-def patch_tqdm() -> None:
-    os.environ["TQDM_DISABLE"] = "1"
 
 
 def test_irb_init() -> None:
