@@ -27,51 +27,47 @@ from supermarq.qcvv import XEB, XEBSample
 
 
 def test_xeb_init() -> None:
-    with patch("cirq_superstaq.service.Service"):
-        experiment = XEB()
-        assert experiment.num_qubits == 2
-        assert experiment.two_qubit_gate == cirq.CZ
-        assert experiment.single_qubit_gate_set == [
-            cirq.PhasedXZGate(
-                z_exponent=z,
-                x_exponent=0.5,
-                axis_phase_exponent=a,
-            )
-            for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
-        ]
+    experiment = XEB()
+    assert experiment.num_qubits == 2
+    assert experiment.two_qubit_gate == cirq.CZ
+    assert experiment.single_qubit_gate_set == [
+        cirq.PhasedXZGate(
+            z_exponent=z,
+            x_exponent=0.5,
+            axis_phase_exponent=a,
+        )
+        for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
+    ]
 
-        with pytest.raises(
-            RuntimeError, match="No samples to retrieve. The experiment has not been run."
-        ):
-            experiment.samples  # pylint: disable=W0104
+    with pytest.raises(
+        RuntimeError, match="No samples to retrieve. The experiment has not been run."
+    ):
+        experiment.samples  # pylint: disable=W0104
 
-        with pytest.raises(
-            RuntimeError, match="No data to retrieve. The experiment has not been run."
-        ):
-            experiment.circuit_fidelities  # pylint: disable=W0104
+    with pytest.raises(RuntimeError, match="No data to retrieve. The experiment has not been run."):
+        experiment.circuit_fidelities  # pylint: disable=W0104
 
-        experiment = XEB(two_qubit_gate=cirq.CX)
-        assert experiment.num_qubits == 2
-        assert experiment.two_qubit_gate == cirq.CX
-        assert experiment.single_qubit_gate_set == [
-            cirq.PhasedXZGate(
-                z_exponent=z,
-                x_exponent=0.5,
-                axis_phase_exponent=a,
-            )
-            for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
-        ]
+    experiment = XEB(two_qubit_gate=cirq.CX)
+    assert experiment.num_qubits == 2
+    assert experiment.two_qubit_gate == cirq.CX
+    assert experiment.single_qubit_gate_set == [
+        cirq.PhasedXZGate(
+            z_exponent=z,
+            x_exponent=0.5,
+            axis_phase_exponent=a,
+        )
+        for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
+    ]
 
-        experiment = XEB(single_qubit_gate_set=[cirq.X])
-        assert experiment.num_qubits == 2
-        assert experiment.two_qubit_gate == cirq.CZ
-        assert experiment.single_qubit_gate_set == [cirq.X]
+    experiment = XEB(single_qubit_gate_set=[cirq.X])
+    assert experiment.num_qubits == 2
+    assert experiment.two_qubit_gate == cirq.CZ
+    assert experiment.single_qubit_gate_set == [cirq.X]
 
 
 @pytest.fixture
 def xeb_experiment() -> XEB:
-    with patch("cirq_superstaq.service.Service"):
-        return XEB(single_qubit_gate_set=[cirq.X, cirq.Y, cirq.Z])
+    return XEB(single_qubit_gate_set=[cirq.X, cirq.Y, cirq.Z])
 
 
 def test_build_xeb_circuit(xeb_experiment: XEB) -> None:

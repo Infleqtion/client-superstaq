@@ -189,12 +189,20 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         self._samples: Sequence[Sample] | None = None
         """The attribute to store the experimental samples in."""
 
-        self._service: css.service.Service = css.service.Service(**kwargs)
+        self._service_kwargs = kwargs
+        self._service: css.Service | None = None
         """The superstaq service for submitting jobs."""
 
     ##############
     # Properties #
     ##############
+    @property
+    def superstaq_service(self) -> css.Service:
+        """A Superstaq service to use for compilation and circuit submission."""
+        if self._service is None:
+            self._service = css.Service(**self._service_kwargs)
+        return self._service
+
     @property
     def num_qubits(self) -> int:
         """Returns:
@@ -456,7 +464,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             target: The device to compile to.
             kwargs: Additional desired compile options.
         """
-        compiled_circuits = self._service.compile(
+        compiled_circuits = self.superstaq_service.compile(
             [sample.circuit for sample in self.samples], target=target, **kwargs
         ).circuits
 
@@ -525,7 +533,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         if not overwrite:
             self._has_raw_data()
 
-        experiment_job = self._service.create_job(
+        experiment_job = self.superstaq_service.create_job(
             [sample.circuit for sample in self.samples],
             target=target,
             method=method,
