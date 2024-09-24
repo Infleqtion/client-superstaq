@@ -264,7 +264,7 @@ class _SuperstaqClient:
             query["name"] = name
         if email is not None:
             query["email"] = email
-        user_info = self.get_request("/get_user_info", query=query)
+        user_info = self.get_request("/user_info", query=query)
         if not user_info:
             # Catch empty server response. This shouldn't happen as the server should return
             # an error code if something is wrong with the request.
