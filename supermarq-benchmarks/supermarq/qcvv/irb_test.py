@@ -16,7 +16,6 @@
 # mypy: disable-error-code="union-attr"
 from __future__ import annotations
 
-import os
 from unittest.mock import MagicMock, patch
 
 import cirq
@@ -27,11 +26,6 @@ import pytest
 import supermarq.qcvv.irb
 from supermarq.qcvv.base_experiment import Sample
 from supermarq.qcvv.irb import IRB
-
-
-@pytest.fixture(scope="session", autouse=True)
-def patch_tqdm() -> None:
-    os.environ["TQDM_DISABLE"] = "1"
 
 
 def test_irb_init() -> None:
@@ -316,6 +310,20 @@ def test_analyse_results(irb_experiment: IRB) -> None:
                 "1": 0.5 - 0.5 * 0.8**1 + 0.00000015,
             },
             {
+                "clifford_depth": 2,
+                "circuit_depth": 3,
+                "experiment": "RB",
+                "0": 0.5 * 0.95**2 + 0.5 + 0.0000011,
+                "1": 0.5 - 0.5 * 0.95**2 - 0.0000011,
+            },
+            {
+                "clifford_depth": 2,
+                "circuit_depth": 4,
+                "experiment": "IRB",
+                "0": 0.5 * 0.8**2 + 0.5 - 0.00000017,
+                "1": 0.5 - 0.5 * 0.8**2 + 0.00000017,
+            },
+            {
                 "clifford_depth": 5,
                 "circuit_depth": 6,
                 "experiment": "RB",
@@ -370,6 +378,13 @@ def test_analyse_results_rb() -> None:
                 "experiment": "RB",
                 "0": 0.5 * 0.95**1 + 0.5 - 0.0000001,
                 "1": 0.5 - 0.5 * 0.95**1 + 0.0000001,
+            },
+            {
+                "clifford_depth": 3,
+                "circuit_depth": 4,
+                "experiment": "RB",
+                "0": 0.5 * 0.95**3 + 0.5 - 0.0000003,
+                "1": 0.5 - 0.5 * 0.95**3 + 0.0000003,
             },
             {
                 "clifford_depth": 5,

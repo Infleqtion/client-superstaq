@@ -25,7 +25,7 @@ import cirq
 import cirq_superstaq as css
 import numpy as np
 import pandas as pd
-from tqdm.notebook import tqdm
+from tqdm.auto import tqdm
 
 
 @dataclass
