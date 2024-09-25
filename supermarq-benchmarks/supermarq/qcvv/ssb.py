@@ -149,17 +149,31 @@ class SSB(BenchmarkingExperiment[SSBResults]):
         max_depth = max(cycle_depths)
         assert min_depth >= 2
 
+        # Precompute action of each gate on the stabilizer state index. This is just Clifford
+        # tableau math and so could probably be generated analytically pretty cleanly.. but we only
+        # have to do this once though so there really isn't much of a performance difference
+        idx_maps = {}
+        for gate in (*self._single_qubit_gate_set, cirq.CZ):
+            mat = cirq.unitary(gate)
+            inner_products = abs(self._stabilizer_states.conj() @ mat @ self._stabilizer_states.T)
+            idx_maps[gate] = dict(enumerate(inner_products.argmax(0)))
+
         for _, depth in tqdm.contrib.itertools.product(
             range(num_circuits), cycle_depths, desc="Building circuits"
         ):
             sss_idx = random.randint(0, 11)
             circuit = self._sss_init_circuit(sss_idx)
-            for _ in range(depth - 2):
-                circuit += self._random_parallel_qubit_rotation()
-                circuit += cirq.CZ(*self.qubits).with_tags("no_compile")
-            for _ in range(max_depth - depth + 2):
-                circuit += self._random_parallel_qubit_rotation()
-            circuit += self._sss_reconciliation_circuit(circuit) + cirq.measure(self.qubits)
+
+            for i in range(max_depth):
+                op = self._random_parallel_qubit_rotation()
+                circuit += op
+                sss_idx = idx_maps[op.gate][sss_idx]
+
+                if i < depth - 2:
+                    circuit += cirq.CZ(*self.qubits).with_tags("no_compile")
+                    sss_idx = idx_maps[cirq.CZ][sss_idx]
+
+            circuit += self._sss_reconciliation_circuit(sss_idx) + cirq.measure(self.qubits)
 
             random_circuits.append(
                 Sample(
@@ -209,6 +223,7 @@ class SSB(BenchmarkingExperiment[SSBResults]):
 
         Args:
             idx: The index of the desired symmetric-stabiliser state
+
         Returns:
             A circuit that maps the |00> state to the desired symmetric-stabiliser state.
         """
@@ -222,23 +237,16 @@ class SSB(BenchmarkingExperiment[SSBResults]):
         )
         return init_circuit
 
-    def _sss_reconciliation_circuit(self, circuit: cirq.Circuit) -> cirq.Circuit:
+    def _sss_reconciliation_circuit(self, idx: int) -> cirq.Circuit:
         """Given a randomly generated circuit, return the appropriate reconciliation circuit.
         See appendix of https://arxiv.org/pdf/2407.20184 for details.
 
         Args:
-            circuit: The randomly generated circuit
+            idx: The index of the final symmetric-stabiliser state
 
         Returns:
             The appropriate reconciliation circuit
         """
-        # Calculate which state the provided circuit maps the |00> state to.
-        state = cirq.final_state_vector(circuit, ignore_terminal_measurements=True)
-
-        # Find the index of this state by checking which symmetric-stabiliser
-        # state it is parallel to.
-        idx = abs(self._stabilizer_states @ state.conj()).argmax()
-
         # Return the reconciliation circuit. See table III of https://arxiv.org/pdf/2407.20184
         return cirq.Circuit(
             self._reconciliation_rotation[idx][0].on(*self.qubits),
