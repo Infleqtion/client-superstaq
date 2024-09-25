@@ -81,7 +81,7 @@ def xeb_experiment() -> XEB:
 
 
 def test_build_xeb_circuit() -> None:
-    with patch("numpy.random.default_rng") as rng:
+    with patch("cirq_superstaq.service.Service"), patch("numpy.random.default_rng") as rng:
         xeb_experiment = XEB(single_qubit_gate_set=[cirq.X, cirq.Y, cirq.Z])
         rng.return_value.choice.side_effect = [
             np.array([[cirq.X, cirq.Y], [cirq.Z, cirq.Y], [cirq.Y, cirq.Z]]),
