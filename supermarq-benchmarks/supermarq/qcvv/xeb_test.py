@@ -249,12 +249,11 @@ def test_xeb_process_probabilities_missing_probs(xeb_experiment: XEB) -> None:
         )
     ]
 
-    with patch("cirq.Simulator") as mock_simulator:
-        mock_simulator.return_value.simulate.return_value.final_state_vector = [0.0, 1.0, 0.0, 0.0]
-        with pytest.warns(
-            UserWarning, match="Sample missing `probabilities`. This sample has been omitted."
-        ):
-            data = xeb_experiment._process_probabilities(samples)
+    with pytest.warns(
+        UserWarning,
+        match=r"1 sample\(s\) are missing `probabilities`. These samples have been omitted.",
+    ):
+        data = xeb_experiment._process_probabilities(samples)
     pd.testing.assert_frame_equal(data, pd.DataFrame())
 
 

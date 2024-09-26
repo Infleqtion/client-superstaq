@@ -249,37 +249,42 @@ class XEB(BenchmarkingExperiment[XEBResults]):
             A data frame of the full results needed to analyse the experiment.
         """
         samples = list(samples)
+        missing_count = 0
         for sample in samples:
             if sample.probabilities is None:
-                warnings.warn("Sample missing `probabilities`. This sample has been omitted.")
+                missing_count += 1
                 samples.remove(sample)
             else:
                 sample.sample_probabilities = sample.probabilities
                 sample.probabilities = {}
+        if missing_count > 0:
+            warnings.warn(
+                f"{missing_count} sample(s) are missing `probabilities`. "
+                "These samples have been omitted."
+            )
 
         for sample in tqdm.notebook.tqdm(samples, desc="Evaluating circuits"):
             sample.target_probabilities = self._simulate_sample(sample)
 
         records = []
         for sample in samples:
-            target_probabilities = {
-                f"p({key})": value
-                for key, value in sample.target_probabilities.items()  # type: ignore[union-attr]
-            }
-            sample_probabilities = {
-                f"p^({key})": value
-                for key, value in sample.sample_probabilities.items()  # type: ignore[union-attr]
-            }
-            records.append(
-                {
-                    "cycle_depth": sample.data["num_cycles"],
-                    "circuit_depth": sample.data["circuit_depth"],
-                    **target_probabilities,
-                    **sample_probabilities,
-                    "sum_p(x)p(x)": sample.sum_target_probs_square(),
-                    "sum_p(x)p^(x)": sample.sum_target_cross_sample_probs(),
+            if sample.sample_probabilities is not None and sample.target_probabilities is not None:
+                target_probabilities = {
+                    f"p({key})": value for key, value in sample.target_probabilities.items()
                 }
-            )
+                sample_probabilities = {
+                    f"p^({key})": value for key, value in sample.sample_probabilities.items()
+                }
+                records.append(
+                    {
+                        "cycle_depth": sample.data["num_cycles"],
+                        "circuit_depth": sample.data["circuit_depth"],
+                        **target_probabilities,
+                        **sample_probabilities,
+                        "sum_p(x)p(x)": sample.sum_target_probs_square(),
+                        "sum_p(x)p^(x)": sample.sum_target_cross_sample_probs(),
+                    }
+                )
         return pd.DataFrame(records)
 
     def _simulate_sample(self, sample: XEBSample) -> dict[str, float]:

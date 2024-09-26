@@ -505,6 +505,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         """
 
         records = []
+        missing_count = 0  # Count the number of samples that do not have probabilities saved
         for sample in samples:
             if sample.probabilities is not None:
                 records.append(
@@ -518,7 +519,13 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
                     }
                 )
             else:
-                warnings.warn("Sample is missing probabilities. This sample has been omitted.")
+                missing_count += 1
+
+        if missing_count > 0:
+            warnings.warn(
+                f"{missing_count} sample(s) are missing probabilities. "
+                "These samples have been omitted."
+            )
 
         return pd.DataFrame(records)
 

@@ -168,7 +168,8 @@ def test_irb_process_probabilities_missing_probs(irb_experiment: IRB) -> None:
     ]
 
     with pytest.warns(
-        UserWarning, match="Sample is missing probabilities. This sample has been omitted."
+        UserWarning,
+        match=r"1 sample\(s\) are missing probabilities. These samples have been omitted.",
     ):
         data = irb_experiment._process_probabilities(samples)
 
