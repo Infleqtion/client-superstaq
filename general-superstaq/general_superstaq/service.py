@@ -418,7 +418,7 @@ class Service:
 
         Raises:
             ValueError: If the target or noise model are not valid.
-            general_superstaq.SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
         noise_dict: dict[str, object] = {}
         if noise:

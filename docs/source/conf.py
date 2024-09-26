@@ -2,6 +2,8 @@
 #
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
+# pylint: disable=missing-function-docstring,missing-class-docstring,unused-argument
+# mypy: disable-error-code="no-untyped-def"
 
 # -- Path setup --------------------------------------------------------------
 from __future__ import annotations
@@ -80,3 +82,15 @@ html_css_files = [
     "css/docs-superstaq.css",
 ]
 html_favicon = "_static/logos/Infleqtion_logo.png"
+
+
+# Replace common aliases (gss, css, qss) in docstrings.
+def autodoc_process_docstring(app, what, name, obj, options, lines):
+    for i in range(len(lines)):
+        lines[i] = lines[i].replace("gss.", "general_superstaq.")
+        lines[i] = lines[i].replace("css.", "cirq_superstaq.")
+        lines[i] = lines[i].replace("qss.", "qiskit_superstaq.")
+
+
+def setup(app):
+    app.connect("autodoc-process-docstring", autodoc_process_docstring)

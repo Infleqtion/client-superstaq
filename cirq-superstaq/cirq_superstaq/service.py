@@ -341,7 +341,7 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If there are no measurements in `circuits`.
-            general_superstaq.SuperstaqServerException: If there was an error accessing the API.
+            ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         css.validation.validate_cirq_circuits(circuits, require_measurements=True)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
@@ -373,7 +373,7 @@ class Service(gss.service.Service):
             A `css.Job` which can be queried for status or results.
 
         Raises:
-            general_superstaq.SuperstaqServerException: If there was an error accessing the API.
+            ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         return css.job.Job(client=self._client, job_id=job_id)
 
@@ -877,7 +877,7 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If `circuit` is not a valid `cirq.Circuit`.
-            general_superstaq.SuperstaqServerException: If there was an error accessing the API.
+            ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         circuit_1 = rho_1[0]
         circuit_2 = rho_2[0]
@@ -916,7 +916,7 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If `ids` is not of size two.
-            general_superstaq.SuperstaqServerException: If there was an error accessing the API or
+            ~gss.SuperstaqServerException: If there was an error accessing the API or
                 the jobs submitted
                 through `submit_dfe` have not finished running.
         """
@@ -981,7 +981,7 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If the target or noise model is not valid.
-            general_superstaq.SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
         noise_dict: dict[str, object] = {}
         if isinstance(noise, str):
@@ -1052,7 +1052,7 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If the target or noise model is not valid.
-            general_superstaq.SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
 
         noise_dict: dict[str, object] = {}
@@ -1090,7 +1090,7 @@ class Service(gss.service.Service):
             A dict containing the Cycle Benchmarking process data.
 
         Raises:
-            general_superstaq.SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
         serialized_counts = cirq.to_json(counts) if counts else None
         cb_data = self._client.process_cb(job_id, serialized_counts)

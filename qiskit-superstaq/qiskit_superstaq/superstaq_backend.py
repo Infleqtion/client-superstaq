@@ -181,7 +181,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             A `qss.SuperstaqJob` which can be queried for status or results.
 
         Raises:
-            general_superstaq.SuperstaqServerException: If there was an error accessing the API.
+            ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         return qss.SuperstaqJob(self, job_id)
 
@@ -586,7 +586,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         Raises:
             AssertionError: If the weights are not an Iterable type.
             ValueError: If the target or noise model is not valid.
-            general_superstaq.SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
         noise_dict: dict[str, object] = {}
         if noise:
