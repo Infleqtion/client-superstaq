@@ -16,7 +16,6 @@
 from __future__ import annotations
 
 import itertools
-import os
 from unittest.mock import MagicMock, patch
 
 import cirq
@@ -25,11 +24,6 @@ import pandas as pd
 import pytest
 
 from supermarq.qcvv import XEB, XEBSample
-
-
-@pytest.fixture(scope="session", autouse=True)
-def patch_tqdm() -> None:
-    os.environ["TQDM_DISABLE"] = "1"
 
 
 def test_xeb_init() -> None:

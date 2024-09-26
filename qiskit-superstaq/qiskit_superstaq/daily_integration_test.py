@@ -48,12 +48,20 @@ def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
     out = provider.ibmq_compile(qc, target="ibmq_brisbane_qpu")
     assert isinstance(out, qss.compiler_output.CompilerOutput)
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
-    assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
+    assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
+    assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
 
-    out = provider.ibmq_compile(qc, target="ibmq_brisbane_qpu")
+    out = provider.ibmq_compile([qc, qc], target="ibmq_brisbane_qpu")
     assert isinstance(out, qss.compiler_output.CompilerOutput)
-    assert isinstance(out.circuit, qiskit.QuantumCircuit)
-    assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
+
+    assert isinstance(out.circuits, list)
+    assert len(out.circuits) == 2
+    assert isinstance(out.circuits[1], qiskit.QuantumCircuit)
+
+    assert isinstance(out.pulse_gate_circuits, list)
+    assert len(out.pulse_gate_circuits) == 2
+    assert isinstance(out.pulse_gate_circuits[1], qiskit.QuantumCircuit)
+    assert len(out.pulse_gate_circuits[1].op_start_times) == len(out.pulse_gate_circuits[1])
 
 
 def test_ibmq_compile_with_token() -> None:
@@ -67,7 +75,8 @@ def test_ibmq_compile_with_token() -> None:
 
     assert isinstance(out, qss.compiler_output.CompilerOutput)
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
-    assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
+    assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
+    assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
 
 
 def test_aqt_compile(provider: qss.SuperstaqProvider) -> None:

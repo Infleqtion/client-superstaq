@@ -9,6 +9,7 @@ import cirq
 import general_superstaq as gss
 import numpy as np
 import pytest
+import qiskit
 from general_superstaq import ResourceEstimate
 
 import cirq_superstaq as css
@@ -34,11 +35,19 @@ def test_ibmq_compile(service: css.Service) -> None:
 
     out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
-    assert out.pulse_sequence is not None
+    assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
+    assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
 
-    out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
-    assert isinstance(out.circuit, cirq.Circuit)
-    assert out.pulse_sequence is not None
+    out = service.ibmq_compile([circuit, circuit], target="ibmq_brisbane_qpu")
+
+    assert isinstance(out.circuits, list)
+    assert len(out.circuits) == 2
+    assert isinstance(out.circuits[1], cirq.Circuit)
+
+    assert isinstance(out.pulse_gate_circuits, list)
+    assert len(out.pulse_gate_circuits) == 2
+    assert isinstance(out.pulse_gate_circuits[1], qiskit.QuantumCircuit)
+    assert len(out.pulse_gate_circuits[1].op_start_times) == len(out.pulse_gate_circuits[1])
 
 
 def test_ibmq_compile_with_token() -> None:
@@ -53,7 +62,8 @@ def test_ibmq_compile_with_token() -> None:
     out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
 
     assert isinstance(out.circuit, cirq.Circuit)
-    assert out.pulse_sequence is not None
+    assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
+    assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
 
 
 def test_aqt_compile(service: css.Service) -> None:
