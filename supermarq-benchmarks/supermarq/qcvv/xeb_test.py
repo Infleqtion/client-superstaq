@@ -74,15 +74,12 @@ def xeb_experiment() -> XEB:
         return XEB(single_qubit_gate_set=[cirq.X, cirq.Y, cirq.Z])
 
 
-def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
-    with patch("supermarq.qcvv.xeb.random.choices") as random_choice:
-        random_choice.side_effect = [
-            [cirq.X, cirq.Y],
-            [cirq.Z, cirq.Y],
-            [cirq.Y, cirq.Z],
-            [cirq.X, cirq.Z],
-            [cirq.X, cirq.X],
-            [cirq.Y, cirq.Y],
+def test_build_xeb_circuit() -> None:
+    with patch("cirq_superstaq.service.Service"), patch("numpy.random.default_rng") as rng:
+        xeb_experiment = XEB(single_qubit_gate_set=[cirq.X, cirq.Y, cirq.Z])
+        rng.return_value.choice.side_effect = [
+            np.array([[cirq.X, cirq.Y], [cirq.Z, cirq.Y], [cirq.Y, cirq.Z]]),
+            np.array([[cirq.X, cirq.Z], [cirq.X, cirq.X], [cirq.Y, cirq.Y]]),
         ]
         circuits = xeb_experiment._build_circuits(num_circuits=2, cycle_depths=[2])
 
