@@ -66,9 +66,8 @@ def test_reduce_clifford_sequence() -> None:
 
 
 def test_random_single_qubit_clifford() -> None:
-    with patch("cirq_superstaq.service.Service"):
-        gate = IRB().random_single_qubit_clifford()
-        assert isinstance(gate, cirq.ops.SingleQubitCliffordGate)
+    gate = IRB().random_single_qubit_clifford()
+    assert isinstance(gate, cirq.ops.SingleQubitCliffordGate)
 
 
 def test_irb_random_clifford() -> None:
@@ -83,9 +82,7 @@ def test_irb_random_clifford() -> None:
 
 
 def test_random_two_qubit_clifford() -> None:
-    with patch("cirq_superstaq.service.Service"), patch(
-        "numpy.random.default_rng", side_effect=np.random.default_rng
-    ) as rng:
+    with patch("numpy.random.default_rng", side_effect=np.random.default_rng) as rng:
         rng.return_value.integers.side_effect = range(20)
         exp = IRB()
 

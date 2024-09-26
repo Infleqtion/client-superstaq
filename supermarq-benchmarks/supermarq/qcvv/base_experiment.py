@@ -14,6 +14,7 @@
 """
 from __future__ import annotations
 
+import functools
 import math
 import pprint
 from abc import ABC, abstractmethod
@@ -196,20 +197,17 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         """The attribute to store the experimental samples in."""
 
         self._service_kwargs = kwargs
-        self._service: css.Service | None = None
-        """The superstaq service for submitting jobs."""
+        """Arguments to pass to the Superstaq service for submitting jobs."""
 
         self._rng = np.random.default_rng(random_seed)
 
     ##############
     # Properties #
     ##############
-    @property
-    def superstaq_service(self) -> css.Service:
+    @functools.cached_property
+    def _superstaq_service(self) -> css.Service:
         """A Superstaq service to use for compilation and circuit submission."""
-        if self._service is None:
-            self._service = css.Service(**self._service_kwargs)
-        return self._service
+        return css.Service(**self._service_kwargs)
 
     @property
     def num_qubits(self) -> int:
@@ -472,7 +470,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             target: The device to compile to.
             kwargs: Additional desired compile options.
         """
-        compiled_circuits = self.superstaq_service.compile(
+        compiled_circuits = self._superstaq_service.compile(
             [sample.circuit for sample in self.samples], target=target, **kwargs
         ).circuits
 
@@ -541,7 +539,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         if not overwrite:
             self._has_raw_data()
 
-        experiment_job = self.superstaq_service.create_job(
+        experiment_job = self._superstaq_service.create_job(
             [sample.circuit for sample in self.samples],
             target=target,
             method=method,
