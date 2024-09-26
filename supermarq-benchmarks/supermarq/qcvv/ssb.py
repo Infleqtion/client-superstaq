@@ -30,23 +30,6 @@ import tqdm.contrib.itertools
 from supermarq.qcvv import BenchmarkingExperiment, BenchmarkingResults, Sample
 
 
-def _parallel(
-    x: np.typing.NDArray[np.float_], y: np.typing.NDArray[np.float_], tol: float = 1e-5
-) -> bool:
-    """Checks whether two numpy arrays are parallel, as determined by the cosine distance between
-    them.
-
-    Args:
-        x: Array 1
-        y: Array 2
-        tol: The tolerance to accept. Defaults to 1E-5.
-
-    Returns:
-        Wether the two arrays are parallel
-    """
-    return np.abs(np.dot(x, np.conj(y)) / (np.linalg.norm(x) * np.linalg.norm(y))) >= 1.0 - tol
-
-
 @dataclass(frozen=True)
 class SSBResults(BenchmarkingResults):
     """Results from an SSB experiment."""
@@ -165,9 +148,9 @@ class SSB(BenchmarkingExperiment[SSBResults]):
             circuit = self._sss_init_circuit(sss_idx)
 
             for i in range(max_depth):
-                op = self._random_parallel_qubit_rotation()
-                circuit += op
-                sss_idx = idx_maps[op.gate][sss_idx]
+                gate = self._random_parallel_qubit_rotation()
+                circuit += gate.on(*self.qubits)
+                sss_idx = idx_maps[gate][sss_idx]
 
                 if i < depth - 2:
                     circuit += cirq.CZ(*self.qubits).with_tags("no_compile")
@@ -206,7 +189,7 @@ class SSB(BenchmarkingExperiment[SSBResults]):
             )
         return pd.DataFrame(records)
 
-    def _random_parallel_qubit_rotation(self) -> cirq.Operation:
+    def _random_parallel_qubit_rotation(self) -> cirq.Gate:
         """Chooses randomly from {X, Y, -X, -Y} and return a moment with this gate acting on both
         quits. Note we don't use `cirq.ParallelGate` as when modelling noise Cirq treats this as
         a two qubit gate.
@@ -214,8 +197,7 @@ class SSB(BenchmarkingExperiment[SSBResults]):
         Returns:
             The randomly chosen rotation gate acting on both qubits.
         """
-        gate = random.choice(self._single_qubit_gate_set)
-        return gate.on(*self.qubits)
+        return random.choice(self._single_qubit_gate_set)
 
     def _sss_init_circuit(self, idx: int) -> cirq.Circuit:
         """Creates the initialisation circuit for the provided symmetric-stabiliser state index.
