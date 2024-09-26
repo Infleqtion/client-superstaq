@@ -289,7 +289,7 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         Returns:
             A dictionary of the probability of each bitstring.
         """
-        sim = cirq.Simulator()
+        sim = cirq.Simulator(seed=self._rng)
 
         result = sim.simulate(
             cirq.drop_terminal_measurements(sample.circuit),
