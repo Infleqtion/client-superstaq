@@ -15,7 +15,6 @@ See https://arxiv.org/pdf/2407.20184
 """
 from __future__ import annotations
 
-import random
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
@@ -45,10 +44,12 @@ class SSBResults(BenchmarkingResults):
 class SSB(BenchmarkingExperiment[SSBResults]):
     """Symmetric Stabilizer Benchmarking"""
 
-    def __init__(self) -> None:
+    def __init__(self, *, include_placeholders: bool = False) -> None:
         """Initializes a symmetric stabilizer benchmarking experiment."""
 
         super().__init__(num_qubits=2)
+
+        self._include_placeholders = include_placeholders
 
         # Moments containing parallel rotations. Used to construst the init and rec circuit.
         # Note we avoid using the `cirq.ParallelGate` as this can lead to single qubit gates
@@ -144,7 +145,7 @@ class SSB(BenchmarkingExperiment[SSBResults]):
         for _, depth in tqdm.contrib.itertools.product(
             range(num_circuits), cycle_depths, desc="Building circuits"
         ):
-            sss_idx = random.randint(0, 11)
+            sss_idx = self._rng.integers(12)
             circuit = self._sss_init_circuit(sss_idx)
 
             for i in range(max_depth):
@@ -155,6 +156,9 @@ class SSB(BenchmarkingExperiment[SSBResults]):
                 if i < depth - 2:
                     circuit += cirq.CZ(*self.qubits).with_tags("no_compile")
                     sss_idx = idx_maps[cirq.CZ][sss_idx]
+
+                elif self._include_placeholders:
+                    circuit += cirq.CZ.on(*self.qubits).with_tags("no_compile", "placeholder")
 
             circuit += self._sss_reconciliation_circuit(sss_idx) + cirq.measure(self.qubits)
 
@@ -197,7 +201,7 @@ class SSB(BenchmarkingExperiment[SSBResults]):
         Returns:
             The randomly chosen rotation gate acting on both qubits.
         """
-        return random.choice(self._single_qubit_gate_set)
+        return self._rng.choice(np.array(self._single_qubit_gate_set))
 
     def _sss_init_circuit(self, idx: int) -> cirq.Circuit:
         """Creates the initialisation circuit for the provided symmetric-stabiliser state index.
