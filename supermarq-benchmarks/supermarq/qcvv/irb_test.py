@@ -29,37 +29,29 @@ from supermarq.qcvv.irb import IRB
 
 
 def test_irb_init() -> None:
-    with patch("cirq_superstaq.service.Service"):
-        experiment = IRB()
-        assert experiment.num_qubits == 1
-        assert experiment.interleaved_gate == cirq.ops.SingleQubitCliffordGate.Z
-        assert experiment.clifford_op_gateset == cirq.CZTargetGateset()
+    experiment = IRB()
+    assert experiment.num_qubits == 1
+    assert experiment.interleaved_gate == cirq.ops.SingleQubitCliffordGate.Z
+    assert experiment.clifford_op_gateset == cirq.CZTargetGateset()
 
-        experiment = IRB(interleaved_gate=cirq.ops.SingleQubitCliffordGate.X)
-        assert experiment.num_qubits == 1
-        assert experiment.interleaved_gate == cirq.ops.SingleQubitCliffordGate.X
-        assert experiment.clifford_op_gateset == cirq.CZTargetGateset()
+    experiment = IRB(interleaved_gate=cirq.ops.SingleQubitCliffordGate.X)
+    assert experiment.num_qubits == 1
+    assert experiment.interleaved_gate == cirq.ops.SingleQubitCliffordGate.X
+    assert experiment.clifford_op_gateset == cirq.CZTargetGateset()
 
-        experiment = IRB(interleaved_gate=cirq.CZ)
-        assert experiment.num_qubits == 2
-        assert experiment.clifford_op_gateset == cirq.CZTargetGateset()
+    experiment = IRB(interleaved_gate=cirq.CZ)
+    assert experiment.num_qubits == 2
+    assert experiment.clifford_op_gateset == cirq.CZTargetGateset()
 
-        experiment = IRB(interleaved_gate=None, clifford_op_gateset=cirq.SqrtIswapTargetGateset())
-        assert experiment.num_qubits == 1
-        assert experiment.interleaved_gate is None
-        assert experiment.clifford_op_gateset == cirq.SqrtIswapTargetGateset()
+    experiment = IRB(interleaved_gate=None, clifford_op_gateset=cirq.SqrtIswapTargetGateset())
+    assert experiment.num_qubits == 1
+    assert experiment.interleaved_gate is None
+    assert experiment.clifford_op_gateset == cirq.SqrtIswapTargetGateset()
 
 
 def test_irb_bad_init() -> None:
-    with patch("cirq_superstaq.service.Service"):
-        with pytest.raises(NotImplementedError):
-            IRB(interleaved_gate=None, num_qubits=3)
-
-
-@pytest.fixture
-def irb_experiment() -> IRB:
-    with patch("cirq_superstaq.service.Service"):
-        return IRB()
+    with pytest.raises(NotImplementedError):
+        IRB(interleaved_gate=None, num_qubits=3)
 
 
 def test_reduce_clifford_sequence() -> None:
@@ -74,27 +66,23 @@ def test_reduce_clifford_sequence() -> None:
 
 
 def test_random_single_qubit_clifford() -> None:
-    with patch("cirq_superstaq.service.Service"):
-        gate = IRB().random_single_qubit_clifford()
-        assert isinstance(gate, cirq.ops.SingleQubitCliffordGate)
+    gate = IRB().random_single_qubit_clifford()
+    assert isinstance(gate, cirq.ops.SingleQubitCliffordGate)
 
 
 def test_irb_random_clifford() -> None:
-    with patch("cirq_superstaq.service.Service"):
-        exp = IRB()
-        gate = exp.random_clifford()
-        assert isinstance(gate, cirq.SingleQubitCliffordGate)
+    exp = IRB()
+    gate = exp.random_clifford()
+    assert isinstance(gate, cirq.SingleQubitCliffordGate)
 
-        exp = IRB(interleaved_gate=cirq.CZ)
-        gate = exp.random_clifford()
-        assert isinstance(gate, cirq.CliffordGate)
-        assert gate.num_qubits() == 2
+    exp = IRB(interleaved_gate=cirq.CZ)
+    gate = exp.random_clifford()
+    assert isinstance(gate, cirq.CliffordGate)
+    assert gate.num_qubits() == 2
 
 
 def test_random_two_qubit_clifford() -> None:
-    with patch("cirq_superstaq.service.Service"), patch(
-        "numpy.random.default_rng", side_effect=np.random.default_rng
-    ) as rng:
+    with patch("numpy.random.default_rng", side_effect=np.random.default_rng) as rng:
         rng.return_value.integers.side_effect = range(20)
         exp = IRB()
 
@@ -108,19 +96,19 @@ def test_random_two_qubit_clifford() -> None:
 
 
 def test_gates_per_clifford() -> None:
-    with patch("cirq_superstaq.service.Service"):
-        exp = IRB()
-        gates = exp.gates_per_clifford(samples=1000)
-        assert gates["single_qubit_gates"] == pytest.approx(0.95, abs=0.1)
-        assert gates["two_qubit_gates"] == 0.0
+    exp = IRB()
+    gates = exp.gates_per_clifford(samples=1000)
+    assert gates["single_qubit_gates"] == pytest.approx(0.95, abs=0.1)
+    assert gates["two_qubit_gates"] == 0.0
 
-        exp = IRB(interleaved_gate=cirq.CZ)
-        gates = exp.gates_per_clifford(samples=1000)
-        assert gates["single_qubit_gates"] == pytest.approx(4.5, abs=0.25)
-        assert gates["two_qubit_gates"] == pytest.approx(1.5, abs=0.1)
+    exp = IRB(interleaved_gate=cirq.CZ)
+    gates = exp.gates_per_clifford(samples=1000)
+    assert gates["single_qubit_gates"] == pytest.approx(4.5, abs=0.25)
+    assert gates["two_qubit_gates"] == pytest.approx(1.5, abs=0.1)
 
 
-def test_irb_process_probabilities(irb_experiment: IRB) -> None:
+def test_irb_process_probabilities() -> None:
+    irb_experiment = IRB()
     samples = [
         Sample(
             raw_circuit=cirq.Circuit(),
@@ -156,7 +144,8 @@ def test_irb_process_probabilities(irb_experiment: IRB) -> None:
     pd.testing.assert_frame_equal(expected_data, data)
 
 
-def test_irb_build_circuit(irb_experiment: IRB) -> None:
+def test_irb_build_circuit() -> None:
+    irb_experiment = IRB()
     with patch("supermarq.qcvv.irb.IRB.random_single_qubit_clifford") as mock_random_clifford:
         mock_random_clifford.side_effect = [
             cirq.ops.SingleQubitCliffordGate.Z,
@@ -290,7 +279,8 @@ def test_irb_build_circuit(irb_experiment: IRB) -> None:
         assert circuits[3].data == expected_circuits[3].data
 
 
-def test_analyse_results(irb_experiment: IRB) -> None:
+def test_analyse_results() -> None:
+    irb_experiment = IRB()
     irb_experiment._samples = MagicMock()
     # Noise added to allow estimate of covariance (otherwise scipy errors)
     irb_experiment._raw_data = pd.DataFrame(
@@ -366,8 +356,7 @@ def test_analyse_results(irb_experiment: IRB) -> None:
 
 
 def test_analyse_results_rb() -> None:
-    with patch("cirq_superstaq.service.Service"):
-        rb_experiment = IRB(interleaved_gate=None)
+    rb_experiment = IRB(interleaved_gate=None)
 
     rb_experiment._samples = MagicMock()
     rb_experiment._raw_data = pd.DataFrame(
