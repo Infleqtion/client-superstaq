@@ -31,7 +31,9 @@ def run(*args: str) -> int:
         return 0
 
     docs_dir = os.path.join(check_utils.root_dir, "docs")
-
+    if not os.path.isdir(os.path.join(docs_dir, "source")):
+        print(check_utils.warning("No docs to build."))
+        return 0
     return subprocess.call(["sphinx-build", "source", "build/html"], cwd=docs_dir)
 
 
