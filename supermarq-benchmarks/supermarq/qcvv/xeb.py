@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import itertools
-import random
 import warnings
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
@@ -25,8 +24,7 @@ import numpy as np
 import pandas as pd
 import scipy
 import seaborn as sns
-import tqdm
-import tqdm.contrib
+import tqdm.auto
 import tqdm.contrib.itertools
 
 from supermarq.qcvv import BenchmarkingExperiment, BenchmarkingResults, Sample
@@ -126,15 +124,20 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         self,
         single_qubit_gate_set: list[cirq.Gate] | None = None,
         two_qubit_gate: cirq.Gate | None = cirq.CZ,
+        *,
+        random_seed: int | np.random.Generator | None = None,
     ) -> None:
-        """Args:
-        single_qubit_gate_set: Optional list of single qubit gates to randomly sample
-            from when generating random circuits. If not provided defaults to phased
-            XZ gates with 1/4 pi intervals.
-        two_qubit_gate: The two qubit gate to interleave between the single qubit gates. If
-            None then no two qubit gate is used. Defaults to control-Z gate.
+        """Initializes a cross-entropy benchmarking experiment.
+
+        Args:
+            single_qubit_gate_set: Optional list of single qubit gates to randomly sample from when
+                generating random circuits. If not provided defaults to phased XZ gates with 1/4 pi
+                intervals.
+            two_qubit_gate: The two qubit gate to interleave between the single qubit gates. If None
+                then no two qubit gate is used. Defaults to control-Z gate.
+            random_seed: An optional seed to use for randomization.
         """
-        super().__init__(num_qubits=2)
+        super().__init__(num_qubits=2, random_seed=random_seed)
 
         self._circuit_fidelities: pd.DataFrame | None = None
 
@@ -209,16 +212,17 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         for _, depth in tqdm.contrib.itertools.product(
             range(num_circuits), cycle_depths, desc="Building circuits"
         ):
-            circuit = cirq.Circuit()
-            for _ in range(depth + int(self.two_qubit_gate is not None)):
-                circuit.append(
-                    [
-                        gate(qubit)
-                        for gate, qubit in zip(
-                            random.choices(self.single_qubit_gate_set, k=2), self.qubits
-                        )
-                    ]
-                )
+            num_single_qubit_gate_layers = depth + int(self.two_qubit_gate is not None)
+            chosen_single_qubit_gates = self._rng.choice(
+                np.asarray(self.single_qubit_gate_set),
+                size=(num_single_qubit_gate_layers, self.num_qubits),
+            )
+
+            circuit = cirq.Circuit(
+                gate.on(qubit)
+                for gates_in_layer in chosen_single_qubit_gates
+                for gate, qubit in zip(gates_in_layer, self.qubits)
+            )
 
             if self.two_qubit_gate is not None:
                 circuit = self._interleave_op(circuit, self.two_qubit_gate(*self.qubits))
@@ -263,7 +267,7 @@ class XEB(BenchmarkingExperiment[XEBResults]):
                 "These samples have been omitted."
             )
 
-        for sample in tqdm.notebook.tqdm(samples, desc="Evaluating circuits"):
+        for sample in tqdm.auto.tqdm(samples, desc="Evaluating circuits"):
             sample.target_probabilities = self._simulate_sample(sample)
 
         records = []
@@ -297,7 +301,7 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         Returns:
             A dictionary of the probability of each bitstring.
         """
-        sim = cirq.Simulator()
+        sim = cirq.Simulator(seed=self._rng)
 
         result = sim.simulate(
             cirq.drop_terminal_measurements(sample.circuit),
