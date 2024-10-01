@@ -432,7 +432,6 @@ def test_superstaq_client_get_balance(mock_get: mock.MagicMock) -> None:
         f"http://example.com/{API_VERSION}/balance",
         headers=EXPECTED_HEADERS,
         verify=False,
-        json=None,
     )
 
 
@@ -990,9 +989,8 @@ def test_get_user_info(mock_get: mock.MagicMock) -> None:
 
     user_info = client.get_user_info()
     mock_get.assert_called_once_with(
-        f"http://example.com/{API_VERSION}/get_user_info",
+        f"http://example.com/{API_VERSION}/user_info",
         headers=EXPECTED_HEADERS,
-        json={},
         verify=False,
     )
     assert user_info == [{"Some": "Data"}]
@@ -1010,9 +1008,8 @@ def test_get_user_info_query(mock_get: mock.MagicMock) -> None:
 
     user_info = client.get_user_info(name="Alice")
     mock_get.assert_called_once_with(
-        f"http://example.com/{API_VERSION}/get_user_info",
+        f"http://example.com/{API_VERSION}/user_info?name=Alice",
         headers=EXPECTED_HEADERS,
-        json={"name": "Alice"},
         verify=False,
     )
     assert user_info == [{"Some": "Data"}]
@@ -1035,8 +1032,7 @@ def test_get_user_info_empty_response(mock_get: mock.MagicMock) -> None:
         client.get_user_info()
 
     mock_get.assert_called_once_with(
-        f"http://example.com/{API_VERSION}/get_user_info",
+        f"http://example.com/{API_VERSION}/user_info",
         headers=EXPECTED_HEADERS,
-        json={},
         verify=False,
     )

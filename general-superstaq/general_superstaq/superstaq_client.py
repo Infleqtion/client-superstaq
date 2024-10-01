@@ -704,7 +704,8 @@ class _SuperstaqClient:
 
         Args:
             endpoint: The endpoint to perform the GET request on.
-            query: An optional query json to include in the get request.
+            query: An optional query dictionary to include in the get request.
+                This query will be appended to the url.
 
         Returns:
             The response of the GET request.
@@ -716,11 +717,14 @@ class _SuperstaqClient:
             Returns:
                 The Flask GET request object.
             """
+            if not query:
+                q_string = ""
+            else:
+                q_string = "?" + urllib.parse.urlencode(query)
             return self.session.get(
-                f"{self.url}{endpoint}",
+                f"{self.url}{endpoint}{q_string}",
                 headers=self.headers,
                 verify=self.verify_https,
-                json=query,
             )
 
         response = self._make_request(request)
