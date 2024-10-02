@@ -15,17 +15,16 @@
 from __future__ import annotations
 
 import itertools
-import random
+import warnings
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import cirq
 import numpy as np
 import pandas as pd
 import scipy
 import seaborn as sns
-import tqdm
-import tqdm.contrib
+import tqdm.auto
 import tqdm.contrib.itertools
 
 from supermarq.qcvv import BenchmarkingExperiment, BenchmarkingResults, Sample
@@ -35,9 +34,9 @@ from supermarq.qcvv import BenchmarkingExperiment, BenchmarkingResults, Sample
 class XEBSample(Sample):
     """The samples used in XEB experiments."""
 
-    target_probabilities: dict[str, float] = field(init=False)
+    target_probabilities: dict[str, float] | None = None
     """The target probabilities obtained through a noiseless simulator"""
-    sample_probabilities: dict[str, float] = field(init=False)
+    sample_probabilities: dict[str, float] | None = None
     """The sample probabilities obtained from the chosen target"""
 
     def sum_target_probs_square(self) -> float:
@@ -49,7 +48,7 @@ class XEBSample(Sample):
         Returns:
             float: The sum of squared target probabilities.
         """
-        if not hasattr(self, "target_probabilities"):
+        if self.target_probabilities is None:
             raise RuntimeError("`target_probabilities` have not yet been initialised")
 
         return sum(prob**2 for prob in self.target_probabilities.values())
@@ -64,10 +63,10 @@ class XEBSample(Sample):
         Returns:
             float: The dot product between the sample and target probabilities.
         """
-        if not hasattr(self, "target_probabilities"):
+        if self.target_probabilities is None:
             raise RuntimeError("`target_probabilities` have not yet been initialised")
 
-        if not hasattr(self, "sample_probabilities"):
+        if self.sample_probabilities is None:
             raise RuntimeError("`sample_probabilities` have not yet been initialised")
 
         return sum(
@@ -125,15 +124,20 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         self,
         single_qubit_gate_set: list[cirq.Gate] | None = None,
         two_qubit_gate: cirq.Gate | None = cirq.CZ,
+        *,
+        random_seed: int | np.random.Generator | None = None,
     ) -> None:
-        """Args:
-        single_qubit_gate_set: Optional list of single qubit gates to randomly sample
-            from when generating random circuits. If not provided defaults to phased
-            XZ gates with 1/4 pi intervals.
-        two_qubit_gate: The two qubit gate to interleave between the single qubit gates. If
-            None then no two qubit gate is used. Defaults to control-Z gate.
+        """Initializes a cross-entropy benchmarking experiment.
+
+        Args:
+            single_qubit_gate_set: Optional list of single qubit gates to randomly sample from when
+                generating random circuits. If not provided defaults to phased XZ gates with 1/4 pi
+                intervals.
+            two_qubit_gate: The two qubit gate to interleave between the single qubit gates. If None
+                then no two qubit gate is used. Defaults to control-Z gate.
+            random_seed: An optional seed to use for randomization.
         """
-        super().__init__(num_qubits=2)
+        super().__init__(num_qubits=2, random_seed=random_seed)
 
         self._circuit_fidelities: pd.DataFrame | None = None
 
@@ -208,16 +212,17 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         for _, depth in tqdm.contrib.itertools.product(
             range(num_circuits), cycle_depths, desc="Building circuits"
         ):
-            circuit = cirq.Circuit()
-            for _ in range(depth + int(self.two_qubit_gate is not None)):
-                circuit.append(
-                    [
-                        gate(qubit)
-                        for gate, qubit in zip(
-                            random.choices(self.single_qubit_gate_set, k=2), self.qubits
-                        )
-                    ]
-                )
+            num_single_qubit_gate_layers = depth + int(self.two_qubit_gate is not None)
+            chosen_single_qubit_gates = self._rng.choice(
+                np.asarray(self.single_qubit_gate_set),
+                size=(num_single_qubit_gate_layers, self.num_qubits),
+            )
+
+            circuit = cirq.Circuit(
+                gate.on(qubit)
+                for gates_in_layer in chosen_single_qubit_gates
+                for gate, qubit in zip(gates_in_layer, self.qubits)
+            )
 
             if self.two_qubit_gate is not None:
                 circuit = self._interleave_op(circuit, self.two_qubit_gate(*self.qubits))
@@ -247,32 +252,43 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         Returns:
             A data frame of the full results needed to analyse the experiment.
         """
-
+        samples = list(samples)
+        missing_count = 0
         for sample in samples:
-            sample.sample_probabilities = sample.probabilities
-            sample.probabilities = {}
+            if sample.probabilities is None:
+                missing_count += 1
+                samples.remove(sample)
+            else:
+                sample.sample_probabilities = sample.probabilities
+                sample.probabilities = {}
+        if missing_count > 0:
+            warnings.warn(
+                f"{missing_count} sample(s) are missing `probabilities`. "
+                "These samples have been omitted."
+            )
 
-        for sample in tqdm.notebook.tqdm(samples, desc="Evaluating circuits"):
+        for sample in tqdm.auto.tqdm(samples, desc="Evaluating circuits"):
             sample.target_probabilities = self._simulate_sample(sample)
 
         records = []
         for sample in samples:
-            target_probabilities = {
-                f"p({key})": value for key, value in sample.target_probabilities.items()
-            }
-            sample_probabilities = {
-                f"p^({key})": value for key, value in sample.sample_probabilities.items()
-            }
-            records.append(
-                {
-                    "cycle_depth": sample.data["num_cycles"],
-                    "circuit_depth": sample.data["circuit_depth"],
-                    **target_probabilities,
-                    **sample_probabilities,
-                    "sum_p(x)p(x)": sample.sum_target_probs_square(),
-                    "sum_p(x)p^(x)": sample.sum_target_cross_sample_probs(),
+            if sample.sample_probabilities is not None and sample.target_probabilities is not None:
+                target_probabilities = {
+                    f"p({key})": value for key, value in sample.target_probabilities.items()
                 }
-            )
+                sample_probabilities = {
+                    f"p^({key})": value for key, value in sample.sample_probabilities.items()
+                }
+                records.append(
+                    {
+                        "cycle_depth": sample.data["num_cycles"],
+                        "circuit_depth": sample.data["circuit_depth"],
+                        **target_probabilities,
+                        **sample_probabilities,
+                        "sum_p(x)p(x)": sample.sum_target_probs_square(),
+                        "sum_p(x)p^(x)": sample.sum_target_cross_sample_probs(),
+                    }
+                )
         return pd.DataFrame(records)
 
     def _simulate_sample(self, sample: XEBSample) -> dict[str, float]:
@@ -285,7 +301,7 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         Returns:
             A dictionary of the probability of each bitstring.
         """
-        sim = cirq.Simulator()
+        sim = cirq.Simulator(seed=self._rng)
 
         result = sim.simulate(
             cirq.drop_terminal_measurements(sample.circuit),

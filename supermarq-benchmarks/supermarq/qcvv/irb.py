@@ -15,7 +15,7 @@
 
 from __future__ import annotations
 
-import random
+import warnings
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Union  # noqa: MDA400
@@ -26,8 +26,8 @@ import numpy as np
 import pandas as pd
 import scipy
 import seaborn as sns
+from tqdm.auto import trange
 from tqdm.contrib.itertools import product
-from tqdm.notebook import tqdm
 
 from supermarq.qcvv.base_experiment import BenchmarkingExperiment, BenchmarkingResults, Sample
 
@@ -176,94 +176,6 @@ _S1_Y = [
 ]
 
 
-def random_single_qubit_clifford() -> cirq.SingleQubitCliffordGate:
-    """Choose a random single qubit clifford gate.
-
-    Returns:
-        The random clifford gate.
-    """
-    Id = cirq.SingleQubitCliffordGate.I
-    H = cirq.SingleQubitCliffordGate.H
-    S = cirq.SingleQubitCliffordGate.Z_sqrt
-    X = cirq.SingleQubitCliffordGate.X
-    Y = cirq.SingleQubitCliffordGate.Y
-    Z = cirq.SingleQubitCliffordGate.Z
-
-    set_A = [
-        Id,
-        S,
-        H,
-        _reduce_single_qubit_clifford_seq([H, S]),
-        _reduce_single_qubit_clifford_seq([S, H]),
-        _reduce_single_qubit_clifford_seq([H, S, H]),
-    ]
-
-    set_B = [Id, X, Y, Z]
-
-    return _reduce_single_qubit_clifford_seq([random.choice(set_A), random.choice(set_B)])
-
-
-def random_two_qubit_clifford() -> cirq.CliffordGate:
-    """Choose a random two qubit clifford gate.
-
-    For details of algorithm see: https://arxiv.org/pdf/1402.4848 & https://arxiv.org/pdf/1210.7011.
-
-    Returns:
-        The random clifford gate.
-    """
-    qubits = cirq.LineQubit.range(2)
-    a = random_single_qubit_clifford()
-    b = random_single_qubit_clifford()
-    idx = random.randint(0, 19)
-    if idx == 0:
-        return cirq.CliffordGate.from_op_list([a(qubits[0]), b(qubits[1])], qubits)
-    elif idx == 1:
-        return cirq.CliffordGate.from_op_list(
-            [
-                a(qubits[0]),
-                b(qubits[1]),
-                cirq.CZ(*qubits),
-                cirq.Y(qubits[0]) ** -0.5,
-                cirq.Y(qubits[1]) ** 0.5,
-                cirq.CZ(*qubits),
-                cirq.Y(qubits[0]) ** 0.5,
-                cirq.Y(qubits[1]) ** -0.5,
-                cirq.CZ(*qubits),
-                cirq.Y(qubits[1]) ** 0.5,
-            ],
-            qubits,
-        )
-    elif 2 <= idx <= 10:
-        idx_a = int((idx - 2) / 3)
-        idx_b = (idx - 2) % 3
-        return cirq.CliffordGate.from_op_list(
-            [
-                a(qubits[0]),
-                b(qubits[1]),
-                cirq.CZ(*qubits),
-                _S1[idx_a](qubits[0]),
-                _S1_Y[idx_b](qubits[1]),
-            ],
-            qubits,
-        )
-
-    idx_a = int((idx - 11) / 3)
-    idx_b = (idx - 11) % 3
-    return cirq.CliffordGate.from_op_list(
-        [
-            a(qubits[0]),
-            b(qubits[1]),
-            cirq.CZ(*qubits),
-            cirq.Y(qubits[0]) ** 0.5,
-            cirq.X(qubits[1]) ** -0.5,
-            cirq.CZ(*qubits),
-            _S1_Y[idx_a](qubits[0]),
-            _S1_X[idx_b](qubits[1]),
-        ],
-        qubits,
-    )
-
-
 @dataclass(frozen=True)
 class IRBResults(BenchmarkingResults):
     """Data structure for the IRB experiment results."""
@@ -336,6 +248,8 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         interleaved_gate: cirq.Gate | None = cirq.Z,
         num_qubits: int | None = 1,
         clifford_op_gateset: cirq.CompilationTargetGateset = cirq.CZTargetGateset(),
+        *,
+        random_seed: int | np.random.Generator | None = None,
     ) -> None:
         """Constructs an IRB experiment.
 
@@ -347,6 +261,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
                 if a gate is provided - the number of qubits is instead inferred from the gate.
             clifford_op_gateset: The gateset to use when implementing the clifford operations.
                 Defaults to the CZ/GR set.
+            random_seed: An optional seed to use for randomization.
         """
         if interleaved_gate is not None:
             num_qubits = interleaved_gate.num_qubits()
@@ -354,7 +269,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
             raise NotImplementedError(
                 "IRB experiment is currently only implemented for single or two qubit use."
             )
-        super().__init__(num_qubits=num_qubits)
+        super().__init__(num_qubits=num_qubits, random_seed=random_seed)
 
         if interleaved_gate is not None:
             self.interleaved_gate: cirq.CliffordGate | None = cirq.CliffordGate.from_op_list(
@@ -387,13 +302,103 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         )
         return cirq.optimize_for_target_gateset(circuit, gateset=self.clifford_op_gateset)
 
+    def random_single_qubit_clifford(self) -> cirq.SingleQubitCliffordGate:
+        """Choose a random single qubit clifford gate.
+
+        Returns:
+            The random clifford gate.
+        """
+        Id = cirq.SingleQubitCliffordGate.I
+        H = cirq.SingleQubitCliffordGate.H
+        S = cirq.SingleQubitCliffordGate.Z_sqrt
+        X = cirq.SingleQubitCliffordGate.X
+        Y = cirq.SingleQubitCliffordGate.Y
+        Z = cirq.SingleQubitCliffordGate.Z
+
+        set_A = np.array(
+            [
+                Id,
+                S,
+                H,
+                _reduce_single_qubit_clifford_seq([H, S]),
+                _reduce_single_qubit_clifford_seq([S, H]),
+                _reduce_single_qubit_clifford_seq([H, S, H]),
+            ]
+        )
+
+        set_B = np.array([Id, X, Y, Z])
+
+        return _reduce_single_qubit_clifford_seq([self._rng.choice(set_A), self._rng.choice(set_B)])
+
+    def random_two_qubit_clifford(self) -> cirq.CliffordGate:
+        """Choose a random two qubit clifford gate.
+
+        For algorithm details see https://arxiv.org/pdf/1402.4848 & https://arxiv.org/pdf/1210.7011.
+
+        Returns:
+            The random clifford gate.
+        """
+        qubits = cirq.LineQubit.range(2)
+        a = self.random_single_qubit_clifford()
+        b = self.random_single_qubit_clifford()
+        print(a)
+        print(b)
+        idx = self._rng.integers(20)
+        if idx == 0:
+            return cirq.CliffordGate.from_op_list([a(qubits[0]), b(qubits[1])], qubits)
+        elif idx == 1:
+            return cirq.CliffordGate.from_op_list(
+                [
+                    a(qubits[0]),
+                    b(qubits[1]),
+                    cirq.CZ(*qubits),
+                    cirq.Y(qubits[0]) ** -0.5,
+                    cirq.Y(qubits[1]) ** 0.5,
+                    cirq.CZ(*qubits),
+                    cirq.Y(qubits[0]) ** 0.5,
+                    cirq.Y(qubits[1]) ** -0.5,
+                    cirq.CZ(*qubits),
+                    cirq.Y(qubits[1]) ** 0.5,
+                ],
+                qubits,
+            )
+        elif 2 <= idx <= 10:
+            idx_a = int((idx - 2) / 3)
+            idx_b = (idx - 2) % 3
+            return cirq.CliffordGate.from_op_list(
+                [
+                    a(qubits[0]),
+                    b(qubits[1]),
+                    cirq.CZ(*qubits),
+                    _S1[idx_a](qubits[0]),
+                    _S1_Y[idx_b](qubits[1]),
+                ],
+                qubits,
+            )
+
+        idx_a = int((idx - 11) / 3)
+        idx_b = (idx - 11) % 3
+        return cirq.CliffordGate.from_op_list(
+            [
+                a(qubits[0]),
+                b(qubits[1]),
+                cirq.CZ(*qubits),
+                cirq.Y(qubits[0]) ** 0.5,
+                cirq.X(qubits[1]) ** -0.5,
+                cirq.CZ(*qubits),
+                _S1_Y[idx_a](qubits[0]),
+                _S1_X[idx_b](qubits[1]),
+            ],
+            qubits,
+        )
+
     def random_clifford(self) -> cirq.CliffordGate:
         """Returns:
         A random clifford gate with the correct number of qubits for the current experiment.
         """
         if self.num_qubits == 1:
-            return random_single_qubit_clifford()
-        return random_two_qubit_clifford()
+            return self.random_single_qubit_clifford()
+        return self.random_two_qubit_clifford()
 
     def gates_per_clifford(self, samples: int = 500) -> dict[str, float]:
         """Samples a number of random Clifford operations and calculates the average number of
@@ -408,7 +413,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         """
         sample = [
             self._clifford_gate_to_circuit(self.random_clifford())
-            for _ in tqdm(range(samples), desc="Sampling Clifford operations")
+            for _ in trange(samples, desc="Sampling Clifford operations")
         ]
         return {
             "single_qubit_gates": np.mean(
@@ -504,16 +509,26 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         """
 
         records = []
+        missing_count = 0  # Count the number of samples that do not have probabilities saved
         for sample in samples:
-            records.append(
-                {
-                    "clifford_depth": sample.data["num_cycles"],
-                    "circuit_depth": sample.data["circuit_depth"],
-                    "experiment": sample.data["experiment"],
-                    "single_qubit_gates": sample.data["single_qubit_gates"],
-                    "two_qubit_gates": sample.data["two_qubit_gates"],
-                    **sample.probabilities,
-                }
+            if sample.probabilities is not None:
+                records.append(
+                    {
+                        "clifford_depth": sample.data["num_cycles"],
+                        "circuit_depth": sample.data["circuit_depth"],
+                        "experiment": sample.data["experiment"],
+                        "single_qubit_gates": sample.data["single_qubit_gates"],
+                        "two_qubit_gates": sample.data["two_qubit_gates"],
+                        **sample.probabilities,
+                    }
+                )
+            else:
+                missing_count += 1
+
+        if missing_count > 0:
+            warnings.warn(
+                f"{missing_count} sample(s) are missing probabilities. "
+                "These samples have been omitted."
             )
 
         return pd.DataFrame(records)
