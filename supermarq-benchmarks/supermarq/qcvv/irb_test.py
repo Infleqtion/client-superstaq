@@ -144,6 +144,31 @@ def test_irb_process_probabilities() -> None:
     pd.testing.assert_frame_equal(expected_data, data)
 
 
+def test_irb_process_probabilities_missing_probs() -> None:
+    irb_experiment = IRB()
+    samples = [
+        Sample(
+            raw_circuit=cirq.Circuit(),
+            data={
+                "num_cycles": 20,
+                "circuit_depth": 23,
+                "experiment": "example",
+                "single_qubit_gates": 10,
+                "two_qubit_gates": 15,
+            },
+        )
+    ]
+
+    with pytest.warns(
+        UserWarning,
+        match=r"1 sample\(s\) are missing probabilities. These samples have been omitted.",
+    ):
+        data = irb_experiment._process_probabilities(samples)
+
+    expected_data = pd.DataFrame()
+    pd.testing.assert_frame_equal(expected_data, data)
+
+
 def test_irb_build_circuit() -> None:
     irb_experiment = IRB()
     with patch("supermarq.qcvv.irb.IRB.random_single_qubit_clifford") as mock_random_clifford:
