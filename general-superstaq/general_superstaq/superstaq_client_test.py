@@ -1016,6 +1016,24 @@ def test_get_user_info_query(mock_get: mock.MagicMock) -> None:
 
 
 @mock.patch("requests.Session.get")
+def test_get_user_info_query_composite(mock_get: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        cq_token="cq-token",
+    )
+    mock_get.return_value.json.return_value = {"example@email.com": {"Some": "Data"}}
+    user_info = client.get_user_info(user_id=42, name="Alice")
+    mock_get.assert_called_once_with(
+        f"http://example.com/{API_VERSION}/user_info?name=Alice&id=42",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+    )
+    assert user_info == [{"Some": "Data"}]
+
+
+@mock.patch("requests.Session.get")
 def test_get_user_info_empty_response(mock_get: mock.MagicMock) -> None:
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",

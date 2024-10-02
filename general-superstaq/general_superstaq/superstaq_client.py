@@ -238,7 +238,7 @@ class _SuperstaqClient:
         return self.get_request("/balance")
 
     def get_user_info(
-        self, name: str | None = None, email: str | None = None
+        self, name: str | None = None, email: str | None = None, user_id: int | None = None
     ) -> list[dict[str, str | float]]:
         """Gets a dictionary of the user's info.
 
@@ -249,7 +249,8 @@ class _SuperstaqClient:
 
         Args:
             name: A name to search by. Defaults to None.
-            email: An email address to search by. Defaults to None
+            email: An email address to search by. Defaults to None.
+            user_id: A user ID to search by. Defaults to None.
 
         Returns:
             A list of dictionaries corresponding to the user
@@ -264,6 +265,8 @@ class _SuperstaqClient:
             query["name"] = name
         if email is not None:
             query["email"] = email
+        if user_id is not None:
+            query["id"] = str(user_id)
         user_info = self.get_request("/user_info", query=query)
         if not user_info:
             # Catch empty server response. This shouldn't happen as the server should return
