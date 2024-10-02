@@ -160,6 +160,27 @@ def test_process_probabilities(su2_experiment: SU2) -> None:
     pd.testing.assert_frame_equal(raw_data, expected_df)
 
 
+def test_irb_process_probabilities_missing_probs() -> None:
+    su2_experiment = SU2()
+    samples = [
+        Sample(
+            raw_circuit=cirq.Circuit(),
+            data={
+                "num_two_qubit_gates": 15,
+            },
+        )
+    ]
+
+    with pytest.warns(
+        UserWarning,
+        match=r"1 sample\(s\) are missing probabilities. These samples have been omitted.",
+    ):
+        data = su2_experiment._process_probabilities(samples)
+
+    expected_data = pd.DataFrame()
+    pd.testing.assert_frame_equal(expected_data, data)
+
+
 def test_analyse_results(su2_experiment: SU2) -> None:
     su2_experiment._samples = [
         Sample(

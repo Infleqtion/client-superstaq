@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
@@ -150,12 +151,21 @@ class SU2(BenchmarkingExperiment[SU2Results]):
             A data frame of the full results needed to analyse the experiment.
         """
         records = []
+        missing_count = 0
         for sample in samples:
-            records.append(
-                {
-                    "num_two_qubit_gates": sample.data["num_two_qubit_gates"],
-                    **sample.probabilities,
-                }
+            if sample.probabilities is not None:
+                records.append(
+                    {
+                        "num_two_qubit_gates": sample.data["num_two_qubit_gates"],
+                        **sample.probabilities,
+                    }
+                )
+            else:
+                missing_count += 1
+        if missing_count > 0:
+            warnings.warn(
+                f"{missing_count} sample(s) are missing probabilities. "
+                "These samples have been omitted."
             )
 
         return pd.DataFrame(records)
