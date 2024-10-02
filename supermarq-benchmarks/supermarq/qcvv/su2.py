@@ -227,9 +227,11 @@ class SU2(BenchmarkingExperiment[SU2Results]):
         Returns:
             The sub circuit to be repeated when building the full circuit
         """
+        # Chose a global rotation
+        rotation = self._haar_random_rotation()
         return cirq.Circuit(
-            self._haar_random_rotation().on(self.qubits[0]),
-            self._haar_random_rotation().on(self.qubits[1]),
+            rotation.on(self.qubits[0]),
+            rotation.on(self.qubits[1]),
             (
                 self.two_qubit_gate(*self.qubits).with_tags("no_compile")
                 if include_two_qubit_gate
