@@ -7,7 +7,10 @@ Below are instructions for accessing Superstaq credentials.
 
 #. Navigate to https://superstaq.infleqtion.com/.
 #. Choose your preferred method to sign up or sign in (Google or other email).
-#. Click the clipboard symbol to copy the key shown next to "Your API key". Save this key in a secure location; never upload your API key to GitHub.
+#. Verify your account by following the link that you receive in the confirmation email.
+#. Click the clipboard symbol to copy the key shown next to "Your API key". Save this key in a secure location; never upload your API key to GitHub. You can
+   recover or regenerate this API key at any time by logging back in to your `profile page <https://superstaq.infleqtion.com/profile>`_.
+#. If you forget your password you can reset it by following `this link <https://superstaq.infleqtion.com/forgot_password>`_ and entering your email to receive a recovery link.
 
 Your balance is listed above your Superstaq API key. If you have any questions or concerns about your balance (e.g., your balance is too low), please contact superstaq@infleqtion.com.
 
