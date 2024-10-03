@@ -403,8 +403,8 @@ def test_retrieve_jobs_not_all_submitted(
     statuses = abc_experiment._retrieve_jobs()
 
     assert statuses == {"example_job_id": "Queued"}
-    assert not hasattr(sample_circuits[0], "probabilities")
-    assert not hasattr(sample_circuits[1], "probabilities")
+    assert sample_circuits[0].probabilities is None
+    assert sample_circuits[1].probabilities is None
 
 
 def test_retrieve_jobs_nothing_to_retrieve(
@@ -439,7 +439,7 @@ def test_retrieve_jobs_all_submitted(
 
     # Check probabilities correctly updated
     assert sample_circuits[1].probabilities == {"00": 5 / 15, "01": 0.0, "10": 0.0, "11": 10 / 15}
-    assert not hasattr(sample_circuits[0], "probabilities")
+    assert sample_circuits[0].probabilities is None
 
 
 def test_collect_data_no_samples(abc_experiment: BenchmarkingExperiment[ExampleResults]) -> None:
