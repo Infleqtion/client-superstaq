@@ -532,6 +532,34 @@ def test_superstaq_client_get_targets(mock_post: mock.MagicMock) -> None:
     )
     response = client.get_targets()
     assert response == RETURNED_TARGETS
+    mock_post.assert_called_once_with(
+        f"http://example.com/{API_VERSION}/targets",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+        json={},
+    )
+
+    response = client.get_targets(simulator=True)
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/targets",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+        json={"simulator": True},
+    )
+
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        ibmq_token="token",
+    )
+    response = client.get_targets(simulator=True)
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/targets",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+        json={"simulator": True, "options": json.dumps({"ibmq_token": "token"})},
+    )
 
 
 @mock.patch("requests.Session.post")

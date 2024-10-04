@@ -296,8 +296,13 @@ class _SuperstaqClient:
         Returns:
             A list of Superstaq targets matching all provided criteria.
         """
-        target_filters = {key: value for key, value in kwargs.items() if value is not None}
-        superstaq_targets = self.post_request("/targets", target_filters)["superstaq_targets"]
+        json_dict: dict[str, str | bool] = {
+            key: value for key, value in kwargs.items() if value is not None
+        }
+        if self.client_kwargs:
+            json_dict["options"] = json.dumps(self.client_kwargs)
+
+        superstaq_targets = self.post_request("/targets", json_dict)["superstaq_targets"]
         target_list = [
             gss.Target(target=target_name, **properties)
             for target_name, properties in superstaq_targets.items()
