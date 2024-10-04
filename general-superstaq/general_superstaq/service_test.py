@@ -95,7 +95,7 @@ def test_get_user_info(mock_get_request: mock.MagicMock) -> None:
         "role": "free_trial",
         "balance": 30.0,
     }
-    mock_get_request.assert_called_once_with("/get_user_info", query={})
+    mock_get_request.assert_called_once_with("/user_info", query={})
 
 
 @mock.patch(
@@ -120,7 +120,7 @@ def test_get_user_info_name_query(mock_get_request: mock.MagicMock) -> None:
             "balance": 30.0,
         }
     ]
-    mock_get_request.assert_called_once_with("/get_user_info", query={"name": "Alice"})
+    mock_get_request.assert_called_once_with("/user_info", query={"name": "Alice"})
 
 
 @mock.patch(
@@ -145,7 +145,7 @@ def test_get_user_info_email_query(mock_get_request: mock.MagicMock) -> None:
             "balance": 30.0,
         }
     ]
-    mock_get_request.assert_called_once_with("/get_user_info", query={"email": "example@email.com"})
+    mock_get_request.assert_called_once_with("/user_info", query={"email": "example@email.com"})
 
 
 @mock.patch(
