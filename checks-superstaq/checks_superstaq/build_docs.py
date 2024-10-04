@@ -35,7 +35,7 @@ def run(*args: str) -> int:
         print(check_utils.warning("No docs to build."))
         return 0
     return subprocess.call(
-        ["sphinx-build", "source", "build/html", "--fail-on-warning"], cwd=docs_dir
+        ["sphinx-build", "source", "build/html", "--fail-on-warning", "--keep-going"], cwd=docs_dir
     )
 
 
