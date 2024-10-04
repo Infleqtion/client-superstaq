@@ -19,7 +19,6 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import cirq
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -82,9 +81,14 @@ def test_irb_random_clifford() -> None:
 
 
 def test_random_two_qubit_clifford() -> None:
-    with patch("numpy.random.default_rng", side_effect=np.random.default_rng) as rng:
-        rng.return_value.integers.side_effect = range(20)
-        exp = IRB()
+    exp = IRB()
+    # Mock the random number generator
+    exp._rng = (mock_rng := MagicMock())
+    mock_rng.integers.side_effect = range(20)
+
+    # Fix the single qubit Cliffords that get generated (also avoids rng being used)
+    with patch.object(IRB, "random_single_qubit_clifford") as random_1q_clifford:
+        random_1q_clifford.return_value = cirq.SingleQubitCliffordGate.Z
 
         gates: set[cirq.Gate] = set()
         for _ in range(20):
