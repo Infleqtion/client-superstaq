@@ -296,7 +296,9 @@ class _SuperstaqClient:
         Returns:
             A list of Superstaq targets matching all provided criteria.
         """
-        json_dict = {key: value for key, value in kwargs.items() if value is not None}
+        json_dict: dict[str, str | bool] = {
+            key: value for key, value in kwargs.items() if value is not None
+        }
         if self.client_kwargs:
             json_dict["options"] = json.dumps(self.client_kwargs)
 
