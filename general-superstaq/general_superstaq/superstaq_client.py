@@ -162,7 +162,7 @@ class _SuperstaqClient:
             about the job, but does contain the job id.
 
         Raises:
-            gss.SuperstaqServerException: if the request fails.
+            ~gss.SuperstaqServerException: if the request fails.
         """
         gss.validation.validate_target(target)
         gss.validation.validate_integer_param(repetitions)
@@ -193,7 +193,7 @@ class _SuperstaqClient:
             A list of the job ids of the jobs that successfully cancelled.
 
         Raises:
-            SuperstaqServerException: For other API call failures.
+            ~gss.SuperstaqServerException: For other API call failures.
         """
         json_dict: dict[str, str | Sequence[str]] = {
             "job_ids": job_ids,
@@ -218,7 +218,7 @@ class _SuperstaqClient:
             The json body of the response as a dict.
 
         Raises:
-            SuperstaqServerException: For other API call failures.
+            ~gss.SuperstaqServerException: For other API call failures.
         """
 
         json_dict: dict[str, Any] = {
@@ -258,7 +258,7 @@ class _SuperstaqClient:
             parameters are used this dictionary will have length 1.
 
         Raises:
-            SuperstaqServerException: If the server returns an empty response.
+            ~gss.SuperstaqServerException: If the server returns an empty response.
         """
         query = {}
         if name is not None:
@@ -483,7 +483,7 @@ class _SuperstaqClient:
 
         Raises:
             ValueError: If any of the targets passed are not valid.
-            SuperstaqServerException: if the request fails.
+            ~gss.SuperstaqServerException: if the request fails.
         """
         gss.validation.validate_target(target_1)
         gss.validation.validate_target(target_2)
@@ -513,7 +513,7 @@ class _SuperstaqClient:
 
         Raises:
             ValueError: If `job_ids` is not of size two.
-            SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
         if len(job_ids) != 2:
             raise ValueError("`job_ids` must contain exactly two job ids.")
@@ -558,7 +558,7 @@ class _SuperstaqClient:
 
         Raises:
             ValueError: If the target or noise model is not valid.
-            SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
         gss.validation.validate_target(target)
 
@@ -626,7 +626,7 @@ class _SuperstaqClient:
 
         Raises:
             ValueError: If the target or noise model is not valid.
-            SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
         gss.validation.validate_target(target)
 
@@ -775,8 +775,8 @@ class _SuperstaqClient:
             response: The `requests.Response` to get the status codes from.
 
         Raises:
-            gss.SuperstaqServerException: If unauthorized by Superstaq API.
-            gss.SuperstaqServerException: If an error has occurred in making a request
+            ~gss.SuperstaqServerException: If unauthorized by Superstaq API.
+            ~gss.SuperstaqServerException: If an error has occurred in making a request
                 to the Superstaq API.
         """
 
@@ -827,7 +827,7 @@ class _SuperstaqClient:
         """Prompts terms of use.
 
         Raises:
-            gss.SuperstaqServerException: If terms of use are not accepted.
+            ~gss.SuperstaqServerException: If terms of use are not accepted.
         """
         message = (
             "Acceptance of the Terms of Use (superstaq.infleqtion.com/terms_of_use)"
@@ -849,7 +849,8 @@ class _SuperstaqClient:
             request: A function that returns a `requests.Response`.
 
         Raises:
-            SuperstaqServerException: If there was a not-retriable error from the API.
+            ~gss.SuperstaqServerException: If there was a not-retriable error from
+                the API.
             TimeoutError: If the requests retried for more than `max_retry_seconds`.
 
         Returns:

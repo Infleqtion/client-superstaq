@@ -27,7 +27,7 @@ import seaborn as sns
 import tqdm.auto
 import tqdm.contrib.itertools
 
-from supermarq.qcvv import BenchmarkingExperiment, BenchmarkingResults, Sample
+from supermarq.qcvv.base_experiment import BenchmarkingExperiment, BenchmarkingResults, Sample
 
 
 @dataclass
@@ -94,8 +94,6 @@ class XEB(BenchmarkingExperiment[XEBResults]):
     cycle of gates. In our case, where we restrict ourselves to two qubits, we use
     cycles made up of two randomly selected single qubit phased XZ gates and a constant
     two qubit gate. This is illustrated as follows:
-
-    .. image:: ../../superstaq/qcvv/XEB_Random_Circuit.png
 
     For each randomly generated circuit, with a given number of cycle, we compare the
     simulated state probabilities, :math:`p(x)` with those achieved by running the circuit
