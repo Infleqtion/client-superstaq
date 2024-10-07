@@ -28,8 +28,10 @@ class QAOAFermionicSwapProxy(Benchmark):
 
     When a new instance of this benchmark is created, the ansatz parameters will
     be initialized by:
-        1. Generating a random instance of an SK graph
-        2. Finding approximately optimal angles (rather than random values)
+
+    #. Generating a random instance of an SK graph
+
+    #. Finding approximately optimal angles (rather than random values)
     """
 
     def __init__(self, num_qubits: int) -> None:
