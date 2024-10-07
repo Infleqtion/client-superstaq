@@ -123,6 +123,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
        data has been collected and is ready to be analysed.
 
        .. code::
+
             if experiment.collect_data():
                 results = experiment.analyze_results(<<args>>)
 
@@ -139,6 +140,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
     Additionally it is possible to pre-compile the experimental circuits for a given device using
 
     .. code::
+
         experiment.prepare_experiment(<<args/kwargs>>)
         experiment.compile_circuits(target=<<target_name>>)
 

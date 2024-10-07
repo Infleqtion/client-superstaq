@@ -174,7 +174,7 @@ class SuperstaqProvider(gss.service.Service):
             target: A string containing the name of a target backend.
 
         Returns:
-            `ResourceEstimate`(s) containing resource costs (after compilation) for running
+            ResourceEstimate(s) containing resource costs (after compilation) for running
             circuit(s) on a backend.
         """
         return self.get_backend(target).resource_estimate(circuits)
@@ -317,12 +317,16 @@ class SuperstaqProvider(gss.service.Service):
         """Returns pulse schedule(s) for the given qiskit circuit(s) and target.
 
         Superstaq currently supports the following dynamical decoupling strategies:
+
         * "standard": Places a single DD sequence in each idle window.
+
         * "syncopated": Places DD pulses at fixed time intervals, alternating between pulses on
-          neighboring qubits in order to mitigate parasitic ZZ coupling errors.
+           neighboring qubits in order to mitigate parasitic ZZ coupling errors.
+
         * "adaptive" (default): Dynamically spaces DD pulses across idle windows with awareness of
-          neighboring qubits to achieve the parasitic ZZ coupling mitigation of the "syncopated"
-          strategy with fewer pulses and less discretization error.
+           neighboring qubits to achieve the parasitic ZZ coupling mitigation of the "syncopated"
+           strategy with fewer pulses and less discretization error.
+
         See https://superstaq.readthedocs.io/en/latest/optimizations/ibm/ibmq_dd_strategies_qss.html
         for an example of each strategy.
 
@@ -368,10 +372,10 @@ class SuperstaqProvider(gss.service.Service):
         Jaqal [2] programs (strings).
 
         References:
-            [1] S. M. Clark et al., *Engineering the Quantum Scientific Computing Open User
-                Testbed*, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
+            [1] S. M. Clark et al., Engineering the Quantum Scientific Computing Open User
+                Testbed, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
                 https://doi.org/10.1109/TQE.2021.3096480.
-            [2] B. Morrison, et al., *Just Another Quantum Assembly Language (Jaqal)*, 2020 IEEE
+            [2] B. Morrison, et al., Just Another Quantum Assembly Language (Jaqal), 2020 IEEE
                 International Conference on Quantum Computing and Engineering (QCE), 402-408 (2020).
                 https://arxiv.org/abs/2008.08042.
 
@@ -468,8 +472,8 @@ class SuperstaqProvider(gss.service.Service):
             depth: The depth of the circuits to run Supercheq on.
 
         Returns:
-            A tuple containing a list of `qiskit.QuantumCircuit`s and a list of corresponding
-                fidelity matrices.
+            A tuple containing a list of qiskit.QuantumCircuits and a list of corresponding
+            fidelity matrices.
         """
         json_dict = self._client.supercheq(files, num_qubits, depth, "qiskit_circuits")
         circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
@@ -520,7 +524,7 @@ class SuperstaqProvider(gss.service.Service):
 
         Raises:
             ValueError: If `circuit` is not a valid `qiskit.QuantumCircuit`.
-            SuperstaqServerException: If there was an error accessing the API.
+            ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         circuit_1 = rho_1[0]
         circuit_2 = rho_2[0]
@@ -564,7 +568,7 @@ class SuperstaqProvider(gss.service.Service):
 
         Raises:
             ValueError: If `ids` is not of size two.
-            SuperstaqServerException: If there was an error accessing the API or the jobs submitted
-                through `submit_dfe` have not finished running.
+            ~gss.SuperstaqServerException: If there was an error accessing the API or
+                the jobs submitted through `submit_dfe` have not finished running.
         """
         return self._client.process_dfe(ids)
