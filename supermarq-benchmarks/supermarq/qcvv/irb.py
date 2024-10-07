@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Union  # noqa: MDA400
@@ -508,16 +509,26 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         """
 
         records = []
+        missing_count = 0  # Count the number of samples that do not have probabilities saved
         for sample in samples:
-            records.append(
-                {
-                    "clifford_depth": sample.data["num_cycles"],
-                    "circuit_depth": sample.data["circuit_depth"],
-                    "experiment": sample.data["experiment"],
-                    "single_qubit_gates": sample.data["single_qubit_gates"],
-                    "two_qubit_gates": sample.data["two_qubit_gates"],
-                    **sample.probabilities,
-                }
+            if sample.probabilities is not None:
+                records.append(
+                    {
+                        "clifford_depth": sample.data["num_cycles"],
+                        "circuit_depth": sample.data["circuit_depth"],
+                        "experiment": sample.data["experiment"],
+                        "single_qubit_gates": sample.data["single_qubit_gates"],
+                        "two_qubit_gates": sample.data["two_qubit_gates"],
+                        **sample.probabilities,
+                    }
+                )
+            else:
+                missing_count += 1
+
+        if missing_count > 0:
+            warnings.warn(
+                f"{missing_count} sample(s) are missing probabilities. "
+                "These samples have been omitted."
             )
 
         return pd.DataFrame(records)

@@ -652,7 +652,7 @@ def parallel_gates_operation(*ops: cirq.Operation) -> cirq.Operation:
         ops: Operations to pack into a single `ParallelGates` operation.
 
     Returns:
-        ParallelGates(op.gate, op2.gate, ...).on(*op.qubits, *op2.qubits, ...)
+        `ParallelGates(op.gate, op2.gate, ...).on(*op.qubits, *op2.qubits, ...)`
 
     Raises:
         ValueError: If the operation has no `.gate` attribute.
@@ -870,15 +870,20 @@ class IXGate(cirq.XPowGate):
         return cls()
 
 
-CR = ZX = ZXPowGate()  # standard CR is a full turn of ZX, i.e. exponent = 1
+# (Sphinx doesn't like double = on one line)
+ZX = ZXPowGate()
+CR = ZX  # standard CR is a full turn of ZX, i.e. exponent = 1
 
 IX = IXGate()
 
 # iToffoli gate
 ICCX = IX.controlled(2, [1, 1])
 
+
 # Open-control iToffoli gate
-AQTICCX = AQTITOFFOLI = IX.controlled(2, [0, 0])
+# (Sphinx doesn't like double = on one line)
+AQTITOFFOLI = IX.controlled(2, [0, 0])
+AQTICCX = AQTITOFFOLI
 
 
 @cirq.value_equality(approximate=True)

@@ -40,8 +40,7 @@ class ExampleResults(BenchmarkingResults):
 @pytest.fixture
 @patch.multiple(BenchmarkingExperiment, __abstractmethods__=set())
 def abc_experiment() -> BenchmarkingExperiment[ExampleResults]:
-    with patch("cirq_superstaq.service.Service"):
-        return BenchmarkingExperiment(num_qubits=2)  # type: ignore[abstract]
+    return BenchmarkingExperiment(num_qubits=2)  # type: ignore[abstract]
 
 
 @pytest.fixture
@@ -213,13 +212,13 @@ def test_run_on_device(
     abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
-    abc_experiment._service = (mock_service := MagicMock())
 
-    job = abc_experiment.run_on_device(
-        target="example_target", repetitions=100, overwrite=False, **{"some": "options"}
-    )
+    with patch("cirq_superstaq.Service") as mock_service:
+        job = abc_experiment.run_on_device(
+            target="example_target", repetitions=100, overwrite=False, **{"some": "options"}
+        )
 
-    mock_service.create_job.assert_called_once_with(
+    mock_service.return_value.create_job.assert_called_once_with(
         [sample_circuits[0].raw_circuit, sample_circuits[1].raw_circuit],
         target="example_target",
         method=None,
@@ -227,21 +226,20 @@ def test_run_on_device(
         some="options",
     )
 
-    assert job == mock_service.create_job.return_value
+    assert job == mock_service.return_value.create_job.return_value
     assert (
         sample_circuits[0].compiled_circuit
-        == mock_service.create_job.return_value.compiled_circuits.return_value[0]
+        == mock_service.return_value.create_job.return_value.compiled_circuits.return_value[0]
     )
     assert (
         sample_circuits[1].compiled_circuit
-        == mock_service.create_job.return_value.compiled_circuits.return_value[1]
+        == mock_service.return_value.create_job.return_value.compiled_circuits.return_value[1]
     )
 
 
 def test_run_on_device_existing_probabilties(
     abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
-    abc_experiment._service = MagicMock()
     sample_circuits[0].probabilities = {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
     sample_circuits[1].probabilities = {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
 
@@ -260,24 +258,26 @@ def test_run_on_device_dry_run(
     abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
 ) -> None:
     abc_experiment._samples = sample_circuits
-    abc_experiment._service = (mock_service := MagicMock())
 
-    job = abc_experiment.run_on_device(target="example_target", repetitions=100, method="dry-run")
+    with patch("cirq_superstaq.Service") as mock_service:
+        job = abc_experiment.run_on_device(
+            target="example_target", repetitions=100, method="dry-run"
+        )
 
-    mock_service.create_job.assert_called_once_with(
+    mock_service.return_value.create_job.assert_called_once_with(
         [sample_circuits[0].raw_circuit, sample_circuits[1].raw_circuit],
         target="example_target",
         method="dry-run",
         repetitions=100,
     )
-    assert job == mock_service.create_job.return_value
+    assert job == mock_service.return_value.create_job.return_value
     assert (
         sample_circuits[0].compiled_circuit
-        == mock_service.create_job.return_value.compiled_circuits.return_value[0]
+        == mock_service.return_value.create_job.return_value.compiled_circuits.return_value[0]
     )
     assert (
         sample_circuits[1].compiled_circuit
-        == mock_service.create_job.return_value.compiled_circuits.return_value[1]
+        == mock_service.return_value.create_job.return_value.compiled_circuits.return_value[1]
     )
 
 
@@ -403,8 +403,8 @@ def test_retrieve_jobs_not_all_submitted(
     statuses = abc_experiment._retrieve_jobs()
 
     assert statuses == {"example_job_id": "Queued"}
-    assert not hasattr(sample_circuits[0], "probabilities")
-    assert not hasattr(sample_circuits[1], "probabilities")
+    assert sample_circuits[0].probabilities is None
+    assert sample_circuits[1].probabilities is None
 
 
 def test_retrieve_jobs_nothing_to_retrieve(
@@ -439,7 +439,7 @@ def test_retrieve_jobs_all_submitted(
 
     # Check probabilities correctly updated
     assert sample_circuits[1].probabilities == {"00": 5 / 15, "01": 0.0, "10": 0.0, "11": 10 / 15}
-    assert not hasattr(sample_circuits[0], "probabilities")
+    assert sample_circuits[0].probabilities is None
 
 
 def test_collect_data_no_samples(abc_experiment: BenchmarkingExperiment[ExampleResults]) -> None:
@@ -546,11 +546,13 @@ def test_compile_circuit(
 ) -> None:
     abc_experiment._samples = sample_circuits
 
-    abc_experiment._service = (mock_service := MagicMock())
-    mock_service.compile.return_value.circuits = (mock_compiled_circuits := MagicMock())
-    abc_experiment.compile_circuits("example_target", additional="kwargs")
+    with patch("cirq_superstaq.Service") as mock_service:
+        mock_service.return_value.compile.return_value.circuits = (
+            mock_compiled_circuits := MagicMock()
+        )
+        abc_experiment.compile_circuits("example_target", additional="kwargs")
 
-    mock_service.compile.assert_called_once_with(
+    mock_service.return_value.compile.assert_called_once_with(
         [sample_circuits[0].raw_circuit, sample_circuits[1].raw_circuit],
         target="example_target",
         additional="kwargs",

@@ -432,7 +432,6 @@ def test_superstaq_client_get_balance(mock_get: mock.MagicMock) -> None:
         f"http://example.com/{API_VERSION}/balance",
         headers=EXPECTED_HEADERS,
         verify=False,
-        json=None,
     )
 
 
@@ -533,6 +532,34 @@ def test_superstaq_client_get_targets(mock_post: mock.MagicMock) -> None:
     )
     response = client.get_targets()
     assert response == RETURNED_TARGETS
+    mock_post.assert_called_once_with(
+        f"http://example.com/{API_VERSION}/targets",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+        json={},
+    )
+
+    response = client.get_targets(simulator=True)
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/targets",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+        json={"simulator": True},
+    )
+
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        ibmq_token="token",
+    )
+    response = client.get_targets(simulator=True)
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/targets",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+        json={"simulator": True, "options": json.dumps({"ibmq_token": "token"})},
+    )
 
 
 @mock.patch("requests.Session.post")
@@ -990,9 +1017,8 @@ def test_get_user_info(mock_get: mock.MagicMock) -> None:
 
     user_info = client.get_user_info()
     mock_get.assert_called_once_with(
-        f"http://example.com/{API_VERSION}/get_user_info",
+        f"http://example.com/{API_VERSION}/user_info",
         headers=EXPECTED_HEADERS,
-        json={},
         verify=False,
     )
     assert user_info == [{"Some": "Data"}]
@@ -1010,9 +1036,26 @@ def test_get_user_info_query(mock_get: mock.MagicMock) -> None:
 
     user_info = client.get_user_info(name="Alice")
     mock_get.assert_called_once_with(
-        f"http://example.com/{API_VERSION}/get_user_info",
+        f"http://example.com/{API_VERSION}/user_info?name=Alice",
         headers=EXPECTED_HEADERS,
-        json={"name": "Alice"},
+        verify=False,
+    )
+    assert user_info == [{"Some": "Data"}]
+
+
+@mock.patch("requests.Session.get")
+def test_get_user_info_query_composite(mock_get: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        cq_token="cq-token",
+    )
+    mock_get.return_value.json.return_value = {"example@email.com": {"Some": "Data"}}
+    user_info = client.get_user_info(user_id=42, name="Alice")
+    mock_get.assert_called_once_with(
+        f"http://example.com/{API_VERSION}/user_info?name=Alice&id=42",
+        headers=EXPECTED_HEADERS,
         verify=False,
     )
     assert user_info == [{"Some": "Data"}]
@@ -1035,8 +1078,7 @@ def test_get_user_info_empty_response(mock_get: mock.MagicMock) -> None:
         client.get_user_info()
 
     mock_get.assert_called_once_with(
-        f"http://example.com/{API_VERSION}/get_user_info",
+        f"http://example.com/{API_VERSION}/user_info",
         headers=EXPECTED_HEADERS,
-        json={},
         verify=False,
     )

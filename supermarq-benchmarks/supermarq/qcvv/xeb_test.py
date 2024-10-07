@@ -27,55 +27,51 @@ from supermarq.qcvv import XEB, XEBSample
 
 
 def test_xeb_init() -> None:
-    with patch("cirq_superstaq.service.Service"):
-        experiment = XEB()
-        assert experiment.num_qubits == 2
-        assert experiment.two_qubit_gate == cirq.CZ
-        assert experiment.single_qubit_gate_set == [
-            cirq.PhasedXZGate(
-                z_exponent=z,
-                x_exponent=0.5,
-                axis_phase_exponent=a,
-            )
-            for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
-        ]
+    experiment = XEB()
+    assert experiment.num_qubits == 2
+    assert experiment.two_qubit_gate == cirq.CZ
+    assert experiment.single_qubit_gate_set == [
+        cirq.PhasedXZGate(
+            z_exponent=z,
+            x_exponent=0.5,
+            axis_phase_exponent=a,
+        )
+        for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
+    ]
 
-        with pytest.raises(
-            RuntimeError, match="No samples to retrieve. The experiment has not been run."
-        ):
-            experiment.samples  # pylint: disable=W0104
+    with pytest.raises(
+        RuntimeError, match="No samples to retrieve. The experiment has not been run."
+    ):
+        experiment.samples  # pylint: disable=W0104
 
-        with pytest.raises(
-            RuntimeError, match="No data to retrieve. The experiment has not been run."
-        ):
-            experiment.circuit_fidelities  # pylint: disable=W0104
+    with pytest.raises(RuntimeError, match="No data to retrieve. The experiment has not been run."):
+        experiment.circuit_fidelities  # pylint: disable=W0104
 
-        experiment = XEB(two_qubit_gate=cirq.CX)
-        assert experiment.num_qubits == 2
-        assert experiment.two_qubit_gate == cirq.CX
-        assert experiment.single_qubit_gate_set == [
-            cirq.PhasedXZGate(
-                z_exponent=z,
-                x_exponent=0.5,
-                axis_phase_exponent=a,
-            )
-            for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
-        ]
+    experiment = XEB(two_qubit_gate=cirq.CX)
+    assert experiment.num_qubits == 2
+    assert experiment.two_qubit_gate == cirq.CX
+    assert experiment.single_qubit_gate_set == [
+        cirq.PhasedXZGate(
+            z_exponent=z,
+            x_exponent=0.5,
+            axis_phase_exponent=a,
+        )
+        for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
+    ]
 
-        experiment = XEB(single_qubit_gate_set=[cirq.X])
-        assert experiment.num_qubits == 2
-        assert experiment.two_qubit_gate == cirq.CZ
-        assert experiment.single_qubit_gate_set == [cirq.X]
+    experiment = XEB(single_qubit_gate_set=[cirq.X])
+    assert experiment.num_qubits == 2
+    assert experiment.two_qubit_gate == cirq.CZ
+    assert experiment.single_qubit_gate_set == [cirq.X]
 
 
 @pytest.fixture
 def xeb_experiment() -> XEB:
-    with patch("cirq_superstaq.service.Service"):
-        return XEB(single_qubit_gate_set=[cirq.X, cirq.Y, cirq.Z])
+    return XEB(single_qubit_gate_set=[cirq.X, cirq.Y, cirq.Z])
 
 
 def test_build_xeb_circuit() -> None:
-    with patch("cirq_superstaq.service.Service"), patch("numpy.random.default_rng") as rng:
+    with patch("numpy.random.default_rng") as rng:
         xeb_experiment = XEB(single_qubit_gate_set=[cirq.X, cirq.Y, cirq.Z])
         rng.return_value.choice.side_effect = [
             np.array([[cirq.X, cirq.Y], [cirq.Z, cirq.Y], [cirq.Y, cirq.Z]]),
@@ -219,6 +215,33 @@ def test_xeb_process_probabilities(xeb_experiment: XEB) -> None:
         ]
     )
     pd.testing.assert_frame_equal(expected_data, data)
+
+
+def test_xeb_process_probabilities_missing_probs(xeb_experiment: XEB) -> None:
+    qubits = cirq.LineQubit.range(2)
+
+    samples = [
+        XEBSample(
+            raw_circuit=cirq.Circuit(
+                [
+                    cirq.X(qubits[0]),
+                    cirq.X(qubits[1]),
+                    cirq.CX(qubits[0], qubits[1]),
+                    cirq.X(qubits[0]),
+                    cirq.X(qubits[1]),
+                    cirq.measure(qubits),
+                ]
+            ),
+            data={"circuit_depth": 3, "num_cycles": 1, "two_qubit_gate": "CX"},
+        )
+    ]
+
+    with pytest.warns(
+        UserWarning,
+        match=r"1 sample\(s\) are missing `probabilities`. These samples have been omitted.",
+    ):
+        data = xeb_experiment._process_probabilities(samples)
+    pd.testing.assert_frame_equal(data, pd.DataFrame())
 
 
 def test_xebsample_sum_probs_square_no_values() -> None:
