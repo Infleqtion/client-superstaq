@@ -49,12 +49,14 @@ class MeasurementCircuit:
         represented as a (2*N, M) matrix.
 
         For instance, YYI, XXY, IYZ would be represented by
-        [[1, 0, 0],  ========
-         [1, 0, 1],  Z matrix (top half)
-         [0, 1, 1],  ========
-         [1, 1, 0],  ========
-         [1, 1, 1],  X matrix (bottom half)
-         [0, 1, 0]   ========
+        .. code::
+
+            [[1, 0, 0],  ========
+             [1, 0, 1],  Z matrix (top half)
+             [0, 1, 1],  ========
+             [1, 1, 0],  ========
+             [1, 1, 1],  X matrix (bottom half)
+             [0, 1, 0]   ========
 
         Returns:
             The current stabilizer matrix.
