@@ -119,8 +119,8 @@ class QAOAFermionicSwapProxy(Benchmark):
             expectation_value += probability * self._get_energy_for_bitstring(bitstring)
         return expectation_value
 
-    def _get_opt_angles(self) -> tuple[npt.NDArray[np.float_], float]:
-        def f(params: npt.NDArray[np.float_]) -> float:
+    def _get_opt_angles(self) -> tuple[npt.NDArray[np.float64], float]:
+        def f(params: npt.NDArray[np.float64]) -> float:
             """The objective function to minimize.
 
             Args:
@@ -143,7 +143,7 @@ class QAOAFermionicSwapProxy(Benchmark):
 
         return out["x"], out["fun"]
 
-    def _gen_angles(self) -> npt.NDArray[np.float_]:
+    def _gen_angles(self) -> npt.NDArray[np.float64]:
         # Classically simulate the variational optimization 5 times,
         # return the parameters from the best performing simulation
         best_params, best_cost = np.zeros(2), 0.0

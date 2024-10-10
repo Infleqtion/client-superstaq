@@ -74,7 +74,7 @@ def json_encoder(val: object) -> dict[str, object]:
     raise TypeError(f"Object of type {type(val)} is not JSON serializable.")
 
 
-def json_resolver(val: T) -> T | npt.NDArray[np.complex_]:
+def json_resolver(val: T) -> T | npt.NDArray[np.complex128]:
     """Hook to deserialize objects that were serialized via `json_encoder()`.
 
     Args:

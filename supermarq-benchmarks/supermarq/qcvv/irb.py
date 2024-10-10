@@ -23,6 +23,7 @@ from typing import Union  # noqa: MDA400
 import cirq
 import cirq.circuits
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import scipy
 import seaborn as sns
@@ -637,7 +638,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
 
     def _fit_decay(
         self, experiment: str = "RB"
-    ) -> tuple[np.typing.NDArray[np.float_], np.typing.NDArray[np.float_]]:
+    ) -> tuple[np.typing.NDArray[np.float64], np.typing.NDArray[np.float64]]:
         """Fits the exponential decay function to either the RB or IRB results.
 
         Args:
@@ -662,9 +663,7 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         return popt, np.sqrt(np.diag(pcov))
 
     @staticmethod
-    def exp_decay(
-        x: np.typing.NDArray[np.float_], A: float, alpha: float, B: float
-    ) -> np.typing.NDArray[np.float_]:
+    def exp_decay(x: npt.ArrayLike, A: float, alpha: float, B: float) -> npt.ArrayLike:
         r"""Exponential decay of the form
 
         .. math::
@@ -680,4 +679,4 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         Returns:
             Exponential decay applied to x.
         """
-        return A * (alpha**x) + B
+        return A * (np.asarray(alpha) ** x) + B

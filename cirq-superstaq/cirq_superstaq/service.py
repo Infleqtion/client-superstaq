@@ -419,7 +419,7 @@ class Service(gss.service.Service):
         target: str = "aqt_keysight_qpu",
         atol: float | None = None,
         gate_defs: None | (
-            Mapping[str, npt.NDArray[np.complex_] | cirq.Gate | cirq.Operation | None]
+            Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]
         ) = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
@@ -483,7 +483,7 @@ class Service(gss.service.Service):
         random_seed: int | None = None,
         atol: float | None = None,
         gate_defs: None | (
-            Mapping[str, npt.NDArray[np.complex_] | cirq.Gate | cirq.Operation | None]
+            Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]
         ) = None,
         gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
         pulses: object = None,
@@ -816,7 +816,7 @@ class Service(gss.service.Service):
 
     def supercheq(
         self, files: list[list[int]], num_qubits: int, depth: int
-    ) -> tuple[list[cirq.Circuit], npt.NDArray[np.float_]]:
+    ) -> tuple[list[cirq.Circuit], npt.NDArray[np.float64]]:
         """Returns the randomly generated circuits and the fidelity matrix for inputted files.
 
         Args:
@@ -1123,7 +1123,7 @@ class Service(gss.service.Service):
 
             def _objective(
                 x: np.typing.NDArray[np.int_], A: float, p: float
-            ) -> np.typing.NDArray[np.float_]:
+            ) -> np.typing.NDArray[np.float64]:
                 return A * p**x
 
             fit_data: defaultdict[str, float] = defaultdict(float)
@@ -1167,7 +1167,7 @@ class Service(gss.service.Service):
 
         def _objective(
             x: np.typing.NDArray[np.int_], A: float, p: float
-        ) -> np.typing.NDArray[np.float_]:
+        ) -> np.typing.NDArray[np.float64]:
             return A * p**x
 
         e_f = 0.0
