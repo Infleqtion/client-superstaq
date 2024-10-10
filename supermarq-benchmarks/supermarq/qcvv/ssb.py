@@ -44,12 +44,18 @@ class SSBResults(BenchmarkingResults):
 class SSB(BenchmarkingExperiment[SSBResults]):
     """Symmetric Stabilizer Benchmarking"""
 
-    def __init__(self, *, include_placeholders: bool = False) -> None:
+    def __init__(
+        self,
+        include_placeholders: bool = False,
+        distribute: bool = True,
+        random_seed: int | np.random.Generator | None = None,
+    ) -> None:
         """Initializes a symmetric stabilizer benchmarking experiment."""
 
-        super().__init__(num_qubits=2)
+        super().__init__(num_qubits=2, random_seed=random_seed)
 
         self._include_placeholders = include_placeholders
+        self._distribute = distribute
 
         # Moments containing parallel rotations. Used to construst the init and rec circuit.
         # Note we avoid using the `cirq.ParallelGate` as this can lead to single qubit gates
@@ -148,17 +154,27 @@ class SSB(BenchmarkingExperiment[SSBResults]):
             sss_idx = self._rng.integers(12)
             circuit = self._sss_init_circuit(sss_idx)
 
-            for i in range(max_depth):
+            if self._distribute and depth < max_depth:
+                indices = self._rng.choice(max_depth - 2, depth - 2, replace=False)
+            else:
+                indices = np.arange(depth - 2)
+
+            num = 0
+            for i in range(max_depth - 2):
+
+                if i in indices:
+                    circuit += cirq.CZ(*self.qubits).with_tags("no_compile")
+                    sss_idx = idx_maps[cirq.CZ][sss_idx]
+                    num += 1
+
+                elif self._include_placeholders:
+                    circuit += cirq.CZ.on(*self.qubits).with_tags("no_compile", "placeholder")
+
                 gate = self._random_parallel_qubit_rotation()
                 circuit += gate.on(*self.qubits)
                 sss_idx = idx_maps[gate][sss_idx]
 
-                if i < depth - 2:
-                    circuit += cirq.CZ(*self.qubits).with_tags("no_compile")
-                    sss_idx = idx_maps[cirq.CZ][sss_idx]
-
-                elif self._include_placeholders:
-                    circuit += cirq.CZ.on(*self.qubits).with_tags("no_compile", "placeholder")
+            assert num == depth - 2, (max_depth, depth, num)
 
             circuit += self._sss_reconciliation_circuit(sss_idx) + cirq.measure(self.qubits)
 
@@ -191,7 +207,9 @@ class SSB(BenchmarkingExperiment[SSBResults]):
                     **sample.probabilities,
                 }
             )
-        return pd.DataFrame(records)
+        data = pd.DataFrame(records)
+        data.fillna(0.0, inplace=True)
+        return data
 
     def _random_parallel_qubit_rotation(self) -> cirq.Gate:
         """Chooses randomly from {X, Y, -X, -Y} and return a moment with this gate acting on both
@@ -296,9 +314,10 @@ class SSB(BenchmarkingExperiment[SSBResults]):
         Returns:
            The final results from the experiment.
         """
-        fit = self._fit_decay()
-        cz_fidelity = fit[0][1]
-        cz_fidelity_std = fit[1][1]
+        fit, fit_std = self._fit_decay()
+
+        cz_fidelity = fit[0]
+        cz_fidelity_std = fit_std[0]
 
         if plot_results:
             self.plot_results()
@@ -319,18 +338,18 @@ class SSB(BenchmarkingExperiment[SSBResults]):
             x="num_cz_gates",
             y="0" * self.num_qubits,
         )
-        fit = self._fit_decay()
+        fit, fit_std = self._fit_decay()
         xx = np.linspace(0, np.max(self.raw_data.num_cz_gates))
         plot.plot(
             xx,
-            self.exp_decay(xx, *fit[0]),
+            self.exp_decay(xx, 1.0, *fit),
             color="tab:blue",
             linestyle="--",
         )
         plot.fill_between(
             xx,
-            self.exp_decay(xx, *(fit[0] - fit[1])),
-            self.exp_decay(xx, *(fit[0] + fit[1])),
+            self.exp_decay(xx, 1.0, *(fit - fit_std)),
+            self.exp_decay(xx, 1.0, *(fit + fit_std)),
             alpha=0.5,
             color="tab:blue",
         )

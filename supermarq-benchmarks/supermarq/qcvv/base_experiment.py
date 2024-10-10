@@ -47,6 +47,7 @@ class Sample:
     compiled_circuit: cirq.Circuit | None = None
     """The compiled circuit. Only used if the circuits are compiled for a specific
     target."""
+    repetitions: int | None = 0
 
     @property
     def target(self) -> str:
@@ -92,6 +93,10 @@ class BenchmarkingResults(ABC):
 
 
 ResultsT = TypeVar("ResultsT", bound="BenchmarkingResults")
+
+
+def drop_placeholders(circuit):
+    return circuit.map_operations(lambda op: () if "placeholder" in op.tags else op)
 
 
 class BenchmarkingExperiment(ABC, Generic[ResultsT]):
@@ -503,7 +508,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
                 "rerunning the experiment. If this is the desired behavior set `overwrite=True`"
             )
 
-        if any(depth <= 0 for depth in cycle_depths):
+        if any(depth < 0 for depth in cycle_depths):
             raise ValueError("The `cycle_depths` iterator can only include positive values.")
 
         self._samples = self._build_circuits(num_circuits, cycle_depths)
@@ -551,6 +556,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         for k, sample in enumerate(self.samples):
             sample.job = experiment_job[k]
             sample.compiled_circuit = compiled_circuits[k]
+            sample.repetitions = repetitions
 
         return experiment_job
 
@@ -576,8 +582,10 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             simulator = cirq.Simulator(seed=self._rng)
 
         for sample in tqdm(self.samples, desc="Simulating circuits"):
-            result = simulator.run(sample.circuit, repetitions=repetitions)
-            hist = result.histogram(key=cirq.measurement_key_name(sample.circuit))
+            circuit = drop_placeholders(sample.circuit)
+            result = simulator.run(circuit, repetitions=repetitions)
+            hist = result.histogram(key=cirq.measurement_key_name(circuit))
+            sample.repetitions = repetitions
             sample.probabilities = {
                 f"{i:0{self.num_qubits}b}": 0.0 for i in range(2**self.num_qubits)
             }  # Set all probabilities to zero
@@ -589,6 +597,8 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         self,
         circuit_eval_func: Callable[[cirq.Circuit], dict[str, float]],
         overwrite: bool = False,
+        repetitions: int | None = None,
+        progressbar: bool = True,
         **kwargs: Any,
     ) -> None:
         """Evaluates the probabilities for each circuit using a user provided callable function.
@@ -608,8 +618,9 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         """
         if not overwrite:
             self._has_raw_data()
-        for sample in tqdm(self.samples, desc="Running circuits"):
-            probability = circuit_eval_func(sample.circuit, **kwargs)
+        for sample in tqdm(self.samples, desc="Running circuits", disable=not progressbar):
+            circuit = drop_placeholders(sample.circuit)
+            probability = circuit_eval_func(circuit, **kwargs)
             if not all(len(key) == self.num_qubits for key in probability.keys()):
                 raise RuntimeError("Returned probabilities include an incorrect number of bits.")
             if not math.isclose(sum(probability.values()), 1.0):
@@ -619,4 +630,5 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
                 if (bitstring := format(k, f"0{self.num_qubits}b")) not in probability:
                     probability[bitstring] = 0.0
 
+            sample.repetitions = repetitions
             sample.probabilities = probability
