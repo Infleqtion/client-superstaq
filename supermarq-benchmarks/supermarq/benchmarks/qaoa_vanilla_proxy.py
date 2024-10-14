@@ -101,7 +101,7 @@ class QAOAVanillaProxy(Benchmark):
             """The objective function to minimize.
 
             Args:
-                params: parameters for objective.
+                params: The parameters at which to evaluate the objective.
 
             Returns:
                 Evaluation of objective given parameters.
@@ -137,7 +137,7 @@ class QAOAVanillaProxy(Benchmark):
         the classical simulation scalable.
 
         Returns:
-            The S-K model QAOA circuit.
+            The S-K model QAOA `cirq.Circuit`.
         """
         gamma, beta = self.params
         return self._gen_ansatz(gamma, beta)
@@ -149,10 +149,10 @@ class QAOAVanillaProxy(Benchmark):
         principle be done efficiently via https://arxiv.org/abs/1706.02998, so we're good.
 
         Args:
-            counts: A dictionary containing measurement counts from circuit execution.
+            counts: A dictionary containing the measurement counts from circuit execution.
 
         Returns:
-            The QAOA Vanilla proxy benchmark score.
+            The QAOA proxy benchmark score.
         """
         ideal_counts = supermarq.simulation.get_ideal_counts(self.circuit())
         total_shots = sum(counts.values())
