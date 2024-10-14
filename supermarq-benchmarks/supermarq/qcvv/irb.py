@@ -342,8 +342,6 @@ class IRB(BenchmarkingExperiment[Union[IRBResults, RBResults]]):
         qubits = cirq.LineQubit.range(2)
         a = self.random_single_qubit_clifford()
         b = self.random_single_qubit_clifford()
-        print(a)
-        print(b)
         idx = self._rng.integers(20)
         if idx == 0:
             return cirq.CliffordGate.from_op_list([a(qubits[0]), b(qubits[1])], qubits)
