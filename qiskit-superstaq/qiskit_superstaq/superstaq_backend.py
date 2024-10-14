@@ -244,7 +244,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         num_eca_circuits: int | None = None,
         random_seed: int | None = None,
         atol: float | None = None,
-        gate_defs: Mapping[str, str | npt.NDArray[np.complex_] | None] | None = None,
+        gate_defs: Mapping[str, str | npt.NDArray[np.number[Any]] | None] | None = None,
         gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
         pulses: object = None,
         variables: object = None,

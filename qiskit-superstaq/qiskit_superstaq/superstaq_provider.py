@@ -187,7 +187,7 @@ class SuperstaqProvider(gss.service.Service):
         num_eca_circuits: int | None = None,
         random_seed: int | None = None,
         atol: float | None = None,
-        gate_defs: Mapping[str, str | npt.NDArray[np.complex_] | None] | None = None,
+        gate_defs: Mapping[str, str | npt.NDArray[np.number[Any]] | None] | None = None,
         gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
         pulses: object = None,
         variables: object = None,
@@ -252,7 +252,7 @@ class SuperstaqProvider(gss.service.Service):
         random_seed: int | None = None,
         target: str = "aqt_keysight_qpu",
         atol: float | None = None,
-        gate_defs: Mapping[str, str | npt.NDArray[np.complex_] | None] | None = None,
+        gate_defs: Mapping[str, str | npt.NDArray[np.number[Any]] | None] | None = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
@@ -458,7 +458,7 @@ class SuperstaqProvider(gss.service.Service):
 
     def supercheq(
         self, files: list[list[int]], num_qubits: int, depth: int
-    ) -> tuple[list[qiskit.QuantumCircuit], npt.NDArray[np.float_]]:
+    ) -> tuple[list[qiskit.QuantumCircuit], npt.NDArray[np.float64]]:
         """Returns Supercheq randomly generated circuits and the corresponding fidelity matrices.
 
         References:

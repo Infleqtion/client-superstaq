@@ -239,7 +239,7 @@ def plot_benchmark(
 
 
 def heatmap(
-    data: npt.NDArray[np.float_],
+    data: npt.NDArray[np.floating[Any]],
     ax: matplotlib.axes.Axes,
     row_labels: list[str],
     col_labels: list[str],
@@ -306,7 +306,7 @@ def heatmap(
 
 def annotate_heatmap(
     im: matplotlib.image.AxesImage,
-    data: npt.NDArray[np.float_] | None = None,
+    data: npt.NDArray[np.floating[Any]] | None = None,
     valfmt: Any = "{x:.2f}",
     textcolors: tuple[str, str] = ("black", "white"),
     threshold: float | None = None,
@@ -360,7 +360,7 @@ def annotate_heatmap(
     return texts
 
 
-def radar_factory(num_vars: int) -> npt.NDArray[np.float_]:
+def radar_factory(num_vars: int) -> npt.NDArray[np.float64]:
     """Create a radar chart with `num_vars` axes.
 
     (https://matplotlib.org/stable/gallery/specialty_plots/radar_chart.html) This function
@@ -398,7 +398,7 @@ class RadarAxesMeta(PolarAxes):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initializes the `RadarAxesMeta` class."""
-        self.theta: npt.NDArray[np.float_]
+        self.theta: npt.NDArray[np.float64]
         self.num_vars: int
         self.frame: str
 

@@ -66,7 +66,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     def _num_qubits_(self) -> int:
         return 2
 
-    def _unitary_(self) -> npt.NDArray[np.complex_] | None:
+    def _unitary_(self) -> npt.NDArray[np.complex128] | None:
         if self._is_parameterized_():
             return None
         return np.array(
@@ -126,7 +126,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     def _has_unitary_(self) -> bool:
         return not self._is_parameterized_()
 
-    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex_]:
+    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex128]:
         zo = args.subspace_index(0b01)
         oz = args.subspace_index(0b10)
         args.available_buffer[zo] = args.target_tensor[zo]
@@ -184,7 +184,7 @@ class ZXPowGate(cirq.EigenGate):
 
     """
 
-    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float64]]]:
         return [
             (
                 0.0,
@@ -914,7 +914,7 @@ class StrippedCZGate(cirq.Gate):
     def _num_qubits_(self) -> int:
         return 2
 
-    def _unitary_(self) -> npt.NDArray[np.complex_] | None:
+    def _unitary_(self) -> npt.NDArray[np.complex128] | None:
         if self._is_parameterized_():
             return None
         return np.diag(
@@ -990,7 +990,7 @@ class StrippedCZGate(cirq.Gate):
 class DDPowGate(cirq.EigenGate):
     r"""The Dipole-Dipole gate for EeroQ hardware"""
 
-    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float64]]]:
         return [
             (
                 -0.5,
