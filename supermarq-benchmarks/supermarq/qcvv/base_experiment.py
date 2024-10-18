@@ -16,11 +16,11 @@ from __future__ import annotations
 
 import functools
 import math
-import pprint
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Sequence
-from dataclasses import dataclass, field
-from typing import Any, Generic, TypeVar
+from dataclasses import dataclass
+from typing import Any
 
 import cirq
 import cirq_superstaq as css
@@ -35,66 +35,117 @@ class Sample:
     that is needed for analysis
     """
 
-    raw_circuit: cirq.Circuit
+    circuit: cirq.Circuit
     """The raw (i.e. pre-compiled) sample circuit."""
     data: dict[str, Any]
-    """The corresponding data about the circuit"""
-    probabilities: dict[str, float] | None = None
-    """The probabilities of the computational basis states"""
-    job: css.Job | None = None
-    """The superstaq job corresponding to the sample. Defaults to None if no job is
-    associated with the sample."""
-    compiled_circuit: cirq.Circuit | None = None
-    """The compiled circuit. Only used if the circuits are compiled for a specific
-    target."""
-
-    @property
-    def target(self) -> str:
-        """Returns:
-        The name of the target that the sample was submitted to.
-        """
-        if self.job is not None:
-            # If there is a job then get the target
-            return self.job.target()
-
-        if self.probabilities is not None:
-            # If no job, but probabilities have been calculated, infer that a local
-            # simulator was used.
-            return "Local simulator"
-
-        # Otherwise the experiment hasn't yet been run so there is no target.
-        return "No target"
-
-    @property
-    def circuit(self) -> cirq.Circuit:
-        """Returns:
-        The circuit used for the experiment. Defaults to the compiled circuit if available
-        and if not returns the raw circuit.
-        """
-        if self.compiled_circuit is not None:
-            return self.compiled_circuit
-
-        return self.raw_circuit
+    """The corresponding data about the circuit that is needed when analyzing results
+    (e.g. cycle depth)."""
 
 
-@dataclass(frozen=True)
-class BenchmarkingResults(ABC):
-    """A dataclass for storing the results of the experiment. Requires subclassing for
-    each new experiment type."""
+# @dataclass(frozen=True)
+@dataclass
+class QCVVResults(ABC):
+    """A dataclass for storing the data and analyze results of the experiment. Requires
+    subclassing for each new experiment type."""
 
     target: str
     """The target device that was used."""
-    total_circuits: int
-    """The total number of circuits used in the experiment."""
 
-    experiment_name: str = field(init=False)
-    """The name of the experiment."""
+    experiment: QCVVExperiment
+    """Reference to the underlying experiment that generated these results experiment."""
+
+    job: css.Job | None = None
+    """The associated Superstaq job (if applicable)."""
+
+    data: pd.DataFrame | None = None
+    """The raw data generated."""
+
+    @property
+    def data_ready(self) -> bool:
+        if self.data is not None:
+            return True
+        if self.job is None:
+            raise RuntimeError()  # TODO
+        job_status = self.job.status()
+        if job_status == "Done":
+            self.data = self._collect_device_counts()
+            return True
+        return False
+
+    @property
+    def samples(self):
+        return self.experiment.samples
+
+    @property
+    def num_qubits(self):
+        return self.experiment.num_qubits
+
+    @property
+    def num_circuits(self):
+        return self.experiment.num_circuits
+
+    def analyze_results(self, plot_results: bool = True, print_results: bool = True) -> None:
+        """Perform the experiment analysis and store the results in the `results` attribute.
+
+        Args:
+            plot_results: Whether to generate plots of the results. Defaults to False.
+
+        Returns:
+            A named tuple of the final results from the experiment.
+        """
+        if not self.data_ready:
+            warnings.warn(
+                "Experiment data is not yet ready to analyse. This is likely because "
+                "the Superstaq job has not yet been completed. Either wait and try again "
+                "later, or interrogate the `.job` attribute."
+            )
+            return
+
+        self._analyze_results()
+
+        if plot_results:
+            self.plot_results()
+
+        if print_results:
+            self.print_results()
+
+    @abstractmethod
+    def _analyze_results(self) -> None:
+        """"""
+
+    @abstractmethod
+    def plot_results(self) -> None:
+        """Plot the results of the experiment"""
+
+    @abstractmethod
+    def print_results(self) -> None:
+        """Prints the key results data."""
+
+    def _collect_device_counts(self) -> pd.DataFrame:
+        """Process the counts returned by the server into a dictionary of probabilities.
+
+        Args:
+            counts: A dictionary of the observed counts for each state in the computational basis.
+
+        Returns:
+            A dictionary of the probability of each state in the computational basis.
+        """
+        records = []
+        device_counts = self.job.counts()
+        for counts, sample in zip(device_counts, self.samples):
+
+            total = sum(counts.values())
+            probabilities = {
+                format(idx, f"0{self.num_qubits}b"): 0.0 for idx in range(2**self.num_qubits)
+            }
+            for key, count in counts.items():
+                probabilities[key] = count / total
+            records.append({**sample.data, **probabilities})
+
+        return pd.DataFrame(records)
 
 
-ResultsT = TypeVar("ResultsT", bound="BenchmarkingResults")
-
-
-class BenchmarkingExperiment(ABC, Generic[ResultsT]):
+class QCVVExperiment(ABC):
     """Base class for gate benchmarking experiments.
 
     The interface for implementing these experiments is as follows:
@@ -174,8 +225,11 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
     def __init__(
         self,
         num_qubits: int,
+        num_circuits: int,
+        cycle_depths: Iterable[int],
         *,
         random_seed: int | np.random.Generator | None = None,
+        results_cls: QCVVResults = QCVVResults,
         **kwargs: Any,
     ) -> None:
         """Initializes a benchmarking experiment.
@@ -189,11 +243,14 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         self.qubits = cirq.LineQubit.range(num_qubits)
         """The qubits used in the experiment."""
 
+        self.num_circuits = num_circuits
+        """The number of circuits to build for each cycle depth."""
+
+        self.cycle_depths = cycle_depths
+        """The different cycle depths to test at."""
+
         self._raw_data: pd.DataFrame | None = None
         "The data generated during the experiment"
-
-        self._results: ResultsT | None = None
-        """The attribute to store the results in."""
 
         self._samples: Sequence[Sample] | None = None
         """The attribute to store the experimental samples in."""
@@ -202,6 +259,11 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         """Arguments to pass to the Superstaq service for submitting jobs."""
 
         self._rng = np.random.default_rng(random_seed)
+
+        self._results_cls = results_cls
+
+        self._prepare_experiment()
+        """Create all the samples needed for the experiment."""
 
     ##############
     # Properties #
@@ -219,30 +281,6 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         return len(self.qubits)
 
     @property
-    def raw_data(self) -> pd.DataFrame:
-        """The data from the most recently run experiment.
-
-        Raises:
-            RuntimeError: If no results are available.
-        """
-        if self._raw_data is None:
-            raise RuntimeError("No data to retrieve. The experiment has not been run.")
-
-        return self._raw_data
-
-    @property
-    def results(self) -> ResultsT:
-        """The results from the most recently run experiment.
-
-        Raises:
-            RuntimeError: If no results are available.
-        """
-        if self._results is None:
-            raise RuntimeError("No results to retrieve. The experiment has not been run.")
-
-        return self._results
-
-    @property
     def samples(self) -> Sequence[Sample]:
         """The samples generated during the experiment.
 
@@ -253,13 +291,6 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             raise RuntimeError("No samples to retrieve. The experiment has not been run.")
 
         return self._samples
-
-    @property
-    def targets(self) -> frozenset[str]:
-        """Returns:
-        A set of the unique target that each sample was submitted to
-        """
-        return frozenset(sample.target for sample in self.samples)
 
     ###################
     # Private Methods #
@@ -303,89 +334,28 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         )
         return interleaved_circuit
 
-    def _process_device_counts(self, counts: dict[str, int]) -> dict[str, float]:
-        """Process the counts returned by the server into a dictionary of probabilities.
+    def _prepare_experiment(
+        self,
+    ) -> None:
+        """Prepares the circuits needed for the experiment
 
         Args:
-            counts: A dictionary of the observed counts for each state in the computational basis.
-
-        Returns:
-            A dictionary of the probability of each state in the computational basis.
-        """
-        total = sum(counts.values())
-
-        probabilities = {
-            format(idx, f"0{self.num_qubits}b"): 0.0 for idx in range(2**self.num_qubits)
-        }
-
-        for key, count in counts.items():
-            probabilities[key] = count / total
-
-        return probabilities
-
-    @abstractmethod
-    def _process_probabilities(self, samples: Sequence[Sample]) -> pd.DataFrame:
-        """Processes the probabilities generated by sampling the circuits into a data frame
-        needed for analyzing the results.
-
-        Args:
-            samples: The list of samples to process the results from.
-
-        Returns:
-            A data frame of the full results needed to analyse the experiment.
-        """
-
-    def _retrieve_jobs(self) -> dict[str, str]:
-        """Retrieve the jobs from the server.
-
-        Returns:
-            A dictionary of the statuses of any jobs that have not been successfully completed.
-        """
-        # If no jobs then return empty dictionary
-        if not [sample for sample in self.samples if sample.job is not None]:
-            return {}
-
-        statuses = {}
-        waiting_samples = [sample for sample in self.samples if sample.probabilities is None]
-        for sample in tqdm(waiting_samples, "Retrieving jobs"):
-            if sample.job is None:
-                continue
-            if (
-                job_status := sample.job.status()
-            ) in css.job.Job.NON_TERMINAL_STATES + css.job.Job.UNSUCCESSFUL_STATES:
-                statuses[sample.job.job_id()] = job_status
-            else:
-                sample.probabilities = self._process_device_counts(sample.job.counts(0))
-
-        return statuses
-
-    def _has_raw_data(self) -> None:
-        """Checks if any of the samples already have probabilities stored. If so raises a runtime
-        error to prevent them from being overwritten.
-
-        To be used within all `run` methods to prevent data being overwritten
+            num_circuits: Number of circuits to run.
+            cycle_depths: An iterable of the different layer depths to use during the experiment.
+            overwrite: Whether to force an experiment run even if there is existing data that would
+                be over written in the process. Defaults to False.
 
         Raises:
-            RuntimeError: If any samples already have probabilities stored.
+            RuntimeError: If the experiment has already been run once and the `overwrite` argument
+                is not True
+            ValueError: If any of the cycle depths provided negative or zero.
         """
-        if any(sample.probabilities is not None for sample in self.samples):
-            raise RuntimeError(
-                "Some samples have already been run. Re-running the experiment will"
-                "overwrite these results. If this is the desired behaviour use `overwrite=True`"
-            )
 
-    def _sample_statuses(self) -> list[str | None]:
-        """Returns:
-        The statuses of the jobs associated with each sample. If no job is associated
-        with a sample then :code:`None` is listed instead.
-        """
-        statuses: list[str | None] = []
-        for sample in self.samples:
-            if sample.job is None:
-                statuses.append(None)
-            else:
-                statuses.append(sample.job.status())
-        return statuses
+        if any(depth <= 0 for depth in self.cycle_depths):
+            raise ValueError("The `cycle_depths` iterator can only include positive values.")
+
+        self._samples = self._build_circuits(self.num_circuits, self.cycle_depths)
+        self._validate_circuits()
 
     def _validate_circuits(self) -> None:
         """Checks that all circuits contain a terminal measurement of all qubits."""
@@ -402,121 +372,13 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
     ###################
     # Public Methods  #
     ###################
-    @abstractmethod
-    def analyze_results(self, plot_results: bool = True) -> ResultsT:
-        """Perform the experiment analysis and store the results in the `results` attribute.
-
-        Args:
-            plot_results: Whether to generate plots of the results. Defaults to False.
-
-        Returns:
-            A named tuple of the final results from the experiment.
-        """
-
-    def collect_data(self, force: bool = False) -> bool:
-        """Collect the data from the samples and process it into the :attr:`raw_data` attribute.
-
-        If the data is successfully stored in the :attr:`raw_data` attribute then the function will
-        return :code:`True`.
-
-        If either not all jobs submitted to the server have completed, or not all samples have
-        probability results then no data will be saved in :attr:`raw_data` and the function will
-        return :code:`False`. This check can be overridden with :code:`force=True` in which case
-        only the samples which have probability results will be used to generate the results
-        dataframe.
-
-        Args:
-            force: Whether to override the check that all data is present. Defaults to False.
-
-        Raises:
-            RuntimeError: If :code:`force=True` but there are no samples with any data.
-            RuntimeError: If the experiment has not yet been run.
-
-        Returns:
-            Whether the results dataframe has been successfully created.
-        """
-        if not self._samples:
-            raise RuntimeError("The experiment has not yet ben run.")
-
-        # Retrieve jobs from server (if needed)
-        outstanding_statuses = self._retrieve_jobs()
-        if outstanding_statuses:
-            print(
-                "Not all circuits have been sampled. "
-                "Please wait and try again.\n"
-                f"Outstanding Superstaq jobs:\n{pprint.pformat(outstanding_statuses)}"
-            )
-            if not force:
-                return False
-
-        completed_samples = [sample for sample in self.samples if sample.probabilities is not None]
-
-        if not len(completed_samples) == len(self.samples):
-            print("Some samples do not have probability results.")
-            if not force:
-                return False
-
-        if len(completed_samples) == 0:
-            raise RuntimeError("Cannot force data collection when there are no completed samples.")
-
-        self._raw_data = self._process_probabilities(completed_samples)
-        return True
-
-    def compile_circuits(self, target: str, **kwargs: Any) -> None:
-        """Compiles the experiment circuits for the given device. Useful if the samples
-        are not going to be run via Superstaq.
-
-        Args:
-            target: The device to compile to.
-            kwargs: Additional desired compile options.
-        """
-        compiled_circuits = self._superstaq_service.compile(
-            [sample.circuit for sample in self.samples], target=target, **kwargs
-        ).circuits
-
-        for k, sample in enumerate(self.samples):
-            sample.compiled_circuit = compiled_circuits[k]  # type: ignore[assignment]
-
-    @abstractmethod
-    def plot_results(self) -> None:
-        """Plot the results of the experiment"""
-
-    def prepare_experiment(
-        self, num_circuits: int, cycle_depths: Iterable[int], overwrite: bool = False
-    ) -> None:
-        """Prepares the circuits needed for the experiment
-
-        Args:
-            num_circuits: Number of circuits to run.
-            cycle_depths: An iterable of the different layer depths to use during the experiment.
-            overwrite: Whether to force an experiment run even if there is existing data that would
-                be over written in the process. Defaults to False.
-
-        Raises:
-            RuntimeError: If the experiment has already been run once and the `overwrite` argument
-                is not True
-            ValueError: If any of the cycle depths provided negative or zero.
-        """
-        if self._samples is not None and not overwrite:
-            raise RuntimeError(
-                "This experiment already has existing data which would be overwritten by "
-                "rerunning the experiment. If this is the desired behavior set `overwrite=True`"
-            )
-
-        if any(depth <= 0 for depth in cycle_depths):
-            raise ValueError("The `cycle_depths` iterator can only include positive values.")
-
-        self._samples = self._build_circuits(num_circuits, cycle_depths)
-        self._validate_circuits()
-
     def run_on_device(
         self,
         target: str,
         repetitions: int = 10_000,
         method: str | None = None,
-        overwrite: bool = False,
         **target_options: Any,
-    ) -> css.Job:
+    ) -> QCVVResults:
         """Submit the circuit samples to the desired target device and store the resulting
         probabilities.
 
@@ -536,8 +398,6 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         Return:
             The superstaq job containing all the circuits submitted as part of the experiment.
         """
-        if not overwrite:
-            self._has_raw_data()
 
         experiment_job = self._superstaq_service.create_job(
             [sample.circuit for sample in self.samples],
@@ -546,20 +406,18 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             repetitions=repetitions,
             **target_options,
         )
-        compiled_circuits = experiment_job.compiled_circuits()
 
-        for k, sample in enumerate(self.samples):
-            sample.job = experiment_job[k]
-            sample.compiled_circuit = compiled_circuits[k]
-
-        return experiment_job
+        return self._results_cls(
+            target=target,
+            experiment=self,
+            job=experiment_job,
+        )
 
     def run_with_simulator(
         self,
         simulator: cirq.Sampler | None = None,
         repetitions: int = 10_000,
-        overwrite: bool = False,
-    ) -> None:
+    ) -> QCVVResults:
         """Use the local simulator to sample the circuits and store the resulting probabilities.
 
         Args:
@@ -569,28 +427,32 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             overwrite: Whether to force an experiment run even if there is existing data that would
                 be over written in the process. Defaults to False.
         """
-        if not overwrite:
-            self._has_raw_data()
-
         if simulator is None:
             simulator = cirq.Simulator(seed=self._rng)
 
+        records = []
         for sample in tqdm(self.samples, desc="Simulating circuits"):
             result = simulator.run(sample.circuit, repetitions=repetitions)
             hist = result.histogram(key=cirq.measurement_key_name(sample.circuit))
-            sample.probabilities = {
+            probabilities = {
                 f"{i:0{self.num_qubits}b}": 0.0 for i in range(2**self.num_qubits)
             }  # Set all probabilities to zero
             for val, count in hist.items():
                 # Add in results from the histogram
-                sample.probabilities[f"{val:0{self.num_qubits}b}"] = count / repetitions
+                probabilities[f"{val:0{self.num_qubits}b}"] = count / repetitions
+            records.append({**sample.data, **probabilities})
+
+        return self._results_cls(
+            target="LocalSimulator",
+            experiment=self,
+            data=pd.DataFrame(records),
+        )
 
     def run_with_callable(
         self,
-        circuit_eval_func: Callable[[cirq.Circuit], dict[str, float]],
-        overwrite: bool = False,
+        circuit_eval_func: Callable[[cirq.Circuit], dict[str | int, float]],
         **kwargs: Any,
-    ) -> None:
+    ) -> QCVVResults:
         """Evaluates the probabilities for each circuit using a user provided callable function.
         This function should take a circuit as input and return a dictionary of probabilities for
         each bitstring (including states with zero probability).
@@ -606,8 +468,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
                 an incorrect number of bits.
             RuntimeError: If the returned probabilities dictionary values do not sum to 1.0.
         """
-        if not overwrite:
-            self._has_raw_data()
+        records = []
         for sample in tqdm(self.samples, desc="Running circuits"):
             probability = circuit_eval_func(sample.circuit, **kwargs)
             if not all(len(key) == self.num_qubits for key in probability.keys()):
@@ -619,4 +480,10 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
                 if (bitstring := format(k, f"0{self.num_qubits}b")) not in probability:
                     probability[bitstring] = 0.0
 
-            sample.probabilities = probability
+            records.append({**sample.data, **probability})
+
+        return self._results_cls(
+            target="Callable",
+            experiment=self,
+            data=pd.DataFrame(records),
+        )
