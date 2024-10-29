@@ -56,6 +56,38 @@ def test_get_balance() -> None:
 
 
 @patch("requests.Session.post")
+def test_retrieve_job(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    qc = qiskit.QuantumCircuit(2, 2)
+    qc.h(0)
+    qc.cx(0, 1)
+    qc.measure([0, 0], [1, 1])
+    backend = fake_superstaq_provider.get_backend("ibmq_brisbane_qpu")
+
+    with patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
+        return_value={"job_ids": ["job_id"], "status": "ready"},
+    ):
+        job = backend.run(qc, method="dry-run", shots=100)
+
+    mock_post.return_value.json = lambda: {
+        "job_id": {
+            "provider_id": "placeholder_simprovider_id",
+            "num_qubits": 2,
+            "status": "ready",
+            "target": "ibmq_brisbane_qpu",
+            "data": {"histogram": {"11": 0.54, "00": 0.46}},
+            "samples": {"11": 54, "00": 46},
+            "shots": 100,
+            "state_vector": None,
+            "pulse_gate_circuits": None,
+            "circuit_type": "qiskit_circuits",
+        }
+    }
+
+    assert job == fake_superstaq_provider.retrieve_job("job_id")
+
+
+@patch("requests.Session.post")
 def test_aqt_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
