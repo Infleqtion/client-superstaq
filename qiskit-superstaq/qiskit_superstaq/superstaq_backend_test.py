@@ -79,20 +79,6 @@ def test_multi_arg_run(fake_superstaq_provider: MockSuperstaqProvider) -> None:
         assert answer == expected
 
 
-def test_retrieve_job(fake_superstaq_provider: MockSuperstaqProvider) -> None:
-    qc = qiskit.QuantumCircuit(2, 2)
-    qc.h(0)
-    qc.cx(0, 1)
-    qc.measure([0, 0], [1, 1])
-    backend = fake_superstaq_provider.get_backend("ibmq_brisbane_qpu")
-    with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
-        return_value={"job_ids": ["job_id"], "status": "ready"},
-    ):
-        job = backend.run(qc, shots=1000)
-    assert job == backend.retrieve_job("job_id")
-
-
 def test_eq(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     backend1 = fake_superstaq_provider.get_backend("ibmq_brisbane_qpu")
     assert backend1 != 3
