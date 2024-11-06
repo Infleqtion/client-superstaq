@@ -71,20 +71,51 @@ def test_retrieve_job(mock_post: MagicMock, fake_superstaq_provider: MockSuperst
 
     mock_post.return_value.json = lambda: {
         "job_id": {
-            "provider_id": "placeholder_simprovider_id",
-            "num_qubits": 2,
             "status": "ready",
             "target": "ibmq_brisbane_qpu",
-            "data": {"histogram": {"11": 0.54, "00": 0.46}},
-            "samples": {"11": 54, "00": 46},
-            "shots": 100,
-            "state_vector": None,
-            "pulse_gate_circuits": None,
-            "circuit_type": "qiskit_circuits",
         }
     }
 
     assert job == fake_superstaq_provider.retrieve_job("job_id")
+
+    # multi circuit job with a comma separated job_id
+    with patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
+        return_value={"job_ids": ["job_id1,job_id2"], "status": "ready"},
+    ):
+        job = backend.run([qc, qc], method="dry-run", shots=100)
+
+    mock_post.return_value.json = lambda: {
+        "job_id1": {
+            "status": "ready",
+            "target": "ibmq_brisbane_qpu",
+        },
+        "job_id2": {
+            "status": "ready",
+            "target": "ibmq_brisbane_qpu",
+        },
+    }
+    assert job == fake_superstaq_provider.retrieve_job("job_id1,job_id2")
+
+    # job ids belonging to different targets
+    with patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
+        return_value={"job_ids": ["job_id1,job_id2"], "status": "ready"},
+    ):
+        job = backend.run([qc, qc], method="dry-run", shots=100)
+
+    mock_post.return_value.json = lambda: {
+        "job_id1": {
+            "status": "ready",
+            "target": "ibmq_brisbane_qpu",
+        },
+        "job_id2": {
+            "status": "ready",
+            "target": "ibmq_fez_qpu",
+        },
+    }
+    with pytest.raises(gss.SuperstaqException, match="Job ids belong to jobs at different targets"):
+        fake_superstaq_provider.retrieve_job("job_id1,job_id2")
 
 
 @patch("requests.Session.post")
