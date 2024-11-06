@@ -176,6 +176,7 @@ class SuperstaqProvider(gss.service.Service):
 
         Raises:
             ~gss.SuperstaqServerException: If there was an error accessing the API.
+            ~gss.SuperstaqException: If retrived jobs are from different targets.
         """
         job_ids = job_id.split(",")
         jobs = self._client.fetch_jobs(job_ids)
