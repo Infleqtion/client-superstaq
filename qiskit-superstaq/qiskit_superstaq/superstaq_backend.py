@@ -170,6 +170,25 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
 
         return job
 
+    def retrieve_job(self, job_id: str) -> qss.SuperstaqJob:
+        """Gets a job that has been created on the Superstaq API.
+        Args:
+            job_id: The UUID of the job. Jobs are assigned these numbers by the server during the
+            creation of the job.
+        Returns:
+            A `qss.SuperstaqJob` which can be queried for status or results.
+        Raises:
+            ~gss.SuperstaqServerException: If there was an error accessing the API.
+        """
+        warnings.warn(
+            "The `.retrieve_job()` method of `SuperstaqBackend` has been deprecated, and will be "
+            "removed in a future version of qiskit-superstaq. Instead, use the `.get_job()`"
+            "method of `SuperstaqProvider`.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return qss.SuperstaqJob(self, job_id)
+
     def compile(
         self,
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
