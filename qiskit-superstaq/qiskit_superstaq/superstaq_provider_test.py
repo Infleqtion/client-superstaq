@@ -56,7 +56,7 @@ def test_get_balance() -> None:
 
 
 @patch("requests.Session.post")
-def test_retrieve_job(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
+def test_get_job(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2, 2)
     qc.h(0)
     qc.cx(0, 1)
@@ -76,7 +76,7 @@ def test_retrieve_job(mock_post: MagicMock, fake_superstaq_provider: MockSuperst
         }
     }
 
-    assert job == fake_superstaq_provider.retrieve_job("job_id")
+    assert job == fake_superstaq_provider.get_job("job_id")
 
     # multi circuit job with a comma separated job_id
     with patch(
@@ -95,7 +95,7 @@ def test_retrieve_job(mock_post: MagicMock, fake_superstaq_provider: MockSuperst
             "target": "ibmq_brisbane_qpu",
         },
     }
-    assert job == fake_superstaq_provider.retrieve_job("job_id1,job_id2")
+    assert job == fake_superstaq_provider.get_job("job_id1,job_id2")
 
     # job ids belonging to different targets
     with patch(
@@ -115,7 +115,7 @@ def test_retrieve_job(mock_post: MagicMock, fake_superstaq_provider: MockSuperst
         },
     }
     with pytest.raises(gss.SuperstaqException, match="Job ids belong to jobs at different targets"):
-        fake_superstaq_provider.retrieve_job("job_id1,job_id2")
+        fake_superstaq_provider.get_job("job_id1,job_id2")
 
 
 @patch("requests.Session.post")

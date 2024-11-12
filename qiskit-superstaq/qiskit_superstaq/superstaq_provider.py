@@ -164,7 +164,7 @@ class SuperstaqProvider(gss.service.Service):
             superstaq_backends.append(self.get_backend(backend.target))
         return superstaq_backends
 
-    def retrieve_job(self, job_id: str) -> qss.SuperstaqJob:
+    def get_job(self, job_id: str) -> qss.SuperstaqJob:
         """Gets a job that has been created on the Superstaq API.
 
         Args:
