@@ -56,6 +56,69 @@ def test_get_balance() -> None:
 
 
 @patch("requests.Session.post")
+def test_get_job(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    qc = qiskit.QuantumCircuit(2, 2)
+    qc.h(0)
+    qc.cx(0, 1)
+    qc.measure([0, 0], [1, 1])
+    backend = fake_superstaq_provider.get_backend("ibmq_brisbane_qpu")
+
+    with patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
+        return_value={"job_ids": ["job_id"], "status": "ready"},
+    ):
+        job = backend.run(qc, method="dry-run", shots=100)
+
+    mock_post.return_value.json = lambda: {
+        "job_id": {
+            "status": "ready",
+            "target": "ibmq_brisbane_qpu",
+        }
+    }
+
+    assert job == fake_superstaq_provider.get_job("job_id")
+
+    # multi circuit job with a comma separated job_id
+    with patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
+        return_value={"job_ids": ["job_id1,job_id2"], "status": "ready"},
+    ):
+        job = backend.run([qc, qc], method="dry-run", shots=100)
+
+    mock_post.return_value.json = lambda: {
+        "job_id1": {
+            "status": "ready",
+            "target": "ibmq_brisbane_qpu",
+        },
+        "job_id2": {
+            "status": "ready",
+            "target": "ibmq_brisbane_qpu",
+        },
+    }
+    assert job == fake_superstaq_provider.get_job("job_id1,job_id2")
+
+    # job ids belonging to different targets
+    with patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
+        return_value={"job_ids": ["job_id1,job_id2"], "status": "ready"},
+    ):
+        job = backend.run([qc, qc], method="dry-run", shots=100)
+
+    mock_post.return_value.json = lambda: {
+        "job_id1": {
+            "status": "ready",
+            "target": "ibmq_brisbane_qpu",
+        },
+        "job_id2": {
+            "status": "ready",
+            "target": "ibmq_fez_qpu",
+        },
+    }
+    with pytest.raises(gss.SuperstaqException, match="Job ids belong to jobs at different targets"):
+        fake_superstaq_provider.get_job("job_id1,job_id2")
+
+
+@patch("requests.Session.post")
 def test_aqt_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
