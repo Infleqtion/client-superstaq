@@ -3645,7 +3645,7 @@ html{
     letter-spacing:0.5px;
     font-family:Helvetica Neue,Arial,sans-serif
     white-space:nowrap
-    
+
 }
 .wy-menu-vertical ul{
     margin-bottom:0
@@ -4926,4 +4926,7 @@ span.linenos.special { color: #303030; background-color: #ECECEC; padding-left: 
         grid-row-start: 3;
         grid-row-end: 4;
     }
+}
+.colon {
+    display:none;
 }

@@ -164,6 +164,30 @@ class SuperstaqProvider(gss.service.Service):
             superstaq_backends.append(self.get_backend(backend.target))
         return superstaq_backends
 
+    def get_job(self, job_id: str) -> qss.SuperstaqJob:
+        """Gets a job that has been created on the Superstaq API.
+
+        Args:
+            job_id: The UUID of the job. Jobs are assigned these numbers by the server during the
+            creation of the job.
+
+        Returns:
+            A `qss.SuperstaqJob` which can be queried for status or results.
+
+        Raises:
+            ~gss.SuperstaqServerException: If there was an error accessing the API.
+            ~gss.SuperstaqException: If retrived jobs are from different targets.
+        """
+        job_ids = job_id.split(",")
+        jobs = self._client.fetch_jobs(job_ids)
+
+        target = jobs[job_ids[0]]["target"]
+
+        if all(target == val["target"] for val in jobs.values()):
+            return qss.SuperstaqJob(self.get_backend(target), job_id)
+        else:
+            raise gss.SuperstaqException("Job ids belong to jobs at different targets.")
+
     def resource_estimate(
         self, circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit], target: str
     ) -> gss.ResourceEstimate | list[gss.ResourceEstimate]:
