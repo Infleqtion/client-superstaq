@@ -42,7 +42,6 @@ class Sample:
     (e.g. cycle depth)."""
 
 
-# @dataclass(frozen=True)
 @dataclass
 class QCVVResults(ABC):
     """A dataclass for storing the data and analyze results of the experiment. Requires
@@ -62,10 +61,19 @@ class QCVVResults(ABC):
 
     @property
     def data_ready(self) -> bool:
+        """Whether the experimental data is ready to analyse.
+
+        Raises:
+            RuntimeError: If their is no stored data and no Superstaq job to use to collect the
+                results.
+        """
         if self.data is not None:
             return True
         if self.job is None:
-            raise RuntimeError()  # TODO
+            raise RuntimeError(
+                "No data available and no Superstaq job to use to collect data. Please manually add "
+                "results data in order to perform analysis"
+            )
         job_status = self.job.status()
         if job_status == "Done":
             self.data = self._collect_device_counts()
@@ -74,24 +82,28 @@ class QCVVResults(ABC):
 
     @property
     def samples(self):
+        """Returns:
+        The number of samples used."""
         return self.experiment.samples
 
     @property
     def num_qubits(self):
+        """Returns:
+        The number of qubits in the experiment."""
         return self.experiment.num_qubits
 
     @property
     def num_circuits(self):
+        """Returns:
+        The number of circuits in the experiment."""
         return self.experiment.num_circuits
 
     def analyze_results(self, plot_results: bool = True, print_results: bool = True) -> None:
         """Perform the experiment analysis and store the results in the `results` attribute.
 
         Args:
-            plot_results: Whether to generate plots of the results. Defaults to False.
-
-        Returns:
-            A named tuple of the final results from the experiment.
+            plot_results: Whether to generate plots of the results. Defaults to True.
+            print_results: Whether to print the final results. Defaults to True.
         """
         if not self.data_ready:
             warnings.warn(
@@ -111,7 +123,7 @@ class QCVVResults(ABC):
 
     @abstractmethod
     def _analyze_results(self) -> None:
-        """"""
+        """A method that analyses the `data` attribute and stores the final experimental results."""
 
     @abstractmethod
     def plot_results(self) -> None:
@@ -130,6 +142,10 @@ class QCVVResults(ABC):
         Returns:
             A dictionary of the probability of each state in the computational basis.
         """
+        if self.job is None:
+            raise ValueError(
+                "No Superstaq job associated with these results. Cannot collect device counts."
+            )
         records = []
         device_counts = self.job.counts()
         for counts, sample in zip(device_counts, self.samples):
@@ -164,62 +180,32 @@ class QCVVExperiment(ABC):
             noise_model = cirq.depolarize(p=0.01, n_qubits=1)
             sim = cirq.DensityMatrixSimulator(noise=noise_model)
 
-            experiment.prepare_experiment(<<args/kwargs>>)
-            experiment.run_with_simulator(simulator=sim, <<args/kwargs>>)
+            results = experiment.run_with_simulator(simulator=sim, <<args/kwargs>>)
 
     #. Then we analyse the results. If the target was a local simulator this will be available as
        soon as the :code:`run_with_simulator()` method has finished executing. On the other hand
        if a real device was accessed via Superstaq then it may take time for the data to be
-       available from the server. The :code:`collect_data()` will return :code:`True` when all
-       data has been collected and is ready to be analysed.
+       available from the server. The :code:`results.data_ready` attribute will return
+       :code:`True` when all data has been collected and is ready to be analyzed.
 
        .. code::
 
-            if experiment.collect_data():
-                results = experiment.analyze_results(<<args>>)
-
-    #. The final results of the experiment will be stored in the :code:`results` attribute as a
-       :class:`BenchmarkingResults` of values, while all the data from the experiment will be
-       stored in the :code:`raw_data` attribute as a :class:`~pandas.DataFrame`. Some experiments
-       may include additional data attributes for data generated during the analysis.
-
-        .. code::
-
-            results = experiment.results
-            data = experiment.raw_data
-
-    Additionally it is possible to pre-compile the experimental circuits for a given device using
-
-    .. code::
-
-        experiment.prepare_experiment(<<args/kwargs>>)
-        experiment.compile_circuits(target=<<target_name>>)
-
-    And then to run the experiment using a custom callable function for evaluating the circuits.
-    For example this could be a function that uses a connection to a local device.
-
-    .. code::
-
-        experiment.run_with_callable(<<function_name>>)
+            if results.data_ready():
+                results.analyze_results(<<args>>)
 
     When implementing a new experiment, 4 methods need to be implemented:
 
-    #. :meth:`_build_circuits`: Given a number of circuits and an iterable of the different numbers
-        of layers to use, return a list of :class:`Sample` objects that need to be sampled during
-        the experiment.
+    #. :meth:`experiment._build_circuits()`: Given a number of circuits and an iterable of the
+        different numbers of layers to use, return a list of :class:`Sample` objects that need to
+        be sampled during the experiment.
 
-    #. :meth:`_process_probabilities`: Take the probability distribution over the
-        computational basis resulting from running each circuit and combine the relevant details
-        into a :class:`pandas.DataFrame`.
+    #. :meth:`results._analyse_results()`: Analyse the experimental data and store the final
+        results, for example some fidelities.
 
-    #. :meth:`analyze_results`: Analyse the data in the :attr:`raw_data` dataframe and return a
-        :class:`BenchmarkingResults` object containing the results of the experiment.
+    #. :meth:`results.plot_results()`:  Produce any relevant plots that are useful for understanding
+        the results of the experiment.
 
-    #. :meth:`plot_results`: Produce any relevant plots that are useful for understanding the
-        results of the experiment.
-
-    Additionally the :class:`BenchmarkingResults` dataclass needs subclassing to hold the specific
-    results of the new experiment.
+    #. :meth:`results.print_results()`: Prints the results to the console.
     """
 
     def __init__(
@@ -237,7 +223,10 @@ class QCVVExperiment(ABC):
         Args:
             num_qubits: The number of qubits used during the experiment. Most subclasses
                 will determine this from their other inputs.
+            num_circuits: The number of circuits to sample.
+            cycle_depths: A sequence of depths to sample.
             random_seed: An optional seed to use for randomization.
+            results_cls: The results class to use for the experiment.
             kwargs: Additional kwargs passed to the Superstaq service object.
         """
         self.qubits = cirq.LineQubit.range(num_qubits)
@@ -249,12 +238,6 @@ class QCVVExperiment(ABC):
         self.cycle_depths = cycle_depths
         """The different cycle depths to test at."""
 
-        self._raw_data: pd.DataFrame | None = None
-        "The data generated during the experiment"
-
-        self._samples: Sequence[Sample] | None = None
-        """The attribute to store the experimental samples in."""
-
         self._service_kwargs = kwargs
         """Arguments to pass to the Superstaq service for submitting jobs."""
 
@@ -262,7 +245,7 @@ class QCVVExperiment(ABC):
 
         self._results_cls = results_cls
 
-        self._prepare_experiment()
+        self.samples = self._prepare_experiment()
         """Create all the samples needed for the experiment."""
 
     ##############
@@ -279,18 +262,6 @@ class QCVVExperiment(ABC):
         The number of qubits used in the experiment
         """
         return len(self.qubits)
-
-    @property
-    def samples(self) -> Sequence[Sample]:
-        """The samples generated during the experiment.
-
-        Raises:
-            RuntimeError: If no samples are available.
-        """
-        if self._samples is None:
-            raise RuntimeError("No samples to retrieve. The experiment has not been run.")
-
-        return self._samples
 
     ###################
     # Private Methods #
@@ -336,7 +307,7 @@ class QCVVExperiment(ABC):
 
     def _prepare_experiment(
         self,
-    ) -> None:
+    ) -> Sequence[Sample]:
         """Prepares the circuits needed for the experiment
 
         Args:
@@ -349,17 +320,25 @@ class QCVVExperiment(ABC):
             RuntimeError: If the experiment has already been run once and the `overwrite` argument
                 is not True
             ValueError: If any of the cycle depths provided negative or zero.
+
+        Returns:
+            A sequence of samples for the experiment.
         """
 
         if any(depth <= 0 for depth in self.cycle_depths):
             raise ValueError("The `cycle_depths` iterator can only include positive values.")
 
-        self._samples = self._build_circuits(self.num_circuits, self.cycle_depths)
-        self._validate_circuits()
+        samples = self._build_circuits(self.num_circuits, self.cycle_depths)
+        self._validate_circuits(samples)
+        return samples
 
-    def _validate_circuits(self) -> None:
-        """Checks that all circuits contain a terminal measurement of all qubits."""
-        for sample in self.samples:
+    def _validate_circuits(self, samples: Sequence[Sample]) -> None:
+        """Checks that all circuits contain a terminal measurement of all qubits.
+
+        Args:
+            samples: The sequence of samples to check.
+        """
+        for sample in samples:
             if not sample.circuit.has_measurements():
                 raise ValueError("QCVV experiment circuits must contain measurements.")
             if not sample.circuit.are_all_measurements_terminal():
@@ -392,11 +371,9 @@ class QCVVExperiment(ABC):
             method: Optional method to use on the Superstaq device. Defaults to None corresponding
                 to normal running.
             target_options: Optional configuration dictionary passed when submitting the job.
-            overwrite: Whether to force an experiment run even if there is existing data that would
-                be over written in the process. Defaults to False.
 
-        Return:
-            The superstaq job containing all the circuits submitted as part of the experiment.
+        Returns:
+            The experiment results object.
         """
 
         experiment_job = self._superstaq_service.create_job(
@@ -424,8 +401,9 @@ class QCVVExperiment(ABC):
             simulator: A local :class:`~cirq.Sampler` to use. If None then the default
                 :class:`cirq.Simulator` simulator is used. Defaults to None.
             repetitions: The number of shots to sample. Defaults to 10,000.
-            overwrite: Whether to force an experiment run even if there is existing data that would
-                be over written in the process. Defaults to False.
+
+        Returns:
+            The experiment results object.
         """
         if simulator is None:
             simulator = cirq.Simulator(seed=self._rng)
@@ -459,14 +437,15 @@ class QCVVExperiment(ABC):
 
         Args:
             circuit_eval_func: The custom function to use when evaluating circuit probabilities.
-            overwrite: Whether to force an experiment run even if there is existing data that would
-                be over written in the process. Defaults to False.
             kwargs: Additional arguments to pass to the custom function.
 
         Raises:
             RuntimeError: If the returned probabilities dictionary keys is missing include
                 an incorrect number of bits.
             RuntimeError: If the returned probabilities dictionary values do not sum to 1.0.
+
+        Returns:
+            The experiment results object.
         """
         records = []
         for sample in tqdm(self.samples, desc="Running circuits"):
