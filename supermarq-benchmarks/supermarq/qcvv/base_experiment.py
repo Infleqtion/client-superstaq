@@ -459,8 +459,8 @@ class QCVVExperiment(ABC):
             for old_key, new_key in keys_to_replace:
                 probability[new_key] = probability.pop(old_key)
             if not all(
-                len(key) == self.num_qubits
-                for key in probability.keys()  # type: ignore[arg-type]
+                len(key) == self.num_qubits  # type: ignore[arg-type]
+                for key in probability.keys()
                 # Ignore arg-type for len function as mypy cannot tell that all integer keys have
                 # been replaced with strings.
             ):
