@@ -17,20 +17,21 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from unittest.mock import MagicMock, call, patch
 
 import cirq
 import cirq_superstaq as css
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
 
-
 mock_plot = MagicMock()
 mock_print = MagicMock()
+
 
 @dataclass
 class ExampleResults(QCVVResults):
@@ -38,20 +39,20 @@ class ExampleResults(QCVVResults):
 
     example_final_result: float = field(init=False)
 
-    def _analyze_results(self):
+    def _analyze_results(self) -> None:
         self.example_final_result = 3.142
 
-    def plot_results(self):
+    def plot_results(self) -> None:
         mock_plot()
 
-    def print_results(self):
+    def print_results(self) -> None:
         mock_print("This is a test")
 
 
 class ExampleExperiment(QCVVExperiment):
     """Example experiment class for testing"""
 
-    def _build_circuits(self, num_circuits, cycle_depths):
+    def _build_circuits(self, num_circuits: int, cycle_depths: Iterable[int]) -> Sequence[Sample]:
         return [
             Sample(circuit=MagicMock(spec=cirq.Circuit), data={"num": k, "depth": d})
             for k in range(num_circuits)
@@ -126,7 +127,7 @@ def test_results_job_still_running(abc_experiment: ExampleExperiment) -> None:
     results = ExampleResults(
         target="target", experiment=abc_experiment, job=MagicMock(spec=css.Job)
     )
-    results.job.status.return_value = "Pending"
+    results.job.status.return_value = "Pending"  # type: ignore[union-attr]
     with pytest.warns(
         Warning,
         match=(
@@ -155,9 +156,7 @@ def test_results_job_no_data(abc_experiment: ExampleExperiment) -> None:
 
 def test_results_analyze(abc_experiment: ExampleExperiment) -> None:
     results = ExampleResults(
-        target="target",
-        experiment=abc_experiment,
-        data=MagicMock(spec=pd.DataFrame)
+        target="target", experiment=abc_experiment, data=MagicMock(spec=pd.DataFrame)
     )
 
     results.analyze_results(plot_results=True, print_results=True)
@@ -180,8 +179,8 @@ def test_results_ready_from_job(
     results = ExampleResults(
         target="target", experiment=abc_experiment, job=MagicMock(spec=css.Job)
     )
-    results.job.status.return_value = "Done"
-    results.job.counts.return_value = [
+    results.job.status.return_value = "Done"  # type: ignore[union-attr]
+    results.job.counts.return_value = [  # type: ignore[union-attr]
         {
             "00": 20,
             "01": 5,
@@ -420,6 +419,39 @@ def test_run_with_callable(
     )
 
 
+def test_run_with_callable_mixd_keys(
+    abc_experiment: ExampleExperiment,
+    sample_circuits: list[Sample],
+) -> None:
+    abc_experiment.samples = sample_circuits
+    test_callable = MagicMock()
+    test_callable.return_value = {1: 0.2, "10": 0.7, 3: 0.1}
+
+    results = abc_experiment.run_with_callable(test_callable, some="kwargs")
+
+    test_callable.assert_has_calls(
+        [
+            call(sample_circuits[0].circuit, some="kwargs"),
+            call(sample_circuits[1].circuit, some="kwargs"),
+        ]
+    )
+
+    assert results.target == "Callable"
+    assert results.experiment == abc_experiment
+
+    # Check the data is stored
+    pd.testing.assert_frame_equal(
+        results.data,
+        pd.DataFrame(
+            [
+                {"circuit": 1, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1},
+                {"circuit": 2, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1},
+            ]
+        ),
+        check_like=True,
+    )
+
+
 def test_run_with_callable_bad_bitstring(
     abc_experiment: ExampleExperiment,
     sample_circuits: list[Sample],
@@ -453,7 +485,7 @@ def test_results_collect_device_counts(
     results = ExampleResults(
         target="example_target", experiment=abc_experiment, job=MagicMock(spec=css.Job)
     )
-    results.job.counts.return_value = [
+    results.job.counts.return_value = [  # type: ignore[union-attr]
         {
             "00": 20,
             "01": 5,

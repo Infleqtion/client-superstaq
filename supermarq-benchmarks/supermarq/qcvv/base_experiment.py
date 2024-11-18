@@ -71,8 +71,8 @@ class QCVVResults(ABC):
             return True
         if self.job is None:
             raise RuntimeError(
-                "No data available and no Superstaq job to use to collect data. Please manually add "
-                "results data in order to perform analysis"
+                "No data available and no Superstaq job to use to collect data. Please manually "
+                "add results data in order to perform analysis"
             )
         job_status = self.job.status()
         if job_status == "Done":
@@ -81,19 +81,19 @@ class QCVVResults(ABC):
         return False
 
     @property
-    def samples(self):
+    def samples(self) -> Sequence[Sample]:
         """Returns:
         The number of samples used."""
         return self.experiment.samples
 
     @property
-    def num_qubits(self):
+    def num_qubits(self) -> int:
         """Returns:
         The number of qubits in the experiment."""
         return self.experiment.num_qubits
 
     @property
-    def num_circuits(self):
+    def num_circuits(self) -> int:
         """Returns:
         The number of circuits in the experiment."""
         return self.experiment.num_circuits
@@ -215,7 +215,7 @@ class QCVVExperiment(ABC):
         cycle_depths: Iterable[int],
         *,
         random_seed: int | np.random.Generator | None = None,
-        results_cls: QCVVResults = QCVVResults,
+        results_cls: type[QCVVResults] = QCVVResults,
         **kwargs: Any,
     ) -> None:
         """Initializes a benchmarking experiment.
@@ -450,7 +450,20 @@ class QCVVExperiment(ABC):
         records = []
         for sample in tqdm(self.samples, desc="Running circuits"):
             probability = circuit_eval_func(sample.circuit, **kwargs)
-            if not all(len(key) == self.num_qubits for key in probability.keys()):
+            # Replace any integer keys with bitstrings
+            keys_to_replace: list[tuple[int, str]] = []
+            for key in probability.keys():
+                # Replace any integer keys with bitstrings
+                if isinstance(key, int):
+                    keys_to_replace.append((key, format(key, f"0{self.num_qubits}b")))
+            for old_key, new_key in keys_to_replace:
+                probability[new_key] = probability.pop(old_key)
+            if not all(
+                len(key) == self.num_qubits
+                for key in probability.keys()  # type: ignore[arg-type]
+                # Ignore arg-type for len function as mypy cannot tell that all integer keys have
+                # been replaced with strings.
+            ):
                 raise RuntimeError("Returned probabilities include an incorrect number of bits.")
             if not math.isclose(sum(probability.values()), 1.0):
                 raise RuntimeError("Returned probabilities do not sum to 1.0.")
