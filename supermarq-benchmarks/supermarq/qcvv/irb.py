@@ -193,6 +193,8 @@ class _RBResultsBase(QCVVResults):
         Returns:
             Tuple of the decay fit parameters and their standard deviations.
         """
+        if self.data is None:
+            raise RuntimeError("No data stored. Cannot perform fit.")
 
         xx = self.data.query(f"experiment == '{experiment}'")["clifford_depth"]
         yy = self.data.query(f"experiment == '{experiment}'")["0" * self.num_qubits]
@@ -229,6 +231,8 @@ class _RBResultsBase(QCVVResults):
 
     def _plot_results(self) -> plt.Axes:
         """Plot the exponential decay of the circuit fidelity with cycle depth."""
+        if self.data is None:
+            raise RuntimeError("No data stored. Cannot make plot.")
         plot = sns.scatterplot(
             data=self.data,
             x="clifford_depth",
@@ -257,7 +261,7 @@ class _RBResultsBase(QCVVResults):
 
         return plot
 
-    def _analyze_results(self):
+    def _analyze_results(self) -> None:
         rb_fit = self._fit_decay("RB")
         self.rb_decay_coefficient, self.rb_decay_coefficient_std = rb_fit[0][1], rb_fit[1][1]
 
@@ -276,6 +280,13 @@ class IRBResults(_RBResultsBase):
     """Standard deviation of the estimate for the interleaving gate error."""
 
     def plot_results(self) -> None:
+        """Plot the exponential decay of the circuit fidelity with cycle depth.
+
+        Raises:
+            RuntimeError: If no data is stored.
+        """
+        if self.data is None:
+            raise RuntimeError("No data stored. Cannot make plot.")
         plot = super()._plot_results()
         irb_fit = self._fit_decay("IRB")
         xx = np.linspace(0, np.max(self.data.clifford_depth))
@@ -331,9 +342,10 @@ class RBResults(_RBResultsBase):
     """Standard deviation of the the average error per Clifford operation."""
 
     def plot_results(self) -> None:
+        """Plot the exponential decay of the circuit fidelity with cycle depth."""
         super()._plot_results()
 
-    def _analyze_results(self):
+    def _analyze_results(self) -> None:
         super()._analyze_results()
         self.average_error_per_clifford = (1 - 2**-self.num_qubits) * (
             1 - self.rb_decay_coefficient
@@ -343,6 +355,7 @@ class RBResults(_RBResultsBase):
         ) * self.rb_decay_coefficient_std
 
     def print_results(self) -> None:
+
         print(
             f"Estimated error per Clifford: {self.average_error_per_clifford:.6f} +/- "
             f"{self.average_error_per_clifford:.6f}"
@@ -421,7 +434,7 @@ class IRB(QCVVExperiment):
         """The gateset to use when implementing Clifford operations."""
 
         if self.interleaved_gate is None:
-            results_cls = RBResults
+            results_cls: type[RBResults] | type[IRBResults] = RBResults
         else:
             results_cls = IRBResults
 
