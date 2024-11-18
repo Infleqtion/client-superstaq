@@ -34,7 +34,6 @@ class XEBResults(QCVVResults):
     """Results from an XEB experiment."""
 
     _circuit_fidelities: pd.DataFrame = field(init=False)
-
     cycle_fidelity_estimate: float = field(init=False)
     """Estimated cycle fidelity."""
     cycle_fidelity_estimate_std: float = field(init=False)
@@ -46,19 +45,25 @@ class XEBResults(QCVVResults):
         Args:
             plot_results (optional): Whether to generate the data plots. Defaults to True.
 
+        Raises:
+            RuntimeError: If there is no data stored.
+
         Returns:
            The final results from the experiment.
         """
+        if self.data is None:
+            raise RuntimeError("No data stored. Cannot perform analysis.")
         self.data["sum_p(x)p^(x)"] = pd.DataFrame(
             (
-                self.data.loc[:, "00":"11"].values * self.data.loc[:, "exact_00":"exact_11"].values
+                self.data.loc[:, "00":"11"].values  # type: ignore[misc]
+                * self.data.loc[:, "exact_00":"exact_11"].values  # type: ignore[misc]
             ).sum(axis=1),
             index=self.data.index,
         )
         self.data["sum_p(x)p(x)"] = pd.DataFrame(
             (
-                self.data.loc[:, "exact_00":"exact_11"].values
-                * self.data.loc[:, "exact_00":"exact_11"].values
+                self.data.loc[:, "exact_00":"exact_11"].values  # type: ignore[misc]
+                * self.data.loc[:, "exact_00":"exact_11"].values  # type: ignore[misc]
             ).sum(axis=1),
             index=self.data.index,
         )
@@ -94,7 +99,14 @@ class XEBResults(QCVVResults):
         self.cycle_fidelity_estimate_std = self.cycle_fidelity_estimate * cycle_fit.stderr
 
     def plot_results(self) -> None:
-        """Plot the experiment data and the corresponding fits."""
+        """Plot the experiment data and the corresponding fits.
+
+        Raises:
+            RuntimeError: If there is no data stored.
+        """
+        if self.data is None:
+            raise RuntimeError("No data stored. Cannot plot results.")
+
         plot_1 = sns.lmplot(
             data=self.data,
             x="sum_p(x)p(x)",
@@ -184,6 +196,8 @@ class XEB(QCVVExperiment):
         """Initializes a cross-entropy benchmarking experiment.
 
         Args:
+            num_circuits: Number of circuits to sample.
+            cycle_depths: The cycle depths to sample.
             single_qubit_gate_set: Optional list of single qubit gates to randomly sample from when
                 generating random circuits. If not provided defaults to phased XZ gates with 1/4 pi
                 intervals.

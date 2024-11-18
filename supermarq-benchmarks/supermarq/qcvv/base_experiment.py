@@ -471,7 +471,8 @@ class QCVVExperiment(ABC):
             for k in range(2**self.num_qubits):
                 if (bitstring := format(k, f"0{self.num_qubits}b")) not in probability:
                     probability[bitstring] = 0.0
-
+            # Sort by bitstrings
+            probability = dict(sorted(probability.items()))
             records.append({**sample.data, **probability})
 
         return self._results_cls(

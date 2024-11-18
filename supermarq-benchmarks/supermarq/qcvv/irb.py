@@ -406,6 +406,8 @@ class IRB(QCVVExperiment):
         """Constructs an IRB experiment.
 
         Args:
+            num_circuits: Number of circuits to sample.
+            cycle_depths: The cycle depths to sample.
             interleaved_gate: The Clifford gate to measure the gate error of. If None
                 then no interleaving is performed and instead vanilla randomized benchmarking is
                 performed.
