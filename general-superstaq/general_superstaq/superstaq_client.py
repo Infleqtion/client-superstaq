@@ -28,6 +28,7 @@ from typing import Any, TypeVar
 import requests
 
 import general_superstaq as gss
+import general_superstaq.models as models
 
 TQuboKey = TypeVar("TQuboKey")
 
@@ -189,6 +190,25 @@ class _SuperstaqClient(abc.ABC):
 
         Args:
             job_ids: The UUIDs of the jobs (returned when the jobs were created).
+            kwargs:  Extra options needed to fetch jobs.
+
+        Returns:
+            The json body of the response as a dict.
+
+        Raises:
+            ~gss.SuperstaqServerException: For other API call failures.
+        """
+
+    @abc.abstractmethod
+    def fetch_single_job(
+        self,
+        job_id: str,
+        **kwargs: object,
+    ) -> dict[str, dict[str, str]]:
+        """Get the job from the Superstaq API.
+
+        Args:
+            job_id: The UUIDs of the job (returned when the job was created).
             kwargs:  Extra options needed to fetch jobs.
 
         Returns:
@@ -774,7 +794,7 @@ class _SuperstaqClient_v0_2_0(_SuperstaqClient):
             "the old version as the default will soon be updated to `v0.3.0`. Eventually v0.2.0 "
             "will be retired completely."
         ),
-        DeprecationWarning
+        DeprecationWarning,
     )
 
     def create_job(
@@ -868,6 +888,9 @@ class _SuperstaqClient_v0_2_0(_SuperstaqClient):
             json_dict["options"] = json.dumps({**self.client_kwargs, **kwargs})
 
         return self.post_request("/fetch_jobs", json_dict)
+
+    def fetch_single_job(self, job_id, **kwargs):
+        raise NotImplementedError
 
     def get_balance(self) -> dict[str, float]:
         """Get the querying user's account balance in USD.
@@ -1362,6 +1385,13 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
         "v0.3.0",
     }
 
+    warnings.warn(
+        (
+            "Version v0.3.0 of the Superstaq endpoint is currently under development. This version "
+            "should not be treated as stable."
+        ),
+    )
+
     def create_job(
         self,
         serialized_circuits: dict[str, str],
@@ -1389,7 +1419,54 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
         Raises:
             ~gss.SuperstaqServerException: if the request fails.
         """
-        raise NotImplementedError
+        gss.validation.validate_target(target)
+        gss.validation.validate_integer_param(repetitions)
+
+        # Infer the job type
+        if target.endswith("_simulator"):
+            job_type = models.JobType.SIMULATION
+        elif method in models.SimMethod:
+            job_type = models.JobType.DEVICE_SIMULATION
+        else:
+            job_type = models.JobType.DEVICE_SUBMISSION
+
+        # Get sim method if needed
+        if job_type != models.JobType.DEVICE_SUBMISSION:
+            if method in [ct.value for ct in models.SimMethod]:
+                sim_method = models.SimMethod(method)
+            else:
+                sim_method = None
+        else:
+            sim_method = None
+
+        # Infer dry run
+        dry_run = method == "dry-run"
+
+        # Get circuits
+        if len(serialized_circuits) > 1:
+            raise ValueError("Cannot submit jobs with multiple circuit types.")
+
+        match list(serialized_circuits.keys())[0]:
+            case "cirq_circuits":
+                circuits = list(serialized_circuits.values())[0]
+                circuit_type = models.CircuitType.CIRQ
+            case "qiskit_circuits":
+                circuits = list(serialized_circuits.values())[0]
+                circuit_type = models.CircuitType.QISKIT
+            case _:
+                raise NotImplementedError("TODO")
+
+        new_job = models.NewJob(
+            job_type=job_type,
+            target=target,
+            circuits=circuits,
+            circuit_type=circuit_type,
+            dry_run=dry_run,
+            sim_method=sim_method,
+            shots=repetitions,
+            options_dict={**self.client_kwargs, **kwargs},
+        )
+        return self.post_request("/client/job", new_job.model_dump())
 
     def cancel_jobs(
         self,
@@ -1427,7 +1504,27 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
         Raises:
             ~gss.SuperstaqServerException: For other API call failures.
         """
-        raise NotImplementedError
+        results = self.get_request("/client/job", query={"job_id": job_ids})
+        return {job_id: models.JobData(**data) for (job_id, data) in results.items()}
+
+    def fetch_single_job(
+        self,
+        job_id: str,
+        **kwargs: object,
+    ) -> dict[str, dict[str, str]]:
+        """Get the job from the Superstaq API.
+
+        Args:
+            job_id: The UUIDs of the job (returned when the job was created).
+
+        Returns:
+            The JobData object
+
+        Raises:
+            ~gss.SuperstaqServerException: For other API call failures.
+        """
+        results = self.get_request(f"/client/job/{job_id}")
+        return models.JobData(**results)
 
     def get_balance(self) -> dict[str, float]:
         """Get the querying user's account balance in USD.

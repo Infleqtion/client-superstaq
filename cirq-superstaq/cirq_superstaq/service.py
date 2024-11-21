@@ -356,7 +356,10 @@ class Service(gss.service.Service):
         )
         # Make a virtual job_id that aggregates all of the individual jobs
         # into a single one that comma-separates the individual jobs.
-        job_id = ",".join(result["job_ids"])
+        if self._client.api_version == "v0.3.0":
+            job_id = result["job_id"]
+        else:
+            job_id = ",".join(result["job_ids"])
 
         # The returned job does not have fully populated fields; they will be filled out by
         # when the new job's status is first queried
@@ -375,6 +378,8 @@ class Service(gss.service.Service):
         Raises:
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
+        if self._client.api_version == "v0.3.0":
+            return css.job.Job3(client=self._client, job_id=job_id)
         return css.job.Job(client=self._client, job_id=job_id)
 
     def resource_estimate(

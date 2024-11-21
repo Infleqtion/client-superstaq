@@ -9,7 +9,15 @@ from general_superstaq.superstaq_exceptions import (
 )
 from general_superstaq.typing import Target
 
-from . import serialization, service, superstaq_client, superstaq_exceptions, typing, validation
+from . import (
+    models,
+    serialization,
+    service,
+    superstaq_client,
+    superstaq_exceptions,
+    typing,
+    validation,
+)
 
 __all__ = [
     "__version__",
@@ -27,4 +35,5 @@ __all__ = [
     "typing",
     "Target",
     "validation",
+    "models",
 ]
