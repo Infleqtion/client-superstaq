@@ -64,7 +64,7 @@ def test_get_job(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqPro
     backend = fake_superstaq_provider.get_backend("ibmq_brisbane_qpu")
 
     with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
+        "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
     ):
         job = backend.run(qc, method="dry-run", shots=100)
@@ -80,7 +80,7 @@ def test_get_job(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqPro
 
     # multi circuit job with a comma separated job_id
     with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
+        "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.create_job",
         return_value={"job_ids": ["job_id1,job_id2"], "status": "ready"},
     ):
         job = backend.run([qc, qc], method="dry-run", shots=100)
@@ -99,7 +99,7 @@ def test_get_job(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqPro
 
     # job ids belonging to different targets
     with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
+        "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.create_job",
         return_value={"job_ids": ["job_id1,job_id2"], "status": "ready"},
     ):
         job = backend.run([qc, qc], method="dry-run", shots=100)
@@ -270,7 +270,7 @@ def test_invalid_target_ibmq_compile() -> None:
 
 
 @patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.resource_estimate",
+    "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.resource_estimate",
 )
 def test_resource_estimate(
     mock_resource_estimate: MagicMock, fake_superstaq_provider: MockSuperstaqProvider
@@ -288,7 +288,7 @@ def test_resource_estimate(
 
 
 @patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.resource_estimate",
+    "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.resource_estimate",
 )
 def test_resource_estimate_list(
     mock_resource_estimate: MagicMock, fake_superstaq_provider: MockSuperstaqProvider
@@ -499,7 +499,7 @@ def test_invalid_target_cq_compile(fake_superstaq_provider: MockSuperstaqProvide
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.supercheq",
+    "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.supercheq",
 )
 def test_supercheq(
     mock_supercheq: mock.MagicMock, fake_superstaq_provider: MockSuperstaqProvider

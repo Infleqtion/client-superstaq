@@ -90,7 +90,7 @@ class SuperstaqProvider(gss.service.Service):
         """
         self._name = "superstaq_provider"
 
-        self._client = gss.superstaq_client._SuperstaqClient(
+        self._client = gss.superstaq_client.get_client(
             client_name="qiskit-superstaq",
             remote_host=remote_host,
             api_key=api_key,

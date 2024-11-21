@@ -27,7 +27,7 @@ class Service:
             client: The Superstaq client to use.
         """
 
-        self._client = gss.superstaq_client._SuperstaqClient(
+        self._client = gss.superstaq_client.get_client(
             client_name="general-superstaq",
             remote_host=remote_host,
             api_key=api_key,

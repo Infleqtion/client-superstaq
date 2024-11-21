@@ -176,7 +176,7 @@ class Service(gss.service.Service):
             EnvironmentError: If an API key was not provided and could not be found.
         """
         self.default_target = default_target
-        self._client = superstaq_client._SuperstaqClient(
+        self._client = superstaq_client.get_client(
             client_name="cirq-superstaq",
             remote_host=remote_host,
             api_key=api_key,

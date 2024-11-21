@@ -32,7 +32,7 @@ def job() -> css.Job:
     Returns:
         A `cirq_superstaq` Job instance.
     """
-    client = gss.superstaq_client._SuperstaqClient(
+    client = gss.superstaq_client.get_client(
         client_name="cirq-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -76,7 +76,7 @@ def new_job() -> css.Job:
     Returns:
         A `cirq_superstaq` Job instance.
     """
-    client = gss.superstaq_client._SuperstaqClient(
+    client = gss.superstaq_client.get_client(
         client_name="cirq-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -91,7 +91,7 @@ def multi_circuit_job() -> css.Job:
     Returns:
         A job with multiple subjobs
     """
-    client = gss.superstaq_client._SuperstaqClient(
+    client = gss.superstaq_client.get_client(
         client_name="cirq-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",

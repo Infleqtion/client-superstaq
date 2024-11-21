@@ -25,7 +25,7 @@ def test_service_get_balance() -> None:
 def test_accept_terms_of_use() -> None:
     service = gss.service.Service(remote_host="http://example.com", api_key="key")
     with mock.patch(
-        "general_superstaq.superstaq_client._SuperstaqClient.post_request"
+        "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.post_request"
     ) as mock_post_request:
         service._accept_terms_of_use("response")
         mock_post_request.assert_called_once_with(
@@ -34,7 +34,7 @@ def test_accept_terms_of_use() -> None:
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
+    "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.post_request",
     return_value="The user has been added",
 )
 def test_add_new_user(
@@ -45,7 +45,7 @@ def test_add_new_user(
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
+    "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.post_request",
     return_value="The account's balance has been updated",
 )
 def test_update_user_balance(
@@ -65,7 +65,7 @@ def test_update_user_balance_limit() -> None:
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
+    "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.post_request",
     return_value="The account's role has been updated",
 )
 def test_update_user_role(
@@ -76,7 +76,7 @@ def test_update_user_role(
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.get_request",
+    "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.get_request",
     return_value={
         "example@email.com": {
             "name": "Alice",
@@ -99,7 +99,7 @@ def test_get_user_info(mock_get_request: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.get_request",
+    "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.get_request",
     return_value={
         "example@email.com": {
             "name": "Alice",
@@ -124,7 +124,7 @@ def test_get_user_info_name_query(mock_get_request: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.get_request",
+    "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.get_request",
     return_value={
         "example@email.com": {
             "name": "Alice",
@@ -149,7 +149,7 @@ def test_get_user_info_email_query(mock_get_request: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
+    "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.post_request",
     return_value={"solution": gss.serialization.serialize([{0: 1, 1: 1}] * 10)},
 )
 def test_submit_qubo(
@@ -171,7 +171,7 @@ def test_submit_qubo(
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.aqt_upload_configs",
+    "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.aqt_upload_configs",
     return_value="Your AQT configuration has been updated",
 )
 def test_service_aqt_upload_configs(
@@ -219,7 +219,7 @@ def test_service_aqt_upload_configs(
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
+    "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.post_request",
     return_value={"superstaq_targets": TARGET_LIST},
 )
 def test_service_get_targets(_mock_get_request: mock.MagicMock) -> None:
@@ -228,7 +228,7 @@ def test_service_get_targets(_mock_get_request: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.aqt_get_configs",
+    "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.aqt_get_configs",
     return_value={"pulses": "Hello", "variables": "World"},
 )
 def test_service_aqt_get_configs(
