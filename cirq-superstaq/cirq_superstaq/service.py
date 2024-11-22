@@ -379,7 +379,7 @@ class Service(gss.service.Service):
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         if self._client.api_version == "v0.3.0":
-            return css.job.Job3(client=self._client, job_id=job_id)
+            return css.job._Job(client=self._client, job_id=job_id)
         return css.job.Job(client=self._client, job_id=job_id)
 
     def resource_estimate(

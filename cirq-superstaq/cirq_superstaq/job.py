@@ -493,7 +493,7 @@ class Job:
 
 
 @cirq.value_equality(unhashable=True)
-class Job3(Job):
+class _Job(Job):
     """***NEW API STANDARD***
 
     A job created on the Superstaq API.
@@ -516,7 +516,7 @@ class Job3(Job):
         """
         self._client = client
         if self._client.api_version != "v0.3.0":
-            raise NotImplementedError("Job3 job can only be used with v0.3.0 of the Superstaq API.")
+            raise NotImplementedError("_Job job can only be used with v0.3.0 of the Superstaq API.")
         self._overall_status = models.CircuitStatus.RECEIVED
         self._job_data: None | models.JobData = None
         self._job_id = job_id
