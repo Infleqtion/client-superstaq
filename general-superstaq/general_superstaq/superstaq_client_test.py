@@ -34,6 +34,31 @@ EXPECTED_HEADERS = {
 }
 
 
+def test_get_client() -> None:
+    client = gss.superstaq_client.get_client(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    assert isinstance(client, gss.superstaq_client._SuperstaqClient)
+
+    client = gss.superstaq_client.get_client(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        api_version="v0.3.0",
+    )
+    assert isinstance(client, gss.superstaq_client._SuperstaqClient_v0_3_0)
+
+    with pytest.raises(RuntimeError):
+        gss.superstaq_client.get_client(
+            client_name="general-superstaq",
+            remote_host="http://example.com",
+            api_key="to_my_heart",
+            api_version="bad_version",
+        )
+
+
 def test_superstaq_client_str_and_repr() -> None:
     client = gss.superstaq_client.get_client(
         client_name="general-superstaq",

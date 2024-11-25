@@ -1,5 +1,6 @@
 """Data models used when communicating with the Server"""
 
+# pragma: no cover
 import datetime
 import uuid
 from enum import Enum
@@ -129,33 +130,6 @@ class NewJob(DefaultPydanticModel):
     priority: int = pydantic.Field(default=0)
     options_dict: dict[str, Any] = pydantic.Field(default={})
     tags: list[str] = pydantic.Field(default=[])
-
-    @pydantic.field_validator("sim_method")
-    def validate_sim_method(
-        cls, sim_meth: SimMethod | None, validation_info: pydantic.ValidationInfo
-    ) -> SimMethod | None:
-        """Validates the `sim_method` argument. If `job_type` is not `DEVICE_SIMULATION` or
-        `SIMULATION` then `sim_method` is forced to be None. Otherwise if `sim_method` is None
-        this is changed to `SIM`.
-
-        Args:
-            sim_meth: The value of the `sim_method` argument.
-            validation_info: The validation information.
-
-        Returns:
-            The validated value for sim_method
-        """
-        # If not a simulation job, set sim_method to None
-        if validation_info.data["job_type"] not in [
-            JobType.SIMULATION,
-            JobType.DEVICE_SIMULATION,
-        ]:
-            return None
-        # If sim_method is provided as None, swap this for SIM
-        if sim_meth is None:
-            return SimMethod.SIM
-        # Otherwise return provided value
-        return sim_meth
 
 
 class JobCancellationResults(DefaultPydanticModel):

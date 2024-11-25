@@ -47,16 +47,6 @@ class _SuperstaqClient:
         "v0.2.0",
     }
 
-    warnings.warn(
-        (
-            "Superstaq is preparing to transition to a new API version, v0.2.0 -> v0.3.0. "
-            "We suggest users manually set `api_version='v0.2.0'` if they wish to continue using "
-            "the old version as the default will soon be updated to `v0.3.0`. Eventually v0.2.0 "
-            "will be retired completely."
-        ),
-        DeprecationWarning,
-    )
-
     def __init__(
         self,
         client_name: str,
@@ -156,7 +146,7 @@ class _SuperstaqClient:
         target: str = "ss_unconstrained_simulator",
         method: str | None = None,
         **kwargs: Any,
-    ) -> dict[str, list[str]]:
+    ) -> dict[str, Any]:
         """Create a job.
 
         Args:
@@ -241,9 +231,6 @@ class _SuperstaqClient:
 
         return self.post_request("/fetch_jobs", json_dict)
 
-    def fetch_single_job(self, job_id, **kwargs):
-        raise NotImplementedError
-
     def get_balance(self) -> dict[str, float]:
         """Get the querying user's account balance in USD.
 
@@ -253,7 +240,10 @@ class _SuperstaqClient:
         return self.get_request("/balance")
 
     def get_user_info(
-        self, name: str | None = None, email: str | None = None, user_id: int | None = None
+        self,
+        name: str | None = None,
+        email: str | None = None,
+        user_id: int | uuid.UUID | None = None,
     ) -> list[dict[str, str | float]]:
         """Gets a dictionary of the user's info.
 
@@ -918,11 +908,14 @@ class _SuperstaqClient:
         )
 
 
-class _SuperstaqClient_v0_3_0:
+class _SuperstaqClient_v0_3_0(_SuperstaqClient):  # pragma: no cover
     """Handles calls to Superstaq's API.
 
     Users should not instantiate this themselves,
     but instead should use `$client_superstaq.Service`.
+
+    TODO: When we retire the v0.2.0, switch all the return types of these methods to
+    the data structures defined in models.
     """
 
     RETRIABLE_STATUS_CODES = {
@@ -935,7 +928,8 @@ class _SuperstaqClient_v0_3_0:
     warnings.warn(
         (
             "Version v0.3.0 of the Superstaq endpoint is currently under development. This version "
-            "should not be treated as stable."
+            "should not be treated as stable. Most user should continue using "
+            "`api_version='v0.2.0'`."
         ),
     )
 
@@ -1006,11 +1000,16 @@ class _SuperstaqClient_v0_3_0:
             "Content-Type": "application/json",
             "X-Client-Name": self.client_name,
             "X-Client-Version": self.api_version,
-            "ibmq_token": ibmq_token,
-            "ibmq_instance": ibmq_instance,
-            "ibmq_channel": ibmq_channel,
-            "cq_token": cq_token,
         }
+        if ibmq_token is not None:
+            self.headers["ibmq_token"] = ibmq_token
+        if ibmq_instance is not None:
+            self.headers["ibmq_instance"] = ibmq_instance
+        if ibmq_channel is not None:
+            self.headers["ibmq_channel"] = ibmq_channel
+        if cq_token is not None:
+            self.headers["cq_token"] = cq_token
+
         self.session = requests.Session()
 
         self.client_kwargs = kwargs
@@ -1022,7 +1021,7 @@ class _SuperstaqClient_v0_3_0:
         target: str = "ss_unconstrained_simulator",
         method: str | None = None,
         **kwargs: Any,
-    ) -> _models.NewJobResponse:
+    ) -> dict[str, Any]:
         """Create a job.
 
         Args:
@@ -1041,6 +1040,8 @@ class _SuperstaqClient_v0_3_0:
 
         Raises:
             ~gss.SuperstaqServerException: if the request fails.
+            ValueError: If a job is submitted with multiple circuit types.
+            NotImplementedError: If an unrecognized circuit type is used.
         """
         gss.validation.validate_target(target)
         gss.validation.validate_integer_param(repetitions)
@@ -1089,14 +1090,14 @@ class _SuperstaqClient_v0_3_0:
             shots=repetitions,
             options_dict={**self.client_kwargs, **kwargs},
         )
-        response = self.post_request("/client/job", new_job.model_dump())
-        return _models.NewJobResponse(**response)
+        response = _models.NewJobResponse(**self.post_request("/client/job", new_job.model_dump()))
+        return response.model_dump()
 
     def cancel_jobs(
         self,
         job_ids: Sequence[str],
         **kwargs: object,
-    ) -> _models.JobCancellationResults:
+    ) -> list[str]:
         """Cancel jobs associated with given job ids.
 
         Args:
@@ -1110,14 +1111,16 @@ class _SuperstaqClient_v0_3_0:
             ~gss.SuperstaqServerException: For other API call failures.
         """
         query = _models.JobQuery(job_id=job_ids)
-        response = self.put_request("/client/cancel_job", query.model_dump(exclude_none=True))
-        return _models.JobCancellationResults(**response)
+        response = _models.JobCancellationResults(
+            **self.put_request("/client/cancel_job", query.model_dump(exclude_none=True))
+        )
+        return response.succeeded
 
     def fetch_jobs(
         self,
         job_ids: list[str],
         **kwargs: object,
-    ) -> dict[str, _models.JobData]:
+    ) -> dict[str, dict[str, str]]:
         """Get the job from the Superstaq API.
 
         Args:
@@ -1130,13 +1133,13 @@ class _SuperstaqClient_v0_3_0:
         Raises:
             ~gss.SuperstaqServerException: For other API call failures.
         """
-        results = self.get_request("/client/job", query={"job_id": job_ids})
-        return {job_id: _models.JobData(**data) for (job_id, data) in results.items()}
+        response = self.get_request("/client/job", query={"job_id": job_ids})
+        job_data_dict = {job_id: _models.JobData(**data) for (job_id, data) in response.items()}
+        return {job_id: data.model_dump() for job_id, data in job_data_dict}
 
     def fetch_single_job(
         self,
         job_id: str,
-        **kwargs: object,
     ) -> _models.JobData:
         """Get the job from the Superstaq API.
 
@@ -1152,17 +1155,20 @@ class _SuperstaqClient_v0_3_0:
         results = self.get_request(f"/client/job/{job_id}")
         return _models.JobData(**results)
 
-    def get_balance(self) -> _models.BalanceResponse:
+    def get_balance(self) -> dict[str, float]:
         """Get the querying user's account balance in USD.
 
         Returns:
             The json body of the response as a dict.
         """
-        response = self.get_request("/client/balance")
-        return _models.BalanceResponse(**response)
+        response = _models.BalanceResponse(**self.get_request("/client/balance"))
+        return {"balance": response.balance}
 
     def get_user_info(
-        self, name: str | None = None, email: str | None = None, user_id: uuid.UUID | None = None
+        self,
+        name: str | None = None,
+        email: str | None = None,
+        user_id: int | uuid.UUID | None = None,
     ) -> list[dict[str, str | float]]:
         """Gets a dictionary of the user's info.
 
@@ -1183,14 +1189,19 @@ class _SuperstaqClient_v0_3_0:
 
         Raises:
             ~gss.SuperstaqServerException: If the server returns an empty response.
+            TypeError: If an integer UUID is provided. TODO This will be removed once v0.2.0 is
+                depricated.
         """
+        if isinstance(user_id, int):
+            raise TypeError("Superstaq API v0.3.0 uses UUID indexing for users, not integer.")
         query = _models.UserQuery(
             name=[name] if name is not None else None,
             email=[email] if email is not None else None,
             user_id=[user_id] if user_id is not None else None,
         )
         response = self.get_request("/client/user", query=query.model_dump(exclude_none=True))
-        return _models.UserInfo(**response)
+        user_data = [_models.UserInfo(**data) for data in response]
+        return [data.model_dump() for data in user_data]
 
     def _accept_terms_of_use(self, user_input: str) -> str:
         """Makes a POST request to Superstaq API to confirm acceptance of terms of use.
@@ -1203,7 +1214,7 @@ class _SuperstaqClient_v0_3_0:
         """
         return self.put_request("/client/accept_terms_of_use", {"accept": user_input == "YES"})
 
-    def get_targets(self, **kwargs: bool | None) -> list[_models.TargetInfoModel]:
+    def get_targets(self, **kwargs: bool | None) -> list[gss.typing.Target]:
         """Makes a GET request to retrieve targets from the Superstaq API.
 
         Args:
@@ -1214,7 +1225,8 @@ class _SuperstaqClient_v0_3_0:
         """
         request = _models.GetTargetsFilterModel(**kwargs)
         response = self.get_request("/client/targets", **request.model_dump(exclude_defaults=True))
-        return {name: _models.TargetInfoModel(**data) for name, data in response.items()}
+        targets = [_models.TargetInfoModel(**data) for data in response.values()]
+        return [gss.typing.Target(**target.model_dump()) for target in targets]
 
     def add_new_user(self, json_dict: dict[str, str]) -> str:
         """Makes a POST request to Superstaq API to add a new user.
@@ -1306,7 +1318,7 @@ class _SuperstaqClient_v0_3_0:
         Returns:
             A dictionary containing compiled circuit data.
         """
-        return self.post_request("/compile", json_dict)
+        raise NotImplementedError
 
     def submit_qubo(
         self,
@@ -1420,64 +1432,6 @@ class _SuperstaqClient_v0_3_0:
         """
         raise NotImplementedError
 
-    def get_request(self, endpoint: str, query: Mapping[str, object] | None = None) -> Any:
-        """Performs a GET request on a given endpoint.
-
-        Args:
-            endpoint: The endpoint to perform the GET request on.
-            query: An optional query dictionary to include in the get request.
-                This query will be appended to the url.
-
-        Returns:
-            The response of the GET request.
-        """
-
-        def request() -> requests.Response:
-            """Builds GET request object.
-
-            Returns:
-                The Flask GET request object.
-            """
-            if not query:
-                q_string = ""
-            else:
-                q_string = "?" + urllib.parse.urlencode(query)
-            return self.session.get(
-                f"{self.url}{endpoint}{q_string}",
-                headers=self.headers,
-                verify=self.verify_https,
-            )
-
-        response = self._make_request(request)
-        return self._handle_response(response)
-
-    def post_request(self, endpoint: str, json_dict: Mapping[str, object]) -> Any:
-        """Performs a POST request on a given endpoint with a given payload.
-
-        Args:
-            endpoint: The endpoint to perform the POST request on.
-            json_dict: The payload to POST.
-
-        Returns:
-            The response of the POST request.
-        """
-
-        def request() -> requests.Response:
-            """Builds GET request object.
-
-            Returns:
-                The Flask GET request object.
-            """
-            return self.session.post(
-                f"{self.url}{endpoint}",
-                json=json_dict,
-                headers=self.headers,
-                verify=self.verify_https,
-            )
-
-        response = self._make_request(request)
-        return self._handle_response(response)
-
     def put_request(self, endpoint: str, json_dict: Mapping[str, object]) -> Any:
         """Performs a PUT request on a given endpoint with a given payload.
 
@@ -1504,143 +1458,6 @@ class _SuperstaqClient_v0_3_0:
 
         response = self._make_request(request)
         return self._handle_response(response)
-
-    def _handle_response(self, response: requests.Response) -> object:
-        response_json = response.json()
-        if isinstance(response_json, dict) and "warnings" in response_json:
-            for warning in response_json["warnings"]:
-                warnings.warn(warning["message"], gss.SuperstaqWarning, stacklevel=4)
-            del response_json["warnings"]
-        return response_json
-
-    def _handle_status_codes(self, response: requests.Response) -> None:
-        """A method to handle status codes.
-
-        Args:
-            response: The `requests.Response` to get the status codes from.
-
-        Raises:
-            ~gss.SuperstaqServerException: If unauthorized by Superstaq API.
-            ~gss.SuperstaqServerException: If an error has occurred in making a request
-                to the Superstaq API.
-        """
-
-        if response.status_code == requests.codes.unauthorized:
-            if response.json() == (
-                "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
-            ):
-                self._prompt_accept_terms_of_use()
-                return
-
-            elif response.json() == ("You must validate your registered email."):
-                raise gss.SuperstaqServerException(
-                    "You must validate your registered email.",
-                    response.status_code,
-                )
-
-            else:
-                raise gss.SuperstaqServerException(
-                    '"Not authorized" returned by Superstaq API.  '
-                    "Check to ensure you have supplied the correct API key.",
-                    response.status_code,
-                )
-
-        if response.status_code == requests.codes.gateway_timeout:
-            # Job took too long. Don't retry, it probably won't be any faster.
-            raise gss.SuperstaqServerException(
-                "Connection timed out while processing your request. Try submitting a smaller "
-                "batch of circuits.",
-                response.status_code,
-            )
-
-        if response.status_code not in self.RETRIABLE_STATUS_CODES:
-            try:
-                json_content = self._handle_response(response)
-            except requests.JSONDecodeError:
-                json_content = None
-
-            if isinstance(json_content, dict) and "message" in json_content:
-                message = json_content["message"]
-            else:
-                message = str(response.text)
-
-            raise gss.SuperstaqServerException(
-                message=message, status_code=response.status_code, contact_info=True
-            )
-
-    def _prompt_accept_terms_of_use(self) -> None:
-        """Prompts terms of use.
-
-        Raises:
-            ~gss.SuperstaqServerException: If terms of use are not accepted.
-        """
-        message = (
-            "Acceptance of the Terms of Use (superstaq.infleqtion.com/terms_of_use)"
-            " is necessary before using Superstaq.\nType in YES to accept: "
-        )
-        user_input = input(message).upper()
-        response = self._accept_terms_of_use(user_input)
-        print(response)
-        if response != "Accepted. You can now continue using Superstaq.":
-            raise gss.SuperstaqServerException(
-                "You'll need to accept the Terms of Use before usage of Superstaq.",
-                requests.codes.unauthorized,
-            )
-
-    def _make_request(self, request: Callable[[], requests.Response]) -> requests.Response:
-        """Make a request to the API, retrying if necessary.
-
-        Args:
-            request: A function that returns a `requests.Response`.
-
-        Raises:
-            ~gss.SuperstaqServerException: If there was a not-retriable error from
-                the API.
-            TimeoutError: If the requests retried for more than `max_retry_seconds`.
-
-        Returns:
-            The `requests.Response` from the final successful request call.
-        """
-        # Initial backoff of 100ms.
-        delay_seconds = 0.1
-        while True:
-            try:
-                response = request()
-
-                if response.ok:
-                    return response
-
-                self._handle_status_codes(response)
-                message = response.reason
-
-            # Fallthrough should retry.
-            except requests.RequestException as e:
-                # Connection error, timeout at server, or too many redirects.
-                # Retry these.
-                message = f"RequestException of type {type(e)}."
-            if delay_seconds > self.max_retry_seconds:
-                raise TimeoutError(f"Reached maximum number of retries. Last error: {message}")
-            if self.verbose:
-                print(message, file=sys.stderr)
-                print(f"Waiting {delay_seconds} seconds before retrying.")
-            time.sleep(delay_seconds)
-            delay_seconds *= 2
-
-    def __str__(self) -> str:
-        return f"Client version {self.api_version} with host={self.url} and name={self.client_name}"
-
-    def __repr__(self) -> str:
-        return textwrap.dedent(
-            f"""\
-            gss.superstaq_client.{self.__class__.__name__}(
-                remote_host={self.url!r},
-                api_key={self.api_key!r},
-                client_name={self.client_name!r},
-                api_version={self.api_version!r},
-                max_retry_seconds={self.max_retry_seconds!r},
-                verbose={self.verbose!r},
-            )"""
-        )
 
 
 def find_api_key() -> str:
@@ -1691,10 +1508,35 @@ def get_client(
     ibmq_token: str | None = None,
     ibmq_instance: str | None = None,
     ibmq_channel: str | None = None,
-) -> _SuperstaqClient:
-    """Instantiate the correct _SuperstaqClient based on the API version."""
+    **kwargs: Any,
+) -> _SuperstaqClient | _SuperstaqClient_v0_3_0:
+    """Instantiate the correct _SuperstaqClient based on the API version.
+
+    Args:
+        client_name: The name of the client.
+        api_key: The key used for authenticating against the Superstaq API.
+        remote_host: The url of the server exposing the Superstaq API. This will strip anything
+            besides the base scheme and netloc, i.e. it only takes the part of the host of
+            the form `http://example.com` of `http://example.com/test`.
+        api_version: Which version fo the api to use, defaults to client_superstaq.API_VERSION,
+            which is the most recent version when this client was downloaded.
+        max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
+        verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
+        cq_token: Token from CQ cloud. This is required to submit circuits to CQ hardware.
+        ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
+            to IBM hardware, or to access non-public IBM devices you may have access to.
+        ibmq_instance: An optional instance to use when running IBM jobs.
+        ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
+        kwargs: Other optimization and execution parameters.
+
+    Raises:
+        NotImplementedError: If the API version is not recognized.
+
+    Returns:
+        The instantiated Superstaq client
+    """
     if api_version == "v0.2.0":
-        client = _SuperstaqClient
+        client: type[_SuperstaqClient] | type[_SuperstaqClient_v0_3_0] = _SuperstaqClient
     elif api_version == "v0.3.0":
         client = _SuperstaqClient_v0_3_0
     else:
@@ -1710,4 +1552,5 @@ def get_client(
         ibmq_token=ibmq_token,
         ibmq_instance=ibmq_instance,
         ibmq_channel=ibmq_channel,
+        **kwargs,
     )

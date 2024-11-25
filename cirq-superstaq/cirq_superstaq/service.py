@@ -354,11 +354,11 @@ class Service(gss.service.Service):
             method=method,
             **kwargs,
         )
-        # Make a virtual job_id that aggregates all of the individual jobs
-        # into a single one that comma-separates the individual jobs.
-        if self._client.api_version == "v0.3.0":
+        if isinstance(self._client, gss.superstaq_client._SuperstaqClient_v0_3_0):
             job_id = result["job_id"]
         else:
+            # Make a virtual job_id that aggregates all of the individual jobs
+            # into a single one that comma-separates the individual jobs.
             job_id = ",".join(result["job_ids"])
 
         # The returned job does not have fully populated fields; they will be filled out by
@@ -378,7 +378,7 @@ class Service(gss.service.Service):
         Raises:
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
-        if self._client.api_version == "v0.3.0":
+        if isinstance(self._client, gss.superstaq_client._SuperstaqClient_v0_3_0):
             return css.job._Job(client=self._client, job_id=job_id)
         return css.job.Job(client=self._client, job_id=job_id)
 

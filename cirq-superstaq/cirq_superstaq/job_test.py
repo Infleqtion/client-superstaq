@@ -37,6 +37,7 @@ def job() -> css.Job:
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
+    assert isinstance(client, gss.superstaq_client._SuperstaqClient)
     return css.Job(client, "job_id")
 
 
@@ -81,6 +82,7 @@ def new_job() -> css.Job:
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
+    assert isinstance(client, gss.superstaq_client._SuperstaqClient)
     return css.Job(client, "new_job_id")
 
 
@@ -96,6 +98,7 @@ def multi_circuit_job() -> css.Job:
         remote_host="http://example.com",
         api_key="to_my_heart",
     )
+    assert isinstance(client, gss.superstaq_client._SuperstaqClient)
     job = css.Job(client, "job_id1,job_id2,job_id3")
     job._job = {
         "job_id1": {"status": "Done"},
