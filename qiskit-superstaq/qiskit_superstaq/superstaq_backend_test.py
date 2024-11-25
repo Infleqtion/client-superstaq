@@ -29,7 +29,7 @@ def test_run(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     backend = fake_superstaq_provider.get_backend("ss_example_qpu")
 
     with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.create_job",
+        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
     ):
         answer = backend.run(circuits=qc, shots=1000)
@@ -54,7 +54,7 @@ def test_multi_circuit_run(fake_superstaq_provider: MockSuperstaqProvider) -> No
     backend = fake_superstaq_provider.get_backend("ss_example_qpu")
 
     with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.create_job",
+        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
     ):
         answer = backend.run(circuits=[qc1, qc2], shots=1000)
@@ -71,7 +71,7 @@ def test_multi_arg_run(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     backend = fake_superstaq_provider.get_backend("ss_example_qpu")
 
     with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.create_job",
+        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
     ):
         answer = backend.run(circuits=qc, shots=1000, method="fake_method", test="123")
@@ -86,7 +86,7 @@ def test_retrieve_job(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc.measure([0, 0], [1, 1])
     backend = fake_superstaq_provider.get_backend("ibmq_brisbane_qpu")
     with patch(
-        "general_superstaq.superstaq_client._SuperstaqClient_v0_2_0.create_job",
+        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
         return_value={"job_ids": ["job_id"], "status": "ready"},
     ):
         job = backend.run(qc, shots=1000)

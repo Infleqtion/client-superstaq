@@ -22,7 +22,7 @@ from typing import Any, overload
 
 import cirq
 import general_superstaq as gss
-import general_superstaq.models as models
+import general_superstaq._models as _models
 from cirq._doc import document
 
 import cirq_superstaq as css
@@ -504,7 +504,7 @@ class _Job(Job):
     If a job is canceled or deleted, only the job id and the status remain valid.
     """
 
-    def __init__(self, client: gss.superstaq_client._SuperstaqClient, job_id: str) -> None:
+    def __init__(self, client: gss.superstaq_client._SuperstaqClient_v0_3_0, job_id: str) -> None:
         """Constructs a `Job`.
 
         Users should not call this themselves. If you only know the `job_id`, use `fetch_jobs`
@@ -517,8 +517,8 @@ class _Job(Job):
         self._client = client
         if self._client.api_version != "v0.3.0":
             raise NotImplementedError("_Job job can only be used with v0.3.0 of the Superstaq API.")
-        self._overall_status = models.CircuitStatus.RECEIVED
-        self._job_data: None | models.JobData = None
+        self._overall_status = _models.CircuitStatus.RECEIVED
+        self._job_data: None | _models.JobData = None
         self._job_id = job_id
 
     def _refresh_job(self) -> None:
@@ -538,17 +538,17 @@ class _Job(Job):
         """
         status_occurrence = set(self._job_data.statuses)
         status_priority_order = (
-            models.CircuitStatus.RECEIVED,
-            models.CircuitStatus.AWAITING_CONVERSION,
-            models.CircuitStatus.AWAITING_COMPILE,
-            models.CircuitStatus.AWAITING_SUBMISSION,
-            models.CircuitStatus.AWAITING_SIMULATION,
-            models.CircuitStatus.AWAITING_SUBMISSION,
-            models.CircuitStatus.PENDING,
-            models.CircuitStatus.FAILED,
-            models.CircuitStatus.CANCELLED,
-            models.CircuitStatus.UNRECOGNIZED,
-            models.CircuitStatus.COMPLETED,
+            _models.CircuitStatus.RECEIVED,
+            _models.CircuitStatus.AWAITING_CONVERSION,
+            _models.CircuitStatus.AWAITING_COMPILE,
+            _models.CircuitStatus.AWAITING_SUBMISSION,
+            _models.CircuitStatus.AWAITING_SIMULATION,
+            _models.CircuitStatus.AWAITING_SUBMISSION,
+            _models.CircuitStatus.PENDING,
+            _models.CircuitStatus.FAILED,
+            _models.CircuitStatus.CANCELLED,
+            _models.CircuitStatus.UNRECOGNIZED,
+            _models.CircuitStatus.COMPLETED,
         )
 
         for temp_status in status_priority_order:
@@ -566,7 +566,7 @@ class _Job(Job):
             gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
         status = self.status(index)
-        if status == models.CircuitStatus.FAILED:
+        if status == _models.CircuitStatus.FAILED:
             raise gss.SuperstaqUnsuccessfulJobException(
                 f"{self.job_id()}--{index}", self._job_data.status_messages[index]
             )
@@ -615,9 +615,7 @@ class _Job(Job):
             ~gss.SuperstaqServerException: If unable to get the status of the job
                 from the API or cancellations were unsuccessful.
         """
-        job_ids = self._job_id.split(",")
-        ids_to_cancel = [job_ids[index]] if index else job_ids
-        self._client.cancel_jobs(ids_to_cancel, **kwargs)
+        self._client.cancel_jobs(self._job_id**kwargs)
 
     def target(self) -> str:
         """Gets the Superstaq target associated with this job.
@@ -631,6 +629,8 @@ class _Job(Job):
             ~gss.SuperstaqServerException: If unable to get the status of the job
                 from the API.
         """
+        if self._job_data is None:
+            raise RuntimeError("No data associated with the job")
         return self._job_data.target
 
     @overload
@@ -662,14 +662,8 @@ class _Job(Job):
 
         Returns:
             The number of repetitions for this job.
-
-        Raises:
-            ~gss.SuperstaqUnsuccessfulJobException: If the job failed or has been
-                canceled or deleted.
-            ~gss.SuperstaqServerException: If unable to get the status of the job
-                from the API.
         """
-        raise NotADirectoryError
+        raise NotImplementedError
 
     @overload
     def _get_circuits(self, circuit_type: str, index: int) -> cirq.Circuit: ...
@@ -801,7 +795,7 @@ class _Job(Job):
         """
         time_waited_seconds: float = 0.0
         # If not in a terminal state then poll
-        while (status := self.status(index)) not in models.TERMINAL_CIRCUIT_STATES:
+        while (status := self.status(index)) not in _models.TERMINAL_CIRCUIT_STATES:
             # Status does a refresh.
             if time_waited_seconds > timeout_seconds:
                 raise TimeoutError(
@@ -839,7 +833,7 @@ class _Job(Job):
             A dictionary containing updated job information.
         """
         self._refresh_job()
-        return self._job_data
+        return self._job_data.model_dump()
 
     def __str__(self) -> str:
         return f"Job with job_id={self.job_id()}"

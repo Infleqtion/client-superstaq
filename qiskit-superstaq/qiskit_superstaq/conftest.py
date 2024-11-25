@@ -6,7 +6,7 @@ import pytest
 import qiskit_superstaq as qss
 
 
-class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient_v0_2_0):
+class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
     """Stand-in for `_SuperstaqClient` that the tests can call."""
 
     def get_targets(self, **kwargs: bool | None) -> list[gss.typing.Target]:

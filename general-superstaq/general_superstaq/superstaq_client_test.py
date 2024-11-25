@@ -41,9 +41,9 @@ def test_superstaq_client_str_and_repr() -> None:
         api_key="to_my_heart",
     )
 
-    assert (
-        str(client)
-        == f"Client version v0.2.0 with host=http://example.com/{API_VERSION} and name=general-superstaq"
+    assert str(client) == (
+        f"Client version v0.2.0 with host=http://example.com/{API_VERSION} and "
+        "name=general-superstaq"
     )
     assert str(eval(repr(client))) == str(client)
 
@@ -147,7 +147,7 @@ def test_superstaq_client_attributes() -> None:
     assert client.verbose
 
 
-@mock.patch("general_superstaq.superstaq_client._SuperstaqClient_v0_2_0._accept_terms_of_use")
+@mock.patch("general_superstaq.superstaq_client._SuperstaqClient._accept_terms_of_use")
 @mock.patch("requests.Session.get")
 def test_superstaq_client_needs_accept_terms_of_use(
     mock_get: mock.MagicMock,
