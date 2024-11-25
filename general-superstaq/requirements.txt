@@ -1,4 +1,4 @@
-eval-type-backport
+eval-type-backport>=0.2.0
 numpy>=1.21.0
 pydantic[email]>=1.10.7
 requests>=2.30.0
