@@ -1070,15 +1070,14 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):  # pragma: no cover
         if len(serialized_circuits) > 1:
             raise ValueError("Cannot submit jobs with multiple circuit types.")
 
-        match list(serialized_circuits.keys())[0]:
-            case "cirq_circuits":
-                circuits = list(serialized_circuits.values())[0]
-                circuit_type = _models.CircuitType.CIRQ
-            case "qiskit_circuits":
-                circuits = list(serialized_circuits.values())[0]
-                circuit_type = _models.CircuitType.QISKIT
-            case _:
-                raise NotImplementedError("TODO")
+        if list(serialized_circuits.keys())[0] == "cirq_circuits":
+            circuits = list(serialized_circuits.values())[0]
+            circuit_type = _models.CircuitType.CIRQ
+        elif list(serialized_circuits.keys())[0] == "qiskit_circuits":
+            circuits = list(serialized_circuits.values())[0]
+            circuit_type = _models.CircuitType.QISKIT
+        else:
+            raise NotImplementedError("Unsupported circuit type.")
 
         new_job = _models.NewJob(
             job_type=job_type,
