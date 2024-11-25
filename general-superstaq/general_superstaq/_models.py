@@ -1,5 +1,7 @@
 """Data models used when communicating with the Server"""
 
+from __future__ import annotations
+
 # pragma: no cover
 import datetime
 import uuid
