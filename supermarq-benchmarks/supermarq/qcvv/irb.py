@@ -604,7 +604,7 @@ class IRB(QCVVExperiment):
             The list of experiment samples.
         """
         samples = []
-        for _, depth in product(range(num_circuits), cycle_depths, desc="Building circuits"):
+        for k, depth in product(range(num_circuits), cycle_depths, desc="Building circuits"):
             base_sequence = [self.random_clifford() for _ in range(depth)]
             rb_sequence = base_sequence + [
                 _reduce_clifford_seq(cirq.inverse(base_sequence))  # type: ignore[arg-type]
@@ -624,6 +624,7 @@ class IRB(QCVVExperiment):
                         ),
                         "experiment": "RB",
                     },
+                    circuit_index=k,
                 ),
             )
             if self.interleaved_gate is not None:
@@ -656,6 +657,7 @@ class IRB(QCVVExperiment):
                             ),
                             "experiment": "IRB",
                         },
+                        circuit_index=k,
                     ),
                 )
         return samples

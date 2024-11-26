@@ -19,6 +19,8 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 
 import cirq
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy
@@ -152,6 +154,47 @@ class XEBResults(QCVVResults):
             f"+/- {self.cycle_fidelity_estimate_std:.5}"
         )
 
+    def plot_speckle(self) -> None:
+        """Creates the speckle plot of the XEB data. See Fig. S18 of
+        https://arxiv.org/pdf/1910.11333 for an explanation of this plot.
+        """
+        df = self.data
+        df2 = pd.melt(
+            df,
+            value_vars=["00", "01", "10", "11"],
+            id_vars=["cycle_depth", "circuit_index"],
+            var_name="bitstring",
+        )
+        fig, axs = plt.subplots(nrows=4, sharex=True)
+        fig.subplots_adjust(hspace=0)
+        for k, bitstring in enumerate(["00", "01", "10", "11"]):
+            data = df2[df2["bitstring"] == bitstring].pivot(
+                index="circuit_index", columns="cycle_depth", values="value"
+            )
+            cmap = mpl.colormaps["rocket"]
+            norm = mpl.colors.Normalize(0, 1)  # or vmin, vmax
+            sns.heatmap(data, vmin=0, vmax=1, ax=axs[k], cbar=False, cmap=cmap)
+            axs[k].set_ylabel("")
+            axs[k].set_xlabel("")
+            axs[k].set_yticks([0, 15])
+            axs[k].set_yticklabels([0, 15])
+            plt.text(
+                0.99,
+                0.90,
+                f"P({bitstring})",
+                ha="right",
+                va="top",
+                transform=axs[k].transAxes,
+                color="white",
+            )
+            if k != 0:
+                axs[k].axhline(y=0, linewidth=1.5, color="white", linestyle="--")
+        fig.supxlabel("Cycle depth")
+        fig.supylabel("Circuit Instance")
+        fig.colorbar(
+            mpl.cm.ScalarMappable(norm, cmap), ax=axs, orientation="vertical", label="Probability"
+        )
+
 
 class XEB(QCVVExperiment):
     r"""Cross-entropy benchmarking (XEB) experiment.
@@ -252,7 +295,7 @@ class XEB(QCVVExperiment):
             The list of experiment samples.
         """
         random_circuits = []
-        for _, depth in tqdm.contrib.itertools.product(
+        for k, depth in tqdm.contrib.itertools.product(
             range(num_circuits), cycle_depths, desc="Building circuits"
         ):
             num_single_qubit_gate_layers = depth + int(self.two_qubit_gate is not None)
@@ -287,6 +330,7 @@ class XEB(QCVVExperiment):
                         "two_qubit_gate": str(self.two_qubit_gate),
                         **analytic_probabilities,
                     },
+                    circuit_index=k,
                 )
             )
 
