@@ -362,7 +362,7 @@ class RBResults(_RBResultsBase):
         )
 
 
-class IRB(QCVVExperiment):
+class IRB(QCVVExperiment[_RBResultsBase]):
     r"""Interleaved random benchmarking (IRB) experiment.
 
     IRB estimates the gate error of specified Clifford gate, :math:`\mathcal{C}^*`.

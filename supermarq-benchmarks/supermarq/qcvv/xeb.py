@@ -153,7 +153,7 @@ class XEBResults(QCVVResults):
         )
 
 
-class XEB(QCVVExperiment):
+class XEB(QCVVExperiment[XEBResults]):
     r"""Cross-entropy benchmarking (XEB) experiment.
 
     The XEB experiment can be used to estimate the combined fidelity of a repeating

@@ -49,7 +49,7 @@ class ExampleResults(QCVVResults):
         mock_print("This is a test")
 
 
-class ExampleExperiment(QCVVExperiment):
+class ExampleExperiment(QCVVExperiment[ExampleResults]):
     """Example experiment class for testing"""
 
     def _build_circuits(self, num_circuits: int, cycle_depths: Iterable[int]) -> Sequence[Sample]:
@@ -61,7 +61,7 @@ class ExampleExperiment(QCVVExperiment):
 
 
 @pytest.fixture
-def abc_experiment() -> QCVVExperiment:
+def abc_experiment() -> ExampleExperiment:
     with patch("supermarq.qcvv.base_experiment.QCVVExperiment._validate_circuits"):
         return ExampleExperiment(
             num_qubits=2,

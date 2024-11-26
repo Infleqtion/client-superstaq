@@ -20,7 +20,7 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 import cirq
 import cirq_superstaq as css
@@ -50,7 +50,7 @@ class QCVVResults(ABC):
     target: str
     """The target device that was used."""
 
-    experiment: QCVVExperiment
+    experiment: QCVVExperiment[QCVVResults]
     """Reference to the underlying experiment that generated these results experiment."""
 
     job: css.Job | None = None
@@ -161,7 +161,11 @@ class QCVVResults(ABC):
         return pd.DataFrame(records)
 
 
-class QCVVExperiment(ABC):
+ResultsT = TypeVar("ResultsT", bound=QCVVResults, covariant=True)
+# Generic results type for base experiments.
+
+
+class QCVVExperiment(ABC, Generic[ResultsT]):
     """Base class for gate benchmarking experiments.
 
     The interface for implementing these experiments is as follows:
@@ -215,7 +219,7 @@ class QCVVExperiment(ABC):
         cycle_depths: Iterable[int],
         *,
         random_seed: int | np.random.Generator | None = None,
-        results_cls: type[QCVVResults] = QCVVResults,
+        results_cls: type[ResultsT],
         **kwargs: Any,
     ) -> None:
         """Initializes a benchmarking experiment.
@@ -243,7 +247,7 @@ class QCVVExperiment(ABC):
 
         self._rng = np.random.default_rng(random_seed)
 
-        self._results_cls = results_cls
+        self._results_cls: type[ResultsT] = results_cls
 
         self.samples = self._prepare_experiment()
         """Create all the samples needed for the experiment."""
@@ -357,7 +361,7 @@ class QCVVExperiment(ABC):
         repetitions: int = 10_000,
         method: str | None = None,
         **target_options: Any,
-    ) -> QCVVResults:
+    ) -> ResultsT:
         """Submit the circuit samples to the desired target device and store the resulting
         probabilities.
 
@@ -394,7 +398,7 @@ class QCVVExperiment(ABC):
         self,
         simulator: cirq.Sampler | None = None,
         repetitions: int = 10_000,
-    ) -> QCVVResults:
+    ) -> ResultsT:
         """Use the local simulator to sample the circuits and store the resulting probabilities.
 
         Args:
@@ -430,7 +434,7 @@ class QCVVExperiment(ABC):
         self,
         circuit_eval_func: Callable[[cirq.Circuit], dict[str | int, float]],
         **kwargs: Any,
-    ) -> QCVVResults:
+    ) -> ResultsT:
         """Evaluates the probabilities for each circuit using a user provided callable function.
         This function should take a circuit as input and return a dictionary of probabilities for
         each bitstring (including states with zero probability).
