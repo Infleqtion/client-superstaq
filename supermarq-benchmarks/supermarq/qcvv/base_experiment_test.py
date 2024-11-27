@@ -562,21 +562,22 @@ def test_results_from_records_bad_input(abc_experiment: ExampleExperiment) -> No
     ):
         abc_experiment.results_from_records({new_uuid: {"00": 10}})
 
-    # Warn for invalid bitstring and for no non-zero counts
-    with (
-        pytest.warns(
-            UserWarning,
-            match=re.escape(
-                f"Some counts provided in the record with ID {samples[0].uuid} have invalid "
-                "bitstrings, these will be ignored."
-            ),
+    # Warn for invalid bitstring for no non-zero counts
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            f"Some counts provided in the record with ID {samples[0].uuid} have invalid "
+            "bitstrings, these will be ignored."
         ),
-        pytest.warns(
-            UserWarning,
-            match=re.escape(
-                f"Record with ID {samples[0].uuid} contains no valid, non-zero counts. This record"
-                "will be ignored."
-            ),
+    ):
+        abc_experiment.results_from_records({samples[0].uuid: {"001": 10}})
+
+    # Warn for no non-zero counts
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            f"Record with ID {samples[0].uuid} contains no valid, non-zero counts. This record"
+            "will be ignored."
         ),
     ):
         abc_experiment.results_from_records({samples[0].uuid: {"001": 10}})
