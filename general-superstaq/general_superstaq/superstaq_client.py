@@ -733,7 +733,7 @@ class _SuperstaqClient:
             if not query:
                 q_string = ""
             else:
-                q_string = "?" + urllib.parse.urlencode(query)
+                q_string = "?" + urllib.parse.urlencode(query, doseq=True)
             return self.session.get(
                 f"{self.url}{endpoint}{q_string}",
                 headers=self.headers,
@@ -1049,14 +1049,14 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):  # pragma: no cover
         # Infer the job type
         if target.endswith("_simulator"):
             job_type = _models.JobType.SIMULATION
-        elif method in _models.SimMethod:
+        elif method in _models.SimMethod._value2member_map_.keys():
             job_type = _models.JobType.DEVICE_SIMULATION
         else:
             job_type = _models.JobType.DEVICE_SUBMISSION
 
         # Get sim method if needed
         if job_type != _models.JobType.DEVICE_SUBMISSION:
-            if method in [ct.value for ct in _models.SimMethod]:
+            if method in _models.SimMethod._value2member_map_.keys():
                 sim_method = _models.SimMethod(method)
             else:
                 sim_method = None
@@ -1222,10 +1222,18 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):  # pragma: no cover
         Returns:
             A list of Superstaq targets matching all provided criteria.
         """
-        request = _models.GetTargetsFilterModel(**kwargs)
+
+        request = _models.GetTargetsFilterModel(
+            **{key: val for key, val in kwargs.items() if val is not None}
+        )
         response = self.get_request("/client/targets", **request.model_dump(exclude_defaults=True))
-        targets = [_models.TargetInfoModel(**data) for data in response.values()]
-        return [gss.typing.Target(**target.model_dump()) for target in targets]
+        targets = [_models.TargetInfoModel(**data) for data in response]
+        return [
+            gss.typing.Target(
+                target=target.target_name, **target.model_dump(exclude={"target_name"})
+            )
+            for target in targets
+        ]
 
     def add_new_user(self, json_dict: dict[str, str]) -> str:
         """Makes a POST request to Superstaq API to add a new user.
@@ -1309,7 +1317,8 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):  # pragma: no cover
         raise NotImplementedError
 
     def compile(self, json_dict: dict[str, str]) -> dict[str, str]:
-        """Makes a POST request to Superstaq API to compile a list of circuits.
+        """Makes a POST request to Superstaq API to compile a list of circuits. Then polls the
+        API with GET requests in order to process the compiled circuits.
 
         Args:
             json_dict: The dictionary containing data to compile.
@@ -1317,7 +1326,68 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):  # pragma: no cover
         Returns:
             A dictionary containing compiled circuit data.
         """
-        raise NotImplementedError
+        # Get circuits
+        if "cirq_circuits" in json_dict:
+            circuits = json_dict["cirq_circuits"]
+            circuit_type = _models.CircuitType.CIRQ
+        elif "qiskit_circuits" in json_dict:
+            circuits = json_dict["qiskit_circuits"]
+            circuit_type = _models.CircuitType.QISKIT
+        else:
+            raise NotImplementedError("Unsupported circuit type.")
+
+        # Define job
+        new_job = _models.NewJob(
+            job_type=_models.JobType.COMPILE,
+            target=json_dict["target"],
+            circuits=circuits,
+            circuit_type=circuit_type,
+            options_dict=json.loads(json_dict.get("options", "{}")),
+        )
+        # Submit job and store ID
+        response = _models.NewJobResponse(**self.post_request("/client/job", new_job.model_dump()))
+        job_id = response.job_id
+        job_data = self.fetch_single_job(job_id)
+
+        # Poll the server until all circuits have reached a terminal state.
+        time_waited_seconds: float = 0.0
+        while any(s not in _models.TERMINAL_CIRCUIT_STATES for s in job_data.statuses):
+            # Status does a refresh.
+            if time_waited_seconds > 7200:
+                raise TimeoutError(
+                    f"Timed out while waiting for circuits to compile. The job ID is {job_id}. "
+                    "Please use retrieve the job later when it has finished compiling."
+                )
+            time.sleep(2.5)
+            time_waited_seconds += 2.5
+            job_data = self.fetch_single_job(job_id)
+
+        # Exception if any have not been successful
+        if not all(s == _models.CircuitStatus.COMPLETED for s in job_data.statuses):
+            raise gss.SuperstaqException(
+                f"Not all circuits were successfully compiled. Check job ID {job_id} for further "
+                "details."
+            )
+
+        # Join circuits together in json string - TODO: make this neater
+        compile_dict = {
+            "initial_logical_to_physicals": "["
+            + ", ".join(job_data.initial_logical_to_physicals)
+            + "]",
+            "final_logical_to_physicals": "["
+            + ", ".join(job_data.final_logical_to_physicals)
+            + "]",
+        }
+        if all(pgs is not None for pgs in job_data.pulse_gate_circuits):
+            compile_dict["pulse_sequences"] = "[" + ", ".join(job_data.pulse_gate_circuits) + "]"
+
+        if circuit_type == _models.CircuitType.CIRQ:
+            compile_dict["cirq_circuits"] = "[" + ", ".join(job_data.compiled_circuits) + "]"
+            return compile_dict
+
+        if circuit_type == _models.CircuitType.QISKIT:
+            compile_dict["qiskit_circuits"] = "[" + ", ".join(job_data.compiled_circuits) + "]"
+            return compile_dict
 
     def submit_qubo(
         self,

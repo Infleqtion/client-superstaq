@@ -115,6 +115,8 @@ class JobData(DefaultPydanticModel):
     dry_run: bool
     submission_timestamp: datetime.datetime
     last_updated_timestamp: list[datetime.datetime | None]
+    initial_logical_to_physicals: list[str | None]
+    final_logical_to_physicals: list[str | None]
 
 
 class NewJob(DefaultPydanticModel):

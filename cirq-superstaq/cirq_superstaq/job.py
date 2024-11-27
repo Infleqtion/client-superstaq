@@ -524,6 +524,9 @@ class _Job(Job):  # pragma: no cover
 
     def _refresh_job(self) -> None:
         """If the last fetched job is not terminal, gets the job from the API."""
+        if hasattr(self, "_job_data"):
+            if all(s in _models.TERMINAL_CIRCUIT_STATES for s in self._job_data.statuses):
+                return
         self._job_data = self._client.fetch_single_job(self._job_id)
         self._update_status_queue_info()
 
@@ -570,7 +573,18 @@ class _Job(Job):  # pragma: no cover
         """
         status = self.status()
         if status == _models.CircuitStatus.FAILED:
-            raise gss.SuperstaqUnsuccessfulJobException(self.job_id(), status)
+            message = "Failure: "
+            circuit_messages = []
+            for k in range(self._job_data.num_circuits):
+                if self._job_data.statuses[k] == _models.CircuitStatus.FAILED:
+                    error = (
+                        self._job_data.status_messages[k]
+                        if self._job_data.status_messages[k] is not None
+                        else "Unknown"
+                    )
+                    circuit_messages.append(f"Circuit {k} - {error}")
+            message += "[" + ", ".join(circuit_messages) + "]"
+            raise gss.SuperstaqUnsuccessfulJobException(self.job_id(), message)
 
     def job_id(self) -> str:
         """Gets the job id of this job.

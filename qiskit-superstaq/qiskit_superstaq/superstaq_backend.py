@@ -163,10 +163,14 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             **kwargs,
         )
 
-        #  we make a virtual job_id that aggregates all of the individual jobs
-        # into a single one, that comma-separates the individual jobs:
-        job_id = ",".join(result["job_ids"])
-        job = qss.SuperstaqJob(self, job_id)
+        if isinstance(self._provider._client, gss.superstaq_client._SuperstaqClient_v0_3_0):
+            job_id = result["job_id"]
+            job = qss.superstaq_job._SuperstaqJob(self, job_id)
+        else:
+            #  we make a virtual job_id that aggregates all of the individual jobs
+            # into a single one, that comma-separates the individual jobs:
+            job_id = ",".join(result["job_ids"])
+            job = qss.SuperstaqJob(self, job_id)
 
         return job
 
