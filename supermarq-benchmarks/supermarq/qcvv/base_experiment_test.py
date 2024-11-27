@@ -593,13 +593,11 @@ def test_results_from_records_bad_input(abc_experiment: ExampleExperiment) -> No
         ),
     ):
         abc_experiment.results_from_records({samples[0].uuid: {"01": -10}})
-    with (
-        pytest.raises(
-            ValueError,
-            match=re.escape(
-                f"Some counts provided for record with ID {samples[0].uuid} are not "
-                "positive integers."
-            ),
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            f"Some counts provided for record with ID {samples[0].uuid} are not "
+            "positive integers."
         ),
     ):
         abc_experiment.results_from_records(
