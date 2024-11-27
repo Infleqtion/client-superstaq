@@ -49,7 +49,7 @@ def test_run_v0_3_0(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc.measure([0, 0], [1, 1])
 
     fake_superstaq_provider._client = gss.superstaq_client.get_client(
-        "test_name", api_version="v0.3.0"
+        "test_name", api_version="v0.3.0", api_key="fake-key"
     )
 
     backend = fake_superstaq_provider.get_backend("ss_example_qpu")
