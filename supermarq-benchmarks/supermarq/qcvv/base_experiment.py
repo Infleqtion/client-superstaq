@@ -16,10 +16,11 @@ from __future__ import annotations
 
 import functools
 import math
+import uuid
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Generic, TypeVar
 
 import cirq
@@ -40,6 +41,9 @@ class Sample:
     data: dict[str, Any]
     """The corresponding data about the circuit that is needed when analyzing results
     (e.g. cycle depth)."""
+
+    uuid: uuid.UUID = field(default_factory=uuid.uuid4)
+    """The unique ID of the sample."""
 
 
 @dataclass
@@ -483,4 +487,78 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             target="Callable",
             experiment=self,
             data=pd.DataFrame(records),
+        )
+
+    def results_from_records(self, records: dict[uuid.UUID, dict[str, int]]) -> ResultsT:
+        """Creates a results object from records of the counts for each sample circuit. This
+        function is aimed at users who would like to use the QCVV framework to generate sample
+        circuits and analyse the results but need to run these circuits without submitting a job
+        to Superstaq.
+
+        Args:
+            records: A dictionary of the counts for each sample, indexed by the sample UUID. The
+                counts for each sample should be provided as a dictionary of integers indexed by
+                the bitstring.
+
+        Raises:
+            ValueError: If any of the provided counts are not positive integers.
+
+        Returns:
+            The experiment results object.
+        """
+        # First check for any missing or spurious records
+        expected_uuids = [s.uuid for s in self.samples]
+        received_uuids = [u for u in records.keys()]
+
+        missing_uuids = [str(u) for u in expected_uuids if u not in received_uuids]
+        if missing_uuids:
+            warnings.warn(f"The following samples are missing records: {', '.join(missing_uuids)}")
+        spurious_uuids = [str(u) for u in received_uuids if u not in expected_uuids]
+        if spurious_uuids:
+            warnings.warn(
+                "Records were provided with the following UUIDs which do not match"
+                f" any samples and will be ignored: {', '.join(spurious_uuids)}"
+            )
+
+        results_data = []
+        samples_dict = {s.uuid: s for s in self.samples}
+        for uid, counts in records.items():
+            # Skip the records if the UUID is not recognized.
+            if uid not in samples_dict:
+                break
+            sample = samples_dict[uid]
+            bitstrings = [format(k, f"0{self.num_qubits}b") for k in range(2**self.num_qubits)]
+            # Check if any of the provided bitstrings are invalid.
+            if any(k not in bitstrings for k in counts.keys()):
+                warnings.warn(
+                    f"Some counts provided in the record with ID {uid} have invalid bitstrings, "
+                    "these will be ignored."
+                )
+            # Check all counts are positive intergers
+            if any(not isinstance(c, int) or c < 0 for c in counts.values()):
+                raise ValueError(
+                    f"Some counts provided for record with ID {uid} are not positive integers."
+                )
+            # Drop invalid bitstrings
+            counts = {bitstring: counts.get(bitstring, 0) for bitstring in bitstrings}
+            # Convert to probabilities
+            total_count = sum(counts.values())
+            if total_count == 0:
+                warnings.warn(
+                    f"Record with ID {uid} contains no valid, non-zero counts. This record"
+                    "will be ignored."
+                )
+                break
+            else:
+                probability = {
+                    bitstring: count / total_count for bitstring, count in counts.items()
+                }
+
+            # Add to results data
+            results_data.append({**sample.data, **probability})
+
+        return self._results_cls(
+            target="Records",
+            experiment=self,
+            data=pd.DataFrame(results_data),
         )

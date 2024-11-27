@@ -17,6 +17,8 @@
 
 from __future__ import annotations
 
+import re
+import uuid
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from unittest.mock import MagicMock, call, patch
@@ -518,3 +520,87 @@ def test_results_collect_device_counts_no_job() -> None:
         match=("No Superstaq job associated with these results. Cannot collect device counts."),
     ):
         results._collect_device_counts()
+
+
+def test_results_from_records(abc_experiment: ExampleExperiment) -> None:
+    samples = abc_experiment.samples
+    records = {s.uuid: {"01": 1, "10": 3} for s in samples}
+
+    results = abc_experiment.results_from_records(records)
+    pd.testing.assert_frame_equal(
+        results.data,
+        pd.DataFrame(
+            [
+                {"num": n, "depth": d, "00": 0.0, "01": 0.25, "10": 0.75, "11": 0.0}
+                for n in range(10)
+                for d in (1, 3, 5)
+            ]
+        ),
+    )
+
+
+def test_results_from_records_bad_input(abc_experiment: ExampleExperiment) -> None:
+    samples = abc_experiment.samples
+    # Warn for missing samples
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            "The following samples are missing records: "
+            f"{', '.join(str(s.uuid) for s in samples[1:])}"
+        ),
+    ):
+        abc_experiment.results_from_records({samples[0].uuid: {"00": 10}})
+
+    # Warn for spurious records
+    new_uuid = uuid.uuid4()
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            "Records were provided with the following UUIDs which do not match"
+            f" any samples and will be ignored: {', '.join([str(new_uuid)])}"
+        ),
+    ):
+        abc_experiment.results_from_records({new_uuid: {"00": 10}})
+
+    # Warn for invalid bitstring and for no non-zero counts
+    with (
+        pytest.warns(
+            UserWarning,
+            match=re.escape(
+                f"Some counts provided in the record with ID {samples[0].uuid} have invalid "
+                "bitstrings, these will be ignored."
+            ),
+        ),
+        pytest.warns(
+            UserWarning,
+            match=re.escape(
+                f"Record with ID {samples[0].uuid} contains no valid, non-zero counts. This record"
+                "will be ignored."
+            ),
+        ),
+    ):
+        abc_experiment.results_from_records({samples[0].uuid: {"001": 10}})
+
+    # Raise exception for non positive integer counts
+    with (
+        pytest.raises(
+            ValueError,
+            match=re.escape(
+                f"Some counts provided for record with ID {samples[0].uuid} are not "
+                "positive integers."
+            ),
+        ),
+    ):
+        abc_experiment.results_from_records({samples[0].uuid: {"01": -10}})
+    with (
+        pytest.raises(
+            ValueError,
+            match=re.escape(
+                f"Some counts provided for record with ID {samples[0].uuid} are not "
+                "positive integers."
+            ),
+        ),
+    ):
+        abc_experiment.results_from_records(
+            {samples[0].uuid: {"01": 2.5}}  # type: ignore[dict-item]
+        )
