@@ -1323,6 +1323,12 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):  # pragma: no cover
         Args:
             json_dict: The dictionary containing data to compile.
 
+        Raises:
+            NotImplementedError: If the circuit type is unsupported
+            TimeoutError: If the server does not return compiled circuits in the alloted
+                time (7200s)
+            SuperstaqException: If the server fails to compile all circuits successfully
+
         Returns:
             A dictionary containing compiled circuit data.
         """
@@ -1346,7 +1352,7 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):  # pragma: no cover
         )
         # Submit job and store ID
         response = _models.NewJobResponse(**self.post_request("/client/job", new_job.model_dump()))
-        job_id = response.job_id
+        job_id = str(response.job_id)
         job_data = self.fetch_single_job(job_id)
 
         # Poll the server until all circuits have reached a terminal state.
@@ -1369,25 +1375,46 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):  # pragma: no cover
                 "details."
             )
 
-        # Join circuits together in json string - TODO: make this neater
+        # Check that all the expected data has been received. TODO - eventually add this validation
+        # into the JobData object itself.
+        if (
+            any(a is None for a in job_data.initial_logical_to_physicals)
+            or any(a is None for a in job_data.final_logical_to_physicals)
+            or any(a is None for a in job_data.compiled_circuits)
+        ):
+            raise gss.SuperstaqException(
+                "The server did not return all the expected data."
+            )  # TODO Add more description.
+
+        # Join circuits together in json string - TODO: make this neater.
+        # Note mypy does not recognise that the above checks ensure there are no None's anywhere,
+        # hence the ignored [arg-type]'s
         compile_dict = {
             "initial_logical_to_physicals": "["
-            + ", ".join(job_data.initial_logical_to_physicals)
+            + ", ".join(job_data.initial_logical_to_physicals)  # type: ignore[arg-type]
             + "]",
             "final_logical_to_physicals": "["
-            + ", ".join(job_data.final_logical_to_physicals)
+            + ", ".join(job_data.final_logical_to_physicals)  # type: ignore[arg-type]
             + "]",
         }
         if all(pgs is not None for pgs in job_data.pulse_gate_circuits):
-            compile_dict["pulse_sequences"] = "[" + ", ".join(job_data.pulse_gate_circuits) + "]"
+            compile_dict["pulse_sequences"] = (
+                "[" + ", ".join(job_data.pulse_gate_circuits) + "]"  # type: ignore[arg-type]
+            )
 
         if circuit_type == _models.CircuitType.CIRQ:
-            compile_dict["cirq_circuits"] = "[" + ", ".join(job_data.compiled_circuits) + "]"
+            compile_dict["cirq_circuits"] = (
+                "[" + ", ".join(job_data.compiled_circuits) + "]"  # type: ignore[arg-type]
+            )
             return compile_dict
 
         if circuit_type == _models.CircuitType.QISKIT:
-            compile_dict["qiskit_circuits"] = "[" + ", ".join(job_data.compiled_circuits) + "]"
+            compile_dict["qiskit_circuits"] = (
+                "[" + ", ".join(job_data.compiled_circuits) + "]"  # type: ignore[arg-type]
+            )
             return compile_dict
+
+        raise NotImplementedError("Unsupported circuit type.")
 
     def submit_qubo(
         self,

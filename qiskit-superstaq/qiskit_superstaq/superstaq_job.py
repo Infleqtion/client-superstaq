@@ -413,7 +413,7 @@ class _SuperstaqJob(SuperstaqJob):  # pragma: no cover
         qiskit.providers.JobV1.__init__(self, backend, job_id)
         if self._backend._provider._client.api_version != "v0.3.0":
             raise NotImplementedError("_Job job can only be used with v0.3.0 of the Superstaq API.")
-        self._overall_status = gss._models.CircuitStatus.RECEIVED
+        self._overall_status: gss._models.CircuitStatus = gss._models.CircuitStatus.RECEIVED
         self._job_data: gss._models.JobData
         self._refresh_job()
 
@@ -475,14 +475,14 @@ class _SuperstaqJob(SuperstaqJob):  # pragma: no cover
             The equivalent `qiskit.providers.jobstatus.JobStatus` type.
         """
 
-        status_match = {
+        status_match: dict[gss._models.CircuitStatus, qiskit.providers.jobstatus.JobStatus] = {
             gss._models.CircuitStatus.PENDING: qiskit.providers.jobstatus.JobStatus.QUEUED,
-            gss._models.CircuitStatus.AWAITING_SUBMISSION: qiskit.providers.jobstatus.JobStatus.QUEUED,
-            gss._models.CircuitStatus.AWAITING_SIMULATION: qiskit.providers.jobstatus.JobStatus.QUEUED,
+            gss._models.CircuitStatus.AWAITING_SUBMISSION: qiskit.providers.jobstatus.JobStatus.QUEUED,  # noqa: E501 # pylint: disable=line-too-long
+            gss._models.CircuitStatus.AWAITING_SIMULATION: qiskit.providers.jobstatus.JobStatus.QUEUED,  # noqa: E501 # pylint: disable=line-too-long
             gss._models.CircuitStatus.RUNNING: qiskit.providers.jobstatus.JobStatus.RUNNING,
             gss._models.CircuitStatus.RECEIVED: qiskit.providers.jobstatus.JobStatus.INITIALIZING,
-            gss._models.CircuitStatus.AWAITING_COMPILE: qiskit.providers.jobstatus.JobStatus.INITIALIZING,
-            gss._models.CircuitStatus.AWAITING_CONVERSION: qiskit.providers.jobstatus.JobStatus.INITIALIZING,
+            gss._models.CircuitStatus.AWAITING_COMPILE: qiskit.providers.jobstatus.JobStatus.INITIALIZING,  # noqa: E501 # pylint: disable=line-too-long
+            gss._models.CircuitStatus.AWAITING_CONVERSION: qiskit.providers.jobstatus.JobStatus.INITIALIZING,  # noqa: E501 # pylint: disable=line-too-long
             gss._models.CircuitStatus.CANCELLED: qiskit.providers.jobstatus.JobStatus.CANCELLED,
             gss._models.CircuitStatus.FAILED: qiskit.providers.jobstatus.JobStatus.ERROR,
             gss._models.CircuitStatus.UNRECOGNIZED: qiskit.providers.jobstatus.JobStatus.ERROR,

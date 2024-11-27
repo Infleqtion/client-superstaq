@@ -96,7 +96,7 @@ class JobData(DefaultPydanticModel):
     """A class to store data for a Superstaq job which is returned through to the client."""
 
     job_type: JobType
-    statuses: list[str]
+    statuses: list[CircuitStatus]
     status_messages: list[str | None]
     user_email: pydantic.EmailStr
     target: str
