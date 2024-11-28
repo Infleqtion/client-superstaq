@@ -594,6 +594,8 @@ class _SuperstaqJob(SuperstaqJob):  # pragma: no cover
         # create list of result dictionaries
         results_list = []
         for i in range(self._job_data.num_circuits):
+            if index is not None and index != i:
+                continue
             counts = self._job_data.counts[i]
             if counts:
                 num_clbits = self._get_num_clbits(i)
