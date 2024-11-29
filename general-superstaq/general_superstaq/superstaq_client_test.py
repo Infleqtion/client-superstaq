@@ -562,6 +562,38 @@ def test_superstaq_client_get_targets(mock_post: mock.MagicMock) -> None:
     )
 
 
+@mock.patch("requests.Session.get")
+def test_superstaq_client_get_my_targets(mock_get: mock.MagicMock) -> None:
+    mock_get.return_value.ok = True
+    target = {
+        "ss_unconstrained_simulator": {
+            "supports_submit": True,
+            "supports_submit_qubo": True,
+            "supports_compile": True,
+            "available": True,
+            "retired": False,
+        }
+    }
+    mock_get.return_value.json.return_value = {"superstaq_targets": target}
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    response = client.get_my_targets()
+    assert response == [
+        gss.typing.Target(
+            target="ss_unconstrained_simulator",
+            **target["ss_unconstrained_simulator"],
+        )
+    ]
+    mock_get.assert_called_once_with(
+        f"http://example.com/{API_VERSION}/my_targets",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+    )
+
+
 @mock.patch("requests.Session.post")
 def test_superstaq_client_fetch_jobs_unauthorized(mock_post: mock.MagicMock) -> None:
     mock_post.return_value.ok = False
