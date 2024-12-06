@@ -333,7 +333,7 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
     assert job.counts(0) == {"11": 1}
 
 
-@pytest.mark.skip(reason="Can't be executed when Sqorpius is set to not accept jobs")
+@pytest.mark.skip(reason="Can't be executed when Sqale is set to not accept jobs")
 def test_submit_to_sqale_qubit_sorting(service: css.Service) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776
 
