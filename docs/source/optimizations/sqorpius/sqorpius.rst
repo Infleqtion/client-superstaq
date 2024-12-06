@@ -7,5 +7,5 @@ Below, you will find links to identical tutorials that demonstrate Superstaq for
 .. toctree::
     :maxdepth: 1
 
-    sqorpius_compile_qss
-    sqorpius_compile_css
+    sqale_compile_qss
+    sqale_compile_css

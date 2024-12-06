@@ -323,7 +323,7 @@ def test_job(service: css.Service) -> None:
     assert job.job_id() == job_id
 
 
-@pytest.mark.parametrize("target", ["cq_sqorpius_simulator", "aws_sv1_simulator"])
+@pytest.mark.parametrize("target", ["cq_sqale_simulator", "aws_sv1_simulator"])
 def test_submit_to_provider_simulators(target: str, service: css.Service) -> None:
     q0 = cirq.LineQubit(0)
     q1 = cirq.LineQubit(1)
@@ -334,13 +334,13 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
 
 
 @pytest.mark.skip(reason="Can't be executed when Sqorpius is set to not accept jobs")
-def test_submit_to_sqorpius_qubit_sorting(service: css.Service) -> None:
+def test_submit_to_sqale_qubit_sorting(service: css.Service) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776
 
     Args:
         service: cirq_superstaq service object from fixture.
     """
-    target = "cq_sqorpius_qpu"
+    target = "cq_sqale_qpu"
     num_qubits = service.target_info(target)["num_qubits"]
     qubits = cirq.LineQubit.range(num_qubits)
     circuit = cirq.Circuit(
