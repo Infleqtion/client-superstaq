@@ -164,6 +164,30 @@ class SuperstaqProvider(gss.service.Service):
             superstaq_backends.append(self.get_backend(backend.target))
         return superstaq_backends
 
+    def get_job(self, job_id: str) -> qss.SuperstaqJob:
+        """Gets a job that has been created on the Superstaq API.
+
+        Args:
+            job_id: The UUID of the job. Jobs are assigned these numbers by the server during the
+            creation of the job.
+
+        Returns:
+            A `qss.SuperstaqJob` which can be queried for status or results.
+
+        Raises:
+            ~gss.SuperstaqServerException: If there was an error accessing the API.
+            ~gss.SuperstaqException: If retrived jobs are from different targets.
+        """
+        job_ids = job_id.split(",")
+        jobs = self._client.fetch_jobs(job_ids)
+
+        target = jobs[job_ids[0]]["target"]
+
+        if all(target == val["target"] for val in jobs.values()):
+            return qss.SuperstaqJob(self.get_backend(target), job_id)
+        else:
+            raise gss.SuperstaqException("Job ids belong to jobs at different targets.")
+
     def resource_estimate(
         self, circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit], target: str
     ) -> gss.ResourceEstimate | list[gss.ResourceEstimate]:
@@ -174,7 +198,7 @@ class SuperstaqProvider(gss.service.Service):
             target: A string containing the name of a target backend.
 
         Returns:
-            `ResourceEstimate`(s) containing resource costs (after compilation) for running
+            ResourceEstimate(s) containing resource costs (after compilation) for running
             circuit(s) on a backend.
         """
         return self.get_backend(target).resource_estimate(circuits)
@@ -187,7 +211,7 @@ class SuperstaqProvider(gss.service.Service):
         num_eca_circuits: int | None = None,
         random_seed: int | None = None,
         atol: float | None = None,
-        gate_defs: Mapping[str, str | npt.NDArray[np.complex_] | None] | None = None,
+        gate_defs: Mapping[str, str | npt.NDArray[np.number[Any]] | None] | None = None,
         gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
         pulses: object = None,
         variables: object = None,
@@ -252,7 +276,7 @@ class SuperstaqProvider(gss.service.Service):
         random_seed: int | None = None,
         target: str = "aqt_keysight_qpu",
         atol: float | None = None,
-        gate_defs: Mapping[str, str | npt.NDArray[np.complex_] | None] | None = None,
+        gate_defs: Mapping[str, str | npt.NDArray[np.number[Any]] | None] | None = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
@@ -309,19 +333,34 @@ class SuperstaqProvider(gss.service.Service):
         self,
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         target: str,
+        *,
         dynamical_decoupling: bool = True,
-        dd_strategy: str = "static_context_aware",
+        dd_strategy: str = "adaptive",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Returns pulse schedule(s) for the given qiskit circuit(s) and target.
+
+        Superstaq currently supports the following dynamical decoupling strategies:
+
+        * "standard": Places a single DD sequence in each idle window.
+
+        * "syncopated": Places DD pulses at fixed time intervals, alternating between pulses on
+           neighboring qubits in order to mitigate parasitic ZZ coupling errors.
+
+        * "adaptive" (default): Dynamically spaces DD pulses across idle windows with awareness of
+           neighboring qubits to achieve the parasitic ZZ coupling mitigation of the "syncopated"
+           strategy with fewer pulses and less discretization error.
+
+        See https://superstaq.readthedocs.io/en/latest/optimizations/ibm/ibmq_dd_strategies_qss.html
+        for an example of each strategy.
 
         Args:
             circuits: The circuit(s) to compile.
             target: A string containing the name of a target IBMQ backend.
             dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
-            dd_strategy: Method to use for placing dynamical decoupling operations; either
-                "dynamic", "static", or "static_context_aware" (default).
-            kwargs: Other desired ibmq_compile options.
+            dd_strategy: Method to use for placing dynamical decoupling operations; should be either
+                "standard", "syncopated", or "adaptive" (default). See above.
+            kwargs: Other desired compile options.
 
         Returns:
             Object whose .circuit(s) attribute contains the compiled circuits(s), and whose
@@ -357,10 +396,10 @@ class SuperstaqProvider(gss.service.Service):
         Jaqal [2] programs (strings).
 
         References:
-            [1] S. M. Clark et al., *Engineering the Quantum Scientific Computing Open User
-                Testbed*, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
+            [1] S. M. Clark et al., Engineering the Quantum Scientific Computing Open User
+                Testbed, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
                 https://doi.org/10.1109/TQE.2021.3096480.
-            [2] B. Morrison, et al., *Just Another Quantum Assembly Language (Jaqal)*, 2020 IEEE
+            [2] B. Morrison, et al., Just Another Quantum Assembly Language (Jaqal), 2020 IEEE
                 International Conference on Quantum Computing and Engineering (QCE), 402-408 (2020).
                 https://arxiv.org/abs/2008.08042.
 
@@ -443,7 +482,7 @@ class SuperstaqProvider(gss.service.Service):
 
     def supercheq(
         self, files: list[list[int]], num_qubits: int, depth: int
-    ) -> tuple[list[qiskit.QuantumCircuit], npt.NDArray[np.float_]]:
+    ) -> tuple[list[qiskit.QuantumCircuit], npt.NDArray[np.float64]]:
         """Returns Supercheq randomly generated circuits and the corresponding fidelity matrices.
 
         References:
@@ -457,8 +496,8 @@ class SuperstaqProvider(gss.service.Service):
             depth: The depth of the circuits to run Supercheq on.
 
         Returns:
-            A tuple containing a list of `qiskit.QuantumCircuit`s and a list of corresponding
-                fidelity matrices.
+            A tuple containing a list of qiskit.QuantumCircuits and a list of corresponding
+            fidelity matrices.
         """
         json_dict = self._client.supercheq(files, num_qubits, depth, "qiskit_circuits")
         circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
@@ -509,7 +548,7 @@ class SuperstaqProvider(gss.service.Service):
 
         Raises:
             ValueError: If `circuit` is not a valid `qiskit.QuantumCircuit`.
-            SuperstaqServerException: If there was an error accessing the API.
+            ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         circuit_1 = rho_1[0]
         circuit_2 = rho_2[0]
@@ -553,7 +592,7 @@ class SuperstaqProvider(gss.service.Service):
 
         Raises:
             ValueError: If `ids` is not of size two.
-            SuperstaqServerException: If there was an error accessing the API or the jobs submitted
-                through `submit_dfe` have not finished running.
+            ~gss.SuperstaqServerException: If there was an error accessing the API or
+                the jobs submitted through `submit_dfe` have not finished running.
         """
         return self._client.process_dfe(ids)

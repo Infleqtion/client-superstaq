@@ -14,6 +14,7 @@
 """
 from __future__ import annotations
 
+import functools
 import math
 import pprint
 from abc import ABC, abstractmethod
@@ -23,8 +24,9 @@ from typing import Any, Generic, TypeVar
 
 import cirq
 import cirq_superstaq as css
+import numpy as np
 import pandas as pd
-from tqdm.notebook import tqdm
+from tqdm.auto import tqdm
 
 
 @dataclass
@@ -37,12 +39,12 @@ class Sample:
     """The raw (i.e. pre-compiled) sample circuit."""
     data: dict[str, Any]
     """The corresponding data about the circuit"""
-    probabilities: dict[str, float] = field(init=False)
+    probabilities: dict[str, float] | None = None
     """The probabilities of the computational basis states"""
     job: css.Job | None = None
     """The superstaq job corresponding to the sample. Defaults to None if no job is
     associated with the sample."""
-    compiled_circuit: cirq.Circuit = field(init=False)
+    compiled_circuit: cirq.Circuit | None = None
     """The compiled circuit. Only used if the circuits are compiled for a specific
     target."""
 
@@ -55,7 +57,7 @@ class Sample:
             # If there is a job then get the target
             return self.job.target()
 
-        if hasattr(self, "probabilities"):
+        if self.probabilities is not None:
             # If no job, but probabilities have been calculated, infer that a local
             # simulator was used.
             return "Local simulator"
@@ -69,7 +71,7 @@ class Sample:
         The circuit used for the experiment. Defaults to the compiled circuit if available
         and if not returns the raw circuit.
         """
-        if hasattr(self, "compiled_circuit"):
+        if self.compiled_circuit is not None:
             return self.compiled_circuit
 
         return self.raw_circuit
@@ -121,6 +123,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
        data has been collected and is ready to be analysed.
 
        .. code::
+
             if experiment.collect_data():
                 results = experiment.analyze_results(<<args>>)
 
@@ -137,6 +140,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
     Additionally it is possible to pre-compile the experimental circuits for a given device using
 
     .. code::
+
         experiment.prepare_experiment(<<args/kwargs>>)
         experiment.compile_circuits(target=<<target_name>>)
 
@@ -170,12 +174,17 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
     def __init__(
         self,
         num_qubits: int,
+        *,
+        random_seed: int | np.random.Generator | None = None,
         **kwargs: Any,
     ) -> None:
-        """Args:
-        num_qubits: The number of qubits used during the experiment. Most subclasses
-            will determine this from their other inputs.
-        kwargs: Additional kwargs passed to the Superstaq service object.
+        """Initializes a benchmarking experiment.
+
+        Args:
+            num_qubits: The number of qubits used during the experiment. Most subclasses
+                will determine this from their other inputs.
+            random_seed: An optional seed to use for randomization.
+            kwargs: Additional kwargs passed to the Superstaq service object.
         """
         self.qubits = cirq.LineQubit.range(num_qubits)
         """The qubits used in the experiment."""
@@ -189,12 +198,19 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         self._samples: Sequence[Sample] | None = None
         """The attribute to store the experimental samples in."""
 
-        self._service: css.service.Service = css.service.Service(**kwargs)
-        """The superstaq service for submitting jobs."""
+        self._service_kwargs = kwargs
+        """Arguments to pass to the Superstaq service for submitting jobs."""
+
+        self._rng = np.random.default_rng(random_seed)
 
     ##############
     # Properties #
     ##############
+    @functools.cached_property
+    def _superstaq_service(self) -> css.Service:
+        """A Superstaq service to use for compilation and circuit submission."""
+        return css.Service(**self._service_kwargs)
+
     @property
     def num_qubits(self) -> int:
         """Returns:
@@ -330,9 +346,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             return {}
 
         statuses = {}
-        waiting_samples = [
-            sample for sample in self.samples if not hasattr(sample, "probabilities")
-        ]
+        waiting_samples = [sample for sample in self.samples if sample.probabilities is None]
         for sample in tqdm(waiting_samples, "Retrieving jobs"):
             if sample.job is None:
                 continue
@@ -345,7 +359,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
 
         return statuses
 
-    def _run_check(self) -> None:
+    def _has_raw_data(self) -> None:
         """Checks if any of the samples already have probabilities stored. If so raises a runtime
         error to prevent them from being overwritten.
 
@@ -354,7 +368,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
         Raises:
             RuntimeError: If any samples already have probabilities stored.
         """
-        if any(hasattr(sample, "probabilities") for sample in self.samples):
+        if any(sample.probabilities is not None for sample in self.samples):
             raise RuntimeError(
                 "Some samples have already been run. Re-running the experiment will"
                 "overwrite these results. If this is the desired behaviour use `overwrite=True`"
@@ -435,7 +449,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             if not force:
                 return False
 
-        completed_samples = [sample for sample in self.samples if hasattr(sample, "probabilities")]
+        completed_samples = [sample for sample in self.samples if sample.probabilities is not None]
 
         if not len(completed_samples) == len(self.samples):
             print("Some samples do not have probability results.")
@@ -456,7 +470,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             target: The device to compile to.
             kwargs: Additional desired compile options.
         """
-        compiled_circuits = self._service.compile(
+        compiled_circuits = self._superstaq_service.compile(
             [sample.circuit for sample in self.samples], target=target, **kwargs
         ).circuits
 
@@ -523,9 +537,9 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             The superstaq job containing all the circuits submitted as part of the experiment.
         """
         if not overwrite:
-            self._run_check()
+            self._has_raw_data()
 
-        experiment_job = self._service.create_job(
+        experiment_job = self._superstaq_service.create_job(
             [sample.circuit for sample in self.samples],
             target=target,
             method=method,
@@ -556,10 +570,10 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
                 be over written in the process. Defaults to False.
         """
         if not overwrite:
-            self._run_check()
+            self._has_raw_data()
 
         if simulator is None:
-            simulator = cirq.Simulator()
+            simulator = cirq.Simulator(seed=self._rng)
 
         for sample in tqdm(self.samples, desc="Simulating circuits"):
             result = simulator.run(sample.circuit, repetitions=repetitions)
@@ -593,7 +607,7 @@ class BenchmarkingExperiment(ABC, Generic[ResultsT]):
             RuntimeError: If the returned probabilities dictionary values do not sum to 1.0.
         """
         if not overwrite:
-            self._run_check()
+            self._has_raw_data()
         for sample in tqdm(self.samples, desc="Running circuits"):
             probability = circuit_eval_func(sample.circuit, **kwargs)
             if not all(len(key) == self.num_qubits for key in probability.keys()):

@@ -10,12 +10,11 @@ from checks_superstaq import check_utils
 
 
 @check_utils.enable_exit_on_failure
-def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
+def run(*args: str) -> int:
     """Checks that the docs build successfully.
 
     Args:
         *args: Command line arguments.
-        sphinx_paths: List of sphinx paths (passed to `sphinx-apidoc`).
 
     Returns:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
@@ -32,17 +31,12 @@ def run(*args: str, sphinx_paths: list[str] | None = None) -> int:
         return 0
 
     docs_dir = os.path.join(check_utils.root_dir, "docs")
-
-    if sphinx_paths:
-        returncode = 0
-        for path in sphinx_paths:
-            returncode |= subprocess.call(
-                ["sphinx-apidoc", "-f", "-o", "source", path, f"{path}/*_test.py"], cwd=docs_dir
-            )
-        return subprocess.call(["sphinx-build", "source", "build/html"], cwd=docs_dir)
-    else:
+    if not os.path.isdir(os.path.join(docs_dir, "source")):
         print(check_utils.warning("No docs to build."))
         return 0
+    return subprocess.call(
+        ["sphinx-build", "source", "build/html", "--fail-on-warning", "--keep-going"], cwd=docs_dir
+    )
 
 
 if __name__ == "__main__":

@@ -4,9 +4,8 @@ from __future__ import annotations
 import json
 import textwrap
 from typing import TYPE_CHECKING
-from unittest.mock import DEFAULT, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
-import general_superstaq as gss
 import pytest
 import qiskit
 
@@ -14,6 +13,11 @@ import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
     from qiskit_superstaq.conftest import MockSuperstaqProvider
+
+
+def test_repr(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    backend = fake_superstaq_provider.get_backend("ss_example_qpu")
+    assert repr(backend) == "<SuperstaqBackend('ss_example_qpu')>"
 
 
 def test_run(fake_superstaq_provider: MockSuperstaqProvider) -> None:
@@ -226,23 +230,27 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "initial_logical_to_physicals": "[[[4, 4], [5, 5]]]",
         "final_logical_to_physicals": "[[[0, 4], [1, 5]]]",
-        "pulses": gss.serialization.serialize([DEFAULT]),
+        "pulse_gate_circuits": qss.serialization.serialize_circuits(qc),
     }
     assert backend.compile(
-        qiskit.QuantumCircuit(), dd_strategy="static", test_options="yes"
+        qiskit.QuantumCircuit(), dd_strategy="standard", test_options="yes"
     ) == qss.compiler_output.CompilerOutput(
-        qc, initial_logical_to_physical, final_logical_to_physical, pulse_sequences=DEFAULT
+        qc, initial_logical_to_physical, final_logical_to_physical, pulse_gate_circuits=qc
     )
 
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
-        "dd_strategy": "static",
+        "dd_strategy": "standard",
         "dynamical_decoupling": True,
         "test_options": "yes",
     }
 
     assert backend.compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
-        [qc], [initial_logical_to_physical], [final_logical_to_physical], pulse_sequences=[DEFAULT]
+        [qc], [initial_logical_to_physical], [final_logical_to_physical], pulse_gate_circuits=[qc]
     )
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "dd_strategy": "adaptive",
+        "dynamical_decoupling": True,
+    }
 
     with pytest.raises(ValueError, match="'ibmq_jakarta_qpu' is not a valid AQT target."):
         backend.aqt_compile([qc])

@@ -48,12 +48,20 @@ def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
     out = provider.ibmq_compile(qc, target="ibmq_brisbane_qpu")
     assert isinstance(out, qss.compiler_output.CompilerOutput)
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
-    assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
+    assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
+    assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
 
-    out = provider.ibmq_compile(qc, target="ibmq_brisbane_qpu")
+    out = provider.ibmq_compile([qc, qc], target="ibmq_brisbane_qpu")
     assert isinstance(out, qss.compiler_output.CompilerOutput)
-    assert isinstance(out.circuit, qiskit.QuantumCircuit)
-    assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
+
+    assert isinstance(out.circuits, list)
+    assert len(out.circuits) == 2
+    assert isinstance(out.circuits[1], qiskit.QuantumCircuit)
+
+    assert isinstance(out.pulse_gate_circuits, list)
+    assert len(out.pulse_gate_circuits) == 2
+    assert isinstance(out.pulse_gate_circuits[1], qiskit.QuantumCircuit)
+    assert len(out.pulse_gate_circuits[1].op_start_times) == len(out.pulse_gate_circuits[1])
 
 
 def test_ibmq_compile_with_token() -> None:
@@ -67,7 +75,8 @@ def test_ibmq_compile_with_token() -> None:
 
     assert isinstance(out, qss.compiler_output.CompilerOutput)
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
-    assert isinstance(out.pulse_sequence, qiskit.pulse.Schedule)
+    assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
+    assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
 
 
 def test_aqt_compile(provider: qss.SuperstaqProvider) -> None:
@@ -171,10 +180,7 @@ def test_qscout_compile_swap_mirror(provider: qss.SuperstaqProvider) -> None:
     expected_op = qiskit.quantum_info.Operator(qc)
     assert op.equiv(expected_op)
 
-    num_two_qubit_gates = 0
-    for _, qbs, _ in out.circuit:
-        if len(qbs) > 1:
-            num_two_qubit_gates += 1
+    num_two_qubit_gates = sum(1 for inst in out.circuit if len(inst.qubits) == 2)
     assert num_two_qubit_gates == 3
 
 
@@ -267,15 +273,25 @@ def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvi
     "target", ["qscout_peregrine_qpu", "aqt_keysight_qpu", "ibmq_brisbane_qpu"]
 )
 def test_submit_dry_run(target: str, provider: qss.SuperstaqProvider) -> None:
-    qc = qiskit.QuantumCircuit(2, 2)
-    qc.x(0)
-    qc.cx(0, 1)
-    qc.measure(0, 0)
-    qc.measure(1, 1)
+    qc_list = [qiskit.QuantumCircuit(2, 2), qiskit.QuantumCircuit(2, 2)]
+    for i, qc in enumerate(qc_list):
+        qc.x(0)
+        qc.cx(0, 1)
+        if i == 1:
+            qc.x(0)
+        qc.measure(0, 0)
+        qc.measure(1, 1)
 
-    job = provider.get_backend(target).run(qc, shots=1, method="dry-run")
+    job = provider.get_backend(target).run(qc_list[0], shots=1, method="dry-run")
+    multi_job = provider.get_backend(target).run(qc_list, shots=1, method="dry-run")
+
     assert job.status() == qiskit.providers.JobStatus.DONE
+    assert multi_job.status(0) == qiskit.providers.JobStatus.DONE
+    assert multi_job.status(1) == qiskit.providers.JobStatus.DONE
+
     assert job.result().get_counts() == {"11": 1}
+    assert multi_job.result(0).get_counts() == {"11": 1}
+    assert multi_job.result(1).get_counts() == {"10": 1}
 
 
 @pytest.mark.skip(reason="Can't be executed when Sqorpius is set to not accept jobs")
@@ -283,7 +299,8 @@ def test_submit_to_sqorpius_qubit_sorting(provider: qss.SuperstaqProvider) -> No
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776
 
     Args:
-        provider: qiskit_superstaq instance from the fixture."""
+        provider: qiskit_superstaq instance from the fixture.
+    """
     backend = provider.get_backend("cq_sqorpius_qpu")
 
     num_qubits = backend.num_qubits

@@ -125,8 +125,6 @@ def test_read_json() -> None:
     qc_pulse = qc.copy()
     qc_pulse.add_calibration("cx", [0, 1], qiskit.pulse.ScheduleBlock("foo"))
 
-    pulse_sequence = mock.DEFAULT
-
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "initial_logical_to_physicals": "[[]]",
@@ -134,7 +132,6 @@ def test_read_json() -> None:
         "pulse_gate_circuits": qss.serialization.serialize_circuits(qc_pulse),
         "pulse_durations": [[10, 20]],
         "pulse_start_times": [[0, 10]],
-        "pulses": gss.serialization.serialize([pulse_sequence]),
     }
 
     out = qss.compiler_output.read_json(json_dict, circuits_is_list=False)
@@ -144,7 +141,6 @@ def test_read_json() -> None:
     assert out.pulse_gate_circuit.duration == 30
     assert out.pulse_gate_circuit[0].operation.duration == 10
     assert out.pulse_gate_circuit.op_start_times == [0, 10]
-    assert out.pulse_sequence == pulse_sequence
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
@@ -153,7 +149,6 @@ def test_read_json() -> None:
         "pulse_gate_circuits": qss.serialization.serialize_circuits([qc_pulse, qc_pulse]),
         "pulse_durations": [[10, 20], [100, 200]],
         "pulse_start_times": [[0, 10], [0, 100]],
-        "pulses": gss.serialization.serialize([pulse_sequence, pulse_sequence]),
     }
     out = qss.compiler_output.read_json(json_dict, circuits_is_list=True)
     assert out.circuits == [qc, qc]
@@ -162,12 +157,10 @@ def test_read_json() -> None:
     assert out.pulse_gate_circuits[1].duration == 300
     assert out.pulse_gate_circuits[1][0].operation.duration == 100
     assert out.pulse_gate_circuits[1].op_start_times == [0, 100]
-    assert out.pulse_sequences == [pulse_sequence, pulse_sequence]
 
     json_dict["pulses"] = "oops"
     out = qss.compiler_output.read_json(json_dict, circuits_is_list=True)
     assert out.circuits == [qc, qc]
-    assert out.pulse_sequences is None
 
 
 def test_read_json_empty_circuit() -> None:

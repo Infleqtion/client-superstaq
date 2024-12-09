@@ -48,7 +48,7 @@ class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
     def _has_unitary_(self) -> bool:
         return True
 
-    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex_] | None:
+    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex128] | None:
         for i in range(self._dimension):
             for j in range(i):
                 idx0 = args.subspace_index(i * self._dimension + j)
@@ -118,7 +118,7 @@ class BSwapPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
     def _eigen_shifts(self) -> list[float]:
         return [0.0, 0.5, -0.5]
 
-    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float64]]]:
         idx0, idx1 = self._swapped_state_indices()
 
         d = self.dimension**2
@@ -191,7 +191,7 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
     def _qid_shape_(self) -> tuple[int, int]:
         return self.dimension, self.dimension
 
-    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float64]]]:
         eigen_components = []
         exponents = np.kron(range(self.dimension), range(self.dimension)) % self.dimension
         for x in sorted(set(exponents)):
@@ -304,7 +304,7 @@ class VirtualZPowGate(cirq.EigenGate):
             global_shift=self._global_shift,
         )
 
-    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float64]]]:
         projector_phase = np.zeros(self._dimension)
         projector_phase[self._level :] = 1
         projector_rest = 1 - projector_phase
@@ -370,7 +370,7 @@ class _QutritZPowGate(cirq.EigenGate):
     def _qid_shape_(self) -> tuple[int]:
         return (3,)
 
-    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float64]]]:
         d = self._qid_shape_()[0]
         projector_phase = np.zeros((d, d))
         projector_phase[self._target_state, self._target_state] = 1
@@ -542,7 +542,7 @@ class QubitSubspaceGate(cirq.Gate):
     def _has_unitary_(self) -> bool:
         return cirq.has_unitary(self._sub_gate)
 
-    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex_] | None:
+    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex128] | None:
         if not cirq.has_unitary(self._sub_gate):
             return NotImplemented
 

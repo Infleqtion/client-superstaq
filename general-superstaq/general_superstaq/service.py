@@ -89,7 +89,7 @@ class Service:
             balance: The new balance.
 
         Raises:
-            SuperstaqException: If requested balance exceeds the limit.
+            superstaq.SuperstaqException: If requested balance exceeds the limit.
 
         Returns:
             String containing status of update (whether or not it failed).
@@ -172,10 +172,28 @@ class Service:
     def get_user_info(self, *, email: str) -> list[dict[str, str | float]]: ...
 
     @overload
+    def get_user_info(self, *, user_id: int) -> list[dict[str, str | float]]: ...
+
+    @overload
+    def get_user_info(self, *, name: str, user_id: int) -> list[dict[str, str | float]]: ...
+
+    @overload
+    def get_user_info(self, *, email: str, user_id: int) -> list[dict[str, str | float]]: ...
+
+    @overload
     def get_user_info(self, *, name: str, email: str) -> list[dict[str, str | float]]: ...
 
+    @overload
     def get_user_info(
-        self, *, name: str | None = None, email: str | None = None
+        self, *, name: str, email: str, user_id: int
+    ) -> list[dict[str, str | float]]: ...
+
+    def get_user_info(
+        self,
+        *,
+        name: str | None = None,
+        email: str | None = None,
+        user_id: int | None = None,
     ) -> dict[str, str | float] | list[dict[str, str | float]]:
         """Gets a dictionary of the user's info.
 
@@ -186,16 +204,17 @@ class Service:
 
         Args:
             name: A name to search by. Defaults to None.
-            email: An email address to search by. Defaults to None
+            email: An email address to search by. Defaults to None.
+            user_id: A user ID to search by. Defaults to None.
 
         Returns:
             A dictionary of the user information. In the case that either the name or email
             query kwarg is used, a list of dictionaries is returned, corresponding to the user
             information for each user that matches the query.
         """
-        user_info = self._client.get_user_info(name=name, email=email)
+        user_info = self._client.get_user_info(name=name, email=email, user_id=user_id)
 
-        if name is None and email is None:
+        if name is None and email is None and user_id is None:
             # If no query then return the only element in the list.
             return user_info[0]
 
@@ -418,7 +437,7 @@ class Service:
 
         Raises:
             ValueError: If the target or noise model are not valid.
-            SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
         noise_dict: dict[str, object] = {}
         if noise:
