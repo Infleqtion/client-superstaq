@@ -59,10 +59,11 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
    :caption: Applications
 
    apps/supercheq/supercheq
-   apps/max_sharpe_ratio_optimization
    apps/dfe/dfe
    apps/aces/aces
    apps/supermarq/supermarq
+   apps/max_sharpe_ratio_optimization
+   apps/cudaq_logical_aim
 
 .. toctree::
    :maxdepth: 1
