@@ -63,6 +63,7 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
    apps/dfe/dfe
    apps/aces/aces
    apps/supermarq/supermarq
+   apps/cudaq_logical_aim
 
 .. toctree::
    :maxdepth: 1
