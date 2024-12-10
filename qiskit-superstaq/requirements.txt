@@ -1,7 +1,3 @@
 general-superstaq~=0.5.32
-<<<<<<< HEAD
-1.0.0<=qiskit<1.3.0
-=======
 qiskit>=1.0.0,<1.3.0
->>>>>>> 5920c6617a0bd4386df51a18c552f533d62bccf7
 symengine~=0.13.0
