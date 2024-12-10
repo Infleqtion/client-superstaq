@@ -228,7 +228,7 @@ def test_service_get_targets(_mock_get_request: mock.MagicMock) -> None:
 
 
 @mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.get_request",
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
     return_value={
         "superstaq_targets": {
             "ss_unconstrained_simulator": {
@@ -237,11 +237,12 @@ def test_service_get_targets(_mock_get_request: mock.MagicMock) -> None:
                 "supports_compile": True,
                 "available": True,
                 "retired": False,
+                "accessible": True,
             }
         }
     },
 )
-def test_service_get_my_targets(_mock_get_request: mock.MagicMock) -> None:
+def test_service_get_my_targets(_mock_post_request: mock.MagicMock) -> None:
     service = gss.service.Service(api_key="key", remote_host="http://example.com")
     assert service.get_my_targets() == [
         gss.typing.Target(
@@ -252,6 +253,7 @@ def test_service_get_my_targets(_mock_get_request: mock.MagicMock) -> None:
                 "supports_compile": True,
                 "available": True,
                 "retired": False,
+                "accessible": True,
             },
         )
     ]
