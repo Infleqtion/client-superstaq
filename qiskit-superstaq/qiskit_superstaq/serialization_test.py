@@ -270,6 +270,7 @@ test_gates = {
     qiskit.circuit.library.CU1Gate: 1,
     qiskit.circuit.library.CU3Gate: 3,
     qiskit.circuit.library.CUGate: 4,
+    qiskit.circuit.library.IGate: 0,
     qss.AceCR: 2,
     qss.AQTiCCXGate: 0,
     qss.DDGate: 1,
@@ -295,6 +296,17 @@ def test_completeness() -> None:
                 assert attr in test_gates, f"'{attr_name}' missing from `test_gates`."
 
 
+def test_mcphase() -> None:
+    gate1 = qss.serialization._mcphase(1.1, 3, ctrl_state=2)
+    with mock.patch("qiskit.__version__", "1.0.2"):
+        gate3 = qss.serialization._mcphase(1.1, 3, ctrl_state=2)
+    with mock.patch("qiskit.__version__", "1.1.1"), mock.patch(
+        "qiskit.circuit.library.MCPhaseGate", return_value=gate1
+    ):
+        gate2 = qss.serialization._mcphase(1.1, 3, ctrl_state=2)
+    assert gate1 == gate2 == gate3
+
+
 @pytest.mark.parametrize("base_class", test_gates, ids=lambda g: g.name)
 def test_gate_preparation_and_resolution(base_class: type[qiskit.circuit.Instruction]) -> None:
     num_params = test_gates[base_class]
@@ -305,7 +317,17 @@ def test_gate_preparation_and_resolution(base_class: type[qiskit.circuit.Instruc
 
 
 def _check_serialization(*gates: qiskit.circuit.Instruction) -> None:
-    num_qubits = sum(g.num_qubits for g in gates) + 1
+    num_qubits = max(
+        [
+            sum(g.num_qubits for g in gates),
+            *(
+                g.num_qubits + 1
+                for g in gates
+                if not issubclass(g.base_class, qiskit.circuit.ControlledGate)
+            ),
+        ]
+    )
+
     circuit = qiskit.QuantumCircuit(num_qubits, max((g.num_clbits for g in gates), default=0))
 
     for gate in gates:
@@ -330,7 +352,11 @@ def _check_serialization(*gates: qiskit.circuit.Instruction) -> None:
     subcircuit.append(subcircuit.to_instruction(), subcircuit.qubits, subcircuit.clbits)
     circuit.append(subcircuit, circuit.qubits, circuit.clbits)
 
-    assert circuit == qss.deserialize_circuits(qss.serialize_circuits(circuit))[0]
+    new_circuit = qss.deserialize_circuits(qss.serialize_circuits(circuit))[0]
+    assert circuit == new_circuit
+
+    # Try one more round
+    assert circuit == qss.deserialize_circuits(qss.serialize_circuits(new_circuit))[0]
 
 
 @pytest.mark.parametrize("base_class", test_gates, ids=lambda g: g.name)
@@ -348,6 +374,45 @@ def test_gate_serialization(base_class: type[qiskit.circuit.Instruction]) -> Non
     _check_serialization(gate1, gate2)
 
 
+@pytest.mark.parametrize(
+    "gate",
+    [
+        qiskit.circuit.library.MSGate(2, np.random.uniform(-2 * np.pi, 2 * np.pi)),
+        qiskit.circuit.library.MSGate(3, np.random.uniform(-2 * np.pi, 2 * np.pi)),
+        qiskit.circuit.library.MCXGrayCode(4),
+        qiskit.circuit.library.MCXGate(3),
+        qiskit.circuit.library.MCXGate(5),
+        qiskit.circuit.library.MCU1Gate(np.random.uniform(-2 * np.pi, 2 * np.pi), 3),
+        qiskit.circuit.library.MCPhaseGate(np.random.uniform(-2 * np.pi, 2 * np.pi), 3),
+        *(
+            [qiskit.circuit.library.QFTGate(4)]
+            if hasattr(qiskit.circuit.library, "QFTGate")
+            else []
+        ),
+    ],
+    ids=lambda g: g.name,
+)
+def test_nonstandard_gate_serialization(gate: qiskit.circuit.Instruction) -> None:
+    circuit = qiskit.QuantumCircuit(gate.num_qubits, gate.num_clbits)
+    circuit.append(gate, circuit.qubits, circuit.clbits)
+
+    gates = [gate]
+    if hasattr(gate, "ctrl_state"):
+        gate2 = gate.copy().to_mutable()
+        gate2.ctrl_state = 1
+        gates.append(gate2)
+        circuit.append(gate2, circuit.qubits, circuit.clbits)
+
+    new_circuit = qss.deserialize_circuits(qss.serialize_circuits(circuit))[0]
+    assert new_circuit == circuit
+    assert all(
+        inst1.operation.base_class == inst2.operation.base_class
+        for inst1, inst2 in zip(circuit, new_circuit)
+    )
+
+    _check_serialization(*gates)
+
+
 def test_qiskit_gate_workarounds() -> None:
     """Tests workarounds for qiskit gates which are not handled correctly by QPY."""
     _check_serialization(
@@ -356,8 +421,9 @@ def test_qiskit_gate_workarounds() -> None:
         qiskit.circuit.library.MSGate(3, 2.2),
     )
 
-    circuit = qiskit.QuantumCircuit(5)
+    circuit = qiskit.QuantumCircuit(6)
     circuit.append(qiskit.circuit.library.MCXGate(3, ctrl_state=1), range(4))
+    circuit.append(qiskit.circuit.library.MCXGate(5, ctrl_state=6), range(6))
     circuit.append(qiskit.circuit.library.MCXGrayCode(4, ctrl_state=2), range(5))
     circuit.append(qiskit.circuit.library.MCU1Gate(1.1, 3, ctrl_state=5), range(4))
     circuit.append(qiskit.circuit.library.MCU1Gate(2.2, 3, ctrl_state=6), range(4))
