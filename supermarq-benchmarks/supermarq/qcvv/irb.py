@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import cirq
 import cirq.circuits
@@ -177,10 +177,26 @@ _S1_Y = [
 
 @dataclass
 class _RBResultsBase(QCVVResults):
-    rb_decay_coefficient: float = field(init=False)
+    _rb_decay_coefficient: float | None = None
     """Decay coefficient estimate without the interleaving gate."""
-    rb_decay_coefficient_std: float = field(init=False)
+    _rb_decay_coefficient_std: float | None = None
     """Standard deviation of the decay coefficient estimate without the interleaving gate."""
+
+    @property
+    def rb_decay_coefficient(self) -> float:
+        """Returns:
+        Decay coefficient estimate without the interleaving gate."""
+        if self._rb_decay_coefficient is None:
+            raise self._not_analyzed
+        return self._rb_decay_coefficient
+
+    @property
+    def rb_decay_coefficient_std(self) -> float:
+        """Returns:
+        Standard deviation of the decay coefficient estimate without the interleaving gate."""
+        if self._rb_decay_coefficient_std is None:
+            raise self._not_analyzed
+        return self._rb_decay_coefficient_std
 
     def _fit_decay(
         self, experiment: str = "RB"
@@ -261,23 +277,55 @@ class _RBResultsBase(QCVVResults):
 
         return plot
 
-    def _analyze_results(self) -> None:
+    def _analyze(self) -> None:
         rb_fit = self._fit_decay("RB")
-        self.rb_decay_coefficient, self.rb_decay_coefficient_std = rb_fit[0][1], rb_fit[1][1]
+        self._rb_decay_coefficient, self._rb_decay_coefficient_std = rb_fit[0][1], rb_fit[1][1]
 
 
 @dataclass
 class IRBResults(_RBResultsBase):
     """Data structure for the IRB experiment results."""
 
-    irb_decay_coefficient: float = field(init=False)
+    _irb_decay_coefficient: float | None = None
     """Decay coefficient estimate with the interleaving gate."""
-    irb_decay_coefficient_std: float = field(init=False)
+    _irb_decay_coefficient_std: float | None = None
     """Standard deviation of the decay coefficient estimate with the interleaving gate."""
-    average_interleaved_gate_error: float = field(init=False)
+    _average_interleaved_gate_error: float | None = None
     """Estimate of the interleaving gate error."""
-    average_interleaved_gate_error_std: float = field(init=False)
+    _average_interleaved_gate_error_std: float | None = None
     """Standard deviation of the estimate for the interleaving gate error."""
+
+    @property
+    def irb_decay_coefficient(self) -> float:
+        """Returns:
+        Decay coefficient estimate with the interleaving gate."""
+        if self._irb_decay_coefficient is None:
+            raise self._not_analyzed
+        return self._irb_decay_coefficient
+
+    @property
+    def irb_decay_coefficient_std(self) -> float:
+        """Returns:
+        Standard deviation of the decay coefficient estimate with the interleaving gate."""
+        if self._irb_decay_coefficient_std is None:
+            raise self._not_analyzed
+        return self._irb_decay_coefficient_std
+
+    @property
+    def average_interleaved_gate_error(self) -> float:
+        """Returns:
+        Estimate of the interleaving gate error."""
+        if self._average_interleaved_gate_error is None:
+            raise self._not_analyzed
+        return self._average_interleaved_gate_error
+
+    @property
+    def average_interleaved_gate_error_std(self) -> float:
+        """Returns:
+        Standard deviation of the estimate for the interleaving gate error."""
+        if self._average_interleaved_gate_error_std is None:
+            raise self._not_analyzed
+        return self._average_interleaved_gate_error_std
 
     def plot_results(self) -> None:
         """Plot the exponential decay of the circuit fidelity with cycle depth.
@@ -304,8 +352,8 @@ class IRBResults(_RBResultsBase):
             color="tab:orange",
         )
 
-    def _analyze_results(self) -> None:
-        super()._analyze_results()
+    def _analyze(self) -> None:
+        super()._analyze()
 
         irb_fit = self._fit_decay("IRB")
         irb_decay_coefficient, irb_decay_coefficient_std = irb_fit[0][1], irb_fit[1][1]
@@ -320,10 +368,10 @@ class IRBResults(_RBResultsBase):
             + irb_decay_coefficient**2 * self.rb_decay_coefficient_std**2
         )
 
-        self.irb_decay_coefficient = irb_decay_coefficient
-        self.irb_decay_coefficient_std = irb_decay_coefficient_std
-        self.average_interleaved_gate_error = interleaved_gate_error
-        self.average_interleaved_gate_error_std = interleaved_gate_error_std
+        self._irb_decay_coefficient = irb_decay_coefficient
+        self._irb_decay_coefficient_std = irb_decay_coefficient_std
+        self._average_interleaved_gate_error = interleaved_gate_error
+        self._average_interleaved_gate_error_std = interleaved_gate_error_std
 
     def print_results(self) -> None:
         print(
@@ -336,21 +384,37 @@ class IRBResults(_RBResultsBase):
 class RBResults(_RBResultsBase):
     """Data structure for the RB experiment results."""
 
-    average_error_per_clifford: float = field(init=False)
+    _average_error_per_clifford: float | None = None
     """Estimate of the average error per Clifford operation."""
-    average_error_per_clifford_std: float = field(init=False)
+    _average_error_per_clifford_std: float | None = None
     """Standard deviation of the the average error per Clifford operation."""
+
+    @property
+    def average_error_per_clifford(self) -> float:
+        """Returns:
+        Estimate of the average error per Clifford operation."""
+        if self._average_error_per_clifford is None:
+            raise self._not_analyzed
+        return self._average_error_per_clifford
+
+    @property
+    def average_error_per_clifford_std(self) -> float:
+        """Returns:
+        Standard deviation of the the average error per Clifford operation."""
+        if self._average_error_per_clifford_std is None:
+            raise self._not_analyzed
+        return self._average_error_per_clifford_std
 
     def plot_results(self) -> None:
         """Plot the exponential decay of the circuit fidelity with cycle depth."""
         super()._plot_results()
 
-    def _analyze_results(self) -> None:
-        super()._analyze_results()
-        self.average_error_per_clifford = (1 - 2**-self.num_qubits) * (
+    def _analyze(self) -> None:
+        super()._analyze()
+        self._average_error_per_clifford = (1 - 2**-self.num_qubits) * (
             1 - self.rb_decay_coefficient
         )
-        self.average_error_per_clifford_std = (
+        self._average_error_per_clifford_std = (
             1 - 2**-self.num_qubits
         ) * self.rb_decay_coefficient_std
 
@@ -358,11 +422,11 @@ class RBResults(_RBResultsBase):
 
         print(
             f"Estimated error per Clifford: {self.average_error_per_clifford:.6f} +/- "
-            f"{self.average_error_per_clifford:.6f}"
+            f"{self.average_error_per_clifford_std:.6f}"
         )
 
 
-class IRB(QCVVExperiment):
+class IRB(QCVVExperiment[_RBResultsBase]):
     r"""Interleaved random benchmarking (IRB) experiment.
 
     IRB estimates the gate error of specified Clifford gate, :math:`\mathcal{C}^*`.

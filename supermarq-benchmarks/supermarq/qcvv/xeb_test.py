@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import itertools
+import re
 from unittest.mock import MagicMock
 
 import cirq
@@ -213,7 +214,7 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
             },
         ]
     )
-    results.analyze_results()
+    results.analyze()
     np.testing.assert_allclose(
         results.data["sum_p(x)p^(x)"].values, [1.0, 0.5, 0.75, 0.25, 0.25, 0.4]
     )
@@ -232,7 +233,23 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
 def test_results_no_data() -> None:
     results = XEBResults(target="example", experiment=MagicMock(), data=None)
     with pytest.raises(RuntimeError, match="No data stored. Cannot perform analysis."):
-        results._analyze_results()
+        results._analyze()
 
     with pytest.raises(RuntimeError, match="No data stored. Cannot plot results."):
         results.plot_results()
+
+    with pytest.raises(
+        RuntimeError, match="No stored dataframe of circuit fidelities. Something has gone wrong."
+    ):
+        results.data = pd.DataFrame()
+        results.plot_results()
+
+
+def test_results_not_analyzed() -> None:
+    results = XEBResults(target="example", experiment=MagicMock(), data=None)
+    for attr in ["cycle_fidelity_estimate", "cycle_fidelity_estimate_std"]:
+        with pytest.raises(
+            RuntimeError,
+            match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
+        ):
+            getattr(results, attr)

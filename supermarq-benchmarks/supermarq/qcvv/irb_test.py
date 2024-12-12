@@ -16,6 +16,7 @@
 # mypy: disable-error-code="union-attr"
 from __future__ import annotations
 
+import re
 from unittest.mock import MagicMock, patch
 
 import cirq
@@ -331,10 +332,12 @@ def test_analyse_results() -> None:
             },
         ]
     )
-    irb_results.analyze_results()
+    irb_results.analyze()
 
     assert irb_results.rb_decay_coefficient == pytest.approx(0.95, abs=1e-5)
     assert irb_results.irb_decay_coefficient == pytest.approx(0.8, abs=1e-5)
+    assert irb_results.rb_decay_coefficient_std == pytest.approx(0.0, abs=1e-5)
+    assert irb_results.irb_decay_coefficient_std == pytest.approx(0.0, abs=1e-5)
     assert irb_results.average_interleaved_gate_error == pytest.approx(
         0.5 * (1 - 0.8 / 0.95), abs=1e-5
     )
@@ -382,7 +385,7 @@ def test_analyse_results_rb() -> None:
             },
         ]
     )
-    rb_results.analyze_results()
+    rb_results.analyze()
 
     assert rb_results.rb_decay_coefficient == pytest.approx(0.95, abs=1e-5)
     assert rb_results.average_error_per_clifford == pytest.approx(0.5 * (1 - 0.95), abs=1e-5)
@@ -401,3 +404,35 @@ def test_results_no_data() -> None:
 
     with pytest.raises(RuntimeError, match="No data stored. Cannot make plot."):
         results.plot_results()
+
+
+def test_irb_results_not_analyzed() -> None:
+    results = IRBResults(target="example", experiment=MagicMock(spec=IRB))
+    for attr in [
+        "rb_decay_coefficient",
+        "rb_decay_coefficient_std",
+        "irb_decay_coefficient",
+        "irb_decay_coefficient_std",
+        "average_interleaved_gate_error",
+        "average_interleaved_gate_error_std",
+    ]:
+        with pytest.raises(
+            RuntimeError,
+            match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
+        ):
+            getattr(results, attr)
+
+
+def test_rb_results_not_analyzed() -> None:
+    results = RBResults(target="example", experiment=MagicMock(spec=IRB))
+    for attr in [
+        "rb_decay_coefficient",
+        "rb_decay_coefficient_std",
+        "average_error_per_clifford",
+        "average_error_per_clifford_std",
+    ]:
+        with pytest.raises(
+            RuntimeError,
+            match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
+        ):
+            getattr(results, attr)
