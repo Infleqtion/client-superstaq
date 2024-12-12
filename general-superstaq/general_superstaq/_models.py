@@ -248,7 +248,7 @@ class UpdateUserDetails(DefaultPydanticModel):
     """New user balance"""
 
 
-class TargetInfoModel(DefaultPydanticModel):
+class TargetModel(DefaultPydanticModel):
     """Model for the info of a target."""
 
     target_name: str
