@@ -162,6 +162,15 @@ class Service:
         )
         return self._client.get_targets(**filters)
 
+    def get_my_targets(self) -> list[gss.Target]:
+        """Gets a list of Superstaq targets that the user can submit to and are available along
+        with their status information.
+
+        Returns:
+            A list of Superstaq targets that the user can currently submit to.
+        """
+        return self._client.get_my_targets()
+
     @overload
     def get_user_info(self) -> dict[str, str | float]: ...
 

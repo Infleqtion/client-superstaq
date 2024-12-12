@@ -20,7 +20,7 @@ from __future__ import annotations
 import re
 import uuid
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from unittest.mock import MagicMock, call, patch
 
 import cirq
@@ -39,16 +39,22 @@ mock_print = MagicMock()
 class ExampleResults(QCVVResults):
     """Example results class for testing"""
 
-    example_final_result: float = field(init=False)
+    _example_final_result: float | None = None
 
-    def _analyze_results(self) -> None:
-        self.example_final_result = 3.142
+    def _analyze(self) -> None:
+        self._example_final_result = 3.142
 
     def plot_results(self) -> None:
         mock_plot()
 
     def print_results(self) -> None:
         mock_print("This is a test")
+
+    @property
+    def example_final_result(self) -> float:
+        if self._example_final_result is None:
+            raise self._not_analyzed
+        return self._example_final_result
 
 
 class ExampleExperiment(QCVVExperiment[ExampleResults]):
@@ -125,6 +131,17 @@ def test_experiment_init_with_bad_layers() -> None:
         )
 
 
+def test_results_not_analyzed(abc_experiment: ExampleExperiment) -> None:
+    results = ExampleResults(
+        target="target", experiment=abc_experiment, job=MagicMock(spec=css.Job)
+    )
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
+    ):
+        _ = results.example_final_result
+
+
 def test_results_job_still_running(abc_experiment: ExampleExperiment) -> None:
     results = ExampleResults(
         target="target", experiment=abc_experiment, job=MagicMock(spec=css.Job)
@@ -138,7 +155,7 @@ def test_results_job_still_running(abc_experiment: ExampleExperiment) -> None:
             "later, or interrogate the `.job` attribute."
         ),
     ):
-        results.analyze_results()
+        results.analyze()
 
 
 def test_results_job_no_data(abc_experiment: ExampleExperiment) -> None:
@@ -153,7 +170,7 @@ def test_results_job_no_data(abc_experiment: ExampleExperiment) -> None:
             "results data in order to perform analysis"
         ),
     ):
-        results.analyze_results()
+        results.analyze()
 
 
 def test_results_analyze(abc_experiment: ExampleExperiment) -> None:
@@ -161,7 +178,7 @@ def test_results_analyze(abc_experiment: ExampleExperiment) -> None:
         target="target", experiment=abc_experiment, data=MagicMock(spec=pd.DataFrame)
     )
 
-    results.analyze_results(plot_results=True, print_results=True)
+    results.analyze(plot_results=True, print_results=True)
     assert results.example_final_result == 3.142
     mock_plot.assert_called_once()
     mock_print.assert_called_once_with("This is a test")
@@ -228,7 +245,7 @@ def test_run_with_simulator(
     )
 
     assert results.experiment == abc_experiment
-    assert results.target == "LocalSimulator"
+    assert results.target == "local_simulator"
 
     # Check the data is stored
     pd.testing.assert_frame_equal(
@@ -264,7 +281,7 @@ def test_run_with_simulator_default_target(
     )
 
     assert results.experiment == abc_experiment
-    assert results.target == "LocalSimulator"
+    assert results.target == "local_simulator"
 
     # Check the data is stored
     pd.testing.assert_frame_equal(
@@ -405,7 +422,7 @@ def test_run_with_callable(
         ]
     )
 
-    assert results.target == "Callable"
+    assert results.target == "callable"
     assert results.experiment == abc_experiment
 
     # Check the data is stored
@@ -438,7 +455,7 @@ def test_run_with_callable_mixd_keys(
         ]
     )
 
-    assert results.target == "Callable"
+    assert results.target == "callable"
     assert results.experiment == abc_experiment
 
     # Check the data is stored
@@ -463,7 +480,8 @@ def test_run_with_callable_bad_bitstring(
     test_callable.return_value = {"000": 0.0, "01": 0.2, "10": 0.8}
 
     with pytest.raises(
-        RuntimeError, match="Returned probabilities include an incorrect number of bits."
+        ValueError,
+        match=("The key contains the wrong number of bits. Got 3 entries " "but expected 2 bits."),
     ):
         abc_experiment.run_with_callable(test_callable, some="kwargs")
 
@@ -476,7 +494,7 @@ def test_run_with_callable_bad_probabilities(
     test_callable = MagicMock()
     test_callable.return_value = {"00": 0.0, "01": 0.2, "10": 0.7, "11": 0.09}
 
-    with pytest.raises(RuntimeError, match="Returned probabilities do not sum to 1.0."):
+    with pytest.raises(RuntimeError, match="Provided probabilities do not sum to 1.0."):
         abc_experiment.run_with_callable(test_callable, some="kwargs")
 
 
@@ -601,3 +619,46 @@ def test_results_from_records_bad_input(abc_experiment: ExampleExperiment) -> No
         abc_experiment.results_from_records(
             {samples[0].uuid: {"01": 2.5}}  # type: ignore[dict-item]
         )
+
+
+def test_canonicalize_bitstring() -> None:
+    assert QCVVExperiment._canonicalize_bitstring("00", 2) == "00"
+    assert QCVVExperiment._canonicalize_bitstring(1, 2) == "01"
+    assert QCVVExperiment._canonicalize_bitstring(5, 4) == "0101"
+
+    with pytest.raises(ValueError, match="The key must be positive. Instead got -2."):
+        QCVVExperiment._canonicalize_bitstring(-2, 4)
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "The key is too large to be encoded with 4 qubits. Got 72 " "but expected less than 16."
+        ),
+    ):
+        QCVVExperiment._canonicalize_bitstring(72, 4)
+
+    with pytest.raises(
+        ValueError,
+        match=("The key contains the wrong number of bits. Got 5 entries " "but expected 4 bits."),
+    ):
+        QCVVExperiment._canonicalize_bitstring("01010", 4)
+
+    with pytest.raises(ValueError, match="All entries in the bitstring must be 0 or 1. Got 1234."):
+        QCVVExperiment._canonicalize_bitstring("1234", 4)
+
+
+def test_canonicalize_probabilities() -> None:
+    p: dict[str | int, float] = {3: 0.3, 0: 0.1, "10": 0.6}
+    assert QCVVExperiment._canonicalize_probabilities(p, 2) == {
+        "00": 0.1,
+        "01": 0.0,
+        "10": 0.6,
+        "11": 0.3,
+    }
+
+    with pytest.raises(
+        RuntimeError,
+        match="Provided probabilities do not sum to 1.0. Got",  # Ignore exact value due to rounding
+    ):
+        p[0] = 0.0
+        QCVVExperiment._canonicalize_probabilities(p, 2)
