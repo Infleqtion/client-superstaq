@@ -71,15 +71,15 @@ class XEBResults(QCVVResults):
             raise RuntimeError("No data stored. Cannot perform analysis.")
         self.data["sum_p(x)p^(x)"] = pd.DataFrame(
             (
-                self.data.loc[:, "00":"11"].values  # type: ignore[misc]
-                * self.data.loc[:, "exact_00":"exact_11"].values  # type: ignore[misc]
+                self.data[["00", "01", "10", "11"]].values
+                * self.data[["exact_00", "exact_01", "exact_10", "exact_11"]].values
             ).sum(axis=1),
             index=self.data.index,
         )
         self.data["sum_p(x)p(x)"] = pd.DataFrame(
             (
-                self.data.loc[:, "exact_00":"exact_11"].values  # type: ignore[misc]
-                * self.data.loc[:, "exact_00":"exact_11"].values  # type: ignore[misc]
+                self.data[["exact_00", "exact_01", "exact_10", "exact_11"]].values
+                * self.data[["exact_00", "exact_01", "exact_10", "exact_11"]].values
             ).sum(axis=1),
             index=self.data.index,
         )
