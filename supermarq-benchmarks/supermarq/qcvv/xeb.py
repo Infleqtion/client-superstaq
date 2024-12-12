@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import itertools
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import cirq
 import numpy as np
@@ -33,13 +33,29 @@ from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
 class XEBResults(QCVVResults):
     """Results from an XEB experiment."""
 
-    _circuit_fidelities: pd.DataFrame = field(init=False)
-    cycle_fidelity_estimate: float = field(init=False)
+    _circuit_fidelities: pd.DataFrame | None = None
+    _cycle_fidelity_estimate: float | None = None
     """Estimated cycle fidelity."""
-    cycle_fidelity_estimate_std: float = field(init=False)
+    _cycle_fidelity_estimate_std: float | None = None
     """Standard deviation for the cycle fidelity estimate."""
 
-    def _analyze_results(self) -> None:
+    @property
+    def cycle_fidelity_estimate(self) -> float:
+        """Returns:
+        Estimated cycle fidelity."""
+        if self._cycle_fidelity_estimate is None:
+            raise self._not_analyzed
+        return self._cycle_fidelity_estimate
+
+    @property
+    def cycle_fidelity_estimate_std(self) -> float:
+        """Returns:
+        Standard deviation for the cycle fidelity estimate."""
+        if self._cycle_fidelity_estimate_std is None:
+            raise self._not_analyzed
+        return self._cycle_fidelity_estimate_std
+
+    def _analyze(self) -> None:
         """Analyse the results and calculate the estimated circuit fidelity.
 
         Args:
@@ -95,8 +111,8 @@ class XEBResults(QCVVResults):
             x=self._circuit_fidelities.cycle_depth,
             y=np.log(self._circuit_fidelities.circuit_fidelity_estimate),
         )
-        self.cycle_fidelity_estimate = np.exp(cycle_fit.slope)
-        self.cycle_fidelity_estimate_std = self.cycle_fidelity_estimate * cycle_fit.stderr
+        self._cycle_fidelity_estimate = np.exp(cycle_fit.slope)
+        self._cycle_fidelity_estimate_std = self.cycle_fidelity_estimate * cycle_fit.stderr
 
     def plot_results(self) -> None:
         """Plot the experiment data and the corresponding fits.
@@ -106,6 +122,11 @@ class XEBResults(QCVVResults):
         """
         if self.data is None:
             raise RuntimeError("No data stored. Cannot plot results.")
+
+        if self._circuit_fidelities is None:
+            raise RuntimeError(
+                "No stored dataframe of circuit fidelities. Something has gone wrong."
+            )
 
         plot_1 = sns.lmplot(
             data=self.data,

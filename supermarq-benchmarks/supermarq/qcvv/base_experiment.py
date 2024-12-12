@@ -98,7 +98,7 @@ class QCVVResults(ABC):
         The number of circuits in the experiment."""
         return self.experiment.num_circuits
 
-    def analyze_results(self, plot_results: bool = True, print_results: bool = True) -> None:
+    def analyze(self, plot_results: bool = True, print_results: bool = True) -> None:
         """Perform the experiment analysis and store the results in the `results` attribute.
 
         Args:
@@ -113,7 +113,7 @@ class QCVVResults(ABC):
             )
             return
 
-        self._analyze_results()
+        self._analyze()
 
         if plot_results:
             self.plot_results()
@@ -122,7 +122,7 @@ class QCVVResults(ABC):
             self.print_results()
 
     @abstractmethod
-    def _analyze_results(self) -> None:
+    def _analyze(self) -> None:
         """A method that analyses the `data` attribute and stores the final experimental results."""
 
     @abstractmethod
@@ -134,13 +134,10 @@ class QCVVResults(ABC):
         """Prints the key results data."""
 
     def _collect_device_counts(self) -> pd.DataFrame:
-        """Process the counts returned by the server into a dictionary of probabilities.
-
-        Args:
-            counts: A dictionary of the observed counts for each state in the computational basis.
+        """Process the counts returned by the server and process into a results dataframe.
 
         Returns:
-            A dictionary of the probability of each state in the computational basis.
+            The results dataframe.
         """
         if self.job is None:
             raise ValueError(
@@ -159,6 +156,10 @@ class QCVVResults(ABC):
             records.append({**sample.data, **probabilities})
 
         return pd.DataFrame(records)
+
+    @property
+    def _not_analyzed(self) -> RuntimeError:
+        return RuntimeError("Value has not yet been estimated. Please run `.analyze()` method.")
 
 
 ResultsT = TypeVar("ResultsT", bound=QCVVResults, covariant=True)
@@ -195,7 +196,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
        .. code::
 
             if results.data_ready():
-                results.analyze_results(<<args>>)
+                results.analyze(<<args>>)
 
     When implementing a new experiment, 4 methods need to be implemented:
 
@@ -416,16 +417,14 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         for sample in tqdm(self.samples, desc="Simulating circuits"):
             result = simulator.run(sample.circuit, repetitions=repetitions)
             hist = result.histogram(key=cirq.measurement_key_name(sample.circuit))
-            probabilities = {
-                f"{i:0{self.num_qubits}b}": 0.0 for i in range(2**self.num_qubits)
-            }  # Set all probabilities to zero
-            for val, count in hist.items():
-                # Add in results from the histogram
-                probabilities[f"{val:0{self.num_qubits}b}"] = count / repetitions
+
+            probabilities = self._canonicalize_probabilities(
+                {key: count / sum(hist.values()) for key, count in hist.items()}, self.num_qubits
+            )
             records.append({**sample.data, **probabilities})
 
         return self._results_cls(
-            target="LocalSimulator",
+            target="local_simulator",
             experiment=self,
             data=pd.DataFrame(records),
         )
@@ -453,34 +452,86 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         """
         records = []
         for sample in tqdm(self.samples, desc="Running circuits"):
-            probability = circuit_eval_func(sample.circuit, **kwargs)
-            # Replace any integer keys with bitstrings
-            keys_to_replace: list[tuple[int, str]] = []
-            for key in probability.keys():
-                # Replace any integer keys with bitstrings
-                if isinstance(key, int):
-                    keys_to_replace.append((key, format(key, f"0{self.num_qubits}b")))
-            for old_key, new_key in keys_to_replace:
-                probability[new_key] = probability.pop(old_key)
-            if not all(
-                len(key) == self.num_qubits  # type: ignore[arg-type]
-                for key in probability.keys()
-                # Ignore arg-type for len function as mypy cannot tell that all integer keys have
-                # been replaced with strings.
-            ):
-                raise RuntimeError("Returned probabilities include an incorrect number of bits.")
-            if not math.isclose(sum(probability.values()), 1.0):
-                raise RuntimeError("Returned probabilities do not sum to 1.0.")
-
-            for k in range(2**self.num_qubits):
-                if (bitstring := format(k, f"0{self.num_qubits}b")) not in probability:
-                    probability[bitstring] = 0.0
-            # Sort by bitstrings
-            probability = dict(sorted(probability.items()))
+            raw_probability = circuit_eval_func(sample.circuit, **kwargs)
+            probability = self._canonicalize_probabilities(raw_probability, self.num_qubits)
             records.append({**sample.data, **probability})
 
         return self._results_cls(
-            target="Callable",
+            target="callable",
             experiment=self,
             data=pd.DataFrame(records),
         )
+
+    @staticmethod
+    def _canonicalize_bitstring(key: int | str, num_qubits: int) -> str:
+        """Checks that the provided key represents a bit string for the given number of qubits.
+        If the key is provided as an integer then this is reformatted as a bitstring.
+
+        Args:
+            key: The integer or string which represents a bitstring.
+            num_qubits: The number of bits that the bitstring needs to have
+
+        Raises:
+            ValueError: If the key is integer and negative
+            ValueError: If the key is integer but to large for the given number of qubits.
+            ValueError: If the key is a string but the wrong length.
+            ValueError: If the key is a string but contains characters that are not 0 or 1.
+
+        Returns:
+            The canonicalized representation of the bitstring.
+        """
+        if isinstance(key, int):
+            if key < 0:
+                raise ValueError(f"The key must be positive. Instead got {key}.")
+            if key >= 2**num_qubits:
+                raise ValueError(
+                    f"The key is too large to be encoded with {num_qubits} qubits. Got {key} "
+                    f"but expected less than {2**num_qubits}."
+                )
+            return format(key, f"0{num_qubits}b")
+
+        if isinstance(key, str):
+            if len(key) != num_qubits:
+                raise ValueError(
+                    f"The key contains the wrong number of bits. Got {len(key)} entries "
+                    f"but expected {num_qubits} bits."
+                )
+            if any(b not in ["0", "1"] for b in key):
+                raise ValueError(f"All entries in the bitstring must be 0 or 1. Got {key}.")
+            return key
+
+    @staticmethod
+    def _canonicalize_probabilities(
+        probabilities: dict[str | int, float], num_qubits: int
+    ) -> dict[str, float]:
+        """Reformats a dictionary of probabilities so that all keys are bitstrings and that
+        there are no missing values. Also sorts the dictionary by bitstring.
+
+        Args:
+            probabilities: The unformatted probabilities
+            num_qubits: The number of qubits, used to determine the bitstring length.
+
+        Raises:
+            RuntimeError: If the probabilities do not sum to 1.
+
+        Returns:
+            The formatted dictionary of probabilities.
+        """
+        if not math.isclose(sum(probabilities.values()), 1.0):
+            raise RuntimeError(
+                f"Provided probabilities do not sum to 1.0. Got {sum(probabilities.values())}."
+            )
+
+        new_probability = {
+            QCVVExperiment._canonicalize_bitstring(key, num_qubits): val
+            for key, val in probabilities.items()
+        }
+
+        # Add zero values for any missing bitstrings
+        for k in range(2**num_qubits):
+            if (bitstring := format(k, f"0{num_qubits}b")) not in new_probability:
+                new_probability[bitstring] = 0.0
+        # Sort by bitstrings
+        new_probability = dict(sorted(new_probability.items()))
+
+        return new_probability
