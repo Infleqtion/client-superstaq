@@ -559,6 +559,7 @@ def test_results_from_records(abc_experiment: ExampleExperiment) -> None:
 
 def test_results_from_records_bad_input(abc_experiment: ExampleExperiment) -> None:
     samples = abc_experiment.samples
+    samples[0].uuid = uuid.UUID("0e9421da-3700-42e9-9281-a0e24cc0986c")
     # Warn for missing samples
     with pytest.warns(
         UserWarning,
@@ -584,8 +585,8 @@ def test_results_from_records_bad_input(abc_experiment: ExampleExperiment) -> No
     with pytest.warns(
         UserWarning,
         match=re.escape(
-            f"Some counts provided in the record with ID {samples[0].uuid} have invalid "
-            "bitstrings, these will be ignored."
+            "Processing sample 0e9421da-3700-42e9-9281-a0e24cc0986c raised error. The key "
+            "contains the wrong number of bits. Got 3 entries but expected 2 bits."
         ),
     ):
         abc_experiment.results_from_records({samples[0].uuid: {"001": 10}})
@@ -594,26 +595,27 @@ def test_results_from_records_bad_input(abc_experiment: ExampleExperiment) -> No
     with pytest.warns(
         UserWarning,
         match=re.escape(
-            f"Record with ID {samples[0].uuid} contains no valid, non-zero counts. This record"
-            "will be ignored."
+            "Processing sample 0e9421da-3700-42e9-9281-a0e24cc0986c raised error. No "
+            "non-zero counts."
         ),
     ):
-        abc_experiment.results_from_records({samples[0].uuid: {"001": 10}})
+        abc_experiment.results_from_records({samples[0].uuid: {"01": 0}})
 
-    # Raise exception for non positive integer counts
-    with pytest.raises(
-        ValueError,
+    # Warn for non positive integer counts
+    with pytest.warns(
+        UserWarning,
         match=re.escape(
-            f"Some counts provided for record with ID {samples[0].uuid} are not "
-            "positive integers."
+            "Processing sample 0e9421da-3700-42e9-9281-a0e24cc0986c raised error. Counts "
+            "must be positive."
         ),
     ):
         abc_experiment.results_from_records({samples[0].uuid: {"01": -10}})
-    with pytest.raises(
-        ValueError,
+
+    with pytest.warns(
+        UserWarning,
         match=re.escape(
-            f"Some counts provided for record with ID {samples[0].uuid} are not "
-            "positive integers."
+            "Processing sample 0e9421da-3700-42e9-9281-a0e24cc0986c raised error. Counts "
+            "must be integer."
         ),
     ):
         abc_experiment.results_from_records(

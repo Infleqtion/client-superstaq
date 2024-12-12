@@ -504,38 +504,27 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             if uid not in samples_dict:
                 break
             sample = samples_dict[uid]
-            bitstrings = [format(k, f"0{self.num_qubits}b") for k in range(2**self.num_qubits)]
-            # Check if any of the provided bitstrings are invalid.
-            if any(k not in bitstrings for k in counts.keys()):
-                warnings.warn(
-                    f"Some counts provided in the record with ID {uid} have invalid bitstrings, "
-                    "these will be ignored."
+            try:
+                if any(not isinstance(c, int) for c in counts.values()):
+                    raise ValueError("Counts must be integer.")
+                if any(c < 0 for c in counts.values()):
+                    raise ValueError("Counts must be positive.")
+                if sum(counts.values()) == 0:
+                    raise ValueError("No non-zero counts.")
+
+                probabilities = self._canonicalize_probabilities(
+                    {key: count / sum(counts.values()) for key, count in counts.items()},
+                    self.num_qubits,
                 )
-            # Check all counts are positive intergers
-            if any(not isinstance(c, int) or c < 0 for c in counts.values()):
-                raise ValueError(
-                    f"Some counts provided for record with ID {uid} are not positive integers."
-                )
-            # Drop invalid bitstrings
-            counts = {bitstring: counts.get(bitstring, 0) for bitstring in bitstrings}
-            # Convert to probabilities
-            total_count = sum(counts.values())
-            if total_count == 0:
-                warnings.warn(
-                    f"Record with ID {uid} contains no valid, non-zero counts. This record"
-                    "will be ignored."
-                )
-                break
-            else:
-                probability = {
-                    bitstring: count / total_count for bitstring, count in counts.items()
-                }
+            except (ValueError, RuntimeError) as e:
+                warnings.warn(f"Processing sample {str(sample.uuid)} raised error. {e}")
+                continue  # Skip this record
 
             # Add to results data
-            results_data.append({**sample.data, **probability})
+            results_data.append({**sample.data, **probabilities})
 
         return self._results_cls(
-            target="Records",
+            target="records",
             experiment=self,
             data=pd.DataFrame(results_data),
         )
