@@ -92,7 +92,13 @@ UNSUCCESSFUL_CIRCUIT_STATES = [
 ]
 
 
-class DefaultPydanticModel(pydantic.BaseModel, use_enum_values=True, extra="forbid"):
+class DefaultPydanticModel(
+    pydantic.BaseModel,
+    use_enum_values=True,
+    extra="ignore",
+    validate_assignment=True,
+    validate_default=True,
+):
     """Default pydantic model used across the superstaq server."""
 
 
@@ -100,59 +106,100 @@ class JobData(DefaultPydanticModel):
     """A class to store data for a Superstaq job which is returned through to the client."""
 
     job_type: JobType
+    """The type of job being submitted."""
     statuses: list[CircuitStatus]
+    """The current status of each circuit in the job."""
     status_messages: list[str | None]
+    """Any status messages for each circuit in the job."""
     user_email: pydantic.EmailStr
+    """The email address of the use who submitted the job."""
     target: str
+    """The target that the job was submitted to."""
     provider_id: list[str | None]
+    """Any provider side ID's for each circuit in the job."""
     num_circuits: int
+    """Number of circuits in the job."""
     compiled_circuit_type: CircuitType
+    """The compiled circuit type."""
     compiled_circuits: list[str | None]
+    """Compiled versions of each input circuits."""
     input_circuits: list[str]
+    """The input circuits as serialized strings."""
     input_circuit_type: CircuitType
+    """The input circuit type."""
     pulse_gate_circuits: list[str | None]
+    """Serialized pulse gate circuits (if relevant)."""
     counts: list[dict[str, int] | None]
+    """Counts for each input circuit (if available/relevant)."""
     state_vectors: list[str | None]
+    """State vector results for each input circuit (if available/relevant)."""
     results_dicts: list[str | None]
+    """Serialized results dictionary for each input circuit (if available/relevant)."""
     num_qubits: list[int]
+    """Number of qubits required for each circuit."""
     shots: list[int]
+    """Number of shots for each circuit."""
     dry_run: bool
+    """Flag to indicate a dry-run job."""
     submission_timestamp: datetime.datetime
+    """Timestamp when the job was submitted."""
     last_updated_timestamp: list[datetime.datetime | None]
+    """Timestamp for when each circuit was last updated."""
     initial_logical_to_physicals: list[str | None]
+    """Serialized initial logical-to-physical mapping for each circuit."""
     final_logical_to_physicals: list[str | None]
+    """Serialized initial final-to-physical mapping for each circuit."""
 
 
 class NewJob(DefaultPydanticModel):
     """The data model for submitting new jobs."""
 
     job_type: JobType
+    """The job type."""
     target: str
+    """The target."""
     circuits: str
+    """Serialized input circuits."""
     circuit_type: CircuitType
-    compiled_circuits: str | None = pydantic.Field(default=None)
+    """The input circuit type."""
+    verbatim: bool = pydantic.Field(default=False)
+    """Whether to skip compile step."""
     compiled_circuit_type: CircuitType | None = pydantic.Field(default=None)
+    """The desired circuit type for the compiled circuits. Used mainly for `convert` jobs. If
+    None then the input circuit type is assumed."""
     shots: int = pydantic.Field(default=0, ge=0)
+    """Number of shots."""
     dry_run: bool = pydantic.Field(default=False)
-    sim_method: SimMethod | None = pydantic.Field(default=None, validate_default=True)
+    """Flag for a dry-run"""
+    sim_method: SimMethod | None = pydantic.Field(default=None)
+    """The simulation method to use. Only used on `simulation` jobs."""
     priority: int = pydantic.Field(default=0)
+    """Optional priority level. Note that different roles have their own maximum priority level
+    which will limit the priority that users can submit."""
     options_dict: dict[str, Any] = pydantic.Field(default={})
+    """Options dictionary with additional configuration detail."""
     tags: list[str] = pydantic.Field(default=[])
+    """Optional tags."""
 
 
 class JobCancellationResults(DefaultPydanticModel):
     """The results from cancelling a job."""
 
     succeeded: list[str]
+    """List of circuits that successfully cancelled."""
     message: str
+    """The server message."""
     warnings: list[str]
+    """Any warnings generated when cancelling."""
 
 
 class NewJobResponse(DefaultPydanticModel):
     """Model for the response when a new job is submitted"""
 
     job_id: uuid.UUID
+    """The job ID for the submitted job."""
     num_circuits: int
+    """The number of circuits in the job."""
 
 
 class JobQuery(DefaultPydanticModel):
@@ -160,13 +207,21 @@ class JobQuery(DefaultPydanticModel):
     logical OR while providing values for multiple fields is interpreted as logical AND."""
 
     user_email: list[pydantic.EmailStr] | None = pydantic.Field(None)
+    """List of user emails to include."""
     job_id: list[uuid.UUID] | None = pydantic.Field(None)
+    """List of job IDs to include."""
     target_name: list[str] | None = pydantic.Field(None)
+    """List of targets to include."""
     status: list[CircuitStatus] | None = pydantic.Field(None)
+    """List of statuses to include."""
     min_priority: int | None = pydantic.Field(None)
+    """Minimum priority to include."""
     max_priority: int | None = pydantic.Field(None)
+    """Maximum priority to include."""
     submitted_before: datetime.datetime | None = pydantic.Field(None)
+    """Filter for jobs submitted before this date."""
     submitted_after: datetime.datetime | None = pydantic.Field(None)
+    """Filter for jobs submitted after this date."""
 
 
 class UserTokenResponse(DefaultPydanticModel):
@@ -174,14 +229,18 @@ class UserTokenResponse(DefaultPydanticModel):
     regenerating the token."""
 
     email: pydantic.EmailStr
+    """The user's email address."""
     token: str
+    """The user's new token."""
 
 
 class BalanceResponse(DefaultPydanticModel):
     """Model for returning a single user balance."""
 
     email: pydantic.EmailStr
+    """The user's email address."""
     balance: float
+    """The user's balance."""
 
 
 class UserInfo(DefaultPydanticModel):
@@ -249,7 +308,7 @@ class UpdateUserDetails(DefaultPydanticModel):
 
 
 class TargetModel(DefaultPydanticModel):
-    """Model for the info of a target."""
+    """Model for the details of a target."""
 
     target_name: str
     """The target name"""
@@ -284,8 +343,10 @@ class GetTargetsFilterModel(DefaultPydanticModel):
     """Include Superstaq targets that are retired."""
 
 
-class RetrieveTargetInfoModel(DefaultPydanticModel):
-    """Model for retrieving target info."""
+class TargetInfoModel(DefaultPydanticModel):
+    """Model for retrieving detailed target info."""
 
     target: str
+    """The target's name."""
     options_dict: dict[str, Any] = pydantic.Field(dict())
+    """The details of the target."""
