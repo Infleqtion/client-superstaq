@@ -29,7 +29,7 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 
-@dataclass
+@dataclass(repr=False)
 class Sample:
     """A sample circuit to use along with any data about the circuit
     that is needed for analysis
@@ -42,7 +42,7 @@ class Sample:
     (e.g. cycle depth)."""
 
 
-@dataclass
+@dataclass(repr=False)
 class QCVVResults(ABC):
     """A dataclass for storing the data and analyze results of the experiment. Requires
     subclassing for each new experiment type."""
@@ -58,6 +58,14 @@ class QCVVResults(ABC):
 
     data: pd.DataFrame | None = None
     """The raw data generated."""
+
+    def __repr__(self) -> str:
+        results_type = self.__class__.__name__
+        try:
+            results = self._results_msg()
+        except type(self._not_analyzed):
+            results = "Results not analyzed."
+        return f"{results_type}({results}, experiment={self.experiment})"
 
     @property
     def data_ready(self) -> bool:
@@ -129,9 +137,22 @@ class QCVVResults(ABC):
     def plot_results(self) -> None:
         """Plot the results of the experiment"""
 
-    @abstractmethod
     def print_results(self) -> None:
-        """Prints the key results data."""
+        """Prints the key results data.
+        """
+        try:
+            msg = self._results_msg()
+        except type(self._not_analyzed):
+            msg = "Results not analyzed."
+        print(msg)
+
+    @abstractmethod
+    def _results_msg(self) -> str:
+        """Returns:
+        The message from analyzing the results. Note that it is expected that this method will
+        implicitly result in a `self._not_analyzed` exception being raised if there are no
+        analyzed results available.
+        """
 
     def _collect_device_counts(self) -> pd.DataFrame:
         """Process the counts returned by the server and process into a results dataframe.
@@ -252,6 +273,12 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
         self.samples = self._prepare_experiment()
         """Create all the samples needed for the experiment."""
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(num_qubits={self.num_qubits}, "
+            f"num_samples={len(self.samples)})"
+        )
 
     ##############
     # Properties #

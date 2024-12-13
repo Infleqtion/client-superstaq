@@ -34,7 +34,7 @@ mock_plot = MagicMock()
 mock_print = MagicMock()
 
 
-@dataclass
+@dataclass(repr=False)
 class ExampleResults(QCVVResults):
     """Example results class for testing"""
 
@@ -47,7 +47,10 @@ class ExampleResults(QCVVResults):
         mock_plot()
 
     def print_results(self) -> None:
-        mock_print("This is a test")
+        mock_print(self._results_msg())
+
+    def _results_msg(self) -> str:
+        return "This is a test"
 
     @property
     def example_final_result(self) -> float:

@@ -29,7 +29,7 @@ import tqdm.contrib.itertools
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
 
 
-@dataclass
+@dataclass(repr=False)
 class XEBResults(QCVVResults):
     """Results from an XEB experiment."""
 
@@ -167,8 +167,8 @@ class XEBResults(QCVVResults):
         ax_2.plot(x, y, color="tab:red", linewidth=2)
         ax_2.fill_between(x, y_m, y_p, alpha=0.2, color="tab:red")
 
-    def print_results(self) -> None:
-        print(
+    def _results_msg(self) -> str:
+        return (
             f"Estimated cycle fidelity: {self.cycle_fidelity_estimate:.5} "
             f"+/- {self.cycle_fidelity_estimate_std:.5}"
         )
@@ -253,6 +253,12 @@ class XEB(QCVVExperiment[XEBResults]):
             cycle_depths=cycle_depths,
             random_seed=random_seed,
             results_cls=XEBResults,
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"XEB(two_qubit_gate={self.two_qubit_gate}, num_qubits={self.num_qubits}, "
+            f"num_samples={len(self.samples)})"
         )
 
     ###################
