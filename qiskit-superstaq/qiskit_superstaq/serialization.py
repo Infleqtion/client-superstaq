@@ -432,9 +432,6 @@ def _resolve_circuit(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:
 
 
 def _resolve_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instruction:
-    if not gate.mutable:
-        return gate
-
     if gate.name.startswith(r"__superstaq_wrapper_"):
         return _resolve_gate(gate.definition[0].operation)
 
@@ -459,7 +456,7 @@ def _resolve_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
             ):
                 return trial_gate
 
-    elif type(gate) not in (qiskit.circuit.Instruction, qiskit.circuit.Gate):
+    elif not gate.mutable or type(gate) not in (qiskit.circuit.Instruction, qiskit.circuit.Gate):
         return gate
 
     elif gate.definition is not None:
