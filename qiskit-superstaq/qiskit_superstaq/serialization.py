@@ -462,7 +462,7 @@ def _resolve_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
     elif type(gate) not in (qiskit.circuit.Instruction, qiskit.circuit.Gate):
         return gate
 
-    if gate.definition is not None:
+    elif gate.definition is not None:
         gate.definition = _resolve_circuit(gate.definition)
 
     return _resolve_custom_gate(gate)
