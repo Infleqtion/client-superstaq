@@ -459,11 +459,11 @@ def _resolve_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
             ):
                 return trial_gate
 
-    elif type(gate) in (qiskit.circuit.Instruction, qiskit.circuit.Gate):
-        gate.definition = _resolve_circuit(gate.definition)
-
-    else:
+    elif type(gate) not in (qiskit.circuit.Instruction, qiskit.circuit.Gate):
         return gate
+
+    if gate.definition is not None:
+        gate.definition = _resolve_circuit(gate.definition)
 
     return _resolve_custom_gate(gate)
 
