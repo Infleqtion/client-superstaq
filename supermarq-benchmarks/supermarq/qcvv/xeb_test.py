@@ -16,18 +16,19 @@
 from __future__ import annotations
 
 import itertools
-from unittest.mock import MagicMock, patch
+import re
+from unittest.mock import MagicMock
 
 import cirq
 import numpy as np
 import pandas as pd
 import pytest
 
-from supermarq.qcvv import XEB, XEBSample
+from supermarq.qcvv import XEB, XEBResults
 
 
 def test_xeb_init() -> None:
-    experiment = XEB()
+    experiment = XEB(num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
     assert experiment.two_qubit_gate == cirq.CZ
     assert experiment.single_qubit_gate_set == [
@@ -39,15 +40,7 @@ def test_xeb_init() -> None:
         for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
     ]
 
-    with pytest.raises(
-        RuntimeError, match="No samples to retrieve. The experiment has not been run."
-    ):
-        experiment.samples  # pylint: disable=W0104
-
-    with pytest.raises(RuntimeError, match="No data to retrieve. The experiment has not been run."):
-        experiment.circuit_fidelities  # pylint: disable=W0104
-
-    experiment = XEB(two_qubit_gate=cirq.CX)
+    experiment = XEB(two_qubit_gate=cirq.CX, num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
     assert experiment.two_qubit_gate == cirq.CX
     assert experiment.single_qubit_gate_set == [
@@ -59,7 +52,7 @@ def test_xeb_init() -> None:
         for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
     ]
 
-    experiment = XEB(single_qubit_gate_set=[cirq.X])
+    experiment = XEB(single_qubit_gate_set=[cirq.X], num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
     assert experiment.two_qubit_gate == cirq.CZ
     assert experiment.single_qubit_gate_set == [cirq.X]
@@ -67,17 +60,19 @@ def test_xeb_init() -> None:
 
 @pytest.fixture
 def xeb_experiment() -> XEB:
-    return XEB(single_qubit_gate_set=[cirq.X, cirq.Y, cirq.Z])
+    return XEB(
+        single_qubit_gate_set=[cirq.X, cirq.Y, cirq.Z], num_circuits=10, cycle_depths=[1, 3, 5]
+    )
 
 
-def test_build_xeb_circuit() -> None:
-    with patch("numpy.random.default_rng") as rng:
-        xeb_experiment = XEB(single_qubit_gate_set=[cirq.X, cirq.Y, cirq.Z])
-        rng.return_value.choice.side_effect = [
-            np.array([[cirq.X, cirq.Y], [cirq.Z, cirq.Y], [cirq.Y, cirq.Z]]),
-            np.array([[cirq.X, cirq.Z], [cirq.X, cirq.X], [cirq.Y, cirq.Y]]),
-        ]
-        circuits = xeb_experiment._build_circuits(num_circuits=2, cycle_depths=[2])
+def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
+
+    xeb_experiment._rng = (rng := MagicMock())
+    rng.choice.side_effect = [
+        np.array([[cirq.X, cirq.Y], [cirq.Z, cirq.Y], [cirq.Y, cirq.Z]]),
+        np.array([[cirq.X, cirq.Z], [cirq.X, cirq.X], [cirq.Y, cirq.Y]]),
+    ]
+    circuits = xeb_experiment._build_circuits(num_circuits=2, cycle_depths=[2])
 
     assert len(circuits) == 2
 
@@ -98,7 +93,15 @@ def test_build_xeb_circuit() -> None:
             ]
         ),
     )
-    assert circuits[0].data == {"circuit_depth": 5, "num_cycles": 2, "two_qubit_gate": "CZ"}
+    assert circuits[0].data == {
+        "circuit_depth": 5,
+        "cycle_depth": 2,
+        "two_qubit_gate": "CZ",
+        "exact_00": 1.0,
+        "exact_01": 0.0,
+        "exact_10": 0.0,
+        "exact_11": 0.0,
+    }
     cirq.testing.assert_same_circuits(
         circuits[1].circuit,
         cirq.Circuit(
@@ -115,146 +118,131 @@ def test_build_xeb_circuit() -> None:
             ]
         ),
     )
-    assert circuits[1].data == {"circuit_depth": 5, "num_cycles": 2, "two_qubit_gate": "CZ"}
+    assert circuits[1].data == {
+        "circuit_depth": 5,
+        "cycle_depth": 2,
+        "two_qubit_gate": "CZ",
+        "exact_00": 0.0,
+        "exact_01": 0.0,
+        "exact_10": 1.0,
+        "exact_11": 0.0,
+    }
 
 
 def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
-    xeb_experiment._samples = MagicMock()
-    # Choose example data to give perfect fit with fidelity=0.95
-    xeb_experiment._raw_data = pd.DataFrame(
+    results = XEBResults(target="example", experiment=xeb_experiment)
+
+    results.data = pd.DataFrame(
         [
             {
                 "cycle_depth": 1,
                 "circuit_depth": 3,
-                "sum_p(x)p(x)": 0.3,
-                "sum_p(x)p^(x)": 0.95**1 * 0.3,
+                "00": 1.0,
+                "01": 0.0,
+                "10": 0.0,
+                "11": 0.0,
+                "exact_00": 1.0,
+                "exact_01": 0.0,
+                "exact_10": 0.0,
+                "exact_11": 0.0,
             },
             {
                 "cycle_depth": 1,
                 "circuit_depth": 3,
-                "sum_p(x)p(x)": 0.5,
-                "sum_p(x)p^(x)": 0.95**1 * 0.5,
+                "00": 1.0,
+                "01": 0.0,
+                "10": 0.0,
+                "11": 0.0,
+                "exact_00": 0.5,
+                "exact_01": 0.5,
+                "exact_10": 0.0,
+                "exact_11": 0.0,
             },
             {
                 "cycle_depth": 5,
                 "circuit_depth": 11,
-                "sum_p(x)p(x)": 0.3,
-                "sum_p(x)p^(x)": 0.95**5 * 0.3,
+                "00": 0.0,
+                "01": 1.0,
+                "10": 0.0,
+                "11": 0.0,
+                "exact_00": 0.0,
+                "exact_01": 0.75,
+                "exact_10": 0.25,
+                "exact_11": 0.0,
             },
             {
                 "cycle_depth": 5,
                 "circuit_depth": 11,
-                "sum_p(x)p(x)": 0.5,
-                "sum_p(x)p^(x)": 0.95**5 * 0.5,
+                "00": 0.0,
+                "01": 0.0,
+                "10": 1.0,
+                "11": 0.0,
+                "exact_00": 0.0,
+                "exact_01": 0.5,
+                "exact_10": 0.25,
+                "exact_11": 0.25,
             },
             {
                 "cycle_depth": 10,
                 "circuit_depth": 21,
-                "sum_p(x)p(x)": 0.3,
-                "sum_p(x)p^(x)": 0.95**10 * 0.3,
+                "00": 0.0,
+                "01": 0.0,
+                "10": 0.5,
+                "11": 0.5,
+                "exact_00": 0.2,
+                "exact_01": 0.3,
+                "exact_10": 0.25,
+                "exact_11": 0.25,
             },
             {
                 "cycle_depth": 10,
                 "circuit_depth": 21,
-                "sum_p(x)p(x)": 0.5,
-                "sum_p(x)p^(x)": 0.95**10 * 0.5,
+                "00": 0.0,
+                "01": 0.0,
+                "10": 0.5,
+                "11": 0.5,
+                "exact_00": 0.1,
+                "exact_01": 0.1,
+                "exact_10": 0.4,
+                "exact_11": 0.4,
             },
         ]
     )
-    results = xeb_experiment.analyze_results()
-
-    assert xeb_experiment.results.cycle_fidelity_estimate == pytest.approx(0.95)
-    assert xeb_experiment.results.cycle_fidelity_estimate_std == pytest.approx(0.0, abs=1e-8)
-
-    assert results == xeb_experiment.results
-
-    # Call plotting function to test no errors are raised.
-    xeb_experiment.plot_results()
-
-
-def test_xeb_process_probabilities(xeb_experiment: XEB) -> None:
-    qubits = cirq.LineQubit.range(2)
-
-    samples = [
-        XEBSample(
-            raw_circuit=cirq.Circuit(
-                [
-                    cirq.X(qubits[0]),
-                    cirq.X(qubits[1]),
-                    cirq.CX(qubits[0], qubits[1]),
-                    cirq.X(qubits[0]),
-                    cirq.X(qubits[1]),
-                    cirq.measure(qubits),
-                ]
-            ),
-            data={"circuit_depth": 3, "num_cycles": 1, "two_qubit_gate": "CX"},
-        )
-    ]
-    samples[0].probabilities = {"00": 0.1, "01": 0.3, "10": 0.4, "11": 0.2}
-
-    with patch("cirq.Simulator") as mock_simulator:
-        mock_simulator.return_value.simulate.return_value.final_state_vector = [0.0, 1.0, 0.0, 0.0]
-        data = xeb_experiment._process_probabilities(samples)
-
-    expected_data = pd.DataFrame(
-        [
-            {
-                "cycle_depth": 1,
-                "circuit_depth": 3,
-                "p(00)": 0.0,
-                "p(01)": 1.0,
-                "p(10)": 0.0,
-                "p(11)": 0.0,
-                "p^(00)": 0.1,
-                "p^(01)": 0.3,
-                "p^(10)": 0.4,
-                "p^(11)": 0.2,
-                "sum_p(x)p(x)": 1.0,
-                "sum_p(x)p^(x)": 0.3,
-            }
-        ]
+    results.analyze()
+    np.testing.assert_allclose(
+        results.data["sum_p(x)p^(x)"].values, [1.0, 0.5, 0.75, 0.25, 0.25, 0.4]
     )
-    pd.testing.assert_frame_equal(expected_data, data)
+    np.testing.assert_allclose(
+        results.data["sum_p(x)p(x)"].values, [1.0, 0.5, 0.625, 0.375, 0.255, 0.34]
+    )
+
+    # Calculated by hand
+    assert results.cycle_fidelity_estimate == pytest.approx(1.0613025)
+    assert results.cycle_fidelity_estimate_std == pytest.approx(0.0597633930)
+
+    results.plot_results()
 
 
-def test_xeb_process_probabilities_missing_probs(xeb_experiment: XEB) -> None:
-    qubits = cirq.LineQubit.range(2)
+def test_results_no_data() -> None:
+    results = XEBResults(target="example", experiment=MagicMock(), data=None)
+    with pytest.raises(RuntimeError, match="No data stored. Cannot perform analysis."):
+        results._analyze()
 
-    samples = [
-        XEBSample(
-            raw_circuit=cirq.Circuit(
-                [
-                    cirq.X(qubits[0]),
-                    cirq.X(qubits[1]),
-                    cirq.CX(qubits[0], qubits[1]),
-                    cirq.X(qubits[0]),
-                    cirq.X(qubits[1]),
-                    cirq.measure(qubits),
-                ]
-            ),
-            data={"circuit_depth": 3, "num_cycles": 1, "two_qubit_gate": "CX"},
-        )
-    ]
+    with pytest.raises(RuntimeError, match="No data stored. Cannot plot results."):
+        results.plot_results()
 
-    with pytest.warns(
-        UserWarning,
-        match=r"1 sample\(s\) are missing `probabilities`. These samples have been omitted.",
+    with pytest.raises(
+        RuntimeError, match="No stored dataframe of circuit fidelities. Something has gone wrong."
     ):
-        data = xeb_experiment._process_probabilities(samples)
-    pd.testing.assert_frame_equal(data, pd.DataFrame())
+        results.data = pd.DataFrame()
+        results.plot_results()
 
 
-def test_xebsample_sum_probs_square_no_values() -> None:
-    sample = XEBSample(raw_circuit=cirq.Circuit(), data={})
-    with pytest.raises(RuntimeError, match="`target_probabilities` have not yet been initialised"):
-        sample.sum_target_probs_square()
-
-
-def test_xebsample_sum_cross_sample_probs_no_values() -> None:
-    sample = XEBSample(raw_circuit=cirq.Circuit(), data={})
-    with pytest.raises(RuntimeError, match="`target_probabilities` have not yet been initialised"):
-        sample.sum_target_cross_sample_probs()
-
-    sample.target_probabilities = {"example": 0.6}
-    with pytest.raises(RuntimeError, match="`sample_probabilities` have not yet been initialised"):
-        sample.sum_target_cross_sample_probs()
+def test_results_not_analyzed() -> None:
+    results = XEBResults(target="example", experiment=MagicMock(), data=None)
+    for attr in ["cycle_fidelity_estimate", "cycle_fidelity_estimate_std"]:
+        with pytest.raises(
+            RuntimeError,
+            match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
+        ):
+            getattr(results, attr)
