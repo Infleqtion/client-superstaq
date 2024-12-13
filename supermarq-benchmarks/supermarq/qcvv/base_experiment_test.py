@@ -572,67 +572,62 @@ def test_results_from_records_bad_input(abc_experiment: ExampleExperiment) -> No
 
     # Warn for spurious records
     new_uuid = uuid.uuid4()
-    with (
-        pytest.warns(
-            UserWarning,
-            match=re.escape(
-                "Records were provided with the following UUIDs which do not match"
-                f" any samples and will be ignored: {', '.join([str(new_uuid)])}"
-            ),
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            "Records were provided with the following UUIDs which do not match"
+            f" any samples and will be ignored: {', '.join([str(new_uuid)])}"
         ),
-        pytest.warns(UserWarning, match=re.escape("The following samples are missing records:")),
-    ):
+    ) as _, pytest.warns(
+        UserWarning, match=re.escape("The following samples are missing records:")
+    ) as _:
         abc_experiment.results_from_records({new_uuid: {"00": 10}})
 
     # Warn for invalid bitstring for no non-zero counts
-    with (
-        pytest.warns(
-            UserWarning,
-            match=re.escape(
-                "Processing sample 0e9421da-3700-42e9-9281-a0e24cc0986c raised error. The key "
-                "contains the wrong number of bits. Got 3 entries but expected 2 bits."
-            ),
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            "Processing sample 0e9421da-3700-42e9-9281-a0e24cc0986c raised error. The key "
+            "contains the wrong number of bits. Got 3 entries but expected 2 bits."
         ),
-        pytest.warns(UserWarning, match=re.escape("The following samples are missing records:")),
-    ):
+    ) as _, pytest.warns(
+        UserWarning, match=re.escape("The following samples are missing records:")
+    ) as _:
         abc_experiment.results_from_records({samples[0].uuid: {"001": 10}})
 
     # Warn for no non-zero counts
-    with (
-        pytest.warns(
-            UserWarning,
-            match=re.escape(
-                "Processing sample 0e9421da-3700-42e9-9281-a0e24cc0986c raised error. No "
-                "non-zero counts."
-            ),
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            "Processing sample 0e9421da-3700-42e9-9281-a0e24cc0986c raised error. No "
+            "non-zero counts."
         ),
-        pytest.warns(UserWarning, match=re.escape("The following samples are missing records:")),
-    ):
+    ) as _, pytest.warns(
+        UserWarning, match=re.escape("The following samples are missing records:")
+    ) as _:
         abc_experiment.results_from_records({samples[0].uuid: {"01": 0}})
 
     # Warn for non positive integer counts
-    with (
-        pytest.warns(
-            UserWarning,
-            match=re.escape(
-                "Processing sample 0e9421da-3700-42e9-9281-a0e24cc0986c raised error. Counts "
-                "must be positive."
-            ),
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            "Processing sample 0e9421da-3700-42e9-9281-a0e24cc0986c raised error. Counts "
+            "must be positive."
         ),
-        pytest.warns(UserWarning, match=re.escape("The following samples are missing records:")),
-    ):
+    ) as _, pytest.warns(
+        UserWarning, match=re.escape("The following samples are missing records:")
+    ) as _:
         abc_experiment.results_from_records({samples[0].uuid: {"01": -10}})
 
-    with (
-        pytest.warns(
-            UserWarning,
-            match=re.escape(
-                "Processing sample 0e9421da-3700-42e9-9281-a0e24cc0986c raised error. Counts "
-                "must be integer."
-            ),
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            "Processing sample 0e9421da-3700-42e9-9281-a0e24cc0986c raised error. Counts "
+            "must be integer."
         ),
-        pytest.warns(UserWarning, match=re.escape("The following samples are missing records:")),
-    ):
+    ) as _, pytest.warns(
+        UserWarning, match=re.escape("The following samples are missing records:")
+    ) as _:
         abc_experiment.results_from_records(
             {samples[0].uuid: {"01": 2.5}}  # type: ignore[dict-item]
         )
