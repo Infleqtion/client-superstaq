@@ -1,6 +1,7 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
+import importlib
 import io
 import json
 import warnings
@@ -307,6 +308,18 @@ def test_mcphase() -> None:
     assert gate1 == gate2 == gate3
 
 
+def test_qft_gate() -> None:
+    # This test is necessary to get full coverage with Qiskit < 1.1.0
+    try:
+        with mock.patch(
+            "qiskit.circuit.library.QFTGate", qiskit.circuit.library.Barrier, create=True
+        ) as mock_qft:
+            importlib.reload(qss.serialization)
+            assert mock_qft in qss.serialization._controlled_gate_resolvers
+    finally:
+        importlib.reload(qss.serialization)  # Reset to avoid side effects
+
+
 @pytest.mark.parametrize("base_class", test_gates, ids=lambda g: g.name)
 def test_gate_preparation_and_resolution(base_class: type[qiskit.circuit.Instruction]) -> None:
     num_params = test_gates[base_class]
@@ -358,6 +371,12 @@ def _check_serialization(*gates: qiskit.circuit.Instruction) -> None:
     # Try one more round
     assert circuit == qss.deserialize_circuits(qss.serialize_circuits(new_circuit))[0]
 
+    assert all(
+        inst1.operation.base_class == inst2.operation.base_class
+        for inst1, inst2 in zip(circuit, new_circuit)
+        if inst1.operation.base_class is not qss.AQTiCCXGate
+    )
+
 
 @pytest.mark.parametrize("base_class", test_gates, ids=lambda g: g.name)
 def test_gate_serialization(base_class: type[qiskit.circuit.Instruction]) -> None:
@@ -393,22 +412,11 @@ def test_gate_serialization(base_class: type[qiskit.circuit.Instruction]) -> Non
     ids=lambda g: g.name,
 )
 def test_nonstandard_gate_serialization(gate: qiskit.circuit.Instruction) -> None:
-    circuit = qiskit.QuantumCircuit(gate.num_qubits, gate.num_clbits)
-    circuit.append(gate, circuit.qubits, circuit.clbits)
-
     gates = [gate]
     if hasattr(gate, "ctrl_state"):
         gate2 = gate.copy().to_mutable()
         gate2.ctrl_state = 1
         gates.append(gate2)
-        circuit.append(gate2, circuit.qubits, circuit.clbits)
-
-    new_circuit = qss.deserialize_circuits(qss.serialize_circuits(circuit))[0]
-    assert new_circuit == circuit
-    assert all(
-        inst1.operation.base_class == inst2.operation.base_class
-        for inst1, inst2 in zip(circuit, new_circuit)
-    )
 
     _check_serialization(*gates)
 

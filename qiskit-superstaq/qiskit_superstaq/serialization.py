@@ -58,9 +58,9 @@ def _mcphase(
     label: str | None = None,
     ctrl_state: str | int | None = None,
 ) -> qiskit.circuit.library.MCPhaseGate:
-    """The `ctrl_state` argument was added in Qiskit 1.1.0."""
+    """The `ctrl_state` argument was added to `MCPhaseGate` in Qiskit 1.1.0."""
 
-    if qiskit.__version__.split(".") >= ["1", "1", "0"]:
+    if qiskit.__version__.split(".")[:2] >= ["1", "1"]:
         return qiskit.circuit.library.MCPhaseGate(
             lam, num_ctrl_qubits=num_ctrl_qubits, label=label, ctrl_state=ctrl_state
         )
@@ -81,10 +81,13 @@ _controlled_gate_resolvers: dict[
     qiskit.circuit.library.U1Gate: lambda gate: qiskit.circuit.library.MCU1Gate(
         gate.params[0], gate.num_ctrl_qubits, ctrl_state=gate.ctrl_state, label=gate.label
     ),
+    qiskit.circuit.library.XGate: lambda gate: qiskit.circuit.library.MCXGate(
+        gate.num_ctrl_qubits, ctrl_state=gate.ctrl_state, label=gate.label
+    ),
 }
 
 
-if hasattr(qiskit.circuit.library, "QFTGate"):  # pragma: no cover
+if hasattr(qiskit.circuit.library, "QFTGate"):
     # QFTGate introduced in qiskit 1.2.0
 
     QFTGate = getattr(qiskit.circuit.library, "QFTGate")
@@ -351,25 +354,24 @@ def _prepare_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
     if _is_qiskit_gate(gate):
         return gate
 
+    # Workaround for https://github.com/Qiskit/qiskit/issues/8794
+    if isinstance(gate, qiskit.circuit.ControlledGate):
+        if gate.definition is not None and not gate._definition:
+            gate._define()
+
     if isinstance(gate, tuple(_custom_gates_by_name.values())) and not issubclass(
-        gate.base_class, (qiskit.circuit.ControlledGate, *_custom_resolvers)
+        gate.base_class, tuple(_custom_resolvers)
     ):
         return gate
 
     if isinstance(gate, qiskit.circuit.ControlledGate):
-        if gate.definition is not None and not gate._definition:
-            # Workaround for https://github.com/Qiskit/qiskit/issues/8794
-            definition = qiskit.QuantumCircuit(gate.num_qubits, gate.num_clbits)
-        else:
-            definition = _prepare_circuit(gate._definition)
-
         return qiskit.circuit.ControlledGate(
             name=gate._name,
             num_qubits=gate.num_qubits,
             params=gate.params,
             label=gate.label,
             num_ctrl_qubits=gate.num_ctrl_qubits,
-            definition=definition,
+            definition=_prepare_circuit(gate._definition),
             ctrl_state=gate.ctrl_state,
             base_gate=_prepare_gate(gate.base_gate),
         )
@@ -430,29 +432,35 @@ def _resolve_circuit(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:
 
 
 def _resolve_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instruction:
+    if not gate.mutable:
+        return gate
+
     if gate.name.startswith(r"__superstaq_wrapper_"):
         return _resolve_gate(gate.definition[0].operation)
 
-    elif isinstance(gate, qiskit.circuit.ControlFlowOp):
+    if isinstance(gate, qiskit.circuit.ControlFlowOp):
         return gate.replace_blocks([_resolve_circuit(block) for block in gate.blocks])
 
-    elif type(gate) is qiskit.circuit.ControlledGate:
+    if type(gate) is qiskit.circuit.ControlledGate:
         gate.base_gate = _resolve_gate(gate.base_gate)
 
-        if resolver := _controlled_gate_resolvers.get(gate.base_gate.base_class):
-            gate = resolver(gate)
-
-        elif gate.definition and gate._definition:
+        if gate.definition and gate._definition:
             gate.definition = _resolve_circuit(gate._definition)
 
-        else:
-            gate = gate.base_gate.control(
-                gate.num_ctrl_qubits, label=gate.label, ctrl_state=gate.ctrl_state
-            )
+        if resolver := _controlled_gate_resolvers.get(gate.base_gate.base_class):
+            trial_gate = resolver(gate)
+
+            if trial_gate.definition and not trial_gate._definition:
+                trial_gate._define()
+
+            if (
+                trial_gate.definition == gate.definition
+                or trial_gate._definition == gate._definition
+            ):
+                return trial_gate
 
     elif type(gate) in (qiskit.circuit.Instruction, qiskit.circuit.Gate):
-        if gate.definition:
-            gate.definition = _resolve_circuit(gate.definition)
+        gate.definition = _resolve_circuit(gate.definition)
 
     else:
         return gate
