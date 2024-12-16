@@ -314,6 +314,23 @@ class _SuperstaqClient:
         ]
         return target_list
 
+    def get_my_targets(self) -> list[gss.Target]:
+        """Makes a GET request to retrieve targets from the Superstaq API.
+
+        Returns:
+            A list of Superstaq targets matching all provided criteria.
+        """
+        json_dict: dict[str, str | bool] = {"accessible": True}
+        if self.client_kwargs:
+            json_dict["options"] = json.dumps(self.client_kwargs)
+
+        superstaq_targets = self.post_request("/targets", json_dict)["superstaq_targets"]
+        target_list = [
+            gss.Target(target=target_name, **properties)
+            for target_name, properties in superstaq_targets.items()
+        ]
+        return target_list
+
     def add_new_user(self, json_dict: dict[str, str]) -> str:
         """Makes a POST request to Superstaq API to add a new user.
 

@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import itertools
-import warnings
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
@@ -27,67 +26,155 @@ import seaborn as sns
 import tqdm.auto
 import tqdm.contrib.itertools
 
-from supermarq.qcvv.base_experiment import BenchmarkingExperiment, BenchmarkingResults, Sample
+from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
 
 
 @dataclass
-class XEBSample(Sample):
-    """The samples used in XEB experiments."""
+class XEBResults(QCVVResults):
+    """Results from an XEB experiment."""
 
-    target_probabilities: dict[str, float] | None = None
-    """The target probabilities obtained through a noiseless simulator"""
-    sample_probabilities: dict[str, float] | None = None
-    """The sample probabilities obtained from the chosen target"""
+    _circuit_fidelities: pd.DataFrame | None = None
+    _cycle_fidelity_estimate: float | None = None
+    """Estimated cycle fidelity."""
+    _cycle_fidelity_estimate_std: float | None = None
+    """Standard deviation for the cycle fidelity estimate."""
 
-    def sum_target_probs_square(self) -> float:
-        """Compute the sum of the squared target probabilities.
+    @property
+    def cycle_fidelity_estimate(self) -> float:
+        """Returns:
+        Estimated cycle fidelity."""
+        if self._cycle_fidelity_estimate is None:
+            raise self._not_analyzed
+        return self._cycle_fidelity_estimate
+
+    @property
+    def cycle_fidelity_estimate_std(self) -> float:
+        """Returns:
+        Standard deviation for the cycle fidelity estimate."""
+        if self._cycle_fidelity_estimate_std is None:
+            raise self._not_analyzed
+        return self._cycle_fidelity_estimate_std
+
+    def _analyze(self) -> None:
+        """Analyse the results and calculate the estimated circuit fidelity.
+
+        Args:
+            plot_results (optional): Whether to generate the data plots. Defaults to True.
 
         Raises:
-            RuntimeError: If no target probabilities have been initialised.
+            RuntimeError: If there is no data stored.
 
         Returns:
-            float: The sum of squared target probabilities.
+           The final results from the experiment.
         """
-        if self.target_probabilities is None:
-            raise RuntimeError("`target_probabilities` have not yet been initialised")
+        if self.data is None:
+            raise RuntimeError("No data stored. Cannot perform analysis.")
+        self.data["sum_p(x)p^(x)"] = pd.DataFrame(
+            (
+                self.data[["00", "01", "10", "11"]].values
+                * self.data[["exact_00", "exact_01", "exact_10", "exact_11"]].values
+            ).sum(axis=1),
+            index=self.data.index,
+        )
+        self.data["sum_p(x)p(x)"] = pd.DataFrame(
+            (
+                self.data[["exact_00", "exact_01", "exact_10", "exact_11"]].values
+                * self.data[["exact_00", "exact_01", "exact_10", "exact_11"]].values
+            ).sum(axis=1),
+            index=self.data.index,
+        )
+        # Fit a linear model for each cycle depth to estimate the circuit fidelity
+        records = []
+        for depth in set(self.data.cycle_depth):
+            df = self.data[self.data.cycle_depth == depth]
+            fit = scipy.stats.linregress(
+                x=df["sum_p(x)p(x)"] - 1 / 2**self.num_qubits,
+                y=df["sum_p(x)p^(x)"] - 1 / 2**self.num_qubits,
+            )
 
-        return sum(prob**2 for prob in self.target_probabilities.values())
+            records.append(
+                {
+                    "cycle_depth": depth,
+                    "circuit_fidelity_estimate": fit.slope,
+                    "circuit_fidelity_estimate_std": fit.stderr,
+                }
+            )
 
-    def sum_target_cross_sample_probs(self) -> float:
-        """Compute the dot product between the sample and target probabilities
+        self._circuit_fidelities = pd.DataFrame(records)
+
+        self._circuit_fidelities["log_fidelity_estimate"] = np.log(
+            self._circuit_fidelities.circuit_fidelity_estimate
+        )
+
+        # Fit a linear model to the depth ~ log(fidelity) to approximate the cycle fidelity
+        cycle_fit = scipy.stats.linregress(
+            x=self._circuit_fidelities.cycle_depth,
+            y=np.log(self._circuit_fidelities.circuit_fidelity_estimate),
+        )
+        self._cycle_fidelity_estimate = np.exp(cycle_fit.slope)
+        self._cycle_fidelity_estimate_std = self.cycle_fidelity_estimate * cycle_fit.stderr
+
+    def plot_results(self) -> None:
+        """Plot the experiment data and the corresponding fits.
 
         Raises:
-            RuntimeError: If either the target or sample probabilities have not yet been
-                initialised.
-
-        Returns:
-            float: The dot product between the sample and target probabilities.
+            RuntimeError: If there is no data stored.
         """
-        if self.target_probabilities is None:
-            raise RuntimeError("`target_probabilities` have not yet been initialised")
+        if self.data is None:
+            raise RuntimeError("No data stored. Cannot plot results.")
 
-        if self.sample_probabilities is None:
-            raise RuntimeError("`sample_probabilities` have not yet been initialised")
+        if self._circuit_fidelities is None:
+            raise RuntimeError(
+                "No stored dataframe of circuit fidelities. Something has gone wrong."
+            )
 
-        return sum(
-            self.target_probabilities[state] * self.sample_probabilities[state]
-            for state in self.target_probabilities
+        plot_1 = sns.lmplot(
+            data=self.data,
+            x="sum_p(x)p(x)",
+            y="sum_p(x)p^(x)",
+            hue="cycle_depth",
+            palette="dark:r",
+            legend="full",
+            ci=None,
+        )
+        sns.move_legend(plot_1, "center right")
+        ax_1 = plot_1.axes.item()
+        plot_1.tight_layout()
+        ax_1.set_xlabel(r"$\sum p(x)^2$", fontsize=15)
+        ax_1.set_ylabel(r"$\sum p(x) \hat{p}(x)$", fontsize=15)
+        ax_1.set_title(r"Linear fit per cycle depth", fontsize=15)
+
+        plot_2 = sns.lmplot(
+            data=self._circuit_fidelities,
+            x="cycle_depth",
+            y="circuit_fidelity_estimate",
+            hue="cycle_depth",
+            palette="dark:r",
+        )
+        ax_2 = plot_2.axes.item()
+        plot_2.tight_layout()
+        ax_2.set_xlabel(r"Cycle depth", fontsize=15)
+        ax_2.set_ylabel(r"Circuit fidelity", fontsize=15)
+        ax_2.set_title(r"Exponential decay of circuit fidelity", fontsize=15)
+
+        # Add fit line
+        x = np.linspace(
+            self._circuit_fidelities.cycle_depth.min(), self._circuit_fidelities.cycle_depth.max()
+        )
+        y = self.cycle_fidelity_estimate**x
+        y_p = (self.cycle_fidelity_estimate + self.cycle_fidelity_estimate_std) ** x
+        y_m = (self.cycle_fidelity_estimate - self.cycle_fidelity_estimate_std) ** x
+        ax_2.plot(x, y, color="tab:red", linewidth=2)
+        ax_2.fill_between(x, y_m, y_p, alpha=0.2, color="tab:red")
+
+    def print_results(self) -> None:
+        print(
+            f"Estimated cycle fidelity: {self.cycle_fidelity_estimate:.5} "
+            f"+/- {self.cycle_fidelity_estimate_std:.5}"
         )
 
 
-@dataclass(frozen=True)
-class XEBResults(BenchmarkingResults):
-    """Results from an XEB experiment."""
-
-    cycle_fidelity_estimate: float
-    """Estimated cycle fidelity."""
-    cycle_fidelity_estimate_std: float
-    """Standard deviation for the cycle fidelity estimate."""
-
-    experiment_name = "XEB"
-
-
-class XEB(BenchmarkingExperiment[XEBResults]):
+class XEB(QCVVExperiment[XEBResults]):
     r"""Cross-entropy benchmarking (XEB) experiment.
 
     The XEB experiment can be used to estimate the combined fidelity of a repeating
@@ -120,6 +207,8 @@ class XEB(BenchmarkingExperiment[XEBResults]):
 
     def __init__(
         self,
+        num_circuits: int,
+        cycle_depths: Iterable[int],
         single_qubit_gate_set: list[cirq.Gate] | None = None,
         two_qubit_gate: cirq.Gate | None = cirq.CZ,
         *,
@@ -128,6 +217,8 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         """Initializes a cross-entropy benchmarking experiment.
 
         Args:
+            num_circuits: Number of circuits to sample.
+            cycle_depths: The cycle depths to sample.
             single_qubit_gate_set: Optional list of single qubit gates to randomly sample from when
                 generating random circuits. If not provided defaults to phased XZ gates with 1/4 pi
                 intervals.
@@ -135,12 +226,6 @@ class XEB(BenchmarkingExperiment[XEBResults]):
                 then no two qubit gate is used. Defaults to control-Z gate.
             random_seed: An optional seed to use for randomization.
         """
-        super().__init__(num_qubits=2, random_seed=random_seed)
-
-        self._circuit_fidelities: pd.DataFrame | None = None
-
-        self._samples: Sequence[XEBSample] | None = None  # Overwrite with modified sampled object
-
         self.two_qubit_gate: cirq.Gate | None = two_qubit_gate
         """The two qubit gate to use for interleaving."""
 
@@ -162,32 +247,13 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         else:
             self.single_qubit_gate_set = single_qubit_gate_set
 
-    ##############
-    # Properties #
-    ##############
-    @property
-    def circuit_fidelities(self) -> pd.DataFrame:
-        """The circuit fidelity calculations from the most recently run experiment.
-
-        Raises:
-            RuntimeError: If no data is available.
-        """
-        if self._circuit_fidelities is None:
-            raise RuntimeError("No data to retrieve. The experiment has not been run.")
-
-        return self._circuit_fidelities
-
-    @property
-    def samples(self) -> Sequence[XEBSample]:  # Overwrite with XEBSample return type
-        """The samples generated during the experiment.
-
-        Raises:
-            RuntimeError: If no samples are available.
-        """
-        if self._samples is None:
-            raise RuntimeError("No samples to retrieve. The experiment has not been run.")
-
-        return self._samples
+        super().__init__(
+            num_qubits=2,
+            num_circuits=num_circuits,
+            cycle_depths=cycle_depths,
+            random_seed=random_seed,
+            results_cls=XEBResults,
+        )
 
     ###################
     # Private Methods #
@@ -196,7 +262,7 @@ class XEB(BenchmarkingExperiment[XEBResults]):
         self,
         num_circuits: int,
         cycle_depths: Iterable[int],
-    ) -> Sequence[XEBSample]:
+    ) -> Sequence[Sample]:
         """Build a list of random circuits to perform the XEB experiment with.
 
         Args:
@@ -225,184 +291,24 @@ class XEB(BenchmarkingExperiment[XEBResults]):
             if self.two_qubit_gate is not None:
                 circuit = self._interleave_op(circuit, self.two_qubit_gate(*self.qubits))
 
+            analytic_final_state = cirq.final_state_vector(
+                circuit, qubit_order=sorted(circuit.all_qubits())
+            )
+            analytic_probabilities = {
+                "exact_" + format(idx, f"0{self.num_qubits}b"): np.abs(state) ** 2
+                for idx, state in enumerate(analytic_final_state)
+            }
+
             random_circuits.append(
-                XEBSample(
-                    raw_circuit=circuit + cirq.measure(sorted(circuit.all_qubits())),
+                Sample(
+                    circuit=circuit + cirq.measure(sorted(circuit.all_qubits())),
                     data={
                         "circuit_depth": len(circuit),
-                        "num_cycles": depth,
+                        "cycle_depth": depth,
                         "two_qubit_gate": str(self.two_qubit_gate),
+                        **analytic_probabilities,
                     },
                 )
             )
 
         return random_circuits
-
-    def _process_probabilities(
-        self, samples: Sequence[XEBSample]  # type: ignore[override]
-    ) -> pd.DataFrame:
-        """Processes the probabilities generated by sampling the circuits into the data structures
-        needed for analyzing the results.
-
-        Args:
-            samples: The list of samples to process the results from.
-
-        Returns:
-            A data frame of the full results needed to analyse the experiment.
-        """
-        samples = list(samples)
-        missing_count = 0
-        for sample in samples:
-            if sample.probabilities is None:
-                missing_count += 1
-                samples.remove(sample)
-            else:
-                sample.sample_probabilities = sample.probabilities
-                sample.probabilities = {}
-        if missing_count > 0:
-            warnings.warn(
-                f"{missing_count} sample(s) are missing `probabilities`. "
-                "These samples have been omitted."
-            )
-
-        for sample in tqdm.auto.tqdm(samples, desc="Evaluating circuits"):
-            sample.target_probabilities = self._simulate_sample(sample)
-
-        records = []
-        for sample in samples:
-            if sample.sample_probabilities is not None and sample.target_probabilities is not None:
-                target_probabilities = {
-                    f"p({key})": value for key, value in sample.target_probabilities.items()
-                }
-                sample_probabilities = {
-                    f"p^({key})": value for key, value in sample.sample_probabilities.items()
-                }
-                records.append(
-                    {
-                        "cycle_depth": sample.data["num_cycles"],
-                        "circuit_depth": sample.data["circuit_depth"],
-                        **target_probabilities,
-                        **sample_probabilities,
-                        "sum_p(x)p(x)": sample.sum_target_probs_square(),
-                        "sum_p(x)p^(x)": sample.sum_target_cross_sample_probs(),
-                    }
-                )
-        return pd.DataFrame(records)
-
-    def _simulate_sample(self, sample: XEBSample) -> dict[str, float]:
-        """Simulates the exact probabilities of measuring all possible bitstrings
-        with a given sample.
-
-        Args:
-            sample: The sample to simulate.
-
-        Returns:
-            A dictionary of the probability of each bitstring.
-        """
-        sim = cirq.Simulator(seed=self._rng)
-
-        result = sim.simulate(
-            cirq.drop_terminal_measurements(sample.circuit),
-            qubit_order=sorted(sample.circuit.all_qubits()),
-        )
-        return {
-            f"{i:0{self.num_qubits}b}": np.abs(amp) ** 2
-            for i, amp in enumerate(result.final_state_vector)
-        }
-
-    ###################
-    # Public Methods  #
-    ###################
-    def analyze_results(self, plot_results: bool = True) -> XEBResults:
-        """Analyse the results and calculate the estimated circuit fidelity.
-
-        Args:
-            plot_results (optional): Whether to generate the data plots. Defaults to True.
-
-        Returns:
-           The final results from the experiment.
-        """
-
-        # Fit a linear model for each cycle depth to estimate the circuit fidelity
-        records = []
-        for depth in set(self.raw_data.cycle_depth):
-            df = self.raw_data[self.raw_data.cycle_depth == depth]
-            fit = scipy.stats.linregress(
-                x=df["sum_p(x)p(x)"] - 1 / 2**self.num_qubits,
-                y=df["sum_p(x)p^(x)"] - 1 / 2**self.num_qubits,
-            )
-
-            records.append(
-                {
-                    "cycle_depth": depth,
-                    "circuit_fidelity_estimate": fit.slope,
-                    "circuit_fidelity_estimate_std": fit.stderr,
-                }
-            )
-
-        self._circuit_fidelities = pd.DataFrame(records)
-
-        self.circuit_fidelities["log_fidelity_estimate"] = np.log(
-            self.circuit_fidelities.circuit_fidelity_estimate
-        )
-
-        # Fit a linear model to the depth ~ log(fidelity) to approximate the cycle fidelity
-        cycle_fit = scipy.stats.linregress(
-            x=self.circuit_fidelities.cycle_depth,
-            y=np.log(self.circuit_fidelities.circuit_fidelity_estimate),
-        )
-        cycle_fidelity_estimate = np.exp(cycle_fit.slope)
-        cycle_fidelity_estimate_std = cycle_fidelity_estimate * cycle_fit.stderr
-
-        self._results = XEBResults(
-            target="$ ".join(self.targets),
-            total_circuits=len(self.samples),
-            cycle_fidelity_estimate=cycle_fidelity_estimate,
-            cycle_fidelity_estimate_std=cycle_fidelity_estimate_std,
-        )
-
-        if plot_results:
-            self.plot_results()
-
-        return self.results
-
-    def plot_results(self) -> None:
-        """Plot the experiment data and the corresponding fits."""
-        plot_1 = sns.lmplot(
-            data=self.raw_data,
-            x="sum_p(x)p(x)",
-            y="sum_p(x)p^(x)",
-            hue="cycle_depth",
-            palette="dark:r",
-            legend="full",
-            ci=None,
-        )
-        sns.move_legend(plot_1, "center right")
-        ax_1 = plot_1.axes.item()
-        plot_1.tight_layout()
-        ax_1.set_xlabel(r"$\sum p(x)^2$", fontsize=15)
-        ax_1.set_ylabel(r"$\sum p(x) \hat{p}(x)$", fontsize=15)
-        ax_1.set_title(r"Linear fit per cycle depth", fontsize=15)
-
-        plot_2 = sns.lmplot(
-            data=self.circuit_fidelities,
-            x="cycle_depth",
-            y="circuit_fidelity_estimate",
-            hue="cycle_depth",
-            palette="dark:r",
-        )
-        ax_2 = plot_2.axes.item()
-        plot_2.tight_layout()
-        ax_2.set_xlabel(r"Cycle depth", fontsize=15)
-        ax_2.set_ylabel(r"Circuit fidelity", fontsize=15)
-        ax_2.set_title(r"Exponential decay of circuit fidelity", fontsize=15)
-
-        # Add fit line
-        x = np.linspace(
-            self.circuit_fidelities.cycle_depth.min(), self.circuit_fidelities.cycle_depth.max()
-        )
-        y = self.results.cycle_fidelity_estimate**x
-        y_p = (self.results.cycle_fidelity_estimate + self.results.cycle_fidelity_estimate_std) ** x
-        y_m = (self.results.cycle_fidelity_estimate - self.results.cycle_fidelity_estimate_std) ** x
-        ax_2.plot(x, y, color="tab:red", linewidth=2)
-        ax_2.fill_between(x, y_m, y_p, alpha=0.2, color="tab:red")
