@@ -13,6 +13,7 @@
 """Client for making requests to Superstaq's API."""
 from __future__ import annotations
 
+import copy
 import json
 import os
 import pathlib
@@ -729,7 +730,9 @@ class _SuperstaqClient:
         """
         return self.get_request("/get_aqt_configs")
 
-    def get_request(self, endpoint: str, query: Mapping[str, object] | None = None) -> Any:
+    def get_request(
+        self, endpoint: str, query: Mapping[str, object] | None = None, **custom_headers
+    ) -> Any:
         """Performs a GET request on a given endpoint.
 
         Args:
@@ -740,6 +743,10 @@ class _SuperstaqClient:
         Returns:
             The response of the GET request.
         """
+        # Update headers with custom values
+        headers = copy.deepcopy(self.headers)
+        for key, val in custom_headers.items():
+            headers[key] = val
 
         def request() -> requests.Response:
             """Builds GET request object.
@@ -753,14 +760,14 @@ class _SuperstaqClient:
                 q_string = "?" + urllib.parse.urlencode(query, doseq=True)
             return self.session.get(
                 f"{self.url}{endpoint}{q_string}",
-                headers=self.headers,
+                headers=headers,
                 verify=self.verify_https,
             )
 
         response = self._make_request(request)
         return self._handle_response(response)
 
-    def post_request(self, endpoint: str, json_dict: Mapping[str, object]) -> Any:
+    def post_request(self, endpoint: str, json_dict: Mapping[str, object], **custom_headers) -> Any:
         """Performs a POST request on a given endpoint with a given payload.
 
         Args:
@@ -770,6 +777,10 @@ class _SuperstaqClient:
         Returns:
             The response of the POST request.
         """
+        # Update headers with custom values
+        headers = copy.deepcopy(self.headers)
+        for key, val in custom_headers.items():
+            headers[key] = val
 
         def request() -> requests.Response:
             """Builds GET request object.
@@ -780,7 +791,7 @@ class _SuperstaqClient:
             return self.session.post(
                 f"{self.url}{endpoint}",
                 json=json_dict,
-                headers=self.headers,
+                headers=headers,
                 verify=self.verify_https,
             )
 
@@ -1096,6 +1107,12 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):  # pragma: no cover
         else:
             raise NotImplementedError("Unsupported circuit type.")
 
+        # Extract tokens from kwargs and move to the header
+        custom_headers = {}
+        for key in ["ibmq_token", "ibmq_instance", "ibmq_channel", "cq_token"]:
+            if key in kwargs:
+                custom_headers[key] = kwargs.pop(key)
+
         new_job = _models.NewJob(
             job_type=job_type,
             target=target,
@@ -1106,7 +1123,9 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):  # pragma: no cover
             shots=repetitions,
             options_dict={**self.client_kwargs, **kwargs},
         )
-        response = _models.NewJobResponse(**self.post_request("/client/job", new_job.model_dump()))
+        response = _models.NewJobResponse(
+            **self.post_request("/client/job", new_job.model_dump(), **custom_headers)
+        )
         return response.model_dump()
 
     def cancel_jobs(
@@ -1136,7 +1155,7 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):  # pragma: no cover
         self,
         job_ids: list[str],
         **kwargs: object,
-    ) -> dict[str, dict[str, str]]:
+    ) -> dict[str, dict[str, object]]:
         """Get the job from the Superstaq API.
 
         Args:
@@ -1149,13 +1168,13 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):  # pragma: no cover
         Raises:
             ~gss.SuperstaqServerException: For other API call failures.
         """
-        response = self.get_request("/client/job", query={"job_id": job_ids})
-        job_data_dict = {job_id: _models.JobData(**data) for (job_id, data) in response.items()}
-        return {job_id: data.model_dump() for job_id, data in job_data_dict}
+        response = self.get_request("/client/job", query={"job_id": job_ids}, **kwargs)
+        return {job_id: _models.JobData(**data).model_dump() for (job_id, data) in response.items()}
 
     def fetch_single_job(
         self,
         job_id: str,
+        **kwargs: object,
     ) -> _models.JobData:
         """Get the job from the Superstaq API.
 
@@ -1168,7 +1187,7 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):  # pragma: no cover
         Raises:
             ~gss.SuperstaqServerException: For other API call failures.
         """
-        results = self.get_request(f"/client/job/{job_id}")
+        results = self.get_request(f"/client/job/{job_id}", query=None, **kwargs)
         return _models.JobData(**results)
 
     def get_balance(self) -> dict[str, float]:
@@ -1240,17 +1259,34 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):  # pragma: no cover
             A list of Superstaq targets matching all provided criteria.
         """
 
+        # Extract tokens from kwargs and move to the header
+        custom_headers = {}
+        for key in ["ibmq_token", "ibmq_instance", "ibmq_channel", "cq_token"]:
+            if key in kwargs:
+                custom_headers[key] = kwargs.pop(key)
+
         request = _models.GetTargetsFilterModel(
             **{key: val for key, val in kwargs.items() if val is not None}
         )
-        response = self.get_request("/client/targets", **request.model_dump(exclude_defaults=True))
-        targets = [_models.TargetInfoModel(**data) for data in response]
+
+        response = self.get_request(
+            "/client/targets", query=request.model_dump(exclude_defaults=True), **custom_headers
+        )
+        targets = [_models.TargetModel(**data) for data in response]
         return [
             gss.typing.Target(
                 target=target.target_name, **target.model_dump(exclude={"target_name"})
             )
             for target in targets
         ]
+
+    def get_my_targets(self) -> list[gss.Target]:
+        """Makes a GET request to retrieve targets from the Superstaq API.
+
+        Returns:
+            A list of Superstaq targets matching all provided criteria.
+        """
+        raise NotImplementedError
 
     def add_new_user(self, json_dict: dict[str, str]) -> str:
         """Makes a POST request to Superstaq API to add a new user.
@@ -1262,7 +1298,7 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):  # pragma: no cover
             The response as a string.
         """
         new_user = _models.NewUser(**json_dict)
-        return self.post_request("/user", new_user.model_dump(exclude_none=True))
+        return self.post_request("/client/user", new_user.model_dump(exclude_none=True))
 
     def update_user_balance(self, json_dict: dict[str, float | str]) -> str:
         """Makes a PUT request to Superstaq API to update a user's balance in the database.
