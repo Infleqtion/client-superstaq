@@ -46,11 +46,8 @@ class ExampleResults(QCVVResults):
     def plot_results(self) -> None:
         mock_plot()
 
-    def print_results(self) -> None:
-        mock_print(self._results_msg())
-
     def _results_msg(self) -> str:
-        return "This is a test"
+        return f"This is a test: {self.example_final_result}"
 
     @property
     def example_final_result(self) -> float:
@@ -175,15 +172,21 @@ def test_results_job_no_data(abc_experiment: ExampleExperiment) -> None:
         results.analyze()
 
 
-def test_results_analyze(abc_experiment: ExampleExperiment) -> None:
+@patch("builtins.print")
+def test_results_analyze(mock_print: MagicMock, abc_experiment: ExampleExperiment) -> None:
     results = ExampleResults(
         target="target", experiment=abc_experiment, data=MagicMock(spec=pd.DataFrame)
     )
 
+    # Check the `print_results()` method when there are no results to print.
+    results.print_results()
+    mock_print.assert_called_once_with("Results not analyzed.")
+    mock_print.reset_mock()
+
     results.analyze(plot_results=True, print_results=True)
     assert results.example_final_result == 3.142
     mock_plot.assert_called_once()
-    mock_print.assert_called_once_with("This is a test")
+    mock_print.assert_called_once_with("This is a test: 3.142")
 
 
 def test_results_ready(abc_experiment: ExampleExperiment) -> None:
@@ -583,3 +586,20 @@ def test_canonicalize_probabilities() -> None:
     ):
         p[0] = 0.0
         QCVVExperiment._canonicalize_probabilities(p, 2)
+
+
+def test_repr(abc_experiment: ExampleExperiment) -> None:
+    assert abc_experiment.__repr__() == "ExampleExperiment(num_qubits=2, num_samples=30)"
+    results = ExampleResults(
+        target="target", experiment=abc_experiment, job=MagicMock(spec=css.Job)
+    )
+    assert results.__repr__() == (
+        "ExampleResults(Results not analyzed, "
+        "experiment=ExampleExperiment(num_qubits=2, num_samples=30), target=target)"
+    )
+
+    results._example_final_result = 1.234
+    assert results.__repr__() == (
+        "ExampleResults(This is a test: 1.234, "
+        "experiment=ExampleExperiment(num_qubits=2, num_samples=30), target=target)"
+    )

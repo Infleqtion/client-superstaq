@@ -246,3 +246,20 @@ def test_results_not_analyzed() -> None:
             match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
         ):
             getattr(results, attr)
+
+
+def test_repr(xeb_experiment: XEB) -> None:
+    assert xeb_experiment.__repr__() == "XEB(two_qubit_gate=CZ, num_qubits=2, num_samples=30)"
+    results = XEBResults(target="example", experiment=xeb_experiment, data=None)
+    assert results.__repr__() == (
+        "XEBResults(Results not analyzed, experiment=XEB(two_qubit_gate"
+        "=CZ, num_qubits=2, num_samples=30), target=example)"
+    )
+
+    # Add final results
+    results._cycle_fidelity_estimate = 0.99
+    results._cycle_fidelity_estimate_std = 0.01
+    assert results.__repr__() == (
+        "XEBResults(Estimated cycle fidelity: 0.99 +/- 0.01, experiment=XEB(two_qubit_gate"
+        "=CZ, num_qubits=2, num_samples=30), target=example)"
+    )

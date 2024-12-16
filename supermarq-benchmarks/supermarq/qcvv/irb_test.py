@@ -432,3 +432,40 @@ def test_rb_results_not_analyzed() -> None:
             match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
         ):
             getattr(results, attr)
+
+
+def test_repr_irb(irb: IRB) -> None:
+    assert irb.__repr__() == "IRB(interleaved_gate=Z, num_qubits=1, num_samples=60)"
+    results = IRBResults(target="example", experiment=irb, data=None)
+    assert results.__repr__() == (
+        "IRBResults(Results not analyzed, experiment=IRB(interleaved_gate"
+        "=Z, num_qubits=1, num_samples=60), target=example)"
+    )
+    # Add final results
+    results._average_interleaved_gate_error = 0.99
+    results._average_interleaved_gate_error_std = 0.01
+    assert results.__repr__() == (
+        "IRBResults(Estimated gate error: 0.99 +/- 0.01, experiment=IRB(interleaved_gate"
+        "=Z, num_qubits=1, num_samples=60), target=example)"
+    )
+
+
+def test_repr_rb() -> None:
+    rb = IRB(interleaved_gate=None, num_circuits=1, cycle_depths=[1, 3, 5, 10])
+    results = RBResults(
+        target="example",
+        experiment=IRB(interleaved_gate=None, num_circuits=1, cycle_depths=[1, 3, 5, 10]),
+    )
+    assert rb.__repr__() == "RB(num_qubits=1, num_samples=4)"
+
+    assert results.__repr__() == (
+        "RBResults(Results not analyzed, experiment=RB("
+        "num_qubits=1, num_samples=4), target=example)"
+    )
+    # Add final results
+    results._average_error_per_clifford = 0.99
+    results._average_error_per_clifford_std = 0.01
+    assert results.__repr__() == (
+        "RBResults(Estimated error per Clifford: 0.99 +/- 0.01, experiment=RB("
+        "num_qubits=1, num_samples=4), target=example)"
+    )

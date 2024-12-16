@@ -64,8 +64,8 @@ class QCVVResults(ABC):
         try:
             results = self._results_msg()
         except type(self._not_analyzed):
-            results = "Results not analyzed."
-        return f"{results_type}({results}, experiment={self.experiment})"
+            results = "Results not analyzed"
+        return f"{results_type}({results}, experiment={self.experiment}, target={self.target})"
 
     @property
     def data_ready(self) -> bool:
@@ -138,8 +138,7 @@ class QCVVResults(ABC):
         """Plot the results of the experiment"""
 
     def print_results(self) -> None:
-        """Prints the key results data.
-        """
+        """Prints the key results data."""
         try:
             msg = self._results_msg()
         except type(self._not_analyzed):
