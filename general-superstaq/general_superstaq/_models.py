@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import datetime
 import uuid
+from collections.abc import Sequence
 from enum import Enum
 from typing import Any
 
@@ -264,13 +265,13 @@ class UserQuery(DefaultPydanticModel):
     """Model for querying the database to retrieve users. Use of lists implied logical OR. Providing
     multiple fields (e.g. name and email) implies logical AND."""
 
-    name: list[str] | None = pydantic.Field(None)
+    name: Sequence[str] | None = pydantic.Field(None)
     """List of user names to filter for."""
-    email: list[pydantic.EmailStr] | None = pydantic.Field(None)
+    email: Sequence[pydantic.EmailStr] | None = pydantic.Field(None)
     """List of user emails to filter for."""
-    role: list[str] | None = pydantic.Field(None)
+    role: Sequence[str] | None = pydantic.Field(None)
     """List of user roles to filter for."""
-    user_id: list[uuid.UUID] | None = pydantic.Field(None)
+    user_id: Sequence[uuid.UUID] | None = pydantic.Field(None)
     """List of explicit user IDs to filter for."""
 
 
@@ -343,10 +344,16 @@ class GetTargetsFilterModel(DefaultPydanticModel):
     """Include Superstaq targets that are retired."""
 
 
-class TargetInfoModel(DefaultPydanticModel):
+class RetrieveTargetInfoModel(DefaultPydanticModel):
     """Model for retrieving detailed target info."""
 
     target: str
     """The target's name."""
     options_dict: dict[str, Any] = pydantic.Field(dict())
     """The details of the target."""
+
+
+class TargetInfo(DefaultPydanticModel):
+    """Model containing details info about a specific instance of a target."""
+
+    target_info: dict[str, object]
