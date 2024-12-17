@@ -19,7 +19,7 @@ import datetime
 import io
 import os
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from unittest import mock
 
 import pytest
@@ -41,11 +41,14 @@ EXPECTED_HEADERS = {
 
 @pytest.fixture
 def default_client() -> _SuperstaqClient_v0_3_0:
-    return gss.superstaq_client.get_client(
-        client_name="general-superstaq",
-        remote_host="http://example.com",
-        api_version="v0.3.0",
-        api_key="to_my_heart",
+    return cast(
+        "_SuperstaqClient_v0_3_0",
+        gss.superstaq_client.get_client(
+            client_name="general-superstaq",
+            remote_host="http://example.com",
+            api_version="v0.3.0",
+            api_key="to_my_heart",
+        ),
     )
 
 
@@ -274,7 +277,7 @@ def test_supertstaq_client_create_job(
     ).model_dump()
 
     expected_headers = {
-        "cq_token": {"@type": "RefreshFlowState", "access_token": "123"},
+        "cq_token": '{"@type": "RefreshFlowState", "access_token": "123"}',
         **EXPECTED_HEADERS,
     }
     mock_post.assert_called_with(
@@ -283,6 +286,117 @@ def test_supertstaq_client_create_job(
         headers=expected_headers,
         verify=False,
     )
+
+
+@mock.patch("requests.Session.post")
+def test_supertstaq_client_create_job_simulation(
+    mock_post: mock.MagicMock, default_client: _SuperstaqClient_v0_3_0
+) -> None:
+    mock_post.return_value.status_code = requests.codes.ok
+    job_id = uuid.UUID("f7eed062-65f4-4c58-930d-19226b44e9a9")
+    mock_post.return_value.json.return_value = gss._models.NewJobResponse(
+        job_id=job_id, num_circuits=1
+    ).model_dump(mode="json")
+
+    response = default_client.create_job(
+        serialized_circuits={"cirq_circuits": "World"},
+        repetitions=200,
+        target="ss_example_simulator",
+        method="dry-run",
+        cq_token={"@type": "RefreshFlowState", "access_token": "123"},
+    )
+    assert response == {
+        "job_id": uuid.UUID("f7eed062-65f4-4c58-930d-19226b44e9a9"),
+        "num_circuits": 1,
+    }
+
+    expected_json = gss._models.NewJob(
+        job_type=gss._models.JobType.SIMULATION,
+        circuit_type=gss._models.CircuitType.CIRQ,
+        target="ss_example_simulator",
+        circuits="World",
+        shots=200,
+        dry_run=True,
+    ).model_dump()
+
+    expected_headers = {
+        "cq_token": '{"@type": "RefreshFlowState", "access_token": "123"}',
+        **EXPECTED_HEADERS,
+    }
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/client/job",
+        json=expected_json,
+        headers=expected_headers,
+        verify=False,
+    )
+
+
+@mock.patch("requests.Session.post")
+def test_supertstaq_client_create_job_device_simulation(
+    mock_post: mock.MagicMock, default_client: _SuperstaqClient_v0_3_0
+) -> None:
+    mock_post.return_value.status_code = requests.codes.ok
+    job_id = uuid.UUID("f7eed062-65f4-4c58-930d-19226b44e9a9")
+    mock_post.return_value.json.return_value = gss._models.NewJobResponse(
+        job_id=job_id, num_circuits=1
+    ).model_dump(mode="json")
+
+    response = default_client.create_job(
+        serialized_circuits={"cirq_circuits": "World"},
+        repetitions=200,
+        target="ss_example_qpu",
+        method="noise-sim",
+        cq_token={"@type": "RefreshFlowState", "access_token": "123"},
+    )
+    assert response == {
+        "job_id": uuid.UUID("f7eed062-65f4-4c58-930d-19226b44e9a9"),
+        "num_circuits": 1,
+    }
+
+    expected_json = gss._models.NewJob(
+        job_type=gss._models.JobType.DEVICE_SIMULATION,
+        sim_method=gss._models.SimMethod.NOISE_SIM,
+        circuit_type=gss._models.CircuitType.CIRQ,
+        target="ss_example_qpu",
+        circuits="World",
+        shots=200,
+        dry_run=False,
+    ).model_dump()
+
+    expected_headers = {
+        "cq_token": '{"@type": "RefreshFlowState", "access_token": "123"}',
+        **EXPECTED_HEADERS,
+    }
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/client/job",
+        json=expected_json,
+        headers=expected_headers,
+        verify=False,
+    )
+
+
+def test_supertstaq_client_create_job_multiple_circuit_types(
+    default_client: _SuperstaqClient_v0_3_0,
+) -> None:
+
+    with pytest.raises(RuntimeError, match="Cannot submit jobs with multiple circuit types."):
+        default_client.create_job(
+            serialized_circuits={"cirq_circuits": "World", "qiskit_circuits": "Hello"},
+            repetitions=200,
+            target="ss_example_qpu",
+        )
+
+
+def test_supertstaq_client_create_job_bad_circuit_type(
+    default_client: _SuperstaqClient_v0_3_0,
+) -> None:
+
+    with pytest.raises(RuntimeError, match="No recognized circuits found."):
+        default_client.create_job(
+            serialized_circuits={"other_circuits": "World"},
+            repetitions=200,
+            target="ss_example_qpu",
+        )
 
 
 @mock.patch("requests.Session.post")
@@ -457,7 +571,7 @@ def test_superstaq_client_fetch_jobs(
     response = default_client.fetch_jobs(job_ids=[str(job_id)], cq_token={"access_token": "token"})
     assert response == {job_id: job_data.model_dump()}
 
-    expected_headers = {"cq_token": {"access_token": "token"}, **EXPECTED_HEADERS}
+    expected_headers = {"cq_token": '{"access_token": "token"}', **EXPECTED_HEADERS}
     mock_get.assert_called_with(
         f"http://example.com/v0.3.0/client/job?job_id={job_id}",
         headers=expected_headers,
@@ -499,7 +613,7 @@ def test_superstaq_client_fetch_single_jobs(
     response = default_client.fetch_single_job(str(job_id), cq_token={"access_token": "token"})
     assert response == job_data
 
-    expected_headers = {"cq_token": {"access_token": "token"}, **EXPECTED_HEADERS}
+    expected_headers = {"cq_token": '{"access_token": "token"}', **EXPECTED_HEADERS}
     mock_get.assert_called_with(
         f"http://example.com/v0.3.0/client/job/{job_id}",
         headers=expected_headers,
@@ -564,6 +678,9 @@ def test_update_user_balance(
         verify=False,
     )
 
+    with pytest.raises(ValueError, match="Must provide a user email to update the balance of."):
+        default_client.update_user_balance({"balance": 5.00})
+
 
 @mock.patch("requests.Session.put")
 def test_update_user_role(
@@ -578,6 +695,8 @@ def test_update_user_role(
         json=expected_json,
         verify=False,
     )
+    with pytest.raises(ValueError, match="Must provide a user email to update the role of."):
+        default_client.update_user_role({"role": "free_trial"})
 
 
 @mock.patch("requests.Session.post")
@@ -760,7 +879,7 @@ def test_superstaq_client_qscout_compile(
 
 @mock.patch("requests.Session.post")
 @mock.patch("requests.Session.get")
-def test_superstaq_client_compile(
+def test_superstaq_client_compile_cirq(
     mock_get: mock.MagicMock, mock_post: mock.MagicMock, default_client: _SuperstaqClient_v0_3_0
 ) -> None:
     job_id = uuid.uuid4()
@@ -841,6 +960,352 @@ def test_superstaq_client_compile(
         "final_logical_to_physicals": "[final_l2p]",
         "cirq_circuits": "[compiled_circuit]",
     }
+
+
+@mock.patch("requests.Session.post")
+@mock.patch("requests.Session.get")
+def test_superstaq_client_compile_qiskit(
+    mock_get: mock.MagicMock, mock_post: mock.MagicMock, default_client: _SuperstaqClient_v0_3_0
+) -> None:
+    job_id = uuid.uuid4()
+    job_data = gss._models.JobData(
+        job_type=gss._models.JobType.COMPILE,
+        statuses=[gss._models.CircuitStatus.COMPLETED],
+        status_messages=[None],
+        user_email="example@infleqtion.com",
+        target="ss_example_qpu",
+        provider_id=["example_id"],
+        num_circuits=1,
+        compiled_circuit_type=gss._models.CircuitType.QISKIT,
+        compiled_circuits=["compiled_circuit"],
+        input_circuits=["input_circuits"],
+        input_circuit_type=gss._models.CircuitType.QISKIT,
+        pulse_gate_circuits=["pulse_gates"],
+        counts=[None],
+        state_vectors=[None],
+        results_dicts=[None],
+        num_qubits=[3],
+        shots=[100],
+        dry_run=False,
+        submission_timestamp=datetime.datetime(2000, 1, 1, 0, 0, 0),
+        last_updated_timestamp=[datetime.datetime(2000, 1, 1, 0, 1, 0)],
+        initial_logical_to_physicals=["initial_l2p"],
+        final_logical_to_physicals=["final_l2p"],
+    )
+
+    mock_post.return_value.ok = True
+    mock_post.return_value.json.return_value = gss._models.NewJobResponse(
+        job_id=job_id, num_circuits=1
+    ).model_dump(mode="json")
+
+    mock_get.return_value.ok = True
+    mock_get.return_value.json.return_value = job_data.model_dump(mode="json")
+
+    compiled_circuit = default_client.compile(
+        {"qiskit_circuits": "some_circuit", "target": "ss_example_target"},
+    )
+
+    mock_post.assert_called_once_with(
+        "http://example.com/v0.3.0/client/job",
+        json={
+            "job_type": "compile",
+            "target": "ss_example_target",
+            "circuits": "some_circuit",
+            "circuit_type": "qiskit",
+            "verbatim": False,
+            "compiled_circuit_type": None,
+            "shots": 0,
+            "dry_run": False,
+            "sim_method": None,
+            "priority": 0,
+            "options_dict": {},
+            "tags": [],
+        },
+        headers={
+            "Authorization": "to_my_heart",
+            "Content-Type": "application/json",
+            "X-Client-Name": "general-superstaq",
+            "X-Client-Version": "v0.3.0",
+        },
+        verify=False,
+    )
+
+    mock_get.assert_called_once_with(
+        f"http://example.com/v0.3.0/client/job/{job_id}",
+        headers={
+            "Authorization": "to_my_heart",
+            "Content-Type": "application/json",
+            "X-Client-Name": "general-superstaq",
+            "X-Client-Version": "v0.3.0",
+        },
+        verify=False,
+    )
+    assert compiled_circuit == {
+        "initial_logical_to_physicals": "[initial_l2p]",
+        "final_logical_to_physicals": "[final_l2p]",
+        "qiskit_circuits": "[compiled_circuit]",
+        "pulse_sequences": "[pulse_gates]",
+    }
+
+
+@mock.patch("requests.Session.post")
+@mock.patch("requests.Session.get")
+def test_superstaq_client_compile_waiting(
+    mock_get: mock.MagicMock, mock_post: mock.MagicMock, default_client: _SuperstaqClient_v0_3_0
+) -> None:
+    job_id = uuid.uuid4()
+    job_data_1 = gss._models.JobData(
+        job_type=gss._models.JobType.COMPILE,
+        statuses=[gss._models.CircuitStatus.AWAITING_COMPILE],
+        status_messages=[None],
+        user_email="example@infleqtion.com",
+        target="ss_example_qpu",
+        provider_id=["example_id"],
+        num_circuits=1,
+        compiled_circuit_type=gss._models.CircuitType.CIRQ,
+        compiled_circuits=[None],
+        input_circuits=["input_circuits"],
+        input_circuit_type=gss._models.CircuitType.CIRQ,
+        pulse_gate_circuits=[None],
+        counts=[None],
+        state_vectors=[None],
+        results_dicts=[None],
+        num_qubits=[3],
+        shots=[100],
+        dry_run=False,
+        submission_timestamp=datetime.datetime(2000, 1, 1, 0, 0, 0),
+        last_updated_timestamp=[datetime.datetime(2000, 1, 1, 0, 1, 0)],
+        initial_logical_to_physicals=["initial_l2p"],
+        final_logical_to_physicals=["final_l2p"],
+    )
+    job_data_2 = gss._models.JobData(
+        job_type=gss._models.JobType.COMPILE,
+        statuses=[gss._models.CircuitStatus.COMPLETED],
+        status_messages=[None],
+        user_email="example@infleqtion.com",
+        target="ss_example_qpu",
+        provider_id=["example_id"],
+        num_circuits=1,
+        compiled_circuit_type=gss._models.CircuitType.CIRQ,
+        compiled_circuits=["compiled_circuit"],
+        input_circuits=["input_circuits"],
+        input_circuit_type=gss._models.CircuitType.CIRQ,
+        pulse_gate_circuits=[None],
+        counts=[None],
+        state_vectors=[None],
+        results_dicts=[None],
+        num_qubits=[3],
+        shots=[100],
+        dry_run=False,
+        submission_timestamp=datetime.datetime(2000, 1, 1, 0, 0, 0),
+        last_updated_timestamp=[datetime.datetime(2000, 1, 1, 0, 1, 0)],
+        initial_logical_to_physicals=["initial_l2p"],
+        final_logical_to_physicals=["final_l2p"],
+    )
+
+    mock_post.return_value.ok = True
+    mock_post.return_value.json.return_value = gss._models.NewJobResponse(
+        job_id=job_id, num_circuits=1
+    ).model_dump(mode="json")
+
+    mock_get.return_value.ok = True
+    mock_get.return_value.json.side_effect = [
+        job_data_1.model_dump(mode="json"),
+        job_data_2.model_dump(mode="json"),
+    ]
+
+    compiled_circuit = default_client.compile(
+        {"cirq_circuits": "some_circuit", "target": "ss_example_target"},
+    )
+
+    mock_post.assert_called_once_with(
+        "http://example.com/v0.3.0/client/job",
+        json={
+            "job_type": "compile",
+            "target": "ss_example_target",
+            "circuits": "some_circuit",
+            "circuit_type": "cirq",
+            "verbatim": False,
+            "compiled_circuit_type": None,
+            "shots": 0,
+            "dry_run": False,
+            "sim_method": None,
+            "priority": 0,
+            "options_dict": {},
+            "tags": [],
+        },
+        headers={
+            "Authorization": "to_my_heart",
+            "Content-Type": "application/json",
+            "X-Client-Name": "general-superstaq",
+            "X-Client-Version": "v0.3.0",
+        },
+        verify=False,
+    )
+
+    mock_get.assert_called_with(
+        f"http://example.com/v0.3.0/client/job/{job_id}",
+        headers={
+            "Authorization": "to_my_heart",
+            "Content-Type": "application/json",
+            "X-Client-Name": "general-superstaq",
+            "X-Client-Version": "v0.3.0",
+        },
+        verify=False,
+    )
+    assert mock_get.call_count == 2
+
+    assert compiled_circuit == {
+        "initial_logical_to_physicals": "[initial_l2p]",
+        "final_logical_to_physicals": "[final_l2p]",
+        "cirq_circuits": "[compiled_circuit]",
+    }
+
+
+@mock.patch("requests.Session.post")
+@mock.patch("requests.Session.get")
+@mock.patch("time.sleep")  # Patch the sleep function to loop through without waiting.
+def test_superstaq_client_compile_timeout(
+    _: mock.MagicMock,
+    mock_get: mock.MagicMock,
+    mock_post: mock.MagicMock,
+    default_client: _SuperstaqClient_v0_3_0,
+) -> None:
+    job_id = uuid.uuid4()
+    job_data = gss._models.JobData(
+        job_type=gss._models.JobType.COMPILE,
+        statuses=[gss._models.CircuitStatus.AWAITING_COMPILE],
+        status_messages=[None],
+        user_email="example@infleqtion.com",
+        target="ss_example_qpu",
+        provider_id=["example_id"],
+        num_circuits=1,
+        compiled_circuit_type=gss._models.CircuitType.CIRQ,
+        compiled_circuits=[None],
+        input_circuits=["input_circuits"],
+        input_circuit_type=gss._models.CircuitType.CIRQ,
+        pulse_gate_circuits=[None],
+        counts=[None],
+        state_vectors=[None],
+        results_dicts=[None],
+        num_qubits=[3],
+        shots=[100],
+        dry_run=False,
+        submission_timestamp=datetime.datetime(2000, 1, 1, 0, 0, 0),
+        last_updated_timestamp=[datetime.datetime(2000, 1, 1, 0, 1, 0)],
+        initial_logical_to_physicals=["initial_l2p"],
+        final_logical_to_physicals=["final_l2p"],
+    )
+
+    mock_post.return_value.ok = True
+    mock_post.return_value.json.return_value = gss._models.NewJobResponse(
+        job_id=job_id, num_circuits=1
+    ).model_dump(mode="json")
+
+    mock_get.return_value.ok = True
+    mock_get.return_value.json.return_value = job_data.model_dump(mode="json")
+
+    with pytest.raises(
+        TimeoutError,
+        match=(
+            f"Timed out while waiting for circuits to compile. The job ID is {job_id}. "
+            "Please use retrieve the job later when it has finished compiling."
+        ),
+    ):
+        default_client.compile(
+            {"cirq_circuits": "some_circuit", "target": "ss_example_target"},
+        )
+
+    mock_post.assert_called_once_with(
+        "http://example.com/v0.3.0/client/job",
+        json={
+            "job_type": "compile",
+            "target": "ss_example_target",
+            "circuits": "some_circuit",
+            "circuit_type": "cirq",
+            "verbatim": False,
+            "compiled_circuit_type": None,
+            "shots": 0,
+            "dry_run": False,
+            "sim_method": None,
+            "priority": 0,
+            "options_dict": {},
+            "tags": [],
+        },
+        headers={
+            "Authorization": "to_my_heart",
+            "Content-Type": "application/json",
+            "X-Client-Name": "general-superstaq",
+            "X-Client-Version": "v0.3.0",
+        },
+        verify=False,
+    )
+
+    mock_get.assert_called_with(
+        f"http://example.com/v0.3.0/client/job/{job_id}",
+        headers={
+            "Authorization": "to_my_heart",
+            "Content-Type": "application/json",
+            "X-Client-Name": "general-superstaq",
+            "X-Client-Version": "v0.3.0",
+        },
+        verify=False,
+    )
+    assert mock_get.call_count > 2
+
+
+@mock.patch("requests.Session.post")
+@mock.patch("requests.Session.get")
+def test_superstaq_client_compile_not_all_successful(
+    mock_get: mock.MagicMock, mock_post: mock.MagicMock, default_client: _SuperstaqClient_v0_3_0
+) -> None:
+    job_id = uuid.uuid4()
+    job_data = gss._models.JobData(
+        job_type=gss._models.JobType.COMPILE,
+        statuses=[gss._models.CircuitStatus.COMPLETED, gss._models.CircuitStatus.FAILED],
+        status_messages=[None, None],
+        user_email="example@infleqtion.com",
+        target="ss_example_qpu",
+        provider_id=["example_id", "example_id1"],
+        num_circuits=2,
+        compiled_circuit_type=gss._models.CircuitType.CIRQ,
+        compiled_circuits=[None, None],
+        input_circuits=["input_circuits", "input_circuits1"],
+        input_circuit_type=gss._models.CircuitType.CIRQ,
+        pulse_gate_circuits=[None, None],
+        counts=[None, None],
+        state_vectors=[None, None],
+        results_dicts=[None, None],
+        num_qubits=[3, 5],
+        shots=[100, 200],
+        dry_run=False,
+        submission_timestamp=datetime.datetime(2000, 1, 1, 0, 0, 0),
+        last_updated_timestamp=[
+            datetime.datetime(2000, 1, 1, 0, 1, 0),
+            datetime.datetime(2000, 1, 1, 0, 1, 0),
+        ],
+        initial_logical_to_physicals=["initial_l2p", "initial_l2p"],
+        final_logical_to_physicals=["final_l2p", "final_l2p"],
+    )
+
+    mock_post.return_value.ok = True
+    mock_post.return_value.json.return_value = gss._models.NewJobResponse(
+        job_id=job_id, num_circuits=1
+    ).model_dump(mode="json")
+
+    mock_get.return_value.ok = True
+    mock_get.return_value.json.return_value = job_data.model_dump(mode="json")
+
+    with pytest.raises(
+        gss.SuperstaqException,
+        match=(
+            f"Not all circuits were successfully compiled. Check job ID {job_id} for further "
+            "details."
+        ),
+    ):
+        default_client.compile(
+            {"cirq_circuits": "some_circuit", "target": "ss_example_target"},
+        )
 
 
 @mock.patch("requests.Session.post")
@@ -1133,4 +1598,34 @@ def test_get_user_info_empty_response(
         "http://example.com/v0.3.0/client/user",
         headers=EXPECTED_HEADERS,
         verify=False,
+    )
+
+
+def test_get_user_info_bad_id(default_client: _SuperstaqClient_v0_3_0) -> None:
+
+    with pytest.raises(
+        TypeError,
+        match=("Superstaq API v0.3.0 uses UUID indexing for users, not integer."),
+    ):
+        _ = default_client.get_user_info(user_id=0)
+
+
+@mock.patch("requests.Session.put")
+def test_accept_term_of_use(
+    mock_put: mock.MagicMock, default_client: _SuperstaqClient_v0_3_0
+) -> None:
+    default_client._accept_terms_of_use("YES")
+    mock_put.assert_called_once_with(
+        "http://example.com/v0.3.0/client/accept_terms_of_use",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+        json={"accept": True},
+    )
+    mock_put.reset_mock()
+    default_client._accept_terms_of_use("No")
+    mock_put.assert_called_once_with(
+        "http://example.com/v0.3.0/client/accept_terms_of_use",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+        json={"accept": False},
     )

@@ -24,7 +24,7 @@ import urllib
 import uuid
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, TypeVar
+from typing import Any, Literal, TypeVar
 
 import requests
 
@@ -32,6 +32,9 @@ import general_superstaq as gss
 import general_superstaq._models as _models
 
 TQuboKey = TypeVar("TQuboKey")
+
+RECOGNISED_CIRCUIT_TYPES = Literal[_models.CircuitType.CIRQ, _models.CircuitType.QISKIT]
+"""The circuit types that are currently implemented within the SuperstaqClient."""
 
 
 class _SuperstaqClient:
@@ -1088,17 +1091,7 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
         dry_run = method == "dry-run"
 
         # Get circuits
-        if len(serialized_circuits) > 1:
-            raise ValueError("Cannot submit jobs with multiple circuit types.")
-
-        if list(serialized_circuits.keys())[0] == "cirq_circuits":
-            circuits = list(serialized_circuits.values())[0]
-            circuit_type = _models.CircuitType.CIRQ
-        elif list(serialized_circuits.keys())[0] == "qiskit_circuits":
-            circuits = list(serialized_circuits.values())[0]
-            circuit_type = _models.CircuitType.QISKIT
-        else:
-            raise NotImplementedError("Unsupported circuit type.")
+        circuits, circuit_type = self._extract_circuits(serialized_circuits)
 
         # Extract tokens from kwargs and move to the header
         credentials = self._extract_credentials(kwargs)
@@ -1161,7 +1154,8 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
         Raises:
             ~gss.SuperstaqServerException: For other API call failures.
         """
-        response = self.get_request("/client/job", query={"job_id": job_ids}, **kwargs)
+        credentials = self._extract_credentials(kwargs)
+        response = self.get_request("/client/job", query={"job_id": job_ids}, **credentials)
         return {job_id: _models.JobData(**data).model_dump() for (job_id, data) in response.items()}
 
     def fetch_single_job(
@@ -1173,6 +1167,7 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
 
         Args:
             job_id: The UUIDs of the job (returned when the job was created).
+            kwargs:  Extra options needed to fetch jobs.
 
         Returns:
             The JobData object
@@ -1237,7 +1232,7 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
         return [data.model_dump() for data in user_data]
 
     def _accept_terms_of_use(self, user_input: str) -> str:
-        """Makes a POST request to Superstaq API to confirm acceptance of terms of use.
+        """Makes a PUT request to Superstaq API to confirm acceptance of terms of use.
 
         Args:
             user_input: The user's response to prompt for acceptance of TOU. Server accepts YES.
@@ -1327,7 +1322,7 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
         """
         user_email = json_dict.get("email")
         if user_email is None:
-            raise ValueError("Must provide a user email to update the balance of.")
+            raise ValueError("Must provide a user email to update the role of.")
         request = _models.UpdateUserDetails(role=json_dict.get("role"))
         return self.put_request(f"/client/user/{user_email}", request.model_dump(exclude_none=True))
 
@@ -1380,15 +1375,7 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
         Returns:
             A dictionary containing compiled circuit data.
         """
-        # Get circuits
-        if "cirq_circuits" in json_dict:
-            circuits = json_dict["cirq_circuits"]
-            circuit_type = _models.CircuitType.CIRQ
-        elif "qiskit_circuits" in json_dict:
-            circuits = json_dict["qiskit_circuits"]
-            circuit_type = _models.CircuitType.QISKIT
-        else:
-            raise NotImplementedError("Unsupported circuit type.")
+        circuits, circuit_type = self._extract_circuits(json_dict)
 
         # Define job
         new_job = _models.NewJob(
@@ -1423,19 +1410,8 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
                 "details."
             )
 
-        # Check that all the expected data has been received. TODO - eventually add this validation
-        # into the JobData object itself.
-        if (
-            any(a is None for a in job_data.initial_logical_to_physicals)
-            or any(a is None for a in job_data.final_logical_to_physicals)
-            or any(a is None for a in job_data.compiled_circuits)
-        ):
-            raise gss.SuperstaqException(
-                "The server did not return all the expected data."
-            )  # TODO Add more description.
-
         # Join circuits together in json string - TODO: make this neater.
-        # Note mypy does not recognise that the above checks ensure there are no None's anywhere,
+        # Note mypy does not recognize that the above checks ensure there are no None's anywhere,
         # hence the ignored [arg-type]'s
         compile_dict = {
             "initial_logical_to_physicals": "["
@@ -1461,8 +1437,6 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
                 "[" + ", ".join(job_data.compiled_circuits) + "]"  # type: ignore[arg-type]
             )
             return compile_dict
-
-        raise NotImplementedError("Unsupported circuit type.")
 
     def submit_qubo(
         self,
@@ -1552,6 +1526,7 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
 
         Args:
             target: A string representing the device to get information about.
+            kwargs:  Extra options needed to fetch target info.
 
         Returns:
             The target information.
@@ -1593,7 +1568,7 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
         return response.model_dump()
 
     def get_request(
-        self, endpoint: str, query: Mapping[str, object] | None = None, **credentials: object
+        self, endpoint: str, query: Mapping[str, object] | None = None, **credentials: str
     ) -> Any:
         """Performs a GET request on a given endpoint.
 
@@ -1601,6 +1576,7 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
             endpoint: The endpoint to perform the GET request on.
             query: An optional query dictionary to include in the get request.
                 This query will be appended to the url.
+            credentials: Any credentials that need to be added to the request headers.
 
         Returns:
             The response of the GET request.
@@ -1626,13 +1602,14 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
         return self._handle_response(response)
 
     def post_request(
-        self, endpoint: str, json_dict: Mapping[str, object], **credentials: object
+        self, endpoint: str, json_dict: Mapping[str, object], **credentials: str
     ) -> Any:
         """Performs a POST request on a given endpoint with a given payload.
 
         Args:
             endpoint: The endpoint to perform the POST request on.
             json_dict: The payload to POST.
+            credentials: Any credentials that need to be added to the request headers.
 
         Returns:
             The response of the POST request.
@@ -1655,13 +1632,14 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
         return self._handle_response(response)
 
     def put_request(
-        self, endpoint: str, json_dict: Mapping[str, object], **credentials: object
+        self, endpoint: str, json_dict: Mapping[str, object], **credentials: str
     ) -> Any:
         """Performs a PUT request on a given endpoint with a given payload.
 
         Args:
             endpoint: The endpoint to perform the PUT request on.
             json_dict: The payload to PUT.
+            credentials: Any credentials that need to be added to the request headers.
 
         Returns:
             The response of the PUT request.
@@ -1669,10 +1647,10 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
 
         # Update headers with custom values
         def request() -> requests.Response:
-            """Builds GET request object.
+            """Builds PUT request object.
 
             Returns:
-                The Flask GET request object.
+                The Flask PUT request object.
             """
             return self.session.put(
                 f"{self.url}{endpoint}",
@@ -1684,7 +1662,7 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
         response = self._make_request(request)
         return self._handle_response(response)
 
-    def _custom_headers(self, **credentials: object) -> dict[str, object]:
+    def _custom_headers(self, **credentials: str) -> dict[str, str]:
         custom_headers = copy.deepcopy(self.headers)
         for key in ["ibmq_token", "ibmq_instance", "ibmq_channel", "cq_token"]:
             if key in credentials:
@@ -1693,12 +1671,40 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
         return custom_headers
 
     @staticmethod
-    def _extract_credentials(kwargs: Mapping[str, object]) -> Mapping[str, object]:
+    def _extract_credentials(kwargs: dict[str, Any]) -> dict[str, str]:
         credentials = {}
-        for key in ["ibmq_token", "ibmq_instance", "ibmq_channel", "cq_token"]:
+        for key in ["ibmq_token", "ibmq_instance", "ibmq_channel"]:
             if key in kwargs:
                 credentials[key] = kwargs.pop(key)
+
+        if "cq_token" in kwargs:  # CQ-Token may need to be json encoded as headers must be strings.
+            cq_token = kwargs.pop("cq_token")
+            if isinstance(cq_token, str):
+                credentials["cq_token"] = cq_token
+            else:
+                credentials["cq_token"] = json.dumps(cq_token)
+
         return credentials
+
+    @staticmethod
+    def _extract_circuits(json_dict: dict[str, str]) -> tuple[str, RECOGNISED_CIRCUIT_TYPES]:
+        recognised_circuit_types: dict[str, RECOGNISED_CIRCUIT_TYPES] = {
+            "cirq_circuits": _models.CircuitType.CIRQ,
+            "qiskit_circuits": _models.CircuitType.QISKIT,
+        }
+
+        circuit_keys = list(filter(lambda x: x in recognised_circuit_types, json_dict))
+
+        if len(circuit_keys) > 1:
+            raise RuntimeError("Cannot submit jobs with multiple circuit types.")
+
+        if len(circuit_keys) == 0:
+            raise RuntimeError("No recognized circuits found.")
+
+        circuits = json_dict[circuit_keys[0]]
+        circuit_type = recognised_circuit_types[circuit_keys[0]]
+
+        return circuits, circuit_type
 
 
 def find_api_key() -> str:
