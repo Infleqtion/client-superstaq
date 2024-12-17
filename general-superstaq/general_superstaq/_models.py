@@ -6,9 +6,12 @@ import datetime
 import uuid
 from collections.abc import Sequence
 from enum import Enum
-from typing import Any, Self
+from typing import TYPE_CHECKING, Any
 
 import pydantic
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 class JobType(str, Enum):
