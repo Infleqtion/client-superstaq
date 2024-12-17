@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import re
+import uuid
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from unittest.mock import MagicMock, call, patch
@@ -537,6 +538,99 @@ def test_results_collect_device_counts_no_job() -> None:
         match=("No Superstaq job associated with these results. Cannot collect device counts."),
     ):
         results._collect_device_counts()
+
+
+def test_results_from_records(abc_experiment: ExampleExperiment) -> None:
+    samples = abc_experiment.samples
+    records = {s.uuid: {"01": 1, "10": 3} for s in samples}
+
+    results = abc_experiment.results_from_records(records)
+    pd.testing.assert_frame_equal(
+        results.data,
+        pd.DataFrame(
+            [
+                {"num": n, "depth": d, "00": 0.0, "01": 0.25, "10": 0.75, "11": 0.0}
+                for n in range(10)
+                for d in (1, 3, 5)
+            ]
+        ),
+    )
+
+
+def test_results_from_records_bad_input(abc_experiment: ExampleExperiment) -> None:
+    samples = abc_experiment.samples
+    samples[0].uuid = uuid.UUID("0e9421da-3700-42e9-9281-a0e24cc0986c")
+    # Warn for missing samples
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            "The following samples are missing records: "
+            f"{', '.join(str(s.uuid) for s in samples[1:])}"
+        ),
+    ):
+        abc_experiment.results_from_records({samples[0].uuid: {"00": 10}})
+
+    # Warn for spurious records
+    new_uuid = uuid.uuid4()
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            "Records were provided with the following UUIDs which do not match"
+            f" any samples and will be ignored: {', '.join([str(new_uuid)])}"
+        ),
+    ) as _, pytest.warns(
+        UserWarning, match=re.escape("The following samples are missing records:")
+    ) as _:
+        abc_experiment.results_from_records({new_uuid: {"00": 10}})
+
+    # Warn for invalid bitstring for no non-zero counts
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            "Processing sample 0e9421da-3700-42e9-9281-a0e24cc0986c raised error. The key "
+            "contains the wrong number of bits. Got 3 entries but expected 2 bits."
+        ),
+    ) as _, pytest.warns(
+        UserWarning, match=re.escape("The following samples are missing records:")
+    ) as _:
+        abc_experiment.results_from_records({samples[0].uuid: {"001": 10}})
+
+    # Warn for no non-zero counts
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            "Processing sample 0e9421da-3700-42e9-9281-a0e24cc0986c raised error. No "
+            "non-zero counts."
+        ),
+    ) as _, pytest.warns(
+        UserWarning, match=re.escape("The following samples are missing records:")
+    ) as _:
+        abc_experiment.results_from_records({samples[0].uuid: {"01": 0}})
+
+    # Warn for non positive integer counts
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            "Processing sample 0e9421da-3700-42e9-9281-a0e24cc0986c raised error. Counts "
+            "must be positive."
+        ),
+    ) as _, pytest.warns(
+        UserWarning, match=re.escape("The following samples are missing records:")
+    ) as _:
+        abc_experiment.results_from_records({samples[0].uuid: {"01": -10}})
+
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            "Processing sample 0e9421da-3700-42e9-9281-a0e24cc0986c raised error. Counts "
+            "must be integer."
+        ),
+    ) as _, pytest.warns(
+        UserWarning, match=re.escape("The following samples are missing records:")
+    ) as _:
+        abc_experiment.results_from_records(
+            {samples[0].uuid: {"01": 2.5}}  # type: ignore[dict-item]
+        )
 
 
 def test_canonicalize_bitstring() -> None:
