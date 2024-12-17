@@ -929,7 +929,7 @@ class _SuperstaqClient:
         )
 
 
-class _SuperstaqClient_v0_3_0(_SuperstaqClient):  # pragma: no cover
+class _SuperstaqClient_v0_3_0(_SuperstaqClient):
     """Handles calls to Superstaq's API.
 
     Users should not instantiate this themselves,

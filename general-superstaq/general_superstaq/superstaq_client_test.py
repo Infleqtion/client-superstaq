@@ -116,12 +116,15 @@ def test_warning_from_server() -> None:
     with mock.patch("requests.Session.get", ok=True) as mock_request:
         mock_request.return_value.json = lambda: {"abc": 123, "warnings": [warning]}
         with pytest.warns(gss.SuperstaqWarning, match="WARNING!"):
-            assert client.get_request("/endpoint") == {"abc": 123}
+            assert client.get_request("/endpoint") == {"abc": 123, "warnings": [warning]}
 
     with mock.patch("requests.Session.post", ok=True) as mock_request:
         mock_request.return_value.json = lambda: {"abc": 123, "warnings": [warning, warning]}
         with pytest.warns(gss.SuperstaqWarning, match="WARNING!"):
-            assert client.post_request("/endpoint", {}) == {"abc": 123}
+            assert client.post_request("/endpoint", {}) == {
+                "abc": 123,
+                "warnings": [warning, warning],
+            }
 
 
 @pytest.mark.parametrize("invalid_url", ("url", "http://", "ftp://", "http://"))
