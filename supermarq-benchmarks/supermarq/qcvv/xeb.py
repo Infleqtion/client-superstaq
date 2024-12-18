@@ -177,7 +177,7 @@ class XEBResults(QCVVResults):
 
     def plot_speckle(self) -> None:
         """Creates the speckle plot of the XEB data. See Fig. S18 of
-        https://arxiv.org/pdf/1910.11333 for an explanation of this plot.
+        https://arxiv.org/abs/1910.11333 for an explanation of this plot.
         """
         df = self.data
         df2 = pd.melt(
