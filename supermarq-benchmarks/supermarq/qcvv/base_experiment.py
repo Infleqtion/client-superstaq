@@ -435,7 +435,9 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
     def run_with_callable(
         self,
-        circuit_eval_func: Callable[[cirq.Circuit], dict[str | int, float]],
+        circuit_eval_func: Callable[
+            [cirq.Circuit], dict[str, int] | dict[str, float] | dict[int, int] | dict[int, float]
+        ],
         **kwargs: Any,
     ) -> ResultsT:
         """Evaluates the probabilities for each circuit using a user provided callable function.
@@ -445,11 +447,6 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Args:
             circuit_eval_func: The custom function to use when evaluating circuit probabilities.
             kwargs: Additional arguments to pass to the custom function.
-
-        Raises:
-            RuntimeError: If the returned probabilities dictionary keys is missing include
-                an incorrect number of bits.
-            RuntimeError: If the returned probabilities dictionary values do not sum to 1.0.
 
         Returns:
             The experiment results object.
@@ -466,19 +463,27 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             data=pd.DataFrame(records),
         )
 
-    def results_from_records(self, records: dict[uuid.UUID, dict[str, int]]) -> ResultsT:
-        """Creates a results object from records of the counts for each sample circuit. This
-        function is aimed at users who would like to use the QCVV framework to generate sample
-        circuits and analyse the results but need to run these circuits without submitting a job
-        to Superstaq.
+    def results_from_records(
+        self,
+        records: (
+            dict[uuid.UUID, dict[str, float]]
+            | dict[uuid.UUID, dict[str, int]]
+            | dict[uuid.UUID, dict[int, float]]
+            | dict[uuid.UUID, dict[int, int]]
+        ),
+    ) -> ResultsT:
+        """Creates a results object from records of the counts/probabilities for each sample
+        circuit. This function is aimed at users who would like to use the QCVV framework to
+        generate sample circuits and analyse the results but need to run these circuits without
+        submitting a job to Superstaq.
 
         Args:
-            records: A dictionary of the counts for each sample, indexed by the sample UUID. The
-                counts for each sample should be provided as a dictionary of integers indexed by
-                the bitstring.
-
-        Raises:
-            ValueError: If any of the provided counts are not positive integers.
+            records: A dictionary of the counts/probabilities for each sample, indexed by the
+                sample UUID. The counts/probabilities for each sample should be provided as a
+                dictionary of integers or floats (respectively) indexed by either the bitstring or
+                the integer value of that bitstring. Note that the distinction between counts and
+                probabilities is inferred from the type (int vs float respectively). Please do not
+                use float type for counts.
 
         Returns:
             The experiment results object.
@@ -499,26 +504,20 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
         results_data = []
         samples_dict = {s.uuid: s for s in self.samples}
-        for uid, counts in records.items():
+        for uid, results in records.items():
             # Skip the records if the UUID is not recognized.
             if uid not in samples_dict:
                 break
             sample = samples_dict[uid]
+            # Attempt to canonicalize the results. If unsuccessful warn and skip record.
             try:
-                if any(not isinstance(c, int) for c in counts.values()):
-                    raise ValueError("Counts must be integer.")
-                if any(c < 0 for c in counts.values()):
-                    raise ValueError("Counts must be positive.")
-                if sum(counts.values()) == 0:
-                    raise ValueError("No non-zero counts.")
-
                 probabilities = self._canonicalize_probabilities(
-                    {key: count / sum(counts.values()) for key, count in counts.items()},
+                    results,
                     self.num_qubits,
                 )
-            except (ValueError, RuntimeError) as e:
+            except (TypeError, ValueError, RuntimeError) as e:
                 warnings.warn(f"Processing sample {str(sample.uuid)} raised error. {e}")
-                continue  # Skip this record
+                continue
 
             # Add to results data
             results_data.append({**sample.data, **probabilities})
@@ -569,36 +568,70 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
     @staticmethod
     def _canonicalize_probabilities(
-        probabilities: dict[str | int, float], num_qubits: int
+        results: dict[str, int] | dict[str, float] | dict[int, int] | dict[int, float],
+        num_qubits: int,
     ) -> dict[str, float]:
-        """Reformats a dictionary of probabilities so that all keys are bitstrings and that
+        """Reformats a dictionary of probabilities/counts so that all keys are bitstrings and that
         there are no missing values. Also sorts the dictionary by bitstring.
 
         Args:
-            probabilities: The unformatted probabilities
+            probabilities: The unformatted probabilities or counts
             num_qubits: The number of qubits, used to determine the bitstring length.
 
         Raises:
             RuntimeError: If the probabilities do not sum to 1.
+            TypeError: If the results are not all integer or all float.
+            ValueError: If any counts or probabilities are negative.
+            ValueError: If there are no non-zero counts.
 
         Returns:
             The formatted dictionary of probabilities.
         """
-        if not math.isclose(sum(probabilities.values()), 1.0):
-            raise RuntimeError(
-                f"Provided probabilities do not sum to 1.0. Got {sum(probabilities.values())}."
-            )
+        if all(isinstance(x, int) for x in results.values()):
+            # If all results are integer then check that all integers are strictly positive and that
+            # there is at least one non-zero count.
+            if any(c < 0 for c in results.values()):
+                raise ValueError("Counts must be positive.")
+            if sum(results.values()) == 0:
+                raise ValueError("No non-zero counts.")
+            probabilities = {
+                QCVVExperiment._canonicalize_bitstring(key, num_qubits): count
+                / sum(results.values())
+                for key, count in results.items()
+            }
+        elif all(isinstance(x, float) for x in results.values()):
+            # Check that values are not actually integers cast as float (except possibly 0 or 1)
+            if any(
+                (
+                    x.is_integer()  # type: ignore[union-attr]
+                    # Mypy has not detected that in this context all values are float.
+                    & (x not in [0.0, 1.0])
+                )
+                for x in results.values()
+            ):
+                raise TypeError(
+                    "If providing counts please use integer type to distinguish from probabilities."
+                )
 
-        new_probability = {
-            QCVVExperiment._canonicalize_bitstring(key, num_qubits): val
-            for key, val in probabilities.items()
-        }
+            # If all results are float then check they are all positive and sum to 1.0
+            if any(c < 0 for c in results.values()):
+                raise ValueError("Probabilities must be positive.")
+            if not math.isclose(sum(results.values()), 1.0):
+                raise RuntimeError(
+                    f"Provided probabilities do not sum to 1.0. Got {sum(results.values())}."
+                )
+            probabilities = {
+                QCVVExperiment._canonicalize_bitstring(key, num_qubits): val
+                for key, val in results.items()
+            }
+        else:
+            raise TypeError("Results values must either all be integer or all be float.")
 
         # Add zero values for any missing bitstrings
         for k in range(2**num_qubits):
-            if (bitstring := format(k, f"0{num_qubits}b")) not in new_probability:
-                new_probability[bitstring] = 0.0
+            if (bitstring := format(k, f"0{num_qubits}b")) not in probabilities:
+                probabilities[bitstring] = 0.0
         # Sort by bitstrings
-        new_probability = dict(sorted(new_probability.items()))
+        probabilities = dict(sorted(probabilities.items()))
 
-        return new_probability
+        return probabilities
