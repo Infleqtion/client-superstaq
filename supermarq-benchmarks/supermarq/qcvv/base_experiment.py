@@ -35,6 +35,10 @@ class Sample:
     that is needed for analysis
     """
 
+    circuit_index: int
+    """The index of the circuit. There will be D samples with matching circuit index, one for each
+    cycle depth being measured. This index is useful for grouping results during analysis.
+    """
     circuit: cirq.Circuit
     """The raw (i.e. pre-compiled) sample circuit."""
     data: dict[str, Any]
@@ -417,11 +421,10 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         for sample in tqdm(self.samples, desc="Simulating circuits"):
             result = simulator.run(sample.circuit, repetitions=repetitions)
             hist = result.histogram(key=cirq.measurement_key_name(sample.circuit))
-
             probabilities = self._canonicalize_probabilities(
                 {key: count / sum(hist.values()) for key, count in hist.items()}, self.num_qubits
             )
-            records.append({**sample.data, **probabilities})
+            records.append({"circuit_index": sample.circuit_index, **sample.data, **probabilities})
 
         return self._results_cls(
             target="local_simulator",
