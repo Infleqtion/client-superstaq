@@ -1,15 +1,17 @@
 """Data models used when communicating with the superstaq server."""
 
-# pragma: no cover
 from __future__ import annotations
 
 import datetime
 import uuid
 from collections.abc import Sequence
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pydantic
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 class JobType(str, Enum):
@@ -150,6 +152,26 @@ class JobData(DefaultPydanticModel):
     """Serialized initial logical-to-physical mapping for each circuit."""
     final_logical_to_physicals: list[str | None]
     """Serialized initial final-to-physical mapping for each circuit."""
+
+    @pydantic.model_validator(mode="after")
+    def validate_consistent_number_of_circuits(self) -> Self:
+        """Checks that all lists contain the correct number of elements
+        (equal to the number of circuits).
+
+        Raises:
+            ValueError: If any list attribute has the wrong number of elements
+
+        Returns:
+            The validated model.
+        """
+        for name, attr in self.model_dump().items():
+            if isinstance(attr, list):
+                if len(attr) != self.num_circuits:
+                    raise ValueError(
+                        f"Field {name} does not contain the correct number of elements. "
+                        f"Expected {self.num_circuits} but found {len(attr)}."
+                    )
+        return self
 
 
 class NewJob(DefaultPydanticModel):

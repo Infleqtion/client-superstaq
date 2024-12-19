@@ -176,7 +176,7 @@ class Service(gss.service.Service):
             EnvironmentError: If an API key was not provided and could not be found.
         """
         self.default_target = default_target
-        self._client = superstaq_client._SuperstaqClient(
+        self._client = superstaq_client.get_client(
             client_name="cirq-superstaq",
             remote_host=remote_host,
             api_key=api_key,
@@ -354,9 +354,12 @@ class Service(gss.service.Service):
             method=method,
             **kwargs,
         )
-        # Make a virtual job_id that aggregates all of the individual jobs
-        # into a single one that comma-separates the individual jobs.
-        job_id = ",".join(result["job_ids"])
+        if isinstance(self._client, gss.superstaq_client._SuperstaqClient_v0_3_0):
+            job_id = result["job_id"]
+        else:
+            # Make a virtual job_id that aggregates all of the individual jobs
+            # into a single one that comma-separates the individual jobs.
+            job_id = ",".join(result["job_ids"])
 
         # The returned job does not have fully populated fields; they will be filled out by
         # when the new job's status is first queried
@@ -375,6 +378,8 @@ class Service(gss.service.Service):
         Raises:
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
+        if isinstance(self._client, gss.superstaq_client._SuperstaqClient_v0_3_0):
+            return css.job._Job(client=self._client, job_id=job_id)
         return css.job.Job(client=self._client, job_id=job_id)
 
     def resource_estimate(
