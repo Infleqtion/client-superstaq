@@ -19,9 +19,9 @@ import math
 import uuid
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, Self, TypeVar
 
 import cirq
 import cirq_superstaq as css
@@ -44,6 +44,35 @@ class Sample:
 
     uuid: uuid.UUID = field(default_factory=uuid.uuid4)
     """The unique ID of the sample."""
+
+    def _to_dict(self) -> dict[str, Any]:
+        """Converts the sample to a json-able dictionary that can be used to recreate the
+        sample object.
+
+        Returns:
+            Json-able dictionary of the sample data.
+        """
+        return {
+            "circuit": css.serialize_circuits(self.circuit),
+            "data": self.data,
+            "uuid": str(self.uuid),
+        }
+
+    @classmethod
+    def _from_dict(cls, dictionary: dict[str, Any]) -> Self:
+        """Creates a sample from a dictionary of the data.
+
+        Args:
+            dictionary: Dict containing the sample data.
+
+        Returns:
+            The deserialized Sample object.
+        """
+        return cls(
+            circuit=css.deserialize_circuits(dictionary["circuit"])[0],
+            data=dictionary["data"],
+            uuid=uuid.UUID(dictionary["uuid"]),
+        )
 
 
 @dataclass
@@ -225,6 +254,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         *,
         random_seed: int | np.random.Generator | None = None,
         results_cls: type[ResultsT],
+        _prepare_circuits: bool = True,
         **kwargs: Any,
     ) -> None:
         """Initializes a benchmarking experiment.
@@ -254,7 +284,10 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
         self._results_cls: type[ResultsT] = results_cls
 
-        self.samples = self._prepare_experiment()
+        if _prepare_circuits:
+            self.samples = self._prepare_experiment()
+        else:
+            self.samples = []
         """Create all the samples needed for the experiment."""
 
     ##############
@@ -313,6 +346,66 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             [(k, operation) for k in range(len(circuit) - int(not include_final), 0, -1)]
         )
         return interleaved_circuit
+
+    @abstractmethod
+    def _to_dict(self) -> dict[str, Any]:
+        """Converts the experiment to a json-able dictionary that can be used to recreate the
+        experiment object. Note that the state of the random number generator is not stored.
+
+        .. note:: Must be re-implemented in any subclasses to ensure all important data is stored.
+
+        Returns:
+            Json-able dictionary of the experiment data.
+        """
+        return {
+            "num_circuits": self.num_circuits,
+            "num_qubits": self.num_qubits,
+            "cycle_depths": list(self.cycle_depths),
+            "samples": [s._to_dict() for s in self.samples],
+            **self._service_kwargs,
+        }
+
+    @classmethod
+    @abstractmethod
+    def _from_dict(cls, dictionary: dict[str, Any]) -> Self:
+        """Creates a experiment from a dictionary of the data.
+
+        .. note:: Must be re-implemented in any subclasses to ensure all important data is loaded.
+
+        Args:
+            dictionary: Dict containing the experiment data.
+
+        Returns:
+            The deserialized experiment object.
+        """
+        serialized_samples = dictionary.pop("samples")
+        samples = [Sample._from_dict(s) for s in serialized_samples]
+        experiment = cls(**dictionary, _prepare_circuits=False)
+        experiment.samples = samples
+        return experiment
+
+    def to_file(self, filename: str) -> None:
+        """Save the experiment to a json file.
+
+        Args:
+            filename: Filename to save to.
+        """
+        with open(filename, "w") as file_stream:
+            cirq.to_json(self._to_dict(), file_stream)
+
+    @classmethod
+    def from_file(cls, filename: str) -> Self:
+        """Load the experiment from a json file.
+
+        Args:
+            filename: Filename to load from.
+
+        Returns:
+            The loaded experiment.
+        """
+        with open(filename, "r") as file_stream:
+            data = cirq.read_json(file_stream)
+        return cls._from_dict(data)
 
     def _prepare_experiment(
         self,
@@ -435,9 +528,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
     def run_with_callable(
         self,
-        circuit_eval_func: Callable[
-            [cirq.Circuit], dict[str, int] | dict[str, float] | dict[int, int] | dict[int, float]
-        ],
+        circuit_eval_func: Callable[[cirq.Circuit], Mapping[str, float] | Mapping[int, float]],
         **kwargs: Any,
     ) -> ResultsT:
         """Evaluates the probabilities for each circuit using a user provided callable function.
@@ -465,12 +556,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
     def results_from_records(
         self,
-        records: (
-            dict[uuid.UUID, dict[str, float]]
-            | dict[uuid.UUID, dict[str, int]]
-            | dict[uuid.UUID, dict[int, float]]
-            | dict[uuid.UUID, dict[int, int]]
-        ),
+        records: Mapping[uuid.UUID, Mapping[str, float] | Mapping[int, float]],
     ) -> ResultsT:
         """Creates a results object from records of the counts/probabilities for each sample
         circuit. This function is aimed at users who would like to use the QCVV framework to
@@ -568,7 +654,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
     @staticmethod
     def _canonicalize_probabilities(
-        results: dict[str, int] | dict[str, float] | dict[int, int] | dict[int, float],
+        results: Mapping[str, float] | Mapping[int, float],
         num_qubits: int,
     ) -> dict[str, float]:
         """Reformats a dictionary of probabilities/counts so that all keys are bitstrings and that
@@ -603,7 +689,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             # Check that values are not actually integers cast as float (except possibly 0 or 1)
             if any(
                 (
-                    x.is_integer()  # type: ignore[union-attr]
+                    x.is_integer()
                     # Mypy has not detected that in this context all values are float.
                     & (x not in [0.0, 1.0])
                 )

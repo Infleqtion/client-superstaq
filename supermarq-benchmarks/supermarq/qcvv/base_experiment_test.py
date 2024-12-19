@@ -60,12 +60,39 @@ class ExampleResults(QCVVResults):
 class ExampleExperiment(QCVVExperiment[ExampleResults]):
     """Example experiment class for testing"""
 
+    def __init__(
+        self,
+        num_qubits,
+        num_circuits,
+        cycle_depths,
+        *,
+        random_seed=None,
+        _prepare_circuits=True,
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            num_qubits,
+            num_circuits,
+            cycle_depths,
+            random_seed=random_seed,
+            results_cls=ExampleResults,
+            _prepare_circuits=_prepare_circuits,
+            **kwargs,
+        )
+
     def _build_circuits(self, num_circuits: int, cycle_depths: Iterable[int]) -> Sequence[Sample]:
         return [
             Sample(circuit=MagicMock(spec=cirq.Circuit), data={"num": k, "depth": d})
             for k in range(num_circuits)
             for d in cycle_depths
         ]
+
+    def _to_dict(self):
+        return super()._to_dict()
+
+    @classmethod
+    def _from_dict(cls, data):
+        return super()._from_dict(data)
 
 
 @pytest.fixture
@@ -76,7 +103,6 @@ def abc_experiment() -> ExampleExperiment:
             num_circuits=10,
             cycle_depths=[1, 3, 5],
             random_seed=42,
-            results_cls=ExampleResults,
             service_details="Some other details",
         )
 
@@ -126,7 +152,6 @@ def test_experiment_init_with_bad_layers() -> None:
             num_circuits=10,
             cycle_depths=[0],
             random_seed=42,
-            results_cls=ExampleResults,
             service_details="Some other details",
         )
 
@@ -685,3 +710,20 @@ def test_canonicalize_probabilities_bad_input() -> None:
         match="Results values must either all be integer or all be float.",
     ):
         QCVVExperiment._canonicalize_probabilities({0: 4.0, 1: 5}, 2)
+
+
+def test_dump_and_load(
+    tmp_path_factory: pytest.TempPathFactory,
+    abc_experiment: ExampleExperiment,
+    sample_circuits: list[Sample],
+) -> None:
+    filename = tmp_path_factory.mktemp("tempdir") / "file.json"
+    abc_experiment.samples = sample_circuits
+    abc_experiment.to_file(filename)
+
+    exp = ExampleExperiment.from_file(filename)
+
+    assert exp.samples == abc_experiment.samples
+    assert exp.num_qubits == abc_experiment.num_qubits
+    assert exp.num_circuits == abc_experiment.num_circuits
+    assert exp.cycle_depths == abc_experiment.cycle_depths

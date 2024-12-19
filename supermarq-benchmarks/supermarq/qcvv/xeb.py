@@ -17,6 +17,7 @@ from __future__ import annotations
 import itertools
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import Any, Self
 
 import cirq
 import numpy as np
@@ -213,6 +214,7 @@ class XEB(QCVVExperiment[XEBResults]):
         two_qubit_gate: cirq.Gate | None = cirq.CZ,
         *,
         random_seed: int | np.random.Generator | None = None,
+        **kwargs,
     ) -> None:
         """Initializes a cross-entropy benchmarking experiment.
 
@@ -253,6 +255,7 @@ class XEB(QCVVExperiment[XEBResults]):
             cycle_depths=cycle_depths,
             random_seed=random_seed,
             results_cls=XEBResults,
+            **kwargs,
         )
 
     ###################
@@ -312,3 +315,58 @@ class XEB(QCVVExperiment[XEBResults]):
             )
 
         return random_circuits
+
+    def _to_dict(self) -> dict[str, Any]:
+        two_qubit_gate = (self.two_qubit_gate.__class__.__name__, self.two_qubit_gate._json_dict_())
+        single_qubit_gate_set = [
+            (g.__class__.__name__, g._json_dict_()) for g in self.single_qubit_gate_set
+        ]
+        return {
+            "two_qubit_gate": two_qubit_gate,
+            "single_qubit_gate_set": single_qubit_gate_set,
+            **super()._to_dict(),
+        }
+
+    @classmethod
+    def _from_dict(cls, dictionary):
+        dictionary.pop("num_qubits")
+        two_qubit_gate_data = dictionary.pop("two_qubit_gate")
+        if two_qubit_gate_data is None:
+            two_qubit_gate = None
+        elif hasattr(getattr(cirq, two_qubit_gate_data[0]), "_from_json_dict_"):
+            two_qubit_gate = getattr(cirq, two_qubit_gate_data[0])._from_json_dict_(
+                **two_qubit_gate_data[1]
+            )
+        else:
+            two_qubit_gate = getattr(cirq, two_qubit_gate_data[0])()
+
+        single_qubit_gate_set_data = dictionary.pop("single_qubit_gate_set")
+        if single_qubit_gate_set_data is None:
+            single_qubit_gate_set = None
+        else:
+            single_qubit_gate_set = []
+            for gate_data in single_qubit_gate_set_data:
+                g = getattr(cirq, gate_data[0])
+                if hasattr(g, "_from_json_dict_"):
+                    single_qubit_gate_set.append(g._from_json_dict_(**gate_data[1]))
+                else:
+                    single_qubit_gate_set.append(g)
+
+        single_qubit_gate_set = (
+            None
+            if single_qubit_gate_set_data is None
+            else [
+                getattr(cirq, data[0])._from_json_dict_(**data[1])
+                for data in single_qubit_gate_set_data
+            ]
+        )
+        serialized_samples = dictionary.pop("samples")
+        samples = [Sample._from_dict(s) for s in serialized_samples]
+        experiment = cls(
+            **dictionary,
+            _prepare_circuits=False,
+            single_qubit_gate_set=single_qubit_gate_set,
+            two_qubit_gate=two_qubit_gate,
+        )
+        experiment.samples = samples
+        return experiment
