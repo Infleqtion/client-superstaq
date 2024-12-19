@@ -260,5 +260,5 @@ def test_dump_and_load(
     assert exp.num_qubits == xeb_experiment.num_qubits
     assert exp.num_circuits == xeb_experiment.num_circuits
     assert exp.cycle_depths == xeb_experiment.cycle_depths
-    # assert exp.interleaved_gate == xeb_experiment.interleaved_gate
-    # assert exp.clifford_op_gateset == xeb_experiment.clifford_op_gateset
+    assert exp.single_qubit_gate_set == xeb_experiment.single_qubit_gate_set
+    assert exp.two_qubit_gate == xeb_experiment.two_qubit_gate

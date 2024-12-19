@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import functools
 import math
+import pathlib
 import uuid
 import warnings
 from abc import ABC, abstractmethod
@@ -384,7 +385,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         experiment.samples = samples
         return experiment
 
-    def to_file(self, filename: str) -> None:
+    def to_file(self, filename: str | pathlib.Path) -> None:
         """Save the experiment to a json file.
 
         Args:
@@ -394,7 +395,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             cirq.to_json(self._to_dict(), file_stream)
 
     @classmethod
-    def from_file(cls, filename: str) -> Self:
+    def from_file(cls, filename: str | pathlib.Path) -> Self:
         """Load the experiment from a json file.
 
         Args:

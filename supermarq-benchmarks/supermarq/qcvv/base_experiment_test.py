@@ -21,6 +21,7 @@ import re
 import uuid
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import Any, Self
 from unittest.mock import MagicMock, call, patch
 
 import cirq
@@ -62,13 +63,13 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
 
     def __init__(
         self,
-        num_qubits,
-        num_circuits,
-        cycle_depths,
+        num_qubits: int,
+        num_circuits: int,
+        cycle_depths: Iterable[int],
         *,
-        random_seed=None,
-        _prepare_circuits=True,
-        **kwargs,
+        random_seed: int | None = None,
+        _prepare_circuits: bool = True,
+        **kwargs: str | bool,
     ) -> None:
         super().__init__(
             num_qubits,
@@ -87,11 +88,11 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
             for d in cycle_depths
         ]
 
-    def _to_dict(self):
+    def _to_dict(self) -> dict[str, Any]:
         return super()._to_dict()
 
     @classmethod
-    def _from_dict(cls, data):
+    def _from_dict(cls, data: dict[str, Any]) -> Self:
         return super()._from_dict(data)
 
 

@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Self, Any
+from typing import Any, Self
 
 import cirq
 import cirq.circuits
@@ -467,6 +467,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         clifford_op_gateset: cirq.CompilationTargetGateset = cirq.CZTargetGateset(),
         *,
         random_seed: int | np.random.Generator | None = None,
+        _prepare_circuits: bool = True,
         **kwargs: str,
     ) -> None:
         """Constructs an IRB experiment.
@@ -512,6 +513,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             cycle_depths=cycle_depths,
             random_seed=random_seed,
             results_cls=results_cls,
+            _prepare_circuits=_prepare_circuits,
             **kwargs,
         )
 
@@ -735,16 +737,13 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             Json-able dictionary of the experiment data.
         """
         return {
-            "interleaved_gate": (
-                None if self.interleaved_gate is None else self.interleaved_gate._json_dict_()
-            ),
-            "clifford_op_gateset_name": self.clifford_op_gateset.__class__.__name__,
-            "clifford_op_gateset_params": self.clifford_op_gateset._json_dict_(),
+            "interleaved_gate": cirq.to_json(self.interleaved_gate),
+            "clifford_op_gateset": cirq.to_json(self.clifford_op_gateset),
             **super()._to_dict(),
         }
 
     @classmethod
-    def _from_dict(cls, dictionary) -> Self:
+    def _from_dict(cls, dictionary: dict[str, Any]) -> Self:
         """Creates a experiment from a dictionary of the data.
 
         Args:
@@ -755,15 +754,10 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         """
         serialized_samples = dictionary.pop("samples")
         samples = [Sample._from_dict(s) for s in serialized_samples]
-        interleaved_gate_data = dictionary.pop("interleaved_gate")
-        interleaved_gate = (
-            None
-            if interleaved_gate_data is None
-            else cirq.CliffordGate._from_json_dict_(**interleaved_gate_data)
+        interleaved_gate = cirq.read_json(json_text=dictionary.pop("interleaved_gate", KeyError))
+        clifford_op_gateset = cirq.read_json(
+            json_text=dictionary.pop("clifford_op_gateset", KeyError)
         )
-        clifford_op_gateset = getattr(
-            cirq, dictionary.pop("clifford_op_gateset_name")
-        )._from_json_dict_(**dictionary.pop("clifford_op_gateset_params"))
         experiment = cls(
             **dictionary,
             _prepare_circuits=False,
