@@ -77,8 +77,7 @@ def run(
     if parsed_args.notebook:
         args_to_pass += [
             "--nbval-lax",
-            "--dist",
-            "loadscope",
+            "--dist=loadscope",
             "--randomly-dont-reorganize",
             "--force-enable-socket",
         ]
