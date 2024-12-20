@@ -48,7 +48,7 @@ def qcvv_resolver(cirq_type: str) -> type[object] | None:
     """
     prefix = "supermarq.qcvv."
     if cirq_type.startswith(prefix):
-        name = cirq_type[len(prefix):]
+        name = cirq_type[len(prefix) :]
         if hasattr(supermarq.qcvv, name):
             return getattr(supermarq.qcvv, name)
     else:
