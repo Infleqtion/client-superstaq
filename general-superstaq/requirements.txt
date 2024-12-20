@@ -1,4 +1,5 @@
+eval-type-backport>=0.2.0
 numpy>=1.21.0
-pydantic>=1.10.7
+pydantic[email]>=2.6.0
 requests>=2.30.0
 seaborn>=0.13.2
