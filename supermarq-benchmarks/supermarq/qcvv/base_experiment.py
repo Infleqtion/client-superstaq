@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 
-def qcvv_resolver(cirq_type: str) -> type[object] | None:
+def qcvv_resolver(cirq_type: str) -> type[Any] | None:
     """Resolves string's referencing classes in the QCVV library. Used by `cirq.read_json()`
     to deserialize.
 
@@ -51,8 +51,7 @@ def qcvv_resolver(cirq_type: str) -> type[object] | None:
         name = cirq_type[len(prefix) :]
         if hasattr(supermarq.qcvv, name):
             return getattr(supermarq.qcvv, name)
-    else:
-        return None
+    return None
 
 
 @dataclass
