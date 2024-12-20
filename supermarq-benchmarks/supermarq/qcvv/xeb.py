@@ -29,7 +29,7 @@ import seaborn as sns
 import tqdm.auto
 import tqdm.contrib.itertools
 
-from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
+from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample, qcvv_resolver
 
 
 @dataclass
@@ -362,7 +362,7 @@ class XEB(QCVVExperiment[XEBResults]):
 
         return random_circuits
 
-    def _to_dict(self) -> dict[str, Any]:
+    def _json_dict_(self) -> dict[str, Any]:
         """Converts the experiment to a json-able dictionary that can be used to recreate the
         experiment object. Note that the state of the random number generator is not stored.
 
@@ -372,11 +372,19 @@ class XEB(QCVVExperiment[XEBResults]):
         return {
             "two_qubit_gate": cirq.to_json(self.two_qubit_gate),
             "single_qubit_gate_set": cirq.to_json(self.single_qubit_gate_set),
-            **super()._to_dict(),
+            **super()._json_dict_(),
         }
 
     @classmethod
-    def _from_dict(cls, dictionary: dict[str, Any]) -> Self:
+    def _from_json_dict_(
+        cls,
+        samples: str,
+        two_qubit_gate: str,
+        single_qubit_gate_set: str,
+        num_circuits: int,
+        cycle_depths: list[int],
+        **kwargs: Any,
+    ) -> Self:
         """Creates a experiment from a dictionary of the data.
 
         Args:
@@ -385,18 +393,20 @@ class XEB(QCVVExperiment[XEBResults]):
         Returns:
             The deserialized experiment object.
         """
-        dictionary.pop("num_qubits")
-        two_qubit_gate = cirq.read_json(json_text=dictionary.pop("two_qubit_gate", KeyError))
-        single_qubit_gate_set = cirq.read_json(
-            json_text=dictionary.pop("single_qubit_gate_set", KeyError)
+        kwargs.pop("num_qubits")  # Don't need for XEB
+
+        tq_gate = cirq.read_json(json_text=two_qubit_gate)
+        sq_gate_set = cirq.read_json(json_text=single_qubit_gate_set)
+        resolved_samples = cirq.read_json(
+            json_text=samples, resolvers=[*cirq.DEFAULT_RESOLVERS, qcvv_resolver]
         )
-        serialized_samples = dictionary.pop("samples")
-        samples = [Sample._from_dict(s) for s in serialized_samples]
         experiment = cls(
-            **dictionary,
+            num_circuits=num_circuits,
+            cycle_depths=cycle_depths,
             _prepare_circuits=False,
-            single_qubit_gate_set=single_qubit_gate_set,
-            two_qubit_gate=two_qubit_gate,
+            single_qubit_gate_set=sq_gate_set,
+            two_qubit_gate=tq_gate,
+            **kwargs,
         )
-        experiment.samples = samples
+        experiment.samples = resolved_samples
         return experiment

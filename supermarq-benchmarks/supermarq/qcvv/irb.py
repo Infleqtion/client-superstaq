@@ -29,7 +29,7 @@ import seaborn as sns
 from tqdm.auto import trange
 from tqdm.contrib.itertools import product
 
-from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
+from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample, qcvv_resolver
 
 
 ####################################################################################################
@@ -731,7 +731,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                 )
         return samples
 
-    def _to_dict(self) -> dict[str, Any]:
+    def _json_dict_(self) -> dict[str, Any]:
         """Converts the experiment to a json-able dictionary that can be used to recreate the
         experiment object. Note that the state of the random number generator is not stored.
 
@@ -741,11 +741,19 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         return {
             "interleaved_gate": cirq.to_json(self.interleaved_gate),
             "clifford_op_gateset": cirq.to_json(self.clifford_op_gateset),
-            **super()._to_dict(),
+            **super()._json_dict_(),
         }
 
     @classmethod
-    def _from_dict(cls, dictionary: dict[str, Any]) -> Self:
+    def _from_json_dict_(
+        cls,
+        samples: str,
+        interleaved_gate: str,
+        clifford_op_gateset: str,
+        num_circuits: int,
+        cycle_depths: list[int],
+        **kwargs: Any,
+    ) -> Self:
         """Creates a experiment from a dictionary of the data.
 
         Args:
@@ -754,17 +762,18 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         Returns:
             The deserialized experiment object.
         """
-        serialized_samples = dictionary.pop("samples")
-        samples = [Sample._from_dict(s) for s in serialized_samples]
-        interleaved_gate = cirq.read_json(json_text=dictionary.pop("interleaved_gate", KeyError))
-        clifford_op_gateset = cirq.read_json(
-            json_text=dictionary.pop("clifford_op_gateset", KeyError)
+        resolved_samples = cirq.read_json(
+            json_text=samples, resolvers=[*cirq.DEFAULT_RESOLVERS, qcvv_resolver]
         )
+        i_gate = cirq.read_json(json_text=interleaved_gate)
+        c_op_gateset = cirq.read_json(json_text=clifford_op_gateset)
         experiment = cls(
-            **dictionary,
+            num_circuits=num_circuits,
+            cycle_depths=cycle_depths,
             _prepare_circuits=False,
-            clifford_op_gateset=clifford_op_gateset,
-            interleaved_gate=interleaved_gate,
+            clifford_op_gateset=c_op_gateset,
+            interleaved_gate=i_gate,
+            **kwargs,
         )
-        experiment.samples = samples
+        experiment.samples = resolved_samples
         return experiment

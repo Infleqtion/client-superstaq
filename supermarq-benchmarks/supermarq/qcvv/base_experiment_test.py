@@ -30,7 +30,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
+import supermarq.qcvv
+from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample, qcvv_resolver
 
 mock_plot = MagicMock()
 mock_print = MagicMock()
@@ -90,12 +91,30 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
             for d in cycle_depths
         ]
 
-    def _to_dict(self) -> dict[str, Any]:
-        return super()._to_dict()
+    def _json_dict_(self) -> dict[str, Any]:
+        return super()._json_dict_()
 
     @classmethod
-    def _from_dict(cls, data: dict[str, Any]) -> Self:
-        return super()._from_dict(data)
+    def _from_json_dict_(
+        cls,
+        samples: str,
+        num_qubits: int,
+        num_circuits: int,
+        cycle_depths: list[int],
+        **kwargs: Any,
+    ) -> Self:
+        experiment = cls(
+            num_circuits=num_circuits,
+            num_qubits=num_qubits,
+            cycle_depths=cycle_depths,
+            _prepare_circuits=False,
+            **kwargs,
+        )
+        resolved_samples = cirq.read_json(
+            json_text=samples, resolvers=[*cirq.DEFAULT_RESOLVERS, qcvv_resolver]
+        )
+        experiment.samples = resolved_samples
+        return experiment
 
 
 @pytest.fixture
@@ -125,6 +144,12 @@ def sample_circuits() -> list[Sample]:
             circuit_index=2,
         ),
     ]
+
+
+def test_qcvv_resolver() -> None:
+    for attr in supermarq.qcvv.__all__:
+        assert qcvv_resolver(f"supermarq.qcvv.{attr}") == getattr(supermarq.qcvv, attr)
+    assert qcvv_resolver("bad_reference") is None
 
 
 def test_qcvv_experiment_init(
@@ -729,7 +754,13 @@ def test_dump_and_load(
     abc_experiment.samples = sample_circuits
     abc_experiment.to_file(filename)
 
-    exp = ExampleExperiment.from_file(filename)
+    with patch("supermarq.qcvv.base_experiment.qcvv_resolver") as mock_resolver:
+        temp_resolver = {
+            "supermarq.qcvv.Sample": Sample,
+            "supermarq.qcvv.ExampleExperiment": ExampleExperiment,
+        }
+        mock_resolver.side_effect = lambda x: temp_resolver.get(x)
+        exp = ExampleExperiment.from_file(filename)
 
     assert exp.samples == abc_experiment.samples
     assert exp.num_qubits == abc_experiment.num_qubits
