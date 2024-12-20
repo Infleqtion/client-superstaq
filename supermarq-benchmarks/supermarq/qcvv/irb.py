@@ -69,8 +69,8 @@ def _reduce_clifford_seq(
 
 ####################################################################################################
 # The sets `S1`, `S1_X` and `S1_Y` of single qubit Clifford operations are used to generate
-# random two qubit Clifford operations. For details see: https://arxiv.org/pdf/1210.7011 &
-# https://arxiv.org/pdf/1402.4848.
+# random two qubit Clifford operations. For details see: https://arxiv.org/abs/1210.7011 &
+# https://arxiv.org/abs/1402.4848.
 # The implementation is adapted from:
 # https://github.com/quantumlib/Cirq/blob/main/cirq-core/cirq/experiments/qubit_characterizations.py
 ####################################################################################################
@@ -567,7 +567,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
     def random_two_qubit_clifford(self) -> cirq.CliffordGate:
         """Choose a random two qubit clifford gate.
 
-        For algorithm details see https://arxiv.org/pdf/1402.4848 & https://arxiv.org/pdf/1210.7011.
+        For algorithm details see https://arxiv.org/abs/1402.4848 & https://arxiv.org/abs/1210.7011.
 
         Returns:
             The random clifford gate.
@@ -673,7 +673,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             The list of experiment samples.
         """
         samples = []
-        for _, depth in product(range(num_circuits), cycle_depths, desc="Building circuits"):
+        for k, depth in product(range(num_circuits), cycle_depths, desc="Building circuits"):
             base_sequence = [self.random_clifford() for _ in range(depth)]
             rb_sequence = base_sequence + [
                 _reduce_clifford_seq(cirq.inverse(base_sequence))  # type: ignore[arg-type]
@@ -693,6 +693,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                         ),
                         "experiment": "RB",
                     },
+                    circuit_index=k,
                 ),
             )
             if self.interleaved_gate is not None:
@@ -725,6 +726,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                             ),
                             "experiment": "IRB",
                         },
+                        circuit_index=k,
                     ),
                 )
         return samples
