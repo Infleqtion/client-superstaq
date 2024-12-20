@@ -46,8 +46,11 @@ def qcvv_resolver(cirq_type: str) -> type[object] | None:
     Returns:
         The corresponding type object (if found) else None
     """
-    if hasattr(supermarq.qcvv, cirq_type.removeprefix("supermarq.qcvv.")):
-        return getattr(supermarq.qcvv, cirq_type.removeprefix("supermarq.qcvv."))
+    prefix = "supermarq.qcvv."
+    if cirq_type.startswith(prefix):
+        name = cirq_type[len(prefix):]
+        if hasattr(supermarq.qcvv, name):
+            return getattr(supermarq.qcvv, name)
     else:
         return None
 
