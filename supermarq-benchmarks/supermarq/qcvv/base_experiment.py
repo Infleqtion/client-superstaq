@@ -22,16 +22,18 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import cirq
 import cirq_superstaq as css
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
-from typing_extensions import Self
 
 import supermarq
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 def qcvv_resolver(cirq_type: str) -> type[object] | None:

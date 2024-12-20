@@ -21,7 +21,7 @@ import re
 import uuid
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, call, patch
 
 import cirq
@@ -29,10 +29,12 @@ import cirq_superstaq as css
 import numpy as np
 import pandas as pd
 import pytest
-from typing_extensions import Self
 
 import supermarq.qcvv
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample, qcvv_resolver
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 mock_plot = MagicMock()
 mock_print = MagicMock()

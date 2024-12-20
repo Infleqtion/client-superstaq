@@ -17,7 +17,7 @@ from __future__ import annotations
 import itertools
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import cirq
 import matplotlib as mpl
@@ -28,9 +28,11 @@ import scipy
 import seaborn as sns
 import tqdm.auto
 import tqdm.contrib.itertools
-from typing_extensions import Self
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample, qcvv_resolver
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 @dataclass
