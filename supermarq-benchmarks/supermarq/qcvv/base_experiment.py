@@ -22,13 +22,14 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Generic, Self, TypeVar
+from typing import Any, Generic, TypeVar
 
 import cirq
 import cirq_superstaq as css
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
+from typing_extensions import Self
 
 import supermarq
 
@@ -65,7 +66,7 @@ class Sample:
     """The corresponding data about the circuit that is needed when analyzing results
     (e.g. cycle depth)."""
 
-    uuid: uuid.UUID = field(default_factory=uuid.uuid4)
+    uuid: uuid.UUID = field(default_factory=uuid.uuid1)
     """The unique ID of the sample."""
 
     def _json_dict_(self) -> dict[str, Any]:
