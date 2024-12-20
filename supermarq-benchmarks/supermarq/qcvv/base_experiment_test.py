@@ -18,8 +18,10 @@
 from __future__ import annotations
 
 import re
+import uuid
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, call, patch
 
 import cirq
@@ -28,7 +30,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
+import supermarq.qcvv
+from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample, qcvv_resolver
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 mock_plot = MagicMock()
 mock_print = MagicMock()
@@ -59,6 +65,26 @@ class ExampleResults(QCVVResults):
 class ExampleExperiment(QCVVExperiment[ExampleResults]):
     """Example experiment class for testing"""
 
+    def __init__(
+        self,
+        num_qubits: int,
+        num_circuits: int,
+        cycle_depths: Iterable[int],
+        *,
+        random_seed: int | None = None,
+        _prepare_circuits: bool = True,
+        **kwargs: str | bool,
+    ) -> None:
+        super().__init__(
+            num_qubits,
+            num_circuits,
+            cycle_depths,
+            random_seed=random_seed,
+            results_cls=ExampleResults,
+            _prepare_circuits=_prepare_circuits,
+            **kwargs,
+        )
+
     def _build_circuits(self, num_circuits: int, cycle_depths: Iterable[int]) -> Sequence[Sample]:
         return [
             Sample(
@@ -67,6 +93,31 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
             for k in range(num_circuits)
             for d in cycle_depths
         ]
+
+    def _json_dict_(self) -> dict[str, Any]:
+        return super()._json_dict_()
+
+    @classmethod
+    def _from_json_dict_(
+        cls,
+        samples: str,
+        num_qubits: int,
+        num_circuits: int,
+        cycle_depths: list[int],
+        **kwargs: Any,
+    ) -> Self:
+        experiment = cls(
+            num_circuits=num_circuits,
+            num_qubits=num_qubits,
+            cycle_depths=cycle_depths,
+            _prepare_circuits=False,
+            **kwargs,
+        )
+        resolved_samples = cirq.read_json(
+            json_text=samples, resolvers=[*cirq.DEFAULT_RESOLVERS, qcvv_resolver]
+        )
+        experiment.samples = resolved_samples
+        return experiment
 
 
 @pytest.fixture
@@ -77,7 +128,6 @@ def abc_experiment() -> ExampleExperiment:
             num_circuits=10,
             cycle_depths=[1, 3, 5],
             random_seed=42,
-            results_cls=ExampleResults,
             service_details="Some other details",
         )
 
@@ -97,6 +147,12 @@ def sample_circuits() -> list[Sample]:
             circuit_index=2,
         ),
     ]
+
+
+def test_qcvv_resolver() -> None:
+    for attr in supermarq.qcvv.__all__:
+        assert qcvv_resolver(f"supermarq.qcvv.{attr}") == getattr(supermarq.qcvv, attr)
+    assert qcvv_resolver("bad_reference") is None
 
 
 def test_qcvv_experiment_init(
@@ -132,7 +188,6 @@ def test_experiment_init_with_bad_layers() -> None:
             num_circuits=10,
             cycle_depths=[0],
             random_seed=42,
-            results_cls=ExampleResults,
             service_details="Some other details",
         )
 
@@ -546,6 +601,74 @@ def test_results_collect_device_counts_no_job() -> None:
         results._collect_device_counts()
 
 
+def test_results_from_records(abc_experiment: ExampleExperiment) -> None:
+    samples = abc_experiment.samples
+    # All accepted types
+    records_1 = {s.uuid: {"01": 1, "10": 3} for s in samples}
+    records_2 = {s.uuid: {"01": 0.25, "10": 0.75} for s in samples}
+    records_3 = {s.uuid: {1: 1, 2: 3} for s in samples}
+    records_4 = {s.uuid: {1: 0.25, 2: 0.75} for s in samples}
+
+    records_list: list[
+        dict[uuid.UUID, dict[str, float]]
+        | dict[uuid.UUID, dict[str, int]]
+        | dict[uuid.UUID, dict[int, float]]
+        | dict[uuid.UUID, dict[int, int]]
+    ] = [records_1, records_2, records_3, records_4]
+
+    for record in records_list:
+        results = abc_experiment.results_from_records(record)
+        pd.testing.assert_frame_equal(
+            results.data,
+            pd.DataFrame(
+                [
+                    {"num": n, "depth": d, "00": 0.0, "01": 0.25, "10": 0.75, "11": 0.0}
+                    for n in range(10)
+                    for d in (1, 3, 5)
+                ]
+            ),
+        )
+
+
+def test_results_from_records_bad_input(abc_experiment: ExampleExperiment) -> None:
+    samples = abc_experiment.samples
+    samples[0].uuid = uuid.UUID("0e9421da-3700-42e9-9281-a0e24cc0986c")
+    # Warn for missing samples
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            "The following samples are missing records: "
+            f"{', '.join(str(s.uuid) for s in samples[1:])}"
+        ),
+    ):
+        abc_experiment.results_from_records({samples[0].uuid: {"00": 10}})
+
+    # Warn for spurious records
+    new_uuid = uuid.uuid4()
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            "Records were provided with the following UUIDs which do not match"
+            f" any samples and will be ignored: {', '.join([str(new_uuid)])}"
+        ),
+    ) as _, pytest.warns(
+        UserWarning, match=re.escape("The following samples are missing records:")
+    ) as _:
+        abc_experiment.results_from_records({new_uuid: {"00": 10}})
+
+    # Raise warning from canonicalizing probability
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            f"Processing sample {str(samples[0].uuid)} raised error. "
+            "Provided probabilities do not sum to 1.0. Got 0.6."
+        ),
+    ) as _, pytest.warns(
+        UserWarning, match=re.escape("The following samples are missing records:")
+    ) as _:
+        abc_experiment.results_from_records({samples[0].uuid: {"00": 0.6}})
+
+
 def test_canonicalize_bitstring() -> None:
     assert QCVVExperiment._canonicalize_bitstring("00", 2) == "00"
     assert QCVVExperiment._canonicalize_bitstring(1, 2) == "01"
@@ -573,17 +696,76 @@ def test_canonicalize_bitstring() -> None:
 
 
 def test_canonicalize_probabilities() -> None:
-    p: dict[str | int, float] = {3: 0.3, 0: 0.1, "10": 0.6}
-    assert QCVVExperiment._canonicalize_probabilities(p, 2) == {
-        "00": 0.1,
-        "01": 0.0,
-        "10": 0.6,
-        "11": 0.3,
-    }
+    p1 = {0: 0.1, 1: 0.6, 3: 0.3}
+    p2 = {0: 1, 1: 6, 3: 3}
+    p3 = {"00": 0.1, "01": 0.6, "11": 0.3}
+    p4 = {"00": 1, "01": 6, "11": 3}
+    p_list: list[dict[str, int] | dict[str, float] | dict[int, int] | dict[int, float]] = [
+        p1,
+        p2,
+        p3,
+        p4,
+    ]
+    for p in p_list:
+        assert QCVVExperiment._canonicalize_probabilities(p, 2) == {
+            "00": 0.1,
+            "01": 0.6,
+            "10": 0.0,
+            "11": 0.3,
+        }
 
+
+def test_canonicalize_probabilities_bad_input() -> None:
+
+    # Negative counts
+    with pytest.raises(ValueError, match="Counts must be positive."):
+        QCVVExperiment._canonicalize_probabilities({0: -2}, 2)
+
+    # No non-zero counts
+    with pytest.raises(ValueError, match="No non-zero counts."):
+        QCVVExperiment._canonicalize_probabilities({0: 0, 1: 0}, 2)
+
+    # Negative probabilities
+    with pytest.raises(ValueError, match="Probabilities must be positive."):
+        QCVVExperiment._canonicalize_probabilities({0: 0.0, 1: -0.5}, 2)
+
+    # Probabilities don't sum to 1
+    with pytest.raises(RuntimeError, match="Provided probabilities do not sum to 1.0."):
+        QCVVExperiment._canonicalize_probabilities({0: 0.4, 1: 0.5}, 2)
+
+    # Counts as floats
     with pytest.raises(
-        RuntimeError,
-        match="Provided probabilities do not sum to 1.0. Got",  # Ignore exact value due to rounding
+        TypeError,
+        match="If providing counts please use integer type to distinguish from probabilities.",
     ):
-        p[0] = 0.0
-        QCVVExperiment._canonicalize_probabilities(p, 2)
+        QCVVExperiment._canonicalize_probabilities({0: 4.0, 1: 5.0}, 2)
+
+    # Mixed types
+    with pytest.raises(
+        TypeError,
+        match="Results values must either all be integer or all be float.",
+    ):
+        QCVVExperiment._canonicalize_probabilities({0: 4.0, 1: 5}, 2)
+
+
+def test_dump_and_load(
+    tmp_path_factory: pytest.TempPathFactory,
+    abc_experiment: ExampleExperiment,
+    sample_circuits: list[Sample],
+) -> None:
+    filename = tmp_path_factory.mktemp("tempdir") / "file.json"
+    abc_experiment.samples = sample_circuits
+    abc_experiment.to_file(filename)
+
+    with patch("supermarq.qcvv.base_experiment.qcvv_resolver") as mock_resolver:
+        temp_resolver = {
+            "supermarq.qcvv.Sample": Sample,
+            "supermarq.qcvv.ExampleExperiment": ExampleExperiment,
+        }
+        mock_resolver.side_effect = lambda x: temp_resolver.get(x)
+        exp = ExampleExperiment.from_file(filename)
+
+    assert exp.samples == abc_experiment.samples
+    assert exp.num_qubits == abc_experiment.num_qubits
+    assert exp.num_circuits == abc_experiment.num_circuits
+    assert exp.cycle_depths == abc_experiment.cycle_depths
