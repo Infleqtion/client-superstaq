@@ -26,6 +26,7 @@ def provider() -> qss.SuperstaqProvider:
 
 def test_backends(provider: qss.SuperstaqProvider) -> None:
     result = provider.get_targets()
+    filtered_result = provider.get_my_targets()
     ibmq_backend_info = gss.typing.Target(
         target="ibmq_brisbane_qpu",
         supports_submit=True,
@@ -33,10 +34,12 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
         supports_compile=True,
         available=True,
         retired=False,
+        accessible=True,
     )
     assert ibmq_backend_info in result
     assert provider.get_backend("ibmq_brisbane_qpu").name == "ibmq_brisbane_qpu"
     assert len(provider.backends()) == len(result)
+    assert all(target in result for target in filtered_result)
 
 
 def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
