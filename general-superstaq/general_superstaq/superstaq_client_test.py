@@ -215,6 +215,73 @@ def test_superstaq_client_validate_email_error(
         _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
 
 
+class MockIBMProvider:
+    """MockIBMProvider is a mock class to represent an `IBMProvider`."""
+
+    def __init__(
+        self,
+        token: str | None = "ibmq_token",
+        instance: str = "instance",
+        channel: str = "ibm_quantum",
+    ) -> None:
+        self.token = token
+        self.instance = instance
+        self.channel = channel
+
+    def active_account(self) -> dict[str, str] | None:
+        """Mock of the `IBMProvider.active_account` function.
+
+        Returns:
+            A dictionary with the `token`, `instance`, and `channel`.
+        """
+        if not self.token:
+            return None
+        return {"token": self.token, "instance": self.instance, "channel": self.channel}
+
+
+def test_superstaq_client_use_ibmprovider() -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        ibmq_provider=MockIBMProvider(),
+    )
+
+    assert client.client_kwargs == dict(
+        ibmq_channel="ibm_quantum",
+        ibmq_instance="instance",
+        ibmq_token="ibmq_token",
+    )
+
+    with pytest.raises(
+        AssertionError, match="No active account found for provided `IBMProvider` instance."
+    ):
+        _ = gss.superstaq_client._SuperstaqClient(
+            client_name="general-superstaq",
+            remote_host="http://example.com",
+            api_key="to_my_heart",
+            ibmq_provider=MockIBMProvider(token=None),
+        )
+
+
+def test_superstaq_client_use_stored_ibmq_credential() -> None:
+    with mock.patch(
+        "general_superstaq.superstaq_client.IBMProvider", return_value=MockIBMProvider()
+    ):
+        client = gss.superstaq_client._SuperstaqClient(
+            client_name="general-superstaq",
+            remote_host="http://example.com",
+            api_key="to_my_heart",
+            use_stored_ibmq_credentials=True,
+        )
+
+        assert client.client_kwargs == dict(
+            ibmq_channel="ibm_quantum",
+            ibmq_instance="instance",
+            ibmq_token="ibmq_token",
+        )
+
+
 @mock.patch("requests.Session.post")
 def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
     mock_post.return_value.status_code = requests.codes.ok
