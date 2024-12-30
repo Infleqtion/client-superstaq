@@ -106,7 +106,7 @@ TARGET_LIST = {
         "supports_submit_qubo": False,
         "supports_compile": True,
         "available": False,
-        "retired": False,
+        "retired": True,
     },
     "ionq_ion_simulator": {
         "supports_submit": True,
