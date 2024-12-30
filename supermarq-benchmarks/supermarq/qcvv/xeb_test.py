@@ -253,3 +253,19 @@ def test_results_not_analyzed() -> None:
             match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
         ):
             getattr(results, attr)
+
+
+def test_dump_and_load(
+    tmp_path_factory: pytest.TempPathFactory,
+    xeb_experiment: XEB,
+) -> None:
+    filename = tmp_path_factory.mktemp("tempdir") / "file.json"
+    xeb_experiment.to_file(filename)
+    exp = XEB.from_file(filename)
+
+    assert exp.samples == xeb_experiment.samples
+    assert exp.num_qubits == xeb_experiment.num_qubits
+    assert exp.num_circuits == xeb_experiment.num_circuits
+    assert exp.cycle_depths == xeb_experiment.cycle_depths
+    assert exp.single_qubit_gate_set == xeb_experiment.single_qubit_gate_set
+    assert exp.two_qubit_gate == xeb_experiment.two_qubit_gate

@@ -16,17 +16,42 @@ from __future__ import annotations
 
 import functools
 import math
+import pathlib
+import uuid
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterable, Sequence
-from dataclasses import dataclass
-from typing import Any, Generic, TypeVar
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import cirq
 import cirq_superstaq as css
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
+
+import supermarq
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
+
+def qcvv_resolver(cirq_type: str) -> type[Any] | None:
+    """Resolves string's referencing classes in the QCVV library. Used by `cirq.read_json()`
+    to deserialize.
+
+    Args:
+        cirq_type: The type being resolved
+
+    Returns:
+        The corresponding type object (if found) else None
+    """
+    prefix = "supermarq.qcvv."
+    if cirq_type.startswith(prefix):
+        name = cirq_type[len(prefix) :]
+        if hasattr(supermarq.qcvv, name):
+            return getattr(supermarq.qcvv, name)
+    return None
 
 
 @dataclass
@@ -44,6 +69,51 @@ class Sample:
     data: dict[str, Any]
     """The corresponding data about the circuit that is needed when analyzing results
     (e.g. cycle depth)."""
+
+    uuid: uuid.UUID = field(default_factory=uuid.uuid1)
+    """The unique ID of the sample."""
+
+    def _json_dict_(self) -> dict[str, Any]:
+        """Converts the sample to a json-able dictionary that can be used to recreate the
+        sample object.
+
+        Returns:
+            Json-able dictionary of the sample data.
+        """
+        return {
+            "circuit": css.serialize_circuits(self.circuit),
+            "data": self.data,
+            "circuit_index": self.circuit_index,
+            "uuid_str": str(self.uuid),
+        }
+
+    @classmethod
+    def _from_json_dict_(
+        cls,
+        circuit: str,
+        circuit_index: int,
+        data: dict[str, Any],
+        uuid_str: str,
+        **_: Any,
+    ) -> Self:
+        """Creates a sample from a dictionary of the data.
+
+        Args:
+            dictionary: Dict containing the sample data.
+
+        Returns:
+            The deserialized Sample object.
+        """
+        return cls(
+            circuit=css.deserialize_circuits(circuit)[0],
+            circuit_index=circuit_index,
+            data=data,
+            uuid=uuid.UUID(uuid_str),
+        )
+
+    @classmethod
+    def _json_namespace_(cls) -> str:
+        return "supermarq.qcvv"
 
 
 @dataclass
@@ -225,6 +295,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         *,
         random_seed: int | np.random.Generator | None = None,
         results_cls: type[ResultsT],
+        _prepare_circuits: bool = True,
         **kwargs: Any,
     ) -> None:
         """Initializes a benchmarking experiment.
@@ -254,7 +325,10 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
         self._results_cls: type[ResultsT] = results_cls
 
-        self.samples = self._prepare_experiment()
+        if _prepare_circuits:
+            self.samples = self._prepare_experiment()
+        else:
+            self.samples = []
         """Create all the samples needed for the experiment."""
 
     ##############
@@ -313,6 +387,62 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             [(k, operation) for k in range(len(circuit) - int(not include_final), 0, -1)]
         )
         return interleaved_circuit
+
+    @abstractmethod
+    def _json_dict_(self) -> dict[str, Any]:
+        """Converts the experiment to a json-able dictionary that can be used to recreate the
+        experiment object. Note that the state of the random number generator is not stored.
+
+        .. note:: Must be re-implemented in any subclasses to ensure all important data is stored.
+
+        Returns:
+            Json-able dictionary of the experiment data.
+        """
+        return {
+            "num_circuits": self.num_circuits,
+            "num_qubits": self.num_qubits,
+            "cycle_depths": list(self.cycle_depths),
+            "samples": cirq.to_json(self.samples),
+            **self._service_kwargs,
+        }
+
+    @classmethod
+    @abstractmethod
+    def _from_json_dict_(cls, *args: Any, **kwargs: Any) -> Self:
+        """Creates a experiment from an expanded dictionary of the data.
+
+        Returns:
+            The deserialized experiment object.
+        """
+
+    @classmethod
+    def _json_namespace_(cls) -> str:
+        return "supermarq.qcvv"
+
+    def to_file(self, filename: str | pathlib.Path) -> None:
+        """Save the experiment to a json file.
+
+        Args:
+            filename: Filename to save to.
+        """
+        with open(filename, "w") as file_stream:
+            cirq.to_json(self, file_stream)
+
+    @classmethod
+    def from_file(cls, filename: str | pathlib.Path) -> Self:
+        """Load the experiment from a json file.
+
+        Args:
+            filename: Filename to load from.
+
+        Returns:
+            The loaded experiment.
+        """
+        with open(filename, "r") as file_stream:
+            experiment = cirq.read_json(
+                file_stream, resolvers=[*cirq.DEFAULT_RESOLVERS, qcvv_resolver]
+            )
+        return experiment
 
     def _prepare_experiment(
         self,
@@ -434,7 +564,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
     def run_with_callable(
         self,
-        circuit_eval_func: Callable[[cirq.Circuit], dict[str | int, float]],
+        circuit_eval_func: Callable[[cirq.Circuit], Mapping[str, float] | Mapping[int, float]],
         **kwargs: Any,
     ) -> ResultsT:
         """Evaluates the probabilities for each circuit using a user provided callable function.
@@ -444,11 +574,6 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Args:
             circuit_eval_func: The custom function to use when evaluating circuit probabilities.
             kwargs: Additional arguments to pass to the custom function.
-
-        Raises:
-            RuntimeError: If the returned probabilities dictionary keys is missing include
-                an incorrect number of bits.
-            RuntimeError: If the returned probabilities dictionary values do not sum to 1.0.
 
         Returns:
             The experiment results object.
@@ -463,6 +588,66 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             target="callable",
             experiment=self,
             data=pd.DataFrame(records),
+        )
+
+    def results_from_records(
+        self,
+        records: Mapping[uuid.UUID, Mapping[str, float] | Mapping[int, float]],
+    ) -> ResultsT:
+        """Creates a results object from records of the counts/probabilities for each sample
+        circuit. This function is aimed at users who would like to use the QCVV framework to
+        generate sample circuits and analyse the results but need to run these circuits without
+        submitting a job to Superstaq.
+
+        Args:
+            records: A dictionary of the counts/probabilities for each sample, indexed by the
+                sample UUID. The counts/probabilities for each sample should be provided as a
+                dictionary of integers or floats (respectively) indexed by either the bitstring or
+                the integer value of that bitstring. Note that the distinction between counts and
+                probabilities is inferred from the type (int vs float respectively). Please do not
+                use float type for counts.
+
+        Returns:
+            The experiment results object.
+        """
+        # First check for any missing or spurious records
+        expected_uuids = [s.uuid for s in self.samples]
+        received_uuids = [u for u in records.keys()]
+
+        missing_uuids = [str(u) for u in expected_uuids if u not in received_uuids]
+        if missing_uuids:
+            warnings.warn(f"The following samples are missing records: {', '.join(missing_uuids)}")
+        spurious_uuids = [str(u) for u in received_uuids if u not in expected_uuids]
+        if spurious_uuids:
+            warnings.warn(
+                "Records were provided with the following UUIDs which do not match"
+                f" any samples and will be ignored: {', '.join(spurious_uuids)}"
+            )
+
+        results_data = []
+        samples_dict = {s.uuid: s for s in self.samples}
+        for uid, results in records.items():
+            # Skip the records if the UUID is not recognized.
+            if uid not in samples_dict:
+                break
+            sample = samples_dict[uid]
+            # Attempt to canonicalize the results. If unsuccessful warn and skip record.
+            try:
+                probabilities = self._canonicalize_probabilities(
+                    results,
+                    self.num_qubits,
+                )
+            except (TypeError, ValueError, RuntimeError) as e:
+                warnings.warn(f"Processing sample {str(sample.uuid)} raised error. {e}")
+                continue
+
+            # Add to results data
+            results_data.append({**sample.data, **probabilities})
+
+        return self._results_cls(
+            target="records",
+            experiment=self,
+            data=pd.DataFrame(results_data),
         )
 
     @staticmethod
@@ -505,36 +690,70 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
     @staticmethod
     def _canonicalize_probabilities(
-        probabilities: dict[str | int, float], num_qubits: int
+        results: Mapping[str, float] | Mapping[int, float],
+        num_qubits: int,
     ) -> dict[str, float]:
-        """Reformats a dictionary of probabilities so that all keys are bitstrings and that
+        """Reformats a dictionary of probabilities/counts so that all keys are bitstrings and that
         there are no missing values. Also sorts the dictionary by bitstring.
 
         Args:
-            probabilities: The unformatted probabilities
+            probabilities: The unformatted probabilities or counts
             num_qubits: The number of qubits, used to determine the bitstring length.
 
         Raises:
             RuntimeError: If the probabilities do not sum to 1.
+            TypeError: If the results are not all integer or all float.
+            ValueError: If any counts or probabilities are negative.
+            ValueError: If there are no non-zero counts.
 
         Returns:
             The formatted dictionary of probabilities.
         """
-        if not math.isclose(sum(probabilities.values()), 1.0):
-            raise RuntimeError(
-                f"Provided probabilities do not sum to 1.0. Got {sum(probabilities.values())}."
-            )
+        if all(isinstance(x, int) for x in results.values()):
+            # If all results are integer then check that all integers are strictly positive and that
+            # there is at least one non-zero count.
+            if any(c < 0 for c in results.values()):
+                raise ValueError("Counts must be positive.")
+            if sum(results.values()) == 0:
+                raise ValueError("No non-zero counts.")
+            probabilities = {
+                QCVVExperiment._canonicalize_bitstring(key, num_qubits): count
+                / sum(results.values())
+                for key, count in results.items()
+            }
+        elif all(isinstance(x, float) for x in results.values()):
+            # Check that values are not actually integers cast as float (except possibly 0 or 1)
+            if any(
+                (
+                    x.is_integer()
+                    # Mypy has not detected that in this context all values are float.
+                    & (x not in [0.0, 1.0])
+                )
+                for x in results.values()
+            ):
+                raise TypeError(
+                    "If providing counts please use integer type to distinguish from probabilities."
+                )
 
-        new_probability = {
-            QCVVExperiment._canonicalize_bitstring(key, num_qubits): val
-            for key, val in probabilities.items()
-        }
+            # If all results are float then check they are all positive and sum to 1.0
+            if any(c < 0 for c in results.values()):
+                raise ValueError("Probabilities must be positive.")
+            if not math.isclose(sum(results.values()), 1.0):
+                raise RuntimeError(
+                    f"Provided probabilities do not sum to 1.0. Got {sum(results.values())}."
+                )
+            probabilities = {
+                QCVVExperiment._canonicalize_bitstring(key, num_qubits): val
+                for key, val in results.items()
+            }
+        else:
+            raise TypeError("Results values must either all be integer or all be float.")
 
         # Add zero values for any missing bitstrings
         for k in range(2**num_qubits):
-            if (bitstring := format(k, f"0{num_qubits}b")) not in new_probability:
-                new_probability[bitstring] = 0.0
+            if (bitstring := format(k, f"0{num_qubits}b")) not in probabilities:
+                probabilities[bitstring] = 0.0
         # Sort by bitstrings
-        new_probability = dict(sorted(new_probability.items()))
+        probabilities = dict(sorted(probabilities.items()))
 
-        return new_probability
+        return probabilities
