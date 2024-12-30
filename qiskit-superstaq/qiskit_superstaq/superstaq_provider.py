@@ -24,6 +24,7 @@ import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
     from _typeshed import SupportsItems
+    from qiskit_ibm_provider import IBMProvider
 
 
 class SuperstaqProvider(gss.service.Service):
@@ -54,6 +55,8 @@ class SuperstaqProvider(gss.service.Service):
         ibmq_token: str | None = None,
         ibmq_instance: str | None = None,
         ibmq_channel: str | None = None,
+        ibmq_provider: IBMProvider | None = None,
+        use_stored_ibmq_credentials: bool = False,
         **kwargs: Any,
     ) -> None:
         """Initializes a `SuperstaqProvider`.
@@ -101,6 +104,8 @@ class SuperstaqProvider(gss.service.Service):
             ibmq_token=ibmq_token,
             ibmq_instance=ibmq_instance,
             ibmq_channel=ibmq_channel,
+            ibmq_provider=ibmq_provider,
+            use_stored_ibmq_credentials=use_stored_ibmq_credentials,
             **kwargs,
         )
 

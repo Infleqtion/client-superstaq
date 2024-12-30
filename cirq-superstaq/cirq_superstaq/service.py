@@ -31,6 +31,7 @@ import cirq_superstaq as css
 
 if TYPE_CHECKING:
     from _typeshed import SupportsItems
+    from qiskit_ibm_provider import IBMProvider
 
 
 def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
@@ -138,6 +139,8 @@ class Service(gss.service.Service):
         ibmq_token: str | None = None,
         ibmq_instance: str | None = None,
         ibmq_channel: str | None = None,
+        ibmq_provider: IBMProvider | None = None,
+        use_stored_ibmq_credentials: bool = False,
         **kwargs: object,
     ) -> None:
         """Creates the Service to access Superstaq's API.
@@ -187,6 +190,8 @@ class Service(gss.service.Service):
             ibmq_token=ibmq_token,
             ibmq_instance=ibmq_instance,
             ibmq_channel=ibmq_channel,
+            ibmq_provider=ibmq_provider,
+            use_stored_ibmq_credentials=use_stored_ibmq_credentials,
             **kwargs,
         )
 

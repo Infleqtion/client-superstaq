@@ -25,6 +25,7 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Any, TypeVar
 
 import requests
+from qiskit_ibm_provider import IBMProvider
 
 import general_superstaq as gss
 
@@ -57,6 +58,8 @@ class _SuperstaqClient:
         ibmq_token: str | None = None,
         ibmq_instance: str | None = None,
         ibmq_channel: str | None = None,
+        ibmq_provider: IBMProvider | None = None,
+        use_stored_ibmq_credentials: bool = False,
         **kwargs: Any,
     ) -> None:
         """Creates the SuperstaqClient.
@@ -111,17 +114,29 @@ class _SuperstaqClient:
         }
         self.session = requests.Session()
 
-        if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
-            raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
-
         if cq_token:
             kwargs["cq_token"] = cq_token
-        if ibmq_token:
-            kwargs["ibmq_token"] = ibmq_token
-        if ibmq_instance:
-            kwargs["ibmq_instance"] = ibmq_instance
-        if ibmq_channel:
-            kwargs["ibmq_channel"] = ibmq_channel
+
+        if use_stored_ibmq_credentials:
+            ibmq_provider = IBMProvider()
+
+        if ibmq_provider:
+            ibmq_active_account = ibmq_provider.active_account()
+            assert (
+                ibmq_active_account
+            ), "No active account found for provided `IBMProvider` instance."
+            kwargs["ibmq_token"] = ibmq_active_account.get("token")
+            kwargs["ibmq_instance"] = ibmq_active_account.get("instance")
+            kwargs["ibmq_channel"] = ibmq_active_account.get("channel")
+        else:
+            if ibmq_token:
+                kwargs["ibmq_token"] = ibmq_token
+            if ibmq_instance:
+                kwargs["ibmq_instance"] = ibmq_instance
+            if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
+                raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
+            elif ibmq_channel:
+                kwargs["ibmq_channel"] = ibmq_channel
 
         self.client_kwargs = kwargs
 
