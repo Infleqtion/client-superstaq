@@ -70,6 +70,12 @@ def run(
         print(check_utils.warning(text))
         return 1
 
+    notebooks = [file for file in files if file.endswith(".ipynb")]
+    if notebooks:
+        import checks_superstaq.format_notebook
+
+        return checks_superstaq.format_notebook.format(notebooks)
+
     return returncode_isort
 
 
