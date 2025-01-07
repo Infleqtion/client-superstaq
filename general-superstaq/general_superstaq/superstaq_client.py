@@ -23,7 +23,7 @@ import time
 import urllib
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, TypeVar
+from typing import Any, TypeVar, TYPE_CHECKING
 
 import requests
 
@@ -31,13 +31,8 @@ import general_superstaq as gss
 
 TQuboKey = TypeVar("TQuboKey")
 
-if importlib.util.find_spec("qiskit_ibm_runtime") is not None:
+if TYPE_CHECKING:
     import qiskit_ibm_runtime
-
-    qiskit_ibm_runtime_installed = True
-else:
-    qiskit_ibm_runtime_installed = False
-
 
 class _SuperstaqClient:
     """Handles calls to Superstaq's API.
@@ -131,10 +126,13 @@ class _SuperstaqClient:
             kwargs["cq_token"] = cq_token
 
         if use_stored_ibmq_credentials:
-            if not qiskit_ibm_runtime_installed:
+            if importlib.util.find_spec("qiskit_ibm_runtime") is None:
                 raise gss.SuperstaqException(
                     "The `qiskit_ibm_runtime` is missing. The package is required to load configs."
                 )
+            else:
+                import qiskit_ibm_runtime
+
             ibmq_account = qiskit_ibm_runtime.accounts.AccountManager.get(
                 channel=ibmq_channel, name=ibmq_name
             )
@@ -151,13 +149,13 @@ class _SuperstaqClient:
             kwargs["ibmq_instance"] = ibmq_active_account.get("instance")
             kwargs["ibmq_channel"] = ibmq_active_account.get("channel")
         else:
+            if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
+                raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
             if ibmq_token:
                 kwargs["ibmq_token"] = ibmq_token
             if ibmq_instance:
                 kwargs["ibmq_instance"] = ibmq_instance
-            if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
-                raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
-            elif ibmq_channel:
+            if ibmq_channel:
                 kwargs["ibmq_channel"] = ibmq_channel
 
         self.client_kwargs = kwargs
