@@ -13,6 +13,7 @@
 """Client for making requests to Superstaq's API."""
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import pathlib
@@ -25,11 +26,17 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Any, TypeVar
 
 import requests
-from qiskit_ibm_provider import IBMProvider
 
 import general_superstaq as gss
 
 TQuboKey = TypeVar("TQuboKey")
+
+if importlib.util.find_spec("qiskit_ibm_runtime") is not None:
+    import qiskit_ibm_runtime
+
+    qiskit_ibm_runtime_installed = True
+else:
+    qiskit_ibm_runtime_installed = False
 
 
 class _SuperstaqClient:
@@ -58,8 +65,9 @@ class _SuperstaqClient:
         ibmq_token: str | None = None,
         ibmq_instance: str | None = None,
         ibmq_channel: str | None = None,
-        ibmq_provider: IBMProvider | None = None,
+        ibmq_provider: qiskit_ibm_runtime.QiskitRuntimeService | None = None,
         use_stored_ibmq_credentials: bool = False,
+        ibmq_name: str | None = None,
         **kwargs: Any,
     ) -> None:
         """Creates the SuperstaqClient.
@@ -84,6 +92,11 @@ class _SuperstaqClient:
                 to IBM hardware, or to access non-public IBM devices you may have access to.
             ibmq_instance: An optional instance to use when running IBM jobs.
             ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
+            ibmq_provider: A `qiskit_ibm_runtime.QiskitRuntimeService` object from which IBM
+                credentials are retrieved.
+            use_stored_ibmq_credentials: Whether to retrieve IBM credentials from locally saved
+                accounts.
+            ibmq_name: The name of the account to retrieve.
             kwargs: Other optimization and execution parameters.
         """
 
@@ -118,13 +131,22 @@ class _SuperstaqClient:
             kwargs["cq_token"] = cq_token
 
         if use_stored_ibmq_credentials:
-            ibmq_provider = IBMProvider()
-
-        if ibmq_provider:
+            if not qiskit_ibm_runtime_installed:
+                raise gss.SuperstaqException(
+                    "The `qiskit_ibm_runtime` is missing. The package is required to load configs."
+                )
+            ibmq_account = qiskit_ibm_runtime.accounts.AccountManager.get(
+                channel=ibmq_channel, name=ibmq_name
+            )
+            kwargs["ibmq_token"] = ibmq_account.get("token")
+            kwargs["ibmq_instance"] = ibmq_account.get("instance")
+            kwargs["ibmq_channel"] = ibmq_account.get("channel")
+        elif ibmq_provider:
             ibmq_active_account = ibmq_provider.active_account()
-            assert (
-                ibmq_active_account
-            ), "No active account found for provided `IBMProvider` instance."
+            assert ibmq_active_account, (
+                "No active account found for provided `qiskit_ibm_runtime.QiskitRuntimeService` "
+                "instance."
+            )
             kwargs["ibmq_token"] = ibmq_active_account.get("token")
             kwargs["ibmq_instance"] = ibmq_active_account.get("instance")
             kwargs["ibmq_channel"] = ibmq_active_account.get("channel")
