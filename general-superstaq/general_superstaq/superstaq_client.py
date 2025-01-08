@@ -23,7 +23,7 @@ import time
 import urllib
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, TypeVar, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import requests
 
@@ -33,6 +33,7 @@ TQuboKey = TypeVar("TQuboKey")
 
 if TYPE_CHECKING:
     import qiskit_ibm_runtime
+
 
 class _SuperstaqClient:
     """Handles calls to Superstaq's API.
@@ -127,7 +128,7 @@ class _SuperstaqClient:
 
         if use_stored_ibmq_credentials:
             if importlib.util.find_spec("qiskit_ibm_runtime") is None:
-                raise gss.SuperstaqException(
+                raise ModuleNotFoundError(
                     "The `qiskit_ibm_runtime` is missing. The package is required to load configs."
                 )
             else:
