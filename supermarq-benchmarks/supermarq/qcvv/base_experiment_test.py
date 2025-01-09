@@ -602,24 +602,30 @@ def test_results_from_records_bad_input(
 
     # Warn for spurious records
     new_uuid = uuid.uuid4()
-    with pytest.warns(
-        UserWarning,
-        match=re.escape(f"Could not find sample with key: `{str(new_uuid)}`."),
-    ) as _, pytest.warns(
-        UserWarning, match=re.escape("The following samples are missing records:")
-    ) as _:
+    with (
+        pytest.warns(
+            UserWarning,
+            match=re.escape(f"Could not find sample with key: `{str(new_uuid)}`."),
+        ) as _,
+        pytest.warns(
+            UserWarning, match=re.escape("The following samples are missing records:")
+        ) as _,
+    ):
         abc_experiment.results_from_records({new_uuid: {"00": 10}})
 
     # Raise warning from canonicalizing probability
-    with pytest.warns(
-        UserWarning,
-        match=re.escape(
-            f"Processing sample {str(sample_circuits[0].uuid)} raised error. "
-            "Provided probabilities do not sum to 1.0. Got 0.6."
-        ),
-    ) as _, pytest.warns(
-        UserWarning, match=re.escape("The following samples are missing records:")
-    ) as _:
+    with (
+        pytest.warns(
+            UserWarning,
+            match=re.escape(
+                f"Processing sample {str(sample_circuits[0].uuid)} raised error. "
+                "Provided probabilities do not sum to 1.0. Got 0.6."
+            ),
+        ) as _,
+        pytest.warns(
+            UserWarning, match=re.escape("The following samples are missing records:")
+        ) as _,
+    ):
         abc_experiment.results_from_records({sample_circuits[0].uuid: {"00": 0.6}})
 
 
@@ -749,24 +755,22 @@ def test_map_records_to_samples_missing_key(
     abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
     abc_experiment.samples = sample_circuits
-    with (
-        pytest.warns(
-            UserWarning, match="Could not find sample with key: `5`. Skipping this record."
-        ) as _,
-        pytest.warns(
+    with pytest.warns(
+        UserWarning, match="Could not find sample with key: `5`. Skipping this record."
+    ):
+        with pytest.warns(
             UserWarning,
             match=(
                 f"The following samples are missing records: {sample_circuits[0].uuid}. "
                 "These will not be included in the results."
             ),
-        ) as _,
-    ):
-        abc_experiment._map_records_to_samples(
-            {
-                5: {0: 0.1, 1: 0.6, 3: 0.3},
-                sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
-            }
-        )
+        ):
+            abc_experiment._map_records_to_samples(
+                {
+                    5: {0: 0.1, 1: 0.6, 3: 0.3},
+                    sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
+                }
+            )
 
 
 def test_map_records_to_samples_bad_key_type(
@@ -774,53 +778,49 @@ def test_map_records_to_samples_bad_key_type(
 ) -> None:
     abc_experiment.samples = sample_circuits
     # Bad key type
-    with (
-        pytest.warns(
-            UserWarning,
-            match=re.escape(
-                "The key: `5.0` has an incompatible type (should be uuid.UUID or int). "
-                "Skipping this record."
-            ),
-        ) as _,
-        pytest.warns(
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            "The key: `5.0` has an incompatible type (should be uuid.UUID or int). "
+            "Skipping this record."
+        ),
+    ):
+        with pytest.warns(
             UserWarning,
             match=(
                 f"The following samples are missing records: {sample_circuits[0].uuid}. "
                 "These will not be included in the results."
             ),
-        ) as _,
-    ):
-        abc_experiment._map_records_to_samples(
-            {
-                5.0: {0: 0.1, 1: 0.6, 3: 0.3},  # type: ignore[dict-item]
-                sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
-            }
-        )
+        ):
+            abc_experiment._map_records_to_samples(
+                {
+                    5.0: {0: 0.1, 1: 0.6, 3: 0.3},  # type: ignore[dict-item]
+                    sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
+                }
+            )
 
 
 def test_map_records_to_samples_duplicate_keys(
     abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
     abc_experiment.samples = sample_circuits
-    with (
-        pytest.warns(
-            UserWarning,
-            match=re.escape(
-                f"Duplicate records found for sample with uuid: {str(sample_circuits[1].uuid)}. "
-                "Skipping second record."
-            ),
-        ) as _,
-        pytest.warns(
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            f"Duplicate records found for sample with uuid: {str(sample_circuits[1].uuid)}. "
+            "Skipping second record."
+        ),
+    ):
+        with pytest.warns(
             UserWarning,
             match=(
                 f"The following samples are missing records: {sample_circuits[0].uuid}. "
                 "These will not be included in the results."
             ),
-        ) as _,
-    ):
-        abc_experiment._map_records_to_samples(
-            {
-                1: {0: 0.1, 1: 0.6, 3: 0.3},
-                sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
-            }
-        )
+        ):
+            abc_experiment._map_records_to_samples(
+                {
+                    1: {0: 0.1, 1: 0.6, 3: 0.3},
+                    sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
+                }
+            )
