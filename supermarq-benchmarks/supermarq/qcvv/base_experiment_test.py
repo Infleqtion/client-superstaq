@@ -714,7 +714,7 @@ def test_experiment_get_item(
         assert abc_experiment[str(sample_circuits[k].uuid)] == sample_circuits[k]
 
     with pytest.raises(TypeError, match="Key must be int, str or uuid.UUID"):
-        _ = abc_experiment[3.141]
+        _ = abc_experiment[3.141]  # type: ignore[index]
 
     with pytest.raises(
         KeyError, match=re.escape("No sample found with UUID b55adabc-39c4-4f7b-a84d-906adaf0897e")
@@ -738,7 +738,7 @@ def test_map_records_to_samples(
         0: {0: 0.1, 1: 0.6, 3: 0.3},
         sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
     }
-    mapped_samples = abc_experiment._map_records_to_samples(records)
+    mapped_samples = abc_experiment._map_records_to_samples(records)  # type: ignore[arg-type]
     assert mapped_samples == {
         sample_circuits[0]: {0: 0.1, 1: 0.6, 3: 0.3},
         sample_circuits[1]: {0: 4, 1: 6, 3: 2},
@@ -792,7 +792,7 @@ def test_map_records_to_samples_bad_key_type(
     ):
         abc_experiment._map_records_to_samples(
             {
-                5.0: {0: 0.1, 1: 0.6, 3: 0.3},
+                5.0: {0: 0.1, 1: 0.6, 3: 0.3},  # type: ignore[dict-item]
                 sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
             }
         )
