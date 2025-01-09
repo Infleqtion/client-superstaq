@@ -752,14 +752,14 @@ def test_map_records_to_samples_missing_key(
     with (
         pytest.warns(
             UserWarning, match="Could not find sample with key: `5`. Skipping this record."
-        ),
+        ) as _,
         pytest.warns(
             UserWarning,
             match=(
                 f"The following samples are missing records: {sample_circuits[0].uuid}. "
                 "These will not be included in the results."
             ),
-        ),
+        ) as _,
     ):
         abc_experiment._map_records_to_samples(
             {
@@ -781,14 +781,14 @@ def test_map_records_to_samples_bad_key_type(
                 "The key: `5.0` has an incompatible type (should be uuid.UUID or int). "
                 "Skipping this record."
             ),
-        ),
+        ) as _,
         pytest.warns(
             UserWarning,
             match=(
                 f"The following samples are missing records: {sample_circuits[0].uuid}. "
                 "These will not be included in the results."
             ),
-        ),
+        ) as _,
     ):
         abc_experiment._map_records_to_samples(
             {
@@ -809,14 +809,14 @@ def test_map_records_to_samples_duplicate_keys(
                 f"Duplicate records found for sample with uuid: {str(sample_circuits[1].uuid)}. "
                 "Skipping second record."
             ),
-        ),
+        ) as _,
         pytest.warns(
             UserWarning,
             match=(
                 f"The following samples are missing records: {sample_circuits[0].uuid}. "
                 "These will not be included in the results."
             ),
-        ),
+        ) as _,
     ):
         abc_experiment._map_records_to_samples(
             {
