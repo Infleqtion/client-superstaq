@@ -21,7 +21,6 @@ import re
 import uuid
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, call, patch
 
 import cirq
@@ -30,11 +29,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import supermarq.qcvv
-from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample, qcvv_resolver
-
-if TYPE_CHECKING:
-    from typing_extensions import Self
+from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
 
 mock_plot = MagicMock()
 mock_print = MagicMock()
@@ -72,7 +67,6 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
         cycle_depths: Iterable[int],
         *,
         random_seed: int | None = None,
-        _prepare_circuits: bool = True,
         **kwargs: str | bool,
     ) -> None:
         super().__init__(
@@ -81,7 +75,6 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
             cycle_depths,
             random_seed=random_seed,
             results_cls=ExampleResults,
-            _prepare_circuits=_prepare_circuits,
             **kwargs,
         )
 
@@ -93,31 +86,6 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
             for k in range(num_circuits)
             for d in cycle_depths
         ]
-
-    def _json_dict_(self) -> dict[str, Any]:
-        return super()._json_dict_()
-
-    @classmethod
-    def _from_json_dict_(
-        cls,
-        samples: str,
-        num_qubits: int,
-        num_circuits: int,
-        cycle_depths: list[int],
-        **kwargs: Any,
-    ) -> Self:
-        experiment = cls(
-            num_circuits=num_circuits,
-            num_qubits=num_qubits,
-            cycle_depths=cycle_depths,
-            _prepare_circuits=False,
-            **kwargs,
-        )
-        resolved_samples = cirq.read_json(
-            json_text=samples, resolvers=[*cirq.DEFAULT_RESOLVERS, qcvv_resolver]
-        )
-        experiment.samples = resolved_samples
-        return experiment
 
 
 @pytest.fixture
@@ -147,12 +115,6 @@ def sample_circuits() -> list[Sample]:
             circuit_index=2,
         ),
     ]
-
-
-def test_qcvv_resolver() -> None:
-    for attr in supermarq.qcvv.__all__:
-        assert qcvv_resolver(f"supermarq.qcvv.{attr}") == getattr(supermarq.qcvv, attr)
-    assert qcvv_resolver("bad_reference") is None
 
 
 def test_qcvv_experiment_init(
@@ -746,26 +708,3 @@ def test_canonicalize_probabilities_bad_input() -> None:
         match="Results values must either all be integer or all be float.",
     ):
         QCVVExperiment._canonicalize_probabilities({0: 4.0, 1: 5}, 2)
-
-
-def test_dump_and_load(
-    tmp_path_factory: pytest.TempPathFactory,
-    abc_experiment: ExampleExperiment,
-    sample_circuits: list[Sample],
-) -> None:
-    filename = tmp_path_factory.mktemp("tempdir") / "file.json"
-    abc_experiment.samples = sample_circuits
-    abc_experiment.to_file(filename)
-
-    with patch("supermarq.qcvv.base_experiment.qcvv_resolver") as mock_resolver:
-        temp_resolver = {
-            "supermarq.qcvv.Sample": Sample,
-            "supermarq.qcvv.ExampleExperiment": ExampleExperiment,
-        }
-        mock_resolver.side_effect = lambda x: temp_resolver.get(x)
-        exp = ExampleExperiment.from_file(filename)
-
-    assert exp.samples == abc_experiment.samples
-    assert exp.num_qubits == abc_experiment.num_qubits
-    assert exp.num_circuits == abc_experiment.num_circuits
-    assert exp.cycle_depths == abc_experiment.cycle_depths
