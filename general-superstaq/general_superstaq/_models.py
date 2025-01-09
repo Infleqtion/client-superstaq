@@ -171,7 +171,7 @@ class NewJob(DefaultPydanticModel):
     shots: int = pydantic.Field(default=0, ge=0)
     """Number of shots."""
     dry_run: bool = pydantic.Field(default=False)
-    """Flag for a dry-run"""
+    """Flag for a dry-run."""
     sim_method: SimMethod | None = pydantic.Field(default=None)
     """The simulation method to use. Only used on `simulation` jobs."""
     priority: int = pydantic.Field(default=0)
@@ -254,11 +254,11 @@ class UserInfo(DefaultPydanticModel):
     role: str
     """User role."""
     balance: float
-    """User balance"""
+    """User balance."""
     token: str
     """User API token."""
     user_id: uuid.UUID
-    """User id"""
+    """User id."""
 
 
 class UserQuery(DefaultPydanticModel):
@@ -305,14 +305,14 @@ class UpdateUserDetails(DefaultPydanticModel):
     role: str | None = pydantic.Field(None)
     """New user role."""
     balance: float | None = pydantic.Field(None)
-    """New user balance"""
+    """New user balance."""
 
 
 class TargetModel(DefaultPydanticModel):
     """Model for the details of a target."""
 
     target_name: str
-    """The target name"""
+    """The target name."""
     supports_submit: bool
     """Targets allow job submission."""
     supports_submit_qubo: bool
@@ -324,7 +324,9 @@ class TargetModel(DefaultPydanticModel):
     retired: bool
     """Target is retired."""
     simulator: bool
-    """Target is simulator"""
+    """Target is simulator."""
+    accessible: bool
+    """Target is accessible to user."""
 
 
 class GetTargetsFilterModel(DefaultPydanticModel):
@@ -342,6 +344,8 @@ class GetTargetsFilterModel(DefaultPydanticModel):
     """Include Superstaq targets that are/not currently available."""
     retired: bool = pydantic.Field(False)
     """Include Superstaq targets that are retired."""
+    accessible: bool = pydantic.Field(True)
+    """Include Superstaq targets that are/aren't accessible to the user."""
 
 
 class RetrieveTargetInfoModel(DefaultPydanticModel):

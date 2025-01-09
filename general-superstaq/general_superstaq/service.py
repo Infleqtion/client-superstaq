@@ -131,6 +131,7 @@ class Service:
         supports_compile: bool | None = None,
         available: bool | None = None,
         retired: bool | None = None,
+        accessible: bool | None = None,
         **kwargs: bool,
     ) -> list[gss.Target]:
         """Gets a list of Superstaq targets along with their status information.
@@ -146,6 +147,8 @@ class Service:
             available: Optional boolean flag to only return targets that are (not) available
                 to use.
             retired: Optional boolean flag to only return targets that are or are not retired.
+            accessible: Optional boolean flag to only return targets that are (not) accessible
+                to the user.
             kwargs: Any additional, supported flags to restrict/filter returned targets.
 
         Returns:
@@ -158,6 +161,7 @@ class Service:
             supports_compile=supports_compile,
             available=available,
             retired=retired,
+            accessible=accessible,
             **kwargs,
         )
         return self._client.get_targets(**filters)

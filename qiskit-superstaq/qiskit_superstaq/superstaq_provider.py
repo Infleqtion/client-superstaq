@@ -129,6 +129,7 @@ class SuperstaqProvider(gss.service.Service):
         supports_compile: bool | None = None,
         available: bool | None = None,
         retired: bool | None = None,
+        accessible: bool | None = None,
         **kwargs: bool,
     ) -> list[qss.SuperstaqBackend]:
         """Lists the backends available from this provider.
@@ -144,6 +145,8 @@ class SuperstaqProvider(gss.service.Service):
             available: Optional boolean flag to only return targets that are (not) available
                 to use.
             retired: Optional boolean flag to only return targets that are or are not retired.
+            accessible: Optional boolean flag to only return targets that are (not) accessible
+                to the user.
             kwargs: Any additional, supported flags to restrict/filter returned targets.
 
         Returns:
@@ -156,6 +159,7 @@ class SuperstaqProvider(gss.service.Service):
             supports_compile=supports_compile,
             available=available,
             retired=retired,
+            accessible=accessible,
             **kwargs,
         )
         targets = self._client.get_targets(**filters)
