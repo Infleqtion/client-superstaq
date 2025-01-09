@@ -602,31 +602,27 @@ def test_results_from_records_bad_input(
 
     # Warn for spurious records
     new_uuid = uuid.uuid4()
-    with (
-        pytest.warns(
-            UserWarning,
-            match=re.escape(f"Could not find sample with key: `{str(new_uuid)}`."),
-        ) as _,
-        pytest.warns(
-            UserWarning, match=re.escape("The following samples are missing records:")
-        ) as _,
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(f"Could not find sample with key: `{str(new_uuid)}`."),
     ):
-        abc_experiment.results_from_records({new_uuid: {"00": 10}})
+        with pytest.warns(
+            UserWarning, match=re.escape("The following samples are missing records:")
+        ):
+            abc_experiment.results_from_records({new_uuid: {"00": 10}})
 
     # Raise warning from canonicalizing probability
-    with (
-        pytest.warns(
-            UserWarning,
-            match=re.escape(
-                f"Processing sample {str(sample_circuits[0].uuid)} raised error. "
-                "Provided probabilities do not sum to 1.0. Got 0.6."
-            ),
-        ) as _,
-        pytest.warns(
-            UserWarning, match=re.escape("The following samples are missing records:")
-        ) as _,
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            f"Processing sample {str(sample_circuits[0].uuid)} raised error. "
+            "Provided probabilities do not sum to 1.0. Got 0.6."
+        ),
     ):
-        abc_experiment.results_from_records({sample_circuits[0].uuid: {"00": 0.6}})
+        with pytest.warns(
+            UserWarning, match=re.escape("The following samples are missing records:")
+        ):
+            abc_experiment.results_from_records({sample_circuits[0].uuid: {"00": 0.6}})
 
 
 def test_canonicalize_bitstring() -> None:
