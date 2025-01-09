@@ -20,6 +20,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, call, patch
 
 import cirq
@@ -28,10 +29,19 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
+from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample, qcvv_resolver
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 mock_plot = MagicMock()
 mock_print = MagicMock()
+
+
+def test_qcvv_resolver() -> None:
+    assert qcvv_resolver("bad_name") is None
+    assert qcvv_resolver("supermarq.qcvv.Sample") == Sample
+    assert qcvv_resolver("supermarq.qcvv.QCVVExperiment") == QCVVExperiment
 
 
 @dataclass
@@ -59,6 +69,26 @@ class ExampleResults(QCVVResults):
 class ExampleExperiment(QCVVExperiment[ExampleResults]):
     """Example experiment class for testing"""
 
+    def __init__(
+        self,
+        num_qubits: int,
+        num_circuits: int,
+        cycle_depths: Iterable[int],
+        *,
+        random_seed: int | None = None,
+        _prepare_circuits: bool = True,
+        **kwargs: str | bool,
+    ) -> None:
+        super().__init__(
+            num_qubits,
+            num_circuits,
+            cycle_depths,
+            random_seed=random_seed,
+            results_cls=ExampleResults,
+            _prepare_circuits=_prepare_circuits,
+            **kwargs,
+        )
+
     def _build_circuits(self, num_circuits: int, cycle_depths: Iterable[int]) -> Sequence[Sample]:
         return [
             Sample(
@@ -67,6 +97,31 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
             for k in range(num_circuits)
             for d in cycle_depths
         ]
+
+    def _json_dict_(self) -> dict[str, Any]:
+        return super()._json_dict_()
+
+    @classmethod
+    def _from_json_dict_(
+        cls,
+        samples: str,
+        num_qubits: int,
+        num_circuits: int,
+        cycle_depths: list[int],
+        **kwargs: Any,
+    ) -> Self:
+        experiment = cls(
+            num_circuits=num_circuits,
+            num_qubits=num_qubits,
+            cycle_depths=cycle_depths,
+            _prepare_circuits=False,
+            **kwargs,
+        )
+        resolved_samples = cirq.read_json(
+            json_text=samples, resolvers=[*cirq.DEFAULT_RESOLVERS, qcvv_resolver]
+        )
+        experiment.samples = resolved_samples
+        return experiment
 
 
 @pytest.fixture
@@ -77,7 +132,6 @@ def abc_experiment() -> ExampleExperiment:
             num_circuits=10,
             cycle_depths=[1, 3, 5],
             random_seed=42,
-            results_cls=ExampleResults,
             service_details="Some other details",
         )
 
@@ -132,7 +186,6 @@ def test_experiment_init_with_bad_layers() -> None:
             num_circuits=10,
             cycle_depths=[0],
             random_seed=42,
-            results_cls=ExampleResults,
             service_details="Some other details",
         )
 
@@ -587,3 +640,26 @@ def test_canonicalize_probabilities() -> None:
     ):
         p[0] = 0.0
         QCVVExperiment._canonicalize_probabilities(p, 2)
+
+
+def test_dump_and_load(
+    tmp_path_factory: pytest.TempPathFactory,
+    abc_experiment: ExampleExperiment,
+    sample_circuits: list[Sample],
+) -> None:
+    filename = tmp_path_factory.mktemp("tempdir") / "file.json"
+    abc_experiment.samples = sample_circuits
+    abc_experiment.to_file(filename)
+
+    with patch("supermarq.qcvv.base_experiment.qcvv_resolver") as mock_resolver:
+        temp_resolver = {
+            "supermarq.qcvv.Sample": Sample,
+            "supermarq.qcvv.ExampleExperiment": ExampleExperiment,
+        }
+        mock_resolver.side_effect = lambda x: temp_resolver.get(x)
+        exp = ExampleExperiment.from_file(filename)
+
+    assert exp.samples == abc_experiment.samples
+    assert exp.num_qubits == abc_experiment.num_qubits
+    assert exp.num_circuits == abc_experiment.num_circuits
+    assert exp.cycle_depths == abc_experiment.cycle_depths
