@@ -563,56 +563,48 @@ def test_results_collect_device_counts_no_job() -> None:
         results._collect_device_counts()
 
 
-def test_results_from_records(abc_experiment: ExampleExperiment) -> None:
-    samples = abc_experiment.samples
+def test_results_from_records(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
     # All accepted types
-    records_1 = {s.uuid: {"01": 1, "10": 3} for s in samples}
-    records_2 = {s.uuid: {"01": 0.25, "10": 0.75} for s in samples}
-    records_3 = {s.uuid: {1: 1, 2: 3} for s in samples}
-    records_4 = {s.uuid: {1: 0.25, 2: 0.75} for s in samples}
+    records_1 = {s.uuid: {"01": 1, "10": 3} for s in sample_circuits}
+    records_2 = {s.uuid: {"01": 0.25, "10": 0.75} for s in sample_circuits}
+    records_3 = {s.uuid: {1: 1, 2: 3} for s in sample_circuits}
+    records_4 = {s.uuid: {1: 0.25, 2: 0.75} for s in sample_circuits}
 
-    records_list: list[
-        dict[uuid.UUID, dict[str, float]]
-        | dict[uuid.UUID, dict[str, int]]
-        | dict[uuid.UUID, dict[int, float]]
-        | dict[uuid.UUID, dict[int, int]]
-    ] = [records_1, records_2, records_3, records_4]
+    records_list = [records_1, records_2, records_3, records_4]
 
     for record in records_list:
-        results = abc_experiment.results_from_records(record)
+        results = abc_experiment.results_from_records(record)  # type: ignore[arg-type]
         pd.testing.assert_frame_equal(
             results.data,
             pd.DataFrame(
-                [
-                    {"num": n, "depth": d, "00": 0.0, "01": 0.25, "10": 0.75, "11": 0.0}
-                    for n in range(10)
-                    for d in (1, 3, 5)
-                ]
+                [{"circuit": n + 1, "00": 0.0, "01": 0.25, "10": 0.75, "11": 0.0} for n in range(2)]
             ),
         )
 
 
-def test_results_from_records_bad_input(abc_experiment: ExampleExperiment) -> None:
-    samples = abc_experiment.samples
-    samples[0].uuid = uuid.UUID("0e9421da-3700-42e9-9281-a0e24cc0986c")
+def test_results_from_records_bad_input(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+    sample_circuits[0].uuid = uuid.UUID("0e9421da-3700-42e9-9281-a0e24cc0986c")
     # Warn for missing samples
     with pytest.warns(
         UserWarning,
         match=re.escape(
             "The following samples are missing records: "
-            f"{', '.join(str(s.uuid) for s in samples[1:])}"
+            f"{', '.join(str(s.uuid) for s in sample_circuits[1:])}"
         ),
     ):
-        abc_experiment.results_from_records({samples[0].uuid: {"00": 10}})
+        abc_experiment.results_from_records({sample_circuits[0].uuid: {"00": 10}})
 
     # Warn for spurious records
     new_uuid = uuid.uuid4()
     with pytest.warns(
         UserWarning,
-        match=re.escape(
-            "Records were provided with the following UUIDs which do not match"
-            f" any samples and will be ignored: {', '.join([str(new_uuid)])}"
-        ),
+        match=re.escape(f"Could not find sample with key: `{str(new_uuid)}`."),
     ) as _, pytest.warns(
         UserWarning, match=re.escape("The following samples are missing records:")
     ) as _:
@@ -622,13 +614,13 @@ def test_results_from_records_bad_input(abc_experiment: ExampleExperiment) -> No
     with pytest.warns(
         UserWarning,
         match=re.escape(
-            f"Processing sample {str(samples[0].uuid)} raised error. "
+            f"Processing sample {str(sample_circuits[0].uuid)} raised error. "
             "Provided probabilities do not sum to 1.0. Got 0.6."
         ),
     ) as _, pytest.warns(
         UserWarning, match=re.escape("The following samples are missing records:")
     ) as _:
-        abc_experiment.results_from_records({samples[0].uuid: {"00": 0.6}})
+        abc_experiment.results_from_records({sample_circuits[0].uuid: {"00": 0.6}})
 
 
 def test_canonicalize_bitstring() -> None:
@@ -708,3 +700,127 @@ def test_canonicalize_probabilities_bad_input() -> None:
         match="Results values must either all be integer or all be float.",
     ):
         QCVVExperiment._canonicalize_probabilities({0: 4.0, 1: 5}, 2)
+
+
+def test_experiment_get_item(
+    abc_experiment: ExampleExperiment,
+    sample_circuits: list[Sample],
+) -> None:
+    abc_experiment.samples = sample_circuits
+
+    for k, _ in enumerate(sample_circuits):
+        assert abc_experiment[k] == sample_circuits[k]
+        assert abc_experiment[sample_circuits[k].uuid] == sample_circuits[k]
+        assert abc_experiment[str(sample_circuits[k].uuid)] == sample_circuits[k]
+
+    with pytest.raises(TypeError, match="Key must be int, str or uuid.UUID"):
+        _ = abc_experiment[3.141]
+
+    with pytest.raises(
+        KeyError, match=re.escape("No sample found with UUID b55adabc-39c4-4f7b-a84d-906adaf0897e")
+    ):
+        _ = abc_experiment["b55adabc-39c4-4f7b-a84d-906adaf0897e"]
+
+    with pytest.raises(
+        RuntimeError, match="Multiple samples found with matching key. Something has gone wrong."
+    ):
+        # Manually set duplicate sample uuids
+        abc_experiment.samples[0].uuid = abc_experiment.samples[1].uuid
+        _ = abc_experiment[sample_circuits[0].uuid]
+
+
+def test_map_records_to_samples(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+
+    records = {
+        0: {0: 0.1, 1: 0.6, 3: 0.3},
+        sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
+    }
+    mapped_samples = abc_experiment._map_records_to_samples(records)
+    assert mapped_samples == {
+        sample_circuits[0]: {0: 0.1, 1: 0.6, 3: 0.3},
+        sample_circuits[1]: {0: 4, 1: 6, 3: 2},
+    }
+
+
+def test_map_records_to_samples_missing_key(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+    with (
+        pytest.warns(
+            UserWarning, match="Could not find sample with key: `5`. Skipping this record."
+        ),
+        pytest.warns(
+            UserWarning,
+            match=(
+                f"The following samples are missing records: {sample_circuits[0].uuid}. "
+                "These will not be included in the results."
+            ),
+        ),
+    ):
+        abc_experiment._map_records_to_samples(
+            {
+                5: {0: 0.1, 1: 0.6, 3: 0.3},
+                sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
+            }
+        )
+
+
+def test_map_records_to_samples_bad_key_type(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+    # Bad key type
+    with (
+        pytest.warns(
+            UserWarning,
+            match=re.escape(
+                "The key: `5.0` has an incompatible type (should be uuid.UUID or int). "
+                "Skipping this record."
+            ),
+        ),
+        pytest.warns(
+            UserWarning,
+            match=(
+                f"The following samples are missing records: {sample_circuits[0].uuid}. "
+                "These will not be included in the results."
+            ),
+        ),
+    ):
+        abc_experiment._map_records_to_samples(
+            {
+                5.0: {0: 0.1, 1: 0.6, 3: 0.3},
+                sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
+            }
+        )
+
+
+def test_map_records_to_samples_duplicate_keys(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+    with (
+        pytest.warns(
+            UserWarning,
+            match=re.escape(
+                f"Duplicate records found for sample with uuid: {str(sample_circuits[1].uuid)}. "
+                "Skipping second record."
+            ),
+        ),
+        pytest.warns(
+            UserWarning,
+            match=(
+                f"The following samples are missing records: {sample_circuits[0].uuid}. "
+                "These will not be included in the results."
+            ),
+        ),
+    ):
+        abc_experiment._map_records_to_samples(
+            {
+                1: {0: 0.1, 1: 0.6, 3: 0.3},
+                sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
+            }
+        )

@@ -16,12 +16,12 @@ from __future__ import annotations
 
 import functools
 import math
+import uuid
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence, Iterator
 from dataclasses import dataclass, field
 from typing import Any, Generic, TypeVar
-import uuid
 
 import cirq
 import cirq_superstaq as css
@@ -48,6 +48,16 @@ class Sample:
 
     uuid: uuid.UUID = field(default_factory=uuid.uuid1)
     """The unique ID of the sample."""
+
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self.circuit_index,
+                self.uuid,
+                cirq.to_json(self.circuit),
+                tuple(sorted(self.data.items())),
+            )
+        )
 
 
 @dataclass
@@ -261,6 +271,41 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         self.samples = self._prepare_experiment()
         """Create all the samples needed for the experiment."""
 
+    def __getitem__(self, key: str | int | uuid.UUID) -> Sample:
+        """Gets a sample from the experiment using a key which is either an int (representing the
+        index of the circuit) or a str/uuid.UUID (representing the sample's UUID).
+
+        Args:
+            key: The key of the sample to find.
+
+        Raises:
+            TypeError: If the key is not an int, str or uuid.UUID
+            KeyError: If matching Sample can be found
+            RuntimeError: If multiple samples are found with the same key.
+
+        Returns:
+            The sample corresponding to the key.
+        """
+        if isinstance(key, int):
+            return self.samples[key]
+        elif isinstance(key, str):
+            key = uuid.UUID(key)
+        elif not isinstance(key, uuid.UUID):
+            raise TypeError(f"Key must be int, str or uuid.UUID, not {type(key)}")
+
+        matching_samples = [s for s in self.samples if s.uuid == key]
+        if len(matching_samples) == 1:
+            return matching_samples[0]
+        elif len(matching_samples) == 0:
+            raise KeyError(f"No sample found with UUID {key}")
+        else:
+            raise RuntimeError(
+                "Multiple samples found with matching key. Something has gone wrong."
+            )
+
+    def __iter__(self) -> Iterator[Sample]:
+        return iter(self.samples)
+
     ##############
     # Properties #
     ##############
@@ -297,6 +342,114 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         """
 
     @staticmethod
+    def _canonicalize_bitstring(key: int | str, num_qubits: int) -> str:
+        """Checks that the provided key represents a bit string for the given number of qubits.
+        If the key is provided as an integer then this is reformatted as a bitstring.
+
+        Args:
+            key: The integer or string which represents a bitstring.
+            num_qubits: The number of bits that the bitstring needs to have
+
+        Raises:
+            ValueError: If the key is integer and negative
+            ValueError: If the key is integer but to large for the given number of qubits.
+            ValueError: If the key is a string but the wrong length.
+            ValueError: If the key is a string but contains characters that are not 0 or 1.
+
+        Returns:
+            The canonicalized representation of the bitstring.
+        """
+        if isinstance(key, int):
+            if key < 0:
+                raise ValueError(f"The key must be positive. Instead got {key}.")
+            if key >= 2**num_qubits:
+                raise ValueError(
+                    f"The key is too large to be encoded with {num_qubits} qubits. Got {key} "
+                    f"but expected less than {2**num_qubits}."
+                )
+            return format(key, f"0{num_qubits}b")
+
+        if isinstance(key, str):
+            if len(key) != num_qubits:
+                raise ValueError(
+                    f"The key contains the wrong number of bits. Got {len(key)} entries "
+                    f"but expected {num_qubits} bits."
+                )
+            if any(b not in ["0", "1"] for b in key):
+                raise ValueError(f"All entries in the bitstring must be 0 or 1. Got {key}.")
+            return key
+
+    @staticmethod
+    def _canonicalize_probabilities(
+        results: Mapping[str, float] | Mapping[int, float],
+        num_qubits: int,
+    ) -> dict[str, float]:
+        """Reformats a dictionary of probabilities/counts so that all keys are bitstrings and that
+        there are no missing values. Also sorts the dictionary by bitstring.
+
+        Args:
+            probabilities: The unformatted probabilities or counts
+            num_qubits: The number of qubits, used to determine the bitstring length.
+
+        Raises:
+            RuntimeError: If the probabilities do not sum to 1.
+            TypeError: If the results are not all integer or all float.
+            ValueError: If any counts or probabilities are negative.
+            ValueError: If there are no non-zero counts.
+
+        Returns:
+            The formatted dictionary of probabilities.
+        """
+        if all(isinstance(x, int) for x in results.values()):
+            # If all results are integer then check that all integers are strictly positive and that
+            # there is at least one non-zero count.
+            if any(c < 0 for c in results.values()):
+                raise ValueError("Counts must be positive.")
+            if sum(results.values()) == 0:
+                raise ValueError("No non-zero counts.")
+            probabilities = {
+                QCVVExperiment._canonicalize_bitstring(key, num_qubits): count
+                / sum(results.values())
+                for key, count in results.items()
+            }
+        elif all(isinstance(x, float) for x in results.values()):
+            # Check that values are not actually integers cast as float (except possibly 0 or 1)
+            if any(
+                (
+                    x.is_integer()
+                    # Mypy has not detected that in this context all values are float.
+                    & (x not in [0.0, 1.0])
+                )
+                for x in results.values()
+            ):
+                raise TypeError(
+                    "If providing counts please use integer type to distinguish from probabilities."
+                )
+
+            # If all results are float then check they are all positive and sum to 1.0
+            if any(c < 0 for c in results.values()):
+                raise ValueError("Probabilities must be positive.")
+            if not math.isclose(sum(results.values()), 1.0):
+                raise RuntimeError(
+                    f"Provided probabilities do not sum to 1.0. Got {sum(results.values())}."
+                )
+            probabilities = {
+                QCVVExperiment._canonicalize_bitstring(key, num_qubits): val
+                for key, val in results.items()
+            }
+        else:
+            raise TypeError("Results values must either all be integer or all be float.")
+
+        # Add zero values for any missing bitstrings
+        for k in range(2**num_qubits):
+            if (bitstring := format(k, f"0{num_qubits}b")) not in probabilities:
+                probabilities[bitstring] = 0.0
+        # Sort by bitstrings
+        probabilities = dict(sorted(probabilities.items()))
+
+        return probabilities
+
+    @staticmethod
     def _interleave_op(
         circuit: cirq.Circuit, operation: cirq.Operation, include_final: bool = False
     ) -> cirq.Circuit:
@@ -317,6 +470,56 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             [(k, operation) for k in range(len(circuit) - int(not include_final), 0, -1)]
         )
         return interleaved_circuit
+
+    def _map_records_to_samples(
+        self, records: Mapping[uuid.UUID | int, Mapping[str, float] | Mapping[int, float]]
+    ) -> dict[Sample, Mapping[str, float] | Mapping[int, float]]:
+        """Creates a mapping between experiment samples and the provided results records. Records
+        with unrecognized sample keys (which should be either an integer index or a UUID) are
+        ignored.
+
+        Args:
+            records: A mapping of sample keys (either an integer index or a UUID for the sample) to
+                the corresponding bitcount/probability results.
+
+        Returns:
+            A mapping between experiment samples and the provided results records
+        """
+        records_not_mapped = dict(records)
+
+        record_mapping: dict[Sample, Mapping[str, float] | Mapping[int, float]] = {}
+        for key, record in records.items():
+            try:
+                sample = self[key]
+            except (KeyError, IndexError):
+                warnings.warn(f"Could not find sample with key: `{key}`. Skipping this record.")
+                continue
+
+            except TypeError:
+                warnings.warn(
+                    f"The key: `{key}` has an incompatible type (should be uuid.UUID or int). "
+                    "Skipping this record."
+                )
+                continue
+
+            if sample in record_mapping:
+                warnings.warn(
+                    f"Duplicate records found for sample with uuid: {str(sample.uuid)}. Skipping "
+                    "second record."
+                )
+                continue
+            record_mapping[sample] = record
+            records_not_mapped.pop(key)
+
+        missing_samples = [s for s in self if s not in record_mapping]
+        if missing_samples:
+            warnings.warn(
+                "The following samples are missing records: "
+                f"{', '.join(str(s.uuid) for s in missing_samples)}. These will not be included in "
+                "the results."
+            )
+
+        return record_mapping
 
     def _prepare_experiment(
         self,
@@ -466,7 +669,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
     def results_from_records(
         self,
-        records: Mapping[uuid.UUID, Mapping[str, float] | Mapping[int, float]],
+        records: Mapping[uuid.UUID | int, Mapping[str, float] | Mapping[int, float]],
     ) -> ResultsT:
         """Creates a results object from records of the counts/probabilities for each sample
         circuit. This function is aimed at users who would like to use the QCVV framework to
@@ -474,9 +677,10 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         submitting a job to Superstaq.
 
         Args:
-            records: A dictionary of the counts/probabilities for each sample, indexed by the
-                sample UUID. The counts/probabilities for each sample should be provided as a
-                dictionary of integers or floats (respectively) indexed by either the bitstring or
+            records: A dictionary of the counts/probabilities for each sample, keyed by either the
+                sample UUID or the index of the sample in the experiment. The counts/probabilities
+                for each sample should be provided as a
+                dictionary of integers or floats (respectively) keyed by either the bitstring or
                 the integer value of that bitstring. Note that the distinction between counts and
                 probabilities is inferred from the type (int vs float respectively). Please do not
                 use float type for counts.
@@ -484,28 +688,10 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Returns:
             The experiment results object.
         """
-        # First check for any missing or spurious records
-        expected_uuids = [s.uuid for s in self.samples]
-        received_uuids = [u for u in records.keys()]
-
-        missing_uuids = [str(u) for u in expected_uuids if u not in received_uuids]
-        if missing_uuids:
-            warnings.warn(f"The following samples are missing records: {', '.join(missing_uuids)}")
-        spurious_uuids = [str(u) for u in received_uuids if u not in expected_uuids]
-        if spurious_uuids:
-            warnings.warn(
-                "Records were provided with the following UUIDs which do not match"
-                f" any samples and will be ignored: {', '.join(spurious_uuids)}"
-            )
+        sample_mapping = self._map_records_to_samples(records)
 
         results_data = []
-        samples_dict = {s.uuid: s for s in self.samples}
-        for uid, results in records.items():
-            # Skip the records if the UUID is not recognized.
-            if uid not in samples_dict:
-                break
-            sample = samples_dict[uid]
-            # Attempt to canonicalize the results. If unsuccessful warn and skip record.
+        for sample, results in sample_mapping.items():
             try:
                 probabilities = self._canonicalize_probabilities(
                     results,
@@ -523,111 +709,3 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             experiment=self,
             data=pd.DataFrame(results_data),
         )
-
-    @staticmethod
-    def _canonicalize_bitstring(key: int | str, num_qubits: int) -> str:
-        """Checks that the provided key represents a bit string for the given number of qubits.
-        If the key is provided as an integer then this is reformatted as a bitstring.
-
-        Args:
-            key: The integer or string which represents a bitstring.
-            num_qubits: The number of bits that the bitstring needs to have
-
-        Raises:
-            ValueError: If the key is integer and negative
-            ValueError: If the key is integer but to large for the given number of qubits.
-            ValueError: If the key is a string but the wrong length.
-            ValueError: If the key is a string but contains characters that are not 0 or 1.
-
-        Returns:
-            The canonicalized representation of the bitstring.
-        """
-        if isinstance(key, int):
-            if key < 0:
-                raise ValueError(f"The key must be positive. Instead got {key}.")
-            if key >= 2**num_qubits:
-                raise ValueError(
-                    f"The key is too large to be encoded with {num_qubits} qubits. Got {key} "
-                    f"but expected less than {2**num_qubits}."
-                )
-            return format(key, f"0{num_qubits}b")
-
-        if isinstance(key, str):
-            if len(key) != num_qubits:
-                raise ValueError(
-                    f"The key contains the wrong number of bits. Got {len(key)} entries "
-                    f"but expected {num_qubits} bits."
-                )
-            if any(b not in ["0", "1"] for b in key):
-                raise ValueError(f"All entries in the bitstring must be 0 or 1. Got {key}.")
-            return key
-
-    @staticmethod
-    def _canonicalize_probabilities(
-        results: Mapping[str, float] | Mapping[int, float],
-        num_qubits: int,
-    ) -> dict[str, float]:
-        """Reformats a dictionary of probabilities/counts so that all keys are bitstrings and that
-        there are no missing values. Also sorts the dictionary by bitstring.
-
-        Args:
-            probabilities: The unformatted probabilities or counts
-            num_qubits: The number of qubits, used to determine the bitstring length.
-
-        Raises:
-            RuntimeError: If the probabilities do not sum to 1.
-            TypeError: If the results are not all integer or all float.
-            ValueError: If any counts or probabilities are negative.
-            ValueError: If there are no non-zero counts.
-
-        Returns:
-            The formatted dictionary of probabilities.
-        """
-        if all(isinstance(x, int) for x in results.values()):
-            # If all results are integer then check that all integers are strictly positive and that
-            # there is at least one non-zero count.
-            if any(c < 0 for c in results.values()):
-                raise ValueError("Counts must be positive.")
-            if sum(results.values()) == 0:
-                raise ValueError("No non-zero counts.")
-            probabilities = {
-                QCVVExperiment._canonicalize_bitstring(key, num_qubits): count
-                / sum(results.values())
-                for key, count in results.items()
-            }
-        elif all(isinstance(x, float) for x in results.values()):
-            # Check that values are not actually integers cast as float (except possibly 0 or 1)
-            if any(
-                (
-                    x.is_integer()
-                    # Mypy has not detected that in this context all values are float.
-                    & (x not in [0.0, 1.0])
-                )
-                for x in results.values()
-            ):
-                raise TypeError(
-                    "If providing counts please use integer type to distinguish from probabilities."
-                )
-
-            # If all results are float then check they are all positive and sum to 1.0
-            if any(c < 0 for c in results.values()):
-                raise ValueError("Probabilities must be positive.")
-            if not math.isclose(sum(results.values()), 1.0):
-                raise RuntimeError(
-                    f"Provided probabilities do not sum to 1.0. Got {sum(results.values())}."
-                )
-            probabilities = {
-                QCVVExperiment._canonicalize_bitstring(key, num_qubits): val
-                for key, val in results.items()
-            }
-        else:
-            raise TypeError("Results values must either all be integer or all be float.")
-
-        # Add zero values for any missing bitstrings
-        for k in range(2**num_qubits):
-            if (bitstring := format(k, f"0{num_qubits}b")) not in probabilities:
-                probabilities[bitstring] = 0.0
-        # Sort by bitstrings
-        probabilities = dict(sorted(probabilities.items()))
-
-        return probabilities
