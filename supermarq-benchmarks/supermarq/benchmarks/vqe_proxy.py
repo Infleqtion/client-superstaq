@@ -46,7 +46,7 @@ class VQEProxy(supermarq.benchmark.Benchmark):
         hamiltonian.append(("ZZ", (self.num_qubits - 1, 0), 1))
         return hamiltonian
 
-    def _gen_ansatz(self, params: npt.NDArray[np.float_]) -> list[cirq.Circuit]:
+    def _gen_ansatz(self, params: npt.NDArray[np.float64]) -> list[cirq.Circuit]:
         qubits = cirq.LineQubit.range(self.num_qubits)
         z_circuit = cirq.Circuit()
 
@@ -117,8 +117,8 @@ class VQEProxy(supermarq.benchmark.Benchmark):
 
         return avg_energy
 
-    def _get_opt_angles(self) -> tuple[npt.NDArray[np.float_], float]:
-        def f(params: npt.NDArray[np.float_]) -> float:
+    def _get_opt_angles(self) -> tuple[npt.NDArray[np.float64], float]:
+        def f(params: npt.NDArray[np.float64]) -> float:
             """The objective function to minimize.
 
             Args:
@@ -141,7 +141,7 @@ class VQEProxy(supermarq.benchmark.Benchmark):
 
         return out["x"], out["fun"]
 
-    def _gen_angles(self) -> npt.NDArray[np.float_]:
+    def _gen_angles(self) -> npt.NDArray[np.float64]:
         """Classically simulate the variational optimization and return
         the final parameters.
         """

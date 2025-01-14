@@ -66,7 +66,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     def _num_qubits_(self) -> int:
         return 2
 
-    def _unitary_(self) -> npt.NDArray[np.complex_] | None:
+    def _unitary_(self) -> npt.NDArray[np.complex128] | None:
         if self._is_parameterized_():
             return None
         return np.array(
@@ -126,7 +126,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     def _has_unitary_(self) -> bool:
         return not self._is_parameterized_()
 
-    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex_]:
+    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex128]:
         zo = args.subspace_index(0b01)
         oz = args.subspace_index(0b10)
         args.available_buffer[zo] = args.target_tensor[zo]
@@ -184,7 +184,7 @@ class ZXPowGate(cirq.EigenGate):
 
     """
 
-    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float64]]]:
         return [
             (
                 0.0,
@@ -652,7 +652,7 @@ def parallel_gates_operation(*ops: cirq.Operation) -> cirq.Operation:
         ops: Operations to pack into a single `ParallelGates` operation.
 
     Returns:
-        ParallelGates(op.gate, op2.gate, ...).on(*op.qubits, *op2.qubits, ...)
+        `ParallelGates(op.gate, op2.gate, ...).on(*op.qubits, *op2.qubits, ...)`
 
     Raises:
         ValueError: If the operation has no `.gate` attribute.
@@ -870,22 +870,27 @@ class IXGate(cirq.XPowGate):
         return cls()
 
 
-CR = ZX = ZXPowGate()  # standard CR is a full turn of ZX, i.e. exponent = 1
+# (Sphinx doesn't like double = on one line)
+ZX = ZXPowGate()
+CR = ZX  # standard CR is a full turn of ZX, i.e. exponent = 1
 
 IX = IXGate()
 
 # iToffoli gate
 ICCX = IX.controlled(2, [1, 1])
 
+
 # Open-control iToffoli gate
-AQTICCX = AQTITOFFOLI = IX.controlled(2, [0, 0])
+# (Sphinx doesn't like double = on one line)
+AQTITOFFOLI = IX.controlled(2, [0, 0])
+AQTICCX = AQTITOFFOLI
 
 
 @cirq.value_equality(approximate=True)
 class StrippedCZGate(cirq.Gate):
     """The Stripped CZ gate is a regular CZ gate when the rz angle = 0.
 
-    It is the gate that is actually being performed by Sqorpius, and it is corrected
+    It is the gate that is actually being performed by Sqale, and it is corrected
     into a CZ gate by RZ gates afterwards if the rz angle is nonzero.
     """
 
@@ -909,7 +914,7 @@ class StrippedCZGate(cirq.Gate):
     def _num_qubits_(self) -> int:
         return 2
 
-    def _unitary_(self) -> npt.NDArray[np.complex_] | None:
+    def _unitary_(self) -> npt.NDArray[np.complex128] | None:
         if self._is_parameterized_():
             return None
         return np.diag(
@@ -985,7 +990,7 @@ class StrippedCZGate(cirq.Gate):
 class DDPowGate(cirq.EigenGate):
     r"""The Dipole-Dipole gate for EeroQ hardware"""
 
-    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float64]]]:
         return [
             (
                 -0.5,

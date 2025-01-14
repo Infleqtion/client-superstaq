@@ -228,6 +228,38 @@ def test_service_get_targets(_mock_get_request: mock.MagicMock) -> None:
 
 
 @mock.patch(
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
+    return_value={
+        "superstaq_targets": {
+            "ss_unconstrained_simulator": {
+                "supports_submit": True,
+                "supports_submit_qubo": True,
+                "supports_compile": True,
+                "available": True,
+                "retired": False,
+                "accessible": True,
+            }
+        }
+    },
+)
+def test_service_get_my_targets(_mock_post_request: mock.MagicMock) -> None:
+    service = gss.service.Service(api_key="key", remote_host="http://example.com")
+    assert service.get_my_targets() == [
+        gss.typing.Target(
+            target="ss_unconstrained_simulator",
+            **{
+                "supports_submit": True,
+                "supports_submit_qubo": True,
+                "supports_compile": True,
+                "available": True,
+                "retired": False,
+                "accessible": True,
+            },
+        )
+    ]
+
+
+@mock.patch(
     "general_superstaq.superstaq_client._SuperstaqClient.aqt_get_configs",
     return_value={"pulses": "Hello", "variables": "World"},
 )

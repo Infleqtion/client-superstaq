@@ -1,0 +1,3 @@
+pyportfolioopt>=1.5.3
+qubovert>=1.2.5
+yfinance>=0.2.17

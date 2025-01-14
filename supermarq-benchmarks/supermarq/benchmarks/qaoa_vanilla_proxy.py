@@ -27,8 +27,10 @@ class QAOAVanillaProxy(Benchmark):
 
     When a new instance of this benchmark is created, the ansatz parameters will
     be initialized by:
-        1. Generating a random instance of an SK graph
-        2. Finding approximately optimal angles (rather than random values)
+
+    #. Generating a random instance of an SK graph
+
+    #. Finding approximately optimal angles (rather than random values)
     """
 
     def __init__(self, num_qubits: int) -> None:
@@ -94,12 +96,12 @@ class QAOAVanillaProxy(Benchmark):
             expectation_value += probability * self._get_energy_for_bitstring(bitstring)
         return expectation_value
 
-    def _get_opt_angles(self) -> tuple[npt.NDArray[np.float_], float]:
-        def f(params: npt.NDArray[np.float_]) -> float:
+    def _get_opt_angles(self) -> tuple[npt.NDArray[np.float64], float]:
+        def f(params: npt.NDArray[np.float64]) -> float:
             """The objective function to minimize.
 
             Args:
-                params: parameters for objective.
+                params: The parameters at which to evaluate the objective.
 
             Returns:
                 Evaluation of objective given parameters.
@@ -116,7 +118,7 @@ class QAOAVanillaProxy(Benchmark):
 
         return out["x"], out["fun"]
 
-    def _gen_angles(self) -> npt.NDArray[np.float_]:
+    def _gen_angles(self) -> npt.NDArray[np.float64]:
         # Classically simulate the variational optimization 5 times,
         # return the parameters from the best performing simulation
         best_params, best_cost = np.zeros(2), 0.0
@@ -135,7 +137,7 @@ class QAOAVanillaProxy(Benchmark):
         the classical simulation scalable.
 
         Returns:
-            The S-K model QAOA circuit.
+            The S-K model QAOA `cirq.Circuit`.
         """
         gamma, beta = self.params
         return self._gen_ansatz(gamma, beta)
@@ -147,10 +149,10 @@ class QAOAVanillaProxy(Benchmark):
         principle be done efficiently via https://arxiv.org/abs/1706.02998, so we're good.
 
         Args:
-            counts: A dictionary containing measurement counts from circuit execution.
+            counts: A dictionary containing the measurement counts from circuit execution.
 
         Returns:
-            The QAOA Vanilla proxy benchmark score.
+            The QAOA proxy benchmark score.
         """
         ideal_counts = supermarq.simulation.get_ideal_counts(self.circuit())
         total_shots = sum(counts.values())

@@ -532,6 +532,69 @@ def test_superstaq_client_get_targets(mock_post: mock.MagicMock) -> None:
     )
     response = client.get_targets()
     assert response == RETURNED_TARGETS
+    mock_post.assert_called_once_with(
+        f"http://example.com/{API_VERSION}/targets",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+        json={},
+    )
+
+    response = client.get_targets(simulator=True)
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/targets",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+        json={"simulator": True},
+    )
+
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        ibmq_token="token",
+    )
+    response = client.get_targets(simulator=True)
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/targets",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+        json={"simulator": True, "options": json.dumps({"ibmq_token": "token"})},
+    )
+
+
+@mock.patch("requests.Session.post")
+def test_superstaq_client_get_my_targets(mock_post: mock.MagicMock) -> None:
+    mock_post.return_value.ok = True
+    target = {
+        "ss_unconstrained_simulator": {
+            "supports_submit": True,
+            "supports_submit_qubo": True,
+            "supports_compile": True,
+            "available": True,
+            "retired": False,
+            "accessible": True,
+        }
+    }
+    mock_post.return_value.json.return_value = {"superstaq_targets": target}
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        ibmq_token="token",
+    )
+    response = client.get_my_targets()
+    assert response == [
+        gss.typing.Target(
+            target="ss_unconstrained_simulator",
+            **target["ss_unconstrained_simulator"],
+        )
+    ]
+    mock_post.assert_called_once_with(
+        f"http://example.com/{API_VERSION}/targets",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+        json={"accessible": True, "options": json.dumps({"ibmq_token": "token"})},
+    )
 
 
 @mock.patch("requests.Session.post")

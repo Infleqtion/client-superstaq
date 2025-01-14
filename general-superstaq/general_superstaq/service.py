@@ -89,7 +89,7 @@ class Service:
             balance: The new balance.
 
         Raises:
-            SuperstaqException: If requested balance exceeds the limit.
+            superstaq.SuperstaqException: If requested balance exceeds the limit.
 
         Returns:
             String containing status of update (whether or not it failed).
@@ -131,6 +131,7 @@ class Service:
         supports_compile: bool | None = None,
         available: bool | None = None,
         retired: bool | None = None,
+        accessible: bool | None = None,
         **kwargs: bool,
     ) -> list[gss.Target]:
         """Gets a list of Superstaq targets along with their status information.
@@ -146,6 +147,8 @@ class Service:
             available: Optional boolean flag to only return targets that are (not) available
                 to use.
             retired: Optional boolean flag to only return targets that are or are not retired.
+            accessible: Optional boolean flag to only return targets that are (not) accessible
+                to the user.
             kwargs: Any additional, supported flags to restrict/filter returned targets.
 
         Returns:
@@ -158,9 +161,19 @@ class Service:
             supports_compile=supports_compile,
             available=available,
             retired=retired,
+            accessible=accessible,
             **kwargs,
         )
         return self._client.get_targets(**filters)
+
+    def get_my_targets(self) -> list[gss.Target]:
+        """Gets a list of Superstaq targets that the user can submit to and are available along
+        with their status information.
+
+        Returns:
+            A list of Superstaq targets that the user can currently submit to.
+        """
+        return self._client.get_my_targets()
 
     @overload
     def get_user_info(self) -> dict[str, str | float]: ...
@@ -437,7 +450,7 @@ class Service:
 
         Raises:
             ValueError: If the target or noise model are not valid.
-            SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
         noise_dict: dict[str, object] = {}
         if noise:

@@ -26,6 +26,7 @@ def provider() -> qss.SuperstaqProvider:
 
 def test_backends(provider: qss.SuperstaqProvider) -> None:
     result = provider.get_targets()
+    filtered_result = provider.get_my_targets()
     ibmq_backend_info = gss.typing.Target(
         target="ibmq_brisbane_qpu",
         supports_submit=True,
@@ -33,10 +34,12 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
         supports_compile=True,
         available=True,
         retired=False,
+        accessible=True,
     )
     assert ibmq_backend_info in result
     assert provider.get_backend("ibmq_brisbane_qpu").name == "ibmq_brisbane_qpu"
     assert len(provider.backends()) == len(result)
+    assert all(target in result for target in filtered_result)
 
 
 def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
@@ -257,7 +260,7 @@ def test_aces(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     assert len(result) == 18
 
 
-@pytest.mark.parametrize("target", ["cq_sqorpius_simulator", "aws_sv1_simulator"])
+@pytest.mark.parametrize("target", ["cq_sqale_simulator", "aws_sv1_simulator"])
 def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2, 2)
     qc.x(0)
@@ -294,14 +297,14 @@ def test_submit_dry_run(target: str, provider: qss.SuperstaqProvider) -> None:
     assert multi_job.result(1).get_counts() == {"10": 1}
 
 
-@pytest.mark.skip(reason="Can't be executed when Sqorpius is set to not accept jobs")
-def test_submit_to_sqorpius_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
+@pytest.mark.skip(reason="Can't be executed when Sqale is set to not accept jobs")
+def test_submit_to_sqale_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776
 
     Args:
         provider: qiskit_superstaq instance from the fixture.
     """
-    backend = provider.get_backend("cq_sqorpius_qpu")
+    backend = provider.get_backend("cq_sqale_qpu")
 
     num_qubits = backend.num_qubits
 

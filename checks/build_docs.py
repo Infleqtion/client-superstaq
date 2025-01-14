@@ -9,11 +9,5 @@ if __name__ == "__main__":
     exit(
         checks.build_docs.run(
             *sys.argv[1:],
-            sphinx_paths=[
-                "../cirq-superstaq",
-                "../qiskit-superstaq",
-                "../general-superstaq",
-                "../supermarq-benchmarks",
-            ],
         )
     )
