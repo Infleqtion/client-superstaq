@@ -15,34 +15,66 @@
 
 from __future__ import annotations
 
-import warnings
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
 import cirq
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import seaborn as sns
 from matplotlib.ticker import MaxNLocator
 from scipy.stats import linregress
 from tqdm.contrib.itertools import product
 
-from supermarq.qcvv.base_experiment import BenchmarkingExperiment, BenchmarkingResults, Sample
+from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
 
 
-@dataclass(frozen=True)
-class SU2Results(BenchmarkingResults):
+@dataclass
+class SU2Results(QCVVResults):
     """Data structure for the SU2 experiment results."""
 
-    two_qubit_gate_fidelity: float
-    """Estimated two qubit gate fidelity"""
-    two_qubit_gate_fidelity_std: float
-    """Standard deviation of the two qubit gate fidelity estimate"""
-    single_qubit_noise: float
-    single_qubit_noise_std: float
-
     experiment_name = "SU2"
+
+    _two_qubit_gate_fidelity: float | None = None
+    """Estimated two qubit gate fidelity"""
+    _two_qubit_gate_fidelity_std: float | None = None
+    """Standard deviation of the two qubit gate fidelity estimate"""
+    _single_qubit_noise: float | None = None
+    """Estimated single qubit noise."""
+    _single_qubit_noise_std: float | None = None
+    """Standard deviation of the single qubit noise estimate"""
+
+    @property
+    def two_qubit_gate_fidelity(self) -> float:
+        """Returns:
+        Estimated two qubit gate fidelity."""
+        if self._two_qubit_gate_fidelity is None:
+            raise self._not_analyzed
+        return self._two_qubit_gate_fidelity
+
+    @property
+    def two_qubit_gate_fidelity_std(self) -> float:
+        """Returns:
+        Standard deviation of estimated two qubit gate fidelity."""
+        if self._two_qubit_gate_fidelity_std is None:
+            raise self._not_analyzed
+        return self._two_qubit_gate_fidelity_std
+
+    @property
+    def single_qubit_noise(self) -> float:
+        """Returns:
+        Estimated single qubit noise."""
+        if self._single_qubit_noise is None:
+            raise self._not_analyzed
+        return self._single_qubit_noise
+
+    @property
+    def single_qubit_noise_std(self) -> float:
+        """Returns:
+        Standard deviation of estimated single qubit noise."""
+        if self._single_qubit_noise_std is None:
+            raise self._not_analyzed
+        return self._single_qubit_noise_std
 
     @property
     def two_qubit_gate_error(self) -> float:
@@ -59,8 +91,77 @@ class SU2Results(BenchmarkingResults):
         """
         return self.two_qubit_gate_fidelity_std
 
+    def plot_results(self) -> None:
+        """Plot the results of the experiment
 
-class SU2(BenchmarkingExperiment[SU2Results]):
+        Raises:
+            RuntimeError: If there is no data to plot.
+        """
+
+        if self.data is None:
+            raise RuntimeError("No data stored. Cannot plot results.")
+
+        _, ax = plt.subplots()
+        sns.scatterplot(
+            data=self.data.drop(columns="circuit_index").melt(
+                id_vars="num_two_qubit_gates", var_name="state", value_name="prob"
+            ),
+            x="num_two_qubit_gates",
+            y="prob",
+            hue="state",
+            hue_order=["00", "01", "10", "11"],
+            style="state",
+            ax=ax,
+        )
+        ax.plot(
+            xx := self.data["num_two_qubit_gates"],
+            3 / 4 * (1 - self.single_qubit_noise) * self.two_qubit_gate_fidelity**xx + 0.25,
+            label="00 (fit)",
+        )
+        ax.set_xlabel("Number of two qubit gates")
+        ax.set_ylabel("State probability")
+        ax.legend(title="State")
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+
+    def _analyze(self) -> None:
+        """Perform the experiment analysis and store the results in the `results` attribute.
+
+        Args:
+            plot_results: Whether to generate plots of the results. Defaults to False.
+
+        Returns:
+            A named tuple of the final results from the experiment.
+        """
+        if self.data is None:
+            raise RuntimeError("No data stored. Cannot perform analysis.")
+
+        fit = linregress(
+            x=self.data["num_two_qubit_gates"],
+            y=np.log(4 / 3 * (self.data["00"] - 1 / 4)),
+            # Scale the y coordinate to account for limit of the decay being 1/4
+        )
+        gate_fid = np.exp(fit.slope)
+        gate_fid_std = fit.stderr * gate_fid
+
+        single_qubit_noise = 1 - np.exp(fit.intercept)
+        single_qubit_noise_std = fit.intercept_stderr * (1 - single_qubit_noise)
+
+        # Save results
+        self._two_qubit_gate_fidelity = gate_fid
+        self._two_qubit_gate_fidelity_std = gate_fid_std
+        self._single_qubit_noise = single_qubit_noise
+        self._single_qubit_noise_std = single_qubit_noise_std
+
+    def print_results(self) -> None:
+        print(
+            f"Estimated two qubit gate fidelity: {self.two_qubit_gate_fidelity:.5} "
+            f"+/- {self.two_qubit_gate_error_std:.5}\n"
+            f"Estimated single qubit noise: {self.single_qubit_noise:.5} "
+            f"+/- {self.single_qubit_noise_std:.5}\n"
+        )
+
+
+class SU2(QCVVExperiment[SU2Results]):
     r"""SU2 benchmarking experiment.
 
     SU2 benchmarking extracts the fidelity of a given two qubit gate, even in the presence of
@@ -80,26 +181,36 @@ class SU2(BenchmarkingExperiment[SU2Results]):
     the number of two qubit gates included. Note that all circuits contain a fixed number of single
     qubit gates, so that the contribution for single qubit noise is constant.
 
-    See Fig. 3 of :ref:`https://www.nature.com/articles/s41586-023-06481-y#Fig3` for further
+    See Fig. 3 of https://www.nature.com/articles/s41586-023-06481-y#Fig3 for further
     details.
     """
 
     def __init__(
         self,
+        num_circuits: int,
+        cycle_depths: Iterable[int],
         two_qubit_gate: cirq.Gate = cirq.CZ,
+        *,
+        random_seed: int | np.random.Generator | None = None,
     ) -> None:
         """Args:
         two_qubit_gate: The Clifford gate to measure the gate error of.
         num_qubits: The number of qubits to experiment on. Must equal 2.
         """
-        super().__init__(num_qubits=2)
-
         if two_qubit_gate.num_qubits() != 2:
             raise ValueError(
                 "The `two_qubit_gate` parameter must be a gate that acts on exactly two qubits."
             )
         self.two_qubit_gate = two_qubit_gate
         """The two qubit gate to be benchmarked"""
+
+        super().__init__(
+            num_qubits=2,
+            num_circuits=num_circuits,
+            cycle_depths=cycle_depths,
+            random_seed=random_seed,
+            results_cls=SU2Results,
+        )
 
     def _build_circuits(
         self,
@@ -120,7 +231,7 @@ class SU2(BenchmarkingExperiment[SU2Results]):
         """
         samples = []
         max_depth = max(cycle_depths)
-        for depth, _ in product(cycle_depths, range(num_circuits), desc="Building circuits"):
+        for depth, index in product(cycle_depths, range(num_circuits), desc="Building circuits"):
             circuit = cirq.Circuit(
                 *[self._component(include_two_qubit_gate=True) for _ in range(depth)],
                 *[self._component(include_two_qubit_gate=False) for _ in range(max_depth - depth)],
@@ -137,72 +248,12 @@ class SU2(BenchmarkingExperiment[SU2Results]):
 
             circuit += cirq.measure(sorted(circuit.all_qubits()))
 
-            samples.append(Sample(raw_circuit=circuit, data={"num_two_qubit_gates": 2 * depth}))
-        return samples
-
-    def _process_probabilities(self, samples: Sequence[Sample]) -> pd.DataFrame:
-        """Processes the probabilities generated by sampling the circuits into a data frame
-        needed for analyzing the results.
-
-        Args:
-            samples: The list of samples to process the results from.
-
-        Returns:
-            A data frame of the full results needed to analyse the experiment.
-        """
-        records = []
-        missing_count = 0
-        for sample in samples:
-            if sample.probabilities is not None:
-                records.append(
-                    {
-                        "num_two_qubit_gates": sample.data["num_two_qubit_gates"],
-                        **sample.probabilities,
-                    }
+            samples.append(
+                Sample(
+                    circuit_index=index, circuit=circuit, data={"num_two_qubit_gates": 2 * depth}
                 )
-            else:
-                missing_count += 1
-        if missing_count > 0:
-            warnings.warn(
-                f"{missing_count} sample(s) are missing probabilities. "
-                "These samples have been omitted."
             )
-
-        return pd.DataFrame(records)
-
-    def analyze_results(self, plot_results: bool = True) -> SU2Results:
-        """Perform the experiment analysis and store the results in the `results` attribute.
-
-        Args:
-            plot_results: Whether to generate plots of the results. Defaults to False.
-
-        Returns:
-            A named tuple of the final results from the experiment.
-        """
-        fit = linregress(
-            x=self.raw_data["num_two_qubit_gates"],
-            y=np.log(self.raw_data["00"] - 1 / 4),
-            # Scale the y coordinate to account for limit of the decay being 1/4
-        )
-        gate_fid = np.exp(fit.slope)
-        gate_fid_std = fit.stderr * gate_fid
-
-        single_qubit_noise = 1 - 4 / 3 * np.exp(fit.intercept)
-        single_qubit_noise_std = fit.intercept_stderr * (1 - single_qubit_noise)
-
-        self._results = SU2Results(
-            target="& ".join(self.targets),
-            total_circuits=len(self.samples),
-            two_qubit_gate_fidelity=gate_fid,
-            two_qubit_gate_fidelity_std=gate_fid_std,
-            single_qubit_noise=single_qubit_noise,
-            single_qubit_noise_std=single_qubit_noise_std,
-        )
-
-        if plot_results:
-            self.plot_results()
-
-        return self.results
+        return samples
 
     @staticmethod
     def _haar_random_rotation() -> cirq.Gate:
@@ -254,28 +305,3 @@ class SU2(BenchmarkingExperiment[SU2Results]):
                 else []
             ),
         )
-
-    def plot_results(self) -> None:
-        """Plot the results of the experiment"""
-        _, ax = plt.subplots()
-        sns.scatterplot(
-            data=self.raw_data.melt(
-                id_vars="num_two_qubit_gates", var_name="state", value_name="prob"
-            ),
-            x="num_two_qubit_gates",
-            y="prob",
-            hue="state",
-            hue_order=["00", "01", "10", "11"],
-            style="state",
-            ax=ax,
-        )
-        ax.plot(
-            xx := self.raw_data["num_two_qubit_gates"],
-            3 / 4 * (1 - self.results.single_qubit_noise) * self.results.two_qubit_gate_fidelity**xx
-            + 0.25,
-            label="00 (fit)",
-        )
-        ax.set_xlabel("Number of two qubit gates")
-        ax.set_ylabel("State probability")
-        ax.legend(title="State")
-        ax.xaxis.set_major_locator(MaxNLocator(integer=True))

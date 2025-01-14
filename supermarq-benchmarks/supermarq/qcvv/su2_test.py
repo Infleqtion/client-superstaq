@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 import textwrap
 from unittest.mock import MagicMock, patch
@@ -26,7 +27,7 @@ import cirq
 import pandas as pd
 import pytest
 
-from supermarq.qcvv import SU2, Sample
+from supermarq.qcvv import SU2, SU2Results
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -36,9 +37,11 @@ def patch_tqdm() -> None:
 
 def test_su2_init() -> None:
     with patch("cirq_superstaq.service.Service"):
-        experiment = SU2(cirq.CNOT)
+        experiment = SU2(4, [1, 2, 3, 4], cirq.CNOT)
     assert experiment.num_qubits == 2
     assert experiment.two_qubit_gate == cirq.CNOT
+    assert experiment.num_circuits == 4
+    assert experiment.cycle_depths == [1, 2, 3, 4]
 
 
 def test_su2_init_raises() -> None:
@@ -47,13 +50,13 @@ def test_su2_init_raises() -> None:
             ValueError,
             match="The `two_qubit_gate` parameter must be a gate that acts on exactly two qubits.",
         ):
-            SU2(cirq.X)
+            SU2(4, [1, 2, 3, 4], cirq.X)
 
 
 @pytest.fixture
 def su2_experiment() -> SU2:
     with patch("cirq_superstaq.service.Service"):
-        return SU2(cirq.CNOT)
+        return SU2(4, [1, 2, 3, 4], cirq.CNOT)
 
 
 @pytest.mark.skipif(sys.version_info < (3, 10), reason="Python version < 3.10")
@@ -130,90 +133,52 @@ def test_build_circuits_old(su2_experiment: SU2) -> None:  # pragma: no cover
             )
 
 
-def test_process_probabilities(su2_experiment: SU2) -> None:
-    samples = [
-        Sample(
-            raw_circuit=MagicMock(),
-            data={"num_two_qubit_gates": 2},
-        ),
-        Sample(
-            raw_circuit=MagicMock(),
-            data={"num_two_qubit_gates": 4},
-        ),
-        Sample(
-            raw_circuit=MagicMock(),
-            data={"num_two_qubit_gates": 6},
-        ),
-    ]
-    samples[0].probabilities = {"00": 0.1, "01": 0.2, "10": 0.3, "11": 0.4}
-    samples[1].probabilities = {"00": 0.1, "01": 0.4, "10": 0.3, "11": 0.2}
-    samples[2].probabilities = {"00": 0.3, "01": 0.2, "10": 0.1, "11": 0.4}
-
-    raw_data = su2_experiment._process_probabilities(samples)
-    expected_df = pd.DataFrame(
-        [
-            {"num_two_qubit_gates": 2, "00": 0.1, "01": 0.2, "10": 0.3, "11": 0.4},
-            {"num_two_qubit_gates": 4, "00": 0.1, "01": 0.4, "10": 0.3, "11": 0.2},
-            {"num_two_qubit_gates": 6, "00": 0.3, "01": 0.2, "10": 0.1, "11": 0.4},
-        ]
-    )
-    pd.testing.assert_frame_equal(raw_data, expected_df)
-
-
-def test_irb_process_probabilities_missing_probs() -> None:
-    su2_experiment = SU2()
-    samples = [
-        Sample(
-            raw_circuit=cirq.Circuit(),
-            data={
-                "num_two_qubit_gates": 15,
-            },
-        )
-    ]
-
-    with pytest.warns(
-        UserWarning,
-        match=r"1 sample\(s\) are missing probabilities. These samples have been omitted.",
-    ):
-        data = su2_experiment._process_probabilities(samples)
-
-    expected_data = pd.DataFrame()
-    pd.testing.assert_frame_equal(expected_data, data)
-
-
 def test_analyse_results(su2_experiment: SU2) -> None:
-    su2_experiment._samples = [
-        Sample(
-            raw_circuit=MagicMock(),
-            data={"num_two_qubit_gates": 2},
-        ),
-        Sample(
-            raw_circuit=MagicMock(),
-            data={"num_two_qubit_gates": 4},
-        ),
-        Sample(
-            raw_circuit=MagicMock(),
-            data={"num_two_qubit_gates": 6},
-        ),
-        Sample(
-            raw_circuit=MagicMock(),
-            data={"num_two_qubit_gates": 8},
-        ),
-    ]
-
     def decay(x):  # type: ignore[no-untyped-def] # pylint: disable=W9012
         return (3 * 0.75 * 0.975**x + 1) / 4
 
-    # Generate decay data from a known formula
-    su2_experiment._raw_data = pd.DataFrame(
-        [
-            {"num_two_qubit_gates": 2, "00": decay(2), "01": 0.0, "10": 0.0, "11": 1 - decay(2)},
-            {"num_two_qubit_gates": 4, "00": decay(4), "01": 0.0, "10": 0.0, "11": 1 - decay(4)},
-            {"num_two_qubit_gates": 6, "00": decay(6), "01": 0.0, "10": 0.0, "11": 1 - decay(6)},
-            {"num_two_qubit_gates": 8, "00": decay(8), "01": 0.0, "10": 0.0, "11": 1 - decay(8)},
-        ]
+    result = SU2Results(
+        target="example",
+        experiment=su2_experiment,
+        data=pd.DataFrame(
+            [
+                {
+                    "num_two_qubit_gates": 2,
+                    "circuit_index": 1,
+                    "00": decay(2),
+                    "01": 0.0,
+                    "10": 0.0,
+                    "11": 1 - decay(2),
+                },
+                {
+                    "num_two_qubit_gates": 4,
+                    "circuit_index": 1,
+                    "00": decay(4),
+                    "01": 0.0,
+                    "10": 0.0,
+                    "11": 1 - decay(4),
+                },
+                {
+                    "num_two_qubit_gates": 6,
+                    "circuit_index": 1,
+                    "00": decay(6),
+                    "01": 0.0,
+                    "10": 0.0,
+                    "11": 1 - decay(6),
+                },
+                {
+                    "num_two_qubit_gates": 8,
+                    "circuit_index": 1,
+                    "00": decay(8),
+                    "01": 0.0,
+                    "10": 0.0,
+                    "11": 1 - decay(8),
+                },
+            ]
+        ),
     )
-    result = su2_experiment.analyze_results(plot_results=True)
+
+    result.analyze(plot_results=True, print_results=True)
 
     assert result.two_qubit_gate_fidelity == pytest.approx(0.975)
     assert result.two_qubit_gate_fidelity_std == pytest.approx(0.0)
@@ -227,3 +192,32 @@ def test_haar_random_rotation() -> None:
     r = SU2._haar_random_rotation()
     assert isinstance(r, cirq.Gate)
     assert r.num_qubits() == 1
+
+
+def test_result_not_analyzed() -> None:
+    result = SU2Results(target="example", experiment=MagicMock(spec=SU2))
+
+    for attr in [
+        "two_qubit_gate_fidelity",
+        "two_qubit_gate_fidelity_std",
+        "two_qubit_gate_error",
+        "two_qubit_gate_error_std",
+        "single_qubit_noise",
+        "single_qubit_noise_std",
+    ]:
+
+        with pytest.raises(
+            RuntimeError,
+            match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
+        ):
+            _ = getattr(result, attr)
+
+
+def test_result_missing_data() -> None:
+    result = SU2Results(target="example", experiment=MagicMock(spec=SU2))
+
+    with pytest.raises(RuntimeError, match="No data stored. Cannot perform analysis."):
+        result._analyze()
+
+    with pytest.raises(RuntimeError, match="No data stored. Cannot plot results."):
+        result.plot_results()
