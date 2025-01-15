@@ -59,8 +59,6 @@ class CircuitStatus(str, Enum):
     """The job is waiting for a worker to submit the circuit to an external device."""
     AWAITING_SIMULATION = "awaiting_simulation"
     """The job is waiting for a worker to simulate."""
-    AWAITING_CONVERSION = "awaiting_conversion"
-    """The job is waiting for a worker to convert."""
     RUNNING = "running"
     """The job is being run by a worker."""
     COMPLETED = "completed"
@@ -120,14 +118,12 @@ class JobData(DefaultPydanticModel):
     """Any provider side ID's for each circuit in the job."""
     num_circuits: int
     """Number of circuits in the job."""
-    compiled_circuit_type: CircuitType
-    """The compiled circuit type."""
     compiled_circuits: list[str | None]
     """Compiled versions of each input circuits."""
     input_circuits: list[str]
     """The input circuits as serialized strings."""
-    input_circuit_type: CircuitType
-    """The input circuit type."""
+    circuit_type: CircuitType
+    """The circuit type used for representing the circuits."""
     pulse_gate_circuits: list[str | None]
     """Serialized pulse gate circuits (if relevant)."""
     counts: list[dict[str, int] | None]
@@ -165,9 +161,6 @@ class NewJob(DefaultPydanticModel):
     """The input circuit type."""
     verbatim: bool = pydantic.Field(default=False)
     """Whether to skip compile step."""
-    compiled_circuit_type: CircuitType | None = pydantic.Field(default=None)
-    """The desired circuit type for the compiled circuits. Used mainly for `convert` jobs. If
-    None then the input circuit type is assumed."""
     shots: int = pydantic.Field(default=0, ge=0)
     """Number of shots."""
     dry_run: bool = pydantic.Field(default=False)
@@ -344,8 +337,8 @@ class GetTargetsFilterModel(DefaultPydanticModel):
     """Include Superstaq targets that are/not currently available."""
     retired: bool = pydantic.Field(False)
     """Include Superstaq targets that are retired."""
-    accessible: bool = pydantic.Field(True)
-    """Include Superstaq targets that are/aren't accessible to the user."""
+    accessible: bool | None = pydantic.Field(None)
+    """Include only Superstaq targets that are/aren't accessible to the user."""
 
 
 class RetrieveTargetInfoModel(DefaultPydanticModel):
