@@ -59,6 +59,8 @@ class CircuitStatus(str, Enum):
     """The job is waiting for a worker to submit the circuit to an external device."""
     AWAITING_SIMULATION = "awaiting_simulation"
     """The job is waiting for a worker to simulate."""
+    COMPILING = "compiling"
+    """The job is being compiled by a worker."""
     RUNNING = "running"
     """The job is being run by a worker."""
     COMPLETED = "completed"
