@@ -509,18 +509,6 @@ def test_run_with_callable_bad_bitstring(
         abc_experiment.run_with_callable(test_callable, some="kwargs")
 
 
-def test_run_with_callable_bad_probabilities(
-    abc_experiment: ExampleExperiment,
-    sample_circuits: list[Sample],
-) -> None:
-    abc_experiment.samples = sample_circuits
-    test_callable = MagicMock()
-    test_callable.return_value = {"00": 0.0, "01": 0.2, "10": 0.7, "11": 0.09}
-
-    with pytest.raises(RuntimeError, match="Provided probabilities do not sum to 1.0."):
-        abc_experiment.run_with_callable(test_callable, some="kwargs")
-
-
 def test_results_collect_device_counts(
     abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
@@ -611,18 +599,17 @@ def test_results_from_records_bad_input(
         ):
             abc_experiment.results_from_records({new_uuid: {"00": 10}})
 
-    # Raise warning from canonicalizing probability
+    # Warn for error when processing samples
     with pytest.warns(
         UserWarning,
         match=re.escape(
-            f"Processing sample {str(sample_circuits[0].uuid)} raised error. "
-            "Provided probabilities do not sum to 1.0. Got 0.6."
+            (
+                "Processing sample 0e9421da-3700-42e9-9281-a0e24cc0986c raised error. "
+                "No non-zero counts."
+            )
         ),
     ):
-        with pytest.warns(
-            UserWarning, match=re.escape("The following samples are missing records:")
-        ):
-            abc_experiment.results_from_records({sample_circuits[0].uuid: {"00": 0.6}})
+        abc_experiment.results_from_records({sample_circuits[0].uuid: {"00": 0}})
 
 
 def test_canonicalize_bitstring() -> None:
@@ -674,7 +661,7 @@ def test_canonicalize_probabilities() -> None:
 def test_canonicalize_probabilities_bad_input() -> None:
 
     # Negative counts
-    with pytest.raises(ValueError, match="Counts must be positive."):
+    with pytest.raises(ValueError, match="Probabilities/counts must be positive."):
         QCVVExperiment._canonicalize_probabilities({0: -2}, 2)
 
     # No non-zero counts
@@ -682,26 +669,18 @@ def test_canonicalize_probabilities_bad_input() -> None:
         QCVVExperiment._canonicalize_probabilities({0: 0, 1: 0}, 2)
 
     # Negative probabilities
-    with pytest.raises(ValueError, match="Probabilities must be positive."):
+    with pytest.raises(ValueError, match="Probabilities/counts must be positive."):
         QCVVExperiment._canonicalize_probabilities({0: 0.0, 1: -0.5}, 2)
 
-    # Probabilities don't sum to 1
-    with pytest.raises(RuntimeError, match="Provided probabilities do not sum to 1.0."):
-        QCVVExperiment._canonicalize_probabilities({0: 0.4, 1: 0.5}, 2)
-
-    # Counts as floats
-    with pytest.raises(
-        TypeError,
-        match="If providing counts please use integer type to distinguish from probabilities.",
-    ):
-        QCVVExperiment._canonicalize_probabilities({0: 4.0, 1: 5.0}, 2)
-
     # Mixed types
-    with pytest.raises(
-        TypeError,
-        match="Results values must either all be integer or all be float.",
+    with pytest.warns(
+        UserWarning,
+        match=(
+            "Detected a mixture of float and integer values in the provided results. "
+            "Please double-check that values are either all counts or all probabilities."
+        ),
     ):
-        QCVVExperiment._canonicalize_probabilities({0: 4.0, 1: 5}, 2)
+        QCVVExperiment._canonicalize_probabilities({0: 4.5, 1: 5}, 2)
 
 
 def test_experiment_get_item(

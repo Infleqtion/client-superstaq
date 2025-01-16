@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import functools
-import math
 import uuid
 import warnings
 from abc import ABC, abstractmethod
@@ -54,7 +53,7 @@ class Sample:
             (
                 self.circuit_index,
                 self.uuid,
-                cirq.to_json(self.circuit),
+                self.circuit.freeze(),
                 tuple(sorted(self.data.items())),
             )
         )
@@ -385,61 +384,35 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         num_qubits: int,
     ) -> dict[str, float]:
         """Reformats a dictionary of probabilities/counts so that all keys are bitstrings and that
-        there are no missing values. Also sorts the dictionary by bitstring.
+        there are no missing values. Also renormalizes so that the resulting probabilities sum to 1
+        and sorts the dictionary by bitstring.
 
         Args:
             probabilities: The unformatted probabilities or counts
             num_qubits: The number of qubits, used to determine the bitstring length.
 
         Raises:
-            RuntimeError: If the probabilities do not sum to 1.
-            TypeError: If the results are not all integer or all float.
             ValueError: If any counts or probabilities are negative.
             ValueError: If there are no non-zero counts.
 
         Returns:
             The formatted dictionary of probabilities.
         """
-        if all(isinstance(x, int) for x in results.values()):
-            # If all results are integer then check that all integers are strictly positive and that
-            # there is at least one non-zero count.
-            if any(c < 0 for c in results.values()):
-                raise ValueError("Counts must be positive.")
-            if sum(results.values()) == 0:
-                raise ValueError("No non-zero counts.")
-            probabilities = {
-                QCVVExperiment._canonicalize_bitstring(key, num_qubits): count
-                / sum(results.values())
-                for key, count in results.items()
-            }
-        elif all(isinstance(x, float) for x in results.values()):
-            # Check that values are not actually integers cast as float (except possibly 0 or 1)
-            if any(
-                (
-                    x.is_integer()
-                    # Mypy has not detected that in this context all values are float.
-                    & (x not in [0.0, 1.0])
-                )
-                for x in results.values()
-            ):
-                raise TypeError(
-                    "If providing counts please use integer type to distinguish from probabilities."
-                )
+        _int_count = sum(x == int(x) for x in results.values())
+        if _int_count != len(results):
+            warnings.warn(
+                "Detected a mixture of float and integer values in the provided results. "
+                "Please double-check that values are either all counts or all probabilities."
+            )
 
-            # If all results are float then check they are all positive and sum to 1.0
-            if any(c < 0 for c in results.values()):
-                raise ValueError("Probabilities must be positive.")
-            if not math.isclose(sum(results.values()), 1.0):
-                raise RuntimeError(
-                    f"Provided probabilities do not sum to 1.0. Got {sum(results.values())}."
-                )
-            probabilities = {
-                QCVVExperiment._canonicalize_bitstring(key, num_qubits): val
-                for key, val in results.items()
-            }
-        else:
-            raise TypeError("Results values must either all be integer or all be float.")
-
+        if any(c < 0 for c in results.values()):
+            raise ValueError("Probabilities/counts must be positive.")
+        if sum(results.values()) == 0:
+            raise ValueError("No non-zero counts.")
+        probabilities = {
+            QCVVExperiment._canonicalize_bitstring(key, num_qubits): count / sum(results.values())
+            for key, count in results.items()
+        }
         # Add zero values for any missing bitstrings
         for k in range(2**num_qubits):
             if (bitstring := format(k, f"0{num_qubits}b")) not in probabilities:
