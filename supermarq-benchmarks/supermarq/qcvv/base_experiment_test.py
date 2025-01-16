@@ -672,16 +672,6 @@ def test_canonicalize_probabilities_bad_input() -> None:
     with pytest.raises(ValueError, match="Probabilities/counts must be positive."):
         QCVVExperiment._canonicalize_probabilities({0: 0.0, 1: -0.5}, 2)
 
-    # Mixed types
-    with pytest.warns(
-        UserWarning,
-        match=(
-            "Detected a mixture of float and integer values in the provided results. "
-            "Please double-check that values are either all counts or all probabilities."
-        ),
-    ):
-        QCVVExperiment._canonicalize_probabilities({0: 4.5, 1: 5}, 2)
-
 
 def test_experiment_get_item(
     abc_experiment: ExampleExperiment,

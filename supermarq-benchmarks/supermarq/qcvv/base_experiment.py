@@ -398,13 +398,6 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Returns:
             The formatted dictionary of probabilities.
         """
-        _int_count = sum(x == int(x) for x in results.values())
-        if _int_count != len(results):
-            warnings.warn(
-                "Detected a mixture of float and integer values in the provided results. "
-                "Please double-check that values are either all counts or all probabilities."
-            )
-
         if any(c < 0 for c in results.values()):
             raise ValueError("Probabilities/counts must be positive.")
         if sum(results.values()) == 0:
