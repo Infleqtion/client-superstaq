@@ -236,6 +236,51 @@ class XEBResults(QCVVResults):
             name, extension = os.path.splitext(filename)
             fig.savefig(name + "_speckle_plot" + extension)
 
+        # Plot the decay of purity
+
+        # Calculate the average std of the probability distributions.
+        purity_data = (
+            df2.groupby(by=["cycle_depth"])
+            .std(numeric_only=True)
+            .reset_index()
+            .rename(columns={"value": "sqrt_speckle_purity"})
+            .drop(columns=["circuit_realization"])
+        )
+        # Rescale the purity estimate according to Porter-Thomas distribution
+        purity_data["sqrt_speckle_purity"] = purity_data["sqrt_speckle_purity"] * np.sqrt(
+            4**2 * (4 + 1) / (4 - 1)
+        )
+        # Plot decay
+        purity_plot = sns.lmplot(
+            data=purity_data, x="cycle_depth", y="sqrt_speckle_purity", palette="dark:r", logx=True
+        )
+        ax_1 = purity_plot.axes.item()
+        purity_plot.tight_layout()
+        ax_1.set_xlabel(r"Cycle depth", fontsize=15)
+        ax_1.set_ylabel(r"$\sqrt{\mathrm{Purity}}$", fontsize=15)
+        ax_1.set_title(r"Purity Decay", fontsize=15)
+        # Estimate decay coefficient
+        purity_fit = scipy.stats.linregress(
+            x=purity_data["cycle_depth"],
+            y=np.log(purity_data["sqrt_speckle_purity"]),
+        )
+        ax_1.text(
+            0.05,
+            0.05,
+            (
+                f"Decay coefficient: {np.exp(purity_fit.slope):4f} "
+                f"+/- {np.exp(purity_fit.slope) * purity_fit.stderr:4f}"
+            ),
+            ha="left",
+            va="bottom",
+            transform=ax_1.transAxes,
+        )
+
+        if filename is not None:
+            name, extension = os.path.splitext(filename)
+            fig.savefig(name + "_speckle_plot" + extension)
+            purity_plot.savefig(name + "_purity_decay_plot" + extension)
+
 
 class XEB(QCVVExperiment[XEBResults]):
     r"""Cross-entropy benchmarking (XEB) experiment.

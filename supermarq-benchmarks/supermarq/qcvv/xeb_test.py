@@ -236,6 +236,7 @@ def test_xeb_analyse_results(tmp_path: pathlib.Path, xeb_experiment: XEB) -> Non
     # Test the speckle plot
     results.plot_speckle(filename=plot_filename.as_posix())
     assert pathlib.Path(tmp_path / "example_speckle_plot.png").exists()
+    assert pathlib.Path(tmp_path / "example_purity_decay_plot.png").exists()
 
 
 def test_results_no_data() -> None:
