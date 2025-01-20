@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import itertools
+import pathlib
 import re
 from unittest.mock import MagicMock
 
@@ -129,7 +130,7 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
     }
 
 
-def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
+def test_xeb_analyse_results(tmp_path: pathlib.Path, xeb_experiment: XEB) -> None:
     results = XEBResults(target="example", experiment=xeb_experiment)
 
     results.data = pd.DataFrame(
@@ -214,7 +215,10 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
             },
         ]
     )
-    results.analyze()
+
+    plot_filename = tmp_path / "example.png"
+
+    results.analyze(plot_filename=plot_filename.as_posix())
     np.testing.assert_allclose(
         results.data["sum_p(x)p^(x)"].values, [1.0, 0.5, 0.75, 0.25, 0.25, 0.4]
     )
@@ -226,8 +230,12 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
     assert results.cycle_fidelity_estimate == pytest.approx(1.0613025)
     assert results.cycle_fidelity_estimate_std == pytest.approx(0.0597633930)
 
-    results.plot_results()
-    results.plot_speckle()
+    assert pathlib.Path(tmp_path / "example_ray_plot.png").exists()
+    assert pathlib.Path(tmp_path / "example_circuit_fidelity_decay.png").exists()
+
+    # Test the speckle plot
+    results.plot_speckle(filename=plot_filename.as_posix())
+    assert pathlib.Path(tmp_path / "example_speckle_plot.png").exists()
 
 
 def test_results_no_data() -> None:
