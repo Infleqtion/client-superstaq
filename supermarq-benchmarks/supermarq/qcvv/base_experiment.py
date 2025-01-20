@@ -425,7 +425,9 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             probabilities = self._canonicalize_probabilities(
                 {key: count / sum(hist.values()) for key, count in hist.items()}, self.num_qubits
             )
-            records.append({"circuit_index": sample.circuit_index, **sample.data, **probabilities})
+            records.append(
+                {"circuit_realization": sample.circuit_realization, **sample.data, **probabilities}
+            )
 
         return self._results_cls(
             target="local_simulator",
