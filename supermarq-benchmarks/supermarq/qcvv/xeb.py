@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import itertools
+import os
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
@@ -116,8 +117,15 @@ class XEBResults(QCVVResults):
         self._cycle_fidelity_estimate = np.exp(cycle_fit.slope)
         self._cycle_fidelity_estimate_std = self.cycle_fidelity_estimate * cycle_fit.stderr
 
-    def plot_results(self) -> None:
+    def plot_results(
+        self,
+        filename: str | None = None,
+    ) -> None:
         """Plot the experiment data and the corresponding fits.
+
+        Args:
+            filename: Optional argument providing a filename to save the plots to. Defaults to None,
+                indicating not to save the plot.
 
         Raises:
             RuntimeError: If there is no data stored.
@@ -169,28 +177,37 @@ class XEBResults(QCVVResults):
         ax_2.plot(x, y, color="tab:red", linewidth=2)
         ax_2.fill_between(x, y_m, y_p, alpha=0.2, color="tab:red")
 
+        if filename is not None:
+            name, extension = os.path.splitext(filename)
+            plot_1.savefig(name + "_ray_plot" + extension)
+            plot_2.savefig(name + "_circuit_fidelity_decay" + extension)
+
     def print_results(self) -> None:
         print(
             f"Estimated cycle fidelity: {self.cycle_fidelity_estimate:.5} "
             f"+/- {self.cycle_fidelity_estimate_std:.5}"
         )
 
-    def plot_speckle(self) -> None:
+    def plot_speckle(self, filename: str | None = None) -> None:
         """Creates the speckle plot of the XEB data. See Fig. S18 of
         https://arxiv.org/abs/1910.11333 for an explanation of this plot.
+
+        Args:
+            filename: Optional argument providing a filename to save the plots to. Defaults to None,
+                indicating not to save the plot.
         """
         df = self.data
         df2 = pd.melt(
             df,
             value_vars=["00", "01", "10", "11"],
-            id_vars=["cycle_depth", "circuit_index"],
+            id_vars=["cycle_depth", "circuit_realization"],
             var_name="bitstring",
         )
         fig, axs = plt.subplots(nrows=4, sharex=True)
         fig.subplots_adjust(hspace=0)
         for k, bitstring in enumerate(["00", "01", "10", "11"]):
             data = df2[df2["bitstring"] == bitstring].pivot(
-                index="circuit_index", columns="cycle_depth", values="value"
+                index="circuit_realization", columns="cycle_depth", values="value"
             )
             cmap = mpl.colormaps["rocket"]
             norm = mpl.colors.Normalize(0, 1)  # or vmin, vmax
@@ -215,6 +232,54 @@ class XEBResults(QCVVResults):
         fig.colorbar(
             mpl.cm.ScalarMappable(norm, cmap), ax=axs, orientation="vertical", label="Probability"
         )
+        if filename is not None:
+            name, extension = os.path.splitext(filename)
+            fig.savefig(name + "_speckle_plot" + extension)
+
+        # Plot the decay of purity
+
+        # Calculate the average std of the probability distributions.
+        purity_data = (
+            df2.groupby(by=["cycle_depth"])
+            .std(numeric_only=True)
+            .reset_index()
+            .rename(columns={"value": "sqrt_speckle_purity"})
+            .drop(columns=["circuit_realization"])
+        )
+        # Rescale the purity estimate according to Porter-Thomas distribution
+        purity_data["sqrt_speckle_purity"] = purity_data["sqrt_speckle_purity"] * np.sqrt(
+            4**2 * (4 + 1) / (4 - 1)
+        )
+        # Plot decay
+        purity_plot = sns.lmplot(
+            data=purity_data, x="cycle_depth", y="sqrt_speckle_purity", palette="dark:r", logx=True
+        )
+        ax_1 = purity_plot.axes.item()
+        purity_plot.tight_layout()
+        ax_1.set_xlabel(r"Cycle depth", fontsize=15)
+        ax_1.set_ylabel(r"$\sqrt{\mathrm{Purity}}$", fontsize=15)
+        ax_1.set_title(r"Purity Decay", fontsize=15)
+        # Estimate decay coefficient
+        purity_fit = scipy.stats.linregress(
+            x=purity_data["cycle_depth"],
+            y=np.log(purity_data["sqrt_speckle_purity"]),
+        )
+        ax_1.text(
+            0.05,
+            0.05,
+            (
+                f"Decay coefficient: {np.exp(purity_fit.slope):4f} "
+                f"+/- {np.exp(purity_fit.slope) * purity_fit.stderr:4f}"
+            ),
+            ha="left",
+            va="bottom",
+            transform=ax_1.transAxes,
+        )
+
+        if filename is not None:
+            name, extension = os.path.splitext(filename)
+            fig.savefig(name + "_speckle_plot" + extension)
+            purity_plot.savefig(name + "_purity_decay_plot" + extension)
 
 
 class XEB(QCVVExperiment[XEBResults]):
@@ -351,7 +416,7 @@ class XEB(QCVVExperiment[XEBResults]):
                         "two_qubit_gate": str(self.two_qubit_gate),
                         **analytic_probabilities,
                     },
-                    circuit_index=k,
+                    circuit_realization=k,
                 )
             )
 

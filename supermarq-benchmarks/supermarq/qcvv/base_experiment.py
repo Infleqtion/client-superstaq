@@ -35,9 +35,10 @@ class Sample:
     that is needed for analysis
     """
 
-    circuit_index: int
-    """The index of the circuit. There will be D samples with matching circuit index, one for each
-    cycle depth being measured. This index is useful for grouping results during analysis.
+    circuit_realization: int
+    """Indicates which realization of the random circuit this sameple is. There will be D samples
+    with matching circuit realization value, one for each cycle depth being measured. This index is
+    useful for grouping results during analysis.
     """
     circuit: cirq.Circuit
     """The raw (i.e. pre-compiled) sample circuit."""
@@ -102,12 +103,19 @@ class QCVVResults(ABC):
         The number of circuits in the experiment."""
         return self.experiment.num_circuits
 
-    def analyze(self, plot_results: bool = True, print_results: bool = True) -> None:
+    def analyze(
+        self,
+        plot_results: bool = True,
+        print_results: bool = True,
+        plot_filename: str | None = None,
+    ) -> None:
         """Perform the experiment analysis and store the results in the `results` attribute.
 
         Args:
             plot_results: Whether to generate plots of the results. Defaults to True.
             print_results: Whether to print the final results. Defaults to True.
+            plot_filename: Optional argument providing a filename to save the plots to. Ignored if
+                `plot_results=False` Defaults to None, indicating not to save the plot.
         """
         if not self.data_ready:
             warnings.warn(
@@ -120,7 +128,7 @@ class QCVVResults(ABC):
         self._analyze()
 
         if plot_results:
-            self.plot_results()
+            self.plot_results(filename=plot_filename)
 
         if print_results:
             self.print_results()
@@ -130,8 +138,13 @@ class QCVVResults(ABC):
         """A method that analyses the `data` attribute and stores the final experimental results."""
 
     @abstractmethod
-    def plot_results(self) -> None:
-        """Plot the results of the experiment"""
+    def plot_results(self, filename: str | None = None) -> None:
+        """Plot the results of the experiment
+
+        Args:
+            filename: Optional argument providing a filename to save the plots to. Defaults to None,
+                indicating not to save the plot.
+        """
 
     @abstractmethod
     def print_results(self) -> None:
@@ -424,7 +437,13 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             probabilities = self._canonicalize_probabilities(
                 {key: count / sum(hist.values()) for key, count in hist.items()}, self.num_qubits
             )
-            records.append({"circuit_index": sample.circuit_index, **sample.data, **probabilities})
+            records.append(
+                {
+                    "circuit_realization": sample.circuit_realization,
+                    **sample.data,
+                    **probabilities,
+                }
+            )
 
         return self._results_cls(
             target="local_simulator",

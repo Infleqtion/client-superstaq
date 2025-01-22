@@ -327,8 +327,15 @@ class IRBResults(_RBResultsBase):
             raise self._not_analyzed
         return self._average_interleaved_gate_error_std
 
-    def plot_results(self) -> None:
+    def plot_results(
+        self,
+        filename: str | None = None,
+    ) -> None:
         """Plot the exponential decay of the circuit fidelity with cycle depth.
+
+        Args:
+            filename: Optional argument providing a filename to save the plots to. Defaults to None,
+                indicating not to save the plot.
 
         Raises:
             RuntimeError: If no data is stored.
@@ -351,6 +358,8 @@ class IRBResults(_RBResultsBase):
             alpha=0.5,
             color="tab:orange",
         )
+        if filename is not None:
+            plt.savefig(filename)
 
     def _analyze(self) -> None:
         super()._analyze()
@@ -405,9 +414,19 @@ class RBResults(_RBResultsBase):
             raise self._not_analyzed
         return self._average_error_per_clifford_std
 
-    def plot_results(self) -> None:
-        """Plot the exponential decay of the circuit fidelity with cycle depth."""
+    def plot_results(
+        self,
+        filename: str | None = None,
+    ) -> None:
+        """Plot the exponential decay of the circuit fidelity with cycle depth.
+
+        Args:
+            filename: Optional argument providing a filename to save the plots to. Defaults to None,
+                indicating not to save the plot.
+        """
         super()._plot_results()
+        if filename is not None:
+            plt.savefig(filename)
 
     def _analyze(self) -> None:
         super()._analyze()
@@ -688,7 +707,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                         ),
                         "experiment": "RB",
                     },
-                    circuit_index=k,
+                    circuit_realization=k,
                 ),
             )
             if self.interleaved_gate is not None:
@@ -721,7 +740,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                             ),
                             "experiment": "IRB",
                         },
-                        circuit_index=k,
+                        circuit_realization=k,
                     ),
                 )
         return samples
