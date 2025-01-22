@@ -12,9 +12,6 @@ dynamic = ["version", "dependencies", "optional-dependencies"]
 [project.urls]
 homepage = "https://github.com/Infleqtion/client-superstaq"
 
-[porject.optional-dependencies]
-ibm_credentials = [qiskit-ibm-runtime>=0.21.0]
-
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
