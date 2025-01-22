@@ -15,13 +15,10 @@ import pydantic
 class JobType(str, Enum):
     """The different types of jobs that can be submitted through Superstaq."""
 
-    DEVICE_SUBMISSION = "device_submission"
-    """A job that involves submitting circuits to live quantum hardware (device)."""
-    DEVICE_SIMULATION = "device_simulation"
-    """A job that involves simulating a circuit as if it was on some live hardware (device).
-    May or may not include noise (depending on options dict)."""
-    SIMULATION = "simulation"
-    """Simulation of a given quantum circuit but agnostic to any specific device."""
+    SUBMIT = "submit"
+    """A job that involves submitting circuits to an external device."""
+    SIMULATE = "simulate"
+    """A job that requires superstaq to simulate circuits."""
     COMPILE = "compile"
     """A job that only involves compiling a circuit for some given device."""
     CONVERT = "convert"
@@ -53,27 +50,32 @@ class CircuitStatus(str, Enum):
 
     RECEIVED = "received"
     """The job has been received (and accepted) to the server and is awaiting further action."""
+    # AWAITING states - the job is waiting to be processed
     AWAITING_COMPILE = "awaiting_compile"
     """The job is waiting for a worker to compile."""
     AWAITING_SUBMISSION = "awaiting_submission"
     """The job is waiting for a worker to submit the circuit to an external device."""
     AWAITING_SIMULATION = "awaiting_simulation"
     """The job is waiting for a worker to simulate."""
+    # Processing states - the job is being handled in some way
     COMPILING = "compiling"
     """The job is being compiled by a worker."""
     RUNNING = "running"
-    """The job is being run by a worker."""
-    COMPLETED = "completed"
-    """The job is completed."""
+    """The job is currently running on a device. SUBMIT jobs only"""
+    SIMULATING = "simulating"
+    """The job is currently being simulated. SIMULATE jobs only"""
+    PENDING = "pending"
+    """When a job has been submitted and is waiting to be run on a QPU. SUBMIT jobs only."""
+    # Error states
     FAILED = "failed"
     """The job failed. A reason should be stored in the job."""
-    CANCELLED = "cancelled"
-    """The job was cancelled. A reason should be stored in the job."""
     UNRECOGNIZED = "unrecognized"
     """Something has gone wrong! (Treated as terminal)"""
-    PENDING = "pending"
-    """When a job has been submitted to an external provider but that provider has
-    not yet run the job."""
+    # Finished states
+    COMPLETED = "completed"
+    """The job is completed."""
+    CANCELLED = "cancelled"
+    """The job was cancelled. A reason should be stored in the job."""
     DELETED = "deleted"
     """When a job has been deleted."""
 
