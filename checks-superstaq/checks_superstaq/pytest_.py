@@ -75,7 +75,12 @@ def run(
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     if parsed_args.notebook:
-        args_to_pass += ["--nbmake", "--force-enable-socket"]
+        args_to_pass += [
+            "--nbval-lax",
+            "--dist=loadscope",
+            "--randomly-dont-reorganize",
+            "--force-enable-socket",
+        ]
     elif (parsed_args.integration) or (
         "--integration" not in args
         and any(re.match(r".*_integration_test\.py$", arg) for arg in args)
