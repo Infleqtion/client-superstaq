@@ -36,7 +36,7 @@ class Sample:
     """
 
     circuit_realization: int
-    """Indicates which realization of the random circuit this sameple is. There will be D samples
+    """Indicates which realization of the random circuit this sample is. There will be D samples
     with matching circuit realization value, one for each cycle depth being measured. This index is
     useful for grouping results during analysis.
     """
