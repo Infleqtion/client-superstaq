@@ -135,7 +135,7 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
     results.data = pd.DataFrame(
         [
             {
-                "circuit_index": 0,
+                "circuit_realization": 0,
                 "cycle_depth": 1,
                 "circuit_depth": 3,
                 "00": 1.0,
@@ -148,7 +148,7 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
                 "exact_11": 0.0,
             },
             {
-                "circuit_index": 1,
+                "circuit_realization": 1,
                 "cycle_depth": 1,
                 "circuit_depth": 3,
                 "00": 1.0,
@@ -161,7 +161,7 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
                 "exact_11": 0.0,
             },
             {
-                "circuit_index": 0,
+                "circuit_realization": 0,
                 "cycle_depth": 5,
                 "circuit_depth": 11,
                 "00": 0.0,
@@ -174,7 +174,7 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
                 "exact_11": 0.0,
             },
             {
-                "circuit_index": 1,
+                "circuit_realization": 1,
                 "cycle_depth": 5,
                 "circuit_depth": 11,
                 "00": 0.0,
@@ -187,7 +187,7 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
                 "exact_11": 0.25,
             },
             {
-                "circuit_index": 0,
+                "circuit_realization": 0,
                 "cycle_depth": 10,
                 "circuit_depth": 21,
                 "00": 0.0,
@@ -200,7 +200,7 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
                 "exact_11": 0.25,
             },
             {
-                "circuit_index": 1,
+                "circuit_realization": 1,
                 "cycle_depth": 10,
                 "circuit_depth": 21,
                 "00": 0.0,
