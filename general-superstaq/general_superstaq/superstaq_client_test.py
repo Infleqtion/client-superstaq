@@ -215,6 +215,94 @@ def test_superstaq_client_validate_email_error(
         _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
 
 
+class MockQiskitRuntimeService:
+    """MockQiskitRuntimeService is a mock class to represent an `IBMProvider`."""
+
+    def __init__(
+        self,
+        token: str | None = "ibmq_token",
+        instance: str = "instance",
+        channel: str = "ibm_quantum",
+    ) -> None:
+        self.token = token
+        self.instance = instance
+        self.channel = channel
+
+    def active_account(self) -> dict[str, str] | None:
+        """Mock of the `IBMProvider.active_account` function.
+
+        Returns:
+            A dictionary with the `token`, `instance`, and `channel`.
+        """
+        if not self.token:
+            return None
+        return {"token": self.token, "instance": self.instance, "channel": self.channel}
+
+
+def test_superstaq_client_use_ibmprovider() -> None:
+
+    # retriveing IBM credentials from a valid provided `QiskitRuntimeService` instance.
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        ibmq_provider=MockQiskitRuntimeService(),
+    )
+
+    assert client.client_kwargs == dict(
+        ibmq_channel="ibm_quantum",
+        ibmq_instance="instance",
+        ibmq_token="ibmq_token",
+    )
+
+    # failing to retrive IBM credentials from a bad provided `QiskitRuntimeService` instance.
+    with pytest.raises(
+        AssertionError,
+        match="No active account found for provided `qiskit_ibm_runtime.QiskitRuntimeService`",
+    ):
+        _ = gss.superstaq_client._SuperstaqClient(
+            client_name="general-superstaq",
+            remote_host="http://example.com",
+            api_key="to_my_heart",
+            ibmq_provider=MockQiskitRuntimeService(token=None),
+        )
+
+
+def test_superstaq_client_use_stored_ibmq_credential() -> None:
+    # `qiskit_ibm_runtime` not found
+    with mock.patch(
+        "general_superstaq.superstaq_client.importlib.util.find_spec",
+        return_value=None,
+    ):
+        with pytest.raises(
+            ModuleNotFoundError,
+            match="The `qiskit_ibm_runtime` is missing. The package is required to load configs.",
+        ):
+            gss.superstaq_client._SuperstaqClient(
+                client_name="general-superstaq",
+                remote_host="http://example.com",
+                api_key="to_my_heart",
+                use_stored_ibmq_credentials=True,
+            )
+
+    with mock.patch(
+        "qiskit_ibm_runtime.accounts.AccountManager.get",
+        return_value={"token": "ibmq_token", "instance": "instance", "channel": "ibm_quantum"},
+    ):
+        client = gss.superstaq_client._SuperstaqClient(
+            client_name="general-superstaq",
+            remote_host="http://example.com",
+            api_key="to_my_heart",
+            use_stored_ibmq_credentials=True,
+        )
+
+        assert client.client_kwargs == dict(
+            ibmq_channel="ibm_quantum",
+            ibmq_instance="instance",
+            ibmq_token="ibmq_token",
+        )
+
+
 @mock.patch("requests.Session.post")
 def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
     mock_post.return_value.status_code = requests.codes.ok
