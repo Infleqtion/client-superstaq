@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import functools
+import numbers
 import uuid
 import warnings
 from abc import ABC, abstractmethod
@@ -285,7 +286,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Returns:
             The sample corresponding to the key.
         """
-        if isinstance(key, int):
+        if isinstance(key, numbers.Integral):
             return self.samples[key]
         elif isinstance(key, str):
             key = uuid.UUID(key)
@@ -341,7 +342,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         """
 
     @staticmethod
-    def _canonicalize_bitstring(key: int | str, num_qubits: int) -> str:
+    def canonicalize_bitstring(key: int | str, num_qubits: int) -> str:
         """Checks that the provided key represents a bit string for the given number of qubits.
         If the key is provided as an integer then this is reformatted as a bitstring.
 
@@ -354,11 +355,12 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             ValueError: If the key is integer but to large for the given number of qubits.
             ValueError: If the key is a string but the wrong length.
             ValueError: If the key is a string but contains characters that are not 0 or 1.
+            TypeError: If the key value is not a string or integral.
 
         Returns:
             The canonicalized representation of the bitstring.
         """
-        if isinstance(key, int):
+        if isinstance(key, numbers.Integral):
             if key < 0:
                 raise ValueError(f"The key must be positive. Instead got {key}.")
             if key >= 2**num_qubits:
@@ -378,8 +380,10 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
                 raise ValueError(f"All entries in the bitstring must be 0 or 1. Got {key}.")
             return key
 
+        raise TypeError("Key must either be `numbers.Integral` or `str`.")
+
     @staticmethod
-    def _canonicalize_probabilities(
+    def canonicalize_probabilities(
         results: Mapping[str, float] | Mapping[int, float],
         num_qubits: int,
     ) -> dict[str, float]:
@@ -388,7 +392,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         and sorts the dictionary by bitstring.
 
         Args:
-            probabilities: The unformatted probabilities or counts
+            results: The unformatted probabilities or counts
             num_qubits: The number of qubits, used to determine the bitstring length.
 
         Raises:
@@ -398,12 +402,15 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Returns:
             The formatted dictionary of probabilities.
         """
+        if not results:
+            return {}
+
         if any(c < 0 for c in results.values()):
             raise ValueError("Probabilities/counts must be positive.")
         if sum(results.values()) == 0:
             raise ValueError("No non-zero counts.")
         probabilities = {
-            QCVVExperiment._canonicalize_bitstring(key, num_qubits): count / sum(results.values())
+            QCVVExperiment.canonicalize_bitstring(key, num_qubits): count / sum(results.values())
             for key, count in results.items()
         }
         # Add zero values for any missing bitstrings
@@ -457,23 +464,11 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         for key, record in records.items():
             try:
                 sample = self[key]
-            except (KeyError, IndexError):
-                warnings.warn(f"Could not find sample with key: `{key}`. Skipping this record.")
-                continue
-
-            except TypeError:
-                warnings.warn(
-                    f"The key: `{key}` has an incompatible type (should be uuid.UUID or int). "
-                    "Skipping this record."
-                )
+            except (KeyError, IndexError):  # Ignore any keys that cant be attached to samples
                 continue
 
             if sample in record_mapping:
-                warnings.warn(
-                    f"Duplicate records found for sample with uuid: {str(sample.uuid)}. Skipping "
-                    "second record."
-                )
-                continue
+                raise KeyError(f"Duplicate records found for sample with uuid: {str(sample.uuid)}.")
             record_mapping[sample] = record
             records_not_mapped.pop(key)
 
@@ -482,7 +477,13 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             warnings.warn(
                 "The following samples are missing records: "
                 f"{', '.join(str(s.uuid) for s in missing_samples)}. These will not be included in "
-                "the results."
+                "the results.",
+                stacklevel=2,
+            )
+        if records_not_mapped:
+            warnings.warn(
+                f"Unable to find matching sample for {len(records_not_mapped)} record(s).",
+                stacklevel=2,
             )
 
         return record_mapping
@@ -594,7 +595,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         for sample in tqdm(self.samples, desc="Simulating circuits"):
             result = simulator.run(sample.circuit, repetitions=repetitions)
             hist = result.histogram(key=cirq.measurement_key_name(sample.circuit))
-            probabilities = self._canonicalize_probabilities(
+            probabilities = self.canonicalize_probabilities(
                 {key: count / sum(hist.values()) for key, count in hist.items()}, self.num_qubits
             )
             records.append({"circuit_index": sample.circuit_index, **sample.data, **probabilities})
@@ -624,7 +625,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         records = []
         for sample in tqdm(self.samples, desc="Running circuits"):
             raw_probability = circuit_eval_func(sample.circuit, **kwargs)
-            probability = self._canonicalize_probabilities(raw_probability, self.num_qubits)
+            probability = self.canonicalize_probabilities(raw_probability, self.num_qubits)
             records.append({**sample.data, **probability})
 
         return self._results_cls(
@@ -658,14 +659,10 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
         results_data = []
         for sample, results in sample_mapping.items():
-            try:
-                probabilities = self._canonicalize_probabilities(
-                    results,
-                    self.num_qubits,
-                )
-            except (TypeError, ValueError, RuntimeError) as e:
-                warnings.warn(f"Processing sample {str(sample.uuid)} raised error. {e}")
-                continue
+            probabilities = self.canonicalize_probabilities(
+                results,
+                self.num_qubits,
+            )
 
             # Add to results data
             results_data.append({**sample.data, **probabilities})
