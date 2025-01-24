@@ -43,6 +43,9 @@ def test_qcvv_resolver() -> None:
     assert qcvv_resolver("supermarq.qcvv.Sample") == Sample
     assert qcvv_resolver("supermarq.qcvv.QCVVExperiment") == QCVVExperiment
 
+    with pytest.raises(ValueError):
+        qcvv_resolver("supermarq.qcvv.base_experiment.qcvv_resolver")
+
 
 @dataclass
 class ExampleResults(QCVVResults):

@@ -48,6 +48,8 @@ def qcvv_resolver(cirq_type: str) -> type[Any] | None:
     prefix = "supermarq.qcvv."
     if cirq_type.startswith(prefix):
         name = cirq_type[len(prefix) :]
+        if name not in supermarq.qcvv.__all__:
+            raise ValueError(f"{name} is not resolvable from the QCVV library")
         if hasattr(supermarq.qcvv, name):
             return getattr(supermarq.qcvv, name)
     return None
