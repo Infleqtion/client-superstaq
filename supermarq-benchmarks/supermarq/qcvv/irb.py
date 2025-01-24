@@ -29,7 +29,7 @@ import seaborn as sns
 from tqdm.auto import trange
 from tqdm.contrib.itertools import product
 
-from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample, qcvv_resolver
+from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -742,17 +742,17 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             Json-able dictionary of the experiment data.
         """
         return {
-            "interleaved_gate": cirq.to_json(self.interleaved_gate),
-            "clifford_op_gateset": cirq.to_json(self.clifford_op_gateset),
+            "interleaved_gate": self.interleaved_gate,
+            "clifford_op_gateset": self.clifford_op_gateset,
             **super()._json_dict_(),
         }
 
     @classmethod
     def _from_json_dict_(
         cls,
-        samples: str,
-        interleaved_gate: str,
-        clifford_op_gateset: str,
+        samples: list[Sample],
+        interleaved_gate: cirq.Gate,
+        clifford_op_gateset: list[cirq.CliffordGate],
         num_circuits: int,
         cycle_depths: list[int],
         **kwargs: Any,
@@ -765,18 +765,11 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         Returns:
             The deserialized experiment object.
         """
-        resolved_samples = cirq.read_json(
-            json_text=samples, resolvers=[*cirq.DEFAULT_RESOLVERS, qcvv_resolver]
-        )
-        i_gate = cirq.read_json(json_text=interleaved_gate)
-        c_op_gateset = cirq.read_json(json_text=clifford_op_gateset)
-        experiment = cls(
+        return cls(
             num_circuits=num_circuits,
             cycle_depths=cycle_depths,
-            _prepare_circuits=False,
-            clifford_op_gateset=c_op_gateset,
-            interleaved_gate=i_gate,
+            clifford_op_gateset=clifford_op_gateset,
+            interleaved_gate=interleaved_gate,
+            _samples=samples,
             **kwargs,
         )
-        experiment.samples = resolved_samples
-        return experiment

@@ -76,7 +76,7 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
         cycle_depths: Iterable[int],
         *,
         random_seed: int | None = None,
-        _prepare_circuits: bool = True,
+        _samples: list[Sample] | None = None,
         **kwargs: str | bool,
     ) -> None:
         super().__init__(
@@ -85,7 +85,7 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
             cycle_depths,
             random_seed=random_seed,
             results_cls=ExampleResults,
-            _prepare_circuits=_prepare_circuits,
+            _samples=_samples,
             **kwargs,
         )
 
@@ -114,13 +114,9 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
             num_circuits=num_circuits,
             num_qubits=num_qubits,
             cycle_depths=cycle_depths,
-            _prepare_circuits=False,
+            _samples=samples,
             **kwargs,
         )
-        resolved_samples = cirq.read_json(
-            json_text=samples, resolvers=[*cirq.DEFAULT_RESOLVERS, qcvv_resolver]
-        )
-        experiment.samples = resolved_samples
         return experiment
 
 
@@ -642,22 +638,23 @@ def test_canonicalize_probabilities() -> None:
         QCVVExperiment._canonicalize_probabilities(p, 2)
 
 
+@patch("supermarq.qcvv.base_experiment.qcvv_resolver")
 def test_dump_and_load(
+    mock_resolver: MagicMock,
     tmp_path_factory: pytest.TempPathFactory,
     abc_experiment: ExampleExperiment,
     sample_circuits: list[Sample],
 ) -> None:
+    temp_resolver = {
+        "supermarq.qcvv.Sample": Sample,
+        "supermarq.qcvv.ExampleExperiment": ExampleExperiment,
+    }
+    mock_resolver.side_effect = lambda x: temp_resolver.get(x)
+
     filename = tmp_path_factory.mktemp("tempdir") / "file.json"
     abc_experiment.samples = sample_circuits
     abc_experiment.to_file(filename)
-
-    with patch("supermarq.qcvv.base_experiment.qcvv_resolver") as mock_resolver:
-        temp_resolver = {
-            "supermarq.qcvv.Sample": Sample,
-            "supermarq.qcvv.ExampleExperiment": ExampleExperiment,
-        }
-        mock_resolver.side_effect = lambda x: temp_resolver.get(x)
-        exp = ExampleExperiment.from_file(filename)
+    exp = ExampleExperiment.from_file(filename)
 
     assert exp.samples == abc_experiment.samples
     assert exp.num_qubits == abc_experiment.num_qubits

@@ -29,7 +29,7 @@ import seaborn as sns
 import tqdm.auto
 import tqdm.contrib.itertools
 
-from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample, qcvv_resolver
+from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -373,17 +373,17 @@ class XEB(QCVVExperiment[XEBResults]):
             Json-able dictionary of the experiment data.
         """
         return {
-            "two_qubit_gate": cirq.to_json(self.two_qubit_gate),
-            "single_qubit_gate_set": cirq.to_json(self.single_qubit_gate_set),
+            "two_qubit_gate": self.two_qubit_gate,
+            "single_qubit_gate_set": self.single_qubit_gate_set,
             **super()._json_dict_(),
         }
 
     @classmethod
     def _from_json_dict_(
         cls,
-        samples: str,
-        two_qubit_gate: str,
-        single_qubit_gate_set: str,
+        samples: list[Sample],
+        two_qubit_gate: cirq.Gate,
+        single_qubit_gate_set: list[cirq.Gate],
         num_circuits: int,
         cycle_depths: list[int],
         **kwargs: Any,
@@ -398,18 +398,11 @@ class XEB(QCVVExperiment[XEBResults]):
         """
         kwargs.pop("num_qubits")  # Don't need for XEB
 
-        tq_gate = cirq.read_json(json_text=two_qubit_gate)
-        sq_gate_set = cirq.read_json(json_text=single_qubit_gate_set)
-        resolved_samples = cirq.read_json(
-            json_text=samples, resolvers=[*cirq.DEFAULT_RESOLVERS, qcvv_resolver]
-        )
-        experiment = cls(
+        return cls(
             num_circuits=num_circuits,
             cycle_depths=cycle_depths,
-            _prepare_circuits=False,
-            single_qubit_gate_set=sq_gate_set,
-            two_qubit_gate=tq_gate,
+            _samples=samples,
+            single_qubit_gate_set=single_qubit_gate_set,
+            two_qubit_gate=two_qubit_gate,
             **kwargs,
         )
-        experiment.samples = resolved_samples
-        return experiment

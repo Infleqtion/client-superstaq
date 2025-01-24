@@ -288,7 +288,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         *,
         random_seed: int | np.random.Generator | None = None,
         results_cls: type[ResultsT],
-        _prepare_circuits: bool = True,
+        _samples: Sequence[Sample] | None = None,
         **kwargs: Any,
     ) -> None:
         """Initializes a benchmarking experiment.
@@ -300,6 +300,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             cycle_depths: A sequence of depths to sample.
             random_seed: An optional seed to use for randomization.
             results_cls: The results class to use for the experiment.
+            _samples: Optional list of samples to construct the experiment from
             kwargs: Additional kwargs passed to the Superstaq service object.
         """
         self.qubits = cirq.LineQubit.range(num_qubits)
@@ -318,10 +319,10 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
         self._results_cls: type[ResultsT] = results_cls
 
-        if _prepare_circuits:
+        if not _samples:
             self.samples = self._prepare_experiment()
         else:
-            self.samples = []
+            self.samples = _samples
         """Create all the samples needed for the experiment."""
 
     ##############
@@ -392,10 +393,10 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             Json-able dictionary of the experiment data.
         """
         return {
+            "cycle_depths": self.cycle_depths,
             "num_circuits": self.num_circuits,
             "num_qubits": self.num_qubits,
-            "cycle_depths": list(self.cycle_depths),
-            "samples": cirq.to_json(self.samples),
+            "samples": self.samples,
             **self._service_kwargs,
         }
 
@@ -433,7 +434,8 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         """
         with open(filename, "r") as file_stream:
             experiment = cirq.read_json(
-                file_stream, resolvers=[*cirq.DEFAULT_RESOLVERS, qcvv_resolver]
+                file_stream,
+                resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS, qcvv_resolver],
             )
         return experiment
 
