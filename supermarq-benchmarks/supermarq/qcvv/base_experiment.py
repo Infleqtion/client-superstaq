@@ -36,9 +36,10 @@ class Sample:
     that is needed for analysis
     """
 
-    circuit_index: int
-    """The index of the circuit. There will be D samples with matching circuit index, one for each
-    cycle depth being measured. This index is useful for grouping results during analysis.
+    circuit_realization: int
+    """Indicates which realization of the random circuit this sample is. There will be D samples
+    with matching circuit realization value, one for each cycle depth being measured. This index is
+    useful for grouping results during analysis.
     """
     circuit: cirq.Circuit
     """The raw (i.e. pre-compiled) sample circuit."""
@@ -598,7 +599,9 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             probabilities = self.canonicalize_probabilities(
                 {key: count / sum(hist.values()) for key, count in hist.items()}, self.num_qubits
             )
-            records.append({"circuit_index": sample.circuit_index, **sample.data, **probabilities})
+            records.append(
+                {"circuit_realization": sample.circuit_realization, **sample.data, **probabilities}
+            )
 
         return self._results_cls(
             target="local_simulator",

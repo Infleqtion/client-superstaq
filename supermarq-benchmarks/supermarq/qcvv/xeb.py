@@ -183,14 +183,14 @@ class XEBResults(QCVVResults):
         df2 = pd.melt(
             df,
             value_vars=["00", "01", "10", "11"],
-            id_vars=["cycle_depth", "circuit_index"],
+            id_vars=["cycle_depth", "circuit_realization"],
             var_name="bitstring",
         )
         fig, axs = plt.subplots(nrows=4, sharex=True)
         fig.subplots_adjust(hspace=0)
         for k, bitstring in enumerate(["00", "01", "10", "11"]):
             data = df2[df2["bitstring"] == bitstring].pivot(
-                index="circuit_index", columns="cycle_depth", values="value"
+                index="circuit_realization", columns="cycle_depth", values="value"
             )
             cmap = mpl.colormaps["rocket"]
             norm = mpl.colors.Normalize(0, 1)  # or vmin, vmax
@@ -351,7 +351,7 @@ class XEB(QCVVExperiment[XEBResults]):
                         "two_qubit_gate": str(self.two_qubit_gate),
                         **analytic_probabilities,
                     },
-                    circuit_index=k,
+                    circuit_realization=k,
                 )
             )
 
