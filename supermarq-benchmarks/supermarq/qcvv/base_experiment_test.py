@@ -106,7 +106,7 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
     @classmethod
     def _from_json_dict_(
         cls,
-        samples: str,
+        samples: list[Sample],
         num_qubits: int,
         num_circuits: int,
         cycle_depths: list[int],

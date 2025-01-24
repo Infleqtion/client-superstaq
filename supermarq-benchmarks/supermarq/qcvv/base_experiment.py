@@ -80,14 +80,14 @@ class Sample:
         return {
             "circuit": css.serialize_circuits(self.circuit),
             "data": self.data,
-            "circuit_index": self.circuit_index,
+            "circuit_realization": self.circuit_realization,
         }
 
     @classmethod
     def _from_json_dict_(
         cls,
         circuit: str,
-        circuit_index: int,
+        circuit_realization: int,
         data: dict[str, Any],
         **_: Any,
     ) -> Self:
@@ -101,7 +101,7 @@ class Sample:
         """
         return cls(
             circuit=css.deserialize_circuits(circuit)[0],
-            circuit_index=circuit_index,
+            circuit_realization=circuit_realization,
             data=data,
         )
 

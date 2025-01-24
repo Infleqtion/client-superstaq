@@ -470,7 +470,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         clifford_op_gateset: cirq.CompilationTargetGateset = cirq.CZTargetGateset(),
         *,
         random_seed: int | np.random.Generator | None = None,
-        _prepare_circuits: bool = True,
+        _samples: list[Sample] | None = None,
         **kwargs: str,
     ) -> None:
         """Constructs an IRB experiment.
@@ -516,7 +516,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             cycle_depths=cycle_depths,
             random_seed=random_seed,
             results_cls=results_cls,
-            _prepare_circuits=_prepare_circuits,
+            _samples=_samples,
             **kwargs,
         )
 
@@ -752,7 +752,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         cls,
         samples: list[Sample],
         interleaved_gate: cirq.Gate,
-        clifford_op_gateset: list[cirq.CliffordGate],
+        clifford_op_gateset: cirq.CompilationTargetGateset,
         num_circuits: int,
         cycle_depths: list[int],
         **kwargs: Any,

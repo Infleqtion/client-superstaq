@@ -260,7 +260,7 @@ class XEB(QCVVExperiment[XEBResults]):
         two_qubit_gate: cirq.Gate | None = cirq.CZ,
         *,
         random_seed: int | np.random.Generator | None = None,
-        _prepare_circuits: bool = True,
+        _samples: list[Sample] | None = None,
         **kwargs: str,
     ) -> None:
         """Initializes a cross-entropy benchmarking experiment.
@@ -302,7 +302,7 @@ class XEB(QCVVExperiment[XEBResults]):
             cycle_depths=cycle_depths,
             random_seed=random_seed,
             results_cls=XEBResults,
-            _prepare_circuits=_prepare_circuits,
+            _samples=_samples,
             **kwargs,
         )
 
