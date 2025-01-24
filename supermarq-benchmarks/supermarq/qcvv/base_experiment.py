@@ -36,7 +36,7 @@ class Sample:
     """
 
     circuit_realization: int
-    """Indicates which realization of the random circuit this sameple is. There will be D samples
+    """Indicates which realization of the random circuit this sample is. There will be D samples
     with matching circuit realization value, one for each cycle depth being measured. This index is
     useful for grouping results during analysis.
     """
@@ -438,11 +438,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
                 {key: count / sum(hist.values()) for key, count in hist.items()}, self.num_qubits
             )
             records.append(
-                {
-                    "circuit_realization": sample.circuit_realization,
-                    **sample.data,
-                    **probabilities,
-                }
+                {"circuit_realization": sample.circuit_realization, **sample.data, **probabilities}
             )
 
         return self._results_cls(
