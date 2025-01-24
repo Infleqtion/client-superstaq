@@ -656,7 +656,7 @@ def test_canonicalize_bitstring() -> None:
         QCVVExperiment.canonicalize_bitstring("1234", 4)
 
     with pytest.raises(TypeError, match="Key must either be `numbers.Integral` or `str`."):
-        QCVVExperiment.canonicalize_bitstring(3.141, 4)
+        QCVVExperiment.canonicalize_bitstring(3.141, 4)  # type: ignore[arg-type]
 
 
 def test_canonicalize_probabilities() -> None:

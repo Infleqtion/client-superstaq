@@ -53,7 +53,7 @@ class Sample:
     def __hash__(self) -> int:
         return hash(
             (
-                self.circuit_index,
+                self.circuit_realization,
                 self.uuid,
                 self.circuit.freeze(),
                 tuple(sorted(self.data.items())),
