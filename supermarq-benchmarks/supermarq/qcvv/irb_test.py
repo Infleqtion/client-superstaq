@@ -156,7 +156,7 @@ def test_irb_build_circuit() -> None:
                     "single_qubit_gates": 4,
                     "two_qubit_gates": 0,
                 },
-                circuit_index=1,
+                circuit_realization=1,
             ),
             Sample(
                 circuit=cirq.Circuit(
@@ -189,7 +189,7 @@ def test_irb_build_circuit() -> None:
                     "single_qubit_gates": 6,
                     "two_qubit_gates": 0,
                 },
-                circuit_index=2,
+                circuit_realization=2,
             ),
             Sample(
                 circuit=cirq.Circuit(
@@ -216,7 +216,7 @@ def test_irb_build_circuit() -> None:
                     "single_qubit_gates": 4,
                     "two_qubit_gates": 0,
                 },
-                circuit_index=3,
+                circuit_realization=3,
             ),
             Sample(
                 circuit=cirq.Circuit(
@@ -252,7 +252,7 @@ def test_irb_build_circuit() -> None:
                     "single_qubit_gates": 7,
                     "two_qubit_gates": 0,
                 },
-                circuit_index=4,
+                circuit_realization=4,
             ),
         ]
 

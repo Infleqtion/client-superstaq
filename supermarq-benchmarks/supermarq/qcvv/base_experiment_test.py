@@ -92,7 +92,9 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
     def _build_circuits(self, num_circuits: int, cycle_depths: Iterable[int]) -> Sequence[Sample]:
         return [
             Sample(
-                circuit=MagicMock(spec=cirq.Circuit), data={"num": k, "depth": d}, circuit_index=k
+                circuit=MagicMock(spec=cirq.Circuit),
+                data={"num": k, "depth": d},
+                circuit_realization=k,
             )
             for k in range(num_circuits)
             for d in cycle_depths
@@ -139,12 +141,12 @@ def sample_circuits() -> list[Sample]:
         Sample(
             circuit=cirq.Circuit(cirq.CZ(*qubits), cirq.CZ(*qubits), cirq.measure(*qubits)),
             data={"circuit": 1},
-            circuit_index=1,
+            circuit_realization=1,
         ),
         Sample(
             circuit=cirq.Circuit(cirq.CX(*qubits), cirq.measure(*qubits)),
             data={"circuit": 2},
-            circuit_index=2,
+            circuit_realization=2,
         ),
     ]
 
@@ -307,8 +309,22 @@ def test_run_with_simulator(
         results.data,
         pd.DataFrame(
             [
-                {"circuit_index": 1, "circuit": 1, "00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0},
-                {"circuit_index": 2, "circuit": 2, "00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0},
+                {
+                    "circuit_realization": 1,
+                    "circuit": 1,
+                    "00": 0.0,
+                    "01": 1.0,
+                    "10": 0.0,
+                    "11": 0.0,
+                },
+                {
+                    "circuit_realization": 2,
+                    "circuit": 2,
+                    "00": 0.0,
+                    "01": 1.0,
+                    "10": 0.0,
+                    "11": 0.0,
+                },
             ]
         ),
     )
@@ -343,8 +359,22 @@ def test_run_with_simulator_default_target(
         results.data,
         pd.DataFrame(
             [
-                {"circuit_index": 1, "circuit": 1, "00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0},
-                {"circuit_index": 2, "circuit": 2, "00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0},
+                {
+                    "circuit_realization": 1,
+                    "circuit": 1,
+                    "00": 0.0,
+                    "01": 1.0,
+                    "10": 0.0,
+                    "11": 0.0,
+                },
+                {
+                    "circuit_realization": 2,
+                    "circuit": 2,
+                    "00": 0.0,
+                    "01": 1.0,
+                    "10": 0.0,
+                    "11": 0.0,
+                },
             ]
         ),
     )

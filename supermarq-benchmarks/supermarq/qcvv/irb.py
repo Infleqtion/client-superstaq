@@ -696,7 +696,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                         ),
                         "experiment": "RB",
                     },
-                    circuit_index=k,
+                    circuit_realization=k,
                 ),
             )
             if self.interleaved_gate is not None:
@@ -729,7 +729,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                             ),
                             "experiment": "IRB",
                         },
-                        circuit_index=k,
+                        circuit_realization=k,
                     ),
                 )
         return samples
