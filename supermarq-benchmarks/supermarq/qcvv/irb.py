@@ -360,8 +360,8 @@ class IRBResults(_RBResultsBase):
         )
         if filename is not None:
             figure = plot.get_figure()
-            assert figure is not None
-            figure.savefig(filename, bbox_inches="tight")
+            if figure is not None:
+                figure.savefig(filename, bbox_inches="tight")
 
     def _analyze(self) -> None:
         super()._analyze()
