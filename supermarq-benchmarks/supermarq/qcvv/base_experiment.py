@@ -44,6 +44,9 @@ def qcvv_resolver(cirq_type: str) -> type[Any] | None:
 
     Returns:
         The corresponding type object (if found) else None
+
+    Raises:
+        ValueError: If the provided type is not resolvable
     """
     prefix = "supermarq.qcvv."
     if cirq_type.startswith(prefix):
