@@ -342,7 +342,7 @@ class IRBResults(_RBResultsBase):
         """
         if self.data is None:
             raise RuntimeError("No data stored. Cannot make plot.")
-        plot = super()._plot_results()
+        plot = self._plot_results()
         irb_fit = self._fit_decay("IRB")
         xx = np.linspace(0, np.max(self.data.clifford_depth))
         plot.plot(
@@ -359,7 +359,8 @@ class IRBResults(_RBResultsBase):
             color="tab:orange",
         )
         if filename is not None:
-            plt.savefig(filename)
+            figure = plot.get_figure()
+            figure.savefig(filename, bbox_inches="tight")
 
     def _analyze(self) -> None:
         super()._analyze()
@@ -424,7 +425,7 @@ class RBResults(_RBResultsBase):
             filename: Optional argument providing a filename to save the plots to. Defaults to None,
                 indicating not to save the plot.
         """
-        super()._plot_results()
+        self._plot_results()
         if filename is not None:
             plt.savefig(filename)
 

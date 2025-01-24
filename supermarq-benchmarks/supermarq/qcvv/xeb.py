@@ -179,8 +179,8 @@ class XEBResults(QCVVResults):
 
         if filename is not None:
             name, extension = os.path.splitext(filename)
-            plot_1.savefig(name + "_ray_plot" + extension)
-            plot_2.savefig(name + "_circuit_fidelity_decay" + extension)
+            plot_1.savefig(name + "_ray_plot" + extension, bbox_inches="tight")
+            plot_2.savefig(name + "_circuit_fidelity_decay" + extension, bbox_inches="tight")
 
     def print_results(self) -> None:
         print(
@@ -234,7 +234,7 @@ class XEBResults(QCVVResults):
         )
         if filename is not None:
             name, extension = os.path.splitext(filename)
-            fig.savefig(name + "_speckle_plot" + extension)
+            fig.savefig(name + "_speckle_plot" + extension, bbox_inches="tight")
 
 
 class XEB(QCVVExperiment[XEBResults]):
