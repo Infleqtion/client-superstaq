@@ -360,7 +360,7 @@ class IRBResults(_RBResultsBase):
         )
         if filename is not None:
             figure = plot.get_figure()
-            if figure is not None:
+            if isinstance(figure, plt.Figure):
                 figure.savefig(filename, bbox_inches="tight")
 
     def _analyze(self) -> None:
