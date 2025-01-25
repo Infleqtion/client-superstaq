@@ -239,64 +239,20 @@ class MockQiskitRuntimeService:
         return {"token": self.token, "instance": self.instance, "channel": self.channel}
 
 
-def test_superstaq_client_use_ibmprovider() -> None:
-
-    # retriveing IBM credentials from a valid provided `QiskitRuntimeService` instance.
-    client = gss.superstaq_client._SuperstaqClient(
-        client_name="general-superstaq",
-        remote_host="http://example.com",
-        api_key="to_my_heart",
-        ibmq_provider=MockQiskitRuntimeService(),
-    )
-
-    assert client.client_kwargs == dict(
-        ibmq_channel="ibm_quantum",
-        ibmq_instance="instance",
-        ibmq_token="ibmq_token",
-    )
-
-    # failing to retrive IBM credentials from a bad provided `QiskitRuntimeService` instance.
-    with pytest.raises(
-        AssertionError,
-        match="No active account found for provided `qiskit_ibm_runtime.QiskitRuntimeService`",
-    ):
-        _ = gss.superstaq_client._SuperstaqClient(
-            client_name="general-superstaq",
-            remote_host="http://example.com",
-            api_key="to_my_heart",
-            ibmq_provider=MockQiskitRuntimeService(token=None),
-        )
-
-
 def test_superstaq_client_use_stored_ibmq_credential() -> None:
-    # `qiskit_ibm_runtime` not found
+    credentials = {"token": "ibmq_token", "instance": "instance", "channel": "ibm_quantum"}
     with mock.patch(
-        "general_superstaq.superstaq_client.importlib.util.find_spec",
-        return_value=None,
-    ):
-        with pytest.raises(
-            ModuleNotFoundError,
-            match="The `qiskit_ibm_runtime` is missing. The package is required to load configs.",
-        ):
-            gss.superstaq_client._SuperstaqClient(
-                client_name="general-superstaq",
-                remote_host="http://example.com",
-                api_key="to_my_heart",
-                use_stored_ibmq_credentials=True,
-            )
-
-    with mock.patch(
-        "qiskit_ibm_runtime.accounts.AccountManager.get",
-        return_value={"token": "ibmq_token", "instance": "instance", "channel": "ibm_quantum"},
+        "general_superstaq.superstaq_client.read_ibm_credentials", return_value=credentials
     ):
         client = gss.superstaq_client._SuperstaqClient(
             client_name="general-superstaq",
             remote_host="http://example.com",
             api_key="to_my_heart",
+            cq_token="cq_token",
             use_stored_ibmq_credentials=True,
         )
-
         assert client.client_kwargs == dict(
+            cq_token="cq_token",
             ibmq_channel="ibm_quantum",
             ibmq_instance="instance",
             ibmq_token="ibmq_token",
@@ -1108,6 +1064,31 @@ def test_superstaq_client_target_info_with_credentials(mock_post: mock.MagicMock
         json=expected_json,
         verify=False,
     )
+
+
+def test_read_ibm_credentials() -> None:
+    credentials = {
+        "default": {"token": "ibmq_token", "instance": "instance", "channel": "ibm_quantum"}
+    }
+    with mock.patch("pathlib.Path.is_file", return_value=True):
+        with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(credentials))):
+            assert gss.superstaq_client.read_ibm_credentials("default") == credentials.get(
+                "default"
+            )
+
+    # fail to find credentials file
+    with pytest.raises(
+        FileNotFoundError,
+        match="The `ibm-quantum.json` file was not found in any of the config directories.",
+    ):
+        with mock.patch("pathlib.Path.is_file", return_value=False):
+            gss.superstaq_client.read_ibm_credentials("default")
+
+    # fail with bad ibmq_name
+    with pytest.raises(KeyError, match="bad_key not a key in the config file found at"):
+        with mock.patch("pathlib.Path.is_file", return_value=True):
+            with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(credentials))):
+                gss.superstaq_client.read_ibm_credentials("bad_key")
 
 
 def test_find_api_key() -> None:
