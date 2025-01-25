@@ -23,7 +23,6 @@ import qiskit
 import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
-    import qiskit_ibm_runtime
     from _typeshed import SupportsItems
 
 
@@ -55,7 +54,6 @@ class SuperstaqProvider(gss.service.Service):
         ibmq_token: str | None = None,
         ibmq_instance: str | None = None,
         ibmq_channel: str | None = None,
-        ibmq_provider: qiskit_ibm_runtime.QiskitRuntimeService | None = None,
         use_stored_ibmq_credentials: bool = False,
         ibmq_name: str | None = None,
         **kwargs: Any,
@@ -87,8 +85,6 @@ class SuperstaqProvider(gss.service.Service):
                 to IBM hardware, or to access non-public IBM devices you may have access to.
             ibmq_instance: An optional instance to use when running IBM jobs.
             ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
-            ibmq_provider: A `qiskit_ibm_runtime.QiskitRuntimeService` object from which IBM
-                credentials are retrieved.
             use_stored_ibmq_credentials: Whether to retrieve IBM credentials from locally saved
                 accounts.
             ibmq_name: The name of the account to retrieve.
@@ -110,7 +106,6 @@ class SuperstaqProvider(gss.service.Service):
             ibmq_token=ibmq_token,
             ibmq_instance=ibmq_instance,
             ibmq_channel=ibmq_channel,
-            ibmq_provider=ibmq_provider,
             ibmq_name=ibmq_name,
             use_stored_ibmq_credentials=use_stored_ibmq_credentials,
             **kwargs,

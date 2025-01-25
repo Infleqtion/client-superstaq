@@ -11,9 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Client for making requests to Superstaq's API."""
+
 from __future__ import annotations
 
-import importlib
 import json
 import os
 import pathlib
@@ -23,16 +23,13 @@ import time
 import urllib
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import Any, TypeVar
 
 import requests
 
 import general_superstaq as gss
 
 TQuboKey = TypeVar("TQuboKey")
-
-if TYPE_CHECKING:
-    import qiskit_ibm_runtime
 
 
 class _SuperstaqClient:
@@ -61,7 +58,6 @@ class _SuperstaqClient:
         ibmq_token: str | None = None,
         ibmq_instance: str | None = None,
         ibmq_channel: str | None = None,
-        ibmq_provider: qiskit_ibm_runtime.QiskitRuntimeService | None = None,
         use_stored_ibmq_credentials: bool = False,
         ibmq_name: str | None = None,
         **kwargs: Any,
@@ -88,11 +84,9 @@ class _SuperstaqClient:
                 to IBM hardware, or to access non-public IBM devices you may have access to.
             ibmq_instance: An optional instance to use when running IBM jobs.
             ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
-            ibmq_provider: A `qiskit_ibm_runtime.QiskitRuntimeService` object from which IBM
-                credentials are retrieved.
             use_stored_ibmq_credentials: Whether to retrieve IBM credentials from locally saved
                 accounts.
-            ibmq_name: The name of the account to retrieve.
+            ibmq_name: The name of the account to retrieve. The default is `default-ibm-quantum`.
             kwargs: Other optimization and execution parameters.
         """
 
@@ -127,28 +121,10 @@ class _SuperstaqClient:
             kwargs["cq_token"] = cq_token
 
         if use_stored_ibmq_credentials:
-            if importlib.util.find_spec("qiskit_ibm_runtime") is None:
-                raise ModuleNotFoundError(
-                    "The `qiskit_ibm_runtime` is missing. The package is required to load configs."
-                )
-            else:
-                import qiskit_ibm_runtime
-
-            ibmq_account = qiskit_ibm_runtime.accounts.AccountManager.get(
-                channel=ibmq_channel, name=ibmq_name
-            )
-            kwargs["ibmq_token"] = ibmq_account.get("token")
-            kwargs["ibmq_instance"] = ibmq_account.get("instance")
-            kwargs["ibmq_channel"] = ibmq_account.get("channel")
-        elif ibmq_provider:
-            ibmq_active_account = ibmq_provider.active_account()
-            assert ibmq_active_account, (
-                "No active account found for provided `qiskit_ibm_runtime.QiskitRuntimeService` "
-                "instance."
-            )
-            kwargs["ibmq_token"] = ibmq_active_account.get("token")
-            kwargs["ibmq_instance"] = ibmq_active_account.get("instance")
-            kwargs["ibmq_channel"] = ibmq_active_account.get("channel")
+            config = gss.superstaq_client.read_ibm_credentials(ibmq_name or "default-ibm-quantum")
+            kwargs["ibmq_token"] = config.get("token")
+            kwargs["ibmq_instance"] = config.get("instance")
+            kwargs["ibmq_channel"] = config.get("channel")
         else:
             if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
                 raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
@@ -954,6 +930,37 @@ class _SuperstaqClient:
                 verbose={self.verbose!r},
             )"""
         )
+
+
+def read_ibm_credentials(ibm_name: str) -> dict[str, str]:
+    """Function to try to read IBM credentials from .qiskit/qiskit-ibm.json.
+
+    Raises:
+        FileNotFoundError: If the file is not found.
+
+    Returns:
+        Dictionary containing the ibm token, channel, and instance (if available).
+    """
+    home_dir = pathlib.Path.home()
+    data_dir = pathlib.Path(os.getenv("XDG_DATA_HOME", "~/.local/share")).expanduser()
+    home_dir = pathlib.Path.home()
+    for directory in [
+        data_dir.joinpath(".qiskit"),
+        data_dir.joinpath("super.tech"),
+        data_dir.joinpath("coldquanta"),
+        home_dir.joinpath(".super.tech"),
+        home_dir.joinpath(".coldquanta"),
+    ]:
+        path = directory.joinpath("ibm-quantum.json")
+        if path.is_file():
+            config = json.load(open(path))
+            if ibm_name not in config:
+                raise KeyError(f"{ibm_name} not a key in the config file found at {path}.")
+            return config.get(ibm_name)
+
+    raise FileNotFoundError(
+        "The `ibm-quantum.json` file was not found in any of the config directories."
+    )
 
 
 def find_api_key() -> str:
