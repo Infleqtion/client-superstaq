@@ -122,18 +122,19 @@ class _SuperstaqClient:
 
         if use_stored_ibmq_credentials:
             config = gss.superstaq_client.read_ibm_credentials(ibmq_name or "default-ibm-quantum")
-            kwargs["ibmq_token"] = config.get("token")
-            kwargs["ibmq_instance"] = config.get("instance")
-            kwargs["ibmq_channel"] = config.get("channel")
+            ibmq_token = config.get("token")
+            ibmq_instance = config.get("instance")
+            ibmq_channel = config.get("channel")
         else:
             if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
                 raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
-            if ibmq_token:
-                kwargs["ibmq_token"] = ibmq_token
-            if ibmq_instance:
-                kwargs["ibmq_instance"] = ibmq_instance
-            if ibmq_channel:
-                kwargs["ibmq_channel"] = ibmq_channel
+
+        if ibmq_token:
+            kwargs["ibmq_token"] = ibmq_token
+        if ibmq_instance:
+            kwargs["ibmq_instance"] = ibmq_instance
+        if ibmq_channel:
+            kwargs["ibmq_channel"] = ibmq_channel
 
         self.client_kwargs = kwargs
 
