@@ -87,7 +87,7 @@ class SuperstaqProvider(gss.service.Service):
             ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
             use_stored_ibmq_credentials: Whether to retrieve IBM credentials from locally saved
                 accounts.
-            ibmq_name: The name of the account to retrieve.
+            ibmq_name: The name of the account to retrieve. The default is `default-ibm-quantum`.
             kwargs: Other optimization and execution parameters.
 
         Raises:
