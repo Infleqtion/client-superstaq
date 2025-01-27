@@ -217,6 +217,7 @@ def test_xeb_analyse_results(tmp_path: pathlib.Path, xeb_experiment: XEB) -> Non
     )
 
     plot_filename = tmp_path / "example.png"
+    speckle_plot_filename = tmp_path / "example_speckle.png"
 
     results.analyze(plot_filename=plot_filename.as_posix())
     np.testing.assert_allclose(
@@ -230,12 +231,11 @@ def test_xeb_analyse_results(tmp_path: pathlib.Path, xeb_experiment: XEB) -> Non
     assert results.cycle_fidelity_estimate == pytest.approx(1.0613025)
     assert results.cycle_fidelity_estimate_std == pytest.approx(0.0597633930)
 
-    assert pathlib.Path(tmp_path / "example_ray_plot.png").exists()
-    assert pathlib.Path(tmp_path / "example_circuit_fidelity_decay.png").exists()
+    assert pathlib.Path(tmp_path / "example.png").exists()
 
     # Test the speckle plot
-    results.plot_speckle(filename=plot_filename.as_posix())
-    assert pathlib.Path(tmp_path / "example_speckle_plot.png").exists()
+    results.plot_speckle(filename=speckle_plot_filename.as_posix())
+    assert pathlib.Path(tmp_path / "example_speckle.png").exists()
 
 
 def test_results_no_data() -> None:

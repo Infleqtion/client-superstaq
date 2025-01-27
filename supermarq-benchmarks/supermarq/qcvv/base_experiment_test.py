@@ -27,6 +27,7 @@ import cirq_superstaq as css
 import numpy as np
 import pandas as pd
 import pytest
+import matplotlib.pyplot as plt
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
 
@@ -43,8 +44,9 @@ class ExampleResults(QCVVResults):
     def _analyze(self) -> None:
         self._example_final_result = 3.142
 
-    def plot_results(self, filename: str | None = None) -> None:
+    def plot_results(self, filename: str | None = None) -> plt.Figure:
         mock_plot(filename)
+        return plt.Figure()
 
     def print_results(self) -> None:
         mock_print("This is a test")

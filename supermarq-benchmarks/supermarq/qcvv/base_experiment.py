@@ -24,6 +24,7 @@ from typing import Any, Generic, TypeVar
 
 import cirq
 import cirq_superstaq as css
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
@@ -138,12 +139,14 @@ class QCVVResults(ABC):
         """A method that analyses the `data` attribute and stores the final experimental results."""
 
     @abstractmethod
-    def plot_results(self, filename: str | None = None) -> None:
+    def plot_results(self, filename: str | None = None) -> plt.Figure:
         """Plot the results of the experiment
 
         Args:
             filename: Optional argument providing a filename to save the plots to. Defaults to None,
                 indicating not to save the plot.
+        Returns:
+            A single matplotlib figure containing the relevant plots of the results data.
         """
 
     @abstractmethod
