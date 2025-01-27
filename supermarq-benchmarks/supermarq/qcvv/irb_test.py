@@ -436,3 +436,31 @@ def test_rb_results_not_analyzed() -> None:
             match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
         ):
             getattr(results, attr)
+
+
+def test_dump_and_load(
+    tmp_path_factory: pytest.TempPathFactory,
+    irb: IRB,
+) -> None:
+    filename = tmp_path_factory.mktemp("tempdir") / "file.json"
+    irb.to_file(filename)
+    exp = IRB.from_file(filename)
+
+    assert exp.samples == irb.samples
+    assert exp.num_qubits == irb.num_qubits
+    assert exp.num_circuits == irb.num_circuits
+    assert exp.cycle_depths == irb.cycle_depths
+    assert exp.interleaved_gate == irb.interleaved_gate
+    assert exp.clifford_op_gateset == irb.clifford_op_gateset
+
+    # Set interleaved gate to None and check again
+    irb.interleaved_gate = None
+    irb.to_file(filename)
+    exp = IRB.from_file(filename)
+
+    assert exp.samples == irb.samples
+    assert exp.num_qubits == irb.num_qubits
+    assert exp.num_circuits == irb.num_circuits
+    assert exp.cycle_depths == irb.cycle_depths
+    assert exp.interleaved_gate == irb.interleaved_gate
+    assert exp.clifford_op_gateset == irb.clifford_op_gateset
