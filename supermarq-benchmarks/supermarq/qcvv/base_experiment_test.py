@@ -18,16 +18,17 @@
 from __future__ import annotations
 
 import re
+import uuid
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from unittest.mock import MagicMock, call, patch
 
 import cirq
 import cirq_superstaq as css
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
-import matplotlib.pyplot as plt
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
 
@@ -61,6 +62,24 @@ class ExampleResults(QCVVResults):
 class ExampleExperiment(QCVVExperiment[ExampleResults]):
     """Example experiment class for testing"""
 
+    def __init__(
+        self,
+        num_qubits: int,
+        num_circuits: int,
+        cycle_depths: Iterable[int],
+        *,
+        random_seed: int | None = None,
+        **kwargs: str | bool,
+    ) -> None:
+        super().__init__(
+            num_qubits,
+            num_circuits,
+            cycle_depths,
+            random_seed=random_seed,
+            results_cls=ExampleResults,
+            **kwargs,
+        )
+
     def _build_circuits(self, num_circuits: int, cycle_depths: Iterable[int]) -> Sequence[Sample]:
         return [
             Sample(
@@ -81,7 +100,6 @@ def abc_experiment() -> ExampleExperiment:
             num_circuits=10,
             cycle_depths=[1, 3, 5],
             random_seed=42,
-            results_cls=ExampleResults,
             service_details="Some other details",
         )
 
@@ -136,7 +154,6 @@ def test_experiment_init_with_bad_layers() -> None:
             num_circuits=10,
             cycle_depths=[0],
             random_seed=42,
-            results_cls=ExampleResults,
             service_details="Some other details",
         )
 
@@ -524,18 +541,6 @@ def test_run_with_callable_bad_bitstring(
         abc_experiment.run_with_callable(test_callable, some="kwargs")
 
 
-def test_run_with_callable_bad_probabilities(
-    abc_experiment: ExampleExperiment,
-    sample_circuits: list[Sample],
-) -> None:
-    abc_experiment.samples = sample_circuits
-    test_callable = MagicMock()
-    test_callable.return_value = {"00": 0.0, "01": 0.2, "10": 0.7, "11": 0.09}
-
-    with pytest.raises(RuntimeError, match="Provided probabilities do not sum to 1.0."):
-        abc_experiment.run_with_callable(test_callable, some="kwargs")
-
-
 def test_results_collect_device_counts(
     abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
@@ -578,13 +583,62 @@ def test_results_collect_device_counts_no_job() -> None:
         results._collect_device_counts()
 
 
+def test_results_from_records(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+    # All accepted types
+    records_1 = {s.uuid: {"01": 1, "10": 3} for s in sample_circuits}
+    records_2 = {s.uuid: {"01": 0.25, "10": 0.75} for s in sample_circuits}
+    records_3 = {s.uuid: {1: 1, 2: 3} for s in sample_circuits}
+    records_4 = {s.uuid: {1: 0.25, 2: 0.75} for s in sample_circuits}
+
+    records_list = [records_1, records_2, records_3, records_4]
+
+    for record in records_list:
+        results = abc_experiment.results_from_records(record)  # type: ignore[arg-type]
+        pd.testing.assert_frame_equal(
+            results.data,
+            pd.DataFrame(
+                [{"circuit": n + 1, "00": 0.0, "01": 0.25, "10": 0.75, "11": 0.0} for n in range(2)]
+            ),
+        )
+
+
+def test_results_from_records_bad_input(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+    # Warn for missing samples
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            f"The following samples are missing records: {str(sample_circuits[1].uuid)}. These "
+            "will not be included in the results."
+        ),
+    ):
+        abc_experiment.results_from_records({sample_circuits[0].uuid: {"00": 10}})
+
+    # Warn for spurious records
+    new_uuid = uuid.uuid4()
+    with pytest.warns(
+        UserWarning,
+        match=re.escape("Unable to find matching sample for 1 record(s)."),
+    ):
+        abc_experiment.results_from_records({new_uuid: {"00": 10}})
+
+    # Error when processing samples
+    with pytest.raises(ValueError, match=re.escape("No non-zero counts.")):
+        abc_experiment.results_from_records({sample_circuits[0].uuid: {"00": 0}})
+
+
 def test_canonicalize_bitstring() -> None:
-    assert QCVVExperiment._canonicalize_bitstring("00", 2) == "00"
-    assert QCVVExperiment._canonicalize_bitstring(1, 2) == "01"
-    assert QCVVExperiment._canonicalize_bitstring(5, 4) == "0101"
+    assert QCVVExperiment.canonicalize_bitstring("00", 2) == "00"
+    assert QCVVExperiment.canonicalize_bitstring(1, 2) == "01"
+    assert QCVVExperiment.canonicalize_bitstring(5, 4) == "0101"
 
     with pytest.raises(ValueError, match="The key must be positive. Instead got -2."):
-        QCVVExperiment._canonicalize_bitstring(-2, 4)
+        QCVVExperiment.canonicalize_bitstring(-2, 4)
 
     with pytest.raises(
         ValueError,
@@ -592,30 +646,154 @@ def test_canonicalize_bitstring() -> None:
             "The key is too large to be encoded with 4 qubits. Got 72 " "but expected less than 16."
         ),
     ):
-        QCVVExperiment._canonicalize_bitstring(72, 4)
+        QCVVExperiment.canonicalize_bitstring(72, 4)
 
     with pytest.raises(
         ValueError,
         match=("The key contains the wrong number of bits. Got 5 entries " "but expected 4 bits."),
     ):
-        QCVVExperiment._canonicalize_bitstring("01010", 4)
+        QCVVExperiment.canonicalize_bitstring("01010", 4)
 
     with pytest.raises(ValueError, match="All entries in the bitstring must be 0 or 1. Got 1234."):
-        QCVVExperiment._canonicalize_bitstring("1234", 4)
+        QCVVExperiment.canonicalize_bitstring("1234", 4)
+
+    with pytest.raises(TypeError, match="Key must either be `numbers.Integral` or `str`."):
+        QCVVExperiment.canonicalize_bitstring(3.141, 4)  # type: ignore[arg-type]
 
 
 def test_canonicalize_probabilities() -> None:
-    p: dict[str | int, float] = {3: 0.3, 0: 0.1, "10": 0.6}
-    assert QCVVExperiment._canonicalize_probabilities(p, 2) == {
-        "00": 0.1,
-        "01": 0.0,
-        "10": 0.6,
-        "11": 0.3,
-    }
+    p1 = {0: 0.1, 1: 0.6, 3: 0.3}
+    p2 = {0: 1, 1: 6, 3: 3}
+    p3 = {"00": 0.1, "01": 0.6, "11": 0.3}
+    p4 = {"00": 1, "01": 6, "11": 3}
+    p_list: list[dict[str, int] | dict[str, float] | dict[int, int] | dict[int, float]] = [
+        p1,
+        p2,
+        p3,
+        p4,
+    ]
+    for p in p_list:
+        assert QCVVExperiment.canonicalize_probabilities(p, 2) == {
+            "00": 0.1,
+            "01": 0.6,
+            "10": 0.0,
+            "11": 0.3,
+        }
+
+    # Test for empty dictionary
+    assert QCVVExperiment.canonicalize_probabilities({}, 2) == {}
+
+
+def test_canonicalize_probabilities_bad_input() -> None:
+
+    # Negative counts
+    with pytest.raises(ValueError, match="Probabilities/counts must be positive."):
+        QCVVExperiment.canonicalize_probabilities({0: -2}, 2)
+
+    # No non-zero counts
+    with pytest.raises(ValueError, match="No non-zero counts."):
+        QCVVExperiment.canonicalize_probabilities({0: 0, 1: 0}, 2)
+
+    # Negative probabilities
+    with pytest.raises(ValueError, match="Probabilities/counts must be positive."):
+        QCVVExperiment.canonicalize_probabilities({0: 0.0, 1: -0.5}, 2)
+
+
+def test_experiment_get_item(
+    abc_experiment: ExampleExperiment,
+    sample_circuits: list[Sample],
+) -> None:
+    abc_experiment.samples = sample_circuits
+
+    for k, _ in enumerate(sample_circuits):
+        assert abc_experiment[k] == sample_circuits[k]
+        assert abc_experiment[sample_circuits[k].uuid] == sample_circuits[k]
+        assert abc_experiment[str(sample_circuits[k].uuid)] == sample_circuits[k]
+
+    with pytest.raises(TypeError, match="Key must be int, str or uuid.UUID"):
+        _ = abc_experiment[3.141]  # type: ignore[index]
 
     with pytest.raises(
-        RuntimeError,
-        match="Provided probabilities do not sum to 1.0. Got",  # Ignore exact value due to rounding
+        KeyError, match=re.escape("No sample found with UUID b55adabc-39c4-4f7b-a84d-906adaf0897e")
     ):
-        p[0] = 0.0
-        QCVVExperiment._canonicalize_probabilities(p, 2)
+        _ = abc_experiment["b55adabc-39c4-4f7b-a84d-906adaf0897e"]
+
+    with pytest.raises(
+        RuntimeError, match="Multiple samples found with matching key. Something has gone wrong."
+    ):
+        # Manually set duplicate sample uuids
+        abc_experiment.samples[0].uuid = abc_experiment.samples[1].uuid
+        _ = abc_experiment[sample_circuits[0].uuid]
+
+
+def test_map_records_to_samples(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+
+    records = {
+        0: {0: 0.1, 1: 0.6, 3: 0.3},
+        sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
+    }
+    mapped_samples = abc_experiment._map_records_to_samples(records)  # type: ignore[arg-type]
+    assert mapped_samples == {
+        sample_circuits[0]: {0: 0.1, 1: 0.6, 3: 0.3},
+        sample_circuits[1]: {0: 4, 1: 6, 3: 2},
+    }
+
+
+def test_map_records_to_samples_missing_key(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+    with pytest.warns(
+        UserWarning, match=re.escape("Unable to find matching sample for 1 record(s).")
+    ):
+        with pytest.warns(
+            UserWarning,
+            match=(
+                f"The following samples are missing records: {sample_circuits[0].uuid}. "
+                "These will not be included in the results."
+            ),
+        ):
+            abc_experiment._map_records_to_samples(
+                {
+                    5: {0: 0.1, 1: 0.6, 3: 0.3},
+                    sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
+                }
+            )
+
+
+def test_map_records_to_samples_bad_key_type(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+    # Bad key type
+    with pytest.raises(
+        TypeError,
+        match=re.escape("Key must be int, str or uuid.UUID, not <class 'float'>"),
+    ):
+        abc_experiment._map_records_to_samples(
+            {
+                5.0: {0: 0.1, 1: 0.6, 3: 0.3},  # type: ignore[dict-item]
+                sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
+            }
+        )
+
+
+def test_map_records_to_samples_duplicate_keys(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+    with pytest.raises(
+        KeyError,
+        match=re.escape(
+            f"Duplicate records found for sample with uuid: {str(sample_circuits[1].uuid)}."
+        ),
+    ):
+        abc_experiment._map_records_to_samples(
+            {
+                1: {0: 0.1, 1: 0.6, 3: 0.3},
+                sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
+            }
+        )

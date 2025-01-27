@@ -520,15 +520,15 @@ def test_results_no_data() -> None:
     with pytest.raises(RuntimeError, match="No data stored. Cannot make plot."):
         results.plot_results()
 
-    results = RBResults(target="example", experiment=MagicMock(spec=IRB))
+    rb_results = RBResults(target="example", experiment=MagicMock(spec=IRB))
     with pytest.raises(RuntimeError, match="No data stored. Cannot perform fit."):
-        results._fit_decay()
+        rb_results._fit_decay()
 
     with pytest.raises(RuntimeError, match="No data stored. Cannot make plot."):
-        results._plot_results()
+        rb_results._plot_results()
 
     with pytest.raises(RuntimeError, match="No data stored. Cannot make plot."):
-        results.plot_results()
+        rb_results.plot_results()
 
 
 def test_irb_results_not_analyzed() -> None:
