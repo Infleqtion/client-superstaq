@@ -51,10 +51,8 @@ def qcvv_resolver(cirq_type: str) -> type[Any] | None:
     prefix = "supermarq.qcvv."
     if cirq_type.startswith(prefix):
         name = cirq_type[len(prefix) :]
-        if name not in supermarq.qcvv.__all__:
-            raise ValueError(f"{name} is not resolvable from the QCVV library")
-        if hasattr(supermarq.qcvv, name):
-            return getattr(supermarq.qcvv, name)
+        if name in supermarq.qcvv.__all__:
+            return getattr(supermarq.qcvv, name, None)
     return None
 
 
@@ -83,7 +81,7 @@ class Sample:
             Json-able dictionary of the sample data.
         """
         return {
-            "circuit": css.serialize_circuits(self.circuit),
+            "circuit": self.circuit,
             "data": self.data,
             "circuit_realization": self.circuit_realization,
         }
@@ -91,7 +89,7 @@ class Sample:
     @classmethod
     def _from_json_dict_(
         cls,
-        circuit: str,
+        circuit: cirq.Circuit,
         circuit_realization: int,
         data: dict[str, Any],
         **_: Any,
@@ -105,7 +103,7 @@ class Sample:
             The deserialized Sample object.
         """
         return cls(
-            circuit=css.deserialize_circuits(circuit)[0],
+            circuit=circuit,
             circuit_realization=circuit_realization,
             data=data,
         )
