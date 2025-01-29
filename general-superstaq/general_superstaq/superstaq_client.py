@@ -936,8 +936,14 @@ class _SuperstaqClient:
 def read_ibm_credentials(ibm_name: str) -> dict[str, str]:
     """Function to try to read IBM credentials from .qiskit/qiskit-ibm.json.
 
+    Args:
+        ibm_name: The name under which the IBM account credentials are locally stored.
+
     Raises:
         FileNotFoundError: If the file is not found.
+        KeyError: If the provided `ibm_name` does not have credentials stored in the
+            config file or `token` and/or `channel` keys are missing for the credentials
+            of the account under `ibm_name`.
 
     Returns:
         Dictionary containing the ibm token, channel, and instance (if available).
@@ -956,8 +962,19 @@ def read_ibm_credentials(ibm_name: str) -> dict[str, str]:
         if path.is_file():
             config = json.load(open(path))
             if ibm_name not in config:
-                raise KeyError(f"{ibm_name} not a key in the config file found at {path}.")
-            return config.get(ibm_name)
+                raise KeyError(
+                    f"No account credentials saved under the name {ibm_name}"
+                    f" in the config file found at {path}."
+                )
+
+            credentials = config.get(ibm_name)
+            if any(key not in credentials for key in ["token", "channel"]):
+                raise KeyError(
+                    "`token` and/or `channel` keys missing from credentials for the account",
+                    f" under the name {ibm_name} in the file {path}.",
+                )
+
+            return credentials
 
     raise FileNotFoundError(
         "The `ibm-quantum.json` file was not found in any of the config directories."
