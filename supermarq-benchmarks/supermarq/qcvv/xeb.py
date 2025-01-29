@@ -127,8 +127,8 @@ class XEBResults(QCVVResults):
                 indicating not to save the plot.
 
         Returns:
-            A single matplotlib figure containing both the linear fit per cycle depth
-            and the decay with cycle depth.
+            A single matplotlib figure containing both the linear fit per cycle depth and the decay
+            with cycle depth.
 
         Raises:
             RuntimeError: If there is no data stored.
@@ -194,15 +194,25 @@ class XEBResults(QCVVResults):
             f"+/- {self.cycle_fidelity_estimate_std:.5}"
         )
 
-    def plot_speckle(self, filename: str | None = None) -> None:
+    def plot_speckle(self, filename: str | None = None) -> plt.Figure:
         """Creates the speckle plot of the XEB data. See Fig. S18 of
         https://arxiv.org/abs/1910.11333 for an explanation of this plot.
 
         Args:
             filename: Optional argument providing a filename to save the plots to. Defaults to None,
                 indicating not to save the plot.
+
+        Returns:
+            A matplotlib figure with the speckle plot.
+
+        Raises:
+            RuntimeError: If there is no data stored.
         """
         df = self.data
+
+        if self.data is None:
+            raise RuntimeError("No data stored. Cannot plot results.")
+
         df2 = pd.melt(
             df,
             value_vars=["00", "01", "10", "11"],
@@ -240,6 +250,8 @@ class XEBResults(QCVVResults):
         )
         if filename is not None:
             fig.savefig(filename, bbox_inches="tight")
+
+        return fig
 
 
 class XEB(QCVVExperiment[XEBResults]):

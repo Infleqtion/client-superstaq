@@ -437,8 +437,7 @@ class RBResults(_RBResultsBase):
                 indicating not to save the plot.
 
         Returns:
-            A single matplotlib figure containing the RB decay plot and the corresponding
-            fit.
+            A single matplotlib figure containing the RB decay plot and the corresponding fit.
 
         Raises:
             RuntimeError: If no data is stored.

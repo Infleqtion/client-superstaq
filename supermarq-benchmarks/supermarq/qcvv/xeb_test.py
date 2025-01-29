@@ -246,6 +246,9 @@ def test_results_no_data() -> None:
     with pytest.raises(RuntimeError, match="No data stored. Cannot plot results."):
         results.plot_results()
 
+    with pytest.raises(RuntimeError, match="No data stored. Cannot plot results."):
+        results.plot_speckle()
+
     with pytest.raises(
         RuntimeError, match="No stored dataframe of circuit fidelities. Something has gone wrong."
     ):
