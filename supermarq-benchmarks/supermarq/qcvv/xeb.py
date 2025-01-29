@@ -17,6 +17,7 @@ from __future__ import annotations
 import itertools
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 import cirq
 import matplotlib as mpl
@@ -29,6 +30,9 @@ import tqdm.auto
 import tqdm.contrib.itertools
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 @dataclass
@@ -293,6 +297,8 @@ class XEB(QCVVExperiment[XEBResults]):
         two_qubit_gate: cirq.Gate | None = cirq.CZ,
         *,
         random_seed: int | np.random.Generator | None = None,
+        _samples: list[Sample] | None = None,
+        **kwargs: str,
     ) -> None:
         """Initializes a cross-entropy benchmarking experiment.
 
@@ -333,6 +339,8 @@ class XEB(QCVVExperiment[XEBResults]):
             cycle_depths=cycle_depths,
             random_seed=random_seed,
             results_cls=XEBResults,
+            _samples=_samples,
+            **kwargs,
         )
 
     ###################
@@ -393,3 +401,45 @@ class XEB(QCVVExperiment[XEBResults]):
             )
 
         return random_circuits
+
+    def _json_dict_(self) -> dict[str, Any]:
+        """Converts the experiment to a json-able dictionary that can be used to recreate the
+        experiment object. Note that the state of the random number generator is not stored.
+
+        Returns:
+            Json-able dictionary of the experiment data.
+        """
+        return {
+            "two_qubit_gate": self.two_qubit_gate,
+            "single_qubit_gate_set": self.single_qubit_gate_set,
+            **super()._json_dict_(),
+        }
+
+    @classmethod
+    def _from_json_dict_(
+        cls,
+        samples: list[Sample],
+        two_qubit_gate: cirq.Gate,
+        single_qubit_gate_set: list[cirq.Gate],
+        num_circuits: int,
+        cycle_depths: list[int],
+        **kwargs: Any,
+    ) -> Self:
+        """Creates a experiment from a dictionary of the data.
+
+        Args:
+            dictionary: Dict containing the experiment data.
+
+        Returns:
+            The deserialized experiment object.
+        """
+        kwargs.pop("num_qubits")  # Don't need for XEB
+
+        return cls(
+            num_circuits=num_circuits,
+            cycle_depths=cycle_depths,
+            _samples=samples,
+            single_qubit_gate_set=single_qubit_gate_set,
+            two_qubit_gate=two_qubit_gate,
+            **kwargs,
+        )
