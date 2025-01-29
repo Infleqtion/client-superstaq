@@ -125,9 +125,9 @@ class _SuperstaqClient:
             ibmq_token = config.get("token")
             ibmq_instance = config.get("instance")
             ibmq_channel = config.get("channel")
-        else:
-            if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
-                raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
+
+        if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
+            raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
 
         if ibmq_token:
             kwargs["ibmq_token"] = ibmq_token
@@ -948,17 +948,16 @@ def read_ibm_credentials(ibm_name: str) -> dict[str, str]:
     Returns:
         Dictionary containing the ibm token, channel, and instance (if available).
     """
-    home_dir = pathlib.Path.home()
     data_dir = pathlib.Path(os.getenv("XDG_DATA_HOME", "~/.local/share")).expanduser()
     home_dir = pathlib.Path.home()
     for directory in [
-        data_dir.joinpath(".qiskit"),
+        home_dir.joinpath(".qiskit"),
         data_dir.joinpath("super.tech"),
         data_dir.joinpath("coldquanta"),
         home_dir.joinpath(".super.tech"),
         home_dir.joinpath(".coldquanta"),
     ]:
-        path = directory.joinpath("ibm-quantum.json")
+        path = directory.joinpath("qiskit-ibm.json")
         if path.is_file():
             config = json.load(open(path))
             if ibm_name not in config:
@@ -977,7 +976,7 @@ def read_ibm_credentials(ibm_name: str) -> dict[str, str]:
             return credentials
 
     raise FileNotFoundError(
-        "The `ibm-quantum.json` file was not found in any of the config directories."
+        "The `qiskit-ibm.json` file was not found in any of the config directories."
     )
 
 
