@@ -1055,7 +1055,7 @@ def test_read_ibm_credentials() -> None:
     # fail to find credentials file
     with pytest.raises(
         FileNotFoundError,
-        match="The `ibm-quantum.json` file was not found in any of the config directories.",
+        match="The `qiskit-ibm.json` file was not found in any of the config directories.",
     ):
         with mock.patch("pathlib.Path.is_file", return_value=False):
             gss.superstaq_client.read_ibm_credentials("default")
