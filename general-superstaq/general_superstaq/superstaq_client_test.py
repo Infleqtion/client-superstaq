@@ -215,30 +215,6 @@ def test_superstaq_client_validate_email_error(
         _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
 
 
-class MockQiskitRuntimeService:
-    """MockQiskitRuntimeService is a mock class to represent an `IBMProvider`."""
-
-    def __init__(
-        self,
-        token: str | None = "ibmq_token",
-        instance: str = "instance",
-        channel: str = "ibm_quantum",
-    ) -> None:
-        self.token = token
-        self.instance = instance
-        self.channel = channel
-
-    def active_account(self) -> dict[str, str] | None:
-        """Mock of the `IBMProvider.active_account` function.
-
-        Returns:
-            A dictionary with the `token`, `instance`, and `channel`.
-        """
-        if not self.token:
-            return None
-        return {"token": self.token, "instance": self.instance, "channel": self.channel}
-
-
 def test_superstaq_client_use_stored_ibmq_credential() -> None:
     credentials = {"token": "ibmq_token", "instance": "instance", "channel": "ibm_quantum"}
     with mock.patch(
@@ -1085,10 +1061,17 @@ def test_read_ibm_credentials() -> None:
             gss.superstaq_client.read_ibm_credentials("default")
 
     # fail with bad ibmq_name
-    with pytest.raises(KeyError, match="bad_key not a key in the config file found at"):
+    with pytest.raises(KeyError, match="No account credentials saved under the name bad_key"):
         with mock.patch("pathlib.Path.is_file", return_value=True):
             with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(credentials))):
                 gss.superstaq_client.read_ibm_credentials("bad_key")
+
+    # fail with missing token field in config
+    bad_credentials = {"default": {"instance": "instance", "channel": "ibm_quantum"}}
+    with pytest.raises(KeyError, match="`token` and/or `channel` keys missing from credentials"):
+        with mock.patch("pathlib.Path.is_file", return_value=True):
+            with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(bad_credentials))):
+                gss.superstaq_client.read_ibm_credentials("default")
 
 
 def test_find_api_key() -> None:
