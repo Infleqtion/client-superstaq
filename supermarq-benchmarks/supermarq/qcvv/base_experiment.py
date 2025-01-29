@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import cirq
 import cirq_superstaq as css
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
@@ -186,12 +187,19 @@ class QCVVResults(ABC):
         The number of circuits in the experiment."""
         return self.experiment.num_circuits
 
-    def analyze(self, plot_results: bool = True, print_results: bool = True) -> None:
+    def analyze(
+        self,
+        plot_results: bool = True,
+        print_results: bool = True,
+        plot_filename: str | None = None,
+    ) -> None:
         """Perform the experiment analysis and store the results in the `results` attribute.
 
         Args:
             plot_results: Whether to generate plots of the results. Defaults to True.
             print_results: Whether to print the final results. Defaults to True.
+            plot_filename: Optional argument providing a filename to save the plots to. Ignored if
+                `plot_results=False` Defaults to None, indicating not to save the plot.
         """
         if not self.data_ready:
             warnings.warn(
@@ -204,7 +212,7 @@ class QCVVResults(ABC):
         self._analyze()
 
         if plot_results:
-            self.plot_results()
+            self.plot_results(filename=plot_filename)
 
         if print_results:
             self.print_results()
@@ -214,8 +222,15 @@ class QCVVResults(ABC):
         """A method that analyses the `data` attribute and stores the final experimental results."""
 
     @abstractmethod
-    def plot_results(self) -> None:
-        """Plot the results of the experiment"""
+    def plot_results(self, filename: str | None = None) -> plt.Figure:
+        """Plot the results of the experiment
+
+        Args:
+            filename: Optional argument providing a filename to save the plots to. Defaults to None,
+                indicating not to save the plot.
+        Returns:
+            A single matplotlib figure containing the relevant plots of the results data.
+        """
 
     @abstractmethod
     def print_results(self) -> None:

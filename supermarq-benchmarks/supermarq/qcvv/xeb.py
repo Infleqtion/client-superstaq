@@ -120,8 +120,19 @@ class XEBResults(QCVVResults):
         self._cycle_fidelity_estimate = np.exp(cycle_fit.slope)
         self._cycle_fidelity_estimate_std = self.cycle_fidelity_estimate * cycle_fit.stderr
 
-    def plot_results(self) -> None:
+    def plot_results(
+        self,
+        filename: str | None = None,
+    ) -> plt.Figure:
         """Plot the experiment data and the corresponding fits.
+
+        Args:
+            filename: Optional argument providing a filename to save the plots to. Defaults to None,
+                indicating not to save the plot.
+
+        Returns:
+            A single matplotlib figure containing both the linear fit per cycle depth and the decay
+            with cycle depth.
 
         Raises:
             RuntimeError: If there is no data stored.
@@ -134,44 +145,52 @@ class XEBResults(QCVVResults):
                 "No stored dataframe of circuit fidelities. Something has gone wrong."
             )
 
-        plot_1 = sns.lmplot(
-            data=self.data,
-            x="sum_p(x)p(x)",
-            y="sum_p(x)p^(x)",
-            hue="cycle_depth",
-            palette="dark:r",
-            legend="full",
-            ci=None,
-        )
-        sns.move_legend(plot_1, "center right")
-        ax_1 = plot_1.axes.item()
-        plot_1.tight_layout()
-        ax_1.set_xlabel(r"$\sum p(x)^2$", fontsize=15)
-        ax_1.set_ylabel(r"$\sum p(x) \hat{p}(x)$", fontsize=15)
-        ax_1.set_title(r"Linear fit per cycle depth", fontsize=15)
+        fig, axs = plt.subplots(1, 2, figsize=(10, 4.8))
+        colours = sns.color_palette("dark:r", n_colors=len(self.data.cycle_depth.unique()))
+        for depth, color in zip(sorted(self.data.cycle_depth.unique()), colours):
+            sns.regplot(
+                data=self.data[self.data.cycle_depth == depth],
+                x="sum_p(x)p(x)",
+                y="sum_p(x)p^(x)",
+                ci=None,
+                ax=axs[0],
+                color=color,
+                label=depth,
+            )
+        axs[0].legend(title="Cycle depth", bbox_to_anchor=(1.0, 0.5), loc="center left")
+        axs[0].set_xlabel(r"$\sum p(x)^2$", fontsize=15)
+        axs[0].set_ylabel(r"$\sum p(x) \hat{p}(x)$", fontsize=15)
+        axs[0].set_title(r"Linear fit per cycle depth", fontsize=15, wrap=True)
 
-        plot_2 = sns.lmplot(
+        sns.regplot(
             data=self._circuit_fidelities,
             x="cycle_depth",
             y="circuit_fidelity_estimate",
-            hue="cycle_depth",
-            palette="dark:r",
+            ax=axs[1],
+            fit_reg=False,
+            color="tab:red",
         )
-        ax_2 = plot_2.axes.item()
-        plot_2.tight_layout()
-        ax_2.set_xlabel(r"Cycle depth", fontsize=15)
-        ax_2.set_ylabel(r"Circuit fidelity", fontsize=15)
-        ax_2.set_title(r"Exponential decay of circuit fidelity", fontsize=15)
+        axs[1].set_xlabel(r"Cycle depth", fontsize=15)
+        axs[1].set_ylabel(r"Circuit fidelity", fontsize=15)
+        axs[1].set_title(r"Exponential decay of circuit fidelity", fontsize=15, wrap=True)
 
         # Add fit line
         x = np.linspace(
             self._circuit_fidelities.cycle_depth.min(), self._circuit_fidelities.cycle_depth.max()
         )
         y = self.cycle_fidelity_estimate**x
-        y_p = (self.cycle_fidelity_estimate + self.cycle_fidelity_estimate_std) ** x
-        y_m = (self.cycle_fidelity_estimate - self.cycle_fidelity_estimate_std) ** x
-        ax_2.plot(x, y, color="tab:red", linewidth=2)
-        ax_2.fill_between(x, y_m, y_p, alpha=0.2, color="tab:red")
+        y_p = (self.cycle_fidelity_estimate + 1.96 * self.cycle_fidelity_estimate_std) ** x
+        y_m = (self.cycle_fidelity_estimate - 1.96 * self.cycle_fidelity_estimate_std) ** x
+        axs[1].plot(x, y, color="tab:red", linewidth=2)
+        axs[1].fill_between(x, y_m, y_p, alpha=0.25, color="tab:red", label="95% CI")
+        axs[1].legend()
+
+        fig.tight_layout()
+
+        if filename is not None:
+            fig.savefig(filename, bbox_inches="tight")
+
+        return fig
 
     def print_results(self) -> None:
         print(
@@ -179,11 +198,25 @@ class XEBResults(QCVVResults):
             f"+/- {self.cycle_fidelity_estimate_std:.5}"
         )
 
-    def plot_speckle(self) -> None:
+    def plot_speckle(self, filename: str | None = None) -> plt.Figure:
         """Creates the speckle plot of the XEB data. See Fig. S18 of
         https://arxiv.org/abs/1910.11333 for an explanation of this plot.
+
+        Args:
+            filename: Optional argument providing a filename to save the plots to. Defaults to None,
+                indicating not to save the plot.
+
+        Returns:
+            A matplotlib figure with the speckle plot.
+
+        Raises:
+            RuntimeError: If there is no data stored.
         """
         df = self.data
+
+        if self.data is None:
+            raise RuntimeError("No data stored. Cannot plot results.")
+
         df2 = pd.melt(
             df,
             value_vars=["00", "01", "10", "11"],
@@ -219,6 +252,10 @@ class XEBResults(QCVVResults):
         fig.colorbar(
             mpl.cm.ScalarMappable(norm, cmap), ax=axs, orientation="vertical", label="Probability"
         )
+        if filename is not None:
+            fig.savefig(filename, bbox_inches="tight")
+
+        return fig
 
 
 class XEB(QCVVExperiment[XEBResults]):

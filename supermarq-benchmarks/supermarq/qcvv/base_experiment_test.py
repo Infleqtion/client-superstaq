@@ -26,6 +26,7 @@ from unittest.mock import MagicMock, call, patch
 
 import cirq
 import cirq_superstaq as css
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
@@ -57,8 +58,9 @@ class ExampleResults(QCVVResults):
     def _analyze(self) -> None:
         self._example_final_result = 3.142
 
-    def plot_results(self) -> None:
-        mock_plot()
+    def plot_results(self, filename: str | None = None) -> plt.Figure:
+        mock_plot(filename)
+        return plt.Figure()
 
     def print_results(self) -> None:
         mock_print("This is a test")
@@ -239,9 +241,9 @@ def test_results_analyze(abc_experiment: ExampleExperiment) -> None:
         target="target", experiment=abc_experiment, data=MagicMock(spec=pd.DataFrame)
     )
 
-    results.analyze(plot_results=True, print_results=True)
+    results.analyze(plot_results=True, print_results=True, plot_filename="test_name")
     assert results.example_final_result == 3.142
-    mock_plot.assert_called_once()
+    mock_plot.assert_called_once_with("test_name")
     mock_print.assert_called_once_with("This is a test")
 
 
