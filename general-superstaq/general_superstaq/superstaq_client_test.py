@@ -215,6 +215,26 @@ def test_superstaq_client_validate_email_error(
         _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
 
 
+def test_superstaq_client_use_stored_ibmq_credential() -> None:
+    credentials = {"token": "ibmq_token", "instance": "instance", "channel": "ibm_quantum"}
+    with mock.patch(
+        "general_superstaq.superstaq_client.read_ibm_credentials", return_value=credentials
+    ):
+        client = gss.superstaq_client._SuperstaqClient(
+            client_name="general-superstaq",
+            remote_host="http://example.com",
+            api_key="to_my_heart",
+            cq_token="cq_token",
+            use_stored_ibmq_credentials=True,
+        )
+        assert client.client_kwargs == dict(
+            cq_token="cq_token",
+            ibmq_channel="ibm_quantum",
+            ibmq_instance="instance",
+            ibmq_token="ibmq_token",
+        )
+
+
 @mock.patch("requests.Session.post")
 def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
     mock_post.return_value.status_code = requests.codes.ok
@@ -1020,6 +1040,68 @@ def test_superstaq_client_target_info_with_credentials(mock_post: mock.MagicMock
         json=expected_json,
         verify=False,
     )
+
+
+def test_read_ibm_credentials() -> None:
+    credentials = {
+        "default-ibm-quantum": {
+            "token": "ibmq_token",
+            "instance": "instance",
+            "channel": "ibm_quantum",
+            "is_default_account": "True",
+        },
+        "myAccount": {"token": "account_token", "channel": "ibm_cloud"},
+    }
+    one_none_default_account = {"myAccount": {"token": "account_token", "channel": "ibm_cloud"}}
+    multiple_none_default_account = {
+        "myAccount": {"token": "account_token", "channel": "ibm_cloud"},
+        "otherAccount": {"token": "other_token", "channel": "ibm_quantum"},
+    }
+
+    bad_credentials = {"account": {"instance": "instance", "channel": "ibm_quantum"}}
+
+    with mock.patch("pathlib.Path.is_file", return_value=True):
+        with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(credentials))):
+            # multiple accounts with a default marked
+            assert gss.superstaq_client.read_ibm_credentials(None) == credentials.get(
+                "default-ibm-quantum"
+            )
+            assert gss.superstaq_client.read_ibm_credentials("myAccount") == credentials.get(
+                "myAccount"
+            )
+        # only one account
+        with mock.patch(
+            "builtins.open", mock.mock_open(read_data=json.dumps(one_none_default_account))
+        ):
+            assert gss.superstaq_client.read_ibm_credentials(None) == one_none_default_account.get(
+                "myAccount"
+            )
+
+        # fail because multiple accounts found with none marked as default
+        with pytest.raises(
+            ValueError, match="Multiple accounts found but none are marked as default."
+        ):
+            with mock.patch(
+                "builtins.open", mock.mock_open(read_data=json.dumps(multiple_none_default_account))
+            ):
+                gss.superstaq_client.read_ibm_credentials(None)
+
+        # fail because provided name is not an account in the config
+        with pytest.raises(KeyError, match="No account credentials saved under the name 'bad_key'"):
+            with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(credentials))):
+                gss.superstaq_client.read_ibm_credentials("bad_key")
+
+        # fail with missing token field in config
+        with pytest.raises(
+            KeyError, match="`token` and/or `channel` keys missing from credentials"
+        ):
+            with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(bad_credentials))):
+                gss.superstaq_client.read_ibm_credentials(None)
+    #
+    # fail to find credentials file
+    with pytest.raises(FileNotFoundError, match="The `qiskit-ibm.json` file was not found in"):
+        with mock.patch("pathlib.Path.is_file", return_value=False):
+            gss.superstaq_client.read_ibm_credentials(None)
 
 
 def test_find_api_key() -> None:
