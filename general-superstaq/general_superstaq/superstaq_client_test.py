@@ -1048,6 +1048,7 @@ def test_read_ibm_credentials() -> None:
             "token": "ibmq_token",
             "instance": "instance",
             "channel": "ibm_quantum",
+            "is_default_account": "True",
         },
         "myAccount": {"token": "account_token", "channel": "ibm_cloud"},
     }
@@ -1078,7 +1079,7 @@ def test_read_ibm_credentials() -> None:
 
         # fail because multiple accounts found with none marked as default
         with pytest.raises(
-            ValueError, match="Multiple accounts found but none are marked default with "
+            ValueError, match="Multiple accounts found but none are marked as default."
         ):
             with mock.patch(
                 "builtins.open", mock.mock_open(read_data=json.dumps(multiple_none_default_account))

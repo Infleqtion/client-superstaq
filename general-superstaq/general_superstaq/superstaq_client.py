@@ -957,15 +957,13 @@ def read_ibm_credentials(ibmq_name: str | None) -> dict[str, str]:
         if ibmq_name is None:
             if len(config) == 1:
                 ibmq_name = list(config.keys())[0]
-            elif "default-ibm-quantum" not in config:
-                raise ValueError(
-                    "Multiple accounts found but none are marked default with ",
-                    "`default-ibm-quantum`. Please provide the name of the ",
-                    "account to retrieve.",
-                )
+            elif any(creds.get("is_default_account") for creds in config.values()):
+                ibmq_name = next(name for name in config if config[name].get("is_default_account"))
             else:
-                ibmq_name = "default-ibm-quantum"
-
+                raise ValueError(
+                    "Multiple accounts found but none are marked as default.",
+                    " Please provide the name of the account to retrieve.",
+                )
         elif ibmq_name not in config:
             raise KeyError(
                 f"No account credentials saved under the name {ibmq_name}"
