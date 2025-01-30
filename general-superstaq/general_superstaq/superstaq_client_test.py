@@ -1087,7 +1087,7 @@ def test_read_ibm_credentials() -> None:
                 gss.superstaq_client.read_ibm_credentials(None)
 
         # fail because provided name is not an account in the config
-        with pytest.raises(KeyError, match="No account credentials saved under the name bad_key"):
+        with pytest.raises(KeyError, match="No account credentials saved under the name 'bad_key'"):
             with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(credentials))):
                 gss.superstaq_client.read_ibm_credentials("bad_key")
 
