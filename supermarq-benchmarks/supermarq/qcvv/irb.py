@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 import cirq
 import cirq.circuits
@@ -29,6 +30,9 @@ from tqdm.auto import trange
 from tqdm.contrib.itertools import product
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 ####################################################################################################
@@ -246,7 +250,12 @@ class _RBResultsBase(QCVVResults):
         return A * (np.asarray(alpha) ** x) + B
 
     def _plot_results(self) -> plt.Axes:
-        """Plot the exponential decay of the circuit fidelity with cycle depth."""
+        """Plot the exponential decay of the circuit fidelity with cycle depth.
+
+        Returns:
+            A matplotlib axiss containing the RB decay plots and the corresponding
+            fit.
+        """
         if self.data is None:
             raise RuntimeError("No data stored. Cannot make plot.")
         plot = sns.scatterplot(
@@ -327,15 +336,26 @@ class IRBResults(_RBResultsBase):
             raise self._not_analyzed
         return self._average_interleaved_gate_error_std
 
-    def plot_results(self) -> None:
+    def plot_results(
+        self,
+        filename: str | None = None,
+    ) -> plt.Figure:
         """Plot the exponential decay of the circuit fidelity with cycle depth.
+
+        Args:
+            filename: Optional argument providing a filename to save the plots to. Defaults to None,
+                indicating not to save the plot.
+
+        Returns:
+            A single matplotlib figure containing the IRB and RB decay plots and the corresponding
+            fits.
 
         Raises:
             RuntimeError: If no data is stored.
         """
         if self.data is None:
             raise RuntimeError("No data stored. Cannot make plot.")
-        plot = super()._plot_results()
+        plot = self._plot_results()
         irb_fit = self._fit_decay("IRB")
         xx = np.linspace(0, np.max(self.data.clifford_depth))
         plot.plot(
@@ -351,6 +371,11 @@ class IRBResults(_RBResultsBase):
             alpha=0.5,
             color="tab:orange",
         )
+
+        root_figure = plot.figure.figure
+        if filename is not None:
+            root_figure.savefig(filename, bbox_inches="tight")
+        return root_figure
 
     def _analyze(self) -> None:
         super()._analyze()
@@ -405,9 +430,30 @@ class RBResults(_RBResultsBase):
             raise self._not_analyzed
         return self._average_error_per_clifford_std
 
-    def plot_results(self) -> None:
-        """Plot the exponential decay of the circuit fidelity with cycle depth."""
-        super()._plot_results()
+    def plot_results(
+        self,
+        filename: str | None = None,
+    ) -> plt.Figure:
+        """Plot the exponential decay of the circuit fidelity with cycle depth.
+
+        Args:
+            filename: Optional argument providing a filename to save the plots to. Defaults to None,
+                indicating not to save the plot.
+
+        Returns:
+            A single matplotlib figure containing the RB decay plot and the corresponding fit.
+
+        Raises:
+            RuntimeError: If no data is stored.
+        """
+        if self.data is None:
+            raise RuntimeError("No data stored. Cannot make plot.")
+
+        plot = self._plot_results()
+        root_figure = plot.figure.figure
+        if filename is not None:
+            root_figure.savefig(filename, bbox_inches="tight")
+        return root_figure
 
     def _analyze(self) -> None:
         super()._analyze()
@@ -466,6 +512,8 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         clifford_op_gateset: cirq.CompilationTargetGateset = cirq.CZTargetGateset(),
         *,
         random_seed: int | np.random.Generator | None = None,
+        _samples: list[Sample] | None = None,
+        **kwargs: str,
     ) -> None:
         """Constructs an IRB experiment.
 
@@ -510,6 +558,8 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             cycle_depths=cycle_depths,
             random_seed=random_seed,
             results_cls=results_cls,
+            _samples=_samples,
+            **kwargs,
         )
 
     def _clifford_gate_to_circuit(
@@ -725,3 +775,43 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                     ),
                 )
         return samples
+
+    def _json_dict_(self) -> dict[str, Any]:
+        """Converts the experiment to a json-able dictionary that can be used to recreate the
+        experiment object. Note that the state of the random number generator is not stored.
+
+        Returns:
+            Json-able dictionary of the experiment data.
+        """
+        return {
+            "interleaved_gate": self.interleaved_gate,
+            "clifford_op_gateset": self.clifford_op_gateset,
+            **super()._json_dict_(),
+        }
+
+    @classmethod
+    def _from_json_dict_(
+        cls,
+        samples: list[Sample],
+        interleaved_gate: cirq.Gate,
+        clifford_op_gateset: cirq.CompilationTargetGateset,
+        num_circuits: int,
+        cycle_depths: list[int],
+        **kwargs: Any,
+    ) -> Self:
+        """Creates a experiment from a dictionary of the data.
+
+        Args:
+            dictionary: Dict containing the experiment data.
+
+        Returns:
+            The deserialized experiment object.
+        """
+        return cls(
+            num_circuits=num_circuits,
+            cycle_depths=cycle_depths,
+            clifford_op_gateset=clifford_op_gateset,
+            interleaved_gate=interleaved_gate,
+            _samples=samples,
+            **kwargs,
+        )

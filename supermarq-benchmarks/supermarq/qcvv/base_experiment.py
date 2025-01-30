@@ -16,18 +16,46 @@ from __future__ import annotations
 
 import functools
 import numbers
+import pathlib
 import uuid
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import cirq
 import cirq_superstaq as css
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
+
+import supermarq
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
+
+def qcvv_resolver(cirq_type: str) -> type[Any] | None:
+    """Resolves string's referencing classes in the QCVV library. Used by `cirq.read_json()`
+    to deserialize.
+
+    Args:
+        cirq_type: The type being resolved
+
+    Returns:
+        The corresponding type object (if found) else None
+
+    Raises:
+        ValueError: If the provided type is not resolvable
+    """
+    prefix = "supermarq.qcvv."
+    if cirq_type.startswith(prefix):
+        name = cirq_type[len(prefix) :]
+        if name in supermarq.qcvv.__all__:
+            return getattr(supermarq.qcvv, name, None)
+    return None
 
 
 @dataclass
@@ -59,6 +87,48 @@ class Sample:
                 tuple(sorted(self.data.items())),
             )
         )
+
+    def _json_dict_(self) -> dict[str, Any]:
+        """Converts the sample to a json-able dictionary that can be used to recreate the
+        sample object.
+
+        Returns:
+            Json-able dictionary of the sample data.
+        """
+        return {
+            "circuit": self.circuit,
+            "data": self.data,
+            "circuit_realization": self.circuit_realization,
+            "sample_uuid": str(self.uuid),
+        }
+
+    @classmethod
+    def _from_json_dict_(
+        cls,
+        circuit: cirq.Circuit,
+        circuit_realization: int,
+        data: dict[str, Any],
+        sample_uuid: str,
+        **_: Any,
+    ) -> Self:
+        """Creates a sample from a dictionary of the data.
+
+        Args:
+            dictionary: Dict containing the sample data.
+
+        Returns:
+            The deserialized Sample object.
+        """
+        return cls(
+            circuit=circuit,
+            circuit_realization=circuit_realization,
+            data=data,
+            uuid=uuid.UUID(sample_uuid),
+        )
+
+    @classmethod
+    def _json_namespace_(cls) -> str:
+        return "supermarq.qcvv"
 
 
 @dataclass
@@ -117,12 +187,19 @@ class QCVVResults(ABC):
         The number of circuits in the experiment."""
         return self.experiment.num_circuits
 
-    def analyze(self, plot_results: bool = True, print_results: bool = True) -> None:
+    def analyze(
+        self,
+        plot_results: bool = True,
+        print_results: bool = True,
+        plot_filename: str | None = None,
+    ) -> None:
         """Perform the experiment analysis and store the results in the `results` attribute.
 
         Args:
             plot_results: Whether to generate plots of the results. Defaults to True.
             print_results: Whether to print the final results. Defaults to True.
+            plot_filename: Optional argument providing a filename to save the plots to. Ignored if
+                `plot_results=False` Defaults to None, indicating not to save the plot.
         """
         if not self.data_ready:
             warnings.warn(
@@ -135,7 +212,7 @@ class QCVVResults(ABC):
         self._analyze()
 
         if plot_results:
-            self.plot_results()
+            self.plot_results(filename=plot_filename)
 
         if print_results:
             self.print_results()
@@ -145,8 +222,15 @@ class QCVVResults(ABC):
         """A method that analyses the `data` attribute and stores the final experimental results."""
 
     @abstractmethod
-    def plot_results(self) -> None:
-        """Plot the results of the experiment"""
+    def plot_results(self, filename: str | None = None) -> plt.Figure:
+        """Plot the results of the experiment
+
+        Args:
+            filename: Optional argument providing a filename to save the plots to. Defaults to None,
+                indicating not to save the plot.
+        Returns:
+            A single matplotlib figure containing the relevant plots of the results data.
+        """
 
     @abstractmethod
     def print_results(self) -> None:
@@ -240,6 +324,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         *,
         random_seed: int | np.random.Generator | None = None,
         results_cls: type[ResultsT],
+        _samples: Sequence[Sample] | None = None,
         **kwargs: Any,
     ) -> None:
         """Initializes a benchmarking experiment.
@@ -251,6 +336,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             cycle_depths: A sequence of depths to sample.
             random_seed: An optional seed to use for randomization.
             results_cls: The results class to use for the experiment.
+            _samples: Optional list of samples to construct the experiment from
             kwargs: Additional kwargs passed to the Superstaq service object.
         """
         self.qubits = cirq.LineQubit.range(num_qubits)
@@ -269,7 +355,10 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
         self._results_cls: type[ResultsT] = results_cls
 
-        self.samples = self._prepare_experiment()
+        if not _samples:
+            self.samples = self._prepare_experiment()
+        else:
+            self.samples = _samples
         """Create all the samples needed for the experiment."""
 
     def __getitem__(self, key: str | int | uuid.UUID) -> Sample:
@@ -488,6 +577,63 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             )
 
         return record_mapping
+
+    @abstractmethod
+    def _json_dict_(self) -> dict[str, Any]:
+        """Converts the experiment to a json-able dictionary that can be used to recreate the
+        experiment object. Note that the state of the random number generator is not stored.
+
+        .. note:: Must be re-implemented in any subclasses to ensure all important data is stored.
+
+        Returns:
+            Json-able dictionary of the experiment data.
+        """
+        return {
+            "cycle_depths": self.cycle_depths,
+            "num_circuits": self.num_circuits,
+            "num_qubits": self.num_qubits,
+            "samples": self.samples,
+            **self._service_kwargs,
+        }
+
+    @classmethod
+    @abstractmethod
+    def _from_json_dict_(cls, *args: Any, **kwargs: Any) -> Self:
+        """Creates a experiment from an expanded dictionary of the data.
+
+        Returns:
+            The deserialized experiment object.
+        """
+
+    @classmethod
+    def _json_namespace_(cls) -> str:
+        return "supermarq.qcvv"
+
+    def to_file(self, filename: str | pathlib.Path) -> None:
+        """Save the experiment to a json file.
+
+        Args:
+            filename: Filename to save to.
+        """
+        with open(filename, "w") as file_stream:
+            cirq.to_json(self, file_stream)
+
+    @classmethod
+    def from_file(cls, filename: str | pathlib.Path) -> Self:
+        """Load the experiment from a json file.
+
+        Args:
+            filename: Filename to load from.
+
+        Returns:
+            The loaded experiment.
+        """
+        with open(filename, "r") as file_stream:
+            experiment = cirq.read_json(
+                file_stream,
+                resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS, qcvv_resolver],
+            )
+        return experiment
 
     def _prepare_experiment(
         self,
