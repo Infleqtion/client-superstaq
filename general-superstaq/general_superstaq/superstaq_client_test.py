@@ -1044,34 +1044,63 @@ def test_superstaq_client_target_info_with_credentials(mock_post: mock.MagicMock
 
 def test_read_ibm_credentials() -> None:
     credentials = {
-        "default": {"token": "ibmq_token", "instance": "instance", "channel": "ibm_quantum"}
+        "default-ibm-quantum": {
+            "token": "ibmq_token",
+            "instance": "instance",
+            "channel": "ibm_quantum",
+        },
+        "myAccount": {"token": "account_token", "channel": "ibm_cloud"},
     }
+    one_none_default_account = {"myAccount": {"token": "account_token", "channel": "ibm_cloud"}}
+    multiple_none_default_account = {
+        "myAccount": {"token": "account_token", "channel": "ibm_cloud"},
+        "otherAccount": {"token": "other_token", "channel": "ibm_quantum"},
+    }
+
+    bad_credentials = {"account": {"instance": "instance", "channel": "ibm_quantum"}}
+
     with mock.patch("pathlib.Path.is_file", return_value=True):
         with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(credentials))):
-            assert gss.superstaq_client.read_ibm_credentials("default") == credentials.get(
-                "default"
+            # multiple accounts with a default marked
+            assert gss.superstaq_client.read_ibm_credentials(None) == credentials.get(
+                "default-ibm-quantum"
+            )
+            assert gss.superstaq_client.read_ibm_credentials("myAccount") == credentials.get(
+                "myAccount"
+            )
+        # only one account
+        with mock.patch(
+            "builtins.open", mock.mock_open(read_data=json.dumps(one_none_default_account))
+        ):
+            assert gss.superstaq_client.read_ibm_credentials(None) == one_none_default_account.get(
+                "myAccount"
             )
 
-    # fail to find credentials file
-    with pytest.raises(
-        FileNotFoundError,
-        match="The `qiskit-ibm.json` file was not found in any of the config directories.",
-    ):
-        with mock.patch("pathlib.Path.is_file", return_value=False):
-            gss.superstaq_client.read_ibm_credentials("default")
+        # fail because multiple accounts found with none marked as default
+        with pytest.raises(
+            ValueError, match="Multiple accounts found but none are marked default with "
+        ):
+            with mock.patch(
+                "builtins.open", mock.mock_open(read_data=json.dumps(multiple_none_default_account))
+            ):
+                gss.superstaq_client.read_ibm_credentials(None)
 
-    # fail with bad ibmq_name
-    with pytest.raises(KeyError, match="No account credentials saved under the name bad_key"):
-        with mock.patch("pathlib.Path.is_file", return_value=True):
+        # fail because provided name is not an account in the config
+        with pytest.raises(KeyError, match="No account credentials saved under the name bad_key"):
             with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(credentials))):
                 gss.superstaq_client.read_ibm_credentials("bad_key")
 
-    # fail with missing token field in config
-    bad_credentials = {"default": {"instance": "instance", "channel": "ibm_quantum"}}
-    with pytest.raises(KeyError, match="`token` and/or `channel` keys missing from credentials"):
-        with mock.patch("pathlib.Path.is_file", return_value=True):
+        # fail with missing token field in config
+        with pytest.raises(
+            KeyError, match="`token` and/or `channel` keys missing from credentials"
+        ):
             with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(bad_credentials))):
-                gss.superstaq_client.read_ibm_credentials("default")
+                gss.superstaq_client.read_ibm_credentials(None)
+    #
+    # fail to find credentials file
+    with pytest.raises(FileNotFoundError, match="The `qiskit-ibm.json` file was not found in"):
+        with mock.patch("pathlib.Path.is_file", return_value=False):
+            gss.superstaq_client.read_ibm_credentials(None)
 
 
 def test_find_api_key() -> None:
