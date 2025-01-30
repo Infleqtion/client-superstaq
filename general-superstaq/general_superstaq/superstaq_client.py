@@ -966,20 +966,20 @@ def read_ibm_credentials(ibmq_name: str | None) -> dict[str, str]:
                 )
         elif ibmq_name not in config:
             raise KeyError(
-                f"No account credentials saved under the name {ibmq_name}"
-                f" in the config file found at {path}."
+                f"No account credentials saved under the name '{ibmq_name}'"
+                f" in the config file found at '{path}'."
             )
 
         credentials = config.get(ibmq_name)
         if any(key not in credentials for key in ["token", "channel"]):
             raise KeyError(
                 "`token` and/or `channel` keys missing from credentials for the account",
-                f" under the name {ibmq_name} in the file {path}.",
+                f" under the name '{ibmq_name}' in the file '{path}'.",
             )
 
         return credentials
 
-    raise FileNotFoundError(f"The `qiskit-ibm.json` file was not found in {config_dir}.")
+    raise FileNotFoundError(f"The `qiskit-ibm.json` file was not found in '{config_dir}'.")
 
 
 def find_api_key() -> str:
