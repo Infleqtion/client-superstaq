@@ -378,11 +378,6 @@ class IRBResults(_RBResultsBase):
             root_figure.savefig(filename, bbox_inches="tight")
         return root_figure
 
-        root_figure = plot.figure.figure
-        if filename is not None:
-            root_figure.savefig(filename, bbox_inches="tight")
-        return root_figure
-
     def _analyze(self) -> None:
         super()._analyze()
 
