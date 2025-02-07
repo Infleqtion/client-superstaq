@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Client for making requests to Superstaq's API."""
+
 from __future__ import annotations
 
 import json
@@ -57,6 +58,8 @@ class _SuperstaqClient:
         ibmq_token: str | None = None,
         ibmq_instance: str | None = None,
         ibmq_channel: str | None = None,
+        use_stored_ibmq_credentials: bool = False,
+        ibmq_name: str | None = None,
         **kwargs: Any,
     ) -> None:
         """Creates the SuperstaqClient.
@@ -81,6 +84,9 @@ class _SuperstaqClient:
                 to IBM hardware, or to access non-public IBM devices you may have access to.
             ibmq_instance: An optional instance to use when running IBM jobs.
             ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
+            use_stored_ibmq_credentials: Whether to retrieve IBM credentials from locally saved
+                accounts.
+            ibmq_name: The name of the account to retrieve. The default is `default-ibm-quantum`.
             kwargs: Other optimization and execution parameters.
         """
 
@@ -111,11 +117,18 @@ class _SuperstaqClient:
         }
         self.session = requests.Session()
 
+        if cq_token:
+            kwargs["cq_token"] = cq_token
+
+        if use_stored_ibmq_credentials:
+            config = read_ibm_credentials(ibmq_name)
+            ibmq_token = config.get("token")
+            ibmq_instance = config.get("instance")
+            ibmq_channel = config.get("channel")
+
         if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
             raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
 
-        if cq_token:
-            kwargs["cq_token"] = cq_token
         if ibmq_token:
             kwargs["ibmq_token"] = ibmq_token
         if ibmq_instance:
@@ -918,6 +931,55 @@ class _SuperstaqClient:
                 verbose={self.verbose!r},
             )"""
         )
+
+
+def read_ibm_credentials(ibmq_name: str | None) -> dict[str, str]:
+    """Function to try to read IBM credentials from .qiskit/qiskit-ibm.json.
+
+    Args:
+        ibmq_name: The name under which the IBM account credentials are locally stored.
+
+    Raises:
+        FileNotFoundError: If the configuration file is not found.
+        KeyError: If the provided `ibmq_name` does not have credentials stored in the
+            config file or `token` and/or `channel` keys are missing for the credentials
+            of the account under `ibmq_name`.
+        ValueError: If no `ibmq_name` is provided and multiple accounts are found with
+            none marked as default.
+
+    Returns:
+        Dictionary containing the ibm token, channel, and instance (if available).
+    """
+    config_dir = pathlib.Path.home().joinpath(".qiskit")
+    path = config_dir.joinpath("qiskit-ibm.json")
+    if path.is_file():
+        config = json.load(open(path))
+        if ibmq_name is None:
+            if len(config) == 1:
+                ibmq_name = list(config.keys())[0]
+            elif any(creds.get("is_default_account") for creds in config.values()):
+                ibmq_name = next(name for name in config if config[name].get("is_default_account"))
+            else:
+                raise ValueError(
+                    "Multiple accounts found but none are marked as default.",
+                    " Please provide the name of the account to retrieve.",
+                )
+        elif ibmq_name not in config:
+            raise KeyError(
+                f"No account credentials saved under the name '{ibmq_name}'"
+                f" in the config file found at '{path}'."
+            )
+
+        credentials = config.get(ibmq_name)
+        if any(key not in credentials for key in ["token", "channel"]):
+            raise KeyError(
+                "`token` and/or `channel` keys missing from credentials for the account",
+                f" under the name '{ibmq_name}' in the file '{path}'.",
+            )
+
+        return credentials
+
+    raise FileNotFoundError(f"The `qiskit-ibm.json` file was not found in '{config_dir}'.")
 
 
 def find_api_key() -> str:
