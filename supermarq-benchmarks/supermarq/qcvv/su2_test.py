@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import pathlib
 import os
 import re
 import sys
@@ -133,7 +134,7 @@ def test_build_circuits_old(su2_experiment: SU2) -> None:  # pragma: no cover
             )
 
 
-def test_analyse_results(su2_experiment: SU2) -> None:
+def test_analyse_results(tmp_path: pathlib.Path, su2_experiment: SU2) -> None:
     def decay(x):  # type: ignore[no-untyped-def] # pylint: disable=W9012
         return (3 * 0.75 * 0.975**x + 1) / 4
 
@@ -178,7 +179,11 @@ def test_analyse_results(su2_experiment: SU2) -> None:
         ),
     )
 
-    result.analyze(plot_results=True, print_results=True)
+    plot_filename = tmp_path / "example.png"
+
+    result.analyze(plot_filename=plot_filename.as_posix())
+
+    assert pathlib.Path(tmp_path / "example.png").exists()
 
     assert result.two_qubit_gate_fidelity == pytest.approx(0.975)
     assert result.two_qubit_gate_fidelity_std == pytest.approx(0.0)
@@ -221,3 +226,18 @@ def test_result_missing_data() -> None:
 
     with pytest.raises(RuntimeError, match="No data stored. Cannot plot results."):
         result.plot_results()
+
+
+def test_dump_and_load(
+    tmp_path_factory: pytest.TempPathFactory,
+    su2_experiment: SU2,
+) -> None:
+    filename = tmp_path_factory.mktemp("tempdir") / "file.json"
+    su2_experiment.to_file(filename)
+    exp = SU2.from_file(filename)
+
+    assert exp.samples == su2_experiment.samples
+    assert exp.num_qubits == su2_experiment.num_qubits
+    assert exp.num_circuits == su2_experiment.num_circuits
+    assert exp.cycle_depths == su2_experiment.cycle_depths
+    assert exp.two_qubit_gate == su2_experiment.two_qubit_gate

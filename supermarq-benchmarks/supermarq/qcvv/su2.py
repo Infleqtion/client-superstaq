@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 import cirq
 import matplotlib.pyplot as plt
@@ -27,6 +28,9 @@ from scipy.stats import linregress
 from tqdm.contrib.itertools import product
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 @dataclass
@@ -91,17 +95,23 @@ class SU2Results(QCVVResults):
         """
         return self.two_qubit_gate_fidelity_std
 
-    def plot_results(self) -> None:
+    def plot_results(self, filename: str | None = None) -> plt.Figure:
         """Plot the results of the experiment
 
+        Args:
+            filename: Optional argument providing a filename to save the plots to. Defaults to None,
+                indicating not to save the plot.
+        Returns:
+            A single matplotlib figure containing the relevant plots of the results data.
+            
         Raises:
-            RuntimeError: If there is no data to plot.
+            RuntimeError: If there is no data stored.
         """
 
         if self.data is None:
             raise RuntimeError("No data stored. Cannot plot results.")
 
-        _, ax = plt.subplots()
+        fig, ax = plt.subplots()
         sns.scatterplot(
             data=self.data.drop(columns="circuit_index").melt(
                 id_vars="num_two_qubit_gates", var_name="state", value_name="prob"
@@ -122,6 +132,13 @@ class SU2Results(QCVVResults):
         ax.set_ylabel("State probability")
         ax.legend(title="State")
         ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+
+        fig.tight_layout()
+
+        if filename is not None:
+            fig.savefig(filename)
+
+        return fig
 
     def _analyze(self) -> None:
         """Perform the experiment analysis and store the results in the `results` attribute.
@@ -192,6 +209,8 @@ class SU2(QCVVExperiment[SU2Results]):
         two_qubit_gate: cirq.Gate = cirq.CZ,
         *,
         random_seed: int | np.random.Generator | None = None,
+        _samples: list[Sample] | None = None,
+        **kwargs: str,
     ) -> None:
         """Args:
         two_qubit_gate: The Clifford gate to measure the gate error of.
@@ -210,6 +229,8 @@ class SU2(QCVVExperiment[SU2Results]):
             cycle_depths=cycle_depths,
             random_seed=random_seed,
             results_cls=SU2Results,
+            _samples=_samples,
+            **kwargs,
         )
 
     def _build_circuits(
@@ -250,7 +271,9 @@ class SU2(QCVVExperiment[SU2Results]):
 
             samples.append(
                 Sample(
-                    circuit_index=index, circuit=circuit, data={"num_two_qubit_gates": 2 * depth}
+                    circuit_realization=index,
+                    circuit=circuit,
+                    data={"num_two_qubit_gates": 2 * depth},
                 )
             )
         return samples
@@ -304,4 +327,42 @@ class SU2(QCVVExperiment[SU2Results]):
                 if include_two_qubit_gate
                 else []
             ),
+        )
+
+    def _json_dict_(self) -> dict[str, Any]:
+        """Converts the experiment to a json-able dictionary that can be used to recreate the
+        experiment object. Note that the state of the random number generator is not stored.
+
+        Returns:
+            Json-able dictionary of the experiment data.
+        """
+        return {
+            "two_qubit_gate": self.two_qubit_gate,
+            **super()._json_dict_(),
+        }
+
+    @classmethod
+    def _from_json_dict_(
+        cls,
+        samples: list[Sample],
+        num_circuits: int,
+        cycle_depths: Iterable[int],
+        two_qubit_gate: cirq.Gate = cirq.CZ,
+        **kwargs: Any,
+    ) -> Self:
+        """Creates a experiment from a dictionary of the data.
+
+        Args:
+            dictionary: Dict containing the experiment data.
+
+        Returns:
+            The deserialized experiment object.
+        """
+        kwargs.pop("num_qubits")  # Number of qubits is fixed for SU2
+        return cls(
+            num_circuits=num_circuits,
+            _samples=samples,
+            cycle_depths=cycle_depths,
+            two_qubit_gate=two_qubit_gate,
+            **kwargs,
         )

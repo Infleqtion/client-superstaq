@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import itertools
+import pathlib
 import re
 from unittest.mock import MagicMock
 
@@ -129,13 +130,13 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
     }
 
 
-def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
+def test_xeb_analyse_results(tmp_path: pathlib.Path, xeb_experiment: XEB) -> None:
     results = XEBResults(target="example", experiment=xeb_experiment)
 
     results.data = pd.DataFrame(
         [
             {
-                "circuit_index": 0,
+                "circuit_realization": 0,
                 "cycle_depth": 1,
                 "circuit_depth": 3,
                 "00": 1.0,
@@ -148,7 +149,7 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
                 "exact_11": 0.0,
             },
             {
-                "circuit_index": 1,
+                "circuit_realization": 1,
                 "cycle_depth": 1,
                 "circuit_depth": 3,
                 "00": 1.0,
@@ -161,7 +162,7 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
                 "exact_11": 0.0,
             },
             {
-                "circuit_index": 0,
+                "circuit_realization": 0,
                 "cycle_depth": 5,
                 "circuit_depth": 11,
                 "00": 0.0,
@@ -174,7 +175,7 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
                 "exact_11": 0.0,
             },
             {
-                "circuit_index": 1,
+                "circuit_realization": 1,
                 "cycle_depth": 5,
                 "circuit_depth": 11,
                 "00": 0.0,
@@ -187,7 +188,7 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
                 "exact_11": 0.25,
             },
             {
-                "circuit_index": 0,
+                "circuit_realization": 0,
                 "cycle_depth": 10,
                 "circuit_depth": 21,
                 "00": 0.0,
@@ -200,7 +201,7 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
                 "exact_11": 0.25,
             },
             {
-                "circuit_index": 1,
+                "circuit_realization": 1,
                 "cycle_depth": 10,
                 "circuit_depth": 21,
                 "00": 0.0,
@@ -214,7 +215,11 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
             },
         ]
     )
-    results.analyze()
+
+    plot_filename = tmp_path / "example.png"
+    speckle_plot_filename = tmp_path / "example_speckle.png"
+
+    results.analyze(plot_filename=plot_filename.as_posix())
     np.testing.assert_allclose(
         results.data["sum_p(x)p^(x)"].values, [1.0, 0.5, 0.75, 0.25, 0.25, 0.4]
     )
@@ -226,8 +231,11 @@ def test_xeb_analyse_results(xeb_experiment: XEB) -> None:
     assert results.cycle_fidelity_estimate == pytest.approx(1.0613025)
     assert results.cycle_fidelity_estimate_std == pytest.approx(0.0597633930)
 
-    results.plot_results()
-    results.plot_speckle()
+    assert pathlib.Path(tmp_path / "example.png").exists()
+
+    # Test the speckle plot
+    results.plot_speckle(filename=speckle_plot_filename.as_posix())
+    assert pathlib.Path(tmp_path / "example_speckle.png").exists()
 
 
 def test_results_no_data() -> None:
@@ -237,6 +245,9 @@ def test_results_no_data() -> None:
 
     with pytest.raises(RuntimeError, match="No data stored. Cannot plot results."):
         results.plot_results()
+
+    with pytest.raises(RuntimeError, match="No data stored. Cannot plot results."):
+        results.plot_speckle()
 
     with pytest.raises(
         RuntimeError, match="No stored dataframe of circuit fidelities. Something has gone wrong."
@@ -253,3 +264,19 @@ def test_results_not_analyzed() -> None:
             match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
         ):
             getattr(results, attr)
+
+
+def test_dump_and_load(
+    tmp_path_factory: pytest.TempPathFactory,
+    xeb_experiment: XEB,
+) -> None:
+    filename = tmp_path_factory.mktemp("tempdir") / "file.json"
+    xeb_experiment.to_file(filename)
+    exp = XEB.from_file(filename)
+
+    assert exp.samples == xeb_experiment.samples
+    assert exp.num_qubits == xeb_experiment.num_qubits
+    assert exp.num_circuits == xeb_experiment.num_circuits
+    assert exp.cycle_depths == xeb_experiment.cycle_depths
+    assert exp.single_qubit_gate_set == xeb_experiment.single_qubit_gate_set
+    assert exp.two_qubit_gate == xeb_experiment.two_qubit_gate

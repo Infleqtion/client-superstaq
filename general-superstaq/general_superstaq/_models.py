@@ -15,13 +15,10 @@ import pydantic
 class JobType(str, Enum):
     """The different types of jobs that can be submitted through Superstaq."""
 
-    DEVICE_SUBMISSION = "device_submission"
-    """A job that involves submitting circuits to live quantum hardware (device)."""
-    DEVICE_SIMULATION = "device_simulation"
-    """A job that involves simulating a circuit as if it was on some live hardware (device).
-    May or may not include noise (depending on options dict)."""
-    SIMULATION = "simulation"
-    """Simulation of a given quantum circuit but agnostic to any specific device."""
+    SUBMIT = "submit"
+    """A job that involves submitting circuits to an external device."""
+    SIMULATE = "simulate"
+    """A job that requires superstaq to simulate circuits."""
     COMPILE = "compile"
     """A job that only involves compiling a circuit for some given device."""
     CONVERT = "convert"
@@ -53,27 +50,32 @@ class CircuitStatus(str, Enum):
 
     RECEIVED = "received"
     """The job has been received (and accepted) to the server and is awaiting further action."""
+    # AWAITING states - the job is waiting to be processed
     AWAITING_COMPILE = "awaiting_compile"
     """The job is waiting for a worker to compile."""
     AWAITING_SUBMISSION = "awaiting_submission"
     """The job is waiting for a worker to submit the circuit to an external device."""
     AWAITING_SIMULATION = "awaiting_simulation"
     """The job is waiting for a worker to simulate."""
-    AWAITING_CONVERSION = "awaiting_conversion"
-    """The job is waiting for a worker to convert."""
+    # Processing states - the job is being handled in some way
+    COMPILING = "compiling"
+    """The job is being compiled by a worker."""
     RUNNING = "running"
-    """The job is being run by a worker."""
-    COMPLETED = "completed"
-    """The job is completed."""
+    """The job is currently running on a device. SUBMIT jobs only"""
+    SIMULATING = "simulating"
+    """The job is currently being simulated. SIMULATE jobs only"""
+    PENDING = "pending"
+    """When a job has been submitted and is waiting to be run on a QPU. SUBMIT jobs only."""
+    # Error states
     FAILED = "failed"
     """The job failed. A reason should be stored in the job."""
-    CANCELLED = "cancelled"
-    """The job was cancelled. A reason should be stored in the job."""
     UNRECOGNIZED = "unrecognized"
     """Something has gone wrong! (Treated as terminal)"""
-    PENDING = "pending"
-    """When a job has been submitted to an external provider but that provider has
-    not yet run the job."""
+    # Finished states
+    COMPLETED = "completed"
+    """The job is completed."""
+    CANCELLED = "cancelled"
+    """The job was cancelled. A reason should be stored in the job."""
     DELETED = "deleted"
     """When a job has been deleted."""
 
@@ -120,14 +122,12 @@ class JobData(DefaultPydanticModel):
     """Any provider side ID's for each circuit in the job."""
     num_circuits: int
     """Number of circuits in the job."""
-    compiled_circuit_type: CircuitType
-    """The compiled circuit type."""
     compiled_circuits: list[str | None]
     """Compiled versions of each input circuits."""
     input_circuits: list[str]
     """The input circuits as serialized strings."""
-    input_circuit_type: CircuitType
-    """The input circuit type."""
+    circuit_type: CircuitType
+    """The circuit type used for representing the circuits."""
     pulse_gate_circuits: list[str | None]
     """Serialized pulse gate circuits (if relevant)."""
     counts: list[dict[str, int] | None]
@@ -165,9 +165,6 @@ class NewJob(DefaultPydanticModel):
     """The input circuit type."""
     verbatim: bool = pydantic.Field(default=False)
     """Whether to skip compile step."""
-    compiled_circuit_type: CircuitType | None = pydantic.Field(default=None)
-    """The desired circuit type for the compiled circuits. Used mainly for `convert` jobs. If
-    None then the input circuit type is assumed."""
     shots: int = pydantic.Field(default=0, ge=0)
     """Number of shots."""
     dry_run: bool = pydantic.Field(default=False)
@@ -344,8 +341,8 @@ class GetTargetsFilterModel(DefaultPydanticModel):
     """Include Superstaq targets that are/not currently available."""
     retired: bool = pydantic.Field(False)
     """Include Superstaq targets that are retired."""
-    accessible: bool = pydantic.Field(True)
-    """Include Superstaq targets that are/aren't accessible to the user."""
+    accessible: bool | None = pydantic.Field(None)
+    """Include only Superstaq targets that are/aren't accessible to the user."""
 
 
 class RetrieveTargetInfoModel(DefaultPydanticModel):

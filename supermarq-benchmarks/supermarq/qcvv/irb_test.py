@@ -16,6 +16,7 @@
 # mypy: disable-error-code="union-attr"
 from __future__ import annotations
 
+import pathlib
 import re
 from unittest.mock import MagicMock, patch
 
@@ -156,7 +157,7 @@ def test_irb_build_circuit() -> None:
                     "single_qubit_gates": 4,
                     "two_qubit_gates": 0,
                 },
-                circuit_index=1,
+                circuit_realization=1,
             ),
             Sample(
                 circuit=cirq.Circuit(
@@ -189,7 +190,7 @@ def test_irb_build_circuit() -> None:
                     "single_qubit_gates": 6,
                     "two_qubit_gates": 0,
                 },
-                circuit_index=2,
+                circuit_realization=2,
             ),
             Sample(
                 circuit=cirq.Circuit(
@@ -216,7 +217,7 @@ def test_irb_build_circuit() -> None:
                     "single_qubit_gates": 4,
                     "two_qubit_gates": 0,
                 },
-                circuit_index=3,
+                circuit_realization=3,
             ),
             Sample(
                 circuit=cirq.Circuit(
@@ -252,7 +253,7 @@ def test_irb_build_circuit() -> None:
                     "single_qubit_gates": 7,
                     "two_qubit_gates": 0,
                 },
-                circuit_index=4,
+                circuit_realization=4,
             ),
         ]
 
@@ -394,6 +395,120 @@ def test_analyse_results_rb() -> None:
     rb_results.plot_results()
 
 
+def test_analyse_results_plot_saving(tmp_path: pathlib.Path) -> None:
+    irb_results = IRBResults(
+        target="example", experiment=IRB(num_circuits=1, cycle_depths=[1, 2, 5, 10])
+    )
+    # Noise added to allow estimate of covariance (otherwise scipy errors)
+    irb_results.data = pd.DataFrame(
+        [
+            {
+                "clifford_depth": 1,
+                "circuit_depth": 2,
+                "experiment": "RB",
+                "0": 0.5 * 0.95**1 + 0.5 + 0.0000001,
+                "1": 0.5 - 0.5 * 0.95**1 - 0.0000001,
+            },
+            {
+                "clifford_depth": 1,
+                "circuit_depth": 3,
+                "experiment": "IRB",
+                "0": 0.5 * 0.8**1 + 0.5 - 0.00000015,
+                "1": 0.5 - 0.5 * 0.8**1 + 0.00000015,
+            },
+            {
+                "clifford_depth": 2,
+                "circuit_depth": 3,
+                "experiment": "RB",
+                "0": 0.5 * 0.95**2 + 0.5 + 0.0000011,
+                "1": 0.5 - 0.5 * 0.95**2 - 0.0000011,
+            },
+            {
+                "clifford_depth": 2,
+                "circuit_depth": 4,
+                "experiment": "IRB",
+                "0": 0.5 * 0.8**2 + 0.5 - 0.00000017,
+                "1": 0.5 - 0.5 * 0.8**2 + 0.00000017,
+            },
+            {
+                "clifford_depth": 5,
+                "circuit_depth": 6,
+                "experiment": "RB",
+                "0": 0.5 * 0.95**5 + 0.5 + 0.0000002,
+                "1": 0.5 - 0.5 * 0.95**5 - 0.0000002,
+            },
+            {
+                "clifford_depth": 5,
+                "circuit_depth": 11,
+                "experiment": "IRB",
+                "0": 0.5 * 0.8**5 + 0.5 - 0.0000001,
+                "1": 0.5 - 0.5 * 0.8**5 + 0.0000001,
+            },
+            {
+                "clifford_depth": 10,
+                "circuit_depth": 11,
+                "experiment": "RB",
+                "0": 0.5 * 0.95**10 + 0.5 + 0.00000015,
+                "1": 0.5 - 0.5 * 0.95**10 - 0.00000015,
+            },
+            {
+                "clifford_depth": 10,
+                "circuit_depth": 21,
+                "experiment": "IRB",
+                "0": 0.5 * 0.8**10 + 0.5 + 0.00000012,
+                "1": 0.5 - 0.5 * 0.8**10 - 0.00000012,
+            },
+        ]
+    )
+    filename = tmp_path / "example_filename.png"
+    irb_results.analyze(plot_filename=filename.as_posix())
+    assert pathlib.Path(filename).exists()
+
+
+def test_analyse_results_rb_plot_saving(tmp_path: pathlib.Path) -> None:
+    rb_results = RBResults(
+        target="example",
+        experiment=IRB(interleaved_gate=None, num_circuits=1, cycle_depths=[1, 3, 5, 10]),
+    )
+    # Noise added to allow estimate of covariance (otherwise scipy errors)
+
+    rb_results.data = pd.DataFrame(
+        [
+            {
+                "clifford_depth": 1,
+                "circuit_depth": 2,
+                "experiment": "RB",
+                "0": 0.5 * 0.95**1 + 0.5 - 0.0000001,
+                "1": 0.5 - 0.5 * 0.95**1 + 0.0000001,
+            },
+            {
+                "clifford_depth": 3,
+                "circuit_depth": 4,
+                "experiment": "RB",
+                "0": 0.5 * 0.95**3 + 0.5 - 0.0000003,
+                "1": 0.5 - 0.5 * 0.95**3 + 0.0000003,
+            },
+            {
+                "clifford_depth": 5,
+                "circuit_depth": 6,
+                "experiment": "RB",
+                "0": 0.5 * 0.95**5 + 0.5 - 0.0000002,
+                "1": 0.5 - 0.5 * 0.95**5 + 0.0000002,
+            },
+            {
+                "clifford_depth": 10,
+                "circuit_depth": 11,
+                "experiment": "RB",
+                "0": 0.5 * 0.95**10 + 0.5 + 0.00000015,
+                "1": 0.5 - 0.5 * 0.95**10 - 0.00000015,
+            },
+        ]
+    )
+    filename = tmp_path / "example_filename.png"
+    rb_results.analyze(plot_filename=filename.as_posix())
+    assert pathlib.Path(filename).exists()
+
+
 def test_results_no_data() -> None:
     results = IRBResults(target="example", experiment=MagicMock(spec=IRB))
     with pytest.raises(RuntimeError, match="No data stored. Cannot perform fit."):
@@ -404,6 +519,16 @@ def test_results_no_data() -> None:
 
     with pytest.raises(RuntimeError, match="No data stored. Cannot make plot."):
         results.plot_results()
+
+    rb_results = RBResults(target="example", experiment=MagicMock(spec=IRB))
+    with pytest.raises(RuntimeError, match="No data stored. Cannot perform fit."):
+        rb_results._fit_decay()
+
+    with pytest.raises(RuntimeError, match="No data stored. Cannot make plot."):
+        rb_results._plot_results()
+
+    with pytest.raises(RuntimeError, match="No data stored. Cannot make plot."):
+        rb_results.plot_results()
 
 
 def test_irb_results_not_analyzed() -> None:
@@ -436,3 +561,31 @@ def test_rb_results_not_analyzed() -> None:
             match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
         ):
             getattr(results, attr)
+
+
+def test_dump_and_load(
+    tmp_path_factory: pytest.TempPathFactory,
+    irb: IRB,
+) -> None:
+    filename = tmp_path_factory.mktemp("tempdir") / "file.json"
+    irb.to_file(filename)
+    exp = IRB.from_file(filename)
+
+    assert exp.samples == irb.samples
+    assert exp.num_qubits == irb.num_qubits
+    assert exp.num_circuits == irb.num_circuits
+    assert exp.cycle_depths == irb.cycle_depths
+    assert exp.interleaved_gate == irb.interleaved_gate
+    assert exp.clifford_op_gateset == irb.clifford_op_gateset
+
+    # Set interleaved gate to None and check again
+    irb.interleaved_gate = None
+    irb.to_file(filename)
+    exp = IRB.from_file(filename)
+
+    assert exp.samples == irb.samples
+    assert exp.num_qubits == irb.num_qubits
+    assert exp.num_circuits == irb.num_circuits
+    assert exp.cycle_depths == irb.cycle_depths
+    assert exp.interleaved_gate == irb.interleaved_gate
+    assert exp.clifford_op_gateset == irb.clifford_op_gateset
