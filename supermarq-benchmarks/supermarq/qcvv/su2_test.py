@@ -17,8 +17,8 @@
 
 from __future__ import annotations
 
-import pathlib
 import os
+import pathlib
 import re
 import sys
 import textwrap

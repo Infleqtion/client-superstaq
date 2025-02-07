@@ -103,7 +103,7 @@ class SU2Results(QCVVResults):
                 indicating not to save the plot.
         Returns:
             A single matplotlib figure containing the relevant plots of the results data.
-            
+
         Raises:
             RuntimeError: If there is no data stored.
         """
