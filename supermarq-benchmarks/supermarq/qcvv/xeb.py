@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 
-@dataclass
+@dataclass(repr=False)
 class XEBResults(QCVVResults):
     """Results from an XEB experiment."""
 
@@ -191,8 +191,8 @@ class XEBResults(QCVVResults):
 
         return fig
 
-    def print_results(self) -> None:
-        print(
+    def _results_msg(self) -> str:
+        return (
             f"Estimated cycle fidelity: {self.cycle_fidelity_estimate:.5} "
             f"+/- {self.cycle_fidelity_estimate_std:.5}"
         )
@@ -211,48 +211,114 @@ class XEBResults(QCVVResults):
         Raises:
             RuntimeError: If there is no data stored.
         """
-        df = self.data
-
         if self.data is None:
             raise RuntimeError("No data stored. Cannot plot results.")
 
-        df2 = pd.melt(
-            df,
+        # Reformat dataframe
+        df = pd.melt(
+            self.data,
             value_vars=["00", "01", "10", "11"],
             id_vars=["cycle_depth", "circuit_realization"],
             var_name="bitstring",
         )
-        fig, axs = plt.subplots(nrows=4, sharex=True)
+
+        # Create the axes needed
+        fig, axs = plt.subplot_mosaic(
+            [
+                ["P(00)", "cbar", ".", "Decay"],
+                ["P(01)", "cbar", ".", "Decay"],
+                ["P(10)", "cbar", ".", "Decay"],
+                ["P(11)", "cbar", ".", "Decay"],
+            ],
+            width_ratios=[1, 0.05, 0.05, 1],
+            figsize=(12, 4.8),
+        )
         fig.subplots_adjust(hspace=0)
+
+        # Plot the heatmaps
         for k, bitstring in enumerate(["00", "01", "10", "11"]):
-            data = df2[df2["bitstring"] == bitstring].pivot(
+            ax = axs[f"P({bitstring})"]
+
+            data = df[df["bitstring"] == bitstring].pivot(
                 index="circuit_realization", columns="cycle_depth", values="value"
             )
             cmap = mpl.colormaps["rocket"]
-            norm = mpl.colors.Normalize(0, 1)  # or vmin, vmax
-            sns.heatmap(data, vmin=0, vmax=1, ax=axs[k], cbar=False, cmap=cmap)
-            axs[k].set_ylabel("")
-            axs[k].set_xlabel("")
-            axs[k].set_yticks([0, 15])
-            axs[k].set_yticklabels([0, 15])
+            # norm = mpl.colors.Normalize(0, 1)  # or vmin, vmax
+            sns.heatmap(data, vmin=0, vmax=1, ax=ax, cbar_ax=axs["cbar"], cmap=cmap)
+            ax.set_ylabel("")
+            ax.set_xlabel("")
+            ax.set_yticks([])
+            ax.set_yticklabels([])
             plt.text(
                 0.99,
                 0.90,
                 f"P({bitstring})",
                 ha="right",
                 va="top",
-                transform=axs[k].transAxes,
+                transform=ax.transAxes,
                 color="white",
             )
             if k != 0:
-                axs[k].axhline(y=0, linewidth=1.5, color="white", linestyle="--")
-        fig.supxlabel("Cycle depth")
-        fig.supylabel("Circuit Instance")
-        fig.colorbar(
-            mpl.cm.ScalarMappable(norm, cmap), ax=axs, orientation="vertical", label="Probability"
+
+                ax.axhline(y=0, linewidth=1.5, color="white", linestyle="--")
+            if k == 0:
+                ax.set_title("Speckle plots")
+
+            if k == 3:
+                ax.set_xlabel("Cycle depth")
+
+        # Format colour bar
+        axs["cbar"].set_ylabel("Probability")
+        axs["cbar"].yaxis.set_label_position("right")
+        axs["cbar"].yaxis.tick_left()
+
+        # Plot the decay of purity
+
+        # Calculate the average std of the probability distributions.
+        purity_data = (
+            df.groupby(by=["cycle_depth"])
+            .std(numeric_only=True)
+            .reset_index()
+            .rename(columns={"value": "sqrt_speckle_purity"})
+            .drop(columns=["circuit_realization"])
         )
+        # Rescale the purity estimate according to Porter-Thomas distribution
+        purity_data["sqrt_speckle_purity"] = purity_data["sqrt_speckle_purity"] * np.sqrt(
+            4**2 * (4 + 1) / (4 - 1)
+        )
+
+        # Plot decay
+        sns.regplot(
+            data=purity_data,
+            x="cycle_depth",
+            y="sqrt_speckle_purity",
+            logx=True,
+            ax=axs["Decay"],
+        )
+        # purity_plot.tight_layout()
+        axs["Decay"].set_xlabel(r"Cycle depth")
+        axs["Decay"].set_ylabel(r"$\sqrt{\mathrm{Purity}}$")
+        axs["Decay"].set_title(r"Purity Decay")
+        # Estimate decay coefficient
+        purity_fit = scipy.stats.linregress(
+            x=purity_data["cycle_depth"],
+            y=np.log(purity_data["sqrt_speckle_purity"]),
+        )
+        # Add label with coefficient estimate
+        axs["Decay"].text(
+            0.95,
+            0.95,
+            (
+                f"Decay coefficient: {np.exp(purity_fit.slope):4f} "
+                f"+/- {np.exp(purity_fit.slope) * purity_fit.stderr:4f}"
+            ),
+            ha="right",
+            va="center",
+            transform=axs["Decay"].transAxes,
+        )
+
         if filename is not None:
-            fig.savefig(filename, bbox_inches="tight")
+            fig.savefig(filename)
 
         return fig
 
@@ -340,6 +406,12 @@ class XEB(QCVVExperiment[XEBResults]):
             results_cls=XEBResults,
             _samples=_samples,
             **kwargs,
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"XEB(two_qubit_gate={self.two_qubit_gate}, num_qubits={self.num_qubits}, "
+            f"num_samples={len(self.samples)})"
         )
 
     ###################

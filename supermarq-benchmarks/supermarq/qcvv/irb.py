@@ -178,7 +178,7 @@ _S1_Y = [
 ]
 
 
-@dataclass
+@dataclass(repr=False)
 class _RBResultsBase(QCVVResults):
     _rb_decay_coefficient: float | None = None
     """Decay coefficient estimate without the interleaving gate."""
@@ -290,7 +290,7 @@ class _RBResultsBase(QCVVResults):
         self._rb_decay_coefficient, self._rb_decay_coefficient_std = rb_fit[0][1], rb_fit[1][1]
 
 
-@dataclass
+@dataclass(repr=False)
 class IRBResults(_RBResultsBase):
     """Data structure for the IRB experiment results."""
 
@@ -370,6 +370,8 @@ class IRBResults(_RBResultsBase):
             alpha=0.5,
             color="tab:orange",
         )
+        if filename is not None:
+            plt.savefig(filename)
 
         root_figure = plot.figure.figure
         if filename is not None:
@@ -397,14 +399,14 @@ class IRBResults(_RBResultsBase):
         self._average_interleaved_gate_error = interleaved_gate_error
         self._average_interleaved_gate_error_std = interleaved_gate_error_std
 
-    def print_results(self) -> None:
-        print(
-            f"Estimated gate error: {self.average_interleaved_gate_error:.6f} +/- "
-            f"{self.average_interleaved_gate_error_std:.6f}"
+    def _results_msg(self) -> str:
+        return (
+            f"Estimated gate error: {self.average_interleaved_gate_error:.5} +/- "
+            f"{self.average_interleaved_gate_error_std:.5}"
         )
 
 
-@dataclass
+@dataclass(repr=False)
 class RBResults(_RBResultsBase):
     """Data structure for the RB experiment results."""
 
@@ -463,11 +465,10 @@ class RBResults(_RBResultsBase):
             1 - 2**-self.num_qubits
         ) * self.rb_decay_coefficient_std
 
-    def print_results(self) -> None:
-
-        print(
-            f"Estimated error per Clifford: {self.average_error_per_clifford:.6f} +/- "
-            f"{self.average_error_per_clifford_std:.6f}"
+    def _results_msg(self) -> str:
+        return (
+            f"Estimated error per Clifford: {self.average_error_per_clifford:.5} +/- "
+            f"{self.average_error_per_clifford_std:.5}"
         )
 
 
@@ -560,6 +561,20 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             _samples=_samples,
             **kwargs,
         )
+
+    def __repr__(self) -> str:
+        if self.interleaved_gate is None:
+            return f"RB(num_qubits={self.num_qubits}, " f"num_samples={len(self.samples)})"
+        else:
+            # Decompose the Clifford gate into "normal" gates for printing.
+            gates = [
+                str(g)
+                for g in cirq.single_qubit_matrix_to_gates(cirq.unitary(self.interleaved_gate))
+            ]
+            return (
+                f"IRB(interleaved_gate={''.join(gates)}, num_qubits={self.num_qubits}, "
+                f"num_samples={len(self.samples)})"
+            )
 
     def _clifford_gate_to_circuit(
         self,
