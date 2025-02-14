@@ -370,6 +370,8 @@ class IRBResults(_RBResultsBase):
             alpha=0.5,
             color="tab:orange",
         )
+        if filename is not None:
+            plt.savefig(filename)
 
         root_figure = plot.figure.figure
         if filename is not None:
