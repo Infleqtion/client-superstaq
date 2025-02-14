@@ -318,7 +318,7 @@ class XEBResults(QCVVResults):
         )
 
         if filename is not None:
-            fig.savefig(filename)
+            fig.savefig(filename, bbox_inches="tight")
 
         return fig
 
