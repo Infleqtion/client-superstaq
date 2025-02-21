@@ -517,24 +517,25 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         return probabilities
 
     @staticmethod
-    def _interleave_op(
-        circuit: cirq.Circuit, operation: cirq.Operation, include_final: bool = False
+    def _interleave_layer(
+        circuit: cirq.Circuit, layer: cirq.OP_TREE, include_final: bool = False
     ) -> cirq.Circuit:
-        """Interleave a given operation into a circuit.
+        """Interleave a given operation layer into a circuit.
 
         Args:
             circuit: The original circuit.
-            operation: The operation to interleave.
+            layer: The operation(s) to interleave.
             include_final: If True then the interleaving gate is also appended to
                 the end of the circuit.
 
         Returns:
-            A copy of the original circuit with the provided gate interleaved.
+            A copy of the original circuit with the provided layer interleaved.
         """
-        operation = operation.with_tags("no_compile")
+        layer = cirq.Circuit(operation).map_operations(lambda op: op.with_tags("no_compile"))
+
         interleaved_circuit = circuit.copy()
         interleaved_circuit.batch_insert(
-            [(k, operation) for k in range(len(circuit) - int(not include_final), 0, -1)]
+            [(k, layer) for k in range(len(circuit) - int(not include_final), 0, -1)]
         )
         return interleaved_circuit
 

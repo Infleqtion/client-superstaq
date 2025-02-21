@@ -358,7 +358,7 @@ class XEB(QCVVExperiment[XEBResults]):
         self,
         num_circuits: int,
         cycle_depths: Iterable[int],
-        two_qubit_gate: cirq.Gate | cirq.Operation | None = cirq.CZ,
+        interleaved_layer: cirq.Gate | cirq.OP_TREE | None = cirq.CZ,
         single_qubit_gate_set: list[cirq.Gate] | None = None,
         *,
         random_seed: int | np.random.Generator | None = None,
@@ -370,21 +370,33 @@ class XEB(QCVVExperiment[XEBResults]):
         Args:
             num_circuits: Number of circuits to sample.
             cycle_depths: The cycle depths to sample.
-            two_qubit_gate: The two qubit gate to interleave between the single qubit gates. If None
-                then no two qubit gate is used. Defaults to control-Z gate.
+            interleaved_layer: The gate or operation(s) to interleave between the single qubit
+                gates. If None then no gates are interleaved. Defaults to control-Z gate.
             single_qubit_gate_set: Optional list of single qubit gates to randomly sample from when
                 generating random circuits. If not provided defaults to phased XZ gates with 1/4 pi
                 intervals.
             random_seed: An optional seed to use for randomization.
         """
 
-        if isinstance(two_qubit_gate, cirq.Operation):
-            qubits: Sequence[cirq.Qid] | int = two_qubit_gate.qubits
-            two_qubit_gate = two_qubit_gate.gate
-        else:
+        if interleaved_layer is None:
             qubits = cirq.LineQubit.range(2)
+            interleaved_layer = css.barrier(*qubits)
 
-        self.two_qubit_gate: cirq.Gate | None = two_qubit_gate
+        elif isinstance(interleaved_layer, cirq.Gate):
+            qubits = cirq.LineQubit.range(cirq.num_qubuts(interleaved_layer))
+            interleaved_layer = interleaved_layer.on(*qubits)
+
+        elif isinstance(interleaved_layer, cirq.Operation):
+            qubits = interleaved_layer.qubits
+
+        elif isinstance(interleaved_layer, cirq.Moment):
+            qubits = sorted(interleaved_layer.qubits)
+
+        else:
+            interleaved_layer = cirq.Circuit(interleaved_layer)
+            qubits = sorted(interleaved_layer.all_qubits())
+
+        self.interleaved_layer: cirq.OP_TREE = interleaved_layer
         """The two qubit gate to use for interleaving."""
 
         self.single_qubit_gate_set: list[cirq.Gate]
@@ -436,7 +448,7 @@ class XEB(QCVVExperiment[XEBResults]):
         for k, depth in tqdm.contrib.itertools.product(
             range(num_circuits), cycle_depths, desc="Building circuits"
         ):
-            num_single_qubit_gate_layers = depth + int(self.two_qubit_gate is not None)
+            num_single_qubit_gate_layers = depth + 1
             chosen_single_qubit_gates = self._rng.choice(
                 np.asarray(self.single_qubit_gate_set),
                 size=(num_single_qubit_gate_layers, self.num_qubits),
@@ -448,8 +460,7 @@ class XEB(QCVVExperiment[XEBResults]):
                 for gate, qubit in zip(gates_in_layer, self.qubits)
             )
 
-            if self.two_qubit_gate is not None:
-                circuit = self._interleave_op(circuit, self.two_qubit_gate(*self.qubits))
+            circuit = self._interleave_layer(circuit, self.interleaved_layer)
 
             analytic_final_state = cirq.final_state_vector(
                 circuit, qubit_order=sorted(circuit.all_qubits())
@@ -465,7 +476,8 @@ class XEB(QCVVExperiment[XEBResults]):
                     data={
                         "circuit_depth": len(circuit),
                         "cycle_depth": depth,
-                        "two_qubit_gate": str(self.two_qubit_gate),
+                        "interleaved_layer": str(self.interleaved_layer),
+                        "inter
                         **analytic_probabilities,
                     },
                     circuit_realization=k,
@@ -482,7 +494,7 @@ class XEB(QCVVExperiment[XEBResults]):
             Json-able dictionary of the experiment data.
         """
         return {
-            "two_qubit_gate": self.two_qubit_gate,
+            "interleaved_layer": self.interleaved_layer,
             "single_qubit_gate_set": self.single_qubit_gate_set,
             **super()._json_dict_(),
         }
@@ -491,7 +503,7 @@ class XEB(QCVVExperiment[XEBResults]):
     def _from_json_dict_(
         cls,
         samples: list[Sample],
-        two_qubit_gate: cirq.Gate,
+        interleaved_layer: cirq.OP_TREE,
         single_qubit_gate_set: list[cirq.Gate],
         num_circuits: int,
         cycle_depths: list[int],
@@ -512,6 +524,6 @@ class XEB(QCVVExperiment[XEBResults]):
             cycle_depths=cycle_depths,
             _samples=samples,
             single_qubit_gate_set=single_qubit_gate_set,
-            two_qubit_gate=two_qubit_gate,
+            interleaved_layer=interleaved_layer,
             **kwargs,
         )
