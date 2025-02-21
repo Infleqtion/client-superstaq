@@ -317,7 +317,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
     def __init__(
         self,
-        num_qubits: int,
+        qubits: int | Sequence[cirq.Qid],
         num_circuits: int,
         cycle_depths: Iterable[int],
         *,
@@ -329,8 +329,8 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         """Initializes a benchmarking experiment.
 
         Args:
-            num_qubits: The number of qubits used during the experiment. Most subclasses
-                will determine this from their other inputs.
+            qubits: The qubits used during the experiment. If an integer, this number of line qubits
+                will be used. Most subclasses will determine this from their other inputs.
             num_circuits: The number of circuits to sample.
             cycle_depths: A sequence of depths to sample.
             random_seed: An optional seed to use for randomization.
@@ -338,13 +338,18 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             _samples: Optional list of samples to construct the experiment from
             kwargs: Additional kwargs passed to the Superstaq service object.
         """
-        self.qubits = cirq.LineQubit.range(num_qubits)
+        self.qubits: Sequence[cirq.Qid]
+        if isinstance(qubits, Sequence):
+            self.qubits = list(qubits)
+        else:
+            self.qubits = cirq.LineQubit.range(qubits)
+
         """The qubits used in the experiment."""
 
         self.num_circuits = num_circuits
         """The number of circuits to build for each cycle depth."""
 
-        self.cycle_depths = cycle_depths
+        self.cycle_depths = list(cycle_depths)
         """The different cycle depths to test at."""
 
         self._service_kwargs = kwargs
@@ -590,7 +595,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         return {
             "cycle_depths": self.cycle_depths,
             "num_circuits": self.num_circuits,
-            "num_qubits": self.num_qubits,
+            "qubits": self.qubits,
             "samples": self.samples,
             **self._service_kwargs,
         }

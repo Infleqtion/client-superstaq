@@ -358,8 +358,8 @@ class XEB(QCVVExperiment[XEBResults]):
         self,
         num_circuits: int,
         cycle_depths: Iterable[int],
+        two_qubit_gate: cirq.Gate | cirq.Operation | None = cirq.CZ,
         single_qubit_gate_set: list[cirq.Gate] | None = None,
-        two_qubit_gate: cirq.Gate | None = cirq.CZ,
         *,
         random_seed: int | np.random.Generator | None = None,
         _samples: list[Sample] | None = None,
@@ -370,13 +370,20 @@ class XEB(QCVVExperiment[XEBResults]):
         Args:
             num_circuits: Number of circuits to sample.
             cycle_depths: The cycle depths to sample.
+            two_qubit_gate: The two qubit gate to interleave between the single qubit gates. If None
+                then no two qubit gate is used. Defaults to control-Z gate.
             single_qubit_gate_set: Optional list of single qubit gates to randomly sample from when
                 generating random circuits. If not provided defaults to phased XZ gates with 1/4 pi
                 intervals.
-            two_qubit_gate: The two qubit gate to interleave between the single qubit gates. If None
-                then no two qubit gate is used. Defaults to control-Z gate.
             random_seed: An optional seed to use for randomization.
         """
+
+        if isinstance(two_qubit_gate, cirq.Operation):
+            qubits: Sequence[cirq.Qid] | int = two_qubit_gate.qubits
+            two_qubit_gate = two_qubit_gate.gate
+        else:
+            qubits = cirq.LineQubit.range(2)
+
         self.two_qubit_gate: cirq.Gate | None = two_qubit_gate
         """The two qubit gate to use for interleaving."""
 
@@ -399,7 +406,7 @@ class XEB(QCVVExperiment[XEBResults]):
             self.single_qubit_gate_set = single_qubit_gate_set
 
         super().__init__(
-            num_qubits=2,
+            qubits=qubits,
             num_circuits=num_circuits,
             cycle_depths=cycle_depths,
             random_seed=random_seed,
@@ -498,7 +505,7 @@ class XEB(QCVVExperiment[XEBResults]):
         Returns:
             The deserialized experiment object.
         """
-        kwargs.pop("num_qubits")  # Don't need for XEB
+        kwargs.pop("qubits")  # Don't need for XEB
 
         return cls(
             num_circuits=num_circuits,
