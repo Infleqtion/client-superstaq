@@ -338,6 +338,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             _samples: Optional list of samples to construct the experiment from
             kwargs: Additional kwargs passed to the Superstaq service object.
         """
+        self.qubits: Sequence[cirq.Qid]
         if isinstance(qubits, Sequence):
             self.qubits = list(qubits)
         else:

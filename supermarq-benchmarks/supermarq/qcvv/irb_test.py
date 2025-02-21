@@ -35,8 +35,11 @@ def irb() -> IRB:
 
 
 def test_irb_init() -> None:
+    q0, q1, q2 = cirq.LineQubit.range(3)
+
     experiment = IRB(num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 1
+    assert experiment.qubits == [q0]
     assert experiment.interleaved_gate == cirq.ops.SingleQubitCliffordGate.Z
     assert experiment.clifford_op_gateset == cirq.CZTargetGateset()
     assert experiment.num_circuits == 10
@@ -46,6 +49,7 @@ def test_irb_init() -> None:
         num_circuits=10, cycle_depths=[1, 3, 5], interleaved_gate=cirq.ops.SingleQubitCliffordGate.X
     )
     assert experiment.num_qubits == 1
+    assert experiment.qubits == [q0]
     assert experiment.interleaved_gate == cirq.ops.SingleQubitCliffordGate.X
     assert experiment.clifford_op_gateset == cirq.CZTargetGateset()
     assert experiment.num_circuits == 10
@@ -53,9 +57,18 @@ def test_irb_init() -> None:
 
     experiment = IRB(num_circuits=10, cycle_depths=[1, 3, 5], interleaved_gate=cirq.CZ)
     assert experiment.num_qubits == 2
+    assert experiment.qubits == [q0, q1]
     assert experiment.clifford_op_gateset == cirq.CZTargetGateset()
     assert experiment.num_circuits == 10
     assert experiment.cycle_depths == [1, 3, 5]
+
+    experiment = IRB(num_circuits=10, cycle_depths=[1, 3, 5], interleaved_gate=cirq.CZ(q1, q2))
+    assert experiment.num_qubits == 2
+    assert experiment.qubits == [q1, q2]
+    assert experiment.clifford_op_gateset == cirq.CZTargetGateset()
+    assert experiment.num_circuits == 10
+    assert experiment.cycle_depths == [1, 3, 5]
+    assert all(sample.circuit.all_qubits() == {q1, q2} for sample in experiment.samples)
 
     experiment = IRB(
         num_circuits=10,
@@ -64,6 +77,7 @@ def test_irb_init() -> None:
         clifford_op_gateset=cirq.SqrtIswapTargetGateset(),
     )
     assert experiment.num_qubits == 1
+    assert experiment.qubits == [q0]
     assert experiment.interleaved_gate is None
     assert experiment.clifford_op_gateset == cirq.SqrtIswapTargetGateset()
     assert experiment.num_circuits == 10

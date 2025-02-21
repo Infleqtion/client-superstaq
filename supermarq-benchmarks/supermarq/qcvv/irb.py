@@ -530,7 +530,10 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                 Defaults to the CZ/GR set.
             random_seed: An optional seed to use for randomization.
         """
-        if interleaved_gate is not None:
+        if isinstance(interleaved_gate, cirq.Operation):
+            qubits = interleaved_gate.qubits
+            interleaved_gate = interleaved_gate.gate
+        elif interleaved_gate is not None:
             qubits = cirq.LineQubit.range(cirq.num_qubits(interleaved_gate))
         elif not isinstance(qubits, Sequence):
             qubits = cirq.LineQubit.range(qubits)
@@ -579,7 +582,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         """
         circuit = cirq.Circuit(
             cirq.decompose_clifford_tableau_to_operations(
-                self.qubits, clifford.clifford_tableau  # type: ignore[arg-type]
+                list(self.qubits), clifford.clifford_tableau
             )
         )
         return cirq.optimize_for_target_gateset(circuit, gateset=self.clifford_op_gateset)
