@@ -317,7 +317,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
     def __init__(
         self,
-        num_qubits: int,
+        qubits: int | Sequence[cirq.Qid],
         num_circuits: int,
         cycle_depths: Iterable[int],
         *,
@@ -338,13 +338,17 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             _samples: Optional list of samples to construct the experiment from
             kwargs: Additional kwargs passed to the Superstaq service object.
         """
-        self.qubits = cirq.LineQubit.range(num_qubits)
+        if isinstance(qubits, Sequence):
+            self.qubits = qubits
+        else:
+            self.qubits = cirq.LineQubit.range(qubits)
+
         """The qubits used in the experiment."""
 
         self.num_circuits = num_circuits
         """The number of circuits to build for each cycle depth."""
 
-        self.cycle_depths = cycle_depths
+        self.cycle_depths = list(cycle_depths)
         """The different cycle depths to test at."""
 
         self._service_kwargs = kwargs
@@ -513,23 +517,24 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
     @staticmethod
     def _interleave_op(
-        circuit: cirq.Circuit, operation: cirq.Operation, include_final: bool = False
+        circuit: cirq.Circuit, operation: cirq.OP_TREE, include_final: bool = False
     ) -> cirq.Circuit:
         """Interleave a given operation into a circuit.
 
         Args:
             circuit: The original circuit.
-            operation: The operation to interleave.
+            operation: The operation(s) to interleave.
             include_final: If True then the interleaving gate is also appended to
                 the end of the circuit.
 
         Returns:
             A copy of the original circuit with the provided gate interleaved.
         """
-        operation = operation.with_tags("no_compile")
+        layer = cirq.Circuit(operation).map_operations(lambda op: op.with_tags("no_compile"))
+
         interleaved_circuit = circuit.copy()
         interleaved_circuit.batch_insert(
-            [(k, operation) for k in range(len(circuit) - int(not include_final), 0, -1)]
+            [(k, layer) for k in range(len(circuit) - int(not include_final), 0, -1)]
         )
         return interleaved_circuit
 
@@ -590,7 +595,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         return {
             "cycle_depths": self.cycle_depths,
             "num_circuits": self.num_circuits,
-            "num_qubits": self.num_qubits,
+            "qubits": self.qubits,
             "samples": self.samples,
             **self._service_kwargs,
         }

@@ -77,7 +77,7 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
 
     def __init__(
         self,
-        num_qubits: int,
+        qubits: int | Sequence[cirq.Qid],
         num_circuits: int,
         cycle_depths: Iterable[int],
         *,
@@ -86,7 +86,7 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
         **kwargs: str | bool,
     ) -> None:
         super().__init__(
-            num_qubits,
+            qubits,
             num_circuits,
             cycle_depths,
             random_seed=random_seed,
@@ -98,7 +98,7 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
     def _build_circuits(self, num_circuits: int, cycle_depths: Iterable[int]) -> Sequence[Sample]:
         return [
             Sample(
-                circuit=MagicMock(spec=cirq.Circuit),
+                circuit=cirq.Circuit(cirq.measure(*self.qubits)),
                 data={"num": k, "depth": d},
                 circuit_realization=k,
             )
@@ -113,14 +113,14 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
     def _from_json_dict_(
         cls,
         samples: list[Sample],
-        num_qubits: int,
+        qubits: list[cirq.Qid],
         num_circuits: int,
         cycle_depths: list[int],
         **kwargs: Any,
     ) -> Self:
         experiment = cls(
+            qubits=qubits,
             num_circuits=num_circuits,
-            num_qubits=num_qubits,
             cycle_depths=cycle_depths,
             _samples=samples,
             **kwargs,
@@ -130,14 +130,13 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
 
 @pytest.fixture
 def abc_experiment() -> ExampleExperiment:
-    with patch("supermarq.qcvv.base_experiment.QCVVExperiment._validate_circuits"):
-        return ExampleExperiment(
-            num_qubits=2,
-            num_circuits=10,
-            cycle_depths=[1, 3, 5],
-            random_seed=42,
-            service_details="Some other details",
-        )
+    return ExampleExperiment(
+        qubits=2,
+        num_circuits=10,
+        cycle_depths=[1, 3, 5],
+        random_seed=42,
+        service_details="Some other details",
+    )
 
 
 @pytest.fixture
@@ -161,12 +160,21 @@ def test_qcvv_experiment_init(
     abc_experiment: ExampleExperiment,
 ) -> None:
     assert abc_experiment.num_qubits == 2
+    assert abc_experiment.qubits == [cirq.q(0), cirq.q(1)]
     assert abc_experiment.num_circuits == 10
     assert abc_experiment.cycle_depths == [1, 3, 5]
     assert abc_experiment._results_cls == ExampleResults
     assert abc_experiment._service_kwargs == {"service_details": "Some other details"}
     assert len(abc_experiment.samples) == 30
     assert isinstance(abc_experiment._rng, np.random.Generator)
+
+    new_experiment = ExampleExperiment(
+        qubits=[cirq.q(1), cirq.q(3), cirq.q(7)],
+        num_circuits=10,
+        cycle_depths=[1, 3, 5],
+    )
+    assert new_experiment.num_qubits == 3
+    assert new_experiment.qubits == [cirq.q(1), cirq.q(3), cirq.q(7)]
 
 
 def test_results_init(
@@ -186,7 +194,7 @@ def test_experiment_init_with_bad_layers() -> None:
         ValueError, match="The `cycle_depths` iterator can only include positive values."
     ):
         ExampleExperiment(
-            num_qubits=2,
+            qubits=2,
             num_circuits=10,
             cycle_depths=[0],
             random_seed=42,
