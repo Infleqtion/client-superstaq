@@ -74,7 +74,7 @@ def test_irb_bad_init() -> None:
     with pytest.raises(NotImplementedError):
         IRB(
             interleaved_gate=None,
-            num_qubits=3,
+            qubits=3,
             num_circuits=10,
             cycle_depths=[1, 3, 5],
         )
