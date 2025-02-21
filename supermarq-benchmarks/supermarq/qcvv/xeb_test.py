@@ -21,7 +21,6 @@ import re
 from unittest.mock import MagicMock
 
 import cirq
-import cirq_superstaq as css
 import numpy as np
 import pandas as pd
 import pytest
@@ -30,13 +29,12 @@ from supermarq.qcvv import XEB, XEBResults
 
 
 def test_xeb_init() -> None:
-    q0, q1, q2, q3 = cirq.LineQubit.range(4)
+    q0, q1, q2 = cirq.LineQubit.range(3)
 
     experiment = XEB(num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
     assert experiment.qubits == [q0, q1]
-    assert experiment.layer == cirq.Circuit(cirq.CZ(q0, q1))
-    assert experiment._layer_str == "CZ"
+    assert experiment.two_qubit_gate == cirq.CZ
     assert experiment.single_qubit_gate_set == [
         cirq.PhasedXZGate(
             z_exponent=z,
@@ -46,10 +44,10 @@ def test_xeb_init() -> None:
         for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
     ]
 
-    experiment = XEB(layer=cirq.CCX, num_circuits=10, cycle_depths=[1, 3, 5])
-    assert experiment.num_qubits == 3
-    assert experiment.qubits == [q0, q1, q2]
-    assert experiment.layer == cirq.Circuit(cirq.CCX(q0, q1, q2))
+    experiment = XEB(two_qubit_gate=cirq.CX, num_circuits=10, cycle_depths=[1, 3, 5])
+    assert experiment.num_qubits == 2
+    assert experiment.qubits == [q0, q1]
+    assert experiment.two_qubit_gate == cirq.CX
     assert experiment.single_qubit_gate_set == [
         cirq.PhasedXZGate(
             z_exponent=z,
@@ -61,26 +59,19 @@ def test_xeb_init() -> None:
 
     experiment = XEB(single_qubit_gate_set=[cirq.X], num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
-    assert experiment.layer == cirq.Circuit(cirq.CZ(q0, q1))
+    assert experiment.two_qubit_gate == cirq.CZ
     assert experiment.single_qubit_gate_set == [cirq.X]
 
-    experiment = XEB(layer=None, num_circuits=10, cycle_depths=[1, 3, 5])
+    experiment = XEB(two_qubit_gate=None, num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
     assert experiment.qubits == [q0, q1]
-    assert experiment.layer == cirq.Circuit(css.barrier(q0, q1))
+    assert experiment.two_qubit_gate is None
 
-    experiment = XEB(layer=cirq.CZ(q1, q3), num_circuits=10, cycle_depths=[1, 3, 5])
+    experiment = XEB(two_qubit_gate=cirq.CZ(q1, q2), num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
-    assert experiment.qubits == [q1, q3]
-    assert experiment.layer == cirq.Circuit(cirq.CZ(q1, q3))
-    assert all(sample.circuit.all_qubits() == {q1, q3} for sample in experiment.samples)
-
-    circuit_layer = cirq.Circuit(cirq.CX(q1, q3), cirq.CZ(q1, q2), cirq.X(q2))
-    experiment = XEB(layer=circuit_layer, num_circuits=10, cycle_depths=[1, 3, 5])
-    assert experiment.num_qubits == 3
-    assert experiment.qubits == [q1, q2, q3]
-    assert experiment.layer == circuit_layer
-    assert all(sample.circuit.all_qubits() == {q1, q2, q3} for sample in experiment.samples)
+    assert experiment.qubits == [q1, q2]
+    assert experiment.two_qubit_gate == cirq.CZ
+    assert all(sample.circuit.all_qubits() == {q1, q2} for sample in experiment.samples)
 
 
 @pytest.fixture
@@ -121,7 +112,7 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
     assert circuits[0].data == {
         "circuit_depth": 5,
         "cycle_depth": 2,
-        # "two_qubit_gate": "CZ",
+        "two_qubit_gate": "CZ",
         "exact_00": 1.0,
         "exact_01": 0.0,
         "exact_10": 0.0,
@@ -146,7 +137,7 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
     assert circuits[1].data == {
         "circuit_depth": 5,
         "cycle_depth": 2,
-        # "two_qubit_gate": "CZ",
+        "two_qubit_gate": "CZ",
         "exact_00": 0.0,
         "exact_01": 0.0,
         "exact_10": 1.0,
@@ -303,4 +294,4 @@ def test_dump_and_load(
     assert exp.num_circuits == xeb_experiment.num_circuits
     assert exp.cycle_depths == xeb_experiment.cycle_depths
     assert exp.single_qubit_gate_set == xeb_experiment.single_qubit_gate_set
-    assert exp.layer == xeb_experiment.layer
+    assert exp.two_qubit_gate == xeb_experiment.two_qubit_gate

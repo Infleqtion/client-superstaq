@@ -339,7 +339,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             kwargs: Additional kwargs passed to the Superstaq service object.
         """
         if isinstance(qubits, Sequence):
-            self.qubits = qubits
+            self.qubits = list(qubits)
         else:
             self.qubits = cirq.LineQubit.range(qubits)
 
@@ -517,24 +517,23 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
     @staticmethod
     def _interleave_op(
-        circuit: cirq.Circuit, operation: cirq.OP_TREE, include_final: bool = False
+        circuit: cirq.Circuit, operation: cirq.Operation, include_final: bool = False
     ) -> cirq.Circuit:
         """Interleave a given operation into a circuit.
 
         Args:
             circuit: The original circuit.
-            operation: The operation(s) to interleave.
+            operation: The operation to interleave.
             include_final: If True then the interleaving gate is also appended to
                 the end of the circuit.
 
         Returns:
             A copy of the original circuit with the provided gate interleaved.
         """
-        layer = cirq.Circuit(operation).map_operations(lambda op: op.with_tags("no_compile"))
-
+        operation = operation.with_tags("no_compile")
         interleaved_circuit = circuit.copy()
         interleaved_circuit.batch_insert(
-            [(k, layer) for k in range(len(circuit) - int(not include_final), 0, -1)]
+            [(k, operation) for k in range(len(circuit) - int(not include_final), 0, -1)]
         )
         return interleaved_circuit
 
