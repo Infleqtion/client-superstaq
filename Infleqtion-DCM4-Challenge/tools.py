@@ -297,7 +297,9 @@ class AirDefenceModel:
         )
         plt.show()
 
-    def solve_qaoa(self, nreps=8, x0=None, method="COBYQA", shots=0, tol=1e-5, maxiter=None):
+    def solve_qaoa(
+        self, nreps=8, x0=None, method="COBYQA", shots=0, tol=1e-5, maxiter=None, **kwargs
+    ):
 
         self.build_circuit(num_reps=nreps, store=True)
 
@@ -314,5 +316,6 @@ class AirDefenceModel:
             tol=tol,
             options={"maxiter": maxiter},
             callback=self.callback,
+            **kwargs,
         )
         return res
