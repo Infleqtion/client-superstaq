@@ -171,7 +171,10 @@ class AirDefenceModel:
         ax = plt.gca()
         ax.margins(0.20)
         plt.axis("off")
-        plt.title(f"Expected surviving value post-engagement: {self.cost(solution_array):0.2f}")
+        if not self.is_feasible(solution_array):
+            plt.title("SOLUTION IS INFEASIBLE", color="red", fontweight="bold")
+        else:
+            plt.title(f"Expected surviving value post-engagement: {self.cost(solution_array):0.2f}")
 
     def cost(self, x):
         return sum(
