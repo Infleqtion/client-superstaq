@@ -329,8 +329,8 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         """Initializes a benchmarking experiment.
 
         Args:
-            num_qubits: The number of qubits used during the experiment. Most subclasses
-                will determine this from their other inputs.
+            qubits: The qubits used during the experiment. If an integer, this number of line qubits
+                will be used. Most subclasses will determine this from their other inputs.
             num_circuits: The number of circuits to sample.
             cycle_depths: A sequence of depths to sample.
             random_seed: An optional seed to use for randomization.
