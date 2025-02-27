@@ -467,10 +467,8 @@ class _SuperstaqClient:
             "qaoa_depth": qaoa_depth,
             "rqaoa_cutoff": rqaoa_cutoff,
             "random_seed": random_seed,
+            **kwargs,
         }
-
-        if kwargs:
-            options.update(kwargs)
 
         json_dict = {
             "qubo": list(qubo.items()),
