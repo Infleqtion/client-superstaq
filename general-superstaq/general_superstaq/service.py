@@ -245,7 +245,7 @@ class Service:
         rqaoa_cutoff: int = 0,
         dry_run: bool = False,
         random_seed: int | None = None,
-        **kwargs: Any,
+        **kwargs: object,
     ) -> list[dict[TQuboKey, int]]:
         """Solves a submitted QUBO problem via annealing.
 
