@@ -449,10 +449,6 @@ class _SuperstaqClient:
                 solver. Defaults to 0.
             random_seed: Optional random seed choice for RQAOA.
             kwargs: Any additional keyword arguments supported by the qubo solver methods.
-                -scipy_optimizer: The type of scipy minimization optimizer to use. Defaults
-                    to "COBYLA".
-                -max_opt_iters: The maximum number of iterations the scipy optimizer can
-                    run for. Defaults to 1000.
 
         Returns:
             A dictionary from the POST request.
@@ -471,8 +467,7 @@ class _SuperstaqClient:
         }
 
         if kwargs:
-            options["max_opt_iters"] = kwargs.get("max_opt_iters", "1000")
-            options["scipy_optimizer"] = kwargs.get("scipy_optimizer", "COBYLA")
+            options.update(kwargs)
 
         json_dict = {
             "qubo": list(qubo.items()),

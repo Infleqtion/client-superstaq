@@ -268,10 +268,6 @@ class Service:
                 solver. Defaults to 0.
             random_seed: Optional random seed choice for RQAOA.
             kwargs: Any optional keyword arguments supported by the qubo solver methods.
-                -scipy_optimizer: The type of scipy minimization optimizer to use. Defaults
-                    to "COBYLA".
-                -max_opt_iters: The maximum number of iterations the scipy optimizer can
-                    run for. Defaults to 1000.
 
         Returns:
             A dictionary containing the output solutions.

@@ -796,8 +796,7 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
         method="qaoa",
         repetitions=repetitions,
         max_solutions=1,
-        scipy_optimizer="POWELL",
-        max_opt_iters=100,
+        foo_kwarg=True,
     )
 
     expected_json = {
@@ -811,9 +810,7 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
                 "qaoa_depth": 1,
                 "rqaoa_cutoff": 0,
                 "random_seed": None,
-                "max_opt_iters": 100,
-                "scipy_optimizer": "POWELL",
-                "max_opt_iters": 100,
+                "foo_kwarg": True,
             }
         ),
     }
