@@ -428,7 +428,7 @@ class _SuperstaqClient:
         rqaoa_cutoff: int = 0,
         dry_run: bool = False,
         random_seed: int | None = None,
-        **kwargs: Any,
+        **kwargs: object,
     ) -> dict[str, str]:
         """Makes a POST request to Superstaq API to submit a QUBO problem to the
         given target.
