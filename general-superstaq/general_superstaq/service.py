@@ -240,6 +240,11 @@ class Service:
         repetitions: int = 10,
         method: str | None = None,
         max_solutions: int = 1000,
+        *,
+        qaoa_depth: int = 1,
+        rqaoa_cutoff: int = 0,
+        random_seed: int | None = None,
+        **kwargs: Any,
     ) -> list[dict[TQuboKey, int]]:
         """Solves a submitted QUBO problem via annealing.
 
@@ -254,15 +259,34 @@ class Service:
                 would be {('a',): 2, ('a', 'b'): 1, ('b', 'c'): -5, (): -3}.
             target: The target to submit the QUBO.
             repetitions: Number of times that the execution is repeated before stopping.
-            method: The parameter specifying method of QUBO solving execution. Currently,
-                will either be the "dry-run" option which runs on dwave's simulated annealer,
-                or defaults to `None` and sends it directly to the specified target.
+            method: The parameter specifying method of QUBO solving execution. Currently, the
+                supported methods include "bruteforce", "qaoa", "rqaoa", or "sim_anneal"
+                (equivalent to the default `None` which runs on DWave's simulated annealer).
             max_solutions: A parameter that specifies the max number of output solutions.
+            qaoa_depth: The number of QAOA layers to use. Defaults to 1.
+            rqaoa_cutoff: The stopping point for RQAOA before using switching to a classical
+                solver. Defaults to 0.
+            random_seed: Optional random seed choice for RQAOA.
+            kwargs: Any optional keyword arguments supported by the qubo solver methods.
+                -scipy_optimizer: The type of scipy minimization optimizer to use. Defaults
+                    to "COBYLA".
+                -max_opt_iters: The maximum number of iterations the scipy optimizer can
+                    run for. Defaults to 1000.
 
         Returns:
             A dictionary containing the output solutions.
         """
-        result_dict = self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
+        result_dict = self._client.submit_qubo(
+            qubo,
+            target,
+            repetitions,
+            method,
+            max_solutions,
+            qaoa_depth=qaoa_depth,
+            rqaoa_cutoff=rqaoa_cutoff,
+            random_seed=random_seed,
+            **kwargs,
+        )
         return gss.serialization.deserialize(result_dict["solution"])
 
     @staticmethod
