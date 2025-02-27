@@ -238,7 +238,7 @@ class Service:
         qubo: Mapping[tuple[TQuboKey, ...], float],
         target: str = "ss_unconstrained_simulator",
         repetitions: int = 10,
-        method: str | None = None,
+        method: str = "sim_anneal",
         max_solutions: int = 1000,
         *,
         qaoa_depth: int = 1,
@@ -261,8 +261,8 @@ class Service:
             target: The target to submit the QUBO.
             repetitions: Number of times that the execution is repeated before stopping.
             method: The parameter specifying method of QUBO solving execution. Currently, the
-                supported methods include "bruteforce", "qaoa", "rqaoa", or "sim_anneal"
-                (equivalent to the default `None` which runs on DWave's simulated annealer).
+                supported methods include "bruteforce", "sim_anneal", "qaoa", or "rqaoa".
+                Defaults to "sim_anneal" which runs on DWave's simulated annealer.
             max_solutions: A parameter that specifies the max number of output solutions.
             qaoa_depth: The number of QAOA layers to use. Defaults to 1.
             rqaoa_cutoff: The stopping point for RQAOA before using switching to a classical
