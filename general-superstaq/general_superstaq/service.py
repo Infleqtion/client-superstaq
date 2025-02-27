@@ -243,6 +243,7 @@ class Service:
         *,
         qaoa_depth: int = 1,
         rqaoa_cutoff: int = 0,
+        dry_run: bool = False,
         random_seed: int | None = None,
         **kwargs: Any,
     ) -> list[dict[TQuboKey, int]]:
@@ -266,6 +267,8 @@ class Service:
             qaoa_depth: The number of QAOA layers to use. Defaults to 1.
             rqaoa_cutoff: The stopping point for RQAOA before using switching to a classical
                 solver. Defaults to 0.
+            dry_run: If `method="qaoa"`, a boolean flag to (not) run an ideal 'dry-run'
+                QAOA execution on `target`.
             random_seed: Optional random seed choice for RQAOA.
             kwargs: Any optional keyword arguments supported by the qubo solver methods.
 
@@ -280,6 +283,7 @@ class Service:
             max_solutions,
             qaoa_depth=qaoa_depth,
             rqaoa_cutoff=rqaoa_cutoff,
+            dry_run=dry_run,
             random_seed=random_seed,
             **kwargs,
         )

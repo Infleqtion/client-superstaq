@@ -805,6 +805,7 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
         "shots": repetitions,
         "method": "qaoa",
         "max_solutions": 1,
+        "dry_run": False,
         "options": json.dumps(
             {
                 "qaoa_depth": 1,

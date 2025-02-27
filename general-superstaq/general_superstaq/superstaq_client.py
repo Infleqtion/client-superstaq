@@ -426,6 +426,7 @@ class _SuperstaqClient:
         *,
         qaoa_depth: int = 1,
         rqaoa_cutoff: int = 0,
+        dry_run: bool = False,
         random_seed: int | None = None,
         **kwargs: Any,
     ) -> dict[str, str]:
@@ -447,6 +448,8 @@ class _SuperstaqClient:
             qaoa_depth: The number of QAOA layers to use. Defaults to 1.
             rqaoa_cutoff: The stopping point for RQAOA before using switching to a classical
                 solver. Defaults to 0.
+            dry_run: If `method="qaoa"`, a boolean flag to (not) run an ideal 'dry-run'
+                QAOA execution on `target`.
             random_seed: Optional random seed choice for RQAOA.
             kwargs: Any additional keyword arguments supported by the qubo solver methods.
 
@@ -475,6 +478,7 @@ class _SuperstaqClient:
             "shots": int(repetitions),
             "method": method,
             "max_solutions": max_solutions,
+            "dry_run": dry_run,
             "options": json.dumps(options),
         }
         return self.post_request("/qubo", json_dict)
