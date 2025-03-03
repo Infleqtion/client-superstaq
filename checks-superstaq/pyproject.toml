@@ -12,6 +12,10 @@ dynamic = ["version", "dependencies"]
 [project.urls]
 homepage = "https://github.com/Infleqtion/client-superstaq"
 
+[project.scripts]
+checks_init = "checks_superstaq.checks_init:checks_init"
+
+
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
@@ -20,7 +24,7 @@ build-backend = "setuptools.build_meta"
 include = ["checks_superstaq*"]
 
 [tool.setuptools.package-data]
-checks_superstaq = ["py.typed", "checks-pyproject.toml"]
+checks_superstaq = ["py.typed", "checks-pyproject.toml", "_checks.py"]
 
 [tool.setuptools.dynamic.version]
 attr = "checks_superstaq._version.__version__"

@@ -1,5 +1,18 @@
 # Check script configuration:
 
+[project.scripts]
+checks_all = "checks.checks:all"
+checks_docs = "checks.checks:build_docs"
+checks_configs = "checks.checks:configs"
+checks_coverage = "checks.checks:coverage"
+checks_flake8 = "checks.checks:flake8"
+checks_format = "checks.checks:format"
+checks_mypy = "checks.checks:mypy"
+checks_pytest = "checks.checks:pytest"
+checks_requirements = "checks.checks:build_docs"
+checks_ruff_format = "checks.checks:ruff_format"
+checks_ruff_lint = "checks.checks:ruff_lint"
+
 [tool.pytest.ini_options]
 addopts = "--disable-socket"
 filterwarnings = [
