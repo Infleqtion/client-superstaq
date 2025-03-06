@@ -28,8 +28,6 @@ class JobType(str, Enum):
 class SimMethod(str, Enum):
     """The different simulation methods that are available."""
 
-    STATEVECTOR = "statevector"
-    """Simulation calculates the wavefunction of the state at the end of the circuit."""
     NOISE_SIM = "noise-sim"
     """The simulation applies noise. If used with `device_simulation` this applies realistic device
     noise otherwise the noise needs to be provided by the user (via the options dict)."""
@@ -132,12 +130,8 @@ class JobData(DefaultPydanticModel):
     """Serialized pulse gate circuits (if relevant)."""
     counts: list[dict[str, int] | None]
     """Counts for each input circuit (if available/relevant)."""
-    state_vectors: list[str | None]
-    """State vector results for each input circuit (if available/relevant)."""
     results_dicts: list[str | None]
     """Serialized results dictionary for each input circuit (if available/relevant)."""
-    num_qubits: list[int]
-    """Number of qubits required for each circuit."""
     shots: list[int]
     """Number of shots for each circuit."""
     dry_run: bool
