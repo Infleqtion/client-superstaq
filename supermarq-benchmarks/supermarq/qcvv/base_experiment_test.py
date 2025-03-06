@@ -436,12 +436,12 @@ def test_run_on_device_dry_run(
     assert results.experiment == abc_experiment
 
 
-def test_interleave_circuit() -> None:
+def test_interleave_circuit(abc_experiment: ExampleExperiment) -> None:
     qubit = cirq.LineQubit(0)
     circuit = cirq.Circuit(*[cirq.X(qubit) for _ in range(4)])
 
     # With last gate
-    interleaved_circuit = QCVVExperiment._interleave_layer(circuit, cirq.Z(qubit), include_final=True)
+    interleaved_circuit = abc_experiment._interleave_layer(circuit, cirq.Z(qubit), include_final=True)
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(
@@ -457,7 +457,7 @@ def test_interleave_circuit() -> None:
     )
 
     # Without last gate
-    interleaved_circuit = QCVVExperiment._interleave_layer(circuit, cirq.Z(qubit), include_final=False)
+    interleaved_circuit = abc_experiment._interleave_layer(circuit, cirq.Z(qubit), include_final=False)
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(

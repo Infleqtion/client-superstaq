@@ -378,12 +378,14 @@ class XEB(QCVVExperiment[XEBResults]):
             random_seed: An optional seed to use for randomization.
         """
 
+        qubits: Sequence[cirq.Qid]
+
         if interleaved_layer is None:
             qubits = cirq.LineQubit.range(2)
-            interleaved_layer = css.barrier(*qubits)
+            interleaved_layer = cirq.Moment()
 
         elif isinstance(interleaved_layer, cirq.Gate):
-            qubits = cirq.LineQubit.range(cirq.num_qubuts(interleaved_layer))
+            qubits = cirq.LineQubit.range(cirq.num_qubits(interleaved_layer))
             interleaved_layer = interleaved_layer.on(*qubits)
 
         elif isinstance(interleaved_layer, cirq.Operation):
@@ -397,7 +399,7 @@ class XEB(QCVVExperiment[XEBResults]):
             qubits = sorted(interleaved_layer.all_qubits())
 
         self.interleaved_layer: cirq.OP_TREE = interleaved_layer
-        """The two qubit gate to use for interleaving."""
+        """The layer to interleave."""
 
         self.single_qubit_gate_set: list[cirq.Gate]
         """The single qubit gates to randomly sample from"""
@@ -477,7 +479,6 @@ class XEB(QCVVExperiment[XEBResults]):
                         "circuit_depth": len(circuit),
                         "cycle_depth": depth,
                         "interleaved_layer": str(self.interleaved_layer),
-                        "inter
                         **analytic_probabilities,
                     },
                     circuit_realization=k,

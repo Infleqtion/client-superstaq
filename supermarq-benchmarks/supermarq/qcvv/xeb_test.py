@@ -34,7 +34,7 @@ def test_xeb_init() -> None:
     experiment = XEB(num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
     assert experiment.qubits == [q0, q1]
-    assert experiment.two_qubit_gate == cirq.CZ
+    assert experiment.interleaved_layer == cirq.CZ(q0, q1)
     assert experiment.single_qubit_gate_set == [
         cirq.PhasedXZGate(
             z_exponent=z,
@@ -44,10 +44,10 @@ def test_xeb_init() -> None:
         for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
     ]
 
-    experiment = XEB(two_qubit_gate=cirq.CX, num_circuits=10, cycle_depths=[1, 3, 5])
+    experiment = XEB(interleaved_layer=cirq.CX(q2, q0), num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
-    assert experiment.qubits == [q0, q1]
-    assert experiment.two_qubit_gate == cirq.CX
+    assert experiment.qubits == [q2, q0]
+    assert experiment.interleaved_layer == cirq.CX(q2, q0)
     assert experiment.single_qubit_gate_set == [
         cirq.PhasedXZGate(
             z_exponent=z,
@@ -56,22 +56,25 @@ def test_xeb_init() -> None:
         )
         for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
     ]
+    assert all(sample.circuit.all_qubits() == {q0, q2} for sample in experiment.samples)
 
     experiment = XEB(single_qubit_gate_set=[cirq.X], num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
-    assert experiment.two_qubit_gate == cirq.CZ
+    assert experiment.qubits == [q0, q1]
+    assert experiment.interleaved_layer == cirq.CZ(q0, q1)
     assert experiment.single_qubit_gate_set == [cirq.X]
 
-    experiment = XEB(two_qubit_gate=None, num_circuits=10, cycle_depths=[1, 3, 5])
+    experiment = XEB(interleaved_layer=None, num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
     assert experiment.qubits == [q0, q1]
-    assert experiment.two_qubit_gate is None
+    assert not experiment.interleaved_layer
 
-    experiment = XEB(two_qubit_gate=cirq.CZ(q1, q2), num_circuits=10, cycle_depths=[1, 3, 5])
-    assert experiment.num_qubits == 2
-    assert experiment.qubits == [q1, q2]
-    assert experiment.two_qubit_gate == cirq.CZ
-    assert all(sample.circuit.all_qubits() == {q1, q2} for sample in experiment.samples)
+    interleaved_circuit = cirq.Circuit(cirq.CZ(q2, q0), cirq.H(q1))
+    experiment = XEB(interleaved_layer=interleaved_circuit, num_circuits=10, cycle_depths=[1, 3, 5])
+    assert experiment.num_qubits == 3
+    assert experiment.qubits == [q0, q1, q2]
+    assert experiment.interleaved_layer == interleaved_circuit
+    assert all(sample.circuit.all_qubits() == {q0, q1, q2} for sample in experiment.samples)
 
 
 @pytest.fixture
@@ -112,7 +115,7 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
     assert circuits[0].data == {
         "circuit_depth": 5,
         "cycle_depth": 2,
-        "two_qubit_gate": "CZ",
+        "interleaved_layer": "CZ(q(0), q(1))",
         "exact_00": 1.0,
         "exact_01": 0.0,
         "exact_10": 0.0,
@@ -137,7 +140,7 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
     assert circuits[1].data == {
         "circuit_depth": 5,
         "cycle_depth": 2,
-        "two_qubit_gate": "CZ",
+        "interleaved_layer": "CZ(q(0), q(1))",
         "exact_00": 0.0,
         "exact_01": 0.0,
         "exact_10": 1.0,
@@ -294,4 +297,4 @@ def test_dump_and_load(
     assert exp.num_circuits == xeb_experiment.num_circuits
     assert exp.cycle_depths == xeb_experiment.cycle_depths
     assert exp.single_qubit_gate_set == xeb_experiment.single_qubit_gate_set
-    assert exp.two_qubit_gate == xeb_experiment.two_qubit_gate
+    assert exp.interleaved_layer == xeb_experiment.interleaved_layer
