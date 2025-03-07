@@ -21,7 +21,7 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, ParamSpec, Concatenate
 
 import cirq
 import cirq_superstaq as css
@@ -35,6 +35,7 @@ import supermarq
 if TYPE_CHECKING:
     from typing_extensions import Self
 
+    P = ParamSpec("P")
 
 def qcvv_resolver(cirq_type: str) -> type[Any] | None:
     """Resolves string's referencing classes in the QCVV library. Used by `cirq.read_json()`
@@ -761,7 +762,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
     def run_with_callable(
         self,
-        circuit_eval_func: Callable[[cirq.Circuit], Mapping[str, float] | Mapping[int, float]],
+        circuit_eval_func: Callable[..., Mapping[str, float] | Mapping[int, float]],
         **kwargs: Any,
     ) -> ResultsT:
         """Evaluates the probabilities for each circuit using a user provided callable function.

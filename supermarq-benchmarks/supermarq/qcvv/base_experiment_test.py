@@ -36,9 +36,6 @@ from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample, 
 if TYPE_CHECKING:
     from typing_extensions import Self
 
-mock_plot = MagicMock()
-mock_print = MagicMock()
-
 
 def test_qcvv_resolver() -> None:
     assert qcvv_resolver("bad_name") is None
@@ -59,11 +56,12 @@ class ExampleResults(QCVVResults):
         self._example_final_result = 3.142
 
     def plot_results(self, filename: str | None = None) -> plt.Figure:
-        mock_plot(filename)
-        return plt.Figure()
+        fig = plt.Figure()
+        fig.savefig(filename)
+        return fig
 
     def print_results(self) -> None:
-        mock_print("This is a test")
+        print("This is a test")
 
     @property
     def example_final_result(self) -> float:
@@ -144,12 +142,12 @@ def sample_circuits() -> list[Sample]:
     qubits = cirq.LineQubit.range(2)
     return [
         Sample(
-            circuit=cirq.Circuit(cirq.CZ(*qubits), cirq.CZ(*qubits), cirq.measure(*qubits)),
+            circuit=cirq.Circuit(cirq.X(qubits[1]), cirq.CZ(*qubits), cirq.CZ(*qubits), cirq.measure(*qubits)),
             data={"circuit": 1},
             circuit_realization=1,
         ),
         Sample(
-            circuit=cirq.Circuit(cirq.CX(*qubits), cirq.measure(*qubits)),
+            circuit=cirq.Circuit(cirq.X(qubits[0]), cirq.CX(*qubits), cirq.measure(*qubits)),
             data={"circuit": 2},
             circuit_realization=2,
         ),
@@ -180,9 +178,7 @@ def test_qcvv_experiment_init(
 def test_results_init(
     abc_experiment: ExampleExperiment,
 ) -> None:
-    results = ExampleResults(
-        target="target", experiment=abc_experiment, job=MagicMock(spec=css.Job)
-    )
+    results = ExampleResults(target="target", experiment=abc_experiment)
     assert results.target == "target"
     assert results.samples == abc_experiment.samples
     assert results.num_circuits == 10
@@ -203,9 +199,7 @@ def test_experiment_init_with_bad_layers() -> None:
 
 
 def test_results_not_analyzed(abc_experiment: ExampleExperiment) -> None:
-    results = ExampleResults(
-        target="target", experiment=abc_experiment, job=MagicMock(spec=css.Job)
-    )
+    results = ExampleResults(target="target", experiment=abc_experiment)
     with pytest.raises(
         RuntimeError,
         match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
@@ -214,10 +208,9 @@ def test_results_not_analyzed(abc_experiment: ExampleExperiment) -> None:
 
 
 def test_results_job_still_running(abc_experiment: ExampleExperiment) -> None:
-    results = ExampleResults(
-        target="target", experiment=abc_experiment, job=MagicMock(spec=css.Job)
-    )
-    results.job.status.return_value = "Pending"  # type: ignore[union-attr]
+    job = MagicMock(spec=css.Job)
+    job.status.return_value = "Pending"
+    results = ExampleResults(target="target", experiment=abc_experiment, job=job)
     with pytest.warns(
         Warning,
         match=(
@@ -249,7 +242,9 @@ def test_results_analyze(abc_experiment: ExampleExperiment) -> None:
         target="target", experiment=abc_experiment, data=MagicMock(spec=pd.DataFrame)
     )
 
-    results.analyze(plot_results=True, print_results=True, plot_filename="test_name")
+    with patch("matplotlib.pyplot.Figure.savefig") as mock_plot, patch("builtins.print") as mock_print:
+        results.analyze(plot_results=True, print_results=True, plot_filename="test_name")
+
     assert results.example_final_result == 3.142
     mock_plot.assert_called_once_with("test_name")
     mock_print.assert_called_once_with("This is a test")
@@ -257,7 +252,7 @@ def test_results_analyze(abc_experiment: ExampleExperiment) -> None:
 
 def test_results_ready(abc_experiment: ExampleExperiment) -> None:
     results = ExampleResults(
-        target="target", experiment=abc_experiment, data=MagicMock(spec=pd.DataFrame)
+        target="target", experiment=abc_experiment, data=pd.DataFrame()
     )
     assert results.data_ready
 
@@ -297,24 +292,13 @@ def test_results_ready_from_job(
 def test_run_with_simulator(
     abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
-    cirq.measurement_key_name = MagicMock()
     abc_experiment.samples = sample_circuits
-    test_sim = MagicMock()
-    mock_result = MagicMock()
-    mock_result.histogram.return_value = {0: 0, 1: 100, 2: 0, 3: 0}
-    test_sim.run.return_value = mock_result
 
-    results = abc_experiment.run_with_simulator(simulator=test_sim, repetitions=100)
+    simulator = cirq.DensityMatrixSimulator()
+    with patch("cirq.Simulator") as mock_sim:
+        results = abc_experiment.run_with_simulator(simulator=simulator, repetitions=100)
 
-    # Test simulator calls
-    test_sim.run.assert_has_calls(
-        [
-            call(sample_circuits[0].circuit, repetitions=100),
-            call(sample_circuits[1].circuit, repetitions=100),
-        ],
-        any_order=True,
-    )
-
+    mock_sim.assert_not_called()
     assert results.experiment == abc_experiment
     assert results.target == "local_simulator"
 
@@ -335,9 +319,9 @@ def test_run_with_simulator(
                     "circuit_realization": 2,
                     "circuit": 2,
                     "00": 0.0,
-                    "01": 1.0,
+                    "01": 0.0,
                     "10": 0.0,
-                    "11": 0.0,
+                    "11": 1.0,
                 },
             ]
         ),
@@ -347,23 +331,9 @@ def test_run_with_simulator(
 def test_run_with_simulator_default_target(
     abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
-    cirq.measurement_key_name = MagicMock()
-    cirq.Simulator = (target := MagicMock())  # type: ignore [misc]
     abc_experiment.samples = sample_circuits
-    mock_result = MagicMock()
-    mock_result.histogram.return_value = {0: 0, 1: 100, 2: 0, 3: 0}
-    target().run.return_value = mock_result
 
     results = abc_experiment.run_with_simulator(repetitions=100)
-
-    # Test simulator calls
-    target().run.assert_has_calls(
-        [
-            call(sample_circuits[0].circuit, repetitions=100),
-            call(sample_circuits[1].circuit, repetitions=100),
-        ],
-        any_order=True,
-    )
 
     assert results.experiment == abc_experiment
     assert results.target == "local_simulator"
@@ -385,9 +355,9 @@ def test_run_with_simulator_default_target(
                     "circuit_realization": 2,
                     "circuit": 2,
                     "00": 0.0,
-                    "01": 1.0,
+                    "01": 0.0,
                     "10": 0.0,
-                    "11": 0.0,
+                    "11": 1.0,
                 },
             ]
         ),
@@ -504,22 +474,13 @@ def test_validate_circuits(
         abc_experiment._validate_circuits(sample_circuits)
 
 
-def test_run_with_callable(
-    abc_experiment: ExampleExperiment,
-    sample_circuits: list[Sample],
-) -> None:
-    abc_experiment.samples = sample_circuits
-    test_callable = MagicMock()
-    test_callable.return_value = {"01": 0.2, "10": 0.7, "11": 0.1}
+def test_run_with_callable(abc_experiment: ExampleExperiment) -> None:
 
-    results = abc_experiment.run_with_callable(test_callable, some="kwargs")
+    def _example_callable(sample: Sample, some: str) -> dict[str, float]:
+        assert some == "kwargs"
+        return {"01": 0.2, "10": 0.7, "11": 0.1}
 
-    test_callable.assert_has_calls(
-        [
-            call(sample_circuits[0].circuit, some="kwargs"),
-            call(sample_circuits[1].circuit, some="kwargs"),
-        ]
-    )
+    results = abc_experiment.run_with_callable(_example_callable, some="kwargs")
 
     assert results.target == "callable"
     assert results.experiment == abc_experiment
@@ -529,30 +490,22 @@ def test_run_with_callable(
         results.data,
         pd.DataFrame(
             [
-                {"circuit": 1, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1},
-                {"circuit": 2, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1},
+                {"num": num, "depth": depth, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1}
+                for num in range(abc_experiment.num_circuits)
+                for depth in abc_experiment.cycle_depths
             ]
         ),
         check_like=True,
     )
 
 
-def test_run_with_callable_mixd_keys(
-    abc_experiment: ExampleExperiment,
-    sample_circuits: list[Sample],
-) -> None:
-    abc_experiment.samples = sample_circuits
-    test_callable = MagicMock()
-    test_callable.return_value = {1: 0.2, "10": 0.7, 3: 0.1}
+def test_run_with_callable_mixd_keys(abc_experiment: ExampleExperiment) -> None:
 
-    results = abc_experiment.run_with_callable(test_callable, some="kwargs")
+    def _example_callable(sample: Sample, some: str) -> dict[str | int, float]:
+        assert some == "kwargs"
+        return {1: 0.2, "10": 0.7, 3: 0.1}
 
-    test_callable.assert_has_calls(
-        [
-            call(sample_circuits[0].circuit, some="kwargs"),
-            call(sample_circuits[1].circuit, some="kwargs"),
-        ]
-    )
+    results = abc_experiment.run_with_callable(_example_callable, some="kwargs")
 
     assert results.target == "callable"
     assert results.experiment == abc_experiment
@@ -562,27 +515,26 @@ def test_run_with_callable_mixd_keys(
         results.data,
         pd.DataFrame(
             [
-                {"circuit": 1, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1},
-                {"circuit": 2, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1},
+                {"num": num, "depth": depth, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1}
+                for num in range(abc_experiment.num_circuits)
+                for depth in abc_experiment.cycle_depths
             ]
         ),
         check_like=True,
     )
 
 
-def test_run_with_callable_bad_bitstring(
-    abc_experiment: ExampleExperiment,
-    sample_circuits: list[Sample],
-) -> None:
-    abc_experiment.samples = sample_circuits
-    test_callable = MagicMock()
-    test_callable.return_value = {"000": 0.0, "01": 0.2, "10": 0.8}
+def test_run_with_callable_bad_bitstring(abc_experiment: ExampleExperiment) -> None:
+
+    def _example_callable(sample: Sample, some: str) -> dict[str, float]:
+        assert some == "kwargs"
+        return {"000": 0.0, "01": 0.2, "10": 0.8}
 
     with pytest.raises(
         ValueError,
         match=("The key contains the wrong number of bits. Got 3 entries " "but expected 2 bits."),
     ):
-        abc_experiment.run_with_callable(test_callable, some="kwargs")
+        abc_experiment.run_with_callable(_example_callable, some="kwargs")
 
 
 def test_results_collect_device_counts(
@@ -618,8 +570,10 @@ def test_results_collect_device_counts(
     )
 
 
-def test_results_collect_device_counts_no_job() -> None:
-    results = ExampleResults(target="example_target", experiment=MagicMock(), job=None)
+def test_results_collect_device_counts_no_job(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    results = ExampleResults(target="example_target", experiment=abc_experiment, job=None)
     with pytest.raises(
         ValueError,
         match=("No Superstaq job associated with these results. Cannot collect device counts."),
