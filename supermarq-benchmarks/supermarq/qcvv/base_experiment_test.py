@@ -297,7 +297,6 @@ def test_results_ready_from_job(
 def test_run_with_simulator(
     abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
-    cirq.measurement_key_name = MagicMock()
     abc_experiment.samples = sample_circuits
     test_sim = MagicMock()
     mock_result = MagicMock()
@@ -347,7 +346,6 @@ def test_run_with_simulator(
 def test_run_with_simulator_default_target(
     abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
-    cirq.measurement_key_name = MagicMock()
     cirq.Simulator = (target := MagicMock())  # type: ignore [misc]
     abc_experiment.samples = sample_circuits
     mock_result = MagicMock()
@@ -436,12 +434,14 @@ def test_run_on_device_dry_run(
     assert results.experiment == abc_experiment
 
 
-def test_interleave_circuit() -> None:
+def test_interleave_circuit(abc_experiment: ExampleExperiment) -> None:
     qubit = cirq.LineQubit(0)
     circuit = cirq.Circuit(*[cirq.X(qubit) for _ in range(4)])
 
     # With last gate
-    interleaved_circuit = QCVVExperiment._interleave_op(circuit, cirq.Z(qubit), include_final=True)
+    interleaved_circuit = abc_experiment._interleave_layer(
+        circuit, cirq.Z(qubit), include_final=True
+    )
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(
@@ -457,7 +457,9 @@ def test_interleave_circuit() -> None:
     )
 
     # Without last gate
-    interleaved_circuit = QCVVExperiment._interleave_op(circuit, cirq.Z(qubit), include_final=False)
+    interleaved_circuit = abc_experiment._interleave_layer(
+        circuit, cirq.Z(qubit), include_final=False
+    )
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(

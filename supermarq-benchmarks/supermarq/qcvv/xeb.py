@@ -74,18 +74,16 @@ class XEBResults(QCVVResults):
         """
         if self.data is None:
             raise RuntimeError("No data stored. Cannot perform analysis.")
+
+        indices = [f"{i:0>{self.num_qubits}b}" for i in range(2**self.num_qubits)]
+        exact_indices = [f"exact_{i}" for i in indices]
+
         self.data["sum_p(x)p^(x)"] = pd.DataFrame(
-            (
-                self.data[["00", "01", "10", "11"]].values
-                * self.data[["exact_00", "exact_01", "exact_10", "exact_11"]].values
-            ).sum(axis=1),
+            (self.data[indices].values * self.data[exact_indices].values).sum(axis=1),
             index=self.data.index,
         )
         self.data["sum_p(x)p(x)"] = pd.DataFrame(
-            (
-                self.data[["exact_00", "exact_01", "exact_10", "exact_11"]].values
-                * self.data[["exact_00", "exact_01", "exact_10", "exact_11"]].values
-            ).sum(axis=1),
+            (self.data[exact_indices].values * self.data[exact_indices].values).sum(axis=1),
             index=self.data.index,
         )
         # Fit a linear model for each cycle depth to estimate the circuit fidelity
@@ -214,29 +212,26 @@ class XEBResults(QCVVResults):
         if self.data is None:
             raise RuntimeError("No data stored. Cannot plot results.")
 
+        indices = [f"{i:0>{self.num_qubits}b}" for i in range(2**self.num_qubits)]
+
         # Reformat dataframe
         df = pd.melt(
             self.data,
-            value_vars=["00", "01", "10", "11"],
+            value_vars=indices,
             id_vars=["cycle_depth", "circuit_realization"],
             var_name="bitstring",
         )
 
         # Create the axes needed
         fig, axs = plt.subplot_mosaic(
-            [
-                ["P(00)", "cbar", ".", "Decay"],
-                ["P(01)", "cbar", ".", "Decay"],
-                ["P(10)", "cbar", ".", "Decay"],
-                ["P(11)", "cbar", ".", "Decay"],
-            ],
+            [[f"P({idx})", "cbar", ".", "Decay"] for idx in indices],
             width_ratios=[1, 0.05, 0.05, 1],
             figsize=(12, 4.8),
         )
         fig.subplots_adjust(hspace=0)
 
         # Plot the heatmaps
-        for k, bitstring in enumerate(["00", "01", "10", "11"]):
+        for k, bitstring in enumerate(indices):
             ax = axs[f"P({bitstring})"]
 
             data = df[df["bitstring"] == bitstring].pivot(
@@ -326,30 +321,29 @@ class XEBResults(QCVVResults):
 class XEB(QCVVExperiment[XEBResults]):
     r"""Cross-entropy benchmarking (XEB) experiment.
 
-    The XEB experiment can be used to estimate the combined fidelity of a repeating
-    cycle of gates. In our case, where we restrict ourselves to two qubits, we use
-    cycles made up of two randomly selected single qubit phased XZ gates and a constant
-    two qubit gate. This is illustrated as follows:
+    The XEB experiment can be used to estimate the combined fidelity of a repeating cycle of gates.
+    Cycles are made up of randomly selected single qubit phased XZ gates and the constant layer of
+    interest. This is illustrated as follows:
 
-    For each randomly generated circuit, with a given number of cycle, we compare the
-    simulated state probabilities, :math:`p(x)` with those achieved by running the circuit
-    on a given target, :math:`\hat{p}(x)`. The fidelity of a circuit containing :math:`d`
-    cycles, :math:`f_d` can then be estimated as
+    For each randomly generated circuit, with a given number of cycles, we compare the simulated
+    state probabilities, :math:`p(x)` with those achieved by running the circuit on a given target,
+    :math:`\hat{p}(x)`. The fidelity of a circuit containing :math:`d` cycles, :math:`f_d` can then
+    be estimated as,
 
     .. math::
 
         \sum_{x \in \{0, 1\}^n} p(x) \hat{p}(x) - \frac{1}{2^n} =
         f_d \left(\sum_{x \in \{0, 1\}^n} p(x)^2 -  \frac{1}{2^n}\right)
 
-    We can therefore fit a linear model to estimate the value of :math:`f_d`. We the estimate
-    the fidelity of the cycle, :math:`f_{\mathrm{cycle}}` as
+    We can therefore fit a linear model to estimate the value of :math:`f_d`. We the estimate the
+    fidelity of the cycle, :math:`f_{\mathrm{cycle}}` as
 
     .. math::
 
         f_d = A(f_{cycle})^d
 
-    Thus fitting another linear model to :math:`\log(f_d) \sim d` provides us with an estimate
-    of the cycle fidelity.
+    Thus fitting another linear model to :math:`\log(f_d) \sim d` provides us with an estimate of
+    the cycle fidelity.
 
     For more details see: https://www.nature.com/articles/s41586-019-1666-5
     """
@@ -358,7 +352,7 @@ class XEB(QCVVExperiment[XEBResults]):
         self,
         num_circuits: int,
         cycle_depths: Iterable[int],
-        two_qubit_gate: cirq.Gate | cirq.Operation | None = cirq.CZ,
+        interleaved_layer: cirq.Gate | cirq.OP_TREE | None = cirq.CZ,
         single_qubit_gate_set: list[cirq.Gate] | None = None,
         *,
         random_seed: int | np.random.Generator | None = None,
@@ -370,22 +364,33 @@ class XEB(QCVVExperiment[XEBResults]):
         Args:
             num_circuits: Number of circuits to sample.
             cycle_depths: The cycle depths to sample.
-            two_qubit_gate: The two qubit gate to interleave between the single qubit gates. If None
-                then no two qubit gate is used. Defaults to control-Z gate.
+            interleaved_layer: The gate or operation(s) to interleave between the single qubit
+                gates. If None then no gates are interleaved.
             single_qubit_gate_set: Optional list of single qubit gates to randomly sample from when
                 generating random circuits. If not provided defaults to phased XZ gates with 1/4 pi
                 intervals.
             random_seed: An optional seed to use for randomization.
         """
 
-        if isinstance(two_qubit_gate, cirq.Operation):
-            qubits: Sequence[cirq.Qid] | int = two_qubit_gate.qubits
-            two_qubit_gate = two_qubit_gate.gate
-        else:
-            qubits = cirq.LineQubit.range(2)
+        if interleaved_layer is None:
+            qubits: Sequence[cirq.Qid] = cirq.LineQubit.range(2)
 
-        self.two_qubit_gate: cirq.Gate | None = two_qubit_gate
-        """The two qubit gate to use for interleaving."""
+        elif isinstance(interleaved_layer, cirq.Gate):
+            qubits = cirq.LineQubit.range(cirq.num_qubits(interleaved_layer))
+            interleaved_layer = interleaved_layer.on(*qubits)
+
+        elif isinstance(interleaved_layer, cirq.Operation):
+            qubits = interleaved_layer.qubits
+
+        elif isinstance(interleaved_layer, cirq.Moment):
+            qubits = sorted(interleaved_layer.qubits)
+
+        else:
+            interleaved_layer = cirq.Circuit(interleaved_layer)
+            qubits = sorted(interleaved_layer.all_qubits())
+
+        self.interleaved_layer: cirq.OP_TREE | None = interleaved_layer
+        """The layer to interleave."""
 
         self.single_qubit_gate_set: list[cirq.Gate]
         """The single qubit gates to randomly sample from"""
@@ -436,7 +441,7 @@ class XEB(QCVVExperiment[XEBResults]):
         for k, depth in tqdm.contrib.itertools.product(
             range(num_circuits), cycle_depths, desc="Building circuits"
         ):
-            num_single_qubit_gate_layers = depth + int(self.two_qubit_gate is not None)
+            num_single_qubit_gate_layers = depth + 1
             chosen_single_qubit_gates = self._rng.choice(
                 np.asarray(self.single_qubit_gate_set),
                 size=(num_single_qubit_gate_layers, self.num_qubits),
@@ -448,8 +453,7 @@ class XEB(QCVVExperiment[XEBResults]):
                 for gate, qubit in zip(gates_in_layer, self.qubits)
             )
 
-            if self.two_qubit_gate is not None:
-                circuit = self._interleave_op(circuit, self.two_qubit_gate(*self.qubits))
+            circuit = self._interleave_layer(circuit, self.interleaved_layer)
 
             analytic_final_state = cirq.final_state_vector(
                 circuit, qubit_order=sorted(circuit.all_qubits())
@@ -465,7 +469,7 @@ class XEB(QCVVExperiment[XEBResults]):
                     data={
                         "circuit_depth": len(circuit),
                         "cycle_depth": depth,
-                        "two_qubit_gate": str(self.two_qubit_gate),
+                        "interleaved_layer": str(self.interleaved_layer),
                         **analytic_probabilities,
                     },
                     circuit_realization=k,
@@ -482,7 +486,7 @@ class XEB(QCVVExperiment[XEBResults]):
             Json-able dictionary of the experiment data.
         """
         return {
-            "two_qubit_gate": self.two_qubit_gate,
+            "interleaved_layer": self.interleaved_layer,
             "single_qubit_gate_set": self.single_qubit_gate_set,
             **super()._json_dict_(),
         }
@@ -491,7 +495,7 @@ class XEB(QCVVExperiment[XEBResults]):
     def _from_json_dict_(
         cls,
         samples: list[Sample],
-        two_qubit_gate: cirq.Gate,
+        interleaved_layer: cirq.OP_TREE | None,
         single_qubit_gate_set: list[cirq.Gate],
         num_circuits: int,
         cycle_depths: list[int],
@@ -512,6 +516,6 @@ class XEB(QCVVExperiment[XEBResults]):
             cycle_depths=cycle_depths,
             _samples=samples,
             single_qubit_gate_set=single_qubit_gate_set,
-            two_qubit_gate=two_qubit_gate,
+            interleaved_layer=interleaved_layer,
             **kwargs,
         )
