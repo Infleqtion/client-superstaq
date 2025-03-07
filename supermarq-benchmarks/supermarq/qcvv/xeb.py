@@ -74,18 +74,16 @@ class XEBResults(QCVVResults):
         """
         if self.data is None:
             raise RuntimeError("No data stored. Cannot perform analysis.")
+
+        indices = [f"{i:0>{self.num_qubits}b}" for i in range(2**self.num_qubits)]
+        exact_indices = [f"exact_{i}" for i in indices]
+
         self.data["sum_p(x)p^(x)"] = pd.DataFrame(
-            (
-                self.data[["00", "01", "10", "11"]].values
-                * self.data[["exact_00", "exact_01", "exact_10", "exact_11"]].values
-            ).sum(axis=1),
+            (self.data[indices].values * self.data[exact_indices].values).sum(axis=1),
             index=self.data.index,
         )
         self.data["sum_p(x)p(x)"] = pd.DataFrame(
-            (
-                self.data[["exact_00", "exact_01", "exact_10", "exact_11"]].values
-                * self.data[["exact_00", "exact_01", "exact_10", "exact_11"]].values
-            ).sum(axis=1),
+            (self.data[exact_indices].values * self.data[exact_indices].values).sum(axis=1),
             index=self.data.index,
         )
         # Fit a linear model for each cycle depth to estimate the circuit fidelity
@@ -214,29 +212,26 @@ class XEBResults(QCVVResults):
         if self.data is None:
             raise RuntimeError("No data stored. Cannot plot results.")
 
+        indices = [f"{i:0>{self.num_qubits}b}" for i in range(2**self.num_qubits)]
+
         # Reformat dataframe
         df = pd.melt(
             self.data,
-            value_vars=["00", "01", "10", "11"],
+            value_vars=indices,
             id_vars=["cycle_depth", "circuit_realization"],
             var_name="bitstring",
         )
 
         # Create the axes needed
         fig, axs = plt.subplot_mosaic(
-            [
-                ["P(00)", "cbar", ".", "Decay"],
-                ["P(01)", "cbar", ".", "Decay"],
-                ["P(10)", "cbar", ".", "Decay"],
-                ["P(11)", "cbar", ".", "Decay"],
-            ],
+            [[f"P({idx})", "cbar", ".", "Decay"] for idx in indices],
             width_ratios=[1, 0.05, 0.05, 1],
             figsize=(12, 4.8),
         )
         fig.subplots_adjust(hspace=0)
 
         # Plot the heatmaps
-        for k, bitstring in enumerate(["00", "01", "10", "11"]):
+        for k, bitstring in enumerate(indices):
             ax = axs[f"P({bitstring})"]
 
             data = df[df["bitstring"] == bitstring].pivot(
@@ -371,18 +366,15 @@ class XEB(QCVVExperiment[XEBResults]):
             num_circuits: Number of circuits to sample.
             cycle_depths: The cycle depths to sample.
             interleaved_layer: The gate or operation(s) to interleave between the single qubit
-                gates. If None then no gates are interleaved. Defaults to control-Z gate.
+                gates. If None then no gates are interleaved.
             single_qubit_gate_set: Optional list of single qubit gates to randomly sample from when
                 generating random circuits. If not provided defaults to phased XZ gates with 1/4 pi
                 intervals.
             random_seed: An optional seed to use for randomization.
         """
 
-        qubits: Sequence[cirq.Qid]
-
         if interleaved_layer is None:
-            qubits = cirq.LineQubit.range(2)
-            interleaved_layer = cirq.Moment()
+            qubits: Sequence[cirq.Qid] = cirq.LineQubit.range(2)
 
         elif isinstance(interleaved_layer, cirq.Gate):
             qubits = cirq.LineQubit.range(cirq.num_qubits(interleaved_layer))
@@ -398,7 +390,7 @@ class XEB(QCVVExperiment[XEBResults]):
             interleaved_layer = cirq.Circuit(interleaved_layer)
             qubits = sorted(interleaved_layer.all_qubits())
 
-        self.interleaved_layer: cirq.OP_TREE = interleaved_layer
+        self.interleaved_layer: cirq.OP_TREE | None = interleaved_layer
         """The layer to interleave."""
 
         self.single_qubit_gate_set: list[cirq.Gate]
@@ -504,7 +496,7 @@ class XEB(QCVVExperiment[XEBResults]):
     def _from_json_dict_(
         cls,
         samples: list[Sample],
-        interleaved_layer: cirq.OP_TREE,
+        interleaved_layer: cirq.OP_TREE | None,
         single_qubit_gate_set: list[cirq.Gate],
         num_circuits: int,
         cycle_depths: list[int],

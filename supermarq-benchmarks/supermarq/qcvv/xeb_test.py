@@ -44,10 +44,10 @@ def test_xeb_init() -> None:
         for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
     ]
 
-    experiment = XEB(interleaved_layer=cirq.CX(q2, q0), num_circuits=10, cycle_depths=[1, 3, 5])
+    experiment = XEB(interleaved_layer=cirq.CX, num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
-    assert experiment.qubits == [q2, q0]
-    assert experiment.interleaved_layer == cirq.CX(q2, q0)
+    assert experiment.qubits == [q0, q1]
+    assert experiment.interleaved_layer == cirq.CX(q0, q1)
     assert experiment.single_qubit_gate_set == [
         cirq.PhasedXZGate(
             z_exponent=z,
@@ -56,7 +56,6 @@ def test_xeb_init() -> None:
         )
         for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
     ]
-    assert all(sample.circuit.all_qubits() == {q0, q2} for sample in experiment.samples)
 
     experiment = XEB(single_qubit_gate_set=[cirq.X], num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
@@ -69,7 +68,21 @@ def test_xeb_init() -> None:
     assert experiment.qubits == [q0, q1]
     assert not experiment.interleaved_layer
 
-    interleaved_circuit = cirq.Circuit(cirq.CZ(q2, q0), cirq.H(q1))
+    interleaved_op = cirq.CCX(q2, q0, q1)
+    experiment = XEB(interleaved_layer=interleaved_op, num_circuits=10, cycle_depths=[1, 3, 5])
+    assert experiment.num_qubits == 3
+    assert experiment.qubits == [q2, q0, q1]
+    assert experiment.interleaved_layer == interleaved_op
+    assert all(sample.circuit.all_qubits() == {q0, q1, q2} for sample in experiment.samples)
+
+    interleaved_moment = cirq.Moment(cirq.Z(q2), cirq.H(q1))
+    experiment = XEB(interleaved_layer=interleaved_moment, num_circuits=10, cycle_depths=[1, 3, 5])
+    assert experiment.num_qubits == 2
+    assert experiment.qubits == [q1, q2]
+    assert experiment.interleaved_layer == interleaved_moment
+    assert all(sample.circuit.all_qubits() == {q1, q2} for sample in experiment.samples)
+
+    interleaved_circuit = cirq.Circuit(cirq.CZ(q2, q0), cirq.CCZ(q0, q1, q2))
     experiment = XEB(interleaved_layer=interleaved_circuit, num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 3
     assert experiment.qubits == [q0, q1, q2]
@@ -256,6 +269,27 @@ def test_xeb_analyse_results(tmp_path: pathlib.Path, xeb_experiment: XEB) -> Non
     assert pathlib.Path(tmp_path / "example_speckle.png").exists()
 
 
+@pytest.mark.parametrize(
+    "layer",
+    [
+        None,
+        cirq.Y,
+        cirq.CCX,
+        cirq.CX(cirq.q(4), cirq.q(0)),
+        cirq.Moment(cirq.H(cirq.q(2)), cirq.X(cirq.q(0))),
+        cirq.Circuit(cirq.CX(cirq.q(1), cirq.q(2)), cirq.CZ(cirq.q(2), cirq.q(0))),
+    ],
+)
+def test_analysis_succeeds_with_all_layer_types(
+    layer: cirq.OP_TREE | None,
+) -> None:
+    xeb_experiment = XEB(num_circuits=5, cycle_depths=[1, 3], interleaved_layer=layer)
+    results = xeb_experiment.run_with_simulator()
+    results.analyze()
+    _ = results.plot_results()
+    _ = results.plot_speckle()
+
+
 def test_results_no_data() -> None:
     results = XEBResults(target="example", experiment=MagicMock(), data=None)
     with pytest.raises(RuntimeError, match="No data stored. Cannot perform analysis."):
@@ -284,11 +318,27 @@ def test_results_not_analyzed() -> None:
             getattr(results, attr)
 
 
+@pytest.mark.parametrize(
+    "layer",
+    [
+        None,
+        cirq.CX,
+        cirq.CCX(cirq.q(2), cirq.q(0), cirq.q(1)),
+        cirq.Moment(cirq.H(cirq.q(2)), cirq.X(cirq.q(0))),
+        cirq.Circuit(cirq.CX(cirq.q(1), cirq.q(2)), cirq.CZ(cirq.q(2), cirq.q(0))),
+    ],
+)
 def test_dump_and_load(
     tmp_path_factory: pytest.TempPathFactory,
-    xeb_experiment: XEB,
+    layer: cirq.OP_TREE | None,
 ) -> None:
     filename = tmp_path_factory.mktemp("tempdir") / "file.json"
+    xeb_experiment = XEB(
+        num_circuits=10,
+        cycle_depths=[1, 3, 5],
+        interleaved_layer=layer,
+        single_qubit_gate_set=[cirq.X, cirq.Y, cirq.Z],
+    )
     xeb_experiment.to_file(filename)
     exp = XEB.from_file(filename)
 

@@ -441,7 +441,9 @@ def test_interleave_circuit(abc_experiment: ExampleExperiment) -> None:
     circuit = cirq.Circuit(*[cirq.X(qubit) for _ in range(4)])
 
     # With last gate
-    interleaved_circuit = abc_experiment._interleave_layer(circuit, cirq.Z(qubit), include_final=True)
+    interleaved_circuit = abc_experiment._interleave_layer(
+        circuit, cirq.Z(qubit), include_final=True
+    )
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(
@@ -457,7 +459,9 @@ def test_interleave_circuit(abc_experiment: ExampleExperiment) -> None:
     )
 
     # Without last gate
-    interleaved_circuit = abc_experiment._interleave_layer(circuit, cirq.Z(qubit), include_final=False)
+    interleaved_circuit = abc_experiment._interleave_layer(
+        circuit, cirq.Z(qubit), include_final=False
+    )
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(

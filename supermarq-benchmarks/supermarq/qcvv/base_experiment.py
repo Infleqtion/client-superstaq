@@ -519,7 +519,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
     def _interleave_layer(
         self, circuit: cirq.Circuit, layer: cirq.OP_TREE | None, include_final: bool = False
     ) -> cirq.Circuit:
-        """Interleave a given operation layer into a circuit.
+        """Interleave a given operation(s) into a circuit.
 
         Args:
             circuit: The original circuit.
@@ -530,19 +530,22 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Returns:
             A copy of the original circuit with the provided layer interleaved.
         """
-        layer = cirq.Circuit(layer).map_operations(lambda op: op.with_tags("no_compile"))
+        if layer:
+            layer_circuit = cirq.toggle_tags(cirq.Circuit(layer), ("no_compile",))
+        else:
+            layer_circuit = cirq.Circuit()
 
-        # If the layer is empty, use a barrier to separate the single-qubit gate layers
-        if not layer:
-            layer += css.barrier(*self.qubits)
+        # If the layer is empty, use a single barrier as a placeholder
+        if not layer_circuit:
+            layer_circuit += css.barrier(*self.qubits)
 
         # If the layer has more than one operation, surround it with barriers
-        elif len(layer) > 1 or len(layer[0]) > 1:
-            layer = css.barrier(*self.qubits) + layer + css.barrier(*self.qubits)
+        elif len(layer_circuit) > 1 or len(layer_circuit[0]) > 1:
+            layer_circuit = css.barrier(*self.qubits) + layer_circuit + css.barrier(*self.qubits)
 
         interleaved_circuit = circuit.copy()
         interleaved_circuit.batch_insert(
-            [(k, layer) for k in range(len(circuit) - int(not include_final), 0, -1)]
+            [(k, layer_circuit) for k in range(len(circuit) - int(not include_final), 0, -1)]
         )
         return interleaved_circuit
 
