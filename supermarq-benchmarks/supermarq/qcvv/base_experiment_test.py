@@ -22,7 +22,7 @@ import uuid
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import cirq
 import cirq_superstaq as css
@@ -57,7 +57,8 @@ class ExampleResults(QCVVResults):
 
     def plot_results(self, filename: str | None = None) -> plt.Figure:
         fig = plt.Figure()
-        fig.savefig(filename)
+        if filename:
+            fig.savefig(filename)
         return fig
 
     def print_results(self) -> None:
@@ -142,7 +143,9 @@ def sample_circuits() -> list[Sample]:
     qubits = cirq.LineQubit.range(2)
     return [
         Sample(
-            circuit=cirq.Circuit(cirq.X(qubits[1]), cirq.CZ(*qubits), cirq.CZ(*qubits), cirq.measure(*qubits)),
+            circuit=cirq.Circuit(
+                cirq.X(qubits[1]), cirq.CZ(*qubits), cirq.CZ(*qubits), cirq.measure(*qubits)
+            ),
             data={"circuit": 1},
             circuit_realization=1,
         ),
@@ -208,9 +211,9 @@ def test_results_not_analyzed(abc_experiment: ExampleExperiment) -> None:
 
 
 def test_results_job_still_running(abc_experiment: ExampleExperiment) -> None:
-    job = MagicMock(spec=css.Job)
-    job.status.return_value = "Pending"
-    results = ExampleResults(target="target", experiment=abc_experiment, job=job)
+    mock_job = MagicMock(spec=css.Job)
+    mock_job.status.return_value = "Pending"
+    results = ExampleResults(target="target", experiment=abc_experiment, job=mock_job)
     with pytest.warns(
         Warning,
         match=(
@@ -238,11 +241,11 @@ def test_results_job_no_data(abc_experiment: ExampleExperiment) -> None:
 
 
 def test_results_analyze(abc_experiment: ExampleExperiment) -> None:
-    results = ExampleResults(
-        target="target", experiment=abc_experiment, data=MagicMock(spec=pd.DataFrame)
-    )
+    results = ExampleResults(target="target", experiment=abc_experiment, data=pd.DataFrame())
 
-    with patch("matplotlib.pyplot.Figure.savefig") as mock_plot, patch("builtins.print") as mock_print:
+    with patch("matplotlib.pyplot.Figure.savefig") as mock_plot, patch(
+        "builtins.print"
+    ) as mock_print:
         results.analyze(plot_results=True, print_results=True, plot_filename="test_name")
 
     assert results.example_final_result == 3.142
@@ -251,9 +254,7 @@ def test_results_analyze(abc_experiment: ExampleExperiment) -> None:
 
 
 def test_results_ready(abc_experiment: ExampleExperiment) -> None:
-    results = ExampleResults(
-        target="target", experiment=abc_experiment, data=pd.DataFrame()
-    )
+    results = ExampleResults(target="target", experiment=abc_experiment, data=pd.DataFrame())
     assert results.data_ready
 
 
@@ -261,11 +262,9 @@ def test_results_ready_from_job(
     abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
     abc_experiment.samples = sample_circuits
-    results = ExampleResults(
-        target="target", experiment=abc_experiment, job=MagicMock(spec=css.Job)
-    )
-    results.job.status.return_value = "Done"  # type: ignore[union-attr]
-    results.job.counts.return_value = [  # type: ignore[union-attr]
+    mock_job = MagicMock(spec=css.Job)
+    mock_job.status.return_value = "Done"
+    mock_job.counts.return_value = [
         {
             "00": 20,
             "01": 5,
@@ -276,6 +275,7 @@ def test_results_ready_from_job(
             "01": 5,
         },
     ]
+    results = ExampleResults(target="target", experiment=abc_experiment, job=mock_job)
     assert results.data_ready
     pd.testing.assert_frame_equal(
         results.data,
@@ -295,10 +295,10 @@ def test_run_with_simulator(
     abc_experiment.samples = sample_circuits
 
     simulator = cirq.DensityMatrixSimulator()
-    with patch("cirq.Simulator") as mock_sim:
+    with patch("cirq.Simulator") as mock_sim:  # Mock default simulator to make sure it isn't called
         results = abc_experiment.run_with_simulator(simulator=simulator, repetitions=100)
+        mock_sim.assert_not_called()
 
-    mock_sim.assert_not_called()
     assert results.experiment == abc_experiment
     assert results.target == "local_simulator"
 
@@ -477,10 +477,13 @@ def test_validate_circuits(
 def test_run_with_callable(abc_experiment: ExampleExperiment) -> None:
 
     def _example_callable(sample: Sample, some: str) -> dict[str, float]:
+        assert sample
         assert some == "kwargs"
         return {"01": 0.2, "10": 0.7, "11": 0.1}
 
-    results = abc_experiment.run_with_callable(_example_callable, some="kwargs")
+    results = abc_experiment.run_with_callable(
+        _example_callable, some="kwargs"  # type: ignore[arg-type]
+    )
 
     assert results.target == "callable"
     assert results.experiment == abc_experiment
@@ -502,10 +505,13 @@ def test_run_with_callable(abc_experiment: ExampleExperiment) -> None:
 def test_run_with_callable_mixd_keys(abc_experiment: ExampleExperiment) -> None:
 
     def _example_callable(sample: Sample, some: str) -> dict[str | int, float]:
+        assert sample
         assert some == "kwargs"
         return {1: 0.2, "10": 0.7, 3: 0.1}
 
-    results = abc_experiment.run_with_callable(_example_callable, some="kwargs")
+    results = abc_experiment.run_with_callable(
+        _example_callable, some="kwargs"  # type: ignore[arg-type]
+    )
 
     assert results.target == "callable"
     assert results.experiment == abc_experiment
@@ -527,6 +533,7 @@ def test_run_with_callable_mixd_keys(abc_experiment: ExampleExperiment) -> None:
 def test_run_with_callable_bad_bitstring(abc_experiment: ExampleExperiment) -> None:
 
     def _example_callable(sample: Sample, some: str) -> dict[str, float]:
+        assert sample
         assert some == "kwargs"
         return {"000": 0.0, "01": 0.2, "10": 0.8}
 
@@ -534,17 +541,16 @@ def test_run_with_callable_bad_bitstring(abc_experiment: ExampleExperiment) -> N
         ValueError,
         match=("The key contains the wrong number of bits. Got 3 entries " "but expected 2 bits."),
     ):
-        abc_experiment.run_with_callable(_example_callable, some="kwargs")
+        abc_experiment.run_with_callable(_example_callable, some="kwargs")  # type: ignore[arg-type]
 
 
 def test_results_collect_device_counts(
     abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
     abc_experiment.samples = sample_circuits
-    results = ExampleResults(
-        target="example_target", experiment=abc_experiment, job=MagicMock(spec=css.Job)
-    )
-    results.job.counts.return_value = [  # type: ignore[union-attr]
+
+    mock_job = MagicMock(spec=css.Job)
+    mock_job.counts.return_value = [
         {
             "00": 20,
             "01": 5,
@@ -555,6 +561,7 @@ def test_results_collect_device_counts(
             "01": 5,
         },
     ]
+    results = ExampleResults(target="example_target", experiment=abc_experiment, job=mock_job)
 
     df = results._collect_device_counts()
 
@@ -570,9 +577,7 @@ def test_results_collect_device_counts(
     )
 
 
-def test_results_collect_device_counts_no_job(
-    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
-) -> None:
+def test_results_collect_device_counts_no_job(abc_experiment: ExampleExperiment) -> None:
     results = ExampleResults(target="example_target", experiment=abc_experiment, job=None)
     with pytest.raises(
         ValueError,
@@ -581,24 +586,21 @@ def test_results_collect_device_counts_no_job(
         results._collect_device_counts()
 
 
-def test_results_from_records(
-    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
-) -> None:
-    abc_experiment.samples = sample_circuits
+def test_results_from_records(abc_experiment: ExampleExperiment) -> None:
     # All accepted types
-    records_1 = {s.uuid: {"01": 1, "10": 3} for s in sample_circuits}
-    records_2 = {s.uuid: {"01": 0.25, "10": 0.75} for s in sample_circuits}
-    records_3 = {s.uuid: {1: 1, 2: 3} for s in sample_circuits}
-    records_4 = {s.uuid: {1: 0.25, 2: 0.75} for s in sample_circuits}
+    records_1 = {s.uuid: {"01": 1, "10": 3} for s in abc_experiment.samples}
+    records_2 = {s.uuid: {"01": 0.25, "10": 0.75} for s in abc_experiment.samples}
+    records_3 = {s.uuid: {1: 1, 2: 3} for s in abc_experiment.samples}
+    records_4 = {s.uuid: {1: 0.25, 2: 0.75} for s in abc_experiment.samples}
 
-    records_list = [records_1, records_2, records_3, records_4]
-
-    for record in records_list:
+    for record in (records_1, records_2, records_3, records_4):
         results = abc_experiment.results_from_records(record)  # type: ignore[arg-type]
         pd.testing.assert_frame_equal(
             results.data,
             pd.DataFrame(
-                [{"circuit": n + 1, "00": 0.0, "01": 0.25, "10": 0.75, "11": 0.0} for n in range(2)]
+                {"num": num, "depth": depth, "00": 0.0, "01": 0.25, "10": 0.75, "11": 0.0}
+                for num in range(abc_experiment.num_circuits)
+                for depth in abc_experiment.cycle_depths
             ),
         )
 
