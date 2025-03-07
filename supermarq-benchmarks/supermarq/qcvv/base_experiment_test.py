@@ -625,11 +625,22 @@ def test_results_from_records_bad_input(
         UserWarning,
         match=re.escape("Unable to find matching sample for 1 record(s)."),
     ):
-        abc_experiment.results_from_records({new_uuid: {"00": 10}})
+        abc_experiment.results_from_records(
+            {
+                new_uuid: {"00": 10},
+                sample_circuits[0].uuid: {"00": 10},
+                sample_circuits[1].uuid: {"00": 10},
+            }
+        )
 
     # Error when processing samples
     with pytest.raises(ValueError, match=re.escape("No non-zero counts.")):
-        abc_experiment.results_from_records({sample_circuits[0].uuid: {"00": 0}})
+        abc_experiment.results_from_records(
+            {
+                sample_circuits[0].uuid: {"00": 0},
+                sample_circuits[1].uuid: {"00": 0},
+            }
+        )
 
 
 def test_canonicalize_bitstring() -> None:
