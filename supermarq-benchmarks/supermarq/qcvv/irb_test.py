@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import pathlib
 import re
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import cirq
 import pandas as pd
@@ -524,7 +524,7 @@ def test_analyse_results_rb_plot_saving(tmp_path: pathlib.Path) -> None:
 
 
 def test_results_no_data() -> None:
-    results = IRBResults(target="example", experiment=MagicMock(spec=IRB))
+    results = IRBResults(target="example", experiment=IRB(1, []))
     with pytest.raises(RuntimeError, match="No data stored. Cannot perform fit."):
         results._fit_decay()
 
@@ -534,7 +534,7 @@ def test_results_no_data() -> None:
     with pytest.raises(RuntimeError, match="No data stored. Cannot make plot."):
         results.plot_results()
 
-    rb_results = RBResults(target="example", experiment=MagicMock(spec=IRB))
+    rb_results = RBResults(target="example", experiment=IRB(1, []))
     with pytest.raises(RuntimeError, match="No data stored. Cannot perform fit."):
         rb_results._fit_decay()
 
@@ -546,7 +546,7 @@ def test_results_no_data() -> None:
 
 
 def test_irb_results_not_analyzed() -> None:
-    results = IRBResults(target="example", experiment=MagicMock(spec=IRB))
+    results = IRBResults(target="example", experiment=IRB(1, []))
     for attr in [
         "rb_decay_coefficient",
         "rb_decay_coefficient_std",
@@ -563,7 +563,7 @@ def test_irb_results_not_analyzed() -> None:
 
 
 def test_rb_results_not_analyzed() -> None:
-    results = RBResults(target="example", experiment=MagicMock(spec=IRB))
+    results = RBResults(target="example", experiment=IRB(1, []))
     for attr in [
         "rb_decay_coefficient",
         "rb_decay_coefficient_std",
