@@ -297,7 +297,6 @@ def test_results_ready_from_job(
 def test_run_with_simulator(
     abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
-    cirq.measurement_key_name = MagicMock()
     abc_experiment.samples = sample_circuits
     test_sim = MagicMock()
     mock_result = MagicMock()
@@ -347,7 +346,6 @@ def test_run_with_simulator(
 def test_run_with_simulator_default_target(
     abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
-    cirq.measurement_key_name = MagicMock()
     cirq.Simulator = (target := MagicMock())  # type: ignore [misc]
     abc_experiment.samples = sample_circuits
     mock_result = MagicMock()
