@@ -111,7 +111,7 @@ class SU2Results(QCVVResults):
 
         fig, ax = plt.subplots()
         sns.scatterplot(
-            data=self.data.drop(columns="circuit_index").melt(
+            data=self.data.drop(columns="circuit_realization").melt(
                 id_vars="num_two_qubit_gates", var_name="state", value_name="prob"
             ),
             x="num_two_qubit_gates",
