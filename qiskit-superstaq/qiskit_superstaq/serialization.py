@@ -52,6 +52,55 @@ _custom_resolvers: dict[
 }
 
 
+def _mcphase(
+    lam: float | qiskit.circuit.ParameterExpression,
+    num_ctrl_qubits: int,
+    label: str | None = None,
+    ctrl_state: str | int | None = None,
+) -> qiskit.circuit.library.MCPhaseGate:
+    """The `ctrl_state` argument was added to `MCPhaseGate` in Qiskit 1.1.0."""
+
+    if qiskit.__version__.split(".")[:2] >= ["1", "1"]:
+        return qiskit.circuit.library.MCPhaseGate(
+            lam, num_ctrl_qubits=num_ctrl_qubits, label=label, ctrl_state=ctrl_state
+        )
+
+    gate = qiskit.circuit.library.MCPhaseGate(lam, num_ctrl_qubits=num_ctrl_qubits, label=label)
+    gate.ctrl_state = ctrl_state
+    return gate
+
+
+# Resolvers for controlled gates which can be incorrectly serialized by Qiskit
+_controlled_gate_resolvers: dict[
+    type[qiskit.circuit.Instruction],
+    Callable[[qiskit.circuit.Instruction], qiskit.circuit.Instruction],
+] = {
+    qiskit.circuit.library.PhaseGate: lambda gate: _mcphase(
+        gate.params[0], gate.num_ctrl_qubits, ctrl_state=gate.ctrl_state, label=gate.label
+    ),
+    qiskit.circuit.library.U1Gate: lambda gate: qiskit.circuit.library.MCU1Gate(
+        gate.params[0], gate.num_ctrl_qubits, ctrl_state=gate.ctrl_state, label=gate.label
+    ),
+    qiskit.circuit.library.XGate: lambda gate: qiskit.circuit.library.MCXGate(
+        gate.num_ctrl_qubits, ctrl_state=gate.ctrl_state, label=gate.label
+    ),
+}
+
+
+if hasattr(qiskit.circuit.library, "QFTGate"):
+    # QFTGate introduced in qiskit 1.2.0
+
+    QFTGate = getattr(qiskit.circuit.library, "QFTGate")
+
+    _controlled_gate_resolvers[QFTGate] = lambda gate: QFTGate(
+        gate.num_qubits - gate.num_ctrl_qubits
+    ).control(
+        num_ctrl_qubits=gate.num_ctrl_qubits,
+        ctrl_state=gate.ctrl_state,
+        label=gate.label,
+    )
+
+
 def json_encoder(val: object) -> dict[str, object]:
     """Converts (real or complex) arrays to a JSON-serializable format.
 
@@ -74,7 +123,7 @@ def json_encoder(val: object) -> dict[str, object]:
     raise TypeError(f"Object of type {type(val)} is not JSON serializable.")
 
 
-def json_resolver(val: T) -> T | npt.NDArray[np.complex_]:
+def json_resolver(val: T) -> T | npt.NDArray[np.complex128]:
     """Hook to deserialize objects that were serialized via `json_encoder()`.
 
     Args:
@@ -104,10 +153,10 @@ def to_json(val: object) -> str:
 
 
 def serialize_circuits(circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit]) -> str:
-    """Serializes `qiskit.QuantumCircuit`(s) into a single string.
+    """Serializes qiskit.QuantumCircuit(s) into a single string.
 
     Args:
-        circuits: A `qiskit.QuantumCircuit` or list of `qiskit.QuantumCircuit`s to be serialized.
+        circuits: A `qiskit.QuantumCircuit` or list of `qiskit.QuantumCircuit` to be serialized.
 
     Returns:
         A string representing the serialized circuit(s).
@@ -126,7 +175,7 @@ def serialize_circuits(circuits: qiskit.QuantumCircuit | Sequence[qiskit.Quantum
 
 
 def deserialize_circuits(serialized_circuits: str) -> list[qiskit.QuantumCircuit]:
-    """Deserializes serialized `qiskit.QuantumCircuit`(s).
+    """Deserializes serialized qiskit.QuantumCircuit(s).
 
     Args:
         serialized_circuits: String generated via `qss.serialization.serialize_circuit()`.
@@ -218,14 +267,19 @@ def _is_qiskit_gate(gate: qiskit.circuit.Instruction) -> bool:
             qiskit.circuit.Gate,
             qiskit.circuit.ControlledGate,
         )
-        and not issubclass(  # Qiskit mishandles these gates
-            base_class,
-            (
-                qiskit.circuit.library.MSGate,  # https://github.com/Qiskit/qiskit/issues/11378
-                qiskit.circuit.library.MCXGate,  # https://github.com/Qiskit/qiskit/issues/11377
-                qiskit.circuit.library.MCU1Gate,
-                qiskit.circuit.library.MCPhaseGate,
-            ),
+        and not issubclass(  # https://github.com/Qiskit/qiskit/issues/11378
+            base_class, qiskit.circuit.library.MSGate
+        )
+        and not (
+            issubclass(  # https://github.com/Qiskit/qiskit/issues/11377
+                base_class,
+                (
+                    qiskit.circuit.library.MCXGate,
+                    qiskit.circuit.library.MCU1Gate,
+                    qiskit.circuit.library.MCPhaseGate,
+                ),
+            )
+            and gate.ctrl_state != 2**gate.num_ctrl_qubits - 1
         )
         and (
             hasattr(qiskit.circuit.library, base_class.__name__)
@@ -305,8 +359,8 @@ def _prepare_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
         if gate.definition is not None and not gate._definition:
             gate._define()
 
-    if isinstance(gate, tuple(_custom_gates_by_name.values())) and not isinstance(
-        gate, tuple(_custom_resolvers)
+    if isinstance(gate, tuple(_custom_gates_by_name.values())) and not issubclass(
+        gate.base_class, tuple(_custom_resolvers)
     ):
         return gate
 
@@ -381,21 +435,32 @@ def _resolve_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
     if gate.name.startswith(r"__superstaq_wrapper_"):
         return _resolve_gate(gate.definition[0].operation)
 
-    elif isinstance(gate, qiskit.circuit.ControlFlowOp):
+    if isinstance(gate, qiskit.circuit.ControlFlowOp):
         return gate.replace_blocks([_resolve_circuit(block) for block in gate.blocks])
 
-    elif type(gate) is qiskit.circuit.ControlledGate:
+    if type(gate) is qiskit.circuit.ControlledGate:
         gate.base_gate = _resolve_gate(gate.base_gate)
 
-        if gate.definition is not None and gate._definition is not None:
+        if gate.definition and gate._definition:
             gate.definition = _resolve_circuit(gate._definition)
 
-    elif type(gate) in (qiskit.circuit.Instruction, qiskit.circuit.Gate):
-        if gate.definition:
-            gate.definition = _resolve_circuit(gate.definition)
+        if resolver := _controlled_gate_resolvers.get(gate.base_gate.base_class):
+            trial_gate = resolver(gate)
 
-    else:
+            if trial_gate.definition and not trial_gate._definition:
+                trial_gate._define()
+
+            if (
+                trial_gate.definition == gate.definition
+                or trial_gate._definition == gate._definition
+            ):
+                return trial_gate
+
+    elif not gate.mutable or type(gate) not in (qiskit.circuit.Instruction, qiskit.circuit.Gate):
         return gate
+
+    elif gate.definition is not None:
+        gate.definition = _resolve_circuit(gate.definition)
 
     return _resolve_custom_gate(gate)
 

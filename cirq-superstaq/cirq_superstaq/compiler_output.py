@@ -96,7 +96,6 @@ class CompilerOutput:
             | list[list[dict[cirq.Qid, cirq.Qid]]]
         ),
         pulse_gate_circuits: Any | None = None,
-        pulse_sequences: Any | None = None,
         seq: qtrl.sequencer.Sequence | None = None,
         jaqal_programs: list[str] | str | None = None,
     ) -> None:
@@ -110,7 +109,6 @@ class CompilerOutput:
                 qubits.
             pulse_gate_circuits: Pulse-gate `qiskit.QuantumCircuit` or list thereof specifying the
                 pulse compilation.
-            pulse_sequences: The qiskit pulse schedules for the compiled circuit(s).
             seq: A `qtrl` pulse sequence, if `qtrl` is available locally.
             jaqal_programs: The Jaqal program (resp. programs) as a string (resp. list of
                 strings).
@@ -120,14 +118,12 @@ class CompilerOutput:
             self.initial_logical_to_physical = initial_logical_to_physicals
             self.final_logical_to_physical = final_logical_to_physicals
             self.pulse_gate_circuit = pulse_gate_circuits
-            self.pulse_sequence = pulse_sequences
             self.jaqal_program = jaqal_programs
         else:
             self.circuits = circuits
             self.initial_logical_to_physicals = initial_logical_to_physicals
             self.final_logical_to_physicals = final_logical_to_physicals
             self.pulse_gate_circuits = pulse_gate_circuits
-            self.pulse_sequences = pulse_sequences
             self.jaqal_programs = jaqal_programs
 
         self.seq = seq
@@ -147,12 +143,12 @@ class CompilerOutput:
             return (
                 f"CompilerOutput({self.circuit!r}, {self.initial_logical_to_physical!r}, "
                 f"{self.final_logical_to_physical!r}, {self.pulse_gate_circuit!r}, "
-                f"{self.pulse_sequence!r}, {self.seq!r}, {self.jaqal_program!r})"
+                f"{self.seq!r}, {self.jaqal_program!r})"
             )
         return (
             f"CompilerOutput({self.circuits!r}, {self.initial_logical_to_physicals!r}, "
             f"{self.final_logical_to_physicals!r}, {self.pulse_gate_circuits!r}, "
-            f"{self.pulse_sequences!r}, {self.seq!r}, {self.jaqal_programs!r})"
+            f"{self.seq!r}, {self.jaqal_programs!r})"
         )
 
 
@@ -167,8 +163,7 @@ def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutp
     Returns:
         A `CompilerOutput` object with the compiled circuit(s). If included in the server response,
         the returned object also stores the corresponding pulse gate circuit(s) in its
-        .pulse_gate_circuit(s) attribute, and pulse sequence(s) in its .pulse_sequences(s) attribute
-        (provided qiskit-superstaq is available locally).
+        .pulse_gate_circuit(s) attribute (provided qiskit-superstaq is available locally).
     """
 
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
@@ -178,7 +173,7 @@ def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutp
     final_logical_to_physicals: list[dict[cirq.Qid, cirq.Qid]] = list(
         map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
     )
-    pulse_gate_circuits = pulses = None
+    pulse_gate_circuits = None
 
     if "pulse_gate_circuits" in json_dict:
         pulse_gate_circuits = css.serialization.deserialize_qiskit_circuits(
@@ -188,57 +183,18 @@ def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutp
             pulse_start_times=json_dict.get("pulse_start_times"),
         )
 
-    if "pulses" in json_dict:
-        if importlib.util.find_spec("qiskit") and importlib.util.find_spec("qiskit.qpy"):
-            import qiskit
-
-            try:
-                pulses = gss.serialization.deserialize(json_dict["pulses"])
-            except Exception as e:
-                s = "s" if circuits_is_list else ""
-                qiskit_version = qiskit.__version__
-                if qiskit_version < "1.0":
-                    warnings.warn(
-                        f"Your compiled pulse sequence{s} could not be deserialized, likely "
-                        f"because your Qiskit installation (version {qiskit_version}) is "
-                        "out of date. Please try again after installing a more recent version.\n\n"
-                        f"You can still access your compiled circuit{s} using the .circuit{s} "
-                        "attribute of this output."
-                    )
-                else:
-                    warnings.warn(
-                        f"Your compiled pulse sequence{s} could not be deserialized. Please let "
-                        "us know at superstaq@infleqtion.com, or file a report at "
-                        "https://github.com/Infleqtion/client-superstaq/issues containing "
-                        "the following information (as well as any other relevant context):\n\n"
-                        f"cirq-superstaq version: {css.__version__}\n"
-                        f"qiskit version: {qiskit_version}\n"
-                        f"error: {e!r}\n\n"
-                        f"You can still access your compiled circuit{s} using the .circuit{s} "
-                        "attribute of this output."
-                    )
-        else:
-            s = "s" if circuits_is_list else ""
-            warnings.warn(
-                f"Qiskit is required to deserialize compiled pulse sequence{s}. You can "
-                f"still access your compiled circuit{s} using the .circuit{s} attribute of this "
-                "output."
-            )
-
     if circuits_is_list:
         return CompilerOutput(
             compiled_circuits,
             initial_logical_to_physicals,
             final_logical_to_physicals,
             pulse_gate_circuits=pulse_gate_circuits,
-            pulse_sequences=pulses,
         )
     return CompilerOutput(
         compiled_circuits[0],
         initial_logical_to_physicals[0],
         final_logical_to_physicals[0],
         pulse_gate_circuits=None if pulse_gate_circuits is None else pulse_gate_circuits[0],
-        pulse_sequences=None if pulses is None else pulses[0],
     )
 
 

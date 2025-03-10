@@ -1,13 +1,13 @@
 """A toolkit of QCVV routines."""
 
-from .base_experiment import BenchmarkingExperiment, BenchmarkingResults, Sample
-from .irb import IRB, IRBResults
+from .base_experiment import QCVVExperiment, QCVVResults, Sample
+from .irb import IRB, IRBResults, RBResults
 from .ssb import SSB, SSBResults
-from .xeb import XEB, XEBResults, XEBSample
+from .xeb import XEB, XEBResults
 
 __all__ = [
-    "BenchmarkingExperiment",
-    "BenchmarkingResults",
+    "QCVVExperiment",
+    "QCVVResults",
     "Sample",
     "SSB",
     "SSBResults",
@@ -15,5 +15,5 @@ __all__ = [
     "IRBResults",
     "XEB",
     "XEBResults",
-    "XEBSample",
+    "RBResults",
 ]

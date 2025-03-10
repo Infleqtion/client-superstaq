@@ -95,7 +95,7 @@ def test_get_user_info(mock_get_request: mock.MagicMock) -> None:
         "role": "free_trial",
         "balance": 30.0,
     }
-    mock_get_request.assert_called_once_with("/get_user_info", query={})
+    mock_get_request.assert_called_once_with("/user_info", query={})
 
 
 @mock.patch(
@@ -120,7 +120,7 @@ def test_get_user_info_name_query(mock_get_request: mock.MagicMock) -> None:
             "balance": 30.0,
         }
     ]
-    mock_get_request.assert_called_once_with("/get_user_info", query={"name": "Alice"})
+    mock_get_request.assert_called_once_with("/user_info", query={"name": "Alice"})
 
 
 @mock.patch(
@@ -145,7 +145,7 @@ def test_get_user_info_email_query(mock_get_request: mock.MagicMock) -> None:
             "balance": 30.0,
         }
     ]
-    mock_get_request.assert_called_once_with("/get_user_info", query={"email": "example@email.com"})
+    mock_get_request.assert_called_once_with("/user_info", query={"email": "example@email.com"})
 
 
 @mock.patch(
@@ -225,6 +225,38 @@ def test_service_aqt_upload_configs(
 def test_service_get_targets(_mock_get_request: mock.MagicMock) -> None:
     service = gss.service.Service(api_key="key", remote_host="http://example.com")
     assert service.get_targets() == RETURNED_TARGETS
+
+
+@mock.patch(
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
+    return_value={
+        "superstaq_targets": {
+            "ss_unconstrained_simulator": {
+                "supports_submit": True,
+                "supports_submit_qubo": True,
+                "supports_compile": True,
+                "available": True,
+                "retired": False,
+                "accessible": True,
+            }
+        }
+    },
+)
+def test_service_get_my_targets(_mock_post_request: mock.MagicMock) -> None:
+    service = gss.service.Service(api_key="key", remote_host="http://example.com")
+    assert service.get_my_targets() == [
+        gss.typing.Target(
+            target="ss_unconstrained_simulator",
+            **{
+                "supports_submit": True,
+                "supports_submit_qubo": True,
+                "supports_compile": True,
+                "available": True,
+                "retired": False,
+                "accessible": True,
+            },
+        )
+    ]
 
 
 @mock.patch(

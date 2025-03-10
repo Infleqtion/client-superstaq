@@ -31,3 +31,4 @@ class Target(pydantic.BaseModel):
     supports_compile: bool = False
     available: bool = False
     retired: bool = False
+    accessible: bool = False

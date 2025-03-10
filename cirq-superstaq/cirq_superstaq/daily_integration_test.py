@@ -9,6 +9,7 @@ import cirq
 import general_superstaq as gss
 import numpy as np
 import pytest
+import qiskit
 from general_superstaq import ResourceEstimate
 
 import cirq_superstaq as css
@@ -34,11 +35,19 @@ def test_ibmq_compile(service: css.Service) -> None:
 
     out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
-    assert out.pulse_sequence is not None
+    assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
+    assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
 
-    out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
-    assert isinstance(out.circuit, cirq.Circuit)
-    assert out.pulse_sequence is not None
+    out = service.ibmq_compile([circuit, circuit], target="ibmq_brisbane_qpu")
+
+    assert isinstance(out.circuits, list)
+    assert len(out.circuits) == 2
+    assert isinstance(out.circuits[1], cirq.Circuit)
+
+    assert isinstance(out.pulse_gate_circuits, list)
+    assert len(out.pulse_gate_circuits) == 2
+    assert isinstance(out.pulse_gate_circuits[1], qiskit.QuantumCircuit)
+    assert len(out.pulse_gate_circuits[1].op_start_times) == len(out.pulse_gate_circuits[1])
 
 
 def test_ibmq_compile_with_token() -> None:
@@ -53,7 +62,8 @@ def test_ibmq_compile_with_token() -> None:
     out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
 
     assert isinstance(out.circuit, cirq.Circuit)
-    assert out.pulse_sequence is not None
+    assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
+    assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
 
 
 def test_aqt_compile(service: css.Service) -> None:
@@ -144,6 +154,7 @@ def test_get_resource_estimate(service: css.Service) -> None:
 
 def test_get_targets(service: css.Service) -> None:
     result = service.get_targets()
+    filtered_result = service.get_my_targets()
     ibmq_target_info = gss.typing.Target(
         target="ibmq_brisbane_qpu",
         supports_submit=True,
@@ -151,6 +162,7 @@ def test_get_targets(service: css.Service) -> None:
         supports_compile=True,
         available=True,
         retired=False,
+        accessible=True,
     )
     aqt_target_info = gss.typing.Target(
         target="aqt_keysight_qpu",
@@ -159,10 +171,12 @@ def test_get_targets(service: css.Service) -> None:
         supports_compile=True,
         available=True,
         retired=False,
+        accessible=True,
     )
 
     assert ibmq_target_info in result
     assert aqt_target_info in result
+    assert all(target in result for target in filtered_result)
 
 
 def test_qscout_compile(service: css.Service) -> None:
@@ -313,7 +327,7 @@ def test_job(service: css.Service) -> None:
     assert job.job_id() == job_id
 
 
-@pytest.mark.parametrize("target", ["cq_sqorpius_simulator", "aws_sv1_simulator"])
+@pytest.mark.parametrize("target", ["cq_sqale_simulator", "aws_sv1_simulator"])
 def test_submit_to_provider_simulators(target: str, service: css.Service) -> None:
     q0 = cirq.LineQubit(0)
     q1 = cirq.LineQubit(1)
@@ -323,14 +337,14 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
     assert job.counts(0) == {"11": 1}
 
 
-@pytest.mark.skip(reason="Can't be executed when Sqorpius is set to not accept jobs")
-def test_submit_to_sqorpius_qubit_sorting(service: css.Service) -> None:
+@pytest.mark.skip(reason="Can't be executed when Sqale is set to not accept jobs")
+def test_submit_to_sqale_qubit_sorting(service: css.Service) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776
 
     Args:
         service: cirq_superstaq service object from fixture.
     """
-    target = "cq_sqorpius_qpu"
+    target = "cq_sqale_qpu"
     num_qubits = service.target_info(target)["num_qubits"]
     qubits = cirq.LineQubit.range(num_qubits)
     circuit = cirq.Circuit(

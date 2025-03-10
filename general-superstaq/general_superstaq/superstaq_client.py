@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Client for making requests to Superstaq's API."""
+
 from __future__ import annotations
 
 import json
@@ -57,6 +58,8 @@ class _SuperstaqClient:
         ibmq_token: str | None = None,
         ibmq_instance: str | None = None,
         ibmq_channel: str | None = None,
+        use_stored_ibmq_credentials: bool = False,
+        ibmq_name: str | None = None,
         **kwargs: Any,
     ) -> None:
         """Creates the SuperstaqClient.
@@ -81,6 +84,9 @@ class _SuperstaqClient:
                 to IBM hardware, or to access non-public IBM devices you may have access to.
             ibmq_instance: An optional instance to use when running IBM jobs.
             ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
+            use_stored_ibmq_credentials: Whether to retrieve IBM credentials from locally saved
+                accounts.
+            ibmq_name: The name of the account to retrieve. The default is `default-ibm-quantum`.
             kwargs: Other optimization and execution parameters.
         """
 
@@ -111,11 +117,18 @@ class _SuperstaqClient:
         }
         self.session = requests.Session()
 
+        if cq_token:
+            kwargs["cq_token"] = cq_token
+
+        if use_stored_ibmq_credentials:
+            config = read_ibm_credentials(ibmq_name)
+            ibmq_token = config.get("token")
+            ibmq_instance = config.get("instance")
+            ibmq_channel = config.get("channel")
+
         if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
             raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
 
-        if cq_token:
-            kwargs["cq_token"] = cq_token
         if ibmq_token:
             kwargs["ibmq_token"] = ibmq_token
         if ibmq_instance:
@@ -162,7 +175,7 @@ class _SuperstaqClient:
             about the job, but does contain the job id.
 
         Raises:
-            gss.SuperstaqServerException: if the request fails.
+            ~gss.SuperstaqServerException: if the request fails.
         """
         gss.validation.validate_target(target)
         gss.validation.validate_integer_param(repetitions)
@@ -193,7 +206,7 @@ class _SuperstaqClient:
             A list of the job ids of the jobs that successfully cancelled.
 
         Raises:
-            SuperstaqServerException: For other API call failures.
+            ~gss.SuperstaqServerException: For other API call failures.
         """
         json_dict: dict[str, str | Sequence[str]] = {
             "job_ids": job_ids,
@@ -218,7 +231,7 @@ class _SuperstaqClient:
             The json body of the response as a dict.
 
         Raises:
-            SuperstaqServerException: For other API call failures.
+            ~gss.SuperstaqServerException: For other API call failures.
         """
 
         json_dict: dict[str, Any] = {
@@ -238,7 +251,7 @@ class _SuperstaqClient:
         return self.get_request("/balance")
 
     def get_user_info(
-        self, name: str | None = None, email: str | None = None
+        self, name: str | None = None, email: str | None = None, user_id: int | None = None
     ) -> list[dict[str, str | float]]:
         """Gets a dictionary of the user's info.
 
@@ -249,7 +262,8 @@ class _SuperstaqClient:
 
         Args:
             name: A name to search by. Defaults to None.
-            email: An email address to search by. Defaults to None
+            email: An email address to search by. Defaults to None.
+            user_id: A user ID to search by. Defaults to None.
 
         Returns:
             A list of dictionaries corresponding to the user
@@ -257,14 +271,16 @@ class _SuperstaqClient:
             parameters are used this dictionary will have length 1.
 
         Raises:
-            SuperstaqServerException: If the server returns an empty response.
+            ~gss.SuperstaqServerException: If the server returns an empty response.
         """
         query = {}
         if name is not None:
             query["name"] = name
         if email is not None:
             query["email"] = email
-        user_info = self.get_request("/get_user_info", query=query)
+        if user_id is not None:
+            query["id"] = str(user_id)
+        user_info = self.get_request("/user_info", query=query)
         if not user_info:
             # Catch empty server response. This shouldn't happen as the server should return
             # an error code if something is wrong with the request.
@@ -293,8 +309,30 @@ class _SuperstaqClient:
         Returns:
             A list of Superstaq targets matching all provided criteria.
         """
-        target_filters = {key: value for key, value in kwargs.items() if value is not None}
-        superstaq_targets = self.post_request("/targets", target_filters)["superstaq_targets"]
+        json_dict: dict[str, str | bool] = {
+            key: value for key, value in kwargs.items() if value is not None
+        }
+        if self.client_kwargs:
+            json_dict["options"] = json.dumps(self.client_kwargs)
+
+        superstaq_targets = self.post_request("/targets", json_dict)["superstaq_targets"]
+        target_list = [
+            gss.Target(target=target_name, **properties)
+            for target_name, properties in superstaq_targets.items()
+        ]
+        return target_list
+
+    def get_my_targets(self) -> list[gss.Target]:
+        """Makes a GET request to retrieve targets from the Superstaq API.
+
+        Returns:
+            A list of Superstaq targets matching all provided criteria.
+        """
+        json_dict: dict[str, str | bool] = {"accessible": True}
+        if self.client_kwargs:
+            json_dict["options"] = json.dumps(self.client_kwargs)
+
+        superstaq_targets = self.post_request("/targets", json_dict)["superstaq_targets"]
         target_list = [
             gss.Target(target=target_name, **properties)
             for target_name, properties in superstaq_targets.items()
@@ -383,8 +421,14 @@ class _SuperstaqClient:
         qubo: Mapping[tuple[TQuboKey, ...], float],
         target: str,
         repetitions: int,
-        method: str | None = None,
+        method: str = "sim_anneal",
         max_solutions: int | None = 1000,
+        *,
+        qaoa_depth: int = 1,
+        rqaoa_cutoff: int = 0,
+        dry_run: bool = False,
+        random_seed: int | None = None,
+        **kwargs: object,
     ) -> dict[str, str]:
         """Makes a POST request to Superstaq API to submit a QUBO problem to the
         given target.
@@ -397,10 +441,17 @@ class _SuperstaqClient:
                 would be {('a',): 2, ('a', 'b'): 1, ('b', 'c'): -5, (): -3}.
             target: The target to submit the QUBO.
             repetitions: Number of times that the execution is repeated before stopping.
-            method: The parameter specifying method of QUBO solving execution. Currently,
-                will either be the "dry-run" option which runs on dwave's simulated annealer,
-                or defaults to `None` and sends it directly to the specified target.
+            method: The parameter specifying method of QUBO solving execution. Currently, the
+                supported methods include "bruteforce", "sim_anneal", "qaoa", or "rqaoa".
+                Defaults to "sim_anneal" which runs on DWave's simulated annealer.
             max_solutions: A parameter that specifies the max number of output solutions.
+            qaoa_depth: The number of QAOA layers to use. Defaults to 1.
+            rqaoa_cutoff: The stopping point for RQAOA before using switching to a classical
+                solver. Defaults to 0.
+            dry_run: If `method="qaoa"`, a boolean flag to (not) run an ideal 'dry-run'
+                QAOA execution on `target`.
+            random_seed: Optional random seed choice for RQAOA.
+            kwargs: Any additional keyword arguments supported by the qubo solver methods.
 
         Returns:
             A dictionary from the POST request.
@@ -409,6 +460,15 @@ class _SuperstaqClient:
         gss.validation.validate_qubo(qubo)
         gss.validation.validate_integer_param(repetitions)
         gss.validation.validate_integer_param(max_solutions)
+        gss.validation.validate_integer_param(qaoa_depth)
+        gss.validation.validate_integer_param(rqaoa_cutoff, min_val=0)
+
+        options = {
+            "qaoa_depth": qaoa_depth,
+            "rqaoa_cutoff": rqaoa_cutoff,
+            "random_seed": random_seed,
+            **kwargs,
+        }
 
         json_dict = {
             "qubo": list(qubo.items()),
@@ -416,6 +476,8 @@ class _SuperstaqClient:
             "shots": int(repetitions),
             "method": method,
             "max_solutions": max_solutions,
+            "dry_run": dry_run,
+            "options": json.dumps(options),
         }
         return self.post_request("/qubo", json_dict)
 
@@ -480,7 +542,7 @@ class _SuperstaqClient:
 
         Raises:
             ValueError: If any of the targets passed are not valid.
-            SuperstaqServerException: if the request fails.
+            ~gss.SuperstaqServerException: if the request fails.
         """
         gss.validation.validate_target(target_1)
         gss.validation.validate_target(target_2)
@@ -510,7 +572,7 @@ class _SuperstaqClient:
 
         Raises:
             ValueError: If `job_ids` is not of size two.
-            SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
         if len(job_ids) != 2:
             raise ValueError("`job_ids` must contain exactly two job ids.")
@@ -555,7 +617,7 @@ class _SuperstaqClient:
 
         Raises:
             ValueError: If the target or noise model is not valid.
-            SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
         gss.validation.validate_target(target)
 
@@ -623,7 +685,7 @@ class _SuperstaqClient:
 
         Raises:
             ValueError: If the target or noise model is not valid.
-            SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
         gss.validation.validate_target(target)
 
@@ -704,7 +766,8 @@ class _SuperstaqClient:
 
         Args:
             endpoint: The endpoint to perform the GET request on.
-            query: An optional query json to include in the get request.
+            query: An optional query dictionary to include in the get request.
+                This query will be appended to the url.
 
         Returns:
             The response of the GET request.
@@ -716,11 +779,14 @@ class _SuperstaqClient:
             Returns:
                 The Flask GET request object.
             """
+            if not query:
+                q_string = ""
+            else:
+                q_string = "?" + urllib.parse.urlencode(query)
             return self.session.get(
-                f"{self.url}{endpoint}",
+                f"{self.url}{endpoint}{q_string}",
                 headers=self.headers,
                 verify=self.verify_https,
-                json=query,
             )
 
         response = self._make_request(request)
@@ -768,8 +834,8 @@ class _SuperstaqClient:
             response: The `requests.Response` to get the status codes from.
 
         Raises:
-            gss.SuperstaqServerException: If unauthorized by Superstaq API.
-            gss.SuperstaqServerException: If an error has occurred in making a request
+            ~gss.SuperstaqServerException: If unauthorized by Superstaq API.
+            ~gss.SuperstaqServerException: If an error has occurred in making a request
                 to the Superstaq API.
         """
 
@@ -820,7 +886,7 @@ class _SuperstaqClient:
         """Prompts terms of use.
 
         Raises:
-            gss.SuperstaqServerException: If terms of use are not accepted.
+            ~gss.SuperstaqServerException: If terms of use are not accepted.
         """
         message = (
             "Acceptance of the Terms of Use (superstaq.infleqtion.com/terms_of_use)"
@@ -842,7 +908,8 @@ class _SuperstaqClient:
             request: A function that returns a `requests.Response`.
 
         Raises:
-            SuperstaqServerException: If there was a not-retriable error from the API.
+            ~gss.SuperstaqServerException: If there was a not-retriable error from
+                the API.
             TimeoutError: If the requests retried for more than `max_retry_seconds`.
 
         Returns:
@@ -888,6 +955,55 @@ class _SuperstaqClient:
                 verbose={self.verbose!r},
             )"""
         )
+
+
+def read_ibm_credentials(ibmq_name: str | None) -> dict[str, str]:
+    """Function to try to read IBM credentials from .qiskit/qiskit-ibm.json.
+
+    Args:
+        ibmq_name: The name under which the IBM account credentials are locally stored.
+
+    Raises:
+        FileNotFoundError: If the configuration file is not found.
+        KeyError: If the provided `ibmq_name` does not have credentials stored in the
+            config file or `token` and/or `channel` keys are missing for the credentials
+            of the account under `ibmq_name`.
+        ValueError: If no `ibmq_name` is provided and multiple accounts are found with
+            none marked as default.
+
+    Returns:
+        Dictionary containing the ibm token, channel, and instance (if available).
+    """
+    config_dir = pathlib.Path.home().joinpath(".qiskit")
+    path = config_dir.joinpath("qiskit-ibm.json")
+    if path.is_file():
+        config = json.load(open(path))
+        if ibmq_name is None:
+            if len(config) == 1:
+                ibmq_name = list(config.keys())[0]
+            elif any(creds.get("is_default_account") for creds in config.values()):
+                ibmq_name = next(name for name in config if config[name].get("is_default_account"))
+            else:
+                raise ValueError(
+                    "Multiple accounts found but none are marked as default.",
+                    " Please provide the name of the account to retrieve.",
+                )
+        elif ibmq_name not in config:
+            raise KeyError(
+                f"No account credentials saved under the name '{ibmq_name}'"
+                f" in the config file found at '{path}'."
+            )
+
+        credentials = config.get(ibmq_name)
+        if any(key not in credentials for key in ["token", "channel"]):
+            raise KeyError(
+                "`token` and/or `channel` keys missing from credentials for the account",
+                f" under the name '{ibmq_name}' in the file '{path}'.",
+            )
+
+        return credentials
+
+    raise FileNotFoundError(f"The `qiskit-ibm.json` file was not found in '{config_dir}'.")
 
 
 def find_api_key() -> str:

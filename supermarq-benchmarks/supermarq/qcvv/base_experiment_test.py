@@ -17,37 +17,126 @@
 
 from __future__ import annotations
 
-import os
+import re
+import uuid
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, call, patch
 
 import cirq
 import cirq_superstaq as css
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import pytest
 
-from supermarq.qcvv.base_experiment import BenchmarkingExperiment, BenchmarkingResults, Sample
+from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample, qcvv_resolver
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
+mock_plot = MagicMock()
+mock_print = MagicMock()
 
 
-@dataclass(frozen=True)
-class ExampleResults(BenchmarkingResults):
-    """NamedTuple instance to use for testing"""
+def test_qcvv_resolver() -> None:
+    assert qcvv_resolver("bad_name") is None
+    assert qcvv_resolver("supermarq.qcvv.Sample") == Sample
+    assert qcvv_resolver("supermarq.qcvv.QCVVExperiment") == QCVVExperiment
 
-    example: float
+    # Check for something that is not explicitly exported
+    assert qcvv_resolver("supermarq.qcvv.base_experiment.qcvv_resolver") is None
 
-    experiment_name = "Example results"
+
+@dataclass
+class ExampleResults(QCVVResults):
+    """Example results class for testing"""
+
+    _example_final_result: float | None = None
+
+    def _analyze(self) -> None:
+        self._example_final_result = 3.142
+
+    def plot_results(self, filename: str | None = None) -> plt.Figure:
+        mock_plot(filename)
+        return plt.Figure()
+
+    def print_results(self) -> None:
+        mock_print("This is a test")
+
+    @property
+    def example_final_result(self) -> float:
+        if self._example_final_result is None:
+            raise self._not_analyzed
+        return self._example_final_result
 
 
-@pytest.fixture(scope="session", autouse=True)
-def patch_tqdm() -> None:
-    os.environ["TQDM_DISABLE"] = "1"
+class ExampleExperiment(QCVVExperiment[ExampleResults]):
+    """Example experiment class for testing"""
+
+    def __init__(
+        self,
+        qubits: int | Sequence[cirq.Qid],
+        num_circuits: int,
+        cycle_depths: Iterable[int],
+        *,
+        random_seed: int | None = None,
+        _samples: list[Sample] | None = None,
+        **kwargs: str | bool,
+    ) -> None:
+        super().__init__(
+            qubits,
+            num_circuits,
+            cycle_depths,
+            random_seed=random_seed,
+            results_cls=ExampleResults,
+            _samples=_samples,
+            **kwargs,
+        )
+
+    def _build_circuits(self, num_circuits: int, cycle_depths: Iterable[int]) -> Sequence[Sample]:
+        return [
+            Sample(
+                circuit=cirq.Circuit(cirq.measure(*self.qubits)),
+                data={"num": k, "depth": d},
+                circuit_realization=k,
+            )
+            for k in range(num_circuits)
+            for d in cycle_depths
+        ]
+
+    def _json_dict_(self) -> dict[str, Any]:
+        return super()._json_dict_()
+
+    @classmethod
+    def _from_json_dict_(
+        cls,
+        samples: list[Sample],
+        qubits: list[cirq.Qid],
+        num_circuits: int,
+        cycle_depths: list[int],
+        **kwargs: Any,
+    ) -> Self:
+        experiment = cls(
+            qubits=qubits,
+            num_circuits=num_circuits,
+            cycle_depths=cycle_depths,
+            _samples=samples,
+            **kwargs,
+        )
+        return experiment
 
 
 @pytest.fixture
-@patch.multiple(BenchmarkingExperiment, __abstractmethods__=set())
-def abc_experiment() -> BenchmarkingExperiment[ExampleResults]:
-    with patch("cirq_superstaq.service.Service"):
-        return BenchmarkingExperiment(num_qubits=2)  # type: ignore[abstract]
+def abc_experiment() -> ExampleExperiment:
+    return ExampleExperiment(
+        qubits=2,
+        num_circuits=10,
+        cycle_depths=[1, 3, 5],
+        random_seed=42,
+        service_details="Some other details",
+    )
 
 
 @pytest.fixture
@@ -55,108 +144,167 @@ def sample_circuits() -> list[Sample]:
     qubits = cirq.LineQubit.range(2)
     return [
         Sample(
-            raw_circuit=cirq.Circuit(cirq.CZ(*qubits), cirq.CZ(*qubits), cirq.measure(*qubits)),
+            circuit=cirq.Circuit(cirq.CZ(*qubits), cirq.CZ(*qubits), cirq.measure(*qubits)),
             data={"circuit": 1},
+            circuit_realization=1,
         ),
         Sample(
-            raw_circuit=cirq.Circuit(cirq.CX(*qubits), cirq.measure(*qubits)), data={"circuit": 2}
+            circuit=cirq.Circuit(cirq.CX(*qubits), cirq.measure(*qubits)),
+            data={"circuit": 2},
+            circuit_realization=2,
         ),
     ]
 
 
-def test_sample_target_property() -> None:
-    sample = Sample(raw_circuit=MagicMock(), data={})
-    assert sample.target == "No target"
-
-    sample.probabilities = {"0": 0.25, "1": 0.75}
-    assert sample.target == "Local simulator"
-
-    sample.job = MagicMock()
-    sample.job.target.return_value = "Example target"
-    assert sample.target == "Example target"
-
-
-def test_benchmarking_experiment_init(
-    abc_experiment: BenchmarkingExperiment[ExampleResults],
+def test_qcvv_experiment_init(
+    abc_experiment: ExampleExperiment,
 ) -> None:
     assert abc_experiment.num_qubits == 2
-    assert abc_experiment._raw_data is None
-    assert abc_experiment._results is None
-    assert abc_experiment._samples is None
+    assert abc_experiment.qubits == [cirq.q(0), cirq.q(1)]
+    assert abc_experiment.num_circuits == 10
+    assert abc_experiment.cycle_depths == [1, 3, 5]
+    assert abc_experiment._results_cls == ExampleResults
+    assert abc_experiment._service_kwargs == {"service_details": "Some other details"}
+    assert len(abc_experiment.samples) == 30
+    assert isinstance(abc_experiment._rng, np.random.Generator)
 
-    abc_experiment._raw_data = pd.DataFrame([{"Example": 0.1}])
-    abc_experiment._results = ExampleResults(target="Some target", total_circuits=2, example=5.0)
-
-    pd.testing.assert_frame_equal(abc_experiment.raw_data, abc_experiment._raw_data)
-    assert abc_experiment.results == abc_experiment._results
-
-
-def test_empty_results_error(abc_experiment: BenchmarkingExperiment[ExampleResults]) -> None:
-    with pytest.raises(
-        RuntimeError, match="No results to retrieve. The experiment has not been run."
-    ):
-        _ = abc_experiment.results
-
-
-def test_empty_data_error(abc_experiment: BenchmarkingExperiment[ExampleResults]) -> None:
-    with pytest.raises(RuntimeError, match="No data to retrieve. The experiment has not been run."):
-        _ = abc_experiment.raw_data
+    new_experiment = ExampleExperiment(
+        qubits=[cirq.q(1), cirq.q(3), cirq.q(7)],
+        num_circuits=10,
+        cycle_depths=[1, 3, 5],
+    )
+    assert new_experiment.num_qubits == 3
+    assert new_experiment.qubits == [cirq.q(1), cirq.q(3), cirq.q(7)]
 
 
-def test_empty_samples_error(abc_experiment: BenchmarkingExperiment[ExampleResults]) -> None:
-    with pytest.raises(
-        RuntimeError, match="No samples to retrieve. The experiment has not been run."
-    ):
-        _ = abc_experiment.samples
-
-
-def test_prepare_experiment_overwrite_error(
-    abc_experiment: BenchmarkingExperiment[ExampleResults],
+def test_results_init(
+    abc_experiment: ExampleExperiment,
 ) -> None:
-    abc_experiment._samples = [Sample(raw_circuit=MagicMock(), data={})]
-    abc_experiment._build_circuits = MagicMock()
-
-    with pytest.raises(
-        RuntimeError,
-        match="This experiment already has existing data which would be overwritten by "
-        "rerunning the experiment. If this is the desired behavior set `overwrite=True`",
-    ):
-        abc_experiment.prepare_experiment(100, [1, 50, 100])
+    results = ExampleResults(
+        target="target", experiment=abc_experiment, job=MagicMock(spec=css.Job)
+    )
+    assert results.target == "target"
+    assert results.samples == abc_experiment.samples
+    assert results.num_circuits == 10
+    assert results.num_qubits == 2
 
 
-def test_prepare_experiment_overwrite(
-    abc_experiment: BenchmarkingExperiment[ExampleResults],
-) -> None:
-    abc_experiment._samples = [Sample(raw_circuit=MagicMock(), data={})]
-    abc_experiment._build_circuits = MagicMock()
-    abc_experiment._validate_circuits = MagicMock()
-
-    abc_experiment.prepare_experiment(100, [1, 50, 100], overwrite=True)
-
-    abc_experiment._build_circuits.assert_called_once_with(100, [1, 50, 100])
-    abc_experiment._validate_circuits.assert_called_once_with()
-
-
-def test_prepare_experiment_with_bad_layers(
-    abc_experiment: BenchmarkingExperiment[ExampleResults],
-) -> None:
+def test_experiment_init_with_bad_layers() -> None:
     with pytest.raises(
         ValueError, match="The `cycle_depths` iterator can only include positive values."
     ):
-        abc_experiment.prepare_experiment(20, [0])
+        ExampleExperiment(
+            qubits=2,
+            num_circuits=10,
+            cycle_depths=[0],
+            random_seed=42,
+            service_details="Some other details",
+        )
+
+
+def test_results_not_analyzed(abc_experiment: ExampleExperiment) -> None:
+    results = ExampleResults(
+        target="target", experiment=abc_experiment, job=MagicMock(spec=css.Job)
+    )
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
+    ):
+        _ = results.example_final_result
+
+
+def test_results_job_still_running(abc_experiment: ExampleExperiment) -> None:
+    results = ExampleResults(
+        target="target", experiment=abc_experiment, job=MagicMock(spec=css.Job)
+    )
+    results.job.status.return_value = "Pending"  # type: ignore[union-attr]
+    with pytest.warns(
+        Warning,
+        match=(
+            "Experiment data is not yet ready to analyse. This is likely because "
+            "the Superstaq job has not yet been completed. Either wait and try again "
+            "later, or interrogate the `.job` attribute."
+        ),
+    ):
+        results.analyze()
+
+
+def test_results_job_no_data(abc_experiment: ExampleExperiment) -> None:
+    results = ExampleResults(
+        target="target",
+        experiment=abc_experiment,
+    )
+    with pytest.raises(
+        RuntimeError,
+        match=(
+            "No data available and no Superstaq job to use to collect data. Please manually add "
+            "results data in order to perform analysis"
+        ),
+    ):
+        results.analyze()
+
+
+def test_results_analyze(abc_experiment: ExampleExperiment) -> None:
+    results = ExampleResults(
+        target="target", experiment=abc_experiment, data=MagicMock(spec=pd.DataFrame)
+    )
+
+    results.analyze(plot_results=True, print_results=True, plot_filename="test_name")
+    assert results.example_final_result == 3.142
+    mock_plot.assert_called_once_with("test_name")
+    mock_print.assert_called_once_with("This is a test")
+
+
+def test_results_ready(abc_experiment: ExampleExperiment) -> None:
+    results = ExampleResults(
+        target="target", experiment=abc_experiment, data=MagicMock(spec=pd.DataFrame)
+    )
+    assert results.data_ready
+
+
+def test_results_ready_from_job(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+    results = ExampleResults(
+        target="target", experiment=abc_experiment, job=MagicMock(spec=css.Job)
+    )
+    results.job.status.return_value = "Done"  # type: ignore[union-attr]
+    results.job.counts.return_value = [  # type: ignore[union-attr]
+        {
+            "00": 20,
+            "01": 5,
+            "11": 10,
+        },
+        {
+            "00": 30,
+            "01": 5,
+        },
+    ]
+    assert results.data_ready
+    pd.testing.assert_frame_equal(
+        results.data,
+        pd.DataFrame(
+            [
+                {"circuit": 1, "00": 20 / 35, "01": 5 / 35, "10": 0.0, "11": 10 / 35},
+                {"circuit": 2, "00": 30 / 35, "01": 5 / 35, "10": 0.0, "11": 0.0},
+            ]
+        ),
+        check_like=True,
+    )
 
 
 def test_run_with_simulator(
-    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
     cirq.measurement_key_name = MagicMock()
-    abc_experiment._samples = sample_circuits
+    abc_experiment.samples = sample_circuits
     test_sim = MagicMock()
     mock_result = MagicMock()
     mock_result.histogram.return_value = {0: 0, 1: 100, 2: 0, 3: 0}
     test_sim.run.return_value = mock_result
 
-    abc_experiment.run_with_simulator(simulator=test_sim, repetitions=100)
+    results = abc_experiment.run_with_simulator(simulator=test_sim, repetitions=100)
 
     # Test simulator calls
     test_sim.run.assert_has_calls(
@@ -167,39 +315,46 @@ def test_run_with_simulator(
         any_order=True,
     )
 
-    # Test probabilities
-    assert sample_circuits[0].probabilities == {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
-    assert sample_circuits[1].probabilities == {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
+    assert results.experiment == abc_experiment
+    assert results.target == "local_simulator"
 
-
-def test_run_with_simulator_existing_probabilties(
-    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
-) -> None:
-    sample_circuits[0].probabilities = {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
-    sample_circuits[1].probabilities = {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
-
-    abc_experiment._samples = sample_circuits
-    with pytest.raises(
-        RuntimeError,
-        match=(
-            "Some samples have already been run. Re-running the experiment will"
-            "overwrite these results. If this is the desired behaviour use `overwrite=True`"
+    # Check the data is stored
+    pd.testing.assert_frame_equal(
+        results.data,
+        pd.DataFrame(
+            [
+                {
+                    "circuit_realization": 1,
+                    "circuit": 1,
+                    "00": 0.0,
+                    "01": 1.0,
+                    "10": 0.0,
+                    "11": 0.0,
+                },
+                {
+                    "circuit_realization": 2,
+                    "circuit": 2,
+                    "00": 0.0,
+                    "01": 1.0,
+                    "10": 0.0,
+                    "11": 0.0,
+                },
+            ]
         ),
-    ):
-        abc_experiment.run_with_simulator()
+    )
 
 
 def test_run_with_simulator_default_target(
-    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
     cirq.measurement_key_name = MagicMock()
     cirq.Simulator = (target := MagicMock())  # type: ignore [misc]
-    abc_experiment._samples = sample_circuits
+    abc_experiment.samples = sample_circuits
     mock_result = MagicMock()
     mock_result.histogram.return_value = {0: 0, 1: 100, 2: 0, 3: 0}
     target().run.return_value = mock_result
 
-    abc_experiment.run_with_simulator(repetitions=100)
+    results = abc_experiment.run_with_simulator(repetitions=100)
 
     # Test simulator calls
     target().run.assert_has_calls(
@@ -210,81 +365,75 @@ def test_run_with_simulator_default_target(
         any_order=True,
     )
 
-    # Test probabilities
-    assert sample_circuits[0].probabilities == {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
-    assert sample_circuits[1].probabilities == {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
+    assert results.experiment == abc_experiment
+    assert results.target == "local_simulator"
 
-
-def test_run_on_device(
-    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
-) -> None:
-    abc_experiment._samples = sample_circuits
-    abc_experiment._service = (mock_service := MagicMock())
-
-    job = abc_experiment.run_on_device(
-        target="example_target", repetitions=100, overwrite=False, **{"some": "options"}
+    # Check the data is stored
+    pd.testing.assert_frame_equal(
+        results.data,
+        pd.DataFrame(
+            [
+                {
+                    "circuit_realization": 1,
+                    "circuit": 1,
+                    "00": 0.0,
+                    "01": 1.0,
+                    "10": 0.0,
+                    "11": 0.0,
+                },
+                {
+                    "circuit_realization": 2,
+                    "circuit": 2,
+                    "00": 0.0,
+                    "01": 1.0,
+                    "10": 0.0,
+                    "11": 0.0,
+                },
+            ]
+        ),
     )
 
-    mock_service.create_job.assert_called_once_with(
-        [sample_circuits[0].raw_circuit, sample_circuits[1].raw_circuit],
+
+def test_run_on_device(abc_experiment: ExampleExperiment, sample_circuits: list[Sample]) -> None:
+    abc_experiment.samples = sample_circuits
+
+    with patch("cirq_superstaq.Service") as mock_service:
+        results = abc_experiment.run_on_device(
+            target="example_target", repetitions=100, **{"some": "options"}
+        )
+
+    mock_service.return_value.create_job.assert_called_once_with(
+        [sample_circuits[0].circuit, sample_circuits[1].circuit],
         target="example_target",
         method=None,
         repetitions=100,
         some="options",
     )
 
-    assert job == mock_service.create_job.return_value
-    assert (
-        sample_circuits[0].compiled_circuit
-        == mock_service.create_job.return_value.compiled_circuits.return_value[0]
-    )
-    assert (
-        sample_circuits[1].compiled_circuit
-        == mock_service.create_job.return_value.compiled_circuits.return_value[1]
-    )
-
-
-def test_run_on_device_existing_probabilties(
-    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
-) -> None:
-    abc_experiment._service = MagicMock()
-    sample_circuits[0].probabilities = {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
-    sample_circuits[1].probabilities = {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}
-
-    abc_experiment._samples = sample_circuits
-    with pytest.raises(
-        RuntimeError,
-        match=(
-            "Some samples have already been run. Re-running the experiment will"
-            "overwrite these results. If this is the desired behaviour use `overwrite=True`"
-        ),
-    ):
-        abc_experiment.run_on_device(target="example")
+    assert results.job == mock_service.return_value.create_job.return_value
+    assert results.target == "example_target"
+    assert results.experiment == abc_experiment
 
 
 def test_run_on_device_dry_run(
-    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
-    abc_experiment._samples = sample_circuits
-    abc_experiment._service = (mock_service := MagicMock())
+    abc_experiment.samples = sample_circuits
 
-    job = abc_experiment.run_on_device(target="example_target", repetitions=100, method="dry-run")
+    with patch("cirq_superstaq.Service") as mock_service:
+        results = abc_experiment.run_on_device(
+            target="example_target", repetitions=100, method="dry-run"
+        )
 
-    mock_service.create_job.assert_called_once_with(
-        [sample_circuits[0].raw_circuit, sample_circuits[1].raw_circuit],
+    mock_service.return_value.create_job.assert_called_once_with(
+        [sample_circuits[0].circuit, sample_circuits[1].circuit],
         target="example_target",
         method="dry-run",
         repetitions=100,
     )
-    assert job == mock_service.create_job.return_value
-    assert (
-        sample_circuits[0].compiled_circuit
-        == mock_service.create_job.return_value.compiled_circuits.return_value[0]
-    )
-    assert (
-        sample_circuits[1].compiled_circuit
-        == mock_service.create_job.return_value.compiled_circuits.return_value[1]
-    )
+    assert results.job == mock_service.return_value.create_job.return_value
+    assert results.target == "example_target"
+    assert results.experiment == abc_experiment
 
 
 def test_interleave_circuit() -> None:
@@ -292,9 +441,7 @@ def test_interleave_circuit() -> None:
     circuit = cirq.Circuit(*[cirq.X(qubit) for _ in range(4)])
 
     # With last gate
-    interleaved_circuit = BenchmarkingExperiment._interleave_op(
-        circuit, cirq.Z(qubit), include_final=True
-    )
+    interleaved_circuit = QCVVExperiment._interleave_op(circuit, cirq.Z(qubit), include_final=True)
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(
@@ -310,9 +457,7 @@ def test_interleave_circuit() -> None:
     )
 
     # Without last gate
-    interleaved_circuit = BenchmarkingExperiment._interleave_op(
-        circuit, cirq.Z(qubit), include_final=False
-    )
+    interleaved_circuit = QCVVExperiment._interleave_op(circuit, cirq.Z(qubit), include_final=False)
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(
@@ -327,253 +472,47 @@ def test_interleave_circuit() -> None:
     )
 
 
-def test_sample_statuses(
-    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
-) -> None:
-    abc_experiment._samples = sample_circuits
-    mock_job = MagicMock(spec=css.Job)
-    mock_job.status.return_value = "example_status"
-    sample_circuits[0].job = mock_job
-
-    statuses = abc_experiment._sample_statuses()
-    assert statuses == ["example_status", None]
-    mock_job.status.assert_called_once_with()
-
-
-def test_targets(
-    abc_experiment: BenchmarkingExperiment[ExampleResults],
-) -> None:
-    abc_experiment._samples = [mock_sample_0 := MagicMock(), mock_sample_1 := MagicMock()]
-    mock_sample_0.target = "target_0"
-    mock_sample_1.target = "target_1"
-    assert abc_experiment.targets == frozenset(["target_0", "target_1"])
-
-    mock_sample_1.target = "target_0"
-    assert abc_experiment.targets == frozenset(["target_0"])
-
-
 def test_validate_circuits(
-    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
-    abc_experiment._samples = sample_circuits
     # Should't get any errors with the base circuits
-    abc_experiment._validate_circuits()
+    abc_experiment._validate_circuits(sample_circuits)
 
     # Add a gate so not all measurements are terminal
-    abc_experiment._samples[0].raw_circuit += cirq.X(abc_experiment.qubits[0])
+    sample_circuits[0].circuit += cirq.X(abc_experiment.qubits[0])
     with pytest.raises(
         ValueError, match="QCVV experiment circuits can only contain terminal measurements."
     ):
-        abc_experiment._validate_circuits()
+        abc_experiment._validate_circuits(sample_circuits)
 
     # Remove measurements
-    abc_experiment._samples[0].raw_circuit = abc_experiment._samples[0].circuit[:-2] + cirq.measure(
+    sample_circuits[0].circuit = sample_circuits[0].circuit[:-2] + cirq.measure(
         abc_experiment.qubits[0]
     )
     with pytest.raises(
         ValueError,
         match="The terminal measurement in QCVV experiment circuits must measure all qubits.",
     ):
-        abc_experiment._validate_circuits()
+        abc_experiment._validate_circuits(sample_circuits)
 
     # Remove all measurements
-    abc_experiment._samples[0].raw_circuit = abc_experiment._samples[0].circuit[:-2]
+    sample_circuits[0].circuit = sample_circuits[0].circuit[:-2]
     with pytest.raises(
         ValueError,
         match="QCVV experiment circuits must contain measurements.",
     ):
-        abc_experiment._validate_circuits()
-
-
-def test_process_device_counts(abc_experiment: BenchmarkingExperiment[ExampleResults]) -> None:
-    counts = {
-        "00": 20,
-        "01": 5,
-        "11": 10,
-    }
-    probs = abc_experiment._process_device_counts(counts)
-
-    assert probs == {"00": 20 / 35, "01": 5 / 35, "10": 0.0, "11": 10 / 35}
-
-
-def test_retrieve_jobs_not_all_submitted(
-    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
-) -> None:
-    abc_experiment._samples = sample_circuits
-
-    mock_job_1 = MagicMock()
-    mock_job_1.status.return_value = "Queued"
-    mock_job_1.job_id.return_value = "example_job_id"
-    abc_experiment._samples[0].job = mock_job_1
-
-    statuses = abc_experiment._retrieve_jobs()
-
-    assert statuses == {"example_job_id": "Queued"}
-    assert not hasattr(sample_circuits[0], "probabilities")
-    assert not hasattr(sample_circuits[1], "probabilities")
-
-
-def test_retrieve_jobs_nothing_to_retrieve(
-    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
-) -> None:
-    abc_experiment._samples = sample_circuits
-    statuses = abc_experiment._retrieve_jobs()
-    assert statuses == {}
-
-
-def test_retrieve_jobs_all_submitted(
-    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
-) -> None:
-    abc_experiment._samples = sample_circuits
-    mock_job_1 = MagicMock(spec=css.Job)
-    mock_job_1.status.return_value = "Queued"
-    mock_job_1.job_id.return_value = "example_job_id_1"
-    abc_experiment._samples[0].job = mock_job_1
-
-    mock_job_2 = MagicMock(spec=css.Job)
-    mock_job_2.status.return_value = "Done"
-    mock_job_2.job_id.return_value = "example_job_id_2"
-    mock_job_2.counts.return_value = {"00": 5, "11": 10}
-    abc_experiment._samples[1].job = mock_job_2
-
-    statuses = abc_experiment._retrieve_jobs()
-
-    # Check counts call
-    mock_job_2.counts.assert_called_once_with(0)
-
-    assert statuses == {"example_job_id_1": "Queued"}
-
-    # Check probabilities correctly updated
-    assert sample_circuits[1].probabilities == {"00": 5 / 15, "01": 0.0, "10": 0.0, "11": 10 / 15}
-    assert not hasattr(sample_circuits[0], "probabilities")
-
-
-def test_collect_data_no_samples(abc_experiment: BenchmarkingExperiment[ExampleResults]) -> None:
-    with pytest.raises(RuntimeError, match="The experiment has not yet ben run."):
-        abc_experiment.collect_data()
-
-
-def test_collect_data_no_jobs_to_retrieve(
-    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
-) -> None:
-    sample_circuits[0].probabilities = {"00": 1.0, "10": 0.0, "01": 0.0, "11": 0.0}
-    sample_circuits[1].probabilities = {"00": 0.0, "10": 0.0, "01": 0.0, "11": 1.0}
-    abc_experiment._samples = sample_circuits
-    abc_experiment._process_probabilities = MagicMock()
-
-    assert abc_experiment.collect_data()
-    abc_experiment._process_probabilities.assert_called_once_with(sample_circuits)
-
-
-def test_collect_data_no_jobs_to_retrieve_not_all_probabilities(
-    abc_experiment: BenchmarkingExperiment[ExampleResults],
-    sample_circuits: list[Sample],
-    capfd: pytest.CaptureFixture[str],
-) -> None:
-    sample_circuits[0].probabilities = {"00": 1.0, "10": 0.0, "01": 0.0, "11": 0.0}
-    abc_experiment._samples = sample_circuits
-    abc_experiment._process_probabilities = MagicMock()
-
-    assert not abc_experiment.collect_data()
-    out, _ = capfd.readouterr()
-    assert out == "Some samples do not have probability results.\n"
-    abc_experiment._process_probabilities.assert_not_called()
-
-
-def test_collect_data_no_jobs_to_retrieve_not_all_probabilities_forced(
-    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
-) -> None:
-    sample_circuits[0].probabilities = {"00": 1.0, "10": 0.0, "01": 0.0, "11": 0.0}
-    abc_experiment._samples = sample_circuits
-    abc_experiment._process_probabilities = MagicMock()
-
-    assert abc_experiment.collect_data(force=True)
-    abc_experiment._process_probabilities.assert_called_once_with([sample_circuits[0]])
-
-
-def test_collect_data_cannot_force(
-    abc_experiment: BenchmarkingExperiment[ExampleResults], sample_circuits: list[Sample]
-) -> None:
-    abc_experiment._samples = sample_circuits
-    abc_experiment._process_probabilities = MagicMock()
-
-    with pytest.raises(
-        RuntimeError, match="Cannot force data collection when there are no completed samples."
-    ):
-        abc_experiment.collect_data(force=True)
-
-    abc_experiment._process_probabilities.assert_not_called()
-
-
-def test_collect_data_outstanding_jobs(
-    abc_experiment: BenchmarkingExperiment[ExampleResults],
-    sample_circuits: list[Sample],
-    capfd: pytest.CaptureFixture[str],
-) -> None:
-    abc_experiment._samples = sample_circuits
-    abc_experiment._process_probabilities = MagicMock()
-    abc_experiment._retrieve_jobs = MagicMock(return_value={"example_id": "some_status"})
-    assert not abc_experiment.collect_data()
-    out, _ = capfd.readouterr()
-    assert out == (
-        "Not all circuits have been sampled. Please wait and try again.\n"
-        "Outstanding Superstaq jobs:\n"
-        "{'example_id': 'some_status'}\n"
-    )
-    abc_experiment._process_probabilities.assert_not_called()
-
-
-def test_collect_data_outstanding_jobs_force(
-    abc_experiment: BenchmarkingExperiment[ExampleResults],
-    sample_circuits: list[Sample],
-    capfd: pytest.CaptureFixture[str],
-) -> None:
-    abc_experiment._samples = sample_circuits
-    abc_experiment._process_probabilities = MagicMock(return_value=pd.DataFrame([{"data": 1.0}]))
-    abc_experiment.samples[0].probabilities = {"00": 1.0, "10": 0.0, "01": 0.0, "11": 0.0}
-    abc_experiment._retrieve_jobs = MagicMock(return_value={"example_id": "some_status"})
-    assert abc_experiment.collect_data(force=True)
-    out, _ = capfd.readouterr()
-    assert out == (
-        "Not all circuits have been sampled. Please wait and try again.\n"
-        "Outstanding Superstaq jobs:\n"
-        "{'example_id': 'some_status'}\n"
-        "Some samples do not have probability results.\n"
-    )
-
-    abc_experiment._process_probabilities.assert_called_once_with([abc_experiment.samples[0]])
-
-    pd.testing.assert_frame_equal(pd.DataFrame([{"data": 1.0}]), abc_experiment.raw_data)
-
-
-def test_compile_circuit(
-    abc_experiment: BenchmarkingExperiment[ExampleResults],
-    sample_circuits: list[Sample],
-) -> None:
-    abc_experiment._samples = sample_circuits
-
-    abc_experiment._service = (mock_service := MagicMock())
-    mock_service.compile.return_value.circuits = (mock_compiled_circuits := MagicMock())
-    abc_experiment.compile_circuits("example_target", additional="kwargs")
-
-    mock_service.compile.assert_called_once_with(
-        [sample_circuits[0].raw_circuit, sample_circuits[1].raw_circuit],
-        target="example_target",
-        additional="kwargs",
-    )
-    assert sample_circuits[0].circuit == mock_compiled_circuits[0]
-    assert sample_circuits[1].circuit == mock_compiled_circuits[1]
+        abc_experiment._validate_circuits(sample_circuits)
 
 
 def test_run_with_callable(
-    abc_experiment: BenchmarkingExperiment[ExampleResults],
+    abc_experiment: ExampleExperiment,
     sample_circuits: list[Sample],
 ) -> None:
-    abc_experiment._samples = sample_circuits
+    abc_experiment.samples = sample_circuits
     test_callable = MagicMock()
     test_callable.return_value = {"01": 0.2, "10": 0.7, "11": 0.1}
 
-    abc_experiment.run_with_callable(test_callable, some="kwargs")
+    results = abc_experiment.run_with_callable(test_callable, some="kwargs")
 
     test_callable.assert_has_calls(
         [
@@ -581,31 +520,348 @@ def test_run_with_callable(
             call(sample_circuits[1].circuit, some="kwargs"),
         ]
     )
-    assert sample_circuits[0].probabilities == {"00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1}
-    assert sample_circuits[1].probabilities == {"00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1}
+
+    assert results.target == "callable"
+    assert results.experiment == abc_experiment
+
+    # Check the data is stored
+    pd.testing.assert_frame_equal(
+        results.data,
+        pd.DataFrame(
+            [
+                {"circuit": 1, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1},
+                {"circuit": 2, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1},
+            ]
+        ),
+        check_like=True,
+    )
+
+
+def test_run_with_callable_mixd_keys(
+    abc_experiment: ExampleExperiment,
+    sample_circuits: list[Sample],
+) -> None:
+    abc_experiment.samples = sample_circuits
+    test_callable = MagicMock()
+    test_callable.return_value = {1: 0.2, "10": 0.7, 3: 0.1}
+
+    results = abc_experiment.run_with_callable(test_callable, some="kwargs")
+
+    test_callable.assert_has_calls(
+        [
+            call(sample_circuits[0].circuit, some="kwargs"),
+            call(sample_circuits[1].circuit, some="kwargs"),
+        ]
+    )
+
+    assert results.target == "callable"
+    assert results.experiment == abc_experiment
+
+    # Check the data is stored
+    pd.testing.assert_frame_equal(
+        results.data,
+        pd.DataFrame(
+            [
+                {"circuit": 1, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1},
+                {"circuit": 2, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1},
+            ]
+        ),
+        check_like=True,
+    )
 
 
 def test_run_with_callable_bad_bitstring(
-    abc_experiment: BenchmarkingExperiment[ExampleResults],
+    abc_experiment: ExampleExperiment,
     sample_circuits: list[Sample],
 ) -> None:
-    abc_experiment._samples = sample_circuits
+    abc_experiment.samples = sample_circuits
     test_callable = MagicMock()
     test_callable.return_value = {"000": 0.0, "01": 0.2, "10": 0.8}
 
     with pytest.raises(
-        RuntimeError, match="Returned probabilities include an incorrect number of bits."
+        ValueError,
+        match=("The key contains the wrong number of bits. Got 3 entries " "but expected 2 bits."),
     ):
         abc_experiment.run_with_callable(test_callable, some="kwargs")
 
 
-def test_run_with_callable_bad_probabilities(
-    abc_experiment: BenchmarkingExperiment[ExampleResults],
+def test_results_collect_device_counts(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+    results = ExampleResults(
+        target="example_target", experiment=abc_experiment, job=MagicMock(spec=css.Job)
+    )
+    results.job.counts.return_value = [  # type: ignore[union-attr]
+        {
+            "00": 20,
+            "01": 5,
+            "11": 10,
+        },
+        {
+            "00": 30,
+            "01": 5,
+        },
+    ]
+
+    df = results._collect_device_counts()
+
+    pd.testing.assert_frame_equal(
+        df,
+        pd.DataFrame(
+            [
+                {"circuit": 1, "00": 20 / 35, "01": 5 / 35, "10": 0.0, "11": 10 / 35},
+                {"circuit": 2, "00": 30 / 35, "01": 5 / 35, "10": 0.0, "11": 0.0},
+            ]
+        ),
+        check_like=True,
+    )
+
+
+def test_results_collect_device_counts_no_job() -> None:
+    results = ExampleResults(target="example_target", experiment=MagicMock(), job=None)
+    with pytest.raises(
+        ValueError,
+        match=("No Superstaq job associated with these results. Cannot collect device counts."),
+    ):
+        results._collect_device_counts()
+
+
+def test_results_from_records(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+    # All accepted types
+    records_1 = {s.uuid: {"01": 1, "10": 3} for s in sample_circuits}
+    records_2 = {s.uuid: {"01": 0.25, "10": 0.75} for s in sample_circuits}
+    records_3 = {s.uuid: {1: 1, 2: 3} for s in sample_circuits}
+    records_4 = {s.uuid: {1: 0.25, 2: 0.75} for s in sample_circuits}
+
+    records_list = [records_1, records_2, records_3, records_4]
+
+    for record in records_list:
+        results = abc_experiment.results_from_records(record)  # type: ignore[arg-type]
+        pd.testing.assert_frame_equal(
+            results.data,
+            pd.DataFrame(
+                [{"circuit": n + 1, "00": 0.0, "01": 0.25, "10": 0.75, "11": 0.0} for n in range(2)]
+            ),
+        )
+
+
+def test_results_from_records_bad_input(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+    # Warn for missing samples
+    with pytest.warns(
+        UserWarning,
+        match=re.escape(
+            f"The following samples are missing records: {str(sample_circuits[1].uuid)}. These "
+            "will not be included in the results."
+        ),
+    ):
+        abc_experiment.results_from_records({sample_circuits[0].uuid: {"00": 10}})
+
+    # Warn for spurious records
+    new_uuid = uuid.uuid4()
+    with pytest.warns(
+        UserWarning,
+        match=re.escape("Unable to find matching sample for 1 record(s)."),
+    ):
+        abc_experiment.results_from_records({new_uuid: {"00": 10}})
+
+    # Error when processing samples
+    with pytest.raises(ValueError, match=re.escape("No non-zero counts.")):
+        abc_experiment.results_from_records({sample_circuits[0].uuid: {"00": 0}})
+
+
+def test_canonicalize_bitstring() -> None:
+    assert QCVVExperiment.canonicalize_bitstring("00", 2) == "00"
+    assert QCVVExperiment.canonicalize_bitstring(1, 2) == "01"
+    assert QCVVExperiment.canonicalize_bitstring(5, 4) == "0101"
+
+    with pytest.raises(ValueError, match="The key must be positive. Instead got -2."):
+        QCVVExperiment.canonicalize_bitstring(-2, 4)
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "The key is too large to be encoded with 4 qubits. Got 72 " "but expected less than 16."
+        ),
+    ):
+        QCVVExperiment.canonicalize_bitstring(72, 4)
+
+    with pytest.raises(
+        ValueError,
+        match=("The key contains the wrong number of bits. Got 5 entries " "but expected 4 bits."),
+    ):
+        QCVVExperiment.canonicalize_bitstring("01010", 4)
+
+    with pytest.raises(ValueError, match="All entries in the bitstring must be 0 or 1. Got 1234."):
+        QCVVExperiment.canonicalize_bitstring("1234", 4)
+
+    with pytest.raises(TypeError, match="Key must either be `numbers.Integral` or `str`."):
+        QCVVExperiment.canonicalize_bitstring(3.141, 4)  # type: ignore[arg-type]
+
+
+def test_canonicalize_probabilities() -> None:
+    p1 = {0: 0.1, 1: 0.6, 3: 0.3}
+    p2 = {0: 1, 1: 6, 3: 3}
+    p3 = {"00": 0.1, "01": 0.6, "11": 0.3}
+    p4 = {"00": 1, "01": 6, "11": 3}
+    p_list: list[dict[str, int] | dict[str, float] | dict[int, int] | dict[int, float]] = [
+        p1,
+        p2,
+        p3,
+        p4,
+    ]
+    for p in p_list:
+        assert QCVVExperiment.canonicalize_probabilities(p, 2) == {
+            "00": 0.1,
+            "01": 0.6,
+            "10": 0.0,
+            "11": 0.3,
+        }
+
+    # Test for empty dictionary
+    assert QCVVExperiment.canonicalize_probabilities({}, 2) == {}
+
+
+def test_canonicalize_probabilities_bad_input() -> None:
+
+    # Negative counts
+    with pytest.raises(ValueError, match="Probabilities/counts must be positive."):
+        QCVVExperiment.canonicalize_probabilities({0: -2}, 2)
+
+    # No non-zero counts
+    with pytest.raises(ValueError, match="No non-zero counts."):
+        QCVVExperiment.canonicalize_probabilities({0: 0, 1: 0}, 2)
+
+    # Negative probabilities
+    with pytest.raises(ValueError, match="Probabilities/counts must be positive."):
+        QCVVExperiment.canonicalize_probabilities({0: 0.0, 1: -0.5}, 2)
+
+
+def test_experiment_get_item(
+    abc_experiment: ExampleExperiment,
     sample_circuits: list[Sample],
 ) -> None:
-    abc_experiment._samples = sample_circuits
-    test_callable = MagicMock()
-    test_callable.return_value = {"00": 0.0, "01": 0.2, "10": 0.7, "11": 0.09}
+    abc_experiment.samples = sample_circuits
 
-    with pytest.raises(RuntimeError, match="Returned probabilities do not sum to 1.0."):
-        abc_experiment.run_with_callable(test_callable, some="kwargs")
+    for k, _ in enumerate(sample_circuits):
+        assert abc_experiment[k] == sample_circuits[k]
+        assert abc_experiment[sample_circuits[k].uuid] == sample_circuits[k]
+        assert abc_experiment[str(sample_circuits[k].uuid)] == sample_circuits[k]
+
+    with pytest.raises(TypeError, match="Key must be int, str or uuid.UUID"):
+        _ = abc_experiment[3.141]  # type: ignore[index]
+
+    with pytest.raises(
+        KeyError, match=re.escape("No sample found with UUID b55adabc-39c4-4f7b-a84d-906adaf0897e")
+    ):
+        _ = abc_experiment["b55adabc-39c4-4f7b-a84d-906adaf0897e"]
+
+    with pytest.raises(
+        RuntimeError, match="Multiple samples found with matching key. Something has gone wrong."
+    ):
+        # Manually set duplicate sample uuids
+        abc_experiment.samples[0].uuid = abc_experiment.samples[1].uuid
+        _ = abc_experiment[sample_circuits[0].uuid]
+
+
+def test_map_records_to_samples(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+
+    records = {
+        0: {0: 0.1, 1: 0.6, 3: 0.3},
+        sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
+    }
+    mapped_samples = abc_experiment._map_records_to_samples(records)  # type: ignore[arg-type]
+    assert mapped_samples == {
+        sample_circuits[0]: {0: 0.1, 1: 0.6, 3: 0.3},
+        sample_circuits[1]: {0: 4, 1: 6, 3: 2},
+    }
+
+
+def test_map_records_to_samples_missing_key(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+    with pytest.warns(
+        UserWarning, match=re.escape("Unable to find matching sample for 1 record(s).")
+    ):
+        with pytest.warns(
+            UserWarning,
+            match=(
+                f"The following samples are missing records: {sample_circuits[0].uuid}. "
+                "These will not be included in the results."
+            ),
+        ):
+            abc_experiment._map_records_to_samples(
+                {
+                    5: {0: 0.1, 1: 0.6, 3: 0.3},
+                    sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
+                }
+            )
+
+
+def test_map_records_to_samples_bad_key_type(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+    # Bad key type
+    with pytest.raises(
+        TypeError,
+        match=re.escape("Key must be int, str or uuid.UUID, not <class 'float'>"),
+    ):
+        abc_experiment._map_records_to_samples(
+            {
+                5.0: {0: 0.1, 1: 0.6, 3: 0.3},  # type: ignore[dict-item]
+                sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
+            }
+        )
+
+
+def test_map_records_to_samples_duplicate_keys(
+    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+) -> None:
+    abc_experiment.samples = sample_circuits
+    with pytest.raises(
+        KeyError,
+        match=re.escape(
+            f"Duplicate records found for sample with uuid: {str(sample_circuits[1].uuid)}."
+        ),
+    ):
+        abc_experiment._map_records_to_samples(
+            {
+                1: {0: 0.1, 1: 0.6, 3: 0.3},
+                sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
+            }
+        )
+
+
+@patch("supermarq.qcvv.base_experiment.qcvv_resolver")
+def test_dump_and_load(
+    mock_resolver: MagicMock,
+    tmp_path_factory: pytest.TempPathFactory,
+    abc_experiment: ExampleExperiment,
+    sample_circuits: list[Sample],
+) -> None:
+    temp_resolver = {
+        "supermarq.qcvv.Sample": Sample,
+        "supermarq.qcvv.ExampleExperiment": ExampleExperiment,
+    }
+    mock_resolver.side_effect = lambda x: temp_resolver.get(x)
+
+    filename = tmp_path_factory.mktemp("tempdir") / "file.json"
+    abc_experiment.samples = sample_circuits
+    abc_experiment.to_file(filename)
+    exp = ExampleExperiment.from_file(filename)
+
+    assert exp.samples == abc_experiment.samples
+    assert exp.num_qubits == abc_experiment.num_qubits
+    assert exp.num_circuits == abc_experiment.num_circuits
+    assert exp.cycle_depths == abc_experiment.cycle_depths

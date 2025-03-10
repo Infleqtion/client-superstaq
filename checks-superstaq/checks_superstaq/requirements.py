@@ -137,7 +137,7 @@ def _are_pip_requirements(requirements: list[str]) -> bool:
 
 
 def _get_package_name(requirement: str) -> str:
-    return re.split(">|<|~|=", requirement)[0]
+    return re.split(r"[><~=@]", requirement)[0]
 
 
 def _sort_requirements(requirements: list[str]) -> tuple[bool, list[str]]:
