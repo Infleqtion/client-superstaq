@@ -37,8 +37,6 @@ if TYPE_CHECKING:
 class SU2Results(QCVVResults):
     """Data structure for the SU2 experiment results."""
 
-    experiment_name = "SU2"
-
     _two_qubit_gate_fidelity: float | None = None
     """Estimated two qubit gate fidelity"""
     _two_qubit_gate_fidelity_std: float | None = None
@@ -224,7 +222,7 @@ class SU2(QCVVExperiment[SU2Results]):
         """The two qubit gate to be benchmarked"""
 
         super().__init__(
-            num_qubits=2,
+            qubits=2,
             num_circuits=num_circuits,
             cycle_depths=cycle_depths,
             random_seed=random_seed,
@@ -358,7 +356,7 @@ class SU2(QCVVExperiment[SU2Results]):
         Returns:
             The deserialized experiment object.
         """
-        kwargs.pop("num_qubits")  # Number of qubits is fixed for SU2
+        kwargs.pop("qubits")  # Number of qubits is fixed for SU2
         return cls(
             num_circuits=num_circuits,
             _samples=samples,
