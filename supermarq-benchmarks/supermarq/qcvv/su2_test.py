@@ -145,7 +145,7 @@ def test_analyse_results(tmp_path: pathlib.Path, su2_experiment: SU2) -> None:
             [
                 {
                     "num_two_qubit_gates": 2,
-                    "circuit_index": 1,
+                    "circuit_realization": 1,
                     "00": decay(2),
                     "01": 0.0,
                     "10": 0.0,
@@ -153,7 +153,7 @@ def test_analyse_results(tmp_path: pathlib.Path, su2_experiment: SU2) -> None:
                 },
                 {
                     "num_two_qubit_gates": 4,
-                    "circuit_index": 1,
+                    "circuit_realization": 1,
                     "00": decay(4),
                     "01": 0.0,
                     "10": 0.0,
@@ -161,7 +161,7 @@ def test_analyse_results(tmp_path: pathlib.Path, su2_experiment: SU2) -> None:
                 },
                 {
                     "num_two_qubit_gates": 6,
-                    "circuit_index": 1,
+                    "circuit_realization": 1,
                     "00": decay(6),
                     "01": 0.0,
                     "10": 0.0,
@@ -169,7 +169,7 @@ def test_analyse_results(tmp_path: pathlib.Path, su2_experiment: SU2) -> None:
                 },
                 {
                     "num_two_qubit_gates": 8,
-                    "circuit_index": 1,
+                    "circuit_realization": 1,
                     "00": decay(8),
                     "01": 0.0,
                     "10": 0.0,
