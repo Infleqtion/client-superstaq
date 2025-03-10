@@ -2,6 +2,7 @@
 
 from .base_experiment import QCVVExperiment, QCVVResults, Sample
 from .irb import IRB, IRBResults, RBResults
+from .su2 import SU2, SU2Results
 from .xeb import XEB, XEBResults
 
 __all__ = [
@@ -12,5 +13,7 @@ __all__ = [
     "IRBResults",
     "XEB",
     "XEBResults",
+    "SU2",
+    "SU2Results",
     "RBResults",
 ]
