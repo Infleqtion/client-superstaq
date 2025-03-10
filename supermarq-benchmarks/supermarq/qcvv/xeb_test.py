@@ -29,8 +29,11 @@ from supermarq.qcvv import XEB, XEBResults
 
 
 def test_xeb_init() -> None:
+    q0, q1, q2 = cirq.LineQubit.range(3)
+
     experiment = XEB(num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
+    assert experiment.qubits == [q0, q1]
     assert experiment.two_qubit_gate == cirq.CZ
     assert experiment.single_qubit_gate_set == [
         cirq.PhasedXZGate(
@@ -43,6 +46,7 @@ def test_xeb_init() -> None:
 
     experiment = XEB(two_qubit_gate=cirq.CX, num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
+    assert experiment.qubits == [q0, q1]
     assert experiment.two_qubit_gate == cirq.CX
     assert experiment.single_qubit_gate_set == [
         cirq.PhasedXZGate(
@@ -57,6 +61,17 @@ def test_xeb_init() -> None:
     assert experiment.num_qubits == 2
     assert experiment.two_qubit_gate == cirq.CZ
     assert experiment.single_qubit_gate_set == [cirq.X]
+
+    experiment = XEB(two_qubit_gate=None, num_circuits=10, cycle_depths=[1, 3, 5])
+    assert experiment.num_qubits == 2
+    assert experiment.qubits == [q0, q1]
+    assert experiment.two_qubit_gate is None
+
+    experiment = XEB(two_qubit_gate=cirq.CZ(q1, q2), num_circuits=10, cycle_depths=[1, 3, 5])
+    assert experiment.num_qubits == 2
+    assert experiment.qubits == [q1, q2]
+    assert experiment.two_qubit_gate == cirq.CZ
+    assert all(sample.circuit.all_qubits() == {q1, q2} for sample in experiment.samples)
 
 
 @pytest.fixture
