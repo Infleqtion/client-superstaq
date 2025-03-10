@@ -18,22 +18,22 @@ from __future__ import annotations
 import random
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import Any, Self
 
 import cirq
+import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-import scipy
+import numpy.typing as npt
+import scipy.optimize
 import seaborn as sns
 import tqdm
 import tqdm.contrib
 import tqdm.contrib.itertools
 
-from supermarq.qcvv import BenchmarkingExperiment, BenchmarkingResults, Sample
+from supermarq.qcvv import QCVVExperiment, QCVVResults, Sample
 
 
-def _parallel(
-    x: np.typing.NDArray[np.float_], y: np.typing.NDArray[np.float_], tol: float = 1e-5
-) -> bool:
+def _parallel(x: npt.NDArray[np.float_], y: npt.NDArray[np.float_], tol: float = 1e-5) -> bool:
     """Checks whether two numpy arrays are parallel, as determined by the cosine distance between
     them.
 
@@ -48,33 +48,160 @@ def _parallel(
     return np.abs(np.dot(x, np.conj(y)) / (np.linalg.norm(x) * np.linalg.norm(y))) >= 1.0 - tol
 
 
-@dataclass(frozen=True)
-class SSBResults(BenchmarkingResults):
+def _exp_decay(
+    x: npt.NDArray[np.float_], A: float, alpha: float, B: float
+) -> npt.NDArray[np.float_]:
+    r"""Exponential decay of the form
+
+    .. math::
+
+        A \alpha^x + B
+
+    Args:
+        x: x
+        A: Decay constant
+        alpha: Decay coefficient
+        B: Additive constant
+    Returns:
+        Exponential decay applied to x.
+    """
+    return A * (alpha**x) + B
+
+
+@dataclass
+class SSBResults(QCVVResults):
     """Results from an SSB experiment."""
 
-    cz_fidelity_estimate: float
-    """Estimated cycle fidelity."""
-    cz_fidelity_estimate_std: float
-    """Standard deviation for the cycle fidelity estimate."""
+    _cz_fidelity_estimate: float | None = None
+    """Estimated CZ fidelity."""
+    _cz_fidelity_estimate_std: float | None = None
+    """Standard deviation for the CZ fidelity estimate."""
+    _fit: tuple[npt.NDArray[np.float_], npt.NDArray[np.float_]] | None = None
+    """The fitted values"""
 
-    experiment_name = "SSB"
+    @property
+    def cz_fidelity_estimate(self) -> float:
+        """Estimated CZ fidelity."""
+        if self._cz_fidelity_estimate is None:
+            raise self._not_analyzed
+        return self._cz_fidelity_estimate
+
+    @property
+    def cz_fidelity_estimate_std(self) -> float:
+        """Standard deviation for the CZ fidelity estimate."""
+        if self._cz_fidelity_estimate_std is None:
+            raise self._not_analyzed
+        return self._cz_fidelity_estimate_std
+
+    def _analyze(self) -> None:
+        """Analyse the results and calculate the estimated CZ gate fidelity.
+
+        Args:
+            plot_results (optional): Whether to generate the data plots. Defaults to True.
+
+        Returns:
+           The final results from the experiment.
+        """
+        if self.data is None:
+            raise RuntimeError("No data stored. Cannot perform analysis.")
+
+        xx = self.data["num_cz_gates"]
+        yy = self.data["0" * self.num_qubits]
+
+        self._fit = scipy.optimize.curve_fit(
+            _exp_decay,
+            xx,
+            yy,
+            p0=(1.0 - 2**-self.num_qubits, 0.99, 2**-self.num_qubits),
+            bounds=(0, 1),
+            max_nfev=2000,
+        )
+        assert self._fit is not None
+
+        self._cz_fidelity_estimate = self._fit[0][1]
+        self._cz_fidelity_estimate_std = self._fit[1][1][1]
+
+    def plot_results(self, filename: str | None = None) -> plt.Figure:
+        """Plot the experiment data and the corresponding fits. The shaded upper and lower limits
+        of the shaded region indicate the fits at +/- 1 standard deviation in all fitted parameters.
+
+        Args:
+            filename: Optional argument providing a filename to save the plots to. Defaults to None,
+                indicating not to save the plot.
+
+        Returns:
+            A single matplotlib figure with the experimental data and corresponding fits.
+
+        Raises:
+            RuntimeError: If there is no data stored.
+        """
+        if self.data is None:
+            raise RuntimeError("No data stored. Cannot perform analysis.")
+        assert self._fit is not None
+
+        fig, axs = plt.subplots(1, 1)
+        sns.scatterplot(data=self.data, x="num_cz_gates", y="0" * self.num_qubits, ax=axs)
+        xx = np.linspace(0, np.max(self.data.num_cz_gates))
+        axs.plot(
+            xx,
+            _exp_decay(xx, *self._fit[0]),
+            color="tab:blue",
+            linestyle="--",
+        )
+        axs.fill_between(
+            xx,
+            _exp_decay(xx, *(self._fit[0] - np.sqrt(np.diag(self._fit[1])))),
+            _exp_decay(xx, *(self._fit[0] + np.sqrt(np.diag(self._fit[1])))),
+            alpha=0.5,
+            color="tab:blue",
+        )
+
+        if filename is not None:
+            fig.savefig(filename, bbox_inches="tight")
+
+        return fig
+
+    def print_results(self) -> None:
+        print(
+            f"Estimated CZ fidelity: {self.cz_fidelity_estimate:.5} "
+            f"+/- {self.cz_fidelity_estimate_std:.5}"
+        )
 
 
-class SSB(BenchmarkingExperiment[SSBResults]):
-    """Symmetric Stabilizer Benchmarking"""
+class SSB(QCVVExperiment[SSBResults]):
+    """Symmetric Stabilizer Benchmarking. A benchmarking algorithm for determining the CZ fidelity
+    of a device. Specifically designed for neutral atom devices where CZ-gates mediated by Rydberg
+    interactions are the native entangling gate.
+
+    See: https://arxiv.org/abs/2407.20184
+    """
 
     def __init__(
         self,
+        num_circuits: int,
+        cycle_depths: Iterable[int],
+        *,
+        random_seed: int | np.random.Generator | None = None,
+        _samples: list[Sample] | None = None,
+        **kwargs: str,
     ) -> None:
-        super().__init__(num_qubits=2)
+        """
+        Initializes a cross-entropy benchmarking experiment.
+
+        Args:
+            num_circuits: Number of circuits to sample.
+            cycle_depths: The cycle depths to sample.
+            random_seed: An optional seed to use for randomization.
+        """
+        qubits = cirq.LineQubit.range(2)
 
         # Moments containing parallel rotations. Used to construst the init and rec circuit.
         # Note we avoid using the `cirq.ParallelGate` as this can lead to single qubit gates
         # looking like two qubit gates when building custom noise models.
-        X = cirq.Moment(cirq.rx(np.pi / 2)(self.qubits[0]), cirq.rx(np.pi / 2)(self.qubits[1]))
-        _X = cirq.Moment(cirq.rx(-np.pi / 2)(self.qubits[0]), cirq.rx(-np.pi / 2)(self.qubits[1]))
-        Y = cirq.Moment(cirq.ry(np.pi / 2)(self.qubits[0]), cirq.ry(np.pi / 2)(self.qubits[1]))
-        _Y = cirq.Moment(cirq.ry(-np.pi / 2)(self.qubits[0]), cirq.ry(-np.pi / 2)(self.qubits[1]))
+        X = cirq.Moment(cirq.rx(np.pi / 2)(qubits[0]), cirq.rx(np.pi / 2)(qubits[1]))
+        _X = cirq.Moment(cirq.rx(-np.pi / 2)(qubits[0]), cirq.rx(-np.pi / 2)(qubits[1]))
+        Y = cirq.Moment(cirq.ry(np.pi / 2)(qubits[0]), cirq.ry(np.pi / 2)(qubits[1]))
+        _Y = cirq.Moment(cirq.ry(-np.pi / 2)(qubits[0]), cirq.ry(-np.pi / 2)(qubits[1]))
 
         # Table I of https://arxiv.org/pdf/2407.20184
         self._stabilizer_states = [
@@ -122,6 +249,16 @@ class SSB(BenchmarkingExperiment[SSBResults]):
             [Y, X, Y, X],
         ]
 
+        super().__init__(
+            qubits=qubits,
+            num_circuits=num_circuits,
+            cycle_depths=cycle_depths,
+            random_seed=random_seed,
+            results_cls=SSBResults,
+            _samples=_samples,
+            **kwargs,
+        )
+
     ###################
     # Private Methods #
     ###################
@@ -142,12 +279,13 @@ class SSB(BenchmarkingExperiment[SSBResults]):
         random_circuits = []
         min_depth = min(cycle_depths)
         max_depth = max(cycle_depths)
-        assert min_depth >= 2
+        if min_depth < 2:
+            raise ValueError("Cannot perform SSB with a cycle depth of 1.")
 
-        for _, depth in tqdm.contrib.itertools.product(
+        for k, depth in tqdm.contrib.itertools.product(
             range(num_circuits), cycle_depths, desc="Building circuits"
         ):
-            sss_idx = random.randint(0, 11)
+            sss_idx = self._rng.integers(0, 11)
             circuit = self._sss_init_circuits(sss_idx)
             for _ in range(depth - 2):
                 circuit += self._random_parallel_qubit_rotation()
@@ -158,34 +296,15 @@ class SSB(BenchmarkingExperiment[SSBResults]):
 
             random_circuits.append(
                 Sample(
-                    raw_circuit=circuit,
+                    circuit=circuit,
                     data={
                         "num_cz_gates": depth,
                         "initial_sss_index": sss_idx,
                     },
+                    circuit_realization=k,
                 )
             )
         return random_circuits
-
-    def _process_probabilities(self, samples: Sequence[Sample]) -> pd.DataFrame:
-        """Processes the probabilities generated by sampling the circuits into the data structures
-        needed for analyzing the results.
-
-        Args:
-            samples: The list of samples to process the results from.
-
-        Returns:
-            A data frame of the full results needed to analyse the experiment.
-        """
-        records = []
-        for sample in samples:
-            records.append(
-                {
-                    **sample.data,
-                    **sample.probabilities,
-                }
-            )
-        return pd.DataFrame(records)
 
     def _random_parallel_qubit_rotation(self) -> cirq.Moment:
         """Chooses randomly from {X, Y, -X, -Y} and return a moment with this gate acting on both
@@ -195,7 +314,7 @@ class SSB(BenchmarkingExperiment[SSBResults]):
         Returns:
             The randomly chosen rotation gate acting on both qubits.
         """
-        gate = random.choice(
+        gate = self._rng.choice(
             [cirq.rx(np.pi / 2), cirq.rx(-np.pi / 2), cirq.ry(np.pi / 2), cirq.ry(-np.pi / 2)]
         )
         return cirq.Moment(gate(self.qubits[0]), gate(self.qubits[1]))
@@ -248,95 +367,36 @@ class SSB(BenchmarkingExperiment[SSBResults]):
             cirq.X(self.qubits[1]),
         )
 
-    def _fit_decay(self) -> tuple[np.typing.NDArray[np.float_], np.typing.NDArray[np.float_]]:
-        """Fits the exponential decay function to the survivial probability as a function of
-        the number of CZ gates.
+    def _json_dict_(self) -> dict[str, Any]:
+        """Converts the experiment to a json-able dictionary that can be used to recreate the
+        experiment object. Note that the state of the random number generator is not stored.
 
         Returns:
-            Tuple of the decay fit parameters and their standard deviations.
+            Json-able dictionary of the experiment data.
         """
+        return super()._json_dict_()
 
-        xx = self.raw_data["num_cz_gates"]
-        yy = self.raw_data["0" * self.num_qubits]
-
-        popt, pcov = scipy.optimize.curve_fit(
-            self.exp_decay,
-            xx,
-            yy,
-            p0=(1.0 - 2**-self.num_qubits, 0.99, 2**-self.num_qubits),
-            bounds=(0, 1),
-            max_nfev=2000,
-        )
-
-        return popt, np.sqrt(np.diag(pcov))
-
-    @staticmethod
-    def exp_decay(
-        x: np.typing.NDArray[np.float_], A: float, alpha: float, B: float
-    ) -> np.typing.NDArray[np.float_]:
-        r"""Exponential decay of the form
-
-        .. math::
-
-            A \alpha^x + B
+    @classmethod
+    def _from_json_dict_(
+        cls,
+        samples: list[Sample],
+        num_circuits: int,
+        cycle_depths: list[int],
+        **kwargs: Any,
+    ) -> Self:
+        """Creates a experiment from a dictionary of the data.
 
         Args:
-            x: x
-            A: Decay constant
-            alpha: Decay coefficient
-            B: Additive constant
-        Returns:
-            Exponential decay applied to x.
-        """
-        return A * (alpha**x) + B
-
-    ###################
-    # Public Methods  #
-    ###################
-    def analyze_results(self, plot_results: bool = True) -> SSBResults:
-        """Analyse the results and calculate the estimated CZ gate fidelity.
-
-        Args:
-            plot_results (optional): Whether to generate the data plots. Defaults to True.
+            dictionary: Dict containing the experiment data.
 
         Returns:
-           The final results from the experiment.
+            The deserialized experiment object.
         """
-        fit = self._fit_decay()
-        cz_fidelity = fit[0][1]
-        cz_fidelity_std = fit[1][1]
+        kwargs.pop("qubits")  # Don't need for SSB
 
-        if plot_results:
-            self.plot_results()
-
-        return SSBResults(
-            target="& ".join(self.targets),
-            total_circuits=len(self.samples),
-            cz_fidelity_estimate=cz_fidelity,
-            cz_fidelity_estimate_std=cz_fidelity_std,
-        )
-
-    def plot_results(self) -> None:
-        """Plot the experiment data and the corresponding fits. The shaded upper and lower limits
-        of the shaded region indicate the fits at +/- 1 standard deviation in all fitted parameters.
-        """
-        plot = sns.scatterplot(
-            data=self.raw_data,
-            x="num_cz_gates",
-            y="0" * self.num_qubits,
-        )
-        fit = self._fit_decay()
-        xx = np.linspace(0, np.max(self.raw_data.num_cz_gates))
-        plot.plot(
-            xx,
-            self.exp_decay(xx, *fit[0]),
-            color="tab:blue",
-            linestyle="--",
-        )
-        plot.fill_between(
-            xx,
-            self.exp_decay(xx, *(fit[0] - fit[1])),
-            self.exp_decay(xx, *(fit[0] + fit[1])),
-            alpha=0.5,
-            color="tab:blue",
+        return cls(
+            num_circuits=num_circuits,
+            cycle_depths=cycle_depths,
+            _samples=samples,
+            **kwargs,
         )
