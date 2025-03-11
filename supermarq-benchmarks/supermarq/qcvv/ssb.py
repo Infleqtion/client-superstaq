@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Any, Self
+from typing import TYPE_CHECKING, Self
 
 import cirq
 import matplotlib.pyplot as plt
@@ -30,6 +30,9 @@ import tqdm.contrib
 import tqdm.contrib.itertools
 
 from supermarq.qcvv import QCVVExperiment, QCVVResults, Sample
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 def _parallel(x: npt.NDArray[np.float_], y: npt.NDArray[np.float_], tol: float = 1e-5) -> bool:
