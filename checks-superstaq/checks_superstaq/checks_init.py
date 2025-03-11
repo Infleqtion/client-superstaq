@@ -2,6 +2,8 @@ import importlib.resources
 import click
 import pathlib
 
+import site
+
 import importlib
 import shutil
 
@@ -17,6 +19,8 @@ def checks_init() -> None:
     if not checks_folder.exists():
         checks_folder.mkdir()
 
+    site.addsitedir(checks_folder)
+
     with importlib.resources.path("checks_superstaq", CHECKS_FILE) as base_checks_file:
         shutil.copyfile(base_checks_file, checks_folder/"checks.py")
 
@@ -29,3 +33,7 @@ def checks_init() -> None:
             shutil.copyfile(template_toml, CONFIG_FILE)
 
 
+@click.command()
+def pytest() -> None:
+    import checks.checks
+    checks.checks.pytest()
