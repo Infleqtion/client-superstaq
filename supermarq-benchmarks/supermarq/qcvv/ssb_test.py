@@ -201,7 +201,7 @@ def test_ssb_analyse_results(tmp_path: pathlib.Path, ssb_experiment: SSB) -> Non
 
     # Calculated by hand
     assert results.cz_fidelity_estimate == pytest.approx(0.81358891968418)
-    assert results.cz_fidelity_estimate_std == pytest.approx(0.020908036231898408)
+    assert results.cz_fidelity_estimate_std == pytest.approx(0.14459611416597062)
 
     assert pathlib.Path(tmp_path / "example.png").exists()
 

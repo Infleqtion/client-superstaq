@@ -118,7 +118,7 @@ class SSBResults(QCVVResults):
         assert self._fit is not None
 
         self._cz_fidelity_estimate = self._fit[0][1]
-        self._cz_fidelity_estimate_std = self._fit[1][1][1]
+        self._cz_fidelity_estimate_std = np.sqrt(self._fit[1][1][1])
 
     def plot_results(self, filename: str | None = None) -> plt.Figure:
         """Plot the experiment data and the corresponding fits. The shaded upper and lower limits
@@ -139,21 +139,23 @@ class SSBResults(QCVVResults):
         assert self._fit is not None
 
         fig, axs = plt.subplots(1, 1)
-        sns.scatterplot(data=self.data, x="num_cz_gates", y="0" * self.num_qubits, ax=axs)
-        xx = np.linspace(0, np.max(self.data.num_cz_gates))
-        axs.plot(
-            xx,
-            _exp_decay(xx, *self._fit[0]),
-            color="tab:blue",
-            linestyle="--",
+        sns.scatterplot(
+            data=self.data, x="num_cz_gates", y="0" * self.num_qubits, ax=axs, label="Data"
         )
+        xx = np.linspace(0, np.max(self.data.num_cz_gates))
+        axs.plot(xx, _exp_decay(xx, *self._fit[0]), color="tab:blue", linestyle="--", label="Fit")
         axs.fill_between(
             xx,
             _exp_decay(xx, *(self._fit[0] - np.sqrt(np.diag(self._fit[1])))),
             _exp_decay(xx, *(self._fit[0] + np.sqrt(np.diag(self._fit[1])))),
-            alpha=0.5,
+            alpha=0.35,
             color="tab:blue",
+            label="1s.d C.I.",
         )
+        axs.legend()
+
+        axs.set_xlabel("Number of CZ Gates")
+        axs.set_ylabel("Final state probability")
 
         if filename is not None:
             fig.savefig(filename, bbox_inches="tight")
