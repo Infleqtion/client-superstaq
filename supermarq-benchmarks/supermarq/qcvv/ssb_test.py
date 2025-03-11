@@ -16,7 +16,6 @@
 
 from __future__ import annotations
 
-import itertools
 import pathlib
 import re
 from unittest.mock import MagicMock
@@ -43,6 +42,9 @@ def test_ssb_init() -> None:
     assert len(experiment._reconciliation_rotation) == 12
     for rot in experiment._reconciliation_rotation:
         assert len(rot) == 4
+
+    with pytest.raises(ValueError, match="Cannot perform SSB with a cycle depth of 1."):
+        SSB(num_circuits=10, cycle_depths=[1, 2, 3, 5])
 
 
 @pytest.fixture
@@ -77,11 +79,12 @@ def test_sss_init_circuits(ssb_experiment: SSB) -> None:
         cirq.X(q1),
         cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
         cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
-        cirq.CZ(q0, q1),
+        cirq.CZ(q0, q1).with_tags("no_compile"),
         cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
         cirq.Moment(cirq.ry(-np.pi / 2)(q0), cirq.ry(-np.pi / 2)(q1)),
         cirq.Moment(cirq.rx(-np.pi / 2)(q0), cirq.rx(-np.pi / 2)(q1)),
     )
+
 
 def test_sss_reconciliation_circuit(ssb_experiment: SSB) -> None:
     init_circuit = ssb_experiment._sss_init_circuits(4)
@@ -92,7 +95,7 @@ def test_sss_reconciliation_circuit(ssb_experiment: SSB) -> None:
     assert recon_circuit == cirq.Circuit(
         cirq.Moment(cirq.rx(-np.pi / 2)(q0), cirq.rx(-np.pi / 2)(q1)),
         cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
-        cirq.CZ(q0, q1),
+        cirq.CZ(q0, q1).with_tags("no_compile"),
         cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
         cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
         cirq.X(q0),
@@ -103,64 +106,44 @@ def test_sss_reconciliation_circuit(ssb_experiment: SSB) -> None:
 def test_build_ssb_circuit(ssb_experiment: SSB) -> None:
 
     ssb_experiment._rng = (rng := MagicMock())
-    rng.choice.side_effect = [
-        np.array([[cirq.X, cirq.Y], [cirq.Z, cirq.Y], [cirq.Y, cirq.Z]]),
-        np.array([[cirq.X, cirq.Z], [cirq.X, cirq.X], [cirq.Y, cirq.Y]]),
-    ]
-    circuits = ssb_experiment._build_circuits(num_circuits=2, cycle_depths=[2])
+    rng.integers.return_value = 4
+    rng.choice.return_value = cirq.rx(np.pi / 2)
+    circuits = ssb_experiment._build_circuits(num_circuits=1, cycle_depths=[2])
 
-    assert len(circuits) == 2
+    assert len(circuits) == 1
 
-    qbs = ssb_experiment.qubits
+    q0, q1 = ssb_experiment.qubits
     cirq.testing.assert_same_circuits(
         circuits[0].circuit,
         cirq.Circuit(
-            [
-                cirq.X(qbs[0]),
-                cirq.Y(qbs[1]),
-                cirq.TaggedOperation(cirq.CZ(*qbs), "no_compile"),
-                cirq.Z(qbs[0]),
-                cirq.Y(qbs[1]),
-                cirq.TaggedOperation(cirq.CZ(*qbs), "no_compile"),
-                cirq.Y(qbs[0]),
-                cirq.Z(qbs[1]),
-                cirq.measure(qbs),
-            ]
+            # Init circuit
+            cirq.X(q0),
+            cirq.X(q1),
+            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
+            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
+            cirq.CZ(q0, q1).with_tags("no_compile"),
+            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
+            cirq.Moment(cirq.ry(-np.pi / 2)(q0), cirq.ry(-np.pi / 2)(q1)),
+            cirq.Moment(cirq.rx(-np.pi / 2)(q0), cirq.rx(-np.pi / 2)(q1)),
+            # Intermediate ops
+            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
+            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
+            # Reconcilliation
+            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
+            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
+            cirq.CZ(q0, q1).with_tags("no_compile"),
+            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
+            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
+            cirq.X(q0),
+            cirq.X(q1),
+            cirq.Moment(
+                cirq.measure(cirq.LineQubit(0), cirq.LineQubit(1)),
+            ),
         ),
     )
     assert circuits[0].data == {
-        "circuit_depth": 5,
-        "cycle_depth": 2,
-        "two_qubit_gate": "CZ",
-        "exact_00": 1.0,
-        "exact_01": 0.0,
-        "exact_10": 0.0,
-        "exact_11": 0.0,
-    }
-    cirq.testing.assert_same_circuits(
-        circuits[1].circuit,
-        cirq.Circuit(
-            [
-                cirq.X(qbs[0]),
-                cirq.Z(qbs[1]),
-                cirq.TaggedOperation(cirq.CZ(*qbs), "no_compile"),
-                cirq.X(qbs[0]),
-                cirq.X(qbs[1]),
-                cirq.TaggedOperation(cirq.CZ(*qbs), "no_compile"),
-                cirq.Y(qbs[0]),
-                cirq.Y(qbs[1]),
-                cirq.measure(qbs),
-            ]
-        ),
-    )
-    assert circuits[1].data == {
-        "circuit_depth": 5,
-        "cycle_depth": 2,
-        "two_qubit_gate": "CZ",
-        "exact_00": 0.0,
-        "exact_01": 0.0,
-        "exact_10": 1.0,
-        "exact_11": 0.0,
+        "initial_sss_index": 4,
+        "num_cz_gates": 2,
     }
 
 
@@ -170,106 +153,57 @@ def test_ssb_analyse_results(tmp_path: pathlib.Path, ssb_experiment: SSB) -> Non
     results.data = pd.DataFrame(
         [
             {
-                "circuit_realization": 0,
-                "cycle_depth": 1,
-                "circuit_depth": 3,
+                "initial_sss_index": 4,
+                "num_cz_gates": 2,
                 "00": 1.0,
                 "01": 0.0,
                 "10": 0.0,
                 "11": 0.0,
-                "exact_00": 1.0,
-                "exact_01": 0.0,
-                "exact_10": 0.0,
-                "exact_11": 0.0,
             },
             {
-                "circuit_realization": 1,
-                "cycle_depth": 1,
-                "circuit_depth": 3,
-                "00": 1.0,
+                "initial_sss_index": 4,
+                "num_cz_gates": 3,
+                "00": 0.9,
                 "01": 0.0,
                 "10": 0.0,
                 "11": 0.0,
-                "exact_00": 0.5,
-                "exact_01": 0.5,
-                "exact_10": 0.0,
-                "exact_11": 0.0,
             },
             {
-                "circuit_realization": 0,
-                "cycle_depth": 5,
-                "circuit_depth": 11,
-                "00": 0.0,
-                "01": 1.0,
+                "initial_sss_index": 4,
+                "num_cz_gates": 4,
+                "00": 0.8,
+                "01": 0.0,
                 "10": 0.0,
                 "11": 0.0,
-                "exact_00": 0.0,
-                "exact_01": 0.75,
-                "exact_10": 0.25,
-                "exact_11": 0.0,
             },
             {
-                "circuit_realization": 1,
-                "cycle_depth": 5,
-                "circuit_depth": 11,
-                "00": 0.0,
+                "initial_sss_index": 4,
+                "num_cz_gates": 5,
+                "00": 0.7,
                 "01": 0.0,
-                "10": 1.0,
+                "10": 0.0,
                 "11": 0.0,
-                "exact_00": 0.0,
-                "exact_01": 0.5,
-                "exact_10": 0.25,
-                "exact_11": 0.25,
             },
             {
-                "circuit_realization": 0,
-                "cycle_depth": 10,
-                "circuit_depth": 21,
-                "00": 0.0,
+                "initial_sss_index": 4,
+                "num_cz_gates": 6,
+                "00": 0.6,
                 "01": 0.0,
-                "10": 0.5,
-                "11": 0.5,
-                "exact_00": 0.2,
-                "exact_01": 0.3,
-                "exact_10": 0.25,
-                "exact_11": 0.25,
-            },
-            {
-                "circuit_realization": 1,
-                "cycle_depth": 10,
-                "circuit_depth": 21,
-                "00": 0.0,
-                "01": 0.0,
-                "10": 0.5,
-                "11": 0.5,
-                "exact_00": 0.1,
-                "exact_01": 0.1,
-                "exact_10": 0.4,
-                "exact_11": 0.4,
+                "10": 0.0,
+                "11": 0.0,
             },
         ]
     )
 
     plot_filename = tmp_path / "example.png"
-    speckle_plot_filename = tmp_path / "example_speckle.png"
 
     results.analyze(plot_filename=plot_filename.as_posix())
-    np.testing.assert_allclose(
-        results.data["sum_p(x)p^(x)"].values, [1.0, 0.5, 0.75, 0.25, 0.25, 0.4]
-    )
-    np.testing.assert_allclose(
-        results.data["sum_p(x)p(x)"].values, [1.0, 0.5, 0.625, 0.375, 0.255, 0.34]
-    )
 
     # Calculated by hand
-    assert results.cycle_fidelity_estimate == pytest.approx(1.0613025)
-    assert results.cycle_fidelity_estimate_std == pytest.approx(0.0597633930)
+    assert results.cz_fidelity_estimate == pytest.approx(0.81358891968418)
+    assert results.cz_fidelity_estimate_std == pytest.approx(0.020908036231898408)
 
     assert pathlib.Path(tmp_path / "example.png").exists()
-
-    # Test the speckle plot
-    results.plot_speckle(filename=speckle_plot_filename.as_posix())
-    assert pathlib.Path(tmp_path / "example_speckle.png").exists()
 
 
 def test_results_no_data() -> None:
@@ -280,19 +214,10 @@ def test_results_no_data() -> None:
     with pytest.raises(RuntimeError, match="No data stored. Cannot plot results."):
         results.plot_results()
 
-    with pytest.raises(RuntimeError, match="No data stored. Cannot plot results."):
-        results.plot_speckle()
-
-    with pytest.raises(
-        RuntimeError, match="No stored dataframe of circuit fidelities. Something has gone wrong."
-    ):
-        results.data = pd.DataFrame()
-        results.plot_results()
-
 
 def test_results_not_analyzed() -> None:
     results = SSBResults(target="example", experiment=MagicMock(), data=None)
-    for attr in ["cycle_fidelity_estimate", "cycle_fidelity_estimate_std"]:
+    for attr in ["cz_fidelity_estimate", "cz_fidelity_estimate_std"]:
         with pytest.raises(
             RuntimeError,
             match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
@@ -312,5 +237,4 @@ def test_dump_and_load(
     assert exp.num_qubits == ssb_experiment.num_qubits
     assert exp.num_circuits == ssb_experiment.num_circuits
     assert exp.cycle_depths == ssb_experiment.cycle_depths
-    assert exp.single_qubit_gate_set == ssb_experiment.single_qubit_gate_set
-    assert exp.two_qubit_gate == ssb_experiment.two_qubit_gate
+    assert exp.samples == ssb_experiment.samples

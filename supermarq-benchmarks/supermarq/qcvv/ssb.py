@@ -15,7 +15,6 @@ See https://arxiv.org/pdf/2407.20184
 """
 from __future__ import annotations
 
-import random
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any, Self
@@ -136,7 +135,7 @@ class SSBResults(QCVVResults):
             RuntimeError: If there is no data stored.
         """
         if self.data is None:
-            raise RuntimeError("No data stored. Cannot perform analysis.")
+            raise RuntimeError("No data stored. Cannot plot results.")
         assert self._fit is not None
 
         fig, axs = plt.subplots(1, 1)
@@ -185,8 +184,7 @@ class SSB(QCVVExperiment[SSBResults]):
         _samples: list[Sample] | None = None,
         **kwargs: str,
     ) -> None:
-        """
-        Initializes a cross-entropy benchmarking experiment.
+        """Initializes a cross-entropy benchmarking experiment.
 
         Args:
             num_circuits: Number of circuits to sample.
@@ -315,7 +313,12 @@ class SSB(QCVVExperiment[SSBResults]):
             The randomly chosen rotation gate acting on both qubits.
         """
         gate = self._rng.choice(
-            [cirq.rx(np.pi / 2), cirq.rx(-np.pi / 2), cirq.ry(np.pi / 2), cirq.ry(-np.pi / 2)]
+            [
+                cirq.rx(np.pi / 2),
+                cirq.rx(-np.pi / 2),
+                cirq.ry(np.pi / 2),
+                cirq.ry(-np.pi / 2),
+            ],  # type: ignore[arg-type]
         )
         return cirq.Moment(gate(self.qubits[0]), gate(self.qubits[1]))
 
@@ -333,7 +336,7 @@ class SSB(QCVVExperiment[SSBResults]):
             cirq.X(self.qubits[1]),
             self._init_rotations[idx][0],
             self._init_rotations[idx][1],
-            cirq.CZ(*self.qubits),
+            cirq.CZ(*self.qubits).with_tags("no_compile"),
             self._init_rotations[idx][2],
             self._init_rotations[idx][3],
             self._init_rotations[idx][4],
@@ -360,7 +363,7 @@ class SSB(QCVVExperiment[SSBResults]):
         return cirq.Circuit(
             self._reconciliation_rotation[idx][0],
             self._reconciliation_rotation[idx][1],
-            cirq.CZ(*self.qubits),
+            cirq.CZ(*self.qubits).with_tags("no_compile"),
             self._reconciliation_rotation[idx][2],
             self._reconciliation_rotation[idx][3],
             cirq.X(self.qubits[0]),
