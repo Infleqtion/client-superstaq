@@ -29,7 +29,7 @@ import tqdm
 import tqdm.contrib
 import tqdm.contrib.itertools
 
-from supermarq.qcvv import QCVVExperiment, QCVVResults, Sample
+from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
 
 if TYPE_CHECKING:
     from typing_extensions import Self
