@@ -54,6 +54,8 @@ class SuperstaqProvider(gss.service.Service):
         ibmq_token: str | None = None,
         ibmq_instance: str | None = None,
         ibmq_channel: str | None = None,
+        use_stored_ibmq_credentials: bool = False,
+        ibmq_name: str | None = None,
         **kwargs: Any,
     ) -> None:
         """Initializes a `SuperstaqProvider`.
@@ -83,6 +85,9 @@ class SuperstaqProvider(gss.service.Service):
                 to IBM hardware, or to access non-public IBM devices you may have access to.
             ibmq_instance: An optional instance to use when running IBM jobs.
             ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
+            use_stored_ibmq_credentials: Whether to retrieve IBM credentials from locally saved
+                accounts.
+            ibmq_name: The name of the account to retrieve. The default is `default-ibm-quantum`.
             kwargs: Other optimization and execution parameters.
 
         Raises:
@@ -101,6 +106,8 @@ class SuperstaqProvider(gss.service.Service):
             ibmq_token=ibmq_token,
             ibmq_instance=ibmq_instance,
             ibmq_channel=ibmq_channel,
+            ibmq_name=ibmq_name,
+            use_stored_ibmq_credentials=use_stored_ibmq_credentials,
             **kwargs,
         )
 
@@ -129,6 +136,7 @@ class SuperstaqProvider(gss.service.Service):
         supports_compile: bool | None = None,
         available: bool | None = None,
         retired: bool | None = None,
+        accessible: bool | None = None,
         **kwargs: bool,
     ) -> list[qss.SuperstaqBackend]:
         """Lists the backends available from this provider.
@@ -144,6 +152,8 @@ class SuperstaqProvider(gss.service.Service):
             available: Optional boolean flag to only return targets that are (not) available
                 to use.
             retired: Optional boolean flag to only return targets that are or are not retired.
+            accessible: Optional boolean flag to only return targets that are (not) accessible
+                to the user.
             kwargs: Any additional, supported flags to restrict/filter returned targets.
 
         Returns:
@@ -156,6 +166,7 @@ class SuperstaqProvider(gss.service.Service):
             supports_compile=supports_compile,
             available=available,
             retired=retired,
+            accessible=accessible,
             **kwargs,
         )
         targets = self._client.get_targets(**filters)

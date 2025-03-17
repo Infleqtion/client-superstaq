@@ -10,15 +10,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tooling for cross entropy benchmark experiments.
-"""
+"""Tooling for cross entropy benchmark experiments."""
 from __future__ import annotations
 
 import itertools
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 import cirq
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy
@@ -27,6 +29,9 @@ import tqdm.auto
 import tqdm.contrib.itertools
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 @dataclass
@@ -114,8 +119,19 @@ class XEBResults(QCVVResults):
         self._cycle_fidelity_estimate = np.exp(cycle_fit.slope)
         self._cycle_fidelity_estimate_std = self.cycle_fidelity_estimate * cycle_fit.stderr
 
-    def plot_results(self) -> None:
+    def plot_results(
+        self,
+        filename: str | None = None,
+    ) -> plt.Figure:
         """Plot the experiment data and the corresponding fits.
+
+        Args:
+            filename: Optional argument providing a filename to save the plots to. Defaults to None,
+                indicating not to save the plot.
+
+        Returns:
+            A single matplotlib figure containing both the linear fit per cycle depth and the decay
+            with cycle depth.
 
         Raises:
             RuntimeError: If there is no data stored.
@@ -128,50 +144,183 @@ class XEBResults(QCVVResults):
                 "No stored dataframe of circuit fidelities. Something has gone wrong."
             )
 
-        plot_1 = sns.lmplot(
-            data=self.data,
-            x="sum_p(x)p(x)",
-            y="sum_p(x)p^(x)",
-            hue="cycle_depth",
-            palette="dark:r",
-            legend="full",
-            ci=None,
-        )
-        sns.move_legend(plot_1, "center right")
-        ax_1 = plot_1.axes.item()
-        plot_1.tight_layout()
-        ax_1.set_xlabel(r"$\sum p(x)^2$", fontsize=15)
-        ax_1.set_ylabel(r"$\sum p(x) \hat{p}(x)$", fontsize=15)
-        ax_1.set_title(r"Linear fit per cycle depth", fontsize=15)
+        fig, axs = plt.subplots(1, 2, figsize=(10, 4.8))
+        colours = sns.color_palette("dark:r", n_colors=len(self.data.cycle_depth.unique()))
+        for depth, color in zip(sorted(self.data.cycle_depth.unique()), colours):
+            sns.regplot(
+                data=self.data[self.data.cycle_depth == depth],
+                x="sum_p(x)p(x)",
+                y="sum_p(x)p^(x)",
+                ci=None,
+                ax=axs[0],
+                color=color,
+                label=depth,
+            )
+        axs[0].legend(title="Cycle depth", bbox_to_anchor=(1.0, 0.5), loc="center left")
+        axs[0].set_xlabel(r"$\sum p(x)^2$", fontsize=15)
+        axs[0].set_ylabel(r"$\sum p(x) \hat{p}(x)$", fontsize=15)
+        axs[0].set_title(r"Linear fit per cycle depth", fontsize=15, wrap=True)
 
-        plot_2 = sns.lmplot(
+        sns.regplot(
             data=self._circuit_fidelities,
             x="cycle_depth",
             y="circuit_fidelity_estimate",
-            hue="cycle_depth",
-            palette="dark:r",
+            ax=axs[1],
+            fit_reg=False,
+            color="tab:red",
         )
-        ax_2 = plot_2.axes.item()
-        plot_2.tight_layout()
-        ax_2.set_xlabel(r"Cycle depth", fontsize=15)
-        ax_2.set_ylabel(r"Circuit fidelity", fontsize=15)
-        ax_2.set_title(r"Exponential decay of circuit fidelity", fontsize=15)
+        axs[1].set_xlabel(r"Cycle depth", fontsize=15)
+        axs[1].set_ylabel(r"Circuit fidelity", fontsize=15)
+        axs[1].set_title(r"Exponential decay of circuit fidelity", fontsize=15, wrap=True)
 
         # Add fit line
         x = np.linspace(
             self._circuit_fidelities.cycle_depth.min(), self._circuit_fidelities.cycle_depth.max()
         )
         y = self.cycle_fidelity_estimate**x
-        y_p = (self.cycle_fidelity_estimate + self.cycle_fidelity_estimate_std) ** x
-        y_m = (self.cycle_fidelity_estimate - self.cycle_fidelity_estimate_std) ** x
-        ax_2.plot(x, y, color="tab:red", linewidth=2)
-        ax_2.fill_between(x, y_m, y_p, alpha=0.2, color="tab:red")
+        y_p = (self.cycle_fidelity_estimate + 1.96 * self.cycle_fidelity_estimate_std) ** x
+        y_m = (self.cycle_fidelity_estimate - 1.96 * self.cycle_fidelity_estimate_std) ** x
+        axs[1].plot(x, y, color="tab:red", linewidth=2)
+        axs[1].fill_between(x, y_m, y_p, alpha=0.25, color="tab:red", label="95% CI")
+        axs[1].legend()
+
+        fig.tight_layout()
+
+        if filename is not None:
+            fig.savefig(filename, bbox_inches="tight")
+
+        return fig
 
     def print_results(self) -> None:
         print(
             f"Estimated cycle fidelity: {self.cycle_fidelity_estimate:.5} "
             f"+/- {self.cycle_fidelity_estimate_std:.5}"
         )
+
+    def plot_speckle(self, filename: str | None = None) -> plt.Figure:
+        """Creates the speckle plot of the XEB data. See Fig. S18 of
+        https://arxiv.org/abs/1910.11333 for an explanation of this plot.
+
+        Args:
+            filename: Optional argument providing a filename to save the plots to. Defaults to None,
+                indicating not to save the plot.
+
+        Returns:
+            A matplotlib figure with the speckle plot.
+
+        Raises:
+            RuntimeError: If there is no data stored.
+        """
+        if self.data is None:
+            raise RuntimeError("No data stored. Cannot plot results.")
+
+        # Reformat dataframe
+        df = pd.melt(
+            self.data,
+            value_vars=["00", "01", "10", "11"],
+            id_vars=["cycle_depth", "circuit_realization"],
+            var_name="bitstring",
+        )
+
+        # Create the axes needed
+        fig, axs = plt.subplot_mosaic(
+            [
+                ["P(00)", "cbar", ".", "Decay"],
+                ["P(01)", "cbar", ".", "Decay"],
+                ["P(10)", "cbar", ".", "Decay"],
+                ["P(11)", "cbar", ".", "Decay"],
+            ],
+            width_ratios=[1, 0.05, 0.05, 1],
+            figsize=(12, 4.8),
+        )
+        fig.subplots_adjust(hspace=0)
+
+        # Plot the heatmaps
+        for k, bitstring in enumerate(["00", "01", "10", "11"]):
+            ax = axs[f"P({bitstring})"]
+
+            data = df[df["bitstring"] == bitstring].pivot(
+                index="circuit_realization", columns="cycle_depth", values="value"
+            )
+            cmap = mpl.colormaps["rocket"]
+            # norm = mpl.colors.Normalize(0, 1)  # or vmin, vmax
+            sns.heatmap(data, vmin=0, vmax=1, ax=ax, cbar_ax=axs["cbar"], cmap=cmap)
+            ax.set_ylabel("")
+            ax.set_xlabel("")
+            ax.set_yticks([])
+            ax.set_yticklabels([])
+            plt.text(
+                0.99,
+                0.90,
+                f"P({bitstring})",
+                ha="right",
+                va="top",
+                transform=ax.transAxes,
+                color="white",
+            )
+            if k != 0:
+
+                ax.axhline(y=0, linewidth=1.5, color="white", linestyle="--")
+            if k == 0:
+                ax.set_title("Speckle plots")
+
+            if k == 3:
+                ax.set_xlabel("Cycle depth")
+
+        # Format colour bar
+        axs["cbar"].set_ylabel("Probability")
+        axs["cbar"].yaxis.set_label_position("right")
+        axs["cbar"].yaxis.tick_left()
+
+        # Plot the decay of purity
+
+        # Calculate the average std of the probability distributions.
+        purity_data = (
+            df.groupby(by=["cycle_depth"])
+            .std(numeric_only=True)
+            .reset_index()
+            .rename(columns={"value": "sqrt_speckle_purity"})
+            .drop(columns=["circuit_realization"])
+        )
+        # Rescale the purity estimate according to Porter-Thomas distribution
+        purity_data["sqrt_speckle_purity"] = purity_data["sqrt_speckle_purity"] * np.sqrt(
+            4**2 * (4 + 1) / (4 - 1)
+        )
+
+        # Plot decay
+        sns.regplot(
+            data=purity_data,
+            x="cycle_depth",
+            y="sqrt_speckle_purity",
+            logx=True,
+            ax=axs["Decay"],
+        )
+        # purity_plot.tight_layout()
+        axs["Decay"].set_xlabel(r"Cycle depth")
+        axs["Decay"].set_ylabel(r"$\sqrt{\mathrm{Purity}}$")
+        axs["Decay"].set_title(r"Purity Decay")
+        # Estimate decay coefficient
+        purity_fit = scipy.stats.linregress(
+            x=purity_data["cycle_depth"],
+            y=np.log(purity_data["sqrt_speckle_purity"]),
+        )
+        # Add label with coefficient estimate
+        axs["Decay"].text(
+            0.95,
+            0.95,
+            (
+                f"Decay coefficient: {np.exp(purity_fit.slope):4f} "
+                f"+/- {np.exp(purity_fit.slope) * purity_fit.stderr:4f}"
+            ),
+            ha="right",
+            va="center",
+            transform=axs["Decay"].transAxes,
+        )
+
+        if filename is not None:
+            fig.savefig(filename, bbox_inches="tight")
+
+        return fig
 
 
 class XEB(QCVVExperiment[XEBResults]):
@@ -209,23 +358,32 @@ class XEB(QCVVExperiment[XEBResults]):
         self,
         num_circuits: int,
         cycle_depths: Iterable[int],
+        two_qubit_gate: cirq.Gate | cirq.Operation | None = cirq.CZ,
         single_qubit_gate_set: list[cirq.Gate] | None = None,
-        two_qubit_gate: cirq.Gate | None = cirq.CZ,
         *,
         random_seed: int | np.random.Generator | None = None,
+        _samples: list[Sample] | None = None,
+        **kwargs: str,
     ) -> None:
         """Initializes a cross-entropy benchmarking experiment.
 
         Args:
             num_circuits: Number of circuits to sample.
             cycle_depths: The cycle depths to sample.
+            two_qubit_gate: The two qubit gate to interleave between the single qubit gates. If None
+                then no two qubit gate is used. Defaults to control-Z gate.
             single_qubit_gate_set: Optional list of single qubit gates to randomly sample from when
                 generating random circuits. If not provided defaults to phased XZ gates with 1/4 pi
                 intervals.
-            two_qubit_gate: The two qubit gate to interleave between the single qubit gates. If None
-                then no two qubit gate is used. Defaults to control-Z gate.
             random_seed: An optional seed to use for randomization.
         """
+
+        if isinstance(two_qubit_gate, cirq.Operation):
+            qubits: Sequence[cirq.Qid] | int = two_qubit_gate.qubits
+            two_qubit_gate = two_qubit_gate.gate
+        else:
+            qubits = cirq.LineQubit.range(2)
+
         self.two_qubit_gate: cirq.Gate | None = two_qubit_gate
         """The two qubit gate to use for interleaving."""
 
@@ -248,11 +406,13 @@ class XEB(QCVVExperiment[XEBResults]):
             self.single_qubit_gate_set = single_qubit_gate_set
 
         super().__init__(
-            num_qubits=2,
+            qubits=qubits,
             num_circuits=num_circuits,
             cycle_depths=cycle_depths,
             random_seed=random_seed,
             results_cls=XEBResults,
+            _samples=_samples,
+            **kwargs,
         )
 
     ###################
@@ -273,7 +433,7 @@ class XEB(QCVVExperiment[XEBResults]):
             The list of experiment samples.
         """
         random_circuits = []
-        for _, depth in tqdm.contrib.itertools.product(
+        for k, depth in tqdm.contrib.itertools.product(
             range(num_circuits), cycle_depths, desc="Building circuits"
         ):
             num_single_qubit_gate_layers = depth + int(self.two_qubit_gate is not None)
@@ -308,7 +468,50 @@ class XEB(QCVVExperiment[XEBResults]):
                         "two_qubit_gate": str(self.two_qubit_gate),
                         **analytic_probabilities,
                     },
+                    circuit_realization=k,
                 )
             )
 
         return random_circuits
+
+    def _json_dict_(self) -> dict[str, Any]:
+        """Converts the experiment to a json-able dictionary that can be used to recreate the
+        experiment object. Note that the state of the random number generator is not stored.
+
+        Returns:
+            Json-able dictionary of the experiment data.
+        """
+        return {
+            "two_qubit_gate": self.two_qubit_gate,
+            "single_qubit_gate_set": self.single_qubit_gate_set,
+            **super()._json_dict_(),
+        }
+
+    @classmethod
+    def _from_json_dict_(
+        cls,
+        samples: list[Sample],
+        two_qubit_gate: cirq.Gate,
+        single_qubit_gate_set: list[cirq.Gate],
+        num_circuits: int,
+        cycle_depths: list[int],
+        **kwargs: Any,
+    ) -> Self:
+        """Creates a experiment from a dictionary of the data.
+
+        Args:
+            dictionary: Dict containing the experiment data.
+
+        Returns:
+            The deserialized experiment object.
+        """
+        kwargs.pop("qubits")  # Don't need for XEB
+
+        return cls(
+            num_circuits=num_circuits,
+            cycle_depths=cycle_depths,
+            _samples=samples,
+            single_qubit_gate_set=single_qubit_gate_set,
+            two_qubit_gate=two_qubit_gate,
+            **kwargs,
+        )

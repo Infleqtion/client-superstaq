@@ -17,13 +17,10 @@ if TYPE_CHECKING:
 class JobType(str, Enum):
     """The different types of jobs that can be submitted through Superstaq."""
 
-    DEVICE_SUBMISSION = "device_submission"
-    """A job that involves submitting circuits to live quantum hardware (device)."""
-    DEVICE_SIMULATION = "device_simulation"
-    """A job that involves simulating a circuit as if it was on some live hardware (device).
-    May or may not include noise (depending on options dict)."""
-    SIMULATION = "simulation"
-    """Simulation of a given quantum circuit but agnostic to any specific device."""
+    SUBMIT = "submit"
+    """A job that involves submitting circuits to an external device."""
+    SIMULATE = "simulate"
+    """A job that requires superstaq to simulate circuits."""
     COMPILE = "compile"
     """A job that only involves compiling a circuit for some given device."""
     CONVERT = "convert"
@@ -33,8 +30,6 @@ class JobType(str, Enum):
 class SimMethod(str, Enum):
     """The different simulation methods that are available."""
 
-    STATEVECTOR = "statevector"
-    """Simulation calculates the wavefunction of the state at the end of the circuit."""
     NOISE_SIM = "noise-sim"
     """The simulation applies noise. If used with `device_simulation` this applies realistic device
     noise otherwise the noise needs to be provided by the user (via the options dict)."""
@@ -55,27 +50,32 @@ class CircuitStatus(str, Enum):
 
     RECEIVED = "received"
     """The job has been received (and accepted) to the server and is awaiting further action."""
+    # AWAITING states - the job is waiting to be processed
     AWAITING_COMPILE = "awaiting_compile"
     """The job is waiting for a worker to compile."""
     AWAITING_SUBMISSION = "awaiting_submission"
     """The job is waiting for a worker to submit the circuit to an external device."""
     AWAITING_SIMULATION = "awaiting_simulation"
     """The job is waiting for a worker to simulate."""
-    AWAITING_CONVERSION = "awaiting_conversion"
-    """The job is waiting for a worker to convert."""
+    # Processing states - the job is being handled in some way
+    COMPILING = "compiling"
+    """The job is being compiled by a worker."""
     RUNNING = "running"
-    """The job is being run by a worker."""
-    COMPLETED = "completed"
-    """The job is completed."""
+    """The job is currently running on a device. SUBMIT jobs only"""
+    SIMULATING = "simulating"
+    """The job is currently being simulated. SIMULATE jobs only"""
+    PENDING = "pending"
+    """When a job has been submitted and is waiting to be run on a QPU. SUBMIT jobs only."""
+    # Error states
     FAILED = "failed"
     """The job failed. A reason should be stored in the job."""
-    CANCELLED = "cancelled"
-    """The job was cancelled. A reason should be stored in the job."""
     UNRECOGNIZED = "unrecognized"
     """Something has gone wrong! (Treated as terminal)"""
-    PENDING = "pending"
-    """When a job has been submitted to an external provider but that provider has
-    not yet run the job."""
+    # Finished states
+    COMPLETED = "completed"
+    """The job is completed."""
+    CANCELLED = "cancelled"
+    """The job was cancelled. A reason should be stored in the job."""
     DELETED = "deleted"
     """When a job has been deleted."""
 
@@ -122,24 +122,16 @@ class JobData(DefaultPydanticModel):
     """Any provider side ID's for each circuit in the job."""
     num_circuits: int
     """Number of circuits in the job."""
-    compiled_circuit_type: CircuitType
-    """The compiled circuit type."""
     compiled_circuits: list[str | None]
     """Compiled versions of each input circuits."""
     input_circuits: list[str]
     """The input circuits as serialized strings."""
-    input_circuit_type: CircuitType
-    """The input circuit type."""
-    pulse_gate_circuits: list[str | None]
-    """Serialized pulse gate circuits (if relevant)."""
+    circuit_type: CircuitType
+    """The circuit type used for representing the circuits."""
     counts: list[dict[str, int] | None]
     """Counts for each input circuit (if available/relevant)."""
-    state_vectors: list[str | None]
-    """State vector results for each input circuit (if available/relevant)."""
     results_dicts: list[str | None]
     """Serialized results dictionary for each input circuit (if available/relevant)."""
-    num_qubits: list[int]
-    """Number of qubits required for each circuit."""
     shots: list[int]
     """Number of shots for each circuit."""
     dry_run: bool
@@ -148,10 +140,14 @@ class JobData(DefaultPydanticModel):
     """Timestamp when the job was submitted."""
     last_updated_timestamp: list[datetime.datetime | None]
     """Timestamp for when each circuit was last updated."""
-    initial_logical_to_physicals: list[str | None]
+    initial_logical_to_physicals: list[dict[int, int] | None]
     """Serialized initial logical-to-physical mapping for each circuit."""
-    final_logical_to_physicals: list[str | None]
+    final_logical_to_physicals: list[dict[int, int] | None]
     """Serialized initial final-to-physical mapping for each circuit."""
+    logical_qubits: list[str | None]
+    """Serialized logical qubits of compiled circuit"""
+    device_qubits: list[str | None]
+    """Serialized device qubits."""
 
     @pydantic.model_validator(mode="after")
     def validate_consistent_number_of_circuits(self) -> Self:
@@ -187,13 +183,10 @@ class NewJob(DefaultPydanticModel):
     """The input circuit type."""
     verbatim: bool = pydantic.Field(default=False)
     """Whether to skip compile step."""
-    compiled_circuit_type: CircuitType | None = pydantic.Field(default=None)
-    """The desired circuit type for the compiled circuits. Used mainly for `convert` jobs. If
-    None then the input circuit type is assumed."""
     shots: int = pydantic.Field(default=0, ge=0)
     """Number of shots."""
     dry_run: bool = pydantic.Field(default=False)
-    """Flag for a dry-run"""
+    """Flag for a dry-run."""
     sim_method: SimMethod | None = pydantic.Field(default=None)
     """The simulation method to use. Only used on `simulation` jobs."""
     priority: int = pydantic.Field(default=0)
@@ -276,11 +269,11 @@ class UserInfo(DefaultPydanticModel):
     role: str
     """User role."""
     balance: float
-    """User balance"""
+    """User balance."""
     token: str
     """User API token."""
     user_id: uuid.UUID
-    """User id"""
+    """User id."""
 
 
 class UserQuery(DefaultPydanticModel):
@@ -327,14 +320,14 @@ class UpdateUserDetails(DefaultPydanticModel):
     role: str | None = pydantic.Field(None)
     """New user role."""
     balance: float | None = pydantic.Field(None)
-    """New user balance"""
+    """New user balance."""
 
 
 class TargetModel(DefaultPydanticModel):
     """Model for the details of a target."""
 
     target_name: str
-    """The target name"""
+    """The target name."""
     supports_submit: bool
     """Targets allow job submission."""
     supports_submit_qubo: bool
@@ -346,7 +339,9 @@ class TargetModel(DefaultPydanticModel):
     retired: bool
     """Target is retired."""
     simulator: bool
-    """Target is simulator"""
+    """Target is simulator."""
+    accessible: bool
+    """Target is accessible to user."""
 
 
 class GetTargetsFilterModel(DefaultPydanticModel):
@@ -364,6 +359,8 @@ class GetTargetsFilterModel(DefaultPydanticModel):
     """Include Superstaq targets that are/not currently available."""
     retired: bool = pydantic.Field(False)
     """Include Superstaq targets that are retired."""
+    accessible: bool | None = pydantic.Field(None)
+    """Include only Superstaq targets that are/aren't accessible to the user."""
 
 
 class RetrieveTargetInfoModel(DefaultPydanticModel):

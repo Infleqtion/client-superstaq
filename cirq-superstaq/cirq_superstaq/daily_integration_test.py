@@ -154,6 +154,7 @@ def test_get_resource_estimate(service: css.Service) -> None:
 
 def test_get_targets(service: css.Service) -> None:
     result = service.get_targets()
+    filtered_result = service.get_my_targets()
     ibmq_target_info = gss.typing.Target(
         target="ibmq_brisbane_qpu",
         supports_submit=True,
@@ -161,6 +162,7 @@ def test_get_targets(service: css.Service) -> None:
         supports_compile=True,
         available=True,
         retired=False,
+        accessible=True,
     )
     aqt_target_info = gss.typing.Target(
         target="aqt_keysight_qpu",
@@ -169,10 +171,12 @@ def test_get_targets(service: css.Service) -> None:
         supports_compile=True,
         available=True,
         retired=False,
+        accessible=True,
     )
 
     assert ibmq_target_info in result
     assert aqt_target_info in result
+    assert all(target in result for target in filtered_result)
 
 
 def test_qscout_compile(service: css.Service) -> None:

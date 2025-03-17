@@ -10,13 +10,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tooling for interleaved randomised benchmarking
-"""
+"""Tooling for interleaved randomised benchmarking"""
 
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 import cirq
 import cirq.circuits
@@ -29,6 +29,9 @@ from tqdm.auto import trange
 from tqdm.contrib.itertools import product
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 ####################################################################################################
@@ -68,8 +71,8 @@ def _reduce_clifford_seq(
 
 ####################################################################################################
 # The sets `S1`, `S1_X` and `S1_Y` of single qubit Clifford operations are used to generate
-# random two qubit Clifford operations. For details see: https://arxiv.org/pdf/1210.7011 &
-# https://arxiv.org/pdf/1402.4848.
+# random two qubit Clifford operations. For details see: https://arxiv.org/abs/1210.7011 &
+# https://arxiv.org/abs/1402.4848.
 # The implementation is adapted from:
 # https://github.com/quantumlib/Cirq/blob/main/cirq-core/cirq/experiments/qubit_characterizations.py
 ####################################################################################################
@@ -246,7 +249,12 @@ class _RBResultsBase(QCVVResults):
         return A * (np.asarray(alpha) ** x) + B
 
     def _plot_results(self) -> plt.Axes:
-        """Plot the exponential decay of the circuit fidelity with cycle depth."""
+        """Plot the exponential decay of the circuit fidelity with cycle depth.
+
+        Returns:
+            A matplotlib axiss containing the RB decay plots and the corresponding
+            fit.
+        """
         if self.data is None:
             raise RuntimeError("No data stored. Cannot make plot.")
         plot = sns.scatterplot(
@@ -327,15 +335,26 @@ class IRBResults(_RBResultsBase):
             raise self._not_analyzed
         return self._average_interleaved_gate_error_std
 
-    def plot_results(self) -> None:
+    def plot_results(
+        self,
+        filename: str | None = None,
+    ) -> plt.Figure:
         """Plot the exponential decay of the circuit fidelity with cycle depth.
+
+        Args:
+            filename: Optional argument providing a filename to save the plots to. Defaults to None,
+                indicating not to save the plot.
+
+        Returns:
+            A single matplotlib figure containing the IRB and RB decay plots and the corresponding
+            fits.
 
         Raises:
             RuntimeError: If no data is stored.
         """
         if self.data is None:
             raise RuntimeError("No data stored. Cannot make plot.")
-        plot = super()._plot_results()
+        plot = self._plot_results()
         irb_fit = self._fit_decay("IRB")
         xx = np.linspace(0, np.max(self.data.clifford_depth))
         plot.plot(
@@ -351,6 +370,13 @@ class IRBResults(_RBResultsBase):
             alpha=0.5,
             color="tab:orange",
         )
+        if filename is not None:
+            plt.savefig(filename)
+
+        root_figure = plot.figure.figure
+        if filename is not None:
+            root_figure.savefig(filename, bbox_inches="tight")
+        return root_figure
 
     def _analyze(self) -> None:
         super()._analyze()
@@ -405,9 +431,30 @@ class RBResults(_RBResultsBase):
             raise self._not_analyzed
         return self._average_error_per_clifford_std
 
-    def plot_results(self) -> None:
-        """Plot the exponential decay of the circuit fidelity with cycle depth."""
-        super()._plot_results()
+    def plot_results(
+        self,
+        filename: str | None = None,
+    ) -> plt.Figure:
+        """Plot the exponential decay of the circuit fidelity with cycle depth.
+
+        Args:
+            filename: Optional argument providing a filename to save the plots to. Defaults to None,
+                indicating not to save the plot.
+
+        Returns:
+            A single matplotlib figure containing the RB decay plot and the corresponding fit.
+
+        Raises:
+            RuntimeError: If no data is stored.
+        """
+        if self.data is None:
+            raise RuntimeError("No data stored. Cannot make plot.")
+
+        plot = self._plot_results()
+        root_figure = plot.figure.figure
+        if filename is not None:
+            root_figure.savefig(filename, bbox_inches="tight")
+        return root_figure
 
     def _analyze(self) -> None:
         super()._analyze()
@@ -462,36 +509,43 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         num_circuits: int,
         cycle_depths: Iterable[int],
         interleaved_gate: cirq.Gate | None = cirq.Z,
-        num_qubits: int | None = 1,
+        qubits: int | Sequence[cirq.Qid] = 1,
         clifford_op_gateset: cirq.CompilationTargetGateset = cirq.CZTargetGateset(),
         *,
         random_seed: int | np.random.Generator | None = None,
+        _samples: list[Sample] | None = None,
+        **kwargs: str,
     ) -> None:
         """Constructs an IRB experiment.
 
         Args:
             num_circuits: Number of circuits to sample.
             cycle_depths: The cycle depths to sample.
-            interleaved_gate: The Clifford gate to measure the gate error of. If None
-                then no interleaving is performed and instead vanilla randomized benchmarking is
-                performed.
-            num_qubits: The number of qubits to experiment on. Must either be 1 or 2 but is ignored
-                if a gate is provided - the number of qubits is instead inferred from the gate.
+            interleaved_gate: The Clifford gate to measure the gate error of. If None then no
+                interleaving is performed and instead vanilla randomized benchmarking is performed.
+            qubits: The qubit(s) to experiment on. If an integer, must either be 1 or 2; otherwise
+                must be a sequence of 1 or 2 qubit(s). Ignored if a gate is provided - the qubits
+                are instead inferred from the gate.
             clifford_op_gateset: The gateset to use when implementing the clifford operations.
                 Defaults to the CZ/GR set.
             random_seed: An optional seed to use for randomization.
         """
-        if interleaved_gate is not None:
-            num_qubits = interleaved_gate.num_qubits()
-        if num_qubits not in [1, 2]:
+        if isinstance(interleaved_gate, cirq.Operation):
+            qubits = interleaved_gate.qubits
+            interleaved_gate = interleaved_gate.gate
+        elif interleaved_gate is not None:
+            qubits = cirq.LineQubit.range(cirq.num_qubits(interleaved_gate))
+        elif not isinstance(qubits, Sequence):
+            qubits = cirq.LineQubit.range(qubits)
+
+        if len(qubits) not in [1, 2]:
             raise NotImplementedError(
                 "IRB experiment is currently only implemented for single or two qubit use."
             )
 
         if interleaved_gate is not None:
             self.interleaved_gate: cirq.CliffordGate | None = cirq.CliffordGate.from_op_list(
-                [interleaved_gate(*cirq.LineQubit.range(num_qubits))],
-                cirq.LineQubit.range(num_qubits),
+                [interleaved_gate(*qubits)], qubits
             )
         else:
             self.interleaved_gate = None
@@ -505,11 +559,13 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             results_cls = IRBResults
 
         super().__init__(
-            num_qubits=num_qubits,
+            qubits=qubits,
             num_circuits=num_circuits,
             cycle_depths=cycle_depths,
             random_seed=random_seed,
             results_cls=results_cls,
+            _samples=_samples,
+            **kwargs,
         )
 
     def _clifford_gate_to_circuit(
@@ -526,7 +582,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         """
         circuit = cirq.Circuit(
             cirq.decompose_clifford_tableau_to_operations(
-                self.qubits, clifford.clifford_tableau  # type: ignore[arg-type]
+                list(self.qubits), clifford.clifford_tableau
             )
         )
         return cirq.optimize_for_target_gateset(circuit, gateset=self.clifford_op_gateset)
@@ -562,7 +618,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
     def random_two_qubit_clifford(self) -> cirq.CliffordGate:
         """Choose a random two qubit clifford gate.
 
-        For algorithm details see https://arxiv.org/pdf/1402.4848 & https://arxiv.org/pdf/1210.7011.
+        For algorithm details see https://arxiv.org/abs/1402.4848 & https://arxiv.org/abs/1210.7011.
 
         Returns:
             The random clifford gate.
@@ -668,7 +724,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             The list of experiment samples.
         """
         samples = []
-        for _, depth in product(range(num_circuits), cycle_depths, desc="Building circuits"):
+        for k, depth in product(range(num_circuits), cycle_depths, desc="Building circuits"):
             base_sequence = [self.random_clifford() for _ in range(depth)]
             rb_sequence = base_sequence + [
                 _reduce_clifford_seq(cirq.inverse(base_sequence))  # type: ignore[arg-type]
@@ -688,6 +744,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                         ),
                         "experiment": "RB",
                     },
+                    circuit_realization=k,
                 ),
             )
             if self.interleaved_gate is not None:
@@ -720,6 +777,47 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                             ),
                             "experiment": "IRB",
                         },
+                        circuit_realization=k,
                     ),
                 )
         return samples
+
+    def _json_dict_(self) -> dict[str, Any]:
+        """Converts the experiment to a json-able dictionary that can be used to recreate the
+        experiment object. Note that the state of the random number generator is not stored.
+
+        Returns:
+            Json-able dictionary of the experiment data.
+        """
+        return {
+            "interleaved_gate": self.interleaved_gate,
+            "clifford_op_gateset": self.clifford_op_gateset,
+            **super()._json_dict_(),
+        }
+
+    @classmethod
+    def _from_json_dict_(
+        cls,
+        samples: list[Sample],
+        interleaved_gate: cirq.Gate,
+        clifford_op_gateset: cirq.CompilationTargetGateset,
+        num_circuits: int,
+        cycle_depths: list[int],
+        **kwargs: Any,
+    ) -> Self:
+        """Creates a experiment from a dictionary of the data.
+
+        Args:
+            dictionary: Dict containing the experiment data.
+
+        Returns:
+            The deserialized experiment object.
+        """
+        return cls(
+            num_circuits=num_circuits,
+            cycle_depths=cycle_depths,
+            clifford_op_gateset=clifford_op_gateset,
+            interleaved_gate=interleaved_gate,
+            _samples=samples,
+            **kwargs,
+        )
