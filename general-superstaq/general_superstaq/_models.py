@@ -40,7 +40,7 @@ class CircuitType(str, Enum):
 
     CIRQ = "cirq"
     QISKIT = "qiskit"
-    QASM_STRS = "qasm_strs"
+    QASM = "qasm"
 
 
 class CircuitStatus(str, Enum):
@@ -126,8 +126,6 @@ class JobData(DefaultPydanticModel):
     """The input circuits as serialized strings."""
     circuit_type: CircuitType
     """The circuit type used for representing the circuits."""
-    pulse_gate_circuits: list[str | None]
-    """Serialized pulse gate circuits (if relevant)."""
     counts: list[dict[str, int] | None]
     """Counts for each input circuit (if available/relevant)."""
     results_dicts: list[str | None]
@@ -140,10 +138,14 @@ class JobData(DefaultPydanticModel):
     """Timestamp when the job was submitted."""
     last_updated_timestamp: list[datetime.datetime | None]
     """Timestamp for when each circuit was last updated."""
-    initial_logical_to_physicals: list[str | None]
+    initial_logical_to_physicals: list[dict[int, int] | None]
     """Serialized initial logical-to-physical mapping for each circuit."""
-    final_logical_to_physicals: list[str | None]
+    final_logical_to_physicals: list[dict[int, int] | None]
     """Serialized initial final-to-physical mapping for each circuit."""
+    logical_qubits: list[str | None]
+    """Serialized logical qubits of compiled circuit. Only provided for CIRQ circuit type."""
+    physical_qubits: list[str | None]
+    """Serialized physical qubits of the device. Only provided for CIRQ circuit type."""
 
 
 class NewJob(DefaultPydanticModel):
