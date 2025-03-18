@@ -1158,14 +1158,14 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
 
         # Infer the job type
         if target.endswith("_simulator"):
-            job_type = _models.JobType.SIMULATION
+            job_type = _models.JobType.SIMULATE
         elif method in _models.SimMethod._value2member_map_.keys():
-            job_type = _models.JobType.DEVICE_SIMULATION
+            job_type = _models.JobType.SIMULATE
         else:
-            job_type = _models.JobType.DEVICE_SUBMISSION
+            job_type = _models.JobType.SUBMIT
 
         # Get sim method if needed
-        if job_type != _models.JobType.DEVICE_SUBMISSION:
+        if job_type == _models.JobType.SIMULATE:
             if method in _models.SimMethod._value2member_map_.keys():
                 sim_method = _models.SimMethod(method)
             else:
@@ -1262,7 +1262,7 @@ class _SuperstaqClient_v0_3_0(_SuperstaqClient):
             ~gss.SuperstaqServerException: For other API call failures.
         """
         credentials = self._extract_credentials(kwargs)
-        results = self.get_request(f"/client/job/{job_id}", query=None, **credentials)
+        results = self.get_request(f"/client/job/{job_id}/cirq", query=None, **credentials)
         return _models.JobData(**results)
 
     def get_balance(self) -> dict[str, float]:

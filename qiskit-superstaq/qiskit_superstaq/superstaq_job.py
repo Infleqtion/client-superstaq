@@ -448,7 +448,6 @@ class _SuperstaqJob(SuperstaqJob):  # pragma: no cover
         status_occurrence = set(self._job_data.statuses)
         status_priority_order = (
             gss._models.CircuitStatus.RECEIVED,
-            gss._models.CircuitStatus.AWAITING_CONVERSION,
             gss._models.CircuitStatus.AWAITING_COMPILE,
             gss._models.CircuitStatus.AWAITING_SUBMISSION,
             gss._models.CircuitStatus.AWAITING_SIMULATION,
@@ -482,7 +481,6 @@ class _SuperstaqJob(SuperstaqJob):  # pragma: no cover
             gss._models.CircuitStatus.RUNNING: qiskit.providers.jobstatus.JobStatus.RUNNING,
             gss._models.CircuitStatus.RECEIVED: qiskit.providers.jobstatus.JobStatus.INITIALIZING,
             gss._models.CircuitStatus.AWAITING_COMPILE: qiskit.providers.jobstatus.JobStatus.INITIALIZING,  # noqa: E501 # pylint: disable=line-too-long
-            gss._models.CircuitStatus.AWAITING_CONVERSION: qiskit.providers.jobstatus.JobStatus.INITIALIZING,  # noqa: E501 # pylint: disable=line-too-long
             gss._models.CircuitStatus.CANCELLED: qiskit.providers.jobstatus.JobStatus.CANCELLED,
             gss._models.CircuitStatus.FAILED: qiskit.providers.jobstatus.JobStatus.ERROR,
             gss._models.CircuitStatus.UNRECOGNIZED: qiskit.providers.jobstatus.JobStatus.ERROR,

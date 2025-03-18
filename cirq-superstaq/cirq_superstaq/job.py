@@ -543,7 +543,6 @@ class _Job(Job):  # pragma: no cover
         status_occurrence = set(self._job_data.statuses)
         status_priority_order = (
             _models.CircuitStatus.RECEIVED,
-            _models.CircuitStatus.AWAITING_CONVERSION,
             _models.CircuitStatus.AWAITING_COMPILE,
             _models.CircuitStatus.AWAITING_SUBMISSION,
             _models.CircuitStatus.AWAITING_SIMULATION,
