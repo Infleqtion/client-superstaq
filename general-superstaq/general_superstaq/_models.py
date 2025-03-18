@@ -143,9 +143,9 @@ class JobData(DefaultPydanticModel):
     final_logical_to_physicals: list[dict[int, int] | None]
     """Serialized initial final-to-physical mapping for each circuit."""
     logical_qubits: list[str | None]
-    """Serialized logical qubits of compiled circuit"""
-    device_qubits: list[str | None]
-    """Serialized device qubits."""
+    """Serialized logical qubits of compiled circuit. Only provided for CIRQ circuit type."""
+    physical_qubits: list[str | None]
+    """Serialized physical qubits of the device. Only provided for CIRQ circuit type."""
 
 
 class NewJob(DefaultPydanticModel):
