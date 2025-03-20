@@ -6,12 +6,9 @@ import datetime
 import uuid
 from collections.abc import Sequence
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import pydantic
-
-if TYPE_CHECKING:
-    from typing_extensions import Self
 
 
 class JobType(str, Enum):
@@ -42,7 +39,7 @@ class CircuitType(str, Enum):
 
     CIRQ = "cirq"
     QISKIT = "qiskit"
-    QASM_STRS = "qasm_strs"
+    QASM = "qasm"
 
 
 class CircuitStatus(str, Enum):
@@ -145,29 +142,9 @@ class JobData(DefaultPydanticModel):
     final_logical_to_physicals: list[dict[int, int] | None]
     """Serialized initial final-to-physical mapping for each circuit."""
     logical_qubits: list[str | None]
-    """Serialized logical qubits of compiled circuit"""
-    device_qubits: list[str | None]
-    """Serialized device qubits."""
-
-    @pydantic.model_validator(mode="after")
-    def validate_consistent_number_of_circuits(self) -> Self:
-        """Checks that all lists contain the correct number of elements
-        (equal to the number of circuits).
-
-        Raises:
-            ValueError: If any list attribute has the wrong number of elements
-
-        Returns:
-            The validated model.
-        """
-        for name, attr in self.model_dump().items():
-            if isinstance(attr, list):
-                if len(attr) != self.num_circuits:
-                    raise ValueError(
-                        f"Field {name} does not contain the correct number of elements. "
-                        f"Expected {self.num_circuits} but found {len(attr)}."
-                    )
-        return self
+    """Serialized logical qubits of compiled circuit. Only provided for CIRQ circuit type."""
+    physical_qubits: list[str | None]
+    """Serialized physical qubits of the device. Only provided for CIRQ circuit type."""
 
 
 class NewJob(DefaultPydanticModel):
