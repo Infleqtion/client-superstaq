@@ -12,6 +12,10 @@ from cirq.ops.common_gates import proper_repr
 import cirq_superstaq as css
 
 
+def _subscript(n: int) -> str:
+    return "".join(map(chr, (ord("₀") + int(digit) for digit in str(n))))
+
+
 @cirq.value_equality
 class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
     """A (non-parametrized) SWAP gate on two qudits of arbitrary dimension."""
@@ -332,8 +336,8 @@ class VirtualZPowGate(cirq.EigenGate):
         return cirq.obj_to_dict_helper(self, ["exponent", "global_shift", "dimension", "level"])
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        if args.use_unicode_characters and self._level < 10:
-            wire_symbol = f"VZ{ord('₀') + self._level:c}₊"
+        if args.use_unicode_characters:
+            wire_symbol = f"VZ{_subscript(self._level)}₊"
         else:
             wire_symbol = f"VZ({self._level}+)"
 
@@ -383,7 +387,7 @@ class _QutritZPowGate(cirq.EigenGate):
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         if args.use_unicode_characters and self._target_state < 10:
-            wire_symbol = f"Z{ord('₀') + self._target_state:c}"
+            wire_symbol = f"Z{_subscript(self._target_state)}"
         else:
             wire_symbol = f"Z[{self._target_state}]"
 
@@ -559,8 +563,8 @@ class QubitSubspaceGate(cirq.Gate):
 
         new_symbols: list[str] = []
         for symbol, subspace in zip(sub_gate_info.wire_symbols, self.subspaces):
-            if args.use_unicode_characters and max(subspace) < 10:
-                subspace_str = f"{ord('₀') + subspace[0]:c}{ord('₀') + subspace[1]:c}"
+            if args.use_unicode_characters:
+                subspace_str = f"{_subscript(subspace[0])}˯{_subscript(subspace[1])}"
             else:
                 subspace_str = f"[{subspace[0]},{subspace[1]}]"
 

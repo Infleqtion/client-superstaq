@@ -355,8 +355,8 @@ def test_virtual_z_pow_gate() -> None:
     )
 
     cirq.testing.assert_has_diagram(
-        cirq.Circuit(css.VirtualZPowGate(dimension=4, level=3)(cirq.LineQid(0, 4)) ** 1.2),
-        "0 (d=4): ───VZ₃₊^-0.8───",
+        cirq.Circuit(css.VirtualZPowGate(dimension=14, level=13)(cirq.LineQid(0, 14)) ** 1.2),
+        "0 (d=14): ───VZ₁₃₊^-0.8───",
     )
 
     cirq.testing.assert_has_diagram(
@@ -535,7 +535,7 @@ def test_qubit_subspace_circuit_diagram() -> None:
         cirq.Circuit(css.QubitSubspaceGate(cirq.rx(np.pi / 2), (3,), [(0, 2)]).on(q0)),
         textwrap.dedent(
             """
-            0 (d=3): ───Rx(0.5π)₀₂───
+                0 (d=3): ───Rx(0.5π)₀˯₂───
             """
         ),
     )
@@ -543,9 +543,9 @@ def test_qubit_subspace_circuit_diagram() -> None:
         cirq.Circuit(css.QubitSubspaceGate(cirq.CX, (3, 4), [(0, 1), (1, 2)]).on(q0, q1)),
         textwrap.dedent(
             """
-            0 (d=3): ───@₀₁───
+            0 (d=3): ───@₀˯₁───
                         │
-            1 (d=4): ───X₁₂───
+            1 (d=4): ───X₁˯₂───
             """
         ),
     )
