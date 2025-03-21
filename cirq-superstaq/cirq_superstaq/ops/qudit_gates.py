@@ -562,9 +562,12 @@ class QubitSubspaceGate(cirq.Gate):
         sub_gate_info = cirq.circuit_diagram_info(self._sub_gate, args)
 
         new_symbols: list[str] = []
+        max_subspace_level = max(lvl for subspace in self.subspaces for lvl in subspace)
         for symbol, subspace in zip(sub_gate_info.wire_symbols, self.subspaces):
-            if args.use_unicode_characters:
-                subspace_str = f"{_subscript(subspace[0])}˯{_subscript(subspace[1])}"
+            if args.use_unicode_characters and max_subspace_level < 10:
+                subspace_str = f"{_subscript(subspace[0])}{_subscript(subspace[1])}"
+            elif args.use_unicode_characters:
+                subspace_str = f"{_subscript(subspace[0])}˰{_subscript(subspace[1])}"
             else:
                 subspace_str = f"[{subspace[0]},{subspace[1]}]"
 
