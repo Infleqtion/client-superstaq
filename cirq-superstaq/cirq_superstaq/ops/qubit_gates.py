@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence, Set
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import cirq
 import numpy as np
@@ -11,6 +11,9 @@ import numpy.typing as npt
 from cirq.ops.common_gates import _pi
 
 import cirq_superstaq as css
+
+if TYPE_CHECKING:
+    from types import NotImplementedType
 
 
 def approx_eq_mod(a: cirq.TParamVal, b: cirq.TParamVal, period: float, atol: float = 1e-8) -> bool:
@@ -87,9 +90,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     def _value_equality_approximate_values_(self) -> cirq.PeriodicValue:
         return cirq.PeriodicValue(self.theta, 2 * np.pi)
 
-    def __pow__(
-        self, exponent: cirq.TParamVal
-    ) -> ZZSwapGate | cirq.ZZPowGate | cirq.type_workarounds.NotImplementedType:
+    def __pow__(self, exponent: cirq.TParamVal) -> ZZSwapGate | cirq.ZZPowGate | NotImplementedType:
         if exponent % 2 == 1:
             return ZZSwapGate(exponent * self.theta)
         if exponent % 2 == 0:
@@ -136,9 +137,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
         args.target_tensor[oz] *= np.exp(1j * self.theta)
         return args.target_tensor
 
-    def _pauli_expansion_(
-        self,
-    ) -> cirq.value.LinearDict[str] | cirq.type_workarounds.NotImplementedType:
+    def _pauli_expansion_(self) -> cirq.value.LinearDict[str] | NotImplementedType:
         if cirq.is_parameterized(self):
             return NotImplemented
         return cirq.value.LinearDict(
@@ -359,7 +358,7 @@ class AceCR(cirq.Gate):
             cirq.PeriodicValue(self.sandwich_rx_rads, 4 * np.pi),
         )
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
+    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | NotImplementedType:
         if not isinstance(other, AceCR):
             return NotImplemented
 
@@ -410,7 +409,7 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
     Otherwise equivalent to the identity gate.
     """
 
-    def _decompose_(self, qubits: tuple[cirq.Qid, ...]) -> cirq.type_workarounds.NotImplementedType:
+    def _decompose_(self, qubits: tuple[cirq.Qid, ...]) -> NotImplementedType:
         return NotImplemented
 
     def _commutes_(self, other: object, atol: float = 1e-8) -> bool:
