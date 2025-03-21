@@ -535,7 +535,7 @@ def test_qubit_subspace_circuit_diagram() -> None:
         cirq.Circuit(css.QubitSubspaceGate(cirq.rx(np.pi / 2), (3,), [(0, 2)]).on(q0)),
         textwrap.dedent(
             """
-                0 (d=3): ───Rx(0.5π)₀˯₂───
+            0 (d=3): ───Rx(0.5π)₀˯₂───
             """
         ),
     )
