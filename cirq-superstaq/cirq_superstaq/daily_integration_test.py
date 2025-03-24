@@ -26,11 +26,10 @@ def service() -> css.Service:
 
 
 def test_ibmq_compile(service: css.Service) -> None:
-    qubits = cirq.LineQubit.range(4)
+    qubits = cirq.LineQubit.range(2)
     circuit = cirq.Circuit(
-        css.AceCRMinusPlus(qubits[0], qubits[1]),
-        css.AceCRMinusPlus(qubits[1], qubits[2]),
-        css.AceCRMinusPlus(qubits[2], qubits[3]),
+        cirq.H(qubits[0]),
+        cirq.CX(qubits[0], qubits[1]),
     )
 
     out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
@@ -52,11 +51,10 @@ def test_ibmq_compile(service: css.Service) -> None:
 
 def test_ibmq_compile_with_token() -> None:
     service = css.Service(ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"])
-    qubits = cirq.LineQubit.range(4)
+    qubits = cirq.LineQubit.range(2)
     circuit = cirq.Circuit(
-        css.AceCRMinusPlus(qubits[0], qubits[1]),
-        css.AceCRMinusPlus(qubits[1], qubits[2]),
-        css.AceCRMinusPlus(qubits[2], qubits[3]),
+        cirq.H(qubits[0]),
+        cirq.CX(qubits[0], qubits[1]),
     )
 
     out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
