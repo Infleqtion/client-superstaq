@@ -25,11 +25,12 @@ def service() -> css.Service:
     return css.Service()
 
 
-def test_ibmq_compile_pulse_gate_circuits(service: css.Service):
-    qubits = cirq.LineQubit.range(2)
+def test_ibmq_compile(service: css.Service) -> None:
+    qubits = cirq.LineQubit.range(4)
     circuit = cirq.Circuit(
-        cirq.H(qubits[0]),
-        cirq.CX(qubits[0], qubits[1]),
+        css.AceCRMinusPlus(qubits[0], qubits[1]),
+        css.AceCRMinusPlus(qubits[1], qubits[2]),
+        css.AceCRMinusPlus(qubits[2], qubits[3]),
     )
 
     out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
@@ -49,24 +50,6 @@ def test_ibmq_compile_pulse_gate_circuits(service: css.Service):
     assert len(out.pulse_gate_circuits[1].op_start_times) == len(out.pulse_gate_circuits[1])
 
 
-def test_ibmq_compile(service: css.Service) -> None:
-    qubits = cirq.LineQubit.range(4)
-    circuit = cirq.Circuit(
-        css.AceCRMinusPlus(qubits[0], qubits[1]),
-        css.AceCRMinusPlus(qubits[1], qubits[2]),
-        css.AceCRMinusPlus(qubits[2], qubits[3]),
-    )
-
-    out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
-    assert isinstance(out.circuit, cirq.Circuit)
-
-    out = service.ibmq_compile([circuit, circuit], target="ibmq_brisbane_qpu")
-
-    assert isinstance(out.circuits, list)
-    assert len(out.circuits) == 2
-    assert isinstance(out.circuits[1], cirq.Circuit)
-
-
 def test_ibmq_compile_with_token() -> None:
     service = css.Service(ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"])
     qubits = cirq.LineQubit.range(4)
@@ -79,6 +62,8 @@ def test_ibmq_compile_with_token() -> None:
     out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
 
     assert isinstance(out.circuit, cirq.Circuit)
+    assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
+    assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
 
 
 def test_aqt_compile(service: css.Service) -> None:
