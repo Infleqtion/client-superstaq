@@ -42,7 +42,7 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
     assert all(target in result for target in filtered_result)
 
 
-def test_ibmq_compile_pulse_gate_circuits(service: css.Service):
+def test_ibmq_compile_pulse_gate_circuits(provider: qss.SuperstaqProvider):
     qc = qiskit.QuantumCircuit(2)
     qc.h(0)
     qc.cx(0, 1)
