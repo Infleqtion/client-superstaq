@@ -1,4 +1,4 @@
 numpy>=1.21.0
-pydantic>=2.0.0
+pydantic>=1.10.7
 requests>=2.32.0
 seaborn>=0.13.2

@@ -95,12 +95,14 @@ UNSUCCESSFUL_CIRCUIT_STATES = [
 
 class DefaultPydanticModel(
     pydantic.BaseModel,
-    use_enum_values=True,
-    extra="ignore",
-    validate_assignment=True,
-    validate_default=True,
 ):
     """Default pydantic model used across the superstaq server."""
+    model_config = pydantic.ConfigDict(
+        use_enum_values=True,
+        extra="ignore",
+        validate_assignment=True,
+        validate_default=True,
+    )
 
 
 class JobData(DefaultPydanticModel):
