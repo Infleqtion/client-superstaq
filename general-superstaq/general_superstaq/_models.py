@@ -97,6 +97,7 @@ class DefaultPydanticModel(
     pydantic.BaseModel,
 ):
     """Default pydantic model used across the superstaq server."""
+
     model_config = pydantic.ConfigDict(
         use_enum_values=True,
         extra="ignore",
