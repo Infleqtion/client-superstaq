@@ -9,3 +9,4 @@ def test_user_token_response() -> None:
         email="cameron.booker@infleqtion.com",
         token="abc",
     )
+    
