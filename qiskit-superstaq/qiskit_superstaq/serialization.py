@@ -20,7 +20,7 @@ T = TypeVar("T")
 # used for serialization, so using a slightly lower version prevents us from having to force users
 # to update Qiskit the moment we do.
 # Should always be QPY_COMPATIBILITY_VERSION <= QPY_SERIALIZATION_VERSION <= QPY_VERSION
-QPY_SERIALIZATION_VERSION = 11
+QPY_SERIALIZATION_VERSION = 13
 
 # Custom gate types to resolve when deserializing circuits
 # MSGate included as a workaround for https://github.com/Qiskit/qiskit/issues/11378
