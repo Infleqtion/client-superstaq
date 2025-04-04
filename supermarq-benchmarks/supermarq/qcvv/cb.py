@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 import cirq
+import cirq.circuits
 import numpy as np
 import pandas as pd
 import tqdm.contrib.itertools
@@ -40,8 +41,9 @@ class CB(BenchmarkingExperiment[CBResults]):
 
         super().__init__(num_qubits=cirq.num_qubits(process_circuit))
         self.qubits = process_circuit.all_qubits()
-
-        # TODO: Add check for Clifford process
+        # Checks that the process is a Clifford circuit
+        if not CB._check_is_Clifford(process_circuit):
+            raise Exception("This cycle benchmarking is only valid for Clifford elements.")
         self._process_circuit = cirq.Circuit()
         # Prevent internal compiler optimizations
         for op in process_circuit.all_operations():
@@ -49,8 +51,9 @@ class CB(BenchmarkingExperiment[CBResults]):
 
         self._matrix_root = CB._find_process_identity_min_depth(process_circuit)
 
-        # Choose the random channels to use: TODO make sure sampling without replacement
+        # Choose the random channels to use: 
         if pauli_channels is not None:
+            # Makes sure that the channels are distinct.
             self.pauli_channels = [
                 (
                     channel,
@@ -59,12 +62,10 @@ class CB(BenchmarkingExperiment[CBResults]):
                         for (pauli, qubit) in zip(channel, self.sorted_qubits)
                     ),
                 )
-                for channel in pauli_channels
+                for channel in set(pauli_channels)
             ]
         elif num_channels is not None:
-            self.pauli_channels = [
-                self._generate_n_qubit_pauli_moment() for _ in range(num_channels)
-            ]
+            self.pauli_channels = self._generate_n_qubit_pauli_moments(num_channels)
         else:
             raise RuntimeError("Cannot have both `num_channels` and `pauli_channels` be None.")
 
@@ -85,7 +86,7 @@ class CB(BenchmarkingExperiment[CBResults]):
         num_circuits: int,
         cycle_depths: list[int],
     ) -> Sequence[Sample]:
-        """Build a list of random circuits to perform the XEB experiment with.
+        """Build a list of random circuits to perform the CB experiment with.
 
         Args:
             num_circuits: Number of circuits to generate.
@@ -97,7 +98,7 @@ class CB(BenchmarkingExperiment[CBResults]):
             The list of experiment samples.
         """
         if len(cycle_depths) != 2:
-            raise ValueError("")  # Only needs two cycle depths.
+            raise ValueError("cycle benchmarking requires exactly two cycle depths")  # Only needs two cycle depths.
 
         samples = []
         for channel, depth, _ in tqdm.contrib.itertools.product(
@@ -143,7 +144,7 @@ class CB(BenchmarkingExperiment[CBResults]):
         bulk_circuit = cirq.Circuit()
 
         # Generate initial Pauli layer
-        zeroth_moment = self._generate_n_qubit_pauli_moment()[1]
+        zeroth_moment = self._generate_n_qubit_pauli_moments()[0][1]
 
         # Append to bulk circuit and mutable Pauli string
         bulk_circuit.append(zeroth_moment)
@@ -156,7 +157,7 @@ class CB(BenchmarkingExperiment[CBResults]):
             if process:
                 bulk_circuit += self._process_circuit
 
-            moment = self._generate_n_qubit_pauli_moment()[1]
+            moment = self._generate_n_qubit_pauli_moments()[0][1]
             bulk_circuit.append(moment, strategy=cirq.circuits.InsertStrategy.NEW_THEN_INLINE)
 
             # Pauli string operations
@@ -166,6 +167,14 @@ class CB(BenchmarkingExperiment[CBResults]):
             aggregate_pauli_string.inplace_right_multiply_by(ith_pauli_string)
 
         return bulk_circuit, aggregate_pauli_string
+    
+    @staticmethod
+    def _check_is_Clifford(circuit: cirq.Circuit) -> bool:
+        compiled_circuit = cirq.optimize_for_target_gateset(circuit, gateset=cirq.CZTargetGateset())
+        check = True
+        for op in compiled_circuit.all_operations():
+            check &= cirq.has_stabilizer_effect(op)
+        return check
 
     @staticmethod
     def _find_process_identity_min_depth(circuit, max_depth: int = 50) -> int:
@@ -205,22 +214,31 @@ class CB(BenchmarkingExperiment[CBResults]):
         )
         return full_cb_circuit, c_of_p
 
-    def _generate_n_qubit_pauli_moment(
+    def _generate_n_qubit_pauli_moments(
         self,
-    ) -> tuple[str, cirq.Moment]:
+        num_channels: int = 1,
+    ) -> list[tuple[str, cirq.Moment]]:
         """Generates an n-qubit random Pauli sequence.
 
         Returns:
             Returns a `tuple` object of n-qubit pauli strings and their
             corresponding gate operations.
         """
-        paulis: list[str] = random.choices(list(STRING_TO_PAULI.keys()), k=self.num_qubits)
-        pauli_string: str = "".join(paulis)
-        pauli_moment: cirq.Moment = cirq.Moment(
-            STRING_TO_PAULI[pauli](qubit) for (pauli, qubit) in zip(paulis, self.sorted_qubits)
-        )
-        return pauli_string, pauli_moment
-
+        pauli_strings: list[str] = []
+        pauli_moments: list[cirq.Moment] = []
+        for _ in range(num_channels):
+            paulis: list[str] = random.choices(list(STRING_TO_PAULI.keys()), k=self.num_qubits)
+            pauli_string: str = "".join(paulis)
+            while pauli_string in pauli_strings:
+                paulis = random.choices(list(STRING_TO_PAULI.keys()), k=self.num_qubits)
+                pauli_string = "".join(paulis)
+            pauli_strings.append(pauli_string)
+            pauli_moment: cirq.Moment = cirq.Moment(
+                STRING_TO_PAULI[pauli](qubit) for (pauli, qubit) in zip(paulis, self.sorted_qubits)
+            )
+            pauli_moments.append(pauli_moment)
+        return list(zip(pauli_strings, pauli_moments))
+    
     def _inversion_circuit(
         self,
         channel_pauli_matrix: cirq.MutablePauliString[cirq.Qid],
@@ -354,6 +372,9 @@ class CB(BenchmarkingExperiment[CBResults]):
             fidelities.drop(columns=["process", "identity"], inplace=True)
 
         process_fidelity = fidelities["fidelity"].mean()
+
+        if plot_results:
+            self.plot_results()
 
         return CBResults(
             "$ ".join(self.targets),
