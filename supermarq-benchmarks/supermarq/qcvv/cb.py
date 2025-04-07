@@ -42,14 +42,15 @@ class CB(BenchmarkingExperiment[CBResults]):
         super().__init__(num_qubits=cirq.num_qubits(process_circuit))
         self.qubits = process_circuit.all_qubits()
         # Checks that the process is a Clifford circuit
-        if not CB._check_is_Clifford(process_circuit):
+        check, compiled_circuit = CB._is_Clifford(process_circuit)
+        if not check:
             raise Exception("This cycle benchmarking is only valid for Clifford elements.")
         self._process_circuit = cirq.Circuit()
         # Prevent internal compiler optimizations
         for op in process_circuit.all_operations():
             self._process_circuit += op.with_tags("no_compile")
 
-        self._matrix_root = CB._find_process_identity_min_depth(process_circuit)
+        self._matrix_root = CB._find_process_identity_min_depth(compiled_circuit)
 
         # Choose the random channels to use: 
         if pauli_channels is not None:
@@ -169,24 +170,85 @@ class CB(BenchmarkingExperiment[CBResults]):
         return bulk_circuit, aggregate_pauli_string
     
     @staticmethod
-    def _check_is_Clifford(circuit: cirq.Circuit) -> bool:
+    def _is_Clifford(circuit: cirq.Circuit) -> tuple[bool, cirq.Circuit]:
+        """Checks if the circuit is a Clifford circuit by compiling it to CZ and
+        rotations gates and checking that all operations are stabilizer operations.
+        Args:
+            circuit: The circuit to check.
+        Returns:
+            A tuple containing a `bool` indicating if the circuit is a Clifford circuit 
+            and the `cirq.Cicuit` compiled circuit.
+        """
         compiled_circuit = cirq.optimize_for_target_gateset(circuit, gateset=cirq.CZTargetGateset())
         check = True
         for op in compiled_circuit.all_operations():
             check &= cirq.has_stabilizer_effect(op)
-        return check
-
+        return check, compiled_circuit
+    
     @staticmethod
-    def _find_process_identity_min_depth(circuit, max_depth: int = 50) -> int:
-        """TODO"""
-        identity = np.identity(2 ** len(circuit.all_qubits()), dtype=complex)
-        process_unitary = cirq.unitary(circuit)
-        unitary = np.array(1 + 0j)
+    def _apply_circuit_to_tableau(circuit: cirq.Circuit, tableau: cirq.CliffordTableau) -> None:
+        """Turns the circuit into a Clifford tableau.
+        Args:
+            circuit: The circuit to express as a tableau."""
+        sorted_qubits = sorted(circuit.all_qubits())
+        for op in circuit.all_operations():
+            if isinstance(op.gate, cirq.PhasedXZGate):
+                tableau.apply_z(
+                    axis=sorted_qubits.index(op.qubits[0]), 
+                    exponent=-round(op.gate.axis_phase_exponent, 4)
+                )
+                tableau.apply_x(
+                    axis=sorted_qubits.index(op.qubits[0]), 
+                    exponent=round(op.gate.x_exponent, 4)
+                )
+                tableau.apply_z(
+                    axis=sorted_qubits.index(op.qubits[0]), 
+                    exponent=round(op.gate.axis_phase_exponent, 4)
+                )
+                tableau.apply_z(
+                    axis=sorted_qubits.index(op.qubits[0]), 
+                    exponent=round(op.gate.z_exponent, 4)
+                )
+            else:
+                tableau.apply_cz(
+                    control_axis=sorted_qubits.index(op.qubits[0]), 
+                    target_axis=sorted_qubits.index(op.qubits[1]),
+                    exponent=op.gate.exponent
+                )
+            
+    
+    @staticmethod
+    def _find_process_order(circuit: cirq.Circuit, max_depth: int = 50) -> int:
+        """Finds the order of the process via the Clifford tableau representation.
+        Args:
+            circuit: The circuit to find the order of.
+            max_depth: The maximum depth to search for the order.
+        Returns:
+            The order of the process.
+        """
+        num_qubits = len(circuit.all_qubits())
+        tableau = cirq.CliffordTableau(num_qubits)
+        identity = np.eye(2*num_qubits, dtype=int)
+        zeros = np.zeros(2*num_qubits, dtype=int)
         for i in range(max_depth):
-            unitary = np.dot(process_unitary, unitary)
-            if cirq.equal_up_to_global_phase(unitary, identity):
-                return i + 1
-        raise RuntimeError(f"Could not find a circuit root less than {max_depth}")
+            CB._apply_circuit_to_tableau(circuit, tableau)
+            mat = tableau.matrix().astype(int)
+            phases = tableau.rs.astype(int)
+            if np.array_equal(mat, identity) and np.array_equal(phases, zeros):
+                return i+1
+        raise RuntimeError(f"Could not find a circuit order less than {max_depth}")
+
+    # @staticmethod
+    # def _find_process_identity_min_depth(circuit, max_depth: int = 50) -> int:
+    #     """TODO"""
+    #     identity = np.identity(2 ** len(circuit.all_qubits()), dtype=complex)
+    #     process_unitary = cirq.unitary(circuit)
+    #     unitary = np.array(1 + 0j)
+    #     for i in range(max_depth):
+    #         unitary = np.dot(process_unitary, unitary)
+    #         if cirq.equal_up_to_global_phase(unitary, identity):
+    #             return i + 1
+    #     raise RuntimeError(f"Could not find a circuit root less than {max_depth}")
 
     def _generate_full_cb_circuit(
         self, channel: str, depth: int, process=True
