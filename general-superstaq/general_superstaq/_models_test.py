@@ -7,7 +7,8 @@ import pytest
 from general_superstaq import _models
 
 """This test file will be updated once the new server (v0.3.0) client is implemented.
-For now, a single test is sufficient to check that `pydantic` is loading models and working as expected.
+For now, a single test is sufficient to check that `pydantic` is loading models and working as
+expected.
 """
 
 
