@@ -223,6 +223,25 @@ def test_service_get_job() -> None:
     mock_client.fetch_jobs.assert_called_once_with(["job_id"])
 
 
+def test_service_get_job_v0_3_0() -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
+    mock_client = mock.MagicMock(
+        spec=gss.superstaq_client._SuperstaqClient_v0_3_0, api_version="v0.3.0"
+    )
+    job_dict = mock.MagicMock(
+        spec=gss._models.JobData,
+        statuses=[gss._models.CircuitStatus.RUNNING, gss._models.CircuitStatus.AWAITING_SUBMISSION],
+    )
+    mock_client.fetch_single_job.return_value = job_dict
+    service._client = mock_client
+
+    job = service.get_job("job_id")
+
+    # fetch_jobs() should not be called upon construction
+    assert job.job_id() == "job_id"
+    assert job._job_data == job_dict  # type: ignore[attr-defined]
+
+
 def test_service_create_job() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
     mock_client = mock.MagicMock()
@@ -239,6 +258,37 @@ def test_service_create_job() -> None:
         fake_data="",
     )
     assert job.status() == "Done"
+    create_job_kwargs = mock_client.create_job.call_args[1]
+    # Serialization induces a float, so we don't validate full circuit.
+    assert create_job_kwargs["repetitions"] == 100
+    assert create_job_kwargs["target"] == "ss_fake_qpu"
+    assert create_job_kwargs["method"] == "fake_method"
+    assert create_job_kwargs["fake_data"] == ""
+
+
+def test_service_create_job_v0_3_0() -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
+    mock_client = mock.MagicMock(
+        api_version="v0.3.0", spec=gss.superstaq_client._SuperstaqClient_v0_3_0
+    )
+    mock_client.create_job.return_value = mock.MagicMock(
+        job_id="job_id", statuses=[gss._models.CircuitStatus.RECEIVED]
+    )
+
+    mock_client.fetch_single_job.return_value = mock.MagicMock(
+        job_id="job_id", statuses=[gss._models.CircuitStatus.COMPLETED]
+    )
+    service._client = mock_client
+
+    circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)), cirq.measure(cirq.LineQubit(0)))
+    job = service.create_job(
+        circuits=circuit,
+        repetitions=100,
+        target="ss_fake_qpu",
+        method="fake_method",
+        fake_data="",
+    )
+    assert job.status() == "completed"
     create_job_kwargs = mock_client.create_job.call_args[1]
     # Serialization induces a float, so we don't validate full circuit.
     assert create_job_kwargs["repetitions"] == 100
