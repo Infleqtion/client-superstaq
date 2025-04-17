@@ -11,14 +11,13 @@ import cirq
 import cirq.circuits
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import tqdm.contrib.itertools
 import matplotlib.pyplot as plt
 
 from supermarq.qcvv import BenchmarkingExperiment, BenchmarkingResults, Sample
 
 # Single-qubit basis rotations.
-STRING_TO_ROTATION = {"I": cirq.I, "X": cirq.Y**0.5, "Y": cirq.X ** (-0.5), "Z": cirq.I}
+STRING_TO_ROTATION = {"I": cirq.I, "X": cirq.Y**0.5, "Y": cirq.X**(-0.5), "Z": cirq.I}
 STRING_TO_PAULI = {"I": cirq.I, "X": cirq.X, "Y": cirq.Y, "Z": cirq.Z}
 
 
@@ -42,31 +41,35 @@ class CB(BenchmarkingExperiment[CBResults]):
     ) -> None:
 
         super().__init__(num_qubits=cirq.num_qubits(process_circuit))
-        self.qubits = process_circuit.all_qubits()
+        self.qubits = list(process_circuit.all_qubits())
         # Checks that the process is a Clifford circuit
         check, compiled_circuit = CB._is_Clifford(process_circuit)
         if not check:
-            raise Exception("This cycle benchmarking is only valid for Clifford elements.")
+            raise RuntimeError("This cycle benchmarking is only valid for Clifford elements.")
         self._process_circuit = cirq.Circuit()
         # Prevent internal compiler optimizations
         for op in process_circuit.all_operations():
             self._process_circuit += op.with_tags("no_compile")
 
-        self._matrix_order = CB._find_process_order(compiled_circuit)
+        self._matrix_order = self._find_process_order(compiled_circuit)
 
         # Choose the random channels to use: 
         if pauli_channels is not None:
             # Makes sure that the channels are distinct.
-            self.pauli_channels = [
-                (
-                    channel,
-                    cirq.Moment(
-                        STRING_TO_PAULI[pauli](qubit)
-                        for (pauli, qubit) in zip(channel, self.sorted_qubits)
-                    ),
+            self.pauli_channels = []
+            for channel in set(pauli_channels):
+                if len(channel) != self.num_qubits:
+                    raise RuntimeError(f"All Pauli channels must be over {self.num_qubits}" 
+                                       f" qubits. {channel} is over {len(channel)} qubits.")
+                self.pauli_channels.append(
+                    (
+                        channel,
+                        cirq.Moment(
+                            STRING_TO_PAULI[pauli](qubit)
+                            for (pauli, qubit) in zip(channel, self.sorted_qubits)
+                        ),
+                    )
                 )
-                for channel in set(pauli_channels)
-            ]
         elif num_channels is not None:
             self.pauli_channels = self._generate_n_qubit_pauli_moments(num_channels)
         else:
@@ -79,7 +82,7 @@ class CB(BenchmarkingExperiment[CBResults]):
     ##############
     @property
     def sorted_qubits(self) -> list[cirq.Qubit]:
-        return sorted(list(self.qubits))
+        return sorted(self.qubits)
 
     ###################
     # Private Methods #
@@ -212,8 +215,7 @@ class CB(BenchmarkingExperiment[CBResults]):
 
         return bulk_circuit, aggregate_pauli_string
     
-    @staticmethod
-    def _find_process_order(circuit: cirq.Circuit, max_depth: int = 50) -> int:
+    def _find_process_order(self, circuit: cirq.Circuit, max_depth: int = 50) -> int:
         """Finds the order of the process via the Clifford tableau representation.
 
         Args:
@@ -223,12 +225,11 @@ class CB(BenchmarkingExperiment[CBResults]):
         Returns:
             The order of the process.
         """
-        num_qubits = len(circuit.all_qubits())
-        tableau = cirq.CliffordTableau(num_qubits)
-        identity = np.eye(2*num_qubits, dtype=int)
-        zeros = np.zeros(2*num_qubits, dtype=int)
+        tableau = cirq.CliffordTableau(self.num_qubits)
+        identity = np.eye(2*self.num_qubits, dtype=int)
+        zeros = np.zeros(2*self.num_qubits, dtype=int)
         for i in range(max_depth):
-            CB._apply_circuit_to_tableau(circuit, tableau)
+            self._apply_circuit_to_tableau(circuit, tableau)
             mat = tableau.matrix().astype(int)
             phases = tableau.rs.astype(int)
             if np.array_equal(mat, identity) and np.array_equal(phases, zeros):
@@ -263,9 +264,6 @@ class CB(BenchmarkingExperiment[CBResults]):
     
     def _generate_all_pauli_strings(self) -> list[tuple[str, cirq.Moment]]:
         """Generates all possible Pauli strings of a given length.
-
-        Args:
-            num_qubits: The number of qubits to generate the Pauli strings for.
 
         Returns:
             A list of tuples containing the Pauli string and the corresponding gate operations.
@@ -326,7 +324,7 @@ class CB(BenchmarkingExperiment[CBResults]):
             Returns a `list` of `tuple` object of n-qubit pauli strings and their
             corresponding gate operations.
         """
-        if self.num_qubits*np.log(4) <= num_channels:
+        if self.num_qubits*np.log(4) <= np.log(num_channels):
             # Generate all possible Pauli strings
             return self._generate_all_pauli_strings()
         else:
