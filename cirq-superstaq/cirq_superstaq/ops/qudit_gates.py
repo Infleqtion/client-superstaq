@@ -12,6 +12,10 @@ from cirq.ops.common_gates import proper_repr
 import cirq_superstaq as css
 
 
+def _subscript(n: int) -> str:
+    return "".join(map(chr, (ord("₀") + int(digit) for digit in str(n))))
+
+
 @cirq.value_equality
 class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
     """A (non-parametrized) SWAP gate on two qudits of arbitrary dimension."""
@@ -48,7 +52,7 @@ class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
     def _has_unitary_(self) -> bool:
         return True
 
-    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex_] | None:
+    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex128] | None:
         for i in range(self._dimension):
             for j in range(i):
                 idx0 = args.subspace_index(i * self._dimension + j)
@@ -118,7 +122,7 @@ class BSwapPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
     def _eigen_shifts(self) -> list[float]:
         return [0.0, 0.5, -0.5]
 
-    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float64]]]:
         idx0, idx1 = self._swapped_state_indices()
 
         d = self.dimension**2
@@ -191,7 +195,7 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
     def _qid_shape_(self) -> tuple[int, int]:
         return self.dimension, self.dimension
 
-    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float64]]]:
         eigen_components = []
         exponents = np.kron(range(self.dimension), range(self.dimension)) % self.dimension
         for x in sorted(set(exponents)):
@@ -304,7 +308,7 @@ class VirtualZPowGate(cirq.EigenGate):
             global_shift=self._global_shift,
         )
 
-    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float64]]]:
         projector_phase = np.zeros(self._dimension)
         projector_phase[self._level :] = 1
         projector_rest = 1 - projector_phase
@@ -332,8 +336,8 @@ class VirtualZPowGate(cirq.EigenGate):
         return cirq.obj_to_dict_helper(self, ["exponent", "global_shift", "dimension", "level"])
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        if args.use_unicode_characters and self._level < 10:
-            wire_symbol = f"VZ{ord('₀') + self._level:c}₊"
+        if args.use_unicode_characters:
+            wire_symbol = f"VZ{_subscript(self._level)}₊"
         else:
             wire_symbol = f"VZ({self._level}+)"
 
@@ -370,7 +374,7 @@ class _QutritZPowGate(cirq.EigenGate):
     def _qid_shape_(self) -> tuple[int]:
         return (3,)
 
-    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float_]]]:
+    def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float64]]]:
         d = self._qid_shape_()[0]
         projector_phase = np.zeros((d, d))
         projector_phase[self._target_state, self._target_state] = 1
@@ -383,7 +387,7 @@ class _QutritZPowGate(cirq.EigenGate):
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         if args.use_unicode_characters and self._target_state < 10:
-            wire_symbol = f"Z{ord('₀') + self._target_state:c}"
+            wire_symbol = f"Z{_subscript(self._target_state)}"
         else:
             wire_symbol = f"Z[{self._target_state}]"
 
@@ -542,7 +546,7 @@ class QubitSubspaceGate(cirq.Gate):
     def _has_unitary_(self) -> bool:
         return cirq.has_unitary(self._sub_gate)
 
-    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex_] | None:
+    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex128] | None:
         if not cirq.has_unitary(self._sub_gate):
             return NotImplemented
 
@@ -558,9 +562,12 @@ class QubitSubspaceGate(cirq.Gate):
         sub_gate_info = cirq.circuit_diagram_info(self._sub_gate, args)
 
         new_symbols: list[str] = []
+        max_subspace_level = max(lvl for subspace in self.subspaces for lvl in subspace)
         for symbol, subspace in zip(sub_gate_info.wire_symbols, self.subspaces):
-            if args.use_unicode_characters and max(subspace) < 10:
-                subspace_str = f"{ord('₀') + subspace[0]:c}{ord('₀') + subspace[1]:c}"
+            if args.use_unicode_characters and max_subspace_level < 10:
+                subspace_str = f"{_subscript(subspace[0])}{_subscript(subspace[1])}"
+            elif args.use_unicode_characters:
+                subspace_str = f"{_subscript(subspace[0])}˰{_subscript(subspace[1])}"
             else:
                 subspace_str = f"[{subspace[0]},{subspace[1]}]"
 

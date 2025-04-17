@@ -49,7 +49,8 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
    :caption: Optimizations
 
    optimizations/aqt/aqt
-   optimizations/sqorpius/sqorpius
+   optimizations/eeroq/eeroq
+   optimizations/sqale/sqale
    optimizations/ibm/ibm
    optimizations/qscout/qscout
 
@@ -63,6 +64,7 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
    apps/dfe/dfe
    apps/aces/aces
    apps/supermarq/supermarq
+   apps/cudaq_logical_aim
 
 .. toctree::
    :maxdepth: 1
@@ -76,8 +78,9 @@ Learn more about Superstaq `here <https://www.infleqtion.com/superstaq>`_. To co
 .. toctree::
    :maxdepth: 1
    :hidden:
-   :caption: Clients
+   :caption: API Reference
 
-   cirq_superstaq
-   qiskit_superstaq
-   general_superstaq
+   autoapi/cirq_superstaq/index
+   autoapi/general_superstaq/index
+   autoapi/qiskit_superstaq/index
+   autoapi/supermarq/index

@@ -545,10 +545,18 @@ def test_barrier() -> None:
     assert str(gate) == "Barrier(3)"
     assert repr(gate) == "css.Barrier(3)"
 
+    # Barriers don't commute with other gates
     assert not cirq.commutes(css.Barrier(1), cirq.I)
     assert not cirq.commutes(cirq.Z, css.Barrier(1))
+    # Barrier operations don't commute with operations on the same qubits
     assert not cirq.commutes(css.barrier(*qubits), cirq.I(qubits[1]))
     assert not cirq.commutes(cirq.Z(qubits[2]), css.barrier(*qubits))
+    # Barrier operations do commute with operations on different qubits
+    assert cirq.commutes(css.barrier(*qubits[::2]), cirq.I(qubits[1]))
+    assert cirq.commutes(cirq.Z(qubits[2]), css.barrier(*qubits[:2]))
+    # Undefined behavior when commuting operations with gates
+    assert cirq.commutes(css.barrier(*qubits), cirq.I, default=None) is None
+    assert cirq.commutes(cirq.Z, css.barrier(*qubits), default=None) is None
 
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq as css")
 
@@ -984,7 +992,7 @@ def test_parallel_rgate() -> None:
         qreg q[2];
 
 
-        gate_GR(pi*1.23,pi*0.56) q[0],q[1];
+        GR_gate(pi*1.23,pi*0.56) q[0],q[1];
         """
     )
     assert circuit.to_qasm(header="") == expected_qasm
@@ -1008,7 +1016,7 @@ def test_parallel_rgate() -> None:
         qreg q[2];
 
 
-        gate_GR(pi*1.0,pi*0.5) q[0],q[1];
+        GR_gate(pi*1.0,pi*0.5) q[0],q[1];
         """
     )
 

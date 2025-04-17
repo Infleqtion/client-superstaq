@@ -215,6 +215,26 @@ def test_superstaq_client_validate_email_error(
         _ = client.create_job({"Hello": "World"}, target="ss_example_qpu")
 
 
+def test_superstaq_client_use_stored_ibmq_credential() -> None:
+    credentials = {"token": "ibmq_token", "instance": "instance", "channel": "ibm_quantum"}
+    with mock.patch(
+        "general_superstaq.superstaq_client.read_ibm_credentials", return_value=credentials
+    ):
+        client = gss.superstaq_client._SuperstaqClient(
+            client_name="general-superstaq",
+            remote_host="http://example.com",
+            api_key="to_my_heart",
+            cq_token="cq_token",
+            use_stored_ibmq_credentials=True,
+        )
+        assert client.client_kwargs == dict(
+            cq_token="cq_token",
+            ibmq_channel="ibm_quantum",
+            ibmq_instance="instance",
+            ibmq_token="ibmq_token",
+        )
+
+
 @mock.patch("requests.Session.post")
 def test_supertstaq_client_create_job(mock_post: mock.MagicMock) -> None:
     mock_post.return_value.status_code = requests.codes.ok
@@ -432,7 +452,6 @@ def test_superstaq_client_get_balance(mock_get: mock.MagicMock) -> None:
         f"http://example.com/{API_VERSION}/balance",
         headers=EXPECTED_HEADERS,
         verify=False,
-        json=None,
     )
 
 
@@ -533,6 +552,69 @@ def test_superstaq_client_get_targets(mock_post: mock.MagicMock) -> None:
     )
     response = client.get_targets()
     assert response == RETURNED_TARGETS
+    mock_post.assert_called_once_with(
+        f"http://example.com/{API_VERSION}/targets",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+        json={},
+    )
+
+    response = client.get_targets(simulator=True)
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/targets",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+        json={"simulator": True},
+    )
+
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        ibmq_token="token",
+    )
+    response = client.get_targets(simulator=True)
+    mock_post.assert_called_with(
+        f"http://example.com/{API_VERSION}/targets",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+        json={"simulator": True, "options": json.dumps({"ibmq_token": "token"})},
+    )
+
+
+@mock.patch("requests.Session.post")
+def test_superstaq_client_get_my_targets(mock_post: mock.MagicMock) -> None:
+    mock_post.return_value.ok = True
+    target = {
+        "ss_unconstrained_simulator": {
+            "supports_submit": True,
+            "supports_submit_qubo": True,
+            "supports_compile": True,
+            "available": True,
+            "retired": False,
+            "accessible": True,
+        }
+    }
+    mock_post.return_value.json.return_value = {"superstaq_targets": target}
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        ibmq_token="token",
+    )
+    response = client.get_my_targets()
+    assert response == [
+        gss.typing.Target(
+            target="ss_unconstrained_simulator",
+            **target["ss_unconstrained_simulator"],
+        )
+    ]
+    mock_post.assert_called_once_with(
+        f"http://example.com/{API_VERSION}/targets",
+        headers=EXPECTED_HEADERS,
+        verify=False,
+        json={"accessible": True, "options": json.dumps({"ibmq_token": "token"})},
+    )
 
 
 @mock.patch("requests.Session.post")
@@ -708,14 +790,30 @@ def test_superstaq_client_submit_qubo(mock_post: mock.MagicMock) -> None:
     }
     target = "ss_unconstrained_simulator"
     repetitions = 10
-    client.submit_qubo(example_qubo, target, repetitions=repetitions, max_solutions=1)
+    client.submit_qubo(
+        example_qubo,
+        target,
+        method="qaoa",
+        repetitions=repetitions,
+        max_solutions=1,
+        foo_kwarg=True,
+    )
 
     expected_json = {
         "qubo": [(("a",), 2.0), (("a", "b"), 1.0), (("b", 0), -5), ((), -3.0)],
         "target": target,
         "shots": repetitions,
-        "method": None,
+        "method": "qaoa",
         "max_solutions": 1,
+        "dry_run": False,
+        "options": json.dumps(
+            {
+                "qaoa_depth": 1,
+                "rqaoa_cutoff": 0,
+                "random_seed": None,
+                "foo_kwarg": True,
+            }
+        ),
     }
 
     mock_post.assert_called_with(
@@ -960,6 +1058,68 @@ def test_superstaq_client_target_info_with_credentials(mock_post: mock.MagicMock
     )
 
 
+def test_read_ibm_credentials() -> None:
+    credentials = {
+        "default-ibm-quantum": {
+            "token": "ibmq_token",
+            "instance": "instance",
+            "channel": "ibm_quantum",
+            "is_default_account": "True",
+        },
+        "myAccount": {"token": "account_token", "channel": "ibm_cloud"},
+    }
+    one_none_default_account = {"myAccount": {"token": "account_token", "channel": "ibm_cloud"}}
+    multiple_none_default_account = {
+        "myAccount": {"token": "account_token", "channel": "ibm_cloud"},
+        "otherAccount": {"token": "other_token", "channel": "ibm_quantum"},
+    }
+
+    bad_credentials = {"account": {"instance": "instance", "channel": "ibm_quantum"}}
+
+    with mock.patch("pathlib.Path.is_file", return_value=True):
+        with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(credentials))):
+            # multiple accounts with a default marked
+            assert gss.superstaq_client.read_ibm_credentials(None) == credentials.get(
+                "default-ibm-quantum"
+            )
+            assert gss.superstaq_client.read_ibm_credentials("myAccount") == credentials.get(
+                "myAccount"
+            )
+        # only one account
+        with mock.patch(
+            "builtins.open", mock.mock_open(read_data=json.dumps(one_none_default_account))
+        ):
+            assert gss.superstaq_client.read_ibm_credentials(None) == one_none_default_account.get(
+                "myAccount"
+            )
+
+        # fail because multiple accounts found with none marked as default
+        with pytest.raises(
+            ValueError, match="Multiple accounts found but none are marked as default."
+        ):
+            with mock.patch(
+                "builtins.open", mock.mock_open(read_data=json.dumps(multiple_none_default_account))
+            ):
+                gss.superstaq_client.read_ibm_credentials(None)
+
+        # fail because provided name is not an account in the config
+        with pytest.raises(KeyError, match="No account credentials saved under the name 'bad_key'"):
+            with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(credentials))):
+                gss.superstaq_client.read_ibm_credentials("bad_key")
+
+        # fail with missing token field in config
+        with pytest.raises(
+            KeyError, match="`token` and/or `channel` keys missing from credentials"
+        ):
+            with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(bad_credentials))):
+                gss.superstaq_client.read_ibm_credentials(None)
+    #
+    # fail to find credentials file
+    with pytest.raises(FileNotFoundError, match="The `qiskit-ibm.json` file was not found in"):
+        with mock.patch("pathlib.Path.is_file", return_value=False):
+            gss.superstaq_client.read_ibm_credentials(None)
+
+
 def test_find_api_key() -> None:
     # find key in the environment
     with mock.patch.dict(os.environ, {"SUPERSTAQ_API_KEY": "tomyheart"}):
@@ -990,9 +1150,8 @@ def test_get_user_info(mock_get: mock.MagicMock) -> None:
 
     user_info = client.get_user_info()
     mock_get.assert_called_once_with(
-        f"http://example.com/{API_VERSION}/get_user_info",
+        f"http://example.com/{API_VERSION}/user_info",
         headers=EXPECTED_HEADERS,
-        json={},
         verify=False,
     )
     assert user_info == [{"Some": "Data"}]
@@ -1010,9 +1169,26 @@ def test_get_user_info_query(mock_get: mock.MagicMock) -> None:
 
     user_info = client.get_user_info(name="Alice")
     mock_get.assert_called_once_with(
-        f"http://example.com/{API_VERSION}/get_user_info",
+        f"http://example.com/{API_VERSION}/user_info?name=Alice",
         headers=EXPECTED_HEADERS,
-        json={"name": "Alice"},
+        verify=False,
+    )
+    assert user_info == [{"Some": "Data"}]
+
+
+@mock.patch("requests.Session.get")
+def test_get_user_info_query_composite(mock_get: mock.MagicMock) -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="general-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+        cq_token="cq-token",
+    )
+    mock_get.return_value.json.return_value = {"example@email.com": {"Some": "Data"}}
+    user_info = client.get_user_info(user_id=42, name="Alice")
+    mock_get.assert_called_once_with(
+        f"http://example.com/{API_VERSION}/user_info?name=Alice&id=42",
+        headers=EXPECTED_HEADERS,
         verify=False,
     )
     assert user_info == [{"Some": "Data"}]
@@ -1035,8 +1211,7 @@ def test_get_user_info_empty_response(mock_get: mock.MagicMock) -> None:
         client.get_user_info()
 
     mock_get.assert_called_once_with(
-        f"http://example.com/{API_VERSION}/get_user_info",
+        f"http://example.com/{API_VERSION}/user_info",
         headers=EXPECTED_HEADERS,
-        json={},
         verify=False,
     )

@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to access Superstaqs API."""
+
 from __future__ import annotations
 
 import numbers
@@ -138,6 +139,8 @@ class Service(gss.service.Service):
         ibmq_token: str | None = None,
         ibmq_instance: str | None = None,
         ibmq_channel: str | None = None,
+        use_stored_ibmq_credentials: bool = False,
+        ibmq_name: str | None = None,
         **kwargs: object,
     ) -> None:
         """Creates the Service to access Superstaq's API.
@@ -170,6 +173,9 @@ class Service(gss.service.Service):
                 to IBM hardware, or to access non-public IBM devices you may have access to.
             ibmq_instance: An optional instance to use when running IBM jobs.
             ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
+            use_stored_ibmq_credentials: Whether to retrieve IBM credentials from locally saved
+                accounts.
+            ibmq_name: The name of the account to retrieve. The default is `default-ibm-quantum`.
             kwargs: Other optimization and execution parameters.
 
         Raises:
@@ -187,6 +193,8 @@ class Service(gss.service.Service):
             ibmq_token=ibmq_token,
             ibmq_instance=ibmq_instance,
             ibmq_channel=ibmq_channel,
+            ibmq_name=ibmq_name,
+            use_stored_ibmq_credentials=use_stored_ibmq_credentials,
             **kwargs,
         )
 
@@ -341,7 +349,7 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If there are no measurements in `circuits`.
-            SuperstaqServerException: If there was an error accessing the API.
+            ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         css.validation.validate_cirq_circuits(circuits, require_measurements=True)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
@@ -373,7 +381,7 @@ class Service(gss.service.Service):
             A `css.Job` which can be queried for status or results.
 
         Raises:
-            SuperstaqServerException: If there was an error accessing the API.
+            ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         return css.job.Job(client=self._client, job_id=job_id)
 
@@ -387,7 +395,7 @@ class Service(gss.service.Service):
             target: String of target representing target device.
 
         Returns:
-            `ResourceEstimate`(s) containing resource costs (after compilation).
+            ResourceEstimate(s) containing resource costs (after compilation).
         """
         css.validation.validate_cirq_circuits(circuits)
         circuit_is_list = not isinstance(circuits, cirq.Circuit)
@@ -419,7 +427,7 @@ class Service(gss.service.Service):
         target: str = "aqt_keysight_qpu",
         atol: float | None = None,
         gate_defs: None | (
-            Mapping[str, npt.NDArray[np.complex_] | cirq.Gate | cirq.Operation | None]
+            Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]
         ) = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
@@ -483,7 +491,7 @@ class Service(gss.service.Service):
         random_seed: int | None = None,
         atol: float | None = None,
         gate_defs: None | (
-            Mapping[str, npt.NDArray[np.complex_] | cirq.Gate | cirq.Operation | None]
+            Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]
         ) = None,
         gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
         pulses: object = None,
@@ -588,10 +596,10 @@ class Service(gss.service.Service):
         programs (strings).
 
         References:
-            [1] S. M. Clark et al., *Engineering the Quantum Scientific Computing Open User
-                Testbed*, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
+            [1] S. M. Clark et al., Engineering the Quantum Scientific Computing Open User
+                Testbed, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
                 https://doi.org/10.1109/TQE.2021.3096480.
-            [2] B. Morrison, et al., *Just Another Quantum Assembly Language (Jaqal)*, 2020 IEEE
+            [2] B. Morrison, et al., Just Another Quantum Assembly Language (Jaqal), 2020 IEEE
                 International Conference on Quantum Computing and Engineering (QCE), 402-408 (2020).
                 https://arxiv.org/abs/2008.08042.
 
@@ -674,7 +682,7 @@ class Service(gss.service.Service):
     def cq_compile(
         self,
         circuits: cirq.Circuit | Sequence[cirq.Circuit],
-        target: str = "cq_sqorpius_qpu",
+        target: str = "cq_sqale_qpu",
         *,
         grid_shape: tuple[int, int] | None = None,
         control_radius: float = 1.0,
@@ -694,10 +702,10 @@ class Service(gss.service.Service):
             kwargs: Other desired `cq_compile` options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s).
+            Object whose .circuit(s) attribute contains the compiled cirq.Circuit(s).
 
         Raises:
-            ValueError: If `target` is not a valid IBMQ target.
+            ValueError: If `target` is not a valid CQ target.
         """
         target = self._resolve_target(target)
         if not target.startswith("cq_"):
@@ -716,8 +724,9 @@ class Service(gss.service.Service):
         self,
         circuits: cirq.Circuit | Sequence[cirq.Circuit],
         target: str,
+        *,
         dynamical_decoupling: bool = True,
-        dd_strategy: str = "static_context_aware",
+        dd_strategy: str = "adaptive",
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) to the target IBMQ device.
@@ -725,16 +734,30 @@ class Service(gss.service.Service):
         Qiskit Terra must be installed to correctly deserialize pulse schedules for pulse-enabled
         targets.
 
+        Superstaq currently supports the following dynamical decoupling strategies:
+
+        * "standard": Places a single DD sequence in each idle window.
+
+        * "syncopated": Places DD pulses at fixed time intervals, alternating between pulses on
+           neighboring qubits in order to mitigate parasitic ZZ coupling errors.
+
+        * "adaptive" (default): Dynamically spaces DD pulses across idle windows with awareness of
+           neighboring qubits to achieve the parasitic ZZ coupling mitigation of the "syncopated"
+           strategy with fewer pulses and less discretization error.
+
+        See https://superstaq.readthedocs.io/en/latest/optimizations/ibm/ibmq_dd_strategies_qss.html
+        for an example of each strategy.
+
         Args:
             circuits: The circuit(s) to compile.
             target: String of target IBMQ device.
             dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
-            dd_strategy: Method to use for placing dynamical decoupling operations; either
-                "dynamic", "static", or "static_context_aware" (default).
-            kwargs: Other desired `ibmq_compile` options.
+            dd_strategy: Method to use for placing dynamical decoupling operations; should be either
+                "standard", "syncopated", or "adaptive" (default). See above.
+            kwargs: Other desired compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the compiled `cirq.Circuit`(s), and whose
+            Object whose .circuit(s) attribute contains the compiled cirq.Circuit(s), and whose
             .pulse_gate_circuit(s) attribute contains the corresponding pulse schedule(s) (when
             available).
 
@@ -801,7 +824,7 @@ class Service(gss.service.Service):
 
     def supercheq(
         self, files: list[list[int]], num_qubits: int, depth: int
-    ) -> tuple[list[cirq.Circuit], npt.NDArray[np.float_]]:
+    ) -> tuple[list[cirq.Circuit], npt.NDArray[np.float64]]:
         """Returns the randomly generated circuits and the fidelity matrix for inputted files.
 
         Args:
@@ -862,7 +885,7 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If `circuit` is not a valid `cirq.Circuit`.
-            SuperstaqServerException: If there was an error accessing the API.
+            ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         circuit_1 = rho_1[0]
         circuit_2 = rho_2[0]
@@ -901,7 +924,8 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If `ids` is not of size two.
-            SuperstaqServerException: If there was an error accesing the API or the jobs submitted
+            ~gss.SuperstaqServerException: If there was an error accessing the API or
+                the jobs submitted
                 through `submit_dfe` have not finished running.
         """
         return self._client.process_dfe(ids)
@@ -923,7 +947,7 @@ class Service(gss.service.Service):
     ) -> str:
         """Submits the jobs to characterize `target` through the ACES protocol.
 
-        The following gate eigenvalues are eestimated. For each qubit in the device, we consider
+        The following gate eigenvalues are estimated. For each qubit in the device, we consider
         six Clifford gates. These are given by the XZ maps: XZ, ZX, -YZ, -XY, ZY, YX. For each of
         these gates, three eigenvalues are returned (X, Y, Z, in that order). Then, the two-qubit
         gate considered here is the CZ in linear connectivity (each qubit n with n + 1). For this
@@ -965,7 +989,7 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If the target or noise model is not valid.
-            SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
         noise_dict: dict[str, object] = {}
         if isinstance(noise, str):
@@ -1036,7 +1060,7 @@ class Service(gss.service.Service):
 
         Raises:
             ValueError: If the target or noise model is not valid.
-            SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
 
         noise_dict: dict[str, object] = {}
@@ -1074,7 +1098,7 @@ class Service(gss.service.Service):
             A dict containing the Cycle Benchmarking process data.
 
         Raises:
-            SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
         serialized_counts = cirq.to_json(counts) if counts else None
         cb_data = self._client.process_cb(job_id, serialized_counts)
@@ -1107,7 +1131,7 @@ class Service(gss.service.Service):
 
             def _objective(
                 x: np.typing.NDArray[np.int_], A: float, p: float
-            ) -> np.typing.NDArray[np.float_]:
+            ) -> np.typing.NDArray[np.float64]:
                 return A * p**x
 
             fit_data: defaultdict[str, float] = defaultdict(float)
@@ -1151,7 +1175,7 @@ class Service(gss.service.Service):
 
         def _objective(
             x: np.typing.NDArray[np.int_], A: float, p: float
-        ) -> np.typing.NDArray[np.float_]:
+        ) -> np.typing.NDArray[np.float64]:
             return A * p**x
 
         e_f = 0.0

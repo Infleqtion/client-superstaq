@@ -89,7 +89,7 @@ class Service:
             balance: The new balance.
 
         Raises:
-            SuperstaqException: If requested balance exceeds the limit.
+            superstaq.SuperstaqException: If requested balance exceeds the limit.
 
         Returns:
             String containing status of update (whether or not it failed).
@@ -131,6 +131,7 @@ class Service:
         supports_compile: bool | None = None,
         available: bool | None = None,
         retired: bool | None = None,
+        accessible: bool | None = None,
         **kwargs: bool,
     ) -> list[gss.Target]:
         """Gets a list of Superstaq targets along with their status information.
@@ -146,6 +147,8 @@ class Service:
             available: Optional boolean flag to only return targets that are (not) available
                 to use.
             retired: Optional boolean flag to only return targets that are or are not retired.
+            accessible: Optional boolean flag to only return targets that are (not) accessible
+                to the user.
             kwargs: Any additional, supported flags to restrict/filter returned targets.
 
         Returns:
@@ -158,9 +161,19 @@ class Service:
             supports_compile=supports_compile,
             available=available,
             retired=retired,
+            accessible=accessible,
             **kwargs,
         )
         return self._client.get_targets(**filters)
+
+    def get_my_targets(self) -> list[gss.Target]:
+        """Gets a list of Superstaq targets that the user can submit to and are available along
+        with their status information.
+
+        Returns:
+            A list of Superstaq targets that the user can currently submit to.
+        """
+        return self._client.get_my_targets()
 
     @overload
     def get_user_info(self) -> dict[str, str | float]: ...
@@ -172,10 +185,28 @@ class Service:
     def get_user_info(self, *, email: str) -> list[dict[str, str | float]]: ...
 
     @overload
+    def get_user_info(self, *, user_id: int) -> list[dict[str, str | float]]: ...
+
+    @overload
+    def get_user_info(self, *, name: str, user_id: int) -> list[dict[str, str | float]]: ...
+
+    @overload
+    def get_user_info(self, *, email: str, user_id: int) -> list[dict[str, str | float]]: ...
+
+    @overload
     def get_user_info(self, *, name: str, email: str) -> list[dict[str, str | float]]: ...
 
+    @overload
     def get_user_info(
-        self, *, name: str | None = None, email: str | None = None
+        self, *, name: str, email: str, user_id: int
+    ) -> list[dict[str, str | float]]: ...
+
+    def get_user_info(
+        self,
+        *,
+        name: str | None = None,
+        email: str | None = None,
+        user_id: int | None = None,
     ) -> dict[str, str | float] | list[dict[str, str | float]]:
         """Gets a dictionary of the user's info.
 
@@ -186,16 +217,17 @@ class Service:
 
         Args:
             name: A name to search by. Defaults to None.
-            email: An email address to search by. Defaults to None
+            email: An email address to search by. Defaults to None.
+            user_id: A user ID to search by. Defaults to None.
 
         Returns:
             A dictionary of the user information. In the case that either the name or email
             query kwarg is used, a list of dictionaries is returned, corresponding to the user
             information for each user that matches the query.
         """
-        user_info = self._client.get_user_info(name=name, email=email)
+        user_info = self._client.get_user_info(name=name, email=email, user_id=user_id)
 
-        if name is None and email is None:
+        if name is None and email is None and user_id is None:
             # If no query then return the only element in the list.
             return user_info[0]
 
@@ -206,8 +238,14 @@ class Service:
         qubo: Mapping[tuple[TQuboKey, ...], float],
         target: str = "ss_unconstrained_simulator",
         repetitions: int = 10,
-        method: str | None = None,
+        method: str = "sim_anneal",
         max_solutions: int = 1000,
+        *,
+        qaoa_depth: int = 1,
+        rqaoa_cutoff: int = 0,
+        dry_run: bool = False,
+        random_seed: int | None = None,
+        **kwargs: object,
     ) -> list[dict[TQuboKey, int]]:
         """Solves a submitted QUBO problem via annealing.
 
@@ -222,15 +260,33 @@ class Service:
                 would be {('a',): 2, ('a', 'b'): 1, ('b', 'c'): -5, (): -3}.
             target: The target to submit the QUBO.
             repetitions: Number of times that the execution is repeated before stopping.
-            method: The parameter specifying method of QUBO solving execution. Currently,
-                will either be the "dry-run" option which runs on dwave's simulated annealer,
-                or defaults to `None` and sends it directly to the specified target.
+            method: The parameter specifying method of QUBO solving execution. Currently, the
+                supported methods include "bruteforce", "sim_anneal", "qaoa", or "rqaoa".
+                Defaults to "sim_anneal" which runs on DWave's simulated annealer.
             max_solutions: A parameter that specifies the max number of output solutions.
+            qaoa_depth: The number of QAOA layers to use. Defaults to 1.
+            rqaoa_cutoff: The stopping point for RQAOA before using switching to a classical
+                solver. Defaults to 0.
+            dry_run: If `method="qaoa"`, a boolean flag to (not) run an ideal 'dry-run'
+                QAOA execution on `target`.
+            random_seed: Optional random seed choice for RQAOA.
+            kwargs: Any optional keyword arguments supported by the qubo solver methods.
 
         Returns:
             A dictionary containing the output solutions.
         """
-        result_dict = self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
+        result_dict = self._client.submit_qubo(
+            qubo,
+            target,
+            repetitions,
+            method,
+            max_solutions,
+            qaoa_depth=qaoa_depth,
+            rqaoa_cutoff=rqaoa_cutoff,
+            dry_run=dry_run,
+            random_seed=random_seed,
+            **kwargs,
+        )
         return gss.serialization.deserialize(result_dict["solution"])
 
     @staticmethod
@@ -418,7 +474,7 @@ class Service:
 
         Raises:
             ValueError: If the target or noise model are not valid.
-            SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
         noise_dict: dict[str, object] = {}
         if noise:

@@ -55,6 +55,9 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
 
         return self._provider == other._provider and self.target_info() == other.target_info()
 
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__}('{self.name}')>"
+
     def configuration(self) -> BackendConfiguration:
         """Retrieves configuration information for this target.
 
@@ -169,17 +172,21 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
 
     def retrieve_job(self, job_id: str) -> qss.SuperstaqJob:
         """Gets a job that has been created on the Superstaq API.
-
         Args:
             job_id: The UUID of the job. Jobs are assigned these numbers by the server during the
             creation of the job.
-
         Returns:
             A `qss.SuperstaqJob` which can be queried for status or results.
-
         Raises:
-            SuperstaqServerException: If there was an error accessing the API.
+            ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
+        warnings.warn(
+            "The `.retrieve_job()` method of `SuperstaqBackend` has been deprecated, and will be "
+            "removed in a future version of qiskit-superstaq. Instead, use the `.get_job()`"
+            "method of `SuperstaqProvider`.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return qss.SuperstaqJob(self, job_id)
 
     def compile(
@@ -190,7 +197,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         """Compiles the given circuit(s) to the backend's native gateset.
 
         Args:
-            circuits: The `qiskit.QuantumCircuit`(s) to compile.
+            circuits: The qiskit.QuantumCircuit(s) to compile.
             kwargs: Other desired compile options.
 
         Returns:
@@ -241,7 +248,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         num_eca_circuits: int | None = None,
         random_seed: int | None = None,
         atol: float | None = None,
-        gate_defs: Mapping[str, str | npt.NDArray[np.complex_] | None] | None = None,
+        gate_defs: Mapping[str, str | npt.NDArray[np.number[Any]] | None] | None = None,
         gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
         pulses: object = None,
         variables: object = None,
@@ -313,17 +320,32 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
     def ibmq_compile(
         self,
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
+        *,
         dynamical_decoupling: bool = True,
-        dd_strategy: str = "static_context_aware",
+        dd_strategy: str = "adaptive",
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
 
+        Superstaq currently supports the following dynamical decoupling strategies:
+
+        * "standard": Places a single DD sequence in each idle window.
+
+        * "syncopated": Places DD pulses at fixed time intervals, alternating between pulses on
+           neighboring qubits in order to mitigate parasitic ZZ coupling errors.
+
+        * "adaptive" (default): Dynamically spaces DD pulses across idle windows with awareness of
+           neighboring qubits to achieve the parasitic ZZ coupling mitigation of the "syncopated"
+           strategy with fewer pulses and less discretization error.
+
+        See https://superstaq.readthedocs.io/en/latest/optimizations/ibm/ibmq_dd_strategies_qss.html
+        for an example of each strategy.
+
         Args:
-            circuits: The `qiskit.QuantumCircuit`(s) to compile.
+            circuits: The qiskit.QuantumCircuit(s) to compile.
             dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
-            dd_strategy: Method to use for placing dynamical decoupling operations; either
-                "dynamic", "static", or "static_context_aware" (default).
+            dd_strategy: Method to use for placing dynamical decoupling operations; should be either
+                "standard", "syncopated", or "adaptive" (default). See above.
             kwargs: Other desired compile options.
 
         Returns:
@@ -363,10 +385,10 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         Jaqal [2] programs (strings).
 
         References:
-            [1] S. M. Clark et al., *Engineering the Quantum Scientific Computing Open User
-                Testbed*, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
+            [1] S. M. Clark et al., Engineering the Quantum Scientific Computing Open User
+                Testbed, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
                 https://doi.org/10.1109/TQE.2021.3096480.
-            [2] B. Morrison, et al., *Just Another Quantum Assembly Language (Jaqal)*, 2020 IEEE
+            [2] B. Morrison, et al., Just Another Quantum Assembly Language (Jaqal), 2020 IEEE
                 International Conference on Quantum Computing and Engineering (QCE), 402-408 (2020).
                 https://arxiv.org/abs/2008.08042.
 
@@ -448,7 +470,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         """Compiles and optimizes the given circuit(s) for CQ devices.
 
         Args:
-            circuits: The `qiskit.QuantumCircuit`(s) to compile.
+            circuits: The qiskit.QuantumCircuit(s) to compile.
             grid_shape: Optional fixed dimensions for the rectangular qubit grid (by default the
                 actual qubit layout will be pulled from the hardware provider).
             control_radius: The radius with which qubits remain connected
@@ -496,7 +518,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             circuits: The circuit(s) used during resource estimation.
 
         Returns:
-            `ResourceEstimate`(s) containing resource costs (after compilation) for running
+            ResourceEstimate(s) containing resource costs (after compilation) for running
             circuit(s) on this backend.
         """
         request_json = self._get_compile_request_json(circuits)
@@ -568,7 +590,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         Raises:
             AssertionError: If the weights are not an Iterable type.
             ValueError: If the target or noise model is not valid.
-            SuperstaqServerException: If the request fails.
+            ~gss.SuperstaqServerException: If the request fails.
         """
         noise_dict: dict[str, object] = {}
         if noise:

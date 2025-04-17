@@ -12,7 +12,6 @@ import general_superstaq as gss
 import numpy as np
 import pytest
 import qiskit
-import yaml
 from general_superstaq import ResourceEstimate, testing
 
 import qiskit_superstaq as qss
@@ -57,6 +56,69 @@ def test_get_balance() -> None:
 
 
 @patch("requests.Session.post")
+def test_get_job(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    qc = qiskit.QuantumCircuit(2, 2)
+    qc.h(0)
+    qc.cx(0, 1)
+    qc.measure([0, 0], [1, 1])
+    backend = fake_superstaq_provider.get_backend("ibmq_brisbane_qpu")
+
+    with patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
+        return_value={"job_ids": ["job_id"], "status": "ready"},
+    ):
+        job = backend.run(qc, method="dry-run", shots=100)
+
+    mock_post.return_value.json = lambda: {
+        "job_id": {
+            "status": "ready",
+            "target": "ibmq_brisbane_qpu",
+        }
+    }
+
+    assert job == fake_superstaq_provider.get_job("job_id")
+
+    # multi circuit job with a comma separated job_id
+    with patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
+        return_value={"job_ids": ["job_id1,job_id2"], "status": "ready"},
+    ):
+        job = backend.run([qc, qc], method="dry-run", shots=100)
+
+    mock_post.return_value.json = lambda: {
+        "job_id1": {
+            "status": "ready",
+            "target": "ibmq_brisbane_qpu",
+        },
+        "job_id2": {
+            "status": "ready",
+            "target": "ibmq_brisbane_qpu",
+        },
+    }
+    assert job == fake_superstaq_provider.get_job("job_id1,job_id2")
+
+    # job ids belonging to different targets
+    with patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.create_job",
+        return_value={"job_ids": ["job_id1,job_id2"], "status": "ready"},
+    ):
+        job = backend.run([qc, qc], method="dry-run", shots=100)
+
+    mock_post.return_value.json = lambda: {
+        "job_id1": {
+            "status": "ready",
+            "target": "ibmq_brisbane_qpu",
+        },
+        "job_id2": {
+            "status": "ready",
+            "target": "ibmq_fez_qpu",
+        },
+    }
+    with pytest.raises(gss.SuperstaqException, match="Job ids belong to jobs at different targets"):
+        fake_superstaq_provider.get_job("job_id1,job_id2")
+
+
+@patch("requests.Session.post")
 def test_aqt_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(8)
     qc.cz(4, 5)
@@ -65,7 +127,6 @@ def test_aqt_compile(mock_post: MagicMock, fake_superstaq_provider: MockSupersta
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "initial_logical_to_physicals": "[[[0, 1]]]",
         "final_logical_to_physicals": "[[[1, 4]]]",
-        "state_jp": gss.serialization.serialize({}),
     }
     out = fake_superstaq_provider.aqt_compile(qc)
     assert out.circuit == qc
@@ -73,20 +134,11 @@ def test_aqt_compile(mock_post: MagicMock, fake_superstaq_provider: MockSupersta
     assert out.final_logical_to_physical == {1: 4}
     assert not hasattr(out, "circuits")
 
-    out = fake_superstaq_provider.aqt_compile(
-        [qc], atol=1e-2, pulses={"foo": "bar"}, variables={"abc": 123}
-    )
+    out = fake_superstaq_provider.aqt_compile([qc], atol=1e-2)
     assert out.circuits == [qc]
     assert out.initial_logical_to_physicals == [{0: 1}]
     assert out.final_logical_to_physicals == [{1: 4}]
     assert not hasattr(out, "circuit")
-    expected_options = {
-        "atol": 1e-2,
-        "aqt_configs": {
-            "pulses": yaml.dump({"foo": "bar"}),
-            "variables": yaml.dump({"abc": 123}),
-        },
-    }
     mock_post.assert_called_with(
         f"{fake_superstaq_provider._client.url}/aqt_compile",
         headers=fake_superstaq_provider._client.headers,
@@ -94,7 +146,7 @@ def test_aqt_compile(mock_post: MagicMock, fake_superstaq_provider: MockSupersta
         json={
             "qiskit_circuits": qss.serialize_circuits(qc),
             "target": "aqt_keysight_qpu",
-            "options": json.dumps(expected_options),
+            "options": json.dumps({"atol": 1e-2}),
         },
     )
 
@@ -102,7 +154,6 @@ def test_aqt_compile(mock_post: MagicMock, fake_superstaq_provider: MockSupersta
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
         "initial_logical_to_physicals": "[[], []]",
         "final_logical_to_physicals": "[[], []]",
-        "state_jp": gss.serialization.serialize({}),
     }
     out = fake_superstaq_provider.aqt_compile([qc, qc], test_options="yes")
     assert out.circuits == [qc, qc]
@@ -128,7 +179,6 @@ def test_aqt_compile_eca(
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
-        "state_jp": gss.serialization.serialize({}),
     }
 
     out = fake_superstaq_provider.aqt_compile(qc, num_eca_circuits=1, random_seed=1234, atol=1e-2)
@@ -163,13 +213,13 @@ def test_ibmq_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperst
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "initial_logical_to_physicals": json.dumps([list(initial_logical_to_physical.items())]),
         "final_logical_to_physicals": json.dumps([list(final_logical_to_physical.items())]),
-        "pulses": gss.serialization.serialize([mock.DEFAULT]),
+        "pulse_gate_circuits": qss.serialization.serialize_circuits(qc),
     }
 
     assert fake_superstaq_provider.ibmq_compile(
         qiskit.QuantumCircuit(), test_options="yes", target="ibmq_fake_qpu"
     ) == qss.compiler_output.CompilerOutput(
-        qc, initial_logical_to_physical, final_logical_to_physical, pulse_sequences=mock.DEFAULT
+        qc, initial_logical_to_physical, final_logical_to_physical, pulse_gate_circuits=qc
     )
     assert fake_superstaq_provider.ibmq_compile(
         [qiskit.QuantumCircuit()], target="ibmq_fake_qpu"
@@ -177,7 +227,7 @@ def test_ibmq_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperst
         [qc],
         [initial_logical_to_physical],
         [final_logical_to_physical],
-        pulse_sequences=[mock.DEFAULT],
+        pulse_gate_circuits=[qc],
     )
 
     mock_post.return_value.json = lambda: {
@@ -189,21 +239,25 @@ def test_ibmq_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperst
     assert fake_superstaq_provider.ibmq_compile(
         qiskit.QuantumCircuit(), test_options="yes", target="ibmq_fake_qpu"
     ) == qss.compiler_output.CompilerOutput(
-        qc, initial_logical_to_physical, final_logical_to_physical, pulse_sequences=None
+        qc, initial_logical_to_physical, final_logical_to_physical
     )
     assert fake_superstaq_provider.ibmq_compile(
         [qiskit.QuantumCircuit()], target="ibmq_fake_qpu"
     ) == qss.compiler_output.CompilerOutput(
-        [qc], [initial_logical_to_physical], [final_logical_to_physical], pulse_sequences=None
-    )
-
-    assert fake_superstaq_provider.ibmq_compile(
-        qiskit.QuantumCircuit(), dd_strategy="static", test_options="yes", target="ibmq_fake_qpu"
-    ) == qss.compiler_output.CompilerOutput(
-        qc, initial_logical_to_physical, final_logical_to_physical, pulse_sequences=None
+        [qc], [initial_logical_to_physical], [final_logical_to_physical]
     )
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
-        "dd_strategy": "static",
+        "dd_strategy": "adaptive",
+        "dynamical_decoupling": True,
+    }
+
+    assert fake_superstaq_provider.ibmq_compile(
+        qiskit.QuantumCircuit(), dd_strategy="standard", test_options="yes", target="ibmq_fake_qpu"
+    ) == qss.compiler_output.CompilerOutput(
+        qc, initial_logical_to_physical, final_logical_to_physical
+    )
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "dd_strategy": "standard",
         "dynamical_decoupling": True,
         "test_options": "yes",
     }

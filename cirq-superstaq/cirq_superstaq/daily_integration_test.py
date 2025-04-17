@@ -9,6 +9,7 @@ import cirq
 import general_superstaq as gss
 import numpy as np
 import pytest
+import qiskit
 from general_superstaq import ResourceEstimate
 
 import cirq_superstaq as css
@@ -25,35 +26,39 @@ def service() -> css.Service:
 
 
 def test_ibmq_compile(service: css.Service) -> None:
-    qubits = cirq.LineQubit.range(4)
     circuit = cirq.Circuit(
-        css.AceCRMinusPlus(qubits[0], qubits[1]),
-        css.AceCRMinusPlus(qubits[1], qubits[2]),
-        css.AceCRMinusPlus(qubits[2], qubits[3]),
+        cirq.H(cirq.q(3)),
+        cirq.CX(cirq.q(3), cirq.q(0)) ** 0.7,
     )
 
     out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
-    assert out.pulse_sequence is not None
+    assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
+    assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
 
-    out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
-    assert isinstance(out.circuit, cirq.Circuit)
-    assert out.pulse_sequence is not None
+    out = service.ibmq_compile([circuit, circuit], target="ibmq_brisbane_qpu")
+
+    assert isinstance(out.circuits, list)
+    assert len(out.circuits) == 2
+    assert isinstance(out.circuits[1], cirq.Circuit)
+
+    assert isinstance(out.pulse_gate_circuits, list)
+    assert len(out.pulse_gate_circuits) == 2
+    assert isinstance(out.pulse_gate_circuits[1], qiskit.QuantumCircuit)
+    assert len(out.pulse_gate_circuits[1].op_start_times) == len(out.pulse_gate_circuits[1])
 
 
 def test_ibmq_compile_with_token() -> None:
     service = css.Service(ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"])
-    qubits = cirq.LineQubit.range(4)
     circuit = cirq.Circuit(
-        css.AceCRMinusPlus(qubits[0], qubits[1]),
-        css.AceCRMinusPlus(qubits[1], qubits[2]),
-        css.AceCRMinusPlus(qubits[2], qubits[3]),
+        cirq.H(cirq.q(3)),
+        cirq.CX(cirq.q(3), cirq.q(0)) ** 0.7,
     )
-
     out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
 
     assert isinstance(out.circuit, cirq.Circuit)
-    assert out.pulse_sequence is not None
+    assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
+    assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
 
 
 def test_aqt_compile(service: css.Service) -> None:
@@ -144,6 +149,7 @@ def test_get_resource_estimate(service: css.Service) -> None:
 
 def test_get_targets(service: css.Service) -> None:
     result = service.get_targets()
+    filtered_result = service.get_my_targets()
     ibmq_target_info = gss.typing.Target(
         target="ibmq_brisbane_qpu",
         supports_submit=True,
@@ -151,6 +157,7 @@ def test_get_targets(service: css.Service) -> None:
         supports_compile=True,
         available=True,
         retired=False,
+        accessible=True,
     )
     aqt_target_info = gss.typing.Target(
         target="aqt_keysight_qpu",
@@ -159,10 +166,12 @@ def test_get_targets(service: css.Service) -> None:
         supports_compile=True,
         available=True,
         retired=False,
+        accessible=True,
     )
 
     assert ibmq_target_info in result
     assert aqt_target_info in result
+    assert all(target in result for target in filtered_result)
 
 
 def test_qscout_compile(service: css.Service) -> None:
@@ -281,13 +290,27 @@ def test_aces(service: css.Service) -> None:
 
 def test_job(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
+    circuit_alt = cirq.Circuit(cirq.X(cirq.q(0)), cirq.measure(cirq.q(0)))
+
     job = service.create_job(circuit, target="ibmq_brisbane_qpu", repetitions=10, method="dry-run")
+    multi_job = service.create_job(
+        [circuit, circuit_alt], target="ibmq_brisbane_qpu", repetitions=10, method="dry-run"
+    )
 
     job_id = job.job_id()  # To test for https://github.com/Infleqtion/client-superstaq/issues/452
+    multi_job_id = multi_job.job_id()
 
     assert job.counts(0) == {"0": 10}
+    assert multi_job.counts(0) == {"0": 10}
+    assert multi_job.counts(1) == {"1": 10}
+
     assert job.status() == "Done"
+    assert multi_job.status(0) == "Done"
+    assert multi_job.status(1) == "Done"
+
     assert job.job_id() == job_id
+    assert multi_job.job_id() == multi_job_id
+    assert list(multi_job._job.keys()) == multi_job_id.split(",")
 
     # Force job to refresh when queried:
     job._job.clear()
@@ -299,7 +322,7 @@ def test_job(service: css.Service) -> None:
     assert job.job_id() == job_id
 
 
-@pytest.mark.parametrize("target", ["cq_sqorpius_simulator", "aws_sv1_simulator"])
+@pytest.mark.parametrize("target", ["cq_sqale_simulator", "aws_sv1_simulator"])
 def test_submit_to_provider_simulators(target: str, service: css.Service) -> None:
     q0 = cirq.LineQubit(0)
     q1 = cirq.LineQubit(1)
@@ -309,14 +332,14 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
     assert job.counts(0) == {"11": 1}
 
 
-@pytest.mark.skip(reason="Can't be executed when Sqorpius is set to not accept jobs")
-def test_submit_to_sqorpius_qubit_sorting(service: css.Service) -> None:
+@pytest.mark.skip(reason="Can't be executed when Sqale is set to not accept jobs")
+def test_submit_to_sqale_qubit_sorting(service: css.Service) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776
 
     Args:
         service: cirq_superstaq service object from fixture.
     """
-    target = "cq_sqorpius_qpu"
+    target = "cq_sqale_qpu"
     num_qubits = service.target_info(target)["num_qubits"]
     qubits = cirq.LineQubit.range(num_qubits)
     circuit = cirq.Circuit(
