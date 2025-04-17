@@ -10,6 +10,7 @@ from unittest import mock
 import general_superstaq as gss
 import pytest
 import qiskit
+from packaging import version
 
 import qiskit_superstaq as qss
 
@@ -117,6 +118,10 @@ def test_compiler_output_repr() -> None:
     )
 
 
+@pytest.mark.skipif(
+    version.parse(qiskit.__version__) > version.parse("1.4"),
+    reason="Temporary skip for Qiskit 2.0",
+)
 def test_read_json() -> None:
     qc = qiskit.QuantumCircuit(2)
     qc.h(0)

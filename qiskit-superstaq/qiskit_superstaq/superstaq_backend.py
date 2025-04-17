@@ -25,7 +25,6 @@ import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
     from _typeshed import SupportsItems
-    from qiskit.providers.models import BackendConfiguration
 
 
 class SuperstaqBackend(qiskit.providers.BackendV2):
@@ -57,41 +56,6 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}('{self.name}')>"
-
-    def configuration(self) -> BackendConfiguration:
-        """Retrieves configuration information for this target.
-
-        Returns:
-            A backend configuration object containing various hardware parameters.
-        """
-        warnings.warn(
-            "The `.configuration()` method of `SuperstaqBackend` has been deprecated, and will be "
-            "removed in a future version of qiskit-superstaq. Instead, use attributes of the "
-            "backend itself (e.g. `backend.num_qubits`), or of its `.target` attribute.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        target_info = self.target_info()
-
-        num_qubits = target_info.get("num_qubits")
-        configuration_dict = {
-            "backend_name": target_info.get("target"),
-            "basis_gates": target_info.get("native_gate_set", []),
-            "backend_version": "n/a",
-            "n_qubits": num_qubits,
-            "gates": [],
-            "local": False,
-            "simulator": False,
-            "conditional": False,
-            "open_pulse": False,
-            "memory": False,
-            "max_shots": None,
-            "coupling_map": None,
-            "description": f"{num_qubits} qubit device",
-        }
-
-        return qiskit.providers.models.BackendConfiguration.from_dict(configuration_dict)
 
     @property
     def max_circuits(self) -> int | None:

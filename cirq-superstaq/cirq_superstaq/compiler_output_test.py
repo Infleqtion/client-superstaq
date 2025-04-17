@@ -11,6 +11,7 @@ import general_superstaq as gss
 import pytest
 import qiskit
 import qiskit_superstaq as qss
+from packaging import version
 
 import cirq_superstaq as css
 
@@ -157,6 +158,10 @@ def test_read_json_ibmq() -> None:
     assert not hasattr(out, "final_logical_to_physical")
 
 
+@pytest.mark.skipif(
+    version.parse(qiskit.__version__) > version.parse("1.4"),
+    reason="Temporary skip for Qiskit 2.0",
+)
 def test_read_json_pulse_gate_circuits() -> None:
     qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
     import qiskit
