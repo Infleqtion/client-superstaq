@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 import qiskit
 import qiskit.qasm2
+from packaging import version
 
 import qiskit_superstaq as qss
 
@@ -115,6 +116,10 @@ def test_circuit_serialization() -> None:
     assert qss.serialization.deserialize_circuits(serialized_circuits) == circuits
 
 
+@pytest.mark.skipif(
+    version.parse(qiskit.__version__) > version.parse("1.4"),
+    reason="Temporary skip for Qiskit 2.0",
+)
 def test_insert_times_and_durations() -> None:
     circuit = qiskit.QuantumCircuit(2)
 
