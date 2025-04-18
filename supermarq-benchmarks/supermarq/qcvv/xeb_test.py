@@ -291,7 +291,7 @@ def test_analysis_succeeds_with_all_layer_types(
 
 
 def test_results_no_data() -> None:
-    results = XEBResults(target="example", experiment=MagicMock(), data=None)
+    results = XEBResults(target="example", experiment=XEB(1, []), data=None)
     with pytest.raises(RuntimeError, match="No data stored. Cannot perform analysis."):
         results._analyze()
 
@@ -309,7 +309,7 @@ def test_results_no_data() -> None:
 
 
 def test_results_not_analyzed() -> None:
-    results = XEBResults(target="example", experiment=MagicMock(), data=None)
+    results = XEBResults(target="example", experiment=XEB(1, []), data=None)
     for attr in ["cycle_fidelity_estimate", "cycle_fidelity_estimate_std"]:
         with pytest.raises(
             RuntimeError,
