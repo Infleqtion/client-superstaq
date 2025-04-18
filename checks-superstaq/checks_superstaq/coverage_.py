@@ -5,7 +5,6 @@ import os
 import subprocess
 import sys
 import textwrap
-import warnings
 from collections.abc import Iterable
 
 from checks_superstaq import check_utils
@@ -45,7 +44,8 @@ def run(  # noqa: C901
         "--sysmon",
         action="store_true",
         help="Enable the `COVERAGE_CORE=sysmon` env variable for faster coverage (requires "
-        "Python 3.12 or higher).",
+        "Python 3.12 or higher). Note: using the `--branch` option alongside `--sysmon` may require"
+        " additional configuration for efficient execution.",
     )
     parser.description = textwrap.dedent(
         """
@@ -63,11 +63,6 @@ def run(  # noqa: C901
     coverage_args = []
     if parsed_args.sysmon and sys.version_info.minor >= 12:
         os.environ["COVERAGE_CORE"] = "sysmon"
-        if parsed_args.branch:
-            warnings.warn(
-                "Note: Efficient branch coverage with `COVERAGE_CORE=sysmon` may require "
-                "additional configuration."
-            )
 
     if parsed_args.branch:
         coverage_args.append("--branch")
