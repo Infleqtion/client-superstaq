@@ -1,4 +1,4 @@
-mode<p align="center">
+<p align="center">
   <img src="./docs/source/_static/logos/Superstaq_color.png#gh-light-mode-only">
   <img src="./docs/source/_static/logos/Superstaq_white.png#gh-dark-mode-only">
 </p>
