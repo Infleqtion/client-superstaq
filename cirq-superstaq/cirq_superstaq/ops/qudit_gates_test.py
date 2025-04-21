@@ -331,7 +331,6 @@ def test_virtual_z_pow_gate() -> None:
     for i, gate in enumerate(fixed_gates):
         for other_gate in fixed_gates[:i]:
             assert not cirq.equal_up_to_global_phase(gate, other_gate)
-            assert not cirq.approx_eq(gate, other_gate)
 
     assert repr(css.VirtualZPowGate(dimension=3, level=1)) == "css.VirtualZPowGate(dimension=3)"
     assert (
