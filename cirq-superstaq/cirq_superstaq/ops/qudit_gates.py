@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 from collections.abc import Sequence, Set
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import cirq
 import numpy as np
@@ -11,6 +11,9 @@ import sympy
 from cirq.ops.common_gates import proper_repr
 
 import cirq_superstaq as css
+
+if TYPE_CHECKING:
+    from types import NotImplementedType
 
 
 def _subscript(n: int) -> str:
@@ -39,7 +42,9 @@ class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
     def _value_equality_values_(self) -> int:
         return self.dimension
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
+    def _equal_up_to_global_phase_(
+        self, other: Any, atol: float = 1e-8
+    ) -> NotImplementedType | bool:
         if isinstance(other, QuditSwapGate):
             return other.dimension == self.dimension
 
@@ -140,7 +145,9 @@ class BSwapPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
 
         return [(0.0, projector_rest), (0.5, projector_p), (-0.5, projector_n)]
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
+    def _equal_up_to_global_phase_(
+        self, other: Any, atol: float = 1e-8
+    ) -> NotImplementedType | bool:
         """Workaround for https://github.com/quantumlib/Cirq/issues/5980."""
 
         if not isinstance(other, BSwapPowGate):
@@ -231,7 +238,9 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
     def _value_equality_values_(self) -> tuple[float, float]:
         return self._canonical_exponent, self._global_shift
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
+    def _equal_up_to_global_phase_(
+        self, other: Any, atol: float = 1e-8
+    ) -> NotImplementedType | bool:
         """Workaround for https://github.com/quantumlib/Cirq/issues/5980."""
 
         if isinstance(other, QutritCZPowGate):
@@ -346,10 +355,9 @@ class VirtualZPowGate(cirq.EigenGate):
     def _value_equality_values_(self) -> tuple[object, ...]:
         return (*super()._value_equality_values_(), self._dimension, self._level)
 
-    def _value_equality_approximate_values_(self) -> tuple[object, ...]:
-        return (*super()._value_equality_approximate_values_(), self._dimension, self._level)
-
-    def _equal_up_to_global_phase_(self, other: object, atol: float) -> bool | None:
+    def _equal_up_to_global_phase_(
+        self, other: Any, atol: float = 1e-8
+    ) -> NotImplementedType | bool:
         if not isinstance(other, VirtualZPowGate):
             return NotImplemented
 
@@ -421,7 +429,9 @@ class _QutritZPowGate(cirq.EigenGate):
             wire_symbols=(wire_symbol,), exponent=self._diagram_exponent(args)
         )
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
+    def _equal_up_to_global_phase_(
+        self, other: Any, atol: float = 1e-8
+    ) -> NotImplementedType | bool:
         """Workaround for https://github.com/quantumlib/Cirq/issues/5980."""
 
         if not isinstance(other, _QutritZPowGate):
@@ -606,7 +616,9 @@ class QubitSubspaceGate(cirq.Gate):
     ) -> tuple[cirq.Gate, tuple[int, ...], tuple[tuple[int, int], ...]]:
         return self.sub_gate, self.qid_shape, tuple(self.subspaces)
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
+    def _equal_up_to_global_phase_(
+        self, other: Any, atol: float = 1e-8
+    ) -> NotImplementedType | bool:
         if not isinstance(other, QubitSubspaceGate):
             return NotImplemented
 
