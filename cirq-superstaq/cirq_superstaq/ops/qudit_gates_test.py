@@ -10,6 +10,7 @@ import cirq
 import numpy as np
 import pytest
 import scipy.linalg
+import sympy
 
 import cirq_superstaq as css
 
@@ -155,6 +156,10 @@ def test_qutrit_cz_pow_gate() -> None:
 
     assert css.CZ3 == css.QutritCZPowGate()
     assert css.CZ3_INV == css.CZ3**-1 == css.CZ3**2
+
+    a = sympy.symbols("a")
+    CZ3_zero = css.QutritCZPowGate(exponent=0, global_shift=-1)
+    assert CZ3_zero == CZ3_zero**a
 
     assert css.CZ3 != shifted_cz3
     assert not cirq.approx_eq(css.CZ3, shifted_cz3)
