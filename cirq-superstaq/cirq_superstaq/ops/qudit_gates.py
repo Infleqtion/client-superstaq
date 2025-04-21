@@ -196,7 +196,7 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
         exponent: cirq.TParamVal = 1.0,
         global_shift: float = 0.0,
     ) -> None:
-        self._canonical_exponent_cached = None
+        self._canonical_exponent_cached: float | None = None
         super().__init__(exponent=exponent, global_shift=global_shift)
 
     @property
@@ -222,7 +222,7 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
         return eigen_components
 
     @property
-    def _canonical_exponent(self) -> float:
+    def _canonical_exponent(self) -> float | None:
         if self._canonical_exponent_cached is None:
             period = self._period()
             if not period:
@@ -235,7 +235,7 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
                 self._canonical_exponent_cached = self._exponent % period
         return self._canonical_exponent_cached
 
-    def _value_equality_values_(self) -> tuple[float, float]:
+    def _value_equality_values_(self) -> tuple[float | None, float]:
         return self._canonical_exponent, self._global_shift
 
     def _equal_up_to_global_phase_(

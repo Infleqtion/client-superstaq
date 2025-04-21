@@ -373,7 +373,8 @@ class IRBResults(_RBResultsBase):
         if filename is not None:
             plt.savefig(filename)
 
-        root_figure = plot.figure.figure
+        root_figure = plot.get_figure()
+        assert root_figure is not None
         if filename is not None:
             root_figure.savefig(filename, bbox_inches="tight")
         return root_figure
@@ -451,7 +452,8 @@ class RBResults(_RBResultsBase):
             raise RuntimeError("No data stored. Cannot make plot.")
 
         plot = self._plot_results()
-        root_figure = plot.figure.figure
+        root_figure = plot.get_figure()
+        assert root_figure is not None
         if filename is not None:
             root_figure.savefig(filename, bbox_inches="tight")
         return root_figure
