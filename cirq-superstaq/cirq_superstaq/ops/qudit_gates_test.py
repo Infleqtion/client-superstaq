@@ -157,7 +157,7 @@ def test_qutrit_cz_pow_gate() -> None:
     assert css.CZ3 == css.QutritCZPowGate()
     assert css.CZ3_INV == css.CZ3**-1 == css.CZ3**2
 
-    a = sympy.symbols("a")
+    a = sympy.Symbol("a")
     CZ3_zero = css.QutritCZPowGate(exponent=0, global_shift=-1)
     assert CZ3_zero == CZ3_zero**a
 
@@ -331,6 +331,11 @@ def test_virtual_z_pow_gate() -> None:
     for i, gate in enumerate(fixed_gates):
         for other_gate in fixed_gates[:i]:
             assert not cirq.equal_up_to_global_phase(gate, other_gate)
+            assert not cirq.approx_eq(gate, other_gate)
+
+    phi = sympy.Symbol("phi")
+    test_gate = css.VirtualZPowGate(dimension=2, level=1, exponent=phi)
+    assert cirq.approx_eq(test_gate, fixed_gates[0] ** phi)
 
     assert repr(css.VirtualZPowGate(dimension=3, level=1)) == "css.VirtualZPowGate(dimension=3)"
     assert (
@@ -352,6 +357,7 @@ def test_virtual_z_pow_gate() -> None:
     assert str(css.VirtualZPowGate(dimension=4, level=2) ** 1.2) == "VZ(2+)**1.2"
     assert str(css.VirtualZPowGate(dimension=4, global_shift=0.5)) == "VZ(1+)"
     assert str(css.VirtualZPowGate(dimension=5, global_shift=0.5) ** 2.3) == "VZ(1+)**2.3"
+    assert str(css.VirtualZPowGate(dimension=5, exponent=phi)) == "VZ(1+)**phi"
 
     cirq.testing.assert_has_diagram(
         cirq.Circuit(css.VirtualZPowGate(dimension=3, level=1)(cirq.LineQid(0, 3))),
