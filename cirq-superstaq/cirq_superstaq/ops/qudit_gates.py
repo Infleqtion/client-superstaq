@@ -214,7 +214,8 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
     def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float64]]]:
         eigen_components = []
         exponents = np.kron(range(self.dimension), range(self.dimension)) % self.dimension
-        for x in sorted(set(exponents)):
+        int_exponents = {int(i) for i in exponents}
+        for x in sorted(int_exponents):
             value = cirq.canonicalize_half_turns(2 * x / self.dimension)
             matrix = np.diag(np.asarray(exponents == x, dtype=float))
             eigen_components.append((value, matrix))

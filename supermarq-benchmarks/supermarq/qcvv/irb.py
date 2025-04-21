@@ -374,7 +374,7 @@ class IRBResults(_RBResultsBase):
             plt.savefig(filename)
 
         root_figure = plot.get_figure()
-        assert root_figure is not None
+        assert isinstance(root_figure, plt.Figure)
         if filename is not None:
             root_figure.savefig(filename, bbox_inches="tight")
         return root_figure
@@ -453,7 +453,7 @@ class RBResults(_RBResultsBase):
 
         plot = self._plot_results()
         root_figure = plot.get_figure()
-        assert root_figure is not None
+        assert isinstance(root_figure, plt.Figure)
         if filename is not None:
             root_figure.savefig(filename, bbox_inches="tight")
         return root_figure
