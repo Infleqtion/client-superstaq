@@ -5,19 +5,35 @@
 
 <div align="center">
 
-<a href="">[![License](https://img.shields.io/github/license/Infleqtion/client-superstaq?style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e#gh-light-mode-only)](https://github.com/Infleqtion/client-superstaq/blob/main/LICENSE)</a>
-<a href="">[![Python Versions](https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20-141a5e?display_name=tag&style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e#gh-light-mode-only)](https://github.com/Infleqtion/client-superstaq)
-<a href="">[![GitHub Release](https://img.shields.io/github/v/release/Infleqtion/client-superstaq?display_name=tag&style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e#gh-light-mode-only)](https://github.com/Infleqtion/client-superstaq/releases)</a>
-<a href="">[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Infleqtion/client-superstaq/ci.yml?branch=main&style=flat&logo=github&logoColor=white&labelColor=00b198&color=141a5e#gh-light-mode-only)](https://github.com/Infleqtion/client-superstaq/actions/workflows/ci.yml)</a>
-<a href="">[![Read the docs](https://img.shields.io/badge/Read%20the%20docs-a?style=flat&logo=read-the-docs&logoColor=white&labelColor=00b198&color=141a5e#gh-light-mode-only)](https://superstaq.readthedocs.io/)</a>
-<a href="">[![Slack](https://img.shields.io/badge/Slack-slack?style=flat&logo=slack&logoColor=white&labelColor=00b198&color=141a5e#gh-light-mode-only)](https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw)</a>
+<a href="https://github.com/Infleqtion/client-superstaq/blob/main/LICENSE">
+  <img src="https://img.shields.io/github/license/Infleqtion/client-superstaq?style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e" alt="License" #gh-light-mode-only>
+  <img src="https://img.shields.io/github/license/Infleqtion/client-superstaq?style=flat&logo=python&logoColor=white&labelColor=00b198&color=white" alt="License" #gh-dark-mode-only>
+</a>
 
-<a href="">[![License](https://img.shields.io/github/license/Infleqtion/client-superstaq?style=flat&logo=python&logoColor=white&labelColor=00b198&color=white#gh-dark-mode-only)](https://github.com/Infleqtion/client-superstaq/blob/main/LICENSE)</a>
-<a href="">[![Python Versions](https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20-white?style=flat&logo=python&logoColor=white&labelColor=00b198&color=white#gh-dark-mode-only)](https://github.com/Infleqtion/client-superstaq)</a>
-<a href="">[![GitHub Release](https://img.shields.io/github/v/release/Infleqtion/client-superstaq?display_name=tag&style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=white#gh-dark-mode-only)](https://github.com/Infleqtion/client-superstaq/releases)</a>
-<a href="">[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Infleqtion/client-superstaq/ci.yml?branch=main&style=flat&logo=github&logoColor=white&labelColor=00b198&color=white#gh-dark-mode-only)](https://github.com/Infleqtion/client-superstaq/actions/workflows/ci.yml)</a>
-<a href="">[![Read the docs](https://img.shields.io/badge/Read%20the%20docs-a?style=flat&logo=read-the-docs&logoColor=white&labelColor=00b198&color=white#gh-dark-mode-only)](https://superstaq.readthedocs.io/)</a>
-<a href="">[![Slack](https://img.shields.io/badge/Slack-slack?style=flat&logo=slack&logoColor=white&labelColor=00b198&color=white#gh-dark-mode-only)](https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw)</a>
+<a href="https://github.com/Infleqtion/client-superstaq">
+  <img src="https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20-141a5e?display_name=tag&style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e" alt="Python Versions" #gh-light-mode-only>
+  <img src="https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20-white?style=flat&logo=python&logoColor=white&labelColor=00b198&color=white" alt="Python Versions" #gh-dark-mode-only>
+</a>
+
+<a href="https://github.com/Infleqtion/client-superstaq/releases">
+  <img src="https://img.shields.io/github/v/release/Infleqtion/client-superstaq?display_name=tag&style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e" alt="GitHub Release" #gh-light-mode-only>
+  <img src="https://img.shields.io/github/v/release/Infleqtion/client-superstaq?display_name=tag&style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=white" alt="GitHub Release" #gh-dark-mode-only>
+</a>
+
+<a href="https://github.com/Infleqtion/client-superstaq/actions/workflows/ci.yml">
+  <img src="https://img.shields.io/github/actions/workflow/status/Infleqtion/client-superstaq/ci.yml?branch=main&style=flat&logo=github&logoColor=white&labelColor=00b198&color=141a5e" alt="CI Status" #gh-light-mode-only>
+  <img src="https://img.shields.io/github/actions/workflow/status/Infleqtion/client-superstaq/ci.yml?branch=main&style=flat&logo=github&logoColor=white&labelColor=00b198&color=white" alt="CI Status" #gh-dark-mode-only>
+</a>
+
+<a href="https://superstaq.readthedocs.io/">
+  <img src="https://img.shields.io/badge/Read%20the%20docs-a?style=flat&logo=read-the-docs&logoColor=white&labelColor=00b198&color=141a5e" alt="Read the Docs" #gh-light-mode-only>
+  <img src="https://img.shields.io/badge/Read%20the%20docs-a?style=flat&logo=read-the-docs&logoColor=white&labelColor=00b198&color=white" alt="Read the Docs" #gh-dark-mode-only>
+</a>
+
+<a href="https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw">
+  <img src="https://img.shields.io/badge/Slack-slack?style=flat&logo=slack&logoColor=white&labelColor=00b198&color=141a5e" alt="Slack" #gh-light-mode-only>
+  <img src="https://img.shields.io/badge/Slack-slack?style=flat&logo=slack&logoColor=white&labelColor=00b198&color=white" alt="Slack" #gh-dark-mode-only>
+</a>
 </div>
 
 # Welcome to Superstaq
