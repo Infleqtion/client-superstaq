@@ -12,7 +12,7 @@ features of Superstaq with this package.
 pip install cirq-superstaq
 ```
 
-Please note that Python version `3.9` or higher is required for `v0.6.0` or higher. For further installation instructions, see [here](https://github.com/Infleqtion/client-superstaq#readme).
+Please note that Python version `3.9` or higher is required. For further installation instructions, see [here](https://github.com/Infleqtion/client-superstaq#readme).
 
 ### Creating and submitting a circuit through cirq-superstaq
 
