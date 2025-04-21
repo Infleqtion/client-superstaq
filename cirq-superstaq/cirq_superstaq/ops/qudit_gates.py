@@ -7,6 +7,7 @@ from typing import Any
 import cirq
 import numpy as np
 import numpy.typing as npt
+import sympy
 from cirq.ops.common_gates import proper_repr
 
 import cirq_superstaq as css
@@ -183,6 +184,14 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
     Currently written for qutrits (d = 3), but its implementation should work for any dimension.
     """
 
+    def __init__(
+        self,
+        exponent: cirq.TParamVal = 1.0,
+        global_shift: float = 0.0,
+    ) -> None:
+        self._canonical_exponent_cached = None
+        super().__init__(exponent=exponent, global_shift=global_shift)
+
     @property
     def dimension(self) -> int:
         """Indicates that this gate acts on qutrits.
@@ -204,6 +213,23 @@ class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
             eigen_components.append((value, matrix))
 
         return eigen_components
+
+    @property
+    def _canonical_exponent(self) -> float:
+        if self._canonical_exponent_cached is None:
+            period = self._period()
+            if not period:
+                self._canonical_exponent_cached = self._exponent
+            elif cirq.is_parameterized(self._exponent):
+                self._canonical_exponent_cached = self._exponent
+                if isinstance(self._exponent, sympy.Number):
+                    self._canonical_exponent_cached = float(self._exponent)
+            else:
+                self._canonical_exponent_cached = self._exponent % period
+        return self._canonical_exponent_cached
+
+    def _value_equality_values_(self) -> tuple[float, float]:
+        return self._canonical_exponent, self._global_shift
 
     def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
         """Workaround for https://github.com/quantumlib/Cirq/issues/5980."""
