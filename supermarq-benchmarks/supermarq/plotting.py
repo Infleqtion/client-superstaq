@@ -372,7 +372,7 @@ def radar_factory(num_vars: int) -> npt.NDArray[np.float64]:
     Returns:
         A list of evenly spaced angles.
     """
-    # Calculate evenly-spaced axis angles
+    # calculate evenly-spaced axis angles
     theta = np.linspace(0, 2 * np.pi, num_vars, endpoint=False, dtype=np.float64)
 
     class RadarAxes(RadarAxesMeta):
