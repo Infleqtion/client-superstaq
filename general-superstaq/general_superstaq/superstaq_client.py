@@ -15,8 +15,8 @@
 from __future__ import annotations
 
 import copy
-import json
 import enum
+import json
 import os
 import pathlib
 import sys
@@ -26,8 +26,7 @@ import urllib
 import uuid
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, Literal, TypeVar
-from typing import Self
+from typing import Any, Literal, Self, TypeVar
 
 import requests
 
@@ -48,7 +47,7 @@ class _API_Version(enum.StrEnum):
 class _versioned_method(object):
 
     def __init__(self, method: Callable):
-        self.registry = {}
+        self.registry: dict[_API_Version, Callable] = {}
         self.function = method
 
     def __get__(
