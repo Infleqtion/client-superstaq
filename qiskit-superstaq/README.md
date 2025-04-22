@@ -12,9 +12,10 @@ features of Superstaq with this package.
 pip install qiskit-superstaq
 ```
 
-Please note that Python version `3.8` or higher is required. See installation instructions [here](https://github.com/Infleqtion/client-superstaq#readme).
+Please note that Python version `3.9` or higher is required. See installation instructions [here](https://github.com/Infleqtion/client-superstaq#readme).
 
 ### Creating and submitting a circuit through qiskit-superstaq
+
 ```python
 import qiskit
 import qiskit_superstaq as qss
