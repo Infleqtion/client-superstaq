@@ -357,12 +357,7 @@ class VirtualZPowGate(cirq.EigenGate):
         return (*super()._value_equality_values_(), self._dimension, self._level)
 
     def _value_equality_approximate_values_(self) -> tuple[object, ...]:
-        period = self._period()
-        if not period or cirq.is_parameterized(self._exponent):
-            exponent = self._exponent
-        else:
-            exponent = cirq.PeriodicValue(self._exponent, period)
-        return (exponent, self._global_shift, self._dimension, self._level)
+        return self._value_equality_values_()
 
     def _equal_up_to_global_phase_(
         self, other: Any, atol: float = 1e-8
