@@ -133,7 +133,7 @@ def construct_stabilizer(
     pauli_basis = []
     start_idx = 0
     for i, row in enumerate(echelon_matrix.T):
-        matrix_row = np.array(row)
+        matrix_row = np.asarray(row)
         if 1 in matrix_row[start_idx:]:
             stabilizer_matrix.append(dependent_stabilizer.T[i])
             pauli_basis.append(clique[i][1])
