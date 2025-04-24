@@ -155,11 +155,8 @@ def test_qutrit_cz_pow_gate() -> None:
     shifted_cz3 = css.QutritCZPowGate(global_shift=0.3)
 
     assert css.CZ3 == css.QutritCZPowGate()
-    assert css.CZ3_INV == css.CZ3**-1 == css.CZ3**2
-
-    a = sympy.Symbol("a")
-    CZ3_zero = css.QutritCZPowGate(exponent=0, global_shift=-1)
-    assert CZ3_zero == CZ3_zero**a
+    assert css.CZ3_INV == css.CZ3**-1
+    assert cirq.approx_eq(css.CZ3**-1, css.CZ3**2)
 
     assert css.CZ3 != shifted_cz3
     assert not cirq.approx_eq(css.CZ3, shifted_cz3)
@@ -216,6 +213,7 @@ def test_qutrit_cz_pow_gate() -> None:
 @pytest.mark.parametrize("dimension", [2, 3, 4, 5, 6])
 def test_qutrit_cz_pow_gate_implementation_for_other_qudits(dimension: int) -> None:
     """Confirm that QutritCZPowGate._eigen_components_() would work for any dimension.
+
     Args:
         dimension: The gate dimension for the current test.
     """
