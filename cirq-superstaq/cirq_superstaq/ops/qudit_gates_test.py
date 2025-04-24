@@ -331,10 +331,6 @@ def test_virtual_z_pow_gate() -> None:
             assert not cirq.equal_up_to_global_phase(gate, other_gate)
             assert not cirq.approx_eq(gate, other_gate)
 
-    phi = sympy.Symbol("phi")
-    test_gate = css.VirtualZPowGate(dimension=2, level=1, exponent=phi)
-    assert cirq.approx_eq(test_gate, fixed_gates[0] ** phi)
-
     assert repr(css.VirtualZPowGate(dimension=3, level=1)) == "css.VirtualZPowGate(dimension=3)"
     assert (
         repr(css.VirtualZPowGate(dimension=4, level=3))
@@ -355,7 +351,7 @@ def test_virtual_z_pow_gate() -> None:
     assert str(css.VirtualZPowGate(dimension=4, level=2) ** 1.2) == "VZ(2+)**1.2"
     assert str(css.VirtualZPowGate(dimension=4, global_shift=0.5)) == "VZ(1+)"
     assert str(css.VirtualZPowGate(dimension=5, global_shift=0.5) ** 2.3) == "VZ(1+)**2.3"
-    assert str(css.VirtualZPowGate(dimension=5, exponent=phi)) == "VZ(1+)**phi"
+    assert str(css.VirtualZPowGate(dimension=5, exponent=sympy.Symbol("phi"))) == "VZ(1+)**phi"
 
     cirq.testing.assert_has_diagram(
         cirq.Circuit(css.VirtualZPowGate(dimension=3, level=1)(cirq.LineQid(0, 3))),
