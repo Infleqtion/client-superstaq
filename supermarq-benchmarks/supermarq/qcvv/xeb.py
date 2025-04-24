@@ -376,7 +376,11 @@ class XEB(QCVVExperiment[XEBResults]):
             qubits: Sequence[cirq.Qid] = cirq.LineQubit.range(2)
 
         elif isinstance(interleaved_layer, cirq.Gate):
-            qubits = cirq.LineQubit.range(cirq.num_qubits(interleaved_layer))
+            qubits = (
+                cirq.LineQubit.range(cirq.num_qubits(interleaved_layer))
+                if all(d == 2 for d in cirq.qid_shape(interleaved_layer))
+                else cirq.LineQid.for_gate(interleaved_layer)
+            )
             interleaved_layer = interleaved_layer.on(*qubits)
 
         elif isinstance(interleaved_layer, cirq.Operation):
