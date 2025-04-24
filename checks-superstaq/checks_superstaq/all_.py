@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import os
 import sys
 import textwrap
 
@@ -56,17 +57,28 @@ def run(*args: str) -> int:
         action="store_true",
         help="Use ruff for formatting and linting (replaces black, isort, flake8, and pylint).",
     )
+    parser.add_argument(
+        "--sysmon",
+        action="store_true",
+        help="Enable the `COVERAGE_CORE=sysmon` env variable for faster coverage (requires "
+        "Python 3.12 or higher).",
+    )
 
     parsed_args, _ = parser.parse_known_intermixed_args(args)
     if parsed_args.revisions is not None:
         # print info about incremental files once now, rather than in each check
         _ = check_utils.extract_files(parsed_args, silent=False)
 
+    if parsed_args.sysmon and sys.version_info.minor >= 12:
+        os.environ["COVERAGE_CORE"] = "sysmon"
+
     default_mode = not parsed_args.files and parsed_args.revisions is None
     checks_failed = 0
 
     args_to_pass = [
-        arg for arg in args if arg not in ("-f", "--force-formats", "-F", "--force", "--ruff")
+        arg
+        for arg in args
+        if arg not in ("-f", "--force-formats", "-F", "--force", "--ruff", "--sysmon")
     ]
 
     # run formatting checks

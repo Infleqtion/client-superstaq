@@ -11,7 +11,7 @@ from checks_superstaq import check_utils
 
 
 @check_utils.enable_exit_on_failure
-def run(
+def run(  # noqa: C901
     *args: str,
     include: str | Iterable[str] = "*.py",
     exclude: str | Iterable[str] = "*_integration_test.py",
@@ -40,6 +40,13 @@ def run(
         action="store_true",
         help="Also require all branches to be covered (same as `coverage run --branch`).",
     )
+    parser.add_argument(
+        "--sysmon",
+        action="store_true",
+        help="Enable the `COVERAGE_CORE=sysmon` env variable for faster coverage (requires "
+        "Python 3.12 or higher). Note: using the `--branch` option alongside `--sysmon` may require"
+        " additional configuration for efficient execution.",
+    )
     parser.description = textwrap.dedent(
         """
         Checks to make sure that all code is covered by unit tests.
@@ -54,6 +61,9 @@ def run(
         return 0
 
     coverage_args = []
+    if parsed_args.sysmon and sys.version_info.minor >= 12:
+        os.environ["COVERAGE_CORE"] = "sysmon"
+
     if parsed_args.branch:
         coverage_args.append("--branch")
 
