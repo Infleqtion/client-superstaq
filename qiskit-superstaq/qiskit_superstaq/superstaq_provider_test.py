@@ -40,7 +40,9 @@ def test_provider_args() -> None:
         api_key="MY_TOKEN", ibmq_channel="ibm_quantum", ibmq_instance="instance", ibmq_token="token"
     )
     assert ss_provider._client.client_kwargs == {
-        "ibmq_channel": "ibm_quantum", "ibmq_instance": "instance", "ibmq_token": "token"
+        "ibmq_channel": "ibm_quantum",
+        "ibmq_instance": "instance",
+        "ibmq_token": "token",
     }
 
 

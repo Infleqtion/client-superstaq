@@ -273,7 +273,8 @@ def read_json_aqt(
         if not importlib.util.find_spec("qtrl"):
             warnings.warn(
                 "This output only contains compiled circuits. The `qtrl` package must be installed "
-                "in order to deserialize compiled pulse sequences.", stacklevel=2
+                "in order to deserialize compiled pulse sequences.",
+                stacklevel=2,
             )
         else:  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
 

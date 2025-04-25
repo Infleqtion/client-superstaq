@@ -84,7 +84,8 @@ def deserialize_qiskit_circuits(
                 f"qiskit version: {qiskit.__version__}\n"
                 f"error: {e!r}\n\n"
                 f"You can still access your compiled circuit{s} using the .circuit{s} "
-                "attribute of this output.", stacklevel=2
+                "attribute of this output.",
+                stacklevel=2,
             )
         else:
             if pulse_durations and pulse_start_times:
@@ -102,7 +103,8 @@ def deserialize_qiskit_circuits(
             "qiskit-superstaq is required to deserialize compiled pulse gate circuits. You can "
             "install it with `pip install qiskit-superstaq`.\n\n"
             f"You can still access your compiled circuit{s} using the .circuit{s} attribute of "
-            "this output.", stacklevel=2
+            "this output.",
+            stacklevel=2,
         )
 
     return None
