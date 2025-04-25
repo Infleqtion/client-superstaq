@@ -334,7 +334,7 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
 
 @pytest.mark.skip(reason="Can't be executed when Sqale is set to not accept jobs")
 def test_submit_to_sqale_qubit_sorting(service: css.Service) -> None:
-    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776
+    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776.
 
     Args:
         service: cirq_superstaq service object from fixture.

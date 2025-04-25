@@ -28,7 +28,6 @@ def approx_eq_mod(a: cirq.TParamVal, b: cirq.TParamVal, period: float, atol: flo
     Returns:
         A boolean indicating whether input parameters are approximately equal.
     """
-
     if cirq.is_parameterized(a) or cirq.is_parameterized(b):
         return a == b
 
@@ -481,7 +480,6 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             ValueError: If `component_gates` are not `cirq.Gate` instances.
             ValueError: If `component_gates` contains measurements.
         """
-
         self.component_gates: tuple[cirq.Gate, ...] = ()
 
         # unroll any ParallelGate(s) instances in component_gates
@@ -578,7 +576,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         return qid_shape
 
     def _decompose_(self, qubits: tuple[cirq.Qid, ...]) -> Iterator[cirq.Operation]:
-        """Decompose into each component gate"""
+        """Decompose into each component gate."""
         for gate in self.component_gates:
             num_qubits = gate.num_qubits()
             yield gate(*qubits[:num_qubits])
@@ -852,7 +850,7 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
 
 
 class IXGate(cirq.XPowGate):
-    r"""Thin wrapper of :math:`RX(-\pi)` to improve iToffoli circuit diagrams"""
+    r"""Thin wrapper of :math:`RX(-\pi)` to improve iToffoli circuit diagrams."""
 
     def __init__(self) -> None:
         """Initializes an iXGate."""
@@ -870,7 +868,7 @@ class IXGate(cirq.XPowGate):
         return "IX"
 
     def __repr__(self) -> str:
-        return f"css.ops.qubit_gates.{str(self)}"
+        return f"css.ops.qubit_gates.{self!s}"
 
     @classmethod
     def _from_json_dict_(cls, **_kwargs: object) -> IXGate:
@@ -995,7 +993,7 @@ class StrippedCZGate(cirq.Gate):
 
 
 class DDPowGate(cirq.EigenGate):
-    r"""The Dipole-Dipole gate for EeroQ hardware"""
+    r"""The Dipole-Dipole gate for EeroQ hardware."""
 
     def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float64]]]:
         return [
