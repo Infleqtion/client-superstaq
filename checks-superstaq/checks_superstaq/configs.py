@@ -25,7 +25,6 @@ def run(*args: str, silent: bool = False) -> int:
     Returns:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
-
     parser = check_utils.get_check_parser(no_files=True)
     parser.description = textwrap.dedent(
         f"""
@@ -121,4 +120,4 @@ def _line_text(start: int, end: int) -> str:
 
 
 if __name__ == "__main__":
-    exit(run(*sys.argv[1:]))
+    sys.exit(run(*sys.argv[1:]))

@@ -27,7 +27,7 @@ def run(
 ) -> int:
     """Checks that:
     - all pip requirements files (i.e. files matching *requirements.txt) are sorted
-    - all upstream packages are pinned to their latest versions
+    - all upstream packages are pinned to their latest versions.
 
     Args:
         *args: Command line arguments.
@@ -39,7 +39,6 @@ def run(
     Returns:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
-
     parser = check_utils.get_check_parser()
     parser.description = textwrap.dedent(
         """
@@ -241,19 +240,18 @@ def _cleanup(
     if not requirements_to_fix:
         print("Nothing to fix in requirements files.")
 
-    else:
-        if apply_changes:
-            for req_file, requirements in requirements_to_fix.items():
-                with open(os.path.join(check_utils.root_dir, req_file), "w") as file:
-                    file.write("\n".join(requirements) + "\n")
-            if not silent:
-                print(check_utils.success("Requirements files fixed."))
+    elif apply_changes:
+        for req_file, requirements in requirements_to_fix.items():
+            with open(os.path.join(check_utils.root_dir, req_file), "w") as file:
+                file.write("\n".join(requirements) + "\n")
+        if not silent:
+            print(check_utils.success("Requirements files fixed."))
 
-        elif not silent:
-            command = "./checks/requirements.py --apply"
-            text = f"Run '{command}' (from the repo root directory) to fix requirements files."
-            print(check_utils.warning(text))
+    elif not silent:
+        command = "./checks/requirements.py --apply"
+        text = f"Run '{command}' (from the repo root directory) to fix requirements files."
+        print(check_utils.warning(text))
 
 
 if __name__ == "__main__":
-    exit(run(*sys.argv[1:]))
+    sys.exit(run(*sys.argv[1:]))
