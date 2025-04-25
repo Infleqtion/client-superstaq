@@ -488,7 +488,7 @@ def test_qubit_subspace_gate_protocols(
     larger_gate = css.QubitSubspaceGate(sub_gate, (8,) * len(qid_shape), subspaces)
     another_gate = cirq.Y
 
-    assert gate == gate
+    assert gate == gate  # noqa: PLR0124
     assert gate == same_gate
     assert gate != similar_gate
     assert gate != shifted_gate

@@ -112,7 +112,7 @@ class CompilerOutput:
             circuits: Compiled circuit or list of compiled circuits.
             initial_logical_to_physicals: Dictionary or list of dictionaries specifying initial
                 mapping from logical to physical qubits.
-            final_logical_to_physics: Dictionary or list of dictionaries specifying final mapping
+            final_logical_to_physicals: Dictionary or list of dictionaries specifying final mapping
                 from logical to physical qubits.
             pulse_gate_circuits: Pulse-gate `qiskit.QuantumCircuit` or list thereof specifying the
                 pulse compilation.

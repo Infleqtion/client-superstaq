@@ -186,6 +186,7 @@ class StrippedCZGate(qiskit.circuit.Gate):
 
         Args:
             rz_rads: The RZ-rotation angle in radians.
+            label: An optional label for the constructed gate. Defaults to `None`.
         """
         super().__init__("stripped_cz", 2, [rz_rads], label=label)
 

@@ -180,7 +180,9 @@ class BSwapPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
 
 
 class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
-    """For pairs of equal-dimension qudits, the generalized CZ gate is defined by the unitary:
+    """Generalized CZ gate for pairs of equal-dimension qudits.
+
+    It is defined by the following unitary:
 
         U = Σ_(i<d,j<d) ω**ij.|i⟩⟨i|.|j⟩⟨j|,
 
