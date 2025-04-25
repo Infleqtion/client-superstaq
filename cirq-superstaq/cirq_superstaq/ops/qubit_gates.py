@@ -358,7 +358,9 @@ class AceCR(cirq.Gate):
             cirq.PeriodicValue(self.sandwich_rx_rads, 4 * np.pi),
         )
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | NotImplementedType:
+    def _equal_up_to_global_phase_(
+        self, other: Any, atol: float = 1e-8
+    ) -> NotImplementedType | bool:
         if not isinstance(other, AceCR):
             return NotImplemented
 
@@ -552,7 +554,9 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
     def _value_equality_values_(self) -> tuple[cirq.Gate, ...]:
         return self.component_gates
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
+    def _equal_up_to_global_phase_(
+        self, other: Any, atol: float = 1e-8
+    ) -> NotImplementedType | bool:
         if not isinstance(other, ParallelGates):
             return NotImplemented
 
@@ -707,8 +711,10 @@ class RGate(cirq.PhasedXPowGate):
     def __pow__(self, power: cirq.TParamVal) -> RGate:
         return RGate(power * self.theta, self.phi)
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
-        """Implemented here because it isn't in cirq.PhasedXPowGate"""
+    def _equal_up_to_global_phase_(
+        self, other: Any, atol: float = 1e-8
+    ) -> NotImplementedType | bool:
+        """Implemented here because it isn't in `cirq.PhasedXPowGate`."""
         if not isinstance(other, cirq.PhasedXPowGate):
             return NotImplemented
 
@@ -809,8 +815,10 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
     def __pow__(self, power: cirq.TParamVal) -> ParallelRGate:
         return ParallelRGate(power * self.theta, self.phi, self.num_copies)
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
-        """Implemented here because it isn't in cirq.ParallelGate"""
+    def _equal_up_to_global_phase_(
+        self, other: Any, atol: float = 1e-8
+    ) -> NotImplementedType | bool:
+        """Implemented here because it isn't in `cirq.ParallelGate`."""
         if not isinstance(other, cirq.ParallelGate):
             return NotImplemented
 
