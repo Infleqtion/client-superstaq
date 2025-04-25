@@ -26,7 +26,6 @@ def active_qubit_indices(circuit: qiskit.QuantumCircuit) -> list[int]:
     Returns:
         A list containing the indices of the non-idle qubits.
     """
-
     qubit_indices: set[int] = set()
 
     for inst in circuit:
@@ -46,7 +45,6 @@ def measured_qubit_indices(circuit: qiskit.QuantumCircuit) -> list[int]:
     Returns:
         A list containing the indices of the measured qubits.
     """
-
     measured_qubits: set[qiskit.circuit.Qubit] = set()
 
     for inst in circuit:
@@ -74,7 +72,6 @@ def classical_bit_mapping(circuit: qiskit.QuantumCircuit) -> dict[int, int]:
     Returns:
         A dictionary mapping classical bit indices to the indices of the measured qubits.
     """
-
     clbit_map: dict[qiskit.circuit.Clbit, qiskit.circuit.Qubit] = {}
 
     for inst in circuit:
@@ -253,7 +250,6 @@ def read_json_aqt(
         A `CompilerOutput` object with the compiled circuit(s). If `qtrl` is available locally,
         the returned object also stores the pulse sequence in the .seq attribute.
     """
-
     compiled_circuits: list[qiskit.QuantumCircuit] | list[list[qiskit.QuantumCircuit]]
     compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
 
@@ -277,7 +273,7 @@ def read_json_aqt(
         if not importlib.util.find_spec("qtrl"):
             warnings.warn(
                 "This output only contains compiled circuits. The `qtrl` package must be installed "
-                "in order to deserialize compiled pulse sequences."
+                "in order to deserialize compiled pulse sequences.", stacklevel=2
             )
         else:  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
 
