@@ -75,8 +75,8 @@ class _SuperstaqClient:
             remote_host: The url of the server exposing the Superstaq API. This will strip anything
                 besides the base scheme and netloc, i.e. it only takes the part of the host of
                 the form `http://example.com` of `http://example.com/test`.
-            api_version: Which version fo the api to use, defaults to client_superstaq.API_VERSION,
-                which is the most recent version when this client was downloaded.
+            api_version: Which version of the API to use. Defaults to `client_superstaq.API_VERSION`
+                (which is the most recent version when this client was downloaded).
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
             cq_token: Token from CQ cloud. This is required to submit circuits to CQ hardware.
@@ -89,7 +89,6 @@ class _SuperstaqClient:
             ibmq_name: The name of the account to retrieve. The default is `default-ibm-quantum`.
             kwargs: Other optimization and execution parameters.
         """
-
         self.api_key = api_key or gss.superstaq_client.find_api_key()
         self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
         self.client_name = client_name
@@ -102,9 +101,9 @@ class _SuperstaqClient:
             "http://example.com"
         )
 
-        assert (
-            self.api_version in self.SUPPORTED_VERSIONS
-        ), f"Only API versions {self.SUPPORTED_VERSIONS} are accepted but got {self.api_version}"
+        assert self.api_version in self.SUPPORTED_VERSIONS, (
+            f"Only API versions {self.SUPPORTED_VERSIONS} are accepted but got {self.api_version}"
+        )
         assert max_retry_seconds >= 0, "Negative retry not possible without time machine."
 
         self.url = f"{url.scheme}://{url.netloc}/{api_version}"
@@ -144,7 +143,6 @@ class _SuperstaqClient:
         Returns:
             A `dict` containing the current Superstaq version.
         """
-
         response = self.session.get(self.url)
         version = response.headers.get("superstaq_version")
 
@@ -233,7 +231,6 @@ class _SuperstaqClient:
         Raises:
             ~gss.SuperstaqServerException: For other API call failures.
         """
-
         json_dict: dict[str, Any] = {
             "job_ids": job_ids,
         }
@@ -612,6 +609,7 @@ class _SuperstaqClient:
             lifespan: How long to store the jobs submitted for in days (only works with right
                 permissions).
             weights: The weights of the Pauli strings.
+
         Returns:
             A string with the job id for the ACES job created.
 
@@ -838,7 +836,6 @@ class _SuperstaqClient:
             ~gss.SuperstaqServerException: If an error has occurred in making a request
                 to the Superstaq API.
         """
-
         if response.status_code == requests.codes.unauthorized:
             if response.json() == (
                 "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
@@ -894,7 +891,7 @@ class _SuperstaqClient:
         )
         user_input = input(message).upper()
         response = self._accept_terms_of_use(user_input)
-        print(response)
+        print(response)  # noqa: T201
         if response != "Accepted. You can now continue using Superstaq.":
             raise gss.SuperstaqServerException(
                 "You'll need to accept the Terms of Use before usage of Superstaq.",
@@ -935,8 +932,8 @@ class _SuperstaqClient:
             if delay_seconds > self.max_retry_seconds:
                 raise TimeoutError(f"Reached maximum number of retries. Last error: {message}")
             if self.verbose:
-                print(message, file=sys.stderr)
-                print(f"Waiting {delay_seconds} seconds before retrying.")
+                print(message, file=sys.stderr)  # noqa: T201
+                print(f"Waiting {delay_seconds} seconds before retrying.")  # noqa: T201
             time.sleep(delay_seconds)
             delay_seconds *= 2
 

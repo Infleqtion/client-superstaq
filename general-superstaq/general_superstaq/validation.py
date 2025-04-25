@@ -16,7 +16,6 @@ def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
         TypeError: If `integer_param` is not an integer.
         ValueError: If `integer_param` is less than `min_val`.
     """
-
     if not (
         (hasattr(integer_param, "__int__") and int(integer_param) == integer_param)
         or (isinstance(integer_param, str) and integer_param.isdecimal())
