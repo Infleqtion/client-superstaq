@@ -121,7 +121,8 @@ class QAOAVanillaProxy(Benchmark):
     def _gen_angles(self) -> npt.NDArray[np.float64]:
         # Classically simulate the variational optimization 5 times,
         # return the parameters from the best performing simulation
-        best_params, best_cost = np.zeros(2), 0.0
+        best_params: npt.NDArray[np.float64]
+        best_params, best_cost = np.zeros(2, dtype=np.float64), 0.0
         for _ in range(5):
             params, cost = self._get_opt_angles()
             if cost < best_cost:
