@@ -131,7 +131,6 @@ def plot_correlations(
         savefn: Path to save the plot, if `None`, the plot is not saved.
         show: Display the plot using `plt.show`.
     """
-
     temp_correlations = []
     if isinstance(device_scores, dict):
         device_scores = [device_scores]
@@ -207,7 +206,7 @@ def plot_benchmark(
     num_spokes = len(spoke_labels)
     theta = radar_factory(num_spokes)
 
-    _, ax = plt.subplots(dpi=150, subplot_kw=dict(projection="radar"))
+    _, ax = plt.subplots(dpi=150, subplot_kw={"projection": "radar"})
     assert isinstance(ax, RadarAxesMeta)
 
     ax.set_rgrids([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
@@ -329,7 +328,6 @@ def annotate_heatmap(
     Returns:
         List of the text annotations.
     """
-
     if data is None:
         data = np.asarray(im.get_array())
 
@@ -341,7 +339,7 @@ def annotate_heatmap(
 
     # Set default alignment to center, but allow it to be
     # overwritten by textkw.
-    kw: dict[str, Any] = dict(horizontalalignment="center", verticalalignment="center")
+    kw: dict[str, Any] = {"horizontalalignment": "center", "verticalalignment": "center"}
     kw.update(textkw)
 
     # Get the formatter in case a string is supplied
@@ -376,7 +374,7 @@ def radar_factory(num_vars: int) -> npt.NDArray[np.float64]:
     theta = np.linspace(0, 2 * np.pi, num_vars, endpoint=False, dtype=np.float64)
 
     class RadarAxes(RadarAxesMeta):
-        """A helper class that sets the shape of the feature plot"""
+        """A helper class that sets the shape of the feature plot."""
 
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             """Initializes the helper `RadarAxes` class."""
@@ -419,7 +417,7 @@ class RadarAxesMeta(PolarAxes):
         Returns:
             A list of `matplotlib.patches.Polygon`.
         """
-        return super().fill(closed=closed, *args, **kwargs)
+        return super().fill(*args, closed=closed, **kwargs)
 
     def plot(self, *args: Any, **kwargs: Any) -> list[matplotlib.lines.Line2D]:
         """Overrides plot so that line is closed by default.
