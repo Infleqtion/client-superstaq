@@ -12,7 +12,6 @@ import numpy as np
 import pytest
 import qiskit
 import qiskit.qasm2
-from packaging import version
 
 import qiskit_superstaq as qss
 
@@ -116,10 +115,6 @@ def test_circuit_serialization() -> None:
     assert qss.serialization.deserialize_circuits(serialized_circuits) == circuits
 
 
-@pytest.mark.skipif(
-    version.parse(qiskit.__version__) > version.parse("1.4"),
-    reason="Temporary skip for Qiskit 2.0",
-)
 def test_insert_times_and_durations() -> None:
     circuit = qiskit.QuantumCircuit(2)
 
@@ -138,7 +133,6 @@ def test_insert_times_and_durations() -> None:
     new_circuit = qss.serialization.insert_times_and_durations(circuit, durations, start_times)
     assert new_circuit == circuit
     assert new_circuit.op_start_times == start_times
-    assert [inst.operation.duration for inst in new_circuit] == durations
     assert new_circuit.duration == 160
 
     # Test fallback when timing information is not provided
@@ -306,8 +300,9 @@ def test_mcphase() -> None:
     gate1 = qss.serialization._mcphase(1.1, 3, ctrl_state=2)
     with mock.patch("qiskit.__version__", "1.0.2"):
         gate3 = qss.serialization._mcphase(1.1, 3, ctrl_state=2)
-    with mock.patch("qiskit.__version__", "1.1.1"), mock.patch(
-        "qiskit.circuit.library.MCPhaseGate", return_value=gate1
+    with (
+        mock.patch("qiskit.__version__", "1.1.1"),
+        mock.patch("qiskit.circuit.library.MCPhaseGate", return_value=gate1),
     ):
         gate2 = qss.serialization._mcphase(1.1, 3, ctrl_state=2)
     assert gate1 == gate2 == gate3

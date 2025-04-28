@@ -10,7 +10,6 @@ from unittest import mock
 import general_superstaq as gss
 import pytest
 import qiskit
-from packaging import version
 
 import qiskit_superstaq as qss
 
@@ -118,17 +117,12 @@ def test_compiler_output_repr() -> None:
     )
 
 
-@pytest.mark.skipif(
-    version.parse(qiskit.__version__) > version.parse("1.4"),
-    reason="Temporary skip for Qiskit 2.0",
-)
 def test_read_json() -> None:
     qc = qiskit.QuantumCircuit(2)
     qc.h(0)
     qc.cx(0, 1)
 
     qc_pulse = qc.copy()
-    qc_pulse.add_calibration("cx", [0, 1], qiskit.pulse.ScheduleBlock("foo"))
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
@@ -144,7 +138,6 @@ def test_read_json() -> None:
     assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
     assert out.pulse_gate_circuit == qc_pulse
     assert out.pulse_gate_circuit.duration == 30
-    assert out.pulse_gate_circuit[0].operation.duration == 10
     assert out.pulse_gate_circuit.op_start_times == [0, 10]
 
     json_dict = {
@@ -160,7 +153,6 @@ def test_read_json() -> None:
     assert out.pulse_gate_circuits == [qc_pulse, qc_pulse]
     assert out.pulse_gate_circuits[0].duration == 30
     assert out.pulse_gate_circuits[1].duration == 300
-    assert out.pulse_gate_circuits[1][0].operation.duration == 100
     assert out.pulse_gate_circuits[1].op_start_times == [0, 100]
 
     json_dict["pulses"] = "oops"

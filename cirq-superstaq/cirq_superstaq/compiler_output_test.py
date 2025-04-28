@@ -11,7 +11,6 @@ import general_superstaq as gss
 import pytest
 import qiskit
 import qiskit_superstaq as qss
-from packaging import version
 
 import cirq_superstaq as css
 
@@ -157,10 +156,6 @@ def test_read_json_ibmq() -> None:
     assert not hasattr(out, "final_logical_to_physical")
 
 
-@pytest.mark.skipif(
-    version.parse(qiskit.__version__) > version.parse("1.4"),
-    reason="Temporary skip for Qiskit 2.0",
-)
 def test_read_json_pulse_gate_circuits() -> None:
     qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
     import qiskit
@@ -171,7 +166,6 @@ def test_read_json_pulse_gate_circuits() -> None:
     qc_pulse = qiskit.QuantumCircuit(2)
     qc_pulse.h(0)
     qc_pulse.cx(0, 1)
-    qc_pulse.add_calibration("cx", [0, 1], qiskit.pulse.ScheduleBlock("foo"))
 
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
@@ -186,7 +180,6 @@ def test_read_json_pulse_gate_circuits() -> None:
     assert out.circuit == circuit
     assert out.pulse_gate_circuit == qc_pulse
     assert out.pulse_gate_circuit.duration == 30
-    assert out.pulse_gate_circuit[0].operation.duration == 10
     assert out.pulse_gate_circuit.op_start_times == [0, 10]
 
     json_dict = {
@@ -202,11 +195,11 @@ def test_read_json_pulse_gate_circuits() -> None:
     assert out.pulse_gate_circuits == [qc_pulse, qc_pulse]
     assert out.pulse_gate_circuits[0].duration == 30
     assert out.pulse_gate_circuits[1].duration == 300
-    assert out.pulse_gate_circuits[1][0].operation.duration == 100
     assert out.pulse_gate_circuits[1].op_start_times == [0, 100]
 
-    with mock.patch.dict("sys.modules", {"qiskit_superstaq": None}), pytest.warns(
-        UserWarning, match="qiskit-superstaq is required"
+    with (
+        mock.patch.dict("sys.modules", {"qiskit_superstaq": None}),
+        pytest.warns(UserWarning, match="qiskit-superstaq is required"),
     ):
         out = css.compiler_output.read_json(json_dict, circuits_is_list=False)
         assert out.circuit == circuit
