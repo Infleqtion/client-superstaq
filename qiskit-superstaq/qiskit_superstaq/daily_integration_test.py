@@ -297,7 +297,7 @@ def test_submit_dry_run(target: str, provider: qss.SuperstaqProvider) -> None:
 
 @pytest.mark.skip(reason="Can't be executed when Sqale is set to not accept jobs")
 def test_submit_to_sqale_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
-    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776
+    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776.
 
     Args:
         provider: qiskit_superstaq instance from the fixture.

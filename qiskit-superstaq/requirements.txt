@@ -1,3 +1,3 @@
-general-superstaq~=0.5.39
+general-superstaq~=0.5.40
 qiskit>=1.3.0
 symengine~=0.13.0

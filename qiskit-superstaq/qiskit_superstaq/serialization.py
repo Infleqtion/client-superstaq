@@ -59,7 +59,6 @@ def _mcphase(
     ctrl_state: str | int | None = None,
 ) -> qiskit.circuit.library.MCPhaseGate:
     """The `ctrl_state` argument was added to `MCPhaseGate` in Qiskit 1.1.0."""
-
     if qiskit.__version__.split(".")[:2] >= ["1", "1"]:
         return qiskit.circuit.library.MCPhaseGate(
             lam, num_ctrl_qubits=num_ctrl_qubits, label=label, ctrl_state=ctrl_state
@@ -90,7 +89,7 @@ _controlled_gate_resolvers: dict[
 if hasattr(qiskit.circuit.library, "QFTGate"):
     # QFTGate introduced in qiskit 1.2.0
 
-    QFTGate = getattr(qiskit.circuit.library, "QFTGate")
+    QFTGate = qiskit.circuit.library.QFTGate
 
     _controlled_gate_resolvers[QFTGate] = lambda gate: QFTGate(
         gate.num_qubits - gate.num_ctrl_qubits
@@ -404,7 +403,6 @@ def _wrap_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instruction:
 
     This functions as a workaround for https://github.com/Qiskit/qiskit/issues/8941.
     """
-
     name = f"__superstaq_wrapper_{id(gate)}"
     circuit = qiskit.QuantumCircuit(gate.num_qubits, gate.num_clbits, name=name)
     circuit.append(_prepare_gate(gate), range(gate.num_qubits), range(gate.num_clbits))

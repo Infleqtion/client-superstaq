@@ -95,12 +95,15 @@ UNSUCCESSFUL_CIRCUIT_STATES = [
 
 class DefaultPydanticModel(
     pydantic.BaseModel,
-    use_enum_values=True,
-    extra="ignore",
-    validate_assignment=True,
-    validate_default=True,
 ):
     """Default pydantic model used across the superstaq server."""
+
+    model_config = pydantic.ConfigDict(
+        use_enum_values=True,
+        extra="ignore",
+        validate_assignment=True,
+        validate_default=True,
+    )
 
 
 class JobData(DefaultPydanticModel):
@@ -188,7 +191,7 @@ class JobCancellationResults(DefaultPydanticModel):
 
 
 class NewJobResponse(DefaultPydanticModel):
-    """Model for the response when a new job is submitted"""
+    """Model for the response when a new job is submitted."""
 
     job_id: uuid.UUID
     """The job ID for the submitted job."""
@@ -198,7 +201,8 @@ class NewJobResponse(DefaultPydanticModel):
 
 class JobQuery(DefaultPydanticModel):
     """The query model for retrieving jobs. Using multiple values in a field is interpreted as
-    logical OR while providing values for multiple fields is interpreted as logical AND."""
+    logical OR while providing values for multiple fields is interpreted as logical AND.
+    """
 
     user_email: list[pydantic.EmailStr] | None = pydantic.Field(None)
     """List of user emails to include."""
@@ -220,7 +224,8 @@ class JobQuery(DefaultPydanticModel):
 
 class UserTokenResponse(DefaultPydanticModel):
     """Model for returning a user token to the client, either when adding a new user or
-    regenerating the token."""
+    regenerating the token.
+    """
 
     email: pydantic.EmailStr
     """The user's email address."""
@@ -256,7 +261,8 @@ class UserInfo(DefaultPydanticModel):
 
 class UserQuery(DefaultPydanticModel):
     """Model for querying the database to retrieve users. Use of lists implied logical OR. Providing
-    multiple fields (e.g. name and email) implies logical AND."""
+    multiple fields (e.g. name and email) implies logical AND.
+    """
 
     name: Sequence[str] | None = pydantic.Field(None)
     """List of user names to filter for."""
@@ -291,7 +297,7 @@ class NewUser(DefaultPydanticModel):
 
 
 class UpdateUserDetails(DefaultPydanticModel):
-    """Model for requests which modify user details"""
+    """Model for requests which modify user details."""
 
     name: str | None = pydantic.Field(None)
     """New user name."""
@@ -346,7 +352,7 @@ class RetrieveTargetInfoModel(DefaultPydanticModel):
 
     target: str
     """The target's name."""
-    options_dict: dict[str, Any] = pydantic.Field(dict())
+    options_dict: dict[str, Any] = pydantic.Field({})
     """The details of the target."""
 
 

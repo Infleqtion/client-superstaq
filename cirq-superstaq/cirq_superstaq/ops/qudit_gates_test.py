@@ -10,6 +10,7 @@ import cirq
 import numpy as np
 import pytest
 import scipy.linalg
+import sympy
 
 import cirq_superstaq as css
 
@@ -154,7 +155,8 @@ def test_qutrit_cz_pow_gate() -> None:
     shifted_cz3 = css.QutritCZPowGate(global_shift=0.3)
 
     assert css.CZ3 == css.QutritCZPowGate()
-    assert css.CZ3_INV == css.CZ3**-1 == css.CZ3**2
+    assert css.CZ3_INV == css.CZ3**-1
+    assert cirq.approx_eq(css.CZ3**-1, css.CZ3**2)
 
     assert css.CZ3 != shifted_cz3
     assert not cirq.approx_eq(css.CZ3, shifted_cz3)
@@ -211,6 +213,7 @@ def test_qutrit_cz_pow_gate() -> None:
 @pytest.mark.parametrize("dimension", [2, 3, 4, 5, 6])
 def test_qutrit_cz_pow_gate_implementation_for_other_qudits(dimension: int) -> None:
     """Confirm that QutritCZPowGate._eigen_components_() would work for any dimension.
+
     Args:
         dimension: The gate dimension for the current test.
     """
@@ -348,6 +351,7 @@ def test_virtual_z_pow_gate() -> None:
     assert str(css.VirtualZPowGate(dimension=4, level=2) ** 1.2) == "VZ(2+)**1.2"
     assert str(css.VirtualZPowGate(dimension=4, global_shift=0.5)) == "VZ(1+)"
     assert str(css.VirtualZPowGate(dimension=5, global_shift=0.5) ** 2.3) == "VZ(1+)**2.3"
+    assert str(css.VirtualZPowGate(dimension=5, exponent=sympy.Symbol("phi"))) == "VZ(1+)**phi"
 
     cirq.testing.assert_has_diagram(
         cirq.Circuit(css.VirtualZPowGate(dimension=3, level=1)(cirq.LineQid(0, 3))),
@@ -484,7 +488,7 @@ def test_qubit_subspace_gate_protocols(
     larger_gate = css.QubitSubspaceGate(sub_gate, (8,) * len(qid_shape), subspaces)
     another_gate = cirq.Y
 
-    assert gate == gate
+    assert gate == gate  # noqa: PLR0124
     assert gate == same_gate
     assert gate != similar_gate
     assert gate != shifted_gate
