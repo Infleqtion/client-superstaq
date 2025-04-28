@@ -157,7 +157,6 @@ def select_files(files: Iterable[str], include: str | Iterable[str]) -> list[str
     Returns:
         The selected files.
     """
-
     files = list(files)
     excluded_files = exclude_files(files, include)
     return [file for file in files if file not in excluded_files]
@@ -262,22 +261,20 @@ def get_test_files(
     Returns:
         A list of test files corresponding to the input files.
     """
-
     test_files = []
     for file in files:
         basename = os.path.basename(file).split("::")[0]
 
         if basename.endswith("_test.py") or basename.startswith("test_"):
             test_files.append(file)
-        else:
-            if os.path.isfile(test_file := re.sub(r"\.py$", "_test.py", file)):
-                test_files.append(test_file)
+        elif os.path.isfile(test_file := re.sub(r"\.py$", "_test.py", file)):
+            test_files.append(test_file)
 
-            elif os.path.isfile(test_file := re.sub(rf"{basename}$", f"test_{basename}", file)):
-                test_files.append(test_file)
+        elif os.path.isfile(test_file := re.sub(rf"{basename}$", f"test_{basename}", file)):
+            test_files.append(test_file)
 
-            elif not silent:
-                print(warning(f"WARNING: no test file found for {file}"))
+        elif not silent:
+            print(warning(f"WARNING: no test file found for {file}"))
 
     if exclude:
         test_files = exclude_files(test_files, exclude)
@@ -394,7 +391,6 @@ def extract_files(
             file parser directly.
         3. Paths to extant files passed to the file parser directly, regardless of above criteria.
     """
-
     exclude = [exclude] if isinstance(exclude, str) else exclude
 
     if parsed_args.exclude:
@@ -449,7 +445,7 @@ def enable_exit_on_failure(func_with_returncode: Callable[..., int]) -> Callable
         """
         returncode = func_with_returncode(*args, **kwargs)
         if exit_on_failure and returncode:
-            exit(returncode)
+            sys.exit(returncode)
         return returncode
 
     return func_with_exit

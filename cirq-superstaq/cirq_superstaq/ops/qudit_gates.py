@@ -148,7 +148,6 @@ class BSwapPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
         self, other: Any, atol: float = 1e-8
     ) -> NotImplementedType | bool:
         """Workaround for https://github.com/quantumlib/Cirq/issues/5980."""
-
         if not isinstance(other, BSwapPowGate):
             return NotImplemented
 
@@ -181,7 +180,9 @@ class BSwapPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
 
 
 class QutritCZPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
-    """For pairs of equal-dimension qudits, the generalized CZ gate is defined by the unitary:
+    """Generalized CZ gate for pairs of equal-dimension qudits.
+
+    It is defined by the following unitary:
 
         U = Σ_(i<d,j<d) ω**ij.|i⟩⟨i|.|j⟩⟨j|,
 
@@ -409,7 +410,6 @@ class _QutritZPowGate(cirq.EigenGate):
         self, other: Any, atol: float = 1e-8
     ) -> NotImplementedType | bool:
         """Workaround for https://github.com/quantumlib/Cirq/issues/5980."""
-
         if not isinstance(other, _QutritZPowGate):
             return NotImplemented
 
@@ -484,7 +484,6 @@ class QubitSubspaceGate(cirq.Gate):
             `QubitSubspaceGate(cirq.CX, (3, 3))`: A CX gate on the 0-1 subspace of two dimension-3
                 Qids.
         """
-
         if subspaces is None:
             subspaces = [(0, 1)] * cirq.num_qubits(sub_gate)
 
@@ -648,7 +647,6 @@ def qudit_swap_op(qudit0: cirq.Qid, qudit1: cirq.Qid) -> cirq.Operation:
     Raises:
         ValueError: If the input qudits don't have the same dimension.
     """
-
     if qudit0.dimension != qudit1.dimension:
         raise ValueError(f"{qudit0} and {qudit1} do not have the same dimension.")
 

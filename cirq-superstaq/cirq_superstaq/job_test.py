@@ -86,7 +86,7 @@ def new_job() -> css.Job:
 
 @pytest.fixture
 def multi_circuit_job() -> css.Job:
-    """Fixture for a job with multiple circuits submitted
+    """Fixture for a job with multiple circuits submitted.
 
     Returns:
         A job with multiple subjobs

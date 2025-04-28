@@ -47,7 +47,6 @@ def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
         ValueError: If `matrix` could not be interpreted as a unitary gate acting on either
             qubits or qutrits.
     """
-
     matrix = np.asarray(matrix, dtype=complex)
 
     for dimension in (2, 3):
@@ -790,7 +789,6 @@ class Service(gss.service.Service):
             A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
             circuit(s).
         """
-
         target = self._resolve_target(target)
 
         if target.startswith("aqt_"):
@@ -810,7 +808,6 @@ class Service(gss.service.Service):
         **kwargs: Any,
     ) -> dict[str, str]:
         """Helper method to compile json dictionary."""
-
         css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         request_json = {
@@ -835,7 +832,6 @@ class Service(gss.service.Service):
         Returns:
             A tuple containing the generated circuits and the fidelities for distinguishing files.
         """
-
         json_dict = self._client.supercheq(files, num_qubits, depth, "cirq_circuits")
         circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
         fidelities = gss.serialization.deserialize(json_dict["fidelities"])
@@ -1062,7 +1058,6 @@ class Service(gss.service.Service):
             ValueError: If the target or noise model is not valid.
             ~gss.SuperstaqServerException: If the request fails.
         """
-
         noise_dict: dict[str, object] = {}
         if isinstance(noise, str):
             noise_dict["type"] = noise
@@ -1158,7 +1153,6 @@ class Service(gss.service.Service):
         Args:
             circuits_and_metadata: Dictionary containing cycle benchmarking data.
         """
-
         instance_information = circuits_and_metadata["instance_information"]
         fit_data = circuits_and_metadata["fit_data"]
         x_values = instance_information["depths"]
@@ -1179,7 +1173,7 @@ class Service(gss.service.Service):
             return A * p**x
 
         e_f = 0.0
-        for ps, _ in averages.items():
+        for ps in averages.keys():
             A = fit_data["A_" + str(ps)]
             p = fit_data["p_" + str(ps)]
             for depth in x_values:
@@ -1200,7 +1194,7 @@ class Service(gss.service.Service):
             )
             e_f += p
             if legend_labels_count < max_legend_labels:
-                truncated_label = "A_" + str(ps) + "=%.2f \np_%s=%.2f" % (A, ps, p)
+                truncated_label = "A_" + str(ps) + f"={A:.2f} \np_{ps}={p:.2f}"
                 legend_labels.append(truncated_label)
                 legend_labels_count += 1
                 legend_colors.append(plt.gca().lines[-1].get_color())

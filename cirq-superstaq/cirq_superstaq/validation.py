@@ -31,7 +31,7 @@ def validate_qubit_types(circuits: cirq.Circuit | Sequence[cirq.Circuit]) -> Non
 
     if not all(isinstance(q, SUPPORTED_QID_TYPES) for q in all_qubits_present):
         invalid_qubit_types = ", ".join(
-            map(str, (set(type(q) for q in all_qubits_present) - set(SUPPORTED_QID_TYPES)))
+            map(str, ({type(q) for q in all_qubits_present} - set(SUPPORTED_QID_TYPES)))
         )
         raise TypeError(
             f"Input circuit(s) contains unsupported qubit types: {invalid_qubit_types}. "
@@ -56,7 +56,6 @@ def validate_cirq_circuits(circuits: object, require_measurements: bool = False)
         ValueError: If the input is not a `cirq.Circuit` or a list of `cirq.Circuit` instances.
         TypeError: If an unsupported qubit type is found in `circuits`.
     """
-
     if not (
         isinstance(circuits, cirq.Circuit)
         or (

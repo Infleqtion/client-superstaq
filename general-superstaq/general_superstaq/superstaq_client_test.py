@@ -58,12 +58,12 @@ def test_superstaq_client_args() -> None:
         ibmq_instance="instance",
         ibmq_token="ibmq_token",
     )
-    assert client.client_kwargs == dict(
-        cq_token="cq_token",
-        ibmq_channel="ibm_quantum",
-        ibmq_instance="instance",
-        ibmq_token="ibmq_token",
-    )
+    assert client.client_kwargs == {
+        "cq_token": "cq_token",
+        "ibmq_channel": "ibm_quantum",
+        "ibmq_instance": "instance",
+        "ibmq_token": "ibmq_token",
+    }
 
     with pytest.raises(ValueError, match="must be either 'ibm_cloud' or 'ibm_quantum'"):
         _ = gss.superstaq_client._SuperstaqClient(
@@ -227,12 +227,12 @@ def test_superstaq_client_use_stored_ibmq_credential() -> None:
             cq_token="cq_token",
             use_stored_ibmq_credentials=True,
         )
-        assert client.client_kwargs == dict(
-            cq_token="cq_token",
-            ibmq_channel="ibm_quantum",
-            ibmq_instance="instance",
-            ibmq_token="ibmq_token",
-        )
+        assert client.client_kwargs == {
+            "cq_token": "cq_token",
+            "ibmq_channel": "ibm_quantum",
+            "ibmq_instance": "instance",
+            "ibmq_token": "ibmq_token",
+        }
 
 
 @mock.patch("requests.Session.post")
@@ -929,7 +929,7 @@ def test_superstaq_client_cb(mock_post: mock.MagicMock) -> None:
         verify=False,
     )
 
-    client.process_cb("id", counts="[{" "}]")
+    client.process_cb("id", counts="[{}]")
     mock_post.assert_called_with(
         f"http://example.com/{API_VERSION}/cb_fetch",
         headers=EXPECTED_HEADERS,

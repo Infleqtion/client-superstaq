@@ -24,9 +24,15 @@ class Service:
         """Initializes the `Service` class.
 
         Args:
-            client: The Superstaq client to use.
+            api_key: The key used for authenticating against the Superstaq API.
+            remote_host: The url of the server exposing the Superstaq API. This will strip anything
+                besides the base scheme and netloc, i.e. it only takes the part of the host of
+                the form `http://example.com` of `http://example.com/test`.
+            api_version: Which version of the API to use. Defaults to `client_superstaq.API_VERSION`
+                (which is the most recent version when this client was downloaded).
+            max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
+            verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
         """
-
         self._client = gss.superstaq_client._SuperstaqClient(
             client_name="general-superstaq",
             remote_host=remote_host,
@@ -47,7 +53,6 @@ class Service:
             ($-prefix, commas on LHS every three digits, and two digits after period).
             Otherwise, simply returns a float of the balance.
         """
-
         balance = self._client.get_balance()["balance"]
         if pretty_output:
             return f"{balance:,.2f} credits"
@@ -368,7 +373,6 @@ class Service:
             ValueError: If either file path already exists and overwrite is not True.
             ModuleNotFoundError: If file paths are unspecified and PyYAML cannot be imported.
         """
-
         if pulses_file_path and variables_file_path:
             pulses_file_exists = os.path.exists(pulses_file_path)
             variables_file_exists = os.path.exists(variables_file_path)
@@ -392,11 +396,11 @@ class Service:
             config_dict = self.aqt_get_configs()
             with open(pulses_file_path, "w") as text_file:
                 text_file.write(config_dict["pulses"])
-                print(f"Pulses configuration saved to {pulses_file_path}.")
+                print(f"Pulses configuration saved to {pulses_file_path}.")  # noqa: T201
 
             with open(variables_file_path, "w") as text_file:
                 text_file.write(config_dict["variables"])
-                print(f"Variables configuration saved to {variables_file_path}.")
+                print(f"Variables configuration saved to {variables_file_path}.")  # noqa: T201
 
             return None
 

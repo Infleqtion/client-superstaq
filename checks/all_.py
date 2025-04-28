@@ -9,4 +9,4 @@ if __name__ == "__main__":
     args = [*sys.argv[1:]]
     if sys.version_info.minor >= 12:
         args += ["--sysmon"]
-    exit(checks.all_.run(*args))
+    sys.exit(checks.all_.run(*args))

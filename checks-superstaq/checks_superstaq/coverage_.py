@@ -11,7 +11,7 @@ from checks_superstaq import check_utils
 
 
 @check_utils.enable_exit_on_failure
-def run(  # noqa: C901
+def run(
     *args: str,
     include: str | Iterable[str] = "*.py",
     exclude: str | Iterable[str] = "*_integration_test.py",
@@ -28,7 +28,6 @@ def run(  # noqa: C901
     Returns:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
-
     parser = check_utils.get_check_parser()
     parser.add_argument(
         "--modular",
@@ -122,7 +121,6 @@ def _run_on_files(
     pytest_args: list[str],
 ) -> int:
     """Helper function to run coverage tests on the given files with the given pytest arguments."""
-
     coverage_args = ["--include=" + ",".join(files_requiring_coverage), *coverage_args]
 
     test_returncode = subprocess.call(
@@ -161,4 +159,4 @@ def _report(test_returncode: int) -> int:
 
 
 if __name__ == "__main__":
-    exit(run(*sys.argv[1:]))
+    sys.exit(run(*sys.argv[1:]))
