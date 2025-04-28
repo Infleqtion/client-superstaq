@@ -4,7 +4,6 @@ import io
 import json
 import re
 import warnings
-from collections import defaultdict
 from collections.abc import Callable, Sequence
 from typing import TypeVar
 
@@ -236,25 +235,19 @@ def insert_times_and_durations(
         as well as with the `.duration` `.op_start_times` attributes of the `circuit` itself.
     """
     new_circuit = circuit.copy_empty_like()
-    op_duration_info: dict[str, dict[tuple[int, ...], object]] = defaultdict(dict)
     circuit_duration = 0
     for inst, duration, start_time in zip(circuit, durations, start_times):
         operation = inst.operation
-        op_qubit_indicies = [circuit.find_bit(qubit).index for qubit in inst.qubits]
-        op_duration_info[operation.name] |= {
-            tuple(op_qubit_indicies): qiskit.transpiler.target.InstructionProperties(
-                duration=duration
-            )
-        }
+        if isinstance(operation, qiskit.circuit.delay.Delay):
+            operation = inst.operation.to_mutable()
+            operation.duration = duration
+            inst = inst.replace(operation=operation)
         circuit_duration = max(circuit_duration, start_time + duration)
         new_circuit.append(inst)
-
     if len(new_circuit) == len(circuit):
         new_circuit._op_start_times = start_times
         new_circuit.duration = circuit_duration
-        new_circuit.metadata = op_duration_info
         return new_circuit
-
     return circuit
 
 
