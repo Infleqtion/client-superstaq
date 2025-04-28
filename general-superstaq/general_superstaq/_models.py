@@ -1,6 +1,5 @@
 """Data models used when communicating with the superstaq server."""
 
-# pragma: no cover
 from __future__ import annotations
 
 import datetime

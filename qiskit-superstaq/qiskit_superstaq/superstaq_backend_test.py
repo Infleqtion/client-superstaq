@@ -6,6 +6,7 @@ import textwrap
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
+import general_superstaq as gss
 import pytest
 import qiskit
 
@@ -35,6 +36,32 @@ def test_run(fake_superstaq_provider: MockSuperstaqProvider) -> None:
         answer = backend.run(circuits=qc, shots=1000)
         expected = qss.SuperstaqJob(backend, "job_id")
         assert answer == expected
+
+    with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
+        qc.remove_final_measurements()
+        backend.run(qc, shots=1000)
+
+
+def test_run_v0_3_0(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    qc = qiskit.QuantumCircuit(2, 2)
+    qc.h(0)
+    qc.cx(0, 1)
+    qc.measure([0, 0], [1, 1])
+
+    fake_superstaq_provider._client = gss.superstaq_client.get_client(
+        "test_name", api_version="v0.3.0", api_key="fake-key"
+    )
+
+    backend = fake_superstaq_provider.get_backend("ss_example_qpu")
+
+    with patch(
+        "general_superstaq.superstaq_client._SuperstaqClient_v0_3_0.create_job",
+        return_value={"job_id": "job_id", "status": "ready"},
+    ):
+        with patch("general_superstaq.superstaq_client._SuperstaqClient_v0_3_0.fetch_single_job"):
+            answer = backend.run(circuits=qc, shots=1000)
+            expected = qss.SuperstaqJob(backend, "job_id")
+            assert answer == expected
 
     with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
         qc.remove_final_measurements()
