@@ -5,12 +5,12 @@ from .irb import IRB, IRBResults, RBResults
 from .xeb import XEB, XEBResults
 
 __all__ = [
+    "IRB",
+    "XEB",
+    "IRBResults",
     "QCVVExperiment",
     "QCVVResults",
-    "Sample",
-    "IRB",
-    "IRBResults",
-    "XEB",
-    "XEBResults",
     "RBResults",
+    "Sample",
+    "XEBResults",
 ]

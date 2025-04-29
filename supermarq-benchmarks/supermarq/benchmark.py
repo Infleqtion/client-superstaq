@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+# ruff: noqa: D402
 import abc
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import cirq
-import qiskit
 
 import supermarq
+
+if TYPE_CHECKING:
+    import qiskit
 
 
 class Benchmark:

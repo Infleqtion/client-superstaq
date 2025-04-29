@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tooling for cross entropy benchmark experiments."""
+
 from __future__ import annotations
 
 import itertools
@@ -192,7 +193,8 @@ class XEBResults(QCVVResults):
         return fig
 
     def print_results(self) -> None:
-        print(
+        """Prints the key results data."""
+        print(  # noqa: T201
             f"Estimated cycle fidelity: {self.cycle_fidelity_estimate:.5} "
             f"+/- {self.cycle_fidelity_estimate_std:.5}"
         )
@@ -243,7 +245,7 @@ class XEBResults(QCVVResults):
                 index="circuit_realization", columns="cycle_depth", values="value"
             )
             cmap = mpl.colormaps["rocket"]
-            # norm = mpl.colors.Normalize(0, 1)  # or vmin, vmax
+            # norm = mpl.colors.Normalize(0, 1)  # or vmin, vmax # noqa: ERA001
             sns.heatmap(data, vmin=0, vmax=1, ax=ax, cbar_ax=axs["cbar"], cmap=cmap)
             ax.set_ylabel("")
             ax.set_xlabel("")
@@ -259,7 +261,6 @@ class XEBResults(QCVVResults):
                 color="white",
             )
             if k != 0:
-
                 ax.axhline(y=0, linewidth=1.5, color="white", linestyle="--")
             if k == 0:
                 ax.set_title("Speckle plots")
@@ -295,7 +296,7 @@ class XEBResults(QCVVResults):
             logx=True,
             ax=axs["Decay"],
         )
-        # purity_plot.tight_layout()
+        # purity_plot.tight_layout() # noqa: ERA001
         axs["Decay"].set_xlabel(r"Cycle depth")
         axs["Decay"].set_ylabel(r"$\sqrt{\mathrm{Purity}}$")
         axs["Decay"].set_title(r"Purity Decay")
@@ -376,8 +377,8 @@ class XEB(QCVVExperiment[XEBResults]):
                 generating random circuits. If not provided defaults to phased XZ gates with 1/4 pi
                 intervals.
             random_seed: An optional seed to use for randomization.
+            kwargs: Any additional supported string keyword args.
         """
-
         if isinstance(two_qubit_gate, cirq.Operation):
             qubits: Sequence[cirq.Qid] | int = two_qubit_gate.qubits
             two_qubit_gate = two_qubit_gate.gate

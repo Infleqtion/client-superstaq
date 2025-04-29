@@ -12,7 +12,7 @@ from supermarq.benchmark import Benchmark
 
 @pytest.fixture
 def benchmark() -> Benchmark:
-    """Simple one-qubit benchmark that creates an equal superposition state
+    """Simple one-qubit benchmark that creates an equal superposition state.
 
     Returns:
         A benchmark instance.
