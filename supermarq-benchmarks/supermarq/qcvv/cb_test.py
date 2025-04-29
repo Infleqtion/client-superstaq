@@ -21,6 +21,9 @@ from unittest.mock import MagicMock, patch
 
 import cirq
 import cirq.testing
+import cirq.testing
+import cirq.testing
+import cirq.testing
 import numpy as np
 import pandas as pd
 import pytest
@@ -33,117 +36,259 @@ def patch_tqdm() -> None:
     os.environ["TQDM_DISABLE"] = "1"
 
 
-def test_cb_init() -> None:
-    with patch("cirq_superstaq.service.Service"):
-
-        with pytest.raises(
-            RuntimeError, 
-            match="This cycle benchmarking is only valid for Clifford elements."
-        ):  
-            qubit = cirq.LineQubit(0)
-            circuit = cirq.Circuit([cirq.T(qubit)])
-            CB(circuit, pauli_channels=1)
-
-        with pytest.raises(
-            RuntimeError, 
-            match="All Pauli channels must be over 1 qubits. XX is over 2 qubits."
-        ):  
-            qubit = cirq.LineQubit(0)
-            circuit = cirq.Circuit([cirq.X(qubit)])
-            CB(circuit, pauli_channels=["XX"])
-
-        with pytest.raises(
-            RuntimeError, 
-            match="All Pauli channels must be over 2 qubits. Y is over 1 qubits."
-        ):  
-            qubits = cirq.LineQubit.range(2)
-            circuit = cirq.Circuit([cirq.X(qubits[0]), cirq.Z(qubits[1])])
-            CB(circuit, pauli_channels=["Y"])
-        
+def test_bad_cb_init() -> None:
+    with pytest.raises(
+        RuntimeError, match="This cycle benchmarking is only valid for Clifford elements."
+    ):
         qubit = cirq.LineQubit(0)
-        circuit = cirq.Circuit([cirq.X(qubit), cirq.H(qubit)])
+        process = cirq.Circuit([cirq.T(qubit)])
+        CB(process, pauli_channels=1)
 
-        experiment = CB(circuit, pauli_channels=3)
-        assert experiment.num_qubits == 1
-        assert len(experiment.pauli_channels) == 3
-        assert experiment._dressed_measurement
-        assert experiment._matrix_order == 4
-        assert experiment.cycle_depths == [4, 8]
+    with pytest.raises(
+        RuntimeError, match="All Pauli channels must be over 1 qubits. XX is over 2 qubits."
+    ):
+        qubit = cirq.LineQubit(0)
+        process = cirq.Circuit([cirq.X(qubit)])
+        CB(process, pauli_channels=["XX"])
 
-        experiment = CB(circuit, pauli_channels=6)
-        assert len(experiment.pauli_channels) == 4
-
-        experiment = CB(circuit, pauli_channels=6, dressed_measurement=False)
-        assert not experiment._dressed_measurement
-
-        experiment = CB(circuit, pauli_channels=["X", "Z"])
-        assert len(experiment.pauli_channels) == 2
-
-        experiment = CB(circuit, pauli_channels=["X", "Z", "Z"])
-        assert len(experiment.pauli_channels) == 2
-
+    with pytest.raises(
+        RuntimeError, match="All Pauli channels must be over 2 qubits. Y is over 1 qubits."
+    ):
         qubits = cirq.LineQubit.range(2)
-        circuit = cirq.Circuit([
-                                    cirq.H(qubits[0]), 
-                                    cirq.CX(qubits[0], qubits[1]),
-                                    cirq.H(qubits[0])
-                                ])
+        process = cirq.Circuit([cirq.X(qubits[0]), cirq.Z(qubits[1])])
+        CB(process, pauli_channels=["Y"])
 
-        experiment = CB(circuit, pauli_channels=5)
-        assert experiment.num_qubits == 2
-        assert experiment._dressed_measurement
-        assert experiment._matrix_order == 2
-        assert len(experiment.pauli_channels) == 5
 
-        experiment = CB(circuit, pauli_channels=20)
-        assert len(experiment.pauli_channels) == 16
-        
+
+def test_channels_cb_init() -> None:
+    qubit = cirq.LineQubit(0)
+    process = cirq.Circuit([cirq.X(qubit), cirq.H(qubit)])
+
+    experiment = CB(process, pauli_channels=3)
+    assert len(experiment.pauli_channels) == 3
+
+    experiment = CB(process, pauli_channels=6)
+    assert len(experiment.pauli_channels) == 4
+
+    experiment = CB(process, pauli_channels=["X", "Z"])
+    assert len(experiment.pauli_channels) == 2
+
+    experiment = CB(process, pauli_channels=["X", "Z", "Z"])
+    assert len(experiment.pauli_channels) == 2
+
+
+def test_order_factors_cb_init() -> None:
+    qubit = cirq.LineQubit(0)
+    process = cirq.Circuit([cirq.X(qubit), cirq.H(qubit)])
+
+    experiment = CB(process, 1)
+    assert experiment.cycle_depths == [4, 8]
+
+    experiment = CB(process, 1, process_order_factors=[2, 4])
+    assert experiment.cycle_depths == [8, 16]
+
+
+def test_undressed_cb_init() -> None:
+    qubit = cirq.LineQubit(0)
+    process = cirq.Circuit([cirq.X(qubit), cirq.H(qubit)])
+
+    experiment = CB(process, 1)
+    assert not experiment._undressed_process
+
+    experiment = CB(process, 1, undressed_process=True)
+    assert experiment._undressed_process
+
+
+def test_num_samples_cb_init() -> None:
+    qubit = cirq.LineQubit(0)
+    process = cirq.Circuit([cirq.X(qubit), cirq.H(qubit)])
+
+    experiment = CB(process, 2)
+    assert len(experiment.samples) == 4
+
+    experiment = CB(process, 2, num_circuits=2)
+    assert len(experiment.samples) == 8
+
+    experiment = CB(process, 2, num_circuits=2, undressed_process=True)
+    assert len(experiment.samples) == 16
+
 
 @pytest.fixture
 def cb_experiment() -> CB:
-    with patch("cirq_superstaq.service.Service"):
-        qubits = cirq.LineQubit.range(2)
-        circuit = cirq.Circuit([
-                                    cirq.H(qubits[0]), 
-                                    cirq.CX(qubits[0], qubits[1]),
-                                    cirq.H(qubits[0])
-                                ])
-        pauli_channels = ["XY", "YZ"]
-        return CB(circuit, pauli_channels=pauli_channels)
+    qubits = cirq.LineQubit.range(2)
+    process = cirq.Circuit(
+        [cirq.H(qubits[0]), cirq.CX(qubits[0], qubits[1]), cirq.H(qubits[0])]
+    )
+    pauli_channels = ["XY"]
+    with patch("supermarq.qcvv.cb.np.random.default_rng") as mock_rng:
+        mock_rng.return_value.choice.side_effect = (
+            [[p1, p2] for p1, p2 in itertools.product("XY", "YZ")]
+            +
+            [[p1, p2] for p1, p2 in itertools.product("ZX", "XY")]
+            +
+            [["X", "Y"], ["X", "Z"], ["Y", "Y"]]*2
+        )
+        experiment = CB(process, pauli_channels=pauli_channels)
+    return experiment
 
 
-# def test_build_circuits(cb_experiment: CB) -> None:
-#     with patch("supermarq.qcvv.xeb.random.choices") as random_choices:
-#         random_choices.side_effect = [
-#             [p1, p2] for p1, p2 in itertools.product("IXYZ", "IXYZ")
-#         ]
-#         samples = cb_experiment._build_circuits(1, [1, 2])
+def test_state_prep_circuit(cb_experiment: CB) -> None:
+    circuit, pauli_string = cb_experiment._state_prep_circuit("XY")
+    qubits = cb_experiment.qubits
+    cirq.testing.assert_same_circuits(
+        circuit,
+        cirq.Circuit([cirq.Y(qubits[0])**0.5, cirq.X(qubits[1])**(-0.5)])
+    )
 
-#     assert len(samples) == 2
-#     qubits = cb_experiment.qubits
-#     cirq.testing.assert_same_circuits(
-#         samples[0].raw_circuit,
-#         cirq.Circuit(
-#             [
-#                 cirq.Y(qubits[0])**0.5,
-#                 cirq.X(qubits[1])**(-0.5),
-#                 cirq.I(qubits[0]),
-#                 cirq.I(qubits[1]),
-#                 cirq.TaggedOperation(cirq.H(qubits[0]), "no_compile"),
-#                 cirq.TaggedOperation(cirq.CX(qubits[0], qubits[1]), "no_compile"),
-#                 cirq.TaggedOperation(cirq.H(qubits[0]), "no_compile"),
-#                 cirq.I(qubits[0]),
-#                 cirq.X(qubits[1]),
-#                 cirq.TaggedOperation(cirq.H(qubits[0]), "no_compile"),
-#                 cirq.TaggedOperation(cirq.CX(qubits[0], qubits[1]), "no_compile"),
-#                 cirq.TaggedOperation(cirq.H(qubits[0]), "no_compile"),
-#                 cirq.I(qubits[0]),
-#                 cirq.Y(qubits[1]),
-#                 cirq.Y(qubits[0])**(-0.5),
-#                 cirq.X(qubits[1])**0.5,
-#                 cirq.measure(qubits)
-#             ]
-#         )
-#     )
-#     assert samples[0].data == {"circuit_depth": 5, "num_cycles": 2, "two_qubit_gate": "CZ"}
- 
+    assert pauli_string == cirq.MutablePauliString({qubits[0]: cirq.X, qubits[1]: cirq.Y})
+
+
+def test_cb_bulk_circuit(cb_experiment: CB) -> None:
+    circuit, pauli_string = cb_experiment._cb_bulk_circuit(cb_experiment.cycle_depths[0])
+    qubits = cb_experiment.qubits
+    cirq.testing.assert_same_circuits(
+        circuit,
+        cirq.Circuit(
+            [
+                cirq.Moment(
+                    cirq.X(qubits[0]),
+                    cirq.Y(qubits[1]),
+                ),
+                cirq.TaggedOperation(cirq.H(qubits[0]), "no_compile"),
+                cirq.TaggedOperation(cirq.CX(qubits[0], qubits[1]), "no_compile"),
+                cirq.TaggedOperation(cirq.H(qubits[0]), "no_compile"),
+                cirq.Moment(
+                    cirq.X(qubits[0]),
+                    cirq.Z(qubits[1]),
+                ),
+                cirq.TaggedOperation(cirq.H(qubits[0]), "no_compile"),
+                cirq.TaggedOperation(cirq.CX(qubits[0], qubits[1]), "no_compile"),
+                cirq.TaggedOperation(cirq.H(qubits[0]), "no_compile"),
+                cirq.Moment(
+                    cirq.Y(qubits[0]),
+                    cirq.Y(qubits[1]),
+                ),
+            ]
+        )
+    )
+
+    assert pauli_string == cirq.MutablePauliString({qubits[0]: cirq.Z, qubits[1]: cirq.Z}, coefficient=1j)
+
+
+def test_inversion_circuit(cb_experiment: CB) -> None:
+    qubits = cb_experiment.qubits
+    channel = cirq.MutablePauliString({qubits[0]: cirq.X, qubits[1]: cirq.Y})
+    aggregate_pauli = cirq.MutablePauliString({qubits[0]: cirq.Z, qubits[1]: cirq.Z}, coefficient=1j)
+    circuit, pauli_string = cb_experiment._inversion_circuit(channel, aggregate_pauli) 
+
+    cirq.testing.assert_same_circuits(
+        circuit,
+        cirq.Circuit([cirq.Y(qubits[0])**(-0.5), cirq.X(qubits[1])**0.5])
+    )
+
+    assert pauli_string == cirq.MutablePauliString({qubits[0]: cirq.X, qubits[1]: cirq.Y})
+
+
+def test_generate_full_circuit(cb_experiment: CB) -> None:
+    circuit, pauli_string = cb_experiment._generate_full_cb_circuit("XY", cb_experiment.cycle_depths[0])
+    qubits = cb_experiment.qubits
+
+    cirq.testing.assert_same_circuits(
+        circuit,
+        cirq.Circuit(
+            [
+                cirq.Moment(
+                    cirq.Y(qubits[0])**0.5, 
+                    cirq.X(qubits[1])**(-0.5),
+                ),
+                cirq.Moment(
+                    cirq.X(qubits[0]),
+                    cirq.Y(qubits[1]),
+                ),
+                cirq.TaggedOperation(cirq.H(qubits[0]), "no_compile"),
+                cirq.TaggedOperation(cirq.CX(qubits[0], qubits[1]), "no_compile"),
+                cirq.TaggedOperation(cirq.H(qubits[0]), "no_compile"),
+                cirq.Moment(
+                    cirq.X(qubits[0]),
+                    cirq.Z(qubits[1]),
+                ),
+                cirq.TaggedOperation(cirq.H(qubits[0]), "no_compile"),
+                cirq.TaggedOperation(cirq.CX(qubits[0], qubits[1]), "no_compile"),
+                cirq.TaggedOperation(cirq.H(qubits[0]), "no_compile"),
+                cirq.Moment(
+                    cirq.Y(qubits[0]),
+                    cirq.Y(qubits[1]),
+                ),
+                cirq.Moment(
+                    cirq.Y(qubits[0])**(-0.5), 
+                    cirq.X(qubits[1])**0.5
+                ),
+                cirq.M(qubits)
+            ]
+        )
+    )
+
+    assert pauli_string == cirq.MutablePauliString({qubits[0]: cirq.X, qubits[1]: cirq.Y})
+
+
+def test_samples_cb_experiment(cb_experiment: CB) -> None:
+    samples = cb_experiment.samples
+    qubits = cb_experiment.qubits
+
+    assert len(samples) == 2
+
+    cirq.testing.assert_same_circuits(
+        samples[0].circuit,
+        cirq.Circuit(
+            [
+                cirq.Moment(
+                    cirq.Y(qubits[0])**0.5, 
+                    cirq.X(qubits[1])**(-0.5),
+                ),
+                cirq.Moment(
+                    cirq.X(qubits[0]),
+                    cirq.Y(qubits[1]),
+                ),
+                cirq.TaggedOperation(cirq.H(qubits[0]), "no_compile"),
+                cirq.TaggedOperation(cirq.CX(qubits[0], qubits[1]), "no_compile"),
+                cirq.TaggedOperation(cirq.H(qubits[0]), "no_compile"),
+                cirq.Moment(
+                    cirq.X(qubits[0]),
+                    cirq.Z(qubits[1]),
+                ),
+                cirq.TaggedOperation(cirq.H(qubits[0]), "no_compile"),
+                cirq.TaggedOperation(cirq.CX(qubits[0], qubits[1]), "no_compile"),
+                cirq.TaggedOperation(cirq.H(qubits[0]), "no_compile"),
+                cirq.Moment(
+                    cirq.Y(qubits[0]),
+                    cirq.Y(qubits[1]),
+                ),
+                cirq.Moment(
+                    cirq.Y(qubits[0])**(-0.5), 
+                    cirq.X(qubits[1])**0.5
+                ),
+                cirq.M(qubits)
+            ]
+        )
+    )
+
+    assert samples[0].data["pauli_channel"] == "XY"
+    assert samples[1].data["pauli_channel"] == "XY"
+    assert samples[0].data["c_of_p"] == cirq.MutablePauliString({qubits[0]: cirq.X, qubits[1]: cirq.Y})
+    assert samples[1].data["c_of_p"] == cirq.MutablePauliString({qubits[0]: cirq.X, qubits[1]: cirq.Y},  coefficient=-1)
+
+
+def test_result_analyse() -> None:
+    qubits = cirq.LineQubit.range(2)
+    circuit = cirq.Circuit(
+        [
+            cirq.H(qubits[0]),
+            cirq.CX(qubits[0], qubits[1]),
+            cirq.H(qubits[0]),
+        ]
+    )
+    cb_experiment = CB()
+
+
+
+    
