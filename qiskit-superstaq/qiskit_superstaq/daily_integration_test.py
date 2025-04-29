@@ -43,9 +43,12 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
 
 
 def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
-    qc = qiskit.QuantumCircuit(2)
+    qc = qiskit.QuantumCircuit(4)
     qc.h(0)
     qc.cx(0, 1)
+    qc.append(qss.AceCR("-+"), [0, 1])
+    qc.append(qss.AceCR("-+"), [1, 2])
+    qc.append(qss.AceCR("-+"), [2, 3])
 
     out = provider.ibmq_compile(qc, target="ibmq_brisbane_qpu")
     assert isinstance(out, qss.compiler_output.CompilerOutput)
@@ -68,9 +71,12 @@ def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
 
 def test_ibmq_compile_with_token() -> None:
     provider = qss.SuperstaqProvider(ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"])
-    qc = qiskit.QuantumCircuit(2)
+    qc = qiskit.QuantumCircuit(4)
     qc.h(0)
     qc.cx(0, 1)
+    qc.append(qss.AceCR("-+"), [0, 1])
+    qc.append(qss.AceCR("-+"), [1, 2])
+    qc.append(qss.AceCR("-+"), [2, 3])
 
     out = provider.ibmq_compile(qc, target="ibmq_brisbane_qpu")
 
