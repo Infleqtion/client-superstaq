@@ -13,7 +13,7 @@ line-length = 100
 target-version = "py39"
 show-fixes = true
 
-# Specific linting rules to enable in `ruff` (matching `pylint`'s "enable" list)
+# Specific linting rules to enable in `ruff`
 lint.select = [
   "A",      # flake8-builtins
   "ANN",    # flake8-annotations checks
@@ -28,16 +28,17 @@ lint.select = [
   "FA",     # flake8-future-annotations checks
   "FAST",   # FastAPI checks
   "FLY",    # flynt checks
+  "FURB",   # refurb checks
   "I",      # isort checks
   "ISC",    # flake8-implicit-str-concat checks
   "NPY201", # numpy2-deprecation
   "PERF",   # Perflint checks
+  "PGH",    # pygrep-hooks checks
   "PIE",    # flake8-pie checks
   "PL",     # pylint checks
   "PLE",    # pylint errors
   "PT001",  # pytest-fixture-incorrect-parentheses-style
   "PT009",  # pytest-unittest-assertion
-  "PT013",  # pytest-incorrect-pytest-import
   "Q",      # flake8-quotes checks
   "RSE",    # flake8-raise checks
   "RUF",    # Ruff-specific checks
@@ -61,6 +62,7 @@ lint.ignore = [
   "B034",
   "B904",
   "B905",
+  "C409",    # See https://github.com/astral-sh/ruff/issues/12912
   "C416",
   "C420",
   "D100",
@@ -69,6 +71,7 @@ lint.ignore = [
   "D107",
   "D205",
   "D301",
+  "E731",
   "FAST002",
   "PERF401",
   "PLC0105",
