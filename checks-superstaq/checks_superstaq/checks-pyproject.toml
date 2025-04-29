@@ -30,6 +30,7 @@ lint.select = [
   "FLY",    # flynt checks
   "I",      # isort checks
   "ISC",    # flake8-implicit-str-concat checks
+  "NPY201", # numpy2-deprecation
   "PERF",   # Perflint checks
   "PIE",    # flake8-pie checks
   "PL",     # pylint checks
@@ -39,9 +40,7 @@ lint.select = [
   "PT013",  # pytest-incorrect-pytest-import
   "Q",      # flake8-quotes checks
   "RSE",    # flake8-raise checks
-  "RUF010", # explicit-f-string-type-conversion
-  "RUF022", # `__all__` is not sorted
-  "RUF100", # unused noqa checks
+  "RUF",    # Ruff-specific checks
   "SIM101", # Consider-merging-isinstance check
   "SIM210", # pylint's simplifiable-if-expression (1)
   "SIM211", # pylint's simplifiable-if-expression (2)
@@ -81,6 +80,7 @@ lint.ignore = [
   "PLR2004",
   "PLW0127",
   "PLW2901",
+  "RUF001",
   "TC003",
   "UP038",
   # The following are excluded to not conflict with `ruff format`:
