@@ -50,7 +50,7 @@ def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
     matrix = np.asarray(matrix, dtype=complex)
 
     for dimension in (2, 3):
-        num_qids = int(round(np.log(matrix.size) / np.log(dimension**2)))
+        num_qids = round(np.log(matrix.size) / np.log(dimension**2))
         if matrix.shape == (dimension**num_qids, dimension**num_qids):
             qid_shape = (dimension,) * num_qids
             return cirq.MatrixGate(matrix, qid_shape=qid_shape)

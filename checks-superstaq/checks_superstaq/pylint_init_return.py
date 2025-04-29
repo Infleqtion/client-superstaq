@@ -19,7 +19,7 @@ class InitChecker(BaseChecker):
     """
 
     name = "init-return-check"
-    msgs = {
+    msgs = {  # noqa: RUF012
         "W6061": (
             "Missing -> None return type annotation for __init__ method",
             "missing-return-type-annotation-init",

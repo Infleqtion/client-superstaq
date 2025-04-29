@@ -732,7 +732,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         samples = []
         for k, depth in product(range(num_circuits), cycle_depths, desc="Building circuits"):
             base_sequence = [self.random_clifford() for _ in range(depth)]
-            rb_sequence = base_sequence + [
+            rb_sequence = base_sequence + [  # noqa: RUF005
                 _reduce_clifford_seq(cirq.inverse(base_sequence))  # type: ignore[arg-type]
             ]
             rb_circuit = cirq.Circuit(self._clifford_gate_to_circuit(gate) for gate in rb_sequence)

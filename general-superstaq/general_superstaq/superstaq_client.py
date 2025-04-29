@@ -23,7 +23,7 @@ import time
 import urllib
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, TypeVar
+from typing import Any, ClassVar, TypeVar
 
 import requests
 
@@ -39,10 +39,10 @@ class _SuperstaqClient:
     but instead should use `$client_superstaq.Service`.
     """
 
-    RETRIABLE_STATUS_CODES = {
+    RETRIABLE_STATUS_CODES: ClassVar[set[int]] = {
         requests.codes.service_unavailable,
     }
-    SUPPORTED_VERSIONS = {
+    SUPPORTED_VERSIONS: ClassVar[set[str]] = {
         gss.API_VERSION,
     }
 
@@ -977,7 +977,7 @@ def read_ibm_credentials(ibmq_name: str | None) -> dict[str, str]:
         config = json.load(open(path))
         if ibmq_name is None:
             if len(config) == 1:
-                ibmq_name = list(config.keys())[0]
+                ibmq_name = next(iter(config.keys()))
             elif any(creds.get("is_default_account") for creds in config.values()):
                 ibmq_name = next(name for name in config if config[name].get("is_default_account"))
             else:
