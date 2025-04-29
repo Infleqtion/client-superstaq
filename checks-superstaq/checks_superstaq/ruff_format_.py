@@ -46,9 +46,15 @@ def run(
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     if files:
-        return subprocess.call(
+        returncode_ruff_format = subprocess.call(
             ["python", "-m", "ruff", "format", *files, *args_to_pass], cwd=check_utils.root_dir
         )
+        if returncode_ruff_format == 1:
+            command = "./checks/format_.py --fix"
+            text = f"Run '{command}' (from the repo root directory) to format files."
+            print(check_utils.warning(text))
+            return 1
+        return returncode_ruff_format
 
     return 0
 
