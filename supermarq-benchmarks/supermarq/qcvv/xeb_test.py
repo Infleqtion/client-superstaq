@@ -82,7 +82,6 @@ def xeb_experiment() -> XEB:
 
 
 def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
-
     xeb_experiment._rng = (rng := MagicMock())
     rng.choice.side_effect = [
         np.array([[cirq.X, cirq.Y], [cirq.Z, cirq.Y], [cirq.Y, cirq.Z]]),

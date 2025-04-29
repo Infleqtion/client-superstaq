@@ -115,8 +115,8 @@ def _announce_diff(
 def _line_text(start: int, end: int) -> str:
     """Identify one or multiple line numbers."""
     if end == start + 1:
-        return f"line {start+1}"
-    return f"lines {start+1}--{end}"
+        return f"line {start + 1}"
+    return f"lines {start + 1}--{end}"
 
 
 if __name__ == "__main__":

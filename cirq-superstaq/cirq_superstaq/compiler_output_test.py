@@ -200,8 +200,9 @@ def test_read_json_pulse_gate_circuits() -> None:
     assert out.pulse_gate_circuits[1][0].operation.duration == 100
     assert out.pulse_gate_circuits[1].op_start_times == [0, 100]
 
-    with mock.patch.dict("sys.modules", {"qiskit_superstaq": None}), pytest.warns(
-        UserWarning, match="qiskit-superstaq is required"
+    with (
+        mock.patch.dict("sys.modules", {"qiskit_superstaq": None}),
+        pytest.warns(UserWarning, match="qiskit-superstaq is required"),
     ):
         out = css.compiler_output.read_json(json_dict, circuits_is_list=False)
         assert out.circuit == circuit

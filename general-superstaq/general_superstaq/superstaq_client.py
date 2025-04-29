@@ -101,9 +101,9 @@ class _SuperstaqClient:
             "http://example.com"
         )
 
-        assert (
-            self.api_version in self.SUPPORTED_VERSIONS
-        ), f"Only API versions {self.SUPPORTED_VERSIONS} are accepted but got {self.api_version}"
+        assert self.api_version in self.SUPPORTED_VERSIONS, (
+            f"Only API versions {self.SUPPORTED_VERSIONS} are accepted but got {self.api_version}"
+        )
         assert max_retry_seconds >= 0, "Negative retry not possible without time machine."
 
         self.url = f"{url.scheme}://{url.netloc}/{api_version}"

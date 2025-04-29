@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Base experiment class and tools used across all experiments."""
+
 from __future__ import annotations
 
 import functools
@@ -251,7 +252,6 @@ class QCVVResults(ABC):
         records = []
         device_counts = self.job.counts()
         for counts, sample in zip(device_counts, self.samples):
-
             total = sum(counts.values())
             probabilities = {
                 format(idx, f"0{self.num_qubits}b"): 0.0 for idx in range(2**self.num_qubits)

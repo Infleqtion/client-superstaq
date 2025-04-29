@@ -704,8 +704,9 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
         final_logical_to_physical
     ]
 
-    with mock.patch.dict("sys.modules", {"qiskit_superstaq": None}), pytest.warns(
-        UserWarning, match="qiskit-superstaq is required"
+    with (
+        mock.patch.dict("sys.modules", {"qiskit_superstaq": None}),
+        pytest.warns(UserWarning, match="qiskit-superstaq is required"),
     ):
         assert (
             service.ibmq_compile(cirq.Circuit(), target="ibmq_fake_qpu").pulse_gate_circuit is None
