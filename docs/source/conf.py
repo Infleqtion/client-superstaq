@@ -2,7 +2,6 @@
 #
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
-# pylint: disable=missing-function-docstring,missing-class-docstring,unused-argument
 # mypy: disable-error-code="no-untyped-def"
 
 # -- Path setup --------------------------------------------------------------
@@ -17,7 +16,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "Superstaq"
-copyright = "2024, ColdQuanta, Inc., DBA Infleqtion"  # pylint: disable=redefined-builtin
+copyright = "2024, ColdQuanta, Inc., DBA Infleqtion"
 author = "ColdQuanta, Inc., DBA Infleqtion"
 
 # -- General configuration ---------------------------------------------------
