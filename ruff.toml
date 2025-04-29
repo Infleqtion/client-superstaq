@@ -42,7 +42,7 @@ lint.select = [
     "W",      # pycodestyle warnings checks
 ]
 lint.ignore = [
-    "ANN401",
+    # "ANN401",
     "ARG002",
     "ARG005",
     "B008",
