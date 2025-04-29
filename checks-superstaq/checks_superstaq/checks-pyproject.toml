@@ -113,10 +113,9 @@ exempt-modules = ["collections.abc"]
 docstring-code-format = true
 
 [tool.ruff.lint.per-file-ignores]
-"*.ipynb" = ["T201"]
+"*.ipynb" = ["D101", "D102", "D103", "E501", "ERA001", "T201"]
 "checks-superstaq/*" = ["T201"]
 "*test.py" = ["D101", "D102", "D103"]
-"docs/source/conf.py" = ["A001", "ANN001", "ANN201", "ARG001", "D103"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
