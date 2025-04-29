@@ -359,7 +359,7 @@ class CB(QCVVExperiment[CBResults]):
         process_circuit: cirq.Circuit,
         pauli_channels: int | list[str],
         num_circuits: int = 1,
-        process_order_factor: list[int] = [1, 2],
+        process_order_factors: list[int] = [1, 2],
         undressed_process: bool = False,
         *,
         random_seed: int | np.random.Generator | None = None,
@@ -373,11 +373,11 @@ class CB(QCVVExperiment[CBResults]):
             pauli_channels: the number of Pauli channels to use or
                 a list of the Pauli channels to use.
             num_circuits: The number of circuits to generate per depth.
-            process_order_factor: The factors by which to multiply the process order.
+            process_order_factors: The factors by which to multiply the process order.
             undressed_process: Whether to estimate the undressed process fidelity.
             random_seed: An optional seed to use for randomization.
         """
-        if len(process_order_factor) != 2:
+        if len(process_order_factors) != 2:
             raise ValueError("cycle benchmarking only requires two factors")
 
         check, compiled_circuit = CB._is_Clifford(process_circuit)
@@ -386,7 +386,7 @@ class CB(QCVVExperiment[CBResults]):
 
         self._matrix_order = self._find_process_order(compiled_circuit)
 
-        cycle_depth = [f * self._matrix_order for f in process_order_factor]
+        cycle_depth = [f * self._matrix_order for f in process_order_factors]
 
         self._process_circuit = cirq.Circuit()
         # Prevent internal compiler optimizations
@@ -395,6 +395,7 @@ class CB(QCVVExperiment[CBResults]):
 
         self.qubits = list(process_circuit.all_qubits())
         self._num_qubits = len(self.qubits)
+        self._rng = np.random.default_rng(random_seed)
 
         if isinstance(pauli_channels, list):
             self.pauli_channels = []
@@ -424,7 +425,7 @@ class CB(QCVVExperiment[CBResults]):
             qubits=self.qubits,
             num_circuits=num_circuits,
             cycle_depths=cycle_depth,
-            random_seed=random_seed,
+            random_seed=self._rng,
             results_cls=CBResults,
             _samples=_samples,
             **kwargs,
@@ -528,7 +529,7 @@ class CB(QCVVExperiment[CBResults]):
 
         Args:
             depth: The number of repeated noisy implementations
-                of the process circuit interleaved with randomn Pauli cycle layers.
+                of the process circuit interleaved with random Pauli cycle layers.
             process: Indicates whether to include the process circuit in the bulk circuit.
 
         Returns: a `tuple` containing the bulk `cirq.Circuit` and a
@@ -591,7 +592,7 @@ class CB(QCVVExperiment[CBResults]):
         process_circuit: str,
         pauli_channels: list[str],
         num_circuits: int,
-        process_order_factor: list[int],
+        process_order_factors: list[int],
         undressed_process: bool,
         **kwargs: Any,
     ) -> Self:
@@ -600,7 +601,7 @@ class CB(QCVVExperiment[CBResults]):
             process_circuit=cirq.read_json(json_text=process_circuit),
             pauli_channels=pauli_channels,
             num_circuits=num_circuits,
-            process_order_factor=process_order_factor,
+            process_order_factors=process_order_factors,
             undressed_process=undressed_process,
             **kwargs,
         )
@@ -614,7 +615,7 @@ class CB(QCVVExperiment[CBResults]):
         return {
             "process_circuit": cirq.to_json(self._process_circuit),
             "pauli_channels": [channel[0] for channel in self.pauli_channels],
-            "process_order_factor": factors,
+            "process_order_factors": factors,
             "undressed_process": self._undressed_process,
             "random_seed": self._rng,
             **json_dict,
@@ -629,7 +630,7 @@ class CB(QCVVExperiment[CBResults]):
             channel: String representing the Pauli string of the particular
                 Pauli eigenbasis channel.
             depth: Integer representing the number of repeated noisy implementations
-                of the process circuit interleaved with randomn Pauli cycle layers.
+                of the process circuit interleaved with random Pauli cycle layers.
 
         Returns:
             Returns a `tuple` containing the CB `cirq.Circuit` and a
@@ -682,10 +683,10 @@ class CB(QCVVExperiment[CBResults]):
         pauli_strings: list[str] = []
         pauli_moments: list[cirq.Moment] = []
         for _ in range(num_channels):
-            paulis: list[str] = random.choices(list(STRING_TO_PAULI.keys()), k=self._num_qubits)
+            paulis: list[str] = self._rng.choice(list(STRING_TO_PAULI.keys()), size=self._num_qubits)
             pauli_string: str = "".join(paulis)
             while pauli_string in pauli_strings:
-                paulis = random.choices(list(STRING_TO_PAULI.keys()), k=self._num_qubits)
+                paulis = self._rng.choice(list(STRING_TO_PAULI.keys()), size=self._num_qubits)
                 pauli_string = "".join(paulis)
             pauli_strings.append(pauli_string)
             pauli_moment: cirq.Moment = cirq.Moment(
