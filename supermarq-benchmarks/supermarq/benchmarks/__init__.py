@@ -18,8 +18,8 @@ from .qaoa_vanilla_proxy import QAOAVanillaProxy
 from .vqe_proxy import VQEProxy
 
 __all__ = [
-    "BitCode",
     "GHZ",
+    "BitCode",
     "HamiltonianSimulation",
     "MerminBell",
     "PhaseCode",

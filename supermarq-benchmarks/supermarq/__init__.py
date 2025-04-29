@@ -24,8 +24,8 @@ __all__ = [
     "plotting",
     "qaoa_fermionic_swap_proxy",
     "qaoa_vanilla_proxy",
+    "qcvv",
     "simulation",
     "stabilizers",
     "vqe_proxy",
-    "qcvv",
 ]

@@ -34,8 +34,9 @@ class HamiltonianSimulation(Benchmark):
         self.total_time = total_time
 
     def circuit(self) -> cirq.Circuit:
-        """Generates a circuit to simulate the evolution of an n-qubit TFIM
-        chain under the Hamiltonian:
+        """Generates a circuit to simulate the evolution of an n-qubit TFIM.
+
+        The TFIM chain evolves under the Hamiltonian:
 
         H(t) = - Jz * sum_{i=1}^{n-1}(sigma_{z}^{i} * sigma_{z}^{i+1})
                - e_ph * cos(w_ph * t) * sum_{i=1}^{n}(sigma_{x}^{i})
@@ -84,8 +85,9 @@ class HamiltonianSimulation(Benchmark):
         return circuit
 
     def qiskit_circuit(self) -> qiskit.QuantumCircuit:
-        """Generates a circuit to simulate the evolution of an n-qubit TFIM
-        chain under the Hamiltonian:
+        """Generates a circuit to simulate the evolution of an n-qubit TFIM.
+
+        The TFIM chain evolves under the Hamiltonian:
 
         H(t) = - Jz * sum_{i=1}^{n-1}(sigma_{z}^{i} * sigma_{z}^{i+1})
                - e_ph * cos(w_ph * t) * sum_{i=1}^{n}(sigma_{x}^{i})
