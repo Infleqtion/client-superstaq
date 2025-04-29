@@ -17,7 +17,7 @@ class ImportAnnotationsChecker(BaseChecker):
     """Checker for whether future annotations is imported in python files."""
 
     name = "import-future-annotations"
-    msgs = {  # noqa: RUF012
+    msgs = {  # noqa: RUF012 ; conflicts with `mypy`
         "W6063": (
             "Missing from __future__ import annotations",
             "missing-annotations-import",
