@@ -19,7 +19,7 @@ lint.select = [
   "ANN",    # flake8-annotations checks
   "ARG",    # Unused argument in a function/method
   "B",      # flake8-bugbear checks
-  "C",      # Various flake8-c* checks
+  "C",      # flake8-comprehensions, mccabe checks
   "COM818", # trailing-comma-on-bare-tuple error
   "D",      # pydocstyle checks
   "E",      # pycodestyle checks
@@ -39,12 +39,16 @@ lint.select = [
   "PLE",    # pylint errors
   "PT001",  # pytest-fixture-incorrect-parentheses-style
   "PT009",  # pytest-unittest-assertion
+  "PT018",  # pytest-composite-assertion
+  "PYI",    # flake8-pyi checks
   "Q",      # flake8-quotes checks
   "RSE",    # flake8-raise checks
   "RUF",    # Ruff-specific checks
   "SIM101", # Consider-merging-isinstance check
+  "SIM114", # if-with-same-arms check
   "SIM210", # pylint's simplifiable-if-expression (1)
   "SIM211", # pylint's simplifiable-if-expression (2)
+  "SIM300", # yoda-conditions check
   "T10",    # flake8-debugger checks
   "T20",    # flake8-print checks
   "TC",     # flake8-type-checking checks
@@ -83,6 +87,7 @@ lint.ignore = [
   "PLR2004",
   "PLW0127",
   "PLW2901",
+  "PYI041",
   "RUF001",
   "RUF002",
   "TC003",
