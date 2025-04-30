@@ -27,16 +27,23 @@ STRING_TO_PAULI = {"I": cirq.I, "X": cirq.X, "Y": cirq.Y, "Z": cirq.Z}
 class CBResults(QCVVResults):
     """Results from a CB experiment."""
 
-    """Fidelities of the Pauli channels."""
+    experiment: CB
+    """Reference to the underlying experiment that generated these results experiment."""
+
     _channel_fidelities: pd.DataFrame | None = None
-    """Process fidelity estimate."""
+    """Fidelities of the Pauli channels."""
+
     _process_fidelity_estimate: float | None = None
-    """Standard deviation of the process fidelity estimate."""
+    """Process fidelity estimate."""
+
     _process_fidelity_estimate_std: float | None = None
-    """Undressed process fidelity estimate."""
+    """Standard deviation of the process fidelity estimate."""
+
     _undressed_process_fidelity_estimate: float | None = None
-    """Standard deviation of the undressed process fidelity estimate."""
+    """Undressed process fidelity estimate."""
+
     _undressed_process_fidelity_estimate_std: float | None = None
+    """Standard deviation of the undressed process fidelity estimate."""
 
     @property
     def channel_fidelities(self) -> pd.DataFrame:
@@ -211,7 +218,7 @@ class CBResults(QCVVResults):
 
         self._channel_fidelities = fidelities
 
-        self._channel_expectations = expectations
+        self._channel_expectations: pd.DataFrame = expectations
 
         self._process_fidelity_estimate = fidelities[
             fidelities.process == "dressed"
@@ -237,7 +244,7 @@ class CBResults(QCVVResults):
             ax: The axis to plot to.
         """
         expectations = self._channel_expectations[self._channel_expectations.process == process]
-        fidelities = self._channel_fidelities[self._channel_fidelities.process == process]
+        fidelities = self.channel_fidelities[self.channel_fidelities.process == process]
         pauli_channels = expectations.pauli_channel.unique()
         depths = expectations.cycle_depth.unique()
         for p_c in pauli_channels:
@@ -271,13 +278,13 @@ class CBResults(QCVVResults):
             process: The type of fidelity to plot (dressed or undressed).
             ax: The axis to plot to.
         """
-        fidelities = self._channel_fidelities[self._channel_fidelities.process == process]
+        fidelities = self.channel_fidelities[self.channel_fidelities.process == process]
         if process == "dressed":
-            estimate = self._process_fidelity_estimate
-            std = self._process_fidelity_estimate_std
+            estimate = self.process_fidelity
+            std = self.process_fidelity_std
         else:
-            estimate = self._undressed_process_fidelity_estimate
-            std = self._undressed_process_fidelity_estimate_std
+            estimate = self.undressed_process_fidelity
+            std = self.undressed_process_fidelity_std
         ax.errorbar(
             x=fidelities.pauli_channel,
             y=fidelities.fidelity,
@@ -306,7 +313,8 @@ class CBResults(QCVVResults):
             A data frame of the full results needed to analyse the experiment.
         """
         records = []
-        for _, entry in self.data.iterrows():
+        data: pd.DataFrame = self.data
+        for _, entry in data.iterrows():
             probabilities = dict(entry.filter(regex=f"[01]{{{self.num_qubits}}}"))
             records.append(
                 {
@@ -361,7 +369,7 @@ class CB(QCVVExperiment[CBResults]):
         process_circuit: cirq.Circuit,
         pauli_channels: int | Sequence[str],
         num_circuits: int = 1,
-        process_order_factors: Iterable[int] | None = None,
+        process_order_factors: Sequence[int] | None = None,
         undressed_process: bool = False,
         *,
         random_seed: int | np.random.Generator | None = None,
@@ -474,7 +482,7 @@ class CB(QCVVExperiment[CBResults]):
                     axis=sorted_qubits.index(op.qubits[0]),
                     exponent=round(op.gate.z_exponent, 4),
                 )
-            else:
+            elif isinstance(op.gate, cirq.CZPowGate):
                 tableau.apply_cz(
                     control_axis=sorted_qubits.index(op.qubits[0]),
                     target_axis=sorted_qubits.index(op.qubits[1]),
@@ -689,9 +697,7 @@ class CB(QCVVExperiment[CBResults]):
         pauli_strings: list[str] = []
         pauli_moments: list[cirq.Moment] = []
         for _ in range(num_channels):
-            paulis = self._rng.choice(
-                list(STRING_TO_PAULI.keys()), size=self._num_qubits
-            )
+            paulis = self._rng.choice(list(STRING_TO_PAULI.keys()), size=self._num_qubits)
             pauli_string: str = "".join(paulis)
             while pauli_string in pauli_strings:
                 paulis = self._rng.choice(list(STRING_TO_PAULI.keys()), size=self._num_qubits)
