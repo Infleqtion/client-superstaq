@@ -17,11 +17,14 @@ from __future__ import annotations
 
 import itertools
 import os
+import re
 from unittest.mock import patch
 
 import cirq
 import cirq.testing
+import numpy as np
 import pandas as pd
+import pathlib
 import pytest
 
 from supermarq.qcvv import CB, CBResults
@@ -179,10 +182,10 @@ def test_cb_bulk_circuit(cb_experiment: CB) -> None:
 
 def test_inversion_circuit(cb_experiment: CB) -> None:
     qubits = cb_experiment.qubits
-    channel = cirq.MutablePauliString({qubits[0]: cirq.X, qubits[1]: cirq.Y}) #type: ignore
+    channel = cirq.MutablePauliString({qubits[0]: cirq.X, qubits[1]: cirq.Y})  # type: ignore
     aggregate_pauli = cirq.MutablePauliString(
         {qubits[0]: cirq.Z, qubits[1]: cirq.Z}, coefficient=1j
-    ) #type: ignore
+    )  # type: ignore
     circuit, pauli_string = cb_experiment._inversion_circuit(channel, aggregate_pauli)
 
     cirq.testing.assert_same_circuits(
@@ -308,14 +311,49 @@ def cb_results() -> CBResults:
                 (-cirq.X(cirq.LineQubit(0)) * cirq.Y(cirq.LineQubit(1))).mutable_copy(),
             ],
             "circuit": ["process"] * 8,
-            "00": [0.056, 0.068, 0.092, 0.114, 0.882, 0.062, 0.758, 0.118],
-            "01": [0.85, 0.018, 0.774, 0.058, 0.04, 0.878, 0.114, 0.752],
-            "10": [0.022, 0.862, 0.056, 0.758, 0.05, 0.02, 0.076, 0.054],
-            "11": [0.072, 0.052, 0.078, 0.07, 0.028, 0.04, 0.052, 0.076],
+            "00": [0.05, 0.075, 0.1, 0.1, 0.9, 0.05, 0.75, 0.1],
+            "01": [0.85, 0.025, 0.75, 0.05, 0.025, 0.9, 0.1, 0.75],
+            "10": [0.025, 0.85, 0.05, 0.75, 0.05, 0.025, 0.075, 0.075],
+            "11": [0.075, 0.05, 0.1, 0.1, 0.025, 0.025, 0.075, 0.075],
         }
     )
     return CBResults("sim", cb_experiment, data=data)
 
 
-def test_result_analyse(cb_results: CBResults) -> None:
+def test_results_not_analysed(cb_results: CBResults) -> None:
+    for attr in ["channel_fidelities", "process_fidelity", "process_fidelity_std"]:
+        with pytest.raises(
+            RuntimeError,
+            match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
+        ):
+            getattr(cb_results, attr)
+
+
+def test_results_analyse(cb_results: CBResults) -> None:
     cb_results.analyze(plot_results=False, print_results=False)
+
+    np.testing.assert_allclose(
+        cb_results._channel_expectations["expectation_mean"].values, [0.85, 0.65, 0.75, 0.60]
+    )
+    np.testing.assert_allclose(
+        cb_results._channel_expectations["expectation_delta"].values, [0, 0, 0, 0], atol=1e-2
+    )
+    np.testing.assert_allclose(
+        cb_results.channel_fidelities["fidelity"].values,
+        [np.sqrt(0.65 / 0.85), np.sqrt(0.6 / 0.75)],
+        atol=1e-6,
+    )
+
+
+def test_plot_results(cb_results: CBResults) -> None:
+    cb_results.analyze(plot_results=True, print_results=False)
+
+
+def test_print_results(cb_results: CBResults) -> None:
+    cb_results.analyze(plot_results=False, print_results=True)
+
+
+def test_save_plot_results(cb_results: CBResults, tmp_path: pathlib.Path) -> None:
+    filename = tmp_path / "test_plot.png"
+    cb_results.analyze(plot_results=True, print_results=False, plot_filename=filename.as_posix())
+    assert pathlib.Path(filename).exists()
