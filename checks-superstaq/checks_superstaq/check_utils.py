@@ -202,18 +202,18 @@ def get_changed_files(
     if not silent:
         revision_commit = _check_output("git", "rev-parse", base_revision)
         if common_ancestor == revision_commit:
-            print(f"Comparing against revision '{base_revision}'")
+            print(f"Comparing against revision '{base_revision}'")  # noqa: T201
         else:
-            print(f"Comparing against revision '{base_revision}' (merge base '{common_ancestor}')")
+            print(f"Comparing against revision '{base_revision}' (merge base '{common_ancestor}')")  # noqa: T201
 
     changed_files = _check_output("git", "diff", "--name-only", common_ancestor).splitlines()
 
     files_to_examine = [file for file in files if file in changed_files]
 
     if not silent:
-        print(f"Found {len(files_to_examine)} changed file(s) to examine")
+        print(f"Found {len(files_to_examine)} changed file(s) to examine")  # noqa: T201
         for file in files_to_examine:
-            print(file)
+            print(file)  # noqa: T201
     return files_to_examine
 
 
@@ -225,7 +225,7 @@ def _get_ancestor(*revisions: str, silent: bool = False) -> str:
     elif len(revisions) > 1:
         if not silent:
             rev_text = " ".join([f"'{rev}'" for rev in revisions])
-            print(f"Finding common ancestor of revisions {rev_text}")
+            print(f"Finding common ancestor of revisions {rev_text}")  # noqa: T201
         return _check_output("git", "merge-base", *revisions)
 
     else:
@@ -274,7 +274,7 @@ def get_test_files(
             test_files.append(test_file)
 
         elif not silent:
-            print(warning(f"WARNING: no test file found for {file}"))
+            print(warning(f"WARNING: no test file found for {file}"))  # noqa: T201
 
     if exclude:
         test_files = exclude_files(test_files, exclude)

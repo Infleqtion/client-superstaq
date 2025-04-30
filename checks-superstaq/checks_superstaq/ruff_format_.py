@@ -52,7 +52,7 @@ def run(
         if returncode_ruff_format == 1:
             command = "./checks/format_.py --fix"
             text = f"Run '{command}' (from the repo root directory) to format files."
-            print(check_utils.warning(text))
+            print(check_utils.warning(text))  # noqa: T201
             return 1
         return returncode_ruff_format
 

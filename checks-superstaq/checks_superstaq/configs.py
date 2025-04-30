@@ -59,26 +59,26 @@ def run(*args: str, silent: bool = False) -> int:
 
     if not deltas:
         if not silent:
-            print(check_utils.success("Config files are consistent!"))
+            print(check_utils.success("Config files are consistent!"))  # noqa: T201
         return 0
 
     # print diffs
     num_differences = f"{len(deltas)} differences" if len(deltas) > 1 else "one difference"
-    print(check_utils.warning(f"WARNING: found {num_differences} between config files:"))
-    print(check_utils.styled(f"< {file_orig} (original)", check_utils.Style.RED))
-    print(check_utils.styled(f"> {file_copy} (copy)", check_utils.Style.GREEN))
-    print(check_utils.styled("-" * 70, check_utils.Style.CYAN))
+    print(check_utils.warning(f"WARNING: found {num_differences} between config files:"))  # noqa: T201
+    print(check_utils.styled(f"< {file_orig} (original)", check_utils.Style.RED))  # noqa: T201
+    print(check_utils.styled(f"> {file_copy} (copy)", check_utils.Style.GREEN))  # noqa: T201
+    print(check_utils.styled("-" * 70, check_utils.Style.CYAN))  # noqa: T201
     for tag, orig_start, orig_end, copy_start, copy_end in deltas:
         _announce_diff(tag, orig_offset, orig_start, orig_end, copy_offset, copy_start, copy_end)
         if orig_start != orig_end:
             text = "\n".join(f"< {line}" for line in lines_orig[orig_start:orig_end])
-            print(check_utils.styled(text, check_utils.Style.RED))
+            print(check_utils.styled(text, check_utils.Style.RED))  # noqa: T201
         if copy_start != copy_end:
             text = "\n".join(f"> {line}" for line in lines_copy[copy_start:copy_end])
-            print(check_utils.styled(text, check_utils.Style.GREEN))
+            print(check_utils.styled(text, check_utils.Style.GREEN))  # noqa: T201
 
     file_path = os.path.relpath(file_copy)
-    print(check_utils.warning(f"{file_path} can be fixed manually to prevent this message."))
+    print(check_utils.warning(f"{file_path} can be fixed manually to prevent this message."))  # noqa: T201
     return 0
 
 
@@ -109,7 +109,7 @@ def _announce_diff(
         text = f"{line_text_orig} of original not present in copy"
     elif tag == "insert":
         text = f"{line_text_copy} of copy not present in original"
-    print(check_utils.styled(text, check_utils.Style.CYAN))
+    print(check_utils.styled(text, check_utils.Style.CYAN))  # noqa: T201
 
 
 def _line_text(start: int, end: int) -> str:
