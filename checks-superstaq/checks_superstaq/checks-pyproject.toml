@@ -84,6 +84,7 @@ lint.ignore = [
   "PLW0127",
   "PLW2901",
   "RUF001",
+  "RUF002",
   "TC003",
   "UP038",
   # The following are excluded to not conflict with `ruff format`:
