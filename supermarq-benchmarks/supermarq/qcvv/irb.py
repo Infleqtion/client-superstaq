@@ -560,7 +560,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         """The gateset to use when implementing Clifford operations."""
 
         if self.interleaved_gate is None:
-            results_cls: type[RBResults] | type[IRBResults] = RBResults
+            results_cls: type[RBResults | IRBResults] = RBResults
         else:
             results_cls = IRBResults
 

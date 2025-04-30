@@ -98,10 +98,10 @@ def test_bswap_pow_gate() -> None:
 
     shifted_bswap = css.BSwapPowGate(global_shift=0.3)
 
-    assert css.BSWAP == css.BSwapPowGate()
+    assert css.BSwapPowGate() == css.BSWAP
     assert css.BSWAP_INV == css.BSWAP**-1 == css.BSWAP**3
 
-    assert css.BSWAP != shifted_bswap
+    assert shifted_bswap != css.BSWAP
     assert not cirq.approx_eq(css.BSWAP, shifted_bswap)
     assert cirq.equal_up_to_global_phase(css.BSWAP, shifted_bswap)
     assert cirq.equal_up_to_global_phase(css.BSWAP**1.23, shifted_bswap**5.23)
@@ -153,11 +153,11 @@ def test_qutrit_cz_pow_gate() -> None:
 
     shifted_cz3 = css.QutritCZPowGate(global_shift=0.3)
 
-    assert css.CZ3 == css.QutritCZPowGate()
+    assert css.QutritCZPowGate() == css.CZ3
     assert css.CZ3_INV == css.CZ3**-1
     assert cirq.approx_eq(css.CZ3**-1, css.CZ3**2)
 
-    assert css.CZ3 != shifted_cz3
+    assert shifted_cz3 != css.CZ3
     assert not cirq.approx_eq(css.CZ3, shifted_cz3)
     assert cirq.equal_up_to_global_phase(css.CZ3, shifted_cz3)
     assert cirq.equal_up_to_global_phase(css.CZ3**1.23, shifted_cz3**4.23)

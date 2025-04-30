@@ -267,10 +267,9 @@ def get_test_files(
 
         if basename.endswith("_test.py") or basename.startswith("test_"):
             test_files.append(file)
-        elif os.path.isfile(test_file := re.sub(r"\.py$", "_test.py", file)):
-            test_files.append(test_file)
-
-        elif os.path.isfile(test_file := re.sub(rf"{basename}$", f"test_{basename}", file)):
+        elif os.path.isfile(test_file := re.sub(r"\.py$", "_test.py", file)) or os.path.isfile(
+            test_file := re.sub(rf"{basename}$", f"test_{basename}", file)
+        ):
             test_files.append(test_file)
 
         elif not silent:

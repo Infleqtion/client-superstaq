@@ -195,13 +195,12 @@ def test_cq_compile(provider: qss.SuperstaqProvider) -> None:
     circuit.h(0)
     assert isinstance(provider.cq_compile(circuit).circuit, qiskit.QuantumCircuit)
     circuits = provider.cq_compile([circuit]).circuits
-    assert len(circuits) == 1 and isinstance(circuits[0], qiskit.QuantumCircuit)
+    assert len(circuits) == 1
+    assert isinstance(circuits[0], qiskit.QuantumCircuit)
     circuits = provider.cq_compile([circuit, circuit]).circuits
-    assert (
-        len(circuits) == 2
-        and isinstance(circuits[0], qiskit.QuantumCircuit)
-        and isinstance(circuits[1], qiskit.QuantumCircuit)
-    )
+    assert len(circuits) == 2
+    assert isinstance(circuits[0], qiskit.QuantumCircuit)
+    assert isinstance(circuits[1], qiskit.QuantumCircuit)
 
 
 def test_get_aqt_configs(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
