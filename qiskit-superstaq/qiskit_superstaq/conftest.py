@@ -98,7 +98,7 @@ class MockSuperstaqProvider(qss.SuperstaqProvider):
         )
 
 
-@pytest.fixture()
+@pytest.fixture
 def fake_superstaq_provider() -> MockSuperstaqProvider:
     """Fixture that retrieves the `SuperstaqProvider`.
 

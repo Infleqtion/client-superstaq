@@ -16,13 +16,13 @@ from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
-import numpy as np
-import numpy.typing as npt
 import qiskit
 
 import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
+    import numpy as np
+    import numpy.typing as npt
     from _typeshed import SupportsItems
 
 

@@ -32,7 +32,6 @@ def active_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
     Raises:
         ValueError: If qubit indices are requested for non-line qubits.
     """
-
     all_qubits: set[cirq.Qid] = set()
     for op in circuit.all_operations():
         if not isinstance(op.gate, css.Barrier):
@@ -63,7 +62,6 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
     Raises:
         ValueError: If qubit indices are requested for non-line qubits.
     """
-
     unrolled_circuit = cirq.unroll_circuit_op(circuit, deep=True, tags_to_check=None)
 
     measured_qubits: set[cirq.Qid] = set()
@@ -165,7 +163,6 @@ def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutp
         the returned object also stores the corresponding pulse gate circuit(s) in its
         .pulse_gate_circuit(s) attribute (provided qiskit-superstaq is available locally).
     """
-
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
     initial_logical_to_physicals: list[dict[cirq.Qid, cirq.Qid]] = list(
         map(dict, cirq.read_json(json_text=json_dict["initial_logical_to_physicals"]))
@@ -214,7 +211,6 @@ def read_json_aqt(
         A `CompilerOutput` object with the compiled circuit(s). If `qtrl` is available locally,
         the returned object also stores the pulse sequence in the .seq attribute.
     """
-
     compiled_circuits: list[cirq.Circuit] | list[list[cirq.Circuit]]
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
 
@@ -238,7 +234,8 @@ def read_json_aqt(
         if not importlib.util.find_spec("qtrl"):
             warnings.warn(
                 "This output only contains compiled circuits. The `qtrl` package must be installed "
-                "in order to deserialize compiled pulse sequences."
+                "in order to deserialize compiled pulse sequences.",
+                stacklevel=2,
             )
         else:  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
 
@@ -306,7 +303,6 @@ def read_json_qscout(json_dict: dict[str, Any], circuits_is_list: bool) -> Compi
         A `CompilerOutput` object with the compiled circuit(s) and a list of jaqal programs
         represented as strings.
     """
-
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
     initial_logical_to_physicals: list[dict[cirq.Qid, cirq.Qid]] = list(
         map(dict, cirq.read_json(json_text=json_dict["initial_logical_to_physicals"]))

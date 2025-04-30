@@ -6,14 +6,14 @@ from .irb import IRB, IRBResults, RBResults
 from .xeb import XEB, XEBResults
 
 __all__ = [
+    "IRB",
+    "XEB",
+    "CB",
+    "IRBResults",
+    "XEBResults",
+    "CBResults",
+    "RBResults",
     "QCVVExperiment",
     "QCVVResults",
     "Sample",
-    "CB",
-    "CBResults",
-    "IRB",
-    "IRBResults",
-    "RBResults",
-    "XEB",
-    "XEBResults",
 ]

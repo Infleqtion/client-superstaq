@@ -61,7 +61,6 @@ class MerminBell(Benchmark):
         Returns:
             The score for the Mermin-Bell benchmark score.
         """
-
         # Store the conjugation rules for H, S, CX, CZ, SWAP in dictionaries. The keys are
         # the pauli strings to be conjugated and the values are the resulting pauli strings
         # after conjugation.
@@ -168,7 +167,7 @@ class MerminBell(Benchmark):
     def _mermin_operator(self, num_qubits: int) -> list[tuple[float, str]]:
         """Generate the Mermin operator
         (https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.65.1838), or M_n
-        (Eq. 2.8) in https://arxiv.org/pdf/2005.11271.pdf
+        (Eq. 2.8) in https://arxiv.org/pdf/2005.11271.pdf.
         """
         mermin_op = []
         for num_y in range(1, num_qubits + 1, 2):

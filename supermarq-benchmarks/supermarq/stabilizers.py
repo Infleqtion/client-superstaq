@@ -257,7 +257,7 @@ def patch_Z_matrix(measurement_circuit: MeasurementCircuit) -> None:
     ), f"Z-matrix,\n{stabilizer_matrix} is not symmetric"
 
     for i in range(N):
-        for j in range(0, i):
+        for j in range(i):
             if stabilizer_matrix[i, j] == 1:
                 apply_CZ(measurement_circuit, i, j)
 
