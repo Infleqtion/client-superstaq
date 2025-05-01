@@ -13,20 +13,20 @@ from general_superstaq.typing import Target
 from . import serialization, service, superstaq_client, superstaq_exceptions, typing, validation
 
 __all__ = [
-    "__version__",
     "API_URL",
     "API_VERSION",
     "ResourceEstimate",
-    "SuperstaqException",
-    "SuperstaqUnsuccessfulJobException",
-    "SuperstaqServerException",
-    "SuperstaqWarning",
     "Service",
+    "SuperstaqException",
+    "SuperstaqServerException",
+    "SuperstaqUnsuccessfulJobException",
+    "SuperstaqWarning",
+    "Target",
+    "__version__",
     "serialization",
     "service",
     "superstaq_client",
     "superstaq_exceptions",
     "typing",
-    "Target",
     "validation",
 ]

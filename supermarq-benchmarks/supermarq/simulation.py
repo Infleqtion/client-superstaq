@@ -1,7 +1,11 @@
 from __future__ import annotations
 
-import cirq
+from typing import TYPE_CHECKING
+
 import numpy as np
+
+if TYPE_CHECKING:
+    import cirq
 
 
 def get_ideal_counts(circuit: cirq.Circuit) -> dict[str, float]:

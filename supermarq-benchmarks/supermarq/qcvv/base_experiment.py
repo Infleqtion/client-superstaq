@@ -25,7 +25,6 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import cirq
 import cirq_superstaq as css
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
@@ -33,6 +32,7 @@ from tqdm.auto import tqdm
 import supermarq
 
 if TYPE_CHECKING:
+    import matplotlib.pyplot as plt
     from typing_extensions import Self
 
 
@@ -60,7 +60,7 @@ def qcvv_resolver(cirq_type: str) -> type[Any] | None:
 @dataclass
 class Sample:
     """A sample circuit to use along with any data about the circuit
-    that is needed for analysis
+    that is needed for analysis.
     """
 
     circuit_realization: int
@@ -133,7 +133,8 @@ class Sample:
 @dataclass
 class QCVVResults(ABC):
     """A dataclass for storing the data and analyze results of the experiment. Requires
-    subclassing for each new experiment type."""
+    subclassing for each new experiment type.
+    """
 
     target: str
     """The target device that was used."""
@@ -204,7 +205,8 @@ class QCVVResults(ABC):
             warnings.warn(
                 "Experiment data is not yet ready to analyse. This is likely because "
                 "the Superstaq job has not yet been completed. Either wait and try again "
-                "later, or interrogate the `.job` attribute."
+                "later, or interrogate the `.job` attribute.",
+                stacklevel=2,
             )
             return
 
@@ -222,11 +224,12 @@ class QCVVResults(ABC):
 
     @abstractmethod
     def plot_results(self, filename: str | None = None) -> plt.Figure:
-        """Plot the results of the experiment
+        """Plot the results of the experiment.
 
         Args:
             filename: Optional argument providing a filename to save the plots to. Defaults to None,
                 indicating not to save the plot.
+
         Returns:
             A single matplotlib figure containing the relevant plots of the results data.
         """
@@ -573,7 +576,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
                 continue
 
             if sample in record_mapping:
-                raise KeyError(f"Duplicate records found for sample with uuid: {str(sample.uuid)}.")
+                raise KeyError(f"Duplicate records found for sample with uuid: {sample.uuid!s}.")
             record_mapping[sample] = record
             records_not_mapped.pop(key)
 
@@ -643,7 +646,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Returns:
             The loaded experiment.
         """
-        with open(filename, "r") as file_stream:
+        with open(filename) as file_stream:
             experiment = cirq.read_json(
                 file_stream,
                 resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS, qcvv_resolver],
@@ -653,7 +656,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
     def _prepare_experiment(
         self,
     ) -> Sequence[Sample]:
-        """Prepares the circuits needed for the experiment
+        """Prepares the circuits needed for the experiment.
 
         Args:
             num_circuits: Number of circuits to run.
@@ -669,7 +672,6 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Returns:
             A sequence of samples for the experiment.
         """
-
         if any(depth <= 0 for depth in self.cycle_depths):
             raise ValueError("The `cycle_depths` iterator can only include positive values.")
 
@@ -720,7 +722,6 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Returns:
             The experiment results object.
         """
-
         experiment_job = self._superstaq_service.create_job(
             [sample.circuit for sample in self.samples],
             target=target,

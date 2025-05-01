@@ -28,7 +28,6 @@ def run(
     Returns:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
-
     parser = check_utils.get_check_parser()
     parser.add_argument(
         "--modular",
@@ -39,6 +38,13 @@ def run(
         "--branch",
         action="store_true",
         help="Also require all branches to be covered (same as `coverage run --branch`).",
+    )
+    parser.add_argument(
+        "--sysmon",
+        action="store_true",
+        help="Enable the `COVERAGE_CORE=sysmon` env variable for faster coverage (requires "
+        "Python 3.12 or higher). Note: using the `--branch` option alongside `--sysmon` may require"
+        " additional configuration for efficient execution.",
     )
     parser.description = textwrap.dedent(
         """
@@ -54,6 +60,9 @@ def run(
         return 0
 
     coverage_args = []
+    if parsed_args.sysmon and sys.version_info.minor >= 12:
+        os.environ["COVERAGE_CORE"] = "sysmon"
+
     if parsed_args.branch:
         coverage_args.append("--branch")
 
@@ -112,7 +121,6 @@ def _run_on_files(
     pytest_args: list[str],
 ) -> int:
     """Helper function to run coverage tests on the given files with the given pytest arguments."""
-
     coverage_args = ["--include=" + ",".join(files_requiring_coverage), *coverage_args]
 
     test_returncode = subprocess.call(
@@ -151,4 +159,4 @@ def _report(test_returncode: int) -> int:
 
 
 if __name__ == "__main__":
-    exit(run(*sys.argv[1:]))
+    sys.exit(run(*sys.argv[1:]))

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-import cirq
+from typing import TYPE_CHECKING
 
 import supermarq
+
+if TYPE_CHECKING:
+    import cirq
 
 
 def compute_communication(circuit: cirq.Circuit) -> float:

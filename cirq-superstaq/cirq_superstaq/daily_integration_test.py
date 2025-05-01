@@ -29,6 +29,9 @@ def test_ibmq_compile(service: css.Service) -> None:
     circuit = cirq.Circuit(
         cirq.H(cirq.q(3)),
         cirq.CX(cirq.q(3), cirq.q(0)) ** 0.7,
+        css.AceCRMinusPlus(cirq.q(0), cirq.q(1)),
+        css.AceCRMinusPlus(cirq.q(1), cirq.q(2)),
+        css.AceCRMinusPlus(cirq.q(2), cirq.q(3)),
     )
 
     out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
@@ -53,6 +56,9 @@ def test_ibmq_compile_with_token() -> None:
     circuit = cirq.Circuit(
         cirq.H(cirq.q(3)),
         cirq.CX(cirq.q(3), cirq.q(0)) ** 0.7,
+        css.AceCRMinusPlus(cirq.q(0), cirq.q(1)),
+        css.AceCRMinusPlus(cirq.q(1), cirq.q(2)),
+        css.AceCRMinusPlus(cirq.q(2), cirq.q(3)),
     )
     out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
 
@@ -334,7 +340,7 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
 
 @pytest.mark.skip(reason="Can't be executed when Sqale is set to not accept jobs")
 def test_submit_to_sqale_qubit_sorting(service: css.Service) -> None:
-    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776
+    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776.
 
     Args:
         service: cirq_superstaq service object from fixture.

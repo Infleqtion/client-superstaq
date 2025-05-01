@@ -133,11 +133,12 @@ def construct_stabilizer(
     pauli_basis = []
     start_idx = 0
     for i, row in enumerate(echelon_matrix.T):
-        if 1 in row[start_idx:]:
+        matrix_row = np.asarray(row)
+        if 1 in matrix_row[start_idx:]:
             stabilizer_matrix.append(dependent_stabilizer.T[i])
             pauli_basis.append(clique[i][1])
             last_1_idx = 0
-            for j, val in enumerate(row):
+            for j, val in enumerate(matrix_row):
                 if val == 1:
                     last_1_idx = j
             start_idx = last_1_idx + 1
@@ -256,7 +257,7 @@ def patch_Z_matrix(measurement_circuit: MeasurementCircuit) -> None:
     ), f"Z-matrix,\n{stabilizer_matrix} is not symmetric"
 
     for i in range(N):
-        for j in range(0, i):
+        for j in range(i):
             if stabilizer_matrix[i, j] == 1:
                 apply_CZ(measurement_circuit, i, j)
 

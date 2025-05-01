@@ -26,9 +26,8 @@ class PhaseCode(Benchmark):
             raise ValueError("The length of `phase_state` must match the number of data qubits.")
         if not isinstance(phase_state, list):
             raise ValueError("`phase_state` must be a list[int].")
-        else:
-            if not set(phase_state).issubset({0, 1}):
-                raise ValueError("Entries of `phase_state` must be 0, 1 integers.")
+        elif not set(phase_state).issubset({0, 1}):
+            raise ValueError("Entries of `phase_state` must be 0, 1 integers.")
         self.num_data_qubits = num_data_qubits
         self.num_rounds = num_rounds
         self.phase_state = phase_state
@@ -40,6 +39,7 @@ class PhaseCode(Benchmark):
 
         Args:
             qubits: Circuit qubits, assuming data on even indices and measurement on odd indices.
+            round_idx: The index of the measurement round.
 
         Returns:
             A `cirq.Operation` iterator with the operations for a measurement round.
@@ -95,8 +95,7 @@ class PhaseCode(Benchmark):
             # parity checks
             ancilla_state += str((self.phase_state[i] + self.phase_state[i + 1]) % 2)
             final_state += str(self.phase_state[i]) + "0"
-        else:
-            final_state += str(self.phase_state[-1])
+        final_state += str(self.phase_state[-1])
 
         ideal_bitstring = [ancilla_state] * self.num_rounds + [final_state]
         return {"".join(ideal_bitstring): 1.0}

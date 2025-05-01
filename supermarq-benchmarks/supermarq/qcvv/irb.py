@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tooling for interleaved randomised benchmarking"""
+"""Tooling for interleaved randomised benchmarking."""
 
 from __future__ import annotations
 
@@ -44,6 +44,7 @@ def _reduce_single_qubit_clifford_seq(
 
     Args:
         gate_seq: The list of gates.
+
     Returns:
         The single reduced gate.
     """
@@ -60,6 +61,7 @@ def _reduce_clifford_seq(
 
     Args:
         gate_seq: The list of gates.
+
     Returns:
         The single reduced gate.
     """
@@ -373,7 +375,8 @@ class IRBResults(_RBResultsBase):
         if filename is not None:
             plt.savefig(filename)
 
-        root_figure = plot.figure.figure
+        root_figure = plot.get_figure()
+        assert isinstance(root_figure, plt.Figure)
         if filename is not None:
             root_figure.savefig(filename, bbox_inches="tight")
         return root_figure
@@ -400,7 +403,8 @@ class IRBResults(_RBResultsBase):
         self._average_interleaved_gate_error_std = interleaved_gate_error_std
 
     def print_results(self) -> None:
-        print(
+        """Prints the key results data."""
+        print(  # noqa: T201
             f"Estimated gate error: {self.average_interleaved_gate_error:.6f} +/- "
             f"{self.average_interleaved_gate_error_std:.6f}"
         )
@@ -451,7 +455,8 @@ class RBResults(_RBResultsBase):
             raise RuntimeError("No data stored. Cannot make plot.")
 
         plot = self._plot_results()
-        root_figure = plot.figure.figure
+        root_figure = plot.get_figure()
+        assert isinstance(root_figure, plt.Figure)
         if filename is not None:
             root_figure.savefig(filename, bbox_inches="tight")
         return root_figure
@@ -466,8 +471,8 @@ class RBResults(_RBResultsBase):
         ) * self.rb_decay_coefficient_std
 
     def print_results(self) -> None:
-
-        print(
+        """Prints the key results data."""
+        print(  # noqa: T201
             f"Estimated error per Clifford: {self.average_error_per_clifford:.6f} +/- "
             f"{self.average_error_per_clifford_std:.6f}"
         )
@@ -529,6 +534,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             clifford_op_gateset: The gateset to use when implementing the clifford operations.
                 Defaults to the CZ/GR set.
             random_seed: An optional seed to use for randomization.
+            kwargs: Any other supported string keyword args.
         """
         if isinstance(interleaved_gate, cirq.Operation):
             qubits = interleaved_gate.qubits
