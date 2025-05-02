@@ -595,6 +595,48 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
         return pd.DataFrame(results_data)
 
+    def _structure_records1(
+        self, records: SupportsItems[uuid.UUID | int, Mapping[str, float] | Mapping[int, float]],
+        qubit_groups
+    ) -> pd.DataFrame:
+        """Constructs a `pandas.DataFrame` from the provided records.
+
+        Args:
+            records: A dictionary of the counts/probabilities for each sample, keyed by either the
+                sample UUID or the index of the sample in the experiment. The counts/probabilities
+                for each sample should be provided as a dictionary of keyed by either the bitstring
+                or the integer value of that bitstring.
+
+        Returns:
+            A `DataFrame` containing the provided counts and corresponding sample information.
+        """
+        sample_mapping = self._map_records_to_samples(records)
+
+        results_data = []
+        group_indices = {key: [self.qubits.index(q) for q in qs] for key, qs in qubit_groups.items()}
+
+        for sample, results in sample_mapping.items():
+            probabilities = self.canonicalize_probabilities(results, self.num_qubits)
+
+            for key, qis in group_indices.items():
+                subcircuit_probabilities = {}
+                for bitstring, prob in probabilities.items():
+                    substring = "".join(bitstring[qi] for qi in qis)
+                    subcircuit_probabilities.setdefault(substring, 0)
+                    subcircuit_probabilities[substring] += prob
+
+                # Add to results data
+                result = {
+                    "circuit_realization": sample.circuit_realization,
+                    "qubits": qubit_groups[key],
+                    "subcircuit": key,
+                    **sample.data,
+                    **subcircuit_probabilities,
+                }
+                results_data.append(result)
+
+        return pd.DataFrame(results_data)
+
     @abstractmethod
     def _json_dict_(self) -> dict[str, Any]:
         """Converts the experiment to a json-able dictionary that can be used to recreate the
