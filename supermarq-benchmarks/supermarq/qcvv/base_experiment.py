@@ -733,7 +733,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         if simulator is None:
             simulator = cirq.Simulator(seed=self._rng)
 
-        records: dict[uuid.UUID, Mapping[int, int]] = {}
+        records: dict[uuid.UUID, dict[int, int]] = {}
         for sample in tqdm(self.samples, desc="Simulating circuits"):
             result = simulator.run(sample.circuit, repetitions=repetitions)
             records[sample.uuid] = result.histogram(key=cirq.measurement_key_name(sample.circuit))
