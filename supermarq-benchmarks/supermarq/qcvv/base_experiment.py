@@ -230,7 +230,7 @@ class QCVVResults(ABC):
             )
         device_counts = self.job.counts()
         records = {sample.uuid: counts for sample, counts in zip(self.samples, device_counts)}
-        return self.experiment._collect_records(records)
+        return self.experiment._structure_records(records)
 
     @property
     def _not_analyzed(self) -> RuntimeError:
@@ -511,36 +511,6 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         )
         return interleaved_circuit
 
-    def _collect_records(
-        self, records: SupportsItems[uuid.UUID | int, Mapping[str, float] | Mapping[int, float]]
-    ) -> pd.DataFrame:
-        """Constructs a `pandas.DataFrame` from the provided records.
-
-        Args:
-            records: A dictionary of the counts/probabilities for each sample, keyed by either the
-                sample UUID or the index of the sample in the experiment. The counts/probabilities
-                for each sample should be provided as a dictionary of keyed by either the bitstring
-                or the integer value of that bitstring.
-
-        Returns:
-            A `DataFrame` containing the provided counts and corresponding sample information.
-        """
-        sample_mapping = self._map_records_to_samples(records)
-
-        results_data = []
-        for sample, results in sample_mapping.items():
-            probabilities = self.canonicalize_probabilities(results, self.num_qubits)
-
-            # Add to results data
-            result = {
-                "circuit_realization": sample.circuit_realization,
-                **sample.data,
-                **probabilities,
-            }
-            results_data.append(result)
-
-        return pd.DataFrame(results_data)
-
     def _map_records_to_samples(
         self, records: SupportsItems[uuid.UUID | int, Mapping[str, float] | Mapping[int, float]]
     ) -> dict[Sample, Mapping[str, float] | Mapping[int, float]]:
@@ -583,6 +553,36 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             )
 
         return record_mapping
+
+    def _structure_records(
+        self, records: SupportsItems[uuid.UUID | int, Mapping[str, float] | Mapping[int, float]]
+    ) -> pd.DataFrame:
+        """Constructs a `pandas.DataFrame` from the provided records.
+
+        Args:
+            records: A dictionary of the counts/probabilities for each sample, keyed by either the
+                sample UUID or the index of the sample in the experiment. The counts/probabilities
+                for each sample should be provided as a dictionary of keyed by either the bitstring
+                or the integer value of that bitstring.
+
+        Returns:
+            A `DataFrame` containing the provided counts and corresponding sample information.
+        """
+        sample_mapping = self._map_records_to_samples(records)
+
+        results_data = []
+        for sample, results in sample_mapping.items():
+            probabilities = self.canonicalize_probabilities(results, self.num_qubits)
+
+            # Add to results data
+            result = {
+                "circuit_realization": sample.circuit_realization,
+                **sample.data,
+                **probabilities,
+            }
+            results_data.append(result)
+
+        return pd.DataFrame(results_data)
 
     @abstractmethod
     def _json_dict_(self) -> dict[str, Any]:
@@ -738,7 +738,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             result = simulator.run(sample.circuit, repetitions=repetitions)
             records[sample.uuid] = result.histogram(key=cirq.measurement_key_name(sample.circuit))
 
-        data = self._collect_records(records)
+        data = self._structure_records(records)
         return self._results_cls(target="local_simulator", experiment=self, data=data)
 
     def run_with_callable(
@@ -762,7 +762,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             raw_probability = circuit_eval_func(sample.circuit, **kwargs)
             records[sample.uuid] = raw_probability
 
-        data = self._collect_records(records)
+        data = self._structure_records(records)
         return self._results_cls(target="callable", experiment=self, data=data)
 
     def results_from_records(
@@ -782,5 +782,5 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Returns:
             The experiment results object.
         """
-        data = self._collect_records(records)
+        data = self._structure_records(records)
         return self._results_cls(target="records", experiment=self, data=data)
