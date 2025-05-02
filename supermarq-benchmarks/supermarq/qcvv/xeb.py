@@ -17,7 +17,7 @@ from __future__ import annotations
 import itertools
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import cirq
 import matplotlib as mpl
@@ -30,9 +30,6 @@ import tqdm.auto
 import tqdm.contrib.itertools
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
-
-if TYPE_CHECKING:
-    from typing_extensions import Self
 
 
 @dataclass
@@ -490,37 +487,9 @@ class XEB(QCVVExperiment[XEBResults]):
         Returns:
             Json-able dictionary of the experiment data.
         """
-        return {
-            "interleaved_layer": self.interleaved_layer,
-            "single_qubit_gate_set": self.single_qubit_gate_set,
-            **super()._json_dict_(),
-        }
+        json_dict = super()._json_dict_()
+        json_dict["interleaved_layer"] = self.interleaved_layer
+        json_dict["single_qubit_gate_set"] = self.single_qubit_gate_set
+        del json_dict["qubits"]
 
-    @classmethod
-    def _from_json_dict_(
-        cls,
-        samples: list[Sample],
-        interleaved_layer: cirq.OP_TREE | None,
-        single_qubit_gate_set: list[cirq.Gate],
-        num_circuits: int,
-        cycle_depths: list[int],
-        **kwargs: Any,
-    ) -> Self:
-        """Creates a experiment from a dictionary of the data.
-
-        Args:
-            dictionary: Dict containing the experiment data.
-
-        Returns:
-            The deserialized experiment object.
-        """
-        kwargs.pop("qubits")  # Don't need for XEB
-
-        return cls(
-            num_circuits=num_circuits,
-            cycle_depths=cycle_depths,
-            _samples=samples,
-            single_qubit_gate_set=single_qubit_gate_set,
-            interleaved_layer=interleaved_layer,
-            **kwargs,
-        )
+        return json_dict

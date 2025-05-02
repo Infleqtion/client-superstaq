@@ -49,6 +49,9 @@ def qcvv_resolver(cirq_type: str) -> type[Any] | None:
     Raises:
         ValueError: If the provided type is not resolvable
     """
+    if cirq_type == "uuid":
+        return uuid.UUID
+
     prefix = "supermarq.qcvv."
     if cirq_type.startswith(prefix):
         name = cirq_type[len(prefix) :]
@@ -98,32 +101,8 @@ class Sample:
             "circuit": self.circuit,
             "data": self.data,
             "circuit_realization": self.circuit_realization,
-            "sample_uuid": str(self.uuid),
+            "uuid": {"cirq_type": "uuid", "hex": str(self.uuid)},
         }
-
-    @classmethod
-    def _from_json_dict_(
-        cls,
-        circuit: cirq.Circuit,
-        circuit_realization: int,
-        data: dict[str, Any],
-        sample_uuid: str,
-        **_: Any,
-    ) -> Self:
-        """Creates a sample from a dictionary of the data.
-
-        Args:
-            dictionary: Dict containing the sample data.
-
-        Returns:
-            The deserialized Sample object.
-        """
-        return cls(
-            circuit=circuit,
-            circuit_realization=circuit_realization,
-            data=data,
-            uuid=uuid.UUID(sample_uuid),
-        )
 
     @classmethod
     def _json_namespace_(cls) -> str:
@@ -610,18 +589,9 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             "cycle_depths": self.cycle_depths,
             "num_circuits": self.num_circuits,
             "qubits": self.qubits,
-            "samples": self.samples,
+            "_samples": self.samples,
             **self._service_kwargs,
         }
-
-    @classmethod
-    @abstractmethod
-    def _from_json_dict_(cls, *args: Any, **kwargs: Any) -> Self:
-        """Creates a experiment from an expanded dictionary of the data.
-
-        Returns:
-            The deserialized experiment object.
-        """
 
     @classmethod
     def _json_namespace_(cls) -> str:
