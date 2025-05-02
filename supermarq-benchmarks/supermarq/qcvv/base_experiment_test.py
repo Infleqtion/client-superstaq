@@ -21,7 +21,7 @@ import re
 import uuid
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import cirq
@@ -32,9 +32,6 @@ import pandas as pd
 import pytest
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample, qcvv_resolver
-
-if TYPE_CHECKING:
-    from typing_extensions import Self
 
 
 def test_qcvv_resolver() -> None:
@@ -107,24 +104,6 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
 
     def _json_dict_(self) -> dict[str, Any]:
         return super()._json_dict_()
-
-    @classmethod
-    def _from_json_dict_(
-        cls,
-        samples: list[Sample],
-        qubits: list[cirq.Qid],
-        num_circuits: int,
-        cycle_depths: list[int],
-        **kwargs: Any,
-    ) -> Self:
-        experiment = cls(
-            qubits=qubits,
-            num_circuits=num_circuits,
-            cycle_depths=cycle_depths,
-            _samples=samples,
-            **kwargs,
-        )
-        return experiment
 
 
 @pytest.fixture
@@ -817,6 +796,7 @@ def test_dump_and_load(
     sample_circuits: list[Sample],
 ) -> None:
     temp_resolver = {
+        "uuid": uuid.UUID,
         "supermarq.qcvv.Sample": Sample,
         "supermarq.qcvv.ExampleExperiment": ExampleExperiment,
     }

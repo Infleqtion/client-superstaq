@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import cirq
 import cirq.circuits
@@ -29,9 +29,6 @@ from tqdm.auto import trange
 from tqdm.contrib.itertools import product
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
-
-if TYPE_CHECKING:
-    from typing_extensions import Self
 
 
 ####################################################################################################
@@ -800,30 +797,3 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             "clifford_op_gateset": self.clifford_op_gateset,
             **super()._json_dict_(),
         }
-
-    @classmethod
-    def _from_json_dict_(
-        cls,
-        samples: list[Sample],
-        interleaved_gate: cirq.Gate,
-        clifford_op_gateset: cirq.CompilationTargetGateset,
-        num_circuits: int,
-        cycle_depths: list[int],
-        **kwargs: Any,
-    ) -> Self:
-        """Creates a experiment from a dictionary of the data.
-
-        Args:
-            dictionary: Dict containing the experiment data.
-
-        Returns:
-            The deserialized experiment object.
-        """
-        return cls(
-            num_circuits=num_circuits,
-            cycle_depths=cycle_depths,
-            clifford_op_gateset=clifford_op_gateset,
-            interleaved_gate=interleaved_gate,
-            _samples=samples,
-            **kwargs,
-        )
