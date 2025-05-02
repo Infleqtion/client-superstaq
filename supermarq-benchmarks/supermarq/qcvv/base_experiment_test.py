@@ -97,8 +97,8 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
     def _build_circuits(self, num_circuits: int, cycle_depths: Iterable[int]) -> Sequence[Sample]:
         return [
             Sample(
-                circuit=cirq.Circuit(cirq.measure(*self.qubits)),
-                data={"num": k, "depth": d},
+                circuit=cirq.Circuit(d * [cirq.X.on_each(*self.qubits)], cirq.measure(*self.qubits)),
+                data={"depth": d},
                 circuit_realization=k,
             )
             for k in range(num_circuits)
@@ -259,10 +259,8 @@ def test_results_ready(abc_experiment: ExampleExperiment) -> None:
     assert results.data_ready
 
 
-def test_results_ready_from_job(
-    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
-) -> None:
-    abc_experiment.samples = sample_circuits
+def test_results_ready_from_job() -> None:
+    experiment = ExampleExperiment(qubits=2, num_circuits=1, cycle_depths=[1, 2])
     mock_job = MagicMock(spec=css.Job)
     mock_job.status.return_value = "Done"
     mock_job.counts.return_value = [
@@ -276,14 +274,14 @@ def test_results_ready_from_job(
             "01": 5,
         },
     ]
-    results = ExampleResults(target="target", experiment=abc_experiment, job=mock_job)
+    results = ExampleResults(target="target", experiment=experiment, job=mock_job)
     assert results.data_ready
     pd.testing.assert_frame_equal(
         results.data,
         pd.DataFrame(
             [
-                {"circuit": 1, "00": 20 / 35, "01": 5 / 35, "10": 0.0, "11": 10 / 35},
-                {"circuit": 2, "00": 30 / 35, "01": 5 / 35, "10": 0.0, "11": 0.0},
+                {"circuit_realization": 0, "depth": 1, "00": 20 / 35, "01": 5 / 35, "10": 0.0, "11": 10 / 35},
+                {"circuit_realization": 0, "depth": 2, "00": 30 / 35, "01": 5 / 35, "10": 0.0, "11": 0.0},
             ]
         ),
         check_like=True,
@@ -293,7 +291,7 @@ def test_results_ready_from_job(
 def test_run_with_simulator(
     abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
-    abc_experiment.samples = sample_circuits
+    experiment = ExampleExperiment(qubits=2, num_circuits=1, cycle_depths=[1, 2])
 
     simulator = cirq.DensityMatrixSimulator()
     with patch("cirq.Simulator") as mock_sim:  # Mock default simulator to make sure it isn't called
@@ -309,20 +307,20 @@ def test_run_with_simulator(
         pd.DataFrame(
             [
                 {
-                    "circuit_realization": 1,
-                    "circuit": 1,
-                    "00": 0.0,
-                    "01": 1.0,
-                    "10": 0.0,
-                    "11": 0.0,
-                },
-                {
-                    "circuit_realization": 2,
-                    "circuit": 2,
+                    "circuit_realization": 0,
+                    "depth": 1,
                     "00": 0.0,
                     "01": 0.0,
                     "10": 0.0,
                     "11": 1.0,
+                },
+                {
+                    "circuit_realization": 0,
+                    "depth": 2,
+                    "00": 1.0,
+                    "01": 0.0,
+                    "10": 0.0,
+                    "11": 0.0,
                 },
             ]
         ),
@@ -494,7 +492,14 @@ def test_run_with_callable(abc_experiment: ExampleExperiment) -> None:
         results.data,
         pd.DataFrame(
             [
-                {"num": num, "depth": depth, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1}
+                {
+                    "circuit_realization": num,
+                    "depth": depth,
+                    "00": 0.0,
+                    "01": 0.2,
+                    "10": 0.7,
+                    "11": 0.1,
+                }
                 for num in range(abc_experiment.num_circuits)
                 for depth in abc_experiment.cycle_depths
             ]
@@ -503,7 +508,7 @@ def test_run_with_callable(abc_experiment: ExampleExperiment) -> None:
     )
 
 
-def test_run_with_callable_mixd_keys(abc_experiment: ExampleExperiment) -> None:
+def test_run_with_callable_mixed_keys(abc_experiment: ExampleExperiment) -> None:
     def _example_callable(sample: Sample, some: str) -> dict[str | int, float]:
         assert sample
         assert some == "kwargs"
@@ -522,7 +527,14 @@ def test_run_with_callable_mixd_keys(abc_experiment: ExampleExperiment) -> None:
         results.data,
         pd.DataFrame(
             [
-                {"num": num, "depth": depth, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1}
+                {
+                    "circuit_realization": num,
+                    "depth": depth,
+                    "00": 0.0,
+                    "01": 0.2,
+                    "10": 0.7,
+                    "11": 0.1,
+                }
                 for num in range(abc_experiment.num_circuits)
                 for depth in abc_experiment.cycle_depths
             ]
@@ -569,8 +581,8 @@ def test_results_collect_device_counts(
         df,
         pd.DataFrame(
             [
-                {"circuit": 1, "00": 20 / 35, "01": 5 / 35, "10": 0.0, "11": 10 / 35},
-                {"circuit": 2, "00": 30 / 35, "01": 5 / 35, "10": 0.0, "11": 0.0},
+                {"circuit_realization": 1, "circuit": 1, "00": 20 / 35, "01": 5 / 35, "10": 0.0, "11": 10 / 35},
+                {"circuit_realization": 2, "circuit": 2, "00": 30 / 35, "01": 5 / 35, "10": 0.0, "11": 0.0},
             ]
         ),
         check_like=True,
@@ -594,11 +606,18 @@ def test_results_from_records(abc_experiment: ExampleExperiment) -> None:
     records_4 = {s.uuid: {1: 0.25, 2: 0.75} for s in abc_experiment.samples}
 
     for record in (records_1, records_2, records_3, records_4):
-        results = abc_experiment.results_from_records(record)  # type: ignore[arg-type]
+        results = abc_experiment.results_from_records(record)
         pd.testing.assert_frame_equal(
             results.data,
             pd.DataFrame(
-                {"num": num, "depth": depth, "00": 0.0, "01": 0.25, "10": 0.75, "11": 0.0}
+                {
+                    "circuit_realization": num,
+                    "depth": depth,
+                    "00": 0.0,
+                    "01": 0.25,
+                    "10": 0.75,
+                    "11": 0.0,
+                }
                 for num in range(abc_experiment.num_circuits)
                 for depth in abc_experiment.cycle_depths
             ),
