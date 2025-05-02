@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Sequence, Set
+from collections.abc import Sequence
+from collections.abc import Set as AbstractSet
 from typing import TYPE_CHECKING, Any
 
 import cirq
@@ -542,7 +543,7 @@ class QubitSubspaceGate(cirq.Gate):
     def _is_parameterized_(self) -> bool:
         return cirq.is_parameterized(self._sub_gate)
 
-    def _parameter_names_(self) -> Set[str]:
+    def _parameter_names_(self) -> AbstractSet[str]:
         return cirq.parameter_names(self._sub_gate)
 
     def _resolve_parameters_(

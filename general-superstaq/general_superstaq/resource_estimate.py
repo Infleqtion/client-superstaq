@@ -10,9 +10,9 @@ class ResourceEstimate:
     num_single_qubit_gates: int | None = None
     num_two_qubit_gates: int | None = None
     depth: int | None = None
-    json_data: InitVar[dict[str, int]] = None
+    json_data: InitVar[dict[str, int] | None] = None
 
-    def __post_init__(self, json_data: dict[str, int] | None = None) -> None:
+    def __post_init__(self, json_data: dict[str, int] | None) -> None:
         """Initializes `ResourceEstimate` object with JSON data, if specified.
 
         Args:
