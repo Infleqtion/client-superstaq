@@ -158,7 +158,7 @@ class CompilerOutput:
             f"{self.seq!r}, {self.jaqal_programs!r})"
         )
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, CompilerOutput):
             return False
 

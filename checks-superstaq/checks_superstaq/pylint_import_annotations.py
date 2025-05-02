@@ -17,7 +17,7 @@ class ImportAnnotationsChecker(BaseChecker):
     """Checker for whether future annotations is imported in python files."""
 
     name = "import-future-annotations"
-    msgs = {
+    msgs = {  # noqa: RUF012 ; conflicts with `mypy`
         "W6063": (
             "Missing from __future__ import annotations",
             "missing-annotations-import",
@@ -36,10 +36,8 @@ class ImportAnnotationsChecker(BaseChecker):
         Args:
             node: All the ImportFrom nodes in a module.
         """
-        self.found_import_annotations = (
-            self.found_import_annotations
-            or node.modname == "__future__"
-            and any("annotations" in name for name in node.names)
+        self.found_import_annotations = self.found_import_annotations or (
+            node.modname == "__future__" and any("annotations" in name for name in node.names)
         )
 
     def leave_module(self, node: nodes.Module) -> None:

@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
 import itertools
@@ -528,10 +527,12 @@ def test_acecr_decompose() -> None:
     a = cirq.LineQubit(0)
     b = cirq.LineQubit(1)
     circuit = cirq.Circuit(cirq.decompose_once(css.AceCRMinusPlus(a, b)))
-    assert len(circuit) == 3 and len(list(circuit.all_operations())) == 3
+    assert len(circuit) == 3
+    assert len(list(circuit.all_operations())) == 3
 
     circuit = cirq.Circuit(cirq.decompose_once(css.AceCR("+-", sandwich_rx_rads=-np.pi / 2)(a, b)))
-    assert len(circuit) == 3 and len(list(circuit.all_operations())) == 4
+    assert len(circuit) == 3
+    assert len(list(circuit.all_operations())) == 4
 
 
 def test_barrier() -> None:
