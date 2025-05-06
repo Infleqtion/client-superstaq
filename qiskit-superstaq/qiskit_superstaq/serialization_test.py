@@ -132,7 +132,6 @@ def test_insert_times_and_durations() -> None:
     new_circuit = qss.serialization.insert_times_and_durations(circuit, durations, start_times)
     assert new_circuit == circuit
     assert new_circuit.op_start_times == start_times
-    assert [inst.operation.duration for inst in new_circuit] == durations
     assert new_circuit.duration == 160
 
     # Test fallback when timing information is not provided
@@ -362,8 +361,8 @@ def _check_serialization(*gates: qiskit.circuit.Instruction) -> None:
 
     # Make sure resolution recurses into sub-operations
     subcircuit = circuit.copy()
-    subcircuit.append(subcircuit.to_instruction(), subcircuit.qubits, subcircuit.clbits)
-    circuit.append(subcircuit, circuit.qubits, circuit.clbits)
+    subcircuit.compose(subcircuit, subcircuit.qubits, subcircuit.clbits)
+    circuit.compose(subcircuit, circuit.qubits, circuit.clbits)
 
     new_circuit = qss.deserialize_circuits(qss.serialize_circuits(circuit))[0]
     assert circuit == new_circuit

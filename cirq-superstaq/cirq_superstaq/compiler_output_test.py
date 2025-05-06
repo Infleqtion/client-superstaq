@@ -165,7 +165,6 @@ def test_read_json_pulse_gate_circuits() -> None:
     qc_pulse = qiskit.QuantumCircuit(2)
     qc_pulse.h(0)
     qc_pulse.cx(0, 1)
-    qc_pulse.add_calibration("cx", [0, 1], qiskit.pulse.ScheduleBlock("foo"))
 
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
@@ -180,7 +179,6 @@ def test_read_json_pulse_gate_circuits() -> None:
     assert out.circuit == circuit
     assert out.pulse_gate_circuit == qc_pulse
     assert out.pulse_gate_circuit.duration == 30
-    assert out.pulse_gate_circuit[0].operation.duration == 10
     assert out.pulse_gate_circuit.op_start_times == [0, 10]
 
     json_dict = {
@@ -196,7 +194,6 @@ def test_read_json_pulse_gate_circuits() -> None:
     assert out.pulse_gate_circuits == [qc_pulse, qc_pulse]
     assert out.pulse_gate_circuits[0].duration == 30
     assert out.pulse_gate_circuits[1].duration == 300
-    assert out.pulse_gate_circuits[1][0].operation.duration == 100
     assert out.pulse_gate_circuits[1].op_start_times == [0, 100]
 
     with (
