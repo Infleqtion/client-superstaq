@@ -19,16 +19,17 @@ import io
 import json
 import os
 import uuid
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest import mock
 
 import pytest
 import requests
-from pytest import FixtureRequest
 
 import general_superstaq as gss
 from general_superstaq.testing import RETURNED_TARGETS, TARGET_LIST
 
+if TYPE_CHECKING:
+    from pytest import FixtureRequest
 # API_VERSION = gss.API_VERSION
 EXPECTED_HEADERS = {
     "v0.2.0": {
@@ -47,7 +48,12 @@ EXPECTED_HEADERS = {
 
 
 @pytest.fixture
-def client_v2():
+def client_v2() -> gss.superstaq_client._SuperstaqClient:
+    """Client for API v0.2.0
+
+    Returns:
+        A Superstaq client for API v0.2.0
+    """
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
@@ -58,7 +64,12 @@ def client_v2():
 
 
 @pytest.fixture
-def client_v3():
+def client_v3() -> gss.superstaq_client._SuperstaqClient:
+    """Client for API v0.3.0
+
+    Returns:
+        A Superstaq client for API v0.3.0
+    """
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
@@ -68,37 +79,13 @@ def client_v3():
     return client
 
 
-# @pytest.fixture
-# def client_v2_token():
-#     client = gss.superstaq_client._SuperstaqClient(
-#         client_name="general-superstaq",
-#         remote_host="http://example.com",
-#         api_key="to_my_heart",
-#         api_version="v0.2.0",
-#         cq_token="cq-token",
-#     )
-#     return client
-
-
-# @pytest.fixture
-# def client_v3():
-#     client = gss.superstaq_client._SuperstaqClient(
-#         client_name="general-superstaq",
-#         remote_host="http://example.com",
-#         api_key="to_my_heart",
-#         api_version="v0.3.0",
-#         cq_token="cq-token",
-#     )
-#     return client
-
-
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
 def test_superstaq_client_str_and_repr(client_name: str, request: FixtureRequest) -> None:
     client = request.getfixturevalue(client_name)
     api_version = client.api_version
-    assert (
-        str(client)
-        == f"Client version {api_version} with host=http://example.com/{api_version} and name=general-superstaq"
+    assert str(client) == (
+        f"Client version {api_version} with host=http://example.com/{api_version} "
+        "and name=general-superstaq"
     )
     assert str(eval(repr(client))) == str(client)
 
@@ -390,7 +377,6 @@ def test_superstaq_client_create_job_not_found(
     request: FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
-    api_version = client.api_version
 
     mock_post.return_value.ok = False
     mock_post.return_value.status_code = requests.codes.not_found
@@ -745,7 +731,7 @@ def test_update_user_balance(
     )
 
 
-def test_update_user_balance_invalid_v3(client_v3) -> None:
+def test_update_user_balance_invalid_v3(client_v3: gss.superstaq_client._SuperstaqClient) -> None:
     with pytest.raises(ValueError, match="user email"):
         client_v3.update_user_balance({"balance": 5.00})
 
@@ -799,7 +785,7 @@ def test_update_user_role(
     )
 
 
-def test_update_user_role_invalid_v3(client_v3) -> None:
+def test_update_user_role_invalid_v3(client_v3: gss.superstaq_client._SuperstaqClient) -> None:
     with pytest.raises(ValueError, match="user email"):
         client_v3.update_user_role({"role": "genius"})
 
@@ -1420,12 +1406,12 @@ def test_superstaq_client_compile_v3_with_wait(
         "logical_qubits": ["0"],
         "physical_qubits": ["0"],
     }
-    
+
     mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
     response1 = mock.MagicMock()
     response1.json.return_value = {str(job_id): compiling_data}
     completed_data = compiling_data.copy()
-    completed_data["statuses"] = ["completed"] 
+    completed_data["statuses"] = ["completed"]
     response2 = mock.MagicMock()
     response2.json.return_value = {str(job_id): completed_data}
     mock_get.side_effect = [response1, response2]
