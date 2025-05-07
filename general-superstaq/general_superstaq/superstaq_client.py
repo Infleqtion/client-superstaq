@@ -759,11 +759,11 @@ class _SuperstaqClient:
         # Submit job and store ID
         response = _models.NewJobResponse(**self.post_request("/client/job", new_job.model_dump()))
         job_id = str(response.job_id)
-        job_data = self.fetch_jobs([job_id])
+        job_data = self.fetch_jobs([job_id])[job_id]
 
         # Poll the server until all circuits have reached a terminal state.
         time_waited_seconds: float = 0.0
-        while any(s not in _models.TERMINAL_CIRCUIT_STATES for s in job_data.statuses):
+        while any(s not in _models.TERMINAL_CIRCUIT_STATES for s in job_data["statuses"]):
             # Status does a refresh.
             if time_waited_seconds > 7200:
                 raise TimeoutError(
@@ -772,10 +772,10 @@ class _SuperstaqClient:
                 )
             time.sleep(2.5)
             time_waited_seconds += 2.5
-            job_data = self.fetch_jobs([job_id])
+            job_data = self.fetch_jobs([job_id])[job_id]
 
         # Exception if any have not been successful
-        if not all(s == _models.CircuitStatus.COMPLETED for s in job_data.statuses):
+        if not all(s == _models.CircuitStatus.COMPLETED for s in job_data["statuses"]):
             raise gss.SuperstaqException(
                 f"Not all circuits were successfully compiled. Check job ID {job_id} for further "
                 "details."
@@ -786,26 +786,26 @@ class _SuperstaqClient:
         # hence the ignored [arg-type]'s
         compile_dict = {
             "initial_logical_to_physicals": "["
-            + ", ".join(job_data.initial_logical_to_physicals)  # type: ignore[arg-type]
+            + ", ".join(str(dico) for dico in job_data["initial_logical_to_physicals"])  # type: ignore[arg-type]
             + "]",
             "final_logical_to_physicals": "["
-            + ", ".join(job_data.final_logical_to_physicals)  # type: ignore[arg-type]
+            + ", ".join(str(dico) for dico in job_data["final_logical_to_physicals"])  # type: ignore[arg-type]
             + "]",
         }
-        if all(pgs is not None for pgs in job_data.pulse_gate_circuits):
-            compile_dict["pulse_sequences"] = (
-                "[" + ", ".join(job_data.pulse_gate_circuits) + "]"  # type: ignore[arg-type]
-            )
+        # if all(pgs is not None for pgs in job_data["pulse_gate_circuits"]):
+        #     compile_dict["pulse_sequences"] = (
+        #         "[" + ", ".join(job_data["pulse_gate_circuits"]) + "]"  # type: ignore[arg-type]
+        #     )
 
         if circuit_type == _models.CircuitType.CIRQ:
             compile_dict["cirq_circuits"] = (
-                "[" + ", ".join(job_data.compiled_circuits) + "]"  # type: ignore[arg-type]
+                "[" + ", ".join(job_data["compiled_circuits"]) + "]"  # type: ignore[arg-type]
             )
             return compile_dict
 
         if circuit_type == _models.CircuitType.QISKIT:
             compile_dict["qiskit_circuits"] = (
-                "[" + ", ".join(job_data.compiled_circuits) + "]"  # type: ignore[arg-type]
+                "[" + ", ".join(job_data["compiled_circuits"]) + "]"  # type: ignore[arg-type]
             )
             return compile_dict
 
