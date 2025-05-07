@@ -29,7 +29,7 @@ from general_superstaq.testing import RETURNED_TARGETS, TARGET_LIST
 
 if TYPE_CHECKING:
     from pytest import FixtureRequest
-# API_VERSION = gss.API_VERSION
+
 EXPECTED_HEADERS = {
     "v0.2.0": {
         "Authorization": "to_my_heart",
@@ -48,7 +48,7 @@ EXPECTED_HEADERS = {
 
 @pytest.fixture
 def client_v2() -> gss.superstaq_client._SuperstaqClient:
-    """Client for API v0.2.0
+    """Client for API v0.2.0.
 
     Returns:
         A Superstaq client for API v0.2.0
@@ -64,7 +64,7 @@ def client_v2() -> gss.superstaq_client._SuperstaqClient:
 
 @pytest.fixture
 def client_v3() -> gss.superstaq_client._SuperstaqClient:
-    """Client for API v0.3.0
+    """Client for API v0.3.0.
 
     Returns:
         A Superstaq client for API v0.3.0
@@ -2057,7 +2057,6 @@ def test_get_user_info_query_composite(
         data = [{"Some": "Data"}]
         user_id = 42
         endpoint = endpoint + f"?name=Alice&id={user_id}"
-        # user_info = client.get_user_info(user_id=user_id, name="Alice")
 
     else:
         data = [

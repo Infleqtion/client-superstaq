@@ -350,7 +350,7 @@ class RetrieveTargetInfoModel(DefaultPydanticModel):
 
     target: str
     """The target's name."""
-    options_dict: dict[str, Any] = pydantic.Field(dict())
+    options_dict: dict[str, Any] = pydantic.Field({})
     """The details of the target."""
 
 

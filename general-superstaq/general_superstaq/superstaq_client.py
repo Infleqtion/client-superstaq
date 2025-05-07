@@ -34,7 +34,7 @@ from typing import Any, ClassVar, Literal, Self, TypeVar
 import requests
 
 import general_superstaq as gss
-import general_superstaq._models as _models
+from general_superstaq import _models
 
 TQuboKey = TypeVar("TQuboKey")
 
@@ -47,7 +47,7 @@ class _API_Version(enum.StrEnum):
     V0_3_0 = "v0.3.0"
 
 
-class _versioned_method(object):
+class _versioned_method:
     """Decorator to implement versioned methods."""
 
     def __init__(self, method: Callable[..., Any]) -> None:
@@ -73,7 +73,7 @@ class _versioned_method(object):
         return _method
 
     def version(self, version_number: _API_Version) -> Self:
-        """Define the version of the method
+        """Define the version of the method.
 
         Args:
             version_number: the API version for which the method is implemented
@@ -83,7 +83,7 @@ class _versioned_method(object):
         """
 
         def method_register(method: Callable[..., Any]) -> Callable[..., Any]:
-            """Adds the verioned method to the method register
+            """Adds the verioned method to the method register.
 
             Args:
                 method: the method version
@@ -152,7 +152,6 @@ class _SuperstaqClient:
             ibmq_name: The name of the account to retrieve. The default is `default-ibm-quantum`.
             kwargs: Other optimization and execution parameters.
         """
-
         self.api_key = api_key or gss.superstaq_client.find_api_key()
         self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
         self.client_name = client_name
@@ -210,7 +209,6 @@ class _SuperstaqClient:
         Returns:
             A `dict` containing the current Superstaq version.
         """
-
         response = self.session.get(self.url)
         version = response.headers.get("superstaq_version")
 
@@ -283,9 +281,7 @@ class _SuperstaqClient:
         gss.validation.validate_integer_param(repetitions)
 
         # Infer the job type
-        if target.endswith("_simulator"):
-            job_type = _models.JobType.SIMULATE
-        elif method in _models.SimMethod._value2member_map_.keys():
+        if target.endswith("_simulator") or method in _models.SimMethod._value2member_map_.keys():
             job_type = _models.JobType.SIMULATE
         else:
             job_type = _models.JobType.SUBMIT
@@ -708,7 +704,7 @@ class _SuperstaqClient:
     @aqt_compile.version(_API_Version.V0_3_0)
     def _aqt_compile_v0_3_0(self, json_dict: dict[str, str]) -> dict[str, str]:
         raise DeprecationWarning(
-            "`aqt_compile` is deprecated for version 0.3.0. " "Use `compile` instead."
+            "`aqt_compile` is deprecated for version 0.3.0. Use `compile` instead."
         )
 
     @_versioned_method
@@ -729,7 +725,7 @@ class _SuperstaqClient:
     @qscout_compile.version(_API_Version.V0_3_0)
     def _qscout_compile_v0_3_0(self, json_dict: dict[str, str]) -> dict[str, str | list[str]]:
         raise DeprecationWarning(
-            "`qscout_compile` is deprecated for version 0.3.0. " "Use `compile` instead."
+            "`qscout_compile` is deprecated for version 0.3.0. Use `compile` instead."
         )
 
     @_versioned_method
@@ -789,27 +785,19 @@ class _SuperstaqClient:
         # hence the ignored [arg-type]'s
         compile_dict = {
             "initial_logical_to_physicals": "["
-            + ", ".join(
-                str(dico) for dico in job_data["initial_logical_to_physicals"]
-            )
+            + ", ".join(str(dico) for dico in job_data["initial_logical_to_physicals"])
             + "]",
             "final_logical_to_physicals": "["
-            + ", ".join(
-                str(dico) for dico in job_data["final_logical_to_physicals"]
-            )
+            + ", ".join(str(dico) for dico in job_data["final_logical_to_physicals"])
             + "]",
         }
 
         if circuit_type == _models.CircuitType.CIRQ:
-            compile_dict["cirq_circuits"] = (
-                "[" + ", ".join(job_data["compiled_circuits"]) + "]"
-            )
+            compile_dict["cirq_circuits"] = "[" + ", ".join(job_data["compiled_circuits"]) + "]"
             return compile_dict
 
         if circuit_type == _models.CircuitType.QISKIT:
-            compile_dict["qiskit_circuits"] = (
-                "[" + ", ".join(job_data["compiled_circuits"]) + "]"
-            )
+            compile_dict["qiskit_circuits"] = "[" + ", ".join(job_data["compiled_circuits"]) + "]"
             return compile_dict
 
     @_versioned_method
@@ -1393,7 +1381,6 @@ class _SuperstaqClient:
             ~gss.SuperstaqServerException: If an error has occurred in making a request
                 to the Superstaq API.
         """
-
         if response.status_code == requests.codes.unauthorized:
             if response.json() == (
                 "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
@@ -1483,6 +1470,7 @@ class _SuperstaqClient:
                 "This version should not be treated as stable. Most user should continue using "
                 "`api_version='v0.2.0'`."
             ),
+            stacklevel=2,
         )
 
     def _custom_headers(self, **credentials: str) -> dict[str, str]:
