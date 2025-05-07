@@ -10,6 +10,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# mypy: disable-error-code="empty-body, operator"
+
 """Client for making requests to Superstaq's API."""
 
 from __future__ import annotations
@@ -59,11 +62,11 @@ class _versioned_method(object):
 
         def _method(*args: Any, **kwargs: Any) -> Any:
             try:
-                method = self.registry[instance.api_version]
+                method = self.registry[instance.api_version]  # type: ignore[union-attr]
             except KeyError:
                 raise NotImplementedError(
                     f"The function {self.function.__name__} is not implemented "
-                    f"for version {instance.api_version}."
+                    f"for version {instance.api_version}."  # type: ignore[union-attr]
                 )
             return method.__get__(instance, owner)(*args, **kwargs)
 
@@ -79,7 +82,7 @@ class _versioned_method(object):
             The method register updated with the method version
         """
 
-        def method_register(method: Callable[..., Any]) -> Callable:
+        def method_register(method: Callable[..., Any]) -> Callable[..., Any]:
             """Adds the verioned method to the method register
 
             Args:
@@ -786,26 +789,26 @@ class _SuperstaqClient:
         # hence the ignored [arg-type]'s
         compile_dict = {
             "initial_logical_to_physicals": "["
-            + ", ".join(str(dico) for dico in job_data["initial_logical_to_physicals"])  # type: ignore[arg-type]
+            + ", ".join(
+                str(dico) for dico in job_data["initial_logical_to_physicals"]
+            )
             + "]",
             "final_logical_to_physicals": "["
-            + ", ".join(str(dico) for dico in job_data["final_logical_to_physicals"])  # type: ignore[arg-type]
+            + ", ".join(
+                str(dico) for dico in job_data["final_logical_to_physicals"]
+            )
             + "]",
         }
-        # if all(pgs is not None for pgs in job_data["pulse_gate_circuits"]):
-        #     compile_dict["pulse_sequences"] = (
-        #         "[" + ", ".join(job_data["pulse_gate_circuits"]) + "]"  # type: ignore[arg-type]
-        #     )
 
         if circuit_type == _models.CircuitType.CIRQ:
             compile_dict["cirq_circuits"] = (
-                "[" + ", ".join(job_data["compiled_circuits"]) + "]"  # type: ignore[arg-type]
+                "[" + ", ".join(job_data["compiled_circuits"]) + "]"
             )
             return compile_dict
 
         if circuit_type == _models.CircuitType.QISKIT:
             compile_dict["qiskit_circuits"] = (
-                "[" + ", ".join(job_data["compiled_circuits"]) + "]"  # type: ignore[arg-type]
+                "[" + ", ".join(job_data["compiled_circuits"]) + "]"
             )
             return compile_dict
 
