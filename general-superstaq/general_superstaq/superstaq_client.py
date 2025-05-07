@@ -29,7 +29,7 @@ import urllib
 import uuid
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, Literal, Self, TypeVar
+from typing import Any, ClassVar, Literal, Self, TypeVar
 
 import requests
 
@@ -104,10 +104,10 @@ class _SuperstaqClient:
     but instead should use `$client_superstaq.Service`.
     """
 
-    RETRIABLE_STATUS_CODES = {
+    RETRIABLE_STATUS_CODES: ClassVar[set[int]] = {
         requests.codes.service_unavailable,
     }
-    SUPPORTED_VERSIONS = {v.value for v in _API_Version}
+    SUPPORTED_VERSIONS: ClassVar[set[str]] = {v.value for v in _API_Version}
 
     def __init__(
         self,
@@ -160,14 +160,14 @@ class _SuperstaqClient:
         self.max_retry_seconds = max_retry_seconds
         self.verbose = verbose
         url = urllib.parse.urlparse(self.remote_host)
-        assert url.scheme and url.netloc, (
+        assert url.scheme and url.netloc, (  # noqa: PT018
             f"Specified remote_host {self.remote_host} is not a valid url, for example "
             "http://example.com"
         )
 
-        assert (
-            self.api_version in self.SUPPORTED_VERSIONS
-        ), f"Only API versions {self.SUPPORTED_VERSIONS} are accepted but got {self.api_version}"
+        assert self.api_version in self.SUPPORTED_VERSIONS, (
+            f"Only API versions {self.SUPPORTED_VERSIONS} are accepted but got {self.api_version}"
+        )
         assert max_retry_seconds >= 0, "Negative retry not possible without time machine."
 
         self.url = f"{url.scheme}://{url.netloc}/{self.api_version}"
@@ -1588,7 +1588,7 @@ def read_ibm_credentials(ibmq_name: str | None) -> dict[str, str]:
         config = json.load(open(path))
         if ibmq_name is None:
             if len(config) == 1:
-                ibmq_name = list(config.keys())[0]
+                ibmq_name = next(iter(config.keys()))
             elif any(creds.get("is_default_account") for creds in config.values()):
                 ibmq_name = next(name for name in config if config[name].get("is_default_account"))
             else:

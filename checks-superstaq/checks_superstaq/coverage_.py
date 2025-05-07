@@ -71,7 +71,7 @@ def run(
 
     test_files = check_utils.get_test_files(files, exclude=exclude, silent=silent)
     if not test_files:
-        print("No test files to check for pytest and coverage.")
+        print("No test files to check for pytest and coverage.")  # noqa: T201
         return 0
 
     if not parsed_args.modular:
@@ -147,14 +147,14 @@ def _report(test_returncode: int) -> int:
     )
 
     if test_returncode:
-        print(check_utils.failure("TEST FAILURE!"))
+        print(check_utils.failure("TEST FAILURE!"))  # noqa: T201
         return test_returncode
 
     if coverage_returncode:
-        print(check_utils.failure("COVERAGE FAILURE!"))
+        print(check_utils.failure("COVERAGE FAILURE!"))  # noqa: T201
         return coverage_returncode
 
-    print(check_utils.success("TEST AND COVERAGE SUCCESS!"))
+    print(check_utils.success("TEST AND COVERAGE SUCCESS!"))  # noqa: T201
     return 0
 
 

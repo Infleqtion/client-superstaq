@@ -10,8 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=missing-function-docstring
-# pylint: disable=missing-return-doc
 # mypy: disable-error-code=method-assign
 from __future__ import annotations
 
@@ -82,7 +80,6 @@ def xeb_experiment() -> XEB:
 
 
 def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
-
     xeb_experiment._rng = (rng := MagicMock())
     rng.choice.side_effect = [
         np.array([[cirq.X, cirq.Y], [cirq.Z, cirq.Y], [cirq.Y, cirq.Z]]),
