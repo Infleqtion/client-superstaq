@@ -1804,6 +1804,7 @@ def test_superstaq_client_target_info(
     mock_post.return_value.ok.return_value = True
     mock_post.return_value.json.return_value = {"target_info": {"Hello": "World"}}
 
+    expected_json: dict[str, Any]
     if client.api_version == "v0.2.0":
         expected_json = {"target": "ss_example_qpu", "options": "{}"}
     else:
@@ -1842,6 +1843,7 @@ def test_superstaq_client_target_info_with_credentials(
     mock_post.return_value.json.return_value = {"target_info": {"Hello": "World"}}
     client.target_info("ss_example_qpu")
 
+    expected_json: dict[str, Any]
     if api_version == "v0.2.0":
         expected_json = {
             "target": "ss_example_qpu",
@@ -1960,6 +1962,7 @@ def test_get_user_info(
         cq_token="cq-token",
     )
 
+    data: list[dict[str, Any]]
     if api_version == "v0.2.0":
         mock_get.return_value.json.return_value = {"example@email.com": {"Some": "Data"}}
         data = [{"Some": "Data"}]
@@ -2006,6 +2009,7 @@ def test_get_user_info_query(
         cq_token="cq-token",
     )
 
+    data: list[dict[str, Any]]
     if api_version == "v0.2.0":
         mock_get.return_value.json.return_value = {"example@email.com": {"Some": "Data"}}
         data = [{"Some": "Data"}]
@@ -2052,6 +2056,8 @@ def test_get_user_info_query_composite(
         cq_token="cq-token",
     )
 
+    data: list[dict[str, Any]]
+    user_id: int | uuid.UUID
     if api_version == "v0.2.0":
         mock_get.return_value.json.return_value = {"example@email.com": {"Some": "Data"}}
         data = [{"Some": "Data"}]

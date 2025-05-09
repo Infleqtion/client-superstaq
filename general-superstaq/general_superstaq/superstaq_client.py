@@ -29,7 +29,7 @@ import urllib
 import uuid
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, ClassVar, Literal, Self, TypeVar
+from typing import Any, ClassVar, Literal, TypeVar
 
 import requests
 
@@ -56,13 +56,13 @@ class _versioned_method:
 
     def __get__(
         self, instance: _SuperstaqClient | None, owner: type[_SuperstaqClient] | None
-    ) -> Callable[..., Any]:
+    ) -> Any:
         if instance is None:
             return self
 
         def _method(*args: Any, **kwargs: Any) -> Any:
             try:
-                method = self.registry[instance.api_version]  # type: ignore[union-attr]
+                method = self.registry[_API_Version(instance.api_version)]  # type: ignore[union-attr]
             except KeyError:
                 raise NotImplementedError(
                     f"The function {self.function.__name__} is not implemented "
@@ -72,7 +72,9 @@ class _versioned_method:
 
         return _method
 
-    def version(self, version_number: _API_Version) -> Self:
+    def version(
+        self, version_number: _API_Version
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """Define the version of the method.
 
         Args:
