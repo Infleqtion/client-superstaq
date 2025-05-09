@@ -16,6 +16,9 @@ homepage = "https://github.com/Infleqtion/client-superstaq"
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[tool.pytest.ini_options]
+filterwarnings = ["ignore: Version v0.3.0"]
+
 [tool.setuptools.packages.find]
 include = ["general_superstaq*"]
 

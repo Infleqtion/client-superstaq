@@ -10,10 +10,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# mypy: disable-error-code="empty-body, operator"
+
 """Client for making requests to Superstaq's API."""
 
 from __future__ import annotations
 
+import copy
+import enum
 import json
 import os
 import pathlib
@@ -21,15 +26,77 @@ import sys
 import textwrap
 import time
 import urllib
+import uuid
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, ClassVar, TypeVar
+from typing import Any, ClassVar, Literal, TypeVar
 
 import requests
 
 import general_superstaq as gss
+from general_superstaq import _models
 
 TQuboKey = TypeVar("TQuboKey")
+
+RECOGNISED_CIRCUIT_TYPES = Literal[_models.CircuitType.CIRQ, _models.CircuitType.QISKIT]
+"""The circuit types that are currently implemented within the SuperstaqClient."""
+
+
+class _API_Version(enum.StrEnum):
+    V0_2_0 = "v0.2.0"
+    V0_3_0 = "v0.3.0"
+
+
+class _versioned_method:
+    """Decorator to implement versioned methods."""
+
+    def __init__(self, method: Callable[..., Any]) -> None:
+        self.registry: dict[_API_Version, Callable[..., Any]] = {}
+        self.function = method
+
+    def __get__(
+        self, instance: _SuperstaqClient | None, owner: type[_SuperstaqClient] | None
+    ) -> Any:
+        if instance is None:
+            return self
+
+        def _method(*args: Any, **kwargs: Any) -> Any:
+            try:
+                method = self.registry[_API_Version(instance.api_version)]  # type: ignore[union-attr]
+            except KeyError:
+                raise NotImplementedError(
+                    f"The function {self.function.__name__} is not implemented "
+                    f"for version {instance.api_version}."  # type: ignore[union-attr]
+                )
+            return method.__get__(instance, owner)(*args, **kwargs)
+
+        return _method
+
+    def version(
+        self, version_number: _API_Version
+    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+        """Define the version of the method.
+
+        Args:
+            version_number: the API version for which the method is implemented
+
+        Returns:
+            The method register updated with the method version
+        """
+
+        def method_register(method: Callable[..., Any]) -> Callable[..., Any]:
+            """Adds the verioned method to the method register.
+
+            Args:
+                method: the method version
+
+            Returns:
+                The method version
+            """
+            self.registry[version_number] = method
+            return method
+
+        return method_register
 
 
 class _SuperstaqClient:
@@ -42,9 +109,7 @@ class _SuperstaqClient:
     RETRIABLE_STATUS_CODES: ClassVar[set[int]] = {
         requests.codes.service_unavailable,
     }
-    SUPPORTED_VERSIONS: ClassVar[set[str]] = {
-        gss.API_VERSION,
-    }
+    SUPPORTED_VERSIONS: ClassVar[set[str]] = {v.value for v in _API_Version}
 
     def __init__(
         self,
@@ -106,7 +171,7 @@ class _SuperstaqClient:
         )
         assert max_retry_seconds >= 0, "Negative retry not possible without time machine."
 
-        self.url = f"{url.scheme}://{url.netloc}/{api_version}"
+        self.url = f"{url.scheme}://{url.netloc}/{self.api_version}"
         self.verify_https: bool = f"{gss.API_URL}/{self.api_version}" == self.url
         self.headers = {
             "Authorization": self.api_key,
@@ -137,6 +202,9 @@ class _SuperstaqClient:
 
         self.client_kwargs = kwargs
 
+        if self.api_version == "v0.3.0":
+            self._warn_unstable_version()
+
     def get_superstaq_version(self) -> dict[str, str | None]:
         """Gets Superstaq version from response header.
 
@@ -148,6 +216,7 @@ class _SuperstaqClient:
 
         return {"superstaq_version": version}
 
+    @_versioned_method
     def create_job(
         self,
         serialized_circuits: dict[str, str],
@@ -155,7 +224,7 @@ class _SuperstaqClient:
         target: str = "ss_unconstrained_simulator",
         method: str | None = None,
         **kwargs: Any,
-    ) -> dict[str, list[str]]:
+    ) -> dict[str, Any]:
         """Create a job.
 
         Args:
@@ -175,6 +244,17 @@ class _SuperstaqClient:
         Raises:
             ~gss.SuperstaqServerException: if the request fails.
         """
+
+    @create_job.version(_API_Version.V0_2_0)
+    def _create_job_v0_2_0(
+        self,
+        serialized_circuits: dict[str, str],
+        repetitions: int = 1,
+        target: str = "ss_unconstrained_simulator",
+        method: str | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """Version 0.2.0 implementation."""
         gss.validation.validate_target(target)
         gss.validation.validate_integer_param(repetitions)
 
@@ -189,9 +269,62 @@ class _SuperstaqClient:
             json_dict["options"] = json.dumps({**self.client_kwargs, **kwargs})
         return self.post_request("/jobs", json_dict)
 
+    @create_job.version(_API_Version.V0_3_0)
+    def _create_job_v0_3_0(
+        self,
+        serialized_circuits: dict[str, str],
+        repetitions: int = 1,
+        target: str = "ss_unconstrained_simulator",
+        method: str | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """Version 0.3.0 implementation."""
+        gss.validation.validate_target(target)
+        gss.validation.validate_integer_param(repetitions)
+
+        # Infer the job type
+        if target.endswith("_simulator") or method in _models.SimMethod._value2member_map_.keys():
+            job_type = _models.JobType.SIMULATE
+        else:
+            job_type = _models.JobType.SUBMIT
+
+        # Get sim method if needed
+        if job_type == _models.JobType.SIMULATE:
+            if method in _models.SimMethod._value2member_map_.keys():
+                sim_method = _models.SimMethod(method)
+            else:
+                sim_method = None
+        else:
+            sim_method = None
+
+        # Infer dry run
+        dry_run = method == "dry-run"
+
+        # Get circuits
+        circuits, circuit_type = self._extract_circuits(serialized_circuits)
+
+        # Extract tokens from kwargs and move to the header
+        credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
+
+        new_job = _models.NewJob(
+            job_type=job_type,
+            target=target,
+            circuits=circuits,
+            circuit_type=circuit_type,
+            dry_run=dry_run,
+            sim_method=sim_method,
+            shots=repetitions,
+            options_dict={**self.client_kwargs, **kwargs},
+        )
+        response = _models.NewJobResponse(
+            **self.post_request("/client/job", new_job.model_dump(), **credentials)
+        )
+        return response.model_dump()
+
+    @_versioned_method
     def cancel_jobs(
         self,
-        job_ids: Sequence[str],
+        job_ids: Sequence[str] | Sequence[uuid.UUID],
         **kwargs: object,
     ) -> list[str]:
         """Cancel jobs associated with given job ids.
@@ -206,6 +339,13 @@ class _SuperstaqClient:
         Raises:
             ~gss.SuperstaqServerException: For other API call failures.
         """
+
+    @cancel_jobs.version(_API_Version.V0_2_0)
+    def _cancel_jobs_v0_2_0(
+        self,
+        job_ids: Sequence[str],
+        **kwargs: object,
+    ) -> list[str]:
         json_dict: dict[str, str | Sequence[str]] = {
             "job_ids": job_ids,
         }
@@ -214,9 +354,25 @@ class _SuperstaqClient:
 
         return self.post_request("/cancel_jobs", json_dict)["succeeded"]
 
+    @cancel_jobs.version(_API_Version.V0_3_0)
+    def _cancel_jobs_v0_3_0(
+        self,
+        job_ids: Sequence[uuid.UUID],
+        **kwargs: object,
+    ) -> list[str]:
+        query = _models.JobQuery(job_id=job_ids)
+        credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
+        response = _models.JobCancellationResults(
+            **self.put_request(
+                "/client/cancel_job", query.model_dump(exclude_none=True), **credentials
+            )
+        )
+        return response.succeeded
+
+    @_versioned_method
     def fetch_jobs(
         self,
-        job_ids: list[str],
+        job_ids: Sequence[str] | Sequence[uuid.UUID],
         **kwargs: object,
     ) -> dict[str, dict[str, str]]:
         """Get the job from the Superstaq API.
@@ -231,6 +387,13 @@ class _SuperstaqClient:
         Raises:
             ~gss.SuperstaqServerException: For other API call failures.
         """
+
+    @fetch_jobs.version(_API_Version.V0_2_0)
+    def _fetch_jobs_v0_2_0(
+        self,
+        job_ids: Sequence[str],
+        **kwargs: object,
+    ) -> dict[str, dict[str, str]]:
         json_dict: dict[str, Any] = {
             "job_ids": job_ids,
         }
@@ -239,16 +402,42 @@ class _SuperstaqClient:
 
         return self.post_request("/fetch_jobs", json_dict)
 
+    @fetch_jobs.version(_API_Version.V0_3_0)
+    def _fetch_jobs_v0_3_0(
+        self,
+        job_ids: Sequence[uuid.UUID],
+        **kwargs: object,
+    ) -> dict[str, dict[str, str]]:
+        query = _models.JobQuery(job_id=job_ids)
+        credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
+        response = self.get_request(
+            "/client/job", query.model_dump(exclude_none=True), **credentials
+        )
+        return {job_id: _models.JobData(**data).model_dump() for (job_id, data) in response.items()}
+
+    @_versioned_method
     def get_balance(self) -> dict[str, float]:
         """Get the querying user's account balance in USD.
 
         Returns:
             The json body of the response as a dict.
         """
+
+    @get_balance.version(_API_Version.V0_2_0)
+    def _get_balance_v0_2_0(self) -> dict[str, float]:
         return self.get_request("/balance")
 
+    @get_balance.version(_API_Version.V0_3_0)
+    def _get_balance_v0_3_0(self) -> dict[str, float]:
+        response = _models.BalanceResponse(**self.get_request("/client/balance"))
+        return {"balance": response.balance}
+
+    @_versioned_method
     def get_user_info(
-        self, name: str | None = None, email: str | None = None, user_id: int | None = None
+        self,
+        name: str | None = None,
+        email: str | None = None,
+        user_id: int | uuid.UUID | None = None,
     ) -> list[dict[str, str | float]]:
         """Gets a dictionary of the user's info.
 
@@ -270,6 +459,14 @@ class _SuperstaqClient:
         Raises:
             ~gss.SuperstaqServerException: If the server returns an empty response.
         """
+
+    @get_user_info.version(_API_Version.V0_2_0)
+    def _get_user_info_v0_2_0(
+        self,
+        name: str | None = None,
+        email: str | None = None,
+        user_id: int | uuid.UUID | None = None,
+    ) -> list[dict[str, str | float]]:
         query = {}
         if name is not None:
             query["name"] = name
@@ -286,8 +483,31 @@ class _SuperstaqClient:
             )
         return list(user_info.values())
 
+    @get_user_info.version(_API_Version.V0_3_0)
+    def _get_user_info_v0_3_0(
+        self,
+        name: str | None = None,
+        email: str | None = None,
+        user_id: int | uuid.UUID | None = None,
+    ) -> list[dict[str, str | float]]:
+        if isinstance(user_id, int):
+            raise TypeError("Superstaq API v0.3.0 uses UUID indexing for users, not integer.")
+        query = _models.UserQuery(
+            name=[name] if name is not None else None,
+            email=[email] if email is not None else None,
+            user_id=[user_id] if user_id is not None else None,
+        )
+        response = self.get_request("/client/user", query.model_dump(exclude_none=True))
+        if not response:
+            raise gss.SuperstaqServerException(
+                "Something went wrong. The server has returned an empty response."
+            )
+        user_data = [_models.UserInfo(**data) for data in response]
+        return [data.model_dump() for data in user_data]
+
+    @_versioned_method
     def _accept_terms_of_use(self, user_input: str) -> str:
-        """Makes a POST request to Superstaq API to confirm acceptance of terms of use.
+        """Makes a request to Superstaq API to confirm acceptance of terms of use.
 
         Args:
             user_input: The user's response to prompt for acceptance of TOU. Server accepts YES.
@@ -295,8 +515,16 @@ class _SuperstaqClient:
         Returns:
             String with success message.
         """
+
+    @_accept_terms_of_use.version(_API_Version.V0_2_0)
+    def _accept_terms_of_use_v0_2_0(self, user_input: str) -> str:
         return self.post_request("/accept_terms_of_use", {"user_input": user_input})
 
+    @_accept_terms_of_use.version(_API_Version.V0_3_0)
+    def _accept_terms_of_use_v0_3_0(self, user_input: str) -> str:
+        return self.put_request("/client/accept_terms_of_use", {"accept": user_input == "YES"})
+
+    @_versioned_method
     def get_targets(self, **kwargs: bool | None) -> list[gss.Target]:
         """Makes a GET request to retrieve targets from the Superstaq API.
 
@@ -306,12 +534,14 @@ class _SuperstaqClient:
         Returns:
             A list of Superstaq targets matching all provided criteria.
         """
+
+    @get_targets.version(_API_Version.V0_2_0)
+    def _get_targets_v0_2_0(self, **kwargs: bool | None) -> list[gss.Target]:
         json_dict: dict[str, str | bool] = {
             key: value for key, value in kwargs.items() if value is not None
         }
         if self.client_kwargs:
             json_dict["options"] = json.dumps(self.client_kwargs)
-
         superstaq_targets = self.post_request("/targets", json_dict)["superstaq_targets"]
         target_list = [
             gss.Target(target=target_name, **properties)
@@ -319,12 +549,33 @@ class _SuperstaqClient:
         ]
         return target_list
 
+    @get_targets.version(_API_Version.V0_3_0)
+    def _get_targets_v0_3_0(self, **kwargs: bool | None) -> list[gss.Target]:
+        credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
+        query = _models.GetTargetsFilterModel(
+            **{key: val for key, val in kwargs.items() if val is not None}
+        )
+        response = self.get_request(
+            "/client/targets", query.model_dump(exclude_defaults=True), **credentials
+        )
+        targets = [_models.TargetModel(**data) for data in response]
+        return [
+            gss.typing.Target(
+                target=target.target_name, **target.model_dump(exclude={"target_name"})
+            )
+            for target in targets
+        ]
+
+    @_versioned_method
     def get_my_targets(self) -> list[gss.Target]:
         """Makes a GET request to retrieve targets from the Superstaq API.
 
         Returns:
             A list of Superstaq targets matching all provided criteria.
         """
+
+    @get_my_targets.version(_API_Version.V0_2_0)
+    def _get_my_targets_v0_2_0(self) -> list[gss.Target]:
         json_dict: dict[str, str | bool] = {"accessible": True}
         if self.client_kwargs:
             json_dict["options"] = json.dumps(self.client_kwargs)
@@ -336,6 +587,19 @@ class _SuperstaqClient:
         ]
         return target_list
 
+    @get_my_targets.version(_API_Version.V0_3_0)
+    def _get_my_targets_v0_3_0(self) -> list[gss.Target]:
+        credentials = self._extract_credentials(self.client_kwargs)
+        response = self.get_request("/client/targets", {"accessible": True}, **credentials)
+        targets = [_models.TargetModel(**data) for data in response]
+        return [
+            gss.typing.Target(
+                target=target.target_name, **target.model_dump(exclude={"target_name"})
+            )
+            for target in targets
+        ]
+
+    @_versioned_method
     def add_new_user(self, json_dict: dict[str, str]) -> str:
         """Makes a POST request to Superstaq API to add a new user.
 
@@ -345,8 +609,17 @@ class _SuperstaqClient:
         Returns:
             The response as a string.
         """
+
+    @add_new_user.version(_API_Version.V0_2_0)
+    def _add_new_user_v0_2_0(self, json_dict: dict[str, str]) -> str:
         return self.post_request("/add_new_user", json_dict)
 
+    @add_new_user.version(_API_Version.V0_3_0)
+    def _add_new_user_v0_3_0(self, json_dict: dict[str, str]) -> str:
+        new_user = _models.NewUser(**json_dict)
+        return self.post_request("/client/user", new_user.model_dump(exclude_none=True))
+
+    @_versioned_method
     def update_user_balance(self, json_dict: dict[str, float | str]) -> str:
         """Makes a POST request to Superstaq API to update a user's balance in the database.
 
@@ -356,8 +629,23 @@ class _SuperstaqClient:
         Returns:
             The response as a string.
         """
+
+    @update_user_balance.version(_API_Version.V0_2_0)
+    def _update_user_balance_v0_2_0(self, json_dict: dict[str, float | str]) -> str:
         return self.post_request("/update_user_balance", json_dict)
 
+    @update_user_balance.version(_API_Version.V0_3_0)
+    def _update_user_balance_v0_3_0(self, json_dict: dict[str, float | str]) -> str:
+        user_email = json_dict.get("email")
+        new_balance = json_dict.get("balance")
+        if user_email is None:
+            raise ValueError("Must provide a user email to update the balance of.")
+        if new_balance is None:
+            raise ValueError("Must provide a new balance to update the user with.")
+        request = _models.UpdateUserDetails(balance=json_dict.get("balance"))
+        return self.put_request(f"/client/user/{user_email}", request.model_dump(exclude_none=True))
+
+    @_versioned_method
     def update_user_role(self, json_dict: dict[str, int | str]) -> str:
         """Makes a POST request to Superstaq API to update a user's role.
 
@@ -367,8 +655,23 @@ class _SuperstaqClient:
         Returns:
             The response as a string.
         """
+
+    @update_user_role.version(_API_Version.V0_2_0)
+    def _update_user_role_v0_2_0(self, json_dict: dict[str, int | str]) -> str:
         return self.post_request("/update_user_role", json_dict)
 
+    @update_user_role.version(_API_Version.V0_3_0)
+    def _update_user_role_v0_3_0(self, json_dict: dict[str, int | str]) -> str:
+        user_email = json_dict.get("email")
+        new_role = json_dict.get("role")
+        if user_email is None:
+            raise ValueError("Must provide a user email to update the role of.")
+        if new_role is None:
+            raise ValueError("Must provide a new role to update the user with.")
+        request = _models.UpdateUserDetails(role=json_dict.get("role"))
+        return self.put_request(f"/client/user/{user_email}", request.model_dump(exclude_none=True))
+
+    @_versioned_method
     def resource_estimate(self, json_dict: dict[str, str]) -> dict[str, list[dict[str, int]]]:
         """POSTs the given payload to the `/resource_estimate` endpoint.
 
@@ -378,8 +681,14 @@ class _SuperstaqClient:
         Returns:
             The response of the given payload.
         """
+
+    @resource_estimate.version(_API_Version.V0_2_0)
+    def _resource_estimate_v0_2_0(
+        self, json_dict: dict[str, str]
+    ) -> dict[str, list[dict[str, int]]]:
         return self.post_request("/resource_estimate", json_dict)
 
+    @_versioned_method
     def aqt_compile(self, json_dict: dict[str, str]) -> dict[str, str]:
         """Makes a POST request to Superstaq API to compile a list of circuits for Berkeley-AQT.
 
@@ -389,8 +698,18 @@ class _SuperstaqClient:
         Returns:
             A dictionary containing compiled circuit(s) data.
         """
+
+    @aqt_compile.version(_API_Version.V0_2_0)
+    def _aqt_compile_v0_2_0(self, json_dict: dict[str, str]) -> dict[str, str]:
         return self.post_request("/aqt_compile", json_dict)
 
+    @aqt_compile.version(_API_Version.V0_3_0)
+    def _aqt_compile_v0_3_0(self, json_dict: dict[str, str]) -> dict[str, str]:
+        raise DeprecationWarning(
+            "`aqt_compile` is deprecated for version 0.3.0. Use `compile` instead."
+        )
+
+    @_versioned_method
     def qscout_compile(self, json_dict: dict[str, str]) -> dict[str, str | list[str]]:
         """Makes a POST request to Superstaq API to compile a list of circuits for QSCOUT.
 
@@ -400,8 +719,18 @@ class _SuperstaqClient:
         Returns:
             A dictionary containing compiled circuit(s) data.
         """
+
+    @qscout_compile.version(_API_Version.V0_2_0)
+    def _qscout_compile_v0_2_0(self, json_dict: dict[str, str]) -> dict[str, str | list[str]]:
         return self.post_request("/qscout_compile", json_dict)
 
+    @qscout_compile.version(_API_Version.V0_3_0)
+    def _qscout_compile_v0_3_0(self, json_dict: dict[str, str]) -> dict[str, str | list[str]]:
+        raise DeprecationWarning(
+            "`qscout_compile` is deprecated for version 0.3.0. Use `compile` instead."
+        )
+
+    @_versioned_method
     def compile(self, json_dict: dict[str, str]) -> dict[str, str]:
         """Makes a POST request to Superstaq API to compile a list of circuits.
 
@@ -411,8 +740,69 @@ class _SuperstaqClient:
         Returns:
             A dictionary containing compiled circuit data.
         """
+
+    @compile.version(_API_Version.V0_2_0)
+    def _compile_v0_2_0(self, json_dict: dict[str, str]) -> dict[str, str]:
         return self.post_request("/compile", json_dict)
 
+    @compile.version(_API_Version.V0_3_0)
+    def _compile_v0_3_0(self, json_dict: dict[str, str]) -> dict[str, str]:
+        circuits, circuit_type = self._extract_circuits(json_dict)
+
+        # Define job
+        new_job = _models.NewJob(
+            job_type=_models.JobType.COMPILE,
+            target=json_dict["target"],
+            circuits=circuits,
+            circuit_type=circuit_type,
+            options_dict=json.loads(json_dict.get("options", "{}")),
+        )
+        # Submit job and store ID
+        response = _models.NewJobResponse(**self.post_request("/client/job", new_job.model_dump()))
+        job_id = str(response.job_id)
+        job_data = self.fetch_jobs([job_id])[job_id]
+
+        # Poll the server until all circuits have reached a terminal state.
+        time_waited_seconds: float = 0.0
+        while any(s not in _models.TERMINAL_CIRCUIT_STATES for s in job_data["statuses"]):
+            # Status does a refresh.
+            if time_waited_seconds > 7200:
+                raise TimeoutError(
+                    f"Timed out while waiting for circuits to compile. The job ID is {job_id}. "
+                    "Please use retrieve the job later when it has finished compiling."
+                )
+            time.sleep(2.5)
+            time_waited_seconds += 2.5
+            job_data = self.fetch_jobs([job_id])[job_id]
+
+        # Exception if any have not been successful
+        if not all(s == _models.CircuitStatus.COMPLETED for s in job_data["statuses"]):
+            raise gss.SuperstaqException(
+                f"Not all circuits were successfully compiled. Check job ID {job_id} for further "
+                "details."
+            )
+
+        # Join circuits together in json string - TODO: make this neater.
+        # Note mypy does not recognize that the above checks ensure there are no None's anywhere,
+        # hence the ignored [arg-type]'s
+        compile_dict = {
+            "initial_logical_to_physicals": "["
+            + ", ".join(str(dico) for dico in job_data["initial_logical_to_physicals"])
+            + "]",
+            "final_logical_to_physicals": "["
+            + ", ".join(str(dico) for dico in job_data["final_logical_to_physicals"])
+            + "]",
+        }
+
+        if circuit_type == _models.CircuitType.CIRQ:
+            compile_dict["cirq_circuits"] = "[" + ", ".join(job_data["compiled_circuits"]) + "]"
+            return compile_dict
+
+        if circuit_type == _models.CircuitType.QISKIT:
+            compile_dict["qiskit_circuits"] = "[" + ", ".join(job_data["compiled_circuits"]) + "]"
+            return compile_dict
+
+    @_versioned_method
     def submit_qubo(
         self,
         qubo: Mapping[tuple[TQuboKey, ...], float],
@@ -453,6 +843,22 @@ class _SuperstaqClient:
         Returns:
             A dictionary from the POST request.
         """
+
+    @submit_qubo.version(_API_Version.V0_2_0)
+    def _submit_qubo_v0_2_0(
+        self,
+        qubo: Mapping[tuple[TQuboKey, ...], float],
+        target: str,
+        repetitions: int,
+        method: str = "sim_anneal",
+        max_solutions: int | None = 1000,
+        *,
+        qaoa_depth: int = 1,
+        rqaoa_cutoff: int = 0,
+        dry_run: bool = False,
+        random_seed: int | None = None,
+        **kwargs: object,
+    ) -> dict[str, str]:
         gss.validation.validate_target(target)
         gss.validation.validate_qubo(qubo)
         gss.validation.validate_integer_param(repetitions)
@@ -478,6 +884,7 @@ class _SuperstaqClient:
         }
         return self.post_request("/qubo", json_dict)
 
+    @_versioned_method
     def supercheq(
         self,
         files: list[list[int]],
@@ -497,6 +904,15 @@ class _SuperstaqClient:
         Returns:
             The output of Supercheq.
         """
+
+    @supercheq.version(_API_Version.V0_2_0)
+    def _supercheq_v0_2_0(
+        self,
+        files: list[list[int]],
+        num_qubits: int,
+        depth: int,
+        circuit_return_type: str,
+    ) -> Any:
         gss.validation.validate_integer_param(num_qubits)
         gss.validation.validate_integer_param(depth)
 
@@ -508,6 +924,7 @@ class _SuperstaqClient:
         }
         return self.post_request("/supercheq", json_dict)
 
+    @_versioned_method
     def submit_dfe(
         self,
         circuit_1: dict[str, str],
@@ -541,6 +958,18 @@ class _SuperstaqClient:
             ValueError: If any of the targets passed are not valid.
             ~gss.SuperstaqServerException: if the request fails.
         """
+
+    @submit_dfe.version(_API_Version.V0_2_0)
+    def _submit_dfe_v0_2_0(
+        self,
+        circuit_1: dict[str, str],
+        target_1: str,
+        circuit_2: dict[str, str],
+        target_2: str,
+        num_random_bases: int,
+        shots: int,
+        **kwargs: Any,
+    ) -> list[str]:
         gss.validation.validate_target(target_1)
         gss.validation.validate_target(target_2)
 
@@ -558,7 +987,8 @@ class _SuperstaqClient:
             json_dict["options"] = json.dumps(kwargs)
         return self.post_request("/dfe_post", json_dict)
 
-    def process_dfe(self, job_ids: list[str]) -> float:
+    @_versioned_method
+    def process_dfe(self, job_ids: Sequence[str] | Sequence[uuid.UUID]) -> float:
         """Performs a POST request on the `/dfe_fetch` endpoint.
 
         Args:
@@ -571,6 +1001,9 @@ class _SuperstaqClient:
             ValueError: If `job_ids` is not of size two.
             ~gss.SuperstaqServerException: If the request fails.
         """
+
+    @process_dfe.version(_API_Version.V0_2_0)
+    def _process_dfe_v0_2_0(self, job_ids: Sequence[str]) -> float:
         if len(job_ids) != 2:
             raise ValueError("`job_ids` must contain exactly two job ids.")
 
@@ -580,6 +1013,7 @@ class _SuperstaqClient:
         }
         return self.post_request("/dfe_fetch", json_dict)
 
+    @_versioned_method
     def submit_aces(
         self,
         target: str,
@@ -617,6 +1051,22 @@ class _SuperstaqClient:
             ValueError: If the target or noise model is not valid.
             ~gss.SuperstaqServerException: If the request fails.
         """
+
+    @submit_aces.version(_API_Version.V0_2_0)
+    def _submit_aces_v0_2_0(
+        self,
+        target: str,
+        qubits: Sequence[int],
+        shots: int,
+        num_circuits: int,
+        mirror_depth: int,
+        extra_depth: int,
+        method: str | None = None,
+        noise: dict[str, object] | None = None,
+        tag: str | None = None,
+        lifespan: int | None = None,
+        weights: Sequence[int] | None = None,
+    ) -> str:
         gss.validation.validate_target(target)
 
         json_dict = {
@@ -643,7 +1093,8 @@ class _SuperstaqClient:
 
         return self.post_request("/aces", json_dict)
 
-    def process_aces(self, job_id: str) -> list[float]:
+    @_versioned_method
+    def process_aces(self, job_id: str | uuid.UUID) -> list[float]:
         """Makes a POST request to the "/aces_fetch" endpoint.
 
         Args:
@@ -652,8 +1103,12 @@ class _SuperstaqClient:
         Returns:
             The estimated eigenvalues.
         """
+
+    @process_aces.version(_API_Version.V0_2_0)
+    def _process_aces_v0_2_0(self, job_id: str | uuid.UUID) -> list[float]:
         return self.post_request("/aces_fetch", {"job_id": job_id})
 
+    @_versioned_method
     def submit_cb(
         self,
         target: str,
@@ -685,6 +1140,19 @@ class _SuperstaqClient:
             ValueError: If the target or noise model is not valid.
             ~gss.SuperstaqServerException: If the request fails.
         """
+
+    @submit_cb.version(_API_Version.V0_2_0)
+    def _submit_cb_v0_2_0(
+        self,
+        target: str,
+        shots: int,
+        serialized_circuits: dict[str, str],
+        n_channels: int,
+        n_sequences: int,
+        depths: Sequence[int],
+        method: str | None = None,
+        noise: dict[str, object] | None = None,
+    ) -> str:
         gss.validation.validate_target(target)
 
         json_dict: dict[str, Any] = {
@@ -703,7 +1171,8 @@ class _SuperstaqClient:
 
         return self.post_request("/cb_submit", json_dict)
 
-    def process_cb(self, job_id: str, counts: str | None = None) -> dict[str, Any]:
+    @_versioned_method
+    def process_cb(self, job_id: str | uuid.UUID, counts: str | None = None) -> dict[str, Any]:
         """Makes a POST request to the "/cb_fetch" endpoint.
 
         Args:
@@ -714,6 +1183,11 @@ class _SuperstaqClient:
             Characterization data including process fidelity
             and parameter estimates.
         """
+
+    @process_cb.version(_API_Version.V0_2_0)
+    def _process_cb_v0_2_0(
+        self, job_id: str | uuid.UUID, counts: str | None = None
+    ) -> dict[str, Any]:
         json_dict: dict[str, Any] = {
             "job_id": job_id,
         }
@@ -721,17 +1195,22 @@ class _SuperstaqClient:
             json_dict["counts"] = counts
         return self.post_request("/cb_fetch", json_dict)
 
-    def target_info(self, target: str) -> dict[str, Any]:
+    @_versioned_method
+    def target_info(self, target: str, **kwargs: object) -> dict[str, Any]:
         """Makes a POST request to the /target_info endpoint.
 
         Uses the Superstaq API to request information about `target`.
 
         Args:
             target: A string representing the device to get information about.
+            kwargs: Any other information.
 
         Returns:
             The target information.
         """
+
+    @target_info.version(_API_Version.V0_2_0)
+    def _target_info_v0_2_0(self, target: str) -> dict[str, Any]:
         gss.validation.validate_target(target)
 
         json_dict = {
@@ -740,6 +1219,20 @@ class _SuperstaqClient:
         }
         return self.post_request("/target_info", json_dict)
 
+    @target_info.version(_API_Version.V0_3_0)
+    def _target_info_v0_3_0(self, target: str, **kwargs: object) -> dict[str, Any]:
+        credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
+
+        response = _models.TargetInfo(
+            **self.post_request(
+                "/client/retrieve_target_info",
+                _models.RetrieveTargetInfoModel(target=target, options_dict=kwargs).model_dump(),
+                **credentials,
+            )
+        )
+        return response.model_dump()
+
+    @_versioned_method
     def aqt_upload_configs(self, aqt_configs: dict[str, str]) -> str:
         """Makes a POST request to Superstaq API to upload configurations.
 
@@ -749,23 +1242,43 @@ class _SuperstaqClient:
         Returns:
             A string response from POST request.
         """
+
+    @aqt_upload_configs.version(_API_Version.V0_2_0)
+    def _aqt_upload_configs_v0_2_0(self, aqt_configs: dict[str, str]) -> str:
         return self.post_request("/aqt_configs", aqt_configs)
 
+    @aqt_upload_configs.version(_API_Version.V0_3_0)
+    def _aqt_upload_configs_v0_3_0(self, aqt_configs: dict[str, str]) -> str:
+        response = self.put_request("/aqt_configs", _models.AQTConfigs(**aqt_configs).model_dump())
+        return response
+
+    @_versioned_method
     def aqt_get_configs(self) -> dict[str, str]:
         """Writes AQT configs from the AQT system onto the given file path.
 
         Returns:
             A dictionary containing the AQT configs.
         """
+
+    @aqt_get_configs.version(_API_Version.V0_2_0)
+    def _aqt_get_configs_v0_2_0(self) -> dict[str, str]:
         return self.get_request("/get_aqt_configs")
 
-    def get_request(self, endpoint: str, query: Mapping[str, object] | None = None) -> Any:
+    @aqt_get_configs.version(_API_Version.V0_3_0)
+    def _aqt_get_configs_v0_3_0(self) -> dict[str, str]:
+        response = _models.AQTConfigs(**self.get_request("/aqt_configs"))
+        return response.model_dump()
+
+    def get_request(
+        self, endpoint: str, query: Mapping[str, object] | None = None, **credentials: str
+    ) -> Any:
         """Performs a GET request on a given endpoint.
 
         Args:
             endpoint: The endpoint to perform the GET request on.
             query: An optional query dictionary to include in the get request.
                 This query will be appended to the url.
+            credentials: Any credentials that need to be added to the request headers.
 
         Returns:
             The response of the GET request.
@@ -780,22 +1293,25 @@ class _SuperstaqClient:
             if not query:
                 q_string = ""
             else:
-                q_string = "?" + urllib.parse.urlencode(query)
+                q_string = "?" + urllib.parse.urlencode(query, doseq=True)
             return self.session.get(
                 f"{self.url}{endpoint}{q_string}",
-                headers=self.headers,
+                headers=self._custom_headers(**credentials),
                 verify=self.verify_https,
             )
 
         response = self._make_request(request)
         return self._handle_response(response)
 
-    def post_request(self, endpoint: str, json_dict: Mapping[str, object]) -> Any:
+    def post_request(
+        self, endpoint: str, json_dict: Mapping[str, object], **credentials: str
+    ) -> Any:
         """Performs a POST request on a given endpoint with a given payload.
 
         Args:
             endpoint: The endpoint to perform the POST request on.
             json_dict: The payload to POST.
+            credentials: Any credentials that need to be added to the request headers.
 
         Returns:
             The response of the POST request.
@@ -810,7 +1326,38 @@ class _SuperstaqClient:
             return self.session.post(
                 f"{self.url}{endpoint}",
                 json=json_dict,
-                headers=self.headers,
+                headers=self._custom_headers(**credentials),
+                verify=self.verify_https,
+            )
+
+        response = self._make_request(request)
+        return self._handle_response(response)
+
+    def put_request(
+        self, endpoint: str, json_dict: Mapping[str, object], **credentials: str
+    ) -> Any:
+        """Performs a PUT request on a given endpoint with a given payload.
+
+        Args:
+            endpoint: The endpoint to perform the PUT request on.
+            json_dict: The payload to PUT.
+            credentials: Any credentials that need to be added to the request headers.
+
+        Returns:
+            The response of the PUT request.
+        """
+
+        # Update headers with custom values
+        def request() -> requests.Response:
+            """Builds PUT request object.
+
+            Returns:
+                The Flask PUT request object.
+            """
+            return self.session.put(
+                f"{self.url}{endpoint}",
+                json=json_dict,
+                headers=self._custom_headers(**credentials),
                 verify=self.verify_https,
             )
 
@@ -879,25 +1426,6 @@ class _SuperstaqClient:
                 message=message, status_code=response.status_code, contact_info=True
             )
 
-    def _prompt_accept_terms_of_use(self) -> None:
-        """Prompts terms of use.
-
-        Raises:
-            ~gss.SuperstaqServerException: If terms of use are not accepted.
-        """
-        message = (
-            "Acceptance of the Terms of Use (superstaq.infleqtion.com/terms_of_use)"
-            " is necessary before using Superstaq.\nType in YES to accept: "
-        )
-        user_input = input(message).upper()
-        response = self._accept_terms_of_use(user_input)
-        print(response)  # noqa: T201
-        if response != "Accepted. You can now continue using Superstaq.":
-            raise gss.SuperstaqServerException(
-                "You'll need to accept the Terms of Use before usage of Superstaq.",
-                requests.codes.unauthorized,
-            )
-
     def _make_request(self, request: Callable[[], requests.Response]) -> requests.Response:
         """Make a request to the API, retrying if necessary.
 
@@ -937,8 +1465,81 @@ class _SuperstaqClient:
             time.sleep(delay_seconds)
             delay_seconds *= 2
 
+    def _warn_unstable_version(self) -> None:
+        warnings.warn(
+            (
+                "Version v0.3.0 of the Superstaq endpoint is currently under development. "
+                "This version should not be treated as stable. Most user should continue using "
+                "`api_version='v0.2.0'`."
+            ),
+            stacklevel=2,
+        )
+
+    def _custom_headers(self, **credentials: str) -> dict[str, str]:
+        custom_headers = copy.deepcopy(self.headers)
+        for key in ["ibmq_token", "ibmq_instance", "ibmq_channel", "cq_token"]:
+            if key in credentials:
+                custom_headers[key] = credentials[key]
+
+        return custom_headers
+
+    def _prompt_accept_terms_of_use(self) -> None:
+        """Prompts terms of use.
+
+        Raises:
+            ~gss.SuperstaqServerException: If terms of use are not accepted.
+        """
+        message = (
+            "Acceptance of the Terms of Use (superstaq.infleqtion.com/terms_of_use)"
+            " is necessary before using Superstaq.\nType in YES to accept: "
+        )
+        user_input = input(message).upper()
+        response = self._accept_terms_of_use(user_input)
+        print(response)  # noqa: T201
+        if response != "Accepted. You can now continue using Superstaq.":
+            raise gss.SuperstaqServerException(
+                "You'll need to accept the Terms of Use before usage of Superstaq.",
+                requests.codes.unauthorized,
+            )
+
+    @staticmethod
+    def _extract_credentials(kwargs: dict[str, Any]) -> dict[str, str]:
+        credentials = {}
+        for key in ["ibmq_token", "ibmq_instance", "ibmq_channel"]:
+            if key in kwargs:
+                credentials[key] = kwargs.pop(key)
+
+        if "cq_token" in kwargs:  # CQ-Token may need to be json encoded as headers must be strings.
+            cq_token = kwargs.pop("cq_token")
+            if isinstance(cq_token, str):
+                credentials["cq_token"] = cq_token
+            else:
+                credentials["cq_token"] = json.dumps(cq_token)
+
+        return credentials
+
+    @staticmethod
+    def _extract_circuits(json_dict: dict[str, str]) -> tuple[str, RECOGNISED_CIRCUIT_TYPES]:
+        recognised_circuit_types: dict[str, RECOGNISED_CIRCUIT_TYPES] = {
+            "cirq_circuits": _models.CircuitType.CIRQ,
+            "qiskit_circuits": _models.CircuitType.QISKIT,
+        }
+
+        circuit_keys = list(filter(lambda x: x in recognised_circuit_types, json_dict))
+
+        if len(circuit_keys) > 1:
+            raise RuntimeError("Cannot submit jobs with multiple circuit types.")
+
+        if len(circuit_keys) == 0:
+            raise RuntimeError("No recognized circuits found.")
+
+        circuits = json_dict[circuit_keys[0]]
+        circuit_type = recognised_circuit_types[circuit_keys[0]]
+
+        return circuits, circuit_type
+
     def __str__(self) -> str:
-        return f"Client with host={self.url} and name={self.client_name}"
+        return f"Client version {self.api_version} with host={self.url} and name={self.client_name}"
 
     def __repr__(self) -> str:
         return textwrap.dedent(
