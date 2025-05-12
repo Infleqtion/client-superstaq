@@ -204,6 +204,38 @@ def test_superstaq_client_attributes(api_version: str) -> None:
     assert client.api_version == api_version
 
 
+@pytest.mark.parametrize("user_input", ["YES", "NO"])
+@pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
+@mock.patch("requests.Session.put")
+@mock.patch("requests.Session.post")
+def test_accept_terms_of_use(
+    mock_post: mock.MagicMock,
+    mock_put: mock.MagicMock,
+    client_name: str,
+    user_input: str,
+    request: FixtureRequest,
+) -> None:
+    client = request.getfixturevalue(client_name)
+
+    expected_json: dict[str, Any]
+    if client.api_version == "v0.2.0":
+        mock_call = mock_post
+        endpoint = "accept_terms_of_use"
+        expected_json = {"user_input": user_input}
+    else:
+        mock_call = mock_put
+        endpoint = "client/accept_terms_of_use"
+        expected_json = {"accept": user_input == "YES"}
+
+    client._accept_terms_of_use(user_input)
+    mock_call.assert_called_with(
+        f"http://example.com/{client.api_version}/{endpoint}",
+        headers=EXPECTED_HEADERS[client.api_version],
+        json=expected_json,
+        verify=False,
+    )
+
+
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
 @mock.patch("general_superstaq.superstaq_client._SuperstaqClient._accept_terms_of_use")
 @mock.patch("requests.Session.get")
@@ -284,6 +316,7 @@ def test_superstaq_client_use_stored_ibmq_credential(api_version: str) -> None:
         }
 
 
+@pytest.mark.parametrize("method", ("dry-run", "sim"))
 @pytest.mark.parametrize("target", ("ss_example_qpu", "ss_example_simulator"))
 @pytest.mark.parametrize(
     "client_name, job_id", [("client_v2", "id"), ("client_v3", uuid.UUID(int=0))]
@@ -292,8 +325,9 @@ def test_superstaq_client_use_stored_ibmq_credential(api_version: str) -> None:
 def test_supertstaq_client_create_job(
     mock_post: mock.MagicMock,
     client_name: str,
-    target: str,
     job_id: str | uuid.UUID,
+    target: str,
+    method: str,
     request: FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
@@ -306,31 +340,30 @@ def test_supertstaq_client_create_job(
         serialized_circuits={"qiskit_circuits": "World"},
         repetitions=200,
         target=target,
-        method="dry-run",
+        method=method,
         cq_token={"@type": "RefreshFlowState", "access_token": "123"},
     )
     assert response == {"job_id": job_id, "num_circuits": 1}
 
-    if api_version == "v.0.2.0":
+    if api_version == "v0.2.0":
         expected_json = {
             "qiskit_circuits": "World",
             "target": target,
             "shots": 200,
-            "method": "dry-run",
+            "method": method,
             "options": json.dumps(
                 {"cq_token": {"@type": "RefreshFlowState", "access_token": "123"}}
             ),
         }
-        mock_post.assert_called_with(
-            "http://example.com/v0.2.0/jobs",
-            json=expected_json,
-            headers=EXPECTED_HEADERS[api_version],
-            verify=False,
-        )
-    elif api_version == "v.0.3.0":
+        endpoint = "/jobs"
+        expected_headers = EXPECTED_HEADERS[api_version]
+    else:
         job_type = "submit"
-        if target.endswith("_simulator"):
+        sim_method = None
+        if target.endswith("_simulator") or method == "sim":
             job_type = "simulate"
+            if method == "sim":
+                sim_method = "sim"
         expected_json = {
             "job_type": job_type,
             "target": target,
@@ -338,18 +371,24 @@ def test_supertstaq_client_create_job(
             "circuit_type": "qiskit",
             "verbatim": False,
             "shots": 200,
-            "dry_run": True,
-            "sim_method": None,
+            "dry_run": method == "dry-run",
+            "sim_method": sim_method,
             "priority": 0,
-            "optioins_dict": {},
+            "options_dict": {"cq_token": {"@type": "RefreshFlowState", "access_token": "123"}},
             "tags": [],
         }
-        mock_post.assert_called_with(
-            "http://example.com/v0.3.0/client/jobs",
-            json=expected_json,
-            headers=EXPECTED_HEADERS[api_version],
-            verify=False,
-        )
+        endpoint = "/client/job"
+        expected_headers = {
+            **EXPECTED_HEADERS[api_version],
+            "cq_token": '{"@type": "RefreshFlowState", "access_token": "123"}',
+        }
+
+    mock_post.assert_called_with(
+        f"http://example.com/{api_version}{endpoint}",
+        json=expected_json,
+        headers=expected_headers,
+        verify=False,
+    )
 
 
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
@@ -1308,11 +1347,13 @@ def test_superstaq_client_compile_v3_failed(
     )
 
 
+@pytest.mark.parametrize("circuit_type", ["cirq", "qiskit"])
 @mock.patch("requests.Session.get")
 @mock.patch("requests.Session.post")
 def test_superstaq_client_compile_v3(
     mock_post: mock.MagicMock,
     mock_get: mock.MagicMock,
+    circuit_type: str,
     client_v3: gss.superstaq_client._SuperstaqClient,
 ) -> None:
     job_id = uuid.UUID(int=0)
@@ -1327,7 +1368,7 @@ def test_superstaq_client_compile_v3(
             "num_circuits": 1,
             "compiled_circuits": ["compiled world"],
             "input_circuits": ["world"],
-            "circuit_type": "cirq",
+            "circuit_type": circuit_type,
             "counts": [{"count": 200}],
             "results_dicts": [None],
             "shots": [200],
@@ -1343,7 +1384,9 @@ def test_superstaq_client_compile_v3(
     mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
     mock_get.return_value.json.return_value = job_data
 
-    compilation_results = client_v3.compile({"cirq_circuits": "Hello", "target": "ss_example_qpu"})
+    compilation_results = client_v3.compile(
+        {f"{circuit_type}_circuits": "Hello", "target": "ss_example_qpu"}
+    )
 
     mock_post.assert_called_with(
         f"http://example.com/{client_v3.api_version}/client/job",
@@ -1351,7 +1394,7 @@ def test_superstaq_client_compile_v3(
             "job_type": "compile",
             "target": "ss_example_qpu",
             "circuits": "Hello",
-            "circuit_type": "cirq",
+            "circuit_type": circuit_type,
             "verbatim": False,
             "shots": 0,
             "dry_run": False,
@@ -1369,7 +1412,7 @@ def test_superstaq_client_compile_v3(
         verify=False,
     )
     assert compilation_results == {
-        "cirq_circuits": "[compiled world]",
+        f"{circuit_type}_circuits": "[compiled world]",
         "initial_logical_to_physicals": "[{0: 0}]",
         "final_logical_to_physicals": "[{0: 0}]",
     }
@@ -1415,7 +1458,10 @@ def test_superstaq_client_compile_v3_with_wait(
     response2.json.return_value = {str(job_id): completed_data}
     mock_get.side_effect = [response1, response2]
 
-    compilation_results = client_v3.compile({"cirq_circuits": "Hello", "target": "ss_example_qpu"})
+    with mock.patch("time.sleep", return_value=None):
+        compilation_results = client_v3.compile(
+            {"cirq_circuits": "Hello", "target": "ss_example_qpu"}
+        )
 
     mock_post.assert_called_with(
         f"http://example.com/{client_v3.api_version}/client/job",
@@ -2033,6 +2079,11 @@ def test_get_user_info_query(
         verify=False,
     )
     assert user_info == data
+
+
+def test_get_user_info_v3_fail(client_v3: gss.superstaq_client._SuperstaqClient) -> None:
+    with pytest.raises(TypeError, match="Superstaq API v0.3.0 uses UUID"):
+        client_v3.get_user_info(user_id=42)
 
 
 @pytest.mark.parametrize(

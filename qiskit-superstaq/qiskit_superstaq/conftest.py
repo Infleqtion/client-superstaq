@@ -37,10 +37,6 @@ class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
     def _get_targets_v0_2_0(self, **kwargs: bool | None) -> list[gss.typing.Target]:
         return gss.testing.RETURNED_TARGETS
 
-    @get_targets.version(_API_Version.V0_3_0)
-    def _get_targets_v0_3_0(self, **kwargs: bool | None) -> list[gss.typing.Target]:
-        return gss.testing.RETURNED_TARGETS
-
     @_versioned_method
     def target_info(self, target: str) -> dict[str, object]:
         """Mocks a request to the /target_info endpoint.
@@ -54,17 +50,6 @@ class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
 
     @target_info.version(_API_Version.V0_2_0)
     def _target_info_v0_2_0(self, target: str) -> dict[str, object]:
-        return {
-            "target_info": {
-                "target": target,
-                "num_qubits": 4,
-                "basis_gates": None,
-                "coupling_map": [[0, 1], [1, 2]],
-            },
-        }
-
-    @target_info.version(_API_Version.V0_3_0)
-    def _target_info_v0_3_0(self, target: str) -> dict[str, object]:
         return {
             "target_info": {
                 "target": target,

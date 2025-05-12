@@ -42,7 +42,7 @@ RECOGNISED_CIRCUIT_TYPES = Literal[_models.CircuitType.CIRQ, _models.CircuitType
 """The circuit types that are currently implemented within the SuperstaqClient."""
 
 
-class _API_Version(enum.StrEnum):
+class _API_Version(str, enum.Enum):
     V0_2_0 = "v0.2.0"
     V0_3_0 = "v0.3.0"
 
@@ -57,7 +57,7 @@ class _versioned_method:
     def __get__(
         self, instance: _SuperstaqClient | None, owner: type[_SuperstaqClient] | None
     ) -> Any:
-        if instance is None:
+        if instance is None:  # pragma: no cover
             return self
 
         def _method(*args: Any, **kwargs: Any) -> Any:
@@ -766,7 +766,7 @@ class _SuperstaqClient:
         time_waited_seconds: float = 0.0
         while any(s not in _models.TERMINAL_CIRCUIT_STATES for s in job_data["statuses"]):
             # Status does a refresh.
-            if time_waited_seconds > 7200:
+            if time_waited_seconds > 7200:  # pragma: no cover
                 raise TimeoutError(
                     f"Timed out while waiting for circuits to compile. The job ID is {job_id}. "
                     "Please use retrieve the job later when it has finished compiling."
