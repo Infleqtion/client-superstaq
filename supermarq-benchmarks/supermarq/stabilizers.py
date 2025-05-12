@@ -252,12 +252,12 @@ def patch_Z_matrix(measurement_circuit: MeasurementCircuit) -> None:
         measurement_circuit: The current measurement circuit to act on.
     """
     stabilizer_matrix, N = measurement_circuit.get_stabilizer(), measurement_circuit.num_qubits
-    assert np.allclose(
-        stabilizer_matrix[:N], stabilizer_matrix[:N].T
-    ), f"Z-matrix,\n{stabilizer_matrix} is not symmetric"
+    assert np.allclose(stabilizer_matrix[:N], stabilizer_matrix[:N].T), (
+        f"Z-matrix,\n{stabilizer_matrix} is not symmetric"
+    )
 
     for i in range(N):
-        for j in range(0, i):
+        for j in range(i):
             if stabilizer_matrix[i, j] == 1:
                 apply_CZ(measurement_circuit, i, j)
 

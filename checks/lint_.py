@@ -6,4 +6,4 @@ import sys
 import checks_superstaq as checks
 
 if __name__ == "__main__":
-    sys.exit(checks.pylint_.run(*sys.argv[1:]))
+    sys.exit(checks.ruff_lint_.run(*sys.argv[1:], include=("*.py", "*.ipynb")))

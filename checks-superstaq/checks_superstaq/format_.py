@@ -66,7 +66,7 @@ def run(
         # some files should be reformatted, but there don't seem to be any bona fide errors
         command = "./checks/format_.py --apply"
         text = f"Run '{command}' (from the repo root directory) to format files."
-        print(check_utils.warning(text))
+        print(check_utils.warning(text))  # noqa: T201
         return 1
 
     return returncode_isort

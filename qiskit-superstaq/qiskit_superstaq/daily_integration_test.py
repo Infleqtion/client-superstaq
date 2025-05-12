@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring,missing-class-docstring
 """Integration checks that run daily (via Github action) between client and prod server."""
 
 from __future__ import annotations
@@ -43,9 +42,12 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
 
 
 def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
-    qc = qiskit.QuantumCircuit(2)
+    qc = qiskit.QuantumCircuit(4)
     qc.h(0)
     qc.cx(0, 1)
+    qc.append(qss.AceCR("-+"), [0, 1])
+    qc.append(qss.AceCR("-+"), [1, 2])
+    qc.append(qss.AceCR("-+"), [2, 3])
 
     out = provider.ibmq_compile(qc, target="ibmq_brisbane_qpu")
     assert isinstance(out, qss.compiler_output.CompilerOutput)
@@ -68,9 +70,12 @@ def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
 
 def test_ibmq_compile_with_token() -> None:
     provider = qss.SuperstaqProvider(ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"])
-    qc = qiskit.QuantumCircuit(2)
+    qc = qiskit.QuantumCircuit(4)
     qc.h(0)
     qc.cx(0, 1)
+    qc.append(qss.AceCR("-+"), [0, 1])
+    qc.append(qss.AceCR("-+"), [1, 2])
+    qc.append(qss.AceCR("-+"), [2, 3])
 
     out = provider.ibmq_compile(qc, target="ibmq_brisbane_qpu")
 
@@ -190,13 +195,12 @@ def test_cq_compile(provider: qss.SuperstaqProvider) -> None:
     circuit.h(0)
     assert isinstance(provider.cq_compile(circuit).circuit, qiskit.QuantumCircuit)
     circuits = provider.cq_compile([circuit]).circuits
-    assert len(circuits) == 1 and isinstance(circuits[0], qiskit.QuantumCircuit)
+    assert len(circuits) == 1
+    assert isinstance(circuits[0], qiskit.QuantumCircuit)
     circuits = provider.cq_compile([circuit, circuit]).circuits
-    assert (
-        len(circuits) == 2
-        and isinstance(circuits[0], qiskit.QuantumCircuit)
-        and isinstance(circuits[1], qiskit.QuantumCircuit)
-    )
+    assert len(circuits) == 2
+    assert isinstance(circuits[0], qiskit.QuantumCircuit)
+    assert isinstance(circuits[1], qiskit.QuantumCircuit)
 
 
 def test_get_aqt_configs(provider: qss.superstaq_provider.SuperstaqProvider) -> None:

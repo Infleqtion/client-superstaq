@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
 import importlib
@@ -288,9 +287,9 @@ def test_completeness() -> None:
     for attr_name in dir(qss.custom_gates):
         attr = getattr(qss.custom_gates, attr_name)
         if isinstance(attr, type) and issubclass(attr, qiskit.circuit.Instruction):
-            assert issubclass(
-                attr, tuple(qss.serialization._custom_gates_by_name.values())
-            ), f"'{attr_name}' not covered in `qss.serialization._custom_gates_by_name`."
+            assert issubclass(attr, tuple(qss.serialization._custom_gates_by_name.values())), (
+                f"'{attr_name}' not covered in `qss.serialization._custom_gates_by_name`."
+            )
 
             if attr is not qss.ParallelGates:
                 assert attr in test_gates, f"'{attr_name}' missing from `test_gates`."

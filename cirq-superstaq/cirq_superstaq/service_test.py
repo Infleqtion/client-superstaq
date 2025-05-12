@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
 import collections
@@ -704,8 +703,9 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
         final_logical_to_physical
     ]
 
-    with mock.patch.dict("sys.modules", {"qiskit_superstaq": None}), pytest.warns(
-        UserWarning, match="qiskit-superstaq is required"
+    with (
+        mock.patch.dict("sys.modules", {"qiskit_superstaq": None}),
+        pytest.warns(UserWarning, match="qiskit-superstaq is required"),
     ):
         assert (
             service.ibmq_compile(cirq.Circuit(), target="ibmq_fake_qpu").pulse_gate_circuit is None
@@ -747,7 +747,7 @@ def test_service_dfe(mock_post: mock.MagicMock) -> None:
 
     with pytest.raises(ValueError, match="should contain a single circuit"):
         service.submit_dfe(
-            rho_1=([circuit, circuit], "ss_example_qpu"),  # type: ignore # for testing
+            rho_1=([circuit, circuit], "ss_example_qpu"),  # type: ignore[arg-type]
             rho_2=(circuit, "ss_example_qpu"),
             num_random_bases=5,
             shots=100,

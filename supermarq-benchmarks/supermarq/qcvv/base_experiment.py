@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Base experiment class and tools used across all experiments."""
+
 from __future__ import annotations
 
 import functools
@@ -25,7 +26,6 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import cirq
 import cirq_superstaq as css
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
@@ -33,6 +33,8 @@ from tqdm.auto import tqdm
 import supermarq
 
 if TYPE_CHECKING:
+    import matplotlib.pyplot as plt
+    from _typeshed import SupportsItems
     from typing_extensions import Self
 
 
@@ -49,6 +51,9 @@ def qcvv_resolver(cirq_type: str) -> type[Any] | None:
     Raises:
         ValueError: If the provided type is not resolvable
     """
+    if cirq_type == "uuid":
+        return uuid.UUID
+
     prefix = "supermarq.qcvv."
     if cirq_type.startswith(prefix):
         name = cirq_type[len(prefix) :]
@@ -60,7 +65,7 @@ def qcvv_resolver(cirq_type: str) -> type[Any] | None:
 @dataclass
 class Sample:
     """A sample circuit to use along with any data about the circuit
-    that is needed for analysis
+    that is needed for analysis.
     """
 
     circuit_realization: int
@@ -98,32 +103,8 @@ class Sample:
             "circuit": self.circuit,
             "data": self.data,
             "circuit_realization": self.circuit_realization,
-            "sample_uuid": str(self.uuid),
+            "uuid": {"cirq_type": "uuid", "hex": str(self.uuid)},
         }
-
-    @classmethod
-    def _from_json_dict_(
-        cls,
-        circuit: cirq.Circuit,
-        circuit_realization: int,
-        data: dict[str, Any],
-        sample_uuid: str,
-        **_: Any,
-    ) -> Self:
-        """Creates a sample from a dictionary of the data.
-
-        Args:
-            dictionary: Dict containing the sample data.
-
-        Returns:
-            The deserialized Sample object.
-        """
-        return cls(
-            circuit=circuit,
-            circuit_realization=circuit_realization,
-            data=data,
-            uuid=uuid.UUID(sample_uuid),
-        )
 
     @classmethod
     def _json_namespace_(cls) -> str:
@@ -133,7 +114,8 @@ class Sample:
 @dataclass
 class QCVVResults(ABC):
     """A dataclass for storing the data and analyze results of the experiment. Requires
-    subclassing for each new experiment type."""
+    subclassing for each new experiment type.
+    """
 
     target: str
     """The target device that was used."""
@@ -204,7 +186,8 @@ class QCVVResults(ABC):
             warnings.warn(
                 "Experiment data is not yet ready to analyse. This is likely because "
                 "the Superstaq job has not yet been completed. Either wait and try again "
-                "later, or interrogate the `.job` attribute."
+                "later, or interrogate the `.job` attribute.",
+                stacklevel=2,
             )
             return
 
@@ -222,11 +205,12 @@ class QCVVResults(ABC):
 
     @abstractmethod
     def plot_results(self, filename: str | None = None) -> plt.Figure:
-        """Plot the results of the experiment
+        """Plot the results of the experiment.
 
         Args:
             filename: Optional argument providing a filename to save the plots to. Defaults to None,
                 indicating not to save the plot.
+
         Returns:
             A single matplotlib figure containing the relevant plots of the results data.
         """
@@ -245,19 +229,9 @@ class QCVVResults(ABC):
             raise ValueError(
                 "No Superstaq job associated with these results. Cannot collect device counts."
             )
-        records = []
         device_counts = self.job.counts()
-        for counts, sample in zip(device_counts, self.samples):
-
-            total = sum(counts.values())
-            probabilities = {
-                format(idx, f"0{self.num_qubits}b"): 0.0 for idx in range(2**self.num_qubits)
-            }
-            for key, count in counts.items():
-                probabilities[key] = count / total
-            records.append({**sample.data, **probabilities})
-
-        return pd.DataFrame(records)
+        records = {sample.uuid: counts for sample, counts in zip(self.samples, device_counts)}
+        return self.experiment._structure_records(records)
 
     @property
     def _not_analyzed(self) -> RuntimeError:
@@ -539,7 +513,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         return interleaved_circuit
 
     def _map_records_to_samples(
-        self, records: Mapping[uuid.UUID | int, Mapping[str, float] | Mapping[int, float]]
+        self, records: SupportsItems[uuid.UUID | int, Mapping[str, float] | Mapping[int, float]]
     ) -> dict[Sample, Mapping[str, float] | Mapping[int, float]]:
         """Creates a mapping between experiment samples and the provided results records. Records
         with unrecognized sample keys (which should be either an integer index or a UUID) are
@@ -552,19 +526,18 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Returns:
             A mapping between experiment samples and the provided results records
         """
-        records_not_mapped = dict(records)
-
         record_mapping: dict[Sample, Mapping[str, float] | Mapping[int, float]] = {}
+        num_unmatched = 0
         for key, record in records.items():
             try:
                 sample = self[key]
             except (KeyError, IndexError):  # Ignore any keys that cant be attached to samples
+                num_unmatched += 1
                 continue
 
             if sample in record_mapping:
-                raise KeyError(f"Duplicate records found for sample with uuid: {str(sample.uuid)}.")
+                raise KeyError(f"Duplicate records found for sample with uuid: {sample.uuid!s}.")
             record_mapping[sample] = record
-            records_not_mapped.pop(key)
 
         missing_samples = [s for s in self if s not in record_mapping]
         if missing_samples:
@@ -574,13 +547,43 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
                 "the results.",
                 stacklevel=2,
             )
-        if records_not_mapped:
+        if num_unmatched:
             warnings.warn(
-                f"Unable to find matching sample for {len(records_not_mapped)} record(s).",
+                f"Unable to find matching sample for {num_unmatched} record(s).",
                 stacklevel=2,
             )
 
         return record_mapping
+
+    def _structure_records(
+        self, records: SupportsItems[uuid.UUID | int, Mapping[str, float] | Mapping[int, float]]
+    ) -> pd.DataFrame:
+        """Constructs a `pandas.DataFrame` from the provided records.
+
+        Args:
+            records: A dictionary of the counts/probabilities for each sample, keyed by either the
+                sample UUID or the index of the sample in the experiment. The counts/probabilities
+                for each sample should be provided as a dictionary of keyed by either the bitstring
+                or the integer value of that bitstring.
+
+        Returns:
+            A `DataFrame` containing the provided counts and corresponding sample information.
+        """
+        sample_mapping = self._map_records_to_samples(records)
+
+        results_data = []
+        for sample, results in sample_mapping.items():
+            probabilities = self.canonicalize_probabilities(results, self.num_qubits)
+
+            # Add to results data
+            result = {
+                "circuit_realization": sample.circuit_realization,
+                **sample.data,
+                **probabilities,
+            }
+            results_data.append(result)
+
+        return pd.DataFrame(results_data)
 
     @abstractmethod
     def _json_dict_(self) -> dict[str, Any]:
@@ -596,18 +599,9 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             "cycle_depths": self.cycle_depths,
             "num_circuits": self.num_circuits,
             "qubits": self.qubits,
-            "samples": self.samples,
+            "_samples": self.samples,
             **self._service_kwargs,
         }
-
-    @classmethod
-    @abstractmethod
-    def _from_json_dict_(cls, *args: Any, **kwargs: Any) -> Self:
-        """Creates a experiment from an expanded dictionary of the data.
-
-        Returns:
-            The deserialized experiment object.
-        """
 
     @classmethod
     def _json_namespace_(cls) -> str:
@@ -632,7 +626,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Returns:
             The loaded experiment.
         """
-        with open(filename, "r") as file_stream:
+        with open(filename) as file_stream:
             experiment = cirq.read_json(
                 file_stream,
                 resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS, qcvv_resolver],
@@ -642,7 +636,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
     def _prepare_experiment(
         self,
     ) -> Sequence[Sample]:
-        """Prepares the circuits needed for the experiment
+        """Prepares the circuits needed for the experiment.
 
         Args:
             num_circuits: Number of circuits to run.
@@ -658,7 +652,6 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Returns:
             A sequence of samples for the experiment.
         """
-
         if any(depth <= 0 for depth in self.cycle_depths):
             raise ValueError("The `cycle_depths` iterator can only include positive values.")
 
@@ -709,7 +702,6 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Returns:
             The experiment results object.
         """
-
         experiment_job = self._superstaq_service.create_job(
             [sample.circuit for sample in self.samples],
             target=target,
@@ -742,22 +734,13 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         if simulator is None:
             simulator = cirq.Simulator(seed=self._rng)
 
-        records = []
+        records: dict[uuid.UUID, dict[int, int]] = {}
         for sample in tqdm(self.samples, desc="Simulating circuits"):
             result = simulator.run(sample.circuit, repetitions=repetitions)
-            hist = result.histogram(key=cirq.measurement_key_name(sample.circuit))
-            probabilities = self.canonicalize_probabilities(
-                {key: count / sum(hist.values()) for key, count in hist.items()}, self.num_qubits
-            )
-            records.append(
-                {"circuit_realization": sample.circuit_realization, **sample.data, **probabilities}
-            )
+            records[sample.uuid] = result.histogram(key=cirq.measurement_key_name(sample.circuit))
 
-        return self._results_cls(
-            target="local_simulator",
-            experiment=self,
-            data=pd.DataFrame(records),
-        )
+        data = self._structure_records(records)
+        return self._results_cls(target="local_simulator", experiment=self, data=data)
 
     def run_with_callable(
         self,
@@ -775,21 +758,16 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Returns:
             The experiment results object.
         """
-        records = []
+        records: dict[uuid.UUID, Mapping[str, float] | Mapping[int, float]] = {}
         for sample in tqdm(self.samples, desc="Running circuits"):
             raw_probability = circuit_eval_func(sample.circuit, **kwargs)
-            probability = self.canonicalize_probabilities(raw_probability, self.num_qubits)
-            records.append({**sample.data, **probability})
+            records[sample.uuid] = raw_probability
 
-        return self._results_cls(
-            target="callable",
-            experiment=self,
-            data=pd.DataFrame(records),
-        )
+        data = self._structure_records(records)
+        return self._results_cls(target="callable", experiment=self, data=data)
 
     def results_from_records(
-        self,
-        records: Mapping[uuid.UUID | int, Mapping[str, float] | Mapping[int, float]],
+        self, records: SupportsItems[uuid.UUID | int, Mapping[str, float] | Mapping[int, float]]
     ) -> ResultsT:
         """Creates a results object from records of the counts/probabilities for each sample
         circuit. This function is aimed at users who would like to use the QCVV framework to
@@ -799,29 +777,11 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Args:
             records: A dictionary of the counts/probabilities for each sample, keyed by either the
                 sample UUID or the index of the sample in the experiment. The counts/probabilities
-                for each sample should be provided as a
-                dictionary of integers or floats (respectively) keyed by either the bitstring or
-                the integer value of that bitstring. Note that the distinction between counts and
-                probabilities is inferred from the type (int vs float respectively). Please do not
-                use float type for counts.
+                for each sample should be provided as a dictionary of keyed by either the bitstring
+                or the integer value of that bitstring.
 
         Returns:
             The experiment results object.
         """
-        sample_mapping = self._map_records_to_samples(records)
-
-        results_data = []
-        for sample, results in sample_mapping.items():
-            probabilities = self.canonicalize_probabilities(
-                results,
-                self.num_qubits,
-            )
-
-            # Add to results data
-            results_data.append({**sample.data, **probabilities})
-
-        return self._results_cls(
-            target="records",
-            experiment=self,
-            data=pd.DataFrame(results_data),
-        )
+        data = self._structure_records(records)
+        return self._results_cls(target="records", experiment=self, data=data)

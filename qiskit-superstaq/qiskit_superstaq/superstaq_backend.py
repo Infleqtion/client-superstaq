@@ -48,7 +48,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
     def _default_options(cls) -> qiskit.providers.Options:
         return qiskit.providers.Options(shots=1000)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, qss.SuperstaqBackend):
             return False
 

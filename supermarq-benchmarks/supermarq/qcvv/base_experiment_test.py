@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=missing-function-docstring
-# pylint: disable=missing-return-doc
 # mypy: disable-error-code=method-assign
 
 from __future__ import annotations
@@ -21,7 +19,7 @@ import re
 import uuid
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import cirq
@@ -32,9 +30,6 @@ import pandas as pd
 import pytest
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample, qcvv_resolver
-
-if TYPE_CHECKING:
-    from typing_extensions import Self
 
 
 def test_qcvv_resolver() -> None:
@@ -48,7 +43,7 @@ def test_qcvv_resolver() -> None:
 
 @dataclass
 class ExampleResults(QCVVResults):
-    """Example results class for testing"""
+    """Example results class for testing."""
 
     _example_final_result: float | None = None
 
@@ -62,7 +57,7 @@ class ExampleResults(QCVVResults):
         return fig
 
     def print_results(self) -> None:
-        print("This is a test")
+        print("This is a test")  # noqa: T201
 
     @property
     def example_final_result(self) -> float:
@@ -72,7 +67,7 @@ class ExampleResults(QCVVResults):
 
 
 class ExampleExperiment(QCVVExperiment[ExampleResults]):
-    """Example experiment class for testing"""
+    """Example experiment class for testing."""
 
     def __init__(
         self,
@@ -98,7 +93,7 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
         return [
             Sample(
                 circuit=cirq.Circuit(cirq.measure(*self.qubits)),
-                data={"num": k, "depth": d},
+                data={"depth": d},
                 circuit_realization=k,
             )
             for k in range(num_circuits)
@@ -107,24 +102,6 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
 
     def _json_dict_(self) -> dict[str, Any]:
         return super()._json_dict_()
-
-    @classmethod
-    def _from_json_dict_(
-        cls,
-        samples: list[Sample],
-        qubits: list[cirq.Qid],
-        num_circuits: int,
-        cycle_depths: list[int],
-        **kwargs: Any,
-    ) -> Self:
-        experiment = cls(
-            qubits=qubits,
-            num_circuits=num_circuits,
-            cycle_depths=cycle_depths,
-            _samples=samples,
-            **kwargs,
-        )
-        return experiment
 
 
 @pytest.fixture
@@ -243,9 +220,10 @@ def test_results_job_no_data(abc_experiment: ExampleExperiment) -> None:
 def test_results_analyze(abc_experiment: ExampleExperiment) -> None:
     results = ExampleResults(target="target", experiment=abc_experiment, data=pd.DataFrame())
 
-    with patch("matplotlib.pyplot.Figure.savefig") as mock_plot, patch(
-        "builtins.print"
-    ) as mock_print:
+    with (
+        patch("matplotlib.pyplot.Figure.savefig") as mock_plot,
+        patch("builtins.print") as mock_print,
+    ):
         results.analyze(plot_results=True, print_results=True, plot_filename="test_name")
 
     assert results.example_final_result == 3.142
@@ -281,8 +259,22 @@ def test_results_ready_from_job(
         results.data,
         pd.DataFrame(
             [
-                {"circuit": 1, "00": 20 / 35, "01": 5 / 35, "10": 0.0, "11": 10 / 35},
-                {"circuit": 2, "00": 30 / 35, "01": 5 / 35, "10": 0.0, "11": 0.0},
+                {
+                    "circuit_realization": 1,
+                    "circuit": 1,
+                    "00": 20 / 35,
+                    "01": 5 / 35,
+                    "10": 0.0,
+                    "11": 10 / 35,
+                },
+                {
+                    "circuit_realization": 2,
+                    "circuit": 2,
+                    "00": 30 / 35,
+                    "01": 5 / 35,
+                    "10": 0.0,
+                    "11": 0.0,
+                },
             ]
         ),
         check_like=True,
@@ -369,7 +361,7 @@ def test_run_on_device(abc_experiment: ExampleExperiment, sample_circuits: list[
 
     with patch("cirq_superstaq.Service") as mock_service:
         results = abc_experiment.run_on_device(
-            target="example_target", repetitions=100, **{"some": "options"}
+            target="example_target", repetitions=100, some="options"
         )
 
     mock_service.return_value.create_job.assert_called_once_with(
@@ -475,14 +467,14 @@ def test_validate_circuits(
 
 
 def test_run_with_callable(abc_experiment: ExampleExperiment) -> None:
-
     def _example_callable(sample: Sample, some: str) -> dict[str, float]:
         assert sample
         assert some == "kwargs"
         return {"01": 0.2, "10": 0.7, "11": 0.1}
 
     results = abc_experiment.run_with_callable(
-        _example_callable, some="kwargs"  # type: ignore[arg-type]
+        _example_callable,  # type: ignore[arg-type]
+        some="kwargs",
     )
 
     assert results.target == "callable"
@@ -493,7 +485,14 @@ def test_run_with_callable(abc_experiment: ExampleExperiment) -> None:
         results.data,
         pd.DataFrame(
             [
-                {"num": num, "depth": depth, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1}
+                {
+                    "circuit_realization": num,
+                    "depth": depth,
+                    "00": 0.0,
+                    "01": 0.2,
+                    "10": 0.7,
+                    "11": 0.1,
+                }
                 for num in range(abc_experiment.num_circuits)
                 for depth in abc_experiment.cycle_depths
             ]
@@ -503,14 +502,14 @@ def test_run_with_callable(abc_experiment: ExampleExperiment) -> None:
 
 
 def test_run_with_callable_mixd_keys(abc_experiment: ExampleExperiment) -> None:
-
     def _example_callable(sample: Sample, some: str) -> dict[str | int, float]:
         assert sample
         assert some == "kwargs"
         return {1: 0.2, "10": 0.7, 3: 0.1}
 
     results = abc_experiment.run_with_callable(
-        _example_callable, some="kwargs"  # type: ignore[arg-type]
+        _example_callable,  # type: ignore[arg-type]
+        some="kwargs",
     )
 
     assert results.target == "callable"
@@ -521,7 +520,14 @@ def test_run_with_callable_mixd_keys(abc_experiment: ExampleExperiment) -> None:
         results.data,
         pd.DataFrame(
             [
-                {"num": num, "depth": depth, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1}
+                {
+                    "circuit_realization": num,
+                    "depth": depth,
+                    "00": 0.0,
+                    "01": 0.2,
+                    "10": 0.7,
+                    "11": 0.1,
+                }
                 for num in range(abc_experiment.num_circuits)
                 for depth in abc_experiment.cycle_depths
             ]
@@ -531,7 +537,6 @@ def test_run_with_callable_mixd_keys(abc_experiment: ExampleExperiment) -> None:
 
 
 def test_run_with_callable_bad_bitstring(abc_experiment: ExampleExperiment) -> None:
-
     def _example_callable(sample: Sample, some: str) -> dict[str, float]:
         assert sample
         assert some == "kwargs"
@@ -539,7 +544,7 @@ def test_run_with_callable_bad_bitstring(abc_experiment: ExampleExperiment) -> N
 
     with pytest.raises(
         ValueError,
-        match=("The key contains the wrong number of bits. Got 3 entries " "but expected 2 bits."),
+        match=("The key contains the wrong number of bits. Got 3 entries but expected 2 bits."),
     ):
         abc_experiment.run_with_callable(_example_callable, some="kwargs")  # type: ignore[arg-type]
 
@@ -569,8 +574,22 @@ def test_results_collect_device_counts(
         df,
         pd.DataFrame(
             [
-                {"circuit": 1, "00": 20 / 35, "01": 5 / 35, "10": 0.0, "11": 10 / 35},
-                {"circuit": 2, "00": 30 / 35, "01": 5 / 35, "10": 0.0, "11": 0.0},
+                {
+                    "circuit_realization": 1,
+                    "circuit": 1,
+                    "00": 20 / 35,
+                    "01": 5 / 35,
+                    "10": 0.0,
+                    "11": 10 / 35,
+                },
+                {
+                    "circuit_realization": 2,
+                    "circuit": 2,
+                    "00": 30 / 35,
+                    "01": 5 / 35,
+                    "10": 0.0,
+                    "11": 0.0,
+                },
             ]
         ),
         check_like=True,
@@ -594,11 +613,18 @@ def test_results_from_records(abc_experiment: ExampleExperiment) -> None:
     records_4 = {s.uuid: {1: 0.25, 2: 0.75} for s in abc_experiment.samples}
 
     for record in (records_1, records_2, records_3, records_4):
-        results = abc_experiment.results_from_records(record)  # type: ignore[arg-type]
+        results = abc_experiment.results_from_records(record)
         pd.testing.assert_frame_equal(
             results.data,
             pd.DataFrame(
-                {"num": num, "depth": depth, "00": 0.0, "01": 0.25, "10": 0.75, "11": 0.0}
+                {
+                    "circuit_realization": num,
+                    "depth": depth,
+                    "00": 0.0,
+                    "01": 0.25,
+                    "10": 0.75,
+                    "11": 0.0,
+                }
                 for num in range(abc_experiment.num_circuits)
                 for depth in abc_experiment.cycle_depths
             ),
@@ -613,7 +639,7 @@ def test_results_from_records_bad_input(
     with pytest.warns(
         UserWarning,
         match=re.escape(
-            f"The following samples are missing records: {str(sample_circuits[1].uuid)}. These "
+            f"The following samples are missing records: {sample_circuits[1].uuid!s}. These "
             "will not be included in the results."
         ),
     ):
@@ -654,14 +680,14 @@ def test_canonicalize_bitstring() -> None:
     with pytest.raises(
         ValueError,
         match=(
-            "The key is too large to be encoded with 4 qubits. Got 72 " "but expected less than 16."
+            "The key is too large to be encoded with 4 qubits. Got 72 but expected less than 16."
         ),
     ):
         QCVVExperiment.canonicalize_bitstring(72, 4)
 
     with pytest.raises(
         ValueError,
-        match=("The key contains the wrong number of bits. Got 5 entries " "but expected 4 bits."),
+        match=("The key contains the wrong number of bits. Got 5 entries but expected 4 bits."),
     ):
         QCVVExperiment.canonicalize_bitstring("01010", 4)
 
@@ -696,7 +722,6 @@ def test_canonicalize_probabilities() -> None:
 
 
 def test_canonicalize_probabilities_bad_input() -> None:
-
     # Negative counts
     with pytest.raises(ValueError, match="Probabilities/counts must be positive."):
         QCVVExperiment.canonicalize_probabilities({0: -2}, 2)
@@ -799,7 +824,7 @@ def test_map_records_to_samples_duplicate_keys(
     with pytest.raises(
         KeyError,
         match=re.escape(
-            f"Duplicate records found for sample with uuid: {str(sample_circuits[1].uuid)}."
+            f"Duplicate records found for sample with uuid: {sample_circuits[1].uuid!s}."
         ),
     ):
         abc_experiment._map_records_to_samples(
@@ -818,6 +843,7 @@ def test_dump_and_load(
     sample_circuits: list[Sample],
 ) -> None:
     temp_resolver = {
+        "uuid": uuid.UUID,
         "supermarq.qcvv.Sample": Sample,
         "supermarq.qcvv.ExampleExperiment": ExampleExperiment,
     }
