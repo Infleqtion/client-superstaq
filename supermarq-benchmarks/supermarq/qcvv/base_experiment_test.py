@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=missing-function-docstring
-# pylint: disable=missing-return-doc
 # mypy: disable-error-code=method-assign
 
 from __future__ import annotations
@@ -21,7 +19,7 @@ import re
 import uuid
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import cirq
@@ -32,9 +30,6 @@ import pandas as pd
 import pytest
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample, qcvv_resolver
-
-if TYPE_CHECKING:
-    from typing_extensions import Self
 
 
 def test_qcvv_resolver() -> None:
@@ -98,7 +93,7 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
         return [
             Sample(
                 circuit=cirq.Circuit(cirq.measure(*self.qubits)),
-                data={"num": k, "depth": d},
+                data={"depth": d},
                 circuit_realization=k,
             )
             for k in range(num_circuits)
@@ -107,24 +102,6 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
 
     def _json_dict_(self) -> dict[str, Any]:
         return super()._json_dict_()
-
-    @classmethod
-    def _from_json_dict_(
-        cls,
-        samples: list[Sample],
-        qubits: list[cirq.Qid],
-        num_circuits: int,
-        cycle_depths: list[int],
-        **kwargs: Any,
-    ) -> Self:
-        experiment = cls(
-            qubits=qubits,
-            num_circuits=num_circuits,
-            cycle_depths=cycle_depths,
-            _samples=samples,
-            **kwargs,
-        )
-        return experiment
 
 
 @pytest.fixture
@@ -282,8 +259,22 @@ def test_results_ready_from_job(
         results.data,
         pd.DataFrame(
             [
-                {"circuit": 1, "00": 20 / 35, "01": 5 / 35, "10": 0.0, "11": 10 / 35},
-                {"circuit": 2, "00": 30 / 35, "01": 5 / 35, "10": 0.0, "11": 0.0},
+                {
+                    "circuit_realization": 1,
+                    "circuit": 1,
+                    "00": 20 / 35,
+                    "01": 5 / 35,
+                    "10": 0.0,
+                    "11": 10 / 35,
+                },
+                {
+                    "circuit_realization": 2,
+                    "circuit": 2,
+                    "00": 30 / 35,
+                    "01": 5 / 35,
+                    "10": 0.0,
+                    "11": 0.0,
+                },
             ]
         ),
         check_like=True,
@@ -494,7 +485,14 @@ def test_run_with_callable(abc_experiment: ExampleExperiment) -> None:
         results.data,
         pd.DataFrame(
             [
-                {"num": num, "depth": depth, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1}
+                {
+                    "circuit_realization": num,
+                    "depth": depth,
+                    "00": 0.0,
+                    "01": 0.2,
+                    "10": 0.7,
+                    "11": 0.1,
+                }
                 for num in range(abc_experiment.num_circuits)
                 for depth in abc_experiment.cycle_depths
             ]
@@ -522,7 +520,14 @@ def test_run_with_callable_mixd_keys(abc_experiment: ExampleExperiment) -> None:
         results.data,
         pd.DataFrame(
             [
-                {"num": num, "depth": depth, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1}
+                {
+                    "circuit_realization": num,
+                    "depth": depth,
+                    "00": 0.0,
+                    "01": 0.2,
+                    "10": 0.7,
+                    "11": 0.1,
+                }
                 for num in range(abc_experiment.num_circuits)
                 for depth in abc_experiment.cycle_depths
             ]
@@ -569,8 +574,22 @@ def test_results_collect_device_counts(
         df,
         pd.DataFrame(
             [
-                {"circuit": 1, "00": 20 / 35, "01": 5 / 35, "10": 0.0, "11": 10 / 35},
-                {"circuit": 2, "00": 30 / 35, "01": 5 / 35, "10": 0.0, "11": 0.0},
+                {
+                    "circuit_realization": 1,
+                    "circuit": 1,
+                    "00": 20 / 35,
+                    "01": 5 / 35,
+                    "10": 0.0,
+                    "11": 10 / 35,
+                },
+                {
+                    "circuit_realization": 2,
+                    "circuit": 2,
+                    "00": 30 / 35,
+                    "01": 5 / 35,
+                    "10": 0.0,
+                    "11": 0.0,
+                },
             ]
         ),
         check_like=True,
@@ -594,11 +613,18 @@ def test_results_from_records(abc_experiment: ExampleExperiment) -> None:
     records_4 = {s.uuid: {1: 0.25, 2: 0.75} for s in abc_experiment.samples}
 
     for record in (records_1, records_2, records_3, records_4):
-        results = abc_experiment.results_from_records(record)  # type: ignore[arg-type]
+        results = abc_experiment.results_from_records(record)
         pd.testing.assert_frame_equal(
             results.data,
             pd.DataFrame(
-                {"num": num, "depth": depth, "00": 0.0, "01": 0.25, "10": 0.75, "11": 0.0}
+                {
+                    "circuit_realization": num,
+                    "depth": depth,
+                    "00": 0.0,
+                    "01": 0.25,
+                    "10": 0.75,
+                    "11": 0.0,
+                }
                 for num in range(abc_experiment.num_circuits)
                 for depth in abc_experiment.cycle_depths
             ),
@@ -817,6 +843,7 @@ def test_dump_and_load(
     sample_circuits: list[Sample],
 ) -> None:
     temp_resolver = {
+        "uuid": uuid.UUID,
         "supermarq.qcvv.Sample": Sample,
         "supermarq.qcvv.ExampleExperiment": ExampleExperiment,
     }

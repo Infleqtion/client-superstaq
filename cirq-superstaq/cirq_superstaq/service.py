@@ -50,7 +50,7 @@ def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
     matrix = np.asarray(matrix, dtype=complex)
 
     for dimension in (2, 3):
-        num_qids = int(round(np.log(matrix.size) / np.log(dimension**2)))
+        num_qids = round(np.log(matrix.size) / np.log(dimension**2))
         if matrix.shape == (dimension**num_qids, dimension**num_qids):
             qid_shape = (dimension,) * num_qids
             return cirq.MatrixGate(matrix, qid_shape=qid_shape)
@@ -425,9 +425,8 @@ class Service(gss.service.Service):
         random_seed: int | None = None,
         target: str = "aqt_keysight_qpu",
         atol: float | None = None,
-        gate_defs: None | (
-            Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]
-        ) = None,
+        gate_defs: None
+        | (Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]) = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for AQT using ECA.
@@ -489,9 +488,8 @@ class Service(gss.service.Service):
         num_eca_circuits: int | None = None,
         random_seed: int | None = None,
         atol: float | None = None,
-        gate_defs: None | (
-            Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]
-        ) = None,
+        gate_defs: None
+        | (Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]) = None,
         gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
         pulses: object = None,
         variables: object = None,

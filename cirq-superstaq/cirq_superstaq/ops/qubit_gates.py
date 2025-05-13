@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Sequence, Set
+from collections.abc import Iterator, Sequence
+from collections.abc import Set as AbstractSet
 from typing import TYPE_CHECKING, Any
 
 import cirq
@@ -115,7 +116,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     def _is_parameterized_(self) -> bool:
         return cirq.is_parameterized(self.theta)
 
-    def _parameter_names_(self) -> Set[str]:
+    def _parameter_names_(self) -> AbstractSet[str]:
         return cirq.parameter_names(self.theta)
 
     def _resolve_parameters_(self, resolver: cirq.ParamResolver, recursive: bool) -> ZZSwapGate:
@@ -329,7 +330,7 @@ class AceCR(cirq.Gate):
     def _is_parameterized_(self) -> bool:
         return cirq.is_parameterized(self.sandwich_rx_rads) or cirq.is_parameterized(self.rads)
 
-    def _parameter_names_(self) -> Set[str]:
+    def _parameter_names_(self) -> AbstractSet[str]:
         return cirq.parameter_names(self.sandwich_rx_rads) | cirq.parameter_names(self.rads)
 
     def _resolve_parameters_(self, resolver: cirq.ParamResolver, recursive: bool) -> AceCR:
@@ -978,7 +979,7 @@ class StrippedCZGate(cirq.Gate):
     def _is_parameterized_(self) -> bool:
         return cirq.is_parameterized(self.rz_rads)
 
-    def _parameter_names_(self) -> Set[str]:
+    def _parameter_names_(self) -> AbstractSet[str]:
         return cirq.parameter_names(self.rz_rads)
 
     def _has_unitary_(self) -> bool:
