@@ -232,7 +232,7 @@ def insert_times_and_durations(
 
     Returns:
         A new circuit, in which the `.duration` attribute of every delay gate has been filled-in,
-        as well as with the `.duration` `.op_start_times` attributes of the `circuit` itself.
+        as well as the `.duration` and `.op_start_times` attributes of the `circuit` itself.
     """
     new_circuit = circuit.copy_empty_like()
     circuit_duration = 0
