@@ -127,13 +127,13 @@ class CBResults(QCVVResults):
 
     def print_results(self) -> None:
         """Prints the result of the experiment."""
-        print(
+        print(  # noqa: T201
             "Cycle Benchmarking Results:\n"
             f"Estimated process fidelity: {self._process_fidelity_estimate:.5f}"
             f" +/- {self._process_fidelity_estimate_std:.5f}"
         )
         if self.experiment._undressed_process:
-            print(
+            print(  # noqa: T201
                 "Estimated undressed process fidelity: "
                 f"{self._undressed_process_fidelity_estimate:.5f}"
                 f" +/- {self._undressed_process_fidelity_estimate_std:.5f}"
@@ -141,7 +141,8 @@ class CBResults(QCVVResults):
 
     def _analyze(self) -> None:
         """Analyzes the results of the experiment and estimates the pauli channels
-        and the process fidelities."""
+        and the process fidelities.
+        """
         records = self._process_probabilities().rename(columns={"circuit": "process"})
         records.replace(["identity", "process"], ["undressed", "dressed"], inplace=True)
         depths = records.cycle_depth.unique()
@@ -386,6 +387,7 @@ class CB(QCVVExperiment[CBResults]):
             process_order_factors: The factors by which to multiply the process order.
             undressed_process: Whether to estimate the undressed process fidelity.
             random_seed: An optional seed to use for randomization.
+            kwargs: keyword arguments.
         """
         if process_order_factors is None:
             process_order_factors = [1, 2]
@@ -646,6 +648,7 @@ class CB(QCVVExperiment[CBResults]):
                 Pauli eigenbasis channel.
             depth: Integer representing the number of repeated noisy implementations
                 of the process circuit interleaved with random Pauli cycle layers.
+            process:  Boolean represnting wheter the process should be included or not.
 
         Returns:
             Returns a `tuple` containing the CB `cirq.Circuit` and a

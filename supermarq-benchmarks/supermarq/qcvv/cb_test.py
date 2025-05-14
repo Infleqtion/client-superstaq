@@ -18,9 +18,8 @@ from __future__ import annotations
 import itertools
 import os
 import pathlib
-import re
-from unittest.mock import patch
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 import cirq
 import cirq.testing
@@ -202,10 +201,12 @@ def test_cb_bulk_circuit(cb_experiment: CB) -> None:
 
 def test_inversion_circuit(cb_experiment: CB) -> None:
     qubits = cb_experiment.qubits
-    channel = cirq.MutablePauliString({qubits[0]: cirq.X, qubits[1]: cirq.Y})  # type: ignore
+    channel: cirq.MutablePauliString[cirq.Qid]
+    channel = cirq.MutablePauliString({qubits[0]: cirq.X, qubits[1]: cirq.Y})
+    aggregate_pauli: cirq.MutablePauliString[cirq.Qid]
     aggregate_pauli = cirq.MutablePauliString(
         {qubits[0]: cirq.Z, qubits[1]: cirq.Z}, coefficient=1j
-    )  # type: ignore
+    )
     circuit, pauli_string = cb_experiment._inversion_circuit(channel, aggregate_pauli)
 
     cirq.testing.assert_same_circuits(
@@ -259,22 +260,18 @@ def test_generate_full_circuit(cb_experiment: CB) -> None:
 def test_from_json_dict() -> None:
     qubits = cirq.LineQubit.range(2)
     process = cirq.Circuit([cirq.H(qubits[0]), cirq.CX(qubits[0], qubits[1]), cirq.H(qubits[0])])
-    json = {
-        "process_circuit": cirq.to_json(process),
-        "pauli_channels": ["XX", "YY"],
-        "num_circuits": 2,
-        "process_order_factors": [2, 4],
-        "undressed_process": False,
-    }
-    # expected_circuit = cirq.Circuit()
-    # for op in process.all_operations():
-    #     expected_circuit += op.with_tags("no_compile")
-    experiment = CB._from_json_dict_(**json)
 
-    # assert cirq.testing.assert_same_circuits(experiment._process_circuit, expected_circuit)
+    experiment = CB._from_json_dict_(
+        process_circuit=cirq.to_json(process),
+        pauli_channels=["XX", "YY"],
+        num_circuits=2,
+        process_order_factors=[2, 4],
+        undressed_process=False,
+    )
+
     assert {m[0] for m in experiment.pauli_channels} == {"XX", "YY"}
     assert experiment.cycle_depths == [4, 8]
-    assert experiment._undressed_process == False
+    assert not experiment._undressed_process
     assert len(experiment.samples) == 8
 
 
@@ -292,7 +289,7 @@ def test_json_dict() -> None:
     assert set(json["pauli_channels"]) == {"XX", "YY"}
     assert json["num_circuits"] == 1
     assert json["process_order_factors"] == [2, 4]
-    assert json["undressed_process"] == False
+    assert not json["undressed_process"]
 
 
 def test_samples_cb_experiment(cb_experiment: CB) -> None:
@@ -356,9 +353,9 @@ def dressed_cb_results() -> CBResults:
     dressed_cb_experiment = CB(process, ["XY", "YZ"], 2, random_seed=0)
     dressed_data = pd.DataFrame(
         {
-            "circuit_realization": [0, 1]*4,
-            "pauli_channel": ["YZ"]*4 + ["XY"]*4,
-            "cycle_depth": [2, 2, 4, 4]*2,
+            "circuit_realization": [0, 1] * 4,
+            "pauli_channel": ["YZ"] * 4 + ["XY"] * 4,
+            "cycle_depth": [2, 2, 4, 4] * 2,
             "c_of_p": [
                 -cirq.Y(cirq.LineQubit(0)) * cirq.Z(cirq.LineQubit(1)),
                 -cirq.Z(cirq.LineQubit(1)) * cirq.Y(cirq.LineQubit(0)),
@@ -392,9 +389,9 @@ def undressed_cb_results() -> CBResults:
     undressed_cb_experiment = CB(process, ["XY"], 2, undressed_process=True, random_seed=0)
     undressed_data = pd.DataFrame(
         {
-            "circuit_realization": [0, 0, 1, 1]*2,
-            "pauli_channel": ["XY"]*8,
-            "cycle_depth": [2]*4 + [4]*4,
+            "circuit_realization": [0, 0, 1, 1] * 2,
+            "pauli_channel": ["XY"] * 8,
+            "cycle_depth": [2] * 4 + [4] * 4,
             "c_of_p": [
                 cirq.X(cirq.LineQubit(0)) * cirq.Y(cirq.LineQubit(1)),
                 -cirq.X(cirq.LineQubit(0)) * cirq.Y(cirq.LineQubit(1)),
@@ -471,13 +468,9 @@ def test_print_results(results_name: str, request: FixtureRequest) -> None:
 
 @pytest.mark.parametrize("results_name", ["dressed_cb_results", "undressed_cb_results"])
 def test_save_plot_results(
-    results_name: str,
-    request: FixtureRequest,
-    tmp_path: pathlib.Path
+    results_name: str, request: FixtureRequest, tmp_path: pathlib.Path
 ) -> None:
     filename = tmp_path / "test_plot.png"
     results = request.getfixturevalue(results_name)
-    results.analyze(
-        plot_results=True, print_results=False, plot_filename=filename.as_posix()
-    )
+    results.analyze(plot_results=True, print_results=False, plot_filename=filename.as_posix())
     assert pathlib.Path(filename).exists()
