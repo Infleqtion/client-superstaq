@@ -331,7 +331,7 @@ class CBResults(QCVVResults):
         return pd.DataFrame(records)
 
     def _sequence_expectation_value(
-        self, c_of_p: cirq.MutablePauliString[cirq.Qid], probabilities: dict[str, float]
+        self, c_of_p: cirq.PauliString[cirq.Qid], probabilities: dict[str, float]
     ) -> float:
         """Computes expectation values for each sequence.
 
@@ -431,7 +431,7 @@ class CB(QCVVExperiment[CBResults]):
         elif isinstance(pauli_channels, int):
             self.pauli_channels = self._generate_n_qubit_pauli_moments(pauli_channels)
         else:
-            raise RuntimeError("`pauli_channels` must be a list of Pauli strings or an integer.")
+            raise TypeError("`pauli_channels` must be a list of Pauli strings or an integer.")
 
         self._undressed_process = undressed_process
 
@@ -511,7 +511,7 @@ class CB(QCVVExperiment[CBResults]):
                     data={
                         "pauli_channel": channel[0],
                         "cycle_depth": depth,
-                        "c_of_p": c_of_p,
+                        "c_of_p": c_of_p.frozen(),
                         "circuit": "process",
                     },
                 )
@@ -527,7 +527,7 @@ class CB(QCVVExperiment[CBResults]):
                         data={
                             "pauli_channel": channel[0],
                             "cycle_depth": depth,
-                            "c_of_p": c_of_p,
+                            "c_of_p": c_of_p.frozen(),
                             "circuit": "identity",
                         },
                     )
@@ -604,7 +604,7 @@ class CB(QCVVExperiment[CBResults]):
     def _from_json_dict_(
         cls,
         process_circuit: str,
-        pauli_channels: list[str],
+        pauli_channels: list[str] | int,
         num_circuits: int,
         process_order_factors: list[int],
         undressed_process: bool,
@@ -629,6 +629,7 @@ class CB(QCVVExperiment[CBResults]):
         return {
             "process_circuit": cirq.to_json(self._process_circuit),
             "pauli_channels": [channel[0] for channel in self.pauli_channels],
+            "num_circuits": self.num_circuits,
             "process_order_factors": factors,
             "undressed_process": self._undressed_process,
             "random_seed": self._rng,
