@@ -17,17 +17,21 @@ from __future__ import annotations
 
 import itertools
 import os
+import pathlib
 import re
 from unittest.mock import patch
+from typing import TYPE_CHECKING
 
 import cirq
 import cirq.testing
 import numpy as np
 import pandas as pd
-import pathlib
 import pytest
 
 from supermarq.qcvv import CB, CBResults
+
+if TYPE_CHECKING:
+    from pytest import FixtureRequest
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -66,6 +70,11 @@ def test_bad_cb_init() -> None:
         qubits = cirq.LineQubit.range(2)
         process = cirq.Circuit([cirq.X(qubits[0]), cirq.Z(qubits[1])])
         CB(process, pauli_channels=["Y"], process_order_factors=[1])
+
+    with pytest.raises(TypeError, match="must be a list of Pauli strings or an integer"):
+        qubits = cirq.LineQubit.range(2)
+        process = cirq.Circuit([cirq.X(qubits[0]), cirq.Z(qubits[1])])
+        CB(process, pauli_channels="Y")
 
 
 def test_channels_cb_init() -> None:
@@ -119,6 +128,17 @@ def test_num_samples_cb_init() -> None:
 
     experiment = CB(process, 2, num_circuits=2, undressed_process=True)
     assert len(experiment.samples) == 16
+
+
+def test_find_process_order() -> None:
+    qubits = cirq.LineQubit.range(2)
+    process = cirq.Circuit([cirq.H(qubits[0]), cirq.CX(qubits[0], qubits[1])])
+    _, compiled_circuit = CB._is_Clifford(process)
+    experiment = CB(process, pauli_channels=1)
+    assert experiment._find_process_order(compiled_circuit) == 8
+
+    with pytest.raises(RuntimeError, match="Could not find a circuit order less than 4"):
+        experiment._find_process_order(compiled_circuit, max_depth=4)
 
 
 @pytest.fixture
@@ -236,6 +256,45 @@ def test_generate_full_circuit(cb_experiment: CB) -> None:
     assert pauli_string == cirq.MutablePauliString({qubits[0]: cirq.X, qubits[1]: cirq.Y})
 
 
+def test_from_json_dict() -> None:
+    qubits = cirq.LineQubit.range(2)
+    process = cirq.Circuit([cirq.H(qubits[0]), cirq.CX(qubits[0], qubits[1]), cirq.H(qubits[0])])
+    json = {
+        "process_circuit": cirq.to_json(process),
+        "pauli_channels": ["XX", "YY"],
+        "num_circuits": 2,
+        "process_order_factors": [2, 4],
+        "undressed_process": False,
+    }
+    # expected_circuit = cirq.Circuit()
+    # for op in process.all_operations():
+    #     expected_circuit += op.with_tags("no_compile")
+    experiment = CB._from_json_dict_(**json)
+
+    # assert cirq.testing.assert_same_circuits(experiment._process_circuit, expected_circuit)
+    assert {m[0] for m in experiment.pauli_channels} == {"XX", "YY"}
+    assert experiment.cycle_depths == [4, 8]
+    assert experiment._undressed_process == False
+    assert len(experiment.samples) == 8
+
+
+def test_json_dict() -> None:
+    qubits = cirq.LineQubit.range(2)
+    process = cirq.Circuit([cirq.H(qubits[0]), cirq.CX(qubits[0], qubits[1]), cirq.H(qubits[0])])
+    expected_circuit = cirq.Circuit()
+    for op in process.all_operations():
+        expected_circuit += op.with_tags("no_compile")
+    experiment = CB(process, ["XX", "YY"], 1, [2, 4], False)
+
+    json = experiment._json_dict_()
+
+    assert json["process_circuit"] == cirq.to_json(expected_circuit)
+    assert set(json["pauli_channels"]) == {"XX", "YY"}
+    assert json["num_circuits"] == 1
+    assert json["process_order_factors"] == [2, 4]
+    assert json["undressed_process"] == False
+
+
 def test_samples_cb_experiment(cb_experiment: CB) -> None:
     samples = cb_experiment.samples
     qubits = cb_experiment.qubits
@@ -285,7 +344,7 @@ def test_samples_cb_experiment(cb_experiment: CB) -> None:
 
 
 @pytest.fixture
-def cb_results() -> CBResults:
+def dressed_cb_results() -> CBResults:
     qubits = cirq.LineQubit.range(2)
     process = cirq.Circuit(
         [
@@ -294,21 +353,21 @@ def cb_results() -> CBResults:
             cirq.H(qubits[0]),
         ]
     )
-    cb_experiment = CB(process, ["XY", "YZ"], 2, random_seed=0)
-    data = pd.DataFrame(
+    dressed_cb_experiment = CB(process, ["XY", "YZ"], 2, random_seed=0)
+    dressed_data = pd.DataFrame(
         {
-            "circuit_realization": [0, 1, 0, 1, 0, 1, 0, 1],
-            "pauli_channel": ["YZ", "YZ", "YZ", "YZ", "XY", "XY", "XY", "XY"],
-            "cycle_depth": [2, 2, 4, 4, 2, 2, 4, 4],
+            "circuit_realization": [0, 1]*4,
+            "pauli_channel": ["YZ"]*4 + ["XY"]*4,
+            "cycle_depth": [2, 2, 4, 4]*2,
             "c_of_p": [
-                (-cirq.Y(cirq.LineQubit(0)) * cirq.Z(cirq.LineQubit(1))).mutable_copy(),
-                (-cirq.Z(cirq.LineQubit(1)) * cirq.Y(cirq.LineQubit(0))).mutable_copy(),
-                (-cirq.Y(cirq.LineQubit(0)) * cirq.Z(cirq.LineQubit(1))).mutable_copy(),
-                (-cirq.Z(cirq.LineQubit(1)) * cirq.Y(cirq.LineQubit(0))).mutable_copy(),
-                ((1 + 0j) * cirq.Y(cirq.LineQubit(1)) * cirq.X(cirq.LineQubit(0))).mutable_copy(),
-                (-cirq.X(cirq.LineQubit(0)) * cirq.Y(cirq.LineQubit(1))).mutable_copy(),
-                ((1 + 0j) * cirq.X(cirq.LineQubit(0)) * cirq.Y(cirq.LineQubit(1))).mutable_copy(),
-                (-cirq.X(cirq.LineQubit(0)) * cirq.Y(cirq.LineQubit(1))).mutable_copy(),
+                -cirq.Y(cirq.LineQubit(0)) * cirq.Z(cirq.LineQubit(1)),
+                -cirq.Z(cirq.LineQubit(1)) * cirq.Y(cirq.LineQubit(0)),
+                -cirq.Y(cirq.LineQubit(0)) * cirq.Z(cirq.LineQubit(1)),
+                -cirq.Z(cirq.LineQubit(1)) * cirq.Y(cirq.LineQubit(0)),
+                (1 + 0j) * cirq.Y(cirq.LineQubit(1)) * cirq.X(cirq.LineQubit(0)),
+                -cirq.X(cirq.LineQubit(0)) * cirq.Y(cirq.LineQubit(1)),
+                (1 + 0j) * cirq.X(cirq.LineQubit(0)) * cirq.Y(cirq.LineQubit(1)),
+                -cirq.X(cirq.LineQubit(0)) * cirq.Y(cirq.LineQubit(1)),
             ],
             "circuit": ["process"] * 8,
             "00": [0.05, 0.075, 0.1, 0.1, 0.9, 0.05, 0.75, 0.1],
@@ -317,43 +376,108 @@ def cb_results() -> CBResults:
             "11": [0.075, 0.05, 0.1, 0.1, 0.025, 0.025, 0.075, 0.075],
         }
     )
-    return CBResults("sim", cb_experiment, data=data)
+    return CBResults("sim", dressed_cb_experiment, data=dressed_data)
 
 
-def test_results_not_analysed(cb_results: CBResults) -> None:
+@pytest.fixture
+def undressed_cb_results() -> CBResults:
+    qubits = cirq.LineQubit.range(2)
+    process = cirq.Circuit(
+        [
+            cirq.H(qubits[0]),
+            cirq.CX(qubits[0], qubits[1]),
+            cirq.H(qubits[0]),
+        ]
+    )
+    undressed_cb_experiment = CB(process, ["XY"], 2, undressed_process=True, random_seed=0)
+    undressed_data = pd.DataFrame(
+        {
+            "circuit_realization": [0, 0, 1, 1]*2,
+            "pauli_channel": ["XY"]*8,
+            "cycle_depth": [2]*4 + [4]*4,
+            "c_of_p": [
+                cirq.X(cirq.LineQubit(0)) * cirq.Y(cirq.LineQubit(1)),
+                -cirq.X(cirq.LineQubit(0)) * cirq.Y(cirq.LineQubit(1)),
+                cirq.X(cirq.LineQubit(0)) * cirq.Y(cirq.LineQubit(1)),
+                cirq.X(cirq.LineQubit(0)) * cirq.Y(cirq.LineQubit(1)),
+                -cirq.X(cirq.LineQubit(0)) * cirq.Y(cirq.LineQubit(1)),
+                cirq.X(cirq.LineQubit(0)) * cirq.Y(cirq.LineQubit(1)),
+                cirq.X(cirq.LineQubit(0)) * cirq.Y(cirq.LineQubit(1)),
+                cirq.X(cirq.LineQubit(0)) * cirq.Y(cirq.LineQubit(1)),
+            ],
+            "circuit": ["process", "identity"] * 4,
+            "00": [0.9, 0.05, 0.025, 0.9, 0.15, 0.8, 0.8, 0.8],
+            "01": [0.05, 0.025, 0.025, 0.05, 0.025, 0.025, 0.025, 0.15],
+            "10": [0.025, 0.9, 0.05, 0.025, 0.8, 0.025, 0.15, 0.025],
+            "11": [0.024, 0.025, 0.9, 0.025, 0.025, 0.15, 0.025, 0.025],
+        }
+    )
+    return CBResults("sim", undressed_cb_experiment, data=undressed_data)
+
+
+@pytest.mark.parametrize("results_name", ["dressed_cb_results", "undressed_cb_results"])
+def test_results_not_analysed(results_name: str, request: FixtureRequest) -> None:
+    results = request.getfixturevalue(results_name)
     for attr in ["channel_fidelities", "process_fidelity", "process_fidelity_std"]:
+        with pytest.raises(RuntimeError, match="Value has not yet been estimated"):
+            getattr(results, attr)
+
+
+def test_results_not_analysed_undressed(undressed_cb_results: CBResults) -> None:
+    for attr in ["undressed_process_fidelity", "undressed_process_fidelity_std"]:
+        with pytest.raises(RuntimeError, match="Value has not yet been estimated"):
+            getattr(undressed_cb_results, attr)
+
+
+def test_results_undressed_with_dressed(dressed_cb_results: CBResults) -> None:
+    for attr in ["undressed_process_fidelity", "undressed_process_fidelity_std"]:
         with pytest.raises(
             RuntimeError,
-            match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
+            match="Undressed process fidelity is not available for this experiment.",
         ):
-            getattr(cb_results, attr)
+            getattr(dressed_cb_results, attr)
 
 
-def test_results_analyse(cb_results: CBResults) -> None:
-    cb_results.analyze(plot_results=False, print_results=False)
+def test_results_analyse(dressed_cb_results: CBResults) -> None:
+    dressed_cb_results.analyze(plot_results=False, print_results=False)
 
     np.testing.assert_allclose(
-        cb_results._channel_expectations["expectation_mean"].values, [0.85, 0.65, 0.75, 0.60]
+        dressed_cb_results._channel_expectations["expectation_mean"].values,
+        [0.85, 0.65, 0.75, 0.60],
     )
     np.testing.assert_allclose(
-        cb_results._channel_expectations["expectation_delta"].values, [0, 0, 0, 0], atol=1e-2
+        dressed_cb_results._channel_expectations["expectation_delta"].values,
+        [0, 0, 0, 0],
+        atol=1e-2,
     )
     np.testing.assert_allclose(
-        cb_results.channel_fidelities["fidelity"].values,
+        dressed_cb_results.channel_fidelities["fidelity"].values,
         [np.sqrt(0.65 / 0.85), np.sqrt(0.6 / 0.75)],
         atol=1e-6,
     )
 
 
-def test_plot_results(cb_results: CBResults) -> None:
-    cb_results.analyze(plot_results=True, print_results=False)
+@pytest.mark.parametrize("results_name", ["dressed_cb_results", "undressed_cb_results"])
+def test_plot_results(results_name: str, request: FixtureRequest) -> None:
+    results = request.getfixturevalue(results_name)
+    results.analyze(plot_results=True, print_results=False)
 
 
-def test_print_results(cb_results: CBResults) -> None:
-    cb_results.analyze(plot_results=False, print_results=True)
+@pytest.mark.parametrize("results_name", ["dressed_cb_results", "undressed_cb_results"])
+def test_print_results(results_name: str, request: FixtureRequest) -> None:
+    results = request.getfixturevalue(results_name)
+    results.analyze(plot_results=False, print_results=True)
 
 
-def test_save_plot_results(cb_results: CBResults, tmp_path: pathlib.Path) -> None:
+@pytest.mark.parametrize("results_name", ["dressed_cb_results", "undressed_cb_results"])
+def test_save_plot_results(
+    results_name: str,
+    request: FixtureRequest,
+    tmp_path: pathlib.Path
+) -> None:
     filename = tmp_path / "test_plot.png"
-    cb_results.analyze(plot_results=True, print_results=False, plot_filename=filename.as_posix())
+    results = request.getfixturevalue(results_name)
+    results.analyze(
+        plot_results=True, print_results=False, plot_filename=filename.as_posix()
+    )
     assert pathlib.Path(filename).exists()
