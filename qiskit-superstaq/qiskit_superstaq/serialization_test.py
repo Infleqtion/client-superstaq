@@ -356,13 +356,13 @@ def _check_serialization(*gates: qiskit.circuit.Instruction) -> None:
         parallel_gates = qss.ParallelGates(*gates)
         circuit.append(qss.ParallelGates(*gates), range(parallel_gates.num_qubits))
 
-    # Make sure resolution recurses into control-flow operations
-    circuit.for_loop([0, 1], body=circuit.copy(), qubits=circuit.qubits, clbits=circuit.clbits)
-
     # Make sure resolution recurses into sub-operations
     subcircuit = circuit.copy()
-    subcircuit.compose(subcircuit, subcircuit.qubits, subcircuit.clbits)
-    circuit.compose(subcircuit, circuit.qubits, circuit.clbits)
+    subcircuit.append(subcircuit.to_instruction(), subcircuit.qubits, subcircuit.clbits)
+    circuit.append(subcircuit, circuit.qubits, circuit.clbits)
+
+    # Check control-flow operations in circuit
+    circuit.for_loop([0, 1], body=circuit.copy(), qubits=circuit.qubits, clbits=circuit.clbits)
 
     new_circuit = qss.deserialize_circuits(qss.serialize_circuits(circuit))[0]
     assert circuit == new_circuit
