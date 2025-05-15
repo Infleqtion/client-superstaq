@@ -95,13 +95,13 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             for gate_name, qubit_indicies, duration, unit in duration_info:
                 gate_durations.append((gate_name, tuple(qubit_indicies), duration, unit))
 
-        basis_gateset = ["measure"]
+        basis_gateset = ["reset", "measure"]
         if native_gate_set := target_info.get("native_gate_set"):
             basis_gateset += list(native_gate_set)
 
         backend_target = qiskit.transpiler.Target.from_configuration(
             num_qubits=target_info.get("num_qubits"),
-            basis_gates=sorted(basis_gateset),
+            basis_gates=basis_gateset,
             coupling_map=qiskit.transpiler.CouplingMap(
                 couplinglist=target_info.get("coupling_map")
             ),
