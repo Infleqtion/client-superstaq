@@ -89,14 +89,19 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             "min_length": target_info.get("min_length"),
             "pulse_alignment": target_info.get("pulse_alignment"),
         }
-        duration_info = target_info.get("gate_durations")
+
         gate_durations = []
-        for gate_name, qubit_indicies, duration, unit in duration_info:
-            gate_durations.append((gate_name, tuple(qubit_indicies), duration, unit))
+        if duration_info := target_info.get("gate_durations"):
+            for gate_name, qubit_indicies, duration, unit in duration_info:
+                gate_durations.append((gate_name, tuple(qubit_indicies), duration, unit))
+
+        basis_gateset = ["measure"]
+        if native_gate_set := target_info.get("native_gate_set"):
+            basis_gateset += list(native_gate_set)
 
         backend_target = qiskit.transpiler.Target.from_configuration(
             num_qubits=target_info.get("num_qubits"),
-            basis_gates=[*target_info.get("native_gate_set"), "measure"],
+            basis_gates=sorted(basis_gateset),
             coupling_map=qiskit.transpiler.CouplingMap(
                 couplinglist=target_info.get("coupling_map")
             ),
@@ -108,7 +113,6 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             ),
             dt=target_info.get("dt"),
         )
-
         backend_target.description = self.description
         return backend_target
 
