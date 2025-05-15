@@ -45,6 +45,11 @@ EXPECTED_HEADERS = {
     },
 }
 
+CLIENT_VERSION = {
+    "v0.2.0": gss.superstaq_client._SuperstaqClient,
+    "v0.3.0": gss.superstaq_client._SuperstaqClientV3,
+}
+
 
 @pytest.fixture
 def client_v2() -> gss.superstaq_client._SuperstaqClient:
@@ -63,13 +68,13 @@ def client_v2() -> gss.superstaq_client._SuperstaqClient:
 
 
 @pytest.fixture
-def client_v3() -> gss.superstaq_client._SuperstaqClient:
+def client_v3() -> gss.superstaq_client._SuperstaqClientV3:
     """Client for API v0.3.0.
 
     Returns:
         A Superstaq client for API v0.3.0
     """
-    client = gss.superstaq_client._SuperstaqClient(
+    client = gss.superstaq_client._SuperstaqClientV3(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -91,7 +96,8 @@ def test_superstaq_client_str_and_repr(client_name: str, request: FixtureRequest
 
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
 def test_superstaq_client_args(api_version: str) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
+    client_version = CLIENT_VERSION[api_version]
+    client = client_version(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -109,10 +115,11 @@ def test_superstaq_client_args(api_version: str) -> None:
     }
 
     with pytest.raises(ValueError, match="must be either 'ibm_cloud' or 'ibm_quantum'"):
-        _ = gss.superstaq_client._SuperstaqClient(
+        _ = client_version(
             client_name="general-superstaq",
             remote_host="http://example.com",
             api_key="to_my_heart",
+            api_version=api_version,
             ibmq_channel="foo",
         )
 
@@ -142,15 +149,16 @@ def test_warning_from_server(client_name: str, request: FixtureRequest) -> None:
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
 @pytest.mark.parametrize("invalid_url", ("url", "http://", "ftp://", "http://"))
 def test_superstaq_client_invalid_remote_host(api_version: str, invalid_url: str) -> None:
+    client_version = CLIENT_VERSION[api_version]
     with pytest.raises(AssertionError, match="not a valid url"):
-        _ = gss.superstaq_client._SuperstaqClient(
+        _ = client_version(
             client_name="general-superstaq",
             remote_host=invalid_url,
             api_key="a",
             api_version=api_version,
         )
     with pytest.raises(AssertionError, match=invalid_url):
-        _ = gss.superstaq_client._SuperstaqClient(
+        _ = client_version(
             client_name="general-superstaq",
             remote_host=invalid_url,
             api_key="a",
@@ -158,16 +166,18 @@ def test_superstaq_client_invalid_remote_host(api_version: str, invalid_url: str
         )
 
 
-def test_superstaq_client_invalid_api_version() -> None:
+@pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
+def test_superstaq_client_invalid_api_version(api_version: str) -> None:
+    client_version = CLIENT_VERSION[api_version]
     with pytest.raises(AssertionError, match="are accepted"):
-        _ = gss.superstaq_client._SuperstaqClient(
+        _ = client_version(
             client_name="general-superstaq",
             remote_host="http://example.com",
             api_key="a",
             api_version="v0.0",
         )
     with pytest.raises(AssertionError, match="0.0"):
-        _ = gss.superstaq_client._SuperstaqClient(
+        _ = client_version(
             client_name="general-superstaq",
             remote_host="http://example.com",
             api_key="a",
@@ -177,8 +187,9 @@ def test_superstaq_client_invalid_api_version() -> None:
 
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
 def test_superstaq_client_time_travel(api_version: str) -> None:
+    client_version = CLIENT_VERSION[api_version]
     with pytest.raises(AssertionError, match="time machine"):
-        _ = gss.superstaq_client._SuperstaqClient(
+        _ = client_version(
             client_name="general-superstaq",
             remote_host="http://example.com",
             api_key="a",
@@ -189,7 +200,8 @@ def test_superstaq_client_time_travel(api_version: str) -> None:
 
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
 def test_superstaq_client_attributes(api_version: str) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
+    client_version = CLIENT_VERSION[api_version]
+    client = client_version(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -236,13 +248,20 @@ def test_accept_terms_of_use(
     )
 
 
-@pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
-@mock.patch("general_superstaq.superstaq_client._SuperstaqClient._accept_terms_of_use")
+@pytest.mark.parametrize(
+    "client_name, mock_accept",
+    [
+        ("client_v2", "general_superstaq.superstaq_client._SuperstaqClient._accept_terms_of_use"),
+        ("client_v3", "general_superstaq.superstaq_client._SuperstaqClientV3._accept_terms_of_use"),
+    ],
+)
+# @mock.patch("general_superstaq.superstaq_client._SuperstaqClient._accept_terms_of_use")
 @mock.patch("requests.Session.get")
 def test_superstaq_client_needs_accept_terms_of_use(
     mock_get: mock.MagicMock,
-    mock_accept_terms_of_use: mock.MagicMock,
+    # mock_accept_terms_of_use: mock.MagicMock,
     client_name: str,
+    mock_accept: str,
     request: FixtureRequest,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -256,23 +275,25 @@ def test_superstaq_client_needs_accept_terms_of_use(
     )
     mock_get.return_value = fake_get_response
 
-    mock_accept_terms_of_use.return_value = "YES response required to proceed"
+    with mock.patch(mock_accept) as mock_accept_terms_of_use:
+        mock_accept_terms_of_use.return_value = "YES response required to proceed"
 
-    with mock.patch("builtins.input"):
-        with pytest.raises(
-            gss.SuperstaqServerException, match="You'll need to accept the Terms of Use"
-        ):
-            client.get_balance()
-        assert capsys.readouterr().out == "YES response required to proceed\n"
+        with mock.patch("builtins.input"):
+            with pytest.raises(
+                gss.SuperstaqServerException, match="You'll need to accept the Terms of Use"
+            ):
+                client.get_balance()
+            assert capsys.readouterr().out == "YES response required to proceed\n"
 
     fake_authorized_get_response = mock.MagicMock()
     fake_authorized_get_response.ok = True
     fake_authorized_get_response.json.return_value = {"email": "test@email.com", "balance": 1.234}
     mock_get.side_effect = [fake_get_response, fake_authorized_get_response]
-    mock_accept_terms_of_use.return_value = "Accepted. You can now continue using Superstaq."
-    with mock.patch("builtins.input"):
-        client.get_balance()
-        assert capsys.readouterr().out == "Accepted. You can now continue using Superstaq.\n"
+    with mock.patch(mock_accept) as mock_accept_terms_of_use:
+        mock_accept_terms_of_use.return_value = "Accepted. You can now continue using Superstaq."
+        with mock.patch("builtins.input"):
+            client.get_balance()
+            assert capsys.readouterr().out == "Accepted. You can now continue using Superstaq.\n"
 
 
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
@@ -296,11 +317,12 @@ def test_superstaq_client_validate_email_error(
 
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
 def test_superstaq_client_use_stored_ibmq_credential(api_version: str) -> None:
+    client_version = CLIENT_VERSION[api_version]
     credentials = {"token": "ibmq_token", "instance": "instance", "channel": "ibm_quantum"}
     with mock.patch(
         "general_superstaq.superstaq_client.read_ibm_credentials", return_value=credentials
     ):
-        client = gss.superstaq_client._SuperstaqClient(
+        client = client_version(
             client_name="general-superstaq",
             remote_host="http://example.com",
             api_key="to_my_heart",
@@ -431,17 +453,10 @@ def test_superstaq_client_create_job_not_retriable(
     request: FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
-    api_version = client.api_version
 
     mock_post.return_value.ok = False
     mock_post.return_value.status_code = requests.codes.not_implemented
 
-    client = gss.superstaq_client._SuperstaqClient(
-        client_name="general-superstaq",
-        remote_host="http://example.com",
-        api_key="to_my_heart",
-        api_version=api_version,
-    )
     with pytest.raises(gss.SuperstaqServerException, match="Status code: 501"):
         _ = client.create_job({"cirq_circuits": "World"}, target="ss_example_qpu")
 
@@ -451,7 +466,8 @@ def test_superstaq_client_create_job_not_retriable(
 def test_superstaq_client_create_job_retry(
     mock_post: mock.MagicMock, api_version: str, job_id: str | uuid.UUID
 ) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
+    client_version = CLIENT_VERSION[api_version]
+    client = client_version(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -534,7 +550,8 @@ def test_superstaq_client_create_job_dont_retry_on_timeout(
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
 @mock.patch("requests.Session.post")
 def test_superstaq_client_create_job_timeout(mock_post: mock.MagicMock, api_version: str) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
+    client_version = CLIENT_VERSION[api_version]
+    client = client_version(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -727,49 +744,42 @@ def test_add_new_user(
 
 
 @pytest.mark.parametrize(
-    "client_name, endpoint, expected_json",
+    "client_name, endpoint, expected_json, call_type",
     [
         (
             "client_v2",
             "http://example.com/v0.2.0/update_user_balance",
             {"email": "mc@gmail.com", "balance": 5.00},
+            "requests.Session.post",
         ),
         (
             "client_v3",
             "http://example.com/v0.3.0/client/user/mc@gmail.com",
             {"balance": 5.00},
+            "requests.Session.put",
         ),
     ],
 )
-@mock.patch("requests.Session.put")
-@mock.patch("requests.Session.post")
 def test_update_user_balance(
-    mock_post: mock.MagicMock,
-    mock_put: mock.MagicMock,
     client_name: str,
     endpoint: str,
     expected_json: dict[str, Any],
+    call_type: str,
     request: FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
-    api_version = client.api_version
 
-    if api_version == "v0.2.0":
-        mock_call = mock_post
-
-    else:
-        mock_call = mock_put
-
-    client.update_user_balance({"email": "mc@gmail.com", "balance": 5.00})
-    mock_call.assert_called_with(
-        endpoint,
-        headers=EXPECTED_HEADERS[api_version],
-        json=expected_json,
-        verify=False,
-    )
+    with mock.patch(call_type) as mock_call:
+        client.update_user_balance({"email": "mc@gmail.com", "balance": 5.00})
+        mock_call.assert_called_with(
+            endpoint,
+            headers=EXPECTED_HEADERS[client.api_version],
+            json=expected_json,
+            verify=False,
+        )
 
 
-def test_update_user_balance_invalid_v3(client_v3: gss.superstaq_client._SuperstaqClient) -> None:
+def test_update_user_balance_invalid_v3(client_v3: gss.superstaq_client._SuperstaqClientV3) -> None:
     with pytest.raises(ValueError, match="user email"):
         client_v3.update_user_balance({"balance": 5.00})
 
@@ -778,52 +788,45 @@ def test_update_user_balance_invalid_v3(client_v3: gss.superstaq_client._Superst
 
 
 @pytest.mark.parametrize(
-    "client_name, endpoint, role, expected_json",
+    "client_name, endpoint, role, expected_json, call_type",
     [
         (
             "client_v2",
             "http://example.com/v0.2.0/update_user_role",
             5,
             {"email": "mc@gmail.com", "role": 5},
+            "requests.Session.post",
         ),
         (
             "client_v3",
             "http://example.com/v0.3.0/client/user/mc@gmail.com",
             "genius",
             {"role": "genius"},
+            "requests.Session.put",
         ),
     ],
 )
-@mock.patch("requests.Session.put")
-@mock.patch("requests.Session.post")
 def test_update_user_role(
-    mock_post: mock.MagicMock,
-    mock_put: mock.MagicMock,
     client_name: str,
     endpoint: str,
     role: int | str,
     expected_json: dict[str, Any],
+    call_type: str,
     request: FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
-    api_version = client.api_version
 
-    if api_version == "v0.2.0":
-        mock_call = mock_post
-
-    else:
-        mock_call = mock_put
-
-    client.update_user_role({"email": "mc@gmail.com", "role": role})
-    mock_call.assert_called_with(
-        endpoint,
-        headers=EXPECTED_HEADERS[api_version],
-        json=expected_json,
-        verify=False,
-    )
+    with mock.patch(call_type) as mock_call:
+        client.update_user_role({"email": "mc@gmail.com", "role": role})
+        mock_call.assert_called_with(
+            endpoint,
+            headers=EXPECTED_HEADERS[client.api_version],
+            json=expected_json,
+            verify=False,
+        )
 
 
-def test_update_user_role_invalid_v3(client_v3: gss.superstaq_client._SuperstaqClient) -> None:
+def test_update_user_role_invalid_v3(client_v3: gss.superstaq_client._SuperstaqClientV3) -> None:
     with pytest.raises(ValueError, match="user email"):
         client_v3.update_user_role({"role": "genius"})
 
@@ -865,13 +868,14 @@ def test_superstaq_client_get_targets(
     api_version: str,
     endpoint: str,
 ) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
+    client_version = CLIENT_VERSION[api_version]
+    client = client_version(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
         api_version=api_version,
     )
-    token_client = gss.superstaq_client._SuperstaqClient(
+    token_client = client_version(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -943,7 +947,8 @@ def test_superstaq_client_get_my_targets(
     mock_get: mock.MagicMock,
     api_version: str,
 ) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
+    client_version = CLIENT_VERSION[api_version]
+    client = client_version(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -1000,93 +1005,85 @@ def test_superstaq_client_get_my_targets(
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id", [("client_v2", "id"), ("client_v3", uuid.UUID(int=0))]
+    "client_name, job_id, call_type",
+    [
+        ("client_v2", "id", "requests.Session.post"),
+        ("client_v3", uuid.UUID(int=0), "requests.Session.get"),
+    ],
 )
-@mock.patch("requests.Session.get")
-@mock.patch("requests.Session.post")
 def test_superstaq_client_fetch_jobs_unauthorized(
-    mock_post: mock.MagicMock,
-    mock_get: mock.MagicMock,
     client_name: str,
     job_id: str | uuid.UUID,
+    call_type: str,
     request: FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
-    if client.api_version == "v0.2.0":
-        mock_call = mock_post
-    else:
-        mock_call = mock_get
+    with mock.patch(call_type) as mock_call:
+        mock_call.return_value.ok = False
+        mock_call.return_value.status_code = requests.codes.unauthorized
 
-    mock_call.return_value.ok = False
-    mock_call.return_value.status_code = requests.codes.unauthorized
-
-    with pytest.raises(gss.SuperstaqServerException, match="Not authorized"):
-        _ = client.fetch_jobs([job_id])
+        with pytest.raises(gss.SuperstaqServerException, match="Not authorized"):
+            _ = client.fetch_jobs([job_id])
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id", [("client_v2", "id"), ("client_v3", uuid.UUID(int=0))]
+    "client_name, job_id, call_type",
+    [
+        ("client_v2", "id", "requests.Session.post"),
+        ("client_v3", uuid.UUID(int=0), "requests.Session.get"),
+    ],
 )
-@mock.patch("requests.Session.get")
-@mock.patch("requests.Session.post")
 def test_superstaq_client_fetch_jobs_not_found(
-    mock_post: mock.MagicMock,
-    mock_get: mock.MagicMock,
     client_name: str,
     job_id: str | uuid.UUID,
+    call_type: str,
     request: FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
-    if client.api_version == "v0.2.0":
-        mock_call = mock_post
-    else:
-        mock_call = mock_get
+    with mock.patch(call_type) as mock_call:
+        mock_call.return_value.ok = False
+        mock_call.return_value.status_code = requests.codes.not_found
 
-    mock_call.return_value.ok = False
-    mock_call.return_value.status_code = requests.codes.not_found
-
-    with pytest.raises(gss.SuperstaqServerException):
-        _ = client.fetch_jobs([job_id])
+        with pytest.raises(gss.SuperstaqServerException):
+            _ = client.fetch_jobs([job_id])
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id", [("client_v2", "id"), ("client_v3", uuid.UUID(int=0))]
+    "client_name, job_id, call_type",
+    [
+        ("client_v2", "id", "requests.Session.post"),
+        ("client_v3", uuid.UUID(int=0), "requests.Session.get"),
+    ],
 )
-@mock.patch("requests.Session.get")
-@mock.patch("requests.Session.post")
 def test_superstaq_client_fetch_jobs_not_retriable(
-    mock_post: mock.MagicMock,
-    mock_get: mock.MagicMock,
     client_name: str,
     job_id: str | uuid.UUID,
+    call_type: str,
     request: FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
-    if client.api_version == "v0.2.0":
-        mock_call = mock_post
-    else:
-        mock_call = mock_get
+    with mock.patch(call_type) as mock_call:
+        mock_call.return_value.ok = False
+        mock_call.return_value.status_code = requests.codes.bad_request
 
-    mock_call.return_value.ok = False
-    mock_call.return_value.status_code = requests.codes.bad_request
-
-    with pytest.raises(gss.SuperstaqServerException, match="Status code: 400"):
-        _ = client.fetch_jobs([job_id])
+        with pytest.raises(gss.SuperstaqServerException, match="Status code: 400"):
+            _ = client.fetch_jobs([job_id])
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id", [("client_v2", "id"), ("client_v3", uuid.UUID(int=0))]
+    "client_name, job_id, call_type",
+    [
+        ("client_v2", "id", "requests.Session.post"),
+        ("client_v3", uuid.UUID(int=0), "requests.Session.get"),
+    ],
 )
-@mock.patch("requests.Session.get")
-@mock.patch("requests.Session.post")
 def test_superstaq_client_fetch_jobs_retry(
-    mock_post: mock.MagicMock,
-    mock_get: mock.MagicMock,
     client_name: str,
     job_id: str | uuid.UUID,
+    call_type: str,
     request: FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
@@ -1098,125 +1095,109 @@ def test_superstaq_client_fetch_jobs_retry(
     response2 = mock.MagicMock()
     response2.ok = True
 
-    if client.api_version == "v0.2.0":
-        mock_call = mock_post
-    else:
-        mock_call = mock_get
+    with mock.patch(call_type) as mock_call:
+        mock_call.side_effect = [response1, response2]
+        _ = client.fetch_jobs([job_id])
 
-    mock_call.side_effect = [response1, response2]
-    _ = client.fetch_jobs([job_id])
-
-    assert mock_call.call_count == 2
+        assert mock_call.call_count == 2
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id", [("client_v2", "id"), ("client_v3", uuid.UUID(int=0))]
+    "client_name, job_id, call_type",
+    [
+        ("client_v2", "id", "requests.Session.post"),
+        ("client_v3", uuid.UUID(int=0), "requests.Session.put"),
+    ],
 )
-@mock.patch("requests.Session.put")
-@mock.patch("requests.Session.post")
 def test_superstaq_client_cancel_jobs_unauthorized(
-    mock_post: mock.MagicMock,
-    mock_put: mock.MagicMock,
     client_name: str,
     job_id: str | uuid.UUID,
+    call_type: str,
     request: FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
-    if client.api_version == "v0.2.0":
-        mock_call = mock_post
-    else:
-        mock_call = mock_put
+    with mock.patch(call_type) as mock_call:
+        mock_call.return_value.ok = False
+        mock_call.return_value.status_code = requests.codes.unauthorized
 
-    mock_call.return_value.ok = False
-    mock_call.return_value.status_code = requests.codes.unauthorized
-
-    with pytest.raises(gss.SuperstaqServerException, match="Not authorized"):
-        _ = client.cancel_jobs([job_id])
+        with pytest.raises(gss.SuperstaqServerException, match="Not authorized"):
+            _ = client.cancel_jobs([job_id])
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id", [("client_v2", "id"), ("client_v3", uuid.UUID(int=0))]
+    "client_name, job_id, call_type",
+    [
+        ("client_v2", "id", "requests.Session.post"),
+        ("client_v3", uuid.UUID(int=0), "requests.Session.put"),
+    ],
 )
-@mock.patch("requests.Session.put")
-@mock.patch("requests.Session.post")
 def test_superstaq_client_cancel_jobs_not_found(
-    mock_post: mock.MagicMock,
-    mock_put: mock.MagicMock,
     client_name: str,
     job_id: str | uuid.UUID,
+    call_type: str,
     request: FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
-    if client.api_version == "v0.2.0":
-        mock_call = mock_post
-    else:
-        mock_call = mock_put
+    with mock.patch(call_type) as mock_call:
+        mock_call.return_value.ok = False
+        mock_call.return_value.status_code = requests.codes.not_found
 
-    mock_call.return_value.ok = False
-    mock_call.return_value.status_code = requests.codes.not_found
-
-    with pytest.raises(gss.SuperstaqServerException):
-        _ = client.cancel_jobs([job_id])
+        with pytest.raises(gss.SuperstaqServerException):
+            _ = client.cancel_jobs([job_id])
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id", [("client_v2", "id"), ("client_v3", uuid.UUID(int=0))]
+    "client_name, job_id, call_type",
+    [
+        ("client_v2", "id", "requests.Session.post"),
+        ("client_v3", uuid.UUID(int=0), "requests.Session.put"),
+    ],
 )
-@mock.patch("requests.Session.put")
-@mock.patch("requests.Session.post")
 def test_superstaq_client_get_cancel_jobs_retriable(
-    mock_post: mock.MagicMock,
-    mock_put: mock.MagicMock,
     client_name: str,
     job_id: str | uuid.UUID,
+    call_type: str,
     request: FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
-    if client.api_version == "v0.2.0":
-        mock_call = mock_post
-    else:
-        mock_call = mock_put
+    with mock.patch(call_type) as mock_call:
+        mock_call.return_value.ok = False
+        mock_call.return_value.status_code = requests.codes.bad_request
 
-    mock_call.return_value.ok = False
-    mock_call.return_value.status_code = requests.codes.bad_request
-
-    with pytest.raises(gss.SuperstaqServerException, match="Status code: 400"):
-        _ = client.cancel_jobs([job_id], cq_token=1)
+        with pytest.raises(gss.SuperstaqServerException, match="Status code: 400"):
+            _ = client.cancel_jobs([job_id], cq_token=1)
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id", [("client_v2", "id"), ("client_v3", uuid.UUID(int=0))]
+    "client_name, job_id, call_type",
+    [
+        ("client_v2", "id", "requests.Session.post"),
+        ("client_v3", uuid.UUID(int=0), "requests.Session.put"),
+    ],
 )
-@mock.patch("requests.Session.put")
-@mock.patch("requests.Session.post")
 def test_superstaq_client_cancel_jobs_retry(
-    mock_post: mock.MagicMock,
-    mock_put: mock.MagicMock,
     client_name: str,
     job_id: str | uuid.UUID,
+    call_type: str,
     request: FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
     response1 = mock.MagicMock(ok=False, status_code=requests.codes.service_unavailable)
     response2 = mock.MagicMock(ok=True)
-
-    if client.api_version == "v0.2.0":
-        mock_call = mock_post
-
-    else:
+    if client.api_version == "v0.3.0":
         response2.json.return_value = {
             "succeeded": [str(job_id)],
             "message": "",
         }
-        mock_call = mock_put
 
-    mock_call.side_effect = [response1, response2]
-    _ = client.cancel_jobs([job_id])
-    assert mock_call.call_count == 2
+    with mock.patch(call_type) as mock_call:
+        mock_call.side_effect = [response1, response2]
+        _ = client.cancel_jobs([job_id])
+        assert mock_call.call_count == 2
 
 
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
@@ -1271,14 +1252,14 @@ def test_superstaq_client_compile_v2(
 
 
 def test_superstaq_client_compile_v3_multi_circuit_types(
-    client_v3: gss.superstaq_client._SuperstaqClient,
+    client_v3: gss.superstaq_client._SuperstaqClientV3,
 ) -> None:
     with pytest.raises(RuntimeError, match="multiple circuit types"):
         client_v3.compile({"cirq_circuits": "Hello", "qiskit_circuits": "World"})
 
 
 def test_superstaq_client_compile_v3__type_not_found(
-    client_v3: gss.superstaq_client._SuperstaqClient,
+    client_v3: gss.superstaq_client._SuperstaqClientV3,
 ) -> None:
     with pytest.raises(RuntimeError, match="No recognized circuits found."):
         client_v3.compile({"qasm_circuits": "Hello"})
@@ -1289,7 +1270,7 @@ def test_superstaq_client_compile_v3__type_not_found(
 def test_superstaq_client_compile_v3_failed(
     mock_post: mock.MagicMock,
     mock_get: mock.MagicMock,
-    client_v3: gss.superstaq_client._SuperstaqClient,
+    client_v3: gss.superstaq_client._SuperstaqClientV3,
 ) -> None:
     job_id = uuid.UUID(int=0)
     job_data = {
@@ -1354,7 +1335,7 @@ def test_superstaq_client_compile_v3(
     mock_post: mock.MagicMock,
     mock_get: mock.MagicMock,
     circuit_type: str,
-    client_v3: gss.superstaq_client._SuperstaqClient,
+    client_v3: gss.superstaq_client._SuperstaqClientV3,
 ) -> None:
     job_id = uuid.UUID(int=0)
     job_data = {
@@ -1423,7 +1404,7 @@ def test_superstaq_client_compile_v3(
 def test_superstaq_client_compile_v3_with_wait(
     mock_post: mock.MagicMock,
     mock_get: mock.MagicMock,
-    client_v3: gss.superstaq_client._SuperstaqClient,
+    client_v3: gss.superstaq_client._SuperstaqClientV3,
 ) -> None:
     job_id = uuid.UUID(int=0)
     compiling_data = {
@@ -1656,6 +1637,9 @@ def test_superstaq_client_aces(
                 noise={"type": "symmetric_depolarize", "params": (0.01,)},
             )
 
+        with pytest.raises(NotImplementedError, match="process_aces is not implemented"):
+            client.process_aces(uuid.UUID(int=0))
+
 
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
 @mock.patch("requests.Session.post")
@@ -1716,6 +1700,9 @@ def test_superstaq_client_cb(
                 method="dry-run",
                 noise={"type": "symmetric_depolarize", "params": (0.01,)},
             )
+
+        with pytest.raises(NotImplementedError, match="process_cb is not implemented"):
+            client.process_cb(uuid.UUID(int=0), "count")
 
 
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
@@ -1781,40 +1768,34 @@ def test_superstaq_client_dfe(
                 lifespan=10,
             )
 
+        with pytest.raises(NotImplementedError, match="process_dfe is not implemented"):
+            client.process_dfe([uuid.UUID(int=0)])
+
 
 @pytest.mark.parametrize(
-    "client_name, endpoint",
+    "client_name, endpoint, call_type",
     [
-        ("client_v2", "http://example.com/v0.2.0/aqt_configs"),
-        ("client_v3", "http://example.com/v0.3.0/aqt_configs"),
+        ("client_v2", "http://example.com/v0.2.0/aqt_configs", "requests.Session.post"),
+        ("client_v3", "http://example.com/v0.3.0/aqt_configs", "requests.Session.put"),
     ],
 )
-@mock.patch("requests.Session.put")
-@mock.patch("requests.Session.post")
 def test_superstaq_client_aqt_upload_configs(
-    mock_post: mock.MagicMock,
-    mock_put: mock.MagicMock,
     client_name: str,
     endpoint: str,
+    call_type: str,
     request: FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
-
-    client.aqt_upload_configs({"pulses": "Hello", "variables": "World"})
-
     expected_json = {"pulses": "Hello", "variables": "World"}
 
-    if client.api_version == "v0.2.0":
-        mock_call = mock_post
-    else:
-        mock_call = mock_put
-
-    mock_call.assert_called_with(
-        endpoint,
-        headers=EXPECTED_HEADERS[client.api_version],
-        json=expected_json,
-        verify=False,
-    )
+    with mock.patch(call_type) as mock_call:
+        client.aqt_upload_configs({"pulses": "Hello", "variables": "World"})
+        mock_call.assert_called_with(
+            endpoint,
+            headers=EXPECTED_HEADERS[client.api_version],
+            json=expected_json,
+            verify=False,
+        )
 
 
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
@@ -1878,7 +1859,8 @@ def test_superstaq_client_target_info_with_credentials(
     api_version: str,
     endpoint: str,
 ) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
+    client_version = CLIENT_VERSION[api_version]
+    client = client_version(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -2000,7 +1982,8 @@ def test_get_user_info(
     api_version: str,
     endpoint: str,
 ) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
+    client_version = CLIENT_VERSION[api_version]
+    client = client_version(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -2047,7 +2030,8 @@ def test_get_user_info_query(
     api_version: str,
     endpoint: str,
 ) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
+    client_version = CLIENT_VERSION[api_version]
+    client = client_version(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -2081,7 +2065,7 @@ def test_get_user_info_query(
     assert user_info == data
 
 
-def test_get_user_info_v3_fail(client_v3: gss.superstaq_client._SuperstaqClient) -> None:
+def test_get_user_info_v3_fail(client_v3: gss.superstaq_client._SuperstaqClientV3) -> None:
     with pytest.raises(TypeError, match="Superstaq API v0.3.0 uses UUID"):
         client_v3.get_user_info(user_id=42)
 
@@ -2099,7 +2083,8 @@ def test_get_user_info_query_composite(
     api_version: str,
     endpoint: str,
 ) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
+    client_version = CLIENT_VERSION[api_version]
+    client = client_version(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
@@ -2153,7 +2138,8 @@ def test_get_user_info_empty_response(
     api_version: str,
     endpoint: str,
 ) -> None:
-    client = gss.superstaq_client._SuperstaqClient(
+    client_version = CLIENT_VERSION[api_version]
+    client = client_version(
         client_name="general-superstaq",
         remote_host="http://example.com",
         api_key="to_my_heart",
