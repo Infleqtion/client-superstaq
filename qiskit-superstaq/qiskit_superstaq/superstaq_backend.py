@@ -83,11 +83,17 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
     def target(self) -> qiskit.transpiler.Target:
         """A `qiskit.transpiler.Target` object for this backend."""
         target_info = self.target_info()
-        timing_info = target_info.get("timing_constraints")
+        timing_info = {
+            "acquire_alignment": target_info.get("acquire_alignment"),
+            "granularity": target_info.get("granularity"),
+            "min_length": target_info.get("min_length"),
+            "pulse_alignment": target_info.get("pulse_alignment"),
+        }
         duration_info = target_info.get("gate_durations")
         gate_durations = []
         for gate_name, qubit_indicies, duration, unit in duration_info:
             gate_durations.append((gate_name, tuple(qubit_indicies), duration, unit))
+
         backend_target = qiskit.transpiler.Target.from_configuration(
             num_qubits=target_info.get("num_qubits"),
             basis_gates=[*target_info.get("native_gate_set"), "measure"],
@@ -102,6 +108,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             ),
             dt=target_info.get("dt"),
         )
+
         backend_target.description = self.description
         return backend_target
 
