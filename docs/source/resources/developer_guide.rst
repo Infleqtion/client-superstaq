@@ -31,7 +31,7 @@ Push Edits and Make a Pull Request for Review
 #. Test your changes by running local checks with ``./checks/all_.py``. No internet connection is required for local checks. You can also run specific checks. e.g. ``./checks/format_.py``, or use ``./checks/all_.py -i`` to run all checks but just on locally modified files. More information about local checks can be found in the **Testing** section of the Developer Guide.
 #. Test your changes by running integration tests with ``./checks/pytest_.py -- integration``. These tests require the internet to run, so all appropriate access tokens will need to be set before running locally. More information about integration tests can be found in the Testing` section of the Developer Guide.
 #. Some changes will require new tests to be added to the local checks and integration tests. For example, if a conditional if/then statement is added, a corresponding check should be written to cover the new statement within the appropriate ``*_test.py`` file. Existing tests can be used as an example for how to create new tests.
-#. Once all the checks pass locally, push your code: ``git push -u origin new-branch-name``. It should pass all checks on Github too. 
+#. Once all the checks pass locally, push your code: ``git push -u origin new-branch-name``. It should pass all checks on Github too.
 #. Use a draft PR until you think your code is ready for review. When ready for review, you can mark accordingly on GitHub and the checks will automatically run. If needed, you can also run checks on a draft PR by navigating to the Actions tab and triggering manually.
 #. Engage in code review on your Github Pull Request. If you need to make changes to your code, you can just push new commits to the branch. When the code is all good, one of your reviewers will approve your Pull Request.\*
     #. Please limit changes in the Pull Request to those related to the issue the PR is resolving. Unrelated changes should be made in a different Pull Request.
@@ -65,17 +65,18 @@ Superstaq local checks do not need an internet connection to be run locally i.e.
 
 The same command is used to run client local checks (i.e., ``cirq_superstaq``, ``qiskit_superstaq``)
 
-Descriptions 
+Descriptions
 -----------------
 A high-level description of key Superstaq tests are as follows:
 
 .. code-block:: bash
 
-    checks/format_.py  # Enforces basic formatting rules (e.g. line length, import ordering) for python files and notebooks.
-    checks/format_.py --apply  # Automatically update files to conform to formatting rules.
-    checks/flake8_.py  # Style guide enforcement for python files.
-    checks/pylint_.py  # Further style guide enforcement, including docstrings style.
-    checks/mypy_.py  # Static type check.
+    checks/format_.py  # Enforces basic formatting rules (e.g. line length, spacing, etc) for python files and notebooks.
+    checks/format_.py --fix # Automatically update files to conform to `ruff` formatting rules.
+    checks/lint_.py  # Further style guide enforcement, including docstrings style.
+    checks/lint_.py --fix # Automatically apply safe fixes to the linting issues raised (e.g., package import ordering).
+    checks/lint_.py --fix --unsafe-fixes # Automatically apply potentially unsafe fixes that should be further reviewed.
+    checks/mypy_.py  # Runs a static type check using `mypy`.
     checks/pytest_.py  # Runs local python tests (from `*_test.py` files, not including `*_integration_test.py`).
     checks/pytest_.py --integration  # Runs integration tests (`*_integration_test.py`).
     checks/pytest_.py --notebook  # Executes example notebooks to make they're working.
@@ -83,7 +84,8 @@ A high-level description of key Superstaq tests are as follows:
     checks/requirements.py  # Makes sure *superstaq dependencies are up to date in all *requirements.txt files.
     checks/requirements.py --apply  # Automatically updates requirements files to use the latest available version of any *superstaq dependency.checks/configs.py and checks that `setup.cfg` files are consistent across repos.
     checks/build_docs.py  # Ensures docs can be built. This will fail for e.g. incorrectly formatted code blocks in docstrings.
-    checks/all_.py  # Runs all the non-integration checks described above.
+    checks/all_.py  # Runs all the non-integration checks described above on the whole repo.
+    checks/all_.py -i # Runs all the non-integration checks described above but just on locally modified files.
 
 By default, all test scripts will consider any tracked file in the current repository (meaning that new files will not be checked until they've been added to the repo via ``git add``). Passing ``-i`` or ``--incremental`` to any check will limit its scope to just locally modified files. Test scripts can also be passed individual files or subdirectories or prevented from checking specific files using ``-x <path>`` or ``--exclude <path>``.
 
@@ -208,7 +210,7 @@ Productivity Tips
   >>> %autoreload 2
 
   This will enable autoreload.
-* Also recommended: 
+* Also recommended:
 
 .. code-block:: bash
 
@@ -247,6 +249,6 @@ When you have implemented one of these methods, you can set up access to Superst
 
     # cirq-superstaq
     service = css.Service()
-    
+
     # qiskit-superstaq
     provider = qss.SuperstaqProvider()
