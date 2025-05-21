@@ -767,6 +767,8 @@ class _BaseSuperstaqClient(ABC):
 
             if isinstance(json_content, dict) and "message" in json_content:
                 message = json_content["message"]
+            elif isinstance(json_content, dict) and "detail" in json_content:
+                message = json_content["detail"]
             else:
                 message = str(response.text)
 
