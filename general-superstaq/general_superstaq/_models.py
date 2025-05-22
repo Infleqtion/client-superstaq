@@ -186,8 +186,6 @@ class JobCancellationResults(DefaultPydanticModel):
     """List of circuits that successfully cancelled."""
     message: str
     """The server message."""
-    warnings: list[str]
-    """Any warnings generated when cancelling."""
 
 
 class NewJobResponse(DefaultPydanticModel):

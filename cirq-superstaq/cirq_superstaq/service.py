@@ -25,13 +25,20 @@ import general_superstaq as gss
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-from general_superstaq import ResourceEstimate, superstaq_client
+from general_superstaq import ResourceEstimate
+from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 from scipy.optimize import curve_fit
 
 import cirq_superstaq as css
 
 if TYPE_CHECKING:
     from _typeshed import SupportsItems
+
+
+CLIENT_VERSION = {
+    "v0.2.0": _SuperstaqClient,
+    "v0.3.0": _SuperstaqClientV3,
+}
 
 
 def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
@@ -181,7 +188,8 @@ class Service(gss.service.Service):
             EnvironmentError: If an API key was not provided and could not be found.
         """
         self.default_target = default_target
-        self._client = superstaq_client._SuperstaqClient(
+        client_version = CLIENT_VERSION[api_version]
+        self._client = client_version(
             client_name="cirq-superstaq",
             remote_host=remote_host,
             api_key=api_key,
