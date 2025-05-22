@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "Superstaq"
-copyright = "2024, ColdQuanta, Inc., DBA Infleqtion"  # noqa: A001
+copyright = "2025, ColdQuanta, Inc., DBA Infleqtion"  # noqa: A001
 author = "ColdQuanta, Inc., DBA Infleqtion"
 
 # -- General configuration ---------------------------------------------------
@@ -79,7 +79,7 @@ html_logo = "_static/logos/Superstaq_color.png"
 html_css_files = [
     "css/docs-superstaq.css",
 ]
-html_favicon = "_static/logos/Infleqtion_logo.png"
+html_favicon = "_static/logos/Infleqtion_logo-RGB_favicon.png"
 
 
 # Replace common aliases (gss, css, qss) in docstrings.
