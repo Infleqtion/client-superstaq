@@ -508,7 +508,16 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         operation = operation.with_tags("no_compile")
         interleaved_circuit = circuit.copy()
         interleaved_circuit.batch_insert(
-            [(k, operation) for k in range(len(circuit) - int(not include_final), 0, -1)]
+            [
+                (
+                    k,
+                    [
+                        css.barrier(*interleaved_circuit.all_qubits()),
+                        operation,
+                        css.barrier(*interleaved_circuit.all_qubits()),
+                    ]
+                ) for k in range(len(circuit) - int(not include_final), 0, -1)
+            ]
         )
         return interleaved_circuit
 
