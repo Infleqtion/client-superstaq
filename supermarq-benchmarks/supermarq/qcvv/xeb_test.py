@@ -19,11 +19,11 @@ import re
 from unittest.mock import MagicMock
 
 import cirq
+import cirq_superstaq as css
 import numpy as np
 import pandas as pd
 import pytest
 
-import cirq_superstaq as css
 from supermarq.qcvv import XEB, XEBResults
 
 

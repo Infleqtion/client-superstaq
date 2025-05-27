@@ -20,6 +20,7 @@ from typing import Any
 
 import cirq
 import cirq.circuits
+import cirq_superstaq as css
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
@@ -28,7 +29,6 @@ import seaborn as sns
 from tqdm.auto import trange
 from tqdm.contrib.itertools import product
 
-import cirq_superstaq as css
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
 
 
@@ -737,7 +737,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             for k, gate in enumerate(rb_sequence):
                 rb_circuit += self._clifford_gate_to_circuit(gate)
                 if k < len(rb_sequence) - 1:
-                    rb_circuit +=  css.barrier(*self.qubits)
+                    rb_circuit += css.barrier(*self.qubits)
             samples.append(
                 Sample(
                     circuit=rb_circuit + cirq.measure(sorted(self.qubits)),

@@ -19,10 +19,10 @@ import re
 from unittest.mock import patch
 
 import cirq
+import cirq_superstaq as css
 import pandas as pd
 import pytest
 
-import cirq_superstaq as css
 import supermarq.qcvv.irb
 from supermarq.qcvv.base_experiment import Sample
 from supermarq.qcvv.irb import IRB, IRBResults, RBResults
