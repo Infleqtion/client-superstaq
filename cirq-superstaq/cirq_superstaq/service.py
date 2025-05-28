@@ -1133,7 +1133,7 @@ class Service(gss.service.Service):
             def _objective(
                 x: np.typing.NDArray[np.int_], A: float, p: float
             ) -> np.typing.NDArray[np.float64]:
-                return A * p**x
+                return np.asarray(A * p**x)
 
             fit_data: defaultdict[str, float] = defaultdict(float)
 
@@ -1176,7 +1176,7 @@ class Service(gss.service.Service):
         def _objective(
             x: np.typing.NDArray[np.int_], A: float, p: float
         ) -> np.typing.NDArray[np.float64]:
-            return A * p**x
+            return np.asarray(A * p**x)
 
         e_f = 0.0
         for ps in averages.keys():
