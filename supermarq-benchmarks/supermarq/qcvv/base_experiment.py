@@ -512,9 +512,9 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
                 (
                     k,
                     [
-                        css.barrier(*interleaved_circuit.all_qubits()),
+                        css.barrier(*self.qubits),
                         operation,
-                        css.barrier(*interleaved_circuit.all_qubits()),
+                        css.barrier(*self.qubits),
                     ],
                 )
                 for k in range(len(circuit) - int(not include_final), 0, -1)
