@@ -550,13 +550,6 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         """
         if layer:
             layer_circuit = cirq.toggle_tags(cirq.Circuit(layer), ("no_compile",))
-
-            # If the layer has more than one operation, surround it with barriers
-            if len(layer_circuit) > 1 or len(layer_circuit[0]) > 1:
-                layer_circuit = (
-                    css.barrier(*self.qubits) + layer_circuit + css.barrier(*self.qubits)
-                )
-
         else:
             # If the layer is empty, use a single barrier as a placeholder
             layer_circuit = cirq.Circuit(css.barrier(*self.qubits))
