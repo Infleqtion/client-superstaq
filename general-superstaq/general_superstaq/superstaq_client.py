@@ -10,9 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# mypy: disable-error-code="empty-body, operator"
-
 """Client for making requests to Superstaq's API."""
 
 from __future__ import annotations
@@ -43,7 +40,9 @@ RECOGNISED_CIRCUIT_TYPES = Literal[_models.CircuitType.CIRQ, _models.CircuitType
 """The circuit types that are currently implemented within the SuperstaqClient."""
 
 
-class _API_Version(str, enum.Enum):
+class ApiVersion(str, enum.Enum):
+    """The supported API versions."""
+
     V0_2_0 = "v0.2.0"
     V0_3_0 = "v0.3.0"
 
@@ -58,7 +57,7 @@ class _BaseSuperstaqClient(ABC):
     RETRIABLE_STATUS_CODES: ClassVar[set[int]] = {
         requests.codes.service_unavailable,
     }
-    SUPPORTED_VERSIONS: ClassVar[set[str]] = {v.value for v in _API_Version}
+    SUPPORTED_VERSIONS: ClassVar[set[str]] = {v.value for v in ApiVersion}
 
     def __init__(
         self,
@@ -765,10 +764,11 @@ class _BaseSuperstaqClient(ABC):
             except requests.JSONDecodeError:
                 json_content = None
 
-            if isinstance(json_content, dict) and "message" in json_content:
-                message = json_content["message"]
-            elif isinstance(json_content, dict) and "detail" in json_content:
-                message = json_content["detail"]
+            if isinstance(json_content, dict) and set(json_content.keys()).intersection(
+                {"message", "details"}
+            ):
+                alternative = json_content.get("details", "")
+                message = json_content.get("message", alternative)
             else:
                 message = str(response.text)
 
