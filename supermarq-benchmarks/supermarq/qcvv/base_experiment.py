@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import collections
 import functools
 import numbers
 import pathlib
@@ -22,7 +23,7 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar
 
 import cirq
 import cirq_superstaq as css
@@ -129,6 +130,20 @@ class QCVVResults(ABC):
     data: pd.DataFrame | None = None
     """The raw data generated."""
 
+    _parent: Self | None = None
+    _qubits: tuple[cirq.Qid, ...] | None = None
+
+    @property
+    def parent(self) -> Self:
+        return self._parent or self
+
+    @property
+    def qubits(self) -> tuple[cirq.Qid, ...]:
+        if self._qubits is None:
+            return self.experiment.qubits
+
+        return self._qubits
+
     @property
     def data_ready(self) -> bool:
         """Whether the experimental data is ready to analyse.
@@ -160,13 +175,44 @@ class QCVVResults(ABC):
     def num_qubits(self) -> int:
         """Returns:
         The number of qubits in the experiment."""
-        return self.experiment.num_qubits
+        return len(self.qubits)
 
     @property
     def num_circuits(self) -> int:
         """Returns:
         The number of circuits in the experiment."""
         return self.experiment.num_circuits
+
+    def __getitem__(self, qubits: cirq.Qid | Sequence[cirq.Qid]) -> Self:
+        if not self.data_ready:
+            raise ValueError("No results to split.")
+
+        if isinstance(qubits, cirq.Qid):
+            qubits = [qubits]
+        qubit_indices = [self.experiment.qubits.index(q) for q in qubits]
+
+        num_qubits = self.num_qubits
+        bitstrings = [f"{i:0>{num_qubits}b}" for i in range(2**num_qubits)]
+        substrings = [f"{i:0>{len(qubits)}b}" for i in range(2 ** len(qubits))]
+
+        substring_map: collections.defaultdict[str, list[str]] = collections.defaultdict(list)
+        for bitstring in bitstrings:
+            substring = "".join(bitstring[qi] for qi in qubit_indices)
+            substring_map[substring].append(bitstring)
+
+        assert self.data is not None
+
+        sub_probs = {
+            substring: self.data[substring_map[substring]].sum(axis=1) for substring in substrings
+        }
+        sub_data = pd.DataFrame({**self.data.drop(bitstrings, axis=1), **sub_probs})
+        return self.__class__(
+            target=self.target,
+            experiment=self.experiment,
+            data=sub_data,
+            _parent=self,
+            _qubits=tuple(qubits),
+        )
 
     def analyze(
         self,
@@ -312,11 +358,11 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             _samples: Optional list of samples to construct the experiment from
             kwargs: Additional kwargs passed to the Superstaq service object.
         """
-        self.qubits: Sequence[cirq.Qid]
+        self.qubits: tuple[cirq.Qid, ...]
         if isinstance(qubits, Sequence):
-            self.qubits = list(qubits)
+            self.qubits = tuple(qubits)
         else:
-            self.qubits = cirq.LineQubit.range(qubits)
+            self.qubits = tuple(cirq.LineQubit.range(qubits))
 
         """The qubits used in the experiment."""
 
@@ -384,9 +430,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
     @property
     def num_qubits(self) -> int:
-        """Returns:
-        The number of qubits used in the experiment
-        """
+        """The number of qubits used in the experiment."""
         return len(self.qubits)
 
     ###################
@@ -506,16 +550,16 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         """
         if layer:
             layer_circuit = cirq.toggle_tags(cirq.Circuit(layer), ("no_compile",))
+
+            # If the layer has more than one operation, surround it with barriers
+            if len(layer_circuit) > 1 or len(layer_circuit[0]) > 1:
+                layer_circuit = (
+                    css.barrier(*self.qubits) + layer_circuit + css.barrier(*self.qubits)
+                )
+
         else:
-            layer_circuit = cirq.Circuit()
-
-        # If the layer is empty, use a single barrier as a placeholder
-        if not layer_circuit:
-            layer_circuit += css.barrier(*self.qubits)
-
-        # If the layer has more than one operation, surround it with barriers
-        elif len(layer_circuit) > 1 or len(layer_circuit[0]) > 1:
-            layer_circuit = css.barrier(*self.qubits) + layer_circuit + css.barrier(*self.qubits)
+            # If the layer is empty, use a single barrier as a placeholder
+            layer_circuit = cirq.Circuit(css.barrier(*self.qubits))
 
         interleaved_circuit = circuit.copy()
         interleaved_circuit.batch_insert(
@@ -588,53 +632,12 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
             # Add to results data
             result = {
+                "uuid": sample.uuid,
                 "circuit_realization": sample.circuit_realization,
                 **sample.data,
                 **probabilities,
             }
             results_data.append(result)
-
-        return pd.DataFrame(results_data)
-
-    def _structure_records1(
-        self, records: SupportsItems[uuid.UUID | int, Mapping[str, float] | Mapping[int, float]],
-        qubit_groups
-    ) -> pd.DataFrame:
-        """Constructs a `pandas.DataFrame` from the provided records.
-
-        Args:
-            records: A dictionary of the counts/probabilities for each sample, keyed by either the
-                sample UUID or the index of the sample in the experiment. The counts/probabilities
-                for each sample should be provided as a dictionary of keyed by either the bitstring
-                or the integer value of that bitstring.
-
-        Returns:
-            A `DataFrame` containing the provided counts and corresponding sample information.
-        """
-        sample_mapping = self._map_records_to_samples(records)
-
-        results_data = []
-        group_indices = {key: [self.qubits.index(q) for q in qs] for key, qs in qubit_groups.items()}
-
-        for sample, results in sample_mapping.items():
-            probabilities = self.canonicalize_probabilities(results, self.num_qubits)
-
-            for key, qis in group_indices.items():
-                subcircuit_probabilities = {}
-                for bitstring, prob in probabilities.items():
-                    substring = "".join(bitstring[qi] for qi in qis)
-                    subcircuit_probabilities.setdefault(substring, 0)
-                    subcircuit_probabilities[substring] += prob
-
-                # Add to results data
-                result = {
-                    "circuit_realization": sample.circuit_realization,
-                    "qubits": qubit_groups[key],
-                    "subcircuit": key,
-                    **sample.data,
-                    **subcircuit_probabilities,
-                }
-                results_data.append(result)
 
         return pd.DataFrame(results_data)
 

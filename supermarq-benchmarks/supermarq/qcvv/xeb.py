@@ -23,6 +23,7 @@ import cirq
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import scipy
 import seaborn as sns
@@ -44,19 +45,46 @@ class XEBResults(QCVVResults):
 
     @property
     def cycle_fidelity_estimate(self) -> float:
-        """Returns:
-        Estimated cycle fidelity."""
+        """Estimated cycle fidelity."""
         if self._cycle_fidelity_estimate is None:
             raise self._not_analyzed
         return self._cycle_fidelity_estimate
 
     @property
     def cycle_fidelity_estimate_std(self) -> float:
-        """Returns:
-        Standard deviation for the cycle fidelity estimate."""
+        """Standard deviation for the cycle fidelity estimate."""
         if self._cycle_fidelity_estimate_std is None:
             raise self._not_analyzed
         return self._cycle_fidelity_estimate_std
+
+    def _analytical_data(self) -> pd.DataFrame:
+        """Create a copy of `self.data` with analytical probabilities in place of experimental data.
+
+        Returns:
+            The `pd.DataFrame` containing analytical probabilities.
+        """
+        assert self.data is not None
+
+        indices = [f"{i:0>{self.num_qubits}b}" for i in range(2**self.num_qubits)]
+
+        analytic_probabilities: list[npt.NDArray[np.float64]] = []
+        for row in self.data.itertuples():
+            sample = self.experiment[row.uuid]
+            subcircuit = sample.circuit.copy()
+            subcircuit.clear_operations_touching(
+                subcircuit.all_qubits().difference(self.qubits), range(len(subcircuit))
+            )
+            analytic_final_state = cirq.final_state_vector(
+                subcircuit,
+                qubit_order=self.qubits,
+                ignore_terminal_measurements=True,
+                dtype=np.complex128,
+            )
+            analytic_probabilities.append(np.abs(analytic_final_state) ** 2)
+
+        analytical_data = self.data.drop(columns=indices, errors="ignore")
+        analytical_data[indices] = analytic_probabilities
+        return analytical_data
 
     def _analyze(self) -> None:
         """Analyse the results and calculate the estimated circuit fidelity.
@@ -73,17 +101,18 @@ class XEBResults(QCVVResults):
         if self.data is None:
             raise RuntimeError("No data stored. Cannot perform analysis.")
 
-        indices = [f"{i:0>{self.num_qubits}b}" for i in range(2**self.num_qubits)]
-        exact_indices = [f"exact_{i}" for i in indices]
+        analytical_data = self._analytical_data()
 
+        indices = [f"{i:0>{self.num_qubits}b}" for i in range(2**self.num_qubits)]
         self.data["sum_p(x)p^(x)"] = pd.DataFrame(
-            (self.data[indices].values * self.data[exact_indices].values).sum(axis=1),
+            (self.data[indices] * analytical_data[indices]).sum(axis=1),
             index=self.data.index,
         )
         self.data["sum_p(x)p(x)"] = pd.DataFrame(
-            (self.data[exact_indices].values * self.data[exact_indices].values).sum(axis=1),
+            (analytical_data[indices] ** 2).sum(axis=1),
             index=self.data.index,
         )
+
         # Fit a linear model for each cycle depth to estimate the circuit fidelity
         records = []
         for depth in set(self.data.cycle_depth):
@@ -140,49 +169,45 @@ class XEBResults(QCVVResults):
                 "No stored dataframe of circuit fidelities. Something has gone wrong."
             )
 
-        groups = sorted(set(map(frozenset, self.data.qubits)), key=min)
-        fig, axs = plt.subplots(len(groups), 2, figsize=(10, 4.8))
+        fig, axs = plt.subplots(1, 2, figsize=(10, 4.8))
         colours = sns.color_palette("dark:r", n_colors=len(self.data.cycle_depth.unique()))
-
-        for i, qubits in enumerate(groups):
-            for depth, color in zip(sorted(self.data.cycle_depth.unique()), colours):
-                data = self.data[(self.data.cycle_depth == depth) & (self.data.qubits == qubits)],
-                sns.regplot(
-                    data=data[self.data.cycle_depth == depth],
-                    x="sum_p(x)p(x)",
-                    y="sum_p(x)p^(x)",
-                    ci=None,
-                    ax=axs[i, 0],
-                    color=color,
-                    label=depth,
-                )
-            axs[i, 0].legend(title="Cycle depth", bbox_to_anchor=(1.0, 0.5), loc="center left")
-            axs[i, 0].set_xlabel(r"$\sum p(x)^2$", fontsize=15)
-            axs[i, 0].set_ylabel(r"$\sum p(x) \hat{p}(x)$", fontsize=15)
-            axs[i, 0].set_title(r"Linear fit per cycle depth", fontsize=15, wrap=True)
-
+        for depth, color in zip(sorted(self.data.cycle_depth.unique()), colours):
             sns.regplot(
-                data=self._circuit_fidelities,
-                x="cycle_depth",
-                y="circuit_fidelity_estimate",
-                ax=axs[1],
-                fit_reg=False,
-                color="tab:red",
+                data=self.data[self.data.cycle_depth == depth],
+                x="sum_p(x)p(x)",
+                y="sum_p(x)p^(x)",
+                ci=None,
+                ax=axs[0],
+                color=color,
+                label=depth,
             )
-            axs[i, 1].set_xlabel(r"Cycle depth", fontsize=15)
-            axs[i, 1].set_ylabel(r"Circuit fidelity", fontsize=15)
-            axs[i, 1].set_title(r"Exponential decay of circuit fidelity", fontsize=15, wrap=True)
+        axs[0].legend(title="Cycle depth", bbox_to_anchor=(1.0, 0.5), loc="center left")
+        axs[0].set_xlabel(r"$\sum p(x)^2$", fontsize=15)
+        axs[0].set_ylabel(r"$\sum p(x) \hat{p}(x)$", fontsize=15)
+        axs[0].set_title(r"Linear fit per cycle depth", fontsize=15, wrap=True)
 
-            # Add fit line
-            x = np.linspace(
-                self._circuit_fidelities.cycle_depth.min(), self._circuit_fidelities.cycle_depth.max()
-            )
-            y = self.cycle_fidelity_estimate**x
-            y_p = (self.cycle_fidelity_estimate + 1.96 * self.cycle_fidelity_estimate_std) ** x
-            y_m = (self.cycle_fidelity_estimate - 1.96 * self.cycle_fidelity_estimate_std) ** x
-            axs[i, 1].plot(x, y, color="tab:red", linewidth=2)
-            axs[i, 1].fill_between(x, y_m, y_p, alpha=0.25, color="tab:red", label="95% CI")
-            axs[i, 1].legend()
+        sns.regplot(
+            data=self._circuit_fidelities,
+            x="cycle_depth",
+            y="circuit_fidelity_estimate",
+            ax=axs[1],
+            fit_reg=False,
+            color="tab:red",
+        )
+        axs[1].set_xlabel(r"Cycle depth", fontsize=15)
+        axs[1].set_ylabel(r"Circuit fidelity", fontsize=15)
+        axs[1].set_title(r"Exponential decay of circuit fidelity", fontsize=15, wrap=True)
+
+        # Add fit line
+        x = np.linspace(
+            self._circuit_fidelities.cycle_depth.min(), self._circuit_fidelities.cycle_depth.max()
+        )
+        y = self.cycle_fidelity_estimate**x
+        y_p = (self.cycle_fidelity_estimate + 1.96 * self.cycle_fidelity_estimate_std) ** x
+        y_m = (self.cycle_fidelity_estimate - 1.96 * self.cycle_fidelity_estimate_std) ** x
+        axs[1].plot(x, y, color="tab:red", linewidth=2)
+        axs[1].fill_between(x, y_m, y_p, alpha=0.25, color="tab:red", label="95% CI")
+        axs[1].legend()
 
         fig.tight_layout()
 
@@ -385,10 +410,7 @@ class XEB(QCVVExperiment[XEBResults]):
             )
             interleaved_layer = interleaved_layer.on(*qubits)
 
-        elif isinstance(interleaved_layer, cirq.Operation):
-            qubits = interleaved_layer.qubits
-
-        elif isinstance(interleaved_layer, cirq.Moment):
+        elif isinstance(interleaved_layer, (cirq.Operation, cirq.Moment)):
             qubits = sorted(interleaved_layer.qubits)
 
         else:
@@ -461,14 +483,6 @@ class XEB(QCVVExperiment[XEBResults]):
 
             circuit = self._interleave_layer(circuit, self.interleaved_layer)
 
-            analytic_final_state = cirq.final_state_vector(
-                circuit, qubit_order=sorted(circuit.all_qubits())
-            )
-            # analytic_probabilities = {
-            #     "exact_" + format(idx, f"0{self.num_qubits}b"): np.abs(state) ** 2
-            #     for idx, state in enumerate(analytic_final_state)
-            # }
-
             random_circuits.append(
                 Sample(
                     circuit=circuit + cirq.measure(sorted(circuit.all_qubits())),
@@ -476,71 +490,12 @@ class XEB(QCVVExperiment[XEBResults]):
                         "circuit_depth": len(circuit),
                         "cycle_depth": depth,
                         "interleaved_layer": str(self.interleaved_layer),
-                        # **analytic_probabilities,
                     },
                     circuit_realization=k,
                 )
             )
 
         return random_circuits
-
-    def _structure_records(
-        self, records: SupportsItems[uuid.UUID | int, Mapping[str, float] | Mapping[int, float]],
-    ) -> pd.DataFrame:
-        """Constructs a `pandas.DataFrame` from the provided records.
-
-        Args:
-            records: A dictionary of the counts/probabilities for each sample, keyed by either the
-                sample UUID or the index of the sample in the experiment. The counts/probabilities
-                for each sample should be provided as a dictionary of keyed by either the bitstring
-                or the integer value of that bitstring.
-
-        Returns:
-            A `DataFrame` containing the provided counts and corresponding sample information.
-        """
-        if self.interleaved_layer is None:
-            circuit = cirq.Circuit(css.barrier(*self.qubits))
-        else:
-            circuit = cirq.Circuit(self.interleaved_layer)
-
-        groups = sorted(circuit.get_independent_qubit_sets(), key=min)
-        group_indices = [[self.qubits.index(q) for q in qs] for qs in groups]
-
-        sample_mapping = self._map_records_to_samples(records)
-        results_data = []
-
-        for sample, results in sample_mapping.items():
-            probabilities = self.canonicalize_probabilities(results, self.num_qubits)
-
-            for group, qis in zip(groups, group_indices):
-                subcircuit = sample.circuit.copy()
-                subcircuit.clear_operations_touching(
-                    set(self.qubits) - group, range(len(subcircuit))
-                )
-                print(subcircuit, set(self.qubits) - group, range(len(subcircuit)))
-                analytic_final_state = cirq.final_state_vector(subcircuit, ignore_terminal_measurements=True)
-                analytic_probabilities = {
-                    "exact_" + format(idx, f"0{len(group)}b"): np.abs(state) ** 2
-                    for idx, state in enumerate(analytic_final_state)
-                }
-
-                subcircuit_probabilities = {}
-                for bitstring, prob in probabilities.items():
-                    substring = "".join(bitstring[qi] for qi in qis)
-                    subcircuit_probabilities.setdefault(substring, 0)
-                    subcircuit_probabilities[substring] += prob
-
-                # Add to results data
-                result = {
-                    "circuit_realization": sample.circuit_realization,
-                    "qubits": group,
-                    **sample.data,
-                    **subcircuit_probabilities,
-                    **analytic_probabilities,
-                }
-                results_data.append(result)
-
-        return pd.DataFrame(results_data)
 
     def _json_dict_(self) -> dict[str, Any]:
         """Converts the experiment to a json-able dictionary that can be used to recreate the
