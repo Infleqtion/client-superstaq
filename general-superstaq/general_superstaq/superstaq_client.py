@@ -165,7 +165,7 @@ class _BaseSuperstaqClient(ABC):
         return {"superstaq_version": version}
 
     @abstractmethod
-    def create_job(
+    def create_job(  # type: ignore [return]
         self,
         serialized_circuits: dict[str, str],
         repetitions: int = 1,
@@ -192,6 +192,8 @@ class _BaseSuperstaqClient(ABC):
         Raises:
             ~gss.SuperstaqServerException: if the request fails.
         """
+        gss.validation.validate_target(target)
+        gss.validation.validate_integer_param(repetitions, min_val=1)
 
     @abstractmethod
     def cancel_jobs(
@@ -290,7 +292,7 @@ class _BaseSuperstaqClient(ABC):
         """
 
     @abstractmethod
-    def target_info(self, target: str, **kwargs: object) -> dict[str, Any]:
+    def target_info(self, target: str, **kwargs: object) -> dict[str, Any]:  # type: ignore [return]
         """Makes a POST request to the /target_info endpoint.
 
         Uses the Superstaq API to request information about `target`.
@@ -302,6 +304,7 @@ class _BaseSuperstaqClient(ABC):
         Returns:
             The target information.
         """
+        gss.validation.validate_target(target)
 
     @abstractmethod
     def get_my_targets(self) -> list[gss.Target]:
@@ -389,7 +392,7 @@ class _BaseSuperstaqClient(ABC):
         """
 
     @abstractmethod
-    def submit_qubo(
+    def submit_qubo(  # type: ignore [return]
         self,
         qubo: Mapping[tuple[TQuboKey, ...], float],
         target: str,
@@ -429,6 +432,12 @@ class _BaseSuperstaqClient(ABC):
         Returns:
             A dictionary from the POST request.
         """
+        gss.validation.validate_target(target)
+        gss.validation.validate_qubo(qubo)
+        gss.validation.validate_integer_param(repetitions)
+        gss.validation.validate_integer_param(max_solutions)
+        gss.validation.validate_integer_param(qaoa_depth)
+        gss.validation.validate_integer_param(rqaoa_cutoff, min_val=0)
 
     @abstractmethod
     def supercheq(
@@ -450,9 +459,11 @@ class _BaseSuperstaqClient(ABC):
         Returns:
             The output of Supercheq.
         """
+        gss.validation.validate_integer_param(num_qubits, min_val=1)
+        gss.validation.validate_integer_param(depth, min_val=1)
 
     @abstractmethod
-    def submit_dfe(
+    def submit_dfe(  # type: ignore [return]
         self,
         circuit_1: dict[str, str],
         target_1: str,
@@ -485,6 +496,10 @@ class _BaseSuperstaqClient(ABC):
             ValueError: If any of the targets passed are not valid.
             ~gss.SuperstaqServerException: if the request fails.
         """
+        gss.validation.validate_target(target_1)
+        gss.validation.validate_target(target_2)
+        gss.validation.validate_integer_param(num_random_bases, min_val=1)
+        gss.validation.validate_integer_param(shots, min_val=1)
 
     @abstractmethod
     def process_dfe(self, job_ids: Sequence[str] | Sequence[uuid.UUID]) -> float:
@@ -502,7 +517,7 @@ class _BaseSuperstaqClient(ABC):
         """
 
     @abstractmethod
-    def submit_aces(
+    def submit_aces(  # type: ignore [return]
         self,
         target: str,
         qubits: Sequence[int],
@@ -539,6 +554,11 @@ class _BaseSuperstaqClient(ABC):
             ValueError: If the target or noise model is not valid.
             ~gss.SuperstaqServerException: If the request fails.
         """
+        gss.validation.validate_target(target)
+        gss.validation.validate_integer_param(shots, min_val=1)
+        gss.validation.validate_integer_param(num_circuits, min_val=1)
+        gss.validation.validate_integer_param(mirror_depth, min_val=1)
+        gss.validation.validate_integer_param(extra_depth, min_val=0)
 
     @abstractmethod
     def process_aces(self, job_id: str | uuid.UUID) -> list[float]:
@@ -552,7 +572,7 @@ class _BaseSuperstaqClient(ABC):
         """
 
     @abstractmethod
-    def submit_cb(
+    def submit_cb(  # type: ignore [return]
         self,
         target: str,
         shots: int,
@@ -583,6 +603,10 @@ class _BaseSuperstaqClient(ABC):
             ValueError: If the target or noise model is not valid.
             ~gss.SuperstaqServerException: If the request fails.
         """
+        gss.validation.validate_target(target)
+        gss.validation.validate_integer_param(shots, min_val=1)
+        gss.validation.validate_integer_param(n_channels, min_val=1)
+        gss.validation.validate_integer_param(n_sequences, min_val=1)
 
     @abstractmethod
     def process_cb(self, job_id: str | uuid.UUID, counts: str | None = None) -> dict[str, Any]:
@@ -919,8 +943,7 @@ class _SuperstaqClient(_BaseSuperstaqClient):
         method: str | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
-        gss.validation.validate_target(target)
-        gss.validation.validate_integer_param(repetitions)
+        super().create_job(serialized_circuits, repetitions, target)
 
         json_dict: dict[str, Any] = {
             **serialized_circuits,
@@ -1013,7 +1036,7 @@ class _SuperstaqClient(_BaseSuperstaqClient):
         return target_list
 
     def target_info(self, target: str, **kwargs: object) -> dict[str, Any]:
-        gss.validation.validate_target(target)
+        super().target_info(target)
 
         json_dict = {
             "target": target,
@@ -1056,12 +1079,14 @@ class _SuperstaqClient(_BaseSuperstaqClient):
         random_seed: int | None = None,
         **kwargs: object,
     ) -> dict[str, str]:
-        gss.validation.validate_target(target)
-        gss.validation.validate_qubo(qubo)
-        gss.validation.validate_integer_param(repetitions)
-        gss.validation.validate_integer_param(max_solutions)
-        gss.validation.validate_integer_param(qaoa_depth)
-        gss.validation.validate_integer_param(rqaoa_cutoff, min_val=0)
+        super().submit_qubo(
+            qubo,
+            target,
+            repetitions,
+            max_solutions=max_solutions,
+            qaoa_depth=qaoa_depth,
+            rqaoa_cutoff=rqaoa_cutoff,
+        )
 
         options = {
             "qaoa_depth": qaoa_depth,
@@ -1088,8 +1113,7 @@ class _SuperstaqClient(_BaseSuperstaqClient):
         depth: int,
         circuit_return_type: str,
     ) -> Any:
-        gss.validation.validate_integer_param(num_qubits)
-        gss.validation.validate_integer_param(depth)
+        super().supercheq(files, num_qubits, depth, circuit_return_type)
 
         json_dict = {
             "files": files,
@@ -1109,8 +1133,7 @@ class _SuperstaqClient(_BaseSuperstaqClient):
         shots: int,
         **kwargs: Any,
     ) -> list[str]:
-        gss.validation.validate_target(target_1)
-        gss.validation.validate_target(target_2)
+        super().submit_dfe(circuit_1, target_1, circuit_2, target_2, num_random_bases, shots)
 
         state_1 = {**circuit_1, "target": target_1}
         state_2 = {**circuit_2, "target": target_2}
@@ -1150,7 +1173,14 @@ class _SuperstaqClient(_BaseSuperstaqClient):
         lifespan: int | None = None,
         weights: Sequence[int] | None = None,
     ) -> str:
-        gss.validation.validate_target(target)
+        super().submit_aces(
+            target,
+            qubits,
+            shots,
+            num_circuits,
+            mirror_depth,
+            extra_depth,
+        )
 
         json_dict = {
             "target": target,
@@ -1190,7 +1220,14 @@ class _SuperstaqClient(_BaseSuperstaqClient):
         method: str | None = None,
         noise: dict[str, object] | None = None,
     ) -> str:
-        gss.validation.validate_target(target)
+        super().submit_cb(
+            target,
+            shots,
+            serialized_circuits,
+            n_channels,
+            n_sequences,
+            depths,
+        )
 
         json_dict: dict[str, Any] = {
             "target": target,
@@ -1233,8 +1270,7 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         **kwargs: Any,
     ) -> dict[str, Any]:
         """Version 0.3.0 implementation."""
-        gss.validation.validate_target(target)
-        gss.validation.validate_integer_param(repetitions)
+        super().create_job(serialized_circuits, repetitions, target)
 
         # Infer the job type
         if target.endswith("_simulator") or method in _models.SimMethod._value2member_map_.keys():
@@ -1357,6 +1393,7 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         ]
 
     def target_info(self, target: str, **kwargs: object) -> dict[str, Any]:
+        super().target_info(target)
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
 
         response = _models.TargetInfo(
