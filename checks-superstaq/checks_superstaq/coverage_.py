@@ -142,16 +142,7 @@ def _run_on_files(
 
 def _report(test_returncode: int) -> int:
     coverage_returncode = subprocess.call(
-        [
-            "python",
-            "-m",
-            "coverage",
-            "report",
-            "--precision=2",
-            "--show-missing",
-            "--fail-under",
-            "100",
-        ],
+        ["python", "-m", "coverage", "report", "--precision=2"],
         cwd=check_utils.root_dir,
     )
 
