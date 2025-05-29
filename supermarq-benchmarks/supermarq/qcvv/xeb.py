@@ -68,7 +68,7 @@ class XEBResults(QCVVResults):
         indices = [f"{i:0>{self.num_qubits}b}" for i in range(2**self.num_qubits)]
 
         analytic_probabilities: list[npt.NDArray[np.float64]] = []
-        for row in self.data.itertuples():
+        for _, row in self.data.iterrows():
             sample = self.experiment[row.uuid]
             subcircuit = sample.circuit.copy()
             subcircuit.clear_operations_touching(
@@ -104,14 +104,8 @@ class XEBResults(QCVVResults):
         analytical_data = self._analytical_data()
 
         indices = [f"{i:0>{self.num_qubits}b}" for i in range(2**self.num_qubits)]
-        self.data["sum_p(x)p^(x)"] = pd.DataFrame(
-            (self.data[indices] * analytical_data[indices]).sum(axis=1),
-            index=self.data.index,
-        )
-        self.data["sum_p(x)p(x)"] = pd.DataFrame(
-            (analytical_data[indices] ** 2).sum(axis=1),
-            index=self.data.index,
-        )
+        self.data["sum_p(x)p^(x)"] = (self.data[indices] * analytical_data[indices]).sum(axis=1)
+        self.data["sum_p(x)p(x)"] = (analytical_data[indices] ** 2).sum(axis=1)
 
         # Fit a linear model for each cycle depth to estimate the circuit fidelity
         records = []
