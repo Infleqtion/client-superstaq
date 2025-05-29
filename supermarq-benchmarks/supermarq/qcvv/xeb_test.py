@@ -319,7 +319,7 @@ def test_xeb_analyse_results(tmp_path: pathlib.Path, xeb_experiment: XEB) -> Non
         cirq.Circuit(cirq.CX(cirq.q(1), cirq.q(2)), cirq.CZ(cirq.q(2), cirq.q(0))),
     ],
 )
-def test_analysis_succeeds_with_all_layer_types(
+def test_analytical_probabilities(
     layer: cirq.OP_TREE | None,
 ) -> None:
     xeb_experiment = XEB(num_circuits=3, cycle_depths=[1, 3], interleaved_layer=layer)
