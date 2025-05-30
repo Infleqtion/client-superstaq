@@ -398,52 +398,56 @@ def test_run_on_device_dry_run(
     assert results.experiment == abc_experiment
 
 
-def test_interleave_circuit() -> None:
-    qubit = cirq.LineQubit(0)
-    circuit = cirq.Circuit(*[cirq.X(qubit) for _ in range(4)])
+def test_interleave_circuit(abc_experiment: ExampleExperiment) -> None:
+    qubits = abc_experiment.qubits
+    circuit = cirq.Circuit(*[cirq.X(qubits[0]) for _ in range(4)])
 
     # With last gate
-    interleaved_circuit = QCVVExperiment._interleave_op(circuit, cirq.Z(qubit), include_final=True)
+    interleaved_circuit = abc_experiment._interleave_op(
+        circuit, cirq.Z(qubits[0]), include_final=True
+    )
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(
-            cirq.X(qubit),
-            css.barrier(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            css.barrier(qubit),
-            cirq.X(qubit),
-            css.barrier(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            css.barrier(qubit),
-            cirq.X(qubit),
-            css.barrier(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            css.barrier(qubit),
-            cirq.X(qubit),
-            css.barrier(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            css.barrier(qubit),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.TaggedOperation(cirq.Z(qubits[0]), "no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.TaggedOperation(cirq.Z(qubits[0]), "no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.TaggedOperation(cirq.Z(qubits[0]), "no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.TaggedOperation(cirq.Z(qubits[0]), "no_compile"),
+            css.barrier(*qubits),
         ),
     )
 
     # Without last gate
-    interleaved_circuit = QCVVExperiment._interleave_op(circuit, cirq.Z(qubit), include_final=False)
+    interleaved_circuit = abc_experiment._interleave_op(
+        circuit, cirq.Z(qubits[0]), include_final=False
+    )
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(
-            cirq.X(qubit),
-            css.barrier(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            css.barrier(qubit),
-            cirq.X(qubit),
-            css.barrier(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            css.barrier(qubit),
-            cirq.X(qubit),
-            css.barrier(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            css.barrier(qubit),
-            cirq.X(qubit),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.TaggedOperation(cirq.Z(qubits[0]), "no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.TaggedOperation(cirq.Z(qubits[0]), "no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.TaggedOperation(cirq.Z(qubits[0]), "no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
         ),
     )
 

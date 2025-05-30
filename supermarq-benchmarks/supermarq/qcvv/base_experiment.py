@@ -490,9 +490,8 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
         return probabilities
 
-    @staticmethod
     def _interleave_op(
-        circuit: cirq.Circuit, operation: cirq.Operation, include_final: bool = False
+        self, circuit: cirq.Circuit, operation: cirq.Operation, include_final: bool = False
     ) -> cirq.Circuit:
         """Interleave a given operation into a circuit.
 
