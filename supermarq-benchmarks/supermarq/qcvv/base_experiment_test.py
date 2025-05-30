@@ -145,6 +145,7 @@ def test_qcvv_experiment_init(
     assert abc_experiment._service_kwargs == {"service_details": "Some other details"}
     assert len(abc_experiment.samples) == 30
     assert isinstance(abc_experiment._rng, np.random.Generator)
+    assert abc_experiment.circuits == [sample.circuit for sample in abc_experiment]
 
     new_experiment = ExampleExperiment(
         qubits=[cirq.q(1), cirq.q(3), cirq.q(7)],
@@ -153,6 +154,7 @@ def test_qcvv_experiment_init(
     )
     assert new_experiment.num_qubits == 3
     assert new_experiment.qubits == (cirq.q(1), cirq.q(3), cirq.q(7))
+    assert new_experiment.circuits == [sample.circuit for sample in new_experiment]
 
 
 def test_results_init(

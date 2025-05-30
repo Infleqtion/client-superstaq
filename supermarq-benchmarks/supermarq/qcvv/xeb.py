@@ -435,6 +435,19 @@ class XEB(QCVVExperiment[XEBResults]):
             **kwargs,
         )
 
+    def independent_qubit_groups(self) -> list[tuple[cirq.Qid, ...]]:
+        """Get all independent subsets of qubits in this experiment.
+
+        Returns:
+            A list of disjoint tuples of `cirq.Qid` objects, each of which can be analyzed as an
+            independent XEB experiment.
+        """
+        if self.interleaved_layer:
+            qubit_sets = cirq.Circuit(self.interleaved_layer).get_independent_qubit_sets()
+            return sorted((tuple(sorted(qubit_set)) for qubit_set in qubit_sets), key=min)
+
+        return [self.qubits]
+
     ###################
     # Private Methods #
     ###################

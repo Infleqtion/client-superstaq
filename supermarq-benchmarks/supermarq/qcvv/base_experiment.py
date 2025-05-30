@@ -433,6 +433,11 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         """The number of qubits used in the experiment."""
         return len(self.qubits)
 
+    @property
+    def circuits(self) -> list[cirq.Circuit]:
+        """All circuits in this experiment, as a list."""
+        return [sample.circuit for sample in self.samples]
+
     ###################
     # Private Methods #
     ###################

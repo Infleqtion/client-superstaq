@@ -357,6 +357,34 @@ def test_analytical_probabilities(
     )
 
 
+def test_independent_qubit_groups() -> None:
+    q0, q1, q2, q3 = cirq.LineQubit.range(4)
+
+    experiment = XEB(num_circuits=3, cycle_depths=[1, 3], interleaved_layer=None)
+    assert experiment.independent_qubit_groups() == [(q0, q1)]
+
+    experiment = XEB(num_circuits=3, cycle_depths=[1, 3], interleaved_layer=cirq.CZ)
+    assert experiment.independent_qubit_groups() == [(q0, q1)]
+
+    experiment = XEB(num_circuits=3, cycle_depths=[1, 3], interleaved_layer=cirq.CCZ)
+    assert experiment.independent_qubit_groups() == [(q0, q1, q2)]
+
+    experiment = XEB(num_circuits=3, cycle_depths=[1, 3], interleaved_layer=cirq.CZ(q1, q3))
+    assert experiment.independent_qubit_groups() == [(q1, q3)]
+
+    moment = cirq.Moment(cirq.X.on_each(q0, q2, q3))
+    experiment = XEB(num_circuits=3, cycle_depths=[1, 3], interleaved_layer=moment)
+    assert experiment.independent_qubit_groups() == [(q0,), (q2,), (q3,)]
+
+    moment = cirq.Moment(cirq.CZ(q1, q3), cirq.CZ(q0, q2))
+    experiment = XEB(num_circuits=3, cycle_depths=[1, 3], interleaved_layer=moment)
+    assert experiment.independent_qubit_groups() == [(q0, q2), (q1, q3)]
+
+    circuit = cirq.Circuit(cirq.CZ(q0, q1), cirq.CZ(q1, q2), cirq.X(q3))
+    experiment = XEB(num_circuits=3, cycle_depths=[1, 3], interleaved_layer=circuit)
+    assert experiment.independent_qubit_groups() == [(q0, q1, q2), (q3,)]
+
+
 def test_results_no_data() -> None:
     results = XEBResults(target="example", experiment=XEB(1, []), data=None)
     with pytest.raises(RuntimeError, match="No data stored. Cannot perform analysis."):
