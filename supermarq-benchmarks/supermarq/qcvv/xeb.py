@@ -275,12 +275,12 @@ class XEBResults(QCVVResults):
                 transform=ax.transAxes,
                 color="white",
             )
-            if k != 0:
-                ax.axhline(y=0, linewidth=1.5, color="white", linestyle="--")
             if k == 0:
                 ax.set_title("Speckle plots")
+            else:
+                ax.axhline(y=0, linewidth=1.5, color="white", linestyle="--")
 
-            if k == 3:
+            if k == 2**self.num_qubits - 1:
                 ax.set_xlabel("Cycle depth")
 
         # Format colour bar
@@ -299,8 +299,9 @@ class XEBResults(QCVVResults):
             .drop(columns=["circuit_realization"])
         )
         # Rescale the purity estimate according to Porter-Thomas distribution
+        dim = np.prod([q.dimension for q in self.qubits])
         purity_data["sqrt_speckle_purity"] = purity_data["sqrt_speckle_purity"] * np.sqrt(
-            4**2 * (4 + 1) / (4 - 1)
+            dim**2 * (dim + 1) / (dim - 1)
         )
 
         # Plot decay
