@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import pathlib
 import re
-from unittest.mock import MagicMock
+from unittest import mock
 
 import cirq
 import cirq_superstaq as css
@@ -31,18 +31,18 @@ def test_xeb_init() -> None:
 
     experiment = XEB(num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
-    assert experiment.qubits == [q0, q1]
-    assert experiment.two_qubit_gate == cirq.CZ
+    assert experiment.qubits == (q0, q1)
+    assert experiment.interleaved_layer == cirq.CZ(q0, q1)
     assert experiment.single_qubit_gate_set == [
         cirq.PhasedXPowGate(exponent=0.5, phase_exponent=0.0),
         cirq.PhasedXPowGate(exponent=0.5, phase_exponent=0.25),
         cirq.PhasedXPowGate(exponent=0.5, phase_exponent=0.5),
     ]
 
-    experiment = XEB(two_qubit_gate=cirq.CX, num_circuits=10, cycle_depths=[1, 3, 5])
+    experiment = XEB(interleaved_layer=cirq.CX, num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
-    assert experiment.qubits == [q0, q1]
-    assert experiment.two_qubit_gate == cirq.CX
+    assert experiment.qubits == (q0, q1)
+    assert experiment.interleaved_layer == cirq.CX(q0, q1)
     assert experiment.single_qubit_gate_set == [
         cirq.PhasedXPowGate(exponent=0.5, phase_exponent=0.0),
         cirq.PhasedXPowGate(exponent=0.5, phase_exponent=0.25),
@@ -51,19 +51,35 @@ def test_xeb_init() -> None:
 
     experiment = XEB(single_qubit_gate_set=[cirq.X], num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
-    assert experiment.two_qubit_gate == cirq.CZ
+    assert experiment.qubits == (q0, q1)
+    assert experiment.interleaved_layer == cirq.CZ(q0, q1)
     assert experiment.single_qubit_gate_set == [cirq.X]
 
-    experiment = XEB(two_qubit_gate=None, num_circuits=10, cycle_depths=[1, 3, 5])
+    experiment = XEB(interleaved_layer=None, num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
-    assert experiment.qubits == [q0, q1]
-    assert experiment.two_qubit_gate is None
+    assert experiment.qubits == (q0, q1)
+    assert not experiment.interleaved_layer
 
-    experiment = XEB(two_qubit_gate=cirq.CZ(q1, q2), num_circuits=10, cycle_depths=[1, 3, 5])
+    interleaved_op = cirq.CCX(q2, q0, q1)
+    experiment = XEB(interleaved_layer=interleaved_op, num_circuits=10, cycle_depths=[1, 3, 5])
+    assert experiment.num_qubits == 3
+    assert experiment.qubits == (q0, q1, q2)
+    assert experiment.interleaved_layer == interleaved_op
+    assert all(sample.circuit.all_qubits() == {q0, q1, q2} for sample in experiment.samples)
+
+    interleaved_moment = cirq.Moment(cirq.Z(q2), cirq.H(q1))
+    experiment = XEB(interleaved_layer=interleaved_moment, num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 2
-    assert experiment.qubits == [q1, q2]
-    assert experiment.two_qubit_gate == cirq.CZ
+    assert experiment.qubits == (q1, q2)
+    assert experiment.interleaved_layer == interleaved_moment
     assert all(sample.circuit.all_qubits() == {q1, q2} for sample in experiment.samples)
+
+    interleaved_circuit = cirq.Circuit(cirq.CZ(q2, q0), cirq.CCZ(q0, q1, q2))
+    experiment = XEB(interleaved_layer=interleaved_circuit, num_circuits=10, cycle_depths=[1, 3, 5])
+    assert experiment.num_qubits == 3
+    assert experiment.qubits == (q0, q1, q2)
+    assert experiment.interleaved_layer == interleaved_circuit
+    assert all(sample.circuit.all_qubits() == {q0, q1, q2} for sample in experiment.samples)
 
 
 @pytest.fixture
@@ -74,7 +90,7 @@ def xeb_experiment() -> XEB:
 
 
 def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
-    xeb_experiment._rng = (rng := MagicMock())
+    xeb_experiment._rng = (rng := mock.MagicMock())
     xeb_experiment.single_qubit_gate_set = [cirq.X, cirq.Y, cirq.Z]
     rng.integers.side_effect = [
         np.array([[0, 1]]),
@@ -82,13 +98,13 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
         np.array([[0, 2]]),
         np.array([[1, 1], [2, 1]]),
     ]
-    circuits = xeb_experiment._build_circuits(num_circuits=2, cycle_depths=[2])
+    samples = xeb_experiment._build_circuits(num_circuits=2, cycle_depths=[2])
 
-    assert len(circuits) == 2
+    assert len(samples) == 2
 
     qbs = xeb_experiment.qubits
     cirq.testing.assert_same_circuits(
-        circuits[0].circuit,
+        samples[0].circuit,
         cirq.Circuit(
             [
                 cirq.X(qbs[0]),
@@ -107,17 +123,13 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
             ]
         ),
     )
-    assert circuits[0].data == {
+    assert samples[0].data == {
         "circuit_depth": 9,
         "cycle_depth": 2,
-        "two_qubit_gate": "CZ",
-        "exact_00": 1.0,
-        "exact_01": 0.0,
-        "exact_10": 0.0,
-        "exact_11": 0.0,
+        "interleaved_layer": "CZ(q(0), q(1))",
     }
     cirq.testing.assert_same_circuits(
-        circuits[1].circuit,
+        samples[1].circuit,
         cirq.Circuit(
             [
                 cirq.X(qbs[0]),
@@ -136,14 +148,10 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
             ]
         ),
     )
-    assert circuits[1].data == {
+    assert samples[1].data == {
         "circuit_depth": 9,
         "cycle_depth": 2,
-        "two_qubit_gate": "CZ",
-        "exact_00": 0.0,
-        "exact_01": 0.0,
-        "exact_10": 1.0,
-        "exact_11": 0.0,
+        "interleaved_layer": "CZ(q(0), q(1))",
     }
 
 
@@ -166,11 +174,10 @@ def test_single_qubit_gates_dont_repeat() -> None:
 
 
 def test_xeb_analyse_results(tmp_path: pathlib.Path, xeb_experiment: XEB) -> None:
-    results = XEBResults(target="example", experiment=xeb_experiment)
-
-    results.data = pd.DataFrame(
+    exp_data = pd.DataFrame(
         [
             {
+                "uuid": xeb_experiment.samples[0].uuid,
                 "circuit_realization": 0,
                 "cycle_depth": 1,
                 "circuit_depth": 3,
@@ -178,12 +185,9 @@ def test_xeb_analyse_results(tmp_path: pathlib.Path, xeb_experiment: XEB) -> Non
                 "01": 0.0,
                 "10": 0.0,
                 "11": 0.0,
-                "exact_00": 1.0,
-                "exact_01": 0.0,
-                "exact_10": 0.0,
-                "exact_11": 0.0,
             },
             {
+                "uuid": xeb_experiment.samples[1].uuid,
                 "circuit_realization": 1,
                 "cycle_depth": 1,
                 "circuit_depth": 3,
@@ -191,12 +195,9 @@ def test_xeb_analyse_results(tmp_path: pathlib.Path, xeb_experiment: XEB) -> Non
                 "01": 0.0,
                 "10": 0.0,
                 "11": 0.0,
-                "exact_00": 0.5,
-                "exact_01": 0.5,
-                "exact_10": 0.0,
-                "exact_11": 0.0,
             },
             {
+                "uuid": xeb_experiment.samples[2].uuid,
                 "circuit_realization": 0,
                 "cycle_depth": 5,
                 "circuit_depth": 11,
@@ -204,12 +205,9 @@ def test_xeb_analyse_results(tmp_path: pathlib.Path, xeb_experiment: XEB) -> Non
                 "01": 1.0,
                 "10": 0.0,
                 "11": 0.0,
-                "exact_00": 0.0,
-                "exact_01": 0.75,
-                "exact_10": 0.25,
-                "exact_11": 0.0,
             },
             {
+                "uuid": xeb_experiment.samples[3].uuid,
                 "circuit_realization": 1,
                 "cycle_depth": 5,
                 "circuit_depth": 11,
@@ -217,12 +215,9 @@ def test_xeb_analyse_results(tmp_path: pathlib.Path, xeb_experiment: XEB) -> Non
                 "01": 0.0,
                 "10": 1.0,
                 "11": 0.0,
-                "exact_00": 0.0,
-                "exact_01": 0.5,
-                "exact_10": 0.25,
-                "exact_11": 0.25,
             },
             {
+                "uuid": xeb_experiment.samples[4].uuid,
                 "circuit_realization": 0,
                 "cycle_depth": 10,
                 "circuit_depth": 21,
@@ -230,12 +225,9 @@ def test_xeb_analyse_results(tmp_path: pathlib.Path, xeb_experiment: XEB) -> Non
                 "01": 0.0,
                 "10": 0.5,
                 "11": 0.5,
-                "exact_00": 0.2,
-                "exact_01": 0.3,
-                "exact_10": 0.25,
-                "exact_11": 0.25,
             },
             {
+                "uuid": xeb_experiment.samples[5].uuid,
                 "circuit_realization": 1,
                 "cycle_depth": 10,
                 "circuit_depth": 21,
@@ -243,10 +235,71 @@ def test_xeb_analyse_results(tmp_path: pathlib.Path, xeb_experiment: XEB) -> Non
                 "01": 0.0,
                 "10": 0.5,
                 "11": 0.5,
-                "exact_00": 0.1,
-                "exact_01": 0.1,
-                "exact_10": 0.4,
-                "exact_11": 0.4,
+            },
+        ]
+    )
+
+    analytical_data = pd.DataFrame(
+        [
+            {
+                "uuid": xeb_experiment.samples[0].uuid,
+                "circuit_realization": 0,
+                "cycle_depth": 1,
+                "circuit_depth": 3,
+                "00": 1.0,
+                "01": 0.0,
+                "10": 0.0,
+                "11": 0.0,
+            },
+            {
+                "uuid": xeb_experiment.samples[1].uuid,
+                "circuit_realization": 1,
+                "cycle_depth": 1,
+                "circuit_depth": 3,
+                "00": 0.5,
+                "01": 0.5,
+                "10": 0.0,
+                "11": 0.0,
+            },
+            {
+                "uuid": xeb_experiment.samples[2].uuid,
+                "circuit_realization": 0,
+                "cycle_depth": 5,
+                "circuit_depth": 11,
+                "00": 0.0,
+                "01": 0.75,
+                "10": 0.25,
+                "11": 0.0,
+            },
+            {
+                "uuid": xeb_experiment.samples[3].uuid,
+                "circuit_realization": 1,
+                "cycle_depth": 5,
+                "circuit_depth": 11,
+                "00": 0.0,
+                "01": 0.5,
+                "10": 0.25,
+                "11": 0.25,
+            },
+            {
+                "uuid": xeb_experiment.samples[4].uuid,
+                "circuit_realization": 0,
+                "cycle_depth": 10,
+                "circuit_depth": 21,
+                "00": 0.2,
+                "01": 0.3,
+                "10": 0.25,
+                "11": 0.25,
+            },
+            {
+                "uuid": xeb_experiment.samples[5].uuid,
+                "circuit_realization": 1,
+                "cycle_depth": 10,
+                "circuit_depth": 21,
+                "00": 0.1,
+                "01": 0.1,
+                "10": 0.4,
+                "11": 0.4,
             },
         ]
     )
@@ -254,7 +307,12 @@ def test_xeb_analyse_results(tmp_path: pathlib.Path, xeb_experiment: XEB) -> Non
     plot_filename = tmp_path / "example.png"
     speckle_plot_filename = tmp_path / "example_speckle.png"
 
-    results.analyze(plot_filename=plot_filename.as_posix())
+    results = XEBResults(target="example", experiment=xeb_experiment, data=exp_data)
+
+    with mock.patch.object(results, "_analytical_data", return_value=analytical_data):
+        results.analyze(plot_filename=plot_filename.as_posix())
+
+    assert results.data is not None
     np.testing.assert_allclose(
         results.data["sum_p(x)p^(x)"].values, [1.0, 0.5, 0.75, 0.25, 0.25, 0.4]
     )
@@ -271,6 +329,32 @@ def test_xeb_analyse_results(tmp_path: pathlib.Path, xeb_experiment: XEB) -> Non
     # Test the speckle plot
     results.plot_speckle(filename=speckle_plot_filename.as_posix())
     assert pathlib.Path(tmp_path / "example_speckle.png").exists()
+
+
+@pytest.mark.parametrize(
+    "layer",
+    [
+        None,
+        cirq.Y,
+        cirq.CCX,
+        cirq.CX(cirq.q(4), cirq.q(0)),
+        cirq.Moment(cirq.H(cirq.q(2)), cirq.X(cirq.q(0))),
+        cirq.Circuit(cirq.CX(cirq.q(1), cirq.q(2)), cirq.CZ(cirq.q(2), cirq.q(0))),
+    ],
+)
+def test_analytical_probabilities(
+    layer: cirq.OP_TREE | None,
+) -> None:
+    xeb_experiment = XEB(num_circuits=3, cycle_depths=[1, 3], interleaved_layer=layer)
+
+    def _exact_sim(circuit: cirq.Circuit) -> dict[int, float]:
+        psi = circuit.final_state_vector(ignore_terminal_measurements=True, dtype=np.complex128)
+        return dict(enumerate(np.abs(psi**2)))
+
+    pd.testing.assert_frame_equal(
+        xeb_experiment.run_with_callable(_exact_sim).data,
+        xeb_experiment.run_with_simulator()._analytical_data(),
+    )
 
 
 def test_results_no_data() -> None:
@@ -301,11 +385,27 @@ def test_results_not_analyzed() -> None:
             getattr(results, attr)
 
 
+@pytest.mark.parametrize(
+    "layer",
+    [
+        None,
+        cirq.CX,
+        cirq.CCX(cirq.q(2), cirq.q(0), cirq.q(1)),
+        cirq.Moment(cirq.H(cirq.q(2)), cirq.X(cirq.q(0))),
+        cirq.Circuit(cirq.CX(cirq.q(1), cirq.q(2)), cirq.CZ(cirq.q(2), cirq.q(0))),
+    ],
+)
 def test_dump_and_load(
     tmp_path_factory: pytest.TempPathFactory,
-    xeb_experiment: XEB,
+    layer: cirq.OP_TREE | None,
 ) -> None:
     filename = tmp_path_factory.mktemp("tempdir") / "file.json"
+    xeb_experiment = XEB(
+        num_circuits=10,
+        cycle_depths=[1, 3, 5],
+        interleaved_layer=layer,
+        single_qubit_gate_set=[cirq.X, cirq.Y, cirq.Z],
+    )
     xeb_experiment.to_file(filename)
     exp = XEB.from_file(filename)
 
@@ -314,4 +414,4 @@ def test_dump_and_load(
     assert exp.num_circuits == xeb_experiment.num_circuits
     assert exp.cycle_depths == xeb_experiment.cycle_depths
     assert exp.single_qubit_gate_set == xeb_experiment.single_qubit_gate_set
-    assert exp.two_qubit_gate == xeb_experiment.two_qubit_gate
+    assert exp.interleaved_layer == xeb_experiment.interleaved_layer
