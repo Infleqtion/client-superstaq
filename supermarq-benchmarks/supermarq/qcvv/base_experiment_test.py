@@ -506,65 +506,78 @@ def test_run_on_device_dry_run(
     assert results.experiment == abc_experiment
 
 
-def test_interleave_layer(abc_experiment: ExampleExperiment) -> None:
-    qubit = cirq.LineQubit(0)
-    circuit = cirq.Circuit(*[cirq.X(qubit) for _ in range(4)])
+def test_interleave_circuit(abc_experiment: ExampleExperiment) -> None:
+    qubits = abc_experiment.qubits
+    circuit = cirq.Circuit(*[cirq.X(qubits[0]) for _ in range(4)])
 
     # With last gate
     interleaved_circuit = abc_experiment._interleave_layer(
-        circuit, cirq.Z(qubit), include_final=True
+        circuit, cirq.Z(qubits[0]), include_final=True
     )
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(
-            cirq.X(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            cirq.X(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            cirq.X(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            cirq.X(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            css.barrier(*qubits),
         ),
     )
 
     # Without last gate
     interleaved_circuit = abc_experiment._interleave_layer(
-        circuit, cirq.Z(qubit), include_final=False
+        circuit, cirq.Z(qubits[0]), include_final=False
     )
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(
-            cirq.X(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            cirq.X(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            cirq.X(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            cirq.X(qubit),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
         ),
     )
 
     # Multi-gate layer
-    q0, q1 = abc_experiment.qubits
-    layer = cirq.Moment(cirq.Z(q0), cirq.H(q1))
+    layer = cirq.Moment(cirq.Z(qubits[0]), cirq.H(qubits[1]))
     interleaved_circuit = abc_experiment._interleave_layer(
         circuit, layer=layer, include_final=False
     )
     tagged_layer = cirq.Moment(
-        cirq.Z(q0).with_tags("no_compile"),
-        cirq.H(q1).with_tags("no_compile"),
+        cirq.Z(qubits[0]).with_tags("no_compile"),
+        cirq.H(qubits[1]).with_tags("no_compile"),
     )
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(
-            cirq.X(q0),
+            cirq.X(qubits[0]),
             tagged_layer,
-            cirq.X(q0),
+            cirq.X(qubits[0]),
             tagged_layer,
-            cirq.X(q0),
+            cirq.X(qubits[0]),
             tagged_layer,
-            cirq.X(q0),
+            cirq.X(qubits[0]),
         ),
     )
 
@@ -573,13 +586,13 @@ def test_interleave_layer(abc_experiment: ExampleExperiment) -> None:
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(
-            cirq.X(q0),
-            css.barrier(q0, q1),
-            cirq.X(q0),
-            css.barrier(q0, q1),
-            cirq.X(q0),
-            css.barrier(q0, q1),
-            cirq.X(q0),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
         ),
     )
 

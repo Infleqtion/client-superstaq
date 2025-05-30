@@ -549,7 +549,11 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             A copy of the original circuit with the provided layer interleaved.
         """
         if layer:
-            layer_circuit = cirq.toggle_tags(cirq.Circuit(layer), ("no_compile",))
+            layer_circuit = cirq.Circuit(
+                css.barrier(*self.qubits),
+                cirq.toggle_tags(cirq.Circuit(layer), ("no_compile",)),
+                css.barrier(*self.qubits),
+            )
         else:
             # If the layer is empty, use a single barrier as a placeholder
             layer_circuit = cirq.Circuit(css.barrier(*self.qubits))

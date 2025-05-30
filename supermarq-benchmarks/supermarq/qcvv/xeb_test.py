@@ -19,6 +19,7 @@ import re
 from unittest import mock
 
 import cirq
+import cirq_superstaq as css
 import numpy as np
 import pandas as pd
 import pytest
@@ -112,10 +113,14 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
             [
                 cirq.X(qbs[0]),
                 cirq.Y(qbs[1]),
+                css.barrier(*qbs),
                 cirq.TaggedOperation(cirq.CZ(*qbs), "no_compile"),
+                css.barrier(*qbs),
                 cirq.Z(qbs[0]),
                 cirq.Y(qbs[1]),
+                css.barrier(*qbs),
                 cirq.TaggedOperation(cirq.CZ(*qbs), "no_compile"),
+                css.barrier(*qbs),
                 cirq.Y(qbs[0]),
                 cirq.Z(qbs[1]),
                 cirq.measure(qbs),
@@ -123,7 +128,7 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
         ),
     )
     assert samples[0].data == {
-        "circuit_depth": 5,
+        "circuit_depth": 9,
         "cycle_depth": 2,
         "interleaved_layer": "CZ(q(0), q(1))",
     }
@@ -133,10 +138,14 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
             [
                 cirq.X(qbs[0]),
                 cirq.Z(qbs[1]),
+                css.barrier(*qbs),
                 cirq.TaggedOperation(cirq.CZ(*qbs), "no_compile"),
+                css.barrier(*qbs),
                 cirq.X(qbs[0]),
                 cirq.X(qbs[1]),
+                css.barrier(*qbs),
                 cirq.TaggedOperation(cirq.CZ(*qbs), "no_compile"),
+                css.barrier(*qbs),
                 cirq.Y(qbs[0]),
                 cirq.Y(qbs[1]),
                 cirq.measure(qbs),
@@ -144,7 +153,7 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
         ),
     )
     assert samples[1].data == {
-        "circuit_depth": 5,
+        "circuit_depth": 9,
         "cycle_depth": 2,
         "interleaved_layer": "CZ(q(0), q(1))",
     }
