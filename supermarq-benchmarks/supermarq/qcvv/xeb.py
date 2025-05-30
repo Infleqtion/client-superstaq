@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import itertools
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -357,7 +356,7 @@ class XEB(QCVVExperiment[XEBResults]):
         num_circuits: int,
         cycle_depths: Iterable[int],
         two_qubit_gate: cirq.Gate | cirq.Operation | None = cirq.CZ,
-        single_qubit_gate_set: list[cirq.Gate] | None = None,
+        single_qubit_gate_set: Sequence[cirq.Gate] | None = None,
         *,
         random_seed: int | np.random.Generator | None = None,
         _samples: list[Sample] | None = None,
@@ -371,7 +370,7 @@ class XEB(QCVVExperiment[XEBResults]):
             two_qubit_gate: The two qubit gate to interleave between the single qubit gates. If None
                 then no two qubit gate is used. Defaults to control-Z gate.
             single_qubit_gate_set: Optional list of single qubit gates to randomly sample from when
-                generating random circuits. If not provided defaults to phased XZ gates with 1/4 pi
+                generating random circuits. If not provided defaults to phased X gates with 1/4 pi
                 intervals.
             random_seed: An optional seed to use for randomization.
             kwargs: Any additional supported string keyword args.
@@ -389,19 +388,12 @@ class XEB(QCVVExperiment[XEBResults]):
         """The single qubit gates to randomly sample from"""
 
         if single_qubit_gate_set is None:
-            gate_exponents = np.linspace(start=0, stop=7 / 4, num=8)
             self.single_qubit_gate_set = [
-                cirq.PhasedXZGate(
-                    z_exponent=z,  # 1) Choose an axis in the xy-plane, zπ from the +x-axis.
-                    x_exponent=0.5,  # 2) Rotate about the axis in 1) by a fixed π/2.
-                    axis_phase_exponent=a,  # 3) Rotate about the +z-axis by aπ (a final phasing).
-                )
-                for a, z in itertools.product(
-                    gate_exponents, repeat=2
-                )  # enumerates every possible (a, z)
+                cirq.PhasedXPowGate(exponent=0.5, phase_exponent=phase_exponent)
+                for phase_exponent in [0.0, 0.25, 0.5]
             ]
         else:
-            self.single_qubit_gate_set = single_qubit_gate_set
+            self.single_qubit_gate_set = list(single_qubit_gate_set)
 
         super().__init__(
             qubits=qubits,
@@ -434,16 +426,20 @@ class XEB(QCVVExperiment[XEBResults]):
         for k, depth in tqdm.contrib.itertools.product(
             range(num_circuits), cycle_depths, desc="Building circuits"
         ):
-            num_single_qubit_gate_layers = depth + int(self.two_qubit_gate is not None)
-            chosen_single_qubit_gates = self._rng.choice(
-                np.asarray(self.single_qubit_gate_set),
-                size=(num_single_qubit_gate_layers, self.num_qubits),
+            # Choose single-qubit gates, avoiding repeats on the same qubit in sequential layers
+            num_choices = len(self.single_qubit_gate_set)
+            block_repeats = num_choices > 1
+            chosen_gate_indices = np.append(
+                self._rng.integers(0, num_choices, size=(1, self.num_qubits)),
+                self._rng.integers(block_repeats, num_choices, size=(depth, self.num_qubits)),
+                axis=0,
             )
+            chosen_gate_indices = np.add.accumulate(chosen_gate_indices, axis=0) % num_choices
 
             circuit = cirq.Circuit(
-                gate.on(qubit)
-                for gates_in_layer in chosen_single_qubit_gates
-                for gate, qubit in zip(gates_in_layer, self.qubits)
+                self.single_qubit_gate_set[gate_index].on(qubit)
+                for gate_indices_in_layer in chosen_gate_indices
+                for gate_index, qubit in zip(gate_indices_in_layer, self.qubits)
             )
 
             if self.two_qubit_gate is not None:
@@ -459,7 +455,7 @@ class XEB(QCVVExperiment[XEBResults]):
 
             random_circuits.append(
                 Sample(
-                    circuit=circuit + cirq.measure(sorted(circuit.all_qubits())),
+                    circuit=circuit + cirq.measure(*self.qubits),
                     data={
                         "circuit_depth": len(circuit),
                         "cycle_depth": depth,

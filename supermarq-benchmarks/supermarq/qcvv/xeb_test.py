@@ -13,7 +13,6 @@
 # mypy: disable-error-code=method-assign
 from __future__ import annotations
 
-import itertools
 import pathlib
 import re
 from unittest.mock import MagicMock
@@ -34,12 +33,9 @@ def test_xeb_init() -> None:
     assert experiment.qubits == [q0, q1]
     assert experiment.two_qubit_gate == cirq.CZ
     assert experiment.single_qubit_gate_set == [
-        cirq.PhasedXZGate(
-            z_exponent=z,
-            x_exponent=0.5,
-            axis_phase_exponent=a,
-        )
-        for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
+        cirq.PhasedXPowGate(exponent=0.5, phase_exponent=0.0),
+        cirq.PhasedXPowGate(exponent=0.5, phase_exponent=0.25),
+        cirq.PhasedXPowGate(exponent=0.5, phase_exponent=0.5),
     ]
 
     experiment = XEB(two_qubit_gate=cirq.CX, num_circuits=10, cycle_depths=[1, 3, 5])
@@ -47,12 +43,9 @@ def test_xeb_init() -> None:
     assert experiment.qubits == [q0, q1]
     assert experiment.two_qubit_gate == cirq.CX
     assert experiment.single_qubit_gate_set == [
-        cirq.PhasedXZGate(
-            z_exponent=z,
-            x_exponent=0.5,
-            axis_phase_exponent=a,
-        )
-        for a, z in itertools.product(np.linspace(start=0, stop=7 / 4, num=8), repeat=2)
+        cirq.PhasedXPowGate(exponent=0.5, phase_exponent=0.0),
+        cirq.PhasedXPowGate(exponent=0.5, phase_exponent=0.25),
+        cirq.PhasedXPowGate(exponent=0.5, phase_exponent=0.5),
     ]
 
     experiment = XEB(single_qubit_gate_set=[cirq.X], num_circuits=10, cycle_depths=[1, 3, 5])
@@ -81,9 +74,12 @@ def xeb_experiment() -> XEB:
 
 def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
     xeb_experiment._rng = (rng := MagicMock())
-    rng.choice.side_effect = [
-        np.array([[cirq.X, cirq.Y], [cirq.Z, cirq.Y], [cirq.Y, cirq.Z]]),
-        np.array([[cirq.X, cirq.Z], [cirq.X, cirq.X], [cirq.Y, cirq.Y]]),
+    xeb_experiment.single_qubit_gate_set = [cirq.X, cirq.Y, cirq.Z]
+    rng.integers.side_effect = [
+        np.array([[0, 1]]),
+        np.array([[2, 1], [2, 1]]),
+        np.array([[0, 2]]),
+        np.array([[1, 1], [2, 1]]),
     ]
     circuits = xeb_experiment._build_circuits(num_circuits=2, cycle_depths=[2])
 
@@ -98,10 +94,10 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
                 cirq.Y(qbs[1]),
                 cirq.TaggedOperation(cirq.CZ(*qbs), "no_compile"),
                 cirq.Z(qbs[0]),
-                cirq.Y(qbs[1]),
+                cirq.Z(qbs[1]),
                 cirq.TaggedOperation(cirq.CZ(*qbs), "no_compile"),
                 cirq.Y(qbs[0]),
-                cirq.Z(qbs[1]),
+                cirq.X(qbs[1]),
                 cirq.measure(qbs),
             ]
         ),
@@ -122,10 +118,10 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
                 cirq.X(qbs[0]),
                 cirq.Z(qbs[1]),
                 cirq.TaggedOperation(cirq.CZ(*qbs), "no_compile"),
-                cirq.X(qbs[0]),
+                cirq.Y(qbs[0]),
                 cirq.X(qbs[1]),
                 cirq.TaggedOperation(cirq.CZ(*qbs), "no_compile"),
-                cirq.Y(qbs[0]),
+                cirq.X(qbs[0]),
                 cirq.Y(qbs[1]),
                 cirq.measure(qbs),
             ]
@@ -140,6 +136,24 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
         "exact_10": 1.0,
         "exact_11": 0.0,
     }
+
+
+def test_single_qubit_gates_dont_repeat() -> None:
+    xeb_experiment = XEB(num_circuits=10, cycle_depths=[10])
+    for sample in xeb_experiment.samples:
+        single_qubit_moments = [
+            moment for moment in sample.circuit if all(cirq.num_qubits(g) == 1 for g in moment)
+        ]
+        for i, moment in enumerate(single_qubit_moments[:-1]):
+            assert set(moment).isdisjoint(set(single_qubit_moments[i + 1]))
+
+    # Exception when only one option
+    xeb_experiment = XEB(num_circuits=2, cycle_depths=[10], single_qubit_gate_set=[cirq.H])
+    for sample in xeb_experiment.samples:
+        single_qubit_moments = [
+            moment for moment in sample.circuit if all(cirq.num_qubits(g) == 1 for g in moment)
+        ]
+        assert set(single_qubit_moments) == {cirq.Moment(cirq.H.on_each(*xeb_experiment.qubits))}
 
 
 def test_xeb_analyse_results(tmp_path: pathlib.Path, xeb_experiment: XEB) -> None:
