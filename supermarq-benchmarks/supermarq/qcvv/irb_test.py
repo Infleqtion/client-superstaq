@@ -19,6 +19,7 @@ import re
 from unittest.mock import patch
 
 import cirq
+import cirq_superstaq as css
 import pandas as pd
 import pytest
 
@@ -150,12 +151,15 @@ def test_irb_build_circuit() -> None:
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=0.0, z_exponent=1.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=0.0, z_exponent=1.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=0.0, z_exponent=1.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=0.0, z_exponent=1.0)(
                             *irb_experiment.qubits
                         ),
@@ -164,9 +168,9 @@ def test_irb_build_circuit() -> None:
                 ),
                 data={
                     "clifford_depth": 3,
-                    "circuit_depth": 4,
+                    "circuit_depth": 7,
                     "experiment": "RB",
-                    "single_qubit_gates": 4,
+                    "single_qubit_gates": 7,
                     "two_qubit_gates": 0,
                 },
                 circuit_realization=1,
@@ -177,29 +181,35 @@ def test_irb_build_circuit() -> None:
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=0.0, z_exponent=1.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.TaggedOperation(
                             cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=0.0, z_exponent=1.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.TaggedOperation(
                             cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=0.0, z_exponent=1.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.TaggedOperation(
                             cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.measure(irb_experiment.qubits),
                     ]
                 ),
                 data={
                     "clifford_depth": 3,
-                    "circuit_depth": 6,
+                    "circuit_depth": 12,
                     "experiment": "IRB",
-                    "single_qubit_gates": 6,
+                    "single_qubit_gates": 12,
                     "two_qubit_gates": 0,
                 },
                 circuit_realization=2,
@@ -210,12 +220,15 @@ def test_irb_build_circuit() -> None:
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=1.0, z_exponent=0.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=1.0, z_exponent=0.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=1.0, z_exponent=0.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=1.0, z_exponent=0.0)(
                             *irb_experiment.qubits
                         ),
@@ -224,9 +237,9 @@ def test_irb_build_circuit() -> None:
                 ),
                 data={
                     "clifford_depth": 3,
-                    "circuit_depth": 4,
+                    "circuit_depth": 7,
                     "experiment": "RB",
-                    "single_qubit_gates": 4,
+                    "single_qubit_gates": 7,
                     "two_qubit_gates": 0,
                 },
                 circuit_realization=3,
@@ -237,21 +250,27 @@ def test_irb_build_circuit() -> None:
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=1.0, z_exponent=0.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.TaggedOperation(
                             cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=1.0, z_exponent=0.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.TaggedOperation(
                             cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=1.0, z_exponent=0.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.TaggedOperation(
                             cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=1.0, z_exponent=1.0)(
                             *irb_experiment.qubits
                         ),
@@ -260,9 +279,9 @@ def test_irb_build_circuit() -> None:
                 ),
                 data={
                     "clifford_depth": 3,
-                    "circuit_depth": 7,
+                    "circuit_depth": 13,
                     "experiment": "IRB",
-                    "single_qubit_gates": 7,
+                    "single_qubit_gates": 13,
                     "two_qubit_gates": 0,
                 },
                 circuit_realization=4,
