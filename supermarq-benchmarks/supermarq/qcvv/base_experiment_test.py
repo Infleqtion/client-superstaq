@@ -564,19 +564,24 @@ def test_interleave_circuit(abc_experiment: ExampleExperiment) -> None:
     interleaved_circuit = abc_experiment._interleave_layer(
         circuit, layer=layer, include_final=False
     )
-    tagged_layer = cirq.Moment(
-        cirq.Z(qubits[0]).with_tags("no_compile"),
-        cirq.H(qubits[1]).with_tags("no_compile"),
-    )
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(
             cirq.X(qubits[0]),
-            tagged_layer,
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            cirq.H(qubits[1]).with_tags("no_compile"),
+            css.barrier(*qubits),
             cirq.X(qubits[0]),
-            tagged_layer,
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            cirq.H(qubits[1]).with_tags("no_compile"),
+            css.barrier(*qubits),
             cirq.X(qubits[0]),
-            tagged_layer,
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            cirq.H(qubits[1]).with_tags("no_compile"),
+            css.barrier(*qubits),
             cirq.X(qubits[0]),
         ),
     )
