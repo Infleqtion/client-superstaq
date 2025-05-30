@@ -344,28 +344,28 @@ class XEB(QCVVExperiment[XEBResults]):
     r"""Cross-entropy benchmarking (XEB) experiment.
 
     The XEB experiment can be used to estimate the combined fidelity of a repeating cycle of gates.
-    Cycles are made up of randomly selected single qubit phased XZ gates and the constant layer of
-    interest. This is illustrated as follows:
+    Cycles are made up of randomly selected single qubit gates and a constant layer of interest.
+    This is illustrated as follows:
 
-    For each randomly generated circuit, with a given number of cycles, we compare the simulated
-    state probabilities, :math:`p(x)` with those achieved by running the circuit on a given target,
-    :math:`\hat{p}(x)`. The fidelity of a circuit containing :math:`d` cycles, :math:`f_d` can then
-    be estimated as,
+    For each randomly generated circuit, with a given number of cycle, we compare the
+    simulated state probabilities, :math:`p(x)` with those achieved by running the circuit
+    on a given target, :math:`\hat{p}(x)`. The fidelity of a circuit containing :math:`d`
+    cycles, :math:`f_d` can then be estimated as
 
     .. math::
 
         \sum_{x \in \{0, 1\}^n} p(x) \hat{p}(x) - \frac{1}{2^n} =
         f_d \left(\sum_{x \in \{0, 1\}^n} p(x)^2 -  \frac{1}{2^n}\right)
 
-    We can therefore fit a linear model to estimate the value of :math:`f_d`. We the estimate the
-    fidelity of the cycle, :math:`f_{\mathrm{cycle}}` as
+    We can therefore fit a linear model to estimate the value of :math:`f_d`. We the estimate
+    the fidelity of the cycle, :math:`f_{\mathrm{cycle}}` as
 
     .. math::
 
         f_d = A(f_{cycle})^d
 
-    Thus fitting another linear model to :math:`\log(f_d) \sim d` provides us with an estimate of
-    the cycle fidelity.
+    Thus fitting another linear model to :math:`\log(f_d) \sim d` provides us with an estimate
+    of the cycle fidelity.
 
     For more details see: https://www.nature.com/articles/s41586-019-1666-5
     """
