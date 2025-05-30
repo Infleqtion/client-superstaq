@@ -490,9 +490,8 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
         return probabilities
 
-    @staticmethod
     def _interleave_op(
-        circuit: cirq.Circuit, operation: cirq.Operation, include_final: bool = False
+        self, circuit: cirq.Circuit, operation: cirq.Operation, include_final: bool = False
     ) -> cirq.Circuit:
         """Interleave a given operation into a circuit.
 
@@ -508,7 +507,17 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         operation = operation.with_tags("no_compile")
         interleaved_circuit = circuit.copy()
         interleaved_circuit.batch_insert(
-            [(k, operation) for k in range(len(circuit) - int(not include_final), 0, -1)]
+            [
+                (
+                    k,
+                    [
+                        css.barrier(*self.qubits),
+                        operation,
+                        css.barrier(*self.qubits),
+                    ],
+                )
+                for k in range(len(circuit) - int(not include_final), 0, -1)
+            ]
         )
         return interleaved_circuit
 
