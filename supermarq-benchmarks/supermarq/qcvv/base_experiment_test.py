@@ -171,12 +171,10 @@ def test_results_getitem(
 ) -> None:
     q0, q1 = abc_experiment.qubits
 
-    results = abc_experiment.run_with_callable(lambda c: {"00": 10, "01": 10})
-
-    assert results.qubits == (q0, q1)
-    pd.testing.assert_frame_equal(
-        results.data,
-        pd.DataFrame(
+    results = ExampleResults(
+        target="example",
+        experiment=abc_experiment,
+        data=pd.DataFrame(
             [
                 {
                     "uuid": sample.uuid,
@@ -190,7 +188,6 @@ def test_results_getitem(
                 for sample in abc_experiment.samples
             ]
         ),
-        check_like=True,
     )
 
     results_q0 = results[q0]
