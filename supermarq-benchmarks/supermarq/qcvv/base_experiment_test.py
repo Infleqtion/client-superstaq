@@ -507,41 +507,46 @@ def test_run_on_device_dry_run(
 
 
 def test_interleave_layer(abc_experiment: ExampleExperiment) -> None:
-    q0, q1 = abc_experiment.qubits
-    circuit = cirq.Circuit(*[cirq.X(q0) for _ in range(4)])
+    qubit = cirq.LineQubit(0)
+    circuit = cirq.Circuit(*[cirq.X(qubit) for _ in range(4)])
 
     # With last gate
-    interleaved_circuit = abc_experiment._interleave_layer(circuit, cirq.Z(q0), include_final=True)
+    interleaved_circuit = abc_experiment._interleave_layer(
+        circuit, cirq.Z(qubit), include_final=True
+    )
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(
-            cirq.X(q0),
-            cirq.Z(q0).with_tags("no_compile"),
-            cirq.X(q0),
-            cirq.Z(q0).with_tags("no_compile"),
-            cirq.X(q0),
-            cirq.Z(q0).with_tags("no_compile"),
-            cirq.X(q0),
-            cirq.Z(q0).with_tags("no_compile"),
+            cirq.X(qubit),
+            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
+            cirq.X(qubit),
+            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
+            cirq.X(qubit),
+            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
+            cirq.X(qubit),
+            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
         ),
     )
 
     # Without last gate
-    interleaved_circuit = abc_experiment._interleave_layer(circuit, cirq.Z(q0), include_final=False)
+    interleaved_circuit = abc_experiment._interleave_layer(
+        circuit, cirq.Z(qubit), include_final=False
+    )
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(
-            cirq.X(q0),
-            cirq.Z(q0).with_tags("no_compile"),
-            cirq.X(q0),
-            cirq.Z(q0).with_tags("no_compile"),
-            cirq.X(q0),
-            cirq.Z(q0).with_tags("no_compile"),
-            cirq.X(q0),
+            cirq.X(qubit),
+            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
+            cirq.X(qubit),
+            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
+            cirq.X(qubit),
+            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
+            cirq.X(qubit),
         ),
     )
 
     # Multi-gate layer
+    q0, q1 = abc_experiment.qubits
     layer = cirq.Moment(cirq.Z(q0), cirq.H(q1))
     interleaved_circuit = abc_experiment._interleave_layer(
         circuit, layer=layer, include_final=False
