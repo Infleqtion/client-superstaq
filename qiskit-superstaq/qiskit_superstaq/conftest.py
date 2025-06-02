@@ -5,6 +5,8 @@ import pytest
 
 import qiskit_superstaq as qss
 
+# mypy: disable-error-code="empty-body"
+
 
 class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
     """Stand-in for `_SuperstaqClient` that the tests can call."""
@@ -30,11 +32,12 @@ class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
         """
         return gss.testing.RETURNED_TARGETS
 
-    def target_info(self, target: str) -> dict[str, object]:
+    def target_info(self, target: str, **kwargs: object) -> dict[str, object]:
         """Mocks a request to the /target_info endpoint.
 
         Args:
             target: A string representing the device to get information about.
+            kwargs: Any other information.
 
         Returns:
             The target information.
