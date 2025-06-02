@@ -791,8 +791,8 @@ class _BaseSuperstaqClient(ABC):
             if isinstance(json_content, dict) and set(json_content.keys()).intersection(
                 {"message", "details"}
             ):
-                alternative = json_content.get("details", "")
-                message = json_content.get("message", alternative)
+                alternative: str = json_content.get("details", "")
+                message: str = json_content.get("message", alternative)
             else:
                 message = str(response.text)
 
