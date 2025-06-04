@@ -189,7 +189,7 @@ class SSB(QCVVExperiment[SSBResults]):
         _samples: list[Sample] | None = None,
         **kwargs: str,
     ) -> None:
-        """Initializes a cross-entropy benchmarking experiment.
+        """Initializes a symmetric stabilizer benchmarking experiment.
 
         Args:
             num_circuits: Number of circuits to sample.
