@@ -187,7 +187,7 @@ class JobCancellationResults(DefaultPydanticModel):
     message: str
     """The server message."""
     warnings: list[str] 
-    """A warning that indicates a failed cancellation for a job that is already scheduled."""
+    """A warning that indicates a failed cancellation for a job that already has a status."""
 
 
 class NewJobResponse(DefaultPydanticModel):
