@@ -34,7 +34,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ./checks-superstaq
-      - name: Format
+      - name: Ruff format
         run: |
           checks/format_.py
 
@@ -55,30 +55,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks
-      - name: Pylint
+      - name: Ruff lint
         run: |
-          checks/pylint_.py --all
-
-  flake8:
-    name: Flake8 check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.13
-      - uses: actions/cache@v4
-        with:
-          path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt', '.github/workflows/ci.yml') }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ./checks-superstaq
-      - name: Flake8
-        run: |
-          checks/flake8_.py
+          checks/lint_.py
 
   mypy:
     name: Type check
@@ -105,7 +84,7 @@ jobs:
     name: Pytest and Coverage check
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -141,13 +120,13 @@ jobs:
     name: ${{ matrix.type }} standalone coverage check with minimum dependency versions
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.8
+      - name: Set up Python 3.9
         uses: actions/setup-python@v5
         with:
-          python-version: 3.8
+          python-version: 3.9
       - name: Install dependencies, using minimum supported versions
         run: |
-          min_versions=$(sed ${{ matrix.type }}/requirements.txt ${{ matrix.type }}/dev-requirements.txt -e 's/[~>]=\([0-9]\)/==\1/')
+          min_versions=$(sed -E 's/[~>]=([0-9]+(\.[0-9]+)*)(;.*)?/==\1/' ${{ matrix.type }}/requirements.txt ${{ matrix.type }}/dev-requirements.txt)
           python -m pip install --upgrade pip
           pip install ./checks-superstaq ${{ matrix.dependencies }} $min_versions
       - name: Coverage check

@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring,missing-class-docstring
 """Integration checks that run daily (via Github action) between client and prod server."""
 
 from __future__ import annotations
@@ -26,11 +25,12 @@ def service() -> css.Service:
 
 
 def test_ibmq_compile(service: css.Service) -> None:
-    qubits = cirq.LineQubit.range(4)
     circuit = cirq.Circuit(
-        css.AceCRMinusPlus(qubits[0], qubits[1]),
-        css.AceCRMinusPlus(qubits[1], qubits[2]),
-        css.AceCRMinusPlus(qubits[2], qubits[3]),
+        cirq.H(cirq.q(3)),
+        cirq.CX(cirq.q(3), cirq.q(0)) ** 0.7,
+        css.AceCRMinusPlus(cirq.q(0), cirq.q(1)),
+        css.AceCRMinusPlus(cirq.q(1), cirq.q(2)),
+        css.AceCRMinusPlus(cirq.q(2), cirq.q(3)),
     )
 
     out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
@@ -52,13 +52,13 @@ def test_ibmq_compile(service: css.Service) -> None:
 
 def test_ibmq_compile_with_token() -> None:
     service = css.Service(ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"])
-    qubits = cirq.LineQubit.range(4)
     circuit = cirq.Circuit(
-        css.AceCRMinusPlus(qubits[0], qubits[1]),
-        css.AceCRMinusPlus(qubits[1], qubits[2]),
-        css.AceCRMinusPlus(qubits[2], qubits[3]),
+        cirq.H(cirq.q(3)),
+        cirq.CX(cirq.q(3), cirq.q(0)) ** 0.7,
+        css.AceCRMinusPlus(cirq.q(0), cirq.q(1)),
+        css.AceCRMinusPlus(cirq.q(1), cirq.q(2)),
+        css.AceCRMinusPlus(cirq.q(2), cirq.q(3)),
     )
-
     out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
 
     assert isinstance(out.circuit, cirq.Circuit)
@@ -339,7 +339,7 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
 
 @pytest.mark.skip(reason="Can't be executed when Sqale is set to not accept jobs")
 def test_submit_to_sqale_qubit_sorting(service: css.Service) -> None:
-    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776
+    """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776.
 
     Args:
         service: cirq_superstaq service object from fixture.

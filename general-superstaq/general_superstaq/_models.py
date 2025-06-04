@@ -40,7 +40,7 @@ class CircuitType(str, Enum):
 
     CIRQ = "cirq"
     QISKIT = "qiskit"
-    QASM_STRS = "qasm_strs"
+    QASM = "qasm"
 
 
 class CircuitStatus(str, Enum):
@@ -95,12 +95,15 @@ UNSUCCESSFUL_CIRCUIT_STATES = [
 
 class DefaultPydanticModel(
     pydantic.BaseModel,
-    use_enum_values=True,
-    extra="ignore",
-    validate_assignment=True,
-    validate_default=True,
 ):
     """Default pydantic model used across the superstaq server."""
+
+    model_config = pydantic.ConfigDict(
+        use_enum_values=True,
+        extra="ignore",
+        validate_assignment=True,
+        validate_default=True,
+    )
 
 
 class JobData(DefaultPydanticModel):
@@ -126,8 +129,6 @@ class JobData(DefaultPydanticModel):
     """The input circuits as serialized strings."""
     circuit_type: CircuitType
     """The circuit type used for representing the circuits."""
-    pulse_gate_circuits: list[str | None]
-    """Serialized pulse gate circuits (if relevant)."""
     counts: list[dict[str, int] | None]
     """Counts for each input circuit (if available/relevant)."""
     results_dicts: list[str | None]
@@ -140,10 +141,14 @@ class JobData(DefaultPydanticModel):
     """Timestamp when the job was submitted."""
     last_updated_timestamp: list[datetime.datetime | None]
     """Timestamp for when each circuit was last updated."""
-    initial_logical_to_physicals: list[str | None]
+    initial_logical_to_physicals: list[dict[int, int] | None]
     """Serialized initial logical-to-physical mapping for each circuit."""
-    final_logical_to_physicals: list[str | None]
+    final_logical_to_physicals: list[dict[int, int] | None]
     """Serialized initial final-to-physical mapping for each circuit."""
+    logical_qubits: list[str | None]
+    """Serialized logical qubits of compiled circuit. Only provided for CIRQ circuit type."""
+    physical_qubits: list[str | None]
+    """Serialized physical qubits of the device. Only provided for CIRQ circuit type."""
 
 
 class NewJob(DefaultPydanticModel):
@@ -181,12 +186,10 @@ class JobCancellationResults(DefaultPydanticModel):
     """List of circuits that successfully cancelled."""
     message: str
     """The server message."""
-    warnings: list[str]
-    """Any warnings generated when cancelling."""
 
 
 class NewJobResponse(DefaultPydanticModel):
-    """Model for the response when a new job is submitted"""
+    """Model for the response when a new job is submitted."""
 
     job_id: uuid.UUID
     """The job ID for the submitted job."""
@@ -196,7 +199,8 @@ class NewJobResponse(DefaultPydanticModel):
 
 class JobQuery(DefaultPydanticModel):
     """The query model for retrieving jobs. Using multiple values in a field is interpreted as
-    logical OR while providing values for multiple fields is interpreted as logical AND."""
+    logical OR while providing values for multiple fields is interpreted as logical AND.
+    """
 
     user_email: list[pydantic.EmailStr] | None = pydantic.Field(None)
     """List of user emails to include."""
@@ -218,7 +222,8 @@ class JobQuery(DefaultPydanticModel):
 
 class UserTokenResponse(DefaultPydanticModel):
     """Model for returning a user token to the client, either when adding a new user or
-    regenerating the token."""
+    regenerating the token.
+    """
 
     email: pydantic.EmailStr
     """The user's email address."""
@@ -254,7 +259,8 @@ class UserInfo(DefaultPydanticModel):
 
 class UserQuery(DefaultPydanticModel):
     """Model for querying the database to retrieve users. Use of lists implied logical OR. Providing
-    multiple fields (e.g. name and email) implies logical AND."""
+    multiple fields (e.g. name and email) implies logical AND.
+    """
 
     name: Sequence[str] | None = pydantic.Field(None)
     """List of user names to filter for."""
@@ -289,7 +295,7 @@ class NewUser(DefaultPydanticModel):
 
 
 class UpdateUserDetails(DefaultPydanticModel):
-    """Model for requests which modify user details"""
+    """Model for requests which modify user details."""
 
     name: str | None = pydantic.Field(None)
     """New user name."""
@@ -344,7 +350,7 @@ class RetrieveTargetInfoModel(DefaultPydanticModel):
 
     target: str
     """The target's name."""
-    options_dict: dict[str, Any] = pydantic.Field(dict())
+    options_dict: dict[str, Any] = pydantic.Field({})
     """The details of the target."""
 
 

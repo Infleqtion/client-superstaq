@@ -186,6 +186,7 @@ class StrippedCZGate(qiskit.circuit.Gate):
 
         Args:
             rz_rads: The RZ-rotation angle in radians.
+            label: An optional label for the constructed gate. Defaults to `None`.
         """
         super().__init__("stripped_cz", 2, [rz_rads], label=label)
 
@@ -347,7 +348,7 @@ class iXGate(qiskit.circuit.Gate):
         return super().control(num_ctrl_qubits, label, ctrl_state)
 
     def __repr__(self) -> str:
-        return f"qss.custom_gates.{str(self)}"
+        return f"qss.custom_gates.{self!s}"
 
     def __str__(self) -> str:
         return f"iXGate(label={self.label})"
@@ -378,7 +379,8 @@ class iXdgGate(qiskit.circuit.Gate):
         """Inverts the `iXdgGate`.
 
         Returns:
-            The inverse of the `iXdgGate`."""
+            The inverse of the `iXdgGate`.
+        """
         return iXGate()
 
     def control(
@@ -404,7 +406,7 @@ class iXdgGate(qiskit.circuit.Gate):
         return super().control(num_ctrl_qubits, label, ctrl_state)
 
     def __repr__(self) -> str:
-        return f"qss.custom_gates.{str(self)}"
+        return f"qss.custom_gates.{self!s}"
 
     def __str__(self) -> str:
         return f"iXdgGate(label={self.label})"
@@ -453,7 +455,7 @@ class iCCXGate(qiskit.circuit.ControlledGate):
         return np.asarray(mat, dtype=dtype)
 
     def __repr__(self) -> str:
-        return f"qss.custom_gates.{str(self)}"
+        return f"qss.custom_gates.{self!s}"
 
     def __str__(self) -> str:
         return f"iCCXGate(label={self.label}, ctrl_state={self.ctrl_state})"
@@ -488,7 +490,7 @@ class iCCXdgGate(qiskit.circuit.ControlledGate):
         return np.asarray(mat, dtype=dtype)
 
     def __repr__(self) -> str:
-        return f"qss.custom_gates.{str(self)}"
+        return f"qss.custom_gates.{self!s}"
 
     def __str__(self) -> str:
         return f"iCCXdgGate(label={self.label}, ctrl_state={self.ctrl_state})"

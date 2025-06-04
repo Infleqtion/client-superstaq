@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
 import json
@@ -327,15 +326,6 @@ def test_target_info(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     target = "ibmq_brisbane_qpu"
     backend = fake_superstaq_provider.get_backend(target)
     assert backend.target_info()["target"] == target
-
-
-def test_configuration(fake_superstaq_provider: MockSuperstaqProvider) -> None:
-    target = "ibmq_brisbane_qpu"
-    backend = fake_superstaq_provider.get_backend(target)
-    with pytest.warns(DeprecationWarning):
-        configuration = backend.configuration()
-    assert configuration.backend_name == target
-    assert configuration.num_qubits == backend.num_qubits
 
 
 def test_target(fake_superstaq_provider: MockSuperstaqProvider) -> None:

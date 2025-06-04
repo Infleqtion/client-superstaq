@@ -27,7 +27,6 @@ def run(
     Returns:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
-
     parser = check_utils.get_check_parser()
     parser.description = textwrap.dedent(
         """
@@ -47,12 +46,18 @@ def run(
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     if files:
-        return subprocess.call(
+        returncode_ruff_format = subprocess.call(
             ["python", "-m", "ruff", "format", *files, *args_to_pass], cwd=check_utils.root_dir
         )
+        if returncode_ruff_format == 1:
+            command = "./checks/format_.py --fix"
+            text = f"Run '{command}' (from the repo root directory) to format files."
+            print(check_utils.warning(text))  # noqa: T201
+            return 1
+        return returncode_ruff_format
 
     return 0
 
 
 if __name__ == "__main__":
-    exit(run(*sys.argv[1:]))
+    sys.exit(run(*sys.argv[1:]))

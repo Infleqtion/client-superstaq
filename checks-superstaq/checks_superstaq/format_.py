@@ -27,7 +27,6 @@ def run(
     Returns:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
-
     parser = check_utils.get_check_parser()
     parser.description = textwrap.dedent(
         """
@@ -67,11 +66,11 @@ def run(
         # some files should be reformatted, but there don't seem to be any bona fide errors
         command = "./checks/format_.py --apply"
         text = f"Run '{command}' (from the repo root directory) to format files."
-        print(check_utils.warning(text))
+        print(check_utils.warning(text))  # noqa: T201
         return 1
 
     return returncode_isort
 
 
 if __name__ == "__main__":
-    exit(run(*sys.argv[1:]))
+    sys.exit(run(*sys.argv[1:]))

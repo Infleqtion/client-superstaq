@@ -27,7 +27,7 @@ def run(
 ) -> int:
     """Checks that:
     - all pip requirements files (i.e. files matching *requirements.txt) are sorted
-    - all upstream packages are pinned to their latest versions
+    - all upstream packages are pinned to their latest versions.
 
     Args:
         *args: Command line arguments.
@@ -39,7 +39,6 @@ def run(
     Returns:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
-
     parser = check_utils.get_check_parser()
     parser.description = textwrap.dedent(
         """
@@ -95,12 +94,12 @@ def _inspect_req_file(
         if req_file == "requirements.txt":
             raise SyntaxError(check_utils.failure(error))
         elif not silent:
-            print(check_utils.warning(error))
+            print(check_utils.warning(error))  # noqa: T201
         return False, []  # file cannot be cleaned up, and there are no requirements to track
 
     needs_cleanup, requirements = _sort_requirements(requirements)
     if needs_cleanup and not silent:
-        print(check_utils.failure(f"{req_file} is not sorted."))
+        print(check_utils.failure(f"{req_file} is not sorted."))  # noqa: T201
 
     if not only_sort:
         needs_cleanup |= _check_package_versions(
@@ -175,7 +174,7 @@ def _check_package_versions(
             if not latest_version_is_required:
                 should_require = desired_req.lstrip(package)
                 pin_text = f"{req_file} requires {req}, but should require {should_require}"
-                print(text_format(pin_text))
+                print(text_format(pin_text))  # noqa: T201
 
             # check that a compatible version of this upstream package is installed locally
             _inspect_local_version(package, latest_version)
@@ -217,7 +216,7 @@ def _get_pypi_version(package: str, silent: bool) -> str | None:
     except urllib.error.URLError:
         if not silent:
             warning = f"Cannot find package on PyPI: {base_package}."
-            print(check_utils.warning(warning))
+            print(check_utils.warning(warning))  # noqa: T201
         return None
 
 
@@ -228,9 +227,9 @@ def _inspect_local_version(package: str, latest_version: str) -> None:
         warning = f"WARNING: locally installed version of {package} is not up to date."
         version_info = f"Local version is {local_version}, but latest version is {latest_version}."
         suggestion = f"Try calling 'python -m pip install --upgrade {package}'."
-        print(check_utils.warning(warning))
-        print(check_utils.warning(version_info))
-        print(check_utils.warning(suggestion))
+        print(check_utils.warning(warning))  # noqa: T201
+        print(check_utils.warning(version_info))  # noqa: T201
+        print(check_utils.warning(suggestion))  # noqa: T201
 
 
 def _cleanup(
@@ -239,21 +238,20 @@ def _cleanup(
     silent: bool,
 ) -> None:
     if not requirements_to_fix:
-        print("Nothing to fix in requirements files.")
+        print("Nothing to fix in requirements files.")  # noqa: T201
 
-    else:
-        if apply_changes:
-            for req_file, requirements in requirements_to_fix.items():
-                with open(os.path.join(check_utils.root_dir, req_file), "w") as file:
-                    file.write("\n".join(requirements) + "\n")
-            if not silent:
-                print(check_utils.success("Requirements files fixed."))
+    elif apply_changes:
+        for req_file, requirements in requirements_to_fix.items():
+            with open(os.path.join(check_utils.root_dir, req_file), "w") as file:
+                file.write("\n".join(requirements) + "\n")
+        if not silent:
+            print(check_utils.success("Requirements files fixed."))  # noqa: T201
 
-        elif not silent:
-            command = "./checks/requirements.py --apply"
-            text = f"Run '{command}' (from the repo root directory) to fix requirements files."
-            print(check_utils.warning(text))
+    elif not silent:
+        command = "./checks/requirements.py --apply"
+        text = f"Run '{command}' (from the repo root directory) to fix requirements files."
+        print(check_utils.warning(text))  # noqa: T201
 
 
 if __name__ == "__main__":
-    exit(run(*sys.argv[1:]))
+    sys.exit(run(*sys.argv[1:]))

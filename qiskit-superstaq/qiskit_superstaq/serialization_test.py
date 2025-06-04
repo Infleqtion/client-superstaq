@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
 import importlib
@@ -133,7 +132,6 @@ def test_insert_times_and_durations() -> None:
     new_circuit = qss.serialization.insert_times_and_durations(circuit, durations, start_times)
     assert new_circuit == circuit
     assert new_circuit.op_start_times == start_times
-    assert [inst.operation.duration for inst in new_circuit] == durations
     assert new_circuit.duration == 160
 
     # Test fallback when timing information is not provided
@@ -289,9 +287,9 @@ def test_completeness() -> None:
     for attr_name in dir(qss.custom_gates):
         attr = getattr(qss.custom_gates, attr_name)
         if isinstance(attr, type) and issubclass(attr, qiskit.circuit.Instruction):
-            assert issubclass(
-                attr, tuple(qss.serialization._custom_gates_by_name.values())
-            ), f"'{attr_name}' not covered in `qss.serialization._custom_gates_by_name`."
+            assert issubclass(attr, tuple(qss.serialization._custom_gates_by_name.values())), (
+                f"'{attr_name}' not covered in `qss.serialization._custom_gates_by_name`."
+            )
 
             if attr is not qss.ParallelGates:
                 assert attr in test_gates, f"'{attr_name}' missing from `test_gates`."
@@ -301,8 +299,9 @@ def test_mcphase() -> None:
     gate1 = qss.serialization._mcphase(1.1, 3, ctrl_state=2)
     with mock.patch("qiskit.__version__", "1.0.2"):
         gate3 = qss.serialization._mcphase(1.1, 3, ctrl_state=2)
-    with mock.patch("qiskit.__version__", "1.1.1"), mock.patch(
-        "qiskit.circuit.library.MCPhaseGate", return_value=gate1
+    with (
+        mock.patch("qiskit.__version__", "1.1.1"),
+        mock.patch("qiskit.circuit.library.MCPhaseGate", return_value=gate1),
     ):
         gate2 = qss.serialization._mcphase(1.1, 3, ctrl_state=2)
     assert gate1 == gate2 == gate3
@@ -357,13 +356,13 @@ def _check_serialization(*gates: qiskit.circuit.Instruction) -> None:
         parallel_gates = qss.ParallelGates(*gates)
         circuit.append(qss.ParallelGates(*gates), range(parallel_gates.num_qubits))
 
-    # Make sure resolution recurses into control-flow operations
-    circuit.for_loop([0, 1], body=circuit.copy(), qubits=circuit.qubits, clbits=circuit.clbits)
-
     # Make sure resolution recurses into sub-operations
     subcircuit = circuit.copy()
     subcircuit.append(subcircuit.to_instruction(), subcircuit.qubits, subcircuit.clbits)
     circuit.append(subcircuit, circuit.qubits, circuit.clbits)
+
+    # Check control-flow operations in circuit
+    circuit.for_loop([0, 1], body=circuit.copy(), qubits=circuit.qubits, clbits=circuit.clbits)
 
     new_circuit = qss.deserialize_circuits(qss.serialize_circuits(circuit))[0]
     assert circuit == new_circuit

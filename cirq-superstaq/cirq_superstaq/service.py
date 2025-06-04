@@ -25,13 +25,20 @@ import general_superstaq as gss
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-from general_superstaq import ResourceEstimate, superstaq_client
+from general_superstaq import ResourceEstimate
+from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 from scipy.optimize import curve_fit
 
 import cirq_superstaq as css
 
 if TYPE_CHECKING:
     from _typeshed import SupportsItems
+
+
+CLIENT_VERSION = {
+    "v0.2.0": _SuperstaqClient,
+    "v0.3.0": _SuperstaqClientV3,
+}
 
 
 def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
@@ -47,11 +54,10 @@ def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
         ValueError: If `matrix` could not be interpreted as a unitary gate acting on either
             qubits or qutrits.
     """
-
     matrix = np.asarray(matrix, dtype=complex)
 
     for dimension in (2, 3):
-        num_qids = int(round(np.log(matrix.size) / np.log(dimension**2)))
+        num_qids = round(np.log(matrix.size) / np.log(dimension**2))
         if matrix.shape == (dimension**num_qids, dimension**num_qids):
             qid_shape = (dimension,) * num_qids
             return cirq.MatrixGate(matrix, qid_shape=qid_shape)
@@ -182,7 +188,8 @@ class Service(gss.service.Service):
             EnvironmentError: If an API key was not provided and could not be found.
         """
         self.default_target = default_target
-        self._client = superstaq_client._SuperstaqClient(
+        client_version = CLIENT_VERSION[api_version]
+        self._client = client_version(
             client_name="cirq-superstaq",
             remote_host=remote_host,
             api_key=api_key,
@@ -426,9 +433,8 @@ class Service(gss.service.Service):
         random_seed: int | None = None,
         target: str = "aqt_keysight_qpu",
         atol: float | None = None,
-        gate_defs: None | (
-            Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]
-        ) = None,
+        gate_defs: None
+        | (Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]) = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for AQT using ECA.
@@ -490,9 +496,8 @@ class Service(gss.service.Service):
         num_eca_circuits: int | None = None,
         random_seed: int | None = None,
         atol: float | None = None,
-        gate_defs: None | (
-            Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]
-        ) = None,
+        gate_defs: None
+        | (Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]) = None,
         gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
         pulses: object = None,
         variables: object = None,
@@ -790,7 +795,6 @@ class Service(gss.service.Service):
             A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
             circuit(s).
         """
-
         target = self._resolve_target(target)
 
         if target.startswith("aqt_"):
@@ -810,7 +814,6 @@ class Service(gss.service.Service):
         **kwargs: Any,
     ) -> dict[str, str]:
         """Helper method to compile json dictionary."""
-
         css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         request_json = {
@@ -835,7 +838,6 @@ class Service(gss.service.Service):
         Returns:
             A tuple containing the generated circuits and the fidelities for distinguishing files.
         """
-
         json_dict = self._client.supercheq(files, num_qubits, depth, "cirq_circuits")
         circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
         fidelities = gss.serialization.deserialize(json_dict["fidelities"])
@@ -1062,7 +1064,6 @@ class Service(gss.service.Service):
             ValueError: If the target or noise model is not valid.
             ~gss.SuperstaqServerException: If the request fails.
         """
-
         noise_dict: dict[str, object] = {}
         if isinstance(noise, str):
             noise_dict["type"] = noise
@@ -1132,7 +1133,7 @@ class Service(gss.service.Service):
             def _objective(
                 x: np.typing.NDArray[np.int_], A: float, p: float
             ) -> np.typing.NDArray[np.float64]:
-                return A * p**x
+                return np.asarray(A * p**x)
 
             fit_data: defaultdict[str, float] = defaultdict(float)
 
@@ -1158,7 +1159,6 @@ class Service(gss.service.Service):
         Args:
             circuits_and_metadata: Dictionary containing cycle benchmarking data.
         """
-
         instance_information = circuits_and_metadata["instance_information"]
         fit_data = circuits_and_metadata["fit_data"]
         x_values = instance_information["depths"]
@@ -1176,10 +1176,10 @@ class Service(gss.service.Service):
         def _objective(
             x: np.typing.NDArray[np.int_], A: float, p: float
         ) -> np.typing.NDArray[np.float64]:
-            return A * p**x
+            return np.asarray(A * p**x)
 
         e_f = 0.0
-        for ps, _ in averages.items():
+        for ps in averages.keys():
             A = fit_data["A_" + str(ps)]
             p = fit_data["p_" + str(ps)]
             for depth in x_values:
@@ -1200,7 +1200,7 @@ class Service(gss.service.Service):
             )
             e_f += p
             if legend_labels_count < max_legend_labels:
-                truncated_label = "A_" + str(ps) + "=%.2f \np_%s=%.2f" % (A, ps, p)
+                truncated_label = "A_" + str(ps) + f"={A:.2f} \np_{ps}={p:.2f}"
                 legend_labels.append(truncated_label)
                 legend_labels_count += 1
                 legend_colors.append(plt.gca().lines[-1].get_color())

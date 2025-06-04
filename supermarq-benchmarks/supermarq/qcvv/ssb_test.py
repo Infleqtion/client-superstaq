@@ -53,7 +53,6 @@ def ssb_experiment() -> SSB:
 
 
 def test_random_parallel_qubit_rotation(ssb_experiment: SSB) -> None:
-
     ssb_experiment._rng = (rng := MagicMock())
     rng.choice.side_effect = [
         cirq.rx(np.pi / 2),
@@ -104,7 +103,6 @@ def test_sss_reconciliation_circuit(ssb_experiment: SSB) -> None:
 
 
 def test_build_ssb_circuit(ssb_experiment: SSB) -> None:
-
     ssb_experiment._rng = (rng := MagicMock())
     rng.integers.return_value = 4
     rng.choice.return_value = cirq.rx(np.pi / 2)

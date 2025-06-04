@@ -13,6 +13,7 @@
 """Tooling for Symmetric Stabilizer Benchmarking.
 See https://arxiv.org/pdf/2407.20184
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
@@ -35,7 +36,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 
-def _parallel(x: npt.NDArray[np.float_], y: npt.NDArray[np.float_], tol: float = 1e-5) -> bool:
+def _parallel(x: npt.NDArray[np.float64], y: npt.NDArray[np.float64], tol: float = 1e-5) -> bool:
     """Checks whether two numpy arrays are parallel, as determined by the cosine distance between
     them.
 
@@ -51,8 +52,8 @@ def _parallel(x: npt.NDArray[np.float_], y: npt.NDArray[np.float_], tol: float =
 
 
 def _exp_decay(
-    x: npt.NDArray[np.float_], A: float, alpha: float, B: float
-) -> npt.NDArray[np.float_]:
+    x: npt.NDArray[np.float64], A: float, alpha: float, B: float
+) -> npt.NDArray[np.float64]:
     r"""Exponential decay of the form
 
     .. math::
@@ -78,7 +79,7 @@ class SSBResults(QCVVResults):
     """Estimated CZ fidelity."""
     _cz_fidelity_estimate_std: float | None = None
     """Standard deviation for the CZ fidelity estimate."""
-    _fit: tuple[npt.NDArray[np.float_], npt.NDArray[np.float_]] | None = None
+    _fit: tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]] | None = None
     """The fitted values"""
 
     @property

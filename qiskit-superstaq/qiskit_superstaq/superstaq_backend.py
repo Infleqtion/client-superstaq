@@ -17,15 +17,14 @@ from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
-import numpy as np
-import numpy.typing as npt
 import qiskit
 
 import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
+    import numpy as np
+    import numpy.typing as npt
     from _typeshed import SupportsItems
-    from qiskit.providers.models import BackendConfiguration
 
 
 class SuperstaqBackend(qiskit.providers.BackendV2):
@@ -49,7 +48,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
     def _default_options(cls) -> qiskit.providers.Options:
         return qiskit.providers.Options(shots=1000)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, qss.SuperstaqBackend):
             return False
 
@@ -57,41 +56,6 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}('{self.name}')>"
-
-    def configuration(self) -> BackendConfiguration:
-        """Retrieves configuration information for this target.
-
-        Returns:
-            A backend configuration object containing various hardware parameters.
-        """
-        warnings.warn(
-            "The `.configuration()` method of `SuperstaqBackend` has been deprecated, and will be "
-            "removed in a future version of qiskit-superstaq. Instead, use attributes of the "
-            "backend itself (e.g. `backend.num_qubits`), or of its `.target` attribute.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        target_info = self.target_info()
-
-        num_qubits = target_info.get("num_qubits")
-        configuration_dict = {
-            "backend_name": target_info.get("target"),
-            "basis_gates": target_info.get("native_gate_set", []),
-            "backend_version": "n/a",
-            "n_qubits": num_qubits,
-            "gates": [],
-            "local": False,
-            "simulator": False,
-            "conditional": False,
-            "open_pulse": False,
-            "memory": False,
-            "max_shots": None,
-            "coupling_map": None,
-            "description": f"{num_qubits} qubit device",
-        }
-
-        return qiskit.providers.models.BackendConfiguration.from_dict(configuration_dict)
 
     @property
     def max_circuits(self) -> int | None:
@@ -119,8 +83,38 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
     def target(self) -> qiskit.transpiler.Target:
         """A `qiskit.transpiler.Target` object for this backend."""
         target_info = self.target_info()
-        num_qubits = target_info.get("num_qubits")
-        return qiskit.transpiler.Target(description=self.description, num_qubits=num_qubits)
+        timing_info = {
+            "acquire_alignment": target_info.get("acquire_alignment"),
+            "granularity": target_info.get("granularity"),
+            "min_length": target_info.get("min_length"),
+            "pulse_alignment": target_info.get("pulse_alignment"),
+        }
+
+        gate_durations = []
+        if duration_info := target_info.get("gate_durations"):
+            for gate_name, qubit_indicies, duration, unit in duration_info:
+                gate_durations.append((gate_name, tuple(qubit_indicies), duration, unit))
+
+        basis_gateset = ["reset", "measure"]
+        if native_gate_set := target_info.get("native_gate_set"):
+            basis_gateset += list(native_gate_set)
+
+        backend_target = qiskit.transpiler.Target.from_configuration(
+            num_qubits=target_info.get("num_qubits"),
+            basis_gates=basis_gateset,
+            coupling_map=qiskit.transpiler.CouplingMap(
+                couplinglist=target_info.get("coupling_map")
+            ),
+            instruction_durations=qiskit.transpiler.instruction_durations.InstructionDurations(
+                gate_durations
+            ),
+            timing_constraints=qiskit.transpiler.timing_constraints.TimingConstraints(
+                **timing_info
+            ),
+            dt=target_info.get("dt"),
+        )
+        backend_target.description = self.description
+        return backend_target
 
     def run(
         self,
@@ -172,11 +166,14 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
 
     def retrieve_job(self, job_id: str) -> qss.SuperstaqJob:
         """Gets a job that has been created on the Superstaq API.
+
         Args:
             job_id: The UUID of the job. Jobs are assigned these numbers by the server during the
             creation of the job.
+
         Returns:
             A `qss.SuperstaqJob` which can be queried for status or results.
+
         Raises:
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """

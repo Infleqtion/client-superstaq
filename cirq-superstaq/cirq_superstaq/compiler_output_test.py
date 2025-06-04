@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
 import importlib
@@ -49,7 +48,6 @@ def test_measured_qubit_indices() -> None:
 
 def test_measured_qubit_indices_with_circuit_operations() -> None:
     """Check that measurements in CircuitOperations are mapped correctly."""
-
     # Create qubits with indices [0, 1, 2, 3, 5, 6]. No q4 to ensure that indices refer to
     # LineQubit arguments regardless of the number of qubits in the circuit
     q0, q1, q2, q3, _, q5, q6 = cirq.LineQubit.range(7)
@@ -167,7 +165,6 @@ def test_read_json_pulse_gate_circuits() -> None:
     qc_pulse = qiskit.QuantumCircuit(2)
     qc_pulse.h(0)
     qc_pulse.cx(0, 1)
-    qc_pulse.add_calibration("cx", [0, 1], qiskit.pulse.ScheduleBlock("foo"))
 
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
@@ -182,7 +179,6 @@ def test_read_json_pulse_gate_circuits() -> None:
     assert out.circuit == circuit
     assert out.pulse_gate_circuit == qc_pulse
     assert out.pulse_gate_circuit.duration == 30
-    assert out.pulse_gate_circuit[0].operation.duration == 10
     assert out.pulse_gate_circuit.op_start_times == [0, 10]
 
     json_dict = {
@@ -198,11 +194,11 @@ def test_read_json_pulse_gate_circuits() -> None:
     assert out.pulse_gate_circuits == [qc_pulse, qc_pulse]
     assert out.pulse_gate_circuits[0].duration == 30
     assert out.pulse_gate_circuits[1].duration == 300
-    assert out.pulse_gate_circuits[1][0].operation.duration == 100
     assert out.pulse_gate_circuits[1].op_start_times == [0, 100]
 
-    with mock.patch.dict("sys.modules", {"qiskit_superstaq": None}), pytest.warns(
-        UserWarning, match="qiskit-superstaq is required"
+    with (
+        mock.patch.dict("sys.modules", {"qiskit_superstaq": None}),
+        pytest.warns(UserWarning, match="qiskit-superstaq is required"),
     ):
         out = css.compiler_output.read_json(json_dict, circuits_is_list=False)
         assert out.circuit == circuit

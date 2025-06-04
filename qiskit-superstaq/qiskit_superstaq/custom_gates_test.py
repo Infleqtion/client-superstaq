@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
 import numpy as np
@@ -9,8 +8,7 @@ import qiskit_superstaq as qss
 
 
 def _check_gate_definition(gate: qiskit.circuit.Gate) -> None:
-    """Check gate.definition, gate.__array__(), and gate.inverse() against one another"""
-
+    """Check gate.definition, gate.__array__(), and gate.inverse() against one another."""
     assert np.allclose(gate.to_matrix(), gate.__array__())
     defined_operation = qiskit.quantum_info.Operator(gate.definition)
     assert defined_operation.is_unitary()

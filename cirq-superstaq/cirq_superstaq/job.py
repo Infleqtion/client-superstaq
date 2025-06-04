@@ -60,7 +60,7 @@ class Job:
         "data associated with it beyond an id and a status.",
     )
 
-    def __init__(self, client: gss.superstaq_client._SuperstaqClient, job_id: str) -> None:
+    def __init__(self, client: gss.superstaq_client._BaseSuperstaqClient, job_id: str) -> None:
         """Constructs a `Job`.
 
         Users should not call this themselves. If you only know the `job_id`, use `fetch_jobs`
@@ -77,7 +77,6 @@ class Job:
 
     def _refresh_job(self) -> None:
         """If the last fetched job is not terminal, gets the job from the API."""
-
         jobs_to_fetch: list[str] = []
 
         for job_id in self._job_id.split(","):
@@ -100,7 +99,6 @@ class Job:
             jobs are still running (even if some are done), we report 'Running' as the
             overall status of the entire batch.
         """
-
         job_id_list = self._job_id.split(",")  # Separate aggregated job ids
 
         status_occurrence = {self._job[job_id]["status"] for job_id in job_id_list}

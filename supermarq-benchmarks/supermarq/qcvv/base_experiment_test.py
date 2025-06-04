@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=missing-function-docstring
-# pylint: disable=missing-return-doc
 # mypy: disable-error-code=method-assign
 
 from __future__ import annotations
@@ -21,7 +19,7 @@ import re
 import uuid
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import cirq
@@ -32,9 +30,6 @@ import pandas as pd
 import pytest
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample, qcvv_resolver
-
-if TYPE_CHECKING:
-    from typing_extensions import Self
 
 
 def test_qcvv_resolver() -> None:
@@ -48,7 +43,7 @@ def test_qcvv_resolver() -> None:
 
 @dataclass
 class ExampleResults(QCVVResults):
-    """Example results class for testing"""
+    """Example results class for testing."""
 
     _example_final_result: float | None = None
 
@@ -62,7 +57,7 @@ class ExampleResults(QCVVResults):
         return fig
 
     def print_results(self) -> None:
-        print("This is a test")
+        print("This is a test")  # noqa: T201
 
     @property
     def example_final_result(self) -> float:
@@ -72,7 +67,7 @@ class ExampleResults(QCVVResults):
 
 
 class ExampleExperiment(QCVVExperiment[ExampleResults]):
-    """Example experiment class for testing"""
+    """Example experiment class for testing."""
 
     def __init__(
         self,
@@ -98,7 +93,7 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
         return [
             Sample(
                 circuit=cirq.Circuit(cirq.measure(*self.qubits)),
-                data={"num": k, "depth": d},
+                data={"depth": d},
                 circuit_realization=k,
             )
             for k in range(num_circuits)
@@ -107,24 +102,6 @@ class ExampleExperiment(QCVVExperiment[ExampleResults]):
 
     def _json_dict_(self) -> dict[str, Any]:
         return super()._json_dict_()
-
-    @classmethod
-    def _from_json_dict_(
-        cls,
-        samples: list[Sample],
-        qubits: list[cirq.Qid],
-        num_circuits: int,
-        cycle_depths: list[int],
-        **kwargs: Any,
-    ) -> Self:
-        experiment = cls(
-            qubits=qubits,
-            num_circuits=num_circuits,
-            cycle_depths=cycle_depths,
-            _samples=samples,
-            **kwargs,
-        )
-        return experiment
 
 
 @pytest.fixture
@@ -161,13 +138,14 @@ def test_qcvv_experiment_init(
     abc_experiment: ExampleExperiment,
 ) -> None:
     assert abc_experiment.num_qubits == 2
-    assert abc_experiment.qubits == [cirq.q(0), cirq.q(1)]
+    assert abc_experiment.qubits == (cirq.q(0), cirq.q(1))
     assert abc_experiment.num_circuits == 10
     assert abc_experiment.cycle_depths == [1, 3, 5]
     assert abc_experiment._results_cls == ExampleResults
     assert abc_experiment._service_kwargs == {"service_details": "Some other details"}
     assert len(abc_experiment.samples) == 30
     assert isinstance(abc_experiment._rng, np.random.Generator)
+    assert abc_experiment.circuits == [sample.circuit for sample in abc_experiment]
 
     new_experiment = ExampleExperiment(
         qubits=[cirq.q(1), cirq.q(3), cirq.q(7)],
@@ -175,7 +153,8 @@ def test_qcvv_experiment_init(
         cycle_depths=[1, 3, 5],
     )
     assert new_experiment.num_qubits == 3
-    assert new_experiment.qubits == [cirq.q(1), cirq.q(3), cirq.q(7)]
+    assert new_experiment.qubits == (cirq.q(1), cirq.q(3), cirq.q(7))
+    assert new_experiment.circuits == [sample.circuit for sample in new_experiment]
 
 
 def test_results_init(
@@ -186,6 +165,105 @@ def test_results_init(
     assert results.samples == abc_experiment.samples
     assert results.num_circuits == 10
     assert results.num_qubits == 2
+    assert results.qubits == (cirq.q(0), cirq.q(1))
+
+
+def test_results_getitem(
+    abc_experiment: ExampleExperiment,
+) -> None:
+    q0, q1 = abc_experiment.qubits
+
+    results = ExampleResults(
+        target="example",
+        experiment=abc_experiment,
+        data=pd.DataFrame(
+            [
+                {
+                    "uuid": sample.uuid,
+                    "circuit_realization": sample.circuit_realization,
+                    "depth": sample.data["depth"],
+                    "00": 0.5,
+                    "01": 0.5,
+                    "10": 0.0,
+                    "11": 0.0,
+                }
+                for sample in abc_experiment.samples
+            ]
+        ),
+    )
+
+    results_q0 = results[q0]
+    assert results_q0.qubits == (q0,)
+    assert results_q0.parent is results
+    pd.testing.assert_frame_equal(
+        results_q0.data,
+        pd.DataFrame(
+            [
+                {
+                    "uuid": sample.uuid,
+                    "circuit_realization": sample.circuit_realization,
+                    "depth": sample.data["depth"],
+                    "0": 1.0,
+                    "1": 0.0,
+                }
+                for sample in abc_experiment.samples
+            ]
+        ),
+        check_like=True,
+    )
+
+    results_q1 = results[q1]
+    assert results_q1.qubits == (q1,)
+    assert results_q1.parent is results
+    pd.testing.assert_frame_equal(
+        results_q1.data,
+        pd.DataFrame(
+            [
+                {
+                    "uuid": sample.uuid,
+                    "circuit_realization": sample.circuit_realization,
+                    "depth": sample.data["depth"],
+                    "0": 0.5,
+                    "1": 0.5,
+                }
+                for sample in abc_experiment.samples
+            ]
+        ),
+        check_like=True,
+    )
+
+    results_q0q1 = results[q0, q1]
+    assert results_q0q1.qubits == (q0, q1)
+    assert results_q0q1.parent is results
+    pd.testing.assert_frame_equal(results_q0q1.data, results.data)
+
+    results_q1q0 = results[q1, q0]
+    assert results_q1q0.qubits == (q1, q0)
+    assert results_q1q0.parent is results
+    pd.testing.assert_frame_equal(
+        results_q1q0.data,
+        pd.DataFrame(
+            [
+                {
+                    "uuid": sample.uuid,
+                    "circuit_realization": sample.circuit_realization,
+                    "depth": sample.data["depth"],
+                    "00": 0.5,
+                    "01": 0.0,
+                    "10": 0.5,
+                    "11": 0.0,
+                }
+                for sample in abc_experiment.samples
+            ]
+        ),
+        check_like=True,
+    )
+
+    mock_job = MagicMock(spec=css.Job)
+    mock_job.status.return_value = "Queued"
+    results = ExampleResults(target="target", experiment=abc_experiment, job=mock_job)
+    with pytest.raises(ValueError):
+        _ = results[q0]
 
 
 def test_experiment_init_with_bad_layers() -> None:
@@ -243,9 +321,10 @@ def test_results_job_no_data(abc_experiment: ExampleExperiment) -> None:
 def test_results_analyze(abc_experiment: ExampleExperiment) -> None:
     results = ExampleResults(target="target", experiment=abc_experiment, data=pd.DataFrame())
 
-    with patch("matplotlib.pyplot.Figure.savefig") as mock_plot, patch(
-        "builtins.print"
-    ) as mock_print:
+    with (
+        patch("matplotlib.pyplot.Figure.savefig") as mock_plot,
+        patch("builtins.print") as mock_print,
+    ):
         results.analyze(plot_results=True, print_results=True, plot_filename="test_name")
 
     assert results.example_final_result == 3.142
@@ -281,8 +360,24 @@ def test_results_ready_from_job(
         results.data,
         pd.DataFrame(
             [
-                {"circuit": 1, "00": 20 / 35, "01": 5 / 35, "10": 0.0, "11": 10 / 35},
-                {"circuit": 2, "00": 30 / 35, "01": 5 / 35, "10": 0.0, "11": 0.0},
+                {
+                    "uuid": abc_experiment.samples[0].uuid,
+                    "circuit_realization": 1,
+                    "circuit": 1,
+                    "00": 20 / 35,
+                    "01": 5 / 35,
+                    "10": 0.0,
+                    "11": 10 / 35,
+                },
+                {
+                    "uuid": abc_experiment.samples[1].uuid,
+                    "circuit_realization": 2,
+                    "circuit": 2,
+                    "00": 30 / 35,
+                    "01": 5 / 35,
+                    "10": 0.0,
+                    "11": 0.0,
+                },
             ]
         ),
         check_like=True,
@@ -308,6 +403,7 @@ def test_run_with_simulator(
         pd.DataFrame(
             [
                 {
+                    "uuid": abc_experiment.samples[0].uuid,
                     "circuit_realization": 1,
                     "circuit": 1,
                     "00": 0.0,
@@ -316,6 +412,7 @@ def test_run_with_simulator(
                     "11": 0.0,
                 },
                 {
+                    "uuid": abc_experiment.samples[1].uuid,
                     "circuit_realization": 2,
                     "circuit": 2,
                     "00": 0.0,
@@ -344,6 +441,7 @@ def test_run_with_simulator_default_target(
         pd.DataFrame(
             [
                 {
+                    "uuid": abc_experiment.samples[0].uuid,
                     "circuit_realization": 1,
                     "circuit": 1,
                     "00": 0.0,
@@ -352,6 +450,7 @@ def test_run_with_simulator_default_target(
                     "11": 0.0,
                 },
                 {
+                    "uuid": abc_experiment.samples[1].uuid,
                     "circuit_realization": 2,
                     "circuit": 2,
                     "00": 0.0,
@@ -369,7 +468,7 @@ def test_run_on_device(abc_experiment: ExampleExperiment, sample_circuits: list[
 
     with patch("cirq_superstaq.Service") as mock_service:
         results = abc_experiment.run_on_device(
-            target="example_target", repetitions=100, **{"some": "options"}
+            target="example_target", repetitions=100, some="options"
         )
 
     mock_service.return_value.create_job.assert_called_once_with(
@@ -406,38 +505,98 @@ def test_run_on_device_dry_run(
     assert results.experiment == abc_experiment
 
 
-def test_interleave_circuit() -> None:
-    qubit = cirq.LineQubit(0)
-    circuit = cirq.Circuit(*[cirq.X(qubit) for _ in range(4)])
+def test_interleave_circuit(abc_experiment: ExampleExperiment) -> None:
+    qubits = abc_experiment.qubits
+    circuit = cirq.Circuit(*[cirq.X(qubits[0]) for _ in range(4)])
 
     # With last gate
-    interleaved_circuit = QCVVExperiment._interleave_op(circuit, cirq.Z(qubit), include_final=True)
+    interleaved_circuit = abc_experiment._interleave_layer(
+        circuit, cirq.Z(qubits[0]), include_final=True
+    )
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(
-            cirq.X(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            cirq.X(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            cirq.X(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            cirq.X(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            css.barrier(*qubits),
         ),
     )
 
     # Without last gate
-    interleaved_circuit = QCVVExperiment._interleave_op(circuit, cirq.Z(qubit), include_final=False)
+    interleaved_circuit = abc_experiment._interleave_layer(
+        circuit, cirq.Z(qubits[0]), include_final=False
+    )
     cirq.testing.assert_same_circuits(
         interleaved_circuit,
         cirq.Circuit(
-            cirq.X(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            cirq.X(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            cirq.X(qubit),
-            cirq.TaggedOperation(cirq.Z(qubit), "no_compile"),
-            cirq.X(qubit),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+        ),
+    )
+
+    # Multi-gate layer
+    layer = cirq.Moment(cirq.Z(qubits[0]), cirq.H(qubits[1]))
+    interleaved_circuit = abc_experiment._interleave_layer(
+        circuit, layer=layer, include_final=False
+    )
+    cirq.testing.assert_same_circuits(
+        interleaved_circuit,
+        cirq.Circuit(
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            cirq.H(qubits[1]).with_tags("no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            cirq.H(qubits[1]).with_tags("no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.Z(qubits[0]).with_tags("no_compile"),
+            cirq.H(qubits[1]).with_tags("no_compile"),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+        ),
+    )
+
+    # Empty layer
+    interleaved_circuit = abc_experiment._interleave_layer(circuit, layer=None, include_final=False)
+    cirq.testing.assert_same_circuits(
+        interleaved_circuit,
+        cirq.Circuit(
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
+            css.barrier(*qubits),
+            cirq.X(qubits[0]),
         ),
     )
 
@@ -475,14 +634,14 @@ def test_validate_circuits(
 
 
 def test_run_with_callable(abc_experiment: ExampleExperiment) -> None:
-
     def _example_callable(sample: Sample, some: str) -> dict[str, float]:
         assert sample
         assert some == "kwargs"
         return {"01": 0.2, "10": 0.7, "11": 0.1}
 
     results = abc_experiment.run_with_callable(
-        _example_callable, some="kwargs"  # type: ignore[arg-type]
+        _example_callable,  # type: ignore[arg-type]
+        some="kwargs",
     )
 
     assert results.target == "callable"
@@ -493,24 +652,31 @@ def test_run_with_callable(abc_experiment: ExampleExperiment) -> None:
         results.data,
         pd.DataFrame(
             [
-                {"num": num, "depth": depth, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1}
-                for num in range(abc_experiment.num_circuits)
-                for depth in abc_experiment.cycle_depths
+                {
+                    "uuid": sample.uuid,
+                    "circuit_realization": sample.circuit_realization,
+                    "depth": sample.data["depth"],
+                    "00": 0.0,
+                    "01": 0.2,
+                    "10": 0.7,
+                    "11": 0.1,
+                }
+                for sample in abc_experiment.samples
             ]
         ),
         check_like=True,
     )
 
 
-def test_run_with_callable_mixd_keys(abc_experiment: ExampleExperiment) -> None:
-
+def test_run_with_callable_mixed_keys(abc_experiment: ExampleExperiment) -> None:
     def _example_callable(sample: Sample, some: str) -> dict[str | int, float]:
         assert sample
         assert some == "kwargs"
         return {1: 0.2, "10": 0.7, 3: 0.1}
 
     results = abc_experiment.run_with_callable(
-        _example_callable, some="kwargs"  # type: ignore[arg-type]
+        _example_callable,  # type: ignore[arg-type]
+        some="kwargs",
     )
 
     assert results.target == "callable"
@@ -521,9 +687,16 @@ def test_run_with_callable_mixd_keys(abc_experiment: ExampleExperiment) -> None:
         results.data,
         pd.DataFrame(
             [
-                {"num": num, "depth": depth, "00": 0.0, "01": 0.2, "10": 0.7, "11": 0.1}
-                for num in range(abc_experiment.num_circuits)
-                for depth in abc_experiment.cycle_depths
+                {
+                    "uuid": sample.uuid,
+                    "circuit_realization": sample.circuit_realization,
+                    "depth": sample.data["depth"],
+                    "00": 0.0,
+                    "01": 0.2,
+                    "10": 0.7,
+                    "11": 0.1,
+                }
+                for sample in abc_experiment.samples
             ]
         ),
         check_like=True,
@@ -531,7 +704,6 @@ def test_run_with_callable_mixd_keys(abc_experiment: ExampleExperiment) -> None:
 
 
 def test_run_with_callable_bad_bitstring(abc_experiment: ExampleExperiment) -> None:
-
     def _example_callable(sample: Sample, some: str) -> dict[str, float]:
         assert sample
         assert some == "kwargs"
@@ -539,7 +711,7 @@ def test_run_with_callable_bad_bitstring(abc_experiment: ExampleExperiment) -> N
 
     with pytest.raises(
         ValueError,
-        match=("The key contains the wrong number of bits. Got 3 entries " "but expected 2 bits."),
+        match=("The key contains the wrong number of bits. Got 3 entries but expected 2 bits."),
     ):
         abc_experiment.run_with_callable(_example_callable, some="kwargs")  # type: ignore[arg-type]
 
@@ -569,8 +741,24 @@ def test_results_collect_device_counts(
         df,
         pd.DataFrame(
             [
-                {"circuit": 1, "00": 20 / 35, "01": 5 / 35, "10": 0.0, "11": 10 / 35},
-                {"circuit": 2, "00": 30 / 35, "01": 5 / 35, "10": 0.0, "11": 0.0},
+                {
+                    "uuid": abc_experiment.samples[0].uuid,
+                    "circuit_realization": 1,
+                    "circuit": 1,
+                    "00": 20 / 35,
+                    "01": 5 / 35,
+                    "10": 0.0,
+                    "11": 10 / 35,
+                },
+                {
+                    "uuid": abc_experiment.samples[1].uuid,
+                    "circuit_realization": 2,
+                    "circuit": 2,
+                    "00": 30 / 35,
+                    "01": 5 / 35,
+                    "10": 0.0,
+                    "11": 0.0,
+                },
             ]
         ),
         check_like=True,
@@ -594,13 +782,20 @@ def test_results_from_records(abc_experiment: ExampleExperiment) -> None:
     records_4 = {s.uuid: {1: 0.25, 2: 0.75} for s in abc_experiment.samples}
 
     for record in (records_1, records_2, records_3, records_4):
-        results = abc_experiment.results_from_records(record)  # type: ignore[arg-type]
+        results = abc_experiment.results_from_records(record)
         pd.testing.assert_frame_equal(
             results.data,
             pd.DataFrame(
-                {"num": num, "depth": depth, "00": 0.0, "01": 0.25, "10": 0.75, "11": 0.0}
-                for num in range(abc_experiment.num_circuits)
-                for depth in abc_experiment.cycle_depths
+                {
+                    "uuid": sample.uuid,
+                    "circuit_realization": sample.circuit_realization,
+                    "depth": sample.data["depth"],
+                    "00": 0.0,
+                    "01": 0.25,
+                    "10": 0.75,
+                    "11": 0.0,
+                }
+                for sample in abc_experiment.samples
             ),
         )
 
@@ -613,7 +808,7 @@ def test_results_from_records_bad_input(
     with pytest.warns(
         UserWarning,
         match=re.escape(
-            f"The following samples are missing records: {str(sample_circuits[1].uuid)}. These "
+            f"The following samples are missing records: {sample_circuits[1].uuid!s}. These "
             "will not be included in the results."
         ),
     ):
@@ -654,14 +849,14 @@ def test_canonicalize_bitstring() -> None:
     with pytest.raises(
         ValueError,
         match=(
-            "The key is too large to be encoded with 4 qubits. Got 72 " "but expected less than 16."
+            "The key is too large to be encoded with 4 qubits. Got 72 but expected less than 16."
         ),
     ):
         QCVVExperiment.canonicalize_bitstring(72, 4)
 
     with pytest.raises(
         ValueError,
-        match=("The key contains the wrong number of bits. Got 5 entries " "but expected 4 bits."),
+        match=("The key contains the wrong number of bits. Got 5 entries but expected 4 bits."),
     ):
         QCVVExperiment.canonicalize_bitstring("01010", 4)
 
@@ -696,7 +891,6 @@ def test_canonicalize_probabilities() -> None:
 
 
 def test_canonicalize_probabilities_bad_input() -> None:
-
     # Negative counts
     with pytest.raises(ValueError, match="Probabilities/counts must be positive."):
         QCVVExperiment.canonicalize_probabilities({0: -2}, 2)
@@ -799,7 +993,7 @@ def test_map_records_to_samples_duplicate_keys(
     with pytest.raises(
         KeyError,
         match=re.escape(
-            f"Duplicate records found for sample with uuid: {str(sample_circuits[1].uuid)}."
+            f"Duplicate records found for sample with uuid: {sample_circuits[1].uuid!s}."
         ),
     ):
         abc_experiment._map_records_to_samples(
@@ -821,7 +1015,7 @@ def test_dump_and_load(
         "supermarq.qcvv.Sample": Sample,
         "supermarq.qcvv.ExampleExperiment": ExampleExperiment,
     }
-    mock_resolver.side_effect = lambda x: temp_resolver.get(x)
+    mock_resolver.side_effect = lambda x: temp_resolver.get(x, qcvv_resolver(x))
 
     filename = tmp_path_factory.mktemp("tempdir") / "file.json"
     abc_experiment.samples = sample_circuits
