@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import cirq
+import cirq_superstaq as css
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
@@ -186,6 +187,8 @@ class SSB(QCVVExperiment[SSBResults]):
         num_circuits: int,
         cycle_depths: Iterable[int],
         *,
+        include_placeholders: bool = False,
+        distribute: bool = True,
         random_seed: int | np.random.Generator | None = None,
         _samples: list[Sample] | None = None,
         **kwargs: str,
@@ -199,58 +202,65 @@ class SSB(QCVVExperiment[SSBResults]):
         """
         qubits = cirq.LineQubit.range(2)
 
-        # Moments containing parallel rotations. Used to construst the init and rec circuit.
-        # Note we avoid using the `cirq.ParallelGate` as this can lead to single qubit gates
-        # looking like two qubit gates when building custom noise models.
-        X = cirq.Moment(cirq.rx(np.pi / 2)(qubits[0]), cirq.rx(np.pi / 2)(qubits[1]))
-        _X = cirq.Moment(cirq.rx(-np.pi / 2)(qubits[0]), cirq.rx(-np.pi / 2)(qubits[1]))
-        Y = cirq.Moment(cirq.ry(np.pi / 2)(qubits[0]), cirq.ry(np.pi / 2)(qubits[1]))
-        _Y = cirq.Moment(cirq.ry(-np.pi / 2)(qubits[0]), cirq.ry(-np.pi / 2)(qubits[1]))
+        self._include_placeholders = include_placeholders
+        self._distribute = distribute
+
+        # Moments containing parallel rotations.
+        X = css.ParallelRGate(np.pi / 2, 0.0, self.num_qubits)
+        Y = css.ParallelRGate(np.pi / 2, np.pi / 2, self.num_qubits)
+        _X = css.ParallelRGate(np.pi / 2, np.pi, self.num_qubits)
+        _Y = css.ParallelRGate(np.pi / 2, -np.pi / 2, self.num_qubits)
+        self._single_qubit_gate_set = [X, _X, Y, _Y]
 
         # Table I of https://arxiv.org/pdf/2407.20184
-        self._stabilizer_states = [
-            np.array([1, 1, 1, 1]),
-            np.array([1, -1, -1, 1]),
-            np.array([1, 1j, 1j, -1]),
-            np.array([1, -1j, -1j, -1]),
-            np.array([1, 0, 0, 0]),
-            np.array([0, 0, 0, 1]),
-            np.array([1, 1, 1, -1]),
-            np.array([1, -1, -1, -1]),
-            np.array([1, 1j, 1j, 1]),
-            np.array([1, -1j, -1j, 1]),
-            np.array([1, 0, 0, 1j]),
-            np.array([1, 0, 0, -1j]),
-        ]
+        stabilizer_states = np.array(
+            [
+                [1, 1, 1, 1],
+                [1, -1, -1, 1],
+                [1, 1j, 1j, -1],
+                [1, -1j, -1j, -1],
+                [1, 0, 0, 0],
+                [0, 0, 0, 1],
+                [1, 1, 1, -1],
+                [1, -1, -1, -1],
+                [1, 1j, 1j, 1],
+                [1, -1j, -1j, 1],
+                [1, 0, 0, 1j],
+                [1, 0, 0, -1j],
+            ]
+        )
+        stabilizer_states /= np.linalg.norm(stabilizer_states, axis=1, keepdims=True)
+        self._stabilizer_states = stabilizer_states
+
         # Table II of https://arxiv.org/pdf/2407.20184
         self._init_rotations = [
-            [X, X, Y, _Y, Y],
-            [X, _X, Y, _Y, Y],
-            [X, _X, X, _X, X],
-            [X, X, X, _X, X],
-            [X, X, X, _Y, _X],
-            [X, _X, X, _Y, _X],
-            [_X, _Y, X, _Y, _X],
-            [X, Y, X, _Y, _X],
-            [_X, _Y, X, _X, _X],
-            [X, Y, X, _X, X],
-            [X, Y, Y, _Y, Y],
-            [_X, _Y, Y, _Y, Y],
+            [_X, X, Y, _Y, Y],
+            [_X, _X, Y, _Y, Y],
+            [_X, _X, X, _X, X],
+            [_X, X, X, _X, X],
+            [_X, X, X, _Y, _X],
+            [_X, _X, X, _Y, _X],
+            [X, _Y, X, _Y, _X],
+            [_X, Y, X, _Y, _X],
+            [X, _Y, X, _X, _X],
+            [_X, Y, X, _X, X],
+            [_X, Y, Y, _Y, Y],
+            [X, _Y, Y, _Y, Y],
         ]
         # Table III of https://arxiv.org/pdf/2407.20184
         self._reconciliation_rotation = [
-            [X, _Y, X, X],
-            [X, Y, X, X],
-            [Y, X, X, X],
-            [Y, _X, X, X],
-            [_X, X, X, X],
-            [X, X, X, X],
-            [_X, Y, Y, X],
-            [X, Y, Y, X],
-            [Y, Y, Y, X],
-            [X, X, Y, X],
-            [_Y, X, Y, X],
-            [Y, X, Y, X],
+            [X, _Y, X, _X],
+            [X, Y, X, _X],
+            [Y, X, X, _X],
+            [Y, _X, X, _X],
+            [_X, X, X, _X],
+            [X, X, X, _X],
+            [_X, Y, Y, _X],
+            [X, Y, Y, _X],
+            [Y, Y, Y, _X],
+            [X, X, Y, _X],
+            [_Y, X, Y, _X],
+            [Y, X, Y, _X],
         ]
 
         super().__init__(
@@ -286,17 +296,46 @@ class SSB(QCVVExperiment[SSBResults]):
         if min_depth < 2:
             raise ValueError("Cannot perform SSB with a cycle depth of 1.")
 
+        # Precompute action of each gate on the stabilizer state index. This is just Clifford
+        # tableau math but we only have to do this once though so there really isn't much of a
+        # performance difference
+        idx_maps = {}
+        for gate in (*self._single_qubit_gate_set, cirq.CZ):
+            mat = cirq.unitary(gate)
+            inner_products = abs(self._stabilizer_states.conj() @ mat @ self._stabilizer_states.T)
+            idx_maps[gate] = dict(enumerate(inner_products.argmax(0)))
+
+        # Build samples
         for k, depth in tqdm.contrib.itertools.product(
             range(num_circuits), cycle_depths, desc="Building circuits"
         ):
-            sss_idx = self._rng.integers(0, 11)
-            circuit = self._sss_init_circuits(sss_idx)
-            for _ in range(depth - 2):
-                circuit += self._random_parallel_qubit_rotation()
-                circuit += cirq.CZ(*self.qubits).with_tags("no_compile")
-            for _ in range(max_depth - depth + 2):
-                circuit += self._random_parallel_qubit_rotation()
-            circuit += self._sss_reconciliation_circuit(circuit) + cirq.measure(self.qubits)
+            sss_idx = self._rng.integers(0, 11).item()
+            circuit = self._sss_init_circuit(sss_idx)
+
+            if self._distribute and depth < max_depth:
+                indices = self._rng.choice(max_depth - 2, depth - 2, replace=False)
+            else:
+                indices = np.arange(depth - 2)
+
+            num = 0
+            for i in range(max_depth - 2):
+                if i in indices:
+                    circuit += cirq.CZ.on(*self.qubits).with_tags("no_compile")
+                    sss_idx = idx_maps[cirq.CZ][sss_idx]
+                    num += 1
+
+                elif self._include_placeholders:
+                    circuit += css.Barrier(2)(*self.qubits)
+                    circuit += cirq.CZ.on(*self.qubits).with_tags("no_compile")
+                    circuit += css.Barrier(2)(*self.qubits)
+
+                gate = self._random_parallel_qubit_rotation()
+                circuit += gate.on(*self.qubits)
+                sss_idx = idx_maps[gate][sss_idx]
+
+            assert num == depth - 2, (max_depth, depth, num)
+
+            circuit += self._sss_reconciliation_circuit(sss_idx) + cirq.measure(self.qubits)
 
             random_circuits.append(
                 Sample(
@@ -310,7 +349,7 @@ class SSB(QCVVExperiment[SSBResults]):
             )
         return random_circuits
 
-    def _random_parallel_qubit_rotation(self) -> cirq.Moment:
+    def _random_parallel_qubit_rotation(self) -> cirq.Gate:
         """Chooses randomly from {X, Y, -X, -Y} and return a moment with this gate acting on both
         quits. Note we don't use `cirq.ParallelGate` as when modelling noise Cirq treats this as
         a two qubit gate.
@@ -318,62 +357,45 @@ class SSB(QCVVExperiment[SSBResults]):
         Returns:
             The randomly chosen rotation gate acting on both qubits.
         """
-        gate = self._rng.choice(
-            [
-                cirq.rx(np.pi / 2),
-                cirq.rx(-np.pi / 2),
-                cirq.ry(np.pi / 2),
-                cirq.ry(-np.pi / 2),
-            ],  # type: ignore[arg-type]
-        )
-        return cirq.Moment(gate(self.qubits[0]), gate(self.qubits[1]))
+        return self._rng.choice(np.array(self._single_qubit_gate_set))
 
-    def _sss_init_circuits(self, idx: int) -> cirq.Circuit:
+    def _sss_init_circuit(self, idx: int) -> cirq.Circuit:
         """Creates the initialisation circuit for the provided symmetric-stabiliser state index.
         See appendix of https://arxiv.org/pdf/2407.20184 for details.
 
         Args:
             idx: The index of the desired symmetric-stabiliser state
+
         Returns:
             A circuit that maps the |00> state to the desired symmetric-stabiliser state.
         """
         init_circuit = cirq.Circuit(
-            cirq.X(self.qubits[0]),
-            cirq.X(self.qubits[1]),
-            self._init_rotations[idx][0],
-            self._init_rotations[idx][1],
-            cirq.CZ(*self.qubits).with_tags("no_compile"),
-            self._init_rotations[idx][2],
-            self._init_rotations[idx][3],
-            self._init_rotations[idx][4],
+            self._init_rotations[idx][0].on(*self.qubits),
+            self._init_rotations[idx][1].on(*self.qubits),
+            cirq.CZ(*self.qubits),
+            self._init_rotations[idx][2].on(*self.qubits),
+            self._init_rotations[idx][3].on(*self.qubits),
+            self._init_rotations[idx][4].on(*self.qubits),
         )
         return init_circuit
 
-    def _sss_reconciliation_circuit(self, circuit: cirq.Circuit) -> cirq.Circuit:
+    def _sss_reconciliation_circuit(self, idx: int) -> cirq.Circuit:
         """Given a randomly generated circuit, return the appropriate reconciliation circuit.
         See appendix of https://arxiv.org/pdf/2407.20184 for details.
 
         Args:
-            circuit: The randomly generated circuit
+            idx: The index of the final symmetric-stabiliser state
 
         Returns:
             The appropriate reconciliation circuit
         """
-        # Calculate which state the provided circuit maps the |00> state to.
-        state = cirq.unitary(circuit)[:, 0]
-        # Find the index of this state by checking which symmetric-stabiliser
-        # state it is parallel to.
-        idx = [_parallel(state, stab_state) for stab_state in self._stabilizer_states].index(True)
-
         # Return the reconciliation circuit. See table III of https://arxiv.org/pdf/2407.20184
         return cirq.Circuit(
-            self._reconciliation_rotation[idx][0],
-            self._reconciliation_rotation[idx][1],
-            cirq.CZ(*self.qubits).with_tags("no_compile"),
-            self._reconciliation_rotation[idx][2],
-            self._reconciliation_rotation[idx][3],
-            cirq.X(self.qubits[0]),
-            cirq.X(self.qubits[1]),
+            self._reconciliation_rotation[idx][0].on(*self.qubits),
+            self._reconciliation_rotation[idx][1].on(*self.qubits),
+            cirq.CZ(*self.qubits),
+            self._reconciliation_rotation[idx][2].on(*self.qubits),
+            self._reconciliation_rotation[idx][3].on(*self.qubits),
         )
 
     def _json_dict_(self) -> dict[str, Any]:
