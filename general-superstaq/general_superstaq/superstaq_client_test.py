@@ -1192,6 +1192,7 @@ def test_superstaq_client_cancel_jobs_retry(
         response2.json.return_value = {
             "succeeded": [str(job_id)],
             "message": "",
+            "warnings": [{"message": ""}]
         }
 
     with mock.patch(call_type) as mock_call:
