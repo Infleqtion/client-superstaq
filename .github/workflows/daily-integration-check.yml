@@ -25,7 +25,7 @@ jobs:
           pip install ./checks-superstaq ./general-superstaq[dev] ./qiskit-superstaq[dev] ./cirq-superstaq[dev]
       - name: Pytest integration check
         run: |
-          checks/pytest_.py --integration
+          checks/pytest_.py -s --integration
       - name: Create issue if integration check failed
         if: ${{ failure() }}
         uses: JasonEtco/create-an-issue@v2
