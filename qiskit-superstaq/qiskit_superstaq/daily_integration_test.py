@@ -48,7 +48,8 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
             assert backend.target.num_qubits is not None  # Tests `.target` object instantiation
         except Exception as e:
             print(  # noqa: T201
-                f"\nCould not retrieve some backend info for {backend_name} due to: {e}"
+                f"\n\033[31mCould not retrieve some backend info for '{backend_name}' due to: "
+                f"{e}\033[31m"
             )
 
 
