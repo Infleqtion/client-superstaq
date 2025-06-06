@@ -185,8 +185,7 @@ def test_get_targets(service: css.Service) -> None:
             )  # Checks `.target_info()` is retrievable
         except Exception as e:
             print(  # noqa: T201
-                f"\n\033[31mCould not retrieve target info for '{target_name}' due to: "
-                f"{e}\033[31m"
+                f"\n\033[31mCould not retrieve target info for '{target_name}' due to: {e}\033[31m"
             )
 
 
