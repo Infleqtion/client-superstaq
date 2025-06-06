@@ -328,6 +328,13 @@ def test_target_info(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     assert backend.target_info()["target"] == target
 
 
+def test_target_without_info(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    target = "ibmq_brisbane_qpu"
+    backend = fake_superstaq_provider.get_backend(target)
+    with patch.object(backend, "target_info", return_value={}):
+        _ = backend.target
+
+
 def test_target(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     target = "ibmq_brisbane_qpu"
     backend = fake_superstaq_provider.get_backend(target)
