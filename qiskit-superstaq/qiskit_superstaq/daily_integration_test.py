@@ -192,6 +192,8 @@ def test_qscout_compile_swap_mirror(provider: qss.SuperstaqProvider) -> None:
 
 def test_cq_compile(provider: qss.SuperstaqProvider) -> None:
     backend = provider.get_backend("cq_sqale_qpu")
+    assert backend.target.instruction_supported("gr")
+
     circuit = qiskit.QuantumCircuit(1)
     circuit.h(0)
     assert isinstance(backend.cq_compile(circuit).circuit, qiskit.QuantumCircuit)
