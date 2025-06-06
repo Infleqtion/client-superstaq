@@ -64,7 +64,8 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
 
     @property
     def num_qubits(self) -> int:
-        return self.target_info().get("num_qubits", 0)
+        target_info = self.target_info()
+        return target_info.get("num_qubits", 0)
 
     @property
     def coupling_map(self) -> qiskit.transpiler.CouplingMap | None:
