@@ -35,10 +35,13 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
         retired=False,
         accessible=True,
     )
+    all_backends = provider.backends()
     assert ibmq_backend_info in result
     assert provider.get_backend("ibmq_brisbane_qpu").name == "ibmq_brisbane_qpu"
-    assert len(provider.backends()) == len(result)
+    assert provider.get_backend("cq_sqale_qpu").target_info()["target"] == "cq_sqale_qpu"
+    assert len(all_backends) == len(result)
     assert all(target in result for target in filtered_result)
+    assert all(backend.target.num_qubits is not None for backend in all_backends)
 
 
 def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
@@ -299,12 +302,11 @@ def test_submit_dry_run(target: str, provider: qss.SuperstaqProvider) -> None:
     assert multi_job.result(1).get_counts() == {"10": 1}
 
 
-@pytest.mark.skip(reason="Can't be executed when Sqale is set to not accept jobs")
-def test_submit_to_sqale_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
+def test_dry_run_submit_to_sqale_with_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776.
 
     Args:
-        provider: qiskit_superstaq instance from the fixture.
+        provider: A `qiskit_superstaq` instance from the fixture.
     """
     backend = provider.get_backend("cq_sqale_qpu")
 
@@ -319,8 +321,8 @@ def test_submit_to_sqale_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
     qc.append(grdg, range(num_qubits))
     qc.measure_all()
 
-    job = backend.run(qc, 100, verbatim=True, route=False)
-    counts = job.result().get_counts()
+    job = backend.run(qc, 100, method="dry-run", verbatim=True, route=False)
+    counts = job.result().get_counts(0)
     assert sum(counts.values()) == 100
     assert max(counts, key=counts.__getitem__) == ("0" * (num_qubits - 3)) + "100"
 
