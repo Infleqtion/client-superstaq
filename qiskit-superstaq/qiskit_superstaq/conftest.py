@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import general_superstaq as gss
-import general_superstaq.testing
 import pytest
+from general_superstaq.testing import RETURNED_TARGETS
 
 import qiskit_superstaq as qss
 
@@ -31,7 +31,7 @@ class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
         Returns:
             A list of Superstaq targets matching all provided criteria.
         """
-        return gss.testing.RETURNED_TARGETS
+        return RETURNED_TARGETS
 
     def target_info(self, target: str, **kwargs: object) -> dict[str, object]:
         """Mocks a request to the /target_info endpoint.
