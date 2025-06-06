@@ -349,7 +349,7 @@ def test_target_with_custom_gates(fake_superstaq_provider: MockSuperstaqProvider
 def test_target(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     target = "ibmq_brisbane_qpu"
     backend = fake_superstaq_provider.get_backend(target)
-    assert backend.target.num_qubits == 4
+    assert backend.target.num_qubits == backend.num_qubits == 4
 
 
 def test_max_circuits(fake_superstaq_provider: MockSuperstaqProvider) -> None:
