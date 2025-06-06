@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import general_superstaq as gss
+import general_superstaq.testing
 import pytest
 
 import qiskit_superstaq as qss
@@ -46,7 +47,7 @@ class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
             "target_info": {
                 "target": target,
                 "num_qubits": 4,
-                "native_gate_set": ["cz", "id", "rz", "sx", "x"],
+                "native_gate_set": ["cz", "id", "rz", "sx", "x", "gr"],
                 "coupling_map": [[0, 1], [1, 2]],
                 "acquire_alignment": 1,
                 "granularity": 1,
@@ -82,6 +83,7 @@ class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
                         ["x", [0], 3.5555555555555554e-08, "s"],
                         ["x", [1], 3.5555555555555554e-08, "s"],
                         ["x", [2], 3.5555555555555554e-08, "s"],
+                        ["gr", [0, 1, 2, 3], 1.5e-5, "s"],
                     ]
                 ),
             },
