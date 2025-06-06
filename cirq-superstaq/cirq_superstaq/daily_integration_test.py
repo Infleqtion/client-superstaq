@@ -177,6 +177,17 @@ def test_get_targets(service: css.Service) -> None:
     assert ibmq_target_info in result
     assert aqt_target_info in result
     assert all(target in result for target in filtered_result)
+    for gss_target in result:
+        target_name = gss_target.target
+        try:
+            assert (
+                service.target_info(target_name)["target"] == target_name
+            )  # Checks `.target_info()` is retrievable
+        except Exception as e:
+            print(  # noqa: T201
+                f"\n\033[31mCould not retrieve target info for '{target_name}' due to: "
+                f"{e}\033[31m"
+            )
 
 
 def test_qscout_compile(service: css.Service) -> None:
@@ -337,12 +348,11 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
     assert job.counts(0) == {"11": 1}
 
 
-@pytest.mark.skip(reason="Can't be executed when Sqale is set to not accept jobs")
 def test_submit_to_sqale_qubit_sorting(service: css.Service) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776.
 
     Args:
-        service: cirq_superstaq service object from fixture.
+        service: A `cirq_superstaq` service object from fixture.
     """
     target = "cq_sqale_qpu"
     num_qubits = service.target_info(target)["num_qubits"]
@@ -354,7 +364,9 @@ def test_submit_to_sqale_qubit_sorting(service: css.Service) -> None:
         cirq.measure(*qubits),
     )
 
-    job = service.create_job(circuit, repetitions=100, verbatim=True, route=False, target=target)
+    job = service.create_job(
+        circuit, repetitions=100, verbatim=True, method="dry-run", route=False, target=target
+    )
     counts = job.counts(0)
     assert sum(counts.values()) == 100
     assert max(counts, key=counts.__getitem__) == "001" + ("0" * (num_qubits - 3))
