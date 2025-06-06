@@ -335,10 +335,21 @@ def test_target_without_info(fake_superstaq_provider: MockSuperstaqProvider) -> 
         _ = backend.target
 
 
+def test_target_with_custom_gates(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    target = "cq_fake_qpu"
+    backend = fake_superstaq_provider.get_backend(target)
+    with patch.object(
+        backend, "target_info", return_value={"native_gate_set": ["gr", "dd", "acecr", "iccx_o0"]}
+    ):
+        assert backend.target.instruction_supported("gr")
+        assert backend.target.instruction_supported(operation_class=qss.DDGate)
+        assert backend.target.instruction_supported("iccx_o0", [1, 2, 3], qss.AQTiCCXGate)
+
+
 def test_target(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     target = "ibmq_brisbane_qpu"
     backend = fake_superstaq_provider.get_backend(target)
-    assert backend.target.num_qubits == 4
+    assert backend.target.num_qubits == backend.num_qubits == 4
 
 
 def test_max_circuits(fake_superstaq_provider: MockSuperstaqProvider) -> None:
