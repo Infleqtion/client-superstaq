@@ -63,6 +63,11 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         return self.target_info().get("max_circuits")
 
     @property
+    def num_qubits(self) -> int:
+        target_info = self.target_info()
+        return target_info.get("num_qubits", 0)
+
+    @property
     def coupling_map(self) -> qiskit.transpiler.CouplingMap | None:
         """A coupling map generated from the two-qubit gates supported by this backend."""
         target_info = self.target_info()
@@ -120,6 +125,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
                 pulse_alignment=target_info.get("pulse_alignment", 1),
             ),
             dt=target_info.get("dt"),
+            custom_name_mapping=custom_name_mapping,
         )
         backend_target.description = self.description
         return backend_target
