@@ -1328,12 +1328,13 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
     def fetch_jobs(
         self,
         job_ids: Sequence[str] | Sequence[uuid.UUID],
+        circuit_type: _models.CircuitType,
         **kwargs: object,
     ) -> dict[str, dict[str, str]]:
         query = _models.JobQuery(job_id=job_ids)
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
         response = self.get_request(
-            "/client/job", query.model_dump(exclude_none=True), **credentials
+            f"/client/job/{circuit_type.value}", query.model_dump(exclude_none=True), **credentials
         )
         return {job_id: _models.JobData(**data).model_dump() for (job_id, data) in response.items()}
 
