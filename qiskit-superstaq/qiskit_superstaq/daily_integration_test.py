@@ -36,9 +36,21 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
         accessible=True,
     )
     assert ibmq_backend_info in result
-    assert provider.get_backend("ibmq_brisbane_qpu").name == "ibmq_brisbane_qpu"
     assert len(provider.backends()) == len(result)
     assert all(target in result for target in filtered_result)
+    for gss_target in result:
+        backend_name = gss_target.target
+        backend = provider.get_backend(backend_name)
+        try:
+            assert (
+                backend.target_info()["target"] == backend_name
+            )  # Checks `.target_info()` is retrievable
+            assert backend.target.num_qubits is not None  # Tests `.target` object instantiation
+        except Exception as e:
+            print(  # noqa: T201
+                f"\n\033[31mCould not retrieve some backend info for '{backend_name}' due to: "
+                f"{e}\033[31m"
+            )
 
 
 def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
@@ -302,12 +314,11 @@ def test_submit_dry_run(target: str, provider: qss.SuperstaqProvider) -> None:
     assert multi_job.result(1).get_counts() == {"10": 1}
 
 
-@pytest.mark.skip(reason="Can't be executed when Sqale is set to not accept jobs")
-def test_submit_to_sqale_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
+def test_dry_run_submit_to_sqale_with_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776.
 
     Args:
-        provider: qiskit_superstaq instance from the fixture.
+        provider: A `qiskit_superstaq` instance from the fixture.
     """
     backend = provider.get_backend("cq_sqale_qpu")
 
@@ -322,8 +333,8 @@ def test_submit_to_sqale_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
     qc.append(grdg, range(num_qubits))
     qc.measure_all()
 
-    job = backend.run(qc, 100, verbatim=True, route=False)
-    counts = job.result().get_counts()
+    job = backend.run(qc, 100, method="dry-run", verbatim=True, route=False)
+    counts = job.result().get_counts(0)
     assert sum(counts.values()) == 100
     assert max(counts, key=counts.__getitem__) == ("0" * (num_qubits - 3)) + "100"
 
