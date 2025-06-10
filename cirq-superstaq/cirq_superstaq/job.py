@@ -17,13 +17,14 @@ from __future__ import annotations
 
 import collections
 import time
+import uuid
 from collections.abc import Sequence
 from typing import Any, overload
 
 import cirq
 import general_superstaq as gss
-import general_superstaq._models as _models
 from cirq._doc import document
+from general_superstaq import _models
 
 import cirq_superstaq as css
 
@@ -78,7 +79,6 @@ class Job:
 
     def _refresh_job(self) -> None:
         """If the last fetched job is not terminal, gets the job from the API."""
-
         jobs_to_fetch: list[str] = []
 
         for job_id in self._job_id.split(","):
@@ -86,7 +86,7 @@ class Job:
                 jobs_to_fetch.append(job_id)
 
         if jobs_to_fetch:
-            result = self._client.fetch_jobs(jobs_to_fetch, _models.CircuitType.CIRQ)
+            result = self._client.fetch_jobs(jobs_to_fetch)
             self._job.update(result)
 
         self._update_status_queue_info()
@@ -101,7 +101,6 @@ class Job:
             jobs are still running (even if some are done), we report 'Running' as the
             overall status of the entire batch.
         """
-
         job_id_list = self._job_id.split(",")  # Separate aggregated job ids
 
         status_occurrence = {self._job[job_id]["status"] for job_id in job_id_list}
@@ -158,7 +157,7 @@ class Job:
         current status. A full list of states is given in `cirq_superstaq.Job.ALL_STATES`.
 
         Args:
-            index: An optional index of the specific sub-job to cancel.
+            index: An optional index of the specific sub-job to get the status of.
 
         Raises:
             ~gss.SuperstaqServerException: If unable to get the status of the job
@@ -493,10 +492,8 @@ class Job:
 
 
 @cirq.value_equality(unhashable=True)
-class _Job(Job):  # pragma: no cover
-    """***NEW API STANDARD***
-
-    A job created on the Superstaq API.
+class JobV3:  # pragma: no cover
+    """***NEW API STANDARD*** A job created on the Superstaq API.
 
     Note that this is mutable, when calls to get status or results are made the job updates itself
     to the results returned from the API.
@@ -504,7 +501,7 @@ class _Job(Job):  # pragma: no cover
     If a job is canceled or deleted, only the job id and the status remain valid.
     """
 
-    def __init__(self, client: gss.superstaq_client._SuperstaqClient_v0_3_0, job_id: str) -> None:
+    def __init__(self, client: gss.superstaq_client._SuperstaqClientV3, job_id: uuid.UUID) -> None:
         """Constructs a `Job`.
 
         Users should not call this themselves. If you only know the `job_id`, use `fetch_jobs`
@@ -514,9 +511,11 @@ class _Job(Job):  # pragma: no cover
             client: The client used for calling the API.
             job_id: Unique identifier for the job.
         """
-        self._client: gss.superstaq_client._SuperstaqClient_v0_3_0 = client
+        self._client = client
         if self._client.api_version != "v0.3.0":
-            raise NotImplementedError("_Job job can only be used with v0.3.0 of the Superstaq API.")
+            raise NotImplementedError(
+                "JobV3 job can only be used with v0.3.0 of the Superstaq API."
+            )
         self._overall_status = _models.CircuitStatus.RECEIVED
         self._job_data: _models.JobData
         self._job_id = job_id
@@ -528,7 +527,7 @@ class _Job(Job):  # pragma: no cover
             if all(s in _models.TERMINAL_CIRCUIT_STATES for s in self._job_data.statuses):
                 return
         self._job_data = _models.JobData(
-            **self._client.fetch_jobs([self._job_id], _models.CircuitType.CIRQ)[str(self._job_id)]
+            **self._client.fetch_jobs([self._job_id])[str(self._job_id)]
         )
         self._update_status_queue_info()
 
@@ -577,7 +576,11 @@ class _Job(Job):  # pragma: no cover
         if status == _models.CircuitStatus.FAILED:
             message = "Failure: "
             circuit_messages = []
-            for k in range(self._job_data.num_circuits):
+            if index is None:
+                to_check = list(range(self._job_data.num_circuits))
+            else:
+                to_check = [index]
+            for k in to_check:
                 if self._job_data.statuses[k] == _models.CircuitStatus.FAILED:
                     error = (
                         self._job_data.status_messages[k]
@@ -586,9 +589,9 @@ class _Job(Job):  # pragma: no cover
                     )
                     circuit_messages.append(f"Circuit {k} - {error}")
             message += "[" + ", ".join(circuit_messages) + "]"
-            raise gss.SuperstaqUnsuccessfulJobException(self.job_id(), message)
+            raise gss.SuperstaqUnsuccessfulJobException(str(self.job_id()), message)
 
-    def job_id(self) -> str:
+    def job_id(self) -> uuid.UUID:
         """Gets the job id of this job.
 
         This is the unique identifier used for identifying the job by the API.
@@ -605,7 +608,7 @@ class _Job(Job):  # pragma: no cover
         current status. A full list of states is given in `cirq_superstaq.Job.ALL_STATES`.
 
         Args:
-            index: An optional index of the specific sub-job to cancel.
+            index: An optional index of the specific sub-job to get the status of.
 
         Raises:
             ~gss.SuperstaqServerException: If unable to get the status of the job
@@ -632,7 +635,7 @@ class _Job(Job):  # pragma: no cover
             ~gss.SuperstaqServerException: If unable to get the status of the job
                 from the API or cancellations were unsuccessful.
         """
-        self._client.cancel_jobs(self._job_id, **kwargs)
+        self._client.cancel_jobs([self._job_id], **kwargs)
 
     def target(self) -> str:
         """Gets the Superstaq target associated with this job.
@@ -670,7 +673,21 @@ class _Job(Job):  # pragma: no cover
             ~gss.SuperstaqServerException: If unable to get the status of the job
                 from the API.
         """
-        raise NotImplementedError
+        num_qubits = []
+        if index is None:
+            to_check = list(range(self._job_data.num_circuits))
+        else:
+            to_check = [index]
+        for k in to_check:
+            qubit_map = self._job_data.initial_logical_to_physicals[k]
+            if qubit_map is None:
+                num_qubits.append(0)
+            else:
+                num_qubits.append(len(qubit_map))
+        if index is None:
+            return num_qubits
+        else:
+            return num_qubits[0]
 
     def repetitions(self) -> int:
         """Gets the number of repetitions requested for this job.
@@ -678,7 +695,7 @@ class _Job(Job):  # pragma: no cover
         Returns:
             The number of repetitions for this job.
         """
-        raise NotImplementedError
+        return self._job_data.shots[0]
 
     @overload
     def _get_circuits(self, circuit_type: str, index: int) -> cirq.Circuit: ...
@@ -699,7 +716,7 @@ class _Job(Job):  # pragma: no cover
         Returns:
             A single circuit or list of circuits.
         """
-        raise NotADirectoryError
+        raise NotImplementedError
 
     @overload
     def compiled_circuits(self, index: int) -> cirq.Circuit: ...
@@ -880,7 +897,7 @@ class _Job(Job):  # pragma: no cover
     def __repr__(self) -> str:
         return f"css.Job(client={self._client!r}, job_id={self.job_id()!r})"
 
-    def _value_equality_values_(self) -> tuple[str, dict[str, Any] | None]:
+    def _value_equality_values_(self) -> tuple[uuid.UUID, dict[str, Any] | None]:
         if self._job_data is None:
             return self._job_id, None
         return self._job_id, self._job_data.model_dump()

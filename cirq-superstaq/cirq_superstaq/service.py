@@ -25,11 +25,12 @@ import general_superstaq as gss
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-from general_superstaq import ResourceEstimate
+from general_superstaq import ResourceEstimate, _models
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 from scipy.optimize import curve_fit
 
 import cirq_superstaq as css
+from cirq_superstaq.job import Job, JobV3
 
 if TYPE_CHECKING:
     from _typeshed import SupportsItems
@@ -38,6 +39,12 @@ if TYPE_CHECKING:
 CLIENT_VERSION = {
     "v0.2.0": _SuperstaqClient,
     "v0.3.0": _SuperstaqClientV3,
+}
+
+
+JOB_VERSION = {
+    "v0.2.0": Job,
+    "v0.3.0": JobV3,
 }
 
 
@@ -188,12 +195,12 @@ class Service(gss.service.Service):
             EnvironmentError: If an API key was not provided and could not be found.
         """
         self.default_target = default_target
-        self._client_version = CLIENT_VERSION[api_version]
-        self._client = self._client_version(
+        self._client = CLIENT_VERSION[api_version](
             client_name="cirq-superstaq",
             remote_host=remote_host,
             api_key=api_key,
             api_version=api_version,
+            circuit_type=_models.CircuitType.CIRQ,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
             cq_token=cq_token,
@@ -204,6 +211,7 @@ class Service(gss.service.Service):
             use_stored_ibmq_credentials=use_stored_ibmq_credentials,
             **kwargs,
         )
+        self.Job = JOB_VERSION[api_version]
 
     def _resolve_target(self, target: str | None) -> str:
         target = target or self.default_target
@@ -341,7 +349,7 @@ class Service(gss.service.Service):
         target: str | None = None,
         method: str | None = None,
         **kwargs: Any,
-    ) -> css.job.Job:
+    ) -> Job:
         """Creates a new job to run the given circuit(s).
 
         Args:
@@ -369,8 +377,8 @@ class Service(gss.service.Service):
             method=method,
             **kwargs,
         )
-        if self._client_version ==_SuperstaqClientV3:
-            job_id = result["job_id"]
+        if self._client.api_version == "v0.3.0":
+            job_id = result["job_id"]  # pragma: no cover
         else:
             # Make a virtual job_id that aggregates all of the individual jobs
             # into a single one that comma-separates the individual jobs.
@@ -379,7 +387,7 @@ class Service(gss.service.Service):
         # when the new job's status is first queried
         return self.get_job(job_id=job_id)
 
-    def get_job(self, job_id: str) -> css.job.Job:
+    def get_job(self, job_id: str) -> Job:
         """Gets a job that has been created on the Superstaq API.
 
         Args:
@@ -392,9 +400,7 @@ class Service(gss.service.Service):
         Raises:
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
-        if self._client_version ==_SuperstaqClientV3:
-            return css.job._Job(client=self._client, job_id=job_id)
-        return css.job.Job(client=self._client, job_id=job_id)
+        return self.Job(client=self._client, job_id=job_id)
 
     def resource_estimate(
         self, circuits: cirq.Circuit | Sequence[cirq.Circuit], target: str | None = None
