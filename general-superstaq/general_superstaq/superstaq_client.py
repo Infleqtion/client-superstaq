@@ -65,6 +65,7 @@ class _BaseSuperstaqClient(ABC):
         api_key: str | None = None,
         remote_host: str | None = None,
         api_version: str = gss.API_VERSION,
+        circuit_type: _models.CircuitType = _models.CircuitType.CIRQ,
         max_retry_seconds: float = 60,  # 1 minute
         verbose: bool = False,
         cq_token: str | None = None,
@@ -90,6 +91,7 @@ class _BaseSuperstaqClient(ABC):
                 the form `http://example.com` of `http://example.com/test`.
             api_version: Which version of the API to use. Defaults to `client_superstaq.API_VERSION`
                 (which is the most recent version when this client was downloaded).
+            circuit_type: The type of circuit, Cirq, Qiskit or QASM.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
             cq_token: Token from CQ cloud. This is required to submit circuits to CQ hardware.
@@ -106,6 +108,7 @@ class _BaseSuperstaqClient(ABC):
         self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
         self.client_name = client_name
         self.api_version = api_version
+        self.circuit_type = circuit_type
         self.max_retry_seconds = max_retry_seconds
         self.verbose = verbose
         url = urllib.parse.urlparse(self.remote_host)
@@ -1328,13 +1331,14 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
     def fetch_jobs(
         self,
         job_ids: Sequence[str] | Sequence[uuid.UUID],
-        circuit_type: _models.CircuitType,
         **kwargs: object,
     ) -> dict[str, dict[str, str]]:
         query = _models.JobQuery(job_id=job_ids)
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
         response = self.get_request(
-            f"/client/job/{circuit_type.value}", query.model_dump(exclude_none=True), **credentials
+            f"/client/job/{self.circuit_type.value}",
+            query.model_dump(exclude_none=True),
+            **credentials,
         )
         return {job_id: _models.JobData(**data).model_dump() for (job_id, data) in response.items()}
 
