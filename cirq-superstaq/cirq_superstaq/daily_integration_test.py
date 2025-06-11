@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING, cast
 
 import cirq
 import general_superstaq as gss
@@ -12,6 +13,9 @@ import qiskit
 from general_superstaq import ResourceEstimate
 
 import cirq_superstaq as css
+
+if TYPE_CHECKING:
+    from cirq_superstaq.job import Job
 
 
 @pytest.fixture
@@ -301,6 +305,8 @@ def test_job(service: css.Service) -> None:
     multi_job = service.create_job(
         [circuit, circuit_alt], target="ibmq_brisbane_qpu", repetitions=10, method="dry-run"
     )
+    job = cast("Job", job)
+    multi_job = cast("Job", multi_job)
 
     job_id = job.job_id()  # To test for https://github.com/Infleqtion/client-superstaq/issues/452
     multi_job_id = multi_job.job_id()
