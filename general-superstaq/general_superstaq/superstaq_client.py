@@ -222,7 +222,7 @@ class _BaseSuperstaqClient(ABC):
         self,
         job_ids: Sequence[str] | Sequence[uuid.UUID],
         **kwargs: object,
-    ) -> dict[str, dict[str, str]]:
+    ) -> dict[str, dict[str, Any]]:
         """Get the job from the Superstaq API.
 
         Args:
@@ -976,7 +976,7 @@ class _SuperstaqClient(_BaseSuperstaqClient):
         self,
         job_ids: Sequence[str] | Sequence[uuid.UUID],
         **kwargs: object,
-    ) -> dict[str, dict[str, str]]:
+    ) -> dict[str, dict[str, Any]]:
         json_dict: dict[str, Any] = {
             "job_ids": job_ids,
         }
@@ -1332,7 +1332,7 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         self,
         job_ids: Sequence[str] | Sequence[uuid.UUID],
         **kwargs: object,
-    ) -> dict[str, dict[str, str]]:
+    ) -> dict[str, dict[str, Any]]:
         query = _models.JobQuery(job_id=job_ids)
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
         response = self.get_request(
