@@ -25,6 +25,7 @@ import cirq
 import general_superstaq as gss
 from cirq._doc import document
 from general_superstaq import _models
+from general_superstaq.superstaq_client import _SuperstaqClientV3
 
 import cirq_superstaq as css
 
@@ -501,7 +502,7 @@ class JobV3:  # pragma: no cover
     If a job is canceled or deleted, only the job id and the status remain valid.
     """
 
-    def __init__(self, client: gss.superstaq_client._SuperstaqClientV3, job_id: uuid.UUID) -> None:
+    def __init__(self, client: gss.superstaq_client._SuperstaqClientV3, job_id: str) -> None:
         """Constructs a `Job`.
 
         Users should not call this themselves. If you only know the `job_id`, use `fetch_jobs`
@@ -512,7 +513,7 @@ class JobV3:  # pragma: no cover
             job_id: Unique identifier for the job.
         """
         self._client = client
-        if self._client.api_version != "v0.3.0":
+        if not isinstance(self._client, _SuperstaqClientV3):
             raise NotImplementedError(
                 "JobV3 job can only be used with v0.3.0 of the Superstaq API."
             )
@@ -601,7 +602,15 @@ class JobV3:  # pragma: no cover
         """
         return self._job_id
 
-    def status(self, index: int | None = None) -> str:
+    @overload
+    def status(self, index: int) -> _models.CircuitStatus: ...
+
+    @overload
+    def status(self, index: None = None) -> list[_models.CircuitStatus]: ...
+
+    def status(
+        self, index: int | None = None
+    ) -> _models.CircuitStatus | list[_models.CircuitStatus]:
         """Gets the current status of the job.
 
         If the current job is in a non-terminal state, this will update the job and return the
