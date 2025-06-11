@@ -10,10 +10,7 @@ from checks_superstaq import (
     check_utils,
     configs,
     coverage_,
-    flake8_,
-    format_,
     mypy_,
-    pylint_,
     requirements,
     ruff_format_,
     ruff_lint_,
@@ -38,6 +35,8 @@ def run(*args: str) -> int:
         """
     )
 
+    # "--ruff" flag removed
+
     parser.add_argument(
         "-f",
         "--force-formats",
@@ -50,11 +49,6 @@ def run(*args: str) -> int:
         dest="force_all",
         action="store_true",
         help="'Hard force' ~ continue past (i.e. do not exit after) all failing checks.",
-    )
-    parser.add_argument(
-        "--ruff",
-        action="store_true",
-        help="Use ruff for formatting and linting (replaces black, isort, flake8, and pylint).",
     )
     parser.add_argument(
         "--sysmon",
@@ -77,23 +71,23 @@ def run(*args: str) -> int:
     args_to_pass = [
         arg
         for arg in args
-        if arg not in ("-f", "--force-formats", "-F", "--force", "--ruff", "--sysmon")
+        if arg not in ("-f", "--force-formats", "-F", "--force", "--sysmon")
     ]
 
     # run formatting checks
     # silence most checks to avoid printing duplicate info about incremental files
     # silencing does not affect warnings and errors
-    exit_on_failure = not (parsed_args.force_formats or parsed_args.force_all)
-    checks_failed |= configs.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
-    if parsed_args.ruff:
-        checks_failed |= ruff_format_.run(
-            *args_to_pass, exit_on_failure=exit_on_failure, silent=True
-        )
-        checks_failed |= ruff_lint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
-    else:
-        checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
-        checks_failed |= flake8_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
-        checks_failed |= pylint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+    exit_on_failure_formats_lints = not (parsed_args.force_formats or parsed_args.force_all)
+    checks_failed |= configs.run(
+        *args_to_pass, exit_on_failure=exit_on_failure_formats_lints, silent=True
+    )
+    # Always use ruff for formatting and linting
+    checks_failed |= ruff_format_.run(
+        *args_to_pass, exit_on_failure=exit_on_failure_formats_lints, silent=True
+    )
+    checks_failed |= ruff_lint_.run(
+        *args_to_pass, exit_on_failure=exit_on_failure_formats_lints, silent=True
+    )
 
     # run typing and coverage checks
     exit_on_failure = not parsed_args.force_all
