@@ -69,9 +69,7 @@ def run(*args: str) -> int:
     checks_failed = 0
 
     args_to_pass = [
-        arg
-        for arg in args
-        if arg not in ("-f", "--force-formats", "-F", "--force", "--sysmon")
+        arg for arg in args if arg not in ("-f", "--force-formats", "-F", "--force", "--sysmon")
     ]
 
     # run formatting checks
