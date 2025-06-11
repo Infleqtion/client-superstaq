@@ -29,6 +29,7 @@ import cirq
 import cirq_superstaq as css
 import numpy as np
 import pandas as pd
+from cirq_superstaq.job import JobV3
 from tqdm.auto import tqdm
 
 import supermarq
@@ -768,6 +769,10 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             **target_options,
         )
 
+        if isinstance(experiment_job, JobV3):  # pragma: no cover
+            raise NotImplementedError(
+                "QCVV experiments are not using v0.3.0 of the Superstaq API yet."
+            )
         return self._results_cls(
             target=target,
             experiment=self,
