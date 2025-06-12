@@ -136,6 +136,7 @@ class XEBResults(QCVVResults):
         )
         self._cycle_fidelity_estimate = np.exp(cycle_fit.slope)
         self._cycle_fidelity_estimate_std = self.cycle_fidelity_estimate * cycle_fit.stderr
+        self._zero_cycle_fidelity_estimate = np.exp(cycle_fit.intercept)
 
     def plot_results(
         self,
@@ -195,9 +196,13 @@ class XEBResults(QCVVResults):
         x = np.linspace(
             self._circuit_fidelities.cycle_depth.min(), self._circuit_fidelities.cycle_depth.max()
         )
-        y = self.cycle_fidelity_estimate**x
-        y_p = (self.cycle_fidelity_estimate + 1.96 * self.cycle_fidelity_estimate_std) ** x
-        y_m = (self.cycle_fidelity_estimate - 1.96 * self.cycle_fidelity_estimate_std) ** x
+        y = self.cycle_fidelity_estimate**x * self._zero_cycle_fidelity_estimate
+        y_p = (
+            self.cycle_fidelity_estimate + 1.96 * self.cycle_fidelity_estimate_std
+        ) ** x * self._zero_cycle_fidelity_estimate
+        y_m = (
+            self.cycle_fidelity_estimate - 1.96 * self.cycle_fidelity_estimate_std
+        ) ** x * self._zero_cycle_fidelity_estimate
         axs[1].plot(x, y, color="tab:red", linewidth=2)
         axs[1].fill_between(x, y_m, y_p, alpha=0.25, color="tab:red", label="95% CI")
         axs[1].legend()
