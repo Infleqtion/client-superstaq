@@ -74,16 +74,10 @@ def run(*args: str) -> int:
     # silence most checks to avoid printing duplicate info about incremental files
     # silencing does not affect warnings and errors
     exit_on_failure = not (parsed_args.force_formats or parsed_args.force_all)
-    checks_failed |= configs.run(
-        *args_to_pass, exit_on_failure=exit_on_failure, silent=True
-    )
+    checks_failed |= configs.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
     # Always use ruff for formatting and linting
-    checks_failed |= ruff_format_.run(
-        *args_to_pass, exit_on_failure=exit_on_failure, silent=True
-    )
-    checks_failed |= ruff_lint_.run(
-        *args_to_pass, exit_on_failure=exit_on_failure, silent=True
-    )
+    checks_failed |= ruff_format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+    checks_failed |= ruff_lint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 
     # run typing and coverage checks
     exit_on_failure = not parsed_args.force_all
