@@ -52,7 +52,8 @@ def run(*args: str) -> int:
     parser.add_argument(
         "--ruff",
         action="store_true",
-        help="[DEPRECATED] Ruff is now the default formatter and linter. The --ruff flag is ignored.",
+        help="[DEPRECATED] Ruff is now the default formatter and linter. "
+        "The --ruff flag is ignored.",
     )
     parser.add_argument(
         "--sysmon",
