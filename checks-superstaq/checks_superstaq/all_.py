@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import sys
 import textwrap
+import warnings
 
 from checks_superstaq import (
     build_docs,
@@ -49,6 +50,11 @@ def run(*args: str) -> int:
         help="'Hard force' ~ continue past (i.e. do not exit after) all failing checks.",
     )
     parser.add_argument(
+        "--ruff",
+        action="store_true",
+        help="[DEPRECATED] Ruff is now the default formatter and linter. The --ruff flag is ignored.",
+    )
+    parser.add_argument(
         "--sysmon",
         action="store_true",
         help="Enable the `COVERAGE_CORE=sysmon` env variable for faster coverage (requires "
@@ -56,6 +62,16 @@ def run(*args: str) -> int:
     )
 
     parsed_args, _ = parser.parse_known_intermixed_args(args)
+    
+    # Issue deprecation warning for --ruff flag
+    if parsed_args.ruff:
+        warnings.warn(
+            "The --ruff flag is deprecated and will be removed in a future version. "
+            "Ruff is now the default formatter and linter.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+    
     if parsed_args.revisions is not None:
         # print info about incremental files once now, rather than in each check
         _ = check_utils.extract_files(parsed_args, silent=False)
@@ -67,15 +83,15 @@ def run(*args: str) -> int:
     checks_failed = 0
 
     args_to_pass = [
-        arg for arg in args if arg not in ("-f", "--force-formats", "-F", "--force", "--sysmon")
+        arg for arg in args if arg not in ("-f", "--force-formats", "-F", "--force", "--ruff", "--sysmon")
     ]
-
+    
+    # Always use ruff for formatting and linting (remove the conditional logic)
     # run formatting checks
     # silence most checks to avoid printing duplicate info about incremental files
     # silencing does not affect warnings and errors
     exit_on_failure = not (parsed_args.force_formats or parsed_args.force_all)
     checks_failed |= configs.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
-    # Always use ruff for formatting and linting
     checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
     checks_failed |= lint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 
