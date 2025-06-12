@@ -62,7 +62,7 @@ def run(*args: str) -> int:
     )
 
     parsed_args, _ = parser.parse_known_intermixed_args(args)
-    
+
     # Issue deprecation warning for --ruff flag
     if parsed_args.ruff:
         warnings.warn(
@@ -71,7 +71,7 @@ def run(*args: str) -> int:
             DeprecationWarning,
             stacklevel=2,
         )
-    
+
     if parsed_args.revisions is not None:
         # print info about incremental files once now, rather than in each check
         _ = check_utils.extract_files(parsed_args, silent=False)
@@ -83,9 +83,11 @@ def run(*args: str) -> int:
     checks_failed = 0
 
     args_to_pass = [
-        arg for arg in args if arg not in ("-f", "--force-formats", "-F", "--force", "--ruff", "--sysmon")
+        arg
+        for arg in args
+        if arg not in ("-f", "--force-formats", "-F", "--force", "--ruff", "--sysmon")
     ]
-    
+
     # Always use ruff for formatting and linting (remove the conditional logic)
     # run formatting checks
     # silence most checks to avoid printing duplicate info about incremental files
