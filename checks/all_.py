@@ -6,8 +6,7 @@ import sys
 import checks_superstaq as checks
 
 if __name__ == "__main__":
-    args = sys.argv[1:]  # Removed the automatic "--ruff" addition as ruff is
-    # now the default for lints and formats
+    args = sys.argv[1:]
 
     if sys.version_info.minor >= 12:
         args += ["--sysmon"]

@@ -35,7 +35,6 @@ def run(*args: str) -> int:
         """
     )
 
-    # "--ruff" flag removed
 
     parser.add_argument(
         "-f",
