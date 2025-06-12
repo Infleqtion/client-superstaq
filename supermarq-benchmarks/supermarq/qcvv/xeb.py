@@ -198,13 +198,11 @@ class XEBResults(QCVVResults):
         )
         y = self.cycle_fidelity_estimate**x * self._zero_cycle_fidelity_estimate
         y_p = (
-            (self._cycle_fidelity_estimate + 1.96 * self._cycle_fidelity_estimate_std) ** x
-            * self._zero_cycle_fidelity_estimate
-        )
+            self.cycle_fidelity_estimate + 1.96 * self.cycle_fidelity_estimate_std
+        ) ** x * self._zero_cycle_fidelity_estimate
         y_m = (
-            (self._cycle_fidelity_estimate - 1.96 * self._cycle_fidelity_estimate_std) ** x
-            * self._zero_cycle_fidelity_estimate
-        )
+            self.cycle_fidelity_estimate - 1.96 * self.cycle_fidelity_estimate_std
+        ) ** x * self._zero_cycle_fidelity_estimate
         axs[1].plot(x, y, color="tab:red", linewidth=2)
         axs[1].fill_between(x, y_m, y_p, alpha=0.25, color="tab:red", label="95% CI")
         axs[1].legend()
