@@ -493,7 +493,7 @@ class Job:
 
 
 @cirq.value_equality(unhashable=True)
-class JobV3:  # pragma: no cover
+class JobV3:
     """***NEW API STANDARD*** A job created on the Superstaq API.
 
     Note that this is mutable, when calls to get status or results are made the job updates itself
@@ -502,7 +502,7 @@ class JobV3:  # pragma: no cover
     If a job is canceled or deleted, only the job id and the status remain valid.
     """
 
-    def __init__(self, client: gss.superstaq_client._SuperstaqClientV3, job_id: str) -> None:
+    def __init__(self, client: gss.superstaq_client._SuperstaqClientV3, job_id: uuid.UUID) -> None:
         """Constructs a `Job`.
 
         Users should not call this themselves. If you only know the `job_id`, use `fetch_jobs`
@@ -514,13 +514,10 @@ class JobV3:  # pragma: no cover
         """
         self._client = client
         if not isinstance(self._client, _SuperstaqClientV3):
-            raise NotImplementedError(
-                "JobV3 job can only be used with v0.3.0 of the Superstaq API."
-            )
+            raise ValueError("JobV3 job can only be used with v0.3.0 of the Superstaq API.")
         self._overall_status = _models.CircuitStatus.RECEIVED
         self._job_data: _models.JobData
         self._job_id = job_id
-        self._refresh_job()
 
     def _refresh_job(self) -> None:
         """If the last fetched job is not terminal, gets the job from the API."""
@@ -548,7 +545,6 @@ class JobV3:  # pragma: no cover
             _models.CircuitStatus.AWAITING_COMPILE,
             _models.CircuitStatus.AWAITING_SUBMISSION,
             _models.CircuitStatus.AWAITING_SIMULATION,
-            _models.CircuitStatus.AWAITING_SUBMISSION,
             _models.CircuitStatus.PENDING,
             _models.CircuitStatus.RUNNING,
             _models.CircuitStatus.FAILED,
@@ -602,15 +598,7 @@ class JobV3:  # pragma: no cover
         """
         return self._job_id
 
-    @overload
-    def status(self, index: int) -> _models.CircuitStatus: ...
-
-    @overload
-    def status(self, index: None = None) -> list[_models.CircuitStatus]: ...
-
-    def status(
-        self, index: int | None = None
-    ) -> _models.CircuitStatus | list[_models.CircuitStatus]:
+    def status(self, index: int | None = None) -> _models.CircuitStatus:
         """Gets the current status of the job.
 
         If the current job is in a non-terminal state, this will update the job and return the
@@ -658,6 +646,8 @@ class JobV3:  # pragma: no cover
             ~gss.SuperstaqServerException: If unable to get the status of the job
                 from the API.
         """
+        if not hasattr(self, "_job_data"):
+            self._refresh_job()
         return self._job_data.target
 
     @overload
@@ -682,6 +672,8 @@ class JobV3:  # pragma: no cover
             ~gss.SuperstaqServerException: If unable to get the status of the job
                 from the API.
         """
+        if not hasattr(self, "_job_data"):
+            self._refresh_job()
         num_qubits = []
         if index is None:
             to_check = list(range(self._job_data.num_circuits))
@@ -704,28 +696,9 @@ class JobV3:  # pragma: no cover
         Returns:
             The number of repetitions for this job.
         """
+        if not hasattr(self, "_job_data"):
+            self._refresh_job()
         return self._job_data.shots[0]
-
-    @overload
-    def _get_circuits(self, circuit_type: str, index: int) -> cirq.Circuit: ...
-
-    @overload
-    def _get_circuits(self, circuit_type: str, index: None = None) -> list[cirq.Circuit]: ...
-
-    def _get_circuits(
-        self, circuit_type: str, index: int | None = None
-    ) -> cirq.Circuit | list[cirq.Circuit]:
-        """Retrieves the corresponding circuit(s) to `circuit_type`.
-
-        Args:
-            circuit_type: The kind of circuit(s) to retrieve. Either "input_circuit" or
-                "compiled_circuit".
-            index: The index of the circuit to retrieve.
-
-        Returns:
-            A single circuit or list of circuits.
-        """
-        raise NotImplementedError
 
     @overload
     def compiled_circuits(self, index: int) -> cirq.Circuit: ...
@@ -746,6 +719,8 @@ class JobV3:  # pragma: no cover
         Returns:
             A single compiled circuit or list of compiled circuits.
         """
+        if not hasattr(self, "_job_data"):
+            self._refresh_job()
         if all(c is None for c in self._job_data.compiled_circuits):
             raise RuntimeError(f"The job {self._job_id} has no compiled circuits.")
 
@@ -781,6 +756,8 @@ class JobV3:  # pragma: no cover
         Returns:
             A single input circuit or list of submitted input circuits.
         """
+        if not hasattr(self, "_job_data"):
+            self._refresh_job()
         circuits = [
             css.deserialize_circuits(self._job_data.input_circuits[k])[0]
             for k in range(self._job_data.num_circuits)
@@ -789,22 +766,6 @@ class JobV3:  # pragma: no cover
         if index is None:
             return circuits
         return circuits[index]
-
-    def pulse_gate_circuits(self, index: int | None = None) -> Any:
-        """Gets the pulse gate circuit(s) returned by this job.
-
-        Args:
-            index: An optional index of the pulse gate circuit to retrieve.
-
-        Returns:
-            A `qiskit.QuantumCircuit` pulse gate circuit or list of `qiskit.QuantumCircuit` pulse
-            gate circuits.
-
-        Raises:
-            ValueError: If the job was not run on an IBM pulse device.
-            ValueError: If the job's target does not use pulse gate circuits.
-        """
-        raise NotImplementedError
 
     @overload
     def counts(
@@ -897,17 +858,18 @@ class JobV3:  # pragma: no cover
         Returns:
             A dictionary containing updated job information.
         """
-        self._refresh_job()
+        if not hasattr(self, "_job_data"):
+            self._refresh_job()
         return self._job_data.model_dump()
 
     def __str__(self) -> str:
         return f"Job with job_id={self.job_id()}"
 
     def __repr__(self) -> str:
-        return f"css.Job(client={self._client!r}, job_id={self.job_id()!r})"
+        return f"css.JobV3(client={self._client!r}, job_id={self.job_id()!r})"
 
     def _value_equality_values_(self) -> tuple[uuid.UUID, dict[str, Any] | None]:
-        if self._job_data is None:
+        if not hasattr(self, "_job_data"):
             return self._job_id, None
         return self._job_id, self._job_data.model_dump()
 
