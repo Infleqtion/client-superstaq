@@ -43,6 +43,13 @@ def test_provider_args() -> None:
         "ibmq_instance": "instance",
         "ibmq_token": "token",
     }
+    assert isinstance(ss_provider._client, gss.superstaq_client._SuperstaqClient)
+
+    ss_provider = qss.SuperstaqProvider(api_version="v0.3.0")
+    assert isinstance(ss_provider._client, gss.superstaq_client._SuperstaqClientV3)
+
+    with pytest.raises(ValueError, match="`api_version` can only take value 'v0.2.0' or 'v0.3.0'"):
+        ss_provider = qss.SuperstaqProvider(api_version="v0.4.0")
 
 
 @patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
