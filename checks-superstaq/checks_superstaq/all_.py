@@ -35,7 +35,6 @@ def run(*args: str) -> int:
         """
     )
 
-
     parser.add_argument(
         "-f",
         "--force-formats",
