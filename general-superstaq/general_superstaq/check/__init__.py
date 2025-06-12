@@ -5,11 +5,11 @@ from checks_superstaq import (  # To be removed in version 0.5.0
     check_utils,
     configs,
     coverage_,
+    format_,
+    lint_,
     mypy_,
     pytest_,
     requirements,
-    format_,
-    lint_,
 )
 
 __all__ = [
@@ -19,9 +19,9 @@ __all__ = [
     "check_utils",
     "configs",
     "coverage_",
+    "format_",
+    "lint_",
     "mypy_",
     "pytest_",
     "requirements",
-    "format_",
-    "lint_",
 ]

@@ -10,10 +10,10 @@ from checks_superstaq import (
     check_utils,
     configs,
     coverage_,
-    mypy_,
-    requirements,
     format_,
     lint_,
+    mypy_,
+    requirements,
 )
 
 

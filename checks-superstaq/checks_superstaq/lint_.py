@@ -30,7 +30,7 @@ def run(
     parser = check_utils.get_check_parser()
     parser.description = textwrap.dedent(
         """
-        Runs 'ruff check' on the repository (linting check). 
+        Runs 'ruff check' on the repository (linting check).
         """
     )
 
