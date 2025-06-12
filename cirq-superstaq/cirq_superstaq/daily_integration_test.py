@@ -227,14 +227,18 @@ def test_qscout_compile_swap_mirror(service: css.Service) -> None:
     assert num_two_qubit_gates == 3
 
 
-def test_cq_compile(service: css.Service) -> None:
+@pytest.mark.parametrize("target", ["cq_sqale_simulator", "cq_sqale_qpu"])
+def test_cq_compile(target: str, service: css.Service) -> None:
     # We use GridQubits cause CQ's qubits are laid in a grid
     qubits = cirq.GridQubit.rect(2, 2)
     circuit = cirq.Circuit(
-        cirq.H(qubits[0]), cirq.CNOT(qubits[0], qubits[1]), cirq.measure(qubits[0])
+        cirq.H(qubits[0]),
+        cirq.CNOT(qubits[0], qubits[1]),
+        css.ParallelRGate(0.125, 0.125, 2).on(qubits[0], qubits[1]),
+        cirq.measure(qubits[0]),
     )
 
-    out = service.cq_compile(circuit)
+    out = service.cq_compile(circuit, target=target)
     assert isinstance(out.circuit, cirq.Circuit)
 
 

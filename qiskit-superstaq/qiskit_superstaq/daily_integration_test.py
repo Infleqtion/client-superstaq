@@ -194,12 +194,14 @@ def test_qscout_compile_swap_mirror(provider: qss.SuperstaqProvider) -> None:
     assert num_two_qubit_gates == 3
 
 
-def test_cq_compile(provider: qss.SuperstaqProvider) -> None:
-    backend = provider.get_backend("cq_sqale_qpu")
+@pytest.mark.parametrize("backend_name", ["cq_sqale_simulator", "cq_sqale_qpu"])
+def test_cq_compile(backend_name: str, provider: qss.SuperstaqProvider) -> None:
+    backend = provider.get_backend(backend_name)
     assert backend.target.instruction_supported("gr")
 
-    circuit = qiskit.QuantumCircuit(1)
+    circuit = qiskit.QuantumCircuit(2)
     circuit.h(0)
+    circuit.append(qiskit.circuit.library.GR(2, np.pi / 2, 0), [0, 1])
     assert isinstance(backend.cq_compile(circuit).circuit, qiskit.QuantumCircuit)
     circuits = backend.compile([circuit]).circuits
     assert len(circuits) == 1
