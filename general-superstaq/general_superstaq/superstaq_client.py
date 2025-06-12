@@ -792,9 +792,9 @@ class _BaseSuperstaqClient(ABC):
                 json_content = None
 
             if isinstance(json_content, dict) and set(json_content.keys()).intersection(
-                {"message", "details"}
+                {"message", "detail"}
             ):
-                alternative: str = json_content.get("details", "")
+                alternative: str = json_content.get("detail", "")
                 message: str = json_content.get("message", alternative)
             else:
                 message = str(response.text)
@@ -1320,11 +1320,12 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         **kwargs: object,
     ) -> list[str]:
         query = _models.JobQuery(job_id=job_ids)
+        json_dict = query.model_dump(exclude_none=True)
+        json_dict["job_id"] = list(map(str, json_dict["job_id"]))
+        json_dict["job_id"] = 10
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
         response = _models.JobCancellationResults(
-            **self.put_request(
-                "/client/cancel_job", query.model_dump(exclude_none=True), **credentials
-            )
+            **self.put_request("/client/cancel_job", json_dict, **credentials)
         )
         return response.succeeded
 
