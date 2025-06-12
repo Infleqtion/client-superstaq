@@ -31,7 +31,7 @@ from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClien
 from scipy.optimize import curve_fit
 
 import cirq_superstaq as css
-from cirq_superstaq.job import Job, JobV3
+from cirq_superstaq import Job, JobV3
 
 if TYPE_CHECKING:
     from _typeshed import SupportsItems
@@ -376,7 +376,7 @@ class Service(gss.service.Service):
             # into a single one that comma-separates the individual jobs.
             job_id = ",".join(result["job_ids"])
         else:
-            job_id = result["job_id"]  # pragma: no cover
+            job_id = result["job_id"]
         # The returned job does not have fully populated fields; they will be filled out by
         # when the new job's status is first queried
         return self.get_job(job_id=job_id)
@@ -397,7 +397,7 @@ class Service(gss.service.Service):
         if isinstance(self._client, _SuperstaqClient):
             job_id = cast("str", job_id)
             return Job(client=self._client, job_id=job_id)
-        else:  # pragma: no cover
+        else:
             # mypy doesn't narrow hence the ignore
             job_id = cast("uuid.UUID", job_id)
             return JobV3(client=self._client, job_id=job_id)  # type: ignore[arg-type]
