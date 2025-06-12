@@ -12,8 +12,8 @@ from checks_superstaq import (
     coverage_,
     mypy_,
     requirements,
-    ruff_format_,
-    ruff_lint_,
+    format_,
+    lint_,
 )
 
 
@@ -76,8 +76,8 @@ def run(*args: str) -> int:
     exit_on_failure = not (parsed_args.force_formats or parsed_args.force_all)
     checks_failed |= configs.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
     # Always use ruff for formatting and linting
-    checks_failed |= ruff_format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
-    checks_failed |= ruff_lint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+    checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
+    checks_failed |= lint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 
     # run typing and coverage checks
     exit_on_failure = not parsed_args.force_all
