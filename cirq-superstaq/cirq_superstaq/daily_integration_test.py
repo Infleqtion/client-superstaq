@@ -179,14 +179,7 @@ def test_get_targets(service: css.Service) -> None:
     assert all(target in result for target in filtered_result)
     for gss_target in result:
         target_name = gss_target.target
-        try:
-            assert (
-                service.target_info(target_name)["target"] == target_name
-            )  # Checks `.target_info()` is retrievable
-        except Exception as e:
-            print(  # noqa: T201
-                f"\n\033[31mCould not retrieve target info for '{target_name}' due to: {e}\033[31m"
-            )
+        assert service.target_info(target_name)["target"] == target_name
 
 
 def test_qscout_compile(service: css.Service) -> None:
