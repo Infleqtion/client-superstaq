@@ -31,7 +31,6 @@ from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClien
 from scipy.optimize import curve_fit
 
 import cirq_superstaq as css
-from cirq_superstaq import Job, JobV3
 
 if TYPE_CHECKING:
     from _typeshed import SupportsItems
@@ -343,7 +342,7 @@ class Service(gss.service.Service):
         target: str | None = None,
         method: str | None = None,
         **kwargs: Any,
-    ) -> Job | JobV3:
+    ) -> css.Job | css.JobV3:
         """Creates a new job to run the given circuit(s).
 
         Args:
@@ -381,7 +380,7 @@ class Service(gss.service.Service):
         # when the new job's status is first queried
         return self.get_job(job_id=job_id)
 
-    def get_job(self, job_id: str | uuid.UUID) -> Job | JobV3:
+    def get_job(self, job_id: str | uuid.UUID) -> css.Job | css.JobV3:
         """Gets a job that has been created on the Superstaq API.
 
         Args:
@@ -396,11 +395,11 @@ class Service(gss.service.Service):
         """
         if isinstance(self._client, _SuperstaqClient):
             job_id = cast("str", job_id)
-            return Job(client=self._client, job_id=job_id)
+            return css.Job(client=self._client, job_id=job_id)
         else:
             # mypy doesn't narrow hence the ignore
             job_id = cast("uuid.UUID", job_id)
-            return JobV3(client=self._client, job_id=job_id)  # type: ignore[arg-type]
+            return css.JobV3(client=self._client, job_id=job_id)  # type: ignore[arg-type]
 
     def resource_estimate(
         self, circuits: cirq.Circuit | Sequence[cirq.Circuit], target: str | None = None
