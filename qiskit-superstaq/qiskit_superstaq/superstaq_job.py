@@ -11,9 +11,9 @@
 # that they have been altered from the originals.
 from __future__ import annotations
 
+import time
 import uuid
 from collections.abc import Sequence
-import time
 from typing import Any, overload
 
 import general_superstaq as gss

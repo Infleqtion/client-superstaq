@@ -10,7 +10,6 @@ import pytest
 import qiskit
 
 import qiskit_superstaq as qss
-from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 
 if TYPE_CHECKING:
     from qiskit_superstaq.conftest import MockSuperstaqProvider

@@ -1248,7 +1248,7 @@ class _SuperstaqClient(_BaseSuperstaqClient):
 
     def aqt_get_configs(self) -> dict[str, str]:
         return self.get_request("/get_aqt_configs")
-    
+
     def __repr__(self) -> str:
         return textwrap.dedent(
             f"""\
