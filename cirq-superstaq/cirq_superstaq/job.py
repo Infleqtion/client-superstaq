@@ -545,12 +545,15 @@ class JobV3:
             _models.CircuitStatus.AWAITING_COMPILE,
             _models.CircuitStatus.AWAITING_SUBMISSION,
             _models.CircuitStatus.AWAITING_SIMULATION,
+            _models.CircuitStatus.COMPILING,
+            _models.CircuitStatus.SIMULATING,
             _models.CircuitStatus.PENDING,
             _models.CircuitStatus.RUNNING,
             _models.CircuitStatus.FAILED,
             _models.CircuitStatus.CANCELLED,
             _models.CircuitStatus.UNRECOGNIZED,
             _models.CircuitStatus.COMPLETED,
+            _models.CircuitStatus.DELETED,
         )
 
         for temp_status in status_priority_order:
@@ -680,11 +683,8 @@ class JobV3:
         else:
             to_check = [index]
         for k in to_check:
-            qubit_map = self._job_data.initial_logical_to_physicals[k]
-            if qubit_map is None:
-                num_qubits.append(0)
-            else:
-                num_qubits.append(len(qubit_map))
+            circuit = self.input_circuits(index=k)
+            num_qubits.append(cirq.num_qubits(circuit))
         if index is None:
             return num_qubits
         else:
