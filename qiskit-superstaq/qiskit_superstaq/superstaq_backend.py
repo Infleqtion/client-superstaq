@@ -12,12 +12,14 @@
 from __future__ import annotations
 
 import numbers
+import uuid
 import warnings
 from collections.abc import Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import general_superstaq as gss
 import qiskit
+from general_superstaq.superstaq_client import _SuperstaqClient
 
 import qiskit_superstaq as qss
 
@@ -131,7 +133,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         shots: int,
         method: str | None = None,
         **kwargs: Any,
-    ) -> qss.SuperstaqJob:
+    ) -> qss.SuperstaqJob | qss.SuperstaqJobV3:
         """Runs circuits on the stored Superstaq backend.
 
         Args:
@@ -166,14 +168,16 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             **kwargs,
         )
 
-        #  we make a virtual job_id that aggregates all of the individual jobs
-        # into a single one, that comma-separates the individual jobs:
-        job_id = ",".join(result["job_ids"])
-        job = qss.SuperstaqJob(self, job_id)
+        if isinstance(self._provider._client, _SuperstaqClient):
+            # Make a virtual job_id that aggregates all of the individual jobs
+            # into a single one that comma-separates the individual jobs.
+            job_id = ",".join(result["job_ids"])
+            return qss.SuperstaqJob(self, job_id)
+        else:
+            job_id_v3 = cast("uuid.UUID", result["job_id"])
+            return qss.SuperstaqJobV3(self, job_id_v3)
 
-        return job
-
-    def retrieve_job(self, job_id: str) -> qss.SuperstaqJob:
+    def retrieve_job(self, job_id: str | uuid.UUID) -> qss.SuperstaqJob | qss.SuperstaqJobV3:
         """Gets a job that has been created on the Superstaq API.
 
         Args:
@@ -193,7 +197,12 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             DeprecationWarning,
             stacklevel=2,
         )
-        return qss.SuperstaqJob(self, job_id)
+        if isinstance(self._provider._client, _SuperstaqClient):
+            job_id = cast("str", job_id)
+            return qss.SuperstaqJob(self, job_id)
+        else:
+            job_id = cast("uuid.UUID", job_id)
+            return qss.SuperstaqJobV3(self, job_id)
 
     def compile(
         self,

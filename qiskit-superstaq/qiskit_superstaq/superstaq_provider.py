@@ -17,6 +17,8 @@ from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
 import qiskit
+from general_superstaq import _models
+from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 
 import qiskit_superstaq as qss
 
@@ -95,11 +97,19 @@ class SuperstaqProvider(gss.service.Service):
         """
         self._name = "superstaq_provider"
 
-        self._client = gss.superstaq_client._SuperstaqClient(
+        if api_version == "v0.2.0":
+            client_version: type[_SuperstaqClient | _SuperstaqClientV3] = _SuperstaqClient
+        elif api_version == "v0.3.0":
+            client_version = _SuperstaqClientV3
+        else:
+            raise ValueError("`api_version` can only take value 'v0.2.0' or 'v0.3.0'")
+
+        self._client = client_version(
             client_name="qiskit-superstaq",
             remote_host=remote_host,
             api_key=api_key,
             api_version=api_version,
+            circuit_type=_models.CircuitType.QISKIT,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
             cq_token=cq_token,

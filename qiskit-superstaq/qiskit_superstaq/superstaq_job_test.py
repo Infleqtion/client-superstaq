@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import datetime
 import json
+import uuid
 from typing import TYPE_CHECKING
 from unittest import mock
 
@@ -60,6 +62,69 @@ def backend(fake_superstaq_provider: MockSuperstaqProvider) -> qss.SuperstaqBack
     return fake_superstaq_provider.get_backend("ss_example_qpu")
 
 
+@pytest.fixture
+def backendV3(fake_superstaq_providerV3: MockSuperstaqProvider) -> qss.SuperstaqBackend:
+    """Fixture for qiskit_superstaq backend.
+
+    Args:
+        fake_superstaq_providerV3: the mocked SuperstaqProvider.
+
+    Returns:
+        A mocked SuperstaqBackend.
+    """
+    return fake_superstaq_providerV3.get_backend("ss_example_qpu")
+
+
+def job_dictV3(n_circuits: int = 1) -> dict[str, object]:
+    """Fixture for a standard, completed single v0.3.0 job result.
+
+    Args:
+        n_circuits: the number of circuits to include in the dictionary.
+
+    Returns:
+        A dictionary containing commonly expected job data.
+    """
+    circuit = qiskit.QuantumCircuit(2)
+    circuit.x(0)
+    circuit.cx(0, 1)
+    circuit.measure_all()
+    return {
+        "job_type": "simulate",
+        "statuses": ["completed"] * n_circuits,
+        "status_messages": [None] * n_circuits,
+        "user_email": "test@email.com",
+        "target": "ss_unconstrained_simulator",
+        "provider_id": ["provider_id"] * n_circuits,
+        "num_circuits": n_circuits,
+        "compiled_circuits": [None] * n_circuits,
+        "input_circuits": [qss.serialize_circuits(circuit)] * n_circuits,
+        "circuit_type": "cirq",
+        "counts": [{"11": 1}] * n_circuits,
+        "results_dicts": [] * n_circuits,
+        "shots": [1] * n_circuits,
+        "dry_run": True,
+        "submission_timestamp": str(datetime.datetime.now()),
+        "last_updated_timestamp": [str(datetime.datetime.now())] * n_circuits,
+        "initial_logical_to_physicals": [{0: 0, 1: 1}] * n_circuits,
+        "final_logical_to_physicals": [{0: 0, 1: 1}] * n_circuits,
+        "logical_qubits": ["0", "1"],
+        "physical_qubits": ["0", "1"],
+    }
+
+
+def modifiy_job_result(base_result: dict[str, object], **kwargs: object) -> dict[str, object]:
+    """Extends and updates `base_result` with passed `kwargs`.
+
+    Args:
+        base_result: Base job result to modify.
+        kwargs: Additional keyword args to add or update existing values in `base_result`.
+
+    Returns:
+        An updated dictionary based on the `kwargs` passed.
+    """
+    return {**base_result, **kwargs}
+
+
 def test_wait_for_results(backend: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJob(backend=backend, job_id="123abc")
     jobs = qss.SuperstaqJob(backend=backend, job_id="123abc,456def")
@@ -75,6 +140,22 @@ def test_wait_for_results(backend: qss.SuperstaqBackend) -> None:
         ]
 
 
+def test_wait_for_resultsV3(backendV3: qss.SuperstaqBackend) -> None:
+    job = qss.SuperstaqJobV3(backendV3, uuid.UUID(int=42))
+    response_dict = {str(job._job_id): job_dictV3()}
+    with patched_requests(response_dict):
+        assert job._wait_for_results(
+            timeout=backendV3._provider._client.max_retry_seconds
+        ).statuses == ["completed"]
+
+    job = qss.SuperstaqJobV3(backendV3, uuid.UUID(int=42))
+    response_dict = {str(job._job_id): job_dictV3(2)}
+    with patched_requests(response_dict):
+        assert job._wait_for_results(
+            timeout=backendV3._provider._client.max_retry_seconds
+        ).statuses == ["completed", "completed"]
+
+
 def test_cancel(backend: qss.SuperstaqBackend) -> None:
     multi_job = qss.SuperstaqJob(backend=backend, job_id="123abc,456def,789abc")
     with mock.patch("requests.Session.post", return_value=mock.MagicMock(ok=True)) as mock_post:
@@ -82,6 +163,13 @@ def test_cancel(backend: qss.SuperstaqBackend) -> None:
         multi_job.cancel(0)
         multi_job.cancel()
         assert mock_post.call_count == 3
+
+
+def test_cancelV3(backendV3: qss.SuperstaqBackend) -> None:
+    job = qss.SuperstaqJobV3(backendV3, uuid.UUID(int=42))
+    with mock.patch("requests.Session.put") as mock_put:
+        mock_put.return_value.json.return_value = {"succeeded": ["circuit"], "message": "message"}
+        job.cancel()
 
 
 def test_timeout(backend: qss.SuperstaqBackend) -> None:
@@ -96,6 +184,33 @@ def test_timeout(backend: qss.SuperstaqBackend) -> None:
             timeout=backend._provider._client.max_retry_seconds, wait=0.0
         ) == [mock_response("Done")]
         assert mocked_get_job.call_count == 3
+
+
+def test_timeoutV3(backendV3: qss.SuperstaqBackend) -> None:
+    job = qss.SuperstaqJobV3(backendV3, uuid.UUID(int=42))
+    completed_dict = job_dictV3()
+    queue_dict = modifiy_job_result(completed_dict, statuses=["awaiting_submission"])
+
+    with patched_requests(
+        {str(job._job_id): queue_dict},
+        {str(job._job_id): queue_dict},
+        {str(job._job_id): completed_dict},
+    ) as mocked_get_job:
+        assert job._wait_for_results(
+            timeout=backendV3._provider._client.max_retry_seconds, wait=0.0
+        ).statuses == ["completed"]
+        assert mocked_get_job.call_count == 3
+
+    job = qss.SuperstaqJobV3(backendV3, uuid.UUID(int=42))
+    with mock.patch("time.sleep", return_value=None):
+        with patched_requests(
+            {str(job._job_id): queue_dict},
+            {str(job._job_id): queue_dict},
+            {str(job._job_id): queue_dict},
+            {str(job._job_id): completed_dict},
+        ) as mocked_get_job:
+            with pytest.raises(TimeoutError, match="Timed out while waiting for results."):
+                job._wait_for_results(timeout=10, wait=8)
 
 
 def test_result(backend: qss.SuperstaqBackend) -> None:
@@ -141,6 +256,68 @@ def test_result(backend: qss.SuperstaqBackend) -> None:
 
     multi_job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz")
     with patched_requests({"123abc": response, "456xyz": response}):
+        assert multi_job.result().get_counts() == [
+            {"011": 30, "001": 50, "111": 20},
+            {"011": 30, "001": 50, "111": 20},
+        ]
+        assert multi_job.result(index=0).get_counts() == {"011": 30, "001": 50, "111": 20}
+
+
+def test_resultV3(backendV3: qss.SuperstaqBackend) -> None:
+    qc = qiskit.QuantumCircuit(3, 3)
+    qc.h(0)
+    qc.cx(0, 1)
+    qc.h(2)
+    qc.measure([0, 1, 2], [0, 1, 2])
+
+    job = qss.SuperstaqJobV3(backendV3, uuid.UUID(int=42))
+
+    job_dict = modifiy_job_result(
+        job_dictV3(),
+        input_circuits=[qss.serialize_circuits(qc)],
+        compiled_circuits=[qss.serialize_circuits(qc)],
+        counts=[{"110": 30, "100": 50, "111": 20}],
+        shots=[100],
+    )
+    results_list = [
+        {"success": True, "shots": 100, "data": {"counts": {"011": 30, "001": 50, "111": 20}}}
+    ]
+    expected_result = qiskit.result.Result.from_dict(
+        {
+            "results": results_list,
+            "qobj_id": -1,
+            "backend_name": "ss_example_qpu",
+            "backend_version": "n/a",
+            "success": True,
+            "job_id": uuid.UUID(int=42),
+        }
+    )
+
+    with patched_requests({str(job._job_id): job_dict}):
+        ans = (
+            job.result(index=0),
+            job.result(index=0, qubit_indices=[0]),
+            job.result(index=0, qubit_indices=[2]),
+            job.result(index=0, qubit_indices=[1, 2]),
+        )
+        assert ans[0].backend_name == expected_result.backend_name
+        assert ans[0].job_id == expected_result.job_id
+        assert ans[0].get_counts() == expected_result.get_counts()
+        assert ans[1].get_counts() == {"1": 100}
+        assert ans[2].get_counts() == {"0": 80, "1": 20}
+        assert ans[3].get_counts() == {"01": 30, "00": 50, "11": 20}
+
+    multi_job = qss.SuperstaqJobV3(backendV3, uuid.UUID(int=42))
+
+    job_dict = modifiy_job_result(
+        job_dictV3(2),
+        input_circuits=[qss.serialize_circuits(qc)] * 2,
+        compiled_circuits=[qss.serialize_circuits(qc)] * 2,
+        counts=[{"110": 30, "100": 50, "111": 20}] * 2,
+        shots=[100] * 2,
+    )
+
+    with patched_requests({str(multi_job._job_id): job_dict}):
         assert multi_job.result().get_counts() == [
             {"011": 30, "001": 50, "111": 20},
             {"011": 30, "001": 50, "111": 20},
