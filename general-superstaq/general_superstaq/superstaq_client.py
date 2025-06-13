@@ -923,19 +923,6 @@ class _BaseSuperstaqClient(ABC):
     def __str__(self) -> str:
         return f"Client version {self.api_version} with host={self.url} and name={self.client_name}"
 
-    def __repr__(self) -> str:
-        return textwrap.dedent(
-            f"""\
-            gss.superstaq_client._SuperstaqClient(
-                remote_host={self.url!r},
-                api_key={self.api_key!r},
-                client_name={self.client_name!r},
-                api_version={self.api_version!r},
-                max_retry_seconds={self.max_retry_seconds!r},
-                verbose={self.verbose!r},
-            )"""
-        )
-
 
 class _SuperstaqClient(_BaseSuperstaqClient):
     def create_job(
@@ -1261,6 +1248,19 @@ class _SuperstaqClient(_BaseSuperstaqClient):
 
     def aqt_get_configs(self) -> dict[str, str]:
         return self.get_request("/get_aqt_configs")
+    
+    def __repr__(self) -> str:
+        return textwrap.dedent(
+            f"""\
+            gss.superstaq_client._SuperstaqClient(
+                remote_host={self.url!r},
+                api_key={self.api_key!r},
+                client_name={self.client_name!r},
+                api_version={self.api_version!r},
+                max_retry_seconds={self.max_retry_seconds!r},
+                verbose={self.verbose!r},
+            )"""
+        )
 
 
 class _SuperstaqClientV3(_BaseSuperstaqClient):
@@ -1322,10 +1322,9 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         query = _models.JobQuery(job_id=job_ids)
         json_dict = query.model_dump(exclude_none=True)
         json_dict["job_id"] = list(map(str, json_dict["job_id"]))
-        json_dict["job_id"] = 10
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
         response = _models.JobCancellationResults(
-            **self.put_request("/client/cancel_job", json_dict, **credentials)
+            **self.put_request("/client/cancel_jobs", json_dict, **credentials)
         )
         return response.succeeded
 
@@ -1588,6 +1587,19 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
     def aqt_get_configs(self) -> dict[str, str]:
         response = _models.AQTConfigs(**self.get_request("/aqt_configs"))
         return response.model_dump()
+
+    def __repr__(self) -> str:
+        return textwrap.dedent(
+            f"""\
+            gss.superstaq_client._SuperstaqClientV3(
+                remote_host={self.url!r},
+                api_key={self.api_key!r},
+                client_name={self.client_name!r},
+                api_version={self.api_version!r},
+                max_retry_seconds={self.max_retry_seconds!r},
+                verbose={self.verbose!r},
+            )"""
+        )
 
 
 def read_ibm_credentials(ibmq_name: str | None) -> dict[str, str]:
