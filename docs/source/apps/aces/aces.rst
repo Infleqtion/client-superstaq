@@ -12,4 +12,4 @@ Below, you will find links to identical tutorials that demonstrate ACES using ei
 
 References
 -----------------------
-More details can be found in this paper: https://arxiv.org/abs/2108.05803.
+More details can be found in this paper: https://arxiv.org/abs/2403.12857.
