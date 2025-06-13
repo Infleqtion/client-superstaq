@@ -12,5 +12,4 @@ Below, you will find links to identical tutorials that demonstrate ACES using ei
 
 References
 -----------------------
-More details can be found in this paper: https://arxiv.org/abs/2108.05803.
-Further details on experimental characterization can be found here: https://arxiv.org/abs/2403.12857.
+More details can be found in this paper: https://arxiv.org/abs/2403.12857.
