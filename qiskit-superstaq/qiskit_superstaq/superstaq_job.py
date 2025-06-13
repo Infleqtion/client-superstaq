@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
+import time
 from typing import Any, overload
 
 import general_superstaq as gss
@@ -437,7 +438,20 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         Returns:
             Results from the job.
         """
-        self.wait_for_final_state(timeout, wait)  # Should call self.status()
+        time_waited: float = 0.0
+        terminal_qiskit_statuses = [
+            qiskit.providers.jobstatus.JobStatus.ERROR,
+            qiskit.providers.jobstatus.JobStatus.DONE,
+            qiskit.providers.jobstatus.JobStatus.CANCELLED,
+        ]
+        while self.status() not in terminal_qiskit_statuses:
+            if time_waited > timeout:
+                raise TimeoutError(
+                    f"Timed out while waiting for results. Final status was '{self.status()}'"
+                )
+            time.sleep(wait)
+            time_waited += wait
+
         return self._job_info
 
     def _arrange_counts(
@@ -513,7 +527,11 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
 
         # create list of result dictionaries
         results_list = []
-        for i in range(job_results.num_circuits):
+        if index is None:
+            search_list = list(range(job_results.num_circuits))
+        else:
+            search_list = [index]
+        for i in search_list:
             counts = job_results.counts[i]
             if counts:
                 num_clbits = self._get_num_clbits(i)
