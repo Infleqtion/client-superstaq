@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numbers
 import re
+import warnings
 from collections.abc import Mapping, Sequence
 
 
@@ -137,3 +138,20 @@ def validate_qubo(qubo: object) -> None:
 
         if not isinstance(val, numbers.Real):
             raise ValueError("QUBO values must be real numbers.")
+
+
+def _validate_ibm_channel(ibm_channel: str) -> None:
+    if ibm_channel == "ibm_quantum":
+        raise ValueError(
+            "The 'ibm_quantum' channel has been deprecated and sunset on July 1st, 2025. Instead, "
+            "use 'ibm_quantum_platform' (or 'ibm_cloud') and its corresponding token.",
+        )
+    elif ibm_channel == "ibm_cloud":
+        warnings.warn(
+            "The 'ibm_cloud' channel is expected to be deprecated in the future. Instead, "
+            "consider using 'ibm_quantum_platform' which points to the same channel.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+    elif ibm_channel not in ("ibm_cloud", "ibm_quantum_platform"):
+        raise ValueError("`ibmq_channel` must be either 'ibm_cloud' or 'ibm_quantum_platform'.")
