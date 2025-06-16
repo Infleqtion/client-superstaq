@@ -573,9 +573,9 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
             ~gss.SuperstaqServerException: If unable to get the status of the job
                 from the API.
         """
-        if self._overall_status.value in ("cancelled", "failed"):
+        if self._overall_status in ("cancelled", "failed"):
             raise gss.superstaq_exceptions.SuperstaqUnsuccessfulJobException(
-                str(self._job_id), self._overall_status
+                str(self._job_id), self._overall_status.value
             )
 
     def cancel(self, index: int | None = None, **kwargs: object) -> None:
@@ -726,14 +726,14 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         }
 
         if index is None and self._overall_status in _models.TERMINAL_CIRCUIT_STATES:
-            return status_match.get(self._overall_status.value)
+            return status_match.get(self._overall_status)
 
         self._refresh_job(index)
         if index is None:
             status = self._overall_status
         else:
             status = self._job_info.statuses[index]
-        return status_match.get(status.value)
+        return status_match.get(status)
 
     def submit(self) -> None:
         """Unsupported submission call.
@@ -754,6 +754,6 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         Returns:
             A dictionary containing updated job information.
         """
-        if self._overall_status not in self.TERMINAL_STATES:
+        if self._overall_status not in _models.TERMINAL_CIRCUIT_STATES:
             self._refresh_job()
         return self._job_info.model_dump()
