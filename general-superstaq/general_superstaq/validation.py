@@ -151,7 +151,7 @@ def _validate_ibm_channel(ibm_channel: str) -> None:
             "The 'ibm_cloud' channel is expected to be deprecated in the future. Instead, "
             "consider using 'ibm_quantum_platform' which points to the same channel.",
             DeprecationWarning,
-            stacklevel=2,
+            stacklevel=4,
         )
     elif ibm_channel not in ("ibm_cloud", "ibm_quantum_platform"):
         raise ValueError("`ibmq_channel` must be either 'ibm_cloud' or 'ibm_quantum_platform'.")
