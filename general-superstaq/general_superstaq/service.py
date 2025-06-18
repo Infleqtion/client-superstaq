@@ -313,7 +313,7 @@ class Service:
         config = getattr(config, "_config_raw", config)  # required to serialize qtrl Managers
         if isinstance(config, dict):
             try:
-                import yaml
+                import yaml  # noqa: PLC0415
 
                 return yaml.safe_dump(config)
 
@@ -416,7 +416,7 @@ class Service:
 
         else:
             try:
-                import yaml
+                import yaml  # noqa: PLC0415
             except ImportError:
                 raise ModuleNotFoundError(
                     "The PyYAML package is required to parse AQT configuration files. "
