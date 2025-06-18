@@ -1210,7 +1210,7 @@ class Service(gss.service.Service):
         # Truncate legend labels
         if instance_information["n_channels"] > 10:
             truncated_legend_labels = (
-                legend_labels[:2] + ["..."] + legend_labels[-2:]
+                [*legend_labels[:2], "...", *legend_labels[-2:]]
                 if len(legend_labels) > 2
                 else legend_labels
             )

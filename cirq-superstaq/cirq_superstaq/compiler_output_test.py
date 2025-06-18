@@ -157,7 +157,7 @@ def test_read_json_ibmq() -> None:
 
 def test_read_json_pulse_gate_circuits() -> None:
     qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
-    import qiskit
+    import qiskit  # noqa: PLC0415
 
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
