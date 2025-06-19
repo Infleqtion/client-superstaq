@@ -1486,20 +1486,27 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         # Join circuits together in json string - TODO: make this neater.
         # Note mypy does not recognize that the above checks ensure there are no None's anywhere,
         # hence the ignored [arg-type]'s
-        compile_dict = {
-            "initial_logical_to_physicals": "["
-            + ", ".join(str(dico) for dico in job_data["initial_logical_to_physicals"])
-            + "]",
-            "final_logical_to_physicals": "["
-            + ", ".join(str(dico) for dico in job_data["final_logical_to_physicals"])
-            + "]",
-        }
-
         if circuit_type == _models.CircuitType.CIRQ:
+            compile_dict = {
+                "initial_logical_to_physicals": json.dumps(
+                    job_data["initial_logical_to_physicals"]
+                ),
+                "final_logical_to_physicals": json.dumps(job_data["final_logical_to_physicals"]),
+            }
+            compile_dict["physical_qubits"] = "[" + ", ".join(job_data["physical_qubits"]) + "]"
+            compile_dict["logical_qubits"] = "[" + ", ".join(job_data["logical_qubits"]) + "]"
             compile_dict["cirq_circuits"] = "[" + ", ".join(job_data["compiled_circuits"]) + "]"
             return compile_dict
 
         if circuit_type == _models.CircuitType.QISKIT:
+            compile_dict = {
+                "initial_logical_to_physicals": "["
+                + ", ".join(str(dico) for dico in job_data["initial_logical_to_physicals"])
+                + "]",
+                "final_logical_to_physicals": "["
+                + ", ".join(str(dico) for dico in job_data["final_logical_to_physicals"])
+                + "]",
+            }
             compile_dict["qiskit_circuits"] = "[" + ", ".join(job_data["compiled_circuits"]) + "]"
             return compile_dict
 
