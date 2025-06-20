@@ -138,8 +138,8 @@ class _BaseSuperstaqClient(ABC):
             ibmq_instance = config.get("instance")
             ibmq_channel = config.get("channel")
 
-        if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
-            raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
+        if ibmq_channel:
+            gss.validation._validate_ibm_channel(ibmq_channel)
 
         if ibmq_token:
             kwargs["ibmq_token"] = ibmq_token
