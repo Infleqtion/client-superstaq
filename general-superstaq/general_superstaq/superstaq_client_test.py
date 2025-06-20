@@ -652,7 +652,7 @@ def test_superstaq_client_fetch_jobs(
         assert response == expected_result
 
         mock_get.assert_called_with(
-            f"http://example.com/{api_version}/client/job?job_id={uuid.UUID(int=0)}",
+            f"http://example.com/{api_version}/client/job/cirq?job_id={uuid.UUID(int=0)}",
             headers=dict(EXPECTED_HEADERS[api_version], cq_token='{"access_token": "token"}'),
             verify=False,
         )
@@ -1322,7 +1322,7 @@ def test_superstaq_client_compile_v3_failed(
         verify=False,
     )
     mock_get.assert_called_with(
-        f"http://example.com/{client_v3.api_version}/client/job?job_id={job_id}",
+        f"http://example.com/{client_v3.api_version}/client/job/cirq?job_id={job_id}",
         headers=EXPECTED_HEADERS[client_v3.api_version],
         verify=False,
     )
@@ -1388,7 +1388,7 @@ def test_superstaq_client_compile_v3(
         verify=False,
     )
     mock_get.assert_called_with(
-        f"http://example.com/{client_v3.api_version}/client/job?job_id={job_id}",
+        f"http://example.com/{client_v3.api_version}/client/job/cirq?job_id={job_id}",
         headers=EXPECTED_HEADERS[client_v3.api_version],
         verify=False,
     )
@@ -1463,7 +1463,7 @@ def test_superstaq_client_compile_v3_with_wait(
         verify=False,
     )
     mock_get.assert_called_with(
-        f"http://example.com/{client_v3.api_version}/client/job?job_id={job_id}",
+        f"http://example.com/{client_v3.api_version}/client/job/cirq?job_id={job_id}",
         headers=EXPECTED_HEADERS[client_v3.api_version],
         verify=False,
     )
