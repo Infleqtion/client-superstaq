@@ -4,7 +4,8 @@ from __future__ import annotations
 import sys
 
 import checks_superstaq as checks
-# Just a random comment. 
+
+# Just a random comment.
 if __name__ == "__main__":
     args = sys.argv[1:]
     args += ["--exclude", "docs/source/apps/aces/*"]
