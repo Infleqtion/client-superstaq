@@ -164,38 +164,12 @@ def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutp
         .pulse_gate_circuit(s) attribute (provided qiskit-superstaq is available locally).
     """
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
-    if "physical_qubits" in json_dict:
-        physical_qubits = cirq.read_json(json_text=json_dict["physical_qubits"])
-        logical_qubits = cirq.read_json(json_text=json_dict["logical_qubits"])
-        initial_logical_to_physicals_indices: list[dict[cirq.Qid, cirq.Qid]] = cirq.read_json(
-            json_text=json_dict["initial_logical_to_physicals"]
-        )
-
-        final_logical_to_physicals_indices: list[dict[cirq.Qid, cirq.Qid]] = cirq.read_json(
-            json_text=json_dict["final_logical_to_physicals"]
-        )
-
-        initial_logical_to_physicals = [
-            {
-                logical_qubits[circ][int(lq)]: physical_qubits[circ][pq]
-                for lq, pq in initial_logical_to_physicals_indices[circ].items()
-            }
-            for circ in range(len(compiled_circuits))
-        ]
-        final_logical_to_physicals = [
-            {
-                logical_qubits[circ][int(lq)]: physical_qubits[circ][pq]
-                for lq, pq in final_logical_to_physicals_indices[circ].items()
-            }
-            for circ in range(len(compiled_circuits))
-        ]
-    else:
-        initial_logical_to_physicals: list[dict[cirq.Qid, cirq.Qid]] = list(
-            map(dict, cirq.read_json(json_text=json_dict["initial_logical_to_physicals"]))
-        )
-        final_logical_to_physicals: list[dict[cirq.Qid, cirq.Qid]] = list(
-            map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
-        )
+    initial_logical_to_physicals: list[dict[cirq.Qid, cirq.Qid]] = list(
+        map(dict, cirq.read_json(json_text=json_dict["initial_logical_to_physicals"]))
+    )
+    final_logical_to_physicals: list[dict[cirq.Qid, cirq.Qid]] = list(
+        map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
+    )
 
     pulse_gate_circuits = None
 

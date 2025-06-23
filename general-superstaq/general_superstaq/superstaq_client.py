@@ -1487,40 +1487,40 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         # Note mypy does not recognize that the above checks ensure there are no None's anywhere,
         # hence the ignored [arg-type]'s
         if circuit_type == _models.CircuitType.QISKIT:
-            initial_log_to_phys = [
+            qiskit_initial_log_to_phys = [
                 [[k, v] for k, v in q_map.items()]
                 for q_map in job_data["initial_logical_to_physicals"]
             ]
-            final_log_to_phys = [
+            qiskit_final_log_to_phys = [
                 [[k, v] for k, v in q_map.items()]
                 for q_map in job_data["final_logical_to_physicals"]
             ]
 
             compile_dict = {
                 "initial_logical_to_physicals": "["
-                + ", ".join(json.dumps(q_map) for q_map in initial_log_to_phys)
+                + ", ".join(json.dumps(q_map) for q_map in qiskit_initial_log_to_phys)
                 + "]",
                 "final_logical_to_physicals": "["
-                + ", ".join(json.dumps(q_map) for q_map in final_log_to_phys)
+                + ", ".join(json.dumps(q_map) for q_map in qiskit_final_log_to_phys)
                 + "]",
             }
             compile_dict["qiskit_circuits"] = "[" + ", ".join(job_data["compiled_circuits"]) + "]"
             return compile_dict
 
         elif circuit_type == _models.CircuitType.CIRQ:
-            initial_log_to_phys = []
-            final_log_to_phys = []
+            cirq_initial_log_to_phys = []
+            cirq_final_log_to_phys = []
             for i in range(len(job_data["initial_logical_to_physicals"])):
                 logical = json.loads(job_data["logical_qubits"][i])
                 physical = json.loads(job_data["physical_qubits"][i])
 
-                initial_log_to_phys.append(
+                cirq_initial_log_to_phys.append(
                     {
                         json.dumps(logical[k]): json.dumps(physical[v])
                         for k, v in job_data["initial_logical_to_physicals"][i].items()
                     }
                 )
-                final_log_to_phys.append(
+                cirq_final_log_to_phys.append(
                     {
                         json.dumps(logical[k]): json.dumps(physical[v])
                         for k, v in job_data["final_logical_to_physicals"][i].items()
@@ -1528,17 +1528,14 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
                 )
             compile_dict = {
                 "initial_logical_to_physicals": "["
-                + ", ".join(json.dumps(q_map) for q_map in initial_log_to_phys)
+                + ", ".join(json.dumps(q_map) for q_map in cirq_initial_log_to_phys)
                 + "]",
                 "final_logical_to_physicals": "["
-                + ", ".join(json.dumps(q_map) for q_map in final_log_to_phys)
+                + ", ".join(json.dumps(q_map) for q_map in cirq_final_log_to_phys)
                 + "]",
             }
             compile_dict["cirq_circuits"] = "[" + ", ".join(job_data["compiled_circuits"]) + "]"
             return compile_dict
-
-        else:
-            raise gss.SuperstaqException(f"Unsupported circuit type: {circuit_type}.")
 
     def submit_qubo(  # type: ignore [return]
         self,
