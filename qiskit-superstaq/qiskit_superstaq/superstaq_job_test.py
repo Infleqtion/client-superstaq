@@ -1118,3 +1118,8 @@ def test_to_dictV3(backendV3: qss.SuperstaqBackend) -> None:
 def test_job_id(backendV3: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJobV3(backend=backendV3, job_id=uuid.UUID(int=42))
     assert job.job_id() == uuid.UUID(int=42)
+
+
+def test_hash(backendV3: qss.SuperstaqBackend) -> None:
+    job = qss.SuperstaqJobV3(backend=backendV3, job_id=uuid.UUID(int=42))
+    assert hash(job) == hash(uuid.UUID(int=42))
