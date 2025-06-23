@@ -73,7 +73,11 @@ def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
 
 
 def test_ibmq_compile_with_token() -> None:
-    provider = qss.SuperstaqProvider(ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"])
+    provider = qss.SuperstaqProvider(
+        ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"],
+        ibmq_instance=os.environ["TEST_USER_IBMQ_INSTANCE"],
+        ibmq_channel="ibm_cloud",
+    )
     qc = qiskit.QuantumCircuit(4)
     qc.h(0)
     qc.cx(0, 1)
