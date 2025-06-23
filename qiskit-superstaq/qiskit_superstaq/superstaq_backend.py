@@ -222,17 +222,18 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         Raises:
             ValueError: If this backend does not support compilation.
         """
-        if self.name.startswith("ibmq_"):
-            return self.ibmq_compile(circuits, **kwargs)
+        if self._provider._client.api_version == "v0.2.0":
+            if self.name.startswith("ibmq_"):
+                return self.ibmq_compile(circuits, **kwargs)
 
-        elif self.name.startswith("aqt_"):
-            return self.aqt_compile(circuits, **kwargs)
+            elif self.name.startswith("aqt_"):
+                return self.aqt_compile(circuits, **kwargs)
 
-        elif self.name.startswith("qscout_"):
-            return self.qscout_compile(circuits, **kwargs)
+            elif self.name.startswith("qscout_"):
+                return self.qscout_compile(circuits, **kwargs)
 
-        elif self.name.startswith("cq_"):
-            return self.cq_compile(circuits, **kwargs)
+            elif self.name.startswith("cq_"):
+                return self.cq_compile(circuits, **kwargs)
 
         request_json = self._get_compile_request_json(circuits, **kwargs)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)

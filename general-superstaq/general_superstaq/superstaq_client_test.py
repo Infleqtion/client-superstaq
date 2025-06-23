@@ -1328,13 +1328,20 @@ def test_superstaq_client_compile_v3_failed(
     )
 
 
-@pytest.mark.parametrize("circuit_type", ["cirq", "qiskit"])
+@pytest.mark.parametrize(
+    "circuit_type, expected_map",
+    [
+        ("cirq", '[{"{\\"qubit\\": \\"q0\\"}": "{\\"qubit\\": \\"q0\\"}"}]'),
+        ("qiskit", "[[[0, 0]]]"),
+    ],
+)
 @mock.patch("requests.Session.get")
 @mock.patch("requests.Session.post")
 def test_superstaq_client_compile_v3(
     mock_post: mock.MagicMock,
     mock_get: mock.MagicMock,
     circuit_type: str,
+    expected_map: str,
     client_v3: gss.superstaq_client._SuperstaqClientV3,
 ) -> None:
     job_id = uuid.UUID(int=0)
@@ -1358,8 +1365,8 @@ def test_superstaq_client_compile_v3(
             "last_updated_timestamp": [None],
             "initial_logical_to_physicals": [{0: 0}],
             "final_logical_to_physicals": [{0: 0}],
-            "logical_qubits": ["0"],
-            "physical_qubits": ["0"],
+            "logical_qubits": ['[{"qubit": "q0"}]'],
+            "physical_qubits": ['[{"qubit": "q0"}]'],
         }
     }
     mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
@@ -1394,8 +1401,8 @@ def test_superstaq_client_compile_v3(
     )
     assert compilation_results == {
         f"{circuit_type}_circuits": "[compiled world]",
-        "initial_logical_to_physicals": "[{0: 0}]",
-        "final_logical_to_physicals": "[{0: 0}]",
+        "initial_logical_to_physicals": expected_map,
+        "final_logical_to_physicals": expected_map,
     }
 
 
@@ -1426,8 +1433,8 @@ def test_superstaq_client_compile_v3_with_wait(
         "last_updated_timestamp": [None],
         "initial_logical_to_physicals": [{0: 0}],
         "final_logical_to_physicals": [{0: 0}],
-        "logical_qubits": ["0"],
-        "physical_qubits": ["0"],
+        "logical_qubits": ['[{"qubit": "q0"}]'],
+        "physical_qubits": ['[{"qubit": "q0"}]'],
     }
 
     mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
@@ -1470,8 +1477,8 @@ def test_superstaq_client_compile_v3_with_wait(
     assert mock_get.call_count == 2
     assert compilation_results == {
         "cirq_circuits": "[compiled world]",
-        "initial_logical_to_physicals": "[{0: 0}]",
-        "final_logical_to_physicals": "[{0: 0}]",
+        "initial_logical_to_physicals": '[{"{\\"qubit\\": \\"q0\\"}": "{\\"qubit\\": \\"q0\\"}"}]',
+        "final_logical_to_physicals": '[{"{\\"qubit\\": \\"q0\\"}": "{\\"qubit\\": \\"q0\\"}"}]',
     }
 
 
