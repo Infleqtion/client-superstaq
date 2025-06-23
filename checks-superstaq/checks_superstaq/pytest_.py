@@ -9,7 +9,7 @@ from collections.abc import Callable, Iterable
 
 from checks_superstaq import check_utils
 
-NB_EXEC_TIMEOUT = 300  # 5 minutes
+NBMAKE_TIMEOUT = 300  # 5 minutes
 
 
 @check_utils.enable_exit_on_failure
@@ -79,7 +79,7 @@ def run(
         args_to_pass += [
             "--nbmake",
             "--force-enable-socket",
-            f"--nb-exec-timeout={NB_EXEC_TIMEOUT}",
+            f"--nbmake-timeout={NBMAKE_TIMEOUT}",
         ]
     elif (parsed_args.integration) or (
         "--integration" not in args
