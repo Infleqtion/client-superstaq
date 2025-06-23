@@ -1535,7 +1535,6 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
                 + "]",
             }
             compile_dict["cirq_circuits"] = "[" + ", ".join(job_data["compiled_circuits"]) + "]"
-            print(compile_dict)
             return compile_dict
 
         else:
