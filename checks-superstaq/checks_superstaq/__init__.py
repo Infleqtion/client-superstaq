@@ -1,6 +1,7 @@
 from checks_superstaq._version import __version__
 
 from . import (
+    add_license_header_,
     all_,
     build_docs,
     check_utils,
@@ -15,6 +16,7 @@ from . import (
 
 __all__ = [
     "__version__",
+    "add_license_header_",
     "all_",
     "build_docs",
     "check_utils",
