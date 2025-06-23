@@ -423,6 +423,9 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
             return False
 
         return self._job_id == other._job_id
+    
+    def __hash__(self) -> int:
+        return hash(self._job_id)
 
     def job_id(self) -> uuid.UUID:
         """Returns the job's unique id."""
