@@ -375,7 +375,7 @@ def test_compiled_circuitV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obje
 
 
 def test_pulse_gate_circuits(job: css.Job) -> None:
-    import qiskit
+    import qiskit  # noqa: PLC0415
 
     qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
     pulse_gate_circuit = qiskit.QuantumCircuit(1, 1)
@@ -395,7 +395,7 @@ def test_pulse_gate_circuits(job: css.Job) -> None:
 
 
 def test_pulse_gate_circuits_index(job: css.Job) -> None:
-    import qiskit
+    import qiskit  # noqa: PLC0415
 
     qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
     pulse_gate_circuit = qiskit.QuantumCircuit(1, 1)
@@ -433,7 +433,7 @@ def test_pulse_gate_circuits_invalid_circuit(job: css.Job) -> None:
 
 
 def test_multi_pulse_gate_circuits(multi_circuit_job: css.Job) -> None:
-    import qiskit
+    import qiskit  # noqa: PLC0415
 
     qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
     pulse_gate_circuit = qiskit.QuantumCircuit(1, 1)

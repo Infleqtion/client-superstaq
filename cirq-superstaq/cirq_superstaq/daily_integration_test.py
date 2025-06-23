@@ -55,7 +55,11 @@ def test_ibmq_compile(service: css.Service) -> None:
 
 
 def test_ibmq_compile_with_token() -> None:
-    service = css.Service(ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"])
+    service = css.Service(
+        ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"],
+        ibmq_instance=os.environ["TEST_USER_IBMQ_INSTANCE"],
+        ibmq_channel="ibm_cloud",
+    )
     circuit = cirq.Circuit(
         cirq.H(cirq.q(3)),
         cirq.CX(cirq.q(3), cirq.q(0)) ** 0.7,
@@ -181,6 +185,9 @@ def test_get_targets(service: css.Service) -> None:
     assert ibmq_target_info in result
     assert aqt_target_info in result
     assert all(target in result for target in filtered_result)
+    for gss_target in result:
+        target_name = gss_target.target
+        assert service.target_info(target_name)["target"] == target_name
 
 
 def test_qscout_compile(service: css.Service) -> None:
@@ -228,14 +235,18 @@ def test_qscout_compile_swap_mirror(service: css.Service) -> None:
     assert num_two_qubit_gates == 3
 
 
-def test_cq_compile(service: css.Service) -> None:
+@pytest.mark.parametrize("target", ["cq_sqale_simulator", "cq_sqale_qpu"])
+def test_cq_compile(target: str, service: css.Service) -> None:
     # We use GridQubits cause CQ's qubits are laid in a grid
     qubits = cirq.GridQubit.rect(2, 2)
     circuit = cirq.Circuit(
-        cirq.H(qubits[0]), cirq.CNOT(qubits[0], qubits[1]), cirq.measure(qubits[0])
+        cirq.H(qubits[0]),
+        cirq.CNOT(qubits[0], qubits[1]),
+        css.ParallelRGate(0.125, 0.125, 2).on(qubits[0], qubits[1]),
+        cirq.measure(qubits[0]),
     )
 
-    out = service.cq_compile(circuit)
+    out = service.cq_compile(circuit, target=target)
     assert isinstance(out.circuit, cirq.Circuit)
 
 
@@ -343,12 +354,11 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
     assert job.counts(0) == {"11": 1}
 
 
-@pytest.mark.skip(reason="Can't be executed when Sqale is set to not accept jobs")
-def test_submit_to_sqale_qubit_sorting(service: css.Service) -> None:
+def test_dry_run_submit_to_sqale_with_qubit_sorting(service: css.Service) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776.
 
     Args:
-        service: cirq_superstaq service object from fixture.
+        service: A `cirq_superstaq` service object from fixture.
     """
     target = "cq_sqale_qpu"
     num_qubits = service.target_info(target)["num_qubits"]
@@ -360,7 +370,9 @@ def test_submit_to_sqale_qubit_sorting(service: css.Service) -> None:
         cirq.measure(*qubits),
     )
 
-    job = service.create_job(circuit, repetitions=100, verbatim=True, route=False, target=target)
+    job = service.create_job(
+        circuit, repetitions=100, verbatim=True, method="dry-run", route=False, target=target
+    )
     counts = job.counts(0)
     assert sum(counts.values()) == 100
     assert max(counts, key=counts.__getitem__) == "001" + ("0" * (num_qubits - 3))

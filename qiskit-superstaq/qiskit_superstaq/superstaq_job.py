@@ -23,7 +23,7 @@ from general_superstaq import _models
 import qiskit_superstaq as qss
 
 
-class SuperstaqJob(qiskit.providers.JobV1):
+class SuperstaqJob(qiskit.providers.JobV1):  # noqa: PLW1641
     """This class represents a Superstaq job instance."""
 
     TERMINAL_STATES = ("Done", "Cancelled", "Failed")

@@ -88,7 +88,7 @@ def classical_bit_mapping(circuit: qiskit.QuantumCircuit) -> dict[int, int]:
     return {circuit.find_bit(c).index: circuit.find_bit(q).index for c, q in clbit_map.items()}
 
 
-class CompilerOutput:
+class CompilerOutput:  # noqa: PLW1641
     """A class that stores the results of compiled circuits."""
 
     def __init__(

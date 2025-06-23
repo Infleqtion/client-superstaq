@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from _typeshed import SupportsItems
 
 
-class SuperstaqBackend(qiskit.providers.BackendV2):
+class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
     """This class represents a Superstaq backend."""
 
     def __init__(self, provider: qss.SuperstaqProvider, target: str) -> None:
@@ -105,6 +105,11 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             "dd": qss.DDGate,
             "gr": qiskit.circuit.library.GR,
             "iccx_o0": qss.AQTiCCXGate,
+            "GPI": qiskit.circuit.library.UGate,
+            "GPI2": qiskit.circuit.library.UGate,
+            "prx": qiskit.circuit.library.UGate,
+            "MS": qiskit.circuit.library.MSGate,
+            "ZZ": qiskit.circuit.library.RZZGate,
         }
         backend_target = qiskit.transpiler.Target.from_configuration(
             num_qubits=target_info.get("num_qubits"),
