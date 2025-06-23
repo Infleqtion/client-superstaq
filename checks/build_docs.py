@@ -10,4 +10,4 @@ if __name__ == "__main__":
         checks.build_docs.run(
             *sys.argv[1:],
         )
-    )
+    )  
