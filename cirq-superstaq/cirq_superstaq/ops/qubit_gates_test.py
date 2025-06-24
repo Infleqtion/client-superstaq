@@ -151,6 +151,9 @@ def test_stripped_cz_gate() -> None:
     assert gate**1 == gate
     assert gate**2 == css.ParallelGates(z_exp_gate, z_exp_gate)
 
+    assert cirq.phase_by(gate, 1.23, 0) == gate
+    assert cirq.phase_by(operation, 1.23, 1) == operation
+
 
 def test_stripped_cz_gate_circuit() -> None:
     qubits = cirq.LineQubit.range(3)
