@@ -226,6 +226,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install ${{ matrix.dependencies }}
       - name: Check notebooks
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
         run: |
           checks/pytest_.py --notebook ${{ matrix.pattern }} -v
 
