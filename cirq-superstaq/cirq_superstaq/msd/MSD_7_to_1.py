@@ -1,13 +1,8 @@
-# ruff: noqa: ERA001, T201
+# ruff: noqa: ERA001
 
 import cirq
 import sympy
 from cirq.circuits import InsertStrategy
-
-# index 0 is our magic state
-qubits = cirq.LineQubit.range(8)
-
-cir = cirq.Circuit()
 
 
 # Function to perform a 7-to-1 magic state distillation protocol
@@ -24,6 +19,8 @@ def msd_7_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     Returns:
         The magic state distillation circuit.
     """
+    cir = cirq.Circuit()
+
     # reset qubits
     for q in qubits:
         cir.append([cirq.R(q)])
@@ -143,50 +140,3 @@ def msd_7_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
 
     # return circuit
     return magicStateCir
-
-
-# TESTING
-sim = cirq.Simulator()
-magicStateCir = msd_7_to_1(qubits)
-print(magicStateCir)
-
-results = sim.simulate(magicStateCir)
-print("\nRESULTS ====================")
-print(results, end="\n\n")
-print("\nFINAL STATE VECTOR =========")
-stateVector = results.final_state_vector
-# print(stateVector)
-print(cirq.dirac_notation(stateVector))
-
-
-print("\n\nSIMULATING ====================")
-
-
-# looking for 0.71|0⟩ + (0.71j)|1⟩
-fMap: dict[str, int] = {}
-for _i in range(1000):
-    targetTensorResults = cirq.dirac_notation(
-        sim.simulate(magicStateCir).get_state_containing_qubit(cirq.q(0)).target_tensor
-    )
-    if targetTensorResults in fMap:
-        fMap[targetTensorResults] += 1
-    else:
-        fMap[targetTensorResults] = 1
-    # print(targetTensorResults)
-
-print("\nFINAL STATE VECTORS FREQUENCIES ====================")
-for f in fMap:
-    print(str(f) + "\t:\t" + str(fMap[f]))
-
-
-print("\nDENSITY MATRIX (density_matrix_from_state_vector from cirq) ====================")
-densityMatrix = cirq.density_matrix_from_state_vector(stateVector, indices=[0])
-print(densityMatrix)
-
-print("\nSINGLE QUBIT TOMOGRAPHY ====================")
-tomo_res = cirq.experiments.single_qubit_state_tomography(sim, qubits[0], magicStateCir, 10000)
-print(tomo_res.data)
-
-# from IPython.display import FileLink
-# cirq.to_json(magicStateCir, file_or_fn="MSD_7_to_1.json")
-# FileLink("MSD_7_to_1.json")
