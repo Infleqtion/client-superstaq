@@ -64,8 +64,8 @@ def deserialize_qiskit_circuits(
         could not be deserialized.
     """
     if importlib.util.find_spec("qiskit_superstaq"):
-        import qiskit
-        import qiskit_superstaq as qss
+        import qiskit  # noqa: PLC0415
+        import qiskit_superstaq as qss  # noqa: PLC0415
 
         try:
             pulse_gate_circuits = qss.deserialize_circuits(serialized_qiskit_circuits)
