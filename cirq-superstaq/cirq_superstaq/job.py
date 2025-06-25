@@ -502,6 +502,22 @@ class JobV3:
     If a job is canceled or deleted, only the job id and the status remain valid.
     """
 
+    STATUS_PRIORITY_ORDER = (
+        _models.CircuitStatus.RECEIVED,
+        _models.CircuitStatus.AWAITING_COMPILE,
+        _models.CircuitStatus.AWAITING_SUBMISSION,
+        _models.CircuitStatus.AWAITING_SIMULATION,
+        _models.CircuitStatus.COMPILING,
+        _models.CircuitStatus.SIMULATING,
+        _models.CircuitStatus.PENDING,
+        _models.CircuitStatus.RUNNING,
+        _models.CircuitStatus.FAILED,
+        _models.CircuitStatus.CANCELLED,
+        _models.CircuitStatus.UNRECOGNIZED,
+        _models.CircuitStatus.COMPLETED,
+        _models.CircuitStatus.DELETED,
+    )
+
     def __init__(self, client: gss.superstaq_client._SuperstaqClientV3, job_id: uuid.UUID) -> None:
         """Constructs a `Job`.
 
@@ -540,31 +556,14 @@ class JobV3:
             overall status of the entire batch.
         """
         status_occurrence = set(self._job_data.statuses)
-        status_priority_order = (
-            _models.CircuitStatus.RECEIVED,
-            _models.CircuitStatus.AWAITING_COMPILE,
-            _models.CircuitStatus.AWAITING_SUBMISSION,
-            _models.CircuitStatus.AWAITING_SIMULATION,
-            _models.CircuitStatus.COMPILING,
-            _models.CircuitStatus.SIMULATING,
-            _models.CircuitStatus.PENDING,
-            _models.CircuitStatus.RUNNING,
-            _models.CircuitStatus.FAILED,
-            _models.CircuitStatus.CANCELLED,
-            _models.CircuitStatus.UNRECOGNIZED,
-            _models.CircuitStatus.COMPLETED,
-            _models.CircuitStatus.DELETED,
-        )
 
-        for temp_status in status_priority_order:
+        for temp_status in self.STATUS_PRIORITY_ORDER:
             if temp_status in status_occurrence:
                 self._overall_status = temp_status
                 return
 
     def _check_if_unsuccessful(self, index: int | None = None) -> None:
         """Helper method to check if the current circuit status has any failure.
-
-        TODO: Separate out the different circuits within the job.
 
         Args:
             index: The index of the specific job status.
@@ -624,7 +623,7 @@ class JobV3:
         gss.validation.validate_integer_param(index, min_val=0)
         return self._job_data.statuses[index]
 
-    def cancel(self, index: int | None = None, **kwargs: object) -> None:
+    def cancel(self, **kwargs: object) -> None:
         """Cancel the current job if it is not in a terminal state.
 
         Args:
