@@ -1,7 +1,8 @@
 # ruff: noqa: ERA001
 
-import cirq
 import math
+
+import cirq
 import sympy
 from cirq.circuits import InsertStrategy
 
@@ -20,7 +21,7 @@ def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     Returns:
         The magic state distillation circuit.
     """
-    phi = math.acos(1 / math.sqrt(3) )
+    phi = math.acos(1 / math.sqrt(3))
     theta = math.pi / 4
 
     cir = cirq.Circuit()
@@ -60,7 +61,7 @@ def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             cirq.X(qubits[2]),
             cirq.Z(qubits[3]),
             cirq.Y(qubits[4]),
-        ], 
+        ],
         strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
@@ -74,7 +75,7 @@ def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
         ]
     )
 
-    # hadamard gate + swap 
+    # hadamard gate + swap
     cir.append([cirq.H(qubits[4]), cirq.SWAP(qubits[3], qubits[4])])
 
     # lots of hadamard gates
@@ -127,25 +128,23 @@ def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     # measure
     cir.append(
         [
-            cirq.measure(qubits[1], key='m1'),
-            cirq.measure(qubits[2], key='m2'),
-            cirq.measure(qubits[3], key='m3'),
-            cirq.measure(qubits[4], key='m4'),
-        ], 
+            cirq.measure(qubits[1], key="m1"),
+            cirq.measure(qubits[2], key="m2"),
+            cirq.measure(qubits[3], key="m3"),
+            cirq.measure(qubits[4], key="m4"),
+        ],
         strategy=InsertStrategy.NEW_THEN_INLINE,
     )
-    
+
     # print("CIRCUIT ====================")
     # print(cir)
 
-
-    m1, m2, m3, m4 = sympy.symbols('m1 m2 m3 m4')
-    sympyCond = cirq.SympyCondition(sympy.Eq(m1+m2+m3+m4,0)) # b = c = d = e = 0
-    sim = cirq.Simulator()
+    m1, m2, m3, m4 = sympy.symbols("m1 m2 m3 m4")
+    sympyCond = cirq.SympyCondition(sympy.Eq(m1 + m2 + m3 + m4, 0))  # b = c = d = e = 0
 
     magicStateCir = cirq.Circuit(
         cirq.CircuitOperation(
-            circuit=cir.freeze(), 
+            circuit=cir.freeze(),
             use_repetition_ids=False,
             repeat_until=sympyCond,
         )
