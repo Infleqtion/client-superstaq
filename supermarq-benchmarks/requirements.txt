@@ -2,3 +2,4 @@ cirq-superstaq~=0.5.46
 qiskit-superstaq~=0.5.46
 scikit-learn>=1.0
 seaborn>=0.13.2
+setuptools<60.0
