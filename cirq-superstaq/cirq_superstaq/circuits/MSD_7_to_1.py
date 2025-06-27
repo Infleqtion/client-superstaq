@@ -1,14 +1,8 @@
-# ruff: noqa: ERA001
-
 import cirq
 import sympy
 from cirq.circuits import InsertStrategy
 
 
-# Function to perform a 7-to-1 magic state distillation protocol
-# @param: qubits - List of LineQubits with length 8.
-#         The first qubit should be the final magic state qubit.
-# @return: Circuit - the magic state distillation circuit
 def msd_7_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     """Function to perform a 7-to-1 magic state distillation protocol.
 
@@ -21,11 +15,9 @@ def msd_7_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     """
     cir = cirq.Circuit()
 
-    # reset qubits
     for q in qubits:
         cir.append([cirq.R(q)])
 
-    # set ket plus using hadamard
     cir.append(
         [
             cirq.H(qubits[0]),
@@ -36,8 +28,6 @@ def msd_7_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
         strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
-    # control qubits are @
-    # target qubits are X
     cir.append([cirq.CNOT(qubits[0], qubits[3])], strategy=InsertStrategy.NEW_THEN_INLINE)
 
     cir.append(
@@ -75,7 +65,6 @@ def msd_7_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
         strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
-    # adding S gate
     cir.append(
         [
             cirq.S(qubits[1]),
@@ -110,9 +99,6 @@ def msd_7_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
         strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
-    # print("CIRCUIT ====================")
-    # print(cir)
-
     # index 0=magic
     m0, m1, m2, m3, m4, m5, m6 = sympy.symbols("m0 m1 m2 m3 m4 m5 m6")
     # all those parities must be 0 for it to be even ( so output of xor is 0 for even )
@@ -138,5 +124,4 @@ def msd_7_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     # is even, so do the Z
     magicStateCir.append([cirq.Z(qubits[0]).with_classical_controls(sympy.Not(specialParity))])
 
-    # return circuit
     return magicStateCir

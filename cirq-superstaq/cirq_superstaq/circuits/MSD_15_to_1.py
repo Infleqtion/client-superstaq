@@ -1,14 +1,8 @@
-# ruff: noqa: ERA001
-
 import cirq
 import sympy
 from cirq.circuits import InsertStrategy
 
 
-# Function to perform a 15-to-1 magic state distillation protocol
-# @param: qubits - List of LineQubits with length 16.
-#         The last qubit should be the final magic state qubit.
-# @return: Circuit - the magic state distillation circuit
 def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     """Function to perform a 15-to-1 magic state distillation protocol.
 
@@ -21,7 +15,6 @@ def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     """
     cir = cirq.Circuit()
 
-    # reset qubits
     for q in qubits:
         cir.append([cirq.R(q)])
 
@@ -162,9 +155,6 @@ def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
         strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
-    # print("CIRCUIT ====================")
-    # print(cir)
-
     # index 15=magic
     m1, m2, m3, m4, m5, m6, m7, m8 = sympy.symbols("m1 m2 m3 m4 m5 m6 m7 m8")
     m9, m10, m11, m12, m13, m14, m15 = sympy.symbols("m9 m10 m11 m12 m13 m14 m15")
@@ -187,13 +177,10 @@ def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             circuit=cir.freeze(),
             use_repetition_ids=False,
             repeat_until=cirq.SympyCondition(evenParity),
-        )
-        # put corrections
+        ),
+        # magic state "correction"
+        # is odd, so do the Z
+        cirq.Z(qubits[15]).with_classical_controls(specialParity),
     )
 
-    # magic state "correction"
-    # is odd, so do the Z
-    magicStateCir.append([cirq.Z(qubits[15]).with_classical_controls(specialParity)])
-
-    # return circuit
     return magicStateCir
