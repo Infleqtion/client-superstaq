@@ -1,10 +1,10 @@
 import cirq
 import sympy
-from cirq.circuits import InsertStrategy
 
 
 def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     """Function to perform a 15-to-1 magic state distillation protocol.
+        Reference: https://arxiv.org/ftp/arxiv/papers/1208/1208.0928.pdf Page 38 Figure 33.
 
     Args:
         qubits: The list of LineQubits of length 16.
@@ -18,7 +18,6 @@ def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     for q in qubits:
         cir.append([cirq.R(q)])
 
-    # set ket plus using hadamard
     cir.append(
         [
             cirq.H(qubits[0]),
@@ -27,11 +26,8 @@ def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             cirq.H(qubits[7]),
             cirq.H(qubits[15]),
         ],
-        strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
-    # control qubits are @
-    # target qubits are X
     cir.append(
         [
             cirq.CNOT(qubits[15], qubits[14]),
@@ -43,7 +39,6 @@ def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             cirq.CNOT(qubits[7], qubits[13]),
             cirq.CNOT(qubits[7], qubits[14]),
         ],
-        strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
     cir.append(
@@ -56,7 +51,6 @@ def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             cirq.CNOT(qubits[3], qubits[13]),
             cirq.CNOT(qubits[3], qubits[14]),
         ],
-        strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
     cir.append(
@@ -69,7 +63,6 @@ def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             cirq.CNOT(qubits[1], qubits[13]),
             cirq.CNOT(qubits[1], qubits[14]),
         ],
-        strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
     cir.append(
@@ -82,7 +75,6 @@ def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             cirq.CNOT(qubits[0], qubits[12]),
             cirq.CNOT(qubits[0], qubits[14]),
         ],
-        strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
     cir.append(
@@ -94,7 +86,6 @@ def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             cirq.CNOT(qubits[14], qubits[9]),
             cirq.CNOT(qubits[14], qubits[11]),
         ],
-        strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
     cir.append(
@@ -115,7 +106,6 @@ def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             cirq.inverse(cirq.T(qubits[13])),
             cirq.inverse(cirq.T(qubits[14])),
         ],
-        strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
     cir.append(
@@ -152,7 +142,6 @@ def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             cirq.measure(qubits[14], key="m15"),
         ],
         # no need to measure index 15, that is our magic state
-        strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
     # index 15=magic
@@ -160,27 +149,25 @@ def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     m9, m10, m11, m12, m13, m14, m15 = sympy.symbols("m9 m10 m11 m12 m13 m14 m15")
     # all those parities must be 0 for it to be even ( output of xor is 0 for even )
     # so stop when true == ~0 & ~0 & ~0 & ~0 == ~(0 | 0 | 0 | 0)
-    # use demorgans
-    # https://arxiv.org/ftp/arxiv/papers/1208/1208.0928.pdf page 38 figure 33
-    evenParity = sympy.Not(
+    even_parity = sympy.Not(
         sympy.Xor(m4, m5, m6, m7, m8, m9, m10, m11)
         | sympy.Xor(m1, m2, m3, m4, m5, m6, m7, m15)
         | sympy.Xor(m2, m3, m4, m5, m10, m11, m12, m13)
         | sympy.Xor(m1, m2, m5, m6, m9, m10, m13, m14)
     )
     # if special parity of all qubits is ODD, do Z
-    specialParity = sympy.Xor(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15)
+    special_parity = sympy.Xor(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15)
 
     # repeating until matched parities are all even
-    magicStateCir = cirq.Circuit(
+    magic_state_cir = cirq.Circuit(
         cirq.CircuitOperation(
             circuit=cir.freeze(),
             use_repetition_ids=False,
-            repeat_until=cirq.SympyCondition(evenParity),
+            repeat_until=cirq.SympyCondition(even_parity),
         ),
         # magic state "correction"
         # is odd, so do the Z
-        cirq.Z(qubits[15]).with_classical_controls(specialParity),
+        cirq.Z(qubits[15]).with_classical_controls(special_parity),
     )
 
-    return magicStateCir
+    return magic_state_cir

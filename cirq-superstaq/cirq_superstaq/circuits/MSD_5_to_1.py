@@ -2,19 +2,20 @@ import math
 
 import cirq
 import sympy
-from cirq.circuits import InsertStrategy
 
 
 def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     """Function to perform a 5-to-1 magic state distillation protocol.
+        Reference: https://arxiv.org/pdf/2310.12106 Page 4 Figure 1.
 
     Args:
         qubits: The list of LineQubits of length 5.
-                The last qubit will be the final magic state qubit.
+                The first qubit will be the final magic state qubit.
 
     Returns:
         The magic state distillation circuit.
     """
+    # https://arxiv.org/pdf/2310.12106 page 4 figure 1
     phi = math.acos(1 / math.sqrt(3))
     theta = math.pi / 4
 
@@ -31,7 +32,6 @@ def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             cirq.ry(phi)(qubits[3]),
             cirq.ry(phi)(qubits[4]),
         ],
-        strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
     cir.append(
@@ -42,7 +42,6 @@ def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             cirq.rz(theta)(qubits[3]),
             cirq.rz(theta)(qubits[4]),
         ],
-        strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
     # adjoint encode
@@ -53,7 +52,6 @@ def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             cirq.Z(qubits[3]),
             cirq.Y(qubits[4]),
         ],
-        strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
     cir.append(
@@ -74,7 +72,6 @@ def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             cirq.H(qubits[3]),
             cirq.H(qubits[4]),
         ],
-        strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
     cir.append(
@@ -88,7 +85,6 @@ def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             cirq.H(qubits[1]),
             cirq.CNOT(qubits[0], qubits[1]),
         ],
-        strategy=InsertStrategy.NEW,
     )
 
     cir.append(
@@ -96,7 +92,6 @@ def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             cirq.H(qubits[0]),
             cirq.CNOT(qubits[4], qubits[3]),
         ],
-        strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
     cir.append(
@@ -108,7 +103,6 @@ def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             cirq.CNOT(qubits[3], qubits[0]),
             cirq.CNOT(qubits[1], qubits[0]),
         ],
-        strategy=InsertStrategy.NEW,
     )
 
     cir.append(
@@ -118,18 +112,17 @@ def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
             cirq.measure(qubits[3], key="m3"),
             cirq.measure(qubits[4], key="m4"),
         ],
-        strategy=InsertStrategy.NEW_THEN_INLINE,
     )
 
     m1, m2, m3, m4 = sympy.symbols("m1 m2 m3 m4")
-    sympyCond = cirq.SympyCondition(sympy.Eq(m1 + m2 + m3 + m4, 0))  # b = c = d = e = 0
+    sympy_cond = cirq.SympyCondition(sympy.Eq(m1 + m2 + m3 + m4, 0))  # m1 = m2 = m3 = m4 = 0
 
-    magicStateCir = cirq.Circuit(
+    magic_state_cir = cirq.Circuit(
         cirq.CircuitOperation(
             circuit=cir.freeze(),
             use_repetition_ids=False,
-            repeat_until=sympyCond,
+            repeat_until=sympy_cond,
         )
     )
 
-    return magicStateCir
+    return magic_state_cir
