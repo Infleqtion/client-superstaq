@@ -1,6 +1,6 @@
 import cirq
 import numpy
-from MSD_7_to_1 import msd_7_to_1
+from msd_7_to_1 import msd_7_to_1
 
 
 def test_7_to_1_msd() -> None:
