@@ -65,6 +65,7 @@ class _BaseSuperstaqClient(ABC):
         api_key: str | None = None,
         remote_host: str | None = None,
         api_version: str = gss.API_VERSION,
+        circuit_type: _models.CircuitType = _models.CircuitType.CIRQ,
         max_retry_seconds: float = 60,  # 1 minute
         verbose: bool = False,
         cq_token: str | None = None,
@@ -90,6 +91,7 @@ class _BaseSuperstaqClient(ABC):
                 the form `http://example.com` of `http://example.com/test`.
             api_version: Which version of the API to use. Defaults to `client_superstaq.API_VERSION`
                 (which is the most recent version when this client was downloaded).
+            circuit_type: The type of circuit, Cirq, Qiskit or QASM.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
             cq_token: Token from CQ cloud. This is required to submit circuits to CQ hardware.
@@ -106,6 +108,7 @@ class _BaseSuperstaqClient(ABC):
         self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
         self.client_name = client_name
         self.api_version = api_version
+        self.circuit_type = circuit_type
         self.max_retry_seconds = max_retry_seconds
         self.verbose = verbose
         url = urllib.parse.urlparse(self.remote_host)
@@ -219,7 +222,7 @@ class _BaseSuperstaqClient(ABC):
         self,
         job_ids: Sequence[str] | Sequence[uuid.UUID],
         **kwargs: object,
-    ) -> dict[str, dict[str, str]]:
+    ) -> dict[str, dict[str, Any]]:
         """Get the job from the Superstaq API.
 
         Args:
@@ -789,9 +792,9 @@ class _BaseSuperstaqClient(ABC):
                 json_content = None
 
             if isinstance(json_content, dict) and set(json_content.keys()).intersection(
-                {"message", "details"}
+                {"message", "detail"}
             ):
-                alternative: str = json_content.get("details", "")
+                alternative: str = json_content.get("detail", "")
                 message: str = json_content.get("message", alternative)
             else:
                 message = str(response.text)
@@ -920,19 +923,6 @@ class _BaseSuperstaqClient(ABC):
     def __str__(self) -> str:
         return f"Client version {self.api_version} with host={self.url} and name={self.client_name}"
 
-    def __repr__(self) -> str:
-        return textwrap.dedent(
-            f"""\
-            gss.superstaq_client._SuperstaqClient(
-                remote_host={self.url!r},
-                api_key={self.api_key!r},
-                client_name={self.client_name!r},
-                api_version={self.api_version!r},
-                max_retry_seconds={self.max_retry_seconds!r},
-                verbose={self.verbose!r},
-            )"""
-        )
-
 
 class _SuperstaqClient(_BaseSuperstaqClient):
     def create_job(
@@ -973,7 +963,7 @@ class _SuperstaqClient(_BaseSuperstaqClient):
         self,
         job_ids: Sequence[str] | Sequence[uuid.UUID],
         **kwargs: object,
-    ) -> dict[str, dict[str, str]]:
+    ) -> dict[str, dict[str, Any]]:
         json_dict: dict[str, Any] = {
             "job_ids": job_ids,
         }
@@ -1259,6 +1249,19 @@ class _SuperstaqClient(_BaseSuperstaqClient):
     def aqt_get_configs(self) -> dict[str, str]:
         return self.get_request("/get_aqt_configs")
 
+    def __repr__(self) -> str:
+        return textwrap.dedent(
+            f"""\
+            gss.superstaq_client._SuperstaqClient(
+                remote_host={self.url!r},
+                api_key={self.api_key!r},
+                client_name={self.client_name!r},
+                api_version={self.api_version!r},
+                max_retry_seconds={self.max_retry_seconds!r},
+                verbose={self.verbose!r},
+            )"""
+        )
+
 
 class _SuperstaqClientV3(_BaseSuperstaqClient):
     def create_job(
@@ -1317,11 +1320,11 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         **kwargs: object,
     ) -> list[str]:
         query = _models.JobQuery(job_id=job_ids)
+        json_dict = query.model_dump(exclude_none=True)
+        json_dict["job_id"] = list(map(str, json_dict["job_id"]))
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
         response = _models.JobCancellationResults(
-            **self.put_request(
-                "/client/cancel_job", query.model_dump(exclude_none=True), **credentials
-            )
+            **self.put_request("/client/cancel_jobs", json_dict, **credentials)
         )
         return response.succeeded
 
@@ -1329,11 +1332,13 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         self,
         job_ids: Sequence[str] | Sequence[uuid.UUID],
         **kwargs: object,
-    ) -> dict[str, dict[str, str]]:
+    ) -> dict[str, dict[str, Any]]:
         query = _models.JobQuery(job_id=job_ids)
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
         response = self.get_request(
-            "/client/job", query.model_dump(exclude_none=True), **credentials
+            f"/client/job/{self.circuit_type.value}",
+            query.model_dump(exclude_none=True),
+            **credentials,
         )
         return {job_id: _models.JobData(**data).model_dump() for (job_id, data) in response.items()}
 
@@ -1481,21 +1486,55 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         # Join circuits together in json string - TODO: make this neater.
         # Note mypy does not recognize that the above checks ensure there are no None's anywhere,
         # hence the ignored [arg-type]'s
-        compile_dict = {
-            "initial_logical_to_physicals": "["
-            + ", ".join(str(dico) for dico in job_data["initial_logical_to_physicals"])
-            + "]",
-            "final_logical_to_physicals": "["
-            + ", ".join(str(dico) for dico in job_data["final_logical_to_physicals"])
-            + "]",
-        }
+        if circuit_type == _models.CircuitType.QISKIT:
+            qiskit_initial_log_to_phys = [
+                [[k, v] for k, v in q_map.items()]
+                for q_map in job_data["initial_logical_to_physicals"]
+            ]
+            qiskit_final_log_to_phys = [
+                [[k, v] for k, v in q_map.items()]
+                for q_map in job_data["final_logical_to_physicals"]
+            ]
 
-        if circuit_type == _models.CircuitType.CIRQ:
-            compile_dict["cirq_circuits"] = "[" + ", ".join(job_data["compiled_circuits"]) + "]"
+            compile_dict = {
+                "initial_logical_to_physicals": "["
+                + ", ".join(json.dumps(q_map) for q_map in qiskit_initial_log_to_phys)
+                + "]",
+                "final_logical_to_physicals": "["
+                + ", ".join(json.dumps(q_map) for q_map in qiskit_final_log_to_phys)
+                + "]",
+            }
+            compile_dict["qiskit_circuits"] = "[" + ", ".join(job_data["compiled_circuits"]) + "]"
             return compile_dict
 
-        if circuit_type == _models.CircuitType.QISKIT:
-            compile_dict["qiskit_circuits"] = "[" + ", ".join(job_data["compiled_circuits"]) + "]"
+        elif circuit_type == _models.CircuitType.CIRQ:
+            cirq_initial_log_to_phys = []
+            cirq_final_log_to_phys = []
+            for i in range(len(job_data["initial_logical_to_physicals"])):
+                logical = json.loads(job_data["logical_qubits"][i])
+                physical = json.loads(job_data["physical_qubits"][i])
+
+                cirq_initial_log_to_phys.append(
+                    {
+                        json.dumps(logical[k]): json.dumps(physical[v])
+                        for k, v in job_data["initial_logical_to_physicals"][i].items()
+                    }
+                )
+                cirq_final_log_to_phys.append(
+                    {
+                        json.dumps(logical[k]): json.dumps(physical[v])
+                        for k, v in job_data["final_logical_to_physicals"][i].items()
+                    }
+                )
+            compile_dict = {
+                "initial_logical_to_physicals": "["
+                + ", ".join(json.dumps(q_map) for q_map in cirq_initial_log_to_phys)
+                + "]",
+                "final_logical_to_physicals": "["
+                + ", ".join(json.dumps(q_map) for q_map in cirq_final_log_to_phys)
+                + "]",
+            }
+            compile_dict["cirq_circuits"] = "[" + ", ".join(job_data["compiled_circuits"]) + "]"
             return compile_dict
 
     def submit_qubo(  # type: ignore [return]
@@ -1582,6 +1621,19 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
     def aqt_get_configs(self) -> dict[str, str]:
         response = _models.AQTConfigs(**self.get_request("/aqt_configs"))
         return response.model_dump()
+
+    def __repr__(self) -> str:
+        return textwrap.dedent(
+            f"""\
+            gss.superstaq_client._SuperstaqClientV3(
+                remote_host={self.url!r},
+                api_key={self.api_key!r},
+                client_name={self.client_name!r},
+                api_version={self.api_version!r},
+                max_retry_seconds={self.max_retry_seconds!r},
+                verbose={self.verbose!r},
+            )"""
+        )
 
 
 def read_ibm_credentials(ibmq_name: str | None) -> dict[str, str]:
