@@ -3,7 +3,7 @@ import numpy
 from MSD_7_to_1 import msd_7_to_1
 
 
-def test_distilled_magic_state() -> None:
+def test_7_to_1_msd() -> None:
     qubits = cirq.LineQubit.range(8)
     sim = cirq.Simulator()
     magic_state_circuit = msd_7_to_1(qubits)
