@@ -18,9 +18,6 @@ from cirq_superstaq.circuits import (
     MSD_5_to_1,
     MSD_7_to_1,
     MSD_15_to_1,
-    msd_5_to_1_test,
-    msd_7_to_1_test,
-    msd_15_to_1_test,
 )
 from cirq_superstaq.compiler_output import active_qubit_indices, measured_qubit_indices
 from cirq_superstaq.job import Job
@@ -118,9 +115,6 @@ __all__ = [
     "compiler_output",
     "deserialize_circuits",
     "measured_qubit_indices",
-    "msd_5_to_1_test",
-    "msd_7_to_1_test",
-    "msd_15_to_1_test",
     "parallel_gates_operation",
     "qubit_subspace_op",
     "qudit_swap_op",
