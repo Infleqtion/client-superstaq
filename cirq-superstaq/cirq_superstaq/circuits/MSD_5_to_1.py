@@ -15,7 +15,6 @@ def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     Returns:
         The magic state distillation circuit.
     """
-    # https://arxiv.org/pdf/2310.12106 page 4 figure 1
     phi = math.acos(1 / math.sqrt(3))
     theta = math.pi / 4
 
