@@ -94,7 +94,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
             for gate_name, qubit_indicies, duration, unit in duration_info:
                 gate_durations.append((gate_name, tuple(qubit_indicies), duration, unit))
 
-        basis_gateset = ["reset", "measure"] if self.name.startswith("ibmq_") else []
+        basis_gateset = ["reset", "measure"]
         if native_gate_set := target_info.get("native_gate_set"):
             basis_gateset += list(native_gate_set)
 
