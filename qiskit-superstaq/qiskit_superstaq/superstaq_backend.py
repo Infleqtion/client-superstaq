@@ -17,12 +17,12 @@ from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
+import numpy as np
 import qiskit
 
 import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
-    import numpy as np
     import numpy.typing as npt
     from _typeshed import SupportsItems
 
@@ -94,7 +94,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
             for gate_name, qubit_indicies, duration, unit in duration_info:
                 gate_durations.append((gate_name, tuple(qubit_indicies), duration, unit))
 
-        basis_gateset = ["reset", "measure"]
+        basis_gateset = ["reset", "measure"] if self.name.startswith("ibmq_") else []
         if native_gate_set := target_info.get("native_gate_set"):
             basis_gateset += list(native_gate_set)
 
@@ -103,11 +103,19 @@ class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
             "dd": qss.DDGate,
             "gr": qiskit.circuit.library.GR,
             "iccx_o0": qss.AQTiCCXGate,
-            "GPI": qiskit.circuit.library.UGate,
-            "GPI2": qiskit.circuit.library.UGate,
-            "prx": qiskit.circuit.library.UGate,
+            "GPI": qiskit.circuit.library.RGate(
+                np.pi, 2 * np.pi * qiskit.circuit.Parameter("phi"), label="GPI"
+            ),
+            "GPI2": qiskit.circuit.library.RGate(
+                np.pi / 2, 2 * np.pi * qiskit.circuit.Parameter("phi"), label="GPI2"
+            ),
+            "prx": qiskit.circuit.library.RGate,
+            "cc_prx": qiskit.circuit.library.RGate,  # Classically controlled 'prx' gate
             "MS": qiskit.circuit.library.MSGate,
             "ZZ": qiskit.circuit.library.RZZGate,
+            "measure_ff": qiskit.circuit.Measure(
+                label="measure_ff"
+            ),  # Measurement with classical feed-forward
         }
         backend_target = qiskit.transpiler.Target.from_configuration(
             num_qubits=target_info.get("num_qubits"),
