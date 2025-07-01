@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import cirq
+import cirq_superstaq as css
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -152,7 +153,8 @@ class SU2Results(QCVVResults):
         fit = linregress(
             x=self.data["num_two_qubit_gates"],
             y=np.log(4 / 3 * (self.data["00"] - 1 / 4)),
-            # Scale the y coordinate to account for limit of the decay being 1/4
+            # 1/4 < self.data["00"] < 1 so we subtract 1/4 and rescale by 4/3 to obtain a
+            # quantity in the range 0 < 4 / 3 * (self.data["00"] - 1 / 4) < 1
         )
         gate_fid = np.exp(fit.slope)
         gate_fid_std = fit.stderr * gate_fid
@@ -280,9 +282,9 @@ class SU2(QCVVExperiment[SU2Results]):
         """Returns:
         Haar randomly sampled SU(2) rotation.
         """
-        gate: cirq.Gate | None = None
-        while gate is None:
-            gate = cirq.single_qubit_matrix_to_phxz(cirq.testing.random_special_unitary(dim=2))
+        gate = cirq.single_qubit_matrix_to_phxz(cirq.testing.random_special_unitary(dim=2))
+        if gate is None:
+            return cirq.I
         return gate
 
     def _component(self, include_two_qubit_gate: bool) -> cirq.Circuit:
@@ -295,11 +297,11 @@ class SU2(QCVVExperiment[SU2Results]):
         The component looks like:
         .. code::
 
-            0: ───R1───Q───X───Q───
-                       │       │
-            1: ───R2───Q───X───Q───
+            0: ───R───Q───X───Q───
+                      │       │
+            1: ───R───Q───X───Q───
 
-        where :code:`R1` and :code:`R2` are Haar randomly chosen SU(2) rotation
+        where :code:`R` is a Haar randomly chosen SU(2) rotation
         and :code:`Q-Q` represents the two qubit gate being measured.
 
         Args:
@@ -313,14 +315,22 @@ class SU2(QCVVExperiment[SU2Results]):
         return cirq.Circuit(
             rotation.on(self.qubits[0]),
             rotation.on(self.qubits[1]),
+            css.barrier(*self.qubits),
             (
-                self.two_qubit_gate(*self.qubits).with_tags("no_compile")
+                [
+                    self.two_qubit_gate(*self.qubits).with_tags("no_compile"),
+                    css.barrier(*self.qubits),
+                ]
                 if include_two_qubit_gate
                 else []
             ),
             cirq.X.on_each(*self.qubits),
+            css.barrier(*self.qubits),
             (
-                self.two_qubit_gate(*self.qubits).with_tags("no_compile")
+                [
+                    self.two_qubit_gate(*self.qubits).with_tags("no_compile"),
+                    css.barrier(*self.qubits),
+                ]
                 if include_two_qubit_gate
                 else []
             ),
