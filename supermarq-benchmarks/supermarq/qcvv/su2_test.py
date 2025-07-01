@@ -210,7 +210,6 @@ def test_result_not_analyzed() -> None:
         "single_qubit_noise",
         "single_qubit_noise_std",
     ]:
-
         with pytest.raises(
             RuntimeError,
             match=re.escape("Value has not yet been estimated. Please run `.analyze()` method."),
