@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=missing-function-docstring
-# pylint: disable=missing-return-doc
 # mypy: disable-error-code=method-assign
 
 from __future__ import annotations
@@ -83,7 +81,7 @@ def test_build_circuits(su2_experiment: SU2) -> None:  # pragma: no cover
                     0: ───PhXZ───│───@[no_compile]───│───X───│───@[no_compile]───│───PhXZ───│───X───│───PhXZ───│───X───│───PhXZ───M───
                                  │   │               │       │   │               │          │       │          │       │          │
                     1: ───PhXZ───│───X───────────────│───X───│───X───────────────│───PhXZ───│───X───│───PhXZ───│───X───│───PhXZ───M───
-                    """  # noqa: E501  # pylint: disable=line-too-long
+                    """  # noqa: E501
                 ),
             )
         else:
@@ -94,7 +92,7 @@ def test_build_circuits(su2_experiment: SU2) -> None:  # pragma: no cover
                     0: ───PhXZ───│───@[no_compile]───│───X───│───@[no_compile]───│───PhXZ───│───@[no_compile]───│───X───│───@[no_compile]───│───PhXZ───│───@[no_compile]───│───X───│───@[no_compile]───│───PhXZ───M───
                                  │   │               │       │   │               │          │   │               │       │   │               │          │   │               │       │   │               │          │
                     1: ───PhXZ───│───X───────────────│───X───│───X───────────────│───PhXZ───│───X───────────────│───X───│───X───────────────│───PhXZ───│───X───────────────│───X───│───X───────────────│───PhXZ───M───
-                    """  # noqa: E501  # pylint: disable=line-too-long
+                    """  # noqa: E501
                 ),
             )
 
@@ -120,7 +118,7 @@ def test_build_circuits_old(su2_experiment: SU2) -> None:  # pragma: no cover
                     0: ───PhXZ───│───@['no_compile']───│───X───│───@['no_compile']───│───PhXZ───│───X───│───PhXZ───│───X───│───PhXZ───M───
                                  │   │                 │       │   │                 │          │       │          │       │          │
                     1: ───PhXZ───│───X─────────────────│───X───│───X─────────────────│───PhXZ───│───X───│───PhXZ───│───X───│───PhXZ───M───
-                    """  # noqa: E501  # pylint: disable=line-too-long
+                    """  # noqa: E501
                 ),
             )
         else:
@@ -131,13 +129,13 @@ def test_build_circuits_old(su2_experiment: SU2) -> None:  # pragma: no cover
                     0: ───PhXZ───│───@['no_compile']───│───X───│───@['no_compile']───│───PhXZ───│───@['no_compile']───│───X───│───@['no_compile']───│───PhXZ───│───@['no_compile']───│───X───│───@['no_compile']───│───PhXZ───M───
                                  │   │                 │       │   │                 │          │   │                 │       │   │                 │          │   │                 │       │   │                 │          │
                     1: ───PhXZ───│───X─────────────────│───X───│───X─────────────────│───PhXZ───│───X─────────────────│───X───│───X─────────────────│───PhXZ───│───X─────────────────│───X───│───X─────────────────│───PhXZ───M───
-                    """  # noqa: E501  # pylint: disable=line-too-long
+                    """  # noqa: E501
                 ),
             )
 
 
 def test_analyse_results(tmp_path: pathlib.Path, su2_experiment: SU2) -> None:
-    def decay(x):  # type: ignore[no-untyped-def] # pylint: disable=W9012 # noqa: ANN001, ANN202
+    def decay(x: int | float) -> float:
         return (3 * 0.75 * 0.975**x + 1) / 4
 
     result = SU2Results(
