@@ -11,6 +11,7 @@ jobs:
     env:
       SUPERSTAQ_API_KEY: ${{ secrets.SUPERSTAQ_API_KEY }}
       TEST_USER_IBMQ_TOKEN: ${{ secrets.TEST_USER_IBMQ_TOKEN }}
+      TEST_USER_IBMQ_INSTANCE: ${{ secrets.TEST_USER_IBMQ_INSTANCE }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -32,6 +33,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TEST_USER_IBMQ_TOKEN: ${{ secrets.TEST_USER_IBMQ_TOKEN }}
+          TEST_USER_IBMQ_INSTANCE: ${{ secrets.TEST_USER_IBMQ_INSTANCE }}
         with:
           filename: .github/integration-check-failure-issue.md
           update_existing: true

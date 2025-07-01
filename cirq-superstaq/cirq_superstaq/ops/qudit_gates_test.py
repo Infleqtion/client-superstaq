@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
 import functools
@@ -10,6 +9,7 @@ import cirq
 import numpy as np
 import pytest
 import scipy.linalg
+import sympy
 
 import cirq_superstaq as css
 
@@ -98,10 +98,10 @@ def test_bswap_pow_gate() -> None:
 
     shifted_bswap = css.BSwapPowGate(global_shift=0.3)
 
-    assert css.BSWAP == css.BSwapPowGate()
+    assert css.BSwapPowGate() == css.BSWAP
     assert css.BSWAP_INV == css.BSWAP**-1 == css.BSWAP**3
 
-    assert css.BSWAP != shifted_bswap
+    assert shifted_bswap != css.BSWAP
     assert not cirq.approx_eq(css.BSWAP, shifted_bswap)
     assert cirq.equal_up_to_global_phase(css.BSWAP, shifted_bswap)
     assert cirq.equal_up_to_global_phase(css.BSWAP**1.23, shifted_bswap**5.23)
@@ -153,10 +153,11 @@ def test_qutrit_cz_pow_gate() -> None:
 
     shifted_cz3 = css.QutritCZPowGate(global_shift=0.3)
 
-    assert css.CZ3 == css.QutritCZPowGate()
-    assert css.CZ3_INV == css.CZ3**-1 == css.CZ3**2
+    assert css.QutritCZPowGate() == css.CZ3
+    assert css.CZ3_INV == css.CZ3**-1
+    assert cirq.approx_eq(css.CZ3**-1, css.CZ3**2)
 
-    assert css.CZ3 != shifted_cz3
+    assert shifted_cz3 != css.CZ3
     assert not cirq.approx_eq(css.CZ3, shifted_cz3)
     assert cirq.equal_up_to_global_phase(css.CZ3, shifted_cz3)
     assert cirq.equal_up_to_global_phase(css.CZ3**1.23, shifted_cz3**4.23)
@@ -211,6 +212,7 @@ def test_qutrit_cz_pow_gate() -> None:
 @pytest.mark.parametrize("dimension", [2, 3, 4, 5, 6])
 def test_qutrit_cz_pow_gate_implementation_for_other_qudits(dimension: int) -> None:
     """Confirm that QutritCZPowGate._eigen_components_() would work for any dimension.
+
     Args:
         dimension: The gate dimension for the current test.
     """
@@ -348,6 +350,7 @@ def test_virtual_z_pow_gate() -> None:
     assert str(css.VirtualZPowGate(dimension=4, level=2) ** 1.2) == "VZ(2+)**1.2"
     assert str(css.VirtualZPowGate(dimension=4, global_shift=0.5)) == "VZ(1+)"
     assert str(css.VirtualZPowGate(dimension=5, global_shift=0.5) ** 2.3) == "VZ(1+)**2.3"
+    assert str(css.VirtualZPowGate(dimension=5, exponent=sympy.Symbol("phi"))) == "VZ(1+)**phi"
 
     cirq.testing.assert_has_diagram(
         cirq.Circuit(css.VirtualZPowGate(dimension=3, level=1)(cirq.LineQid(0, 3))),
@@ -355,8 +358,8 @@ def test_virtual_z_pow_gate() -> None:
     )
 
     cirq.testing.assert_has_diagram(
-        cirq.Circuit(css.VirtualZPowGate(dimension=4, level=3)(cirq.LineQid(0, 4)) ** 1.2),
-        "0 (d=4): ───VZ₃₊^-0.8───",
+        cirq.Circuit(css.VirtualZPowGate(dimension=14, level=13)(cirq.LineQid(0, 14)) ** 1.2),
+        "0 (d=14): ───VZ₁₃₊^-0.8───",
     )
 
     cirq.testing.assert_has_diagram(
@@ -484,7 +487,7 @@ def test_qubit_subspace_gate_protocols(
     larger_gate = css.QubitSubspaceGate(sub_gate, (8,) * len(qid_shape), subspaces)
     another_gate = cirq.Y
 
-    assert gate == gate
+    assert gate == gate  # noqa: PLR0124
     assert gate == same_gate
     assert gate != similar_gate
     assert gate != shifted_gate
@@ -531,6 +534,8 @@ def test_qubit_subspace_gate_protocols(
 def test_qubit_subspace_circuit_diagram() -> None:
     q0 = cirq.LineQid(0, dimension=3)
     q1 = cirq.LineQid(1, dimension=4)
+    q2 = cirq.LineQid(2, dimension=13)
+
     cirq.testing.assert_has_diagram(
         cirq.Circuit(css.QubitSubspaceGate(cirq.rx(np.pi / 2), (3,), [(0, 2)]).on(q0)),
         textwrap.dedent(
@@ -557,6 +562,16 @@ def test_qubit_subspace_circuit_diagram() -> None:
             """
         ),
         use_unicode_characters=False,
+    )
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(css.QubitSubspaceGate(cirq.CX, (4, 13), [(0, 1), (1, 12)]).on(q1, q2)),
+        textwrap.dedent(
+            """
+            1 (d=4): ────@₀˰₁────
+                         │
+            2 (d=13): ───X₁˰₁₂───
+            """
+        ),
     )
 
 

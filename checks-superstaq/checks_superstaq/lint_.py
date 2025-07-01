@@ -16,7 +16,7 @@ def run(
     exclude: str | Iterable[str] = (),
     silent: bool = False,
 ) -> int:
-    """Runs flake8 on the repository (formatting check).
+    """Runs 'ruff check' on the repository (formatting check).
 
     Args:
         *args: Command line arguments.
@@ -27,27 +27,26 @@ def run(
     Returns:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
-
     parser = check_utils.get_check_parser()
     parser.description = textwrap.dedent(
         """
-        Runs flake8 on the repository (formatting check).
+        Runs 'ruff check' on the repository (linting check).
         """
     )
 
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
-    if "flake8" in parsed_args.skip:
+    if "lint" in parsed_args.skip:
         return 0
 
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     if files:
         return subprocess.call(
-            ["python", "-m", "flake8", *files, *args_to_pass], cwd=check_utils.root_dir
+            ["python", "-m", "ruff", "check", *files, *args_to_pass], cwd=check_utils.root_dir
         )
 
     return 0
 
 
 if __name__ == "__main__":
-    exit(run(*sys.argv[1:]))
+    sys.exit(run(*sys.argv[1:]))

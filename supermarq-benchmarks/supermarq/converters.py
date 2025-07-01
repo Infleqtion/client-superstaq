@@ -55,7 +55,6 @@ def compute_liveness_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
     Returns:
         The value of the liveness feature for this circuit.
     """
-
     num_qubits = circuit.num_qubits
     dag = qiskit.converters.circuit_to_dag(circuit)
     dag.remove_all_ops_named("barrier")

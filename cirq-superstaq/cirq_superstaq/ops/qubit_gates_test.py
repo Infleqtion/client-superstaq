@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
 import itertools
@@ -151,6 +150,9 @@ def test_stripped_cz_gate() -> None:
     assert gate**0.5 == cirq.DiagonalGate(phases)
     assert gate**1 == gate
     assert gate**2 == css.ParallelGates(z_exp_gate, z_exp_gate)
+
+    assert cirq.phase_by(gate, 1.23, 0) == gate
+    assert cirq.phase_by(operation, 1.23, 1) == operation
 
 
 def test_stripped_cz_gate_circuit() -> None:
@@ -528,10 +530,12 @@ def test_acecr_decompose() -> None:
     a = cirq.LineQubit(0)
     b = cirq.LineQubit(1)
     circuit = cirq.Circuit(cirq.decompose_once(css.AceCRMinusPlus(a, b)))
-    assert len(circuit) == 3 and len(list(circuit.all_operations())) == 3
+    assert len(circuit) == 3
+    assert len(list(circuit.all_operations())) == 3
 
     circuit = cirq.Circuit(cirq.decompose_once(css.AceCR("+-", sandwich_rx_rads=-np.pi / 2)(a, b)))
-    assert len(circuit) == 3 and len(list(circuit.all_operations())) == 4
+    assert len(circuit) == 3
+    assert len(list(circuit.all_operations())) == 4
 
 
 def test_barrier() -> None:

@@ -6,14 +6,14 @@ from .su2 import SU2, SU2Results
 from .xeb import XEB, XEBResults
 
 __all__ = [
+    "IRB",
+    "XEB",
+    "IRBResults",
     "QCVVExperiment",
     "QCVVResults",
+    "RBResults",
     "Sample",
-    "IRB",
-    "IRBResults",
-    "XEB",
     "XEBResults",
     "SU2",
     "SU2Results",
-    "RBResults",
 ]

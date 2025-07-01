@@ -16,13 +16,13 @@ from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
-import numpy as np
-import numpy.typing as npt
 import qiskit
 
 import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
+    import numpy as np
+    import numpy.typing as npt
     from _typeshed import SupportsItems
 
 
@@ -35,9 +35,9 @@ class SuperstaqProvider(gss.service.Service):
 
         import qiskit_superstaq as qss
 
-        ss_provider = qss.SuperstaqProvider('MY_TOKEN')
+        ss_provider = qss.SuperstaqProvider("MY_TOKEN")
 
-        backend = ss_provider.get_backend('target')
+        backend = ss_provider.get_backend("target")
 
     where `MY_TOKEN` is the access token provided by Superstaq,
     and `target` is the name of the desired backend.

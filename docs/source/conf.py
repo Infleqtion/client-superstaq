@@ -2,9 +2,8 @@
 #
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
-# pylint: disable=missing-function-docstring,missing-class-docstring,unused-argument
 # mypy: disable-error-code="no-untyped-def"
-
+# ruff: noqa: ANN001, ANN201, ARG001, D103
 # -- Path setup --------------------------------------------------------------
 from __future__ import annotations
 
@@ -17,7 +16,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "Superstaq"
-copyright = "2024, ColdQuanta, Inc., DBA Infleqtion"  # pylint: disable=redefined-builtin
+copyright = "2025, ColdQuanta, Inc., DBA Infleqtion"  # noqa: A001
 author = "ColdQuanta, Inc., DBA Infleqtion"
 
 # -- General configuration ---------------------------------------------------
@@ -80,11 +79,11 @@ html_logo = "_static/logos/Superstaq_color.png"
 html_css_files = [
     "css/docs-superstaq.css",
 ]
-html_favicon = "_static/logos/Infleqtion_logo.png"
+html_favicon = "_static/logos/Infleqtion_logo-RGB_favicon.png"
 
 
 # Replace common aliases (gss, css, qss) in docstrings.
-def autodoc_process_docstring(app, what, name, obj, options, lines):
+def autodoc_process_docstring(app, what, name, obj, options, lines) -> None:
     for i in range(len(lines)):
         lines[i] = lines[i].replace("gss.", "general_superstaq.")
         lines[i] = lines[i].replace("css.", "cirq_superstaq.")

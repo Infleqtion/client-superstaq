@@ -64,8 +64,8 @@ def deserialize_qiskit_circuits(
         could not be deserialized.
     """
     if importlib.util.find_spec("qiskit_superstaq"):
-        import qiskit
-        import qiskit_superstaq as qss
+        import qiskit  # noqa: PLC0415
+        import qiskit_superstaq as qss  # noqa: PLC0415
 
         try:
             pulse_gate_circuits = qss.deserialize_circuits(serialized_qiskit_circuits)
@@ -84,7 +84,8 @@ def deserialize_qiskit_circuits(
                 f"qiskit version: {qiskit.__version__}\n"
                 f"error: {e!r}\n\n"
                 f"You can still access your compiled circuit{s} using the .circuit{s} "
-                "attribute of this output."
+                "attribute of this output.",
+                stacklevel=2,
             )
         else:
             if pulse_durations and pulse_start_times:
@@ -102,7 +103,8 @@ def deserialize_qiskit_circuits(
             "qiskit-superstaq is required to deserialize compiled pulse gate circuits. You can "
             "install it with `pip install qiskit-superstaq`.\n\n"
             f"You can still access your compiled circuit{s} using the .circuit{s} attribute of "
-            "this output."
+            "this output.",
+            stacklevel=2,
         )
 
     return None

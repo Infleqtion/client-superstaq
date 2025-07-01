@@ -5,10 +5,9 @@ from checks_superstaq import (  # To be removed in version 0.5.0
     check_utils,
     configs,
     coverage_,
-    flake8_,
     format_,
+    lint_,
     mypy_,
-    pylint_,
     pytest_,
     requirements,
 )
@@ -20,10 +19,9 @@ __all__ = [
     "check_utils",
     "configs",
     "coverage_",
-    "flake8_",
     "format_",
+    "lint_",
     "mypy_",
-    "pylint_",
     "pytest_",
     "requirements",
 ]

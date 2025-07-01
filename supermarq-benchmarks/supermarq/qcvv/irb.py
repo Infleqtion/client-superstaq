@@ -10,16 +10,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tooling for interleaved randomised benchmarking"""
+"""Tooling for interleaved randomised benchmarking."""
 
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import cirq
 import cirq.circuits
+import cirq_superstaq as css
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
@@ -29,9 +30,6 @@ from tqdm.auto import trange
 from tqdm.contrib.itertools import product
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
-
-if TYPE_CHECKING:
-    from typing_extensions import Self
 
 
 ####################################################################################################
@@ -44,6 +42,7 @@ def _reduce_single_qubit_clifford_seq(
 
     Args:
         gate_seq: The list of gates.
+
     Returns:
         The single reduced gate.
     """
@@ -60,6 +59,7 @@ def _reduce_clifford_seq(
 
     Args:
         gate_seq: The list of gates.
+
     Returns:
         The single reduced gate.
     """
@@ -373,7 +373,8 @@ class IRBResults(_RBResultsBase):
         if filename is not None:
             plt.savefig(filename)
 
-        root_figure = plot.figure.figure
+        root_figure = plot.get_figure()
+        assert isinstance(root_figure, plt.Figure)
         if filename is not None:
             root_figure.savefig(filename, bbox_inches="tight")
         return root_figure
@@ -400,7 +401,8 @@ class IRBResults(_RBResultsBase):
         self._average_interleaved_gate_error_std = interleaved_gate_error_std
 
     def print_results(self) -> None:
-        print(
+        """Prints the key results data."""
+        print(  # noqa: T201
             f"Estimated gate error: {self.average_interleaved_gate_error:.6f} +/- "
             f"{self.average_interleaved_gate_error_std:.6f}"
         )
@@ -451,7 +453,8 @@ class RBResults(_RBResultsBase):
             raise RuntimeError("No data stored. Cannot make plot.")
 
         plot = self._plot_results()
-        root_figure = plot.figure.figure
+        root_figure = plot.get_figure()
+        assert isinstance(root_figure, plt.Figure)
         if filename is not None:
             root_figure.savefig(filename, bbox_inches="tight")
         return root_figure
@@ -466,8 +469,8 @@ class RBResults(_RBResultsBase):
         ) * self.rb_decay_coefficient_std
 
     def print_results(self) -> None:
-
-        print(
+        """Prints the key results data."""
+        print(  # noqa: T201
             f"Estimated error per Clifford: {self.average_error_per_clifford:.6f} +/- "
             f"{self.average_error_per_clifford_std:.6f}"
         )
@@ -529,6 +532,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             clifford_op_gateset: The gateset to use when implementing the clifford operations.
                 Defaults to the CZ/GR set.
             random_seed: An optional seed to use for randomization.
+            kwargs: Any other supported string keyword args.
         """
         if isinstance(interleaved_gate, cirq.Operation):
             qubits = interleaved_gate.qubits
@@ -554,7 +558,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         """The gateset to use when implementing Clifford operations."""
 
         if self.interleaved_gate is None:
-            results_cls: type[RBResults] | type[IRBResults] = RBResults
+            results_cls: type[RBResults | IRBResults] = RBResults
         else:
             results_cls = IRBResults
 
@@ -726,10 +730,14 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         samples = []
         for k, depth in product(range(num_circuits), cycle_depths, desc="Building circuits"):
             base_sequence = [self.random_clifford() for _ in range(depth)]
-            rb_sequence = base_sequence + [
+            rb_sequence = base_sequence + [  # noqa: RUF005
                 _reduce_clifford_seq(cirq.inverse(base_sequence))  # type: ignore[arg-type]
             ]
-            rb_circuit = cirq.Circuit(self._clifford_gate_to_circuit(gate) for gate in rb_sequence)
+            rb_circuit = cirq.Circuit()
+            for k, gate in enumerate(rb_sequence):
+                rb_circuit += self._clifford_gate_to_circuit(gate)
+                if k < len(rb_sequence) - 1:
+                    rb_circuit += css.barrier(*self.qubits)
             samples.append(
                 Sample(
                     circuit=rb_circuit + cirq.measure(sorted(self.qubits)),
@@ -757,7 +765,9 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                 irb_circuit = cirq.Circuit()
                 for gate in base_sequence:
                     irb_circuit += self._clifford_gate_to_circuit(gate)
+                    irb_circuit += css.barrier(*self.qubits)
                     irb_circuit += self.interleaved_gate(*self.qubits).with_tags("no_compile")
+                    irb_circuit += css.barrier(*self.qubits)
                 # Add the final inverting gate
                 irb_circuit += self._clifford_gate_to_circuit(
                     irb_sequence_final_gate,
@@ -794,30 +804,3 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             "clifford_op_gateset": self.clifford_op_gateset,
             **super()._json_dict_(),
         }
-
-    @classmethod
-    def _from_json_dict_(
-        cls,
-        samples: list[Sample],
-        interleaved_gate: cirq.Gate,
-        clifford_op_gateset: cirq.CompilationTargetGateset,
-        num_circuits: int,
-        cycle_depths: list[int],
-        **kwargs: Any,
-    ) -> Self:
-        """Creates a experiment from a dictionary of the data.
-
-        Args:
-            dictionary: Dict containing the experiment data.
-
-        Returns:
-            The deserialized experiment object.
-        """
-        return cls(
-            num_circuits=num_circuits,
-            cycle_depths=cycle_depths,
-            clifford_op_gateset=clifford_op_gateset,
-            interleaved_gate=interleaved_gate,
-            _samples=samples,
-            **kwargs,
-        )

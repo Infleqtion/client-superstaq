@@ -20,7 +20,7 @@ T = TypeVar("T")
 # used for serialization, so using a slightly lower version prevents us from having to force users
 # to update Qiskit the moment we do.
 # Should always be QPY_COMPATIBILITY_VERSION <= QPY_SERIALIZATION_VERSION <= QPY_VERSION
-QPY_SERIALIZATION_VERSION = 11
+QPY_SERIALIZATION_VERSION = 13
 
 # Custom gate types to resolve when deserializing circuits
 # MSGate included as a workaround for https://github.com/Qiskit/qiskit/issues/11378
@@ -59,7 +59,6 @@ def _mcphase(
     ctrl_state: str | int | None = None,
 ) -> qiskit.circuit.library.MCPhaseGate:
     """The `ctrl_state` argument was added to `MCPhaseGate` in Qiskit 1.1.0."""
-
     if qiskit.__version__.split(".")[:2] >= ["1", "1"]:
         return qiskit.circuit.library.MCPhaseGate(
             lam, num_ctrl_qubits=num_ctrl_qubits, label=label, ctrl_state=ctrl_state
@@ -90,7 +89,7 @@ _controlled_gate_resolvers: dict[
 if hasattr(qiskit.circuit.library, "QFTGate"):
     # QFTGate introduced in qiskit 1.2.0
 
-    QFTGate = getattr(qiskit.circuit.library, "QFTGate")
+    QFTGate = qiskit.circuit.library.QFTGate
 
     _controlled_gate_resolvers[QFTGate] = lambda gate: QFTGate(
         gate.num_qubits - gate.num_ctrl_qubits
@@ -232,25 +231,23 @@ def insert_times_and_durations(
         start_times: A list containing the start_time of every instruction in `circuit`.
 
     Returns:
-        A new circuit, in which the `.duration` attribute of every gate has been filled-in, as well
-        as the `.duration` `.op_start_times` attributes of the circuit itself.
+        A new circuit, in which the `.duration` attribute of every delay gate has been filled-in,
+        as well as the `.duration` and `.op_start_times` attributes of the `circuit` itself.
     """
     new_circuit = circuit.copy_empty_like()
     circuit_duration = 0
     for inst, duration, start_time in zip(circuit, durations, start_times):
         operation = inst.operation
-        if inst.operation.duration != duration:
+        if isinstance(operation, qiskit.circuit.delay.Delay):
             operation = inst.operation.to_mutable()
             operation.duration = duration
             inst = inst.replace(operation=operation)
         circuit_duration = max(circuit_duration, start_time + duration)
         new_circuit.append(inst)
-
     if len(new_circuit) == len(circuit):
         new_circuit._op_start_times = start_times
         new_circuit.duration = circuit_duration
         return new_circuit
-
     return circuit
 
 
@@ -404,7 +401,6 @@ def _wrap_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instruction:
 
     This functions as a workaround for https://github.com/Qiskit/qiskit/issues/8941.
     """
-
     name = f"__superstaq_wrapper_{id(gate)}"
     circuit = qiskit.QuantumCircuit(gate.num_qubits, gate.num_clbits, name=name)
     circuit.append(_prepare_gate(gate), range(gate.num_qubits), range(gate.num_clbits))

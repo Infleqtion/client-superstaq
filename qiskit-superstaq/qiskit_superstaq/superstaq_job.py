@@ -20,7 +20,7 @@ import qiskit
 import qiskit_superstaq as qss
 
 
-class SuperstaqJob(qiskit.providers.JobV1):
+class SuperstaqJob(qiskit.providers.JobV1):  # noqa: PLW1641
     """This class represents a Superstaq job instance."""
 
     TERMINAL_STATES = ("Done", "Cancelled", "Failed")
@@ -226,7 +226,6 @@ class SuperstaqJob(qiskit.providers.JobV1):
             -> Cancelled -> Done. For example, if any of the jobs are still queued (even if
             some are done), we report 'Queued' as the overall status of the entire batch.
         """
-
         job_id_list = self._job_id.split(",")  # Separate aggregated job ids
         status_occurrence = {
             self._job_info[job_id].get("status", "Submitted") for job_id in job_id_list
@@ -357,7 +356,6 @@ class SuperstaqJob(qiskit.providers.JobV1):
         Returns:
             The equivalent `qiskit.providers.jobstatus.JobStatus` type.
         """
-
         status_match = {
             "Queued": qiskit.providers.jobstatus.JobStatus.QUEUED,
             "Running": qiskit.providers.jobstatus.JobStatus.RUNNING,

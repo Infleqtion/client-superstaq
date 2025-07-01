@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
 import json
@@ -86,7 +85,7 @@ def new_job() -> css.Job:
 
 @pytest.fixture
 def multi_circuit_job() -> css.Job:
-    """Fixture for a job with multiple circuits submitted
+    """Fixture for a job with multiple circuits submitted.
 
     Returns:
         A job with multiple subjobs
@@ -209,7 +208,7 @@ def test_compiled_circuit(job: css.Job) -> None:
 
 
 def test_pulse_gate_circuits(job: css.Job) -> None:
-    import qiskit
+    import qiskit  # noqa: PLC0415
 
     qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
     pulse_gate_circuit = qiskit.QuantumCircuit(1, 1)
@@ -229,7 +228,7 @@ def test_pulse_gate_circuits(job: css.Job) -> None:
 
 
 def test_pulse_gate_circuits_index(job: css.Job) -> None:
-    import qiskit
+    import qiskit  # noqa: PLC0415
 
     qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
     pulse_gate_circuit = qiskit.QuantumCircuit(1, 1)
@@ -259,14 +258,15 @@ def test_pulse_gate_circuits_invalid_circuit(job: css.Job) -> None:
 
     # The first call will trigger a refresh:
     with patched_requests({"job_id": job_dict}):
-        with pytest.raises(ValueError, match="circuits could not be deserialized."), pytest.warns(
-            match="pulse gate circuit could not be deserialized"
+        with (
+            pytest.raises(ValueError, match="circuits could not be deserialized."),
+            pytest.warns(match="pulse gate circuit could not be deserialized"),
         ):
             job.pulse_gate_circuits()
 
 
 def test_multi_pulse_gate_circuits(multi_circuit_job: css.Job) -> None:
-    import qiskit
+    import qiskit  # noqa: PLC0415
 
     qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
     pulse_gate_circuit = qiskit.QuantumCircuit(1, 1)

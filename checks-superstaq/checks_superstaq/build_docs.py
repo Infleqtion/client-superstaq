@@ -19,7 +19,6 @@ def run(*args: str) -> int:
     Returns:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
-
     parser = check_utils.get_check_parser(no_files=True)
     parser.description = textwrap.dedent(
         """
@@ -32,7 +31,7 @@ def run(*args: str) -> int:
 
     docs_dir = os.path.join(check_utils.root_dir, "docs")
     if not os.path.isdir(os.path.join(docs_dir, "source")):
-        print(check_utils.warning("No docs to build."))
+        print(check_utils.warning("No docs to build."))  # noqa: T201
         return 0
     return subprocess.call(
         ["sphinx-build", "source", "build/html", "--fail-on-warning", "--keep-going"], cwd=docs_dir
@@ -40,4 +39,4 @@ def run(*args: str) -> int:
 
 
 if __name__ == "__main__":
-    exit(run(*sys.argv[1:]))
+    sys.exit(run(*sys.argv[1:]))

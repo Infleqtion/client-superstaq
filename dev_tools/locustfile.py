@@ -2,7 +2,8 @@
 To run Locust, first install it with "python -m pip install locust", set the SUPERSTAQ_API_KEY
 environment variable and execute "locust --config=locust.conf" in the "dev_tools" directory.
 Navigate to http://0.0.0.0:8089/ in your browser, insert the number of users and spawn rate,
-and then click the "Start swarming" button."""
+and then click the "Start swarming" button.
+"""
 
 from __future__ import annotations
 
@@ -26,10 +27,10 @@ SERVICE = css.Service()
 
 
 class QuickstartUser(locust.HttpUser):
-    """Simulates a user during load testing"""
+    """Simulates a user during load testing."""
 
     @locust.task
     def get_targets(self) -> None:
-        """Load tests the get_targets endpoint"""
+        """Load tests the get_targets endpoint."""
         requests.get = self.client.get
         _ = SERVICE.get_targets()

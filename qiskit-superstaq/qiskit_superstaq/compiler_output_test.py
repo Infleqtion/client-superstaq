@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
 import importlib
@@ -120,43 +119,41 @@ def test_compiler_output_repr() -> None:
 def test_read_json() -> None:
     qc = qiskit.QuantumCircuit(2)
     qc.h(0)
+    qc.delay(100, 0, unit="dt")
     qc.cx(0, 1)
 
     qc_pulse = qc.copy()
-    qc_pulse.add_calibration("cx", [0, 1], qiskit.pulse.ScheduleBlock("foo"))
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
         "pulse_gate_circuits": qss.serialization.serialize_circuits(qc_pulse),
-        "pulse_durations": [[10, 20]],
-        "pulse_start_times": [[0, 10]],
+        "pulse_durations": [[10, 100, 20]],
+        "pulse_start_times": [[0, 10, 20]],
     }
 
     out = qss.compiler_output.read_json(json_dict, circuits_is_list=False)
     assert out.circuit == qc
     assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
     assert out.pulse_gate_circuit == qc_pulse
-    assert out.pulse_gate_circuit.duration == 30
-    assert out.pulse_gate_circuit[0].operation.duration == 10
-    assert out.pulse_gate_circuit.op_start_times == [0, 10]
+    assert out.pulse_gate_circuit.duration == 110
+    assert out.pulse_gate_circuit.op_start_times == [0, 10, 20]
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
         "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[], []]",
         "pulse_gate_circuits": qss.serialization.serialize_circuits([qc_pulse, qc_pulse]),
-        "pulse_durations": [[10, 20], [100, 200]],
-        "pulse_start_times": [[0, 10], [0, 100]],
+        "pulse_durations": [[10, 100, 20], [100, 100, 50]],
+        "pulse_start_times": [[0, 10, 20], [0, 100, 200]],
     }
     out = qss.compiler_output.read_json(json_dict, circuits_is_list=True)
     assert out.circuits == [qc, qc]
     assert out.pulse_gate_circuits == [qc_pulse, qc_pulse]
-    assert out.pulse_gate_circuits[0].duration == 30
-    assert out.pulse_gate_circuits[1].duration == 300
-    assert out.pulse_gate_circuits[1][0].operation.duration == 100
-    assert out.pulse_gate_circuits[1].op_start_times == [0, 100]
+    assert out.pulse_gate_circuits[0].duration == 110
+    assert out.pulse_gate_circuits[1].duration == 250
+    assert out.pulse_gate_circuits[1].op_start_times == [0, 100, 200]
 
     json_dict["pulses"] = "oops"
     out = qss.compiler_output.read_json(json_dict, circuits_is_list=True)

@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
 import json
@@ -56,7 +55,8 @@ def backend(fake_superstaq_provider: MockSuperstaqProvider) -> qss.SuperstaqBack
         fake_superstaq_provider: the mocked SuperstaqProvider.
 
     Returns:
-        A mocked SuperstaqBackend."""
+        A mocked SuperstaqBackend.
+    """
     return fake_superstaq_provider.get_backend("ss_example_qpu")
 
 

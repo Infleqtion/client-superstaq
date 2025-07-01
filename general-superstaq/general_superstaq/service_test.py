@@ -1,4 +1,3 @@
-# pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
 import os
@@ -247,14 +246,12 @@ def test_service_get_my_targets(_mock_post_request: mock.MagicMock) -> None:
     assert service.get_my_targets() == [
         gss.typing.Target(
             target="ss_unconstrained_simulator",
-            **{
-                "supports_submit": True,
-                "supports_submit_qubo": True,
-                "supports_compile": True,
-                "available": True,
-                "retired": False,
-                "accessible": True,
-            },
+            supports_submit=True,
+            supports_submit_qubo=True,
+            supports_compile=True,
+            available=True,
+            retired=False,
+            accessible=True,
         )
     ]
 
