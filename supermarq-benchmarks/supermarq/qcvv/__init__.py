@@ -7,13 +7,13 @@ from .xeb import XEB, XEBResults
 
 __all__ = [
     "IRB",
+    "SU2",
     "XEB",
     "IRBResults",
     "QCVVExperiment",
     "QCVVResults",
     "RBResults",
+    "SU2Results",
     "Sample",
     "XEBResults",
-    "SU2",
-    "SU2Results",
 ]

@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tooling for SU(2) benchmarking"""
+"""Tooling for SU(2) benchmarking."""
 
 from __future__ import annotations
 
@@ -94,18 +94,18 @@ class SU2Results(QCVVResults):
         return self.two_qubit_gate_fidelity_std
 
     def plot_results(self, filename: str | None = None) -> plt.Figure:
-        """Plot the results of the experiment
+        """Plot the results of the experiment.
 
         Args:
             filename: Optional argument providing a filename to save the plots to. Defaults to None,
                 indicating not to save the plot.
+
         Returns:
             A single matplotlib figure containing the relevant plots of the results data.
 
         Raises:
             RuntimeError: If there is no data stored.
         """
-
         if self.data is None:
             raise RuntimeError("No data stored. Cannot plot results.")
 
@@ -169,7 +169,8 @@ class SU2Results(QCVVResults):
         self._single_qubit_noise_std = single_qubit_noise_std
 
     def print_results(self) -> None:
-        print(
+        """Prints the key results data."""
+        print(  # noqa: T201
             f"Estimated two qubit gate fidelity: {self.two_qubit_gate_fidelity:.5} "
             f"+/- {self.two_qubit_gate_error_std:.5}\n"
             f"Estimated single qubit noise: {self.single_qubit_noise:.5} "
@@ -351,7 +352,7 @@ class SU2(QCVVExperiment[SU2Results]):
     @classmethod
     def _from_json_dict_(
         cls,
-        samples: list[Sample],
+        _samples: list[Sample],
         num_circuits: int,
         cycle_depths: Iterable[int],
         two_qubit_gate: cirq.Gate = cirq.CZ,
@@ -368,7 +369,7 @@ class SU2(QCVVExperiment[SU2Results]):
         kwargs.pop("qubits")  # Number of qubits is fixed for SU2
         return cls(
             num_circuits=num_circuits,
-            _samples=samples,
+            _samples=_samples,
             cycle_depths=cycle_depths,
             two_qubit_gate=two_qubit_gate,
             **kwargs,

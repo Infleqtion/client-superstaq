@@ -25,6 +25,7 @@ import textwrap
 from unittest.mock import MagicMock, patch
 
 import cirq
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -78,9 +79,9 @@ def test_build_circuits(su2_experiment: SU2) -> None:  # pragma: no cover
                 sample.circuit,
                 textwrap.dedent(
                     """
-                    0: ───PhXZ───@[no_compile]───X───@[no_compile]───PhXZ───X───PhXZ───X───PhXZ───M───
-                                 │                   │                                            │
-                    1: ───PhXZ───X───────────────X───X───────────────PhXZ───X───PhXZ───X───PhXZ───M───
+                    0: ───PhXZ───│───@[no_compile]───│───X───│───@[no_compile]───│───PhXZ───│───X───│───PhXZ───│───X───│───PhXZ───M───
+                                 │   │               │       │   │               │          │       │          │       │          │
+                    1: ───PhXZ───│───X───────────────│───X───│───X───────────────│───PhXZ───│───X───│───PhXZ───│───X───│───PhXZ───M───
                     """  # noqa: E501  # pylint: disable=line-too-long
                 ),
             )
@@ -89,9 +90,9 @@ def test_build_circuits(su2_experiment: SU2) -> None:  # pragma: no cover
                 sample.circuit,
                 textwrap.dedent(
                     """
-                    0: ───PhXZ───@[no_compile]───X───@[no_compile]───PhXZ───@[no_compile]───X───@[no_compile]───PhXZ───@[no_compile]───X───@[no_compile]───PhXZ───M───
-                                 │                   │                      │                   │                      │                   │                      │
-                    1: ───PhXZ───X───────────────X───X───────────────PhXZ───X───────────────X───X───────────────PhXZ───X───────────────X───X───────────────PhXZ───M───
+                    0: ───PhXZ───│───@[no_compile]───│───X───│───@[no_compile]───│───PhXZ───│───@[no_compile]───│───X───│───@[no_compile]───│───PhXZ───│───@[no_compile]───│───X───│───@[no_compile]───│───PhXZ───M───
+                                 │   │               │       │   │               │          │   │               │       │   │               │          │   │               │       │   │               │          │
+                    1: ───PhXZ───│───X───────────────│───X───│───X───────────────│───PhXZ───│───X───────────────│───X───│───X───────────────│───PhXZ───│───X───────────────│───X───│───X───────────────│───PhXZ───M───
                     """  # noqa: E501  # pylint: disable=line-too-long
                 ),
             )
@@ -115,9 +116,9 @@ def test_build_circuits_old(su2_experiment: SU2) -> None:  # pragma: no cover
                 sample.circuit,
                 textwrap.dedent(
                     """
-                    0: ───PhXZ───@['no_compile']───X───@['no_compile']───PhXZ───X───PhXZ───X───PhXZ───M───
-                                 │                     │                                              │
-                    1: ───PhXZ───X─────────────────X───X─────────────────PhXZ───X───PhXZ───X───PhXZ───M───
+                    0: ───PhXZ───│───@['no_compile']───│───X───│───@['no_compile']───│───PhXZ───│───X───│───PhXZ───│───X───│───PhXZ───M───
+                                 │   │                 │       │   │                 │          │       │          │       │          │
+                    1: ───PhXZ───│───X─────────────────│───X───│───X─────────────────│───PhXZ───│───X───│───PhXZ───│───X───│───PhXZ───M───
                     """  # noqa: E501  # pylint: disable=line-too-long
                 ),
             )
@@ -126,16 +127,16 @@ def test_build_circuits_old(su2_experiment: SU2) -> None:  # pragma: no cover
                 sample.circuit,
                 textwrap.dedent(
                     """
-                    0: ───PhXZ───@['no_compile']───X───@['no_compile']───PhXZ───@['no_compile']───X───@['no_compile']───PhXZ───@['no_compile']───X───@['no_compile']───PhXZ───M───
-                                 │                     │                        │                     │                        │                     │                        │
-                    1: ───PhXZ───X─────────────────X───X─────────────────PhXZ───X─────────────────X───X─────────────────PhXZ───X─────────────────X───X─────────────────PhXZ───M───
+                    0: ───PhXZ───│───@['no_compile']───│───X───│───@['no_compile']───│───PhXZ───│───@['no_compile']───│───X───│───@['no_compile']───│───PhXZ───│───@['no_compile']───│───X───│───@['no_compile']───│───PhXZ───M───
+                                 │   │                 │       │   │                 │          │   │                 │       │   │                 │          │   │                 │       │   │                 │          │
+                    1: ───PhXZ───│───X─────────────────│───X───│───X─────────────────│───PhXZ───│───X─────────────────│───X───│───X─────────────────│───PhXZ───│───X─────────────────│───X───│───X─────────────────│───PhXZ───M───
                     """  # noqa: E501  # pylint: disable=line-too-long
                 ),
             )
 
 
 def test_analyse_results(tmp_path: pathlib.Path, su2_experiment: SU2) -> None:
-    def decay(x):  # type: ignore[no-untyped-def] # pylint: disable=W9012
+    def decay(x):  # type: ignore[no-untyped-def] # pylint: disable=W9012 # noqa: ANN001, ANN202
         return (3 * 0.75 * 0.975**x + 1) / 4
 
     result = SU2Results(
@@ -197,6 +198,9 @@ def test_haar_random_rotation() -> None:
     r = SU2._haar_random_rotation()
     assert isinstance(r, cirq.Gate)
     assert r.num_qubits() == 1
+
+    with patch("cirq.testing.random_special_unitary", return_value=np.eye(2)):
+        assert SU2._haar_random_rotation() == cirq.I
 
 
 def test_result_not_analyzed() -> None:
