@@ -22,8 +22,8 @@ import pathlib
 import re
 import sys
 import textwrap
-from unittest.mock import MagicMock, patch
 import uuid
+from unittest.mock import MagicMock, patch
 
 import cirq
 import numpy as np
