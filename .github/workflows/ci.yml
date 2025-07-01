@@ -36,7 +36,7 @@ jobs:
           pip install -e ./checks-superstaq
       - name: Ruff format
         run: |
-          checks/format_.py
+          FORCE_COLOR=1 checks/format_.py
 
   lint:
     name: Lint check
@@ -57,7 +57,7 @@ jobs:
           pip install -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks
       - name: Ruff lint
         run: |
-          checks/lint_.py
+          FORCE_COLOR=1 checks/lint_.py
 
   mypy:
     name: Type check
@@ -159,10 +159,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.12
+      - name: Set up Python 3.13
         uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: 3.13
       - uses: actions/cache@v4
         with:
           path: ${{ env.pythonLocation }}
