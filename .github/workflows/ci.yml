@@ -36,7 +36,7 @@ jobs:
           pip install -e ./checks-superstaq
       - name: Ruff format
         run: |
-          FORCE_COLOR=1 checks/format_.py
+          checks/format_.py
 
   lint:
     name: Lint check
@@ -57,7 +57,7 @@ jobs:
           pip install -e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks
       - name: Ruff lint
         run: |
-          FORCE_COLOR=1 checks/lint_.py
+          checks/lint_.py
 
   mypy:
     name: Type check
