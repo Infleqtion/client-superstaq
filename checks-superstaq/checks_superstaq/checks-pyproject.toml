@@ -139,6 +139,7 @@ case-sensitive = false
 [tool.mypy]
 pretty = true
 ignore_missing_imports = true
+warn_redundant_casts = true
 show_error_codes = true
 disallow_any_generics = true
 disallow_incomplete_defs = true
@@ -158,4 +159,3 @@ exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "@overload"]
 [tool.coverage.run]
 include = ["./*"]
 concurrency = ["thread"]
-
