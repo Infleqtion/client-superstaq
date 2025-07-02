@@ -135,7 +135,7 @@ def test_build_circuits_old(su2_experiment: SU2) -> None:  # pragma: no cover
 
 
 def test_analyse_results(tmp_path: pathlib.Path, su2_experiment: SU2) -> None:
-    def decay(x: int | float) -> float:
+    def decay(x: float) -> float:
         return (3 * 0.75 * 0.975**x + 1) / 4
 
     result = SU2Results(
