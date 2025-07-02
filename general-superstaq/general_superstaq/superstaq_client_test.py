@@ -1331,7 +1331,7 @@ def test_superstaq_client_compile_v3_failed(
 @pytest.mark.parametrize(
     "circuit_type, expected_map",
     [
-        ("cirq", '[{"{\\"qubit\\": \\"q0\\"}": "{\\"qubit\\": \\"q0\\"}"}]'),
+        ("cirq", '[[[{"qubit": "q0"}, {"qubit": "q0"}]]]'),
         ("qiskit", "[[[0, 0]]]"),
     ],
 )
@@ -1477,8 +1477,8 @@ def test_superstaq_client_compile_v3_with_wait(
     assert mock_get.call_count == 2
     assert compilation_results == {
         "cirq_circuits": "[compiled world]",
-        "initial_logical_to_physicals": '[{"{\\"qubit\\": \\"q0\\"}": "{\\"qubit\\": \\"q0\\"}"}]',
-        "final_logical_to_physicals": '[{"{\\"qubit\\": \\"q0\\"}": "{\\"qubit\\": \\"q0\\"}"}]',
+        "initial_logical_to_physicals": '[[[{"qubit": "q0"}, {"qubit": "q0"}]]]',
+        "final_logical_to_physicals": '[[[{"qubit": "q0"}, {"qubit": "q0"}]]]',
     }
 
 
