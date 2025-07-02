@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import textwrap
 from collections.abc import Iterable
 
 from checks_superstaq import check_utils
+
+os.environ["FORCE_COLOR"] = "1"
 
 
 @check_utils.enable_exit_on_failure

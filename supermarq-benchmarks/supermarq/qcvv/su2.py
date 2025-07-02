@@ -30,7 +30,7 @@ from tqdm.contrib.itertools import product
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
 
 if TYPE_CHECKING:
-    from typing_extensions import Self
+    from typing import Self
 
 
 @dataclass
