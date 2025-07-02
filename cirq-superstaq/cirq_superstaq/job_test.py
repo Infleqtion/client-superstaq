@@ -269,10 +269,11 @@ def test_target(job: css.Job, job_dict: dict[str, object]) -> None:
 def test_targetV3(mock_get: mock.MagicMock, jobV3: css.Job, job_dictV3: dict[str, object]) -> None:
     mock_get.return_value.json.return_value = {str(uuid.UUID(int=42)): job_dictV3}
     assert jobV3.target() == "ss_unconstrained_simulator"
-    mock_get.assert_called_once()
+    assert mock_get.call_count == 1
 
     # Shouldn't need to retrieve anything now that `job._job_data` is populated:
     assert jobV3.target() == "ss_unconstrained_simulator"
+    assert mock_get.call_count == 1
 
 
 def test_num_qubits(job: css.Job, job_dict: dict[str, object]) -> None:
@@ -293,11 +294,11 @@ def test_num_qubitsV3(
 ) -> None:
     mock_get.return_value.json.return_value = {str(uuid.UUID(int=42)): job_dictV3}
     assert jobV3.num_qubits(index=0) == 2
-    mock_get.assert_called_once()
-
+    assert mock_get.call_count == 1
     # Shouldn't need to retrieve anything now that `job._job_data` is populated:
     assert jobV3.num_qubits(index=0) == 2
     assert jobV3.num_qubits() == [2]
+    assert mock_get.call_count == 1
 
 
 def test_repetitions(job: css.Job, job_dict: dict[str, object]) -> None:
@@ -316,10 +317,11 @@ def test_repetitionsV3(
 ) -> None:
     mock_get.return_value.json.return_value = {str(uuid.UUID(int=42)): job_dictV3}
     assert jobV3.repetitions() == 1
-    mock_get.assert_called_once()
+    assert mock_get.call_count == 1
 
     # Shouldn't need to retrieve anything now that `job._job_data` is populated:
     assert jobV3.repetitions() == 1
+    assert mock_get.call_count == 1
 
 
 def test_get_circuit(job: css.Job) -> None:
