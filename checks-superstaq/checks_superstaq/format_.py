@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import textwrap
-import os
 from collections.abc import Iterable
 
 from checks_superstaq import check_utils
