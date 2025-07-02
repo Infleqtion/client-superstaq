@@ -15,7 +15,7 @@ import numbers
 import uuid
 import warnings
 from collections.abc import Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
 import qiskit
@@ -179,7 +179,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
             job_id = ",".join(result["job_ids"])
             return qss.SuperstaqJob(self, job_id)
         else:
-            job_id_v3 = cast("uuid.UUID", result["job_id"])
+            job_id_v3 = result["job_id"]
             return qss.SuperstaqJobV3(self, job_id_v3)
 
     def retrieve_job(self, job_id: str | uuid.UUID) -> qss.SuperstaqJob | qss.SuperstaqJobV3:
@@ -203,10 +203,8 @@ class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
             stacklevel=2,
         )
         if isinstance(self._provider._client, _SuperstaqClient):
-            job_id = cast("str", job_id)
-            return qss.SuperstaqJob(self, job_id)
+            return qss.SuperstaqJob(self, str(job_id))
         else:
-            job_id = cast("uuid.UUID", job_id)
             return qss.SuperstaqJobV3(self, job_id)
 
     def compile(
