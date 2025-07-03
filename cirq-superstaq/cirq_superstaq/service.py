@@ -640,7 +640,7 @@ class Service(gss.service.Service):
 
         base_entangling_gate = base_entangling_gate.lower()
         if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
-            raise ValueError("base_entangling_gate must be 'xx', 'zz', 'sxx', or 'szz'")
+            raise ValueError("`base_entangling_gate` must be 'xx', 'zz', 'sxx', or 'szz'")
 
         css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)

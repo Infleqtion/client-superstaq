@@ -1607,7 +1607,8 @@ def read_ibm_credentials(ibmq_name: str | None) -> dict[str, str]:
     config_dir = pathlib.Path.home().joinpath(".qiskit")
     path = config_dir.joinpath("qiskit-ibm.json")
     if path.is_file():
-        config = json.load(open(path))
+        with open(path) as config_file:
+            config = json.load(config_file)
         if ibmq_name is None:
             if len(config) == 1:
                 ibmq_name = next(iter(config.keys()))

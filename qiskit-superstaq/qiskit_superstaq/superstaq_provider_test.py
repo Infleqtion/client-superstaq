@@ -199,9 +199,9 @@ def test_aqt_compile_eca(
         deprecated_out = fake_superstaq_provider.aqt_compile_eca(
             [qc], num_equivalent_circuits=1, random_seed=1234, atol=1e-2
         )
-        assert deprecated_out.circuits == out.circuits
-        assert deprecated_out.initial_logical_to_physicals == out.initial_logical_to_physicals
-        assert deprecated_out.final_logical_to_physicals == out.final_logical_to_physicals
+    assert deprecated_out.circuits == out.circuits
+    assert deprecated_out.initial_logical_to_physicals == out.initial_logical_to_physicals
+    assert deprecated_out.final_logical_to_physicals == out.final_logical_to_physicals
 
 
 @patch("requests.Session.post")
@@ -434,7 +434,7 @@ def test_qscout_compile_change_entangler(
 def test_qscout_compile_wrong_entangler(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="`base_entangling_gate` must be"):
         _ = fake_superstaq_provider.qscout_compile(qc, base_entangling_gate="yy")
 
 
