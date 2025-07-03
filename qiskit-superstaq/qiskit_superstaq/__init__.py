@@ -12,7 +12,7 @@ from .custom_gates import (
 )
 from .serialization import deserialize_circuits, serialize_circuits
 from .superstaq_backend import SuperstaqBackend
-from .superstaq_job import SuperstaqJob
+from .superstaq_job import SuperstaqJob, SuperstaqJobV3
 from .superstaq_provider import SuperstaqProvider
 
 __all__ = [
@@ -24,6 +24,7 @@ __all__ = [
     "StrippedCZGate",
     "SuperstaqBackend",
     "SuperstaqJob",
+    "SuperstaqJobV3",
     "SuperstaqProvider",
     "ZZSwapGate",
     "__version__",
