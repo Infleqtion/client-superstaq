@@ -159,7 +159,7 @@ def test_superstaq_client_invalid_remote_host_netloc(api_version: str, invalid_u
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
 @pytest.mark.parametrize(
     "invalid_url",
-    ["url", "www.example.com/path", "example.com/path"],
+    ["url", "www.example.com/path", "example.com//path"],
 )
 def test_superstaq_client_invalid_remote_host_protocol(api_version: str, invalid_url: str) -> None:
     client_version = CLIENT_VERSION[api_version]
