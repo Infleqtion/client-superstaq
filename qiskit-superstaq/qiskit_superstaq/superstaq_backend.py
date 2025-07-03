@@ -17,17 +17,17 @@ from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
+import numpy as np
 import qiskit
 
 import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
-    import numpy as np
     import numpy.typing as npt
     from _typeshed import SupportsItems
 
 
-class SuperstaqBackend(qiskit.providers.BackendV2):
+class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
     """This class represents a Superstaq backend."""
 
     def __init__(self, provider: qss.SuperstaqProvider, target: str) -> None:
@@ -63,6 +63,11 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         return self.target_info().get("max_circuits")
 
     @property
+    def num_qubits(self) -> int:
+        target_info = self.target_info()
+        return target_info.get("num_qubits", 0)
+
+    @property
     def coupling_map(self) -> qiskit.transpiler.CouplingMap | None:
         """A coupling map generated from the two-qubit gates supported by this backend."""
         target_info = self.target_info()
@@ -83,12 +88,6 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
     def target(self) -> qiskit.transpiler.Target:
         """A `qiskit.transpiler.Target` object for this backend."""
         target_info = self.target_info()
-        timing_info = {
-            "acquire_alignment": target_info.get("acquire_alignment"),
-            "granularity": target_info.get("granularity"),
-            "min_length": target_info.get("min_length"),
-            "pulse_alignment": target_info.get("pulse_alignment"),
-        }
 
         gate_durations = []
         if duration_info := target_info.get("gate_durations"):
@@ -99,6 +98,25 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         if native_gate_set := target_info.get("native_gate_set"):
             basis_gateset += list(native_gate_set)
 
+        custom_name_mapping = {
+            "acecr": qss.AceCR,
+            "dd": qss.DDGate,
+            "gr": qiskit.circuit.library.GR,
+            "iccx_o0": qss.AQTiCCXGate,
+            "GPI": qiskit.circuit.library.RGate(
+                np.pi, 2 * np.pi * qiskit.circuit.Parameter("phi"), label="GPI"
+            ),
+            "GPI2": qiskit.circuit.library.RGate(
+                np.pi / 2, 2 * np.pi * qiskit.circuit.Parameter("phi"), label="GPI2"
+            ),
+            "prx": qiskit.circuit.library.RGate,
+            "cc_prx": qiskit.circuit.library.RGate,  # Classically controlled 'prx' gate
+            "MS": qiskit.circuit.library.MSGate,
+            "ZZ": qiskit.circuit.library.RZZGate,
+            "measure_ff": qiskit.circuit.Measure(
+                label="measure_ff"
+            ),  # Measurement with classical feed-forward
+        }
         backend_target = qiskit.transpiler.Target.from_configuration(
             num_qubits=target_info.get("num_qubits"),
             basis_gates=basis_gateset,
@@ -109,9 +127,13 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
                 gate_durations
             ),
             timing_constraints=qiskit.transpiler.timing_constraints.TimingConstraints(
-                **timing_info
+                acquire_alignment=target_info.get("acquire_alignment", 1),
+                granularity=target_info.get("granularity", 1),
+                min_length=target_info.get("min_length", 1),
+                pulse_alignment=target_info.get("pulse_alignment", 1),
             ),
             dt=target_info.get("dt"),
+            custom_name_mapping=custom_name_mapping,
         )
         backend_target.description = self.description
         return backend_target

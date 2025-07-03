@@ -11,6 +11,7 @@ For a demonstration of how to implement a new experiment take a look at the foll
 
     qcvv_css
 
+
 Alternatively for pre-build experiments that can be used out of the box see
 
 .. toctree::
@@ -18,6 +19,7 @@ Alternatively for pre-build experiments that can be used out of the box see
 
     qcvv_irb_css
     qcvv_ssb_css
+    qcvv_su2_css
     qcvv_xeb_css
 
 .. note::
