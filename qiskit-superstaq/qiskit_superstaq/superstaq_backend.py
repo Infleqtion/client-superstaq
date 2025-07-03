@@ -18,13 +18,13 @@ from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
+import numpy as np
 import qiskit
 from general_superstaq.superstaq_client import _SuperstaqClient
 
 import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
-    import numpy as np
     import numpy.typing as npt
     from _typeshed import SupportsItems
 
@@ -105,11 +105,19 @@ class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
             "dd": qss.DDGate,
             "gr": qiskit.circuit.library.GR,
             "iccx_o0": qss.AQTiCCXGate,
-            "GPI": qiskit.circuit.library.UGate,
-            "GPI2": qiskit.circuit.library.UGate,
-            "prx": qiskit.circuit.library.UGate,
+            "GPI": qiskit.circuit.library.RGate(
+                np.pi, 2 * np.pi * qiskit.circuit.Parameter("phi"), label="GPI"
+            ),
+            "GPI2": qiskit.circuit.library.RGate(
+                np.pi / 2, 2 * np.pi * qiskit.circuit.Parameter("phi"), label="GPI2"
+            ),
+            "prx": qiskit.circuit.library.RGate,
+            "cc_prx": qiskit.circuit.library.RGate,  # Classically controlled 'prx' gate
             "MS": qiskit.circuit.library.MSGate,
             "ZZ": qiskit.circuit.library.RZZGate,
+            "measure_ff": qiskit.circuit.Measure(
+                label="measure_ff"
+            ),  # Measurement with classical feed-forward
         }
         backend_target = qiskit.transpiler.Target.from_configuration(
             num_qubits=target_info.get("num_qubits"),

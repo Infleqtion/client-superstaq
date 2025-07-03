@@ -35,9 +35,10 @@ from tqdm.auto import tqdm
 import supermarq
 
 if TYPE_CHECKING:
+    from typing import Self
+
     import matplotlib.pyplot as plt
     from _typeshed import SupportsItems
-    from typing_extensions import Self
 
 
 def qcvv_resolver(cirq_type: str) -> type[Any] | None:
