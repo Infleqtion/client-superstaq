@@ -523,9 +523,11 @@ def test_superstaq_client_create_job_invalid_json(
     response._content = b"invalid/json"
     mock_post.return_value = response
 
-    with mock.patch("requests.Session.post", return_value=response):
-        with pytest.raises(gss.SuperstaqServerException, match="invalid/json"):
-            _ = client.create_job({"qiskit_circuits": "World"}, target="ss_example_qpu")
+    with (
+        mock.patch("requests.Session.post", return_value=response),
+        pytest.raises(gss.SuperstaqServerException, match="invalid/json"),
+    ):
+        _ = client.create_job({"qiskit_circuits": "World"}, target="ss_example_qpu")
 
 
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
@@ -542,9 +544,11 @@ def test_superstaq_client_create_job_dont_retry_on_timeout(
     response._content = b"invalid/json"
     mock_post.return_value = response
 
-    with mock.patch("requests.Session.post", return_value=response):
-        with pytest.raises(gss.SuperstaqServerException, match="timed out"):
-            _ = client.create_job({"cirq_circuits": "World"}, target="ss_example_qpu")
+    with (
+        mock.patch("requests.Session.post", return_value=response),
+        pytest.raises(gss.SuperstaqServerException, match="timed out"),
+    ):
+        _ = client.create_job({"cirq_circuits": "World"}, target="ss_example_qpu")
 
 
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
@@ -1366,7 +1370,10 @@ def test_superstaq_client_compile_v3(
     mock_get.return_value.json.return_value = job_data
 
     compilation_results = client_v3.compile(
-        {f"{circuit_type}_circuits": "Hello", "target": "ss_example_qpu"}
+        {
+            f"{circuit_type}_circuits": "Hello",
+            "target": "ss_example_qpu",
+        }
     )
 
     mock_post.assert_called_with(
@@ -1441,7 +1448,10 @@ def test_superstaq_client_compile_v3_with_wait(
 
     with mock.patch("time.sleep", return_value=None):
         compilation_results = client_v3.compile(
-            {"cirq_circuits": "Hello", "target": "ss_example_qpu"}
+            {
+                "cirq_circuits": "Hello",
+                "target": "ss_example_qpu",
+            }
         )
 
     mock_post.assert_called_with(
@@ -1925,30 +1935,36 @@ def test_read_ibm_credentials() -> None:
             )
 
         # fail because multiple accounts found with none marked as default
-        with pytest.raises(
-            ValueError, match="Multiple accounts found but none are marked as default."
-        ):
-            with mock.patch(
+        with (
+            pytest.raises(
+                ValueError, match="Multiple accounts found but none are marked as default."
+            ),
+            mock.patch(
                 "builtins.open", mock.mock_open(read_data=json.dumps(multiple_none_default_account))
-            ):
-                gss.superstaq_client.read_ibm_credentials(None)
+            ),
+        ):
+            gss.superstaq_client.read_ibm_credentials(None)
 
         # fail because provided name is not an account in the config
-        with pytest.raises(KeyError, match="No account credentials saved under the name 'bad_key'"):
-            with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(credentials))):
-                gss.superstaq_client.read_ibm_credentials("bad_key")
+        with (
+            pytest.raises(KeyError, match="No account credentials saved under the name 'bad_key'"),
+            mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(credentials))),
+        ):
+            gss.superstaq_client.read_ibm_credentials("bad_key")
 
         # fail with missing token field in config
-        with pytest.raises(
-            KeyError, match="`token` and/or `channel` keys missing from credentials"
+        with (
+            pytest.raises(KeyError, match="`token` and/or `channel` keys missing from credentials"),
+            mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(bad_credentials))),
         ):
-            with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(bad_credentials))):
-                gss.superstaq_client.read_ibm_credentials(None)
+            gss.superstaq_client.read_ibm_credentials(None)
     #
     # fail to find credentials file
-    with pytest.raises(FileNotFoundError, match="The `qiskit-ibm.json` file was not found in"):
-        with mock.patch("pathlib.Path.is_file", return_value=False):
-            gss.superstaq_client.read_ibm_credentials(None)
+    with (
+        pytest.raises(FileNotFoundError, match="The `qiskit-ibm.json` file was not found in"),
+        mock.patch("pathlib.Path.is_file", return_value=False),
+    ):
+        gss.superstaq_client.read_ibm_credentials(None)
 
 
 def test_find_api_key() -> None:
@@ -1957,16 +1973,20 @@ def test_find_api_key() -> None:
         assert gss.superstaq_client.find_api_key() == "tomyheart"
 
     # find key in a config file
-    with mock.patch.dict(os.environ, SUPERSTAQ_API_KEY=""):
-        with mock.patch("pathlib.Path.is_file", return_value=True):
-            with mock.patch("builtins.open", mock.mock_open(read_data="tomyheart")):
-                assert gss.superstaq_client.find_api_key() == "tomyheart"
+    with (
+        mock.patch.dict(os.environ, SUPERSTAQ_API_KEY=""),
+        mock.patch("pathlib.Path.is_file", return_value=True),
+        mock.patch("builtins.open", mock.mock_open(read_data="tomyheart")),
+    ):
+        assert gss.superstaq_client.find_api_key() == "tomyheart"
 
     # fail to find an API key :(
-    with pytest.raises(EnvironmentError, match="Superstaq API key not specified and not found."):
-        with mock.patch.dict(os.environ, SUPERSTAQ_API_KEY=""):
-            with mock.patch("pathlib.Path.is_file", return_value=False):
-                gss.superstaq_client.find_api_key()
+    with (
+        pytest.raises(EnvironmentError, match="Superstaq API key not specified and not found."),
+        mock.patch.dict(os.environ, SUPERSTAQ_API_KEY=""),
+        mock.patch("pathlib.Path.is_file", return_value=False),
+    ):
+        gss.superstaq_client.find_api_key()
 
 
 @pytest.mark.parametrize(

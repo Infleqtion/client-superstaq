@@ -434,7 +434,11 @@ def test_index_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
 
     job = qss.SuperstaqJob(backend=backend, job_id="123abc,456xyz,789cba")
     with patched_requests(
-        {"123abc": response, "456xyz": response, "789cba": response}
+        {
+            "123abc": response,
+            "456xyz": response,
+            "789cba": response,
+        }
     ) as mocked_get_job:
         assert job.compiled_circuits() == qc_list
         assert job.compiled_circuits(index=2) == single_qc

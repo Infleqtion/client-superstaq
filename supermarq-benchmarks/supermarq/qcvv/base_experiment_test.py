@@ -951,22 +951,24 @@ def test_map_records_to_samples_missing_key(
     abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
 ) -> None:
     abc_experiment.samples = sample_circuits
-    with pytest.warns(
-        UserWarning, match=re.escape("Unable to find matching sample for 1 record(s).")
-    ):
-        with pytest.warns(
+    with (
+        pytest.warns(
+            UserWarning, match=re.escape("Unable to find matching sample for 1 record(s).")
+        ),
+        pytest.warns(
             UserWarning,
             match=(
                 f"The following samples are missing records: {sample_circuits[0].uuid}. "
                 "These will not be included in the results."
             ),
-        ):
-            abc_experiment._map_records_to_samples(
-                {
-                    5: {0: 0.1, 1: 0.6, 3: 0.3},
-                    sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
-                }
-            )
+        ),
+    ):
+        abc_experiment._map_records_to_samples(
+            {
+                5: {0: 0.1, 1: 0.6, 3: 0.3},
+                sample_circuits[1].uuid: {0: 4, 1: 6, 3: 2},
+            }
+        )
 
 
 def test_map_records_to_samples_bad_key_type(

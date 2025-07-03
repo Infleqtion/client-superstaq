@@ -844,7 +844,11 @@ def test_cb(
             }
         },
         "instance_information": cirq.to_json(
-            {"target": "ss_unconstrained_simulator", "depths": [1, 2, 3], "n_channels": 2}
+            {
+                "target": "ss_unconstrained_simulator",
+                "depths": [1, 2, 3],
+                "n_channels": 2,
+            }
         ),
         "process_fidelity_data": {
             "averages": {

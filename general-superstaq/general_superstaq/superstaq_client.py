@@ -109,7 +109,7 @@ class _BaseSuperstaqClient(ABC):
         self.max_retry_seconds = max_retry_seconds
         self.verbose = verbose
         url = urllib.parse.urlparse(self.remote_host)
-        assert url.scheme and url.netloc, (  # noqa: PT018
+        assert url.scheme and url.netloc, (
             f"Specified remote_host {self.remote_host} is not a valid url, for example "
             "http://example.com"
         )
@@ -789,7 +789,10 @@ class _BaseSuperstaqClient(ABC):
                 json_content = None
 
             if isinstance(json_content, dict) and set(json_content.keys()).intersection(
-                {"message", "details"}
+                {
+                    "message",
+                    "details",
+                }
             ):
                 alternative: str = json_content.get("details", "")
                 message: str = json_content.get("message", alternative)
