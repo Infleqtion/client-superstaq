@@ -262,7 +262,7 @@ def test_results_getitem(
     mock_job = MagicMock(spec=css.Job)
     mock_job.status.return_value = "Queued"
     results = ExampleResults(target="target", experiment=abc_experiment, job=mock_job)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="No results to split."):
         _ = results[q0]
 
 

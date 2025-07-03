@@ -757,7 +757,9 @@ def test_parallel_gates_operation() -> None:
     with pytest.raises(ValueError, match="tagged operations not permitted"):
         _ = css.parallel_gates_operation(cirq.X(q0).with_tags("foo"))
 
-    with pytest.raises(ValueError):  # Overlapping qubits should be caught by cirq
+    with pytest.raises(
+        ValueError, match="Duplicate qids for"
+    ):  # Overlapping qubits should be caught by `cirq`
         _ = css.parallel_gates_operation(cirq.CX(q2, q0), cirq.Y(q2))
 
 

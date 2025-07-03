@@ -493,7 +493,7 @@ def test_service_qscout_compile_multiple(mock_qscout_compile: mock.MagicMock) ->
 
 
 @mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
-@pytest.mark.parametrize("mirror_swaps", (True, False))
+@pytest.mark.parametrize("mirror_swaps", [True, False])
 def test_qscout_compile_swap_mirror(
     mock_qscout_compile: mock.MagicMock, mirror_swaps: bool
 ) -> None:
@@ -555,7 +555,7 @@ def test_qscout_compile_error_rates(mock_qscout_compile: mock.MagicMock) -> None
 
 
 @mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
-@pytest.mark.parametrize("base_entangling_gate", ("xx", "zz"))
+@pytest.mark.parametrize("base_entangling_gate", ["xx", "zz"])
 def test_qscout_compile_base_entangling_gate(
     mock_qscout_compile: mock.MagicMock, base_entangling_gate: str
 ) -> None:

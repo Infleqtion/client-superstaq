@@ -109,9 +109,13 @@ class _BaseSuperstaqClient(ABC):
         self.max_retry_seconds = max_retry_seconds
         self.verbose = verbose
         url = urllib.parse.urlparse(self.remote_host)
-        assert url.scheme and url.netloc, (
-            f"Specified remote_host {self.remote_host} is not a valid url, for example "
-            "http://example.com"
+        assert url.scheme, (
+            f"Specified URL protocol/scheme in `remote_host` ({self.remote_host}) is not valid. Use"
+            " for example: 'http', 'https'."
+        )
+        assert url.netloc, (
+            f"Specified network location in `remote_host` ({self.remote_host}) is not a valid URL, "
+            "for example http://example.com"
         )
 
         assert self.api_version in self.SUPPORTED_VERSIONS, (

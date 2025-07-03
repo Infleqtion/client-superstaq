@@ -370,7 +370,7 @@ def test_invalid_target_qscout_compile(fake_superstaq_provider: MockSuperstaqPro
 
 
 @patch("requests.Session.post")
-@pytest.mark.parametrize("mirror_swaps", (True, False))
+@pytest.mark.parametrize("mirror_swaps", [True, False])
 def test_qscout_compile_swap_mirror(
     mock_post: MagicMock, mirror_swaps: bool, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
@@ -400,7 +400,7 @@ def test_qscout_compile_swap_mirror(
 
 
 @patch("requests.Session.post")
-@pytest.mark.parametrize("base_entangling_gate", ("xx", "zz"))
+@pytest.mark.parametrize("base_entangling_gate", ["xx", "zz"])
 def test_qscout_compile_change_entangler(
     mock_post: MagicMock, base_entangling_gate: str, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
