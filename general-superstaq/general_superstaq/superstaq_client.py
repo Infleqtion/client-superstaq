@@ -92,9 +92,10 @@ class _BaseSuperstaqClient(ABC):
                 (which is the most recent version when this client was downloaded).
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
-            cq_token: Token from CQ cloud. This is required to submit circuits to CQ hardware.
-            ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
-                to IBM hardware, or to access non-public IBM devices you may have access to.
+            cq_token: Token from CQ cloud. This may be required to submit circuits to CQ hardware.
+            ibmq_token: An optional IBM Quantum or IBM Cloud token. This may be required to submit
+                circuits to IBM hardware, or to access non-public IBM devices you may have access
+                to.
             ibmq_instance: An optional instance to use when running IBM jobs.
             ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
             use_stored_ibmq_credentials: Whether to retrieve IBM credentials from locally saved
@@ -110,12 +111,12 @@ class _BaseSuperstaqClient(ABC):
         self.verbose = verbose
         url = urllib.parse.urlparse(self.remote_host)
         assert url.scheme, (
-            f"Specified URL protocol/scheme in `remote_host` ({self.remote_host}) is not valid. Use"
-            " for example: 'http', 'https'."
+            f"Specified URL protocol/scheme in `remote_host` ({self.remote_host}) is not valid. "
+            "Use, for example, 'http', 'https'."
         )
         assert url.netloc, (
-            f"Specified network location in `remote_host` ({self.remote_host}) is not a valid URL, "
-            "for example http://example.com"
+            f"Specified network location in `remote_host` ({self.remote_host}) is not a valid URL "
+            "like, for example, http://example.com"
         )
 
         assert self.api_version in self.SUPPORTED_VERSIONS, (
@@ -793,10 +794,7 @@ class _BaseSuperstaqClient(ABC):
                 json_content = None
 
             if isinstance(json_content, dict) and set(json_content.keys()).intersection(
-                {
-                    "message",
-                    "details",
-                }
+                {"message", "details"}
             ):
                 alternative: str = json_content.get("details", "")
                 message: str = json_content.get("message", alternative)

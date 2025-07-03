@@ -144,7 +144,7 @@ def test_warning_from_server(client_name: str, request: pytest.FixtureRequest) -
 
 
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
-@pytest.mark.parametrize("invalid_url", ["http://", "ftp://", "http:/:42"])
+@pytest.mark.parametrize("invalid_url", ["http://", "ftp:s//foo", "http:/:42"])
 def test_superstaq_client_invalid_remote_host_netloc(api_version: str, invalid_url: str) -> None:
     client_version = CLIENT_VERSION[api_version]
     with pytest.raises(AssertionError, match="Specified network location"):
@@ -1378,10 +1378,7 @@ def test_superstaq_client_compile_v3(
     mock_get.return_value.json.return_value = job_data
 
     compilation_results = client_v3.compile(
-        {
-            f"{circuit_type}_circuits": "Hello",
-            "target": "ss_example_qpu",
-        }
+        {f"{circuit_type}_circuits": "Hello", "target": "ss_example_qpu"}
     )
 
     mock_post.assert_called_with(
@@ -1456,10 +1453,7 @@ def test_superstaq_client_compile_v3_with_wait(
 
     with mock.patch("time.sleep", return_value=None):
         compilation_results = client_v3.compile(
-            {
-                "cirq_circuits": "Hello",
-                "target": "ss_example_qpu",
-            }
+            {"cirq_circuits": "Hello", "target": "ss_example_qpu"}
         )
 
     mock_post.assert_called_with(
