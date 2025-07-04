@@ -1270,6 +1270,7 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         repetitions: int = 1,
         target: str = "ss_unconstrained_simulator",
         method: str | None = None,
+        verbatim: bool = False,
         **kwargs: Any,
     ) -> dict[str, Any]:
         """Version 0.3.0 implementation."""
@@ -1308,6 +1309,7 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
             sim_method=sim_method,
             shots=repetitions,
             options_dict={**self.client_kwargs, **kwargs},
+            verbatim=verbatim,
         )
         response = _models.NewJobResponse(
             **self.post_request("/client/job", new_job.model_dump(), **credentials)
@@ -1451,12 +1453,14 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         circuits, circuit_type = self._extract_circuits(json_dict)
 
         # Define job
+        options_dict = json.loads(json_dict.get("options", "{}"))
         new_job = _models.NewJob(
             job_type=_models.JobType.COMPILE,
             target=json_dict["target"],
             circuits=circuits,
             circuit_type=circuit_type,
-            options_dict=json.loads(json_dict.get("options", "{}")),
+            options_dict=options_dict,
+            verbatim=options_dict.get("verbatim")
         )
         # Submit job and store ID
         response = _models.NewJobResponse(**self.post_request("/client/job", new_job.model_dump()))
