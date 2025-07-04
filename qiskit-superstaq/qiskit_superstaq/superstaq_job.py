@@ -406,7 +406,7 @@ class SuperstaqJob(qiskit.providers.JobV1):  # noqa: PLW1641
 class SuperstaqJobV3(qiskit.providers.JobV1):
     """This class represents a Superstaq job instance."""
 
-    def __init__(self, backend: qss.SuperstaqBackend, job_id: uuid.UUID) -> None:
+    def __init__(self, backend: qss.SuperstaqBackend, job_id: uuid.UUID | str) -> None:
         """Initialize a job instance for v0.3.0 API.
 
         Args:
@@ -414,7 +414,7 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
             job_id: The unique job ID string from Superstaq.
         """
         super().__init__(backend, str(job_id))
-        self._job_id = job_id
+        self._job_id = job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(job_id)
         self._overall_status = _models.CircuitStatus.RECEIVED
         self._job_info: _models.JobData
 

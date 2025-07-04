@@ -19,7 +19,7 @@ import uuid
 import warnings
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, cast, overload
+from typing import TYPE_CHECKING, Any, overload
 
 import cirq
 import general_superstaq as gss
@@ -394,12 +394,10 @@ class Service(gss.service.Service):
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         if isinstance(self._client, _SuperstaqClient):
-            job_id = cast("str", job_id)
-            return css.Job(client=self._client, job_id=job_id)
+            return css.Job(client=self._client, job_id=str(job_id))
         else:
-            # mypy doesn't narrow hence the ignore
-            job_id = cast("uuid.UUID", job_id)
-            return css.JobV3(client=self._client, job_id=job_id)  # type: ignore[arg-type]
+            assert isinstance(self._client, _SuperstaqClientV3)
+            return css.JobV3(client=self._client, job_id=job_id)
 
     def resource_estimate(
         self, circuits: cirq.Circuit | Sequence[cirq.Circuit], target: str | None = None

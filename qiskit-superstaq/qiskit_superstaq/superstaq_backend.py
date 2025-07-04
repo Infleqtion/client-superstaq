@@ -15,16 +15,16 @@ import numbers
 import uuid
 import warnings
 from collections.abc import Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
+import numpy as np
 import qiskit
 from general_superstaq.superstaq_client import _SuperstaqClient
 
 import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
-    import numpy as np
     import numpy.typing as npt
     from _typeshed import SupportsItems
 
@@ -105,11 +105,19 @@ class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
             "dd": qss.DDGate,
             "gr": qiskit.circuit.library.GR,
             "iccx_o0": qss.AQTiCCXGate,
-            "GPI": qiskit.circuit.library.UGate,
-            "GPI2": qiskit.circuit.library.UGate,
-            "prx": qiskit.circuit.library.UGate,
+            "GPI": qiskit.circuit.library.RGate(
+                np.pi, 2 * np.pi * qiskit.circuit.Parameter("phi"), label="GPI"
+            ),
+            "GPI2": qiskit.circuit.library.RGate(
+                np.pi / 2, 2 * np.pi * qiskit.circuit.Parameter("phi"), label="GPI2"
+            ),
+            "prx": qiskit.circuit.library.RGate,
+            "cc_prx": qiskit.circuit.library.RGate,  # Classically controlled 'prx' gate
             "MS": qiskit.circuit.library.MSGate,
             "ZZ": qiskit.circuit.library.RZZGate,
+            "measure_ff": qiskit.circuit.Measure(
+                label="measure_ff"
+            ),  # Measurement with classical feed-forward
         }
         backend_target = qiskit.transpiler.Target.from_configuration(
             num_qubits=target_info.get("num_qubits"),
@@ -179,7 +187,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
             job_id = ",".join(result["job_ids"])
             return qss.SuperstaqJob(self, job_id)
         else:
-            job_id_v3 = cast("uuid.UUID", result["job_id"])
+            job_id_v3 = result["job_id"]
             return qss.SuperstaqJobV3(self, job_id_v3)
 
     def retrieve_job(self, job_id: str | uuid.UUID) -> qss.SuperstaqJob | qss.SuperstaqJobV3:
@@ -203,10 +211,8 @@ class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
             stacklevel=2,
         )
         if isinstance(self._provider._client, _SuperstaqClient):
-            job_id = cast("str", job_id)
-            return qss.SuperstaqJob(self, job_id)
+            return qss.SuperstaqJob(self, str(job_id))
         else:
-            job_id = cast("uuid.UUID", job_id)
             return qss.SuperstaqJobV3(self, job_id)
 
     def compile(

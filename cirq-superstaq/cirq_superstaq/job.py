@@ -518,7 +518,11 @@ class JobV3:
         _models.CircuitStatus.DELETED,
     )
 
-    def __init__(self, client: gss.superstaq_client._SuperstaqClientV3, job_id: uuid.UUID) -> None:
+    def __init__(
+        self,
+        client: gss.superstaq_client._SuperstaqClientV3,
+        job_id: uuid.UUID | str,
+    ) -> None:
         """Constructs a `Job`.
 
         Users should not call this themselves. If you only know the `job_id`, use `fetch_jobs`
@@ -533,7 +537,7 @@ class JobV3:
             raise ValueError("JobV3 job can only be used with v0.3.0 of the Superstaq API.")
         self._overall_status = _models.CircuitStatus.RECEIVED
         self._job_data: _models.JobData
-        self._job_id = job_id
+        self._job_id = job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(job_id)
 
     def _refresh_job(self) -> None:
         """If the last fetched job is not terminal, gets the job from the API."""
