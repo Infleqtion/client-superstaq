@@ -111,7 +111,7 @@ __all__ = [
     "parallel_gates_operation",
     "qubit_subspace_op",
     "qudit_swap_op",
-    "serialize_circuits",
     "resource_counters",
+    "serialize_circuits",
     "validation",
 ]

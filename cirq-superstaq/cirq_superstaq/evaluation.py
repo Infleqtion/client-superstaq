@@ -16,11 +16,12 @@ from __future__ import annotations
 from collections.abc import Iterable, Sequence
 
 import cirq
-import cirq_superstaq as css
 import general_superstaq as gss
 import networkx as nx
 import numpy as np
 import numpy.typing as npt
+
+import cirq_superstaq as css
 
 
 def paramval_to_float(param: cirq.TParamVal) -> float:

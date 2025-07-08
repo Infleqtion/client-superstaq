@@ -16,11 +16,12 @@ from __future__ import annotations
 import math
 
 import cirq
-import cirq_superstaq as css
 import general_superstaq as gss
 import numpy as np
 import pytest
 import sympy
+
+import cirq_superstaq as css
 
 
 def test_paramval_to_float() -> None:

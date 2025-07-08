@@ -14,8 +14,9 @@
 from __future__ import annotations
 
 import cirq
-import cirq_superstaq as css
 import numpy as np
+
+import cirq_superstaq as css
 
 
 def test_resource_counters() -> None:
