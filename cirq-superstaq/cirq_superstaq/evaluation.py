@@ -35,7 +35,7 @@ def paramval_to_float(param: cirq.TParamVal) -> float:
 
     Raises:
         gss.SuperstaqException: If input parameter is not a type
-                                capable of being converted to float.
+            capable of being converted to float.
     """
     try:
         return float(param)
