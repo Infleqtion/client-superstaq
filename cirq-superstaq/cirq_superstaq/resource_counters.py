@@ -29,13 +29,13 @@ def num_category_ops(
     """Computes the number of operations in a circuit that belong to a category.
 
     Args:
-        category_classifier: A Callable that returns true if the given operation has
-                            certain features.
+        category_classifier: A `Callable` that returns true if the given operation has
+            certain features.
         circuit: A Cirq circuit.
 
     Returns:
         A number representing how many operations in the given circuit
-        match the category classifier's conditions
+        match the category classifier's conditions.
     """
     return sum(category_classifier(op) for op in circuit.all_operations())
 
