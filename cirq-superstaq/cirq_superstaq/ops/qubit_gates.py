@@ -976,6 +976,9 @@ class StrippedCZGate(cirq.Gate):
             cirq.resolve_parameters(self.rz_rads, resolver, recursive),
         )
 
+    def _phase_by_(self, phase_turns: cirq.TParamVal, qubit_index: int) -> StrippedCZGate:
+        return self
+
     def _is_parameterized_(self) -> bool:
         return cirq.is_parameterized(self.rz_rads)
 

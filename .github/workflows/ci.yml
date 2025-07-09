@@ -159,10 +159,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.12
+      - name: Set up Python 3.13
         uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: 3.13
       - uses: actions/cache@v4
         with:
           path: ${{ env.pythonLocation }}
@@ -226,6 +226,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install ${{ matrix.dependencies }}
       - name: Check notebooks
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
         run: |
           checks/pytest_.py --notebook ${{ matrix.pattern }} -v
 
