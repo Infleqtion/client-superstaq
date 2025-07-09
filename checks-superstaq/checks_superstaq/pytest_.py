@@ -9,6 +9,8 @@ from collections.abc import Callable, Iterable
 
 from checks_superstaq import check_utils
 
+NBMAKE_TIMEOUT = 300  # 5 minutes
+
 
 @check_utils.enable_exit_on_failure
 def run(
@@ -74,7 +76,11 @@ def run(
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     if parsed_args.notebook:
-        args_to_pass += ["--nbmake", "--force-enable-socket"]
+        args_to_pass += [
+            "--nbmake",
+            "--force-enable-socket",
+            f"--nbmake-timeout={NBMAKE_TIMEOUT}",
+        ]
     elif (parsed_args.integration) or (
         "--integration" not in args
         and any(re.match(r".*_integration_test\.py$", arg) for arg in args)
