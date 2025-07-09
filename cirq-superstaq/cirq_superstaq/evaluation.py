@@ -59,13 +59,15 @@ def is_known_diagonal(gate: cirq.Gate | None, rtol: float = 1e-5, atol: float = 
     """
     if isinstance(
         gate,
-        cirq.IdentityGate
-        | cirq.DiagonalGate
-        | cirq.ZPowGate
-        | cirq.CZPowGate
-        | cirq.CCZPowGate
-        | cirq.ZZPowGate
-        | css.StrippedCZGate,
+        (
+            cirq.IdentityGate,
+            cirq.DiagonalGate,
+            cirq.ZPowGate,
+            cirq.CZPowGate,
+            cirq.CCZPowGate,
+            cirq.ZZPowGate,
+            css.StrippedCZGate,
+        ),
     ):
         return True
 
@@ -93,14 +95,16 @@ def is_clifford(circuit: cirq.Circuit) -> bool:
             not cirq.has_stabilizer_effect(op)
             and not isinstance(
                 op.gate,
-                cirq.DepolarizingChannel
-                | cirq.AsymmetricDepolarizingChannel
-                | cirq.BitFlipChannel
-                | cirq.PhaseFlipChannel
-                | cirq.PhaseDampingChannel
-                | cirq.ResetChannel
-                | cirq.MeasurementGate
-                | cirq.PauliMeasurementGate,
+                (
+                    cirq.DepolarizingChannel,
+                    cirq.AsymmetricDepolarizingChannel,
+                    cirq.BitFlipChannel,
+                    cirq.PhaseFlipChannel,
+                    cirq.PhaseDampingChannel,
+                    cirq.ResetChannel,
+                    cirq.MeasurementGate,
+                    cirq.PauliMeasurementGate,
+                ),
             )
             and not (
                 isinstance(op.gate, cirq.RandomGateChannel)
@@ -133,7 +137,7 @@ def expressible_with_single_qubit_gates(op: cirq.Operation) -> bool:
     Returns:
         Whether or not `op` is a single-qubit gate, or can be deconstructed into single-qubit gates.
     """
-    if isinstance(op.gate, cirq.IdentityGate | cirq.ParallelGate | cirq.MeasurementGate):
+    if isinstance(op.gate, (cirq.IdentityGate, cirq.ParallelGate, cirq.MeasurementGate)):
         return True
     if isinstance(op.gate, css.ParallelGates):
         return all(expressible_with_single_qubit_gates(o) for o in cirq.decompose_once(op))

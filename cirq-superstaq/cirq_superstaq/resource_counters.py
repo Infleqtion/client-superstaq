@@ -95,7 +95,7 @@ def _is_global_op(op: cirq.Operation, circuit: cirq.Circuit) -> bool:
         A boolean representing whether the operation is applied to all qubits.
     """
     return isinstance(
-        op.gate, cirq.ParallelGate | cirq.InterchangeableQubitsGate
+        op.gate, (cirq.ParallelGate, cirq.InterchangeableQubitsGate)
     ) and cirq.num_qubits(op) == cirq.num_qubits(circuit)
 
 
