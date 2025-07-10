@@ -867,6 +867,39 @@ def test_status_with_index(
         assert mock_sleep.call_count == 0
 
 
+def test_multijob_overall_status(multi_circuit_job: css.Job) -> None:
+    running_job = {
+        "status": "Running",
+    }
+    queued_job = {
+        "status": "Queued",
+    }
+
+    job_info = {"job_id1": running_job}
+    job_info |= {f"job_id{i}": queued_job for i in range(2, 5)}
+    multi_circuit_job._job = job_info
+
+    # Test that overall status is running since 1/4 of the job is not queued
+    with patched_requests(job_info):
+        assert multi_circuit_job.status() == "Running"
+
+
+@mock.patch("requests.Session.get")
+def test_multijobv3_overall_status(
+    mock_get: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
+) -> None:
+    job_result = modifiy_job_result(
+        job_dictV3,
+        num_circuits=4,
+        statuses=["running", "pending", "pending", "completed"],
+    )
+    mock_get.return_value.json.return_value = {str(uuid.UUID(int=42)): job_result}
+
+    # Test "running" status dominates as the overall status
+    assert jobV3.status() == "running"
+    assert jobV3.status(index=3) == "completed"
+
+
 def test_job_getitem(multi_circuit_job: css.Job) -> None:
     job_1 = multi_circuit_job[0]
     assert isinstance(job_1, css.Job)
