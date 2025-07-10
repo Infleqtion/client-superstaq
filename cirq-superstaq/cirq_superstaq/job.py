@@ -575,7 +575,7 @@ class JobV3:
         Raises:
             gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
-        status = self.status()
+        status = self.status(index)
         if status == _models.CircuitStatus.FAILED:
             message = "Failure: "
             circuit_messages = []
