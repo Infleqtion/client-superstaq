@@ -87,7 +87,7 @@ def is_clifford(circuit: cirq.Circuit) -> bool:
         circuit: Circuit to be checked.
 
     Returns:
-        A boolean value representing whether circuit contains only Clifford gates.
+        A boolean value representing whether `circuit` contains only Clifford gates.
     """
     for op in circuit.all_operations():
         op = op.without_classical_controls()
