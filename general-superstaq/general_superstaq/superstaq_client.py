@@ -97,9 +97,10 @@ class _BaseSuperstaqClient(ABC):
                 circuits to IBM hardware, or to access non-public IBM devices you may have access
                 to.
             ibmq_instance: An optional instance to use when running IBM jobs.
-            ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
-            use_stored_ibmq_credentials: Whether to retrieve IBM credentials from locally saved
-                accounts.
+            ibmq_channel: Optional type of IBM account. Must be either "ibm_quantum_platform" or
+                "ibm_cloud".
+            use_stored_ibmq_credentials: Boolean flag on whether to retrieve IBM credentials from
+                locally saved accounts or not. Defaults to `False`.
             ibmq_name: The name of the account to retrieve. The default is `default-ibm-quantum`.
             kwargs: Other optimization and execution parameters.
         """
@@ -143,8 +144,8 @@ class _BaseSuperstaqClient(ABC):
             ibmq_instance = config.get("instance")
             ibmq_channel = config.get("channel")
 
-        if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
-            raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
+        if ibmq_channel:
+            gss.validation._validate_ibm_channel(ibmq_channel)
 
         if ibmq_token:
             kwargs["ibmq_token"] = ibmq_token
