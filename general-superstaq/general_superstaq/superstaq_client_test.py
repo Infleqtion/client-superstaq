@@ -103,24 +103,33 @@ def test_superstaq_client_args(api_version: str) -> None:
         api_key="to_my_heart",
         api_version=api_version,
         cq_token="cq_token",
-        ibmq_channel="ibm_quantum",
+        ibmq_channel="ibm_cloud",
         ibmq_instance="instance",
-        ibmq_token="ibmq_token",
+        ibmq_token="ibm_cloud_token",
     )
     assert client.client_kwargs == {
         "cq_token": "cq_token",
-        "ibmq_channel": "ibm_quantum",
+        "ibmq_channel": "ibm_cloud",
         "ibmq_instance": "instance",
-        "ibmq_token": "ibmq_token",
+        "ibmq_token": "ibm_cloud_token",
     }
 
-    with pytest.raises(ValueError, match="must be either 'ibm_cloud' or 'ibm_quantum'"):
+    with pytest.raises(ValueError, match="must be either 'ibm_cloud' or 'ibm_quantum_platform'"):
         _ = client_version(
             client_name="general-superstaq",
             remote_host="http://example.com",
             api_key="to_my_heart",
             api_version=api_version,
             ibmq_channel="foo",
+        )
+
+    with pytest.raises(ValueError, match="Instead, use 'ibm_quantum_platform'"):
+        _ = client_version(
+            client_name="general-superstaq",
+            remote_host="http://example.com",
+            api_key="to_my_heart",
+            api_version=api_version,
+            ibmq_channel="ibm_quantum",
         )
 
 
@@ -318,7 +327,7 @@ def test_superstaq_client_validate_email_error(
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
 def test_superstaq_client_use_stored_ibmq_credential(api_version: str) -> None:
     client_version = CLIENT_VERSION[api_version]
-    credentials = {"token": "ibmq_token", "instance": "instance", "channel": "ibm_quantum"}
+    credentials = {"token": "ibmq_token", "instance": "instance", "channel": "ibm_quantum_platform"}
     with mock.patch(
         "general_superstaq.superstaq_client.read_ibm_credentials", return_value=credentials
     ):
@@ -332,7 +341,7 @@ def test_superstaq_client_use_stored_ibmq_credential(api_version: str) -> None:
         )
         assert client.client_kwargs == {
             "cq_token": "cq_token",
-            "ibmq_channel": "ibm_quantum",
+            "ibmq_channel": "ibm_quantum_platform",
             "ibmq_instance": "instance",
             "ibmq_token": "ibmq_token",
         }
@@ -1894,7 +1903,7 @@ def test_read_ibm_credentials() -> None:
         "default-ibm-quantum": {
             "token": "ibmq_token",
             "instance": "instance",
-            "channel": "ibm_quantum",
+            "channel": "ibm_quantum_platform",
             "is_default_account": "True",
         },
         "myAccount": {"token": "account_token", "channel": "ibm_cloud"},
@@ -1902,10 +1911,10 @@ def test_read_ibm_credentials() -> None:
     one_none_default_account = {"myAccount": {"token": "account_token", "channel": "ibm_cloud"}}
     multiple_none_default_account = {
         "myAccount": {"token": "account_token", "channel": "ibm_cloud"},
-        "otherAccount": {"token": "other_token", "channel": "ibm_quantum"},
+        "otherAccount": {"token": "other_token", "channel": "ibm_quantum_platform"},
     }
 
-    bad_credentials = {"account": {"instance": "instance", "channel": "ibm_quantum"}}
+    bad_credentials = {"account": {"instance": "instance", "channel": "ibm_quantum_platform"}}
 
     with mock.patch("pathlib.Path.is_file", return_value=True):
         with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(credentials))):

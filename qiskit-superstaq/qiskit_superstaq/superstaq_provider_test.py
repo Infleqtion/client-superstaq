@@ -32,14 +32,17 @@ def test_provider(fake_superstaq_provider: MockSuperstaqProvider) -> None:
 
 
 def test_provider_args() -> None:
-    with pytest.raises(ValueError, match="must be either 'ibm_cloud' or 'ibm_quantum'"):
+    with pytest.raises(ValueError, match="must be either 'ibm_cloud' or 'ibm_quantum_platform'"):
         ss_provider = qss.SuperstaqProvider(api_key="MY_TOKEN", ibmq_channel="foo")
 
     ss_provider = qss.SuperstaqProvider(
-        api_key="MY_TOKEN", ibmq_channel="ibm_quantum", ibmq_instance="instance", ibmq_token="token"
+        api_key="MY_TOKEN",
+        ibmq_channel="ibm_quantum_platform",
+        ibmq_instance="instance",
+        ibmq_token="token",
     )
     assert ss_provider._client.client_kwargs == {
-        "ibmq_channel": "ibm_quantum",
+        "ibmq_channel": "ibm_quantum_platform",
         "ibmq_instance": "instance",
         "ibmq_token": "token",
     }
