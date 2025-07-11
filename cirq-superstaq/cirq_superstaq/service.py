@@ -174,9 +174,10 @@ class Service(gss.service.Service):
             api_version: Version of the api.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
             verbose: Whether to print to stdio and stderr on retriable errors.
-            cq_token: Token from CQ cloud.This is required to submit circuits to CQ hardware.
-            ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
-                to IBM hardware, or to access non-public IBM devices you may have access to.
+            cq_token: Token from CQ cloud. This may be required to submit circuits to CQ hardware.
+            ibmq_token: An optional IBM Quantum or IBM Cloud token. This may be required to submit
+                circuits to IBM hardware, or to access non-public IBM devices you may have access
+                to.
             ibmq_instance: An optional instance to use when running IBM jobs.
             ibmq_channel: Optional type of IBM account. Must be either "ibm_quantum_platform" or
                 "ibm_cloud".
@@ -641,7 +642,7 @@ class Service(gss.service.Service):
 
         base_entangling_gate = base_entangling_gate.lower()
         if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
-            raise ValueError("base_entangling_gate must be 'xx', 'zz', 'sxx', or 'szz'")
+            raise ValueError("`base_entangling_gate` must be 'xx', 'zz', 'sxx', or 'szz'")
 
         css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)

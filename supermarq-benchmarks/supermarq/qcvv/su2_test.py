@@ -46,12 +46,14 @@ def test_su2_init() -> None:
 
 
 def test_su2_init_raises() -> None:
-    with patch("cirq_superstaq.service.Service"):
-        with pytest.raises(
+    with (
+        patch("cirq_superstaq.service.Service"),
+        pytest.raises(
             ValueError,
             match="The `two_qubit_gate` parameter must be a gate that acts on exactly two qubits.",
-        ):
-            SU2(4, [1, 2, 3, 4], cirq.X)
+        ),
+    ):
+        SU2(4, [1, 2, 3, 4], cirq.X)
 
 
 @pytest.fixture

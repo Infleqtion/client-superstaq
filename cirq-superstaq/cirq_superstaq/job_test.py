@@ -257,12 +257,12 @@ def test_pulse_gate_circuits_invalid_circuit(job: css.Job) -> None:
     job_dict = {"status": "Done", "pulse_gate_circuits": "invalid_pulse_gate_circuit_str"}
 
     # The first call will trigger a refresh:
-    with patched_requests({"job_id": job_dict}):
-        with (
-            pytest.raises(ValueError, match="circuits could not be deserialized."),
-            pytest.warns(match="pulse gate circuit could not be deserialized"),
-        ):
-            job.pulse_gate_circuits()
+    with (
+        patched_requests({"job_id": job_dict}),
+        pytest.raises(ValueError, match="circuits could not be deserialized."),
+        pytest.warns(match="pulse gate circuit could not be deserialized"),
+    ):
+        job.pulse_gate_circuits()
 
 
 def test_multi_pulse_gate_circuits(multi_circuit_job: css.Job) -> None:
@@ -388,7 +388,7 @@ def test_job_str_repr_eq(job: css.Job) -> None:
         job, setup_code="import cirq_superstaq as css\nimport general_superstaq as gss"
     )
 
-    assert not job == 1
+    assert job != 1
 
 
 def test_job_to_dict(job: css.Job, job_dict: dict[str, object]) -> None:
@@ -436,9 +436,11 @@ def test_job_counts_poll_timeout(
     ready_job = {
         "status": "Ready",
     }
-    with patched_requests(*[{"job_id": ready_job}] * 20):
-        with pytest.raises(TimeoutError, match="Ready"):
-            _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
+    with (
+        patched_requests(*[{"job_id": ready_job}] * 20),
+        pytest.raises(TimeoutError, match="Ready"),
+    ):
+        _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
     assert mock_sleep.call_count == 11
 
 
@@ -452,9 +454,11 @@ def test_job_results_poll_failure(mock_sleep: mock.MagicMock, job: css.Job) -> N
         "failure": {"error": "too many qubits"},
     }
 
-    with patched_requests(*[{"job_id": running_job}] * 5, {"job_id": failed_job}):
-        with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="too many qubits"):
-            _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
+    with (
+        patched_requests(*[{"job_id": running_job}] * 5, {"job_id": failed_job}),
+        pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="too many qubits"),
+    ):
+        _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
     assert mock_sleep.call_count == 5
 
 
