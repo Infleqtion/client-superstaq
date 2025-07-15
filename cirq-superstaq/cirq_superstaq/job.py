@@ -96,11 +96,10 @@ class Job:
         """Updates the overall status based on status queue info.
 
         Note:
-            When we have multiple jobs, we will take the "worst status" among the jobs.
-            The worst status check follows the chain: Submitted -> Ready -> Queued ->
-            Running -> Failed -> Canceled -> Deleted -> Done. For example, if any of the
-            jobs are still running (even if some are done), we report 'Running' as the
-            overall status of the entire batch.
+            When we have multiple jobs, we will take the "positive status" among the jobs. The
+            status check follows the chain: Submitted -> Ready -> Running -> Queued -> Failed ->
+            Canceled -> Deleted -> Done. For example, if any of the jobs are still running (even
+            if some are done), we report 'Running' as the overall status of the entire batch.
         """
         job_id_list = self._job_id.split(",")  # Separate aggregated job ids
 
@@ -108,8 +107,8 @@ class Job:
         status_priority_order = (
             "Submitted",
             "Ready",
-            "Queued",
             "Running",
+            "Queued",
             "Failed",
             "Canceled",
             "Deleted",
@@ -509,8 +508,8 @@ class JobV3:
         _models.CircuitStatus.AWAITING_SIMULATION,
         _models.CircuitStatus.COMPILING,
         _models.CircuitStatus.SIMULATING,
-        _models.CircuitStatus.PENDING,
         _models.CircuitStatus.RUNNING,
+        _models.CircuitStatus.PENDING,
         _models.CircuitStatus.FAILED,
         _models.CircuitStatus.CANCELLED,
         _models.CircuitStatus.UNRECOGNIZED,
@@ -553,11 +552,10 @@ class JobV3:
         """Updates the overall status based on status queue info.
 
         Note:
-            When we have multiple jobs, we will take the "worst status" among the jobs.
-            The worst status check follows the chain: Submitted -> Ready -> Queued ->
-            Running -> Failed -> Canceled -> Deleted -> Done. For example, if any of the
-            jobs are still running (even if some are done), we report 'Running' as the
-            overall status of the entire batch.
+            When we have multiple jobs, we will take the "positive status" among the jobs. The
+            status check sequentially follows the items in `STATUS_PRIORITY_ORDER`. For example,
+            if any of the jobs are still running (even if some are done), we report 'Running' as
+            the overall status of the entire batch.
         """
         status_occurrence = set(self._job_data.statuses)
 
@@ -575,7 +573,7 @@ class JobV3:
         Raises:
             gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
-        status = self.status()
+        status = self.status(index)
         if status == _models.CircuitStatus.FAILED:
             message = "Failure: "
             circuit_messages = []
