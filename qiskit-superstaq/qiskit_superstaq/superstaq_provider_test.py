@@ -32,14 +32,17 @@ def test_provider(fake_superstaq_provider: MockSuperstaqProvider) -> None:
 
 
 def test_provider_args() -> None:
-    with pytest.raises(ValueError, match="must be either 'ibm_cloud' or 'ibm_quantum'"):
+    with pytest.raises(ValueError, match="must be either 'ibm_cloud' or 'ibm_quantum_platform'"):
         ss_provider = qss.SuperstaqProvider(api_key="MY_TOKEN", ibmq_channel="foo")
 
     ss_provider = qss.SuperstaqProvider(
-        api_key="MY_TOKEN", ibmq_channel="ibm_quantum", ibmq_instance="instance", ibmq_token="token"
+        api_key="MY_TOKEN",
+        ibmq_channel="ibm_quantum_platform",
+        ibmq_instance="instance",
+        ibmq_token="token",
     )
     assert ss_provider._client.client_kwargs == {
-        "ibmq_channel": "ibm_quantum",
+        "ibmq_channel": "ibm_quantum_platform",
         "ibmq_instance": "instance",
         "ibmq_token": "token",
     }
@@ -206,9 +209,9 @@ def test_aqt_compile_eca(
         deprecated_out = fake_superstaq_provider.aqt_compile_eca(
             [qc], num_equivalent_circuits=1, random_seed=1234, atol=1e-2
         )
-        assert deprecated_out.circuits == out.circuits
-        assert deprecated_out.initial_logical_to_physicals == out.initial_logical_to_physicals
-        assert deprecated_out.final_logical_to_physicals == out.final_logical_to_physicals
+    assert deprecated_out.circuits == out.circuits
+    assert deprecated_out.initial_logical_to_physicals == out.initial_logical_to_physicals
+    assert deprecated_out.final_logical_to_physicals == out.final_logical_to_physicals
 
 
 @patch("requests.Session.post")
@@ -377,7 +380,7 @@ def test_invalid_target_qscout_compile(fake_superstaq_provider: MockSuperstaqPro
 
 
 @patch("requests.Session.post")
-@pytest.mark.parametrize("mirror_swaps", (True, False))
+@pytest.mark.parametrize("mirror_swaps", [True, False])
 def test_qscout_compile_swap_mirror(
     mock_post: MagicMock, mirror_swaps: bool, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
@@ -407,7 +410,7 @@ def test_qscout_compile_swap_mirror(
 
 
 @patch("requests.Session.post")
-@pytest.mark.parametrize("base_entangling_gate", ("xx", "zz"))
+@pytest.mark.parametrize("base_entangling_gate", ["xx", "zz"])
 def test_qscout_compile_change_entangler(
     mock_post: MagicMock, base_entangling_gate: str, fake_superstaq_provider: MockSuperstaqProvider
 ) -> None:
@@ -441,7 +444,7 @@ def test_qscout_compile_change_entangler(
 def test_qscout_compile_wrong_entangler(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="`base_entangling_gate` must be"):
         _ = fake_superstaq_provider.qscout_compile(qc, base_entangling_gate="yy")
 
 

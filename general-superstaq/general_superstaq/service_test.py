@@ -212,9 +212,11 @@ def test_service_aqt_upload_configs(
         # Input type that can't be serialized with yaml.SafeDumper:
         _ = service.aqt_upload_configs({"foo": mock.DEFAULT}, {})
 
-    with mock.patch.dict("sys.modules", {"yaml": None}):
-        with pytest.raises(ModuleNotFoundError, match="PyYAML"):
-            _ = service.aqt_upload_configs({}, {})
+    with (
+        mock.patch.dict("sys.modules", {"yaml": None}),
+        pytest.raises(ModuleNotFoundError, match="PyYAML"),
+    ):
+        _ = service.aqt_upload_configs({}, {})
 
 
 @mock.patch(
@@ -309,9 +311,11 @@ def test_service_aqt_get_configs(
 
     assert service.aqt_download_configs() == ("Hello", "World")
 
-    with mock.patch.dict("sys.modules", {"yaml": None}):
-        with pytest.raises(ModuleNotFoundError, match="PyYAML"):
-            _ = service.aqt_download_configs()
+    with (
+        mock.patch.dict("sys.modules", {"yaml": None}),
+        pytest.raises(ModuleNotFoundError, match="PyYAML"),
+    ):
+        _ = service.aqt_download_configs()
 
 
 @mock.patch("requests.Session.post")

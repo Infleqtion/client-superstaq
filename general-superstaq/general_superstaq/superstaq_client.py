@@ -94,13 +94,15 @@ class _BaseSuperstaqClient(ABC):
             circuit_type: The type of circuit, Cirq, Qiskit or QASM.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
-            cq_token: Token from CQ cloud. This is required to submit circuits to CQ hardware.
-            ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
-                to IBM hardware, or to access non-public IBM devices you may have access to.
+            cq_token: Token from CQ cloud. This may be required to submit circuits to CQ hardware.
+            ibmq_token: An optional IBM Quantum or IBM Cloud token. This may be required to submit
+                circuits to IBM hardware, or to access non-public IBM devices you may have access
+                to.
             ibmq_instance: An optional instance to use when running IBM jobs.
-            ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
-            use_stored_ibmq_credentials: Whether to retrieve IBM credentials from locally saved
-                accounts.
+            ibmq_channel: Optional type of IBM account. Must be either "ibm_quantum_platform" or
+                "ibm_cloud".
+            use_stored_ibmq_credentials: Boolean flag on whether to retrieve IBM credentials from
+                locally saved accounts or not. Defaults to `False`.
             ibmq_name: The name of the account to retrieve. The default is `default-ibm-quantum`.
             kwargs: Other optimization and execution parameters.
         """
@@ -112,9 +114,13 @@ class _BaseSuperstaqClient(ABC):
         self.max_retry_seconds = max_retry_seconds
         self.verbose = verbose
         url = urllib.parse.urlparse(self.remote_host)
-        assert url.scheme and url.netloc, (  # noqa: PT018
-            f"Specified remote_host {self.remote_host} is not a valid url, for example "
-            "http://example.com"
+        assert url.scheme, (
+            f"Specified URL protocol/scheme in `remote_host` ({self.remote_host}) is not valid. "
+            "Use, for example, 'http', 'https'."
+        )
+        assert url.netloc, (
+            f"Specified network location in `remote_host` ({self.remote_host}) is not a valid URL "
+            "like, for example, http://example.com"
         )
 
         assert self.api_version in self.SUPPORTED_VERSIONS, (
@@ -141,8 +147,8 @@ class _BaseSuperstaqClient(ABC):
             ibmq_instance = config.get("instance")
             ibmq_channel = config.get("channel")
 
-        if ibmq_channel and ibmq_channel not in ("ibm_quantum", "ibm_cloud"):
-            raise ValueError("ibmq_channel must be either 'ibm_cloud' or 'ibm_quantum'.")
+        if ibmq_channel:
+            gss.validation._validate_ibm_channel(ibmq_channel)
 
         if ibmq_token:
             kwargs["ibmq_token"] = ibmq_token
@@ -1665,7 +1671,8 @@ def read_ibm_credentials(ibmq_name: str | None) -> dict[str, str]:
     config_dir = pathlib.Path.home().joinpath(".qiskit")
     path = config_dir.joinpath("qiskit-ibm.json")
     if path.is_file():
-        config = json.load(open(path))
+        with open(path) as config_file:
+            config = json.load(config_file)
         if ibmq_name is None:
             if len(config) == 1:
                 ibmq_name = next(iter(config.keys()))
