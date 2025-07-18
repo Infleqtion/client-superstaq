@@ -312,6 +312,8 @@ def test_job(service: css.Service) -> None:
     multi_job = service.create_job(
         [circuit, circuit_alt], target="ibmq_brisbane_qpu", repetitions=10, method="dry-run"
     )
+    assert isinstance(job, css.Job)
+    assert isinstance(multi_job, css.Job)
 
     job_id = job.job_id()  # To test for https://github.com/Infleqtion/client-superstaq/issues/452
     multi_job_id = multi_job.job_id()
