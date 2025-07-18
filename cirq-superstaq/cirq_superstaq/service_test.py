@@ -78,13 +78,13 @@ def test_counts_to_results() -> None:
         result = css.service.counts_to_results(
             {"00": 50.1, "11": 49.9}, circuit, cirq.ParamResolver({})
         )
-        assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
+    assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
 
     with pytest.warns(UserWarning, match="raw counts contain negative"):
         result = css.service.counts_to_results(
             {"00": -50, "11": 100}, circuit, cirq.ParamResolver({})
         )
-        assert result.histogram(key="01") == collections.Counter({3: 100})
+    assert result.histogram(key="01") == collections.Counter({3: 100})
 
 
 def test_service_wrong_version() -> None:
@@ -607,9 +607,9 @@ def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
         deprecated_out = service.aqt_compile_eca(
             [cirq.Circuit()], num_equivalent_circuits=1, random_seed=1234, atol=1e-2
         )
-        assert deprecated_out.circuits == out.circuits
-        assert deprecated_out.initial_logical_to_physicals == out.initial_logical_to_physicals
-        assert deprecated_out.final_logical_to_physicals == out.final_logical_to_physicals
+    assert deprecated_out.circuits == out.circuits
+    assert deprecated_out.initial_logical_to_physicals == out.initial_logical_to_physicals
+    assert deprecated_out.final_logical_to_physicals == out.final_logical_to_physicals
 
 
 @mock.patch(
@@ -732,7 +732,7 @@ def test_service_qscout_compile_multiple(mock_qscout_compile: mock.MagicMock) ->
 
 
 @mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
-@pytest.mark.parametrize("mirror_swaps", (True, False))
+@pytest.mark.parametrize("mirror_swaps", [True, False])
 def test_qscout_compile_swap_mirror(
     mock_qscout_compile: mock.MagicMock, mirror_swaps: bool
 ) -> None:
@@ -794,7 +794,7 @@ def test_qscout_compile_error_rates(mock_qscout_compile: mock.MagicMock) -> None
 
 
 @mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
-@pytest.mark.parametrize("base_entangling_gate", ("xx", "zz"))
+@pytest.mark.parametrize("base_entangling_gate", ["xx", "zz"])
 def test_qscout_compile_base_entangling_gate(
     mock_qscout_compile: mock.MagicMock, base_entangling_gate: str
 ) -> None:
@@ -830,7 +830,7 @@ def test_qscout_compile_wrong_base_entangling_gate() -> None:
     circuit = cirq.Circuit(cirq.measure(q0))
 
     service = css.Service(api_key="key", remote_host="http://example.com")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="`base_entangling_gate` must be"):
         _ = service.qscout_compile(circuit, base_entangling_gate="yy")
 
 
@@ -942,17 +942,17 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
         final_logical_to_physical
     ]
 
-    with (
-        mock.patch.dict("sys.modules", {"qiskit_superstaq": None}),
-        pytest.warns(UserWarning, match="qiskit-superstaq is required"),
-    ):
-        assert (
-            service.ibmq_compile(cirq.Circuit(), target="ibmq_fake_qpu").pulse_gate_circuit is None
-        )
-        assert (
-            service.ibmq_compile([cirq.Circuit()], target="ibmq_fake_qpu").pulse_gate_circuits
-            is None
-        )
+    with mock.patch.dict("sys.modules", {"qiskit_superstaq": None}):
+        with pytest.warns(UserWarning, match="qiskit-superstaq is required"):
+            assert (
+                service.ibmq_compile(cirq.Circuit(), target="ibmq_fake_qpu").pulse_gate_circuit
+                is None
+            )
+        with pytest.warns(UserWarning, match="qiskit-superstaq is required"):
+            assert (
+                service.ibmq_compile([cirq.Circuit()], target="ibmq_fake_qpu").pulse_gate_circuits
+                is None
+            )
 
     with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid IBMQ target."):
         service.ibmq_compile(cirq.Circuit(), target="ss_example_qpu")
@@ -1083,7 +1083,11 @@ def test_cb(
             }
         },
         "instance_information": cirq.to_json(
-            {"target": "ss_unconstrained_simulator", "depths": [1, 2, 3], "n_channels": 2}
+            {
+                "target": "ss_unconstrained_simulator",
+                "depths": [1, 2, 3],
+                "n_channels": 2,
+            }
         ),
         "process_fidelity_data": {
             "averages": {

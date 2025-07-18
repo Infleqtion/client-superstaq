@@ -54,7 +54,7 @@ def test_ibmq_compile_with_token() -> None:
     service = css.Service(
         ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"],
         ibmq_instance=os.environ["TEST_USER_IBMQ_INSTANCE"],
-        ibmq_channel="ibm_cloud",
+        ibmq_channel="ibm_quantum_platform",
     )
     circuit = cirq.Circuit(
         cirq.H(cirq.q(3)),

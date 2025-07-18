@@ -18,7 +18,7 @@ import io
 import json
 import os
 import uuid
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -26,9 +26,6 @@ import requests
 
 import general_superstaq as gss
 from general_superstaq.testing import RETURNED_TARGETS, TARGET_LIST
-
-if TYPE_CHECKING:
-    from pytest import FixtureRequest
 
 EXPECTED_HEADERS = {
     "v0.2.0": {
@@ -84,7 +81,7 @@ def client_v3() -> gss.superstaq_client._SuperstaqClientV3:
 
 
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
-def test_superstaq_client_str_and_repr(client_name: str, request: FixtureRequest) -> None:
+def test_superstaq_client_str_and_repr(client_name: str, request: pytest.FixtureRequest) -> None:
     client = request.getfixturevalue(client_name)
     api_version = client.api_version
     assert str(client) == (
@@ -103,24 +100,33 @@ def test_superstaq_client_args(api_version: str) -> None:
         api_key="to_my_heart",
         api_version=api_version,
         cq_token="cq_token",
-        ibmq_channel="ibm_quantum",
+        ibmq_channel="ibm_cloud",
         ibmq_instance="instance",
-        ibmq_token="ibmq_token",
+        ibmq_token="ibm_cloud_token",
     )
     assert client.client_kwargs == {
         "cq_token": "cq_token",
-        "ibmq_channel": "ibm_quantum",
+        "ibmq_channel": "ibm_cloud",
         "ibmq_instance": "instance",
-        "ibmq_token": "ibmq_token",
+        "ibmq_token": "ibm_cloud_token",
     }
 
-    with pytest.raises(ValueError, match="must be either 'ibm_cloud' or 'ibm_quantum'"):
+    with pytest.raises(ValueError, match="must be either 'ibm_cloud' or 'ibm_quantum_platform'"):
         _ = client_version(
             client_name="general-superstaq",
             remote_host="http://example.com",
             api_key="to_my_heart",
             api_version=api_version,
             ibmq_channel="foo",
+        )
+
+    with pytest.raises(ValueError, match="Instead, use 'ibm_quantum_platform'"):
+        _ = client_version(
+            client_name="general-superstaq",
+            remote_host="http://example.com",
+            api_key="to_my_heart",
+            api_version=api_version,
+            ibmq_channel="ibm_quantum",
         )
 
 
@@ -130,7 +136,7 @@ def test_general_superstaq_exception_str() -> None:
 
 
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
-def test_warning_from_server(client_name: str, request: FixtureRequest) -> None:
+def test_warning_from_server(client_name: str, request: pytest.FixtureRequest) -> None:
     client = request.getfixturevalue(client_name)
 
     warning = {"message": "WARNING!", "category": "SuperstaqWarning"}
@@ -147,17 +153,26 @@ def test_warning_from_server(client_name: str, request: FixtureRequest) -> None:
 
 
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
-@pytest.mark.parametrize("invalid_url", ("url", "http://", "ftp://", "http://"))
-def test_superstaq_client_invalid_remote_host(api_version: str, invalid_url: str) -> None:
+@pytest.mark.parametrize("invalid_url", ["http://", "ftp:s//foo", "http:/:42"])
+def test_superstaq_client_invalid_remote_host_netloc(api_version: str, invalid_url: str) -> None:
     client_version = CLIENT_VERSION[api_version]
-    with pytest.raises(AssertionError, match="not a valid url"):
+    with pytest.raises(AssertionError, match="Specified network location"):
         _ = client_version(
             client_name="general-superstaq",
             remote_host=invalid_url,
             api_key="a",
             api_version=api_version,
         )
-    with pytest.raises(AssertionError, match=invalid_url):
+
+
+@pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
+@pytest.mark.parametrize(
+    "invalid_url",
+    ["url", "www.example.com/path", "example.com//path"],
+)
+def test_superstaq_client_invalid_remote_host_protocol(api_version: str, invalid_url: str) -> None:
+    client_version = CLIENT_VERSION[api_version]
+    with pytest.raises(AssertionError, match="Specified URL protocol"):
         _ = client_version(
             client_name="general-superstaq",
             remote_host=invalid_url,
@@ -225,7 +240,7 @@ def test_accept_terms_of_use(
     mock_put: mock.MagicMock,
     client_name: str,
     user_input: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -249,7 +264,7 @@ def test_accept_terms_of_use(
 
 
 @pytest.mark.parametrize(
-    "client_name, mock_accept",
+    ("client_name", "mock_accept"),
     [
         ("client_v2", "general_superstaq.superstaq_client._SuperstaqClient._accept_terms_of_use"),
         ("client_v3", "general_superstaq.superstaq_client._SuperstaqClientV3._accept_terms_of_use"),
@@ -262,7 +277,7 @@ def test_superstaq_client_needs_accept_terms_of_use(
     # mock_accept_terms_of_use: mock.MagicMock,
     client_name: str,
     mock_accept: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     client = request.getfixturevalue(client_name)
@@ -301,7 +316,7 @@ def test_superstaq_client_needs_accept_terms_of_use(
 def test_superstaq_client_validate_email_error(
     mock_post: mock.MagicMock,
     client_name: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -318,7 +333,7 @@ def test_superstaq_client_validate_email_error(
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
 def test_superstaq_client_use_stored_ibmq_credential(api_version: str) -> None:
     client_version = CLIENT_VERSION[api_version]
-    credentials = {"token": "ibmq_token", "instance": "instance", "channel": "ibm_quantum"}
+    credentials = {"token": "ibmq_token", "instance": "instance", "channel": "ibm_quantum_platform"}
     with mock.patch(
         "general_superstaq.superstaq_client.read_ibm_credentials", return_value=credentials
     ):
@@ -332,16 +347,16 @@ def test_superstaq_client_use_stored_ibmq_credential(api_version: str) -> None:
         )
         assert client.client_kwargs == {
             "cq_token": "cq_token",
-            "ibmq_channel": "ibm_quantum",
+            "ibmq_channel": "ibm_quantum_platform",
             "ibmq_instance": "instance",
             "ibmq_token": "ibmq_token",
         }
 
 
-@pytest.mark.parametrize("method", ("dry-run", "sim"))
-@pytest.mark.parametrize("target", ("ss_example_qpu", "ss_example_simulator"))
+@pytest.mark.parametrize("method", ["dry-run", "sim"])
+@pytest.mark.parametrize("target", ["ss_example_qpu", "ss_example_simulator"])
 @pytest.mark.parametrize(
-    "client_name, job_id", [("client_v2", "id"), ("client_v3", uuid.UUID(int=0))]
+    ("client_name", "job_id"), [("client_v2", "id"), ("client_v3", uuid.UUID(int=0))]
 )
 @mock.patch("requests.Session.post")
 def test_supertstaq_client_create_job(
@@ -350,7 +365,7 @@ def test_supertstaq_client_create_job(
     job_id: str | uuid.UUID,
     target: str,
     method: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
     api_version = client.api_version
@@ -418,7 +433,7 @@ def test_supertstaq_client_create_job(
 def test_superstaq_client_create_job_unauthorized(
     mock_post: mock.MagicMock,
     client_name: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -434,7 +449,7 @@ def test_superstaq_client_create_job_unauthorized(
 def test_superstaq_client_create_job_not_found(
     mock_post: mock.MagicMock,
     client_name: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -450,7 +465,7 @@ def test_superstaq_client_create_job_not_found(
 def test_superstaq_client_create_job_not_retriable(
     mock_post: mock.MagicMock,
     client_name: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -461,7 +476,9 @@ def test_superstaq_client_create_job_not_retriable(
         _ = client.create_job({"cirq_circuits": "World"}, target="ss_example_qpu")
 
 
-@pytest.mark.parametrize("api_version, job_id", [("v0.2.0", "id"), ("v0.3.0", uuid.UUID(int=0))])
+@pytest.mark.parametrize(
+    ("api_version", "job_id"), [("v0.2.0", "id"), ("v0.3.0", uuid.UUID(int=0))]
+)
 @mock.patch("requests.Session.post")
 def test_superstaq_client_create_job_retry(
     mock_post: mock.MagicMock, api_version: str, job_id: str | uuid.UUID
@@ -489,14 +506,14 @@ def test_superstaq_client_create_job_retry(
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id", [("client_v2", "id"), ("client_v3", uuid.UUID(int=0))]
+    ("client_name", "job_id"), [("client_v2", "id"), ("client_v3", uuid.UUID(int=0))]
 )
 @mock.patch("requests.Session.post")
 def test_superstaq_client_create_job_retry_request_error(
     mock_post: mock.MagicMock,
     client_name: str,
     job_id: str | uuid.UUID,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -514,7 +531,7 @@ def test_superstaq_client_create_job_retry_request_error(
 def test_superstaq_client_create_job_invalid_json(
     mock_post: mock.MagicMock,
     client_name: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -523,9 +540,11 @@ def test_superstaq_client_create_job_invalid_json(
     response._content = b"invalid/json"
     mock_post.return_value = response
 
-    with mock.patch("requests.Session.post", return_value=response):
-        with pytest.raises(gss.SuperstaqServerException, match="invalid/json"):
-            _ = client.create_job({"qiskit_circuits": "World"}, target="ss_example_qpu")
+    with (
+        mock.patch("requests.Session.post", return_value=response),
+        pytest.raises(gss.SuperstaqServerException, match="invalid/json"),
+    ):
+        _ = client.create_job({"qiskit_circuits": "World"}, target="ss_example_qpu")
 
 
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
@@ -533,7 +552,7 @@ def test_superstaq_client_create_job_invalid_json(
 def test_superstaq_client_create_job_dont_retry_on_timeout(
     mock_post: mock.MagicMock,
     client_name: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -542,9 +561,11 @@ def test_superstaq_client_create_job_dont_retry_on_timeout(
     response._content = b"invalid/json"
     mock_post.return_value = response
 
-    with mock.patch("requests.Session.post", return_value=response):
-        with pytest.raises(gss.SuperstaqServerException, match="timed out"):
-            _ = client.create_job({"cirq_circuits": "World"}, target="ss_example_qpu")
+    with (
+        mock.patch("requests.Session.post", return_value=response),
+        pytest.raises(gss.SuperstaqServerException, match="timed out"),
+    ):
+        _ = client.create_job({"cirq_circuits": "World"}, target="ss_example_qpu")
 
 
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
@@ -567,14 +588,14 @@ def test_superstaq_client_create_job_timeout(mock_post: mock.MagicMock, api_vers
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id", [("client_v2", "id"), ("client_v3", uuid.UUID(int=0))]
+    ("client_name", "job_id"), [("client_v2", "id"), ("client_v3", uuid.UUID(int=0))]
 )
 @mock.patch("requests.Session.post")
 def test_superstaq_client_create_job_json(
     mock_post: mock.MagicMock,
     client_name: str,
     job_id: str | uuid.UUID,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -601,7 +622,7 @@ def test_superstaq_client_fetch_jobs(
     mock_post: mock.MagicMock,
     mock_get: mock.MagicMock,
     client_name: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
     api_version = client.api_version
@@ -659,7 +680,7 @@ def test_superstaq_client_fetch_jobs(
 
 
 @pytest.mark.parametrize(
-    "client_name, endpoint",
+    ("client_name", "endpoint"),
     [
         ("client_v2", "http://example.com/v0.2.0/balance"),
         ("client_v3", "http://example.com/v0.3.0/client/balance"),
@@ -670,7 +691,7 @@ def test_superstaq_client_get_balance(
     mock_get: mock.MagicMock,
     client_name: str,
     endpoint: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
     api_version = client.api_version
@@ -697,7 +718,7 @@ def test_superstaq_client_get_balance(
 def test_superstaq_client_get_version(
     mock_get: mock.MagicMock,
     client_name: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
     api_version = client.api_version
@@ -712,7 +733,7 @@ def test_superstaq_client_get_version(
 
 
 @pytest.mark.parametrize(
-    "client_name, endpoint",
+    ("client_name", "endpoint"),
     [
         ("client_v2", "http://example.com/v0.2.0/add_new_user"),
         ("client_v3", "http://example.com/v0.3.0/client/user"),
@@ -723,7 +744,7 @@ def test_add_new_user(
     mock_post: mock.MagicMock,
     client_name: str,
     endpoint: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
     api_version = client.api_version
@@ -744,7 +765,7 @@ def test_add_new_user(
 
 
 @pytest.mark.parametrize(
-    "client_name, endpoint, expected_json, call_type",
+    ("client_name", "endpoint", "expected_json", "call_type"),
     [
         (
             "client_v2",
@@ -765,7 +786,7 @@ def test_update_user_balance(
     endpoint: str,
     expected_json: dict[str, Any],
     call_type: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -788,7 +809,7 @@ def test_update_user_balance_invalid_v3(client_v3: gss.superstaq_client._Superst
 
 
 @pytest.mark.parametrize(
-    "client_name, endpoint, role, expected_json, call_type",
+    ("client_name", "endpoint", "role", "expected_json", "call_type"),
     [
         (
             "client_v2",
@@ -812,7 +833,7 @@ def test_update_user_role(
     role: int | str,
     expected_json: dict[str, Any],
     call_type: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -839,7 +860,7 @@ def test_update_user_role_invalid_v3(client_v3: gss.superstaq_client._SuperstaqC
 def test_superstaq_client_resource_estimate(
     mock_post: mock.MagicMock,
     client_name: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
     api_version = client.api_version
@@ -854,7 +875,7 @@ def test_superstaq_client_resource_estimate(
 
 
 @pytest.mark.parametrize(
-    "api_version, endpoint",
+    ("api_version", "endpoint"),
     [
         ("v0.2.0", "http://example.com/v0.2.0/targets"),
         ("v0.3.0", "http://example.com/v0.3.0/client/targets"),
@@ -1005,7 +1026,7 @@ def test_superstaq_client_get_my_targets(
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id, call_type",
+    ("client_name", "job_id", "call_type"),
     [
         ("client_v2", "id", "requests.Session.post"),
         ("client_v3", uuid.UUID(int=0), "requests.Session.get"),
@@ -1015,7 +1036,7 @@ def test_superstaq_client_fetch_jobs_unauthorized(
     client_name: str,
     job_id: str | uuid.UUID,
     call_type: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -1028,7 +1049,7 @@ def test_superstaq_client_fetch_jobs_unauthorized(
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id, call_type",
+    ("client_name", "job_id", "call_type"),
     [
         ("client_v2", "id", "requests.Session.post"),
         ("client_v3", uuid.UUID(int=0), "requests.Session.get"),
@@ -1038,7 +1059,7 @@ def test_superstaq_client_fetch_jobs_not_found(
     client_name: str,
     job_id: str | uuid.UUID,
     call_type: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -1051,7 +1072,7 @@ def test_superstaq_client_fetch_jobs_not_found(
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id, call_type",
+    ("client_name", "job_id", "call_type"),
     [
         ("client_v2", "id", "requests.Session.post"),
         ("client_v3", uuid.UUID(int=0), "requests.Session.get"),
@@ -1061,7 +1082,7 @@ def test_superstaq_client_fetch_jobs_not_retriable(
     client_name: str,
     job_id: str | uuid.UUID,
     call_type: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -1074,7 +1095,7 @@ def test_superstaq_client_fetch_jobs_not_retriable(
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id, call_type",
+    ("client_name", "job_id", "call_type"),
     [
         ("client_v2", "id", "requests.Session.post"),
         ("client_v3", uuid.UUID(int=0), "requests.Session.get"),
@@ -1084,7 +1105,7 @@ def test_superstaq_client_fetch_jobs_retry(
     client_name: str,
     job_id: str | uuid.UUID,
     call_type: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -1103,7 +1124,7 @@ def test_superstaq_client_fetch_jobs_retry(
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id, call_type",
+    ("client_name", "job_id", "call_type"),
     [
         ("client_v2", "id", "requests.Session.post"),
         ("client_v3", uuid.UUID(int=0), "requests.Session.put"),
@@ -1113,7 +1134,7 @@ def test_superstaq_client_cancel_jobs_unauthorized(
     client_name: str,
     job_id: str | uuid.UUID,
     call_type: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -1126,7 +1147,7 @@ def test_superstaq_client_cancel_jobs_unauthorized(
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id, call_type",
+    ("client_name", "job_id", "call_type"),
     [
         ("client_v2", "id", "requests.Session.post"),
         ("client_v3", uuid.UUID(int=0), "requests.Session.put"),
@@ -1136,7 +1157,7 @@ def test_superstaq_client_cancel_jobs_not_found(
     client_name: str,
     job_id: str | uuid.UUID,
     call_type: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -1149,7 +1170,7 @@ def test_superstaq_client_cancel_jobs_not_found(
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id, call_type",
+    ("client_name", "job_id", "call_type"),
     [
         ("client_v2", "id", "requests.Session.post"),
         ("client_v3", uuid.UUID(int=0), "requests.Session.put"),
@@ -1159,7 +1180,7 @@ def test_superstaq_client_get_cancel_jobs_retriable(
     client_name: str,
     job_id: str | uuid.UUID,
     call_type: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -1172,7 +1193,7 @@ def test_superstaq_client_get_cancel_jobs_retriable(
 
 
 @pytest.mark.parametrize(
-    "client_name, job_id, call_type",
+    ("client_name", "job_id", "call_type"),
     [
         ("client_v2", "id", "requests.Session.post"),
         ("client_v3", uuid.UUID(int=0), "requests.Session.put"),
@@ -1182,7 +1203,7 @@ def test_superstaq_client_cancel_jobs_retry(
     client_name: str,
     job_id: str | uuid.UUID,
     call_type: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
 
@@ -1205,7 +1226,7 @@ def test_superstaq_client_cancel_jobs_retry(
 def test_superstaq_client_aqt_compile(
     mock_post: mock.MagicMock,
     client_name: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
     api_version = client.api_version
@@ -1224,7 +1245,7 @@ def test_superstaq_client_aqt_compile(
 def test_superstaq_client_qscout_compile(
     mock_post: mock.MagicMock,
     client_name: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
     api_version = client.api_version
@@ -1487,7 +1508,7 @@ def test_superstaq_client_compile_v3_with_wait(
 def test_superstaq_client_submit_qubo(
     mock_post: mock.MagicMock,
     client_name: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
     api_version = client.api_version
@@ -1551,7 +1572,7 @@ def test_superstaq_client_submit_qubo(
 def test_superstaq_client_supercheq(
     mock_post: mock.MagicMock,
     client_name: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
     api_version = client.api_version
@@ -1581,7 +1602,7 @@ def test_superstaq_client_supercheq(
 def test_superstaq_client_aces(
     mock_post: mock.MagicMock,
     client_name: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
     api_version = client.api_version
@@ -1653,7 +1674,7 @@ def test_superstaq_client_aces(
 def test_superstaq_client_cb(
     mock_post: mock.MagicMock,
     client_name: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
     api_version = client.api_version
@@ -1717,7 +1738,7 @@ def test_superstaq_client_cb(
 def test_superstaq_client_dfe(
     mock_post: mock.MagicMock,
     client_name: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
     api_version = client.api_version
@@ -1780,7 +1801,7 @@ def test_superstaq_client_dfe(
 
 
 @pytest.mark.parametrize(
-    "client_name, endpoint, call_type",
+    ("client_name", "endpoint", "call_type"),
     [
         ("client_v2", "http://example.com/v0.2.0/aqt_configs", "requests.Session.post"),
         ("client_v3", "http://example.com/v0.3.0/aqt_configs", "requests.Session.put"),
@@ -1790,7 +1811,7 @@ def test_superstaq_client_aqt_upload_configs(
     client_name: str,
     endpoint: str,
     call_type: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
     expected_json = {"pulses": "Hello", "variables": "World"}
@@ -1810,7 +1831,7 @@ def test_superstaq_client_aqt_upload_configs(
 def test_superstaq_client_aqt_get_configs(
     mock_get: mock.MagicMock,
     client_name: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
     expected_json = {"pulses": "Hello", "variables": "World"}
@@ -1821,7 +1842,7 @@ def test_superstaq_client_aqt_get_configs(
 
 
 @pytest.mark.parametrize(
-    "client_name, endpoint",
+    ("client_name", "endpoint"),
     [
         ("client_v2", "http://example.com/v0.2.0/target_info"),
         ("client_v3", "http://example.com/v0.3.0/client/retrieve_target_info"),
@@ -1832,7 +1853,7 @@ def test_superstaq_client_target_info(
     mock_post: mock.MagicMock,
     client_name: str,
     endpoint: str,
-    request: FixtureRequest,
+    request: pytest.FixtureRequest,
 ) -> None:
     client = request.getfixturevalue(client_name)
     mock_post.return_value.ok.return_value = True
@@ -1854,7 +1875,7 @@ def test_superstaq_client_target_info(
 
 
 @pytest.mark.parametrize(
-    "api_version, endpoint",
+    ("api_version", "endpoint"),
     [
         ("v0.2.0", "http://example.com/v0.2.0/target_info"),
         ("v0.3.0", "http://example.com/v0.3.0/client/retrieve_target_info"),
@@ -1901,7 +1922,7 @@ def test_read_ibm_credentials() -> None:
         "default-ibm-quantum": {
             "token": "ibmq_token",
             "instance": "instance",
-            "channel": "ibm_quantum",
+            "channel": "ibm_quantum_platform",
             "is_default_account": "True",
         },
         "myAccount": {"token": "account_token", "channel": "ibm_cloud"},
@@ -1909,10 +1930,10 @@ def test_read_ibm_credentials() -> None:
     one_none_default_account = {"myAccount": {"token": "account_token", "channel": "ibm_cloud"}}
     multiple_none_default_account = {
         "myAccount": {"token": "account_token", "channel": "ibm_cloud"},
-        "otherAccount": {"token": "other_token", "channel": "ibm_quantum"},
+        "otherAccount": {"token": "other_token", "channel": "ibm_quantum_platform"},
     }
 
-    bad_credentials = {"account": {"instance": "instance", "channel": "ibm_quantum"}}
+    bad_credentials = {"account": {"instance": "instance", "channel": "ibm_quantum_platform"}}
 
     with mock.patch("pathlib.Path.is_file", return_value=True):
         with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(credentials))):
@@ -1932,30 +1953,36 @@ def test_read_ibm_credentials() -> None:
             )
 
         # fail because multiple accounts found with none marked as default
-        with pytest.raises(
-            ValueError, match="Multiple accounts found but none are marked as default."
-        ):
-            with mock.patch(
+        with (
+            pytest.raises(
+                ValueError, match="Multiple accounts found but none are marked as default."
+            ),
+            mock.patch(
                 "builtins.open", mock.mock_open(read_data=json.dumps(multiple_none_default_account))
-            ):
-                gss.superstaq_client.read_ibm_credentials(None)
+            ),
+        ):
+            gss.superstaq_client.read_ibm_credentials(None)
 
         # fail because provided name is not an account in the config
-        with pytest.raises(KeyError, match="No account credentials saved under the name 'bad_key'"):
-            with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(credentials))):
-                gss.superstaq_client.read_ibm_credentials("bad_key")
+        with (
+            pytest.raises(KeyError, match="No account credentials saved under the name 'bad_key'"),
+            mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(credentials))),
+        ):
+            gss.superstaq_client.read_ibm_credentials("bad_key")
 
         # fail with missing token field in config
-        with pytest.raises(
-            KeyError, match="`token` and/or `channel` keys missing from credentials"
+        with (
+            pytest.raises(KeyError, match="`token` and/or `channel` keys missing from credentials"),
+            mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(bad_credentials))),
         ):
-            with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(bad_credentials))):
-                gss.superstaq_client.read_ibm_credentials(None)
+            gss.superstaq_client.read_ibm_credentials(None)
     #
     # fail to find credentials file
-    with pytest.raises(FileNotFoundError, match="The `qiskit-ibm.json` file was not found in"):
-        with mock.patch("pathlib.Path.is_file", return_value=False):
-            gss.superstaq_client.read_ibm_credentials(None)
+    with (
+        pytest.raises(FileNotFoundError, match="The `qiskit-ibm.json` file was not found in"),
+        mock.patch("pathlib.Path.is_file", return_value=False),
+    ):
+        gss.superstaq_client.read_ibm_credentials(None)
 
 
 def test_find_api_key() -> None:
@@ -1964,20 +1991,24 @@ def test_find_api_key() -> None:
         assert gss.superstaq_client.find_api_key() == "tomyheart"
 
     # find key in a config file
-    with mock.patch.dict(os.environ, SUPERSTAQ_API_KEY=""):
-        with mock.patch("pathlib.Path.is_file", return_value=True):
-            with mock.patch("builtins.open", mock.mock_open(read_data="tomyheart")):
-                assert gss.superstaq_client.find_api_key() == "tomyheart"
+    with (
+        mock.patch.dict(os.environ, SUPERSTAQ_API_KEY=""),
+        mock.patch("pathlib.Path.is_file", return_value=True),
+        mock.patch("builtins.open", mock.mock_open(read_data="tomyheart")),
+    ):
+        assert gss.superstaq_client.find_api_key() == "tomyheart"
 
     # fail to find an API key :(
-    with pytest.raises(EnvironmentError, match="Superstaq API key not specified and not found."):
-        with mock.patch.dict(os.environ, SUPERSTAQ_API_KEY=""):
-            with mock.patch("pathlib.Path.is_file", return_value=False):
-                gss.superstaq_client.find_api_key()
+    with (
+        pytest.raises(EnvironmentError, match="Superstaq API key not specified and not found."),
+        mock.patch.dict(os.environ, SUPERSTAQ_API_KEY=""),
+        mock.patch("pathlib.Path.is_file", return_value=False),
+    ):
+        gss.superstaq_client.find_api_key()
 
 
 @pytest.mark.parametrize(
-    "api_version, endpoint",
+    ("api_version", "endpoint"),
     [
         ("v0.2.0", "http://example.com/v0.2.0/user_info"),
         ("v0.3.0", "http://example.com/v0.3.0/client/user"),
@@ -2025,7 +2056,7 @@ def test_get_user_info(
 
 
 @pytest.mark.parametrize(
-    "api_version, endpoint",
+    ("api_version", "endpoint"),
     [
         ("v0.2.0", "http://example.com/v0.2.0/user_info"),
         ("v0.3.0", "http://example.com/v0.3.0/client/user"),
@@ -2078,7 +2109,7 @@ def test_get_user_info_v3_fail(client_v3: gss.superstaq_client._SuperstaqClientV
 
 
 @pytest.mark.parametrize(
-    "api_version, endpoint",
+    ("api_version", "endpoint"),
     [
         ("v0.2.0", "http://example.com/v0.2.0/user_info"),
         ("v0.3.0", "http://example.com/v0.3.0/client/user"),
@@ -2133,7 +2164,7 @@ def test_get_user_info_query_composite(
 
 
 @pytest.mark.parametrize(
-    "api_version, endpoint",
+    ("api_version", "endpoint"),
     [
         ("v0.2.0", "http://example.com/v0.2.0/user_info"),
         ("v0.3.0", "http://example.com/v0.3.0/client/user"),
