@@ -1350,7 +1350,7 @@ def test_superstaq_client_compile_v3_failed(
 
 
 @pytest.mark.parametrize(
-    "circuit_type, expected_map",
+    ("circuit_type", "expected_map"),
     [
         ("cirq", '[[[{"qubit": "q0"}, {"qubit": "q0"}]]]'),
         ("qiskit", "[[[0, 0]]]"),
