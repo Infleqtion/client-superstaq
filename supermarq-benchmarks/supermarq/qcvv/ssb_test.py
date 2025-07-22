@@ -24,6 +24,7 @@ import cirq
 import numpy as np
 import pandas as pd
 import pytest
+import cirq_superstaq as css
 
 from supermarq.qcvv import SSB, SSBResults
 
@@ -33,7 +34,7 @@ def test_ssb_init() -> None:
 
     experiment = SSB(num_circuits=10, cycle_depths=[2, 3, 5])
     assert experiment.num_qubits == 2
-    assert experiment.qubits == [q0, q1]
+    assert experiment.qubits == (q0, q1)
 
     assert len(experiment._stabilizer_states) == 12
     assert len(experiment._init_rotations) == 12
@@ -59,46 +60,38 @@ def test_random_parallel_qubit_rotation(ssb_experiment: SSB) -> None:
         cirq.ry(-np.pi / 2),
     ]
     moment = ssb_experiment._random_parallel_qubit_rotation()
-    assert moment == cirq.Moment(
-        cirq.rx(np.pi / 2)(cirq.LineQubit(0)), cirq.rx(np.pi / 2)(cirq.LineQubit(1))
-    )
+    assert moment == cirq.rx(np.pi / 2)
 
     moment = ssb_experiment._random_parallel_qubit_rotation()
-    assert moment == cirq.Moment(
-        cirq.ry(-np.pi / 2)(cirq.LineQubit(0)), cirq.ry(-np.pi / 2)(cirq.LineQubit(1))
-    )
+    assert moment == cirq.ry(-np.pi / 2)
 
 
 def test_sss_init_circuits(ssb_experiment: SSB) -> None:
-    init_circuit = ssb_experiment._sss_init_circuits(4)
+    init_circuit = ssb_experiment._sss_init_circuit(4)
     # Index-4 has init_rotations [X, X, X, _Y, _X]
     q0, q1 = cirq.LineQubit.range(2)
     assert init_circuit == cirq.Circuit(
-        cirq.X(q0),
-        cirq.X(q1),
-        cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
-        cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
-        cirq.CZ(q0, q1).with_tags("no_compile"),
-        cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
-        cirq.Moment(cirq.ry(-np.pi / 2)(q0), cirq.ry(-np.pi / 2)(q1)),
-        cirq.Moment(cirq.rx(-np.pi / 2)(q0), cirq.rx(-np.pi / 2)(q1)),
+        css.ParallelRGate(np.pi/2, np.pi, 2)(q0, q1),
+        css.ParallelRGate(np.pi/2, 0, 2)(q0, q1),
+        cirq.CZ(q0, q1),
+        css.ParallelRGate(np.pi/2, 0, 2)(q0, q1),
+        css.ParallelRGate(np.pi/2, -np.pi/2, 2)(q0, q1),
+        css.ParallelRGate(np.pi/2, np.pi, 2)(q0, q1),
     )
 
 
 def test_sss_reconciliation_circuit(ssb_experiment: SSB) -> None:
-    init_circuit = ssb_experiment._sss_init_circuits(4)
+    init_circuit = ssb_experiment._sss_init_circuit(4)
     # Index-4 has recon_rotations [_X, X, X, X]
 
     recon_circuit = ssb_experiment._sss_reconciliation_circuit(init_circuit)
     q0, q1 = cirq.LineQubit.range(2)
     assert recon_circuit == cirq.Circuit(
-        cirq.Moment(cirq.rx(-np.pi / 2)(q0), cirq.rx(-np.pi / 2)(q1)),
-        cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
-        cirq.CZ(q0, q1).with_tags("no_compile"),
-        cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
-        cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
-        cirq.X(q0),
-        cirq.X(q1),
+        css.ParallelRGate(np.pi/2, np.pi, 2)(q0, q1),
+        css.ParallelRGate(np.pi/2, np.pi, 2)(q0, q1),
+        cirq.CZ(q0, q1),
+        css.ParallelRGate(np.pi/2, np.pi, 2)(q0, q1),
+        css.ParallelRGate(np.pi/2, np.pi, 2)(q0, q1),
     )
 
 

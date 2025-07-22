@@ -16,7 +16,7 @@ __all__ = [
     "QCVVResults",
     "RBResults",
     "SSBResults",
-    "Sample",
     "SU2Results",
+    "Sample",
     "XEBResults",
 ]

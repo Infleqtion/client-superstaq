@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tooling for Symmetric Stabilizer Benchmarking.
-See https://arxiv.org/pdf/2407.20184
+See https://arxiv.org/pdf/2407.20184 for more details.
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ def _parallel(x: npt.NDArray[np.float64], y: npt.NDArray[np.float64], tol: float
 def _exp_decay(
     x: npt.NDArray[np.float64], A: float, alpha: float, B: float
 ) -> npt.NDArray[np.float64]:
-    r"""Exponential decay of the form
+    r"""Exponential decay of the form.
 
     .. math::
 
@@ -168,7 +168,8 @@ class SSBResults(QCVVResults):
         return fig
 
     def print_results(self) -> None:
-        print(
+        """Prints the key results data."""
+        print(  # noqa: T201
             f"Estimated CZ fidelity: {self.cz_fidelity_estimate:.5} "
             f"+/- {self.cz_fidelity_estimate_std:.5}"
         )
@@ -199,6 +200,11 @@ class SSB(QCVVExperiment[SSBResults]):
             num_circuits: Number of circuits to sample.
             cycle_depths: The cycle depths to sample.
             random_seed: An optional seed to use for randomization.
+            include_placeholders: Whether to include placeholder barriers to prevent adjacent layer
+                being compiled together.
+            distribute: Whether to randomly distribute the CZ gates throughout the the circuit
+                instead of having them all at the start.
+            kwargs: Additional kwargs passed to the base QCVVExperiment.
         """
         qubits = cirq.LineQubit.range(2)
 
@@ -206,10 +212,10 @@ class SSB(QCVVExperiment[SSBResults]):
         self._distribute = distribute
 
         # Moments containing parallel rotations.
-        X = css.ParallelRGate(np.pi / 2, 0.0, self.num_qubits)
-        Y = css.ParallelRGate(np.pi / 2, np.pi / 2, self.num_qubits)
-        _X = css.ParallelRGate(np.pi / 2, np.pi, self.num_qubits)
-        _Y = css.ParallelRGate(np.pi / 2, -np.pi / 2, self.num_qubits)
+        X = css.ParallelRGate(np.pi / 2, 0.0, 2)
+        Y = css.ParallelRGate(np.pi / 2, np.pi / 2, 2)
+        _X = css.ParallelRGate(np.pi / 2, np.pi, 2)
+        _Y = css.ParallelRGate(np.pi / 2, -np.pi / 2, 2)
         self._single_qubit_gate_set = [X, _X, Y, _Y]
 
         # Table I of https://arxiv.org/pdf/2407.20184
@@ -326,8 +332,6 @@ class SSB(QCVVExperiment[SSBResults]):
 
                 elif self._include_placeholders:
                     circuit += css.Barrier(2)(*self.qubits)
-                    circuit += cirq.CZ.on(*self.qubits).with_tags("no_compile")
-                    circuit += css.Barrier(2)(*self.qubits)
 
                 gate = self._random_parallel_qubit_rotation()
                 circuit += gate.on(*self.qubits)
@@ -410,7 +414,7 @@ class SSB(QCVVExperiment[SSBResults]):
     @classmethod
     def _from_json_dict_(
         cls,
-        samples: list[Sample],
+        _samples: list[Sample],
         num_circuits: int,
         cycle_depths: list[int],
         **kwargs: Any,
@@ -428,6 +432,6 @@ class SSB(QCVVExperiment[SSBResults]):
         return cls(
             num_circuits=num_circuits,
             cycle_depths=cycle_depths,
-            _samples=samples,
+            _samples=_samples,
             **kwargs,
         )
