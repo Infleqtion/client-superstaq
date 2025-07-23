@@ -49,6 +49,7 @@ class ApiVersion(str, enum.Enum):
 
 class HTTPClient:
     """Base HTTP client that makes HTTP requests and handles responses."""
+
     RETRIABLE_STATUS_CODES: ClassVar[set[int]] = {
         requests.codes.service_unavailable,
     }
