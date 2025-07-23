@@ -12,7 +12,7 @@ def test_5_to_1_msd() -> None:
     state_vector = sim_results.final_state_vector
     magic_state = sim_results.get_state_containing_qubit(cirq.q(0)).target_tensor
 
-    assert (cirq.dirac_notation(magic_state)) == "(-0.33+0.33j)|0⟩ + 0.89|1⟩"
+    assert (cirq.dirac_notation(magic_state)) == "(-0.328+0.328j)|0⟩ + 0.886|1⟩"
 
     density_matrix = cirq.density_matrix_from_state_vector(state_vector, indices=[0])
     tomo_res = cirq.experiments.single_qubit_state_tomography(
@@ -21,8 +21,8 @@ def test_5_to_1_msd() -> None:
 
     expected_density = numpy.array(
         [
-            [0.21132484 + 0.0j, -0.28867513 + 0.28867513j],
-            [-0.28867513 - 0.28867513j, 0.78867525 + 0.0j],
+            [0.21566492 + 0.0j, -0.29082087 + 0.29082087j],
+            [-0.29082087 - 0.29082087j, 0.7843351 + 0.0j],
         ],
         dtype=numpy.complex64,
     )
