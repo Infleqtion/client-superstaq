@@ -1,2 +1,2 @@
-cirq-core @ git+https://github.com/kygnz/Cirq.git@records#subdirectory=cirq-core
-general-superstaq~=0.5.46
+cirq-core>=1.0.0
+general-superstaq~=0.5.47

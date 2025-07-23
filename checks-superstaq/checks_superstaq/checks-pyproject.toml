@@ -37,18 +37,12 @@ lint.select = [
   "PIE",    # flake8-pie checks
   "PL",     # pylint checks
   "PLE",    # pylint errors
-  "PT001",  # pytest-fixture-incorrect-parentheses-style
-  "PT009",  # pytest-unittest-assertion
-  "PT018",  # pytest-composite-assertion
+  "PT",     # flake8-pytest-style
   "PYI",    # flake8-pyi checks
   "Q",      # flake8-quotes checks
   "RSE",    # flake8-raise checks
   "RUF",    # Ruff-specific checks
-  "SIM101", # Consider-merging-isinstance check
-  "SIM114", # if-with-same-arms check
-  "SIM210", # pylint's simplifiable-if-expression (1)
-  "SIM211", # pylint's simplifiable-if-expression (2)
-  "SIM300", # yoda-conditions check
+  "SIM",    # flake8-simplify checks
   "T10",    # flake8-debugger checks
   "T20",    # flake8-print checks
   "TC",     # flake8-type-checking checks
@@ -87,9 +81,16 @@ lint.ignore = [
   "PLR2004",
   "PLW0127",
   "PLW2901",
+  "PT012",
+  "PT019",
+  "PT022",
   "PYI041",
   "RUF001",
   "RUF002",
+  "SIM102",
+  "SIM105",
+  "SIM108",
+  "SIM118",
   "TC003",
   "UP038",
   # The following are excluded to not conflict with `ruff format`:
@@ -139,6 +140,7 @@ case-sensitive = false
 [tool.mypy]
 pretty = true
 ignore_missing_imports = true
+warn_redundant_casts = true
 show_error_codes = true
 disallow_any_generics = true
 disallow_incomplete_defs = true
@@ -158,4 +160,3 @@ exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "@overload"]
 [tool.coverage.run]
 include = ["./*"]
 concurrency = ["thread"]
-
