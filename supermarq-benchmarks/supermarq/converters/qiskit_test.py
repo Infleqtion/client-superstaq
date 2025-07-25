@@ -8,12 +8,13 @@ from typing import TYPE_CHECKING
 import cirq
 import cirq_superstaq as css
 import general_superstaq as gss
-import supermarq as sm
 import numpy as np
 import pytest
 import qiskit
 import qiskit_superstaq as qss
 import sympy
+
+import supermarq as sm
 
 if TYPE_CHECKING:
     import _pytest

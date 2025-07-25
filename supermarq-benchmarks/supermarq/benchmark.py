@@ -4,12 +4,8 @@ from __future__ import annotations
 import abc
 from typing import TYPE_CHECKING, Any
 
-import cirq
-
-import supermarq
-
 if TYPE_CHECKING:
-    import qiskit
+    import cirq
 
 
 class Benchmark:

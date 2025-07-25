@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-from unittest.mock import patch
-
-import qiskit
-
 import supermarq
 from supermarq.benchmarks.mermin_bell import MerminBell
 
