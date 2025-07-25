@@ -8,13 +8,12 @@ from typing import TYPE_CHECKING
 import cirq
 import cirq_superstaq as css
 import general_superstaq as gss
+import supermarq as sm
 import numpy as np
 import pytest
 import qiskit
 import qiskit_superstaq as qss
 import sympy
-
-import experiments_superstaq as ess
 
 if TYPE_CHECKING:
     import _pytest
@@ -72,19 +71,19 @@ def _gates_are_equivalent(
 
 
 def trial_qiskit_static_gates() -> list[qiskit.circuit.Gate]:
-    return [qiskit_gate_type() for qiskit_gate_type in ess.converters.qiskit._qiskit_static_gates]
+    return [qiskit_gate_type() for qiskit_gate_type in sm.converters.qiskit._qiskit_static_gates]
 
 
 def trial_qiskit_pow_gates() -> list[qiskit.circuit.Gate]:
     rng = np.random.default_rng()
     qiskit_gates = []
-    for qiskit_gate_type in ess.converters.qiskit._qiskit_pow_gates:
+    for qiskit_gate_type in sm.converters.qiskit._qiskit_pow_gates:
         rads = rng.uniform(-2 * np.pi, 2 * np.pi)
         qiskit_gate = qiskit_gate_type(rads)
         qiskit_gates.append(qiskit_gate)
 
         assert _gates_are_equivalent(
-            qiskit_gate, ess.converters.qiskit._qiskit_pow_gates[qiskit_gate_type] ** (rads / np.pi)
+            qiskit_gate, sm.converters.qiskit._qiskit_pow_gates[qiskit_gate_type] ** (rads / np.pi)
         )
 
     return qiskit_gates
@@ -112,7 +111,7 @@ def trial_qiskit_param_gates() -> list[qiskit.circuit.Gate]:
 
     # meta: make sure we've covered every gate type in _qiskit_param_gates
     covered = {gate.base_class for gate in qiskit_gates}
-    missing = set(ess.converters.qiskit._qiskit_param_gates).difference(covered)
+    missing = set(sm.converters.qiskit._qiskit_param_gates).difference(covered)
     assert not missing, "Missing tests for: " + ", ".join(gate.__name__ for gate in missing)
     return qiskit_gates
 
@@ -147,7 +146,7 @@ def trial_controlled_gates() -> list[qiskit.circuit.ControlledGate]:
 
     # meta: make sure we've covered every gate type in _known_qiskit_controlled_gate_types
     covered = {gate.base_class for gate in qiskit_gates}
-    missing = set(ess.converters.qiskit._known_qiskit_controlled_gate_types).difference(covered)
+    missing = set(sm.converters.qiskit._known_qiskit_controlled_gate_types).difference(covered)
     assert not missing, "Missing tests for: " + ", ".join(gate.__name__ for gate in missing)
 
     return qiskit_gates
@@ -170,17 +169,17 @@ def trial_keep_definition_gates() -> list[qiskit.circuit.ControlledGate]:
 
     # meta: make sure we've covered every gate type in _keep_qiskit_definition
     covered = {gate.base_class for gate in qiskit_gates}
-    missing = set(ess.converters.qiskit._keep_qiskit_definition).difference(covered)
+    missing = set(sm.converters.qiskit._keep_qiskit_definition).difference(covered)
     assert not missing, "Missing tests for: " + ", ".join(gate.__name__ for gate in missing)
     return qiskit_gates
 
 
 def test_gate_maps() -> None:
-    """Make sure all the global gate dictionaries in ess.converters.qiskit are valid."""
+    """Make sure all the global gate dictionaries in sm.converters.qiskit are valid."""
     standard_args = {"self", "label", "duration", "unit"}
 
     # static gates should have no arguments aside from (possibly) "label"
-    for qiskit_gate_type, cirq_gate in ess.converters.qiskit._qiskit_static_gates.items():
+    for qiskit_gate_type, cirq_gate in sm.converters.qiskit._qiskit_static_gates.items():
         init_args = set(inspect.signature(qiskit_gate_type.__init__).parameters)
         assert init_args.issubset(standard_args)
         if cirq.has_unitary(cirq_gate):
@@ -190,7 +189,7 @@ def test_gate_maps() -> None:
             assert issubclass(qiskit_gate_type, qiskit.circuit.Instruction)
 
     # pow gates should have a single argument aside from (possibly) "label"
-    for qiskit_gate_type, cirq_gate in ess.converters.qiskit._qiskit_pow_gates.items():
+    for qiskit_gate_type, cirq_gate in sm.converters.qiskit._qiskit_pow_gates.items():
         assert issubclass(qiskit_gate_type, qiskit.circuit.Gate)
 
         init_args = set(inspect.signature(qiskit_gate_type.__init__).parameters)
@@ -199,11 +198,11 @@ def test_gate_maps() -> None:
 
     # make sure there are no duplicates
     all_gate_types = [
-        *ess.converters.qiskit._qiskit_static_gates,
-        *ess.converters.qiskit._qiskit_pow_gates,
-        *ess.converters.qiskit._qiskit_param_gates,
-        *ess.converters.qiskit._known_qiskit_controlled_gate_types,
-        *ess.converters.qiskit._keep_qiskit_definition,
+        *sm.converters.qiskit._qiskit_static_gates,
+        *sm.converters.qiskit._qiskit_pow_gates,
+        *sm.converters.qiskit._qiskit_param_gates,
+        *sm.converters.qiskit._known_qiskit_controlled_gate_types,
+        *sm.converters.qiskit._keep_qiskit_definition,
     ]
     assert len(set(all_gate_types)) == len(all_gate_types)
 
@@ -216,8 +215,8 @@ def test_gate_maps() -> None:
             attr = getattr(module, attr_name)
             if isinstance(attr, type) and issubclass(attr, qiskit.circuit.ControlledGate):
                 assert attr in (
-                    *ess.converters.qiskit._known_qiskit_controlled_gate_types,
-                    *ess.converters.qiskit._keep_qiskit_definition,
+                    *sm.converters.qiskit._known_qiskit_controlled_gate_types,
+                    *sm.converters.qiskit._keep_qiskit_definition,
                     qiskit.circuit.library.CUGate,
                 ), (
                     f"{attr_name} should be in either _known_qiskit_controlled_gate_types or"
@@ -228,7 +227,7 @@ def test_gate_maps() -> None:
 @pytest.mark.parametrize("num_qubits", [1, 2, 3, 4, 5])
 def test_swap_endianness(num_qubits: int) -> None:
     matrix = cirq.testing.random_unitary(2**num_qubits)
-    swapped_matrix = ess.converters.qiskit.swap_endianness(matrix)
+    swapped_matrix = sm.converters.qiskit.swap_endianness(matrix)
 
     # Swapped matrix should be the same as a MatrixGate applied to qubits in reverse order
     qs = cirq.LineQubit.range(num_qubits)
@@ -237,34 +236,34 @@ def test_swap_endianness(num_qubits: int) -> None:
     )
 
     # Applying twice should return the original matrix
-    np.testing.assert_array_equal(ess.converters.qiskit.swap_endianness(swapped_matrix), matrix)
+    np.testing.assert_array_equal(sm.converters.qiskit.swap_endianness(swapped_matrix), matrix)
 
 
 @parametrize_over_qiskit_gates(*trial_qiskit_static_gates())
 def test_convert_gate_static(trial_gate: qiskit.circuit.Instruction) -> None:
-    cirq_gate = ess.converters.qiskit.qiskit_gate_to_cirq_gate(trial_gate)
-    assert cirq_gate is ess.converters.qiskit._qiskit_static_gates[trial_gate.base_class]
+    cirq_gate = sm.converters.qiskit.qiskit_gate_to_cirq_gate(trial_gate)
+    assert cirq_gate is sm.converters.qiskit._qiskit_static_gates[trial_gate.base_class]
 
 
 @parametrize_over_qiskit_gates(*trial_qiskit_pow_gates())
 def test_convert_gate_pow(trial_gate: qiskit.circuit.Instruction) -> None:
-    cirq_gate = ess.converters.qiskit.qiskit_gate_to_cirq_gate(trial_gate)
+    cirq_gate = sm.converters.qiskit.qiskit_gate_to_cirq_gate(trial_gate)
     exponent = trial_gate.params[0] / np.pi
-    assert cirq_gate == ess.converters.qiskit._qiskit_pow_gates[trial_gate.base_class] ** exponent
+    assert cirq_gate == sm.converters.qiskit._qiskit_pow_gates[trial_gate.base_class] ** exponent
     assert _gates_are_equivalent(trial_gate, cirq_gate)
 
 
 @parametrize_over_qiskit_gates(*trial_qiskit_param_gates())
 def test_convert_gate_param(trial_gate: qiskit.circuit.Instruction) -> None:
-    cirq_gate = ess.converters.qiskit.qiskit_gate_to_cirq_gate(trial_gate)
-    assert cirq_gate == ess.converters.qiskit._qiskit_param_gates[trial_gate.base_class](trial_gate)
+    cirq_gate = sm.converters.qiskit.qiskit_gate_to_cirq_gate(trial_gate)
+    assert cirq_gate == sm.converters.qiskit._qiskit_param_gates[trial_gate.base_class](trial_gate)
     assert _gates_are_equivalent(trial_gate, cirq_gate)
 
 
 def test_convert_gate_unknown() -> None:
     # qiskit gates with no single-gate cirq equivalence
     for qiskit_gate in (qiskit.circuit.library.QFT(3), qiskit.circuit.library.MCXGrayCode(4)):
-        assert ess.converters.qiskit.qiskit_gate_to_cirq_gate(qiskit_gate) is None
+        assert sm.converters.qiskit.qiskit_gate_to_cirq_gate(qiskit_gate) is None
 
 
 @parametrize_over_qiskit_gates(
@@ -275,13 +274,13 @@ def test_convert_gate_unknown() -> None:
 )
 def test_handle_qiskit_instruction_known(trial_gate: qiskit.circuit.Instruction) -> None:
     qubits = random_qubits(trial_gate.num_qubits)
-    cirq_op, phase = ess.converters.qiskit._handle_qiskit_inst(trial_gate, qubits, [])
+    cirq_op, phase = sm.converters.qiskit._handle_qiskit_inst(trial_gate, qubits, [])
     assert phase == 0
     assert isinstance(cirq_op, cirq.Operation)
     if cirq.has_unitary(cirq_op):
         assert _operations_are_equivalent(trial_gate, cirq_op, qubits)
 
-    assert (cirq_op, phase) == ess.converters.qiskit._handle_qiskit_inst(
+    assert (cirq_op, phase) == sm.converters.qiskit._handle_qiskit_inst(
         trial_gate.to_mutable(), qubits, []
     )
 
@@ -291,9 +290,9 @@ def test_handle_qiskit_instruction_using_qiskit_definition(
     trial_gate: qiskit.circuit.Instruction,
 ) -> None:
     qubits = random_qubits(trial_gate.num_qubits)
-    cirq_op, phase = ess.converters.qiskit._handle_qiskit_inst(trial_gate, qubits, [])
+    cirq_op, phase = sm.converters.qiskit._handle_qiskit_inst(trial_gate, qubits, [])
     assert isinstance(cirq_op, cirq.CircuitOperation)
-    assert (cirq_op, phase) == ess.converters.qiskit._handle_qiskit_definition(
+    assert (cirq_op, phase) == sm.converters.qiskit._handle_qiskit_definition(
         trial_gate, qubits, []
     )
     assert _operations_are_equivalent(trial_gate, cirq_op, qubits, phase)
@@ -305,12 +304,12 @@ def test_handle_qiskit_instruction_parallel_gates() -> None:
 
     theta, phi = rng.uniform(-2 * np.pi, 2 * np.pi, size=2)
     trial_gate = qiskit.circuit.library.GR(3, theta, phi)[0].operation
-    cirq_op, phase = ess.converters.qiskit._handle_qiskit_inst(trial_gate, qubits, [])
+    cirq_op, phase = sm.converters.qiskit._handle_qiskit_inst(trial_gate, qubits, [])
     assert cirq.approx_eq(cirq_op, css.ParallelRGate(theta, phi, 3).on(*qubits))
     assert phase == 0
 
     trial_gate = qss.ParallelGates(qiskit.circuit.library.HGate(), qss.AceCR("-+"))
-    cirq_op, phase = ess.converters.qiskit._handle_qiskit_inst(trial_gate, qubits, [])
+    cirq_op, phase = sm.converters.qiskit._handle_qiskit_inst(trial_gate, qubits, [])
     assert cirq_op == css.ParallelGates(cirq.H, css.AceCR("-+")).on(*qubits)
     assert phase == 0
 
@@ -319,7 +318,7 @@ def test_handle_qiskit_instruction() -> None:
     qubits = random_qubits(3)
 
     # Measurement
-    cirq_op, phase = ess.converters.qiskit._handle_qiskit_inst(
+    cirq_op, phase = sm.converters.qiskit._handle_qiskit_inst(
         qiskit.circuit.library.Measure(), [cirq.LineQubit(123)], ["abc"]
     )
     assert cirq_op == cirq.measure(cirq.LineQubit(123), key="abc")
@@ -327,20 +326,20 @@ def test_handle_qiskit_instruction() -> None:
 
     # Operation subclassing QuantumCircuit instead of Instruction
     trial_gate = qiskit.circuit.library.QFT(3).to_instruction()
-    cirq_op, phase = ess.converters.qiskit._handle_qiskit_inst(trial_gate, qubits, [])
+    cirq_op, phase = sm.converters.qiskit._handle_qiskit_inst(trial_gate, qubits, [])
     assert isinstance(cirq_op, cirq.CircuitOperation)
     assert _operations_are_equivalent(trial_gate, cirq_op, qubits, phase)
 
     # MatrixGate fallback:
     matrix = cirq.testing.random_unitary(8)
     trial_gate = qiskit.circuit.library.UnitaryGate(matrix)
-    cirq_op, phase = ess.converters.qiskit._handle_qiskit_inst(trial_gate, qubits, [])
+    cirq_op, phase = sm.converters.qiskit._handle_qiskit_inst(trial_gate, qubits, [])
     assert isinstance(cirq_op.gate, cirq.MatrixGate)
     assert _operations_are_equivalent(trial_gate, cirq_op, qubits)
     assert phase == 0
 
     with pytest.raises(gss.SuperstaqException, match="We don't know what to do"):
-        _, _ = ess.converters.qiskit._handle_qiskit_inst(
+        _, _ = sm.converters.qiskit._handle_qiskit_inst(
             qiskit.circuit.Gate("unknown", 1, []), [cirq.LineQubit(789)], []
         )
 
@@ -355,7 +354,7 @@ def test_translate_circuit() -> None:
     qiskit_circuit.measure(2, 0)
     qiskit_circuit.measure(3, 3)
 
-    cirq_circuit = ess.converters.qiskit_to_cirq(qiskit_circuit)
+    cirq_circuit = sm.converters.qiskit_to_cirq(qiskit_circuit)
     cirq.testing.assert_same_circuits(
         cirq_circuit,
         cirq.Circuit(
@@ -384,10 +383,10 @@ def test_translate_circuit() -> None:
         cirq.measure(q3, key="b_1"),
     )
 
-    cirq_circuit = ess.converters.qiskit_to_cirq(qiskit_circuit)
+    cirq_circuit = sm.converters.qiskit_to_cirq(qiskit_circuit)
     cirq.testing.assert_same_circuits(cirq_circuit, expected)
 
-    cirq_circuit = ess.converters.qiskit_to_cirq(qiskit_circuit, keep_global_phase=True)
+    cirq_circuit = sm.converters.qiskit_to_cirq(qiskit_circuit, keep_global_phase=True)
     cirq.testing.assert_same_circuits(
         cirq_circuit, (expected + cirq.global_phase_operation(np.exp(1j * 1.23)))
     )
@@ -411,7 +410,7 @@ def test_translate_circuit() -> None:
         cirq.measure(q2, key="measure_0"),
         cirq.measure(q3, key="somename_0"),
     )
-    cirq_circuit = ess.converters.qiskit_to_cirq(qiskit_circuit)
+    cirq_circuit = sm.converters.qiskit_to_cirq(qiskit_circuit)
     cirq.testing.assert_same_circuits(cirq_circuit, expected_cirq_circuit)
 
     qiskit_circuit = qiskit.QuantumCircuit(4)
@@ -425,7 +424,7 @@ def test_translate_circuit() -> None:
         cirq.WaitGate(cirq.Duration(millis=3.4)).on(q2),
         cirq.WaitGate(cirq.Duration(millis=5.6e3)).on(q3),
     )
-    cirq_circuit = ess.converters.qiskit_to_cirq(qiskit_circuit)
+    cirq_circuit = sm.converters.qiskit_to_cirq(qiskit_circuit)
     cirq.testing.assert_same_circuits(cirq_circuit, expected_cirq_circuit)
 
 
@@ -440,7 +439,7 @@ def test_translate_circuit_with_labels() -> None:
     qiskit_circuit.append(qiskit.circuit.library.DCXGate(label="no_compile"), [1, 2])
     qiskit_circuit.append(qiskit.circuit.library.DCXGate(label="pls_compile"), [2, 3])
 
-    cirq_circuit = ess.converters.qiskit_to_cirq(qiskit_circuit)
+    cirq_circuit = sm.converters.qiskit_to_cirq(qiskit_circuit)
     cirq.testing.assert_same_circuits(
         cirq_circuit,
         cirq.Circuit(
@@ -463,7 +462,7 @@ def test_classical_bit_padding() -> None:
     qiskit_circuit = qiskit.QuantumCircuit(1, 1)
     qiskit_circuit.measure(0, 0)
     cirq.testing.assert_same_circuits(
-        ess.converters.qiskit_to_cirq(qiskit_circuit),
+        sm.converters.qiskit_to_cirq(qiskit_circuit),
         cirq.Circuit(cirq.measure(cirq.q(0), key="c_0")),
     )
 
@@ -471,7 +470,7 @@ def test_classical_bit_padding() -> None:
     qiskit_circuit.measure(0, 0)
     qiskit_circuit.measure(0, 9)
     cirq.testing.assert_same_circuits(
-        ess.converters.qiskit_to_cirq(qiskit_circuit),
+        sm.converters.qiskit_to_cirq(qiskit_circuit),
         cirq.Circuit(cirq.measure(cirq.q(0), key="c_0"), cirq.measure(cirq.q(0), key="c_9")),
     )
 
@@ -479,7 +478,7 @@ def test_classical_bit_padding() -> None:
     qiskit_circuit.measure(0, 0)
     qiskit_circuit.measure(0, 9)
     cirq.testing.assert_same_circuits(
-        ess.converters.qiskit_to_cirq(qiskit_circuit),
+        sm.converters.qiskit_to_cirq(qiskit_circuit),
         cirq.Circuit(cirq.measure(cirq.q(0), key="c_00"), cirq.measure(cirq.q(0), key="c_09")),
     )
 
@@ -487,7 +486,7 @@ def test_classical_bit_padding() -> None:
     qiskit_circuit.measure(0, 0)
     qiskit_circuit.measure(0, 90)
     cirq.testing.assert_same_circuits(
-        ess.converters.qiskit_to_cirq(qiskit_circuit),
+        sm.converters.qiskit_to_cirq(qiskit_circuit),
         cirq.Circuit(cirq.measure(cirq.q(0), key="c_000"), cirq.measure(cirq.q(0), key="c_090")),
     )
 
@@ -497,8 +496,8 @@ def test_classical_bit_padding() -> None:
         qiskit.ClassicalRegister(20, "c"),
     )
     qiskit_circuit.measure(range(20), range(20))
-    round_trip_circuit = ess.converters.cirq_to_qiskit(
-        ess.converters.qiskit_to_cirq(qiskit_circuit), cirq.LineQubit.range(20)
+    round_trip_circuit = sm.converters.cirq_to_qiskit(
+        sm.converters.qiskit_to_cirq(qiskit_circuit), cirq.LineQubit.range(20)
     )
     assert round_trip_circuit == qiskit_circuit
 
@@ -517,7 +516,7 @@ def test_handle_qiskit_circuit() -> None:
 
     for qiskit_gate in trial_qiskit_static_gates():
         # this test compares the unitary effect of each circuit, so skip over nonunitary ops
-        if cirq.has_unitary(ess.converters.qiskit._qiskit_static_gates[qiskit_gate.base_class]):
+        if cirq.has_unitary(sm.converters.qiskit._qiskit_static_gates[qiskit_gate.base_class]):
             trial_gates.append(qiskit_gate)
 
     total_qubits = max(qiskit_gate.num_qubits for qiskit_gate in trial_gates)
@@ -531,7 +530,7 @@ def test_handle_qiskit_circuit() -> None:
         qiskit_circuit.append(qiskit_gate, qubits.tolist())
 
     cirq_qubits = random_qubits(qiskit_circuit.num_qubits)
-    cirq_circuit, phase = ess.converters.qiskit._handle_qiskit_circuit(
+    cirq_circuit, phase = sm.converters.qiskit._handle_qiskit_circuit(
         qiskit_circuit, cirq_qubits, []
     )
     assert _operations_are_equivalent(qiskit_circuit, cirq_circuit, cirq_qubits, phase)
@@ -543,7 +542,7 @@ def test_handle_qiskit_circuit() -> None:
     qiskit_circuit.append(
         qiskit_circuit.to_instruction(), rng.permutation(qiskit_circuit.num_qubits).tolist()
     )
-    cirq_circuit, phase2 = ess.converters.qiskit._handle_qiskit_circuit(
+    cirq_circuit, phase2 = sm.converters.qiskit._handle_qiskit_circuit(
         qiskit_circuit, cirq_qubits, []
     )
     assert _operations_are_equivalent(qiskit_circuit, cirq_circuit, cirq_qubits, phase2)
@@ -564,7 +563,7 @@ def test_conditional_sub_circuit() -> None:
     qiskit_circuit.t(1)
 
     qubits = [cirq.GridQubit(1, 4), cirq.LineQubit(1), cirq.LineQubit(3), cirq.NamedQubit("jay")]
-    cirq_circuit, _ = ess.converters.qiskit._handle_qiskit_circuit(qiskit_circuit, qubits, ["meas"])
+    cirq_circuit, _ = sm.converters.qiskit._handle_qiskit_circuit(qiskit_circuit, qubits, ["meas"])
     expected_circuit = textwrap.dedent(
         """
                                ┌───┐
@@ -601,7 +600,7 @@ def test_handle_qiskit_circuit_with_classical_bits() -> None:
     qubits = [cirq.GridQubit(1, 4), cirq.LineQubit(1), cirq.LineQubit(3), cirq.NamedQubit("jay")]
     measurement_keys = ["A", "B", "C", "D"]
 
-    cirq_circuit, _ = ess.converters.qiskit._handle_qiskit_circuit(
+    cirq_circuit, _ = sm.converters.qiskit._handle_qiskit_circuit(
         qiskit_circuit, qubits, measurement_keys
     )
 
@@ -647,7 +646,7 @@ def test_handle_qiskit_circuit_with_classical_bits() -> None:
     qiskit_circuit = qiskit_circuit.compose(z_adj_circuit, [0, 3], [1])
     qiskit_circuit = qiskit_circuit.compose(x_adj_circuit, [2, 3], [2])
 
-    cirq_circuit, _ = ess.converters.qiskit._handle_qiskit_circuit(
+    cirq_circuit, _ = sm.converters.qiskit._handle_qiskit_circuit(
         qiskit_circuit, qubits, measurement_keys
     )
     cirq.testing.assert_has_diagram(cirq_circuit, expected_circuit)
@@ -670,7 +669,7 @@ def test_handle_qiskit_circuit_with_classical_bits() -> None:
         qiskit_circuit.z(0)
 
     qubits = [cirq.LineQubit(5), cirq.LineQubit(2)]
-    cirq_circuit, _ = ess.converters.qiskit._handle_qiskit_circuit(
+    cirq_circuit, _ = sm.converters.qiskit._handle_qiskit_circuit(
         qiskit_circuit, qubits, ["B", "A"]
     )
     cirq.testing.assert_has_diagram(
@@ -695,8 +694,8 @@ def test_handle_qiskit_circuit_with_classical_bits() -> None:
 def test_handle_qiskit_controlled_op(trial_gate: qiskit.circuit.ControlledGate) -> None:
     while trial_gate.ctrl_state > 0:
         qubits = random_qubits(trial_gate.num_qubits)
-        cirq_op = ess.converters.qiskit._handle_qiskit_controlled_op(trial_gate, qubits)
-        assert ess.converters.qiskit._handle_qiskit_inst(trial_gate, qubits, []) == (cirq_op, 0.0)
+        cirq_op = sm.converters.qiskit._handle_qiskit_controlled_op(trial_gate, qubits)
+        assert sm.converters.qiskit._handle_qiskit_inst(trial_gate, qubits, []) == (cirq_op, 0.0)
         assert isinstance(cirq_op, cirq.Operation)
         assert _operations_are_equivalent(trial_gate, cirq_op, qubits)
 
@@ -727,8 +726,8 @@ def test_handle_qiskit_controlled_op_uses_correct_sub_op(base_gate: qiskit.circu
         qiskit_gate = base_gate.control(num_controls, ctrl_state=ctrl_state)
 
         qubits = cirq.LineQubit.range(qiskit_gate.num_qubits)
-        cirq_op = ess.converters.qiskit._handle_qiskit_controlled_op(qiskit_gate, qubits)
-        expected_base_gate = ess.converters.qiskit.qiskit_gate_to_cirq_gate(base_gate)
+        cirq_op = sm.converters.qiskit._handle_qiskit_controlled_op(qiskit_gate, qubits)
+        expected_base_gate = sm.converters.qiskit.qiskit_gate_to_cirq_gate(base_gate)
         assert isinstance(cirq_op, cirq.ControlledOperation)
         assert cirq_op.sub_operation.gate == expected_base_gate
         assert _operations_are_equivalent(qiskit_gate, cirq_op, qubits)
@@ -738,13 +737,13 @@ def test_handle_qiskit_controlled_op_with_unknown_gates() -> None:
     q0, q1, q2, q3 = qubits = random_qubits(4)
     qiskit_gate = qss.AceCR("+-").control(2, ctrl_state="10")
     expected = css.AceCR("+-").on(q2, q3).controlled_by(q0, q1, control_values=[0, 1])
-    assert ess.converters.qiskit._handle_qiskit_controlled_op(qiskit_gate, qubits) == expected
-    assert ess.converters.qiskit._handle_qiskit_inst(qiskit_gate, qubits, []) == (expected, 0.0)
+    assert sm.converters.qiskit._handle_qiskit_controlled_op(qiskit_gate, qubits) == expected
+    assert sm.converters.qiskit._handle_qiskit_inst(qiskit_gate, qubits, []) == (expected, 0.0)
 
     qiskit_gate = qiskit.circuit.library.GR(2, 1.1, 2.2).to_gate().control(2, ctrl_state="11")
     expected = css.ParallelRGate(1.1, 2.2, 2).on(q2, q3).controlled_by(q0, q1)
-    assert ess.converters.qiskit._handle_qiskit_controlled_op(qiskit_gate, qubits) == expected
-    assert ess.converters.qiskit._handle_qiskit_inst(qiskit_gate, qubits, []) == (expected, 0.0)
+    assert sm.converters.qiskit._handle_qiskit_controlled_op(qiskit_gate, qubits) == expected
+    assert sm.converters.qiskit._handle_qiskit_inst(qiskit_gate, qubits, []) == (expected, 0.0)
 
     # control a whole circuit
     circuit = qiskit.QuantumCircuit(3)
@@ -762,11 +761,11 @@ def test_handle_qiskit_controlled_op_with_unknown_gates() -> None:
             cirq.CCX(q0, q2, q3),
         ).freeze()
     )
-    assert ess.converters.qiskit._handle_qiskit_controlled_op(qiskit_gate, qubits) == expected
-    assert ess.converters.qiskit._handle_qiskit_inst(qiskit_gate, qubits, []) == (expected, 0.0)
+    assert sm.converters.qiskit._handle_qiskit_controlled_op(qiskit_gate, qubits) == expected
+    assert sm.converters.qiskit._handle_qiskit_inst(qiskit_gate, qubits, []) == (expected, 0.0)
 
     qiskit_gate.definition = qiskit.circuit.library.C3XGate().definition
-    assert ess.converters.qiskit._handle_qiskit_controlled_op(qiskit_gate, qubits) is None
+    assert sm.converters.qiskit._handle_qiskit_controlled_op(qiskit_gate, qubits) is None
 
 
 def test_handle_qiskit_u_gate() -> None:
@@ -774,38 +773,38 @@ def test_handle_qiskit_u_gate() -> None:
 
     theta, phi, lam = rng.uniform(-2 * np.pi, 2 * np.pi, size=3)
     qiskit_gate = qiskit.circuit.library.UGate(theta, phi, lam)
-    cirq_gate, phase = ess.converters.qiskit._handle_qiskit_u_gate(theta, phi, lam)
+    cirq_gate, phase = sm.converters.qiskit._handle_qiskit_u_gate(theta, phi, lam)
     assert cirq.allclose_up_to_global_phase(qiskit_gate.to_matrix(), cirq.unitary(cirq_gate))
     assert np.allclose(qiskit_gate.to_matrix(), cirq.unitary(cirq_gate) * np.exp(1j * phase))
 
     qiskit_gate = qiskit.circuit.library.UGate(0.0, phi, lam)
-    cirq_gate, phase = ess.converters.qiskit._handle_qiskit_u_gate(0.0, phi, lam)
+    cirq_gate, phase = sm.converters.qiskit._handle_qiskit_u_gate(0.0, phi, lam)
     assert isinstance(cirq_gate, cirq.ZPowGate)
     assert not phase
     assert np.allclose(qiskit_gate.to_matrix(), cirq.unitary(cirq_gate))
 
     qiskit_gate = qiskit.circuit.library.UGate(theta, phi, -phi)
-    cirq_gate, phase = ess.converters.qiskit._handle_qiskit_u_gate(theta, phi, -phi)
+    cirq_gate, phase = sm.converters.qiskit._handle_qiskit_u_gate(theta, phi, -phi)
     assert isinstance(cirq_gate, cirq.PhasedXPowGate)
     assert not phase
     assert np.allclose(qiskit_gate.to_matrix(), cirq.unitary(cirq_gate))
 
     qiskit_gate = qiskit.circuit.library.UGate(np.pi, phi, lam)
-    cirq_gate, phase = ess.converters.qiskit._handle_qiskit_u_gate(np.pi, phi, lam)
+    cirq_gate, phase = sm.converters.qiskit._handle_qiskit_u_gate(np.pi, phi, lam)
     assert isinstance(cirq_gate, cirq.PhasedXZGate)
     assert not phase
     assert np.allclose(qiskit_gate.to_matrix(), cirq.unitary(cirq_gate))
 
 
 def test_get_cirq_duration() -> None:
-    assert ess.converters.qiskit._get_cirq_duration(1.1, "ps") == cirq.Duration(picos=1.1)
-    assert ess.converters.qiskit._get_cirq_duration(2.1, "ns") == cirq.Duration(nanos=2.1)
-    assert ess.converters.qiskit._get_cirq_duration(3.1, "us") == cirq.Duration(micros=3.1)
-    assert ess.converters.qiskit._get_cirq_duration(4.1, "ms") == cirq.Duration(millis=4.1)
-    assert ess.converters.qiskit._get_cirq_duration(5.1, "s") == cirq.Duration(millis=5100)
+    assert sm.converters.qiskit._get_cirq_duration(1.1, "ps") == cirq.Duration(picos=1.1)
+    assert sm.converters.qiskit._get_cirq_duration(2.1, "ns") == cirq.Duration(nanos=2.1)
+    assert sm.converters.qiskit._get_cirq_duration(3.1, "us") == cirq.Duration(micros=3.1)
+    assert sm.converters.qiskit._get_cirq_duration(4.1, "ms") == cirq.Duration(millis=4.1)
+    assert sm.converters.qiskit._get_cirq_duration(5.1, "s") == cirq.Duration(millis=5100)
 
     with pytest.raises(gss.SuperstaqException, match="We only.*(got 'dt')"):
-        _ = ess.converters.qiskit._get_cirq_duration(123, "dt")
+        _ = sm.converters.qiskit._get_cirq_duration(123, "dt")
 
 
 def test_handle_qiskit_definition() -> None:
@@ -813,7 +812,7 @@ def test_handle_qiskit_definition() -> None:
     q1 = cirq.LineQubit(2)
 
     qiskit_gate = qss.ZZSwapGate(1.23)
-    cirq_op, phase = ess.converters.qiskit._handle_qiskit_definition(qiskit_gate, [q0, q1], [])
+    cirq_op, phase = sm.converters.qiskit._handle_qiskit_definition(qiskit_gate, [q0, q1], [])
 
     assert phase == 0.0
     assert isinstance(cirq_op, cirq.CircuitOperation)
@@ -831,7 +830,7 @@ def test_handle_qiskit_definition() -> None:
 
     qubits = random_qubits(5)
     measurement_keys = ["A", "B", "C", "D", "E"]
-    cirq_op, phase = ess.converters.qiskit._handle_qiskit_definition(
+    cirq_op, phase = sm.converters.qiskit._handle_qiskit_definition(
         qiskit_circuit.to_instruction(), qubits, measurement_keys
     )
 
@@ -848,13 +847,13 @@ def test_handle_qiskit_definition() -> None:
     cirq.testing.assert_same_circuits(cirq_op.mapped_circuit(), expected_cirq_circuit)
 
     qiskit_gate = qss.ParallelGates(qss.ZZSwapGate(1.23), qiskit.circuit.library.XGate())
-    cirq_op, phase = ess.converters.qiskit._handle_qiskit_definition(qiskit_gate, qubits[:3], [])
+    cirq_op, phase = sm.converters.qiskit._handle_qiskit_definition(qiskit_gate, qubits[:3], [])
 
     assert phase == 0.0
     assert cirq_op == css.ParallelGates(css.ZZSwapGate(1.23), cirq.X).on(*qubits[:3])
 
     qiskit_gate = qiskit.circuit.library.GR(3, 1.23, 4.56)[0].operation
-    cirq_op, phase = ess.converters.qiskit._handle_qiskit_definition(qiskit_gate, qubits[-3:], [])
+    cirq_op, phase = sm.converters.qiskit._handle_qiskit_definition(qiskit_gate, qubits[-3:], [])
 
     assert phase == 0.0
     assert cirq_op == css.ParallelRGate(1.23, 4.56, 3).on(*qubits[-3:])
@@ -864,28 +863,28 @@ def test_intercept_qiskit_parallel_r_gate() -> None:
     q0, q1, q2, q3 = random_qubits(4)
     cirq_circuit = cirq.Circuit(css.RGate(0.2, 0.3).on_each(q0, q1, q2))
 
-    cirq_op = ess.converters.qiskit._intercept_qiskit_parallel_r_gate(cirq_circuit)
+    cirq_op = sm.converters.qiskit._intercept_qiskit_parallel_r_gate(cirq_circuit)
     assert cirq_op == css.ParallelRGate(0.2, 0.3, 3).on(q0, q1, q2)
 
     cirq_circuit1 = cirq_circuit + css.RGate(0.2, 0.3).on(q3)
-    cirq_op = ess.converters.qiskit._intercept_qiskit_parallel_r_gate(cirq_circuit1)
+    cirq_op = sm.converters.qiskit._intercept_qiskit_parallel_r_gate(cirq_circuit1)
     assert cirq_op == css.ParallelRGate(0.2, 0.3, 4).on(q0, q1, q2, q3)
 
     cirq_circuit1 = cirq_circuit + css.RGate(0.2, 0.4).on(q3)  # RGate with different parameters
-    assert ess.converters.qiskit._intercept_qiskit_parallel_r_gate(cirq_circuit1) is None
+    assert sm.converters.qiskit._intercept_qiskit_parallel_r_gate(cirq_circuit1) is None
 
     cirq_circuit1 = cirq_circuit + cirq.X(q3)  # non-RGate on q3
-    assert ess.converters.qiskit._intercept_qiskit_parallel_r_gate(cirq_circuit1) is None
+    assert sm.converters.qiskit._intercept_qiskit_parallel_r_gate(cirq_circuit1) is None
 
     cirq_circuit1 = cirq_circuit + css.RGate(0.2, 0.3).on(q0)  # two RGates on q0
-    assert ess.converters.qiskit._intercept_qiskit_parallel_r_gate(cirq_circuit1) is None
+    assert sm.converters.qiskit._intercept_qiskit_parallel_r_gate(cirq_circuit1) is None
 
-    assert ess.converters.qiskit._intercept_qiskit_parallel_r_gate(cirq.Circuit()) is None
+    assert sm.converters.qiskit._intercept_qiskit_parallel_r_gate(cirq.Circuit()) is None
 
 
 def test_parameterized_gates() -> None:
     param_angle = qiskit.circuit.Parameter("theta")
-    # As of `qiskit>=2.1`, a `qiskit.circuit.ParameterExpression` should not be directly
+    # As of `qiskit>=2.1`, a `qiskit.circuit.ParameterExprsmion` should not be directly
     # instantiated. Instead, it can be created indirectly via `qiskit.circuit.Parameter`; for
     # example:
     param_expr = 1 + 5 * param_angle
@@ -898,7 +897,7 @@ def test_parameterized_gates() -> None:
     )
     for param in test_params:
         param_gate = qiskit.circuit.library.RXGate(np.pi * param)
-        ess.converters.qiskit._parameter_expressions_to_float(param_gate)
+        sm.converters.qiskit._parameter_expressions_to_float(param_gate)
         assert param_gate == qiskit.circuit.library.RXGate(1.23 * np.pi)
 
 
@@ -925,14 +924,14 @@ def test_parameterized_circuits() -> None:
         gss.SuperstaqException,
         match="Can't convert parameterized unbounded qiskit circuits",
     ):
-        _ = ess.converters.qiskit_to_cirq(qc)
+        _ = sm.converters.qiskit_to_cirq(qc)
 
     qc.rx(1 + 0j * theta, 0)
     qc.rz(theta, 0)
     qc.r(theta, phi, 0)
     binded_circuit = qc.assign_parameters({theta: 0.1, beta: 0.2, phi: 0.3})
     cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
-        ess.converters.qiskit_to_cirq(binded_circuit),
+        sm.converters.qiskit_to_cirq(binded_circuit),
         expected_cirq_circuit,
         1e-3,
     )
@@ -942,7 +941,7 @@ def test_parameterized_circuits() -> None:
         match="Can't convert parameterized unbounded qiskit circuits",
     ):
         qc.rx(1 + 1j * theta, 0)
-        _ = ess.converters.qiskit_to_cirq(qc)
+        _ = sm.converters.qiskit_to_cirq(qc)
 
 
 def test_qiskit_quantum_volume_circuit() -> None:
@@ -951,20 +950,20 @@ def test_qiskit_quantum_volume_circuit() -> None:
     circuit = qiskit.circuit.library.QuantumVolume(4)
     circuit.measure_active()
 
-    _ = ess.converters.qiskit_to_cirq(circuit)
+    _ = sm.converters.qiskit_to_cirq(circuit)
 
     circuit = qiskit.transpile(circuit, basis_gates=["u1", "u2", "u3", "cx"], optimization_level=0)
-    _ = ess.converters.qiskit_to_cirq(circuit)
+    _ = sm.converters.qiskit_to_cirq(circuit)
 
 
 @pytest.mark.parametrize(
     "cirq_gate",
-    ess.converters.qiskit._cirq_static_gates,
-    ids=map(str, ess.converters.qiskit._cirq_static_gates),
+    sm.converters.qiskit._cirq_static_gates,
+    ids=map(str, sm.converters.qiskit._cirq_static_gates),
 )
 def test_cirq_gate_to_qiskit_gate_static(cirq_gate: cirq.Gate) -> None:
-    qiskit_gate = ess.converters.cirq_gate_to_qiskit_gate(cirq_gate)
-    assert qiskit_gate == ess.converters.qiskit._cirq_static_gates[cirq_gate]()
+    qiskit_gate = sm.converters.cirq_gate_to_qiskit_gate(cirq_gate)
+    assert qiskit_gate == sm.converters.qiskit._cirq_static_gates[cirq_gate]()
     assert qiskit_gate.num_qubits == qiskit_gate.num_qubits
     if cirq.has_unitary(cirq_gate):
         assert _gates_are_equivalent(qiskit_gate, cirq_gate)
@@ -972,14 +971,14 @@ def test_cirq_gate_to_qiskit_gate_static(cirq_gate: cirq.Gate) -> None:
 
 @pytest.mark.parametrize(
     "cirq_gate_type",
-    ess.converters.qiskit._cirq_pow_gates.keys(),
-    ids=[gate_type.__name__ for gate_type in ess.converters.qiskit._cirq_pow_gates],
+    sm.converters.qiskit._cirq_pow_gates.keys(),
+    ids=[gate_type.__name__ for gate_type in sm.converters.qiskit._cirq_pow_gates],
 )
 def test_cirq_gate_to_qiskit_gate_pow(cirq_gate_type: type[cirq.EigenGate]) -> None:
     global_shift = 0.0 if cirq_gate_type in [cirq.CZPowGate, css.DDPowGate] else -0.5
     cirq_gate = cirq_gate_type(exponent=0.25, global_shift=global_shift)
-    qiskit_gate = ess.converters.cirq_gate_to_qiskit_gate(cirq_gate)
-    assert qiskit_gate == ess.converters.qiskit._cirq_pow_gates[cirq_gate_type](np.pi / 4)
+    qiskit_gate = sm.converters.cirq_gate_to_qiskit_gate(cirq_gate)
+    assert qiskit_gate == sm.converters.qiskit._cirq_pow_gates[cirq_gate_type](np.pi / 4)
     assert _gates_are_equivalent(qiskit_gate, cirq_gate)
 
 
@@ -1025,7 +1024,7 @@ def test_cirq_gate_to_qiskit_gate_pow(cirq_gate_type: type[cirq.EigenGate]) -> N
 def test_cirq_gate_to_qiskit_gate_param(
     cirq_gate: cirq.Gate, expected_qiskit_gate: qiskit.circuit.Gate
 ) -> None:
-    assert ess.converters.cirq_gate_to_qiskit_gate(cirq_gate) == expected_qiskit_gate
+    assert sm.converters.cirq_gate_to_qiskit_gate(cirq_gate) == expected_qiskit_gate
     assert _gates_are_equivalent(expected_qiskit_gate, cirq_gate, ignore_global_phase=True)
 
 
@@ -1034,7 +1033,7 @@ def test_cirq_gate_to_qiskit_gate_matrix(num_qubits: int) -> None:
     matrix = cirq.testing.random_unitary(2**num_qubits)
     cirq_gate = cirq.MatrixGate(matrix, name=f"{num_qubits}-qubit matrix")
 
-    qiskit_gate = ess.converters.cirq_gate_to_qiskit_gate(cirq_gate)
+    qiskit_gate = sm.converters.cirq_gate_to_qiskit_gate(cirq_gate)
     assert _gates_are_equivalent(qiskit_gate, cirq_gate, ignore_global_phase=False)
     assert isinstance(qiskit_gate, qiskit.circuit.library.UnitaryGate)
     assert qiskit_gate.label == f"{num_qubits}-qubit matrix"
@@ -1063,7 +1062,7 @@ def test_cirq_gate_to_qiskit_gate_phase_dependent(
     """These gates should be mapped differently depending on e.g. whether they're passed as
     cirq.Z or cirq.rz(pi). These will preserve global phase.
     """
-    assert ess.converters.cirq_gate_to_qiskit_gate(cirq_gate) == expected_qiskit_gate
+    assert sm.converters.cirq_gate_to_qiskit_gate(cirq_gate) == expected_qiskit_gate
     assert _gates_are_equivalent(expected_qiskit_gate, cirq_gate)
 
 
@@ -1088,23 +1087,23 @@ def test_cirq_gate_to_qiskit_gate_phase_dependent(
 def test_cirq_gate_to_qiskit_gate_phase_independent(
     cirq_gate: cirq.Gate, expected_qiskit_gate: qiskit.circuit.Gate
 ) -> None:
-    """The gates should not be mapped differently regardless of global phase."""
-    assert ess.converters.cirq_gate_to_qiskit_gate(cirq_gate) == expected_qiskit_gate
+    """The gates should not be mapped differently regardlsm of global phase."""
+    assert sm.converters.cirq_gate_to_qiskit_gate(cirq_gate) == expected_qiskit_gate
     assert _gates_are_equivalent(expected_qiskit_gate, cirq_gate, ignore_global_phase=True)
 
 
 def test_cirq_gate_to_qiskit_gate_unknown() -> None:
     cirq_gate = cirq.FSimGate(1.1, 2.2)
-    qiskit_gate = ess.converters.cirq_gate_to_qiskit_gate(cirq_gate)
+    qiskit_gate = sm.converters.cirq_gate_to_qiskit_gate(cirq_gate)
     assert _gates_are_equivalent(qiskit_gate, cirq_gate, ignore_global_phase=True)
 
     qubits = cirq.LineQid.for_gate(cirq_gate)
-    assert qiskit_gate.definition == ess.converters.cirq_to_qiskit(
+    assert qiskit_gate.definition == sm.converters.cirq_to_qiskit(
         cirq.Circuit(cirq.decompose_once(cirq_gate(*qubits))), qubits
     )
 
     with pytest.raises(NotImplementedError, match="Unable to convert"):
-        _ = ess.converters.cirq_gate_to_qiskit_gate(css.CZ3)
+        _ = sm.converters.cirq_gate_to_qiskit_gate(css.CZ3)
 
 
 def test_cirq_to_qiskit() -> None:
@@ -1138,8 +1137,8 @@ def test_cirq_to_qiskit() -> None:
     )
 
     all_qubits: Sequence[cirq.Qid] = cirq.LineQubit.range(5)
-    assert ess.converters.cirq_to_qiskit(cirq_circuit, all_qubits).num_qubits == 5
-    assert ess.converters.cirq_to_qiskit(cirq_circuit, [q1, q2, q3]).num_qubits == 3
+    assert sm.converters.cirq_to_qiskit(cirq_circuit, all_qubits).num_qubits == 5
+    assert sm.converters.cirq_to_qiskit(cirq_circuit, [q1, q2, q3]).num_qubits == 3
 
     # Test manual circuit comparison
     qiskit_circuit = qiskit.QuantumCircuit(5)
@@ -1168,8 +1167,8 @@ def test_cirq_to_qiskit() -> None:
     qiskit_circuit.append(qss.AQTiCCXGate(), [1, 2, 3])
     qiskit_circuit.append(qss.StrippedCZGate(1.23), [1, 2])
     qiskit_circuit.append(qss.DDGate(0.7 * np.pi), [1, 2])
-    assert qiskit_circuit == ess.converters.cirq_to_qiskit(cirq_circuit, all_qubits)
-    assert cirq.approx_eq(cirq_circuit, ess.converters.qiskit_to_cirq(qiskit_circuit))
+    assert qiskit_circuit == sm.converters.cirq_to_qiskit(cirq_circuit, all_qubits)
+    assert cirq.approx_eq(cirq_circuit, sm.converters.qiskit_to_cirq(qiskit_circuit))
 
     phase = -0.1 * np.pi / 2  # 0.1 from the PhasedXZGate's x_exponent
     assert _operations_are_equivalent(qiskit_circuit, cirq_circuit, all_qubits, phase)
@@ -1185,7 +1184,7 @@ def test_cirq_to_qiskit() -> None:
         qubit_map: dict[cirq.Qid, cirq.Qid] = dict(zip(all_qubits, new_qubits))
         mapped_circuit = cirq_circuit.transform_qubits(qubit_map)
 
-        assert qiskit_circuit == ess.converters.cirq_to_qiskit(mapped_circuit, new_qubits)
+        assert qiskit_circuit == sm.converters.cirq_to_qiskit(mapped_circuit, new_qubits)
 
     # Circuit with measurements + resets
     cirq_circuit = cirq_circuit.copy()
@@ -1207,7 +1206,7 @@ def test_cirq_to_qiskit() -> None:
     qiskit_circuit.reset(3)
     qiskit_circuit.measure(3, 3)
 
-    assert qiskit_circuit == ess.converters.cirq_to_qiskit(cirq_circuit, all_qubits)
+    assert qiskit_circuit == sm.converters.cirq_to_qiskit(cirq_circuit, all_qubits)
 
 
 def test_cirq_to_qiskit_with_decompose() -> None:
@@ -1219,7 +1218,7 @@ def test_cirq_to_qiskit_with_decompose() -> None:
         cirq.FSimGate(0.12, 0.34).on(q0, q3),
     )
 
-    round_trip = ess.converters.qiskit_to_cirq(ess.converters.cirq_to_qiskit(cirq_circuit, qubits))
+    round_trip = sm.converters.qiskit_to_cirq(sm.converters.cirq_to_qiskit(cirq_circuit, qubits))
 
     cirq.testing.assert_allclose_up_to_global_phase(
         cirq.unitary(round_trip), cirq.unitary(cirq_circuit), atol=1e-8
@@ -1241,9 +1240,9 @@ def test_cirq_to_qiskit_with_iterative_decompose() -> None:
 
     unrolled_cirq_circuit = cirq.unroll_circuit_op(cirq_circuit, tags_to_check=None, deep=True)
 
-    qiskit_circuit = ess.converters.cirq_to_qiskit(cirq_circuit, sorted(qubits))
+    qiskit_circuit = sm.converters.cirq_to_qiskit(cirq_circuit, sorted(qubits))
     cirq.testing.assert_same_circuits(
-        ess.converters.qiskit_to_cirq(qiskit_circuit),
+        sm.converters.qiskit_to_cirq(qiskit_circuit),
         cirq.align_left(unrolled_cirq_circuit),
     )
 
@@ -1262,7 +1261,7 @@ def test_cirq_to_qiskit_invert_mask() -> None:
     expected_qiskit_circuit.x(2)
     expected_qiskit_circuit.measure([0, 1, 2, 3], [0, 1, 2, 3])
 
-    assert ess.converters.cirq_to_qiskit(cirq_circuit, qubits) == expected_qiskit_circuit
+    assert sm.converters.cirq_to_qiskit(cirq_circuit, qubits) == expected_qiskit_circuit
 
 
 def test_cirq_to_qiskit_classical_control() -> None:
@@ -1301,7 +1300,7 @@ def test_cirq_to_qiskit_classical_control() -> None:
     with qc.if_test(condition3):
         qc.x(1)
 
-    assert ess.converters.cirq_to_qiskit(cirq_circuit, sorted(cirq_circuit.all_qubits())) == qc
+    assert sm.converters.cirq_to_qiskit(cirq_circuit, sorted(cirq_circuit.all_qubits())) == qc
 
     q0, q1, q2 = sympy.symbols("q0 q1 q2")
     sympy_cond = sympy.Mul(q0, q1, q2)
@@ -1314,7 +1313,7 @@ def test_cirq_to_qiskit_classical_control() -> None:
     cirq_circuit += cirq.Z(qubits[0]).with_classical_controls(sympy_cond % 2)
 
     with pytest.raises(gss.SuperstaqException, match="We don't currently support"):
-        ess.converters.cirq_to_qiskit(cirq_circuit, sorted(cirq_circuit.all_qubits()))
+        sm.converters.cirq_to_qiskit(cirq_circuit, sorted(cirq_circuit.all_qubits()))
 
     q0, q1 = sympy.symbols("q0 q1")
     sympy_cond = sympy.Add(q0, q1)
@@ -1335,7 +1334,7 @@ def test_cirq_to_qiskit_classical_control() -> None:
         match="We don't currently support mutliple layers of classical control on a single "
         "operation.",
     ):
-        ess.converters.cirq_to_qiskit(cirq_circuit, sorted(cirq_circuit.all_qubits()))
+        sm.converters.cirq_to_qiskit(cirq_circuit, sorted(cirq_circuit.all_qubits()))
 
     qubits = cirq.LineQubit.range(3)
     cirq_circuit = cirq.Circuit(cirq.H(qubits[0]), cirq.CX(*qubits[:2]))
@@ -1355,7 +1354,7 @@ def test_cirq_to_qiskit_classical_control() -> None:
     with qc.if_test(condition):
         qc.z(0)
 
-    assert ess.converters.cirq_to_qiskit(cirq_circuit, sorted(cirq_circuit.all_qubits())) == qc
+    assert sm.converters.cirq_to_qiskit(cirq_circuit, sorted(cirq_circuit.all_qubits())) == qc
 
 
 def test_cirq_qubits_to_qiskit() -> None:
@@ -1368,4 +1367,4 @@ def test_cirq_qubits_to_qiskit() -> None:
     qc.h(qr1[0])
     qc.cx(qr1[0], qr2[0])
 
-    assert ess.converters.cirq_to_qiskit(cirq_circuit, sorted(cirq_circuit.all_qubits())) == qc
+    assert sm.converters.cirq_to_qiskit(cirq_circuit, sorted(cirq_circuit.all_qubits())) == qc

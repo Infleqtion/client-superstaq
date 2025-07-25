@@ -17,14 +17,6 @@ def test_mermin_bell_circuit() -> None:
 
     mb = MerminBell(5)
     assert len(mb.circuit().all_qubits()) == 5
-    qiskit_circuit = mb.qiskit_circuit()
-    if isinstance(qiskit_circuit, qiskit.QuantumCircuit):
-        assert qiskit_circuit.num_qubits == 5
-    with patch(
-        "supermarq.benchmarks.mermin_bell.MerminBell.circuit",
-        return_value=[mb.circuit()],
-    ):
-        assert mb.qiskit_circuit()[0].num_qubits == 5
 
 
 def test_mermin_bell_score() -> None:

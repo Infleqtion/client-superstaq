@@ -34,15 +34,6 @@ class Benchmark:
         """
         return self.circuit()
 
-    def qiskit_circuit(self) -> qiskit.QuantumCircuit | list[qiskit.QuantumCircuit]:
-        """Returns:
-        The qiskit circuit(s) corresponding to the current benchmark parameters.
-        """
-        cirq_circuit = self.cirq_circuit()
-        if isinstance(cirq_circuit, cirq.Circuit):
-            return supermarq.converters.cirq_to_qiskit(cirq_circuit)
-        return [supermarq.converters.cirq_to_qiskit(c) for c in cirq_circuit]
-
     @abc.abstractmethod
     def score(self, counts: Any) -> float:
         """Returns a normalized [0,1] score reflecting device performance.
