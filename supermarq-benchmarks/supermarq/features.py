@@ -162,7 +162,6 @@ def compute_depth(circuit: cirq.Circuit) -> float:
         two_qubit_gates_per_moment.append(two_qubit_gates)
     total_two_qubit_gates = sum(len(x) for x in two_qubit_gates_per_moment)
 
-
     # Find critical path: for each qubit, count the 2-qubit gates
     # it participates in along the longest path
     # Track the path length per qubit
