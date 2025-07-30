@@ -202,15 +202,17 @@ def test_timeoutV3(backendV3: qss.SuperstaqBackend) -> None:
         assert mocked_get_job.call_count == 3
 
     job = qss.SuperstaqJobV3(backendV3, uuid.UUID(int=42))
-    with mock.patch("time.sleep", return_value=None):
-        with patched_requests(
+    with (
+        mock.patch("time.sleep", return_value=None),
+        patched_requests(
             {str(job._job_id): queue_dict},
             {str(job._job_id): queue_dict},
             {str(job._job_id): queue_dict},
             {str(job._job_id): completed_dict},
-        ) as mocked_get_job:
-            with pytest.raises(TimeoutError, match="Timed out while waiting for results."):
-                job._wait_for_results(timeout=10, wait=8)
+        ) as mocked_get_job,
+        pytest.raises(TimeoutError, match="Timed out while waiting for results."),
+    ):
+        job._wait_for_results(timeout=10, wait=8)
 
 
 def test_result(backend: qss.SuperstaqBackend) -> None:

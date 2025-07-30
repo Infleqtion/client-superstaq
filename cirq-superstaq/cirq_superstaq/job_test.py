@@ -676,7 +676,7 @@ def test_job_str_repr_eqV3(jobV3: css.JobV3) -> None:
     setup_code = "import cirq_superstaq as css\nimport general_superstaq as gss\n"
     setup_code += "from uuid import UUID"
     cirq.testing.assert_equivalent_repr(jobV3, setup_code=setup_code)
-    assert not jobV3 == 1
+    assert jobV3 != 1
 
 
 def test_job_to_dict(job: css.Job, job_dict: dict[str, object]) -> None:
