@@ -25,4 +25,3 @@ using `Superstaq <https://superstaq.infleqtion.com/>`_. The general workflow is 
     :maxdepth: 1
 
     Supermarq_HPCA_Tutorial_css
-    Supermarq_HPCA_Tutorial_qss
