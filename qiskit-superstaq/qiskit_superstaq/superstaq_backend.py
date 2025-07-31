@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from _typeshed import SupportsItems
 
 
-class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
+class SuperstaqBackend(qiskit.providers.BackendV2):
     """This class represents a Superstaq backend."""
 
     def __init__(self, provider: qss.SuperstaqProvider, target: str) -> None:
@@ -53,6 +53,9 @@ class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
             return False
 
         return self._provider == other._provider and self.target_info() == other.target_info()
+
+    def __hash__(self) -> int:
+        return hash(self.name)
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}('{self.name}')>"
