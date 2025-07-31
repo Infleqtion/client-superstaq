@@ -251,7 +251,8 @@ def cirq_to_qiskit(
                 assert cirq_gate
                 qiskit_gate = cirq_gate_to_qiskit_gate(cirq_gate)
                 qiskit_circuit.append(qiskit_gate, qubit_indices)
-            continue
+            # Remove pragma after removal of Python 3.9 support
+            continue  # pragma: no cover
 
         elif op.gate:
             qiskit_gate = cirq_gate_to_qiskit_gate(op.gate)
@@ -393,9 +394,7 @@ def _cirq_op_to_custom_gate(op: cirq.Operation) -> qiskit.circuit.Gate:
 
 
 def cirq_gate_to_qiskit_gate(cirq_gate: cirq.Gate) -> qiskit.circuit.Gate:
-    """Convert a single `cirq.Gate` to a qiskit Gate. Supports a limited gateset, but a superset of
-    all hardware operations supported by superstaq.Device subclasses (excluding measurements).
-    """
+    """Convert a single `cirq.Gate` to a qiskit Gate."""
     if cirq_gate in _cirq_static_gates:
         return _cirq_static_gates[cirq_gate]()
 
