@@ -21,7 +21,7 @@ def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     cir = cirq.Circuit()
 
     for q in qubits:
-        cir.append([cirq.R(q)])
+        cir.append([cirq.reset(q)])
 
     cir.append(
         [
@@ -141,7 +141,7 @@ def msd_7_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     cir = cirq.Circuit()
 
     for q in qubits:
-        cir.append([cirq.R(q)])
+        cir.append([cirq.reset(q)])
 
     cir.append(
         [
@@ -257,7 +257,7 @@ def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     cir = cirq.Circuit()
 
     for q in qubits:
-        cir.append([cirq.R(q)])
+        cir.append([cirq.reset(q)])
 
     cir.append(
         [
