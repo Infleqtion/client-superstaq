@@ -12,7 +12,7 @@ def test_5_to_1_msd() -> None:
     state_vector = sim_results.final_state_vector
     magic_state = sim_results.get_state_containing_qubit(cirq.q(0)).target_tensor
 
-    assert (cirq.dirac_notation(magic_state)) == "(-0.33+0.33j)|0⟩ + 0.89|1⟩"
+    assert (cirq.dirac_notation(magic_state)) == "(0.89)|0⟩ + (0.33+0.33j)|1⟩"
 
     density_matrix = cirq.density_matrix_from_state_vector(state_vector, indices=[0])
     expected_density = numpy.array(
