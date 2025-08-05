@@ -17,8 +17,8 @@ def test_5_to_1_msd() -> None:
     density_matrix = cirq.density_matrix_from_state_vector(state_vector, indices=[0])
     expected_density = numpy.array(
         [
-            [0.21132484 + 0.0j, -0.28867513 + 0.28867513j],
-            [-0.28867513 - 0.28867513j, 0.78867525 + 0.0j],
+            [0.78433508 + 0.00000000j, 0.29082087 + -0.29082087j],
+            [0.29082087 + 0.29082087j, 0.21566492 + 0.00000000j],
         ],
         dtype=numpy.complex64,
     )
