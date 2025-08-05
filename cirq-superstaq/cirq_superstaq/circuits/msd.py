@@ -113,12 +113,12 @@ def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
         ],
     )
 
-    # cir.append(
-    #     [
-    #         cirq.X(qubits[0]),
-    #         cirq.S(qubits[0]) ** -1,
-    #     ],
-    # )
+    cir.append(
+        [
+            cirq.X(qubits[0]),
+            cirq.S(qubits[0]) ** -1,
+        ],
+    )
 
     m1, m2, m3, m4 = sympy.symbols("m1 m2 m3 m4")
     sympy_cond = cirq.SympyCondition(sympy.Eq(m1 + m2 + m3 + m4, 0))  # m1 = m2 = m3 = m4 = 0
