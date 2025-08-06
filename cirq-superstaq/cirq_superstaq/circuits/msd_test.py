@@ -5,7 +5,10 @@ import pytest
 from .msd import msd_5_to_1, msd_7_to_1, msd_15_to_1
 
 
-@pytest.mark.skipif(cirq.__version__ == "1.0.0", reason="Magic state is not producing consistent result with this Cirq version")
+@pytest.mark.skipif(
+    cirq.__version__ == "1.0.0",
+    reason="Magic state is not producing consistent result with this Cirq version",
+)
 def test_5_to_1_msd() -> None:
     qubits = cirq.LineQubit.range(5)
     sim = cirq.Simulator()
