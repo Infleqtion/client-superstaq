@@ -52,7 +52,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         if not isinstance(other, qss.SuperstaqBackend):
             return False
 
-        return self._provider == other._provider
+        return self._provider == other._provider and self.name == other.name
 
     def __hash__(self) -> int:
         return hash((self.name, self._provider))
