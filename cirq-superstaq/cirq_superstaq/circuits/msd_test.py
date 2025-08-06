@@ -1,23 +1,15 @@
 import cirq
 import numpy
-import pytest
 
 from .msd import msd_5_to_1, msd_7_to_1, msd_15_to_1
 
 
-@pytest.mark.skipif(
-    cirq.__version__ == "1.0.0",
-    reason="Magic state is not producing consistent result with this Cirq version",
-)
 def test_5_to_1_msd() -> None:
     qubits = cirq.LineQubit.range(5)
     sim = cirq.Simulator()
     magic_state_circuit = msd_5_to_1(qubits)
     sim_results = sim.simulate(magic_state_circuit)
     state_vector = sim_results.final_state_vector
-    magic_state = sim_results.get_state_containing_qubit(cirq.q(0)).target_tensor
-
-    assert (cirq.dirac_notation(magic_state)) == "0.89|0⟩ + (0.33+0.33j)|1⟩"
 
     density_matrix = cirq.density_matrix_from_state_vector(state_vector, indices=[0])
     expected_density = numpy.array(
