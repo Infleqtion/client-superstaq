@@ -12,6 +12,13 @@ def test_5_to_1_msd() -> None:
     state_vector = sim_results.final_state_vector
 
     density_matrix = cirq.density_matrix_from_state_vector(state_vector, indices=[0])
+    # The expected density matrix below corresponds to the output of the 5-to-1 magic 
+    # state distillation protocol.
+    # These values are derived from the theoretical output state after distillation, 
+    # which is a specific magic state
+    # (see e.g. Bravyi & Kitaev, Phys. Rev. A 71, 022316 (2005)). The entries represent 
+    # the expected density matrix
+    # for the distilled qubit in the computational basis.
     expected_density = numpy.array(
         [
             [0.7886752 + 0.00000000j, 0.28867516 + -0.2886752j],
@@ -49,7 +56,7 @@ def test_15_to_1_msd() -> None:
     magic_state_circuit = msd_15_to_1(qubits)
     sim_results = sim.simulate(magic_state_circuit)
     state_vector = sim_results.final_state_vector
-    magic_state = sim_results.get_state_containing_qubit(cirq.q(15)).target_tensor
+    magic_state = sim_results.get_state_containing_qubit(qubits[15]).target_tensor
 
     assert (cirq.dirac_notation(magic_state)) == "0.71|0⟩ + (0.5+0.5j)|1⟩"
 

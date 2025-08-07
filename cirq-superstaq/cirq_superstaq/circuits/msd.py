@@ -1,21 +1,28 @@
 import math
+from collections.abc import Sequence
 
 import cirq
 import sympy
 
 
-def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
+def msd_5_to_1(qubits: Sequence[cirq.Qid]) -> cirq.Circuit:
     """Function to perform a 5-to-1 magic state distillation protocol.
-        Reference: https://arxiv.org/pdf/2310.12106 Page 4 Figure 1.
+
+    Reference: https://arxiv.org/pdf/2310.12106 Page 4 Figure 1.
 
     Args:
-        qubits: The list of LineQubits of length 5.
-                The first qubit will be the final magic state qubit.
+        qubits: A list of qubits to use in the circuit, where the first qubit will
+            be the final magic state qubit.
 
     Returns:
         The magic state distillation circuit.
     """
+    # phi is the rotation angle for preparing the |H> magic state, derived from
+    # cos(phi) = 1/sqrt(3), as described in the 5-to-1 magic state distillation protocol
+    # (see https://arxiv.org/pdf/2310.12106, Page 4, Figure 1).
     phi = math.acos(1 / math.sqrt(3))
+    # theta is pi/4, corresponding to the T gate (pi/4 phase), as required by the protocol.
+
     theta = math.pi / 4
 
     cir = cirq.Circuit()
@@ -134,13 +141,13 @@ def msd_5_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     return magic_state_cir
 
 
-def msd_7_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
+def msd_7_to_1(qubits: Sequence[cirq.Qid]) -> cirq.Circuit:
     """Function to perform a 7-to-1 magic state distillation protocol.
         Reference: https://arxiv.org/pdf/0803.0272 Page 12 Figure 19.
 
     Args:
-        qubits: The list of LineQubits of length 8.
-                The first qubit will be the final magic state qubit.
+        qubits: The list of `cirq.LineQubit` of length 8. The first qubit
+            in the list will be the final magic state qubit.
 
     Returns:
         The magic state distillation circuit.
@@ -250,7 +257,7 @@ def msd_7_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
     return magic_state_cir
 
 
-def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
+def msd_15_to_1(qubits: Sequence[cirq.Qid]) -> cirq.Circuit:
     """Function to perform a 15-to-1 magic state distillation protocol.
         Reference: https://arxiv.org/ftp/arxiv/papers/1208/1208.0928.pdf Page 38 Figure 33.
 
@@ -392,9 +399,10 @@ def msd_15_to_1(qubits: list[cirq.LineQubit]) -> cirq.Circuit:
         # no need to measure index 15, that is our magic state
     )
 
-    # index 15=magic
-    m1, m2, m3, m4, m5, m6, m7, m8 = sympy.symbols("m1 m2 m3 m4 m5 m6 m7 m8")
-    m9, m10, m11, m12, m13, m14, m15 = sympy.symbols("m9 m10 m11 m12 m13 m14 m15")
+    m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15 = sympy.symbols(
+        "m1 m2 m3 m4 m5 m6 m7 m8 m9 m10 m11 m12 m13 m14 m15"
+    )
+
     # all those parities must be 0 for it to be even ( output of xor is 0 for even )
     # so stop when true == ~0 & ~0 & ~0 & ~0 == ~(0 | 0 | 0 | 0)
     even_parity = sympy.Not(
