@@ -1081,6 +1081,17 @@ def test_eq(backend: qss.SuperstaqBackend) -> None:
     assert job == job3
 
 
+def test_hash(backend: qss.SuperstaqBackend) -> None:
+    job = qss.SuperstaqJob(backend=backend, job_id="12345")
+    job2 = qss.SuperstaqJob(backend=backend, job_id="123456")
+    job3 = qss.SuperstaqJob(backend=backend, job_id="12345")
+    hash_set = set()
+    hash_set.add(job)
+    hash_set.add(job2)
+    hash_set.add(job3)
+    assert len(hash_set) == 2
+
+
 def test_eqV3(backend: qss.SuperstaqBackend, backendV3: qss.SuperstaqBackend) -> None:
     jobV2 = qss.SuperstaqJob(backend, str(uuid.UUID(int=42)))
     job = qss.SuperstaqJobV3(backendV3, uuid.UUID(int=42))
