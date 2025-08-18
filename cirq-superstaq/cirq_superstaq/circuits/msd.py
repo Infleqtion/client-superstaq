@@ -1,7 +1,7 @@
-import numpy as np
 from collections.abc import Sequence
 
 import cirq
+import numpy as np
 import sympy
 
 
