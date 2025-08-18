@@ -20,7 +20,7 @@ def msd_5_to_1(qubits: Sequence[cirq.Qid]) -> cirq.Circuit:
     # phi is the rotation angle for preparing the |H> magic state, derived from
     # cos(phi) = 1/sqrt(3), as described in the 5-to-1 magic state distillation protocol
     # (see https://arxiv.org/abs/2310.12106, Page 4, Figure 1).
-    phi = np.acos(1 / np.sqrt(3))
+    phi = np.arccos(1 / np.sqrt(3))
     # theta is pi/4, corresponding to the T gate (pi/4 phase), as required by the protocol.
 
     theta = np.pi / 4
