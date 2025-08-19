@@ -24,7 +24,7 @@ from typing import Any, overload
 import cirq
 import general_superstaq as gss
 from cirq._doc import document
-from general_superstaq import _models
+from general_superstaq import _models, SuperstaqException
 from general_superstaq.superstaq_client import _SuperstaqClientV3
 
 import cirq_superstaq as css
@@ -717,20 +717,26 @@ class JobV3:
             index: An optional index of the specific circuit to retrieve.
 
         Raises:
-            RuntimeError: If the circuit at the provided index has no compiled circuit or, when
+            SuperstaqException: If the circuit at the provided index has no compiled circuit or, when
                 index is None, if any of the circuits in the job are missing the compiled circuit.
 
         Returns:
             A single compiled circuit or list of compiled circuits.
         """
-        if all(c is None for c in self.job_data.compiled_circuits):
-            raise RuntimeError(f"The job {self._job_id} has no compiled circuits.")
+        if index is None:
+            if all(c is None for c in self.job_data.compiled_circuits):
+                raise SuperstaqException(f"The job {self._job_id} has no compiled circuits.")
 
-        if any(c is None for c in self.job_data.compiled_circuits):
-            raise RuntimeError(
-                "Some compiled circuits are missing. This is likely because there was an error on "
-                "the server. Please check the individual circuit statuses and any status messages."
-            )
+            if any(c is None for c in self.job_data.compiled_circuits):
+                raise SuperstaqException(
+                    "Some compiled circuits are missing. This is likely because there was an error on "
+                    "the server. Please check the individual circuit statuses and any status messages."
+                )
+        else:
+            if self.job_data.compiled_circuits[index] is None:
+                raise SuperstaqException(
+                    f"Circuit {index} of job {self._job_id} does not have a compiled circuit."
+                )
 
         circuits = [
             css.deserialize_circuits(self.job_data.compiled_circuits[k])[  # type: ignore[arg-type]
@@ -809,7 +815,7 @@ class JobV3:
                 canceled or deleted.
             ~gss.SuperstaqServerException: If unable to get the results from the API.
             TimeoutError: If no results are available in the provided timeout interval.
-            RuntimeError: If the job counts are missing.
+            SuperstaqException: If the job counts are missing.
         """
         time_waited_seconds: float = 0.0
         # If not in a terminal state then poll
@@ -827,7 +833,7 @@ class JobV3:
 
         if index is None:
             if any(c is None for c in self.job_data.counts):
-                raise RuntimeError(f"Job {self._job_id} does not have counts for all circuits.")
+                raise SuperstaqException(f"Job {self._job_id} does not have counts for all circuits.")
             counts_list: list[dict[str, int]] = self.job_data.counts  # type: ignore[assignment]
             # Type checking does not recognise that the above error catches the case when any of
             # the counts are None.
@@ -840,7 +846,7 @@ class JobV3:
         gss.validation.validate_integer_param(index, min_val=0)
         single_counts = self.job_data.counts[index]
         if single_counts is None:
-            raise RuntimeError(f"Circuit {index} of job {self._job_id} does not have any counts.")
+            raise SuperstaqException(f"Circuit {index} of job {self._job_id} does not have any counts.")
         if qubit_indices:
             return _get_marginal_counts(single_counts, qubit_indices)
         return single_counts
