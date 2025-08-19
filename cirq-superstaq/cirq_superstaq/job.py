@@ -24,7 +24,7 @@ from typing import Any, overload
 import cirq
 import general_superstaq as gss
 from cirq._doc import document
-from general_superstaq import _models, SuperstaqException
+from general_superstaq import _models
 from general_superstaq.superstaq_client import _SuperstaqClientV3
 
 import cirq_superstaq as css
@@ -553,7 +553,7 @@ class JobV3:
         if self._job_data is None:
             self._refresh_job()
         if self._job_data is None:
-            raise AttributeError("Job data has not been fetched yet. Ru _refresh_job().")
+            raise AttributeError("Job data has not been fetched yet. Run _refresh_job().")
         else:
             return self._job_data
 
@@ -725,16 +725,16 @@ class JobV3:
         """
         if index is None:
             if all(c is None for c in self.job_data.compiled_circuits):
-                raise SuperstaqException(f"The job {self._job_id} has no compiled circuits.")
+                raise gss.SuperstaqException(f"The job {self._job_id} has no compiled circuits.")
 
             if any(c is None for c in self.job_data.compiled_circuits):
-                raise SuperstaqException(
+                raise gss.SuperstaqException(
                     "Some compiled circuits are missing. This is likely because there was an error on "
                     "the server. Please check the individual circuit statuses and any status messages."
                 )
         else:
             if self.job_data.compiled_circuits[index] is None:
-                raise SuperstaqException(
+                raise gss.SuperstaqException(
                     f"Circuit {index} of job {self._job_id} does not have a compiled circuit."
                 )
 
@@ -833,7 +833,7 @@ class JobV3:
 
         if index is None:
             if any(c is None for c in self.job_data.counts):
-                raise SuperstaqException(f"Job {self._job_id} does not have counts for all circuits.")
+                raise gss.SuperstaqException(f"Job {self._job_id} does not have counts for all circuits.")
             counts_list: list[dict[str, int]] = self.job_data.counts  # type: ignore[assignment]
             # Type checking does not recognise that the above error catches the case when any of
             # the counts are None.
@@ -846,7 +846,7 @@ class JobV3:
         gss.validation.validate_integer_param(index, min_val=0)
         single_counts = self.job_data.counts[index]
         if single_counts is None:
-            raise SuperstaqException(f"Circuit {index} of job {self._job_id} does not have any counts.")
+            raise gss.SuperstaqException(f"Circuit {index} of job {self._job_id} does not have any counts.")
         if qubit_indices:
             return _get_marginal_counts(single_counts, qubit_indices)
         return single_counts

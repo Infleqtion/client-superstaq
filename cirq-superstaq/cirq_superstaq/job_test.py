@@ -25,8 +25,6 @@ import requests
 
 import cirq_superstaq as css
 
-from general_superstaq import SuperstaqException
-
 
 @pytest.fixture
 def job() -> css.Job:
@@ -366,7 +364,7 @@ def test_compiled_circuitV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obje
     job_result = modifiy_job_result(job_dictV3, compiled_circuits=[None])
     mock_get.return_value.json.return_value = {str(uuid.UUID(int=43)): job_result}
     job = new_jobV3()
-    with pytest.raises(SuperstaqException, match=f"The job {job._job_id} has no compiled circuits."):
+    with pytest.raises(gss.SuperstaqException, match=f"The job {job._job_id} has no compiled circuits."):
         job.compiled_circuits()
 
     job_result = modifiy_job_result(
@@ -374,8 +372,10 @@ def test_compiled_circuitV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obje
     )
     mock_get.return_value.json.return_value = {str(uuid.UUID(int=43)): job_result}
     job = new_jobV3()
-    with pytest.raises(SuperstaqException, match="Some compiled circuits are missing"):
+    with pytest.raises(gss.SuperstaqException, match="Some compiled circuits are missing"):
         job.compiled_circuits()
+    with pytest.raises(gss.SuperstaqException, match=f"Circuit 0 of job {job._job_id}"):
+        job.compiled_circuits(index=0)
 
 
 def test_pulse_gate_circuits(job: css.Job) -> None:
@@ -748,12 +748,12 @@ def test_job_counts_failedV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obj
     job = new_jobV3()
     mock_get.return_value.json.return_value = {str(job._job_id): job_result}
     with pytest.raises(
-        SuperstaqException, match=f"Job {job._job_id} does not have counts for all circuits."
+        gss.SuperstaqException, match=f"Job {job._job_id} does not have counts for all circuits."
     ):
         job.counts()
 
     with pytest.raises(
-        SuperstaqException, match=f"Circuit 0 of job {job._job_id} does not have any counts."
+        gss.SuperstaqException, match=f"Circuit 0 of job {job._job_id} does not have any counts."
     ):
         job.counts(index=0)
 
@@ -922,3 +922,8 @@ def test_get_marginal_counts() -> None:
 def test_get_itemV3() -> None:
     with pytest.raises(NotImplementedError):
         new_jobV3().__getitem__(0)
+
+def test_job_data_failureV3(jobV3: css.JobV3):
+    with mock.patch.object(jobV3, "_refresh_job", return_value=None):
+        with pytest.raises(AttributeError, match="Job data has not been fetched yet"):
+            jobV3.job_data

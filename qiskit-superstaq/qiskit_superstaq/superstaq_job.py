@@ -435,7 +435,7 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         if self._job_info is None:
             self._refresh_job()
         if self._job_info is None:
-            raise AttributeError("Job data has not been fetched yet. Ru _refresh_job().")
+            raise AttributeError("Job info has not been fetched yet. Run _refresh_job().")
         else:
             return self._job_info
 
@@ -666,14 +666,20 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         Returns:
             A single compiled circuit or list of compiled circuits.
         """
-        if all(c is None for c in self.job_info.compiled_circuits):
-            raise RuntimeError(f"The job {self._job_id} has no compiled circuits.")
+        if index is None:
+            if all(c is None for c in self.job_info.compiled_circuits):
+                raise gss.SuperstaqException(f"The job {self._job_id} has no compiled circuits.")
 
-        if any(c is None for c in self.job_info.compiled_circuits):
-            raise RuntimeError(
-                "Some compiled circuits are missing. This is likely because there was an error on "
-                "the server. Please check the individual circuit statuses and any status messages."
-            )
+            if any(c is None for c in self.job_info.compiled_circuits):
+                raise gss.SuperstaqException(
+                    "Some compiled circuits are missing. This is likely because there was an error on "
+                    "the server. Please check the individual circuit statuses and any status messages."
+                )
+        else:
+            if self.job_info.compiled_circuits[index] is None:
+                raise gss.SuperstaqException(
+                    f"Circuit {index} of job {self._job_id} does not have a compiled circuit."
+                )
 
         circuits = [
             qss.deserialize_circuits(self.job_info.compiled_circuits[k])[0]  # type: ignore[arg-type]
