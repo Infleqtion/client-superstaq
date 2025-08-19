@@ -1,3 +1,4 @@
+from general_superstaq import _models
 from general_superstaq._init_vars import API_URL, API_VERSION
 from general_superstaq._version import __version__
 from general_superstaq.resource_estimate import ResourceEstimate
@@ -15,6 +16,7 @@ from . import serialization, service, superstaq_client, superstaq_exceptions, ty
 __all__ = [
     "API_URL",
     "API_VERSION",
+    "_models",
     "ResourceEstimate",
     "Service",
     "SuperstaqException",

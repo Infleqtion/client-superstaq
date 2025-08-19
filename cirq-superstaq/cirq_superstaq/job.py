@@ -24,7 +24,6 @@ from typing import Any, overload
 import cirq
 import general_superstaq as gss
 from cirq._doc import document
-from general_superstaq import _models
 from general_superstaq.superstaq_client import _SuperstaqClientV3
 
 import cirq_superstaq as css
@@ -502,19 +501,19 @@ class JobV3:
     """
 
     STATUS_PRIORITY_ORDER = (
-        _models.CircuitStatus.RECEIVED,
-        _models.CircuitStatus.AWAITING_COMPILE,
-        _models.CircuitStatus.AWAITING_SUBMISSION,
-        _models.CircuitStatus.AWAITING_SIMULATION,
-        _models.CircuitStatus.COMPILING,
-        _models.CircuitStatus.SIMULATING,
-        _models.CircuitStatus.RUNNING,
-        _models.CircuitStatus.PENDING,
-        _models.CircuitStatus.FAILED,
-        _models.CircuitStatus.CANCELLED,
-        _models.CircuitStatus.UNRECOGNIZED,
-        _models.CircuitStatus.COMPLETED,
-        _models.CircuitStatus.DELETED,
+        gss._models.CircuitStatus.RECEIVED,
+        gss._models.CircuitStatus.AWAITING_COMPILE,
+        gss._models.CircuitStatus.AWAITING_SUBMISSION,
+        gss._models.CircuitStatus.AWAITING_SIMULATION,
+        gss._models.CircuitStatus.COMPILING,
+        gss._models.CircuitStatus.SIMULATING,
+        gss._models.CircuitStatus.RUNNING,
+        gss._models.CircuitStatus.PENDING,
+        gss._models.CircuitStatus.FAILED,
+        gss._models.CircuitStatus.CANCELLED,
+        gss._models.CircuitStatus.UNRECOGNIZED,
+        gss._models.CircuitStatus.COMPLETED,
+        gss._models.CircuitStatus.DELETED,
     )
 
     def __init__(
@@ -534,22 +533,22 @@ class JobV3:
         self._client = client
         if not isinstance(self._client, _SuperstaqClientV3):
             raise ValueError("JobV3 job can only be used with v0.3.0 of the Superstaq API.")
-        self._overall_status = _models.CircuitStatus.RECEIVED
-        self._job_data: _models.JobData | None = None
+        self._overall_status = gss._models.CircuitStatus.RECEIVED
+        self._job_data: gss._models.JobData | None = None
         self._job_id = job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(job_id)
 
     def _refresh_job(self) -> None:
         """If the last fetched job is not terminal, gets the job from the API."""
         if self._job_data is not None:
-            if all(s in _models.TERMINAL_CIRCUIT_STATES for s in self._job_data.statuses):
+            if all(s in gss._models.TERMINAL_CIRCUIT_STATES for s in self._job_data.statuses):
                 return
-        self._job_data = _models.JobData(
+        self._job_data = gss._models.JobData(
             **self._client.fetch_jobs([self._job_id])[str(self._job_id)]
         )
         self._update_status_queue_info()
 
     @property
-    def job_data(self) -> _models.JobData:
+    def job_data(self) -> gss._models.JobData:
         if self._job_data is None:
             self._refresh_job()
         if self._job_data is None:
@@ -583,7 +582,7 @@ class JobV3:
             gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
         status = self.status(index)
-        if status == _models.CircuitStatus.FAILED:
+        if status == gss._models.CircuitStatus.FAILED:
             message = "Failure: "
             circuit_messages = []
             if index is None:
@@ -591,7 +590,7 @@ class JobV3:
             else:
                 to_check = [index]
             for k in to_check:
-                if self.job_data.statuses[k] == _models.CircuitStatus.FAILED:
+                if self.job_data.statuses[k] == gss._models.CircuitStatus.FAILED:
                     error = (
                         self.job_data.status_messages[k]
                         if self.job_data.status_messages[k] is not None
@@ -611,7 +610,7 @@ class JobV3:
         """
         return self._job_id
 
-    def status(self, index: int | None = None) -> _models.CircuitStatus:
+    def status(self, index: int | None = None) -> gss._models.CircuitStatus:
         """Gets the current status of the job.
 
         If the current job is in a non-terminal state, this will update the job and return the
@@ -819,7 +818,7 @@ class JobV3:
         """
         time_waited_seconds: float = 0.0
         # If not in a terminal state then poll
-        while (status := self.status(index)) not in _models.TERMINAL_CIRCUIT_STATES:
+        while (status := self.status(index)) not in gss._models.TERMINAL_CIRCUIT_STATES:
             # Status does a refresh.
             if time_waited_seconds > timeout_seconds:
                 raise TimeoutError(
