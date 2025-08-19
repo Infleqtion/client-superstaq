@@ -1540,6 +1540,8 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
             }
             compile_dict["cirq_circuits"] = "[" + ", ".join(job_data["compiled_circuits"]) + "]"
             return compile_dict
+        else:
+            raise gss.SuperstaqException(f"The circuit type {circuit_type} is not supported.")
 
     def submit_qubo(  # type: ignore [return]
         self,
