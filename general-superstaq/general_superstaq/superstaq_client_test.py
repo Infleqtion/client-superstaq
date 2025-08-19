@@ -130,6 +130,16 @@ def test_superstaq_client_args(api_version: str) -> None:
         )
 
 
+def test_superstaq_client_url_switchV3():
+    client = gss.superstaq_client._SuperstaqClientV3(
+        client_name="general-superstaq",
+        api_key="to_my_heart",
+        api_version="v0.3.0",
+    )
+
+    assert client.remote_host == "https://superstaq-prod.infleqtion.com/"
+
+
 def test_general_superstaq_exception_str() -> None:
     ex = gss.SuperstaqServerException("err.", status_code=501)
     assert str(ex) == "err. (Status code: 501)"
