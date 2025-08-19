@@ -106,14 +106,17 @@ class _BaseSuperstaqClient(ABC):
             kwargs: Other optimization and execution parameters.
         """
         self.api_key = api_key or gss.superstaq_client.find_api_key()
-        self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
+        self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST")
         self.client_name = client_name
         self.api_version = api_version
         self.circuit_type = circuit_type
         self.max_retry_seconds = max_retry_seconds
         self.verbose = verbose
-        if self.api_version == "v0.3.0":
-            self.remote_host = "https://superstaq-prod.infleqtion.com/"
+        if self.remote_host is None:
+            if self.api_version == "v0.2.0":
+                self.remote_host = gss.API_URL
+            else:
+                self.remote_host = "https://superstaq-prod.infleqtion.com/"
         url = urllib.parse.urlparse(self.remote_host)
         assert url.scheme, (
             f"Specified URL protocol/scheme in `remote_host` ({self.remote_host}) is not valid. "
