@@ -854,14 +854,14 @@ def test_compiled_circuitsV3(backendV3: qss.SuperstaqBackend) -> None:
 
     assert job.compiled_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
 
-    job._job_info.compiled_circuits[0] = None
+    job.job_info.compiled_circuits[0] = None
     with pytest.raises(gss.SuperstaqException, match="Some compiled circuits are missing"):
         job.compiled_circuits()
 
     with pytest.raises(gss.SuperstaqException, match=f"Circuit 0 of job {uuid.UUID(int=42)}"):
         job.compiled_circuits(index=0)
 
-    job._job_info.compiled_circuits[1] = None
+    job.job_info.compiled_circuits[1] = None
     with pytest.raises(
         gss.SuperstaqException, match=f"The job {uuid.UUID(int=42)} has no compiled circuits"
     ):
