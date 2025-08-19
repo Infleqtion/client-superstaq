@@ -130,7 +130,7 @@ def test_superstaq_client_args(api_version: str) -> None:
         )
 
 
-def test_superstaq_client_url_switchV3():
+def test_superstaq_client_url_switchV3() -> None:
     client = gss.superstaq_client._SuperstaqClientV3(
         client_name="general-superstaq",
         api_key="to_my_heart",
