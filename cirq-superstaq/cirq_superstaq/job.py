@@ -716,8 +716,8 @@ class JobV3:
             index: An optional index of the specific circuit to retrieve.
 
         Raises:
-            SuperstaqException: If the circuit at the provided index has no compiled circuit or, when
-                index is None, if any of the circuits in the job are missing the compiled circuit.
+            SuperstaqException: If the circuit at the provided index has no compiled circuit or,
+            when index is None, if any of the circuits in the job are missing the compiled circuit.
 
         Returns:
             A single compiled circuit or list of compiled circuits.
@@ -728,14 +728,14 @@ class JobV3:
 
             if any(c is None for c in self.job_data.compiled_circuits):
                 raise gss.SuperstaqException(
-                    "Some compiled circuits are missing. This is likely because there was an error on "
-                    "the server. Please check the individual circuit statuses and any status messages."
+                    "Some compiled circuits are missing. "
+                    "This is likely because there was an error on the server. "
+                    "Please check the individual circuit statuses and any status messages."
                 )
-        else:
-            if self.job_data.compiled_circuits[index] is None:
-                raise gss.SuperstaqException(
-                    f"Circuit {index} of job {self._job_id} does not have a compiled circuit."
-                )
+        elif self.job_data.compiled_circuits[index] is None:
+            raise gss.SuperstaqException(
+                f"Circuit {index} of job {self._job_id} does not have a compiled circuit."
+            )
 
         circuits = [
             css.deserialize_circuits(self.job_data.compiled_circuits[k])[  # type: ignore[arg-type]
@@ -832,7 +832,9 @@ class JobV3:
 
         if index is None:
             if any(c is None for c in self.job_data.counts):
-                raise gss.SuperstaqException(f"Job {self._job_id} does not have counts for all circuits.")
+                raise gss.SuperstaqException(
+                    f"Job {self._job_id} does not have counts for all circuits."
+                )
             counts_list: list[dict[str, int]] = self.job_data.counts  # type: ignore[assignment]
             # Type checking does not recognise that the above error catches the case when any of
             # the counts are None.
@@ -845,7 +847,9 @@ class JobV3:
         gss.validation.validate_integer_param(index, min_val=0)
         single_counts = self.job_data.counts[index]
         if single_counts is None:
-            raise gss.SuperstaqException(f"Circuit {index} of job {self._job_id} does not have any counts.")
+            raise gss.SuperstaqException(
+                f"Circuit {index} of job {self._job_id} does not have any counts."
+            )
         if qubit_indices:
             return _get_marginal_counts(single_counts, qubit_indices)
         return single_counts

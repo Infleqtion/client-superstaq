@@ -862,7 +862,9 @@ def test_compiled_circuitsV3(backendV3: qss.SuperstaqBackend) -> None:
         job.compiled_circuits(index=0)
 
     job._job_info.compiled_circuits[1] = None
-    with pytest.raises(gss.SuperstaqException, match=f"The job {uuid.UUID(int=42)} has no compiled circuits"):
+    with pytest.raises(
+        gss.SuperstaqException, match=f"The job {uuid.UUID(int=42)} has no compiled circuits"
+    ):
         job.compiled_circuits()
 
 
@@ -1143,6 +1145,8 @@ def test_hashV3(backendV3: qss.SuperstaqBackend) -> None:
 
 def test_job_infoV3(backendV3: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJobV3(backend=backendV3, job_id=uuid.UUID(int=42))
-    with mock.patch.object(job, "_refresh_job", return_value=None):
-        with pytest.raises(AttributeError, match="Job info has not been fetched yet"):
-            job.job_info
+    with (
+        mock.patch.object(job, "_refresh_job", return_value=None),
+        pytest.raises(AttributeError, match="Job info has not been fetched yet"),
+    ):
+        _ = job.job_info

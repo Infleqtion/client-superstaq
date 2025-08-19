@@ -16,7 +16,6 @@ from . import serialization, service, superstaq_client, superstaq_exceptions, ty
 __all__ = [
     "API_URL",
     "API_VERSION",
-    "_models",
     "ResourceEstimate",
     "Service",
     "SuperstaqException",
@@ -25,6 +24,7 @@ __all__ = [
     "SuperstaqWarning",
     "Target",
     "__version__",
+    "_models",
     "serialization",
     "service",
     "superstaq_client",

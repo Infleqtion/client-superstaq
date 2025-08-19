@@ -1281,7 +1281,10 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         super().create_job(serialized_circuits, repetitions, target)
 
         # Infer the job type
-        if target.endswith("_simulator") or method in gss._models.SimMethod._value2member_map_.keys():
+        if (
+            target.endswith("_simulator")
+            or method in gss._models.SimMethod._value2member_map_.keys()
+        ):
             job_type = gss._models.JobType.SIMULATE
         else:
             job_type = gss._models.JobType.SUBMIT
@@ -1345,7 +1348,9 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
             query.model_dump(exclude_none=True),
             **credentials,
         )
-        return {job_id: gss._models.JobData(**data).model_dump() for (job_id, data) in response.items()}
+        return {
+            job_id: gss._models.JobData(**data).model_dump() for (job_id, data) in response.items()
+        }
 
     def get_balance(self) -> dict[str, float]:
         response = gss._models.BalanceResponse(**self.get_request("/client/balance"))
@@ -1409,7 +1414,9 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         response = gss._models.TargetInfo(
             **self.post_request(
                 "/client/retrieve_target_info",
-                gss._models.RetrieveTargetInfoModel(target=target, options_dict=kwargs).model_dump(),
+                gss._models.RetrieveTargetInfoModel(
+                    target=target, options_dict=kwargs
+                ).model_dump(),
                 **credentials,
             )
         )
@@ -1464,7 +1471,9 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
             options_dict=json.loads(json_dict.get("options", "{}")),
         )
         # Submit job and store ID
-        response = gss._models.NewJobResponse(**self.post_request("/client/job", new_job.model_dump()))
+        response = gss._models.NewJobResponse(
+            **self.post_request("/client/job", new_job.model_dump())
+        )
         job_id = str(response.job_id)
         job_data = self.fetch_jobs([job_id])[job_id]
 
@@ -1540,8 +1549,6 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
             }
             compile_dict["cirq_circuits"] = "[" + ", ".join(job_data["compiled_circuits"]) + "]"
             return compile_dict
-        else:
-            raise gss.SuperstaqException(f"The circuit type {circuit_type} is not supported.")
 
     def submit_qubo(  # type: ignore [return]
         self,
@@ -1621,7 +1628,9 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         self._raise_not_implemented("process_cb")
 
     def aqt_upload_configs(self, aqt_configs: dict[str, str]) -> str:
-        response = self.put_request("/aqt_configs", gss._models.AQTConfigs(**aqt_configs).model_dump())
+        response = self.put_request(
+            "/aqt_configs", gss._models.AQTConfigs(**aqt_configs).model_dump()
+        )
         return response
 
     def aqt_get_configs(self) -> dict[str, str]:

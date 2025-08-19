@@ -364,7 +364,9 @@ def test_compiled_circuitV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obje
     job_result = modifiy_job_result(job_dictV3, compiled_circuits=[None])
     mock_get.return_value.json.return_value = {str(uuid.UUID(int=43)): job_result}
     job = new_jobV3()
-    with pytest.raises(gss.SuperstaqException, match=f"The job {job._job_id} has no compiled circuits."):
+    with pytest.raises(
+        gss.SuperstaqException, match=f"The job {job._job_id} has no compiled circuits."
+    ):
         job.compiled_circuits()
 
     job_result = modifiy_job_result(
@@ -923,7 +925,10 @@ def test_get_itemV3() -> None:
     with pytest.raises(NotImplementedError):
         new_jobV3().__getitem__(0)
 
-def test_job_data_failureV3(jobV3: css.JobV3):
-    with mock.patch.object(jobV3, "_refresh_job", return_value=None):
-        with pytest.raises(AttributeError, match="Job data has not been fetched yet"):
-            jobV3.job_data
+
+def test_job_data_failureV3(jobV3: css.JobV3) -> None:
+    with (
+        mock.patch.object(jobV3, "_refresh_job", return_value=None),
+        pytest.raises(AttributeError, match="Job data has not been fetched yet"),
+    ):
+        _ = jobV3.job_data

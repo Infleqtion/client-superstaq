@@ -428,7 +428,7 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
 
     def __hash__(self) -> int:
         return hash(self._job_id)
-    
+
     @property
     def job_info(self) -> gss._models.JobData:
         if self._job_info is None:
@@ -671,14 +671,14 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
 
             if any(c is None for c in self.job_info.compiled_circuits):
                 raise gss.SuperstaqException(
-                    "Some compiled circuits are missing. This is likely because there was an error on "
-                    "the server. Please check the individual circuit statuses and any status messages."
+                    "Some compiled circuits are missing. "
+                    "This is likely because there was an error on the server. "
+                    "Please check the individual circuit statuses and any status messages."
                 )
-        else:
-            if self.job_info.compiled_circuits[index] is None:
-                raise gss.SuperstaqException(
-                    f"Circuit {index} of job {self._job_id} does not have a compiled circuit."
-                )
+        elif self.job_info.compiled_circuits[index] is None:
+            raise gss.SuperstaqException(
+                f"Circuit {index} of job {self._job_id} does not have a compiled circuit."
+            )
 
         circuits = [
             qss.deserialize_circuits(self.job_info.compiled_circuits[k])[0]  # type: ignore[arg-type]
