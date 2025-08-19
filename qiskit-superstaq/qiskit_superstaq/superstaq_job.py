@@ -419,7 +419,7 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         super().__init__(backend, str(job_id))
         self._job_id = job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(job_id)
         self._overall_status = _models.CircuitStatus.RECEIVED
-        self._job_info: _models.JobData
+        self._job_info: _models.JobData | None = None
 
     def __eq__(self, other: object) -> bool:
         if not (isinstance(other, SuperstaqJobV3)):
@@ -429,6 +429,15 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
 
     def __hash__(self) -> int:
         return hash(self._job_id)
+    
+    @property
+    def job_info(self) -> _models.JobData:
+        if self._job_info is None:
+            self._refresh_job()
+        if self._job_info is None:
+            raise AttributeError("Job data has not been fetched yet. Ru _refresh_job().")
+        else:
+            return self._job_info
 
     def job_id(self) -> uuid.UUID:
         """Returns the job's unique id."""
@@ -458,7 +467,7 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
             time.sleep(wait)
             time_waited += wait
 
-        return self._job_info
+        return self.job_info
 
     def _arrange_counts(
         self, counts: dict[str, int], circ_meas_bit_indices: list[int], num_clbits: int
@@ -603,7 +612,7 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         Args:
             index: An optional index to check a specific sub-job.
         """
-        if hasattr(self, "_job_info"):
+        if self._job_info is not None:
             if all(s in _models.TERMINAL_CIRCUIT_STATES for s in self._job_info.statuses):
                 return
         self._job_info = _models.JobData(
@@ -621,7 +630,7 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
             -> Cancelled -> Done. For example, if any of the jobs are still queued (even if
             some are done), we report 'Queued' as the overall status of the entire batch.
         """
-        status_occurrence = set(self._job_info.statuses)
+        status_occurrence = set(self.job_info.statuses)
         status_priority_order = (
             _models.CircuitStatus.RECEIVED,
             _models.CircuitStatus.AWAITING_COMPILE,
@@ -657,20 +666,18 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         Returns:
             A single compiled circuit or list of compiled circuits.
         """
-        if not hasattr(self, "_job_info"):
-            self._refresh_job()
-        if all(c is None for c in self._job_info.compiled_circuits):
+        if all(c is None for c in self.job_info.compiled_circuits):
             raise RuntimeError(f"The job {self._job_id} has no compiled circuits.")
 
-        if any(c is None for c in self._job_info.compiled_circuits):
+        if any(c is None for c in self.job_info.compiled_circuits):
             raise RuntimeError(
                 "Some compiled circuits are missing. This is likely because there was an error on "
                 "the server. Please check the individual circuit statuses and any status messages."
             )
 
         circuits = [
-            qss.deserialize_circuits(self._job_info.compiled_circuits[k])[0]  # type: ignore[arg-type]
-            for k in range(self._job_info.num_circuits)
+            qss.deserialize_circuits(self.job_info.compiled_circuits[k])[0]  # type: ignore[arg-type]
+            for k in range(self.job_info.num_circuits)
         ]
 
         if index is None:
@@ -694,12 +701,9 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         Returns:
             The input circuit or list of submitted input circuits.
         """
-        if not hasattr(self, "_job_info"):
-            self._refresh_job()
-
         circuits = [
-            qss.deserialize_circuits(self._job_info.input_circuits[k])[0]
-            for k in range(self._job_info.num_circuits)
+            qss.deserialize_circuits(self.job_info.input_circuits[k])[0]
+            for k in range(self.job_info.num_circuits)
         ]
 
         if index is None:
@@ -738,7 +742,7 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         if index is None:
             status = self._overall_status
         else:
-            status = self._job_info.statuses[index]
+            status = self.job_info.statuses[index]
         return status_match.get(status)
 
     def submit(self) -> None:
@@ -762,4 +766,4 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         """
         if self._overall_status not in _models.TERMINAL_CIRCUIT_STATES:
             self._refresh_job()
-        return self._job_info.model_dump()
+        return self.job_info.model_dump()
