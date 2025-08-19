@@ -535,7 +535,7 @@ class JobV3:
         if not isinstance(self._client, _SuperstaqClientV3):
             raise ValueError("JobV3 job can only be used with v0.3.0 of the Superstaq API.")
         self._overall_status = _models.CircuitStatus.RECEIVED
-        self._job_data: _models.JobData | None
+        self._job_data: _models.JobData | None = None
         self._job_id = job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(job_id)
 
     def _refresh_job(self) -> None:
@@ -550,10 +550,12 @@ class JobV3:
 
     @property
     def job_data(self) -> _models.JobData:
-        self._refresh_job()
         if self._job_data is None:
-            raise AttributeError("Job data has not been initialized. Run _refresh_job().")
-        return self._job_data
+            self._refresh_job()
+        if self._job_data is None:
+            raise AttributeError("Job data has not been fetched yet. Ru _refresh_job().")
+        else:
+            return self._job_data
 
     def _update_status_queue_info(self) -> None:
         """Updates the overall status based on status queue info.
@@ -657,8 +659,6 @@ class JobV3:
             ~gss.SuperstaqServerException: If unable to get the status of the job
                 from the API.
         """
-        if not hasattr(self, "_job_data"):
-            self._refresh_job()
         return self.job_data.target
 
     @overload
@@ -683,8 +683,6 @@ class JobV3:
             ~gss.SuperstaqServerException: If unable to get the status of the job
                 from the API.
         """
-        if not hasattr(self, "_job_data"):
-            self._refresh_job()
         num_qubits = []
         if index is None:
             to_check = list(range(self.job_data.num_circuits))
@@ -704,8 +702,6 @@ class JobV3:
         Returns:
             The number of repetitions for this job.
         """
-        if not hasattr(self, "_job_data"):
-            self._refresh_job()
         return self.job_data.shots[0]
 
     @overload
@@ -727,8 +723,6 @@ class JobV3:
         Returns:
             A single compiled circuit or list of compiled circuits.
         """
-        if not hasattr(self, "_job_data"):
-            self._refresh_job()
         if all(c is None for c in self.job_data.compiled_circuits):
             raise RuntimeError(f"The job {self._job_id} has no compiled circuits.")
 
@@ -764,8 +758,6 @@ class JobV3:
         Returns:
             A single input circuit or list of submitted input circuits.
         """
-        if not hasattr(self, "_job_data"):
-            self._refresh_job()
         circuits = [
             css.deserialize_circuits(self.job_data.input_circuits[k])[0]
             for k in range(self.job_data.num_circuits)
@@ -846,11 +838,9 @@ class JobV3:
             return counts_list
 
         gss.validation.validate_integer_param(index, min_val=0)
-        if self.job_data.counts[index] is None:
+        single_counts = self.job_data.counts[index]
+        if single_counts is None:
             raise RuntimeError(f"Circuit {index} of job {self._job_id} does not have any counts.")
-        single_counts: dict[str, int] = self.job_data.counts[index]  # type: ignore[assignment]
-        # Type checking does not recognise that the above error catches the case when the counts
-        # are None.
         if qubit_indices:
             return _get_marginal_counts(single_counts, qubit_indices)
         return single_counts
@@ -866,8 +856,6 @@ class JobV3:
         Returns:
             A dictionary containing updated job information.
         """
-        if not hasattr(self, "_job_data"):
-            self._refresh_job()
         return self.job_data.model_dump()
 
     def __str__(self) -> str:
@@ -877,7 +865,7 @@ class JobV3:
         return f"css.JobV3(client={self._client!r}, job_id={self.job_id()!r})"
 
     def _value_equality_values_(self) -> tuple[uuid.UUID, dict[str, Any] | None]:
-        if not hasattr(self, "_job_data"):
+        if self._job_data is None:
             return self._job_id, None
         return self._job_id, self.job_data.model_dump()
 
