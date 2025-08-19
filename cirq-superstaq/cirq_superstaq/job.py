@@ -716,7 +716,7 @@ class JobV3:
             index: An optional index of the specific circuit to retrieve.
 
         Raises:
-            SuperstaqException: If the circuit at the provided index has no compiled circuit or,
+            gss.SuperstaqException: If the circuit at the provided index has no compiled circuit or,
             when index is None, if any of the circuits in the job are missing the compiled circuit.
 
         Returns:
@@ -814,7 +814,7 @@ class JobV3:
                 canceled or deleted.
             ~gss.SuperstaqServerException: If unable to get the results from the API.
             TimeoutError: If no results are available in the provided timeout interval.
-            SuperstaqException: If the job counts are missing.
+            gss.SuperstaqException: If the job counts are missing.
         """
         time_waited_seconds: float = 0.0
         # If not in a terminal state then poll
