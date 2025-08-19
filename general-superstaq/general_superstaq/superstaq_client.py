@@ -112,6 +112,8 @@ class _BaseSuperstaqClient(ABC):
         self.circuit_type = circuit_type
         self.max_retry_seconds = max_retry_seconds
         self.verbose = verbose
+        if self.api_version == "v0.3.0":
+            self.remote_host = "superstaq-prod.infleqtion.com"
         url = urllib.parse.urlparse(self.remote_host)
         assert url.scheme, (
             f"Specified URL protocol/scheme in `remote_host` ({self.remote_host}) is not valid. "
