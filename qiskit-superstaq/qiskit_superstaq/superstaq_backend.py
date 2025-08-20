@@ -252,7 +252,9 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         request_json = self._get_compile_request_json(circuits, **kwargs)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
-        return qss.compiler_output.read_json(json_dict, circuits_is_list)
+        return qss.compiler_output.read_json(
+            json_dict, circuits_is_list, api_version=self._provider._client.api_version
+        )
 
     def _get_compile_request_json(
         self,
