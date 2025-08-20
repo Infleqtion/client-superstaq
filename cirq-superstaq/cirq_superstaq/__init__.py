@@ -14,6 +14,11 @@
 
 from cirq_superstaq import compiler_output, evaluation, resource_counters, validation
 from cirq_superstaq._version import __version__
+from cirq_superstaq.circuits import (
+    msd_5_to_1,
+    msd_7_to_1,
+    msd_15_to_1,
+)
 from cirq_superstaq.compiler_output import active_qubit_indices, measured_qubit_indices
 from cirq_superstaq.job import Job, JobV3
 from cirq_superstaq.ops import (
@@ -109,6 +114,9 @@ __all__ = [
     "deserialize_circuits",
     "evaluation",
     "measured_qubit_indices",
+    "msd_5_to_1",
+    "msd_7_to_1",
+    "msd_15_to_1",
     "parallel_gates_operation",
     "qubit_subspace_op",
     "qudit_swap_op",
