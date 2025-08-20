@@ -1526,31 +1526,22 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
                 physical = json.loads(job_data["physical_qubits"][i])
 
                 cirq_initial_log_to_phys.append(
-                    "["
-                    + ", ".join(
-                        f"[{json.dumps(logical[k])}, {json.dumps(physical[v])}]"
+                    [
+                        [logical[k], physical[v]]
                         for k, v in job_data["initial_logical_to_physicals"][i].items()
-                    )
-                    + "]"
+                    ]
                 )
                 cirq_final_log_to_phys.append(
-                    "["
-                    + ", ".join(
-                        f"[{json.dumps(logical[k])}, {json.dumps(physical[v])}]"
+                    [
+                        [logical[k], physical[v]]
                         for k, v in job_data["final_logical_to_physicals"][i].items()
-                    )
-                    + "]"
+                    ]
                 )
-
             compile_dict = {
-                "initial_logical_to_physicals": "["
-                + ", ".join(q_map for q_map in cirq_initial_log_to_phys)
-                + "]",
-                "final_logical_to_physicals": "["
-                + ", ".join(q_map for q_map in cirq_final_log_to_phys)
-                + "]",
+                "initial_logical_to_physicals": json.dumps(cirq_initial_log_to_phys),
+                "final_logical_to_physicals": json.dumps(cirq_final_log_to_phys),
+                "cirq_circuits": json.dumps(list(map(json.loads, job_data["compiled_circuits"]))),
             }
-            compile_dict["cirq_circuits"] = "[" + ", ".join(job_data["compiled_circuits"]) + "]"
             return compile_dict
 
     def submit_qubo(  # type: ignore [return]
