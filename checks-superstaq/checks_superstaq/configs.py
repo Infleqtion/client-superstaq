@@ -53,8 +53,10 @@ def run(*args: str, silent: bool = False) -> int:
     # identify the "original" config file, and the file that is supposed to be a copy
     file_orig = os.path.join(os.path.abspath(os.path.dirname(__file__)), TEMPLATE_FILE)
     file_copy = os.path.join(check_utils.root_dir, CONFIG_FILE)
-    lines_orig = open(file_orig).read().splitlines()
-    lines_copy = open(file_copy).read().splitlines()
+    with open(file_orig) as original_file:
+        lines_orig = original_file.read().splitlines()
+    with open(file_copy) as copy_file:
+        lines_copy = copy_file.read().splitlines()
 
     # trim package-specific configuration
     lines_orig, orig_offset = _trim_lines(lines_orig)

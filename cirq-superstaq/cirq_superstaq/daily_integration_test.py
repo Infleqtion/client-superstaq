@@ -54,7 +54,7 @@ def test_ibmq_compile_with_token() -> None:
     service = css.Service(
         ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"],
         ibmq_instance=os.environ["TEST_USER_IBMQ_INSTANCE"],
-        ibmq_channel="ibm_cloud",
+        ibmq_channel="ibm_quantum_platform",
     )
     circuit = cirq.Circuit(
         cirq.H(cirq.q(3)),
@@ -358,9 +358,9 @@ def test_dry_run_submit_to_sqale_with_qubit_sorting(service: css.Service) -> Non
     num_qubits = service.target_info(target)["num_qubits"]
     qubits = cirq.LineQubit.range(num_qubits)
     circuit = cirq.Circuit(
-        css.ParallelRGate(np.pi / 2, 0.0, 24).on(*qubits),
+        css.ParallelRGate(np.pi / 2, 0.0, num_qubits).on(*qubits),
         cirq.rz(np.pi).on(qubits[2]),
-        css.ParallelRGate(-np.pi / 2, 0.0, 24).on(*qubits),
+        css.ParallelRGate(-np.pi / 2, 0.0, num_qubits).on(*qubits),
         cirq.measure(*qubits),
     )
 

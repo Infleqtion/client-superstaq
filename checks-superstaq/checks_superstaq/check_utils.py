@@ -300,8 +300,6 @@ def get_test_files(
 CHECK_LIST = [
     "configs",
     "format",
-    "flake8",
-    "pylint",
     "mypy",
     "pytest",
     "coverage",

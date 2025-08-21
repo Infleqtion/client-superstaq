@@ -201,17 +201,17 @@ def test_read_json_pulse_gate_circuits() -> None:
         pytest.warns(UserWarning, match="qiskit-superstaq is required"),
     ):
         out = css.compiler_output.read_json(json_dict, circuits_is_list=False)
-        assert out.circuit == circuit
-        assert out.pulse_gate_circuit is None
+    assert out.circuit == circuit
+    assert out.pulse_gate_circuit is None
 
+    json_dict["pulse_gate_circuits"] = "not-a-serialized-circuit"
     with pytest.warns(
         UserWarning,
         match="Your compiled pulse gate circuits could not be deserialized.",
     ):
-        json_dict["pulse_gate_circuits"] = "not-a-serialized-circuit"
         out = css.compiler_output.read_json(json_dict, circuits_is_list=True)
-        assert out.circuits == [circuit, circuit]
-        assert out.pulse_gate_circuits is None
+    assert out.circuits == [circuit, circuit]
+    assert out.pulse_gate_circuits is None
 
 
 @mock.patch.dict("sys.modules", {"qtrl": None})
