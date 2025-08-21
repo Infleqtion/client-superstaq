@@ -556,6 +556,17 @@ def test_eq(backend: qss.SuperstaqBackend) -> None:
     assert job == job3
 
 
+def test_hash(backend: qss.SuperstaqBackend) -> None:
+    job = qss.SuperstaqJob(backend=backend, job_id="12345")
+    job2 = qss.SuperstaqJob(backend=backend, job_id="123456")
+    job3 = qss.SuperstaqJob(backend=backend, job_id="12345")
+    hash_set = set()
+    hash_set.add(job)
+    hash_set.add(job2)
+    hash_set.add(job3)
+    assert len(hash_set) == 2
+
+
 def test_to_dict(backend: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJob(backend=backend, job_id="12345")
     with patched_requests({"12345": mock_response("Done")}):

@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from _typeshed import SupportsItems
 
 
-class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
+class SuperstaqBackend(qiskit.providers.BackendV2):
     """This class represents a Superstaq backend."""
 
     def __init__(self, provider: qss.SuperstaqProvider, target: str) -> None:
@@ -52,7 +52,10 @@ class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
         if not isinstance(other, qss.SuperstaqBackend):
             return False
 
-        return self._provider == other._provider and self.target_info() == other.target_info()
+        return self._provider == other._provider and self.name == other.name
+
+    def __hash__(self) -> int:
+        return hash((self.name, self._provider))
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}('{self.name}')>"
@@ -441,7 +444,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
 
         base_entangling_gate = base_entangling_gate.lower()
         if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
-            raise ValueError("base_entangling_gate must be 'xx', 'zz', 'sxx', or 'szz'")
+            raise ValueError("`base_entangling_gate` must be 'xx', 'zz', 'sxx', or 'szz'")
 
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 

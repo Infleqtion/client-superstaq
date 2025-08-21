@@ -20,7 +20,7 @@ import qiskit
 import qiskit_superstaq as qss
 
 
-class SuperstaqJob(qiskit.providers.JobV1):  # noqa: PLW1641
+class SuperstaqJob(qiskit.providers.JobV1):
     """This class represents a Superstaq job instance."""
 
     TERMINAL_STATES = ("Done", "Cancelled", "Failed")
@@ -43,6 +43,9 @@ class SuperstaqJob(qiskit.providers.JobV1):  # noqa: PLW1641
             return False
 
         return self._job_id == other._job_id
+
+    def __hash__(self) -> int:
+        return hash(self._job_id)
 
     def _wait_for_results(self, timeout: float, wait: float = 5) -> list[dict[str, dict[str, int]]]:
         """Waits for the results till either the job is done or some error in the job occurs.
