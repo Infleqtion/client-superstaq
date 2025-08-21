@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2025 Infleqtion
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,14 +12,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from __future__ import annotations
 
-from general_superstaq import ResourceEstimate
+import sys
 
+import checks_superstaq as checks
 
-def test_resource_estimate() -> None:
-    json_data = {"num_single_qubit_gates": 1, "num_two_qubit_gates": 2, "depth": 3}
-    expected_re = ResourceEstimate(1, 2, 3)
-    constructed_re = ResourceEstimate(json_data=json_data)
-
-    assert repr(expected_re) == repr(constructed_re)
+if __name__ == "__main__":
+    sys.exit(checks.license_header_.run(*sys.argv[1:]))

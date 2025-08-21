@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+# Copyright 2025 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import os
@@ -12,6 +26,7 @@ from checks_superstaq import (
     configs,
     coverage_,
     format_,
+    license_header_,
     lint_,
     mypy_,
     requirements,
@@ -98,6 +113,11 @@ def run(*args: str) -> int:
     checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
     checks_failed |= lint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 
+    checks_failed |= license_header_.run(
+        *args_to_pass,
+        exit_on_failure=exit_on_failure,
+        silent=True,
+    )
     # run typing and coverage checks
     exit_on_failure = not parsed_args.force_all
     checks_failed |= mypy_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
