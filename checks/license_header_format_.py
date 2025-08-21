@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2024 Infleqtion
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,5 +12,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-API_URL = "https://superstaq.infleqtion.com"
-API_VERSION = "v0.2.0"
+from __future__ import annotations
+
+import sys
+
+import checks_superstaq as checks
+
+if __name__ == "__main__":
+    exit(checks.license_header_format_.run(*sys.argv[1:]))
