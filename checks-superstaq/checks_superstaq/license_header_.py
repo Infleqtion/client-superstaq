@@ -16,14 +16,12 @@
 
 from __future__ import annotations
 
-import sys
 import subprocess
+import sys
 import textwrap
 from collections.abc import Iterable
 
 from checks_superstaq import check_utils
-from pathlib import Path
-from typing import Any
 
 
 @check_utils.enable_exit_on_failure

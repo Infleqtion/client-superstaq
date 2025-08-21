@@ -25,6 +25,7 @@ from checks_superstaq import (
     configs,
     coverage_,
     format_,
+    license_header_,
     lint_,
     mypy_,
     requirements,
@@ -111,7 +112,7 @@ def run(*args: str) -> int:
     checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
     checks_failed |= lint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 
-    checks_failed |= license_header_format_.run(
+    checks_failed |= license_header_.run(
         *args_to_pass,
         exit_on_failure=exit_on_failure,
         silent=True,
