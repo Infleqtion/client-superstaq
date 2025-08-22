@@ -35,7 +35,7 @@ import general_superstaq as gss
 
 TQuboKey = TypeVar("TQuboKey")
 
-RECOGNISED_CIRCUIT_TYPES = Literal[gss._models.CircuitType.CIRQ, gss._models.CircuitType.QISKIT]
+RECOGNISED_CIRCUIT_TYPES = Literal[gss.models.CircuitType.CIRQ, gss.models.CircuitType.QISKIT]
 """The circuit types that are currently implemented within the SuperstaqClient."""
 
 
@@ -64,7 +64,7 @@ class _BaseSuperstaqClient(ABC):
         api_key: str | None = None,
         remote_host: str | None = None,
         api_version: str = gss.API_VERSION,
-        circuit_type: gss._models.CircuitType = gss._models.CircuitType.CIRQ,
+        circuit_type: gss.models.CircuitType = gss.models.CircuitType.CIRQ,
         max_retry_seconds: float = 60,  # 1 minute
         verbose: bool = False,
         cq_token: str | None = None,
@@ -114,7 +114,7 @@ class _BaseSuperstaqClient(ABC):
         self.verbose = verbose
 
         if self.api_version == "v0.3.0" and self.remote_host == gss.API_URL:
-            self.remote_host = "https://superstaq-prod.infleqtion.com/"
+            self.remote_host = gss.API_URL_V3
         url = urllib.parse.urlparse(self.remote_host)
         assert url.scheme, (
             f"Specified URL protocol/scheme in `remote_host` ({self.remote_host}) is not valid. "
@@ -131,7 +131,11 @@ class _BaseSuperstaqClient(ABC):
         assert max_retry_seconds >= 0, "Negative retry not possible without time machine."
 
         self.url = f"{url.scheme}://{url.netloc}/{self.api_version}"
-        self.verify_https: bool = f"{gss.API_URL}/{self.api_version}" == self.url
+        self.verify_https: bool = self.url in [
+            f"{gss.API_URL}/{self.api_version}",
+            f"{gss.API_URL_V3}/{self.api_version}",
+        ]
+
         self.headers = {
             "Authorization": self.api_key,
             "Content-Type": "application/json",
@@ -911,8 +915,8 @@ class _BaseSuperstaqClient(ABC):
     @staticmethod
     def _extract_circuits(json_dict: dict[str, str]) -> tuple[str, RECOGNISED_CIRCUIT_TYPES]:
         recognised_circuit_types: dict[str, RECOGNISED_CIRCUIT_TYPES] = {
-            "cirq_circuits": gss._models.CircuitType.CIRQ,
-            "qiskit_circuits": gss._models.CircuitType.QISKIT,
+            "cirq_circuits": gss.models.CircuitType.CIRQ,
+            "qiskit_circuits": gss.models.CircuitType.QISKIT,
         }
 
         circuit_keys = list(filter(lambda x: x in recognised_circuit_types, json_dict))
@@ -1286,16 +1290,16 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         # Infer the job type
         if (
             target.endswith("_simulator")
-            or method in gss._models.SimMethod._value2member_map_.keys()
+            or method in gss.models.SimMethod._value2member_map_.keys()
         ):
-            job_type = gss._models.JobType.SIMULATE
+            job_type = gss.models.JobType.SIMULATE
         else:
-            job_type = gss._models.JobType.SUBMIT
+            job_type = gss.models.JobType.SUBMIT
 
         # Get sim method if needed
-        if job_type == gss._models.JobType.SIMULATE:
-            if method in gss._models.SimMethod._value2member_map_.keys():
-                sim_method = gss._models.SimMethod(method)
+        if job_type == gss.models.JobType.SIMULATE:
+            if method in gss.models.SimMethod._value2member_map_.keys():
+                sim_method = gss.models.SimMethod(method)
             else:
                 sim_method = None
         else:
@@ -1310,7 +1314,7 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         # Extract tokens from kwargs and move to the header
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
 
-        new_job = gss._models.NewJob(
+        new_job = gss.models.NewJob(
             job_type=job_type,
             target=target,
             circuits=circuits,
@@ -1320,7 +1324,7 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
             shots=repetitions,
             options_dict={**self.client_kwargs, **kwargs},
         )
-        response = gss._models.NewJobResponse(
+        response = gss.models.NewJobResponse(
             **self.post_request("/client/job", new_job.model_dump(), **credentials)
         )
         return response.model_dump()
@@ -1330,11 +1334,11 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         job_ids: Sequence[str] | Sequence[uuid.UUID],
         **kwargs: object,
     ) -> list[str]:
-        query = gss._models.JobQuery(job_id=job_ids)
+        query = gss.models.JobQuery(job_id=job_ids)
         json_dict = query.model_dump(exclude_none=True)
         json_dict["job_id"] = list(map(str, json_dict["job_id"]))
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
-        response = gss._models.JobCancellationResults(
+        response = gss.models.JobCancellationResults(
             **self.put_request("/client/cancel_jobs", json_dict, **credentials)
         )
         return response.succeeded
@@ -1344,7 +1348,7 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         job_ids: Sequence[str] | Sequence[uuid.UUID],
         **kwargs: object,
     ) -> dict[str, dict[str, Any]]:
-        query = gss._models.JobQuery(job_id=job_ids)
+        query = gss.models.JobQuery(job_id=job_ids)
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
         response = self.get_request(
             f"/client/job/{self.circuit_type.value}",
@@ -1352,11 +1356,11 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
             **credentials,
         )
         return {
-            job_id: gss._models.JobData(**data).model_dump() for (job_id, data) in response.items()
+            job_id: gss.models.JobData(**data).model_dump() for (job_id, data) in response.items()
         }
 
     def get_balance(self) -> dict[str, float]:
-        response = gss._models.BalanceResponse(**self.get_request("/client/balance"))
+        response = gss.models.BalanceResponse(**self.get_request("/client/balance"))
         return {"balance": response.balance}
 
     def get_user_info(
@@ -1367,7 +1371,7 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
     ) -> list[dict[str, str | float]]:
         if isinstance(user_id, int):
             raise TypeError("Superstaq API v0.3.0 uses UUID indexing for users, not integer.")
-        query = gss._models.UserQuery(
+        query = gss.models.UserQuery(
             name=[name] if name is not None else None,
             email=[email] if email is not None else None,
             user_id=[user_id] if user_id is not None else None,
@@ -1377,7 +1381,7 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
             raise gss.SuperstaqServerException(
                 "Something went wrong. The server has returned an empty response."
             )
-        user_data = [gss._models.UserInfo(**data) for data in response]
+        user_data = [gss.models.UserInfo(**data) for data in response]
         return [data.model_dump() for data in user_data]
 
     def _accept_terms_of_use(self, user_input: str) -> str:
@@ -1385,13 +1389,13 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
 
     def get_targets(self, **kwargs: bool | None) -> list[gss.Target]:
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
-        query = gss._models.GetTargetsFilterModel(
+        query = gss.models.GetTargetsFilterModel(
             **{key: val for key, val in kwargs.items() if val is not None}
         )
         response = self.get_request(
             "/client/targets", query.model_dump(exclude_defaults=True), **credentials
         )
-        targets = [gss._models.TargetModel(**data) for data in response]
+        targets = [gss.models.TargetModel(**data) for data in response]
         return [
             gss.typing.Target(
                 target=target.target_name, **target.model_dump(exclude={"target_name"})
@@ -1402,7 +1406,7 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
     def get_my_targets(self) -> list[gss.Target]:
         credentials = self._extract_credentials(self.client_kwargs)
         response = self.get_request("/client/targets", {"accessible": True}, **credentials)
-        targets = [gss._models.TargetModel(**data) for data in response]
+        targets = [gss.models.TargetModel(**data) for data in response]
         return [
             gss.typing.Target(
                 target=target.target_name, **target.model_dump(exclude={"target_name"})
@@ -1414,19 +1418,17 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         super().target_info(target)
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
 
-        response = gss._models.TargetInfo(
+        response = gss.models.TargetInfo(
             **self.post_request(
                 "/client/retrieve_target_info",
-                gss._models.RetrieveTargetInfoModel(
-                    target=target, options_dict=kwargs
-                ).model_dump(),
+                gss.models.RetrieveTargetInfoModel(target=target, options_dict=kwargs).model_dump(),
                 **credentials,
             )
         )
         return response.model_dump()
 
     def add_new_user(self, json_dict: dict[str, str]) -> str:
-        new_user = gss._models.NewUser(**json_dict)
+        new_user = gss.models.NewUser(**json_dict)
         return self.post_request("/client/user", new_user.model_dump(exclude_none=True))
 
     def update_user_balance(self, json_dict: dict[str, float | str]) -> str:
@@ -1436,7 +1438,7 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
             raise ValueError("Must provide a user email to update the balance of.")
         if new_balance is None:
             raise ValueError("Must provide a new balance to update the user with.")
-        request = gss._models.UpdateUserDetails(balance=json_dict.get("balance"))
+        request = gss.models.UpdateUserDetails(balance=json_dict.get("balance"))
         return self.put_request(f"/client/user/{user_email}", request.model_dump(exclude_none=True))
 
     def update_user_role(self, json_dict: dict[str, int | str]) -> str:
@@ -1446,7 +1448,7 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
             raise ValueError("Must provide a user email to update the role of.")
         if new_role is None:
             raise ValueError("Must provide a new role to update the user with.")
-        request = gss._models.UpdateUserDetails(role=json_dict.get("role"))
+        request = gss.models.UpdateUserDetails(role=json_dict.get("role"))
         return self.put_request(f"/client/user/{user_email}", request.model_dump(exclude_none=True))
 
     def resource_estimate(self, json_dict: dict[str, str]) -> dict[str, list[dict[str, int]]]:  # type: ignore [return]
@@ -1466,15 +1468,15 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         circuits, circuit_type = self._extract_circuits(json_dict)
 
         # Define job
-        new_job = gss._models.NewJob(
-            job_type=gss._models.JobType.COMPILE,
+        new_job = gss.models.NewJob(
+            job_type=gss.models.JobType.COMPILE,
             target=json_dict["target"],
             circuits=circuits,
             circuit_type=circuit_type,
             options_dict=json.loads(json_dict.get("options", "{}")),
         )
         # Submit job and store ID
-        response = gss._models.NewJobResponse(
+        response = gss.models.NewJobResponse(
             **self.post_request("/client/job", new_job.model_dump())
         )
         job_id = str(response.job_id)
@@ -1482,7 +1484,7 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
 
         # Poll the server until all circuits have reached a terminal state.
         time_waited_seconds: float = 0.0
-        while any(s not in gss._models.TERMINAL_CIRCUIT_STATES for s in job_data["statuses"]):
+        while any(s not in gss.models.TERMINAL_CIRCUIT_STATES for s in job_data["statuses"]):
             # Status does a refresh.
             if time_waited_seconds > 7200:  # pragma: no cover
                 raise TimeoutError(
@@ -1494,14 +1496,14 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
             job_data = self.fetch_jobs([job_id])[job_id]
 
         # Exception if any have not been successful
-        if not all(s == gss._models.CircuitStatus.COMPLETED for s in job_data["statuses"]):
+        if not all(s == gss.models.CircuitStatus.COMPLETED for s in job_data["statuses"]):
             raise gss.SuperstaqException(
                 f"Not all circuits were successfully compiled. Check job ID {job_id} for further "
                 "details."
             )
 
         # Join circuits together in json string - TODO: make this neater.
-        if circuit_type == gss._models.CircuitType.QISKIT:
+        if circuit_type == gss.models.CircuitType.QISKIT:
             qiskit_initial_log_to_phys = [
                 [[k, v] for k, v in q_map.items()]
                 for q_map in job_data["initial_logical_to_physicals"]
@@ -1518,7 +1520,7 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
             compile_dict["qiskit_circuits"] = "[" + ", ".join(job_data["compiled_circuits"]) + "]"
             return compile_dict
 
-        elif circuit_type == gss._models.CircuitType.CIRQ:
+        elif circuit_type == gss.models.CircuitType.CIRQ:
             cirq_initial_log_to_phys = []
             cirq_final_log_to_phys = []
             for i in range(len(job_data["initial_logical_to_physicals"])):
@@ -1623,12 +1625,12 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
 
     def aqt_upload_configs(self, aqt_configs: dict[str, str]) -> str:
         response = self.put_request(
-            "/aqt_configs", gss._models.AQTConfigs(**aqt_configs).model_dump()
+            "/aqt_configs", gss.models.AQTConfigs(**aqt_configs).model_dump()
         )
         return response
 
     def aqt_get_configs(self) -> dict[str, str]:
-        response = gss._models.AQTConfigs(**self.get_request("/aqt_configs"))
+        response = gss.models.AQTConfigs(**self.get_request("/aqt_configs"))
         return response.model_dump()
 
     def __repr__(self) -> str:

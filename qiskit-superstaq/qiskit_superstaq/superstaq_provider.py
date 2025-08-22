@@ -110,7 +110,7 @@ class SuperstaqProvider(gss.service.Service):
             remote_host=remote_host,
             api_key=api_key,
             api_version=api_version,
-            circuit_type=gss._models.CircuitType.QISKIT,
+            circuit_type=gss.models.CircuitType.QISKIT,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
             cq_token=cq_token,

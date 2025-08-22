@@ -619,8 +619,8 @@ def test_job_status_refresh() -> None:
 def test_job_status_refreshV3(job_dictV3: dict[str, object]) -> None:
     mock_complete_response = mock.MagicMock()
     mock_complete_response.json.return_value = {str(uuid.UUID(int=43)): job_dictV3}
-    for status in gss._models.CircuitStatus:
-        if status not in gss._models.TERMINAL_CIRCUIT_STATES:
+    for status in gss.models.CircuitStatus:
+        if status not in gss.models.TERMINAL_CIRCUIT_STATES:
             incomplete_dict = modifiy_job_result(job_dictV3, statuses=[status.value])
             mock_incomplete_response = mock.MagicMock()
             mock_incomplete_response.json.return_value = {str(uuid.UUID(int=43)): incomplete_dict}
@@ -637,7 +637,7 @@ def test_job_status_refreshV3(job_dictV3: dict[str, object]) -> None:
                     == f"http://example.com/v0.3.0/client/job/cirq?job_id={uuid.UUID(int=43)}"
                 )
 
-    for status in gss._models.TERMINAL_CIRCUIT_STATES:
+    for status in gss.models.TERMINAL_CIRCUIT_STATES:
         result_dict = modifiy_job_result(job_dictV3, statuses=[status.value])
         with mock.patch(
             "requests.Session.get",
@@ -662,7 +662,7 @@ def test_value_equality(job: css.Job) -> None:
 def test_value_equalityV3(jobV3: css.JobV3, job_dictV3: dict[str, object]) -> None:
     eq = cirq.testing.EqualsTester()
     eq.add_equality_group(new_jobV3(), new_jobV3())
-    jobV3._job_data = gss._models.JobData(**job_dictV3)
+    jobV3._job_data = gss.models.JobData(**job_dictV3)
     eq.add_equality_group(jobV3, jobV3)
 
 

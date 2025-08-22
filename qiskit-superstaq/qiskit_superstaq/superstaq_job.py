@@ -417,8 +417,8 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         """
         super().__init__(backend, str(job_id))
         self._job_id = job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(job_id)
-        self._overall_status = gss._models.CircuitStatus.RECEIVED
-        self._job_info: gss._models.JobData | None = None
+        self._overall_status = gss.models.CircuitStatus.RECEIVED
+        self._job_info: gss.models.JobData | None = None
 
     def __eq__(self, other: object) -> bool:
         if not (isinstance(other, SuperstaqJobV3)):
@@ -430,7 +430,7 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         return hash(self._job_id)
 
     @property
-    def job_info(self) -> gss._models.JobData:
+    def job_info(self) -> gss.models.JobData:
         if self._job_info is None:
             self._refresh_job()
         if self._job_info is None:
@@ -442,7 +442,7 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         """Returns the job's unique id."""
         return self._job_id
 
-    def _wait_for_results(self, timeout: float, wait: float = 5) -> gss._models.JobData:
+    def _wait_for_results(self, timeout: float, wait: float = 5) -> gss.models.JobData:
         """Waits for the results till either the job is done or some error in the job occurs.
 
         Args:
@@ -612,9 +612,9 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
             index: An optional index to check a specific sub-job.
         """
         if self._job_info is not None:
-            if all(s in gss._models.TERMINAL_CIRCUIT_STATES for s in self._job_info.statuses):
+            if all(s in gss.models.TERMINAL_CIRCUIT_STATES for s in self._job_info.statuses):
                 return
-        self._job_info = gss._models.JobData(
+        self._job_info = gss.models.JobData(
             **self._backend._provider._client.fetch_jobs([self._job_id])[str(self._job_id)]
         )
 
@@ -631,16 +631,16 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         """
         status_occurrence = set(self.job_info.statuses)
         status_priority_order = (
-            gss._models.CircuitStatus.RECEIVED,
-            gss._models.CircuitStatus.AWAITING_COMPILE,
-            gss._models.CircuitStatus.AWAITING_SUBMISSION,
-            gss._models.CircuitStatus.AWAITING_SIMULATION,
-            gss._models.CircuitStatus.PENDING,
-            gss._models.CircuitStatus.RUNNING,
-            gss._models.CircuitStatus.FAILED,
-            gss._models.CircuitStatus.CANCELLED,
-            gss._models.CircuitStatus.UNRECOGNIZED,
-            gss._models.CircuitStatus.COMPLETED,
+            gss.models.CircuitStatus.RECEIVED,
+            gss.models.CircuitStatus.AWAITING_COMPILE,
+            gss.models.CircuitStatus.AWAITING_SUBMISSION,
+            gss.models.CircuitStatus.AWAITING_SIMULATION,
+            gss.models.CircuitStatus.PENDING,
+            gss.models.CircuitStatus.RUNNING,
+            gss.models.CircuitStatus.FAILED,
+            gss.models.CircuitStatus.CANCELLED,
+            gss.models.CircuitStatus.UNRECOGNIZED,
+            gss.models.CircuitStatus.COMPLETED,
         )
 
         for temp_status in status_priority_order:
@@ -740,7 +740,7 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
             "deleted": qiskit.providers.jobstatus.JobStatus.CANCELLED,
         }
 
-        if index is None and self._overall_status in gss._models.TERMINAL_CIRCUIT_STATES:
+        if index is None and self._overall_status in gss.models.TERMINAL_CIRCUIT_STATES:
             return status_match.get(self._overall_status)
 
         self._refresh_job(index)
@@ -769,6 +769,6 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         Returns:
             A dictionary containing updated job information.
         """
-        if self._overall_status not in gss._models.TERMINAL_CIRCUIT_STATES:
+        if self._overall_status not in gss.models.TERMINAL_CIRCUIT_STATES:
             self._refresh_job()
         return self.job_info.model_dump()

@@ -196,7 +196,7 @@ class Service(gss.service.Service):
             remote_host=remote_host,
             api_key=api_key,
             api_version=api_version,
-            circuit_type=gss._models.CircuitType.CIRQ,
+            circuit_type=gss.models.CircuitType.CIRQ,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
             cq_token=cq_token,
