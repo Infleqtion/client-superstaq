@@ -137,7 +137,7 @@ def test_superstaq_client_url_switchV3() -> None:
         api_version="v0.3.0",
     )
 
-    assert client.remote_host == "https://superstaq-prod.infleqtion.com/"
+    assert client.remote_host == "https://superstaq-prod.infleqtion.com"
 
 
 def test_general_superstaq_exception_str() -> None:
