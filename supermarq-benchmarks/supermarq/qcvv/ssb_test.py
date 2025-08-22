@@ -21,10 +21,10 @@ import re
 from unittest.mock import MagicMock
 
 import cirq
+import cirq_superstaq as css
 import numpy as np
 import pandas as pd
 import pytest
-import cirq_superstaq as css
 
 from supermarq.qcvv import SSB, SSBResults
 
@@ -71,12 +71,12 @@ def test_sss_init_circuits(ssb_experiment: SSB) -> None:
     # Index-4 has init_rotations [X, X, X, _Y, _X]
     q0, q1 = cirq.LineQubit.range(2)
     assert init_circuit == cirq.Circuit(
-        css.ParallelRGate(np.pi/2, np.pi, 2)(q0, q1),
-        css.ParallelRGate(np.pi/2, 0, 2)(q0, q1),
+        css.ParallelRGate(np.pi / 2, np.pi, 2)(q0, q1),
+        css.ParallelRGate(np.pi / 2, 0, 2)(q0, q1),
         cirq.CZ(q0, q1),
-        css.ParallelRGate(np.pi/2, 0, 2)(q0, q1),
-        css.ParallelRGate(np.pi/2, -np.pi/2, 2)(q0, q1),
-        css.ParallelRGate(np.pi/2, np.pi, 2)(q0, q1),
+        css.ParallelRGate(np.pi / 2, 0, 2)(q0, q1),
+        css.ParallelRGate(np.pi / 2, -np.pi / 2, 2)(q0, q1),
+        css.ParallelRGate(np.pi / 2, np.pi, 2)(q0, q1),
     )
 
 
@@ -87,11 +87,11 @@ def test_sss_reconciliation_circuit(ssb_experiment: SSB) -> None:
     recon_circuit = ssb_experiment._sss_reconciliation_circuit(init_circuit)
     q0, q1 = cirq.LineQubit.range(2)
     assert recon_circuit == cirq.Circuit(
-        css.ParallelRGate(np.pi/2, np.pi, 2)(q0, q1),
-        css.ParallelRGate(np.pi/2, np.pi, 2)(q0, q1),
+        css.ParallelRGate(np.pi / 2, np.pi, 2)(q0, q1),
+        css.ParallelRGate(np.pi / 2, np.pi, 2)(q0, q1),
         cirq.CZ(q0, q1),
-        css.ParallelRGate(np.pi/2, np.pi, 2)(q0, q1),
-        css.ParallelRGate(np.pi/2, np.pi, 2)(q0, q1),
+        css.ParallelRGate(np.pi / 2, np.pi, 2)(q0, q1),
+        css.ParallelRGate(np.pi / 2, np.pi, 2)(q0, q1),
     )
 
 
