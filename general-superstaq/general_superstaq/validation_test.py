@@ -82,7 +82,7 @@ def test_validate_qubo() -> None:
     with pytest.raises(TypeError, match="must be real numbers"):
         gss.validation.validate_qubo({(1, 2): 12 + 3j})
 
-    with pytest.raises(ValueError, match="must be real numbers"):
+    with pytest.raises(TypeError, match="must be real numbers"):
         gss.validation.validate_qubo({(1, 2): "abc"})
 
     with pytest.raises(ValueError, match="must be quadratic"):
