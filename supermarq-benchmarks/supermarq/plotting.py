@@ -404,9 +404,7 @@ class RadarAxesMeta(PolarAxes):
         # rotate plot such that the first axis is at the top
         self.set_theta_zero_location("N")
 
-    def fill(
-        self, *args: Any, closed: bool = True, **kwargs: Any
-    ) -> list[mpl.patches.Polygon]:
+    def fill(self, *args: Any, closed: bool = True, **kwargs: Any) -> list[mpl.patches.Polygon]:
         """Method to override fill so that line is closed by default.
 
         Args:
