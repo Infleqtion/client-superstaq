@@ -127,17 +127,17 @@ def validate_qubo(qubo: object) -> None:
         ValueError: If the provided object cannot be converted into a valid QUBO.
     """
     if not isinstance(qubo, Mapping):
-        raise ValueError("QUBOs must be provided as dict-like objects.")
+        raise TypeError("QUBOs must be provided as dict-like objects.")
 
     for key, val in qubo.items():
         if not isinstance(key, Sequence) or isinstance(key, str):
-            raise ValueError(f"{key!r} is not a valid key for a QUBO.")
+            raise TypeError(f"{key!r} is not a valid key for a QUBO.")
 
         if len(key) > 2:
             raise ValueError(f"QUBOs must be quadratic, but key {key!r} has length {len(key)}.")
 
         if not isinstance(val, numbers.Real):
-            raise ValueError("QUBO values must be real numbers.")
+            raise TypeError("QUBO values must be real numbers.")
 
 
 def _validate_ibm_channel(ibm_channel: str) -> None:
