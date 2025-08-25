@@ -531,7 +531,7 @@ def test_dfe(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvide
         shots=100,
     ) == ["id1", "id2"]
 
-    with pytest.raises(ValueError, match="should contain a single circuit"):
+    with pytest.raises(TypeError, match="should contain a single `qiskit.QuantumCircuit`"):
         fake_superstaq_provider.submit_dfe(
             rho_1=([qc, qc], "ss_example_qpu"),
             rho_2=(qc, "ss_example_qpu"),

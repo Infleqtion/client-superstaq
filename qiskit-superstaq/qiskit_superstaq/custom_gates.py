@@ -246,7 +246,7 @@ class ParallelGates(qiskit.circuit.Gate):
             num_qubits += gate.num_qubits
 
             if not isinstance(gate, qiskit.circuit.Gate):
-                raise ValueError("Component gates must be instances of qiskit.circuit.Gate")
+                raise TypeError("Component gates must be instances of `qiskit.circuit.Gate`")
             elif isinstance(gate, ParallelGates):
                 self.component_gates += gate.component_gates
             else:

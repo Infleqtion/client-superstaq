@@ -25,7 +25,7 @@ class PhaseCode(Benchmark):
         if len(phase_state) != num_data_qubits:
             raise ValueError("The length of `phase_state` must match the number of data qubits.")
         if not isinstance(phase_state, list):
-            raise ValueError("`phase_state` must be a list[int].")
+            raise TypeError("`phase_state` must be a `list[int]`.")
         elif not set(phase_state).issubset({0, 1}):
             raise ValueError("Entries of `phase_state` must be 0, 1 integers.")
         self.num_data_qubits = num_data_qubits

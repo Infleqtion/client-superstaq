@@ -577,7 +577,7 @@ class SuperstaqProvider(gss.service.Service):
             isinstance(circuit_1, qiskit.QuantumCircuit)
             and isinstance(circuit_2, qiskit.QuantumCircuit)
         ):
-            raise ValueError("Each state `rho_i` should contain a single circuit.")
+            raise TypeError("Each state `rho_i` should contain a single `qiskit.QuantumCircuit`.")
 
         serialized_circuit_1 = qss.serialization.serialize_circuits(circuit_1)
         serialized_circuit_2 = qss.serialization.serialize_circuits(circuit_2)
