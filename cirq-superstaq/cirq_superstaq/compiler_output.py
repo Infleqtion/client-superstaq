@@ -40,7 +40,7 @@ def active_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
     qubit_indices: list[int] = []
     for q in sorted(all_qubits):
         if not isinstance(q, (cirq.LineQubit, cirq.LineQid)):
-            raise ValueError("Qubit indices can only be determined for line qubits.")
+            raise TypeError("Qubit indices can only be determined for line qubits.")
         qubit_indices.append(int(q))
 
     return qubit_indices
@@ -71,7 +71,7 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
     qubit_indices: set[int] = set()
     for q in measured_qubits:
         if not isinstance(q, (cirq.LineQubit, cirq.LineQid)):
-            raise ValueError("Qubit indices can only be determined for line qubits")
+            raise TypeError("Qubit indices can only be determined for line qubits")
         qubit_indices.add(int(q))
 
     return sorted(qubit_indices)

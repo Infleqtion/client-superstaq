@@ -486,9 +486,9 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         # unroll any ParallelGate(s) instances in component_gates
         for gate in component_gates:
             if not isinstance(gate, cirq.Gate):
-                raise ValueError(f"{gate} is not a cirq Gate")
+                raise TypeError(f"{gate} is not a `cirq.Gate`")
             elif cirq.is_measurement(gate):
-                raise ValueError("ParallelGates cannot contain measurements")
+                raise ValueError("`ParallelGates` cannot contain measurements")
             elif isinstance(gate, ParallelGates):
                 self.component_gates += gate.component_gates
             elif isinstance(gate, cirq.ParallelGate):
