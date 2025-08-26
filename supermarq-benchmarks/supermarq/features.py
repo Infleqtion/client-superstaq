@@ -86,6 +86,8 @@ def compute_parallelism(circuit: cirq.Circuit) -> float:
     if num_qubits <= 1:
         return 0
     depth = len(circuit.moments)
+    if depth == 0:
+        return 0
     num_gates = sum(1 for moment in circuit for _ in moment.operations)
     return max(((num_gates / depth) - 1) / (num_qubits - 1), 0)
 
