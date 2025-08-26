@@ -205,7 +205,7 @@ class SuperstaqProvider(gss.service.Service):
 
         target = jobs[job_ids[0]]["target"]
 
-        if all(target == val["target"] for val in jobs.values()):
+        if isinstance(target, str) and all(target == val["target"] for val in jobs.values()):
             return qss.SuperstaqJob(self.get_backend(target), job_id)
         else:
             raise gss.SuperstaqException("Job ids belong to jobs at different targets.")

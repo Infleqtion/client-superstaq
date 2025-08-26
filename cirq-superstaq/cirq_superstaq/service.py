@@ -375,8 +375,9 @@ class Service(gss.service.Service):
         if isinstance(self._client, _SuperstaqClient):
             # Make a virtual job_id that aggregates all of the individual jobs
             # into a single one that comma-separates the individual jobs.
-            job_id = ",".join(result["job_ids"])
+            job_id: str | uuid.UUID = ",".join(result["job_ids"])
         else:
+            assert isinstance(result["job_id"], (str, uuid.UUID))
             job_id = result["job_id"]
         # The returned job does not have fully populated fields; they will be filled out by
         # when the new job's status is first queried
