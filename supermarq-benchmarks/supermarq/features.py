@@ -111,7 +111,7 @@ def compute_measurement(circuit: cirq.Circuit) -> float:
         reset_present = False
         for op in moment.operations:
             # Check for mid-circuit measurement: cirq.MeasurementGate not at the end
-            if isinstance(op.gate, cirq.ResetChannel) or getattr(op.gate, "name", None) == "reset":
+            if isinstance(op.gate, cirq.MeasurementGate):
                 reset_present = True
         if reset_present:
             reset_moments += 1
