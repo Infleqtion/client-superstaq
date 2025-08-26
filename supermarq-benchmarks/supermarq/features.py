@@ -140,6 +140,8 @@ def compute_entanglement(circuit: cirq.Circuit) -> float:
                 total_gates += 1
                 if len(op.qubits) == 2:
                     two_qubit_gates += 1
+    if total_gates == 0:
+        return 0.0
     return two_qubit_gates / total_gates
 
 
