@@ -364,7 +364,9 @@ def test_compiled_circuitV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obje
     job_result = modifiy_job_result(job_dictV3, compiled_circuits=[None])
     mock_get.return_value.json.return_value = {str(uuid.UUID(int=43)): job_result}
     job = new_jobV3()
-    with pytest.raises(RuntimeError, match=f"The job {job._job_id} has no compiled circuits."):
+    with pytest.raises(
+        gss.SuperstaqException, match=f"The job {job._job_id} has no compiled circuits."
+    ):
         job.compiled_circuits()
 
     job_result = modifiy_job_result(
@@ -372,8 +374,10 @@ def test_compiled_circuitV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obje
     )
     mock_get.return_value.json.return_value = {str(uuid.UUID(int=43)): job_result}
     job = new_jobV3()
-    with pytest.raises(RuntimeError, match="Some compiled circuits are missing"):
+    with pytest.raises(gss.SuperstaqException, match="Some compiled circuits are missing"):
         job.compiled_circuits()
+    with pytest.raises(gss.SuperstaqException, match=f"Circuit 0 of job {job._job_id}"):
+        job.compiled_circuits(index=0)
 
 
 def test_pulse_gate_circuits(job: css.Job) -> None:
@@ -615,8 +619,8 @@ def test_job_status_refresh() -> None:
 def test_job_status_refreshV3(job_dictV3: dict[str, object]) -> None:
     mock_complete_response = mock.MagicMock()
     mock_complete_response.json.return_value = {str(uuid.UUID(int=43)): job_dictV3}
-    for status in gss._models.CircuitStatus:
-        if status not in gss._models.TERMINAL_CIRCUIT_STATES:
+    for status in gss.models.CircuitStatus:
+        if status not in gss.models.TERMINAL_CIRCUIT_STATES:
             incomplete_dict = modifiy_job_result(job_dictV3, statuses=[status.value])
             mock_incomplete_response = mock.MagicMock()
             mock_incomplete_response.json.return_value = {str(uuid.UUID(int=43)): incomplete_dict}
@@ -633,7 +637,7 @@ def test_job_status_refreshV3(job_dictV3: dict[str, object]) -> None:
                     == f"http://example.com/v0.3.0/client/job/cirq?job_id={uuid.UUID(int=43)}"
                 )
 
-    for status in gss._models.TERMINAL_CIRCUIT_STATES:
+    for status in gss.models.TERMINAL_CIRCUIT_STATES:
         result_dict = modifiy_job_result(job_dictV3, statuses=[status.value])
         with mock.patch(
             "requests.Session.get",
@@ -658,7 +662,7 @@ def test_value_equality(job: css.Job) -> None:
 def test_value_equalityV3(jobV3: css.JobV3, job_dictV3: dict[str, object]) -> None:
     eq = cirq.testing.EqualsTester()
     eq.add_equality_group(new_jobV3(), new_jobV3())
-    jobV3._job_data = gss._models.JobData(**job_dictV3)
+    jobV3._job_data = gss.models.JobData(**job_dictV3)
     eq.add_equality_group(jobV3, jobV3)
 
 
@@ -746,12 +750,12 @@ def test_job_counts_failedV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obj
     job = new_jobV3()
     mock_get.return_value.json.return_value = {str(job._job_id): job_result}
     with pytest.raises(
-        RuntimeError, match=f"Job {job._job_id} does not have counts for all circuits."
+        gss.SuperstaqException, match=f"Job {job._job_id} does not have counts for all circuits."
     ):
         job.counts()
 
     with pytest.raises(
-        RuntimeError, match=f"Circuit 0 of job {job._job_id} does not have any counts."
+        gss.SuperstaqException, match=f"Circuit 0 of job {job._job_id} does not have any counts."
     ):
         job.counts(index=0)
 
@@ -920,3 +924,11 @@ def test_get_marginal_counts() -> None:
 def test_get_itemV3() -> None:
     with pytest.raises(NotImplementedError):
         new_jobV3().__getitem__(0)
+
+
+def test_job_data_failureV3(jobV3: css.JobV3) -> None:
+    with (
+        mock.patch.object(jobV3, "_refresh_job", return_value=None),
+        pytest.raises(AttributeError, match="Job data has not been fetched yet"),
+    ):
+        _ = jobV3.job_data

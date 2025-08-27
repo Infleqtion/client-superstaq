@@ -29,7 +29,7 @@ import pytest
 import qiskit
 import qiskit_superstaq as qss
 import sympy
-from general_superstaq import ResourceEstimate, _models
+from general_superstaq import ResourceEstimate
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 
 import cirq_superstaq as css
@@ -408,7 +408,7 @@ def test_service_get_jobV3() -> None:
     job = service.get_job(job_id)
 
     assert job.job_id() == job_id
-    assert job.status() == _models.CircuitStatus.COMPLETED
+    assert job.status() == gss.models.CircuitStatus.COMPLETED
     mock_client.fetch_jobs.assert_called_once_with([job_id])
 
 
@@ -476,7 +476,7 @@ def test_service_create_jobV3() -> None:
         method="fake_method",
         fake_data="",
     )
-    assert job.status() == _models.CircuitStatus.COMPLETED
+    assert job.status() == gss.models.CircuitStatus.COMPLETED
     create_job_kwargs = mock_client.create_job.call_args[1]
     # # Serialization induces a float, so we don't validate full circuit.
     assert create_job_kwargs["repetitions"] == 100

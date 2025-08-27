@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from _typeshed import SupportsItems
 
 
-class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
+class SuperstaqBackend(qiskit.providers.BackendV2):
     """This class represents a Superstaq backend."""
 
     def __init__(self, provider: qss.SuperstaqProvider, target: str) -> None:
@@ -54,7 +54,10 @@ class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
         if not isinstance(other, qss.SuperstaqBackend):
             return False
 
-        return self._provider == other._provider and self.target_info() == other.target_info()
+        return self._provider == other._provider and self.name == other.name
+
+    def __hash__(self) -> int:
+        return hash((self.name, self._provider))
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}('{self.name}')>"
@@ -249,7 +252,9 @@ class SuperstaqBackend(qiskit.providers.BackendV2):  # noqa: PLW1641
         request_json = self._get_compile_request_json(circuits, **kwargs)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
-        return qss.compiler_output.read_json(json_dict, circuits_is_list)
+        return qss.compiler_output.read_json(
+            json_dict, circuits_is_list, api_version=self._provider._client.api_version
+        )
 
     def _get_compile_request_json(
         self,

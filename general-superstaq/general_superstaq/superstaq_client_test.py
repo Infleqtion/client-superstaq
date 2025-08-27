@@ -130,6 +130,16 @@ def test_superstaq_client_args(api_version: str) -> None:
         )
 
 
+def test_superstaq_client_url_switchV3() -> None:
+    client = gss.superstaq_client._SuperstaqClientV3(
+        client_name="general-superstaq",
+        api_key="to_my_heart",
+        api_version="v0.3.0",
+    )
+
+    assert client.remote_host == "https://superstaq-prod.infleqtion.com"
+
+
 def test_general_superstaq_exception_str() -> None:
     ex = gss.SuperstaqServerException("err.", status_code=501)
     assert str(ex) == "err. (Status code: 501)"
@@ -1375,7 +1385,7 @@ def test_superstaq_client_compile_v3(
             "target": "ss_example_qpu",
             "provider_id": ["ss"],
             "num_circuits": 1,
-            "compiled_circuits": ["compiled world"],
+            "compiled_circuits": ['"compiled world"'],
             "input_circuits": ["world"],
             "circuit_type": circuit_type,
             "counts": [{"count": 200}],
@@ -1421,7 +1431,7 @@ def test_superstaq_client_compile_v3(
         verify=False,
     )
     assert compilation_results == {
-        f"{circuit_type}_circuits": "[compiled world]",
+        f"{circuit_type}_circuits": '["compiled world"]',
         "initial_logical_to_physicals": expected_map,
         "final_logical_to_physicals": expected_map,
     }
@@ -1443,7 +1453,7 @@ def test_superstaq_client_compile_v3_with_wait(
         "target": "ss_example_qpu",
         "provider_id": ["ss"],
         "num_circuits": 1,
-        "compiled_circuits": ["compiled world"],
+        "compiled_circuits": ['"compiled world"'],
         "input_circuits": ["world"],
         "circuit_type": "cirq",
         "counts": [{"count": 200}],
@@ -1497,7 +1507,7 @@ def test_superstaq_client_compile_v3_with_wait(
     )
     assert mock_get.call_count == 2
     assert compilation_results == {
-        "cirq_circuits": "[compiled world]",
+        "cirq_circuits": '["compiled world"]',
         "initial_logical_to_physicals": '[[[{"qubit": "q0"}, {"qubit": "q0"}]]]',
         "final_logical_to_physicals": '[[[{"qubit": "q0"}, {"qubit": "q0"}]]]',
     }

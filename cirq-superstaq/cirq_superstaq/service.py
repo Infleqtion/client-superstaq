@@ -26,7 +26,7 @@ import general_superstaq as gss
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-from general_superstaq import ResourceEstimate, _models
+from general_superstaq import ResourceEstimate
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 from scipy.optimize import curve_fit
 
@@ -196,7 +196,7 @@ class Service(gss.service.Service):
             remote_host=remote_host,
             api_key=api_key,
             api_version=api_version,
-            circuit_type=_models.CircuitType.CIRQ,
+            circuit_type=gss.models.CircuitType.CIRQ,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
             cq_token=cq_token,
@@ -375,8 +375,9 @@ class Service(gss.service.Service):
         if isinstance(self._client, _SuperstaqClient):
             # Make a virtual job_id that aggregates all of the individual jobs
             # into a single one that comma-separates the individual jobs.
-            job_id = ",".join(result["job_ids"])
+            job_id: str | uuid.UUID = ",".join(result["job_ids"])
         else:
+            assert isinstance(result["job_id"], (str, uuid.UUID))
             job_id = result["job_id"]
         # The returned job does not have fully populated fields; they will be filled out by
         # when the new job's status is first queried

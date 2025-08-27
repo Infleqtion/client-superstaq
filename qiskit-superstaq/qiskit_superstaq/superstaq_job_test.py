@@ -409,7 +409,7 @@ def test_counts_arrangedV3(backendV3: qss.SuperstaqBackend) -> None:
     ]
     job_dict["shots"] = [100] * 2
 
-    job._job_info = gss._models.JobData(**job_dict)
+    job._job_info = gss.models.JobData(**job_dict)
     job._update_status_queue_info()
 
     counts = job.result().get_counts()
@@ -432,7 +432,7 @@ def test_counts_arrangedV3(backendV3: qss.SuperstaqBackend) -> None:
     job_dict["compiled_circuits"] = [qss.serialization.serialize_circuits(qc3)]
     job_dict["shots"] = [100]
 
-    job._job_info = gss._models.JobData(**job_dict)
+    job._job_info = gss.models.JobData(**job_dict)
     job._update_status_queue_info()
     counts = job.result().get_counts()
     assert counts == {"10011": 26, "10010": 19, "10001": 19, "10000": 36}
@@ -451,7 +451,7 @@ def test_counts_arrangedV3(backendV3: qss.SuperstaqBackend) -> None:
     job_dict["compiled_circuits"] = [qss.serialization.serialize_circuits(qc4)]
     job_dict["shots"] = [100]
 
-    job._job_info = gss._models.JobData(**job_dict)
+    job._job_info = gss.models.JobData(**job_dict)
     job._update_status_queue_info()
     counts = job.result(0).get_counts()
     assert counts == {"00010": 50, "10010": 50}
@@ -484,7 +484,7 @@ def test_get_clbit_indicesV3(backendV3: qss.SuperstaqBackend) -> None:
     job_dict["input_circuit"] = [qss.serialization.serialize_circuits(qc)]
 
     job = qss.SuperstaqJobV3(backend=backendV3, job_id=uuid.UUID(int=42))
-    job._job_info = gss._models.JobData(**job_dict)
+    job._job_info = gss.models.JobData(**job_dict)
 
     returned_meas_list = job._get_clbit_indices(index=0)
     assert returned_meas_list == [0, 1]
@@ -511,7 +511,7 @@ def test_get_num_clbitsV3(backendV3: qss.SuperstaqBackend) -> None:
     job_dict["input_circuit"] = [qss.serialization.serialize_circuits(qc)]
 
     job = qss.SuperstaqJobV3(backend=backendV3, job_id=uuid.UUID(int=42))
-    job._job_info = gss._models.JobData(**job_dict)
+    job._job_info = gss.models.JobData(**job_dict)
 
     assert job._get_num_clbits(index=0) == 2
 
@@ -551,7 +551,7 @@ def test_check_if_stopped(backend: qss.SuperstaqBackend) -> None:
 
 
 def test_check_if_stoppedV3(backendV3: qss.SuperstaqBackend) -> None:
-    for status in (gss._models.CircuitStatus.CANCELLED, gss._models.CircuitStatus.FAILED):
+    for status in (gss.models.CircuitStatus.CANCELLED, gss.models.CircuitStatus.FAILED):
         job = qss.SuperstaqJobV3(backendV3, uuid.UUID(int=42))
         job._overall_status = status
         with pytest.raises(
@@ -771,23 +771,23 @@ def test_update_status_queue_infoV3(backendV3: qss.SuperstaqBackend) -> None:
 
     job_dict = job_dictV3(3)
     job_dict["statuses"] = ["completed"] * 3
-    job._job_info = gss._models.JobData(**job_dict)
+    job._job_info = gss.models.JobData(**job_dict)
 
     job._update_status_queue_info()
     assert job._overall_status == "completed"
 
     job_dict["statuses"] = ["awaiting_submission", "cancelled", "cancelled"]
-    job._job_info = gss._models.JobData(**job_dict)
+    job._job_info = gss.models.JobData(**job_dict)
     job._update_status_queue_info()
     assert job._overall_status == "awaiting_submission"
 
     job_dict["statuses"] = ["cancelled", "cancelled", "awaiting_submission"]
-    job._job_info = gss._models.JobData(**job_dict)
+    job._job_info = gss.models.JobData(**job_dict)
     job._update_status_queue_info()
     assert job._overall_status == "awaiting_submission"
 
     job_dict["statuses"] = ["completed", "completed", "failed"]
-    job._job_info = gss._models.JobData(**job_dict)
+    job._job_info = gss.models.JobData(**job_dict)
     job._update_status_queue_info()
     assert job._overall_status == "failed"
 
@@ -854,12 +854,17 @@ def test_compiled_circuitsV3(backendV3: qss.SuperstaqBackend) -> None:
 
     assert job.compiled_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
 
-    job._job_info.compiled_circuits[0] = None
-    with pytest.raises(RuntimeError, match="Some compiled circuits are missing"):
+    job.job_info.compiled_circuits[0] = None
+    with pytest.raises(gss.SuperstaqException, match="Some compiled circuits are missing"):
         job.compiled_circuits()
 
-    job._job_info.compiled_circuits[1] = None
-    with pytest.raises(RuntimeError, match=f"The job {uuid.UUID(int=42)} has no compiled circuits"):
+    with pytest.raises(gss.SuperstaqException, match=f"Circuit 0 of job {uuid.UUID(int=42)}"):
+        job.compiled_circuits(index=0)
+
+    job.job_info.compiled_circuits[1] = None
+    with pytest.raises(
+        gss.SuperstaqException, match=f"The job {uuid.UUID(int=42)} has no compiled circuits"
+    ):
         job.compiled_circuits()
 
 
@@ -1081,6 +1086,17 @@ def test_eq(backend: qss.SuperstaqBackend) -> None:
     assert job == job3
 
 
+def test_hash(backend: qss.SuperstaqBackend) -> None:
+    job = qss.SuperstaqJob(backend=backend, job_id="12345")
+    job2 = qss.SuperstaqJob(backend=backend, job_id="123456")
+    job3 = qss.SuperstaqJob(backend=backend, job_id="12345")
+    hash_set = set()
+    hash_set.add(job)
+    hash_set.add(job2)
+    hash_set.add(job3)
+    assert len(hash_set) == 2
+
+
 def test_eqV3(backend: qss.SuperstaqBackend, backendV3: qss.SuperstaqBackend) -> None:
     jobV2 = qss.SuperstaqJob(backend, str(uuid.UUID(int=42)))
     job = qss.SuperstaqJobV3(backendV3, uuid.UUID(int=42))
@@ -1122,6 +1138,15 @@ def test_job_id(backendV3: qss.SuperstaqBackend) -> None:
     assert job.job_id() == uuid.UUID(int=42)
 
 
-def test_hash(backendV3: qss.SuperstaqBackend) -> None:
+def test_hashV3(backendV3: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJobV3(backend=backendV3, job_id=uuid.UUID(int=42))
     assert hash(job) == hash(uuid.UUID(int=42))
+
+
+def test_job_infoV3(backendV3: qss.SuperstaqBackend) -> None:
+    job = qss.SuperstaqJobV3(backend=backendV3, job_id=uuid.UUID(int=42))
+    with (
+        mock.patch.object(job, "_refresh_job", return_value=None),
+        pytest.raises(AttributeError, match="Job info has not been fetched yet"),
+    ):
+        _ = job.job_info

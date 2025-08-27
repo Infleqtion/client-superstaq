@@ -18,12 +18,11 @@ from typing import Any, overload
 
 import general_superstaq as gss
 import qiskit
-from general_superstaq import _models
 
 import qiskit_superstaq as qss
 
 
-class SuperstaqJob(qiskit.providers.JobV1):  # noqa: PLW1641
+class SuperstaqJob(qiskit.providers.JobV1):
     """This class represents a Superstaq job instance."""
 
     TERMINAL_STATES = ("Done", "Cancelled", "Failed")
@@ -46,6 +45,9 @@ class SuperstaqJob(qiskit.providers.JobV1):  # noqa: PLW1641
             return False
 
         return self._job_id == other._job_id
+
+    def __hash__(self) -> int:
+        return hash(self._job_id)
 
     def _wait_for_results(self, timeout: float, wait: float = 5) -> list[dict[str, dict[str, int]]]:
         """Waits for the results till either the job is done or some error in the job occurs.
@@ -415,8 +417,8 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         """
         super().__init__(backend, str(job_id))
         self._job_id = job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(job_id)
-        self._overall_status = _models.CircuitStatus.RECEIVED
-        self._job_info: _models.JobData
+        self._overall_status = gss.models.CircuitStatus.RECEIVED
+        self._job_info: gss.models.JobData | None = None
 
     def __eq__(self, other: object) -> bool:
         if not (isinstance(other, SuperstaqJobV3)):
@@ -427,11 +429,20 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
     def __hash__(self) -> int:
         return hash(self._job_id)
 
+    @property
+    def job_info(self) -> gss.models.JobData:
+        if self._job_info is None:
+            self._refresh_job()
+        if self._job_info is None:
+            raise AttributeError("Job info has not been fetched yet. Run _refresh_job().")
+        else:
+            return self._job_info
+
     def job_id(self) -> uuid.UUID:
         """Returns the job's unique id."""
         return self._job_id
 
-    def _wait_for_results(self, timeout: float, wait: float = 5) -> _models.JobData:
+    def _wait_for_results(self, timeout: float, wait: float = 5) -> gss.models.JobData:
         """Waits for the results till either the job is done or some error in the job occurs.
 
         Args:
@@ -455,7 +466,7 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
             time.sleep(wait)
             time_waited += wait
 
-        return self._job_info
+        return self.job_info
 
     def _arrange_counts(
         self, counts: dict[str, int], circ_meas_bit_indices: list[int], num_clbits: int
@@ -600,10 +611,10 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         Args:
             index: An optional index to check a specific sub-job.
         """
-        if hasattr(self, "_job_info"):
-            if all(s in _models.TERMINAL_CIRCUIT_STATES for s in self._job_info.statuses):
+        if self._job_info is not None:
+            if all(s in gss.models.TERMINAL_CIRCUIT_STATES for s in self._job_info.statuses):
                 return
-        self._job_info = _models.JobData(
+        self._job_info = gss.models.JobData(
             **self._backend._provider._client.fetch_jobs([self._job_id])[str(self._job_id)]
         )
 
@@ -618,18 +629,18 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
             -> Cancelled -> Done. For example, if any of the jobs are still queued (even if
             some are done), we report 'Queued' as the overall status of the entire batch.
         """
-        status_occurrence = set(self._job_info.statuses)
+        status_occurrence = set(self.job_info.statuses)
         status_priority_order = (
-            _models.CircuitStatus.RECEIVED,
-            _models.CircuitStatus.AWAITING_COMPILE,
-            _models.CircuitStatus.AWAITING_SUBMISSION,
-            _models.CircuitStatus.AWAITING_SIMULATION,
-            _models.CircuitStatus.PENDING,
-            _models.CircuitStatus.RUNNING,
-            _models.CircuitStatus.FAILED,
-            _models.CircuitStatus.CANCELLED,
-            _models.CircuitStatus.UNRECOGNIZED,
-            _models.CircuitStatus.COMPLETED,
+            gss.models.CircuitStatus.RECEIVED,
+            gss.models.CircuitStatus.AWAITING_COMPILE,
+            gss.models.CircuitStatus.AWAITING_SUBMISSION,
+            gss.models.CircuitStatus.AWAITING_SIMULATION,
+            gss.models.CircuitStatus.PENDING,
+            gss.models.CircuitStatus.RUNNING,
+            gss.models.CircuitStatus.FAILED,
+            gss.models.CircuitStatus.CANCELLED,
+            gss.models.CircuitStatus.UNRECOGNIZED,
+            gss.models.CircuitStatus.COMPLETED,
         )
 
         for temp_status in status_priority_order:
@@ -654,20 +665,24 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         Returns:
             A single compiled circuit or list of compiled circuits.
         """
-        if not hasattr(self, "_job_info"):
-            self._refresh_job()
-        if all(c is None for c in self._job_info.compiled_circuits):
-            raise RuntimeError(f"The job {self._job_id} has no compiled circuits.")
+        if index is None:
+            if all(c is None for c in self.job_info.compiled_circuits):
+                raise gss.SuperstaqException(f"The job {self._job_id} has no compiled circuits.")
 
-        if any(c is None for c in self._job_info.compiled_circuits):
-            raise RuntimeError(
-                "Some compiled circuits are missing. This is likely because there was an error on "
-                "the server. Please check the individual circuit statuses and any status messages."
+            if any(c is None for c in self.job_info.compiled_circuits):
+                raise gss.SuperstaqException(
+                    "Some compiled circuits are missing. "
+                    "This is likely because there was an error on the server. "
+                    "Please check the individual circuit statuses and any status messages."
+                )
+        elif self.job_info.compiled_circuits[index] is None:
+            raise gss.SuperstaqException(
+                f"Circuit {index} of job {self._job_id} does not have a compiled circuit."
             )
 
         circuits = [
-            qss.deserialize_circuits(self._job_info.compiled_circuits[k])[0]  # type: ignore[arg-type]
-            for k in range(self._job_info.num_circuits)
+            qss.deserialize_circuits(self.job_info.compiled_circuits[k])[0]  # type: ignore[arg-type]
+            for k in range(self.job_info.num_circuits)
         ]
 
         if index is None:
@@ -691,12 +706,9 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         Returns:
             The input circuit or list of submitted input circuits.
         """
-        if not hasattr(self, "_job_info"):
-            self._refresh_job()
-
         circuits = [
-            qss.deserialize_circuits(self._job_info.input_circuits[k])[0]
-            for k in range(self._job_info.num_circuits)
+            qss.deserialize_circuits(self.job_info.input_circuits[k])[0]
+            for k in range(self.job_info.num_circuits)
         ]
 
         if index is None:
@@ -728,14 +740,14 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
             "deleted": qiskit.providers.jobstatus.JobStatus.CANCELLED,
         }
 
-        if index is None and self._overall_status in _models.TERMINAL_CIRCUIT_STATES:
+        if index is None and self._overall_status in gss.models.TERMINAL_CIRCUIT_STATES:
             return status_match.get(self._overall_status)
 
         self._refresh_job(index)
         if index is None:
             status = self._overall_status
         else:
-            status = self._job_info.statuses[index]
+            status = self.job_info.statuses[index]
         return status_match.get(status)
 
     def submit(self) -> None:
@@ -757,6 +769,6 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         Returns:
             A dictionary containing updated job information.
         """
-        if self._overall_status not in _models.TERMINAL_CIRCUIT_STATES:
+        if self._overall_status not in gss.models.TERMINAL_CIRCUIT_STATES:
             self._refresh_job()
-        return self._job_info.model_dump()
+        return self.job_info.model_dump()

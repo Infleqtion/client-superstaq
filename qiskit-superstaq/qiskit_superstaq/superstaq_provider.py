@@ -17,7 +17,6 @@ from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
 import qiskit
-from general_superstaq import _models
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 
 import qiskit_superstaq as qss
@@ -111,7 +110,7 @@ class SuperstaqProvider(gss.service.Service):
             remote_host=remote_host,
             api_key=api_key,
             api_version=api_version,
-            circuit_type=_models.CircuitType.QISKIT,
+            circuit_type=gss.models.CircuitType.QISKIT,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
             cq_token=cq_token,
@@ -206,7 +205,7 @@ class SuperstaqProvider(gss.service.Service):
 
         target = jobs[job_ids[0]]["target"]
 
-        if all(target == val["target"] for val in jobs.values()):
+        if isinstance(target, str) and all(target == val["target"] for val in jobs.values()):
             return qss.SuperstaqJob(self.get_backend(target), job_id)
         else:
             raise gss.SuperstaqException("Job ids belong to jobs at different targets.")

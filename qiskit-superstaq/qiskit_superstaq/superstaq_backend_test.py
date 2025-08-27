@@ -139,6 +139,17 @@ def test_eq(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     assert backend1 == backend3
 
 
+def test_hash(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    backend1 = fake_superstaq_provider.get_backend("ibmq_brisbane_qpu")
+    backend2 = fake_superstaq_provider.get_backend("ibmq_athens_qpu")
+    backend3 = fake_superstaq_provider.get_backend("ibmq_brisbane_qpu")
+    hash_set = set()
+    hash_set.add(backend1)
+    hash_set.add(backend2)
+    hash_set.add(backend3)
+    assert len(hash_set) == 2
+
+
 @patch("requests.Session.post")
 def test_aqt_compile(mock_post: MagicMock) -> None:
     # AQT compile
