@@ -124,7 +124,10 @@ def validate_qubo(qubo: object) -> None:
         qubo: The input value to validate.
 
     Raises:
-        ValueError: If the provided object cannot be converted into a valid QUBO.
+        TypeError: If `qubo` is not a dict-like object.
+        TypeError: If the keys of `qubo` are of an invalid type.
+        ValueError: If `qubo` contains cubic or further higher degree terms.
+        TypeError: If the values in `qubo` are not real numbers.
     """
     if not isinstance(qubo, Mapping):
         raise TypeError("QUBOs must be provided as dict-like objects.")

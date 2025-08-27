@@ -30,7 +30,7 @@ def active_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
         A list of active qubit indicies.
 
     Raises:
-        ValueError: If qubit indices are requested for non-line qubits.
+        TypeError: If qubit indices are requested for non-line qubits.
     """
     all_qubits: set[cirq.Qid] = set()
     for op in circuit.all_operations():
@@ -60,7 +60,7 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
         A list of the measurement qubit indicies.
 
     Raises:
-        ValueError: If qubit indices are requested for non-line qubits.
+        TypeError: If qubit indices are requested for non-line qubits.
     """
     unrolled_circuit = cirq.unroll_circuit_op(circuit, deep=True, tags_to_check=None)
 

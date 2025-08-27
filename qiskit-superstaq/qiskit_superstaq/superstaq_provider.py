@@ -560,7 +560,7 @@ class SuperstaqProvider(gss.service.Service):
             to post-process the measurement results and return the fidelity.
 
         Raises:
-            ValueError: If `circuit` is not a valid `qiskit.QuantumCircuit`.
+            TypeError: If `circuit` is not a valid `qiskit.QuantumCircuit`.
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         circuit_1 = rho_1[0]

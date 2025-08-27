@@ -478,7 +478,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             component_gates: Gate(s) to be collected into a single gate.
 
         Raises:
-            ValueError: If `component_gates` are not `cirq.Gate` instances.
+            TypeError: If `component_gates` are not `cirq.Gate` instances.
             ValueError: If `component_gates` contains measurements.
         """
         self.component_gates: tuple[cirq.Gate, ...] = ()

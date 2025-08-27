@@ -237,7 +237,7 @@ class ParallelGates(qiskit.circuit.Gate):
             label: An optional label for the constructed gate. Defaults to None.
 
         Raises:
-            ValueError: If `component_gates` are not `qiskit.circuit.Gate` instances.
+            TypeError: If `component_gates` are not `qiskit.circuit.Gate` instances.
         """
         self.component_gates: tuple[qiskit.circuit.Gate, ...] = ()
         num_qubits = 0
