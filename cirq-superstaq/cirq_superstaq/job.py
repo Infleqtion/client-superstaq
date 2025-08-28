@@ -529,10 +529,13 @@ class JobV3:
         Args:
             client: The client used for calling the API.
             job_id: Unique identifier for the job.
+
+        Raises:
+            TypeError: If `JobV3` is used with `v0.2.0` of the Superstaq API.
         """
         self._client = client
         if not isinstance(self._client, _SuperstaqClientV3):
-            raise ValueError("JobV3 job can only be used with v0.3.0 of the Superstaq API.")
+            raise TypeError("JobV3 job can only be used with v0.3.0 of the Superstaq API.")
         self._overall_status = gss.models.CircuitStatus.RECEIVED
         self._job_data: gss.models.JobData | None = None
         self._job_id = job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(job_id)
