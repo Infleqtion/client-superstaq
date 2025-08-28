@@ -202,7 +202,7 @@ def read_json(
     if api_version == "v0.2.0":
         compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
     else:
-        serialized_circuits = json_dict["qiskit_circuits"][1:-1].split(", ")
+        serialized_circuits = json.loads(json_dict["qiskit_circuits"])
         compiled_circuits = [
             qss.serialization.deserialize_circuits(circuit)[0] for circuit in serialized_circuits
         ]
