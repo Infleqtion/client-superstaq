@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import numbers
+import uuid
 import warnings
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
@@ -33,12 +34,6 @@ import cirq_superstaq as css
 
 if TYPE_CHECKING:
     from _typeshed import SupportsItems
-
-
-CLIENT_VERSION = {
-    "v0.2.0": _SuperstaqClient,
-    "v0.3.0": _SuperstaqClientV3,
-}
 
 
 def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
@@ -190,12 +185,18 @@ class Service(gss.service.Service):
             EnvironmentError: If an API key was not provided and could not be found.
         """
         self.default_target = default_target
-        client_version = CLIENT_VERSION[api_version]
+        if api_version == "v0.2.0":
+            client_version: type[_SuperstaqClient | _SuperstaqClientV3] = _SuperstaqClient
+        elif api_version == "v0.3.0":
+            client_version = _SuperstaqClientV3
+        else:
+            raise ValueError("`api_version` can only take value 'v0.2.0' or 'v0.3.0'")
         self._client = client_version(
             client_name="cirq-superstaq",
             remote_host=remote_host,
             api_key=api_key,
             api_version=api_version,
+            circuit_type=gss.models.CircuitType.CIRQ,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
             cq_token=cq_token,
@@ -343,7 +344,7 @@ class Service(gss.service.Service):
         target: str | None = None,
         method: str | None = None,
         **kwargs: Any,
-    ) -> css.job.Job:
+    ) -> css.Job | css.JobV3:
         """Creates a new job to run the given circuit(s).
 
         Args:
@@ -371,15 +372,18 @@ class Service(gss.service.Service):
             method=method,
             **kwargs,
         )
-        # Make a virtual job_id that aggregates all of the individual jobs
-        # into a single one that comma-separates the individual jobs.
-        job_id = ",".join(result["job_ids"])
-
+        if isinstance(self._client, _SuperstaqClient):
+            # Make a virtual job_id that aggregates all of the individual jobs
+            # into a single one that comma-separates the individual jobs.
+            job_id: str | uuid.UUID = ",".join(result["job_ids"])
+        else:
+            assert isinstance(result["job_id"], (str, uuid.UUID))
+            job_id = result["job_id"]
         # The returned job does not have fully populated fields; they will be filled out by
         # when the new job's status is first queried
         return self.get_job(job_id=job_id)
 
-    def get_job(self, job_id: str) -> css.job.Job:
+    def get_job(self, job_id: str | uuid.UUID) -> css.Job | css.JobV3:
         """Gets a job that has been created on the Superstaq API.
 
         Args:
@@ -392,7 +396,11 @@ class Service(gss.service.Service):
         Raises:
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
-        return css.job.Job(client=self._client, job_id=job_id)
+        if isinstance(self._client, _SuperstaqClient):
+            return css.Job(client=self._client, job_id=str(job_id))
+        else:
+            assert isinstance(self._client, _SuperstaqClientV3)
+            return css.JobV3(client=self._client, job_id=job_id)
 
     def resource_estimate(
         self, circuits: cirq.Circuit | Sequence[cirq.Circuit], target: str | None = None

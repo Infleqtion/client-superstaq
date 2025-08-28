@@ -130,6 +130,16 @@ def test_superstaq_client_args(api_version: str) -> None:
         )
 
 
+def test_superstaq_client_url_switchV3() -> None:
+    client = gss.superstaq_client._SuperstaqClientV3(
+        client_name="general-superstaq",
+        api_key="to_my_heart",
+        api_version="v0.3.0",
+    )
+
+    assert client.remote_host == "https://superstaq-prod.infleqtion.com"
+
+
 def test_general_superstaq_exception_str() -> None:
     ex = gss.SuperstaqServerException("err.", status_code=501)
     assert str(ex) == "err. (Status code: 501)"
@@ -673,7 +683,7 @@ def test_superstaq_client_fetch_jobs(
         assert response == expected_result
 
         mock_get.assert_called_with(
-            f"http://example.com/{api_version}/client/job?job_id={uuid.UUID(int=0)}",
+            f"http://example.com/{api_version}/client/job/cirq?job_id={uuid.UUID(int=0)}",
             headers=dict(EXPECTED_HEADERS[api_version], cq_token='{"access_token": "token"}'),
             verify=False,
         )
@@ -1343,19 +1353,27 @@ def test_superstaq_client_compile_v3_failed(
         verify=False,
     )
     mock_get.assert_called_with(
-        f"http://example.com/{client_v3.api_version}/client/job?job_id={job_id}",
+        f"http://example.com/{client_v3.api_version}/client/job/cirq?job_id={job_id}",
         headers=EXPECTED_HEADERS[client_v3.api_version],
         verify=False,
     )
 
 
-@pytest.mark.parametrize("circuit_type", ["cirq", "qiskit"])
+@pytest.mark.parametrize(
+    ("circuit_type", "expected_map", "serialized_circuit"),
+    [
+        ("cirq", '[[[{"qubit": "q0"}, {"qubit": "q0"}]]]', '["compiled world"]'),
+        ("qiskit", "[[[0, 0]]]", '["\\"compiled world\\""]'),
+    ],
+)
 @mock.patch("requests.Session.get")
 @mock.patch("requests.Session.post")
 def test_superstaq_client_compile_v3(
     mock_post: mock.MagicMock,
     mock_get: mock.MagicMock,
     circuit_type: str,
+    expected_map: str,
+    serialized_circuit: str,
     client_v3: gss.superstaq_client._SuperstaqClientV3,
 ) -> None:
     job_id = uuid.UUID(int=0)
@@ -1368,7 +1386,7 @@ def test_superstaq_client_compile_v3(
             "target": "ss_example_qpu",
             "provider_id": ["ss"],
             "num_circuits": 1,
-            "compiled_circuits": ["compiled world"],
+            "compiled_circuits": ['"compiled world"'],
             "input_circuits": ["world"],
             "circuit_type": circuit_type,
             "counts": [{"count": 200}],
@@ -1379,8 +1397,8 @@ def test_superstaq_client_compile_v3(
             "last_updated_timestamp": [None],
             "initial_logical_to_physicals": [{0: 0}],
             "final_logical_to_physicals": [{0: 0}],
-            "logical_qubits": ["0"],
-            "physical_qubits": ["0"],
+            "logical_qubits": ['[{"qubit": "q0"}]'],
+            "physical_qubits": ['[{"qubit": "q0"}]'],
         }
     }
     mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
@@ -1409,14 +1427,14 @@ def test_superstaq_client_compile_v3(
         verify=False,
     )
     mock_get.assert_called_with(
-        f"http://example.com/{client_v3.api_version}/client/job?job_id={job_id}",
+        f"http://example.com/{client_v3.api_version}/client/job/cirq?job_id={job_id}",
         headers=EXPECTED_HEADERS[client_v3.api_version],
         verify=False,
     )
     assert compilation_results == {
-        f"{circuit_type}_circuits": "[compiled world]",
-        "initial_logical_to_physicals": "[{0: 0}]",
-        "final_logical_to_physicals": "[{0: 0}]",
+        f"{circuit_type}_circuits": serialized_circuit,
+        "initial_logical_to_physicals": expected_map,
+        "final_logical_to_physicals": expected_map,
     }
 
 
@@ -1436,7 +1454,7 @@ def test_superstaq_client_compile_v3_with_wait(
         "target": "ss_example_qpu",
         "provider_id": ["ss"],
         "num_circuits": 1,
-        "compiled_circuits": ["compiled world"],
+        "compiled_circuits": ['"compiled world"'],
         "input_circuits": ["world"],
         "circuit_type": "cirq",
         "counts": [{"count": 200}],
@@ -1447,8 +1465,8 @@ def test_superstaq_client_compile_v3_with_wait(
         "last_updated_timestamp": [None],
         "initial_logical_to_physicals": [{0: 0}],
         "final_logical_to_physicals": [{0: 0}],
-        "logical_qubits": ["0"],
-        "physical_qubits": ["0"],
+        "logical_qubits": ['[{"qubit": "q0"}]'],
+        "physical_qubits": ['[{"qubit": "q0"}]'],
     }
 
     mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
@@ -1484,15 +1502,15 @@ def test_superstaq_client_compile_v3_with_wait(
         verify=False,
     )
     mock_get.assert_called_with(
-        f"http://example.com/{client_v3.api_version}/client/job?job_id={job_id}",
+        f"http://example.com/{client_v3.api_version}/client/job/cirq?job_id={job_id}",
         headers=EXPECTED_HEADERS[client_v3.api_version],
         verify=False,
     )
     assert mock_get.call_count == 2
     assert compilation_results == {
-        "cirq_circuits": "[compiled world]",
-        "initial_logical_to_physicals": "[{0: 0}]",
-        "final_logical_to_physicals": "[{0: 0}]",
+        "cirq_circuits": '["compiled world"]',
+        "initial_logical_to_physicals": '[[[{"qubit": "q0"}, {"qubit": "q0"}]]]',
+        "final_logical_to_physicals": '[[[{"qubit": "q0"}, {"qubit": "q0"}]]]',
     }
 
 

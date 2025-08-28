@@ -129,14 +129,24 @@ class MockSuperstaqProvider(qss.SuperstaqProvider):
         """
         self._name = "mock_superstaq_provider"
 
-        self._client = MockSuperstaqClient(
-            client_name="qiskit-superstaq",
-            remote_host=remote_host,
-            api_key=api_key,
-            api_version=api_version,
-            max_retry_seconds=max_retry_seconds,
-            verbose=verbose,
-        )
+        if api_version == "v0.2.0":
+            self._client = MockSuperstaqClient(
+                client_name="qiskit-superstaq",
+                remote_host=remote_host,
+                api_key=api_key,
+                api_version=api_version,
+                max_retry_seconds=max_retry_seconds,
+                verbose=verbose,
+            )
+        else:
+            self._client = gss.superstaq_client._SuperstaqClientV3(
+                client_name="qiskit-superstaq",
+                remote_host=remote_host,
+                api_key=api_key,
+                api_version=api_version,
+                max_retry_seconds=max_retry_seconds,
+                verbose=verbose,
+            )
 
 
 @pytest.fixture
@@ -147,3 +157,13 @@ def fake_superstaq_provider() -> MockSuperstaqProvider:
         The Mock Superstaq provider.
     """
     return MockSuperstaqProvider(api_key="MY_TOKEN")
+
+
+@pytest.fixture
+def fake_superstaq_providerV3() -> MockSuperstaqProvider:
+    """Fixture that retrieves the `SuperstaqProvider`.
+
+    Returns:
+        The Mock Superstaq provider.
+    """
+    return MockSuperstaqProvider(api_key="MY_TOKEN", api_version="v0.3.0")
