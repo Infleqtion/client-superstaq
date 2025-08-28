@@ -548,9 +548,9 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             )
 
         if interleaved_gate is not None:
-            self.interleaved_gate: cirq.CliffordGate | None = cirq.CliffordGate.from_op_list(
-                [interleaved_gate(*qubits)], qubits
-            )
+            if not cirq.has_stabilizer_effect(interleaved_gate):
+                raise ValueError("The interleaved gate must be a Clifford gate.")
+            self.interleaved_gate: cirq.Gate | None = interleaved_gate
         else:
             self.interleaved_gate = None
 
@@ -757,7 +757,10 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             )
             if self.interleaved_gate is not None:
                 # Find final gate
-                irb_sequence = [elem for x in base_sequence for elem in (x, self.interleaved_gate)]
+                gate_clifford_repr = cirq.CliffordGate.from_op_list(
+                    [self.interleaved_gate(*self.qubits)], self.qubits
+                )
+                irb_sequence = [elem for x in base_sequence for elem in (x, gate_clifford_repr)]
                 irb_sequence_final_gate = _reduce_clifford_seq(
                     cirq.inverse(irb_sequence)  # type: ignore[arg-type]
                 )

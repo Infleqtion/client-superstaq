@@ -170,6 +170,7 @@ def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutp
     final_logical_to_physicals: list[dict[cirq.Qid, cirq.Qid]] = list(
         map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
     )
+
     pulse_gate_circuits = None
 
     if "pulse_gate_circuits" in json_dict:
