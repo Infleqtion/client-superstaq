@@ -1534,10 +1534,10 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
             ]
 
             compile_dict = {
+                "qiskit_circuits": json.dumps(compiled_circuits),
                 "initial_logical_to_physicals": json.dumps(qiskit_initial_log_to_phys),
                 "final_logical_to_physicals": json.dumps(qiskit_final_log_to_phys),
             }
-            compile_dict["qiskit_circuits"] = "[" + ", ".join(compiled_circuits) + "]"
 
         elif circuit_type == gss.models.CircuitType.CIRQ:
             cirq_initial_log_to_phys = []

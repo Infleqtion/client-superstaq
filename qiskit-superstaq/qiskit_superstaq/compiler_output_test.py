@@ -202,11 +202,10 @@ def test_read_jsonV3() -> None:
     qc.cx(0, 1)
 
     json_dict = {
-        "qiskit_circuits": "[" + qss.serialization.serialize_circuits(qc) + "]",
+        "qiskit_circuits": json.dumps([qss.serialization.serialize_circuits(qc)]),
         "initial_logical_to_physicals": "[[[0, 0], [1, 1]]]",
         "final_logical_to_physicals": "[[[0, 0], [1, 1]]]",
     }
-
     out = qss.compiler_output.read_json(json_dict, circuits_is_list=False, api_version="v0.3.0")
     assert out.circuit == qc
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
@@ -214,13 +213,7 @@ def test_read_jsonV3() -> None:
     assert out.final_logical_to_physical == {0: 0, 1: 1}
 
     json_dict = {
-        "qiskit_circuits": (
-            "["
-            + qss.serialization.serialize_circuits(qc)
-            + ", "
-            + qss.serialization.serialize_circuits(qc)
-            + "]"
-        ),
+        "qiskit_circuits": json.dumps([qss.serialization.serialize_circuits(qc)] * 2),
         "initial_logical_to_physicals": "[[[0, 0], [1, 1]], [[0, 0], [1, 1]]]",
         "final_logical_to_physicals": "[[[0, 0], [1, 1]], [[0, 0], [1, 1]]]",
     }

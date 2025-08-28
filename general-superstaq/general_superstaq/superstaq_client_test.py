@@ -1360,10 +1360,10 @@ def test_superstaq_client_compile_v3_failed(
 
 
 @pytest.mark.parametrize(
-    ("circuit_type", "expected_map"),
+    ("circuit_type", "expected_map", "serialized_circuit"),
     [
-        ("cirq", '[[[{"qubit": "q0"}, {"qubit": "q0"}]]]'),
-        ("qiskit", "[[[0, 0]]]"),
+        ("cirq", '[[[{"qubit": "q0"}, {"qubit": "q0"}]]]', '["compiled world"]'),
+        ("qiskit", "[[[0, 0]]]", '["\\"compiled world\\""]'),
     ],
 )
 @mock.patch("requests.Session.get")
@@ -1373,6 +1373,7 @@ def test_superstaq_client_compile_v3(
     mock_get: mock.MagicMock,
     circuit_type: str,
     expected_map: str,
+    serialized_circuit: str,
     client_v3: gss.superstaq_client._SuperstaqClientV3,
 ) -> None:
     job_id = uuid.UUID(int=0)
@@ -1431,7 +1432,7 @@ def test_superstaq_client_compile_v3(
         verify=False,
     )
     assert compilation_results == {
-        f"{circuit_type}_circuits": '["compiled world"]',
+        f"{circuit_type}_circuits": serialized_circuit,
         "initial_logical_to_physicals": expected_map,
         "final_logical_to_physicals": expected_map,
     }
