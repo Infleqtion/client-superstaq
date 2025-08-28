@@ -769,7 +769,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                 for gate in base_sequence:
                     irb_circuit += self._clifford_gate_to_circuit(gate)
                     irb_circuit += css.barrier(*self.qubits)
-                    irb_circuit += self.interleaved_gate(*self.qubits)
+                    irb_circuit += self.interleaved_gate(*self.qubits).with_tags("no_compile")
                     irb_circuit += css.barrier(*self.qubits)
                 # Add the final inverting gate
                 irb_circuit += self._clifford_gate_to_circuit(
