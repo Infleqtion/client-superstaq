@@ -12,19 +12,24 @@ class BitCode(Benchmark):
     """Creates a circuit for syndrome measurement in a bit-flip error correcting code.
 
     Args:
-        num_data: The number of data qubits.
+        num_data_qubits: The number of data qubits.
         num_rounds: The number of measurement rounds.
         bit_state: A list denoting the state to initialize each data qubit to.
 
     Returns:
         A `cirq.Circuit` for the bit-flip error correcting code.
+
+    Raises:
+        ValueError: If `bit_state` is longer than `num_data_qubits`.
+        TypeError: If `bit_state` is not a `list`.
+        ValueError: If `bit_state` contains values not in {0,1}.
     """
 
     def __init__(self, num_data_qubits: int, num_rounds: int, bit_state: list[int]) -> None:
         if len(bit_state) != num_data_qubits:
             raise ValueError("The length of `bit_state` must match the number of data qubits.")
         if not isinstance(bit_state, list):
-            raise ValueError("`bit_state` must be a list[int].")
+            raise TypeError("`bit_state` must be a `list[int]`.")
         elif not set(bit_state).issubset({0, 1}):
             raise ValueError("Entries of `bit_state` must be 0, 1 integers.")
         self.num_data_qubits = num_data_qubits

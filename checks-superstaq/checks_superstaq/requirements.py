@@ -212,12 +212,13 @@ def _get_pypi_version(package: str, silent: bool) -> str | None:
     try:
         package_info = urllib.request.urlopen(pypi_url).read().decode()
         pypi_version = json.loads(package_info)["info"]["version"]
-        return pypi_version
     except urllib.error.URLError:
         if not silent:
             warning = f"Cannot find package on PyPI: {base_package}."
             print(check_utils.warning(warning))  # noqa: T201
         return None
+    else:
+        return pypi_version
 
 
 def _inspect_local_version(package: str, latest_version: str) -> None:

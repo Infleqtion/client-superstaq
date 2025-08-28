@@ -18,6 +18,7 @@ lint.select = [
   "A",      # flake8-builtins
   "ANN",    # flake8-annotations checks
   "ARG",    # Unused argument in a function/method
+  "ASYNC",  # flake8-async
   "B",      # flake8-bugbear checks
   "C",      # flake8-comprehensions, mccabe checks
   "COM818", # trailing-comma-on-bare-tuple error
@@ -30,8 +31,9 @@ lint.select = [
   "FLY",    # flynt checks
   "FURB",   # refurb checks
   "I",      # isort checks
+  "ICN",    # flake8-import-conventions
   "ISC",    # flake8-implicit-str-concat checks
-  "NPY201", # numpy2-deprecation
+  "NPY",    # numpy-specific checks
   "PERF",   # Perflint checks
   "PGH",    # pygrep-hooks checks
   "PIE",    # flake8-pie checks
@@ -47,6 +49,7 @@ lint.select = [
   "T20",    # flake8-print checks
   "TC",     # flake8-type-checking checks
   "TID",    # flake8-tidy-imports
+  "TRY",    # tryceratops
   "UP",     # pyupgrade checks
   "W",      # pycodestyle warnings checks
 ]
@@ -92,6 +95,7 @@ lint.ignore = [
   "SIM108",
   "SIM118",
   "TC003",
+  "TRY003",
   "UP038",
   # The following are excluded to not conflict with `ruff format`:
   "COM812",

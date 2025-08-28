@@ -135,7 +135,8 @@ class VQEProxy(supermarq.benchmark.Benchmark):
             return -energy  # because we are minimizing instead of maximizing
 
         init_params = [
-            np.random.uniform() * 2 * np.pi for _ in range(self.num_layers * 4 * self.num_qubits)
+            np.random.default_rng().uniform() * 2 * np.pi
+            for _ in range(self.num_layers * 4 * self.num_qubits)
         ]
         out = opt.minimize(f, init_params, method="COBYLA")
 

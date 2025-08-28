@@ -569,7 +569,7 @@ class SuperstaqProvider(gss.service.Service):
             to post-process the measurement results and return the fidelity.
 
         Raises:
-            ValueError: If `circuit` is not a valid `qiskit.QuantumCircuit`.
+            TypeError: If `circuit` is not a valid `qiskit.QuantumCircuit`.
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         circuit_1 = rho_1[0]
@@ -586,7 +586,7 @@ class SuperstaqProvider(gss.service.Service):
             isinstance(circuit_1, qiskit.QuantumCircuit)
             and isinstance(circuit_2, qiskit.QuantumCircuit)
         ):
-            raise ValueError("Each state `rho_i` should contain a single circuit.")
+            raise TypeError("Each state `rho_i` should contain a single `qiskit.QuantumCircuit`.")
 
         serialized_circuit_1 = qss.serialization.serialize_circuits(circuit_1)
         serialized_circuit_2 = qss.serialization.serialize_circuits(circuit_2)
