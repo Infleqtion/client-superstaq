@@ -343,6 +343,7 @@ class Service(gss.service.Service):
         repetitions: int = 1000,
         target: str | None = None,
         method: str | None = None,
+        verbatim: bool = False,
         **kwargs: Any,
     ) -> css.Job | css.JobV3:
         """Creates a new job to run the given circuit(s).
@@ -352,6 +353,7 @@ class Service(gss.service.Service):
             repetitions: The number of times to repeat the circuit. Defaults to 1000.
             target: Where to run the job.
             method: The optional execution method.
+            verbatim: Run the provided circuit(s) verbatim (i.e. without compilation).
             kwargs: Other optimization and execution parameters.
 
         Returns:
@@ -370,6 +372,7 @@ class Service(gss.service.Service):
             repetitions=repetitions,
             target=target,
             method=method,
+            verbatim=verbatim,
             **kwargs,
         )
         if isinstance(self._client, _SuperstaqClient):
