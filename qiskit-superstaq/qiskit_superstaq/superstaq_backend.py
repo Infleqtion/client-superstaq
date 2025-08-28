@@ -148,6 +148,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         shots: int,
         method: str | None = None,
+        verbatim: bool = False,
         **kwargs: Any,
     ) -> qss.SuperstaqJob | qss.SuperstaqJobV3:
         """Runs circuits on the stored Superstaq backend.
@@ -157,6 +158,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             shots: The number of execution shots (times to run the circuit).
             method:  An optional string that describes the execution method
                 (e.g. 'dry-run', 'statevector', etc.).
+            verbatim: Run the provided circuit(s) verbatim (i.e. without compilation).
             kwargs: Other optimization and execution parameters.
 
         Returns:
@@ -181,6 +183,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             repetitions=shots,
             target=self.name,
             method=method,
+            verbatim=verbatim,
             **kwargs,
         )
 

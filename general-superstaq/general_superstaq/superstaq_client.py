@@ -1477,7 +1477,7 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
             circuits=circuits,
             circuit_type=circuit_type,
             options_dict=options_dict,
-            verbatim=options_dict.get("verbatim")
+            verbatim=options_dict.get("verbatim", False),
         )
         # Submit job and store ID
         response = gss.models.NewJobResponse(
