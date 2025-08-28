@@ -474,6 +474,7 @@ def test_service_create_jobV3() -> None:
         repetitions=100,
         target="ss_fake_qpu",
         method="fake_method",
+        verbatim=True,
         fake_data="",
     )
     assert job.status() == gss.models.CircuitStatus.COMPLETED
@@ -483,6 +484,7 @@ def test_service_create_jobV3() -> None:
     assert create_job_kwargs["target"] == "ss_fake_qpu"
     assert create_job_kwargs["method"] == "fake_method"
     assert create_job_kwargs["fake_data"] == ""
+    assert create_job_kwargs["verbatim"] is True
 
 
 @mock.patch(
