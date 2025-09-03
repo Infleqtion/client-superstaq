@@ -170,7 +170,7 @@ class QCVVResults(ABC):
     @property
     def samples(self) -> Sequence[Sample]:
         """Returns:
-        The number of samples used."""
+        The samples used."""
         return self.experiment.samples
 
     @property
