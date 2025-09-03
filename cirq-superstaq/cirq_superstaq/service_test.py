@@ -986,7 +986,7 @@ def test_service_dfe(mock_post: mock.MagicMock) -> None:
         shots=100,
     ) == ["id1", "id2"]
 
-    with pytest.raises(ValueError, match="should contain a single circuit"):
+    with pytest.raises(TypeError, match="should contain a single `cirq.Circuit`"):
         service.submit_dfe(
             rho_1=([circuit, circuit], "ss_example_qpu"),  # type: ignore[arg-type]
             rho_2=(circuit, "ss_example_qpu"),
