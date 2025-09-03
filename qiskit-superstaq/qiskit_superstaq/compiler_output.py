@@ -184,19 +184,28 @@ class CompilerOutput:  # noqa: PLW1641
         )
 
 
-def read_json(json_dict: Mapping[str, Any], circuits_is_list: bool) -> CompilerOutput:
+def read_json(
+    json_dict: Mapping[str, Any], circuits_is_list: bool, api_version: str = "v0.2.0"
+) -> CompilerOutput:
     """Reads out returned JSON from Superstaq API's compilation endpoints.
 
     Args:
         json_dict: A JSON dictionary matching the format returned by /compile endpoint.
         circuits_is_list: A bool flag that controls whether the returned object has a .circuits
             attribute (if `True`) or a .circuit attribute (`False`).
+        api_version: A string indicating the API version.
 
     Returns:
         A `CompilerOutput` object with the compiled circuit(s) and (if applicable to this target)
         corresponding pulse gate circuit(s).
     """
-    compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
+    if api_version == "v0.2.0":
+        compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
+    else:
+        serialized_circuits = json.loads(json_dict["qiskit_circuits"])
+        compiled_circuits = [
+            qss.serialization.deserialize_circuits(circuit)[0] for circuit in serialized_circuits
+        ]
 
     initial_logical_to_physicals: list[dict[int, int]] = list(
         map(dict, json.loads(json_dict["initial_logical_to_physicals"]))

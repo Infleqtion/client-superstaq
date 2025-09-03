@@ -13,9 +13,11 @@
 from __future__ import annotations
 
 import collections
+import datetime
 import json
 import os
 import textwrap
+import uuid
 from unittest import mock
 from unittest.mock import patch
 
@@ -28,6 +30,7 @@ import qiskit
 import qiskit_superstaq as qss
 import sympy
 from general_superstaq import ResourceEstimate
+from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 
 import cirq_superstaq as css
 
@@ -84,12 +87,18 @@ def test_counts_to_results() -> None:
     assert result.histogram(key="01") == collections.Counter({3: 100})
 
 
-def test_service_resolve_target() -> None:
-    service = css.Service(api_key="key", default_target="ss_bar_qpu")
+def test_service_wrong_version() -> None:
+    with pytest.raises(ValueError, match="`api_version` can only take value 'v0.2.0' or 'v0.3.0'"):
+        css.Service(api_version="v4")
+
+
+@pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
+def test_service_resolve_target(api_version: str) -> None:
+    service = css.Service(api_key="key", default_target="ss_bar_qpu", api_version=api_version)
     assert service._resolve_target("ss_foo_qpu") == "ss_foo_qpu"
     assert service._resolve_target(None) == "ss_bar_qpu"
 
-    service = css.Service(api_key="key")
+    service = css.Service(api_key="key", api_version=api_version)
     assert service._resolve_target("ss_foo_qpu") == "ss_foo_qpu"
     with pytest.raises(ValueError, match="requires a target"):
         _ = service._resolve_target(None)
@@ -97,7 +106,8 @@ def test_service_resolve_target() -> None:
 
 def test_service_run_and_get_counts() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    mock_client = mock.MagicMock()
+    assert isinstance(service._client, _SuperstaqClient)
+    mock_client = mock.MagicMock(spec=_SuperstaqClient)
     mock_client.create_job.return_value = {
         "job_ids": ["job_id"],
         "status": "Ready",
@@ -171,9 +181,109 @@ def test_service_run_and_get_counts() -> None:
     assert multi_counts == [{"11": 1}, {"11": 1}]
 
 
+def test_service_run_and_get_countsV3() -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
+    assert isinstance(service._client, _SuperstaqClientV3)
+    mock_client = mock.MagicMock(spec=_SuperstaqClientV3)
+    job_id = uuid.UUID(int=42)
+    mock_client.create_job.return_value = {"job_id": job_id, "num_circuits": 1}
+    job_dict = {
+        "job_type": "simulate",
+        "statuses": ["completed"],
+        "status_messages": [None],
+        "user_email": "test@email.com",
+        "target": "ss_unconstrained_simulator",
+        "provider_id": ["provider_id"],
+        "num_circuits": 1,
+        "compiled_circuits": ["compiled circuit"],
+        "input_circuits": ["input circuit"],
+        "circuit_type": "cirq",
+        "counts": [{"11": 1}],
+        "results_dicts": [],
+        "shots": [1],
+        "dry_run": True,
+        "submission_timestamp": datetime.datetime.now(),
+        "last_updated_timestamp": [datetime.datetime.now()],
+        "initial_logical_to_physicals": [{0: 0}],
+        "final_logical_to_physicals": [{0: 0}],
+        "logical_qubits": ["0"],
+        "physical_qubits": ["0"],
+    }
+    mock_client.fetch_jobs.return_value = {str(job_id): job_dict}
+
+    service._client = mock_client
+
+    a = sympy.Symbol("a")
+    q = cirq.LineQubit(0)
+    circuit = cirq.Circuit((cirq.X**a)(q), cirq.measure(q, key="a"))
+    params = cirq.ParamResolver({"a": 0.5})
+    counts = service.get_counts(
+        circuits=circuit,
+        repetitions=4,
+        target="ss_unconstrained_simulator",
+        param_resolver=params,
+    )
+    assert counts == {"11": 1}
+
+    results = service.run(
+        circuits=circuit,
+        repetitions=4,
+        target="ss_unconstrained_simulator",
+        param_resolver=params,
+    )
+    assert results.histogram(key="a") == collections.Counter({3: 1})
+
+    # Multiple circuit run
+    mock_client.create_job.return_value = {"job_id": job_id, "num_circuits": 2}
+    job_dict = {
+        "job_type": "simulate",
+        "statuses": ["completed"] * 2,
+        "status_messages": [None] * 2,
+        "user_email": "test@email.com",
+        "target": "ss_unconstrained_simulator",
+        "provider_id": ["provider_id"] * 2,
+        "num_circuits": 1,
+        "compiled_circuits": ["compiled circuit"] * 2,
+        "input_circuits": ["input circuit"] * 2,
+        "circuit_type": "cirq",
+        "counts": [{"11": 1}] * 2,
+        "results_dicts": [],
+        "shots": [1] * 2,
+        "dry_run": True,
+        "submission_timestamp": datetime.datetime.now(),
+        "last_updated_timestamp": [datetime.datetime.now()] * 2,
+        "initial_logical_to_physicals": [{0: 0}] * 2,
+        "final_logical_to_physicals": [{0: 0}] * 2,
+        "logical_qubits": ["0"] * 2,
+        "physical_qubits": ["0"] * 2,
+    }
+    mock_client.fetch_jobs.return_value = {str(job_id): job_dict}
+
+    service._client = mock_client
+    multi_results = service.run(
+        circuits=[circuit, circuit],
+        repetitions=10,
+        target="ss_unconstrained_simulator",
+        param_resolver=params,
+    )
+
+    assert isinstance(multi_results, list)
+    for result in multi_results:
+        assert result.histogram(key="a") == collections.Counter({3: 1})
+
+    multi_counts = service.get_counts(
+        circuits=[circuit, circuit],
+        repetitions=4,
+        target="ss_unconstrained_simulator",
+        param_resolver=params,
+    )
+    assert multi_counts == [{"11": 1}, {"11": 1}]
+
+
 def test_service_sampler() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    mock_client = mock.MagicMock()
+    assert isinstance(service._client, _SuperstaqClient)
+    mock_client = mock.MagicMock(spec=_SuperstaqClient)
     service._client = mock_client
     mock_client.create_job.return_value = {
         "job_ids": ["job_id"],
@@ -204,9 +314,52 @@ def test_service_sampler() -> None:
     mock_client.create_job.assert_called_once()
 
 
+def test_service_samplerV3() -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
+    assert isinstance(service._client, _SuperstaqClientV3)
+    mock_client = mock.MagicMock(spec=_SuperstaqClientV3)
+    job_id = uuid.UUID(int=42)
+    mock_client.create_job.return_value = {"job_id": job_id, "num_circuits": 1}
+
+    job_dict = {
+        "job_type": "simulate",
+        "statuses": ["completed"],
+        "status_messages": [None],
+        "user_email": "test@email.com",
+        "target": "ss_unconstrained_simulator",
+        "provider_id": ["provider_id"],
+        "num_circuits": 1,
+        "compiled_circuits": ["compiled circuit"],
+        "input_circuits": ["input circuit"],
+        "circuit_type": "cirq",
+        "counts": [{"0": 3, "1": 1}],
+        "results_dicts": [],
+        "shots": [1],
+        "dry_run": True,
+        "submission_timestamp": datetime.datetime.now(),
+        "last_updated_timestamp": [datetime.datetime.now()],
+        "initial_logical_to_physicals": [{0: 0}],
+        "final_logical_to_physicals": [{0: 0}],
+        "logical_qubits": ["0"],
+        "physical_qubits": ["0"],
+    }
+    mock_client.fetch_jobs.return_value = {str(job_id): job_dict}
+    service._client = mock_client
+
+    sampler = service.sampler(target="ss_unconstrained_simulator")
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.X(q0), cirq.measure(q0, key="a"))
+    results = sampler.sample(program=circuit, repetitions=4)
+    pd.testing.assert_frame_equal(
+        results, pd.DataFrame(columns=["a"], index=[0, 1, 2, 3], data=[[0], [0], [0], [1]])
+    )
+    mock_client.create_job.assert_called_once()
+
+
 def test_service_get_job() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    mock_client = mock.MagicMock()
+    assert isinstance(service._client, _SuperstaqClient)
+    mock_client = mock.MagicMock(spec=_SuperstaqClient)
     job_dict = {"status": "Ready"}
     mock_client.fetch_jobs.return_value = {"job_id": job_dict}
     service._client = mock_client
@@ -222,9 +375,47 @@ def test_service_get_job() -> None:
     mock_client.fetch_jobs.assert_called_once_with(["job_id"])
 
 
+def test_service_get_jobV3() -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
+    assert isinstance(service._client, _SuperstaqClientV3)
+    mock_client = mock.MagicMock(spec=_SuperstaqClientV3)
+    job_dict = {
+        "job_type": "simulate",
+        "statuses": ["completed"],
+        "status_messages": [None],
+        "user_email": "test@email.com",
+        "target": "test_target",
+        "provider_id": ["provider_id"],
+        "num_circuits": 1,
+        "compiled_circuits": ["compiled circuit"],
+        "input_circuits": ["input circuit"],
+        "circuit_type": "cirq",
+        "counts": [{"0": 1}],
+        "results_dicts": [],
+        "shots": [1],
+        "dry_run": True,
+        "submission_timestamp": datetime.datetime.now(),
+        "last_updated_timestamp": [datetime.datetime.now()],
+        "initial_logical_to_physicals": [{0: 0}],
+        "final_logical_to_physicals": [{0: 0}],
+        "logical_qubits": ["0"],
+        "physical_qubits": ["0"],
+    }
+    job_id = uuid.UUID(int=0)
+    mock_client.fetch_jobs.return_value = {str(job_id): job_dict}
+    service._client = mock_client
+
+    job = service.get_job(job_id)
+
+    assert job.job_id() == job_id
+    assert job.status() == gss.models.CircuitStatus.COMPLETED
+    mock_client.fetch_jobs.assert_called_once_with([job_id])
+
+
 def test_service_create_job() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    mock_client = mock.MagicMock()
+    assert isinstance(service._client, _SuperstaqClient)
+    mock_client = mock.MagicMock(spec=_SuperstaqClient)
     mock_client.create_job.return_value = {"job_ids": ["job_id"], "status": "Ready"}
     mock_client.fetch_jobs.return_value = {"job_id": {"status": "Done"}}
     service._client = mock_client
@@ -244,6 +435,56 @@ def test_service_create_job() -> None:
     assert create_job_kwargs["target"] == "ss_fake_qpu"
     assert create_job_kwargs["method"] == "fake_method"
     assert create_job_kwargs["fake_data"] == ""
+
+
+def test_service_create_jobV3() -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
+    assert isinstance(service._client, _SuperstaqClientV3)
+    mock_client = mock.MagicMock(spec=_SuperstaqClientV3)
+    job_id = uuid.UUID(int=42)
+    mock_client.create_job.return_value = {"job_id": job_id, "num_circuits": 1}
+    job_dict = {
+        "job_type": "simulate",
+        "statuses": ["completed"],
+        "status_messages": [None],
+        "user_email": "test@email.com",
+        "target": "test_target",
+        "provider_id": ["provider_id"],
+        "num_circuits": 1,
+        "compiled_circuits": ["compiled circuit"],
+        "input_circuits": ["input circuit"],
+        "circuit_type": "cirq",
+        "counts": [{"0": 1}],
+        "results_dicts": [],
+        "shots": [1],
+        "dry_run": True,
+        "submission_timestamp": datetime.datetime.now(),
+        "last_updated_timestamp": [datetime.datetime.now()],
+        "initial_logical_to_physicals": [{0: 0}],
+        "final_logical_to_physicals": [{0: 0}],
+        "logical_qubits": ["0"],
+        "physical_qubits": ["0"],
+    }
+    mock_client.fetch_jobs.return_value = {str(job_id): job_dict}
+    service._client = mock_client
+
+    circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)), cirq.measure(cirq.LineQubit(0)))
+    job = service.create_job(
+        circuits=circuit,
+        repetitions=100,
+        target="ss_fake_qpu",
+        method="fake_method",
+        verbatim=True,
+        fake_data="",
+    )
+    assert job.status() == gss.models.CircuitStatus.COMPLETED
+    create_job_kwargs = mock_client.create_job.call_args[1]
+    # # Serialization induces a float, so we don't validate full circuit.
+    assert create_job_kwargs["repetitions"] == 100
+    assert create_job_kwargs["target"] == "ss_fake_qpu"
+    assert create_job_kwargs["method"] == "fake_method"
+    assert create_job_kwargs["fake_data"] == ""
+    assert create_job_kwargs["verbatim"] is True
 
 
 @mock.patch(
