@@ -73,7 +73,7 @@ def test_sss_init_circuits(ssb_experiment: SSB) -> None:
     assert init_circuit == cirq.Circuit(
         css.ParallelRGate(np.pi / 2, np.pi, 2)(q0, q1),
         css.ParallelRGate(np.pi / 2, 0, 2)(q0, q1),
-        cirq.CZ(q0, q1),
+        cirq.CZ(q0, q1).with_tags("no_compile"),
         css.ParallelRGate(np.pi / 2, 0, 2)(q0, q1),
         css.ParallelRGate(np.pi / 2, -np.pi / 2, 2)(q0, q1),
         css.ParallelRGate(np.pi / 2, np.pi, 2)(q0, q1),
@@ -81,60 +81,68 @@ def test_sss_init_circuits(ssb_experiment: SSB) -> None:
 
 
 def test_sss_reconciliation_circuit(ssb_experiment: SSB) -> None:
-    init_circuit = ssb_experiment._sss_init_circuit(4)
-    # Index-4 has recon_rotations [_X, X, X, X]
-
-    recon_circuit = ssb_experiment._sss_reconciliation_circuit(init_circuit)
+    recon_circuit = ssb_experiment._sss_reconciliation_circuit(4)
     q0, q1 = cirq.LineQubit.range(2)
     assert recon_circuit == cirq.Circuit(
         css.ParallelRGate(np.pi / 2, np.pi, 2)(q0, q1),
-        css.ParallelRGate(np.pi / 2, np.pi, 2)(q0, q1),
-        cirq.CZ(q0, q1),
-        css.ParallelRGate(np.pi / 2, np.pi, 2)(q0, q1),
+        css.ParallelRGate(np.pi / 2, 0.0, 2)(q0, q1),
+        cirq.CZ(q0, q1).with_tags("no_compile"),
+        css.ParallelRGate(np.pi / 2, 0.0, 2)(q0, q1),
         css.ParallelRGate(np.pi / 2, np.pi, 2)(q0, q1),
     )
 
 
-def test_build_ssb_circuit(ssb_experiment: SSB) -> None:
+@pytest.mark.parametrize("with_barriers", [True, False])
+def test_build_ssb_circuit(with_barriers: bool, ssb_experiment: SSB) -> None:
+    X = css.ParallelRGate(np.pi / 2, 0.0, 2)
+    _X = css.ParallelRGate(np.pi / 2, np.pi, 2)
+    Y = css.ParallelRGate(np.pi / 2, np.pi / 2, 2)
+    _Y = css.ParallelRGate(np.pi / 2, -np.pi / 2, 2)
     ssb_experiment._rng = (rng := MagicMock())
     rng.integers.return_value = 4
-    rng.choice.return_value = cirq.rx(np.pi / 2)
-    circuits = ssb_experiment._build_circuits(num_circuits=1, cycle_depths=[2])
+    rng.choice.side_effect = [_X, _Y]
+    ssb_experiment._include_placeholders = with_barriers
+    circuits = ssb_experiment._build_circuits(num_circuits=1, cycle_depths=[4])
 
     assert len(circuits) == 1
 
     q0, q1 = ssb_experiment.qubits
+    # Init circuit
+    expected_circuit = [
+        cirq.Moment(_X(q0, q1)),
+        cirq.Moment(X(q0, q1)),
+        cirq.CZ(q0, q1).with_tags("no_compile"),
+        cirq.Moment(X(q0, q1)),
+        cirq.Moment(_Y(q0, q1)),
+        cirq.Moment(_X(q0, q1)),
+    ]
+    # Intermediate ops
+    expected_circuit += [cirq.CZ(q0, q1).with_tags("no_compile")]
+    if with_barriers:
+        expected_circuit += [css.Barrier(2)(q0, q1)]
+    expected_circuit += [cirq.Moment(_X(q0, q1)), cirq.CZ(q0, q1).with_tags("no_compile")]
+    if with_barriers:
+        expected_circuit += [css.Barrier(2)(q0, q1)]
+    expected_circuit += [cirq.Moment(_Y(q0, q1))]
+    # Reconcilliation
+    expected_circuit += [
+        cirq.Moment(Y(q0, q1)),
+        cirq.Moment(X(q0, q1)),
+        cirq.CZ(q0, q1).with_tags("no_compile"),
+        cirq.Moment(Y(q0, q1)),
+        cirq.Moment(_X(q0, q1)),
+        cirq.Moment(
+            cirq.measure(cirq.LineQubit(0), cirq.LineQubit(1)),
+        ),
+    ]
+
     cirq.testing.assert_same_circuits(
         circuits[0].circuit,
-        cirq.Circuit(
-            # Init circuit
-            cirq.X(q0),
-            cirq.X(q1),
-            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
-            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
-            cirq.CZ(q0, q1).with_tags("no_compile"),
-            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
-            cirq.Moment(cirq.ry(-np.pi / 2)(q0), cirq.ry(-np.pi / 2)(q1)),
-            cirq.Moment(cirq.rx(-np.pi / 2)(q0), cirq.rx(-np.pi / 2)(q1)),
-            # Intermediate ops
-            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
-            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
-            # Reconcilliation
-            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
-            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
-            cirq.CZ(q0, q1).with_tags("no_compile"),
-            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
-            cirq.Moment(cirq.rx(np.pi / 2)(q0), cirq.rx(np.pi / 2)(q1)),
-            cirq.X(q0),
-            cirq.X(q1),
-            cirq.Moment(
-                cirq.measure(cirq.LineQubit(0), cirq.LineQubit(1)),
-            ),
-        ),
+        cirq.Circuit(expected_circuit),
     )
     assert circuits[0].data == {
-        "initial_sss_index": 4,
-        "num_cz_gates": 2,
+        "initial_sss_index": 11,
+        "num_cz_gates": 4,
     }
 
 

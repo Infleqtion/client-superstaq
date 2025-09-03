@@ -37,21 +37,6 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 
-def _parallel(x: npt.NDArray[np.float64], y: npt.NDArray[np.float64], tol: float = 1e-5) -> bool:
-    """Checks whether two numpy arrays are parallel, as determined by the cosine distance between
-    them.
-
-    Args:
-        x: Array 1
-        y: Array 2
-        tol: The tolerance to accept. Defaults to 1E-5.
-
-    Returns:
-        Wether the two arrays are parallel
-    """
-    return np.abs(np.dot(x, np.conj(y)) / (np.linalg.norm(x) * np.linalg.norm(y))) >= 1.0 - tol
-
-
 def _exp_decay(
     x: npt.NDArray[np.float64], A: float, alpha: float, B: float
 ) -> npt.NDArray[np.float64]:
@@ -315,7 +300,7 @@ class SSB(QCVVExperiment[SSBResults]):
         for k, depth in tqdm.contrib.itertools.product(
             range(num_circuits), cycle_depths, desc="Building circuits"
         ):
-            sss_idx = self._rng.integers(0, 11).item()
+            sss_idx = int(self._rng.integers(0, 11, endpoint=True))
             circuit = self._sss_init_circuit(sss_idx)
 
             if self._distribute and depth < max_depth:
@@ -330,7 +315,7 @@ class SSB(QCVVExperiment[SSBResults]):
                     sss_idx = idx_maps[cirq.CZ][sss_idx]
                     num += 1
 
-                elif self._include_placeholders:
+                if self._include_placeholders:
                     circuit += css.Barrier(2)(*self.qubits)
 
                 gate = self._random_parallel_qubit_rotation()
@@ -376,7 +361,7 @@ class SSB(QCVVExperiment[SSBResults]):
         init_circuit = cirq.Circuit(
             self._init_rotations[idx][0].on(*self.qubits),
             self._init_rotations[idx][1].on(*self.qubits),
-            cirq.CZ(*self.qubits),
+            cirq.CZ(*self.qubits).with_tags("no_compile"),
             self._init_rotations[idx][2].on(*self.qubits),
             self._init_rotations[idx][3].on(*self.qubits),
             self._init_rotations[idx][4].on(*self.qubits),
@@ -397,7 +382,7 @@ class SSB(QCVVExperiment[SSBResults]):
         return cirq.Circuit(
             self._reconciliation_rotation[idx][0].on(*self.qubits),
             self._reconciliation_rotation[idx][1].on(*self.qubits),
-            cirq.CZ(*self.qubits),
+            cirq.CZ(*self.qubits).with_tags("no_compile"),
             self._reconciliation_rotation[idx][2].on(*self.qubits),
             self._reconciliation_rotation[idx][3].on(*self.qubits),
         )
