@@ -150,7 +150,7 @@ def test_parallel_gates() -> None:
     assert gate.component_gates == gate2.component_gates
     assert gate == gate2
 
-    with pytest.raises(ValueError, match="Component gates must be"):
+    with pytest.raises(TypeError, match="Component gates must be"):
         _ = qss.ParallelGates(qiskit.circuit.Measure())
 
 
