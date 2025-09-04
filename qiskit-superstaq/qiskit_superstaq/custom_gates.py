@@ -237,7 +237,7 @@ class ParallelGates(qiskit.circuit.Gate):
             label: An optional label for the constructed gate. Defaults to None.
 
         Raises:
-            ValueError: If `component_gates` are not `qiskit.circuit.Gate` instances.
+            TypeError: If `component_gates` are not `qiskit.circuit.Gate` instances.
         """
         self.component_gates: tuple[qiskit.circuit.Gate, ...] = ()
         num_qubits = 0
@@ -246,7 +246,7 @@ class ParallelGates(qiskit.circuit.Gate):
             num_qubits += gate.num_qubits
 
             if not isinstance(gate, qiskit.circuit.Gate):
-                raise ValueError("Component gates must be instances of qiskit.circuit.Gate")
+                raise TypeError("Component gates must be instances of `qiskit.circuit.Gate`")
             elif isinstance(gate, ParallelGates):
                 self.component_gates += gate.component_gates
             else:

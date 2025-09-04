@@ -22,7 +22,12 @@ def test_zz_swap_gate() -> None:
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq as css")
 
     expected = np.array(
-        [[1, 0, 0, 0], [0, 0, np.exp(1j * theta), 0], [0, np.exp(1j * theta), 0, 0], [0, 0, 0, 1]]
+        [
+            [1, 0, 0, 0],
+            [0, 0, np.exp(1j * theta), 0],
+            [0, np.exp(1j * theta), 0, 0],
+            [0, 0, 0, 1],
+        ]
     )
     assert np.allclose(cirq.unitary(gate), expected)
 
@@ -117,7 +122,12 @@ def test_stripped_cz_gate() -> None:
     assert repr(gate) == "css.StrippedCZGate(0.123)"
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_superstaq as css")
     expected = np.diag(
-        [1.0, np.exp(1j * rz_rads), np.exp(1j * rz_rads), np.exp(1j * (2 * rz_rads - np.pi))]
+        [
+            1.0,
+            np.exp(1j * rz_rads),
+            np.exp(1j * rz_rads),
+            np.exp(1j * (2 * rz_rads - np.pi)),
+        ]
     )
     assert np.allclose(cirq.unitary(gate), expected)
 
@@ -150,6 +160,9 @@ def test_stripped_cz_gate() -> None:
     assert gate**0.5 == cirq.DiagonalGate(phases)
     assert gate**1 == gate
     assert gate**2 == css.ParallelGates(z_exp_gate, z_exp_gate)
+
+    assert cirq.phase_by(gate, 1.23, 0) == gate
+    assert cirq.phase_by(operation, 1.23, 1) == operation
 
 
 def test_stripped_cz_gate_circuit() -> None:
@@ -367,8 +380,8 @@ def test_acecr_eq() -> None:
     assert css.AceCR("+-", sandwich_rx_rads=np.pi) == css.AceCR("+-", sandwich_rx_rads=5 * np.pi)
 
     assert css.AceCR(rads=np.pi) == css.AceCR(rads=np.pi)
-    assert not css.AceCR(rads=-np.pi) == css.AceCR(rads=np.pi)
-    assert not css.AceCR(rads=np.pi) == css.AceCR(rads=3 * np.pi)
+    assert css.AceCR(rads=-np.pi) != css.AceCR(rads=np.pi)
+    assert css.AceCR(rads=np.pi) != css.AceCR(rads=3 * np.pi)
     assert css.AceCR(rads=np.pi) == css.AceCR(rads=5 * np.pi)
     assert css.AceCR(rads=np.pi, sandwich_rx_rads=np.pi) == css.AceCR(
         rads=np.pi, sandwich_rx_rads=np.pi
@@ -726,10 +739,10 @@ def test_parallel_gates() -> None:
         cirq.X, cirq.ParallelGate(cirq.Y, num_copies=2)
     )
 
-    with pytest.raises(ValueError, match="ParallelGates cannot contain measurements"):
+    with pytest.raises(ValueError, match="`ParallelGates` cannot contain measurements"):
         _ = css.ParallelGates(cirq.X, cirq.MeasurementGate(1, key="1"))
 
-    with pytest.raises(ValueError, match="is not a cirq Gate"):
+    with pytest.raises(TypeError, match="is not a `cirq.Gate`"):
         _ = css.ParallelGates(cirq.X(qubits[1]))
 
 
@@ -744,7 +757,9 @@ def test_parallel_gates_operation() -> None:
     with pytest.raises(ValueError, match="tagged operations not permitted"):
         _ = css.parallel_gates_operation(cirq.X(q0).with_tags("foo"))
 
-    with pytest.raises(ValueError):  # Overlapping qubits should be caught by cirq
+    with pytest.raises(
+        ValueError, match="Duplicate qids for"
+    ):  # Overlapping qubits should be caught by `cirq`
         _ = css.parallel_gates_operation(cirq.CX(q2, q0), cirq.Y(q2))
 
 

@@ -46,11 +46,12 @@ class QAOAVanillaProxy(Benchmark):
     def _gen_sk_hamiltonian(self) -> list[tuple[int, int, float]]:
         """Randomly pick +1 or -1 for each edge weight."""
         hamiltonian = []
+        rng = np.random.default_rng()
         for i in range(self.num_qubits):
             for j in range(i + 1, self.num_qubits):
-                hamiltonian.append((i, j, np.random.choice([-1, 1])))
+                hamiltonian.append((i, j, rng.choice([-1, 1])))
 
-        np.random.shuffle(hamiltonian)
+        rng.shuffle(hamiltonian)
 
         return hamiltonian
 
@@ -113,7 +114,8 @@ class QAOAVanillaProxy(Benchmark):
 
             return -objective_value  # because we are minimizing instead of maximizing
 
-        init_params = [np.random.uniform() * 2 * np.pi, np.random.uniform() * 2 * np.pi]
+        rng = np.random.default_rng()
+        init_params = [rng.uniform() * 2 * np.pi, rng.uniform() * 2 * np.pi]
         out = scipy.optimize.minimize(f, init_params, method="COBYLA")
 
         return out["x"], out["fun"]

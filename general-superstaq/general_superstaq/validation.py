@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numbers
 import re
+import warnings
 from collections.abc import Mapping, Sequence
 
 
@@ -123,17 +124,39 @@ def validate_qubo(qubo: object) -> None:
         qubo: The input value to validate.
 
     Raises:
-        ValueError: If the provided object cannot be converted into a valid QUBO.
+        TypeError: If `qubo` is not a dict-like object.
+        TypeError: If the keys of `qubo` are of an invalid type.
+        ValueError: If `qubo` contains cubic or further higher degree terms.
+        TypeError: If the values in `qubo` are not real numbers.
     """
     if not isinstance(qubo, Mapping):
-        raise ValueError("QUBOs must be provided as dict-like objects.")
+        raise TypeError("QUBOs must be provided as dict-like objects.")
 
     for key, val in qubo.items():
         if not isinstance(key, Sequence) or isinstance(key, str):
-            raise ValueError(f"{key!r} is not a valid key for a QUBO.")
+            raise TypeError(f"{key!r} is not a valid key for a QUBO.")
 
         if len(key) > 2:
             raise ValueError(f"QUBOs must be quadratic, but key {key!r} has length {len(key)}.")
 
         if not isinstance(val, numbers.Real):
-            raise ValueError("QUBO values must be real numbers.")
+            raise TypeError("QUBO values must be real numbers.")
+
+
+def _validate_ibm_channel(ibm_channel: str) -> None:
+    if ibm_channel == "ibm_quantum":
+        raise ValueError(
+            "The 'ibm_quantum' channel has been deprecated and sunset on July 1st, 2025. Instead, "
+            "use 'ibm_quantum_platform' (or equivalently, the older 'ibm_cloud') and the "
+            "corresponding channel token.",
+        )
+    elif ibm_channel == "ibm_cloud":
+        warnings.warn(
+            "The 'ibm_cloud' channel will be deprecated in the future. Instead, consider using "
+            "'ibm_quantum_platform' (the newer version which points to the same channel and works "
+            "interchangeably with the same 'ibm_cloud' token and instance).",
+            FutureWarning,
+            stacklevel=4,
+        )
+    elif ibm_channel not in ("ibm_cloud", "ibm_quantum_platform"):
+        raise ValueError("`ibmq_channel` must be either 'ibm_cloud' or 'ibm_quantum_platform'.")

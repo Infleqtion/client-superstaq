@@ -119,43 +119,41 @@ def test_compiler_output_repr() -> None:
 def test_read_json() -> None:
     qc = qiskit.QuantumCircuit(2)
     qc.h(0)
+    qc.delay(100, 0, unit="dt")
     qc.cx(0, 1)
 
     qc_pulse = qc.copy()
-    qc_pulse.add_calibration("cx", [0, 1], qiskit.pulse.ScheduleBlock("foo"))
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits(qc),
         "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[]]",
         "pulse_gate_circuits": qss.serialization.serialize_circuits(qc_pulse),
-        "pulse_durations": [[10, 20]],
-        "pulse_start_times": [[0, 10]],
+        "pulse_durations": [[10, 100, 20]],
+        "pulse_start_times": [[0, 10, 20]],
     }
 
     out = qss.compiler_output.read_json(json_dict, circuits_is_list=False)
     assert out.circuit == qc
     assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
     assert out.pulse_gate_circuit == qc_pulse
-    assert out.pulse_gate_circuit.duration == 30
-    assert out.pulse_gate_circuit[0].operation.duration == 10
-    assert out.pulse_gate_circuit.op_start_times == [0, 10]
+    assert out.pulse_gate_circuit.duration == 110
+    assert out.pulse_gate_circuit.op_start_times == [0, 10, 20]
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
         "initial_logical_to_physicals": "[[]]",
         "final_logical_to_physicals": "[[], []]",
         "pulse_gate_circuits": qss.serialization.serialize_circuits([qc_pulse, qc_pulse]),
-        "pulse_durations": [[10, 20], [100, 200]],
-        "pulse_start_times": [[0, 10], [0, 100]],
+        "pulse_durations": [[10, 100, 20], [100, 100, 50]],
+        "pulse_start_times": [[0, 10, 20], [0, 100, 200]],
     }
     out = qss.compiler_output.read_json(json_dict, circuits_is_list=True)
     assert out.circuits == [qc, qc]
     assert out.pulse_gate_circuits == [qc_pulse, qc_pulse]
-    assert out.pulse_gate_circuits[0].duration == 30
-    assert out.pulse_gate_circuits[1].duration == 300
-    assert out.pulse_gate_circuits[1][0].operation.duration == 100
-    assert out.pulse_gate_circuits[1].op_start_times == [0, 100]
+    assert out.pulse_gate_circuits[0].duration == 110
+    assert out.pulse_gate_circuits[1].duration == 250
+    assert out.pulse_gate_circuits[1].op_start_times == [0, 100, 200]
 
     json_dict["pulses"] = "oops"
     out = qss.compiler_output.read_json(json_dict, circuits_is_list=True)
@@ -196,6 +194,33 @@ def test_read_json_empty_circuit() -> None:
     assert out.pulse_gate_circuits[0].duration == 0
     assert out.pulse_gate_circuits[1].duration == 0
     assert out.pulse_gate_circuits[1].op_start_times == []
+
+
+def test_read_jsonV3() -> None:
+    qc = qiskit.QuantumCircuit(2)
+    qc.h(0)
+    qc.cx(0, 1)
+
+    json_dict = {
+        "qiskit_circuits": json.dumps([qss.serialization.serialize_circuits(qc)]),
+        "initial_logical_to_physicals": "[[[0, 0], [1, 1]]]",
+        "final_logical_to_physicals": "[[[0, 0], [1, 1]]]",
+    }
+    out = qss.compiler_output.read_json(json_dict, circuits_is_list=False, api_version="v0.3.0")
+    assert out.circuit == qc
+    assert isinstance(out.circuit, qiskit.QuantumCircuit)
+    assert out.initial_logical_to_physical == {0: 0, 1: 1}
+    assert out.final_logical_to_physical == {0: 0, 1: 1}
+
+    json_dict = {
+        "qiskit_circuits": json.dumps([qss.serialization.serialize_circuits(qc)] * 2),
+        "initial_logical_to_physicals": "[[[0, 0], [1, 1]], [[0, 0], [1, 1]]]",
+        "final_logical_to_physicals": "[[[0, 0], [1, 1]], [[0, 0], [1, 1]]]",
+    }
+    out = qss.compiler_output.read_json(json_dict, circuits_is_list=True, api_version="v0.3.0")
+    assert out.circuits == [qc, qc]
+    assert out.initial_logical_to_physicals == [{0: 0, 1: 1}, {0: 0, 1: 1}]
+    assert out.final_logical_to_physicals == [{0: 0, 1: 1}, {0: 0, 1: 1}]
 
 
 @mock.patch.dict("sys.modules", {"qtrl": None})

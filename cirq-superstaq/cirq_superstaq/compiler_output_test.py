@@ -26,7 +26,7 @@ def test_active_qubit_indices() -> None:
 
     assert css.active_qubit_indices(circuit) == [1, 3, 5]
 
-    with pytest.raises(ValueError, match="line qubits"):
+    with pytest.raises(TypeError, match="line qubits"):
         _ = css.active_qubit_indices(cirq.Circuit(cirq.X(cirq.GridQubit(1, 2))))
 
 
@@ -73,7 +73,7 @@ def test_measured_qubit_indices_with_circuit_operations() -> None:
     unrolled_circuit = cirq.unroll_circuit_op(circuit + subcircuit_op_mapped, tags_to_check=None)
     assert css.measured_qubit_indices(unrolled_circuit) == [1, 3, 5]
 
-    with pytest.raises(ValueError, match="line qubits"):
+    with pytest.raises(TypeError, match="line qubits"):
         _ = css.measured_qubit_indices(cirq.Circuit(cirq.measure(cirq.GridQubit(1, 2))))
 
 
@@ -157,7 +157,7 @@ def test_read_json_ibmq() -> None:
 
 def test_read_json_pulse_gate_circuits() -> None:
     qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
-    import qiskit
+    import qiskit  # noqa: PLC0415
 
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
@@ -165,7 +165,6 @@ def test_read_json_pulse_gate_circuits() -> None:
     qc_pulse = qiskit.QuantumCircuit(2)
     qc_pulse.h(0)
     qc_pulse.cx(0, 1)
-    qc_pulse.add_calibration("cx", [0, 1], qiskit.pulse.ScheduleBlock("foo"))
 
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
@@ -180,7 +179,6 @@ def test_read_json_pulse_gate_circuits() -> None:
     assert out.circuit == circuit
     assert out.pulse_gate_circuit == qc_pulse
     assert out.pulse_gate_circuit.duration == 30
-    assert out.pulse_gate_circuit[0].operation.duration == 10
     assert out.pulse_gate_circuit.op_start_times == [0, 10]
 
     json_dict = {
@@ -196,7 +194,6 @@ def test_read_json_pulse_gate_circuits() -> None:
     assert out.pulse_gate_circuits == [qc_pulse, qc_pulse]
     assert out.pulse_gate_circuits[0].duration == 30
     assert out.pulse_gate_circuits[1].duration == 300
-    assert out.pulse_gate_circuits[1][0].operation.duration == 100
     assert out.pulse_gate_circuits[1].op_start_times == [0, 100]
 
     with (
@@ -204,17 +201,17 @@ def test_read_json_pulse_gate_circuits() -> None:
         pytest.warns(UserWarning, match="qiskit-superstaq is required"),
     ):
         out = css.compiler_output.read_json(json_dict, circuits_is_list=False)
-        assert out.circuit == circuit
-        assert out.pulse_gate_circuit is None
+    assert out.circuit == circuit
+    assert out.pulse_gate_circuit is None
 
+    json_dict["pulse_gate_circuits"] = "not-a-serialized-circuit"
     with pytest.warns(
         UserWarning,
         match="Your compiled pulse gate circuits could not be deserialized.",
     ):
-        json_dict["pulse_gate_circuits"] = "not-a-serialized-circuit"
         out = css.compiler_output.read_json(json_dict, circuits_is_list=True)
-        assert out.circuits == [circuit, circuit]
-        assert out.pulse_gate_circuits is None
+    assert out.circuits == [circuit, circuit]
+    assert out.pulse_gate_circuits is None
 
 
 @mock.patch.dict("sys.modules", {"qtrl": None})

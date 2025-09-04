@@ -459,7 +459,7 @@ def test_qubit_subspace_gate() -> None:
 
 
 @pytest.mark.parametrize(
-    "sub_gate_type, qid_shape, subspaces",
+    ("sub_gate_type", "qid_shape", "subspaces"),
     [
         (cirq.XPowGate, (3,), None),
         (cirq.YPowGate, (3,), [(1, 2)]),

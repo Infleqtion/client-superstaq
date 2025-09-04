@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
 import qiskit
+from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 
 import qiskit_superstaq as qss
 
@@ -80,13 +81,15 @@ class SuperstaqProvider(gss.service.Service):
             api_version: The version of the API.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
             verbose: Whether to print to stdio and stderr on retriable errors.
-            cq_token: Token from CQ cloud. This is required to submit circuits to CQ hardware.
-            ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
-                to IBM hardware, or to access non-public IBM devices you may have access to.
+            cq_token: Token from CQ cloud. This may be required to submit circuits to CQ hardware.
+            ibmq_token: An optional IBM Quantum or IBM Cloud token. This may be required to submit
+                circuits to IBM hardware, or to access non-public IBM devices you may have access
+                to.
             ibmq_instance: An optional instance to use when running IBM jobs.
-            ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
-            use_stored_ibmq_credentials: Whether to retrieve IBM credentials from locally saved
-                accounts.
+            ibmq_channel: Optional type of IBM account. Must be either "ibm_quantum_platform" or
+                "ibm_cloud".
+            use_stored_ibmq_credentials: Boolean flag on whether to retrieve IBM credentials from
+                locally saved accounts or not. Defaults to `False`.
             ibmq_name: The name of the account to retrieve. The default is `default-ibm-quantum`.
             kwargs: Other optimization and execution parameters.
 
@@ -95,11 +98,19 @@ class SuperstaqProvider(gss.service.Service):
         """
         self._name = "superstaq_provider"
 
-        self._client = gss.superstaq_client._SuperstaqClient(
+        if api_version == "v0.2.0":
+            client_version: type[_SuperstaqClient | _SuperstaqClientV3] = _SuperstaqClient
+        elif api_version == "v0.3.0":
+            client_version = _SuperstaqClientV3
+        else:
+            raise ValueError("`api_version` can only take value 'v0.2.0' or 'v0.3.0'")
+
+        self._client = client_version(
             client_name="qiskit-superstaq",
             remote_host=remote_host,
             api_key=api_key,
             api_version=api_version,
+            circuit_type=gss.models.CircuitType.QISKIT,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
             cq_token=cq_token,
@@ -194,7 +205,7 @@ class SuperstaqProvider(gss.service.Service):
 
         target = jobs[job_ids[0]]["target"]
 
-        if all(target == val["target"] for val in jobs.values()):
+        if isinstance(target, str) and all(target == val["target"] for val in jobs.values()):
             return qss.SuperstaqJob(self.get_backend(target), job_id)
         else:
             raise gss.SuperstaqException("Job ids belong to jobs at different targets.")
@@ -558,7 +569,7 @@ class SuperstaqProvider(gss.service.Service):
             to post-process the measurement results and return the fidelity.
 
         Raises:
-            ValueError: If `circuit` is not a valid `qiskit.QuantumCircuit`.
+            TypeError: If `circuit` is not a valid `qiskit.QuantumCircuit`.
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         circuit_1 = rho_1[0]
@@ -575,7 +586,7 @@ class SuperstaqProvider(gss.service.Service):
             isinstance(circuit_1, qiskit.QuantumCircuit)
             and isinstance(circuit_2, qiskit.QuantumCircuit)
         ):
-            raise ValueError("Each state `rho_i` should contain a single circuit.")
+            raise TypeError("Each state `rho_i` should contain a single `qiskit.QuantumCircuit`.")
 
         serialized_circuit_1 = qss.serialization.serialize_circuits(circuit_1)
         serialized_circuit_2 = qss.serialization.serialize_circuits(circuit_2)

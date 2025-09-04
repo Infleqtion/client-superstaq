@@ -18,6 +18,7 @@ lint.select = [
   "A",      # flake8-builtins
   "ANN",    # flake8-annotations checks
   "ARG",    # Unused argument in a function/method
+  "ASYNC",  # flake8-async
   "B",      # flake8-bugbear checks
   "C",      # flake8-comprehensions, mccabe checks
   "COM818", # trailing-comma-on-bare-tuple error
@@ -30,29 +31,25 @@ lint.select = [
   "FLY",    # flynt checks
   "FURB",   # refurb checks
   "I",      # isort checks
+  "ICN",    # flake8-import-conventions
   "ISC",    # flake8-implicit-str-concat checks
-  "NPY201", # numpy2-deprecation
+  "NPY",    # numpy-specific checks
   "PERF",   # Perflint checks
   "PGH",    # pygrep-hooks checks
   "PIE",    # flake8-pie checks
   "PL",     # pylint checks
   "PLE",    # pylint errors
-  "PT001",  # pytest-fixture-incorrect-parentheses-style
-  "PT009",  # pytest-unittest-assertion
-  "PT018",  # pytest-composite-assertion
+  "PT",     # flake8-pytest-style
   "PYI",    # flake8-pyi checks
   "Q",      # flake8-quotes checks
   "RSE",    # flake8-raise checks
   "RUF",    # Ruff-specific checks
-  "SIM101", # Consider-merging-isinstance check
-  "SIM114", # if-with-same-arms check
-  "SIM210", # pylint's simplifiable-if-expression (1)
-  "SIM211", # pylint's simplifiable-if-expression (2)
-  "SIM300", # yoda-conditions check
+  "SIM",    # flake8-simplify checks
   "T10",    # flake8-debugger checks
   "T20",    # flake8-print checks
   "TC",     # flake8-type-checking checks
   "TID",    # flake8-tidy-imports
+  "TRY",    # tryceratops
   "UP",     # pyupgrade checks
   "W",      # pycodestyle warnings checks
 ]
@@ -87,10 +84,18 @@ lint.ignore = [
   "PLR2004",
   "PLW0127",
   "PLW2901",
+  "PT012",
+  "PT019",
+  "PT022",
   "PYI041",
   "RUF001",
   "RUF002",
+  "SIM102",
+  "SIM105",
+  "SIM108",
+  "SIM118",
   "TC003",
+  "TRY003",
   "UP038",
   # The following are excluded to not conflict with `ruff format`:
   "COM812",
@@ -135,39 +140,11 @@ max-complexity = 10
 [tool.ruff.lint.isort]
 case-sensitive = false
 
-[tool.black]
-color = true
-line_length = 100
-
-[tool.isort]
-profile = "black"
-line_length = 100
-color_output = true
-
-[tool.flake8]
-max-line-length = 100
-max-complexity = 10
-show_source = true
-statistics = true
-count = true
-enable-extensions = ["TC", "TC1"]
-extend-ignore = [
-  "E203",
-  "I100",
-  "I101",
-  "I201",
-  "I202",
-] # these errors conflict with black and/or isort
-type_checking_exempt_modules = ["collections.abc"]
-# Configuration for flake8-modern-annotations
-modern-annotations-postponed = "always"
-modern-annotations-deprecated = "always"
-modern-annotations-union = "always"
-modern-annotations-optional = "always"
 
 [tool.mypy]
 pretty = true
 ignore_missing_imports = true
+warn_redundant_casts = true
 show_error_codes = true
 disallow_any_generics = true
 disallow_incomplete_defs = true
@@ -187,89 +164,3 @@ exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "@overload"]
 [tool.coverage.run]
 include = ["./*"]
 concurrency = ["thread"]
-
-[tool.pylint.main]
-max-line-length = 100
-disable = "all"
-load-plugins = [
-  "pylint.extensions.docparams",
-  "pylint.extensions.docstyle",
-  "checks_superstaq.pylint_init_return",
-  "checks_superstaq.pylint_import_annotations",
-]
-output-format = "colorized"
-score = false
-reports = false
-enable = [
-  "anomalous-backslash-in-string",
-  "assert-on-tuple",
-  "bad-indentation",
-  "bad-option-value",
-  "bad-reversed-sequence",
-  "bad-super-call",
-  "consider-merging-isinstance",
-  "continue-in-finally",
-  "dangerous-default-value",
-  "docstyle",
-  "duplicate-argument-name",
-  "expression-not-assigned",
-  "function-redefined",
-  "import-future-annotations",
-  "inconsistent-mro",
-  "init-return-check",
-  "init-is-generator",
-  "line-too-long",
-  "lost-exception",
-  "missing-class-docstring",
-  "missing-function-docstring",
-  "missing-kwoa",
-  "mixed-line-endings",
-  "not-callable",
-  "no-value-for-parameter",
-  "nonexistent-operator",
-  "not-in-loop",
-  "parameter_documentation",
-  "pointless-statement",
-  "redefined-builtin",
-  "relative-beyond-top-level",
-  "return-arg-in-generator",
-  "return-in-init",
-  "return-outside-function",
-  "simplifiable-if-statement",
-  "syntax-error",
-  "too-many-function-args",
-  "trailing-whitespace",
-  "undefined-variable",
-  "unexpected-keyword-arg",
-  "unhashable-dict-key",
-  "unnecessary-pass",
-  "unreachable",
-  "unrecognized-inline-option",
-  "unused-argument",
-  "unused-import",
-  "unnecessary-semicolon",
-  "unused-variable",
-  "unused-wildcard-import",
-  "wildcard-import",
-  "wrong-import-order",
-  "wrong-import-position",
-  "yield-outside-function",
-]
-
-# Enable the optional checks by parameter_documentation
-[tool.pylint.parameter_documentation]
-accept-no-param-doc = false       # Do not accept totally missing parameter documentation.
-accept-no-raise-doc = false       # Do not accept totally missing raises documentation.
-accept-no-return-doc = false      # Do not accept totally missing return documentation.
-accept-no-yields-doc = false      # Do not accept missing yields annotations.
-default-docstring-type = "google"
-
-# Ignore long lines containing urls or pylint directives.
-[tool.pylint.format]
-ignore-long-lines = '^(.*#\w*pylint: disable.*|\s*(# )?<?https?://\S+>?)$'
-
-# List of members which are set dynamically and missed by pylint inference
-# system, and so shouldn't trigger E1101 when accessed. Python regular
-# expressions are accepted.
-[tool.pylint.typecheck]
-generated-members = "numpy.*"

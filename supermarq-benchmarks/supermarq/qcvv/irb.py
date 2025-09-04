@@ -20,6 +20,7 @@ from typing import Any
 
 import cirq
 import cirq.circuits
+import cirq_superstaq as css
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
@@ -547,9 +548,9 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             )
 
         if interleaved_gate is not None:
-            self.interleaved_gate: cirq.CliffordGate | None = cirq.CliffordGate.from_op_list(
-                [interleaved_gate(*qubits)], qubits
-            )
+            if not cirq.has_stabilizer_effect(interleaved_gate):
+                raise ValueError("The interleaved gate must be a Clifford gate.")
+            self.interleaved_gate: cirq.Gate | None = interleaved_gate
         else:
             self.interleaved_gate = None
 
@@ -732,7 +733,11 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             rb_sequence = base_sequence + [  # noqa: RUF005
                 _reduce_clifford_seq(cirq.inverse(base_sequence))  # type: ignore[arg-type]
             ]
-            rb_circuit = cirq.Circuit(self._clifford_gate_to_circuit(gate) for gate in rb_sequence)
+            rb_circuit = cirq.Circuit()
+            for k, gate in enumerate(rb_sequence):
+                rb_circuit += self._clifford_gate_to_circuit(gate)
+                if k < len(rb_sequence) - 1:
+                    rb_circuit += css.barrier(*self.qubits)
             samples.append(
                 Sample(
                     circuit=rb_circuit + cirq.measure(sorted(self.qubits)),
@@ -752,7 +757,10 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             )
             if self.interleaved_gate is not None:
                 # Find final gate
-                irb_sequence = [elem for x in base_sequence for elem in (x, self.interleaved_gate)]
+                gate_clifford_repr = cirq.CliffordGate.from_op_list(
+                    [self.interleaved_gate(*self.qubits)], self.qubits
+                )
+                irb_sequence = [elem for x in base_sequence for elem in (x, gate_clifford_repr)]
                 irb_sequence_final_gate = _reduce_clifford_seq(
                     cirq.inverse(irb_sequence)  # type: ignore[arg-type]
                 )
@@ -760,7 +768,9 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                 irb_circuit = cirq.Circuit()
                 for gate in base_sequence:
                     irb_circuit += self._clifford_gate_to_circuit(gate)
+                    irb_circuit += css.barrier(*self.qubits)
                     irb_circuit += self.interleaved_gate(*self.qubits).with_tags("no_compile")
+                    irb_circuit += css.barrier(*self.qubits)
                 # Add the final inverting gate
                 irb_circuit += self._clifford_gate_to_circuit(
                     irb_sequence_final_gate,

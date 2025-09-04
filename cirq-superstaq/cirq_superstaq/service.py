@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import numbers
+import uuid
 import warnings
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
@@ -25,7 +26,8 @@ import general_superstaq as gss
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-from general_superstaq import ResourceEstimate, superstaq_client
+from general_superstaq import ResourceEstimate
+from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 from scipy.optimize import curve_fit
 
 import cirq_superstaq as css
@@ -167,13 +169,15 @@ class Service(gss.service.Service):
             api_version: Version of the api.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
             verbose: Whether to print to stdio and stderr on retriable errors.
-            cq_token: Token from CQ cloud.This is required to submit circuits to CQ hardware.
-            ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
-                to IBM hardware, or to access non-public IBM devices you may have access to.
+            cq_token: Token from CQ cloud. This may be required to submit circuits to CQ hardware.
+            ibmq_token: An optional IBM Quantum or IBM Cloud token. This may be required to submit
+                circuits to IBM hardware, or to access non-public IBM devices you may have access
+                to.
             ibmq_instance: An optional instance to use when running IBM jobs.
-            ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
-            use_stored_ibmq_credentials: Whether to retrieve IBM credentials from locally saved
-                accounts.
+            ibmq_channel: Optional type of IBM account. Must be either "ibm_quantum_platform" or
+                "ibm_cloud".
+            use_stored_ibmq_credentials: Boolean flag on whether to retrieve IBM credentials from
+                locally saved accounts or not. Defaults to `False`.
             ibmq_name: The name of the account to retrieve. The default is `default-ibm-quantum`.
             kwargs: Other optimization and execution parameters.
 
@@ -181,11 +185,18 @@ class Service(gss.service.Service):
             EnvironmentError: If an API key was not provided and could not be found.
         """
         self.default_target = default_target
-        self._client = superstaq_client._SuperstaqClient(
+        if api_version == "v0.2.0":
+            client_version: type[_SuperstaqClient | _SuperstaqClientV3] = _SuperstaqClient
+        elif api_version == "v0.3.0":
+            client_version = _SuperstaqClientV3
+        else:
+            raise ValueError("`api_version` can only take value 'v0.2.0' or 'v0.3.0'")
+        self._client = client_version(
             client_name="cirq-superstaq",
             remote_host=remote_host,
             api_key=api_key,
             api_version=api_version,
+            circuit_type=gss.models.CircuitType.CIRQ,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
             cq_token=cq_token,
@@ -332,8 +343,9 @@ class Service(gss.service.Service):
         repetitions: int = 1000,
         target: str | None = None,
         method: str | None = None,
+        verbatim: bool = False,
         **kwargs: Any,
-    ) -> css.job.Job:
+    ) -> css.Job | css.JobV3:
         """Creates a new job to run the given circuit(s).
 
         Args:
@@ -341,6 +353,7 @@ class Service(gss.service.Service):
             repetitions: The number of times to repeat the circuit. Defaults to 1000.
             target: Where to run the job.
             method: The optional execution method.
+            verbatim: Run the provided circuit(s) verbatim (i.e. without compilation).
             kwargs: Other optimization and execution parameters.
 
         Returns:
@@ -359,17 +372,21 @@ class Service(gss.service.Service):
             repetitions=repetitions,
             target=target,
             method=method,
+            verbatim=verbatim,
             **kwargs,
         )
-        # Make a virtual job_id that aggregates all of the individual jobs
-        # into a single one that comma-separates the individual jobs.
-        job_id = ",".join(result["job_ids"])
-
+        if isinstance(self._client, _SuperstaqClient):
+            # Make a virtual job_id that aggregates all of the individual jobs
+            # into a single one that comma-separates the individual jobs.
+            job_id: str | uuid.UUID = ",".join(result["job_ids"])
+        else:
+            assert isinstance(result["job_id"], (str, uuid.UUID))
+            job_id = result["job_id"]
         # The returned job does not have fully populated fields; they will be filled out by
         # when the new job's status is first queried
         return self.get_job(job_id=job_id)
 
-    def get_job(self, job_id: str) -> css.job.Job:
+    def get_job(self, job_id: str | uuid.UUID) -> css.Job | css.JobV3:
         """Gets a job that has been created on the Superstaq API.
 
         Args:
@@ -382,7 +399,11 @@ class Service(gss.service.Service):
         Raises:
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
-        return css.job.Job(client=self._client, job_id=job_id)
+        if isinstance(self._client, _SuperstaqClient):
+            return css.Job(client=self._client, job_id=str(job_id))
+        else:
+            assert isinstance(self._client, _SuperstaqClientV3)
+            return css.JobV3(client=self._client, job_id=job_id)
 
     def resource_estimate(
         self, circuits: cirq.Circuit | Sequence[cirq.Circuit], target: str | None = None
@@ -632,7 +653,7 @@ class Service(gss.service.Service):
 
         base_entangling_gate = base_entangling_gate.lower()
         if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
-            raise ValueError("base_entangling_gate must be 'xx', 'zz', 'sxx', or 'szz'")
+            raise ValueError("`base_entangling_gate` must be 'xx', 'zz', 'sxx', or 'szz'")
 
         css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
@@ -878,7 +899,7 @@ class Service(gss.service.Service):
             to post-process the measurement results and return the fidelity.
 
         Raises:
-            ValueError: If `circuit` is not a valid `cirq.Circuit`.
+            TypeError: If `circuit` is not a valid `cirq.Circuit`.
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         circuit_1 = rho_1[0]
@@ -890,7 +911,7 @@ class Service(gss.service.Service):
         css.validation.validate_cirq_circuits(circuit_2)
 
         if not (isinstance(circuit_1, cirq.Circuit) and isinstance(circuit_2, cirq.Circuit)):
-            raise ValueError("Each state `rho_i` should contain a single circuit.")
+            raise TypeError("Each state `rho_i` should contain a single `cirq.Circuit`.")
 
         serialized_circuits_1 = css.serialization.serialize_circuits(circuit_1)
         serialized_circuits_2 = css.serialization.serialize_circuits(circuit_2)
@@ -1125,7 +1146,7 @@ class Service(gss.service.Service):
             def _objective(
                 x: np.typing.NDArray[np.int_], A: float, p: float
             ) -> np.typing.NDArray[np.float64]:
-                return A * p**x
+                return np.asarray(A * p**x)
 
             fit_data: defaultdict[str, float] = defaultdict(float)
 
@@ -1168,7 +1189,7 @@ class Service(gss.service.Service):
         def _objective(
             x: np.typing.NDArray[np.int_], A: float, p: float
         ) -> np.typing.NDArray[np.float64]:
-            return A * p**x
+            return np.asarray(A * p**x)
 
         e_f = 0.0
         for ps in averages.keys():
@@ -1202,7 +1223,7 @@ class Service(gss.service.Service):
         # Truncate legend labels
         if instance_information["n_channels"] > 10:
             truncated_legend_labels = (
-                legend_labels[:2] + ["..."] + legend_labels[-2:]
+                [*legend_labels[:2], "...", *legend_labels[-2:]]
                 if len(legend_labels) > 2
                 else legend_labels
             )

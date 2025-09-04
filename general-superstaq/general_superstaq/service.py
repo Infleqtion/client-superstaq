@@ -6,8 +6,14 @@ from collections.abc import Mapping, Sequence
 from typing import Any, TypeVar, overload
 
 import general_superstaq as gss
+from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 
 TQuboKey = TypeVar("TQuboKey")
+
+CLIENT_VERSION = {
+    "v0.2.0": _SuperstaqClient,
+    "v0.3.0": _SuperstaqClientV3,
+}
 
 
 class Service:
@@ -33,7 +39,8 @@ class Service:
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
         """
-        self._client = gss.superstaq_client._SuperstaqClient(
+        client_version = CLIENT_VERSION[api_version]
+        self._client = client_version(
             client_name="general-superstaq",
             remote_host=remote_host,
             api_key=api_key,
@@ -306,7 +313,7 @@ class Service:
         config = getattr(config, "_config_raw", config)  # required to serialize qtrl Managers
         if isinstance(config, dict):
             try:
-                import yaml
+                import yaml  # noqa: PLC0415
 
                 return yaml.safe_dump(config)
 
@@ -409,7 +416,7 @@ class Service:
 
         else:
             try:
-                import yaml
+                import yaml  # noqa: PLC0415
             except ImportError:
                 raise ModuleNotFoundError(
                     "The PyYAML package is required to parse AQT configuration files. "

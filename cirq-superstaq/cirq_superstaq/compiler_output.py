@@ -30,7 +30,7 @@ def active_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
         A list of active qubit indicies.
 
     Raises:
-        ValueError: If qubit indices are requested for non-line qubits.
+        TypeError: If qubit indices are requested for non-line qubits.
     """
     all_qubits: set[cirq.Qid] = set()
     for op in circuit.all_operations():
@@ -40,7 +40,7 @@ def active_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
     qubit_indices: list[int] = []
     for q in sorted(all_qubits):
         if not isinstance(q, (cirq.LineQubit, cirq.LineQid)):
-            raise ValueError("Qubit indices can only be determined for line qubits.")
+            raise TypeError("Qubit indices can only be determined for line qubits.")
         qubit_indices.append(int(q))
 
     return qubit_indices
@@ -60,7 +60,7 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
         A list of the measurement qubit indicies.
 
     Raises:
-        ValueError: If qubit indices are requested for non-line qubits.
+        TypeError: If qubit indices are requested for non-line qubits.
     """
     unrolled_circuit = cirq.unroll_circuit_op(circuit, deep=True, tags_to_check=None)
 
@@ -71,7 +71,7 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
     qubit_indices: set[int] = set()
     for q in measured_qubits:
         if not isinstance(q, (cirq.LineQubit, cirq.LineQid)):
-            raise ValueError("Qubit indices can only be determined for line qubits")
+            raise TypeError("Qubit indices can only be determined for line qubits")
         qubit_indices.add(int(q))
 
     return sorted(qubit_indices)
@@ -170,6 +170,7 @@ def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutp
     final_logical_to_physicals: list[dict[cirq.Qid, cirq.Qid]] = list(
         map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
     )
+
     pulse_gate_circuits = None
 
     if "pulse_gate_circuits" in json_dict:
