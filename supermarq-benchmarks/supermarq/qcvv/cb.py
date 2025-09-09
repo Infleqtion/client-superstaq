@@ -103,13 +103,13 @@ class CBResults(QCVVResults):
         """Plots the experiment data and the corresponding fits.
 
         Args:
-            filename: An optional where the plot is saved.
+            filename: An optional file where the plot is saved.
 
         Returns:
             A matplotlib figure containing the plots.
         """
         processes = self._channel_expectations.process.unique()
-        fig, axs = plt.subplots(len(processes), 2, figsize=(10, 10))
+        fig, axs = plt.subplots(len(processes), 2, figsize=(15, 10))
 
         if not self.experiment._undressed_process:
             self._plot_decay("dressed", axs[0])
@@ -124,6 +124,75 @@ class CBResults(QCVVResults):
             fig.savefig(filename, bbox_inches="tight")
 
         return fig
+
+    def _plot_decay(self, process: str, ax: plt.Axes) -> None:
+        """Plots the decay term.
+
+        Args:
+            process: The kind of estimation to plot (dressed or undressed).
+            ax: The axis to plot to.
+        """
+        expectations = self._channel_expectations[self._channel_expectations.process == process]
+        fidelities = self.channel_fidelities[self.channel_fidelities.process == process]
+        pauli_channels = expectations.pauli_channel.unique()
+        depths = expectations.cycle_depth.unique()
+        for p_c in pauli_channels:
+            ys = expectations[expectations.pauli_channel == p_c].expectation_mean
+            ax.errorbar(
+                x=depths,
+                y=ys,
+                yerr=expectations[expectations.pauli_channel == p_c].expectation_delta,
+                label=p_c,
+                fmt="o",
+                capsize=5,
+            )
+            color = ax.get_lines()[-1].get_color()
+            xs = np.linspace(0, 2 * max(depths))
+            a = (
+                expectations[
+                    (expectations.pauli_channel == p_c) & (expectations.cycle_depth == depths[0])
+                ].expectation_mean.iloc[0]
+                / (fidelities[fidelities.pauli_channel == p_c].fidelity.iloc[0]) ** depths[0]
+            )
+            reg = a * fidelities[fidelities.pauli_channel == p_c].fidelity.iloc[0] ** xs
+            ax.plot(xs, reg, color=color)
+        ax.set_xlabel("Number of cycles")
+        ax.set_ylabel("Expectation value")
+        ax.legend()
+
+    def _plot_fidelities(self, process: str, ax: plt.Axes) -> None:
+        """Plots the process fidelity and the channel fidelities.
+
+        Args:
+            process: The type of fidelity to plot (dressed or undressed).
+            ax: The axis to plot to.
+        """
+        fidelities = self.channel_fidelities[self.channel_fidelities.process == process]
+        if process == "dressed":
+            estimate = self.process_fidelity
+            std = self.process_fidelity_std
+        else:
+            estimate = self.undressed_process_fidelity
+            std = self.undressed_process_fidelity_std
+        ax.errorbar(
+            x=fidelities.pauli_channel,
+            y=fidelities.fidelity,
+            yerr=fidelities.delta,
+            fmt="D",
+            capsize=5,
+            label="Pauli fidelity",
+        )
+        ax.axhline(y=estimate, label="process fidelity")
+        xs = np.linspace(*ax.get_xlim())
+        ax.fill_between(
+            xs,
+            estimate - std,
+            estimate + std,
+            alpha=0.2,
+        )
+        ax.set_xlabel("Pauli channel")
+        ax.set_ylabel("Fidelity")
+        ax.legend()
 
     def print_results(self) -> None:
         """Prints the result of the experiment."""
@@ -237,75 +306,6 @@ class CBResults(QCVVResults):
                 (fidelities[fidelities.process == "undressed"].delta ** 2).sum()
             ) / len(fidelities)
 
-    def _plot_decay(self, process: str, ax: plt.Axes) -> None:
-        """Plots the decay term.
-
-        Args:
-            process: The kind of estimation to plot (dressed or undressed).
-            ax: The axis to plot to.
-        """
-        expectations = self._channel_expectations[self._channel_expectations.process == process]
-        fidelities = self.channel_fidelities[self.channel_fidelities.process == process]
-        pauli_channels = expectations.pauli_channel.unique()
-        depths = expectations.cycle_depth.unique()
-        for p_c in pauli_channels:
-            ys = expectations[expectations.pauli_channel == p_c].expectation_mean
-            ax.errorbar(
-                x=depths,
-                y=ys,
-                yerr=expectations[expectations.pauli_channel == p_c].expectation_delta,
-                label=p_c,
-                fmt="o",
-                capsize=5,
-            )
-            color = ax.get_lines()[-1].get_color()
-            xs = np.linspace(0, 2 * max(depths))
-            a = (
-                expectations[
-                    (expectations.pauli_channel == p_c) & (expectations.cycle_depth == depths[0])
-                ].expectation_mean.iloc[0]
-                / (fidelities[fidelities.pauli_channel == p_c].fidelity.iloc[0]) ** depths[0]
-            )
-            reg = a * fidelities[fidelities.pauli_channel == p_c].fidelity.iloc[0] ** xs
-            ax.plot(xs, reg, color=color)
-        ax.set_xlabel("Number of cycles")
-        ax.set_ylabel("Expectation value")
-        ax.legend()
-
-    def _plot_fidelities(self, process: str, ax: plt.Axes) -> None:
-        """Plots the process fidelity and the channel fidelities.
-
-        Args:
-            process: The type of fidelity to plot (dressed or undressed).
-            ax: The axis to plot to.
-        """
-        fidelities = self.channel_fidelities[self.channel_fidelities.process == process]
-        if process == "dressed":
-            estimate = self.process_fidelity
-            std = self.process_fidelity_std
-        else:
-            estimate = self.undressed_process_fidelity
-            std = self.undressed_process_fidelity_std
-        ax.errorbar(
-            x=fidelities.pauli_channel,
-            y=fidelities.fidelity,
-            yerr=fidelities.delta,
-            fmt="D",
-            capsize=5,
-            label="Pauli fidelity",
-        )
-        ax.axhline(y=estimate, label="process fidelity")
-        xs = np.linspace(*ax.get_xlim())
-        ax.fill_between(
-            xs,
-            estimate - std,
-            estimate + std,
-            alpha=0.2,
-        )
-        ax.set_xlabel("Pauli channel")
-        ax.set_ylabel("Fidelity")
-        ax.legend()
-
     def _process_probabilities(self) -> pd.DataFrame:
         """Processes the probabilities generated by sampling the circuits into the data structures
         needed for analyzing the results.
@@ -372,6 +372,7 @@ class CB(QCVVExperiment[CBResults]):
         num_circuits: int = 1,
         process_order_factors: Sequence[int] | None = None,
         undressed_process: bool = False,
+        compile_process: bool = False,
         *,
         random_seed: int | np.random.Generator | None = None,
         _samples: Sequence[Sample] | None = None,
@@ -386,50 +387,45 @@ class CB(QCVVExperiment[CBResults]):
             num_circuits: The number of circuits to generate per depth.
             process_order_factors: The factors by which to multiply the process order.
             undressed_process: Whether to estimate the undressed process fidelity.
+            compile_process: Whether to compile the process's circuit. If False, requires the
+            circuit to be written using the target's native gate set.
             random_seed: An optional seed to use for randomization.
             kwargs: keyword arguments.
         """
         if process_order_factors is None:
             process_order_factors = [1, 2]
         elif len(process_order_factors) != 2:
-            raise ValueError("Cycle benchmarking requires two factors")
+            raise ValueError("Cycle Benchmarking requires two factors")
 
-        check, compiled_circuit = CB._is_Clifford(process_circuit)
-        if not check:
-            raise RuntimeError("This cycle benchmarking is only valid for Clifford elements.")
         if process_circuit.has_measurements():
             raise RuntimeError("The process circuit must not contain measurements.")
+
+        compiled_circuit = CB._is_clifford(process_circuit)
 
         self._matrix_order = self._find_process_order(compiled_circuit)
 
         cycle_depth = [f * self._matrix_order for f in process_order_factors]
 
         self._process_circuit = cirq.Circuit()
-        # Prevent internal compiler optimizations
-        for op in process_circuit.all_operations():
-            self._process_circuit += op.with_tags("no_compile")
 
-        self.qubits = list(process_circuit.all_qubits())
+        if not compile_process:
+            # Prevents internal compiler optimizations
+            for op in process_circuit.all_operations():
+                self._process_circuit += op.with_tags("no_compile")
+
+        self.qubits = tuple(process_circuit.all_qubits())
         self._num_qubits = len(self.qubits)
         self._rng = np.random.default_rng(random_seed)
 
         if isinstance(pauli_channels, list):
             self.pauli_channels = []
-            for channel in set(pauli_channels):
+            for channel in set(pauli_channels):  # Removes duplicate
                 if len(channel) != self._num_qubits:
                     raise RuntimeError(
                         f"All Pauli channels must be over {self._num_qubits}"
                         f" qubits. {channel} is over {len(channel)} qubits."
                     )
-                self.pauli_channels.append(
-                    (
-                        channel,
-                        cirq.Moment(
-                            STRING_TO_PAULI[pauli](qubit)
-                            for (pauli, qubit) in zip(channel, self.sorted_qubits)
-                        ),
-                    )
-                )
+                self.pauli_channels.append(channel)
         elif isinstance(pauli_channels, int):
             self.pauli_channels = self._generate_n_qubit_pauli_moments(pauli_channels)
         else:
@@ -459,6 +455,49 @@ class CB(QCVVExperiment[CBResults]):
     ###################
     # Private Methods #
     ###################
+    @staticmethod
+    def _is_clifford(circuit: cirq.Circuit) -> cirq.Circuit:
+        """Checks if the circuit is a Clifford circuit by compiling it to CZ and
+        rotations gates and checking that all operations are stabilizer operations.
+
+        Args:
+            circuit: The circuit to check.
+
+        Returns:
+            A tuple containing a `bool` indicating if the circuit is a Clifford circuit
+            and the `cirq.Cicuit` compiled circuit.
+        """
+        compiled_circuit = cirq.optimize_for_target_gateset(circuit, gateset=cirq.CZTargetGateset())
+        check = True
+        for op in compiled_circuit.all_operations():
+            check &= cirq.has_stabilizer_effect(op)
+        if not check:
+            raise RuntimeError("Cycle Benchmarking is only valid for Clifford elements.")
+        return compiled_circuit
+
+    @staticmethod
+    def _find_process_order(circuit: cirq.Circuit, max_depth: int = 50) -> int:
+        """Finds the order of the process via the Clifford tableau representation.
+
+        Args:
+            circuit: The circuit to find the order of.
+            max_depth: The maximum depth to search for the order.
+
+        Returns:
+            The order of the process.
+        """
+        num_qubits = len(circuit.all_qubits())
+        tableau = cirq.CliffordTableau(num_qubits)
+        identity = np.eye(2 * num_qubits, dtype=int)
+        zeros = np.zeros(2 * num_qubits, dtype=int)
+        for i in range(max_depth):
+            CB._apply_circuit_to_tableau(circuit, tableau)
+            mat = tableau.matrix().astype(int)
+            phases = tableau.rs.astype(int)
+            if np.array_equal(mat, identity) and np.array_equal(phases, zeros):
+                return i + 1
+        raise RuntimeError(f"Could not find a circuit order less than {max_depth}")
+
     @staticmethod
     def _apply_circuit_to_tableau(circuit: cirq.Circuit, tableau: cirq.CliffordTableau) -> None:
         """Turns the circuit into a Clifford tableau.
@@ -491,6 +530,68 @@ class CB(QCVVExperiment[CBResults]):
                     exponent=op.gate.exponent,
                 )
 
+    def _generate_n_qubit_pauli_moments(
+        self,
+        num_channels: int = 1,
+    ) -> list[str]:
+        """Generates distinct n-qubit random Pauli strings. If the number of
+        channels is greater than the number of possible Pauli strings, it will
+        generate all possible Pauli strings.
+
+        Args:
+            num_channels: Number of Pauli strings to generate.
+
+        Returns:
+            Returns a `list` of `tuple` object of n-qubit pauli strings and their
+            corresponding gate operations.
+        """
+        if self._num_qubits * np.log(4) <= np.log(num_channels):
+            # Generate all possible Pauli strings
+            return self._generate_all_pauli_strings()
+        else:
+            # Generate distinct random Pauli strings
+            return self._generate_random_pauli_strings(num_channels)
+
+    def _generate_all_pauli_strings(self) -> list[str]:
+        """Generates all possible Pauli strings of a given length.
+
+        Returns:
+            A list of Pauli strings.
+        """
+        paulis = list(STRING_TO_PAULI.keys())
+        pauli_strings: list[str] = []
+        for i in range(4**self._num_qubits):
+            pauli_string = ""
+            for _ in range(self._num_qubits):
+                pauli_string += paulis[i % 4]
+                i //= 4
+            pauli_strings.append(pauli_string)
+        return pauli_strings
+
+    def _generate_random_pauli_strings(self, num_channels: int = 1) -> list[str]:
+        """Generates distinct random Pauli strings of a given length.
+
+        Args:
+            num_channels: The number of Pauli strings to generate.
+
+        Returns:
+            A list of Pauli strings.
+        """
+        pauli_strings: list[str] = []
+        for _ in range(num_channels):
+            paulis = self._rng.choice(list(STRING_TO_PAULI.keys()), size=self._num_qubits)
+            pauli_string: str = "".join(paulis)
+            while pauli_string in pauli_strings:
+                paulis = self._rng.choice(list(STRING_TO_PAULI.keys()), size=self._num_qubits)
+                pauli_string = "".join(paulis)
+            pauli_strings.append(pauli_string)
+        return pauli_strings
+
+    def _get_pauli_moment(self, pauli_str: str) -> cirq.Moment:
+        return cirq.Moment(
+            STRING_TO_PAULI[pauli](qubit) for (pauli, qubit) in zip(pauli_str, self.sorted_qubits)
+        )
+
     def _build_circuits(self, num_circuits: int, cycle_depths: Iterable[int]) -> Sequence[Sample]:
         """Build a list of random circuits to perform the CB experiment with.
 
@@ -505,13 +606,13 @@ class CB(QCVVExperiment[CBResults]):
         for channel, depth, k in tqdm.contrib.itertools.product(
             self.pauli_channels, cycle_depths, range(num_circuits), desc="Building circuits"
         ):
-            circuit, c_of_p = self._generate_full_cb_circuit(channel=channel[0], depth=depth)
+            circuit, c_of_p = self._generate_full_cb_circuit(channel=channel, depth=depth)
             samples.append(
                 Sample(
                     circuit_realization=k,
                     circuit=circuit,
                     data={
-                        "pauli_channel": channel[0],
+                        "pauli_channel": channel,
                         "cycle_depth": depth,
                         "c_of_p": c_of_p.frozen(),
                         "circuit": "process",
@@ -520,22 +621,69 @@ class CB(QCVVExperiment[CBResults]):
             )
             if self._undressed_process:  # Compare with identity process
                 circuit, c_of_p = self._generate_full_cb_circuit(
-                    channel=channel[0], depth=depth, process=False
+                    channel=channel, depth=depth, process=False
                 )
                 samples.append(
                     Sample(
                         circuit_realization=k,
                         circuit=circuit,
                         data={
-                            "pauli_channel": channel[0],
+                            "pauli_channel": channel,
                             "cycle_depth": depth,
                             "c_of_p": c_of_p.frozen(),
                             "circuit": "identity",
                         },
                     )
                 )
-
         return samples
+
+    def _generate_full_cb_circuit(
+        self, channel: str, depth: int, process: bool = True
+    ) -> tuple[cirq.Circuit, cirq.MutablePauliString[cirq.Qid]]:
+        """Creates the full Cycle Benchmarking circuit.
+
+        Args:
+            channel: The Pauli string of the particular Pauli eigenbasis channel.
+            depth: The number of random Pauli cycle layers interleaved (or not) with the process.
+            process: Wheter the process should be included or not.
+
+        Returns:
+            Returns a `tuple` containing the CB `cirq.Circuit` and a
+            `cirq.MutablePauliString` object representing C(P) superoperator.
+        """
+        state_prep_circuit, pauli_matrix = self._state_prep_circuit(channel)
+
+        bulk_circuit, c_superoperator = self._cb_bulk_circuit(depth, process)
+
+        inverse_circuit, c_of_p = self._inversion_circuit(pauli_matrix, c_superoperator)
+
+        full_cb_circuit = cirq.Circuit(
+            state_prep_circuit + bulk_circuit + inverse_circuit + cirq.measure(self.qubits)
+        )
+        return full_cb_circuit, c_of_p
+
+    def _state_prep_circuit(
+        self, channel: str
+    ) -> tuple[cirq.Circuit, cirq.MutablePauliString[cirq.Qid]]:
+        """Prepares the initial state for CB, which is the +1 eigenstate of the
+        Pauli channel.
+
+        Args:
+            channel: The Pauli channel of which the +1 eigenstate is prepared.
+
+        Returns:
+            Returns a `tuple` object containing the `cirq.Circuit` resulting
+            in the eigenstate and a `cirq.MutablePauliString` object
+            representing the Pauli string.
+        """
+        channel_basis_circuit = cirq.Circuit()
+        channel_basis_circuit.append(
+            [STRING_TO_ROTATION[s](self.sorted_qubits[ii]) for ii, s in enumerate(channel)]
+        )
+        channel_pauli_matrix: cirq.MutablePauliString[cirq.Qid] = cirq.MutablePauliString(
+            self._get_pauli_moment(channel)
+        )
+        return channel_basis_circuit, channel_pauli_matrix
 
     def _cb_bulk_circuit(
         self, depth: int, process: bool = True
@@ -555,7 +703,7 @@ class CB(QCVVExperiment[CBResults]):
         bulk_circuit = cirq.Circuit()
 
         # Generate initial Pauli layer
-        zeroth_moment = self._generate_n_qubit_pauli_moments()[0][1]
+        zeroth_moment = self._get_pauli_moment(self._generate_n_qubit_pauli_moments()[0])
 
         # Append to bulk circuit and mutable Pauli string
         bulk_circuit.append(zeroth_moment)
@@ -568,7 +716,7 @@ class CB(QCVVExperiment[CBResults]):
             if process:
                 bulk_circuit += self._process_circuit
 
-            moment = self._generate_n_qubit_pauli_moments()[0][1]
+            moment = self._get_pauli_moment(self._generate_n_qubit_pauli_moments()[0])
             bulk_circuit.append(moment, strategy=cirq.circuits.InsertStrategy.NEW_THEN_INLINE)
 
             # Pauli string operations
@@ -578,162 +726,6 @@ class CB(QCVVExperiment[CBResults]):
             aggregate_pauli_string.inplace_right_multiply_by(ith_pauli_string)
 
         return bulk_circuit, aggregate_pauli_string
-
-    @staticmethod
-    def _find_process_order(circuit: cirq.Circuit, max_depth: int = 50) -> int:
-        """Finds the order of the process via the Clifford tableau representation.
-
-        Args:
-            circuit: The circuit to find the order of.
-            max_depth: The maximum depth to search for the order.
-
-        Returns:
-            The order of the process.
-        """
-        num_qubits = len(circuit.all_qubits())
-        tableau = cirq.CliffordTableau(num_qubits)
-        identity = np.eye(2 * num_qubits, dtype=int)
-        zeros = np.zeros(2 * num_qubits, dtype=int)
-        for i in range(max_depth):
-            CB._apply_circuit_to_tableau(circuit, tableau)
-            mat = tableau.matrix().astype(int)
-            phases = tableau.rs.astype(int)
-            if np.array_equal(mat, identity) and np.array_equal(phases, zeros):
-                return i + 1
-        raise RuntimeError(f"Could not find a circuit order less than {max_depth}")
-
-    @classmethod
-    def _from_json_dict_(
-        cls,
-        process_circuit: str,
-        pauli_channels: list[str] | int,
-        num_circuits: int,
-        process_order_factors: list[int],
-        undressed_process: bool,
-        **kwargs: Any,
-    ) -> Self:
-        """Creates a Cycle Benchmarking experiment from a JSON dictionary."""
-        return cls(
-            process_circuit=cirq.read_json(json_text=process_circuit),
-            pauli_channels=pauli_channels,
-            num_circuits=num_circuits,
-            process_order_factors=process_order_factors,
-            undressed_process=undressed_process,
-            **kwargs,
-        )
-
-    def _json_dict_(self) -> dict[str, Any]:
-        """Creates a JSON dictionary from a Cycle Benchmarking experiment."""
-        factors = [depth // self._matrix_order for depth in self.cycle_depths]
-        json_dict = super()._json_dict_()
-        json_dict.pop("cycle_depths")
-        json_dict.pop("qubits")
-        return {
-            "process_circuit": cirq.to_json(self._process_circuit),
-            "pauli_channels": [channel[0] for channel in self.pauli_channels],
-            "num_circuits": self.num_circuits,
-            "process_order_factors": factors,
-            "undressed_process": self._undressed_process,
-            "random_seed": self._rng,
-            **json_dict,
-        }
-
-    def _generate_full_cb_circuit(
-        self, channel: str, depth: int, process: bool = True
-    ) -> tuple[cirq.Circuit, cirq.MutablePauliString[cirq.Qid]]:
-        """Creates the full Cycle Benchmarking circuit.
-
-        Args:
-            channel: String representing the Pauli string of the particular
-                Pauli eigenbasis channel.
-            depth: Integer representing the number of repeated noisy implementations
-                of the process circuit interleaved with random Pauli cycle layers.
-            process:  Boolean represnting wheter the process should be included or not.
-
-        Returns:
-            Returns a `tuple` containing the CB `cirq.Circuit` and a
-            `cirq.MutablePauliString` object representing C(P) superoperator.
-        """
-        state_prep_circuit, pauli_matrix = self._state_prep_circuit(channel)
-
-        bulk_circuit, c_superoperator = self._cb_bulk_circuit(depth, process)
-
-        inverse_circuit, c_of_p = self._inversion_circuit(pauli_matrix, c_superoperator)
-
-        full_cb_circuit = cirq.Circuit(
-            state_prep_circuit + bulk_circuit + inverse_circuit + cirq.measure(self.qubits)
-        )
-        return full_cb_circuit, c_of_p
-
-    def _generate_all_pauli_strings(self) -> list[tuple[str, cirq.Moment]]:
-        """Generates all possible Pauli strings of a given length.
-
-        Returns:
-            A list of tuples containing the Pauli string and the corresponding gate operations.
-        """
-        paulis = list(STRING_TO_PAULI.keys())
-        pauli_strings: list[str] = []
-        pauli_moments: list[cirq.Moment] = []
-        for i in range(4**self._num_qubits):
-            pauli_string = ""
-            for _ in range(self._num_qubits):
-                pauli_string += paulis[i % 4]
-                i //= 4
-            pauli_strings.append(pauli_string)
-            pauli_moment: cirq.Moment = cirq.Moment(
-                STRING_TO_PAULI[pauli](qubit) for (pauli, qubit) in zip(paulis, self.sorted_qubits)
-            )
-            pauli_moments.append(pauli_moment)
-        return list(zip(pauli_strings, pauli_moments))
-
-    def _generate_random_pauli_strings(
-        self, num_channels: int = 1
-    ) -> list[tuple[str, cirq.Moment]]:
-        """Generates distinct random Pauli strings of a given length.
-
-        Args:
-            num_channels: The number of Pauli strings to generate.
-
-        Returns:
-            A list of tuples containing the Pauli string and the corresponding
-            gate operations.
-        """
-        pauli_strings: list[str] = []
-        pauli_moments: list[cirq.Moment] = []
-        for _ in range(num_channels):
-            paulis = self._rng.choice(list(STRING_TO_PAULI.keys()), size=self._num_qubits)
-            pauli_string: str = "".join(paulis)
-            while pauli_string in pauli_strings:
-                paulis = self._rng.choice(list(STRING_TO_PAULI.keys()), size=self._num_qubits)
-                pauli_string = "".join(paulis)
-            pauli_strings.append(pauli_string)
-            pauli_moment: cirq.Moment = cirq.Moment(
-                STRING_TO_PAULI[pauli](qubit) for (pauli, qubit) in zip(paulis, self.sorted_qubits)
-            )
-            pauli_moments.append(pauli_moment)
-        return list(zip(pauli_strings, pauli_moments))
-
-    def _generate_n_qubit_pauli_moments(
-        self,
-        num_channels: int = 1,
-    ) -> list[tuple[str, cirq.Moment]]:
-        """Generates distinct n-qubit random Pauli strings. If the number of
-        channels is greater than the number of possible Pauli strings, it will
-        generate all possible Pauli strings.
-
-        Args:
-            num_channels: Number of Pauli strings to generate.
-
-        Returns:
-            Returns a `list` of `tuple` object of n-qubit pauli strings and their
-            corresponding gate operations.
-        """
-        if self._num_qubits * np.log(4) <= np.log(num_channels):
-            # Generate all possible Pauli strings
-            return self._generate_all_pauli_strings()
-        else:
-            # Generate distinct random Pauli strings
-            return self._generate_random_pauli_strings(num_channels)
 
     def _inversion_circuit(
         self,
@@ -771,43 +763,38 @@ class CB(QCVVExperiment[CBResults]):
 
         return inverse_circuit, channel_pauli_matrix  # Returns B^{\dagger} layer and C(P)
 
-    @staticmethod
-    def _is_Clifford(circuit: cirq.Circuit) -> tuple[bool, cirq.Circuit]:
-        """Checks if the circuit is a Clifford circuit by compiling it to CZ and
-        rotations gates and checking that all operations are stabilizer operations.
-
-        Args:
-            circuit: The circuit to check.
-
-        Returns:
-            A tuple containing a `bool` indicating if the circuit is a Clifford circuit
-            and the `cirq.Cicuit` compiled circuit.
-        """
-        compiled_circuit = cirq.optimize_for_target_gateset(circuit, gateset=cirq.CZTargetGateset())
-        check = True
-        for op in compiled_circuit.all_operations():
-            check &= cirq.has_stabilizer_effect(op)
-        return check, compiled_circuit
-
-    def _state_prep_circuit(
-        self, channel: str
-    ) -> tuple[cirq.Circuit, cirq.MutablePauliString[cirq.Qid]]:
-        """Prepares the initial state for CB, which is the +1 eigenstate of the
-        Pauli channel.
-
-        Args:
-            channel: The Pauli channel of which the +1 eigenstate is prepared.
-
-        Returns:
-            Returns a `tuple` object containing the `cirq.Circuit` resulting
-            in the eigenstate and a `cirq.MutablePauliString` object
-            representing the Pauli string.
-        """
-        channel_basis_circuit = cirq.Circuit()
-        channel_basis_circuit.append(
-            [STRING_TO_ROTATION[s](self.sorted_qubits[ii]) for ii, s in enumerate(channel)]
+    @classmethod
+    def _from_json_dict_(
+        cls,
+        process_circuit: str,
+        pauli_channels: list[str] | int,
+        num_circuits: int,
+        process_order_factors: list[int],
+        undressed_process: bool,
+        **kwargs: Any,
+    ) -> Self:
+        """Creates a Cycle Benchmarking experiment from a JSON dictionary."""
+        return cls(
+            process_circuit=cirq.read_json(json_text=process_circuit),
+            pauli_channels=pauli_channels,
+            num_circuits=num_circuits,
+            process_order_factors=process_order_factors,
+            undressed_process=undressed_process,
+            **kwargs,
         )
-        channel_pauli_matrix: cirq.MutablePauliString[cirq.Qid] = cirq.MutablePauliString(
-            cirq.Moment(STRING_TO_PAULI[s](self.sorted_qubits[ii]) for ii, s in enumerate(channel))
-        )
-        return channel_basis_circuit, channel_pauli_matrix
+
+    def _json_dict_(self) -> dict[str, Any]:
+        """Creates a JSON dictionary from a Cycle Benchmarking experiment."""
+        factors = [depth // self._matrix_order for depth in self.cycle_depths]
+        json_dict = super()._json_dict_()
+        json_dict.pop("cycle_depths")
+        json_dict.pop("qubits")
+        return {
+            "process_circuit": cirq.to_json(self._process_circuit),
+            "pauli_channels": [channel for channel in self.pauli_channels],
+            "num_circuits": self.num_circuits,
+            "process_order_factors": factors,
+            "undressed_process": self._undressed_process,
+            "random_seed": self._rng,
+            **json_dict,
+        }

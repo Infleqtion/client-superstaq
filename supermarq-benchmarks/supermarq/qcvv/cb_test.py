@@ -18,7 +18,6 @@ from __future__ import annotations
 import itertools
 import os
 import pathlib
-from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import cirq
@@ -29,9 +28,6 @@ import pytest
 
 from supermarq.qcvv import CB, CBResults
 
-if TYPE_CHECKING:
-    from pytest import FixtureRequest
-
 
 @pytest.fixture(scope="session", autouse=True)
 def patch_tqdm() -> None:
@@ -40,7 +36,7 @@ def patch_tqdm() -> None:
 
 def test_bad_cb_init() -> None:
     with pytest.raises(
-        RuntimeError, match="This cycle benchmarking is only valid for Clifford elements."
+        RuntimeError, match="Cycle Benchmarking is only valid for Clifford elements."
     ):
         qubit = cirq.LineQubit(0)
         process = cirq.Circuit([cirq.T(qubit)])
@@ -63,17 +59,17 @@ def test_bad_cb_init() -> None:
     with pytest.raises(RuntimeError, match="The process circuit must not contain measurements."):
         qubits = cirq.LineQubit.range(2)
         process = cirq.Circuit([cirq.X(qubits[0]), cirq.Z(qubits[1]), cirq.M(qubits)])
-        CB(process, pauli_channels=["Y"])
+        CB(process, pauli_channels=["YY"])
 
-    with pytest.raises(ValueError, match="Cycle benchmarking requires two factors"):
+    with pytest.raises(ValueError, match="Cycle Benchmarking requires two factors"):
         qubits = cirq.LineQubit.range(2)
         process = cirq.Circuit([cirq.X(qubits[0]), cirq.Z(qubits[1])])
-        CB(process, pauli_channels=["Y"], process_order_factors=[1])
+        CB(process, pauli_channels=["YY"], process_order_factors=[1])
 
     with pytest.raises(TypeError, match="must be a list of Pauli strings or an integer"):
         qubits = cirq.LineQubit.range(2)
         process = cirq.Circuit([cirq.X(qubits[0]), cirq.Z(qubits[1])])
-        CB(process, pauli_channels="Y")
+        CB(process, pauli_channels="a")
 
 
 def test_channels_cb_init() -> None:
@@ -132,7 +128,7 @@ def test_num_samples_cb_init() -> None:
 def test_find_process_order() -> None:
     qubits = cirq.LineQubit.range(2)
     process = cirq.Circuit([cirq.H(qubits[0]), cirq.CX(qubits[0], qubits[1])])
-    _, compiled_circuit = CB._is_Clifford(process)
+    compiled_circuit = CB._is_clifford(process)
     experiment = CB(process, pauli_channels=1)
     assert experiment._find_process_order(compiled_circuit) == 8
 
@@ -269,7 +265,7 @@ def test_from_json_dict() -> None:
         undressed_process=False,
     )
 
-    assert {m[0] for m in experiment.pauli_channels} == {"XX", "YY"}
+    assert {m for m in experiment.pauli_channels} == {"XX", "YY"}
     assert experiment.cycle_depths == [4, 8]
     assert not experiment._undressed_process
     assert len(experiment.samples) == 8
@@ -413,7 +409,7 @@ def undressed_cb_results() -> CBResults:
 
 
 @pytest.mark.parametrize("results_name", ["dressed_cb_results", "undressed_cb_results"])
-def test_results_not_analysed(results_name: str, request: FixtureRequest) -> None:
+def test_results_not_analysed(results_name: str, request: pytest.FixtureRequest) -> None:
     results = request.getfixturevalue(results_name)
     for attr in ["channel_fidelities", "process_fidelity", "process_fidelity_std"]:
         with pytest.raises(RuntimeError, match="Value has not yet been estimated"):
@@ -455,20 +451,20 @@ def test_results_analyse(dressed_cb_results: CBResults) -> None:
 
 
 @pytest.mark.parametrize("results_name", ["dressed_cb_results", "undressed_cb_results"])
-def test_plot_results(results_name: str, request: FixtureRequest) -> None:
+def test_plot_results(results_name: str, request: pytest.FixtureRequest) -> None:
     results = request.getfixturevalue(results_name)
     results.analyze(plot_results=True, print_results=False)
 
 
 @pytest.mark.parametrize("results_name", ["dressed_cb_results", "undressed_cb_results"])
-def test_print_results(results_name: str, request: FixtureRequest) -> None:
+def test_print_results(results_name: str, request: pytest.FixtureRequest) -> None:
     results = request.getfixturevalue(results_name)
     results.analyze(plot_results=False, print_results=True)
 
 
 @pytest.mark.parametrize("results_name", ["dressed_cb_results", "undressed_cb_results"])
 def test_save_plot_results(
-    results_name: str, request: FixtureRequest, tmp_path: pathlib.Path
+    results_name: str, request: pytest.FixtureRequest, tmp_path: pathlib.Path
 ) -> None:
     filename = tmp_path / "test_plot.png"
     results = request.getfixturevalue(results_name)
