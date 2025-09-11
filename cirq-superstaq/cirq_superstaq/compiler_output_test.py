@@ -26,7 +26,7 @@ def test_active_qubit_indices() -> None:
 
     assert css.active_qubit_indices(circuit) == [1, 3, 5]
 
-    with pytest.raises(ValueError, match="line qubits"):
+    with pytest.raises(ValueError, match=r"line qubits"):
         _ = css.active_qubit_indices(cirq.Circuit(cirq.X(cirq.GridQubit(1, 2))))
 
 
@@ -73,7 +73,7 @@ def test_measured_qubit_indices_with_circuit_operations() -> None:
     unrolled_circuit = cirq.unroll_circuit_op(circuit + subcircuit_op_mapped, tags_to_check=None)
     assert css.measured_qubit_indices(unrolled_circuit) == [1, 3, 5]
 
-    with pytest.raises(ValueError, match="line qubits"):
+    with pytest.raises(ValueError, match=r"line qubits"):
         _ = css.measured_qubit_indices(cirq.Circuit(cirq.measure(cirq.GridQubit(1, 2))))
 
 
@@ -198,7 +198,7 @@ def test_read_json_pulse_gate_circuits() -> None:
 
     with (
         mock.patch.dict("sys.modules", {"qiskit_superstaq": None}),
-        pytest.warns(UserWarning, match="qiskit-superstaq is required"),
+        pytest.warns(UserWarning, match=r"qiskit-superstaq is required"),
     ):
         out = css.compiler_output.read_json(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
@@ -207,7 +207,7 @@ def test_read_json_pulse_gate_circuits() -> None:
     json_dict["pulse_gate_circuits"] = "not-a-serialized-circuit"
     with pytest.warns(
         UserWarning,
-        match="Your compiled pulse gate circuits could not be deserialized.",
+        match=r"Your compiled pulse gate circuits could not be deserialized.",
     ):
         out = css.compiler_output.read_json(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
@@ -231,7 +231,7 @@ def test_read_json_aqt() -> None:
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
     }
 
-    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+    with pytest.warns(UserWarning, match=r"deserialize compiled pulse sequences"):
         out = css.compiler_output.read_json_aqt(json_dict, circuits_is_list=False)
 
     assert out.circuit == circuit
@@ -241,7 +241,7 @@ def test_read_json_aqt() -> None:
     assert not hasattr(out, "initial_logical_to_physicals")
     assert not hasattr(out, "final_logical_to_physicals")
 
-    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+    with pytest.warns(UserWarning, match=r"deserialize compiled pulse sequences"):
         out = css.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
 
     assert out.circuits == [circuit]
@@ -251,7 +251,7 @@ def test_read_json_aqt() -> None:
     assert not hasattr(out, "initial_logical_to_physical")
     assert not hasattr(out, "final_logical_to_physical")
 
-    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+    with pytest.warns(UserWarning, match=r"deserialize compiled pulse sequences"):
         out = css.compiler_output.read_json_aqt(json_dict, circuits_is_list=False)
 
     assert out.circuit == circuit
@@ -267,7 +267,7 @@ def test_read_json_aqt() -> None:
         "final_logical_to_physicals": cirq.to_json(2 * [list(final_logical_to_physical.items())]),
     }
 
-    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+    with pytest.warns(UserWarning, match=r"deserialize compiled pulse sequences"):
         out = css.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
 
     assert out.circuits == [circuit, circuit]

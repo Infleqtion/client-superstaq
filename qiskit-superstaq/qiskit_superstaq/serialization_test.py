@@ -56,7 +56,7 @@ def test_to_json() -> None:
     assert np.all(resolved_val[1] == val[1])
     assert np.all(resolved_val[2] == val[2])
 
-    with pytest.raises(TypeError, match="not JSON serializable"):
+    with pytest.raises(TypeError, match=r"not JSON serializable"):
         qss.serialization.to_json(qiskit.QuantumCircuit())
 
 
@@ -155,7 +155,7 @@ def test_warning_suppression() -> None:
 
     # Check that a warning would normally be thrown
     buf = io.BytesIO(gss.serialization.str_to_bytes(serialized_circuit))
-    with pytest.warns(UserWarning, match="This may result in an error if the QPY file"):
+    with pytest.warns(UserWarning, match=r"This may result in an error if the QPY file"):
         _ = qiskit.qpy.load(buf)
 
     # Check that it is suppressed by deserialize_circuits
@@ -181,7 +181,7 @@ def test_deserialization_errors() -> None:
     )
 
     with (
-        pytest.raises(ValueError, match="your version of Qiskit"),
+        pytest.raises(ValueError, match=r"your version of Qiskit"),
         mock.patch("qiskit.qpy.common.QPY_VERSION", qiskit.qpy.common.QPY_VERSION - 3),
     ):
         _ = qss.deserialize_circuits(serialized_circuit)
@@ -193,7 +193,7 @@ def test_deserialization_errors() -> None:
     ):
         serialized_circuit = qss.serialize_circuits(circuit)
 
-    with pytest.raises(ValueError, match="Please contact"):
+    with pytest.raises(ValueError, match=r"Please contact"):
         _ = qss.deserialize_circuits(serialized_circuit)
 
 

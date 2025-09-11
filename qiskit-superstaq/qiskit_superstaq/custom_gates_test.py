@@ -42,7 +42,7 @@ def test_acecr() -> None:
     )
     assert str(gate) == "AceCR(-0.5π)|RXGate(π/2)|"
 
-    with pytest.raises(ValueError, match="Polarity must be"):
+    with pytest.raises(ValueError, match=r"Polarity must be"):
         _ = qss.AceCR("++")
 
     gate = qss.AceCR(np.pi)
@@ -150,7 +150,7 @@ def test_parallel_gates() -> None:
     assert gate.component_gates == gate2.component_gates
     assert gate == gate2
 
-    with pytest.raises(ValueError, match="Component gates must be"):
+    with pytest.raises(ValueError, match=r"Component gates must be"):
         _ = qss.ParallelGates(qiskit.circuit.Measure())
 
 

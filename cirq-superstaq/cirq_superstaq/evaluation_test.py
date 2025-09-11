@@ -29,7 +29,7 @@ def test_paramval_to_float() -> None:
     assert css.evaluation.paramval_to_float(expr) == math.sqrt(8)
 
     expr = sympy.var("x")
-    with pytest.raises(gss.SuperstaqException, match="We don't support parametrized circuits."):
+    with pytest.raises(gss.SuperstaqException, match=r"We don't support parametrized circuits."):
         css.evaluation.paramval_to_float(expr)
 
 
@@ -155,7 +155,7 @@ def test_operations_to_unitary() -> None:
     mat = css.evaluation.operations_to_unitary(circuit.all_operations(), [q4, q5, q2])
     assert np.allclose(mat, circuit.unitary([q4, q5, q2]))
 
-    with pytest.raises(ValueError, match="nonunitary"):
+    with pytest.raises(ValueError, match=r"nonunitary"):
         _ = css.evaluation.operations_to_unitary([cirq.measure(q2)], [q2])
 
 
