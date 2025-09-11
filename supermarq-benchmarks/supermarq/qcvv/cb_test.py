@@ -18,7 +18,7 @@ from __future__ import annotations
 import itertools
 import os
 import pathlib
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import cirq
 import cirq.testing
@@ -149,6 +149,16 @@ def cb_experiment() -> CB:
         )
         experiment = CB(process, pauli_channels=pauli_channels)
     return experiment
+
+
+def test_generate_random_pauli() -> None:
+    qubits = cirq.LineQubit.range(2)
+    process = cirq.Circuit([cirq.H(qubits[0]), cirq.CX(qubits[0], qubits[1]), cirq.H(qubits[0])])
+    experiment = CB(process, 1)
+    experiment._rng = (rng := MagicMock())
+    rng.choice.side_effect = [["X", "X"], ["X", "X"], ["X", "Y"]]
+    pauli_strings = experiment._generate_random_pauli_strings(2)
+    assert pauli_strings == ["XX", "XY"]
 
 
 def test_state_prep_circuit(cb_experiment: CB) -> None:
