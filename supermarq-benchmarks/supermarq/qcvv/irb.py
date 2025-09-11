@@ -745,10 +745,14 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                         "clifford_depth": depth,
                         "circuit_depth": len(rb_circuit),
                         "single_qubit_gates": sum(
-                            1 for op in rb_circuit.all_operations() if len(op.qubits) == 1
+                            1
+                            for op in rb_circuit.all_operations()
+                            if (len(op.qubits) == 1 and not isinstance(op.gate, css.Barrier))
                         ),
                         "two_qubit_gates": sum(
-                            1 for op in rb_circuit.all_operations() if len(op.qubits) == 2
+                            1
+                            for op in rb_circuit.all_operations()
+                            if (len(op.qubits) == 2 and not isinstance(op.gate, css.Barrier))
                         ),
                         "experiment": "RB",
                     },
@@ -783,10 +787,14 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                             "clifford_depth": depth,
                             "circuit_depth": len(irb_circuit),
                             "single_qubit_gates": sum(
-                                1 for op in irb_circuit.all_operations() if len(op.qubits) == 1
+                                1
+                                for op in irb_circuit.all_operations()
+                                if (len(op.qubits) == 1 and not isinstance(op.gate, css.Barrier))
                             ),
                             "two_qubit_gates": sum(
-                                1 for op in irb_circuit.all_operations() if len(op.qubits) == 2
+                                1
+                                for op in irb_circuit.all_operations()
+                                if (len(op.qubits) == 2 and not isinstance(op.gate, css.Barrier))
                             ),
                             "experiment": "IRB",
                         },
