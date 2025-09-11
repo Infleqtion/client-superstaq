@@ -92,7 +92,6 @@ lint.ignore = [
   "SIM108",
   "SIM118",
   "TC003",
-  "UP038",
   # The following are excluded to not conflict with `ruff format`:
   "COM812",
   "COM819",
@@ -105,7 +104,6 @@ lint.ignore = [
   "Q001",
   "Q002",
   "Q003",
-  "UP038",
   "W191",
 ]
 
@@ -115,6 +113,9 @@ lint.unfixable = []
 
 # Allow unused variables when underscore-prefixed
 lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+# Enable `from __future__ import annotations` simplification for rules
+lint.future-annotations = true
 
 [tool.ruff.lint.flake8-type-checking]
 exempt-modules = ["collections.abc"]
