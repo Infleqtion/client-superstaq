@@ -899,7 +899,7 @@ class Service(gss.service.Service):
             to post-process the measurement results and return the fidelity.
 
         Raises:
-            ValueError: If `circuit` is not a valid `cirq.Circuit`.
+            TypeError: If `circuit` is not a valid `cirq.Circuit`.
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         circuit_1 = rho_1[0]
@@ -911,7 +911,7 @@ class Service(gss.service.Service):
         css.validation.validate_cirq_circuits(circuit_2)
 
         if not (isinstance(circuit_1, cirq.Circuit) and isinstance(circuit_2, cirq.Circuit)):
-            raise ValueError("Each state `rho_i` should contain a single circuit.")
+            raise TypeError("Each state `rho_i` should contain a single `cirq.Circuit`.")
 
         serialized_circuits_1 = css.serialization.serialize_circuits(circuit_1)
         serialized_circuits_2 = css.serialization.serialize_circuits(circuit_2)

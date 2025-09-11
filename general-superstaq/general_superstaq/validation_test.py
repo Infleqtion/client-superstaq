@@ -73,16 +73,16 @@ def test_validate_noise_type() -> None:
 
 
 def test_validate_qubo() -> None:
-    with pytest.raises(ValueError, match=r"QUBOs must be"):
+    with pytest.raises(TypeError, match=r"QUBOs must be"):
         gss.validation.validate_qubo("not-a-dict")
 
-    with pytest.raises(ValueError, match=r"not a valid key"):
+    with pytest.raises(TypeError, match=r"not a valid key"):
         gss.validation.validate_qubo({"abc": 123})
 
-    with pytest.raises(ValueError, match=r"must be real numbers"):
+    with pytest.raises(TypeError, match=r"must be real numbers"):
         gss.validation.validate_qubo({(1, 2): 12 + 3j})
 
-    with pytest.raises(ValueError, match=r"must be real numbers"):
+    with pytest.raises(TypeError, match=r"must be real numbers"):
         gss.validation.validate_qubo({(1, 2): "abc"})
 
     with pytest.raises(ValueError, match=r"must be quadratic"):

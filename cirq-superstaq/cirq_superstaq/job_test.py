@@ -198,7 +198,7 @@ def test_wrong_V3_init() -> None:
         api_key="to_my_heart",
     )
     with pytest.raises(
-        ValueError, match=r"JobV3 job can only be used with v0.3.0 of the Superstaq API."
+        TypeError, match=r"JobV3 job can only be used with v0.3.0 of the Superstaq API."
     ):
         css.JobV3(client, uuid.UUID(int=0))  # type: ignore [arg-type]
 

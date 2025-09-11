@@ -26,7 +26,7 @@ def test_active_qubit_indices() -> None:
 
     assert css.active_qubit_indices(circuit) == [1, 3, 5]
 
-    with pytest.raises(ValueError, match=r"line qubits"):
+    with pytest.raises(TypeError, match=r"line qubits"):
         _ = css.active_qubit_indices(cirq.Circuit(cirq.X(cirq.GridQubit(1, 2))))
 
 
@@ -73,7 +73,7 @@ def test_measured_qubit_indices_with_circuit_operations() -> None:
     unrolled_circuit = cirq.unroll_circuit_op(circuit + subcircuit_op_mapped, tags_to_check=None)
     assert css.measured_qubit_indices(unrolled_circuit) == [1, 3, 5]
 
-    with pytest.raises(ValueError, match=r"line qubits"):
+    with pytest.raises(TypeError, match=r"line qubits"):
         _ = css.measured_qubit_indices(cirq.Circuit(cirq.measure(cirq.GridQubit(1, 2))))
 
 

@@ -739,10 +739,10 @@ def test_parallel_gates() -> None:
         cirq.X, cirq.ParallelGate(cirq.Y, num_copies=2)
     )
 
-    with pytest.raises(ValueError, match=r"ParallelGates cannot contain measurements"):
+    with pytest.raises(ValueError, match=r"`ParallelGates` cannot contain measurements"):
         _ = css.ParallelGates(cirq.X, cirq.MeasurementGate(1, key="1"))
 
-    with pytest.raises(ValueError, match=r"is not a cirq Gate"):
+    with pytest.raises(TypeError, match=r"is not a `cirq.Gate`"):
         _ = css.ParallelGates(cirq.X(qubits[1]))
 
 
