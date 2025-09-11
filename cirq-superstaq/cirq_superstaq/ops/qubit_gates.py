@@ -8,13 +8,14 @@ from typing import TYPE_CHECKING, Any
 
 import cirq
 import numpy as np
-import numpy.typing as npt
 from cirq.ops.common_gates import _pi
 
 import cirq_superstaq as css
 
 if TYPE_CHECKING:
     from types import NotImplementedType
+
+    import numpy.typing as npt
 
 
 def approx_eq_mod(a: cirq.TParamVal, b: cirq.TParamVal, period: float, atol: float = 1e-8) -> bool:

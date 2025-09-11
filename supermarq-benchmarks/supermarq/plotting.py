@@ -1,16 +1,18 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as npt
 from matplotlib.patches import Circle
 from matplotlib.projections import register_projection
 from matplotlib.projections.polar import PolarAxes
 from sklearn.linear_model import LinearRegression
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 def plot_results(

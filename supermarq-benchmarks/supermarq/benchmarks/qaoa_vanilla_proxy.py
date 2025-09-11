@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import TYPE_CHECKING
 
 import cirq
 import numpy as np
-import numpy.typing as npt
 import scipy
 
 import supermarq
 from supermarq.benchmark import Benchmark
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 class QAOAVanillaProxy(Benchmark):
