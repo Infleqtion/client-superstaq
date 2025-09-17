@@ -702,18 +702,13 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             self._clifford_gate_to_circuit(self.random_clifford())
             for _ in trange(samples, desc="Sampling Clifford operations")
         ]
+        circuit_counts = [self._count_gates(circuit) for circuit in sample]
         return {
             "single_qubit_gates": np.mean(
-                [
-                    sum(1 for op in circuit.all_operations() if len(op.qubits) == 1)
-                    for circuit in sample
-                ]
+                [count["single_qubit_gates"] for count in circuit_counts]
             ).item(),
             "two_qubit_gates": np.mean(
-                [
-                    sum(1 for op in circuit.all_operations() if len(op.qubits) == 2)
-                    for circuit in sample
-                ]
+                [count["two_qubit_gates"] for count in circuit_counts]
             ).item(),
         }
 
@@ -744,17 +739,8 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                     data={
                         "clifford_depth": depth,
                         "circuit_depth": len(rb_circuit),
-                        "single_qubit_gates": sum(
-                            1
-                            for op in rb_circuit.all_operations()
-                            if (len(op.qubits) == 1 and not isinstance(op.gate, css.Barrier))
-                        ),
-                        "two_qubit_gates": sum(
-                            1
-                            for op in rb_circuit.all_operations()
-                            if (len(op.qubits) == 2 and not isinstance(op.gate, css.Barrier))
-                        ),
                         "experiment": "RB",
+                        **self._count_gates(rb_circuit),
                     },
                     circuit_realization=k,
                 ),
@@ -786,17 +772,8 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                         data={
                             "clifford_depth": depth,
                             "circuit_depth": len(irb_circuit),
-                            "single_qubit_gates": sum(
-                                1
-                                for op in irb_circuit.all_operations()
-                                if (len(op.qubits) == 1 and not isinstance(op.gate, css.Barrier))
-                            ),
-                            "two_qubit_gates": sum(
-                                1
-                                for op in irb_circuit.all_operations()
-                                if (len(op.qubits) == 2 and not isinstance(op.gate, css.Barrier))
-                            ),
                             "experiment": "IRB",
+                            **self._count_gates(irb_circuit),
                         },
                         circuit_realization=k,
                     ),
@@ -814,4 +791,26 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             "interleaved_gate": self.interleaved_gate,
             "clifford_op_gateset": self.clifford_op_gateset,
             **super()._json_dict_(),
+        }
+
+    def _count_gates(self, circuit: cirq.Circuit) -> dict[str, int]:
+        """Counts the number of single and two qubit gates in a circuit.
+
+        Args:
+            circuit: The circuit to count the gates in.
+
+        Returns:
+            A dictionary with the number of one and two qubit gates used.
+        """
+        return {
+            "single_qubit_gates": sum(
+                1
+                for op in circuit.all_operations()
+                if (len(op.qubits) == 1 and not isinstance(op.gate, css.Barrier))
+            ),
+            "two_qubit_gates": sum(
+                1
+                for op in circuit.all_operations()
+                if (len(op.qubits) == 2 and not isinstance(op.gate, css.Barrier))
+            ),
         }
