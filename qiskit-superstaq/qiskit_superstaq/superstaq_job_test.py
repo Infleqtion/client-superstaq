@@ -210,7 +210,7 @@ def test_timeoutV3(backendV3: qss.SuperstaqBackend) -> None:
             {str(job._job_id): queue_dict},
             {str(job._job_id): completed_dict},
         ) as mocked_get_job,
-        pytest.raises(TimeoutError, match="Timed out while waiting for results."),
+        pytest.raises(TimeoutError, match=r"Timed out while waiting for results."),
     ):
         job._wait_for_results(timeout=10, wait=8)
 
@@ -794,7 +794,7 @@ def test_update_status_queue_infoV3(backendV3: qss.SuperstaqBackend) -> None:
 
 def test_get_circuit(backend: qss.SuperstaqBackend) -> None:
     test_job = qss.SuperstaqJob(backend=backend, job_id="123abc")
-    with pytest.raises(ValueError, match="The circuit type requested is invalid."):
+    with pytest.raises(ValueError, match=r"The circuit type requested is invalid."):
         test_job._get_circuits("invalid_type")
 
 
@@ -820,7 +820,7 @@ def test_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
 
         with pytest.raises(
             ValueError,
-            match="The circuit type 'pulse_gate_circuits' is not supported on this device.",
+            match=r"The circuit type 'pulse_gate_circuits' is not supported on this device.",
         ):
             job.pulse_gate_circuits()
 
@@ -855,7 +855,7 @@ def test_compiled_circuitsV3(backendV3: qss.SuperstaqBackend) -> None:
     assert job.compiled_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
 
     job.job_info.compiled_circuits[0] = None
-    with pytest.raises(gss.SuperstaqException, match="Some compiled circuits are missing"):
+    with pytest.raises(gss.SuperstaqException, match=r"Some compiled circuits are missing"):
         job.compiled_circuits()
 
     with pytest.raises(gss.SuperstaqException, match=f"Circuit 0 of job {uuid.UUID(int=42)}"):
@@ -1035,7 +1035,7 @@ def test_index_pulse_gate_circuits(backend: qss.SuperstaqBackend) -> None:
     assert job.pulse_gate_circuits(index=0) == pulse_gate_circuit
 
     # Test on invalid index
-    with pytest.raises(ValueError, match="is less than the minimum"):
+    with pytest.raises(ValueError, match=r"is less than the minimum"):
         job.pulse_gate_circuits(index=-3)
 
 
@@ -1065,13 +1065,13 @@ def test_multi_pulse_gate_circuits(backend: qss.SuperstaqBackend) -> None:
 
 def test_submit(backend: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJob(backend=backend, job_id="12345")
-    with pytest.raises(NotImplementedError, match="Submit through SuperstaqBackend"):
+    with pytest.raises(NotImplementedError, match=r"Submit through SuperstaqBackend"):
         job.submit()
 
 
 def test_submitV3(backendV3: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJobV3(backend=backendV3, job_id=uuid.UUID(int=42))
-    with pytest.raises(NotImplementedError, match="Submit through SuperstaqBackend"):
+    with pytest.raises(NotImplementedError, match=r"Submit through SuperstaqBackend"):
         job.submit()
 
 
@@ -1147,6 +1147,6 @@ def test_job_infoV3(backendV3: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJobV3(backend=backendV3, job_id=uuid.UUID(int=42))
     with (
         mock.patch.object(job, "_refresh_job", return_value=None),
-        pytest.raises(AttributeError, match="Job info has not been fetched yet"),
+        pytest.raises(AttributeError, match=r"Job info has not been fetched yet"),
     ):
         _ = job.job_info

@@ -50,7 +50,7 @@ def test_su2_init_raises() -> None:
         patch("cirq_superstaq.service.Service"),
         pytest.raises(
             ValueError,
-            match="The `two_qubit_gate` parameter must be a gate that acts on exactly two qubits.",
+            match=r"The `two_qubit_gate` parameter must be a gate that acts on exactly two qubits.",
         ),
     ):
         SU2(4, [1, 2, 3, 4], cirq.X)
@@ -229,10 +229,10 @@ def test_result_not_analyzed() -> None:
 def test_result_missing_data() -> None:
     result = SU2Results(target="example", experiment=MagicMock(spec=SU2))
 
-    with pytest.raises(RuntimeError, match="No data stored. Cannot perform analysis."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot perform analysis."):
         result._analyze()
 
-    with pytest.raises(RuntimeError, match="No data stored. Cannot plot results."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot plot results."):
         result.plot_results()
 
 

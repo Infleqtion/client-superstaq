@@ -92,7 +92,7 @@ def test_irb_bad_init() -> None:
             cycle_depths=[1, 3, 5],
         )
 
-    with pytest.raises(ValueError, match="must be a Clifford"):
+    with pytest.raises(ValueError, match=r"must be a Clifford"):
         IRB(1, [2], interleaved_gate=cirq.T)
 
 
@@ -533,23 +533,23 @@ def test_analyse_results_rb_plot_saving(tmp_path: pathlib.Path) -> None:
 
 def test_results_no_data() -> None:
     results = IRBResults(target="example", experiment=IRB(1, []))
-    with pytest.raises(RuntimeError, match="No data stored. Cannot perform fit."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot perform fit."):
         results._fit_decay()
 
-    with pytest.raises(RuntimeError, match="No data stored. Cannot make plot."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot make plot."):
         results._plot_results()
 
-    with pytest.raises(RuntimeError, match="No data stored. Cannot make plot."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot make plot."):
         results.plot_results()
 
     rb_results = RBResults(target="example", experiment=IRB(1, []))
-    with pytest.raises(RuntimeError, match="No data stored. Cannot perform fit."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot perform fit."):
         rb_results._fit_decay()
 
-    with pytest.raises(RuntimeError, match="No data stored. Cannot make plot."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot make plot."):
         rb_results._plot_results()
 
-    with pytest.raises(RuntimeError, match="No data stored. Cannot make plot."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot make plot."):
         rb_results.plot_results()
 
 

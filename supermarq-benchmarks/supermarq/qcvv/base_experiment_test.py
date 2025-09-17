@@ -262,13 +262,13 @@ def test_results_getitem(
     mock_job = MagicMock(spec=css.Job)
     mock_job.status.return_value = "Queued"
     results = ExampleResults(target="target", experiment=abc_experiment, job=mock_job)
-    with pytest.raises(ValueError, match="No results to split."):
+    with pytest.raises(ValueError, match=r"No results to split."):
         _ = results[q0]
 
 
 def test_experiment_init_with_bad_layers() -> None:
     with pytest.raises(
-        ValueError, match="The `cycle_depths` iterator can only include positive values."
+        ValueError, match=r"The `cycle_depths` iterator can only include positive values."
     ):
         ExampleExperiment(
             qubits=2,
@@ -311,7 +311,7 @@ def test_results_job_no_data(abc_experiment: ExampleExperiment) -> None:
     with pytest.raises(
         RuntimeError,
         match=(
-            "No data available and no Superstaq job to use to collect data. Please manually add "
+            r"No data available and no Superstaq job to use to collect data. Please manually add "
             "results data in order to perform analysis"
         ),
     ):
@@ -610,7 +610,7 @@ def test_validate_circuits(
     # Add a gate so not all measurements are terminal
     sample_circuits[0].circuit += cirq.X(abc_experiment.qubits[0])
     with pytest.raises(
-        ValueError, match="QCVV experiment circuits can only contain terminal measurements."
+        ValueError, match=r"QCVV experiment circuits can only contain terminal measurements."
     ):
         abc_experiment._validate_circuits(sample_circuits)
 
@@ -620,7 +620,7 @@ def test_validate_circuits(
     )
     with pytest.raises(
         ValueError,
-        match="The terminal measurement in QCVV experiment circuits must measure all qubits.",
+        match=r"The terminal measurement in QCVV experiment circuits must measure all qubits.",
     ):
         abc_experiment._validate_circuits(sample_circuits)
 
@@ -628,7 +628,7 @@ def test_validate_circuits(
     sample_circuits[0].circuit = sample_circuits[0].circuit[:-2]
     with pytest.raises(
         ValueError,
-        match="QCVV experiment circuits must contain measurements.",
+        match=r"QCVV experiment circuits must contain measurements.",
     ):
         abc_experiment._validate_circuits(sample_circuits)
 
@@ -711,7 +711,7 @@ def test_run_with_callable_bad_bitstring(abc_experiment: ExampleExperiment) -> N
 
     with pytest.raises(
         ValueError,
-        match=("The key contains the wrong number of bits. Got 3 entries but expected 2 bits."),
+        match=(r"The key contains the wrong number of bits. Got 3 entries but expected 2 bits."),
     ):
         abc_experiment.run_with_callable(_example_callable, some="kwargs")  # type: ignore[arg-type]
 
@@ -769,7 +769,7 @@ def test_results_collect_device_counts_no_job(abc_experiment: ExampleExperiment)
     results = ExampleResults(target="example_target", experiment=abc_experiment, job=None)
     with pytest.raises(
         ValueError,
-        match=("No Superstaq job associated with these results. Cannot collect device counts."),
+        match=(r"No Superstaq job associated with these results. Cannot collect device counts."),
     ):
         results._collect_device_counts()
 
@@ -843,27 +843,27 @@ def test_canonicalize_bitstring() -> None:
     assert QCVVExperiment.canonicalize_bitstring(1, 2) == "01"
     assert QCVVExperiment.canonicalize_bitstring(5, 4) == "0101"
 
-    with pytest.raises(ValueError, match="The key must be positive. Instead got -2."):
+    with pytest.raises(ValueError, match=r"The key must be positive. Instead got -2."):
         QCVVExperiment.canonicalize_bitstring(-2, 4)
 
     with pytest.raises(
         ValueError,
         match=(
-            "The key is too large to be encoded with 4 qubits. Got 72 but expected less than 16."
+            r"The key is too large to be encoded with 4 qubits. Got 72 but expected less than 16."
         ),
     ):
         QCVVExperiment.canonicalize_bitstring(72, 4)
 
     with pytest.raises(
         ValueError,
-        match=("The key contains the wrong number of bits. Got 5 entries but expected 4 bits."),
+        match=(r"The key contains the wrong number of bits. Got 5 entries but expected 4 bits."),
     ):
         QCVVExperiment.canonicalize_bitstring("01010", 4)
 
-    with pytest.raises(ValueError, match="All entries in the bitstring must be 0 or 1. Got 1234."):
+    with pytest.raises(ValueError, match=r"All entries in the bitstring must be 0 or 1. Got 1234."):
         QCVVExperiment.canonicalize_bitstring("1234", 4)
 
-    with pytest.raises(TypeError, match="Key must either be `numbers.Integral` or `str`."):
+    with pytest.raises(TypeError, match=r"Key must either be `numbers.Integral` or `str`."):
         QCVVExperiment.canonicalize_bitstring(3.141, 4)  # type: ignore[arg-type]
 
 
@@ -892,15 +892,15 @@ def test_canonicalize_probabilities() -> None:
 
 def test_canonicalize_probabilities_bad_input() -> None:
     # Negative counts
-    with pytest.raises(ValueError, match="Probabilities/counts must be positive."):
+    with pytest.raises(ValueError, match=r"Probabilities/counts must be positive."):
         QCVVExperiment.canonicalize_probabilities({0: -2}, 2)
 
     # No non-zero counts
-    with pytest.raises(ValueError, match="No non-zero counts."):
+    with pytest.raises(ValueError, match=r"No non-zero counts."):
         QCVVExperiment.canonicalize_probabilities({0: 0, 1: 0}, 2)
 
     # Negative probabilities
-    with pytest.raises(ValueError, match="Probabilities/counts must be positive."):
+    with pytest.raises(ValueError, match=r"Probabilities/counts must be positive."):
         QCVVExperiment.canonicalize_probabilities({0: 0.0, 1: -0.5}, 2)
 
 
@@ -915,7 +915,7 @@ def test_experiment_get_item(
         assert abc_experiment[sample_circuits[k].uuid] == sample_circuits[k]
         assert abc_experiment[str(sample_circuits[k].uuid)] == sample_circuits[k]
 
-    with pytest.raises(TypeError, match="Key must be int, str or uuid.UUID"):
+    with pytest.raises(TypeError, match=r"Key must be int, str or uuid.UUID"):
         _ = abc_experiment[3.141]  # type: ignore[index]
 
     with pytest.raises(
@@ -924,7 +924,7 @@ def test_experiment_get_item(
         _ = abc_experiment["b55adabc-39c4-4f7b-a84d-906adaf0897e"]
 
     with pytest.raises(
-        RuntimeError, match="Multiple samples found with matching key. Something has gone wrong."
+        RuntimeError, match=r"Multiple samples found with matching key. Something has gone wrong."
     ):
         # Manually set duplicate sample uuids
         abc_experiment.samples[0].uuid = abc_experiment.samples[1].uuid
