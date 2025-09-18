@@ -26,7 +26,6 @@ import numpy.typing as npt
 import pandas as pd
 import scipy
 import seaborn as sns
-import tqdm.auto
 import tqdm.contrib.itertools
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
@@ -496,7 +495,7 @@ class XEB(QCVVExperiment[XEBResults]):
                 Sample(
                     circuit=circuit + cirq.measure(*self.qubits),
                     data={
-                        "circuit_depth": len(circuit),
+                        "circuit_depth": self._count_non_barrier_gates(circuit),
                         "cycle_depth": depth,
                         "interleaved_layer": str(self.interleaved_layer),
                     },

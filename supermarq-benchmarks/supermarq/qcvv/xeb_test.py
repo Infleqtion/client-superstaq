@@ -124,7 +124,7 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
         ),
     )
     assert samples[0].data == {
-        "circuit_depth": 9,
+        "circuit_depth": 8,
         "cycle_depth": 2,
         "interleaved_layer": "CZ(q(0), q(1))",
     }
@@ -149,7 +149,7 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
         ),
     )
     assert samples[1].data == {
-        "circuit_depth": 9,
+        "circuit_depth": 8,
         "cycle_depth": 2,
         "interleaved_layer": "CZ(q(0), q(1))",
     }

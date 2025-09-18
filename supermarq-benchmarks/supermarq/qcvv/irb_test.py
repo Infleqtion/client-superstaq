@@ -171,7 +171,7 @@ def test_irb_build_circuit() -> None:
                 ),
                 data={
                     "clifford_depth": 3,
-                    "circuit_depth": 7,
+                    "circuit_depth": 4,
                     "experiment": "RB",
                     "single_qubit_gates": 4,
                     "two_qubit_gates": 0,
@@ -204,7 +204,7 @@ def test_irb_build_circuit() -> None:
                 ),
                 data={
                     "clifford_depth": 3,
-                    "circuit_depth": 12,
+                    "circuit_depth": 6,
                     "experiment": "IRB",
                     "single_qubit_gates": 6,
                     "two_qubit_gates": 0,
@@ -234,7 +234,7 @@ def test_irb_build_circuit() -> None:
                 ),
                 data={
                     "clifford_depth": 3,
-                    "circuit_depth": 7,
+                    "circuit_depth": 4,
                     "experiment": "RB",
                     "single_qubit_gates": 4,
                     "two_qubit_gates": 0,
@@ -270,7 +270,7 @@ def test_irb_build_circuit() -> None:
                 ),
                 data={
                     "clifford_depth": 3,
-                    "circuit_depth": 13,
+                    "circuit_depth": 7,
                     "experiment": "IRB",
                     "single_qubit_gates": 7,
                     "two_qubit_gates": 0,

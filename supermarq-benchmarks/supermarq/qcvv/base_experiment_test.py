@@ -1028,3 +1028,19 @@ def test_dump_and_load(
     assert exp.num_qubits == abc_experiment.num_qubits
     assert exp.num_circuits == abc_experiment.num_circuits
     assert exp.cycle_depths == abc_experiment.cycle_depths
+
+
+def test_count_non_barrier_gates() -> None:
+    qubits = cirq.LineQubit.range(4)
+    circuit = cirq.Circuit(
+        cirq.X(qubits[0]),
+        cirq.Y(qubits[1]),
+        css.barrier(*qubits),
+        cirq.CX(*qubits[0:2]),
+        css.barrier(*qubits),
+        css.ParallelRGate(0, 0, num_copies=4).on(*qubits),
+    )
+    assert ExampleExperiment._count_non_barrier_gates(circuit) == 4
+    assert ExampleExperiment._count_non_barrier_gates(circuit, num_qubits=1) == 2
+    assert ExampleExperiment._count_non_barrier_gates(circuit, num_qubits=2) == 1
+    assert ExampleExperiment._count_non_barrier_gates(circuit, num_qubits=4) == 1
