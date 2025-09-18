@@ -7,13 +7,14 @@ from typing import TYPE_CHECKING, Any
 
 import cirq
 import numpy as np
-import numpy.typing as npt
 from cirq.ops.common_gates import proper_repr
 
 import cirq_superstaq as css
 
 if TYPE_CHECKING:
     from types import NotImplementedType
+
+    import numpy.typing as npt
 
 
 def _subscript(n: int) -> str:

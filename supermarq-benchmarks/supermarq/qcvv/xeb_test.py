@@ -387,17 +387,17 @@ def test_independent_qubit_groups() -> None:
 
 def test_results_no_data() -> None:
     results = XEBResults(target="example", experiment=XEB(1, []), data=None)
-    with pytest.raises(RuntimeError, match="No data stored. Cannot perform analysis."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot perform analysis."):
         results._analyze()
 
-    with pytest.raises(RuntimeError, match="No data stored. Cannot plot results."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot plot results."):
         results.plot_results()
 
-    with pytest.raises(RuntimeError, match="No data stored. Cannot plot results."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot plot results."):
         results.plot_speckle()
 
     with pytest.raises(
-        RuntimeError, match="No stored dataframe of circuit fidelities. Something has gone wrong."
+        RuntimeError, match=r"No stored dataframe of circuit fidelities. Something has gone wrong."
     ):
         results.data = pd.DataFrame()
         results.plot_results()

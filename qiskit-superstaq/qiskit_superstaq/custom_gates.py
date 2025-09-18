@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import functools
+from typing import TYPE_CHECKING
 
 import numpy as np
-import numpy.typing as npt
 import qiskit.quantum_info
 import qiskit.visualization
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 class AceCR(qiskit.circuit.Gate):

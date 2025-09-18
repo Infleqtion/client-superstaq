@@ -25,7 +25,6 @@ import cirq
 import general_superstaq as gss
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as npt
 from general_superstaq import ResourceEstimate
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 from scipy.optimize import curve_fit
@@ -33,6 +32,7 @@ from scipy.optimize import curve_fit
 import cirq_superstaq as css
 
 if TYPE_CHECKING:
+    import numpy.typing as npt
     from _typeshed import SupportsItems
 
 

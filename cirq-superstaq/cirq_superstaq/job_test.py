@@ -198,7 +198,7 @@ def test_wrong_V3_init() -> None:
         api_key="to_my_heart",
     )
     with pytest.raises(
-        TypeError, match="JobV3 job can only be used with v0.3.0 of the Superstaq API."
+        TypeError, match=r"JobV3 job can only be used with v0.3.0 of the Superstaq API."
     ):
         css.JobV3(client, uuid.UUID(int=0))  # type: ignore [arg-type]
 
@@ -325,7 +325,7 @@ def test_repetitionsV3(
 
 
 def test_get_circuit(job: css.Job) -> None:
-    with pytest.raises(ValueError, match="The circuit type requested is invalid."):
+    with pytest.raises(ValueError, match=r"The circuit type requested is invalid."):
         job._get_circuits("invalid_type")
 
 
@@ -374,7 +374,7 @@ def test_compiled_circuitV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obje
     )
     mock_get.return_value.json.return_value = {str(uuid.UUID(int=43)): job_result}
     job = new_jobV3()
-    with pytest.raises(gss.SuperstaqException, match="Some compiled circuits are missing"):
+    with pytest.raises(gss.SuperstaqException, match=r"Some compiled circuits are missing"):
         job.compiled_circuits()
     with pytest.raises(gss.SuperstaqException, match=f"Circuit 0 of job {job._job_id}"):
         job.compiled_circuits(index=0)
@@ -420,7 +420,7 @@ def test_pulse_gate_circuits_index(job: css.Job) -> None:
     assert job.pulse_gate_circuits(index=0)[0] == pulse_gate_circuit
 
     # Test on invalid index
-    with pytest.raises(ValueError, match="is less than the minimum"):
+    with pytest.raises(ValueError, match=r"is less than the minimum"):
         job.pulse_gate_circuits(index=-3)
 
 
@@ -432,8 +432,8 @@ def test_pulse_gate_circuits_invalid_circuit(job: css.Job) -> None:
     # The first call will trigger a refresh:
     with (
         patched_requests({"job_id": job_dict}),
-        pytest.raises(ValueError, match="circuits could not be deserialized."),
-        pytest.warns(match="pulse gate circuit could not be deserialized"),
+        pytest.raises(ValueError, match=r"circuits could not be deserialized."),
+        pytest.warns(match=r"pulse gate circuit could not be deserialized"),
     ):
         job.pulse_gate_circuits()
 
@@ -720,7 +720,7 @@ def test_job_countsV3(
 def test_job_counts_failed(job: css.Job, job_dict: dict[str, object]) -> None:
     job_result = modifiy_job_result(job_dict, status="Failed", failure={"error": "too many qubits"})
     with patched_requests({"job_id": job_result}):
-        with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="too many qubits"):
+        with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match=r"too many qubits"):
             _ = job.counts()
         assert job.status() == "Failed"
 
@@ -737,11 +737,11 @@ def test_job_counts_failedV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obj
     mock_get.return_value.json.return_value = {str(job._job_id): job_result}
     with pytest.raises(
         gss.SuperstaqUnsuccessfulJobException,
-        match="[Circuit 0 - too many qubits, Circuit 1 - server error]",
+        match=r"[Circuit 0 - too many qubits, Circuit 1 - server error]",
     ):
         _ = job.counts()
     with pytest.raises(
-        gss.SuperstaqUnsuccessfulJobException, match="[Circuit 0 - too many qubits]"
+        gss.SuperstaqUnsuccessfulJobException, match=r"[Circuit 0 - too many qubits]"
     ):
         _ = job.counts(index=0)
     assert job.status() == "failed"
@@ -804,7 +804,7 @@ def test_job_counts_poll_timeout(
     }
     with (
         patched_requests(*[{"job_id": ready_job}] * 20),
-        pytest.raises(TimeoutError, match="Ready"),
+        pytest.raises(TimeoutError, match=r"Ready"),
     ):
         _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
     assert mock_sleep.call_count == 11
@@ -822,7 +822,7 @@ def test_job_counts_poll_timeoutV3(
 
     with mock.patch("requests.Session.get", side_effect=[running_mock, running_mock]) as mock_get:
         with pytest.raises(
-            TimeoutError, match="Timed out while waiting for results. Final status was 'running'"
+            TimeoutError, match=r"Timed out while waiting for results. Final status was 'running'"
         ):
             jobV3.counts(index=0, timeout_seconds=5, polling_seconds=10)
 
@@ -842,7 +842,7 @@ def test_job_results_poll_failure(mock_sleep: mock.MagicMock, job: css.Job) -> N
 
     with (
         patched_requests(*[{"job_id": running_job}] * 5, {"job_id": failed_job}),
-        pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="too many qubits"),
+        pytest.raises(gss.SuperstaqUnsuccessfulJobException, match=r"too many qubits"),
     ):
         _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
     assert mock_sleep.call_count == 5
@@ -929,6 +929,6 @@ def test_get_itemV3() -> None:
 def test_job_data_failureV3(jobV3: css.JobV3) -> None:
     with (
         mock.patch.object(jobV3, "_refresh_job", return_value=None),
-        pytest.raises(AttributeError, match="Job data has not been fetched yet"),
+        pytest.raises(AttributeError, match=r"Job data has not been fetched yet"),
     ):
         _ = jobV3.job_data

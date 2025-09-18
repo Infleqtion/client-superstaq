@@ -16,19 +16,21 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import cirq
 import cirq_superstaq as css
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as npt
 import scipy
 import seaborn as sns
 from tqdm.auto import trange
 from tqdm.contrib.itertools import product
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 ####################################################################################################

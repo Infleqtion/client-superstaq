@@ -240,13 +240,13 @@ def test_read_json_aqt() -> None:
         "state_jp": state_str,
     }
 
-    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+    with pytest.warns(UserWarning, match=r"deserialize compiled pulse sequences"):
         out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=False)
 
     assert out.circuit == circuit
     assert not hasattr(out, "circuits")
 
-    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+    with pytest.warns(UserWarning, match=r"deserialize compiled pulse sequences"):
         out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
 
     assert out.circuits == [circuit]
@@ -260,7 +260,7 @@ def test_read_json_aqt() -> None:
         "state_jp": state_str,
     }
 
-    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+    with pytest.warns(UserWarning, match=r"deserialize compiled pulse sequences"):
         out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
 
     assert out.circuits == [circuit, circuit]
