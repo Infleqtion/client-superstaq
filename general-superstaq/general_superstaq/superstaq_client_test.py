@@ -111,7 +111,7 @@ def test_superstaq_client_args(api_version: str) -> None:
         "ibmq_token": "ibm_cloud_token",
     }
 
-    with pytest.raises(ValueError, match="must be either 'ibm_cloud' or 'ibm_quantum_platform'"):
+    with pytest.raises(ValueError, match=r"must be either 'ibm_cloud' or 'ibm_quantum_platform'"):
         _ = client_version(
             client_name="general-superstaq",
             remote_host="http://example.com",
@@ -120,7 +120,7 @@ def test_superstaq_client_args(api_version: str) -> None:
             ibmq_channel="foo",
         )
 
-    with pytest.raises(ValueError, match="Instead, use 'ibm_quantum_platform'"):
+    with pytest.raises(ValueError, match=r"Instead, use 'ibm_quantum_platform'"):
         _ = client_version(
             client_name="general-superstaq",
             remote_host="http://example.com",
@@ -128,6 +128,16 @@ def test_superstaq_client_args(api_version: str) -> None:
             api_version=api_version,
             ibmq_channel="ibm_quantum",
         )
+
+
+def test_superstaq_client_url_switchV3() -> None:
+    client = gss.superstaq_client._SuperstaqClientV3(
+        client_name="general-superstaq",
+        api_key="to_my_heart",
+        api_version="v0.3.0",
+    )
+
+    assert client.remote_host == "https://superstaq-prod.infleqtion.com"
 
 
 def test_general_superstaq_exception_str() -> None:
@@ -143,12 +153,12 @@ def test_warning_from_server(client_name: str, request: pytest.FixtureRequest) -
 
     with mock.patch("requests.Session.get", ok=True) as mock_get:
         mock_get.return_value.json = lambda: {"abc": 123, "warnings": [warning]}
-        with pytest.warns(gss.SuperstaqWarning, match="WARNING!"):
+        with pytest.warns(gss.SuperstaqWarning, match=r"WARNING!"):
             assert client.get_request("/endpoint") == {"abc": 123}
 
     with mock.patch("requests.Session.post", ok=True) as mock_post:
         mock_post.return_value.json = lambda: {"abc": 123, "warnings": [warning, warning]}
-        with pytest.warns(gss.SuperstaqWarning, match="WARNING!"):
+        with pytest.warns(gss.SuperstaqWarning, match=r"WARNING!"):
             assert client.post_request("/endpoint", {}) == {"abc": 123}
 
 
@@ -156,7 +166,7 @@ def test_warning_from_server(client_name: str, request: pytest.FixtureRequest) -
 @pytest.mark.parametrize("invalid_url", ["http://", "ftp:s//foo", "http:/:42"])
 def test_superstaq_client_invalid_remote_host_netloc(api_version: str, invalid_url: str) -> None:
     client_version = CLIENT_VERSION[api_version]
-    with pytest.raises(AssertionError, match="Specified network location"):
+    with pytest.raises(AssertionError, match=r"Specified network location"):
         _ = client_version(
             client_name="general-superstaq",
             remote_host=invalid_url,
@@ -172,7 +182,7 @@ def test_superstaq_client_invalid_remote_host_netloc(api_version: str, invalid_u
 )
 def test_superstaq_client_invalid_remote_host_protocol(api_version: str, invalid_url: str) -> None:
     client_version = CLIENT_VERSION[api_version]
-    with pytest.raises(AssertionError, match="Specified URL protocol"):
+    with pytest.raises(AssertionError, match=r"Specified URL protocol"):
         _ = client_version(
             client_name="general-superstaq",
             remote_host=invalid_url,
@@ -184,14 +194,14 @@ def test_superstaq_client_invalid_remote_host_protocol(api_version: str, invalid
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
 def test_superstaq_client_invalid_api_version(api_version: str) -> None:
     client_version = CLIENT_VERSION[api_version]
-    with pytest.raises(AssertionError, match="are accepted"):
+    with pytest.raises(AssertionError, match=r"are accepted"):
         _ = client_version(
             client_name="general-superstaq",
             remote_host="http://example.com",
             api_key="a",
             api_version="v0.0",
         )
-    with pytest.raises(AssertionError, match="0.0"):
+    with pytest.raises(AssertionError, match=r"0.0"):
         _ = client_version(
             client_name="general-superstaq",
             remote_host="http://example.com",
@@ -203,7 +213,7 @@ def test_superstaq_client_invalid_api_version(api_version: str) -> None:
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
 def test_superstaq_client_time_travel(api_version: str) -> None:
     client_version = CLIENT_VERSION[api_version]
-    with pytest.raises(AssertionError, match="time machine"):
+    with pytest.raises(AssertionError, match=r"time machine"):
         _ = client_version(
             client_name="general-superstaq",
             remote_host="http://example.com",
@@ -295,7 +305,7 @@ def test_superstaq_client_needs_accept_terms_of_use(
 
         with mock.patch("builtins.input"):
             with pytest.raises(
-                gss.SuperstaqServerException, match="You'll need to accept the Terms of Use"
+                gss.SuperstaqServerException, match=r"You'll need to accept the Terms of Use"
             ):
                 client.get_balance()
             assert capsys.readouterr().out == "YES response required to proceed\n"
@@ -325,7 +335,7 @@ def test_superstaq_client_validate_email_error(
     mock_post.return_value.json.return_value = "You must validate your registered email."
 
     with pytest.raises(
-        gss.SuperstaqServerException, match="You must validate your registered email."
+        gss.SuperstaqServerException, match=r"You must validate your registered email."
     ):
         _ = client.create_job({"cirq_circuits": "World"}, target="ss_example_qpu")
 
@@ -440,7 +450,7 @@ def test_superstaq_client_create_job_unauthorized(
     mock_post.return_value.ok = False
     mock_post.return_value.status_code = requests.codes.unauthorized
 
-    with pytest.raises(gss.SuperstaqServerException, match="Not authorized"):
+    with pytest.raises(gss.SuperstaqServerException, match=r"Not authorized"):
         _ = client.create_job({"cirq_circuits": "World"}, target="ss_example_qpu")
 
 
@@ -472,7 +482,7 @@ def test_superstaq_client_create_job_not_retriable(
     mock_post.return_value.ok = False
     mock_post.return_value.status_code = requests.codes.not_implemented
 
-    with pytest.raises(gss.SuperstaqServerException, match="Status code: 501"):
+    with pytest.raises(gss.SuperstaqServerException, match=r"Status code: 501"):
         _ = client.create_job({"cirq_circuits": "World"}, target="ss_example_qpu")
 
 
@@ -542,7 +552,7 @@ def test_superstaq_client_create_job_invalid_json(
 
     with (
         mock.patch("requests.Session.post", return_value=response),
-        pytest.raises(gss.SuperstaqServerException, match="invalid/json"),
+        pytest.raises(gss.SuperstaqServerException, match=r"invalid/json"),
     ):
         _ = client.create_job({"qiskit_circuits": "World"}, target="ss_example_qpu")
 
@@ -563,7 +573,7 @@ def test_superstaq_client_create_job_dont_retry_on_timeout(
 
     with (
         mock.patch("requests.Session.post", return_value=response),
-        pytest.raises(gss.SuperstaqServerException, match="timed out"),
+        pytest.raises(gss.SuperstaqServerException, match=r"timed out"),
     ):
         _ = client.create_job({"cirq_circuits": "World"}, target="ss_example_qpu")
 
@@ -607,7 +617,7 @@ def test_superstaq_client_create_job_json(
         "num_circuits": 1,
     }
 
-    with pytest.raises(gss.SuperstaqServerException, match="Status code: 400"):
+    with pytest.raises(gss.SuperstaqServerException, match=r"Status code: 400"):
         _ = client.create_job(
             serialized_circuits={"cirq_circuits": "World"},
             repetitions=200,
@@ -673,7 +683,7 @@ def test_superstaq_client_fetch_jobs(
         assert response == expected_result
 
         mock_get.assert_called_with(
-            f"http://example.com/{api_version}/client/job?job_id={uuid.UUID(int=0)}",
+            f"http://example.com/{api_version}/client/job/cirq?job_id={uuid.UUID(int=0)}",
             headers=dict(EXPECTED_HEADERS[api_version], cq_token='{"access_token": "token"}'),
             verify=False,
         )
@@ -801,10 +811,10 @@ def test_update_user_balance(
 
 
 def test_update_user_balance_invalid_v3(client_v3: gss.superstaq_client._SuperstaqClientV3) -> None:
-    with pytest.raises(ValueError, match="user email"):
+    with pytest.raises(ValueError, match=r"user email"):
         client_v3.update_user_balance({"balance": 5.00})
 
-    with pytest.raises(ValueError, match="new balance"):
+    with pytest.raises(ValueError, match=r"new balance"):
         client_v3.update_user_balance({"email": "test@email.com"})
 
 
@@ -848,10 +858,10 @@ def test_update_user_role(
 
 
 def test_update_user_role_invalid_v3(client_v3: gss.superstaq_client._SuperstaqClientV3) -> None:
-    with pytest.raises(ValueError, match="user email"):
+    with pytest.raises(ValueError, match=r"user email"):
         client_v3.update_user_role({"role": "genius"})
 
-    with pytest.raises(ValueError, match="new role"):
+    with pytest.raises(ValueError, match=r"new role"):
         client_v3.update_user_role({"email": "test@email.com"})
 
 
@@ -870,7 +880,7 @@ def test_superstaq_client_resource_estimate(
         mock_post.assert_called_once()
         assert mock_post.call_args[0][0] == f"http://example.com/{api_version}/resource_estimate"
     else:
-        with pytest.raises(NotImplementedError, match="resource_estimate is not implemented"):
+        with pytest.raises(NotImplementedError, match=r"resource_estimate is not implemented"):
             client.resource_estimate({"Hello": "1", "World": "2"})
 
 
@@ -1044,7 +1054,7 @@ def test_superstaq_client_fetch_jobs_unauthorized(
         mock_call.return_value.ok = False
         mock_call.return_value.status_code = requests.codes.unauthorized
 
-        with pytest.raises(gss.SuperstaqServerException, match="Not authorized"):
+        with pytest.raises(gss.SuperstaqServerException, match=r"Not authorized"):
             _ = client.fetch_jobs([job_id])
 
 
@@ -1090,7 +1100,7 @@ def test_superstaq_client_fetch_jobs_not_retriable(
         mock_call.return_value.ok = False
         mock_call.return_value.status_code = requests.codes.bad_request
 
-        with pytest.raises(gss.SuperstaqServerException, match="Status code: 400"):
+        with pytest.raises(gss.SuperstaqServerException, match=r"Status code: 400"):
             _ = client.fetch_jobs([job_id])
 
 
@@ -1142,7 +1152,7 @@ def test_superstaq_client_cancel_jobs_unauthorized(
         mock_call.return_value.ok = False
         mock_call.return_value.status_code = requests.codes.unauthorized
 
-        with pytest.raises(gss.SuperstaqServerException, match="Not authorized"):
+        with pytest.raises(gss.SuperstaqServerException, match=r"Not authorized"):
             _ = client.cancel_jobs([job_id])
 
 
@@ -1188,7 +1198,7 @@ def test_superstaq_client_get_cancel_jobs_retriable(
         mock_call.return_value.ok = False
         mock_call.return_value.status_code = requests.codes.bad_request
 
-        with pytest.raises(gss.SuperstaqServerException, match="Status code: 400"):
+        with pytest.raises(gss.SuperstaqServerException, match=r"Status code: 400"):
             _ = client.cancel_jobs([job_id], cq_token=1)
 
 
@@ -1236,7 +1246,7 @@ def test_superstaq_client_aqt_compile(
         mock_post.assert_called_once()
         assert mock_post.call_args[0][0] == f"http://example.com/{api_version}/aqt_compile"
     else:
-        with pytest.raises(DeprecationWarning, match="`aqt_compile` is deprecated"):
+        with pytest.raises(DeprecationWarning, match=r"`aqt_compile` is deprecated"):
             client.aqt_compile({"Hello": "1", "World": "2"})
 
 
@@ -1255,7 +1265,7 @@ def test_superstaq_client_qscout_compile(
         mock_post.assert_called_once()
         assert mock_post.call_args[0][0] == f"http://example.com/{api_version}/qscout_compile"
     else:
-        with pytest.raises(DeprecationWarning, match="`qscout_compile` is deprecated"):
+        with pytest.raises(DeprecationWarning, match=r"`qscout_compile` is deprecated"):
             client.qscout_compile({"Hello": "1", "World": "2"})
 
 
@@ -1275,14 +1285,14 @@ def test_superstaq_client_compile_v2(
 def test_superstaq_client_compile_v3_multi_circuit_types(
     client_v3: gss.superstaq_client._SuperstaqClientV3,
 ) -> None:
-    with pytest.raises(RuntimeError, match="multiple circuit types"):
+    with pytest.raises(RuntimeError, match=r"multiple circuit types"):
         client_v3.compile({"cirq_circuits": "Hello", "qiskit_circuits": "World"})
 
 
 def test_superstaq_client_compile_v3__type_not_found(
     client_v3: gss.superstaq_client._SuperstaqClientV3,
 ) -> None:
-    with pytest.raises(RuntimeError, match="No recognized circuits found."):
+    with pytest.raises(RuntimeError, match=r"No recognized circuits found."):
         client_v3.compile({"qasm_circuits": "Hello"})
 
 
@@ -1343,19 +1353,27 @@ def test_superstaq_client_compile_v3_failed(
         verify=False,
     )
     mock_get.assert_called_with(
-        f"http://example.com/{client_v3.api_version}/client/job?job_id={job_id}",
+        f"http://example.com/{client_v3.api_version}/client/job/cirq?job_id={job_id}",
         headers=EXPECTED_HEADERS[client_v3.api_version],
         verify=False,
     )
 
 
-@pytest.mark.parametrize("circuit_type", ["cirq", "qiskit"])
+@pytest.mark.parametrize(
+    ("circuit_type", "expected_map", "serialized_circuit"),
+    [
+        ("cirq", '[[[{"qubit": "q0"}, {"qubit": "q0"}]]]', '["compiled world"]'),
+        ("qiskit", "[[[0, 0]]]", '["\\"compiled world\\""]'),
+    ],
+)
 @mock.patch("requests.Session.get")
 @mock.patch("requests.Session.post")
 def test_superstaq_client_compile_v3(
     mock_post: mock.MagicMock,
     mock_get: mock.MagicMock,
     circuit_type: str,
+    expected_map: str,
+    serialized_circuit: str,
     client_v3: gss.superstaq_client._SuperstaqClientV3,
 ) -> None:
     job_id = uuid.UUID(int=0)
@@ -1368,7 +1386,7 @@ def test_superstaq_client_compile_v3(
             "target": "ss_example_qpu",
             "provider_id": ["ss"],
             "num_circuits": 1,
-            "compiled_circuits": ["compiled world"],
+            "compiled_circuits": ['"compiled world"'],
             "input_circuits": ["world"],
             "circuit_type": circuit_type,
             "counts": [{"count": 200}],
@@ -1379,8 +1397,8 @@ def test_superstaq_client_compile_v3(
             "last_updated_timestamp": [None],
             "initial_logical_to_physicals": [{0: 0}],
             "final_logical_to_physicals": [{0: 0}],
-            "logical_qubits": ["0"],
-            "physical_qubits": ["0"],
+            "logical_qubits": ['[{"qubit": "q0"}]'],
+            "physical_qubits": ['[{"qubit": "q0"}]'],
         }
     }
     mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
@@ -1409,14 +1427,14 @@ def test_superstaq_client_compile_v3(
         verify=False,
     )
     mock_get.assert_called_with(
-        f"http://example.com/{client_v3.api_version}/client/job?job_id={job_id}",
+        f"http://example.com/{client_v3.api_version}/client/job/cirq?job_id={job_id}",
         headers=EXPECTED_HEADERS[client_v3.api_version],
         verify=False,
     )
     assert compilation_results == {
-        f"{circuit_type}_circuits": "[compiled world]",
-        "initial_logical_to_physicals": "[{0: 0}]",
-        "final_logical_to_physicals": "[{0: 0}]",
+        f"{circuit_type}_circuits": serialized_circuit,
+        "initial_logical_to_physicals": expected_map,
+        "final_logical_to_physicals": expected_map,
     }
 
 
@@ -1436,7 +1454,7 @@ def test_superstaq_client_compile_v3_with_wait(
         "target": "ss_example_qpu",
         "provider_id": ["ss"],
         "num_circuits": 1,
-        "compiled_circuits": ["compiled world"],
+        "compiled_circuits": ['"compiled world"'],
         "input_circuits": ["world"],
         "circuit_type": "cirq",
         "counts": [{"count": 200}],
@@ -1447,8 +1465,8 @@ def test_superstaq_client_compile_v3_with_wait(
         "last_updated_timestamp": [None],
         "initial_logical_to_physicals": [{0: 0}],
         "final_logical_to_physicals": [{0: 0}],
-        "logical_qubits": ["0"],
-        "physical_qubits": ["0"],
+        "logical_qubits": ['[{"qubit": "q0"}]'],
+        "physical_qubits": ['[{"qubit": "q0"}]'],
     }
 
     mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
@@ -1484,15 +1502,15 @@ def test_superstaq_client_compile_v3_with_wait(
         verify=False,
     )
     mock_get.assert_called_with(
-        f"http://example.com/{client_v3.api_version}/client/job?job_id={job_id}",
+        f"http://example.com/{client_v3.api_version}/client/job/cirq?job_id={job_id}",
         headers=EXPECTED_HEADERS[client_v3.api_version],
         verify=False,
     )
     assert mock_get.call_count == 2
     assert compilation_results == {
-        "cirq_circuits": "[compiled world]",
-        "initial_logical_to_physicals": "[{0: 0}]",
-        "final_logical_to_physicals": "[{0: 0}]",
+        "cirq_circuits": '["compiled world"]',
+        "initial_logical_to_physicals": '[[[{"qubit": "q0"}, {"qubit": "q0"}]]]',
+        "final_logical_to_physicals": '[[[{"qubit": "q0"}, {"qubit": "q0"}]]]',
     }
 
 
@@ -1549,7 +1567,7 @@ def test_superstaq_client_submit_qubo(
             verify=False,
         )
     else:
-        with pytest.raises(NotImplementedError, match="submit_qubo is not implemented"):
+        with pytest.raises(NotImplementedError, match=r"submit_qubo is not implemented"):
             client.submit_qubo(
                 example_qubo,
                 target,
@@ -1586,7 +1604,7 @@ def test_superstaq_client_supercheq(
             verify=False,
         )
     else:
-        with pytest.raises(NotImplementedError, match="supercheq is not implemented"):
+        with pytest.raises(NotImplementedError, match=r"supercheq is not implemented"):
             client.supercheq([[0]], 1, 1, "cirq_circuits")
 
 
@@ -1643,7 +1661,7 @@ def test_superstaq_client_aces(
             verify=False,
         )
     else:
-        with pytest.raises(NotImplementedError, match="submit_aces is not implemented"):
+        with pytest.raises(NotImplementedError, match=r"submit_aces is not implemented"):
             client.submit_aces(
                 target="ss_unconstrained_simulator",
                 qubits=[0, 1],
@@ -1658,7 +1676,7 @@ def test_superstaq_client_aces(
                 noise={"type": "symmetric_depolarize", "params": (0.01,)},
             )
 
-        with pytest.raises(NotImplementedError, match="process_aces is not implemented"):
+        with pytest.raises(NotImplementedError, match=r"process_aces is not implemented"):
             client.process_aces(uuid.UUID(int=0))
 
 
@@ -1710,7 +1728,7 @@ def test_superstaq_client_cb(
             verify=False,
         )
     else:
-        with pytest.raises(NotImplementedError, match="submit_cb is not implemented"):
+        with pytest.raises(NotImplementedError, match=r"submit_cb is not implemented"):
             client.submit_cb(
                 target="ss_unconstrained_simulator",
                 shots=100,
@@ -1722,7 +1740,7 @@ def test_superstaq_client_cb(
                 noise={"type": "symmetric_depolarize", "params": (0.01,)},
             )
 
-        with pytest.raises(NotImplementedError, match="process_cb is not implemented"):
+        with pytest.raises(NotImplementedError, match=r"process_cb is not implemented"):
             client.process_cb(uuid.UUID(int=0), "count")
 
 
@@ -1775,10 +1793,10 @@ def test_superstaq_client_dfe(
             verify=False,
         )
 
-        with pytest.raises(ValueError, match="must contain exactly two job ids"):
+        with pytest.raises(ValueError, match=r"must contain exactly two job ids"):
             client.process_dfe(["1", "2", "3"])
     else:
-        with pytest.raises(NotImplementedError, match="submit_dfe is not implemented"):
+        with pytest.raises(NotImplementedError, match=r"submit_dfe is not implemented"):
             client.submit_dfe(
                 circuit_1={"Hello": "World"},
                 target_1="ss_example_qpu",
@@ -1789,7 +1807,7 @@ def test_superstaq_client_dfe(
                 lifespan=10,
             )
 
-        with pytest.raises(NotImplementedError, match="process_dfe is not implemented"):
+        with pytest.raises(NotImplementedError, match=r"process_dfe is not implemented"):
             client.process_dfe([uuid.UUID(int=0)])
 
 
@@ -1948,7 +1966,7 @@ def test_read_ibm_credentials() -> None:
         # fail because multiple accounts found with none marked as default
         with (
             pytest.raises(
-                ValueError, match="Multiple accounts found but none are marked as default."
+                ValueError, match=r"Multiple accounts found but none are marked as default."
             ),
             mock.patch(
                 "builtins.open", mock.mock_open(read_data=json.dumps(multiple_none_default_account))
@@ -1958,21 +1976,23 @@ def test_read_ibm_credentials() -> None:
 
         # fail because provided name is not an account in the config
         with (
-            pytest.raises(KeyError, match="No account credentials saved under the name 'bad_key'"),
+            pytest.raises(KeyError, match=r"No account credentials saved under the name 'bad_key'"),
             mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(credentials))),
         ):
             gss.superstaq_client.read_ibm_credentials("bad_key")
 
         # fail with missing token field in config
         with (
-            pytest.raises(KeyError, match="`token` and/or `channel` keys missing from credentials"),
+            pytest.raises(
+                KeyError, match=r"`token` and/or `channel` keys missing from credentials"
+            ),
             mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(bad_credentials))),
         ):
             gss.superstaq_client.read_ibm_credentials(None)
     #
     # fail to find credentials file
     with (
-        pytest.raises(FileNotFoundError, match="The `qiskit-ibm.json` file was not found in"),
+        pytest.raises(FileNotFoundError, match=r"The `qiskit-ibm.json` file was not found in"),
         mock.patch("pathlib.Path.is_file", return_value=False),
     ):
         gss.superstaq_client.read_ibm_credentials(None)
@@ -1993,7 +2013,7 @@ def test_find_api_key() -> None:
 
     # fail to find an API key :(
     with (
-        pytest.raises(EnvironmentError, match="Superstaq API key not specified and not found."),
+        pytest.raises(EnvironmentError, match=r"Superstaq API key not specified and not found."),
         mock.patch.dict(os.environ, SUPERSTAQ_API_KEY=""),
         mock.patch("pathlib.Path.is_file", return_value=False),
     ):
@@ -2097,7 +2117,7 @@ def test_get_user_info_query(
 
 
 def test_get_user_info_v3_fail(client_v3: gss.superstaq_client._SuperstaqClientV3) -> None:
-    with pytest.raises(TypeError, match="Superstaq API v0.3.0 uses UUID"):
+    with pytest.raises(TypeError, match=r"Superstaq API v0.3.0 uses UUID"):
         client_v3.get_user_info(user_id=42)
 
 
@@ -2181,7 +2201,7 @@ def test_get_user_info_empty_response(
 
     with pytest.raises(
         gss.SuperstaqServerException,
-        match=("Something went wrong. The server has returned an empty response."),
+        match=(r"Something went wrong. The server has returned an empty response."),
     ):
         client.get_user_info()
 
