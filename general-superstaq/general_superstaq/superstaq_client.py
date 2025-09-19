@@ -374,15 +374,15 @@ class _BaseSuperstaqClient(ABC, HTTPClient):
 
         self.circuit_type = circuit_type
 
-        if self.api_version == "v0.3.0" and self.remote_host == gss.API_URL:
-            self.remote_host = gss.API_URL_V3
-        url = urllib.parse.urlparse(self.remote_host)
+        if api_version == "v0.3.0" and remote_host == gss.API_URL:
+            remote_host = gss.API_URL_V3
+        url = urllib.parse.urlparse(remote_host)
         assert url.scheme, (
-            f"Specified URL protocol/scheme in `remote_host` ({self.remote_host}) is not valid. "
+            f"Specified URL protocol/scheme in `remote_host` ({remote_host}) is not valid. "
             "Use, for example, 'http', 'https'."
         )
         assert url.netloc, (
-            f"Specified network location in `remote_host` ({self.remote_host}) is not a valid URL "
+            f"Specified network location in `remote_host` ({remote_host}) is not a valid URL "
             "like, for example, http://example.com"
         )
 
