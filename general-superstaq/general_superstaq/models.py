@@ -5,9 +5,9 @@ from __future__ import annotations
 
 import datetime
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from enum import Enum
-from typing import Any
+from typing import Any, Self
 
 import pydantic
 
@@ -106,6 +106,37 @@ class DefaultPydanticModel(
     )
 
 
+class ExternalProviderCredentials(DefaultPydanticModel):
+    """Model for storing a user's credentials for external providers."""
+
+    free_trial_user: bool = False
+    internal_user: bool = False
+
+    # Aliases required for v0.2.0 API. Eventually these should be replaced.
+    cq_token: str | None = pydantic.Field(None)
+    cq_project_id: str | None = pydantic.Field(
+        None, validation_alias=pydantic.AliasChoices("project_id", "cq_project_id")
+    )
+    cq_org_id: str | None = pydantic.Field(
+        None, validation_alias=pydantic.AliasChoices("org_id", "cq_org_id")
+    )
+
+    ibmq_token: str | None = pydantic.Field(None)
+    ibmq_instance: str | None = pydantic.Field(None)
+    ibmq_channel: str | None = pydantic.Field(None)
+
+    @pydantic.field_validator("cq_token", mode="before")
+    @classmethod
+    def _validate_cq_token(cls, cq_token: object) -> object:
+        """Convert all CQ tokens to newer style (`cq_token="token"`).
+
+        Previously CQ tokens were specified via a dict, e.g. `cq_token={"access_token": "token"}`.
+        """
+        if isinstance(cq_token, Mapping):
+            return cq_token.get("access_token")
+        return cq_token
+
+
 class JobData(DefaultPydanticModel):
     """A class to store data for a Superstaq job which is returned through to the client."""
 
@@ -149,6 +180,28 @@ class JobData(DefaultPydanticModel):
     """Serialized logical qubits of compiled circuit. Only provided for CIRQ circuit type."""
     physical_qubits: list[str | None]
     """Serialized physical qubits of the device. Only provided for CIRQ circuit type."""
+    tags: list[str] = []
+    """Any tags attached to this job."""
+
+    @pydantic.model_validator(mode="after")
+    def validate_consistent_number_of_circuits(self) -> Self:
+        """Checks that lists contain the correct number of elements (equal to the number of input
+        circuits).
+
+        Raises:
+            ValueError: If any list attribute has the wrong number of elements
+
+        Returns:
+            The validated model.
+        """
+        for name, attr in self.model_dump().items():
+            if name != "tags" and isinstance(attr, list):
+                if len(attr) != self.num_circuits:
+                    raise ValueError(
+                        f"Field {name} does not contain the correct number of elements. "
+                        f"Expected {self.num_circuits} but found {len(attr)}."
+                    )
+        return self
 
 
 class NewJob(DefaultPydanticModel):
