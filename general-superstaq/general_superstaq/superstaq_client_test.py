@@ -675,6 +675,7 @@ def test_superstaq_client_fetch_jobs(
                 "final_logical_to_physicals": [{0: 0}],
                 "logical_qubits": ["0"],
                 "physical_qubits": ["0"],
+                "tags": [],
             }
         }
         mock_get.return_value.ok = True

@@ -7,7 +7,7 @@ import datetime
 import uuid
 from collections.abc import Mapping, Sequence
 from enum import Enum
-from typing import Any, Self
+from typing import Any
 
 import pydantic
 
@@ -182,26 +182,6 @@ class JobData(DefaultPydanticModel):
     """Serialized physical qubits of the device. Only provided for CIRQ circuit type."""
     tags: list[str] = []
     """Any tags attached to this job."""
-
-    @pydantic.model_validator(mode="after")
-    def validate_consistent_number_of_circuits(self) -> Self:
-        """Checks that lists contain the correct number of elements (equal to the number of input
-        circuits).
-
-        Raises:
-            ValueError: If any list attribute has the wrong number of elements
-
-        Returns:
-            The validated model.
-        """
-        for name, attr in self.model_dump().items():
-            if name != "tags" and isinstance(attr, list):
-                if len(attr) != self.num_circuits:
-                    raise ValueError(
-                        f"Field {name} does not contain the correct number of elements. "
-                        f"Expected {self.num_circuits} but found {len(attr)}."
-                    )
-        return self
 
 
 class NewJob(DefaultPydanticModel):

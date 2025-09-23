@@ -105,6 +105,7 @@ def job_dictV3() -> dict[str, object]:
         "final_logical_to_physicals": [{0: 0, 1: 1}],
         "logical_qubits": ["0", "1"],
         "physical_qubits": ["0", "1"],
+        "tags": [],
     }
 
 
