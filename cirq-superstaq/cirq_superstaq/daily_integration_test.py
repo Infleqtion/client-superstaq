@@ -312,6 +312,8 @@ def test_job(service: css.Service) -> None:
     multi_job = service.create_job(
         [circuit, circuit_alt], target="ibmq_brisbane_qpu", repetitions=10, method="dry-run"
     )
+    assert isinstance(job, css.Job)
+    assert isinstance(multi_job, css.Job)
 
     job_id = job.job_id()  # To test for https://github.com/Infleqtion/client-superstaq/issues/452
     multi_job_id = multi_job.job_id()
@@ -358,9 +360,9 @@ def test_dry_run_submit_to_sqale_with_qubit_sorting(service: css.Service) -> Non
     num_qubits = service.target_info(target)["num_qubits"]
     qubits = cirq.LineQubit.range(num_qubits)
     circuit = cirq.Circuit(
-        css.ParallelRGate(np.pi / 2, 0.0, 24).on(*qubits),
+        css.ParallelRGate(np.pi / 2, 0.0, num_qubits).on(*qubits),
         cirq.rz(np.pi).on(qubits[2]),
-        css.ParallelRGate(-np.pi / 2, 0.0, 24).on(*qubits),
+        css.ParallelRGate(-np.pi / 2, 0.0, num_qubits).on(*qubits),
         cirq.measure(*qubits),
     )
 

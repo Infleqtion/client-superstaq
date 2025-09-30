@@ -14,14 +14,17 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
+from typing import TYPE_CHECKING
 
 import cirq
 import general_superstaq as gss
 import networkx as nx
 import numpy as np
-import numpy.typing as npt
 
 import cirq_superstaq as css
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 def paramval_to_float(param: cirq.TParamVal) -> float:

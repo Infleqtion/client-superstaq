@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import copy
+from typing import TYPE_CHECKING
 
 import cirq
 import numpy as np
-import numpy.typing as npt
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 class MeasurementCircuit:
