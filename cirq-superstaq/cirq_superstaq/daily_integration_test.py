@@ -276,32 +276,34 @@ def test_supercheq(service: css.Service) -> None:
 def test_dfe(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.H(cirq.q(0)))
     target = "ss_unconstrained_simulator"
-    ids = service.submit_dfe(
-        rho_1=(circuit, target),
-        rho_2=(circuit, target),
-        num_random_bases=5,
-        shots=1000,
-    )
-    assert len(ids) == 2
+    with pytest.raises(gss.SuperstaqException, match=r"disabled"):
+        _ = service.submit_dfe(
+            rho_1=(circuit, target),
+            rho_2=(circuit, target),
+            num_random_bases=5,
+            shots=1000,
+        )
 
-    result = service.process_dfe(ids)
-    assert isinstance(result, float)
+    with pytest.raises(gss.SuperstaqException, match=r"disabled"):
+        result = service.process_dfe(["1234", "5678"])
 
 
 def test_aces(service: css.Service) -> None:
     noise_model = cirq.NoiseModel.from_noise_model_like(cirq.depolarize(0.1))
-    job_id = service.submit_aces(
-        target="ss_unconstrained_simulator",
-        qubits=[0],
-        shots=100,
-        num_circuits=10,
-        mirror_depth=5,
-        extra_depth=7,
-        method="noise-sim",
-        noise=noise_model,
-    )
-    result = service.process_aces(job_id)
-    assert len(result) == 18
+    with pytest.raises(gss.SuperstaqException, match=r"disabled"):
+        _ = service.submit_aces(
+            target="ss_unconstrained_simulator",
+            qubits=[0],
+            shots=100,
+            num_circuits=10,
+            mirror_depth=5,
+            extra_depth=7,
+            method="noise-sim",
+            noise=noise_model,
+        )
+
+    with pytest.raises(gss.SuperstaqException, match=r"disabled"):
+        result = service.process_aces("1234")
 
 
 def test_job(service: css.Service) -> None:
