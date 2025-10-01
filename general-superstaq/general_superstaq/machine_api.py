@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 import general_superstaq as gss
-import general_superstaq._models
+import general_superstaq.models
 import logging
 
 
@@ -15,7 +15,7 @@ class SuperstaqMachineAPI(gss.superstaq_client.HTTPClient):
         self,
         worker_api_token: str,
         machine_id: str,
-        circuit_language: general_superstaq._models.CircuitType,
+        circuit_language: general_superstaq.models.CircuitType,
         logger: logging.Logger | None = None,
         remote_host: str | None = None,
         api_version: str = "v0.3.0",
@@ -56,7 +56,7 @@ class SuperstaqMachineAPI(gss.superstaq_client.HTTPClient):
     def machine_status_route(self) -> str:
         return f"{self.api_base_url}/cq_worker/{self.machine_id}/machine_config"
 
-    def get_next_circuit(self) -> general_superstaq._models.DeviceJob | None:
+    def get_next_circuit(self) -> general_superstaq.models.DeviceJob | None:
         """Get next circuit for this machine from Superstaq. If no circuit is found, then
         return None.
         """
@@ -73,11 +73,11 @@ class SuperstaqMachineAPI(gss.superstaq_client.HTTPClient):
         if not job_data:
             self._logger.info("MachineAPI: Did not receive a new circuit")
             return None
-        next_circuit = general_superstaq._models.DeviceJob(**response.json())
+        next_circuit = general_superstaq.models.DeviceJob(**response.json())
         self._logger.debug(f"MachineAPI: Got next circuit: {next_circuit.circuit_ref}")
         return next_circuit
 
-    def get_job_status(self, job_id: str) -> general_superstaq._models.CircuitStatus:
+    def get_job_status(self, job_id: str) -> general_superstaq.models.CircuitStatus:
         """Get the status of a job from Superstaq.
         This allows the hardware to query if a user has canceled the job.
         """
@@ -87,7 +87,7 @@ class SuperstaqMachineAPI(gss.superstaq_client.HTTPClient):
         except Exception as e:
             self._logger.error(f"SuperstaqMachineAPI: Get job status failed for {job_id}: {e}")
             raise
-        circuit_status_response = general_superstaq._models.CircuitStatusResponse(**response.json())
+        circuit_status_response = general_superstaq.models.CircuitStatusResponse(**response.json())
         circuit_status = circuit_status_response.status
         self._logger.debug(
             f"SuperstaqMachineAPI: Got job status for cloud job: {job_id} - {circuit_status}"
@@ -97,7 +97,7 @@ class SuperstaqMachineAPI(gss.superstaq_client.HTTPClient):
     def post_result(
         self,
         job_id: str,
-        job_status: general_superstaq._models.CircuitStatus,
+        job_status: general_superstaq.models.CircuitStatus,
         bitstrings: list[str] | None,
         status_message: str = "",
     ) -> None:
@@ -113,7 +113,7 @@ class SuperstaqMachineAPI(gss.superstaq_client.HTTPClient):
                 bs_index_list = compressed_bitstrings.setdefault(bs, [])
                 bs_index_list.append(idx)
 
-        results = general_superstaq._models.DeviceResults(
+        results = general_superstaq.models.DeviceResults(
             circuit_ref=job_id,
             status=job_status,
             status_message=status_message,
@@ -131,7 +131,7 @@ class SuperstaqMachineAPI(gss.superstaq_client.HTTPClient):
 
     def post_machine_status(
         self,
-        machine_status: general_superstaq._models,
+        machine_status: general_superstaq.models,
         machine_config: dict[str, object] = None,
     ) -> None:
         """Method to update the current machine status to Superstaq."""
