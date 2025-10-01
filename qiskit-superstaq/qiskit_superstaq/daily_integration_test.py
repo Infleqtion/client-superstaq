@@ -257,7 +257,7 @@ def test_dfe(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
         )
 
     with pytest.raises(gss.SuperstaqException, match=r"disabled"):
-        result = provider.process_dfe(["1234", "5678"])
+        _ = provider.process_dfe(["1234", "5678"])
 
 
 def test_aces(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
@@ -275,7 +275,7 @@ def test_aces(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
         )
 
     with pytest.raises(gss.SuperstaqException, match=r"disabled"):
-        result = backend.process_aces("1234")
+        _ = backend.process_aces("1234")
 
 
 @pytest.mark.parametrize("target", ["cq_sqale_simulator", "aws_sv1_simulator"])

@@ -285,7 +285,7 @@ def test_dfe(service: css.Service) -> None:
         )
 
     with pytest.raises(gss.SuperstaqException, match=r"disabled"):
-        result = service.process_dfe(["1234", "5678"])
+        _ = service.process_dfe(["1234", "5678"])
 
 
 def test_aces(service: css.Service) -> None:
@@ -303,7 +303,7 @@ def test_aces(service: css.Service) -> None:
         )
 
     with pytest.raises(gss.SuperstaqException, match=r"disabled"):
-        result = service.process_aces("1234")
+        _ = service.process_aces("1234")
 
 
 def test_job(service: css.Service) -> None:
