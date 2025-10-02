@@ -391,3 +391,42 @@ class TargetInfo(DefaultPydanticModel):
     """Model containing details info about a specific instance of a target."""
 
     target_info: dict[str, object]
+
+
+class DeviceStatus(str, Enum):
+    """Enumeration of possible device statuses."""
+
+    AVAILABLE = "available"
+    DEV_ONLY = "dev_only"
+    OFFLINE = "offline"
+    RETIRED = "retired"
+
+
+class DeviceJob(DefaultPydanticModel):
+    """The data model used for sending circuit data to machine workers."""
+
+    circuit_ref: str
+    """The circuit reference."""
+    circuit: str
+    """Serialized representation of the circuit."""
+    shots: int
+    """The number of shots to perform."""
+
+
+class CircuitStatusResponse(DefaultPydanticModel):
+    """Response for when the status of a circuit is returned."""
+
+    circuit_ref: str
+    status: CircuitStatus
+
+
+class DeviceResults(DefaultPydanticModel):
+    """The data sent by the machine workers when returning job results."""
+
+    circuit_ref: str
+    status: CircuitStatus
+    status_message: str | None = pydantic.Field(default=None)
+    successful_shots: pydantic.NonNegativeInt | None = pydantic.Field(default=None)
+    """The total number of successful shots (used for validation)."""
+    measurements: dict[str, set[pydantic.NonNegativeInt]] | None = pydantic.Field(default=None)
+    """Mapping of bitstrings to a list of shot indexes."""
