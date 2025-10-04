@@ -109,9 +109,6 @@ class DefaultPydanticModel(
 class ExternalProviderCredentials(DefaultPydanticModel):
     """Model for storing a user's credentials for external providers."""
 
-    free_trial_user: bool = False
-    internal_user: bool = False
-
     # Aliases required for v0.2.0 API. Eventually these should be replaced.
     cq_token: str | None = pydantic.Field(None)
     cq_project_id: str | None = pydantic.Field(
@@ -124,6 +121,9 @@ class ExternalProviderCredentials(DefaultPydanticModel):
     ibmq_token: str | None = pydantic.Field(None)
     ibmq_instance: str | None = pydantic.Field(None)
     ibmq_channel: str | None = pydantic.Field(None)
+
+    qtm_token: str | None = pydantic.Field(None)
+    qtm_email: pydantic.EmailStr | None = pydantic.Field(None)
 
     @pydantic.field_validator("cq_token", mode="before")
     @classmethod
