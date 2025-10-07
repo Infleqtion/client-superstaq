@@ -126,7 +126,7 @@ jobs:
           python-version: 3.9
       - name: Install dependencies, using minimum supported versions
         run: |
-          min_versions=$(sed -E "/;\s*python_version\s*>=\s*['\"]?3\.(1[4-9]|[2-9][0-9])(\.[0-9]+)?['\"]?/d; s/[~>]=([0-9]+(\.[0-9]+)*)(;.*)?/==\1/"  ${{ matrix.dependencies }}/requirements.txt ${{ matrix.dependencies }}/dev-requirements.txt)
+          min_versions=$(sed -E "/;\s*python_version\s*>=\s*['\"]?3\.(1[4-9]|[2-9][0-9])(\.[0-9]+)?['\"]?/d; s/[~>]=([0-9]+(\.[0-9]+)*)(;.*)?/==\1/"  ${{ matrix.type }}/requirements.txt ${{ matrix.type }}/dev-requirements.txt)
           python -m pip install --upgrade pip
           pip install ./checks-superstaq ${{ matrix.dependencies }} $min_versions
       - name: Coverage check
