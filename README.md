@@ -190,5 +190,5 @@ If you'd like to reach out to a member of our team, please email us at <supersta
 
 <p align="center" style="padding: 50px">
   <img src="./docs/source/_static/logos/Infleqtion_logo_new_color.png#gh-light-mode-only" style="width: 20%">
-  <img src="./docs/source/_static/logos/Infleqtion_logo_new.png#gh-dark-mode-only" style="width: 20%">
+  <img src="./docs/source/_static/logos/Infleqtion_logo_new_white.png#gh-dark-mode-only" style="width: 20%">
 </p>
