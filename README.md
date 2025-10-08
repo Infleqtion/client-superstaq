@@ -29,17 +29,17 @@
     <!-- dark -->
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20-white?style=flat&logo=python&logoColor=white&labelColor=00b198&color=white"
+      srcset="https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20|%203.14%20-white?style=flat&logo=python&logoColor=white&labelColor=00b198&color=white"
     />
     <!-- light -->
     <source
       media="(prefers-color-scheme: light)"
-      srcset="https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20-141a5e?display_name=tag&style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e"
+      srcset="https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20|%203.14%20-141a5e?display_name=tag&style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e"
     />
     <!-- fallback -->
     <img
       alt="Python Versions"
-      src="https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20-141a5e?display_name=tag&style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e"
+      src="https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20|%203.14%20-141a5e?display_name=tag&style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e"
     />
   </picture>
 </a>
@@ -81,25 +81,6 @@
     />
   </picture>
 </a>
-<a href="https://superstaq.readthedocs.io/">
-  <picture>
-    <!-- dark -->
-    <source
-      media="(prefers-color-scheme: dark)"
-      srcset="https://img.shields.io/badge/Read%20the%20docs-a?style=flat&logo=read-the-docs&logoColor=white&labelColor=00b198&color=white"
-    />
-    <!-- light -->
-    <source
-      media="(prefers-color-scheme: light)"
-      srcset="https://img.shields.io/badge/Read%20the%20docs-a?style=flat&logo=read-the-docs&logoColor=white&labelColor=00b198&color=141a5e"
-    />
-    <!-- fallback -->
-    <img
-      alt="Read the Docs"
-      src="https://img.shields.io/badge/Read%20the%20docs-a?style=flat&logo=read-the-docs&logoColor=white&labelColor=00b198&color=141a5e"
-    />
-  </picture>
-</a>
 <a href="https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw">
   <picture>
     <!-- dark -->
@@ -116,6 +97,25 @@
     <img
       alt="Slack"
       src="https://img.shields.io/badge/Slack-slack?style=flat&logo=slack&logoColor=white&labelColor=00b198&color=141a5e"
+    />
+  </picture>
+</a>
+<a href="https://superstaq.readthedocs.io/">
+  <picture>
+    <!-- dark -->
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://img.shields.io/badge/Read%20the%20docs-a?style=flat&logo=read-the-docs&logoColor=white&labelColor=00b198&color=white"
+    />
+    <!-- light -->
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="https://img.shields.io/badge/Read%20the%20docs-a?style=flat&logo=read-the-docs&logoColor=white&labelColor=00b198&color=141a5e"
+    />
+    <!-- fallback -->
+    <img
+      alt="Read the Docs"
+      src="https://img.shields.io/badge/Read%20the%20docs-a?style=flat&logo=read-the-docs&logoColor=white&labelColor=00b198&color=141a5e"
     />
   </picture>
 </a>
