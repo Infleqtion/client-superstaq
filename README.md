@@ -189,6 +189,6 @@ Superstaq is licensed under the Apache License 2.0. See our [LICENSE](https://gi
 If you'd like to reach out to a member of our team, please email us at <superstaq@infleqtion.com> or join our [Slack workspace](https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw).
 
 <p align="center" style="padding: 50px">
-  <img src="./docs/source/_static/logos/Infleqtion_logo.png#gh-light-mode-only" style="width: 20%">
-  <img src="./docs/source/_static/logos/Infleqtion_logo_white.png#gh-dark-mode-only" style="width: 20%">
+  <img src="./docs/source/_static/logos/Infleqtion_logo_new_color.png#gh-light-mode-only" style="width: 20%">
+  <img src="./docs/source/_static/logos/Infleqtion_logo_new_white.png#gh-dark-mode-only" style="width: 20%">
 </p>
