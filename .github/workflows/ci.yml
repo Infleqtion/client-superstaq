@@ -158,7 +158,7 @@ jobs:
     name: Pytest Windows
     runs-on: windows-latest
     env:
-      MPLBACKEND: Agg
+      MPLBACKEND: Agg # Added due to https://github.com/Infleqtion/client-superstaq/pull/1282#issue-3496955583
     steps:
       - uses: actions/checkout@v5
       - name: Set up Python 3.13
