@@ -23,8 +23,8 @@
       src="https://img.shields.io/github/license/Infleqtion/client-superstaq?style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e"
     />
   </picture>
-</a>
-<a href="https://github.com/Infleqtion/client-superstaq">
+</a><!--
+--><a href="https://github.com/Infleqtion/client-superstaq">
   <picture>
     <!-- dark -->
     <source
@@ -42,8 +42,8 @@
       src="https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20|%203.14%20-141a5e?display_name=tag&style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e"
     />
   </picture>
-</a>
-<a href="https://github.com/Infleqtion/client-superstaq/releases">
+</a><!--
+--><a href="https://github.com/Infleqtion/client-superstaq/releases">
   <picture>
     <!-- dark -->
     <source
@@ -61,8 +61,8 @@
       src="https://img.shields.io/github/v/release/Infleqtion/client-superstaq?display_name=tag&style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e"
     />
   </picture>
-</a>
-<a href="https://github.com/Infleqtion/client-superstaq/actions/workflows/ci.yml">
+</a><!--
+--><a href="https://github.com/Infleqtion/client-superstaq/actions/workflows/ci.yml">
   <picture>
     <!-- dark -->
     <source
@@ -80,8 +80,8 @@
       src="https://img.shields.io/github/actions/workflow/status/Infleqtion/client-superstaq/ci.yml?branch=main&style=flat&logo=github&logoColor=white&labelColor=00b198&color=141a5e"
     />
   </picture>
-</a>
-<a href="https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw">
+</a><!--
+--><a href="https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw">
   <picture>
     <!-- dark -->
     <source
@@ -99,8 +99,8 @@
       src="https://img.shields.io/badge/Slack-slack?style=flat&logo=slack&logoColor=white&labelColor=00b198&color=141a5e"
     />
   </picture>
-</a>
-<a href="https://superstaq.readthedocs.io/">
+</a><!--
+--><a href="https://superstaq.readthedocs.io/">
   <picture>
     <!-- dark -->
     <source
