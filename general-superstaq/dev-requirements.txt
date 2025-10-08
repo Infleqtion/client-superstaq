@@ -1,2 +1,2 @@
-checks-superstaq~=0.5.51
+checks-superstaq~=0.5.52
 pyyaml>=6.0
