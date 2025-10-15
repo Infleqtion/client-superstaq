@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 TQuboKey = TypeVar("TQuboKey")
 
 RECOGNISED_CIRCUIT_TYPES = Literal[gss.models.CircuitType.CIRQ, gss.models.CircuitType.QISKIT]
-"""The circuit types that are currently implemented within the ``SuperstaqClient``."""
+"""The circuit types that are currently implemented within the `SuperstaqClient`."""
 
 
 class ApiVersion(str, enum.Enum):
@@ -89,12 +89,12 @@ class _BaseSuperstaqClient(ABC):
         Args:
             client_name: The name of the client.
             api_key: The key used for authenticating against the Superstaq API.
-            remote_host: The url of the server exposing the Superstaq API. This will strip anything
-                besides the base scheme and netloc, i.e. it only takes the part of the host of
+            remote_host: The URL of the server exposing the Superstaq API. This will strip anything
+                besides the base scheme and netloc, i.e., it only takes the part of the host of
                 the form `http://example.com` of `http://example.com/test`.
             api_version: Which version of the API to use. Defaults to `client_superstaq.API_VERSION`
                 (which is the most recent version when this client was downloaded).
-            circuit_type: The type of circuit, Cirq, Qiskit or QASM.
+            circuit_type: The type of circuit, Cirq, Qiskit, or QASM.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
             cq_token: Token from CQ cloud. This may be required to submit circuits to CQ hardware.
@@ -201,7 +201,7 @@ class _BaseSuperstaqClient(ABC):
                 from the returned job.
             target: Target to run on.
             method: Which type of method to execute the circuits (noisy simulator,
-            non-noisy simulator, hardware, e.t.c)
+                non-noisy simulator, hardware, e.t.c)
             kwargs: Other optimization and execution parameters.
 
         Returns:
@@ -1713,7 +1713,7 @@ def read_ibm_credentials(ibmq_name: str | None) -> dict[str, str]:
             none marked as default.
 
     Returns:
-        Dictionary containing the ibm token, channel, and instance (if available).
+        Dictionary containing the IBM token, channel, and instance (if available).
     """
     config_dir = pathlib.Path.home().joinpath(".qiskit")
     path = config_dir.joinpath("qiskit-ibm.json")
