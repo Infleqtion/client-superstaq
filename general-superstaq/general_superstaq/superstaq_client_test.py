@@ -1581,6 +1581,34 @@ def test_superstaq_client_submit_qubo(
 
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
 @mock.patch("requests.Session.post")
+def test_superstaq_client_atom_picture(
+    mock_post: mock.MagicMock,
+    client_name: str,
+    request: pytest.FixtureRequest,
+) -> None:
+    client = request.getfixturevalue(client_name)
+    api_version = client.api_version
+    bitmap_2d = [[0, 1, 2], [0, 0, 0], [2, 1, 1]]
+
+    if api_version == "v0.2.0":
+        client.submit_atom_picture(bitmap_2d)
+
+        expected_json = {
+            "bitmap_1d_array": [0, 1, 2, 0, 0, 0, 2, 1, 1],
+        }
+        mock_post.assert_called_with(
+            f"http://example.com/{api_version}/atom_picture",
+            headers=EXPECTED_HEADERS[api_version],
+            json=expected_json,
+            verify=False,
+        )
+    else:
+        with pytest.raises(NotImplementedError, match=r"atom_picture is not implemented"):
+            client.submit_atom_picture(bitmap_2d)
+
+
+@pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
+@mock.patch("requests.Session.post")
 def test_superstaq_client_supercheq(
     mock_post: mock.MagicMock,
     client_name: str,
