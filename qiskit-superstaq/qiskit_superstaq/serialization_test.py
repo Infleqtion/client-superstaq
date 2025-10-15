@@ -14,6 +14,8 @@ import qiskit.qasm2
 
 import qiskit_superstaq as qss
 
+NP_RNG = np.random.default_rng()
+
 
 def test_qpy_serialization_version() -> None:
     assert (
@@ -24,8 +26,8 @@ def test_qpy_serialization_version() -> None:
 
 
 def test_to_json() -> None:
-    real_part = np.random.uniform(-1, 1, size=(4, 4))
-    imag_part = np.random.uniform(-1, 1, size=(4, 4))
+    real_part = NP_RNG.uniform(-1, 1, size=(4, 4))
+    imag_part = NP_RNG.uniform(-1, 1, size=(4, 4))
 
     val = [
         {"abc": 123},
@@ -56,7 +58,7 @@ def test_to_json() -> None:
     assert np.all(resolved_val[1] == val[1])
     assert np.all(resolved_val[2] == val[2])
 
-    with pytest.raises(TypeError, match="not JSON serializable"):
+    with pytest.raises(TypeError, match=r"not JSON serializable"):
         qss.serialization.to_json(qiskit.QuantumCircuit())
 
 
@@ -155,7 +157,7 @@ def test_warning_suppression() -> None:
 
     # Check that a warning would normally be thrown
     buf = io.BytesIO(gss.serialization.str_to_bytes(serialized_circuit))
-    with pytest.warns(UserWarning, match="This may result in an error if the QPY file"):
+    with pytest.warns(UserWarning, match=r"This may result in an error if the QPY file"):
         _ = qiskit.qpy.load(buf)
 
     # Check that it is suppressed by deserialize_circuits
@@ -181,7 +183,7 @@ def test_deserialization_errors() -> None:
     )
 
     with (
-        pytest.raises(ValueError, match="your version of Qiskit"),
+        pytest.raises(ValueError, match=r"your version of Qiskit"),
         mock.patch("qiskit.qpy.common.QPY_VERSION", qiskit.qpy.common.QPY_VERSION - 3),
     ):
         _ = qss.deserialize_circuits(serialized_circuit)
@@ -193,7 +195,7 @@ def test_deserialization_errors() -> None:
     ):
         serialized_circuit = qss.serialize_circuits(circuit)
 
-    with pytest.raises(ValueError, match="Please contact"):
+    with pytest.raises(ValueError, match=r"Please contact"):
         _ = qss.deserialize_circuits(serialized_circuit)
 
 
@@ -329,7 +331,7 @@ def test_qft_gate() -> None:
 def test_gate_preparation_and_resolution(base_class: type[qiskit.circuit.Instruction]) -> None:
     num_params = test_gates[base_class]
 
-    gate = base_class(*np.random.uniform(-2 * np.pi, 2 * np.pi, num_params))
+    gate = base_class(*NP_RNG.uniform(-2 * np.pi, 2 * np.pi, num_params))
     assert qss.serialization._resolve_gate(qss.serialization._prepare_gate(gate)) == gate
     assert qss.serialization._resolve_gate(qss.serialization._wrap_gate(gate)) == gate
 
@@ -386,7 +388,7 @@ def _check_serialization(*gates: qiskit.circuit.Instruction) -> None:
 @pytest.mark.parametrize("base_class", test_gates, ids=lambda g: g.name)
 def test_gate_serialization(base_class: type[qiskit.circuit.Instruction]) -> None:
     num_params = test_gates[base_class]
-    params = np.random.uniform(-2 * np.pi, 2 * np.pi, (2, num_params))
+    params = NP_RNG.uniform(-2 * np.pi, 2 * np.pi, (2, num_params))
 
     # Construct two different gates to test https://github.com/Qiskit/qiskit/issues/8941 workaround
     gate1 = base_class(*params[0])
@@ -401,13 +403,13 @@ def test_gate_serialization(base_class: type[qiskit.circuit.Instruction]) -> Non
 @pytest.mark.parametrize(
     "gate",
     [
-        qiskit.circuit.library.MSGate(2, np.random.uniform(-2 * np.pi, 2 * np.pi)),
-        qiskit.circuit.library.MSGate(3, np.random.uniform(-2 * np.pi, 2 * np.pi)),
+        qiskit.circuit.library.MSGate(2, NP_RNG.uniform(-2 * np.pi, 2 * np.pi)),
+        qiskit.circuit.library.MSGate(3, NP_RNG.uniform(-2 * np.pi, 2 * np.pi)),
         qiskit.circuit.library.MCXGrayCode(4),
         qiskit.circuit.library.MCXGate(3),
         qiskit.circuit.library.MCXGate(5),
-        qiskit.circuit.library.MCU1Gate(np.random.uniform(-2 * np.pi, 2 * np.pi), 3),
-        qiskit.circuit.library.MCPhaseGate(np.random.uniform(-2 * np.pi, 2 * np.pi), 3),
+        qiskit.circuit.library.MCU1Gate(NP_RNG.uniform(-2 * np.pi, 2 * np.pi), 3),
+        qiskit.circuit.library.MCPhaseGate(NP_RNG.uniform(-2 * np.pi, 2 * np.pi), 3),
         *(
             [qiskit.circuit.library.QFTGate(4)]
             if hasattr(qiskit.circuit.library, "QFTGate")

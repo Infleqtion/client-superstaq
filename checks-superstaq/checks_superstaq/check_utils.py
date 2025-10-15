@@ -272,7 +272,7 @@ def get_test_files(
         ):
             test_files.append(test_file)
 
-        elif not silent:
+        elif not silent and basename not in ("__init__.py", "conftest.py"):
             print(warning(f"WARNING: no test file found for {file}"))  # noqa: T201
 
     if exclude:

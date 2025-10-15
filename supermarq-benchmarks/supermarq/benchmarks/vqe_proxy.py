@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import copy
+from typing import TYPE_CHECKING
 
 import cirq
 import numpy as np
-import numpy.typing as npt
 import scipy.optimize as opt
 
 import supermarq
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 class VQEProxy(supermarq.benchmark.Benchmark):
@@ -135,7 +138,8 @@ class VQEProxy(supermarq.benchmark.Benchmark):
             return -energy  # because we are minimizing instead of maximizing
 
         init_params = [
-            np.random.uniform() * 2 * np.pi for _ in range(self.num_layers * 4 * self.num_qubits)
+            np.random.default_rng().uniform() * 2 * np.pi
+            for _ in range(self.num_layers * 4 * self.num_qubits)
         ]
         out = opt.minimize(f, init_params, method="COBYLA")
 

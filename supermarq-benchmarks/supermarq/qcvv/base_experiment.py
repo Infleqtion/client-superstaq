@@ -29,6 +29,7 @@ import cirq
 import cirq_superstaq as css
 import numpy as np
 import pandas as pd
+from cirq_superstaq.job import JobV3
 from tqdm.auto import tqdm
 
 import supermarq
@@ -460,6 +461,26 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         """
 
     @staticmethod
+    def _count_non_barrier_gates(circuit: cirq.Circuit, num_qubits: int | None = None) -> int:
+        """Counts the number of gates in a circuit ignoring Barriers. Optionally provide a number
+        of qubits in order to only count the number of gates with that number of qubits.
+
+        Args:
+            circuit: The circuit to count the gates in.
+            num_qubits: Optionally filter gates by the number of qubits they act on.
+
+        Returns:
+            The gate count.
+        """
+        if num_qubits is None:
+            return sum(not isinstance(op.gate, css.Barrier) for op in circuit.all_operations())
+
+        return sum(
+            (len(op.qubits) == num_qubits and not isinstance(op.gate, css.Barrier))
+            for op in circuit.all_operations()
+        )
+
+    @staticmethod
     def canonicalize_bitstring(key: int | str, num_qubits: int) -> str:
         """Checks that the provided key represents a bit string for the given number of qubits.
         If the key is provided as an integer then this is reformatted as a bitstring.
@@ -769,6 +790,10 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             **target_options,
         )
 
+        if isinstance(experiment_job, JobV3):  # pragma: no cover
+            raise NotImplementedError(
+                "QCVV experiments are not using v0.3.0 of the Superstaq API yet."
+            )
         return self._results_cls(
             target=target,
             experiment=self,

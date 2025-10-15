@@ -276,32 +276,34 @@ def test_supercheq(service: css.Service) -> None:
 def test_dfe(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.H(cirq.q(0)))
     target = "ss_unconstrained_simulator"
-    ids = service.submit_dfe(
-        rho_1=(circuit, target),
-        rho_2=(circuit, target),
-        num_random_bases=5,
-        shots=1000,
-    )
-    assert len(ids) == 2
+    with pytest.raises(gss.SuperstaqException, match=r"disabled"):
+        _ = service.submit_dfe(
+            rho_1=(circuit, target),
+            rho_2=(circuit, target),
+            num_random_bases=5,
+            shots=1000,
+        )
 
-    result = service.process_dfe(ids)
-    assert isinstance(result, float)
+    with pytest.raises(gss.SuperstaqException, match=r"disabled"):
+        _ = service.process_dfe(["1234", "5678"])
 
 
 def test_aces(service: css.Service) -> None:
     noise_model = cirq.NoiseModel.from_noise_model_like(cirq.depolarize(0.1))
-    job_id = service.submit_aces(
-        target="ss_unconstrained_simulator",
-        qubits=[0],
-        shots=100,
-        num_circuits=10,
-        mirror_depth=5,
-        extra_depth=7,
-        method="noise-sim",
-        noise=noise_model,
-    )
-    result = service.process_aces(job_id)
-    assert len(result) == 18
+    with pytest.raises(gss.SuperstaqException, match=r"disabled"):
+        _ = service.submit_aces(
+            target="ss_unconstrained_simulator",
+            qubits=[0],
+            shots=100,
+            num_circuits=10,
+            mirror_depth=5,
+            extra_depth=7,
+            method="noise-sim",
+            noise=noise_model,
+        )
+
+    with pytest.raises(gss.SuperstaqException, match=r"disabled"):
+        _ = service.process_aces("1234")
 
 
 def test_job(service: css.Service) -> None:
@@ -312,6 +314,8 @@ def test_job(service: css.Service) -> None:
     multi_job = service.create_job(
         [circuit, circuit_alt], target="ibmq_brisbane_qpu", repetitions=10, method="dry-run"
     )
+    assert isinstance(job, css.Job)
+    assert isinstance(multi_job, css.Job)
 
     job_id = job.job_id()  # To test for https://github.com/Infleqtion/client-superstaq/issues/452
     multi_job_id = multi_job.job_id()
@@ -358,9 +362,9 @@ def test_dry_run_submit_to_sqale_with_qubit_sorting(service: css.Service) -> Non
     num_qubits = service.target_info(target)["num_qubits"]
     qubits = cirq.LineQubit.range(num_qubits)
     circuit = cirq.Circuit(
-        css.ParallelRGate(np.pi / 2, 0.0, 24).on(*qubits),
+        css.ParallelRGate(np.pi / 2, 0.0, num_qubits).on(*qubits),
         cirq.rz(np.pi).on(qubits[2]),
-        css.ParallelRGate(-np.pi / 2, 0.0, 24).on(*qubits),
+        css.ParallelRGate(-np.pi / 2, 0.0, num_qubits).on(*qubits),
         cirq.measure(*qubits),
     )
 
