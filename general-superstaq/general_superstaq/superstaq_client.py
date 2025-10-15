@@ -27,16 +27,20 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, ClassVar, Literal, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeVar
 
+import numpy as np
 import requests
 
 import general_superstaq as gss
 
+if TYPE_CHECKING:
+    import numpy.typing as npt
+
 TQuboKey = TypeVar("TQuboKey")
 
 RECOGNISED_CIRCUIT_TYPES = Literal[gss.models.CircuitType.CIRQ, gss.models.CircuitType.QISKIT]
-"""The circuit types that are currently implemented within the SuperstaqClient."""
+"""The circuit types that are currently implemented within the ``SuperstaqClient``."""
 
 
 class ApiVersion(str, enum.Enum):
@@ -75,11 +79,11 @@ class _BaseSuperstaqClient(ABC):
         ibmq_name: str | None = None,
         **kwargs: Any,
     ) -> None:
-        """Creates the SuperstaqClient.
+        """Creates the `SuperstaqClient`.
 
         Users should use `$client_superstaq.Service` instead of this class directly.
 
-        The SuperstaqClient handles making requests to the SuperstaqClient,
+        The `SuperstaqClient` handles making requests to the `SuperstaqClient`,
         returning dictionary results. It handles retry and authentication.
 
         Args:
@@ -453,6 +457,18 @@ class _BaseSuperstaqClient(ABC):
         gss.validation.validate_integer_param(max_solutions)
         gss.validation.validate_integer_param(qaoa_depth)
         gss.validation.validate_integer_param(rqaoa_cutoff, min_val=0)
+
+    @abstractmethod
+    def submit_atom_picture(self, bitmap: npt.ArrayLike) -> Any:
+        """_summary_.
+
+        Args:
+            bitmap: _description_
+
+        Returns:
+            _description_
+        """
+        gss.validation.validate_bitmap(bitmap)
 
     @abstractmethod
     def supercheq(
@@ -1108,6 +1124,19 @@ class _SuperstaqClient(_BaseSuperstaqClient):
         }
         return self.post_request("/qubo", json_dict)
 
+    def submit_atom_picture(self, bitmap: npt.ArrayLike) -> Any:
+        """_summary_.
+
+        Args:
+            bitmap: _description_
+
+        Returns:
+            _description_
+        """
+        super().submit_atom_picture(bitmap)
+        json_dict = {"bitmap_1d_array": np.asarray(bitmap).ravel().tolist()}
+        return self.post_request("/atom_picture", json_dict)
+
     def supercheq(
         self,
         files: list[list[int]],
@@ -1599,6 +1628,9 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
         **kwargs: Any,
     ) -> list[str]:
         self._raise_not_implemented("submit_dfe")
+
+    def submit_atom_picture(self, _bitmap: npt.ArrayLike) -> Any:
+        self._raise_not_implemented("submit_atom_picture")
 
     def process_dfe(self, job_ids: Sequence[str] | Sequence[uuid.UUID]) -> float:  # type: ignore [return]
         self._raise_not_implemented("process_dfe")
