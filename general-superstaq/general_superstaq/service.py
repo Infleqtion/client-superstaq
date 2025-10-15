@@ -3,10 +3,13 @@ from __future__ import annotations
 import numbers
 import os
 from collections.abc import Mapping, Sequence
-from typing import Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 import general_superstaq as gss
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 TQuboKey = TypeVar("TQuboKey")
 
@@ -517,3 +520,14 @@ class Service:
             The estimated eigenvalues.
         """
         return self._client.process_aces(job_id=job_id)
+
+    def submit_atom_picture(self, bitmap: npt.ArrayLike) -> Any:
+        """_summary_.
+
+        Args:
+            bitmap: _description_
+
+        Returns:
+            _description_
+        """
+        return self._client.submit_atom_picture(bitmap=bitmap)
