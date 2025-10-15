@@ -72,6 +72,38 @@ def test_validate_noise_type() -> None:
         )
 
 
+def test_validate_bitmap() -> None:
+    with pytest.raises(ValueError, match=r"contain the integers 0, 1, or 2"):
+        gss.validation.validate_bitmap([[3, 0], [1, 0]])
+    rng = np.random.default_rng()
+    with pytest.raises(TypeError, match=r"must be a 2D"):
+        gss.validation.validate_bitmap(rng.integers(0, high=3, size=(2, 2, 2)))
+    with pytest.raises(TypeError, match=r"must be a square 2D"):
+        gss.validation.validate_bitmap(rng.integers(0, high=3, size=(3, 2)))
+
+    valid_bitmaps = (
+        [
+            [2, 1, 0],
+            [1, 2, 1],
+            [0, 1, 2],
+        ],
+        (
+            (1, 0, 1, 2),
+            (0, 1, 0, 1),
+            (1, 2, 1, 0),
+            (0, 1, 0, 1),
+        ),
+        [
+            (1, 1, 2),
+            (0, 0, 1),
+            (1, 0, 2),
+        ],
+        np.eye(3, dtype=int),
+    )
+    for valid_bitmap in valid_bitmaps:
+        gss.validation.validate_bitmap(valid_bitmap)
+
+
 def test_validate_qubo() -> None:
     with pytest.raises(TypeError, match=r"QUBOs must be"):
         gss.validation.validate_qubo("not-a-dict")
