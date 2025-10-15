@@ -521,13 +521,15 @@ class Service:
         """
         return self._client.process_aces(job_id=job_id)
 
-    def submit_atom_picture(self, bitmap: npt.ArrayLike) -> Any:
-        """_summary_.
+    def submit_atom_picture(self, bitmap: npt.ArrayLike) -> str:
+        """Performs a POST request on the `/atom_picture` endpoint.
 
         Args:
-            bitmap: _description_
+            bitmap: A 2D array-like object of integers from the set {0, 1, 2}. '0' is empty,
+                '1' is atom, and '2' is whatever is there.
 
         Returns:
-            _description_
+            A string containing the post request id.
         """
-        return self._client.submit_atom_picture(bitmap=bitmap)
+        request_id = self._client.submit_atom_picture(bitmap=bitmap).get("request_id")
+        return f"Submitted request for atom picture with ID: {request_id}"

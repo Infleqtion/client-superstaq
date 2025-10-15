@@ -460,13 +460,14 @@ class _BaseSuperstaqClient(ABC):
 
     @abstractmethod
     def submit_atom_picture(self, bitmap: npt.ArrayLike) -> Any:
-        """_summary_.
+        """Performs a POST request on the `/atom_picture` endpoint.
 
         Args:
-            bitmap: _description_
+            bitmap: A 2D array-like object of integers from the set {0, 1, 2}. '0' is empty,
+                '1' is atom, and '2' is whatever is there.
 
         Returns:
-            _description_
+            A dictionary from the POST request.
         """
         gss.validation.validate_bitmap(bitmap)
 
@@ -1125,13 +1126,14 @@ class _SuperstaqClient(_BaseSuperstaqClient):
         return self.post_request("/qubo", json_dict)
 
     def submit_atom_picture(self, bitmap: npt.ArrayLike) -> Any:
-        """_summary_.
+        """Performs a POST request on the `/atom_picture` endpoint.
 
         Args:
-            bitmap: _description_
+            bitmap: A 2D array-like object of integers from the set {0, 1, 2}. '0' is empty,
+                '1' is atom, and '2' is whatever is there.
 
         Returns:
-            _description_
+            A dictionary from the POST request.
         """
         super().submit_atom_picture(bitmap)
         json_dict = {"bitmap_1d_array": np.asarray(bitmap).ravel().tolist()}

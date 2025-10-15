@@ -34,15 +34,15 @@ def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
 
 
 def validate_bitmap(bitmap: npt.ArrayLike) -> None:
-    """_summary_.
+    """Checks that `bitmap` is in an array format acceptable by the Atom picture API.
 
     Args:
-        bitmap: _description_
+        bitmap: The array-like object to validate.
 
     Raises:
-        TypeError: _description_
-        TypeError: _description_
-        ValueError: _description_
+        TypeError: If `bitmap` is not a two-dimensional array.
+        TypeError: If `bitmap` is not a square two-dimensional array.
+        ValueError: If `bitmap` contains any values outside of {0, 1, 2}.
     """
     bitmap_array = np.asarray(bitmap)
     if not bitmap_array.ndim == 2:
@@ -50,7 +50,7 @@ def validate_bitmap(bitmap: npt.ArrayLike) -> None:
     if not (bitmap_array.shape[0] == bitmap_array.shape[1]):
         raise TypeError("The atom picture `bitmap` must be a square 2D array-like object.")
     if not np.all(np.isin(bitmap_array, [0, 1, 2])):
-        raise ValueError("The atom picture `bitmap` must only contain 0, 1, or 2.")
+        raise ValueError("The atom picture `bitmap` must only contain the integers 0, 1, or 2.")
 
 
 def validate_target(target: str) -> None:
