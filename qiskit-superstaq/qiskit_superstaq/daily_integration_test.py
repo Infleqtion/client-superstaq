@@ -247,32 +247,35 @@ def test_dfe(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)
     target = "ss_unconstrained_simulator"
-    ids = provider.submit_dfe(
-        rho_1=(qc, target),
-        rho_2=(qc, target),
-        num_random_bases=5,
-        shots=1000,
-    )
-    assert len(ids) == 2
 
-    result = provider.process_dfe(ids)
-    assert isinstance(result, float)
+    with pytest.raises(gss.SuperstaqException, match=r"disabled"):
+        _ = provider.submit_dfe(
+            rho_1=(qc, target),
+            rho_2=(qc, target),
+            num_random_bases=5,
+            shots=1000,
+        )
+
+    with pytest.raises(gss.SuperstaqException, match=r"disabled"):
+        _ = provider.process_dfe(["1234", "5678"])
 
 
 def test_aces(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     backend = provider.get_backend("ss_unconstrained_simulator")
-    job_id = backend.submit_aces(
-        qubits=[0],
-        shots=100,
-        num_circuits=10,
-        mirror_depth=5,
-        extra_depth=7,
-        method="dry-run",
-        noise="bit_flip",
-        error_prob=0.1,
-    )
-    result = backend.process_aces(job_id)
-    assert len(result) == 18
+    with pytest.raises(gss.SuperstaqException, match=r"disabled"):
+        _ = backend.submit_aces(
+            qubits=[0],
+            shots=100,
+            num_circuits=10,
+            mirror_depth=5,
+            extra_depth=7,
+            method="dry-run",
+            noise="bit_flip",
+            error_prob=0.1,
+        )
+
+    with pytest.raises(gss.SuperstaqException, match=r"disabled"):
+        _ = backend.process_aces("1234")
 
 
 @pytest.mark.parametrize("target", ["cq_sqale_simulator", "aws_sv1_simulator"])
