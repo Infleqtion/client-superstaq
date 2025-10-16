@@ -170,6 +170,21 @@ def test_submit_qubo(
 
 
 @mock.patch(
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
+    return_value={"request_id": "foo123"},
+)
+def test_submit_atom_picture(
+    _mock_post_request: mock.MagicMock,
+) -> None:
+    example_bitmap = [[0, 1], [1, 2]]
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
+    assert (
+        service.submit_atom_picture(example_bitmap)
+        == "Submitted request for atom picture with ID: foo123"
+    )
+
+
+@mock.patch(
     "general_superstaq.superstaq_client._SuperstaqClient.aqt_upload_configs",
     return_value="Your AQT configuration has been updated",
 )
