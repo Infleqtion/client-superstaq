@@ -53,8 +53,8 @@ class SuperstaqMachineAPI(gss.superstaq_client.HTTPClient):
     def get_job_status_route(self, job_id: str) -> str:
         return f"/cq_worker/circuit_status/{job_id}"
 
-    def machine_status_route(self) -> str:
-        return f"/cq_worker/{self.machine_id}/machine_config"
+    def machine_status_route(self, target: str) -> str:
+        return f"/cq_worker/machine_config"
 
     def get_next_circuit(self) -> general_superstaq.models.DeviceJob | None:
         """Get next circuit for this machine from Superstaq. If no circuit is found, then
@@ -129,10 +129,11 @@ class SuperstaqMachineAPI(gss.superstaq_client.HTTPClient):
             raise
         self._logger.debug(f"SuperstaqMachineAPI: Posted results for job: {job_id}")
 
-    def post_machine_status(
+    def update_machine_status(
         self,
+        target: str,
         machine_status: general_superstaq.models,
-        machine_config: dict[str, object] = None,
+        **machine_config: object,
     ) -> None:
         """Method to update the current machine status to Superstaq."""
         self._logger.debug(
@@ -141,8 +142,8 @@ class SuperstaqMachineAPI(gss.superstaq_client.HTTPClient):
 
         try:
             self.put_request(
-                url=self.machine_status_route(),
-                json={
+                self.machine_status_route(target),
+                {
                     "status": machine_status,
                     **machine_config,
                 },
