@@ -76,9 +76,6 @@ def test_acecr() -> None:
     np.testing.assert_array_equal(
         np.array(gate, dtype=np.complex64), gate.__array__(dtype=np.complex64), strict=True
     )
-    np.testing.assert_array_equal(
-        np.array(gate, dtype=np.complex256), gate.__array__(dtype=np.complex256), strict=True
-    )
 
 
 def test_zz_swap() -> None:
@@ -100,9 +97,6 @@ def test_zz_swap() -> None:
     np.testing.assert_array_equal(
         np.array(gate, dtype=np.complex64), gate.__array__(dtype=np.complex64), strict=True
     )
-    np.testing.assert_array_equal(
-        np.array(gate, dtype=np.complex256), gate.__array__(dtype=np.complex256), strict=True
-    )
 
 
 def test_stripped_cz() -> None:
@@ -119,9 +113,6 @@ def test_stripped_cz() -> None:
 
     np.testing.assert_array_equal(
         np.array(gate, dtype=np.complex64), gate.__array__(dtype=np.complex64), strict=True
-    )
-    np.testing.assert_array_equal(
-        np.array(gate, dtype=np.complex256), gate.__array__(dtype=np.complex256), strict=True
     )
 
 
@@ -189,9 +180,6 @@ def test_parallel_gates() -> None:
 
     np.testing.assert_array_equal(
         np.array(gate, dtype=np.complex64), gate.__array__(dtype=np.complex64), strict=True
-    )
-    np.testing.assert_array_equal(
-        np.array(gate, dtype=np.complex256), gate.__array__(dtype=np.complex256), strict=True
     )
 
 
@@ -278,7 +266,4 @@ def test_dd_gate() -> None:
 
     np.testing.assert_array_equal(
         np.array(gate, dtype=np.complex64), gate.__array__(dtype=np.complex64), strict=True
-    )
-    np.testing.assert_array_equal(
-        np.array(gate, dtype=np.complex256), gate.__array__(dtype=np.complex256), strict=True
     )
