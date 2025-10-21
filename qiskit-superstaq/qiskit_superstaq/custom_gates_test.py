@@ -67,7 +67,18 @@ def test_acecr() -> None:
             [-0.891007j, 0, 0.45399, 0],
         ],
     )
-    assert np.allclose(qiskit.quantum_info.Operator(qc), correct_unitary)
+    np.testing.assert_allclose(gate, correct_unitary, atol=1e-6)
+    np.testing.assert_allclose(qiskit.quantum_info.Operator(qc), correct_unitary, atol=1e-6)
+
+    with pytest.raises(ValueError, match=r"without making a copy"):
+        _ = gate.__array__(copy=False)
+
+    np.testing.assert_array_equal(
+        np.array(gate, dtype=np.complex64), gate.__array__(dtype=np.complex64), strict=True
+    )
+    np.testing.assert_array_equal(
+        np.array(gate, dtype=np.complex256), gate.__array__(dtype=np.complex256), strict=True
+    )
 
 
 def test_zz_swap() -> None:
@@ -83,6 +94,16 @@ def test_zz_swap() -> None:
     gate = qss.ZZSwapGate(np.pi / 3)
     assert str(gate) == "ZZSwapGate(π/3)"
 
+    with pytest.raises(ValueError, match=r"without making a copy"):
+        _ = gate.__array__(copy=False)
+
+    np.testing.assert_array_equal(
+        np.array(gate, dtype=np.complex64), gate.__array__(dtype=np.complex64), strict=True
+    )
+    np.testing.assert_array_equal(
+        np.array(gate, dtype=np.complex256), gate.__array__(dtype=np.complex256), strict=True
+    )
+
 
 def test_stripped_cz() -> None:
     gate = qss.StrippedCZGate(1.23)
@@ -92,6 +113,16 @@ def test_stripped_cz() -> None:
 
     gate = qss.StrippedCZGate(np.pi / 3)
     assert str(gate) == "StrippedCZGate(π/3)"
+
+    with pytest.raises(ValueError, match=r"without making a copy"):
+        _ = gate.__array__(copy=False)
+
+    np.testing.assert_array_equal(
+        np.array(gate, dtype=np.complex64), gate.__array__(dtype=np.complex64), strict=True
+    )
+    np.testing.assert_array_equal(
+        np.array(gate, dtype=np.complex256), gate.__array__(dtype=np.complex256), strict=True
+    )
 
 
 def test_parallel_gates() -> None:
@@ -152,6 +183,16 @@ def test_parallel_gates() -> None:
 
     with pytest.raises(TypeError, match=r"Component gates must be"):
         _ = qss.ParallelGates(qiskit.circuit.Measure())
+
+    with pytest.raises(ValueError, match=r"without making a copy"):
+        _ = gate.__array__(copy=False)
+
+    np.testing.assert_array_equal(
+        np.array(gate, dtype=np.complex64), gate.__array__(dtype=np.complex64), strict=True
+    )
+    np.testing.assert_array_equal(
+        np.array(gate, dtype=np.complex256), gate.__array__(dtype=np.complex256), strict=True
+    )
 
 
 def test_ix_gate() -> None:
@@ -231,3 +272,13 @@ def test_dd_gate() -> None:
 
     gate = qss.DDGate(np.pi / 3)
     assert str(gate) == "DDGate(π/3)"
+
+    with pytest.raises(ValueError, match=r"without making a copy"):
+        _ = gate.__array__(copy=False)
+
+    np.testing.assert_array_equal(
+        np.array(gate, dtype=np.complex64), gate.__array__(dtype=np.complex64), strict=True
+    )
+    np.testing.assert_array_equal(
+        np.array(gate, dtype=np.complex256), gate.__array__(dtype=np.complex256), strict=True
+    )
