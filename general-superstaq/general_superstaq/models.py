@@ -338,6 +338,43 @@ class UpdateUserDetails(DefaultPydanticModel):
     """New user balance."""
 
 
+class TargetStatus(str, Enum):
+    """The current status of a Superstaq Target."""
+    AVAILABLE = "available"
+    """Target is currently accepting new jobs."""
+    DEV_ONLY = "dev_only"
+    """Target is in maintenance mode."""
+    OFFLINE = "offline"
+    """Target is temporarily unavailable for job submission."""
+    RETIRED = "retired"
+    """Target has been permanently retired."""
+    UNSUPPORTED = "unsupported"
+    """Target does not support job submission through Superstaq."""
+
+
+class TargetInputType(str, Enum):
+    """The input type supported by a Superstaq target."""
+    CIRCUIT = "circuit"
+    QUBO = "qubo"
+
+
+class TargetModel(DefaultPydanticModel):
+    """Model for the details of a target."""
+
+    target: str
+    """The target name."""
+    status: TargetStatus
+    """The status of this target."""
+    input_type: TargetInputType
+    """The input type expected by this target."""
+    accessible: bool
+    """Whether this target is accessible to the current user."""
+
+    @property
+    def simulator(self) -> bool:
+        return self.target.endswith("_simulator")
+
+
 class TargetModel(DefaultPydanticModel):
     """Model for the details of a target."""
 
