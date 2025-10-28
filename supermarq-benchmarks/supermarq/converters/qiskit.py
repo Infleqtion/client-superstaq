@@ -342,7 +342,7 @@ def cirq_classical_control_to_qiskit(
     condition = None
     if len(list(op.classical_controls)) > 1:
         raise gss.SuperstaqException(
-            "We don't currently support mutliple layers of classical control on a single operation."
+            "We don't currently support multiple layers of classical control on a single operation."
         )
 
     cirq_condition = next(iter(op.classical_controls))
@@ -644,7 +644,7 @@ def _handle_qiskit_controlled_op(
         if all(control_values):
             controlled_op = base_op.controlled_by(*control_qubits, control_values=control_values)
         else:
-            # `gate.controlled()` sometimes has strange behavior for non-defaultcontrol values, e.g.
+            # `gate.controlled()` sometimes has strange behavior for non-default control values, e.g.
             # creating a controlled-`CZPowGate` instead of a doubly-controlled `ZPowGate`
             controlled_op = cirq.ControlledOperation(control_qubits, base_op, control_values)
 
