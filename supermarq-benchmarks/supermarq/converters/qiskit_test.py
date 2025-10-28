@@ -1088,7 +1088,7 @@ def test_cirq_gate_to_qiskit_gate_phase_dependent(
 def test_cirq_gate_to_qiskit_gate_phase_independent(
     cirq_gate: cirq.Gate, expected_qiskit_gate: qiskit.circuit.Gate
 ) -> None:
-    """The gates should not be mapped differently regardlsm of global phase."""
+    """The gates should not be mapped differently regardless of global phase."""
     assert sm.converters.cirq_gate_to_qiskit_gate(cirq_gate) == expected_qiskit_gate
     assert _gates_are_equivalent(expected_qiskit_gate, cirq_gate, ignore_global_phase=True)
 
