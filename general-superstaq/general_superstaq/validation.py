@@ -4,6 +4,12 @@ import numbers
 import re
 import warnings
 from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING
+
+import numpy as np
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
@@ -25,6 +31,26 @@ def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
 
     if int(integer_param) < min_val:
         raise ValueError(f"{integer_param} is less than the minimum value ({min_val}).")
+
+
+def validate_bitmap(bitmap: npt.ArrayLike) -> None:
+    """Checks that `bitmap` is in an array format acceptable by the Atom picture API.
+
+    Args:
+        bitmap: The array-like object to validate.
+
+    Raises:
+        TypeError: If `bitmap` is not a two-dimensional array.
+        TypeError: If `bitmap` is not a square two-dimensional array.
+        ValueError: If `bitmap` contains any values outside of {0, 1, 2}.
+    """
+    bitmap_array = np.asarray(bitmap)
+    if not bitmap_array.ndim == 2:
+        raise TypeError("The atom picture `bitmap` must be a 2D array-like object.")
+    if not (bitmap_array.shape[0] == bitmap_array.shape[1]):
+        raise TypeError("The atom picture `bitmap` must be a square 2D array-like object.")
+    if not np.all(np.isin(bitmap_array, [0, 1, 2])):
+        raise ValueError("The atom picture `bitmap` must only contain the integers 0, 1, or 2.")
 
 
 def validate_target(target: str) -> None:

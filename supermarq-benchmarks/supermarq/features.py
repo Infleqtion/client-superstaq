@@ -86,6 +86,8 @@ def compute_parallelism(circuit: cirq.Circuit) -> float:
     if num_qubits <= 1:
         return 0
     depth = len(circuit.moments)
+    if depth == 0:
+        return 0
     num_gates = sum(1 for moment in circuit for _ in moment.operations)
     return max(((num_gates / depth) - 1) / (num_qubits - 1), 0)
 
@@ -109,7 +111,7 @@ def compute_measurement(circuit: cirq.Circuit) -> float:
         reset_present = False
         for op in moment.operations:
             # Check for mid-circuit measurement: cirq.MeasurementGate not at the end
-            if isinstance(op.gate, cirq.ResetChannel) or getattr(op.gate, "name", None) == "reset":
+            if isinstance(op.gate, cirq.MeasurementGate):
                 reset_present = True
         if reset_present:
             reset_moments += 1
@@ -138,6 +140,8 @@ def compute_entanglement(circuit: cirq.Circuit) -> float:
                 total_gates += 1
                 if len(op.qubits) == 2:
                     two_qubit_gates += 1
+    if total_gates == 0:
+        return 0.0
     return two_qubit_gates / total_gates
 
 
