@@ -342,7 +342,7 @@ def cirq_classical_control_to_qiskit(
     condition = None
     if len(list(op.classical_controls)) > 1:
         raise gss.SuperstaqException(
-            "We don't currently support mutliple layers of classical control on a single operation."
+            "We don't currently support multiple layers of classical control on a single operation."
         )
 
     cirq_condition = next(iter(op.classical_controls))
