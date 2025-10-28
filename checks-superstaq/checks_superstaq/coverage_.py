@@ -62,7 +62,10 @@ def run(
     # Enable threading setting before other args so -n can be overwritten
     default_threads = (
         "auto"
-        if not parsed_args.files and parsed_args.revisions is None and "-s" not in pytest_args
+        if not parsed_args.files
+        and not parsed_args.modular
+        and parsed_args.revisions is None
+        and "-s" not in pytest_args
         else "0"
     )
     pytest_args = [f"-n={default_threads}", *pytest_args]
@@ -82,13 +85,12 @@ def run(
         print("No test files to check for pytest and coverage.")  # noqa: T201
         return 0
 
-    subprocess.check_call(["python", "-m", "coverage", "erase"])  # Always start fresh
-
     if not parsed_args.modular:
         test_returncode = _run_on_files(files, test_files, coverage_args, pytest_args)
         return _report(test_returncode)
 
     # Run checks on individual files, skipping repeats
+    subprocess.check_call(["python", "-m", "coverage", "erase"])
 
     # Move test files to the end of the file list, so if both "x.py" and "x_test.py" are in `files`
     # both will be included in the coverage report
