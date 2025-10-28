@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import re
 import textwrap
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
@@ -804,7 +805,7 @@ def test_get_cirq_duration() -> None:
     assert sm.converters.qiskit._get_cirq_duration(4.1, "ms") == cirq.Duration(millis=4.1)
     assert sm.converters.qiskit._get_cirq_duration(5.1, "s") == cirq.Duration(millis=5100)
 
-    with pytest.raises(gss.SuperstaqException, match="We only.*(got 'dt')"):
+    with pytest.raises(gss.SuperstaqException, match=r"We only.*\(got 'dt'\)"):
         _ = sm.converters.qiskit._get_cirq_duration(123, "dt")
 
 
@@ -1333,8 +1334,10 @@ def test_cirq_to_qiskit_classical_control() -> None:
 
     with pytest.raises(
         gss.SuperstaqException,
-        match="We don't currently support multiple layers of classical control on a single "
-        "operation.",
+        match=re.escape(
+            "We don't currently support multiple layers of "
+            "classical control on a single operation.",
+        ),
     ):
         sm.converters.cirq_to_qiskit(cirq_circuit, sorted(cirq_circuit.all_qubits()))
 

@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable, Iterator, Sequence
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import cirq
 import cirq_superstaq as css
 import general_superstaq as gss
 import numpy as np
-import numpy.typing as npt
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 import qiskit
 import qiskit_superstaq as qss
 import sympy
