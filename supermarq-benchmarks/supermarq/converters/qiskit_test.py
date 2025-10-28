@@ -1332,7 +1332,7 @@ def test_cirq_to_qiskit_classical_control() -> None:
 
     with pytest.raises(
         gss.SuperstaqException,
-        match="We don't currently support mutliple layers of classical control on a single "
+        match="We don't currently support multiple layers of classical control on a single "
         "operation.",
     ):
         sm.converters.cirq_to_qiskit(cirq_circuit, sorted(cirq_circuit.all_qubits()))
