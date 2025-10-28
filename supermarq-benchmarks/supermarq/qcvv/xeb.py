@@ -16,20 +16,21 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import cirq
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 import scipy
 import seaborn as sns
-import tqdm.auto
 import tqdm.contrib.itertools
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 @dataclass
@@ -496,7 +497,7 @@ class XEB(QCVVExperiment[XEBResults]):
                 Sample(
                     circuit=circuit + cirq.measure(*self.qubits),
                     data={
-                        "circuit_depth": len(circuit),
+                        "circuit_depth": self._count_non_barrier_gates(circuit),
                         "cycle_depth": depth,
                         "interleaved_layer": str(self.interleaved_layer),
                     },

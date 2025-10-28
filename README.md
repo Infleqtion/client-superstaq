@@ -21,28 +21,24 @@
     <img
       alt="License"
       src="https://img.shields.io/github/license/Infleqtion/client-superstaq?style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e"
-    />
-  </picture>
-</a>
+    /></picture></a>
 <a href="https://github.com/Infleqtion/client-superstaq">
   <picture>
     <!-- dark -->
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20-white?style=flat&logo=python&logoColor=white&labelColor=00b198&color=white"
+      srcset="https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20|%203.14%20-white?style=flat&logo=python&logoColor=white&labelColor=00b198&color=white"
     />
     <!-- light -->
     <source
       media="(prefers-color-scheme: light)"
-      srcset="https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20-141a5e?display_name=tag&style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e"
+      srcset="https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20|%203.14%20-141a5e?display_name=tag&style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e"
     />
     <!-- fallback -->
     <img
       alt="Python Versions"
-      src="https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20-141a5e?display_name=tag&style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e"
-    />
-  </picture>
-</a>
+      src="https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20|%203.14%20-141a5e?display_name=tag&style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e"
+    /></picture></a>
 <a href="https://github.com/Infleqtion/client-superstaq/releases">
   <picture>
     <!-- dark -->
@@ -59,9 +55,7 @@
     <img
       alt="GitHub Release"
       src="https://img.shields.io/github/v/release/Infleqtion/client-superstaq?display_name=tag&style=flat&logo=pypi&logoColor=white&labelColor=00b198&color=141a5e"
-    />
-  </picture>
-</a>
+    /></picture></a>
 <a href="https://github.com/Infleqtion/client-superstaq/actions/workflows/ci.yml">
   <picture>
     <!-- dark -->
@@ -78,28 +72,7 @@
     <img
       alt="CI Status"
       src="https://img.shields.io/github/actions/workflow/status/Infleqtion/client-superstaq/ci.yml?branch=main&style=flat&logo=github&logoColor=white&labelColor=00b198&color=141a5e"
-    />
-  </picture>
-</a>
-<a href="https://superstaq.readthedocs.io/">
-  <picture>
-    <!-- dark -->
-    <source
-      media="(prefers-color-scheme: dark)"
-      srcset="https://img.shields.io/badge/Read%20the%20docs-a?style=flat&logo=read-the-docs&logoColor=white&labelColor=00b198&color=white"
-    />
-    <!-- light -->
-    <source
-      media="(prefers-color-scheme: light)"
-      srcset="https://img.shields.io/badge/Read%20the%20docs-a?style=flat&logo=read-the-docs&logoColor=white&labelColor=00b198&color=141a5e"
-    />
-    <!-- fallback -->
-    <img
-      alt="Read the Docs"
-      src="https://img.shields.io/badge/Read%20the%20docs-a?style=flat&logo=read-the-docs&logoColor=white&labelColor=00b198&color=141a5e"
-    />
-  </picture>
-</a>
+    /></picture></a>
 <a href="https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw">
   <picture>
     <!-- dark -->
@@ -116,9 +89,24 @@
     <img
       alt="Slack"
       src="https://img.shields.io/badge/Slack-slack?style=flat&logo=slack&logoColor=white&labelColor=00b198&color=141a5e"
+    /></picture></a>
+<a href="https://superstaq.readthedocs.io/">
+  <picture>
+    <!-- dark -->
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://img.shields.io/badge/Read%20the%20docs-a?style=flat&logo=read-the-docs&logoColor=white&labelColor=00b198&color=white"
     />
-  </picture>
-</a>
+    <!-- light -->
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="https://img.shields.io/badge/Read%20the%20docs-a?style=flat&logo=read-the-docs&logoColor=white&labelColor=00b198&color=141a5e"
+    />
+    <!-- fallback -->
+    <img
+      alt="Read the Docs"
+      src="https://img.shields.io/badge/Read%20the%20docs-a?style=flat&logo=read-the-docs&logoColor=white&labelColor=00b198&color=141a5e"
+    /></picture></a>
 </div>
 
 # Welcome to Superstaq
@@ -189,6 +177,6 @@ Superstaq is licensed under the Apache License 2.0. See our [LICENSE](https://gi
 If you'd like to reach out to a member of our team, please email us at <superstaq@infleqtion.com> or join our [Slack workspace](https://join.slack.com/t/superstaq/shared_invite/zt-1wr6eok5j-fMwB7dPEWGG~5S474xGhxw).
 
 <p align="center" style="padding: 50px">
-  <img src="./docs/source/_static/logos/Infleqtion_logo.png#gh-light-mode-only" style="width: 20%">
-  <img src="./docs/source/_static/logos/Infleqtion_logo_white.png#gh-dark-mode-only" style="width: 20%">
+  <img src="./docs/source/_static/logos/Infleqtion_logo_new_color.png#gh-light-mode-only" style="width: 20%">
+  <img src="./docs/source/_static/logos/Infleqtion_logo_new_white.png#gh-dark-mode-only" style="width: 20%">
 </p>

@@ -4,6 +4,12 @@ import numbers
 import re
 import warnings
 from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING
+
+import numpy as np
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
@@ -25,6 +31,26 @@ def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
 
     if int(integer_param) < min_val:
         raise ValueError(f"{integer_param} is less than the minimum value ({min_val}).")
+
+
+def validate_bitmap(bitmap: npt.ArrayLike) -> None:
+    """Checks that `bitmap` is in an array format acceptable by the Atom picture API.
+
+    Args:
+        bitmap: The array-like object to validate.
+
+    Raises:
+        TypeError: If `bitmap` is not a two-dimensional array.
+        TypeError: If `bitmap` is not a square two-dimensional array.
+        ValueError: If `bitmap` contains any values outside of {0, 1, 2}.
+    """
+    bitmap_array = np.asarray(bitmap)
+    if not bitmap_array.ndim == 2:
+        raise TypeError("The atom picture `bitmap` must be a 2D array-like object.")
+    if not (bitmap_array.shape[0] == bitmap_array.shape[1]):
+        raise TypeError("The atom picture `bitmap` must be a square 2D array-like object.")
+    if not np.all(np.isin(bitmap_array, [0, 1, 2])):
+        raise ValueError("The atom picture `bitmap` must only contain the integers 0, 1, or 2.")
 
 
 def validate_target(target: str) -> None:
@@ -124,20 +150,23 @@ def validate_qubo(qubo: object) -> None:
         qubo: The input value to validate.
 
     Raises:
-        ValueError: If the provided object cannot be converted into a valid QUBO.
+        TypeError: If `qubo` is not a dict-like object.
+        TypeError: If the keys of `qubo` are of an invalid type.
+        ValueError: If `qubo` contains cubic or further higher degree terms.
+        TypeError: If the values in `qubo` are not real numbers.
     """
     if not isinstance(qubo, Mapping):
-        raise ValueError("QUBOs must be provided as dict-like objects.")
+        raise TypeError("QUBOs must be provided as dict-like objects.")
 
     for key, val in qubo.items():
         if not isinstance(key, Sequence) or isinstance(key, str):
-            raise ValueError(f"{key!r} is not a valid key for a QUBO.")
+            raise TypeError(f"{key!r} is not a valid key for a QUBO.")
 
         if len(key) > 2:
             raise ValueError(f"QUBOs must be quadratic, but key {key!r} has length {len(key)}.")
 
         if not isinstance(val, numbers.Real):
-            raise ValueError("QUBO values must be real numbers.")
+            raise TypeError("QUBO values must be real numbers.")
 
 
 def _validate_ibm_channel(ibm_channel: str) -> None:
