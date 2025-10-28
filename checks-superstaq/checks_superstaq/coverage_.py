@@ -82,6 +82,8 @@ def run(
         print("No test files to check for pytest and coverage.")  # noqa: T201
         return 0
 
+    subprocess.check_call(["python", "-m", "coverage", "erase"])  # Always start fresh
+
     if not parsed_args.modular:
         test_returncode = _run_on_files(files, test_files, coverage_args, pytest_args)
         return _report(test_returncode)
@@ -130,7 +132,6 @@ def _run_on_files(
     """Helper function to run coverage tests on the given files with the given pytest arguments."""
     coverage_args = ["--include=" + ",".join(files_requiring_coverage), *coverage_args]
 
-    subprocess.check_call(["python", "-m", "coverage", "erase"])  # Always start fresh
     test_returncode = subprocess.call(
         [
             "python",
