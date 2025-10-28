@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import networkx as nx
 import numpy as np
 import qiskit
-import networkx as nx
 
 import supermarq
 
@@ -15,8 +15,10 @@ if TYPE_CHECKING:
 def compute_communication_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
     """Compute the program communication of the given quantum circuit.
     Program communication = circuit's average qubit degree / degree of a complete graph.
+
     Args:
         circuit: A quantum circuit.
+
     Returns:
         The value of the communication feature for this circuit.
     """
@@ -37,8 +39,10 @@ def compute_communication_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
 def compute_liveness_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
     """Compute the liveness of the given quantum circuit.
     Liveness feature = sum of all entries in the liveness matrix / (num_qubits * depth).
+
     Args:
         circuit: A quantum circuit.
+
     Returns:
         The value of the liveness feature for this circuit.
     """
@@ -59,8 +63,10 @@ def compute_liveness_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
 def compute_parallelism_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
     """Compute the parallelism of the given quantum circuit.
     Parallelism feature = max((((# of gates / depth) - 1) /(# of qubits - 1)), 0).
+
     Args:
         circuit: A quantum circuit.
+
     Returns:
         The value of the parallelism feature for this circuit.
     """
@@ -77,8 +83,10 @@ def compute_parallelism_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
 def compute_measurement_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
     """Compute the measurement feature of the given quantum circuit.
     Measurement feature = # of layers of mid-circuit measurement / circuit depth.
+
     Args:
         circuit: A quantum circuit.
+
     Returns:
         The value of the measurement feature for this circuit.
     """
@@ -104,8 +112,10 @@ def compute_entanglement_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
     """Compute the entanglement-ratio of the given quantum circuit.
     Entanglement-ratio = ratio between # of 2-qubit gates and total number of gates in the
     circuit.
+
     Args:
         circuit: A quantum circuit.
+
     Returns:
         The value of the entanglement feature for this circuit.
     """
@@ -118,8 +128,10 @@ def compute_entanglement_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
 def compute_depth_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
     """Compute the critical depth of the given quantum circuit.
     Critical depth = # of 2-qubit gates along the critical path / total # of 2-qubit gates.
+
     Args:
         circuit: A quantum circuit.
+
     Returns:
         The value of the depth feature for this circuit.
     """
@@ -153,8 +165,8 @@ def compute_communication(circuit: cirq.Circuit) -> float:
     Returns:
         The value of the communication feature for this circuit.
     """
-    return supermarq.converters.compute_communication_with_qiskit(
-        supermarq.converters.cirq_to_qiskit(circuit)
+    return compute_communication_with_qiskit(
+        supermarq.converters.cirq_to_qiskit(circuit, list(circuit.all_qubits()))
     )
 
 
@@ -170,8 +182,8 @@ def compute_liveness(circuit: cirq.Circuit) -> float:
     Returns:
         The value of the liveness feature for this circuit.
     """
-    return supermarq.converters.compute_liveness_with_qiskit(
-        supermarq.converters.cirq_to_qiskit(circuit)
+    return compute_liveness_with_qiskit(
+        supermarq.converters.cirq_to_qiskit(circuit, list(circuit.all_qubits()))
     )
 
 
@@ -187,8 +199,8 @@ def compute_parallelism(circuit: cirq.Circuit) -> float:
     Returns:
         The value of the parallelism feature for this circuit.
     """
-    return supermarq.converters.compute_parallelism_with_qiskit(
-        supermarq.converters.cirq_to_qiskit(circuit)
+    return compute_parallelism_with_qiskit(
+        supermarq.converters.cirq_to_qiskit(circuit, list(circuit.all_qubits()))
     )
 
 
@@ -204,8 +216,8 @@ def compute_measurement(circuit: cirq.Circuit) -> float:
     Returns:
         The value of the measurement feature for this circuit.
     """
-    return supermarq.converters.compute_measurement_with_qiskit(
-        supermarq.converters.cirq_to_qiskit(circuit)
+    return compute_measurement_with_qiskit(
+        supermarq.converters.cirq_to_qiskit(circuit, list(circuit.all_qubits()))
     )
 
 
@@ -221,8 +233,8 @@ def compute_entanglement(circuit: cirq.Circuit) -> float:
     Returns:
         The value of the entanglement feature for this circuit.
     """
-    return supermarq.converters.compute_entanglement_with_qiskit(
-        supermarq.converters.cirq_to_qiskit(circuit)
+    return compute_entanglement_with_qiskit(
+        supermarq.converters.cirq_to_qiskit(circuit, list(circuit.all_qubits()))
     )
 
 
@@ -238,6 +250,6 @@ def compute_depth(circuit: cirq.Circuit) -> float:
     Returns:
         The value of the depth feature for this circuit.
     """
-    return supermarq.converters.compute_depth_with_qiskit(
-        supermarq.converters.cirq_to_qiskit(circuit)
+    return compute_depth_with_qiskit(
+        supermarq.converters.cirq_to_qiskit(circuit, list(circuit.all_qubits()))
     )

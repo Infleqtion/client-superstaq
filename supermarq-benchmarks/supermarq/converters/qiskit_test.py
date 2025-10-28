@@ -1227,13 +1227,14 @@ def test_cirq_to_qiskit_with_decompose() -> None:
 
 
 def test_cirq_to_qiskit_with_iterative_decompose() -> None:
-    qubits = [cirq.LineQubit(int(i)) for i in np.random.permutation(6)]
+    rng = np.random.default_rng()
+    qubits = [cirq.LineQubit(int(i)) for i in rng.permutation(6)]
     cirq_circuit = cirq.testing.random_circuit(
         qubits[:3], 5, 1, gate_domain={cirq.X: 1, cirq.CX: 2, cirq.CCX: 3}
     )
     for _ in range(3):
-        index = np.random.choice(len(cirq_circuit) + 1)
-        new_qubits = [qubits[i] for i in np.random.permutation(len(qubits))]
+        index = rng.choice(len(cirq_circuit) + 1)
+        new_qubits = [qubits[i] for i in rng.permutation(len(qubits))]
         circuit_op = cirq.CircuitOperation(cirq_circuit.freeze()).with_qubit_mapping(
             dict(zip(qubits, new_qubits))
         )
