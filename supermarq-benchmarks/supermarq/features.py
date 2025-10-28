@@ -72,10 +72,8 @@ def compute_parallelism_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
     """
     dag = qiskit.converters.circuit_to_dag(circuit)
     dag.remove_all_ops_named("barrier")
-    if circuit.num_qubits <= 1:
-        return 0
     depth = dag.depth()
-    if depth == 0:
+    if circuit.num_qubits <= 1 or depth == 0:
         return 0
     return max(((len(dag.gate_nodes()) / depth) - 1) / (circuit.num_qubits - 1), 0)
 
