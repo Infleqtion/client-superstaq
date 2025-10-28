@@ -644,7 +644,7 @@ def _handle_qiskit_controlled_op(
         if all(control_values):
             controlled_op = base_op.controlled_by(*control_qubits, control_values=control_values)
         else:
-            # `gate.controlled()` sometimes has strange behavior for non-defaultcontrol values, e.g.
+            # `gate.controlled()` sometimes has strange behavior for non-default control values, e.g.
             # creating a controlled-`CZPowGate` instead of a doubly-controlled `ZPowGate`
             controlled_op = cirq.ControlledOperation(control_qubits, base_op, control_values)
 
