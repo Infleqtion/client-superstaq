@@ -1,8 +1,144 @@
 from __future__ import annotations
 
-import cirq
-import networkx as nx
+from typing import TYPE_CHECKING
+
 import numpy as np
+import qiskit
+import networkx as nx
+
+import supermarq
+
+if TYPE_CHECKING:
+    import cirq
+
+
+def compute_communication_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
+    """Compute the program communication of the given quantum circuit.
+    Program communication = circuit's average qubit degree / degree of a complete graph.
+    Args:
+        circuit: A quantum circuit.
+    Returns:
+        The value of the communication feature for this circuit.
+    """
+    num_qubits = circuit.num_qubits
+    dag = qiskit.converters.circuit_to_dag(circuit)
+    dag.remove_all_ops_named("barrier")
+
+    graph = nx.Graph()
+    for op in dag.two_qubit_ops():
+        q1, q2 = op.qargs
+        graph.add_edge(circuit.find_bit(q1).index, circuit.find_bit(q2).index)
+
+    degree_sum = sum([graph.degree(n) for n in graph.nodes])
+
+    return degree_sum / (num_qubits * (num_qubits - 1))
+
+
+def compute_liveness_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
+    """Compute the liveness of the given quantum circuit.
+    Liveness feature = sum of all entries in the liveness matrix / (num_qubits * depth).
+    Args:
+        circuit: A quantum circuit.
+    Returns:
+        The value of the liveness feature for this circuit.
+    """
+    num_qubits = circuit.num_qubits
+    dag = qiskit.converters.circuit_to_dag(circuit)
+    dag.remove_all_ops_named("barrier")
+
+    activity_matrix = np.zeros((num_qubits, dag.depth()))
+
+    for i, layer in enumerate(dag.layers()):
+        for op in layer["partition"]:
+            for qubit in op:
+                activity_matrix[circuit.find_bit(qubit).index, i] = 1
+
+    return np.sum(activity_matrix) / (num_qubits * dag.depth())
+
+
+def compute_parallelism_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
+    """Compute the parallelism of the given quantum circuit.
+    Parallelism feature = max((((# of gates / depth) - 1) /(# of qubits - 1)), 0).
+    Args:
+        circuit: A quantum circuit.
+    Returns:
+        The value of the parallelism feature for this circuit.
+    """
+    dag = qiskit.converters.circuit_to_dag(circuit)
+    dag.remove_all_ops_named("barrier")
+    if circuit.num_qubits <= 1:
+        return 0
+    depth = dag.depth()
+    if depth == 0:
+        return 0
+    return max(((len(dag.gate_nodes()) / depth) - 1) / (circuit.num_qubits - 1), 0)
+
+
+def compute_measurement_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
+    """Compute the measurement feature of the given quantum circuit.
+    Measurement feature = # of layers of mid-circuit measurement / circuit depth.
+    Args:
+        circuit: A quantum circuit.
+    Returns:
+        The value of the measurement feature for this circuit.
+    """
+    circuit.remove_final_measurements()
+    dag = qiskit.converters.circuit_to_dag(circuit)
+    dag.remove_all_ops_named("barrier")
+
+    reset_moments = 0
+    gate_depth = dag.depth()
+
+    for layer in dag.layers():
+        reset_present = False
+        for op in layer["graph"].op_nodes():
+            if op.name == "reset":
+                reset_present = True
+        if reset_present:
+            reset_moments += 1
+
+    return reset_moments / gate_depth
+
+
+def compute_entanglement_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
+    """Compute the entanglement-ratio of the given quantum circuit.
+    Entanglement-ratio = ratio between # of 2-qubit gates and total number of gates in the
+    circuit.
+    Args:
+        circuit: A quantum circuit.
+    Returns:
+        The value of the entanglement feature for this circuit.
+    """
+    dag = qiskit.converters.circuit_to_dag(circuit)
+    dag.remove_all_ops_named("barrier")
+
+    return len(dag.two_qubit_ops()) / len(dag.gate_nodes())
+
+
+def compute_depth_with_qiskit(circuit: qiskit.QuantumCircuit) -> float:
+    """Compute the critical depth of the given quantum circuit.
+    Critical depth = # of 2-qubit gates along the critical path / total # of 2-qubit gates.
+    Args:
+        circuit: A quantum circuit.
+    Returns:
+        The value of the depth feature for this circuit.
+    """
+    dag = qiskit.converters.circuit_to_dag(circuit)
+    dag.remove_all_ops_named("barrier")
+    longest_paths = dag.count_ops_longest_path()
+    n_ed = sum(
+        [
+            longest_paths[name]
+            for name in {op.name for op in dag.two_qubit_ops()}
+            if name in longest_paths
+        ]
+    )
+    n_e = len(dag.two_qubit_ops())
+
+    if n_ed == 0:
+        return 0
+
+    return n_ed / n_e
 
 
 def compute_communication(circuit: cirq.Circuit) -> float:
@@ -17,27 +153,9 @@ def compute_communication(circuit: cirq.Circuit) -> float:
     Returns:
         The value of the communication feature for this circuit.
     """
-    qubits = sorted(circuit.all_qubits(), key=lambda q: str(q))
-    num_qubits = len(qubits)
-    qubit_to_index = {q: i for i, q in enumerate(qubits)}
-
-    # Build interaction graph: nodes are qubits, edges are two-qubit gates
-    graph = nx.Graph()
-    graph.add_nodes_from(range(num_qubits))
-
-    for moment in circuit:
-        for op in moment.operations:
-            qargs = list(op.qubits)
-            if len(qargs) == 2:
-                idx1 = qubit_to_index[qargs[0]]
-                idx2 = qubit_to_index[qargs[1]]
-                graph.add_edge(idx1, idx2)
-
-    # Sum degrees of all qubits
-    degree_sum = sum(graph.degree(n) for n in graph.nodes)
-
-    # Degree of a complete graph: num_qubits * (num_qubits - 1)
-    return degree_sum / (num_qubits * (num_qubits - 1))
+    return supermarq.converters.compute_communication_with_qiskit(
+        supermarq.converters.cirq_to_qiskit(circuit)
+    )
 
 
 def compute_liveness(circuit: cirq.Circuit) -> float:
@@ -52,22 +170,9 @@ def compute_liveness(circuit: cirq.Circuit) -> float:
     Returns:
         The value of the liveness feature for this circuit.
     """
-    moments = circuit.moments
-    qubits = sorted(
-        circuit.all_qubits(),
-        key=lambda q: (q.row, q.col) if hasattr(q, "row") and hasattr(q, "col") else str(q),
+    return supermarq.converters.compute_liveness_with_qiskit(
+        supermarq.converters.cirq_to_qiskit(circuit)
     )
-    num_qubits = len(qubits)
-    depth = len(moments)
-    # Map qubits to row indices
-    qubit_indices = {q: i for i, q in enumerate(qubits)}
-    activity_matrix = np.zeros((num_qubits, depth), dtype=int)
-
-    for i, moment in enumerate(moments):
-        for op in moment.operations:
-            for q in op.qubits:
-                activity_matrix[qubit_indices[q], i] = 1
-    return np.sum(activity_matrix) / (num_qubits * depth)
 
 
 def compute_parallelism(circuit: cirq.Circuit) -> float:
@@ -82,14 +187,9 @@ def compute_parallelism(circuit: cirq.Circuit) -> float:
     Returns:
         The value of the parallelism feature for this circuit.
     """
-    num_qubits = len(circuit.all_qubits())
-    if num_qubits <= 1:
-        return 0
-    depth = len(circuit.moments)
-    if depth == 0:
-        return 0
-    num_gates = sum(1 for moment in circuit for _ in moment.operations)
-    return max(((num_gates / depth) - 1) / (num_qubits - 1), 0)
+    return supermarq.converters.compute_parallelism_with_qiskit(
+        supermarq.converters.cirq_to_qiskit(circuit)
+    )
 
 
 def compute_measurement(circuit: cirq.Circuit) -> float:
@@ -104,18 +204,9 @@ def compute_measurement(circuit: cirq.Circuit) -> float:
     Returns:
         The value of the measurement feature for this circuit.
     """
-    reset_moments = 0
-    depth = len(circuit.moments)
-
-    for moment in circuit.moments:
-        reset_present = False
-        for op in moment.operations:
-            # Check for mid-circuit measurement: cirq.MeasurementGate not at the end
-            if isinstance(op.gate, cirq.MeasurementGate):
-                reset_present = True
-        if reset_present:
-            reset_moments += 1
-    return reset_moments / depth
+    return supermarq.converters.compute_measurement_with_qiskit(
+        supermarq.converters.cirq_to_qiskit(circuit)
+    )
 
 
 def compute_entanglement(circuit: cirq.Circuit) -> float:
@@ -130,19 +221,9 @@ def compute_entanglement(circuit: cirq.Circuit) -> float:
     Returns:
         The value of the entanglement feature for this circuit.
     """
-    two_qubit_gates = 0
-    total_gates = 0
-
-    for moment in circuit.moments:
-        for op in moment.operations:
-            # Count only gate operations (ignore measurements, etc)
-            if isinstance(op.gate, cirq.Gate):
-                total_gates += 1
-                if len(op.qubits) == 2:
-                    two_qubit_gates += 1
-    if total_gates == 0:
-        return 0.0
-    return two_qubit_gates / total_gates
+    return supermarq.converters.compute_entanglement_with_qiskit(
+        supermarq.converters.cirq_to_qiskit(circuit)
+    )
 
 
 def compute_depth(circuit: cirq.Circuit) -> float:
@@ -157,32 +238,6 @@ def compute_depth(circuit: cirq.Circuit) -> float:
     Returns:
         The value of the depth feature for this circuit.
     """
-    two_qubit_gates_per_moment = []
-    for _, moment in enumerate(circuit.moments):
-        two_qubit_gates = []
-        for op in moment.operations:
-            if isinstance(op.gate, cirq.Gate) and len(op.qubits) == 2:
-                two_qubit_gates.append(op)
-        two_qubit_gates_per_moment.append(two_qubit_gates)
-    total_two_qubit_gates = sum(len(x) for x in two_qubit_gates_per_moment)
-
-    # Find critical path: for each qubit, count the 2-qubit gates
-    # it participates in along the longest path
-    # Track the path length per qubit
-    qubits = sorted(circuit.all_qubits(), key=lambda q: str(q))
-    qubit_last_moment = {q: -1 for q in qubits}
-    qubit_depths = {q: 0 for q in qubits}
-
-    for i, moment in enumerate(circuit.moments):
-        for op in moment.operations:
-            if isinstance(op.gate, cirq.Gate) and len(op.qubits) == 2:
-                for q in op.qubits:
-                    if qubit_last_moment[q] + 1 <= i:
-                        qubit_depths[q] += 1
-                        qubit_last_moment[q] = i
-
-    # The critical path is the maximum number of 2-qubit gates seen by any qubit
-    critical_two_qubit_gates = max(qubit_depths.values()) if qubit_depths else 0
-    if total_two_qubit_gates == 0:
-        return 0.0
-    return critical_two_qubit_gates / total_two_qubit_gates
+    return supermarq.converters.compute_depth_with_qiskit(
+        supermarq.converters.cirq_to_qiskit(circuit)
+    )
