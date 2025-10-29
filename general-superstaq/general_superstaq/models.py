@@ -366,7 +366,7 @@ class TargetModel(DefaultPydanticModel):
     status: TargetStatus
     """The status of this target."""
     input_type: TargetInputType
-    """The input type expected by this target."""
+    """The underlying input type expected by this target (e.g. "circuit" or "qubo")."""
     accessible: bool
     """Whether this target is accessible to the current user."""
 
@@ -375,7 +375,7 @@ class TargetModel(DefaultPydanticModel):
         return self.target.endswith("_simulator")
 
 
-class TargetModel(DefaultPydanticModel):
+class TargetModel_v0(DefaultPydanticModel):
     """Model for the details of a target."""
 
     target_name: str
