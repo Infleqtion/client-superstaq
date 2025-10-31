@@ -16,8 +16,7 @@ class SuperstaqMachineAPI(gss.superstaq_client.HTTPClient):
     def __init__(
         self,
         worker_api_token: str,
-        machine_id: str,
-        circuit_language: general_superstaq.models.CircuitType,
+        circuit_language: gss.models.CircuitType,
         remote_host: str | None = None,
         api_version: str = "v0.3.0",
         max_retry_seconds: float = 60,  # 1 minute
@@ -32,17 +31,12 @@ class SuperstaqMachineAPI(gss.superstaq_client.HTTPClient):
             verbose=verbose,
         )
         self.url += "/cq_worker"
-        self._machine_id = machine_id
         self._circuit_language = circuit_language
-
-    @property
-    def machine_id(self) -> str:
-        return self._machine_id
 
     def _job_status_route(self, job_id: str) -> str:
         return f"/circuit_status/{job_id}"
 
-    def get_next_circuit(self) -> general_superstaq.models.DeviceJob | None:
+    def get_next_circuit(self) -> gss.models.MachineTask | None:
         """Get next circuit for this machine from Superstaq. If no circuit is found, then
         return None.
         """
@@ -51,22 +45,31 @@ class SuperstaqMachineAPI(gss.superstaq_client.HTTPClient):
         )
         if not response:
             return None
-        next_circuit = general_superstaq.models.DeviceJob(**response)
+        next_circuit = gss.models.MachineTask(**response)
         return next_circuit
 
-    def get_job_status(self, job_id: str) -> general_superstaq.models.CircuitStatus:
+    def get_job_status(self, job_id: str) -> gss.models.CircuitStatus:
         """Get the status of a job from Superstaq.
         This allows the hardware to query if a user has canceled the job.
         """
         response = self.get_request(url=self._job_status_route(job_id))
-        circuit_status_response = general_superstaq.models.CircuitStatusResponse(**response)
+        circuit_status_response = gss.models.MachineTaskStatus(**response)
         circuit_status = circuit_status_response.status
         return circuit_status
 
-    def post_result(
+    def post_job_status(
         self,
         job_id: str,
-        job_status: general_superstaq.models.CircuitStatus,
+        job_status: gss.models.CircuitStatus,
+        status_message: str = "",
+    ) -> None:
+        """Post the status of a job to Superstaq."""
+        self.post_job_result(job_id, job_status, bitstrings=None, status_message=status_message)
+
+    def post_job_result(
+        self,
+        job_id: str,
+        job_status: gss.models.CircuitStatus,
         bitstrings: Collection[str] | None,
         status_message: str = "",
     ) -> None:
@@ -80,7 +83,7 @@ class SuperstaqMachineAPI(gss.superstaq_client.HTTPClient):
                 bs_index_list = compressed_bitstrings.setdefault(bs, [])
                 bs_index_list.append(idx)
 
-        results = general_superstaq.models.DeviceResults(
+        results = gss.models.MachineTaskResults(
             circuit_ref=job_id,
             status=job_status,
             status_message=status_message,
@@ -89,10 +92,10 @@ class SuperstaqMachineAPI(gss.superstaq_client.HTTPClient):
         )
         self.post_request("/circuit_results", results.model_dump(mode="json"))
 
-    def update_status(
+    def update_target_status(
         self,
         target: str,
-        status: general_superstaq.models.TargetStatus,
+        status: gss.models.TargetStatus,
         **config: object,
     ) -> None:
         """Method to update the current machine status to Superstaq."""

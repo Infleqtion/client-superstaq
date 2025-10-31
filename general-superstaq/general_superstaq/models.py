@@ -407,7 +407,7 @@ class TargetInfo(DefaultPydanticModel):
     target_info: dict[str, object]
 
 
-class MachineTaskResponse(DefaultPydanticModel):
+class MachineTask(DefaultPydanticModel):
     """The data model used for sending task data to machine workers."""
 
     circuit_ref: str
@@ -418,7 +418,7 @@ class MachineTaskResponse(DefaultPydanticModel):
     """The number of shots to perform."""
 
 
-class MachineTaskStatusResponse(DefaultPydanticModel):
+class MachineTaskStatus(DefaultPydanticModel):
     """Response for when the status of a task is returned."""
 
     circuit_ref: str
