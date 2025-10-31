@@ -338,6 +338,20 @@ class UpdateUserDetails(DefaultPydanticModel):
     """New user balance."""
 
 
+class TargetStatus(str, Enum):
+    """The current status of a Superstaq Target."""
+    AVAILABLE = "available"
+    """Target is currently accepting new jobs."""
+    DEV_ONLY = "dev_only"
+    """Target is in maintenance mode."""
+    OFFLINE = "offline"
+    """Target is temporarily unavailable for job submission."""
+    RETIRED = "retired"
+    """Target has been permanently retired."""
+    UNSUPPORTED = "unsupported"
+    """Target does not support job submission through Superstaq."""
+
+
 class TargetModel(DefaultPydanticModel):
     """Model for the details of a target."""
 
@@ -393,17 +407,8 @@ class TargetInfo(DefaultPydanticModel):
     target_info: dict[str, object]
 
 
-class DeviceStatus(str, Enum):
-    """Enumeration of possible device statuses."""
-
-    AVAILABLE = "available"
-    DEV_ONLY = "dev_only"
-    OFFLINE = "offline"
-    RETIRED = "retired"
-
-
-class DeviceJob(DefaultPydanticModel):
-    """The data model used for sending circuit data to machine workers."""
+class MachineTaskResponse(DefaultPydanticModel):
+    """The data model used for sending task data to machine workers."""
 
     circuit_ref: str
     """The circuit reference."""
@@ -413,19 +418,24 @@ class DeviceJob(DefaultPydanticModel):
     """The number of shots to perform."""
 
 
-class CircuitStatusResponse(DefaultPydanticModel):
-    """Response for when the status of a circuit is returned."""
+class MachineTaskStatusResponse(DefaultPydanticModel):
+    """Response for when the status of a task is returned."""
 
     circuit_ref: str
+    """The circuit reference."""
     status: CircuitStatus
+    """The current status of the task."""
 
 
-class DeviceResults(DefaultPydanticModel):
+class MachineTaskResults(DefaultPydanticModel):
     """The data sent by the machine workers when returning job results."""
 
     circuit_ref: str
+    """The circuit reference."""
     status: CircuitStatus
+    """The current status of the task."""
     status_message: str | None = pydantic.Field(default=None)
+    """Description of the task status."""
     successful_shots: pydantic.NonNegativeInt | None = pydantic.Field(default=None)
     """The total number of successful shots (used for validation)."""
     measurements: dict[str, set[pydantic.NonNegativeInt]] | None = pydantic.Field(default=None)
