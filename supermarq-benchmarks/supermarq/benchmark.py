@@ -40,8 +40,10 @@ class Benchmark:
         """
         cirq_circuit = self.cirq_circuit()
         if isinstance(cirq_circuit, cirq.Circuit):
-            return supermarq.converters.cirq_to_qiskit(cirq_circuit)
-        return [supermarq.converters.cirq_to_qiskit(c) for c in cirq_circuit]
+            return supermarq.converters.cirq_to_qiskit(
+                cirq_circuit, list(cirq_circuit.all_qubits())
+            )
+        return [supermarq.converters.cirq_to_qiskit(c, list(c.all_qubits())) for c in cirq_circuit]
 
     @abc.abstractmethod
     def score(self, counts: Any) -> float:
