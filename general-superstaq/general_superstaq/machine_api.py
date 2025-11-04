@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Collection
 
 import general_superstaq as gss
-import logging
 
 
 class SuperstaqMachineAPI(gss.superstaq_client.HTTPClient):
