@@ -861,11 +861,6 @@ class _BaseSuperstaqClient(ABC):
             f"The function {function_name} is not implemented for version {self.api_version}."
         )
 
-    def _not_implemented(self, function_name: str) -> NotImplementedError:
-        return NotImplementedError(
-            f"The function {function_name} is not implemented for version {self.api_version}."
-        )
-
     def _custom_headers(self, **credentials: str) -> dict[str, str]:
         custom_headers = copy.deepcopy(self.headers)
         for key in ["ibmq_token", "ibmq_instance", "ibmq_channel", "cq_token"]:

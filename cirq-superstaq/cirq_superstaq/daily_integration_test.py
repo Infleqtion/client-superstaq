@@ -33,12 +33,12 @@ def test_ibmq_compile(service: css.Service) -> None:
         css.AceCRMinusPlus(cirq.q(2), cirq.q(3)),
     )
 
-    out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
+    out = service.ibmq_compile(circuit, target="ibmq_pittsburgh_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
     assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
     assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
 
-    out = service.ibmq_compile([circuit, circuit], target="ibmq_brisbane_qpu")
+    out = service.ibmq_compile([circuit, circuit], target="ibmq_fez_qpu")
 
     assert isinstance(out.circuits, list)
     assert len(out.circuits) == 2
@@ -63,7 +63,7 @@ def test_ibmq_compile_with_token() -> None:
         css.AceCRMinusPlus(cirq.q(1), cirq.q(2)),
         css.AceCRMinusPlus(cirq.q(2), cirq.q(3)),
     )
-    out = service.ibmq_compile(circuit, target="ibmq_brisbane_qpu")
+    out = service.ibmq_compile(circuit, target="ibmq_fez_qpu")
 
     assert isinstance(out.circuit, cirq.Circuit)
     assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
@@ -160,7 +160,7 @@ def test_get_targets(service: css.Service) -> None:
     result = service.get_targets()
     filtered_result = service.get_my_targets()
     ibmq_target_info = gss.typing.Target(
-        target="ibmq_brisbane_qpu",
+        target="ibmq_fez_qpu",
         supports_submit=True,
         supports_submit_qubo=False,
         supports_compile=True,
@@ -310,9 +310,9 @@ def test_job(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
     circuit_alt = cirq.Circuit(cirq.X(cirq.q(0)), cirq.measure(cirq.q(0)))
 
-    job = service.create_job(circuit, target="ibmq_brisbane_qpu", repetitions=10, method="dry-run")
+    job = service.create_job(circuit, target="ibmq_pittsburgh_qpu", repetitions=10, method="dry-run")
     multi_job = service.create_job(
-        [circuit, circuit_alt], target="ibmq_brisbane_qpu", repetitions=10, method="dry-run"
+        [circuit, circuit_alt], target="ibmq_fez_qpu", repetitions=10, method="dry-run"
     )
     assert isinstance(job, css.Job)
     assert isinstance(multi_job, css.Job)
