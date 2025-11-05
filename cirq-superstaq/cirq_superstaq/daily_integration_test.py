@@ -310,7 +310,9 @@ def test_job(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
     circuit_alt = cirq.Circuit(cirq.X(cirq.q(0)), cirq.measure(cirq.q(0)))
 
-    job = service.create_job(circuit, target="ibmq_pittsburgh_qpu", repetitions=10, method="dry-run")
+    job = service.create_job(
+        circuit, target="ibmq_pittsburgh_qpu", repetitions=10, method="dry-run"
+    )
     multi_job = service.create_job(
         [circuit, circuit_alt], target="ibmq_fez_qpu", repetitions=10, method="dry-run"
     )
