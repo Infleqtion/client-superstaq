@@ -79,7 +79,7 @@ html_logo = "_static/logos/Superstaq_color.png"
 html_css_files = [
     "css/docs-superstaq.css",
 ]
-html_favicon = "_static/logos/Infleqtion_logo-RGB_favicon.png"
+html_favicon = "_static/logos/Infleqtion-favicon-color.png"
 
 
 # Replace common aliases (gss, css, qss) in docstrings.

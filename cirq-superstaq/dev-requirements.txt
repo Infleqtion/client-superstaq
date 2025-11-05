@@ -1,2 +1,2 @@
-checks-superstaq~=0.5.51
-qiskit-superstaq~=0.5.51
+checks-superstaq~=0.5.54
+qiskit-superstaq~=0.5.54

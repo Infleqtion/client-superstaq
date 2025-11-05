@@ -27,16 +27,20 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, ClassVar, Literal, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeVar
 
+import numpy as np
 import requests
 
 import general_superstaq as gss
 
+if TYPE_CHECKING:
+    import numpy.typing as npt
+
 TQuboKey = TypeVar("TQuboKey")
 
 RECOGNISED_CIRCUIT_TYPES = Literal[gss.models.CircuitType.CIRQ, gss.models.CircuitType.QISKIT]
-"""The circuit types that are currently implemented within the SuperstaqClient."""
+"""The circuit types that are currently implemented within the `SuperstaqClient`."""
 
 
 class ApiVersion(str, enum.Enum):
@@ -339,22 +343,22 @@ class _BaseSuperstaqClient(ABC, HTTPClient):
         ibmq_name: str | None = None,
         **kwargs: Any,
     ) -> None:
-        """Creates the SuperstaqClient.
+        """Creates the `SuperstaqClient`.
 
         Users should use `$client_superstaq.Service` instead of this class directly.
 
-        The SuperstaqClient handles making requests to the SuperstaqClient,
+        The `SuperstaqClient` handles making requests to the `SuperstaqClient`,
         returning dictionary results. It handles retry and authentication.
 
         Args:
             client_name: The name of the client.
             api_key: The key used for authenticating against the Superstaq API.
-            remote_host: The url of the server exposing the Superstaq API. This will strip anything
-                besides the base scheme and netloc, i.e. it only takes the part of the host of
+            remote_host: The URL of the server exposing the Superstaq API. This will strip anything
+                besides the base scheme and netloc, i.e., it only takes the part of the host of
                 the form `http://example.com` of `http://example.com/test`.
             api_version: Which version of the API to use. Defaults to `client_superstaq.API_VERSION`
                 (which is the most recent version when this client was downloaded).
-            circuit_type: The type of circuit, Cirq, Qiskit or QASM.
+            circuit_type: The type of circuit, Cirq, Qiskit, or QASM.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
             cq_token: Token from CQ cloud. This may be required to submit circuits to CQ hardware.
@@ -456,7 +460,7 @@ class _BaseSuperstaqClient(ABC, HTTPClient):
                 from the returned job.
             target: Target to run on.
             method: Which type of method to execute the circuits (noisy simulator,
-            non-noisy simulator, hardware, e.t.c)
+                non-noisy simulator, hardware, e.t.c)
             kwargs: Other optimization and execution parameters.
 
         Returns:
@@ -712,6 +716,19 @@ class _BaseSuperstaqClient(ABC, HTTPClient):
         gss.validation.validate_integer_param(max_solutions)
         gss.validation.validate_integer_param(qaoa_depth)
         gss.validation.validate_integer_param(rqaoa_cutoff, min_val=0)
+
+    @abstractmethod
+    def submit_atom_picture(self, bitmap: npt.ArrayLike) -> Any:
+        """Performs a POST request on the `/atom_picture` endpoint.
+
+        Args:
+            bitmap: A 2D array-like object of integers from the set {0, 1, 2}. '0' is empty,
+                '1' is atom, and '2' is whatever is there.
+
+        Returns:
+            A dictionary from the POST request.
+        """
+        gss.validation.validate_bitmap(bitmap)
 
     @abstractmethod
     def supercheq(
@@ -1140,6 +1157,20 @@ class _SuperstaqClient(_BaseSuperstaqClient):
             "options": json.dumps(options),
         }
         return self.post_request("/qubo", json_dict)
+
+    def submit_atom_picture(self, bitmap: npt.ArrayLike) -> Any:
+        """Performs a POST request on the `/atom_picture` endpoint.
+
+        Args:
+            bitmap: A 2D array-like object of integers from the set {0, 1, 2}. '0' is empty,
+                '1' is atom, and '2' is whatever is there.
+
+        Returns:
+            A dictionary from the POST request.
+        """
+        super().submit_atom_picture(bitmap)
+        json_dict = {"bitmap_1d_array": np.asarray(bitmap).ravel().tolist()}
+        return self.post_request("/atom_picture", json_dict)
 
     def supercheq(
         self,
@@ -1633,6 +1664,9 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
     ) -> list[str]:
         self._raise_not_implemented("submit_dfe")
 
+    def submit_atom_picture(self, _bitmap: npt.ArrayLike) -> Any:
+        self._raise_not_implemented("submit_atom_picture")
+
     def process_dfe(self, job_ids: Sequence[str] | Sequence[uuid.UUID]) -> float:  # type: ignore [return]
         self._raise_not_implemented("process_dfe")
 
@@ -1712,7 +1746,7 @@ def read_ibm_credentials(ibmq_name: str | None) -> dict[str, str]:
             none marked as default.
 
     Returns:
-        Dictionary containing the ibm token, channel, and instance (if available).
+        Dictionary containing the IBM token, channel, and instance (if available).
     """
     config_dir = pathlib.Path.home().joinpath(".qiskit")
     path = config_dir.joinpath("qiskit-ibm.json")

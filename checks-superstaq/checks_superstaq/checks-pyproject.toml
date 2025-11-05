@@ -165,3 +165,5 @@ exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "@overload"]
 [tool.coverage.run]
 include = ["./*"]
 concurrency = ["thread"]
+parallel = true
+patch = ["subprocess"]

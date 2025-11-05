@@ -21,9 +21,9 @@ jobs:
     name: Format check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python 3.13
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.13
       - uses: actions/cache@v4
@@ -42,9 +42,9 @@ jobs:
     name: Lint check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python 3.13
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.13
       - uses: actions/cache@v4
@@ -63,9 +63,9 @@ jobs:
     name: Type check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python 3.13
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.13
       - uses: actions/cache@v4
@@ -84,12 +84,12 @@ jobs:
     name: Pytest and Coverage check
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - uses: actions/cache@v4
@@ -119,14 +119,14 @@ jobs:
             dependencies: "./general-superstaq ./qiskit-superstaq ./cirq-superstaq ./supermarq-benchmarks[dev]"
     name: ${{ matrix.type }} standalone coverage check with minimum dependency versions
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python 3.9
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.9
       - name: Install dependencies, using minimum supported versions
         run: |
-          min_versions=$(sed -E 's/[~>]=([0-9]+(\.[0-9]+)*)(;.*)?/==\1/' ${{ matrix.type }}/requirements.txt ${{ matrix.type }}/dev-requirements.txt)
+          min_versions=$(sed -E "/;\s*python_version\s*>=\s*['\"]?3\.(1[4-9]|[2-9][0-9])(\.[0-9]+)?['\"]?/d; s/[~>]=([0-9]+(\.[0-9]+)*)(;.*)?/==\1/"  ${{ matrix.type }}/requirements.txt ${{ matrix.type }}/dev-requirements.txt)
           python -m pip install --upgrade pip
           pip install ./checks-superstaq ${{ matrix.dependencies }} $min_versions
       - name: Coverage check
@@ -137,9 +137,9 @@ jobs:
     name: Pytest macOS
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python 3.13
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.13
       - uses: actions/cache@v4
@@ -157,10 +157,12 @@ jobs:
   pytest-win:
     name: Pytest Windows
     runs-on: windows-latest
+    env:
+      MPLBACKEND: Agg # Added due to https://github.com/Infleqtion/client-superstaq/pull/1282#issue-3496955583
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python 3.13
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.13
       - uses: actions/cache@v4
@@ -181,9 +183,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python 3.13
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.13
       - uses: actions/cache@v4
@@ -216,9 +218,9 @@ jobs:
             dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq -e ./supermarq-benchmarks"
     name: Notebook check for ${{ matrix.type }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python 3.13
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.13
       - name: Install dependencies
@@ -235,9 +237,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python 3.13
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.13"
       - uses: actions/cache@v4
