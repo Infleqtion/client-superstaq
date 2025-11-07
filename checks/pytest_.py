@@ -13,5 +13,5 @@ if __name__ == "__main__":
     args += ["--exclude", "docs/source/apps/max_sharpe_ratio_optimization.ipynb"]
     args += ["--exclude", "docs/source/apps/cudaq_logical_aim.ipynb"]
     args += ["--exclude", "docs/source/optimizations/ibm/ibmq_dd.ipynb"]
-    args += ["--exclude", "docs/source/optimizations/ibm/ibmq_dd_strategies.ipynb"]
+    args += ["--exclude", "docs/source/optimizations/ibm/ibmq_dd_strategies_qss.ipynb"]
     sys.exit(checks.pytest_.run(*args))
