@@ -1,13 +1,26 @@
 from __future__ import annotations
 
 import cirq
+import stimcirq
 
 import cirq_superstaq as css
 
 
 def test_serialization() -> None:
     qubits = cirq.LineQubit.range(2)
-    circuit = cirq.Circuit(cirq.CX(*qubits), css.ZX(*qubits), cirq.ms(1.23).on(*qubits))
+    circuit = cirq.Circuit(
+        stimcirq.MeasureAndOrResetGate(
+            measure=False,
+            reset=True,
+            basis="X",
+            invert_measure=False,
+            key="",
+            measure_flip_probability=0,
+        ).on(cirq.LineQubit(0)),
+        cirq.CX(*qubits),
+        css.ZX(*qubits),
+        cirq.ms(1.23).on(*qubits),
+    )
 
     serialized_circuit = css.serialization.serialize_circuits(circuit)
     assert isinstance(serialized_circuit, str)
