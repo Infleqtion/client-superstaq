@@ -113,7 +113,7 @@
 
 This repository is the home of the Superstaq development team's open-source work, which includes:
 
-- Our quantum software platform that is optimized across the quantum stack and enables users to write quantum programs in Cirq or Qiskit and target a variety of quantum computers and simulators. Read more about it [here](https://www.infleqtion.com/quantum-software).
+- Our quantum software platform that is optimized across the quantum stack and enables users to write quantum programs in Cirq or Qiskit and target a variety of quantum computers and simulators. Read more about it [here](https://infleqtion.com/quantum-software).
 
 <p align="center"><img src="docs/source/_static/svg/code.svg"></p>
 
