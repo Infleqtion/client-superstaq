@@ -332,7 +332,8 @@ def test_qft_gate() -> None:
 
 @pytest.mark.parametrize("base_class", test_gates, ids=lambda g: g.name)
 def test_gate_preparation_and_resolution(
-    base_class: type[qiskit.circuit.Instruction], rng: np.random.Generator
+    rng: np.random.Generator,
+    base_class: type[qiskit.circuit.Instruction],
 ) -> None:
     num_params = test_gates[base_class]
 
@@ -392,7 +393,8 @@ def _check_serialization(*gates: qiskit.circuit.Instruction) -> None:
 
 @pytest.mark.parametrize("base_class", test_gates, ids=lambda g: g.name)
 def test_gate_serialization(
-    base_class: type[qiskit.circuit.Instruction], rng: np.random.Generator
+    rng: np.random.Generator,
+    base_class: type[qiskit.circuit.Instruction],
 ) -> None:
     num_params = test_gates[base_class]
     params = rng.uniform(-2 * np.pi, 2 * np.pi, (2, num_params))
