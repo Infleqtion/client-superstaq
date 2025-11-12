@@ -3,7 +3,6 @@ from __future__ import annotations
 import importlib
 import io
 import json
-import random
 import warnings
 from unittest import mock
 
@@ -14,11 +13,6 @@ import qiskit
 import qiskit.qasm2
 
 import qiskit_superstaq as qss
-
-
-@pytest.fixture
-def rng() -> np.random.Generator:
-    return np.random.default_rng(random.getrandbits(128))
 
 
 def test_qpy_serialization_version() -> None:

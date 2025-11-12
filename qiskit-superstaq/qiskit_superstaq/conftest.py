@@ -1,12 +1,20 @@
 from __future__ import annotations
 
+import random
+
 import general_superstaq as gss
+import numpy as np
 import pytest
 from general_superstaq.testing import RETURNED_TARGETS
 
 import qiskit_superstaq as qss
 
 # mypy: disable-error-code="empty-body"
+
+
+@pytest.fixture
+def rng() -> np.random.Generator:
+    return np.random.default_rng(random.getrandbits(128))
 
 
 class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
