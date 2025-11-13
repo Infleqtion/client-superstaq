@@ -67,10 +67,12 @@ class HTTPClient:
         max_retry_seconds: float = 60,  # 1 minute
         verbose: bool = False,
     ) -> None:
-        self.session = requests.Session()
+        default_host = gss.API_URL if api_version == "v0.3.0" else gss.API_URL_V3
+        remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or default_host
 
+        self.session = requests.Session()
         self.api_key = api_key
-        self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
+        self.remote_host = remote_host
         self.client_name = client_name
         self.api_version = api_version
         self.max_retry_seconds = max_retry_seconds
@@ -114,6 +116,10 @@ class HTTPClient:
         Returns:
             The response of the GET request.
         """
+        if not query:
+            q_string = ""
+        else:
+            q_string = "?" + urllib.parse.urlencode(query, doseq=True)
 
         def request() -> requests.Response:
             """Builds GET request object.
@@ -121,10 +127,6 @@ class HTTPClient:
             Returns:
                 The Flask GET request object.
             """
-            if not query:
-                q_string = ""
-            else:
-                q_string = "?" + urllib.parse.urlencode(query, doseq=True)
             return self.session.get(
                 f"{self.url}{endpoint}{q_string}",
                 headers=self._custom_headers(**credentials),
@@ -374,21 +376,6 @@ class _BaseSuperstaqClient(ABC, HTTPClient):
             kwargs: Other optimization and execution parameters.
         """
         api_key = api_key or gss.superstaq_client.find_api_key()
-        remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
-
-        self.circuit_type = circuit_type
-
-        if api_version == "v0.3.0" and remote_host == gss.API_URL:
-            remote_host = gss.API_URL_V3
-        url = urllib.parse.urlparse(remote_host)
-        assert url.scheme, (
-            f"Specified URL protocol/scheme in `remote_host` ({remote_host}) is not valid. "
-            "Use, for example, 'http', 'https'."
-        )
-        assert url.netloc, (
-            f"Specified network location in `remote_host` ({remote_host}) is not a valid URL "
-            "like, for example, http://example.com"
-        )
 
         super().__init__(
             client_name=client_name,
@@ -398,6 +385,7 @@ class _BaseSuperstaqClient(ABC, HTTPClient):
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
         )
+        self.circuit_type = circuit_type
 
         if cq_token:
             kwargs["cq_token"] = cq_token
