@@ -76,12 +76,12 @@ def test_post_task_status(mock_post: mock.MagicMock) -> None:
 
     machine_api.post_task_status(
         task_id=task_id,
-        status=gss.models.CircuitStatus.CANCELLED,
+        status=gss.models.CircuitStatus.FAILED,
     )
     mock_post.assert_called_once()
     assert mock_post.call_args.kwargs["json"] == {
         "circuit_ref": task_id,
-        "status": gss.models.CircuitStatus.CANCELLED,
+        "status": gss.models.CircuitStatus.FAILED,
         "status_message": None,
         "successful_shots": None,
         "measurements": None,
