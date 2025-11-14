@@ -340,6 +340,7 @@ class UpdateUserDetails(DefaultPydanticModel):
 
 class TargetStatus(str, Enum):
     """The current status of a Superstaq Target."""
+
     AVAILABLE = "available"
     """Target is currently accepting new jobs."""
     DEV_ONLY = "dev_only"
@@ -410,7 +411,7 @@ class TargetInfo(DefaultPydanticModel):
 class MachineTask(DefaultPydanticModel):
     """The data model used for sending task data to machine workers."""
 
-    circuit_ref: str
+    circuit_ref: pydantic.UUID4
     """The circuit reference."""
     circuit: str
     """Serialized representation of the circuit."""
@@ -421,7 +422,7 @@ class MachineTask(DefaultPydanticModel):
 class MachineTaskStatus(DefaultPydanticModel):
     """Response for when the status of a task is returned."""
 
-    circuit_ref: str
+    circuit_ref: pydantic.UUID4
     """The circuit reference."""
     status: CircuitStatus
     """The current status of the task."""
@@ -430,7 +431,7 @@ class MachineTaskStatus(DefaultPydanticModel):
 class MachineTaskResults(DefaultPydanticModel):
     """The data sent by the machine workers when returning job results."""
 
-    circuit_ref: str
+    circuit_ref: pydantic.UUID4
     """The circuit reference."""
     status: CircuitStatus
     """The current status of the task."""
@@ -440,3 +441,17 @@ class MachineTaskResults(DefaultPydanticModel):
     """The total number of successful shots (used for validation)."""
     measurements: dict[str, set[pydantic.NonNegativeInt]] | None = pydantic.Field(default=None)
     """Mapping of bitstrings to a list of shot indexes."""
+
+
+class NewWorker(DefaultPydanticModel):
+    """Model for declaring a new machine worker."""
+
+    name: str
+    served_target: str
+
+
+class WorkerToken(DefaultPydanticModel):
+    """Model containing new credentials for a machine worker."""
+
+    worker_name: str
+    token: str
