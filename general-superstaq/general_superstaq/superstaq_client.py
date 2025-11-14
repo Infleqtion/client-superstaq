@@ -1755,14 +1755,14 @@ class _SuperstaqClientV3(_AbstractUserClient):
         response = gss.models.AQTConfigs(**self.get_request("/aqt_configs"))
         return response.model_dump()
 
-    def declare_worker(self, target: str, name: str) -> gss.models.WorkerToken:
+    def declare_worker(self, target: str, name: str) -> gss.models.WorkerTokenResponse:
         content = gss.models.NewWorker(name=name, served_target=target)
         response = self.post_request("/cq_worker/new_worker", content.model_dump())
-        return gss.models.WorkerToken(**response)
+        return gss.models.WorkerTokenResponse(**response)
 
-    def regenerate_worker_token(self, name: str) -> gss.models.WorkerToken:
+    def regenerate_worker_token(self, name: str) -> gss.models.WorkerTokenResponse:
         response = self.post_request(f"/cq_worker/regenerate_token/{name}", {})
-        return gss.models.WorkerToken(**response)
+        return gss.models.WorkerTokenResponse(**response)
 
     def __repr__(self) -> str:
         return textwrap.dedent(

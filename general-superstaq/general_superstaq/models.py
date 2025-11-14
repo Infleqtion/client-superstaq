@@ -414,7 +414,7 @@ class TargetInfo(DefaultPydanticModel):
     target_info: dict[str, object]
 
 
-class MachineTask(DefaultPydanticModel):
+class WorkerTask(DefaultPydanticModel):
     """The data model used for sending task data to machine workers."""
 
     circuit_ref: str
@@ -429,7 +429,7 @@ class MachineTask(DefaultPydanticModel):
     """The user's email."""
 
 
-class MachineTaskStatus(DefaultPydanticModel):
+class WorkerTaskStatus(DefaultPydanticModel):
     """Response for when the status of a task is returned."""
 
     circuit_ref: str
@@ -438,7 +438,7 @@ class MachineTaskStatus(DefaultPydanticModel):
     """The current status of the task."""
 
 
-class MachineTaskResults(DefaultPydanticModel):
+class WorkerTaskResults(DefaultPydanticModel):
     """The data sent by the machine workers when returning job results."""
 
     circuit_ref: str
@@ -460,7 +460,7 @@ class NewWorker(DefaultPydanticModel):
     served_target: str
 
 
-class WorkerToken(DefaultPydanticModel):
+class WorkerTokenResponse(DefaultPydanticModel):
     """Model containing new credentials for a machine worker."""
 
     worker_name: str
