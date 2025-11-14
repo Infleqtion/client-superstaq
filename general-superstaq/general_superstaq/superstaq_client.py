@@ -50,7 +50,7 @@ class ApiVersion(str, enum.Enum):
     V0_3_0 = "v0.3.0"
 
 
-class _BaseSuperstaqClient(ABC):
+class _BaseSuperstaqClient:
     """Handles calls to Superstaq's API.
 
     Users should not instantiate this themselves,
@@ -61,6 +61,326 @@ class _BaseSuperstaqClient(ABC):
         requests.codes.service_unavailable,
     }
     SUPPORTED_VERSIONS: ClassVar[set[str]] = {v.value for v in ApiVersion}
+
+    def __init__(
+        self,
+        client_name: str,
+        api_key: str | None = None,
+        remote_host: str | None = None,
+        api_version: str = gss.API_VERSION,
+        circuit_type: gss.models.CircuitType = gss.models.CircuitType.CIRQ,
+        max_retry_seconds: float = 60,  # 1 minute
+        verbose: bool = False,
+    ) -> None:
+        """Creates the `SuperstaqClient`.
+
+        Users should use `$client_superstaq.Service` instead of this class directly.
+
+        The `SuperstaqClient` handles making requests to the `SuperstaqClient`,
+        returning dictionary results. It handles retry and authentication.
+
+        Args:
+            client_name: The name of the client.
+            api_key: The key used for authenticating against the Superstaq API.
+            remote_host: The URL of the server exposing the Superstaq API. This will strip anything
+                besides the base scheme and netloc, i.e., it only takes the part of the host of
+                the form `http://example.com` of `http://example.com/test`.
+            api_version: Which version of the API to use. Defaults to `client_superstaq.API_VERSION`
+                (which is the most recent version when this client was downloaded).
+            circuit_type: The type of circuit, Cirq, Qiskit, or QASM.
+            max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
+            verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
+        """
+        self.api_key = api_key or gss.superstaq_client.find_api_key()
+        self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
+        self.client_name = client_name
+        self.api_version = api_version
+        self.circuit_type = circuit_type
+        self.max_retry_seconds = max_retry_seconds
+        self.verbose = verbose
+
+        if self.api_version == "v0.3.0" and self.remote_host == gss.API_URL:
+            self.remote_host = gss.API_URL_V3
+        url = urllib.parse.urlparse(self.remote_host)
+        assert url.scheme, (
+            f"Specified URL protocol/scheme in `remote_host` ({self.remote_host}) is not valid. "
+            "Use, for example, 'http', 'https'."
+        )
+        assert url.netloc, (
+            f"Specified network location in `remote_host` ({self.remote_host}) is not a valid URL "
+            "like, for example, http://example.com"
+        )
+
+        assert self.api_version in self.SUPPORTED_VERSIONS, (
+            f"Only API versions {self.SUPPORTED_VERSIONS} are accepted but got {self.api_version}"
+        )
+        assert max_retry_seconds >= 0, "Negative retry not possible without time machine."
+
+        self.url = f"{url.scheme}://{url.netloc}/{self.api_version}"
+        self.verify_https: bool = self.url in [
+            f"{gss.API_URL}/{self.api_version}",
+            f"{gss.API_URL_V3}/{self.api_version}",
+        ]
+
+        self.headers = {
+            "Authorization": self.api_key,
+            "Content-Type": "application/json",
+            "X-Client-Name": self.client_name,
+            "X-Client-Version": self.api_version,
+        }
+        self.session = requests.Session()
+
+    def get_superstaq_version(self) -> dict[str, str | None]:
+        """Gets Superstaq version from response header.
+
+        Returns:
+            A `dict` containing the current Superstaq version.
+        """
+        response = self.session.get(self.url)
+        version = response.headers.get("superstaq_version")
+
+        return {"superstaq_version": version}
+
+    def get_request(
+        self, endpoint: str, query: Mapping[str, object] | None = None, **credentials: str
+    ) -> Any:
+        """Performs a GET request on a given endpoint.
+
+        Args:
+            endpoint: The endpoint to perform the GET request on.
+            query: An optional query dictionary to include in the get request.
+                This query will be appended to the url.
+            credentials: Any credentials that need to be added to the request headers.
+
+        Returns:
+            The response of the GET request.
+        """
+
+        def request() -> requests.Response:
+            """Builds GET request object.
+
+            Returns:
+                The Flask GET request object.
+            """
+            if not query:
+                q_string = ""
+            else:
+                q_string = "?" + urllib.parse.urlencode(query, doseq=True)
+            return self.session.get(
+                f"{self.url}{endpoint}{q_string}",
+                headers=self._custom_headers(**credentials),
+                verify=self.verify_https,
+            )
+
+        response = self._make_request(request)
+        return self._handle_response(response)
+
+    def post_request(
+        self, endpoint: str, json_dict: Mapping[str, object], **credentials: str
+    ) -> Any:
+        """Performs a POST request on a given endpoint with a given payload.
+
+        Args:
+            endpoint: The endpoint to perform the POST request on.
+            json_dict: The payload to POST.
+            credentials: Any credentials that need to be added to the request headers.
+
+        Returns:
+            The response of the POST request.
+        """
+
+        def request() -> requests.Response:
+            """Builds GET request object.
+
+            Returns:
+                The Flask GET request object.
+            """
+            return self.session.post(
+                f"{self.url}{endpoint}",
+                json=json_dict,
+                headers=self._custom_headers(**credentials),
+                verify=self.verify_https,
+            )
+
+        response = self._make_request(request)
+        return self._handle_response(response)
+
+    def put_request(
+        self, endpoint: str, json_dict: Mapping[str, object], **credentials: str
+    ) -> Any:
+        """Performs a PUT request on a given endpoint with a given payload.
+
+        Args:
+            endpoint: The endpoint to perform the PUT request on.
+            json_dict: The payload to PUT.
+            credentials: Any credentials that need to be added to the request headers.
+
+        Returns:
+            The response of the PUT request.
+        """
+
+        # Update headers with custom values
+        def request() -> requests.Response:
+            """Builds PUT request object.
+
+            Returns:
+                The Flask PUT request object.
+            """
+            return self.session.put(
+                f"{self.url}{endpoint}",
+                json=json_dict,
+                headers=self._custom_headers(**credentials),
+                verify=self.verify_https,
+            )
+
+        response = self._make_request(request)
+        return self._handle_response(response)
+
+    def _handle_response(self, response: requests.Response) -> object:
+        response_json = response.json()
+        if isinstance(response_json, dict) and "warnings" in response_json:
+            for warning in response_json["warnings"]:
+                warnings.warn(warning["message"], gss.SuperstaqWarning, stacklevel=4)
+            del response_json["warnings"]
+        return response_json
+
+    def _handle_status_codes(self, response: requests.Response) -> None:
+        """A method to handle status codes.
+
+        Args:
+            response: The `requests.Response` to get the status codes from.
+
+        Raises:
+            ~gss.SuperstaqServerException: If unauthorized by Superstaq API.
+            ~gss.SuperstaqServerException: If an error has occurred in making a request
+                to the Superstaq API.
+        """
+        if response.status_code == requests.codes.unauthorized:
+            if response.json() == (
+                "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
+            ):
+                self._prompt_accept_terms_of_use()
+                return
+
+            elif response.json() == ("You must validate your registered email."):
+                raise gss.SuperstaqServerException(
+                    "You must validate your registered email.",
+                    response.status_code,
+                )
+
+            else:
+                raise gss.SuperstaqServerException(
+                    '"Not authorized" returned by Superstaq API.  '
+                    "Check to ensure you have supplied the correct API key.",
+                    response.status_code,
+                )
+
+        if response.status_code == requests.codes.gateway_timeout:
+            # Job took too long. Don't retry, it probably won't be any faster.
+            raise gss.SuperstaqServerException(
+                "Connection timed out while processing your request. Try submitting a smaller "
+                "batch of circuits.",
+                response.status_code,
+            )
+
+        if response.status_code not in self.RETRIABLE_STATUS_CODES:
+            try:
+                json_content = self._handle_response(response)
+            except requests.JSONDecodeError:
+                json_content = None
+
+            if isinstance(json_content, dict) and set(json_content.keys()).intersection(
+                {"message", "detail"}
+            ):
+                alternative: str = json_content.get("detail", "")
+                message: str = json_content.get("message", alternative)
+            else:
+                message = str(response.text)
+
+            raise gss.SuperstaqServerException(
+                message=message, status_code=response.status_code, contact_info=True
+            )
+
+    def _make_request(self, request: Callable[[], requests.Response]) -> requests.Response:
+        """Make a request to the API, retrying if necessary.
+
+        Args:
+            request: A function that returns a `requests.Response`.
+
+        Raises:
+            ~gss.SuperstaqServerException: If there was a not-retriable error from
+                the API.
+            TimeoutError: If the requests retried for more than `max_retry_seconds`.
+
+        Returns:
+            The `requests.Response` from the final successful request call.
+        """
+        # Initial backoff of 100ms.
+        delay_seconds = 0.1
+        while True:
+            try:
+                response = request()
+
+                if response.ok:
+                    return response
+
+                self._handle_status_codes(response)
+                message = response.reason
+
+            # Fallthrough should retry.
+            except requests.RequestException as e:
+                # Connection error, timeout at server, or too many redirects.
+                # Retry these.
+                message = f"RequestException of type {type(e)}."
+            if delay_seconds > self.max_retry_seconds:
+                raise TimeoutError(f"Reached maximum number of retries. Last error: {message}")
+            if self.verbose:
+                print(message, file=sys.stderr)  # noqa: T201
+                print(f"Waiting {delay_seconds} seconds before retrying.")  # noqa: T201
+            time.sleep(delay_seconds)
+            delay_seconds *= 2
+
+    def _custom_headers(self, **credentials: str) -> dict[str, str]:
+        custom_headers = copy.deepcopy(self.headers)
+        for key in ["ibmq_token", "ibmq_instance", "ibmq_channel", "cq_token"]:
+            if key in credentials:
+                custom_headers[key] = credentials[key]
+
+        return custom_headers
+
+    def _prompt_accept_terms_of_use(self) -> None:
+        """Prompts terms of use.
+
+        Raises:
+            ~gss.SuperstaqServerException: If terms of use are not accepted.
+        """
+        raise gss.SuperstaqServerException(
+            "You'll need to accept the Terms of Use before usage of Superstaq.",
+            requests.codes.unauthorized,
+        )
+
+    @staticmethod
+    def _extract_credentials(kwargs: dict[str, Any]) -> dict[str, str]:
+        credentials = {}
+        for key in ["ibmq_token", "ibmq_instance", "ibmq_channel"]:
+            if key in kwargs:
+                credentials[key] = kwargs.pop(key)
+
+        if "cq_token" in kwargs:  # CQ-Token may need to be json encoded as headers must be strings.
+            cq_token = kwargs.pop("cq_token")
+            if isinstance(cq_token, str):
+                credentials["cq_token"] = cq_token
+            else:
+                credentials["cq_token"] = json.dumps(cq_token)
+
+        return credentials
+
+    def __str__(self) -> str:
+        return f"Client version {self.api_version} with host={self.url} and name={self.client_name}"
+
+
+class _AbstractUserClient(_BaseSuperstaqClient, ABC):
+    """Abstract base class for V2 and V3 clients."""
 
     def __init__(
         self,
@@ -109,44 +429,15 @@ class _BaseSuperstaqClient(ABC):
             ibmq_name: The name of the account to retrieve. The default is `default-ibm-quantum`.
             kwargs: Other optimization and execution parameters.
         """
-        self.api_key = api_key or gss.superstaq_client.find_api_key()
-        self.remote_host = remote_host or os.getenv("SUPERSTAQ_REMOTE_HOST") or gss.API_URL
-        self.client_name = client_name
-        self.api_version = api_version
-        self.circuit_type = circuit_type
-        self.max_retry_seconds = max_retry_seconds
-        self.verbose = verbose
-
-        if self.api_version == "v0.3.0" and self.remote_host == gss.API_URL:
-            self.remote_host = gss.API_URL_V3
-        url = urllib.parse.urlparse(self.remote_host)
-        assert url.scheme, (
-            f"Specified URL protocol/scheme in `remote_host` ({self.remote_host}) is not valid. "
-            "Use, for example, 'http', 'https'."
+        super().__init__(
+            client_name=client_name,
+            api_key=api_key,
+            remote_host=remote_host,
+            api_version=api_version,
+            circuit_type=circuit_type,
+            max_retry_seconds=max_retry_seconds,
+            verbose=verbose,
         )
-        assert url.netloc, (
-            f"Specified network location in `remote_host` ({self.remote_host}) is not a valid URL "
-            "like, for example, http://example.com"
-        )
-
-        assert self.api_version in self.SUPPORTED_VERSIONS, (
-            f"Only API versions {self.SUPPORTED_VERSIONS} are accepted but got {self.api_version}"
-        )
-        assert max_retry_seconds >= 0, "Negative retry not possible without time machine."
-
-        self.url = f"{url.scheme}://{url.netloc}/{self.api_version}"
-        self.verify_https: bool = self.url in [
-            f"{gss.API_URL}/{self.api_version}",
-            f"{gss.API_URL_V3}/{self.api_version}",
-        ]
-
-        self.headers = {
-            "Authorization": self.api_key,
-            "Content-Type": "application/json",
-            "X-Client-Name": self.client_name,
-            "X-Client-Version": self.api_version,
-        }
-        self.session = requests.Session()
 
         if cq_token:
             kwargs["cq_token"] = cq_token
@@ -171,17 +462,6 @@ class _BaseSuperstaqClient(ABC):
 
         if self.api_version == "v0.3.0":
             self._warn_unstable_version()
-
-    def get_superstaq_version(self) -> dict[str, str | None]:
-        """Gets Superstaq version from response header.
-
-        Returns:
-            A `dict` containing the current Superstaq version.
-        """
-        response = self.session.get(self.url)
-        version = response.headers.get("superstaq_version")
-
-        return {"superstaq_version": version}
 
     @abstractmethod
     def create_job(  # type: ignore [return]
@@ -672,205 +952,6 @@ class _BaseSuperstaqClient(ABC):
             A dictionary containing the AQT configs.
         """
 
-    def get_request(
-        self, endpoint: str, query: Mapping[str, object] | None = None, **credentials: str
-    ) -> Any:
-        """Performs a GET request on a given endpoint.
-
-        Args:
-            endpoint: The endpoint to perform the GET request on.
-            query: An optional query dictionary to include in the get request.
-                This query will be appended to the url.
-            credentials: Any credentials that need to be added to the request headers.
-
-        Returns:
-            The response of the GET request.
-        """
-
-        def request() -> requests.Response:
-            """Builds GET request object.
-
-            Returns:
-                The Flask GET request object.
-            """
-            if not query:
-                q_string = ""
-            else:
-                q_string = "?" + urllib.parse.urlencode(query, doseq=True)
-            return self.session.get(
-                f"{self.url}{endpoint}{q_string}",
-                headers=self._custom_headers(**credentials),
-                verify=self.verify_https,
-            )
-
-        response = self._make_request(request)
-        return self._handle_response(response)
-
-    def post_request(
-        self, endpoint: str, json_dict: Mapping[str, object], **credentials: str
-    ) -> Any:
-        """Performs a POST request on a given endpoint with a given payload.
-
-        Args:
-            endpoint: The endpoint to perform the POST request on.
-            json_dict: The payload to POST.
-            credentials: Any credentials that need to be added to the request headers.
-
-        Returns:
-            The response of the POST request.
-        """
-
-        def request() -> requests.Response:
-            """Builds GET request object.
-
-            Returns:
-                The Flask GET request object.
-            """
-            return self.session.post(
-                f"{self.url}{endpoint}",
-                json=json_dict,
-                headers=self._custom_headers(**credentials),
-                verify=self.verify_https,
-            )
-
-        response = self._make_request(request)
-        return self._handle_response(response)
-
-    def put_request(
-        self, endpoint: str, json_dict: Mapping[str, object], **credentials: str
-    ) -> Any:
-        """Performs a PUT request on a given endpoint with a given payload.
-
-        Args:
-            endpoint: The endpoint to perform the PUT request on.
-            json_dict: The payload to PUT.
-            credentials: Any credentials that need to be added to the request headers.
-
-        Returns:
-            The response of the PUT request.
-        """
-
-        # Update headers with custom values
-        def request() -> requests.Response:
-            """Builds PUT request object.
-
-            Returns:
-                The Flask PUT request object.
-            """
-            return self.session.put(
-                f"{self.url}{endpoint}",
-                json=json_dict,
-                headers=self._custom_headers(**credentials),
-                verify=self.verify_https,
-            )
-
-        response = self._make_request(request)
-        return self._handle_response(response)
-
-    def _handle_response(self, response: requests.Response) -> object:
-        response_json = response.json()
-        if isinstance(response_json, dict) and "warnings" in response_json:
-            for warning in response_json["warnings"]:
-                warnings.warn(warning["message"], gss.SuperstaqWarning, stacklevel=4)
-            del response_json["warnings"]
-        return response_json
-
-    def _handle_status_codes(self, response: requests.Response) -> None:
-        """A method to handle status codes.
-
-        Args:
-            response: The `requests.Response` to get the status codes from.
-
-        Raises:
-            ~gss.SuperstaqServerException: If unauthorized by Superstaq API.
-            ~gss.SuperstaqServerException: If an error has occurred in making a request
-                to the Superstaq API.
-        """
-        if response.status_code == requests.codes.unauthorized:
-            if response.json() == (
-                "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
-            ):
-                self._prompt_accept_terms_of_use()
-                return
-
-            elif response.json() == ("You must validate your registered email."):
-                raise gss.SuperstaqServerException(
-                    "You must validate your registered email.",
-                    response.status_code,
-                )
-
-            else:
-                raise gss.SuperstaqServerException(
-                    '"Not authorized" returned by Superstaq API.  '
-                    "Check to ensure you have supplied the correct API key.",
-                    response.status_code,
-                )
-
-        if response.status_code == requests.codes.gateway_timeout:
-            # Job took too long. Don't retry, it probably won't be any faster.
-            raise gss.SuperstaqServerException(
-                "Connection timed out while processing your request. Try submitting a smaller "
-                "batch of circuits.",
-                response.status_code,
-            )
-
-        if response.status_code not in self.RETRIABLE_STATUS_CODES:
-            try:
-                json_content = self._handle_response(response)
-            except requests.JSONDecodeError:
-                json_content = None
-
-            if isinstance(json_content, dict) and set(json_content.keys()).intersection(
-                {"message", "detail"}
-            ):
-                alternative: str = json_content.get("detail", "")
-                message: str = json_content.get("message", alternative)
-            else:
-                message = str(response.text)
-
-            raise gss.SuperstaqServerException(
-                message=message, status_code=response.status_code, contact_info=True
-            )
-
-    def _make_request(self, request: Callable[[], requests.Response]) -> requests.Response:
-        """Make a request to the API, retrying if necessary.
-
-        Args:
-            request: A function that returns a `requests.Response`.
-
-        Raises:
-            ~gss.SuperstaqServerException: If there was a not-retriable error from
-                the API.
-            TimeoutError: If the requests retried for more than `max_retry_seconds`.
-
-        Returns:
-            The `requests.Response` from the final successful request call.
-        """
-        # Initial backoff of 100ms.
-        delay_seconds = 0.1
-        while True:
-            try:
-                response = request()
-
-                if response.ok:
-                    return response
-
-                self._handle_status_codes(response)
-                message = response.reason
-
-            # Fallthrough should retry.
-            except requests.RequestException as e:
-                # Connection error, timeout at server, or too many redirects.
-                # Retry these.
-                message = f"RequestException of type {type(e)}."
-            if delay_seconds > self.max_retry_seconds:
-                raise TimeoutError(f"Reached maximum number of retries. Last error: {message}")
-            if self.verbose:
-                print(message, file=sys.stderr)  # noqa: T201
-                print(f"Waiting {delay_seconds} seconds before retrying.")  # noqa: T201
-            time.sleep(delay_seconds)
-            delay_seconds *= 2
-
     def _warn_unstable_version(self) -> None:
         warnings.warn(
             (
@@ -885,14 +966,6 @@ class _BaseSuperstaqClient(ABC):
         raise NotImplementedError(
             f"The function {function_name} is not implemented for version {self.api_version}."
         )
-
-    def _custom_headers(self, **credentials: str) -> dict[str, str]:
-        custom_headers = copy.deepcopy(self.headers)
-        for key in ["ibmq_token", "ibmq_instance", "ibmq_channel", "cq_token"]:
-            if key in credentials:
-                custom_headers[key] = credentials[key]
-
-        return custom_headers
 
     def _prompt_accept_terms_of_use(self) -> None:
         """Prompts terms of use.
@@ -914,22 +987,6 @@ class _BaseSuperstaqClient(ABC):
             )
 
     @staticmethod
-    def _extract_credentials(kwargs: dict[str, Any]) -> dict[str, str]:
-        credentials = {}
-        for key in ["ibmq_token", "ibmq_instance", "ibmq_channel"]:
-            if key in kwargs:
-                credentials[key] = kwargs.pop(key)
-
-        if "cq_token" in kwargs:  # CQ-Token may need to be json encoded as headers must be strings.
-            cq_token = kwargs.pop("cq_token")
-            if isinstance(cq_token, str):
-                credentials["cq_token"] = cq_token
-            else:
-                credentials["cq_token"] = json.dumps(cq_token)
-
-        return credentials
-
-    @staticmethod
     def _extract_circuits(json_dict: dict[str, str]) -> tuple[str, RECOGNISED_CIRCUIT_TYPES]:
         recognised_circuit_types: dict[str, RECOGNISED_CIRCUIT_TYPES] = {
             "cirq_circuits": gss.models.CircuitType.CIRQ,
@@ -949,11 +1006,8 @@ class _BaseSuperstaqClient(ABC):
 
         return circuits, circuit_type
 
-    def __str__(self) -> str:
-        return f"Client version {self.api_version} with host={self.url} and name={self.client_name}"
 
-
-class _SuperstaqClient(_BaseSuperstaqClient):
+class _SuperstaqClient(_AbstractUserClient):
     def create_job(
         self,
         serialized_circuits: dict[str, str],
@@ -1306,7 +1360,7 @@ class _SuperstaqClient(_BaseSuperstaqClient):
         )
 
 
-class _SuperstaqClientV3(_BaseSuperstaqClient):
+class _SuperstaqClientV3(_AbstractUserClient):
     def create_job(
         self,
         serialized_circuits: dict[str, str],
@@ -1683,6 +1737,15 @@ class _SuperstaqClientV3(_BaseSuperstaqClient):
     def aqt_get_configs(self) -> dict[str, str]:
         response = gss.models.AQTConfigs(**self.get_request("/aqt_configs"))
         return response.model_dump()
+
+    def declare_worker(self, target: str, name: str) -> gss.models.WorkerTokenResponse:
+        content = gss.models.NewWorker(name=name, served_target=target)
+        response = self.post_request("/cq_worker/new_worker", content.model_dump())
+        return gss.models.WorkerTokenResponse(**response)
+
+    def regenerate_worker_token(self, name: str) -> gss.models.WorkerTokenResponse:
+        response = self.post_request(f"/cq_worker/regenerate_token/{name}", {})
+        return gss.models.WorkerTokenResponse(**response)
 
     def __repr__(self) -> str:
         return textwrap.dedent(
