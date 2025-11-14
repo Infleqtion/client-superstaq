@@ -20,7 +20,11 @@ def test_get_next_task(mock_get: mock.MagicMock) -> None:
     task_id = str(uuid.uuid4())
     circuit = cirq.Circuit(cirq.X(cirq.q(0)))
     worker_task = gss.models.WorkerTask(
-        circuit_ref=task_id, circuit=css.serialize_circuits(circuit), shots=10
+        circuit_ref=task_id,
+        circuit=css.serialize_circuits(circuit),
+        shots=10,
+        metadata={"foo": "bar"},
+        user_email="f@o.bar",
     )
 
     response1 = requests.Response()
@@ -34,7 +38,9 @@ def test_get_next_task(mock_get: mock.MagicMock) -> None:
     mock_get.side_effect = [response1, response2, response2]
 
     next_circuit = worker.get_next_task()
-    assert next_circuit == css.worker.Task(task_id=task_id, circuit=circuit, shots=10)
+    assert next_circuit == css.worker.Task(
+        task_id=task_id, circuit=circuit, shots=10, metadata={"foo": "bar"}, user_email="f@o.bar"
+    )
 
     next_circuit = worker.get_next_task()
     assert next_circuit is None

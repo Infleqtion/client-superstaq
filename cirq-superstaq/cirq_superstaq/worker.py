@@ -20,6 +20,8 @@ class Task:
     task_id: str
     circuit: cirq.Circuit
     shots: int
+    metadata: dict[str, object]
+    user_email: str | None
 
 
 class Worker:
@@ -55,6 +57,8 @@ class Worker:
             task_id=worker_task.circuit_ref,
             circuit=css.deserialize_circuits(worker_task.circuit)[0],
             shots=worker_task.shots,
+            metadata=worker_task.metadata,
+            user_email=worker_task.user_email,
         )
 
     def get_task_status(self, task_id: str) -> gss.models.CircuitStatus:
