@@ -76,10 +76,29 @@ def test_worker_task_results() -> None:
             measurements={"000": [0, 3], "101": [2]},
         )
 
-    with pytest.raises(ValueError, match=r"Cannot return results"):
+    with pytest.raises(ValueError, match=r"cannot return a status"):
         _ = gss.models.WorkerTaskResults(
             circuit_ref="1234",
-            status=gss.models.CircuitStatus.RUNNING,
+            status=gss.models.CircuitStatus.AWAITING_COMPILE,
+        )
+
+    with pytest.raises(ValueError, match=r"cannot return results unless"):
+        _ = gss.models.WorkerTaskResults(
+            circuit_ref="1234",
+            status=gss.models.CircuitStatus.FAILED,
             successful_shots=4,
             measurements={"000": [0, 1, 3], "101": [2]},
         )
+
+    _ = gss.models.WorkerTaskResults(
+        circuit_ref="1234",
+        status=gss.models.CircuitStatus.COMPLETED,
+        successful_shots=4,
+        measurements={"000": [0, 1, 3], "101": [2]},
+    )
+
+    _ = gss.models.WorkerTaskResults(
+        circuit_ref="1234",
+        status=gss.models.CircuitStatus.FAILED,
+        status_message="message",
+    )

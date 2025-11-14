@@ -468,8 +468,15 @@ class WorkerTaskResults(DefaultPydanticModel):
             ):
                 raise ValueError("Not all successful shots have a measurement.")
 
+        elif self.status not in (
+            CircuitStatus.RUNNING,
+            CircuitStatus.COMPLETED,
+            CircuitStatus.FAILED,
+        ):
+            raise ValueError(f"Workers cannot return a status of {self.status}.")
+
         elif self.successful_shots is not None or self.measurements is not None:
-            raise ValueError("Cannot return results unless status is COMPLETED")
+            raise ValueError("Workers cannot return results unless status is COMPLETED")
 
         return self
 
