@@ -162,7 +162,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
                 (e.g. 'dry-run', 'statevector', etc.).
             verbatim: Run the provided circuit(s) verbatim (i.e. without compilation).
             tag: An identifying tag (or list of tags) which can be used to find this job.
-            metadata: Other data to store alongside the job.
+            metadata: Optional other data to store alongside the job.
             kwargs: Other optimization and execution parameters.
 
         Returns:
