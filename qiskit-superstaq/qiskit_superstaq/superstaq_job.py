@@ -415,7 +415,7 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
             backend: The `qss.SuperstaqBackend` that the job was created with.
             job_id: The unique job ID string from Superstaq.
         """
-        super().__init__(backend, str(job_id))
+        self._backend = backend
         self._job_id = job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(job_id)
         self._overall_status = gss.models.CircuitStatus.RECEIVED
         self._job_info: gss.models.JobData | None = None
@@ -437,6 +437,16 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
             raise AttributeError("Job info has not been fetched yet. Run _refresh_job().")
         else:
             return self._job_info
+
+    @property
+    def tags(self) -> list[str]:
+        """All tags associated with this job."""
+        return self.job_info.tags
+
+    @property
+    def metadata(self) -> dict[str, object]:
+        """Any metadata passed when creating this job."""
+        return self.job_info.metadata
 
     def job_id(self) -> uuid.UUID:
         """Returns the job's unique id."""
