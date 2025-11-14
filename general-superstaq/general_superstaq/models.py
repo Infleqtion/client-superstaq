@@ -8,7 +8,7 @@ import itertools
 import uuid
 from collections.abc import Mapping, Sequence
 from enum import Enum
-from typing import Any, Self
+from typing import Any
 
 import pydantic
 
@@ -454,7 +454,7 @@ class WorkerTaskResults(DefaultPydanticModel):
     """Mapping of bitstrings to a list of shot indexes."""
 
     @pydantic.model_validator(mode="after")
-    def validate_measurements(self) -> Self:
+    def validate_measurements(self) -> WorkerTaskResults:
         """Check all measurement keys are bitstrings of the same length, all values have the
         expected number of shots and all indices are present.
         """
