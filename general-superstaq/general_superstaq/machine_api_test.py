@@ -12,7 +12,7 @@ from general_superstaq.machine_api import MachineAPI
 
 @mock.patch("requests.Session.get")
 def test_get_next_task(mock_get: mock.MagicMock) -> None:
-    machine_api = MachineAPI("token")
+    machine_api = MachineAPI("machine_api", api_key="token")
 
     task_id = str(uuid.uuid4())
     worker_task = gss.models.WorkerTask(circuit_ref=task_id, circuit='["circuit"]', shots=10)
@@ -39,7 +39,7 @@ def test_get_next_task(mock_get: mock.MagicMock) -> None:
 
 @mock.patch("requests.Session.get")
 def test_unaccepted_terms_of_use(mock_get: mock.MagicMock) -> None:
-    machine_api = MachineAPI("token")
+    machine_api = MachineAPI("machine_api", api_key="token")
 
     mock_get.return_value = requests.Response()
     mock_get.return_value.status_code = requests.codes.unauthorized
@@ -53,7 +53,7 @@ def test_unaccepted_terms_of_use(mock_get: mock.MagicMock) -> None:
 
 @mock.patch("requests.Session.get")
 def test_get_task_status(mock_get: mock.MagicMock) -> None:
-    machine_api = MachineAPI("token")
+    machine_api = MachineAPI("machine_api", api_key="token")
 
     task_id = str(uuid.uuid4())
     worker_task_status = gss.models.WorkerTaskStatus(
@@ -71,7 +71,7 @@ def test_get_task_status(mock_get: mock.MagicMock) -> None:
 
 @mock.patch("requests.Session.post")
 def test_post_result(mock_post: mock.MagicMock) -> None:
-    machine_api = MachineAPI("token")
+    machine_api = MachineAPI("machine_api", api_key="token")
 
     task_id = str(uuid.uuid4())
 
@@ -117,7 +117,7 @@ def test_post_result(mock_post: mock.MagicMock) -> None:
 
 @mock.patch("requests.Session.put")
 def test_update_target_status(mock_put: mock.MagicMock) -> None:
-    machine_api = MachineAPI("token")
+    machine_api = MachineAPI("machine_api", api_key="token")
     machine_api.update_target_status(
         status=gss.models.TargetStatus.RETIRED,
     )
