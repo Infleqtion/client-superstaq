@@ -411,7 +411,7 @@ class TargetInfo(DefaultPydanticModel):
 class MachineTask(DefaultPydanticModel):
     """The data model used for sending task data to machine workers."""
 
-    circuit_ref: pydantic.UUID4
+    circuit_ref: str
     """The circuit reference."""
     circuit: str
     """Serialized representation of the circuit."""
@@ -422,7 +422,7 @@ class MachineTask(DefaultPydanticModel):
 class MachineTaskStatus(DefaultPydanticModel):
     """Response for when the status of a task is returned."""
 
-    circuit_ref: pydantic.UUID4
+    circuit_ref: str
     """The circuit reference."""
     status: CircuitStatus
     """The current status of the task."""
@@ -431,7 +431,7 @@ class MachineTaskStatus(DefaultPydanticModel):
 class MachineTaskResults(DefaultPydanticModel):
     """The data sent by the machine workers when returning job results."""
 
-    circuit_ref: pydantic.UUID4
+    circuit_ref: str
     """The circuit reference."""
     status: CircuitStatus
     """The current status of the task."""
