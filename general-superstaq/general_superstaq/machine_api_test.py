@@ -11,14 +11,15 @@ from general_superstaq.machine_api import MachineAPI
 
 
 @mock.patch("requests.Session.get")
-def test_get_next_circuit(mock_get: mock.MagicMock) -> None:
+def test_get_next_task(mock_get: mock.MagicMock) -> None:
     machine_api = MachineAPI("token")
 
-    machine_task = gss.models.WorkerTask(circuit_ref=str(uuid.uuid4()), circuit="circuit", shots=10)
+    task_id = str(uuid.uuid4())
+    worker_task = gss.models.WorkerTask(circuit_ref=task_id, circuit='["circuit"]', shots=10)
 
     response1 = requests.Response()
     response1.status_code = requests.codes.ok
-    response1._content = machine_task.model_dump_json().encode()
+    response1._content = worker_task.model_dump_json().encode()
 
     response2 = requests.Response()
     response2.status_code = requests.codes.ok
@@ -26,13 +27,13 @@ def test_get_next_circuit(mock_get: mock.MagicMock) -> None:
 
     mock_get.side_effect = [response1, response2, response2]
 
-    next_circuit = machine_api.get_next_circuit()
-    assert next_circuit == machine_task
+    next_circuit = machine_api.get_next_task()
+    assert next_circuit == worker_task
 
-    next_circuit = machine_api.get_next_circuit()
+    next_circuit = machine_api.get_next_task()
     assert next_circuit is None
 
-    next_circuit = machine_api.get_next_circuit()
+    next_circuit = machine_api.get_next_task()
     assert next_circuit is None
 
 
@@ -47,7 +48,7 @@ def test_unaccepted_terms_of_use(mock_get: mock.MagicMock) -> None:
     )
 
     with pytest.raises(gss.SuperstaqServerException, match=r"accept the Terms of Use"):
-        _ = machine_api.get_next_circuit()
+        _ = machine_api.get_next_task()
 
 
 @mock.patch("requests.Session.get")
@@ -55,26 +56,26 @@ def test_get_task_status(mock_get: mock.MagicMock) -> None:
     machine_api = MachineAPI("token")
 
     task_id = str(uuid.uuid4())
-    machine_task_status = gss.models.WorkerTaskStatus(
+    worker_task_status = gss.models.WorkerTaskStatus(
         circuit_ref=task_id,
         status=gss.models.CircuitStatus.RUNNING,
     )
 
     mock_get.return_value = requests.Response()
     mock_get.return_value.status_code = requests.codes.ok
-    mock_get.return_value._content = machine_task_status.model_dump_json().encode()
+    mock_get.return_value._content = worker_task_status.model_dump_json().encode()
 
     status = machine_api.get_task_status(task_id)
     assert status == gss.models.CircuitStatus.RUNNING
 
 
 @mock.patch("requests.Session.post")
-def test_post_task_status(mock_post: mock.MagicMock) -> None:
+def test_post_result(mock_post: mock.MagicMock) -> None:
     machine_api = MachineAPI("token")
 
     task_id = str(uuid.uuid4())
 
-    machine_api.post_task_status(
+    machine_api.post_result(
         task_id=task_id,
         status=gss.models.CircuitStatus.FAILED,
     )
@@ -87,7 +88,7 @@ def test_post_task_status(mock_post: mock.MagicMock) -> None:
         "measurements": None,
     }
 
-    machine_api.post_task_status(
+    machine_api.post_result(
         task_id=task_id,
         status=gss.models.CircuitStatus.FAILED,
         status_message="foo",

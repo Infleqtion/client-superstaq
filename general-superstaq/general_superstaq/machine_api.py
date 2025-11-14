@@ -2,49 +2,36 @@
 
 from __future__ import annotations
 
+import dataclasses
 from collections.abc import Collection
 
 import general_superstaq as gss
 
 
-class MachineAPI(gss.superstaq_client._BaseSuperstaqClient):
-    """A client for superstaq target workers. Contains the logic to retrieve circuits, return
-    results to the server and update the machine specs in the target database.
-    """
+@dataclasses.dataclass
+class Task:
+    """A task to be executed on the machine."""
 
-    def __init__(
-        self,
-        worker_api_token: str,
-        remote_host: str | None = None,
-        api_version: str = "v0.3.0",
-        circuit_type: gss.models.CircuitType = gss.models.CircuitType.CIRQ,
-        max_retry_seconds: float = 60,  # 1 minute
-        verbose: bool = False,
-    ) -> None:
-        super().__init__(
-            client_name="MachineAPI",
-            api_key=worker_api_token,
-            remote_host=remote_host,
-            api_version=api_version,
-            circuit_type=circuit_type,
-            max_retry_seconds=max_retry_seconds,
-            verbose=verbose,
-        )
+    task_id: str
+    circuit: str
+    shots: int
+
+
+class MachineAPI(gss.superstaq_client._BaseSuperstaqClient):
+    """API for machine workers."""
 
     def _task_status_route(self, task_id: str) -> str:
         return f"/cq_worker/circuit_status/{task_id}"
 
-    def get_next_circuit(self) -> gss.models.WorkerTask | None:
-        """Get next circuit for this machine from Superstaq. If no circuit is found, then
-        return None.
-        """
+    def get_next_task(self) -> gss.models.WorkerTask | None:
+        """Get next task for this machine from Superstaq. If no task is found, then return None."""
         response = self.get_request(
             "/cq_worker/next_circuit", query={"circuit_language": self.circuit_type.value}
         )
         if not response:
             return None
-        next_circuit = gss.models.WorkerTask(**response)
-        return next_circuit
+
+        return gss.models.WorkerTask(**response)
 
     def get_task_status(self, task_id: str) -> gss.models.CircuitStatus:
         """Get the status of a task from Superstaq.
@@ -55,20 +42,11 @@ class MachineAPI(gss.superstaq_client._BaseSuperstaqClient):
         circuit_status = circuit_status_response.status
         return circuit_status
 
-    def post_task_status(
-        self,
-        task_id: str,
-        status: gss.models.CircuitStatus,
-        status_message: str | None = None,
-    ) -> None:
-        """Post the status of a task to Superstaq."""
-        self.post_result(task_id, status, bitstrings=None, status_message=status_message)
-
     def post_result(
         self,
         task_id: str,
         status: gss.models.CircuitStatus,
-        bitstrings: Collection[str] | None,
+        bitstrings: Collection[str] | None = None,
         status_message: str | None = None,
     ) -> None:
         """Post the result of a task to Superstaq. Note the server will perform verification of
