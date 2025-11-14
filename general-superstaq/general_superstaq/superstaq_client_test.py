@@ -2265,16 +2265,19 @@ def test_new_worker(
 def test_regenerate_worker_token(
     mock_post: mock.MagicMock, client_v3: gss.superstaq_client._SuperstaqClientV3
 ) -> None:
+    worker_name = "sqale_worker"
     token = secrets.token_hex(nbytes=32)
+
     mock_post.return_value = requests.Response()
     mock_post.return_value.status_code = requests.codes.ok
-    mock_post.return_value._content = json.dumps({"worker_name": "worker", "token": token}).encode()
+    mock_post.return_value._content = json.dumps(
+        {"worker_name": "sqale_worker", "token": token}
+    ).encode()
 
-    target = "sqale_test_qpu"
-    response = client_v3.regenerate_worker_token(target)
-    assert response.worker_name == "worker"
+    response = client_v3.regenerate_worker_token(worker_name)
+    assert response.worker_name == "sqale_worker"
     assert response.token == token
 
     mock_post.assert_called_once()
-    assert f"cq_worker/regenerate_token/{target}" in mock_post.call_args.args[0]
+    assert f"cq_worker/regenerate_token/{worker_name}" in mock_post.call_args.args[0]
     assert mock_post.call_args.kwargs["json"] == {}

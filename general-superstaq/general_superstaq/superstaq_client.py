@@ -1743,8 +1743,8 @@ class _SuperstaqClientV3(_AbstractUserClient):
         response = self.post_request("/cq_worker/new_worker", content.model_dump())
         return gss.models.WorkerToken(**response)
 
-    def regenerate_worker_token(self, target: str) -> gss.models.WorkerToken:
-        response = self.post_request(f"/cq_worker/regenerate_token/{target}", {})
+    def regenerate_worker_token(self, name: str) -> gss.models.WorkerToken:
+        response = self.post_request(f"/cq_worker/regenerate_token/{name}", {})
         return gss.models.WorkerToken(**response)
 
     def __repr__(self) -> str:
