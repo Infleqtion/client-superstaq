@@ -34,7 +34,7 @@ class MachineAPI(gss.superstaq_client._BaseSuperstaqClient):
     def _task_status_route(self, task_id: str) -> str:
         return f"/cq_worker/circuit_status/{task_id}"
 
-    def get_next_circuit(self) -> gss.models.MachineTask | None:
+    def get_next_circuit(self) -> gss.models.WorkerTask | None:
         """Get next circuit for this machine from Superstaq. If no circuit is found, then
         return None.
         """
@@ -43,7 +43,7 @@ class MachineAPI(gss.superstaq_client._BaseSuperstaqClient):
         )
         if not response:
             return None
-        next_circuit = gss.models.MachineTask(**response)
+        next_circuit = gss.models.WorkerTask(**response)
         return next_circuit
 
     def get_task_status(self, task_id: str) -> gss.models.CircuitStatus:
@@ -51,7 +51,7 @@ class MachineAPI(gss.superstaq_client._BaseSuperstaqClient):
         This allows the hardware to query if a user has canceled the task.
         """
         response = self.get_request(self._task_status_route(task_id))
-        circuit_status_response = gss.models.MachineTaskStatus(**response)
+        circuit_status_response = gss.models.WorkerTaskStatus(**response)
         circuit_status = circuit_status_response.status
         return circuit_status
 
@@ -82,7 +82,7 @@ class MachineAPI(gss.superstaq_client._BaseSuperstaqClient):
                 bs_index_list = compressed_bitstrings.setdefault(bs, [])
                 bs_index_list.append(idx)
 
-        results = gss.models.MachineTaskResults(
+        results = gss.models.WorkerTaskResults(
             circuit_ref=task_id,
             status=status,
             status_message=status_message,

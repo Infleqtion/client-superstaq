@@ -14,7 +14,7 @@ from general_superstaq.machine_api import MachineAPI
 def test_get_next_circuit(mock_get: mock.MagicMock) -> None:
     machine_api = MachineAPI("token")
 
-    machine_task = gss.models.MachineTask(
+    machine_task = gss.models.WorkerTask(
         circuit_ref=str(uuid.uuid4()), circuit="circuit", shots=10
     )
 
@@ -57,7 +57,7 @@ def test_get_task_status(mock_get: mock.MagicMock) -> None:
     machine_api = MachineAPI("token")
 
     task_id = str(uuid.uuid4())
-    machine_task_status = gss.models.MachineTaskStatus(
+    machine_task_status = gss.models.WorkerTaskStatus(
         circuit_ref=task_id,
         status=gss.models.CircuitStatus.RUNNING,
     )
