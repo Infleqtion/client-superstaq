@@ -469,7 +469,10 @@ class _AbstractUserClient(_BaseSuperstaqClient, ABC):
         serialized_circuits: dict[str, str],
         repetitions: int = 1,
         target: str = "ss_unconstrained_simulator",
+        *,
         method: str | None = None,
+        tag: Sequence[str] | str = (),
+        metadata: Mapping[str, object] | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         """Create a job.
@@ -482,6 +485,8 @@ class _AbstractUserClient(_BaseSuperstaqClient, ABC):
             target: Target to run on.
             method: Which type of method to execute the circuits (noisy simulator,
                 non-noisy simulator, hardware, e.t.c)
+            tag: An identifying tag (or list of tags) which can be used to find this job.
+            metadata: Optional other data to store alongside the job.
             kwargs: Other optimization and execution parameters.
 
         Returns:
@@ -1013,10 +1018,17 @@ class _SuperstaqClient(_AbstractUserClient):
         serialized_circuits: dict[str, str],
         repetitions: int = 1,
         target: str = "ss_unconstrained_simulator",
+        *,
         method: str | None = None,
+        tag: Sequence[str] | str = (),
+        metadata: Mapping[str, object] | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         super().create_job(serialized_circuits, repetitions, target)
+
+        # Ignored by v2 client:
+        _ = tag
+        _ = metadata
 
         json_dict: dict[str, Any] = {
             **serialized_circuits,
@@ -1366,8 +1378,11 @@ class _SuperstaqClientV3(_AbstractUserClient):
         serialized_circuits: dict[str, str],
         repetitions: int = 1,
         target: str = "ss_unconstrained_simulator",
+        *,
         method: str | None = None,
         verbatim: bool = False,
+        tag: Sequence[str] | str = (),
+        metadata: Mapping[str, object] | None = None,
         **kwargs: Any,
     ) -> dict[str, object]:
         """Version 0.3.0 implementation."""
@@ -1410,6 +1425,8 @@ class _SuperstaqClientV3(_AbstractUserClient):
             shots=repetitions,
             options_dict={**self.client_kwargs, **kwargs},
             verbatim=verbatim,
+            tags=[tag] if isinstance(tag, str) else tag,
+            metadata=metadata or {},
         )
         response = gss.models.NewJobResponse(
             **self.post_request("/client/job", new_job.model_dump(), **credentials)
