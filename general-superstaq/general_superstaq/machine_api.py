@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from collections.abc import Collection
 
 import general_superstaq as gss
@@ -32,7 +31,7 @@ class MachineAPI(gss.superstaq_client._BaseSuperstaqClient):
             verbose=verbose,
         )
 
-    def _task_status_route(self, task_id: uuid.UUID | str) -> str:
+    def _task_status_route(self, task_id: str) -> str:
         return f"/cq_worker/circuit_status/{task_id}"
 
     def get_next_circuit(self) -> gss.models.MachineTask | None:
@@ -47,7 +46,7 @@ class MachineAPI(gss.superstaq_client._BaseSuperstaqClient):
         next_circuit = gss.models.MachineTask(**response)
         return next_circuit
 
-    def get_task_status(self, task_id: uuid.UUID | str) -> gss.models.CircuitStatus:
+    def get_task_status(self, task_id: str) -> gss.models.CircuitStatus:
         """Get the status of a task from Superstaq.
         This allows the hardware to query if a user has canceled the task.
         """
@@ -58,7 +57,7 @@ class MachineAPI(gss.superstaq_client._BaseSuperstaqClient):
 
     def post_task_status(
         self,
-        task_id: uuid.UUID | str,
+        task_id: str,
         status: gss.models.CircuitStatus,
         status_message: str | None = None,
     ) -> None:
@@ -67,7 +66,7 @@ class MachineAPI(gss.superstaq_client._BaseSuperstaqClient):
 
     def post_result(
         self,
-        task_id: uuid.UUID | str,
+        task_id: str,
         status: gss.models.CircuitStatus,
         bitstrings: Collection[str] | None,
         status_message: str | None = None,

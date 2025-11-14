@@ -56,9 +56,9 @@ def test_unaccepted_terms_of_use(mock_get: mock.MagicMock) -> None:
 def test_get_task_status(mock_get: mock.MagicMock) -> None:
     machine_api = MachineAPI("token")
 
-    task_id = uuid.uuid4()
+    task_id = str(uuid.uuid4())
     machine_task_status = gss.models.MachineTaskStatus(
-        circuit_ref=str(task_id),
+        circuit_ref=task_id,
         status=gss.models.CircuitStatus.RUNNING,
     )
 
@@ -74,7 +74,7 @@ def test_get_task_status(mock_get: mock.MagicMock) -> None:
 def test_post_task_status(mock_post: mock.MagicMock) -> None:
     machine_api = MachineAPI("token")
 
-    task_id = uuid.uuid4()
+    task_id = str(uuid.uuid4())
 
     machine_api.post_task_status(
         task_id=task_id,
@@ -82,7 +82,7 @@ def test_post_task_status(mock_post: mock.MagicMock) -> None:
     )
     mock_post.assert_called_once()
     assert mock_post.call_args.kwargs["json"] == {
-        "circuit_ref": str(task_id),
+        "circuit_ref": task_id,
         "status": gss.models.CircuitStatus.CANCELLED,
         "status_message": None,
         "successful_shots": None,
@@ -95,7 +95,7 @@ def test_post_task_status(mock_post: mock.MagicMock) -> None:
         status_message="foo",
     )
     assert mock_post.call_args.kwargs["json"] == {
-        "circuit_ref": str(task_id),
+        "circuit_ref": task_id,
         "status": gss.models.CircuitStatus.FAILED,
         "status_message": "foo",
         "successful_shots": None,
@@ -108,7 +108,7 @@ def test_post_task_status(mock_post: mock.MagicMock) -> None:
         bitstrings=["111", "101", "111"],
     )
     assert mock_post.call_args.kwargs["json"] == {
-        "circuit_ref": str(task_id),
+        "circuit_ref": task_id,
         "status": gss.models.CircuitStatus.COMPLETED,
         "status_message": None,
         "successful_shots": 3,
