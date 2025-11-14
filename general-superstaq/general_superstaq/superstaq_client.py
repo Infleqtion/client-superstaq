@@ -486,7 +486,7 @@ class _AbstractUserClient(_BaseSuperstaqClient, ABC):
             method: Which type of method to execute the circuits (noisy simulator,
                 non-noisy simulator, hardware, e.t.c)
             tag: An identifying tag (or list of tags) which can be used to find this job.
-            metadata: Other data to store alongside the job.
+            metadata: Optional other data to store alongside the job.
             kwargs: Other optimization and execution parameters.
 
         Returns:
