@@ -2,19 +2,9 @@
 
 from __future__ import annotations
 
-import dataclasses
 from collections.abc import Collection
 
 import general_superstaq as gss
-
-
-@dataclasses.dataclass
-class Task:
-    """A task to be executed on the machine."""
-
-    task_id: str
-    circuit: str
-    shots: int
 
 
 class MachineAPI(gss.superstaq_client._BaseSuperstaqClient):
