@@ -4,10 +4,11 @@
 from __future__ import annotations
 
 import datetime
+import itertools
 import uuid
 from collections.abc import Mapping, Sequence
 from enum import Enum
-from typing import Any
+from typing import Any, Self
 
 import pydantic
 
@@ -451,6 +452,43 @@ class WorkerTaskResults(DefaultPydanticModel):
     """The total number of successful shots (used for validation)."""
     measurements: dict[str, set[pydantic.NonNegativeInt]] | None = pydantic.Field(default=None)
     """Mapping of bitstrings to a list of shot indexes."""
+
+    @pydantic.model_validator(mode="after")
+    def validate_measurements(self) -> Self:
+        """Check all measurement keys are bitstrings of the same length, all values have the
+        expected number of shots and all indices are present.
+        """
+        if self.status == CircuitStatus.COMPLETED:
+            if self.successful_shots is None or self.measurements is None:
+                raise ValueError(
+                    "When status=COMPLETED the worker must return both the measurements and the "
+                    "number of successful shots."
+                )
+
+            if not all(bitstring.isdecimal() for bitstring in self.measurements):
+                raise ValueError("Measurement keys must be valid bitstrings.")
+
+            if any(
+                len(bitstring) != len(next(iter(self.measurements.keys())))
+                for bitstring in self.measurements
+            ):
+                raise ValueError("All measurement keys must have the same length.")
+            if set(itertools.chain.from_iterable(self.measurements.values())) != set(
+                range(self.successful_shots)
+            ):
+                raise ValueError("Not all successful shots have a measurement.")
+
+        elif self.status not in (
+            CircuitStatus.RUNNING,
+            CircuitStatus.COMPLETED,
+            CircuitStatus.FAILED,
+        ):
+            raise ValueError(f"Workers cannot return a status of {self.status}.")
+
+        elif self.successful_shots is not None or self.measurements is not None:
+            raise ValueError("Workers cannot return results unless status is COMPLETED")
+
+        return self
 
 
 class NewWorker(DefaultPydanticModel):
