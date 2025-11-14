@@ -424,6 +424,7 @@ def test_supertstaq_client_create_job(
             "priority": 0,
             "options_dict": {"cq_token": {"@type": "RefreshFlowState", "access_token": "123"}},
             "tags": [],
+            "metadata": {},
         }
         endpoint = "/client/job"
         expected_headers = {
@@ -677,6 +678,7 @@ def test_superstaq_client_fetch_jobs(
                 "logical_qubits": ["0"],
                 "physical_qubits": ["0"],
                 "tags": [],
+                "metadata": {},
             }
         }
         mock_get.return_value.ok = True
@@ -1350,6 +1352,7 @@ def test_superstaq_client_compile_v3_failed(
             "priority": 0,
             "options_dict": {},
             "tags": [],
+            "metadata": {},
         },
         headers=EXPECTED_HEADERS[client_v3.api_version],
         verify=False,
@@ -1401,6 +1404,7 @@ def test_superstaq_client_compile_v3(
             "final_logical_to_physicals": [{0: 0}],
             "logical_qubits": ['[{"qubit": "q0"}]'],
             "physical_qubits": ['[{"qubit": "q0"}]'],
+            "metadata": {},
         }
     }
     mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
@@ -1424,6 +1428,7 @@ def test_superstaq_client_compile_v3(
             "priority": 0,
             "options_dict": {},
             "tags": [],
+            "metadata": {},
         },
         headers=EXPECTED_HEADERS[client_v3.api_version],
         verify=False,
@@ -1499,6 +1504,7 @@ def test_superstaq_client_compile_v3_with_wait(
             "priority": 0,
             "options_dict": {},
             "tags": [],
+            "metadata": {},
         },
         headers=EXPECTED_HEADERS[client_v3.api_version],
         verify=False,

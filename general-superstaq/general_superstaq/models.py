@@ -182,6 +182,8 @@ class JobData(DefaultPydanticModel):
     """Serialized physical qubits of the device. Only provided for CIRQ circuit type."""
     tags: list[str] = []
     """Any tags attached to this job."""
+    metadata: dict[str, Any] = pydantic.Field(default={})
+    """Additional metadata passed by the user."""
 
 
 class NewJob(DefaultPydanticModel):
@@ -210,6 +212,8 @@ class NewJob(DefaultPydanticModel):
     """Options dictionary with additional configuration detail."""
     tags: list[str] = pydantic.Field(default=[])
     """Optional tags."""
+    metadata: dict[str, Any] = pydantic.Field(default={})
+    """Additional metadata passed by the user."""
 
 
 class JobCancellationResults(DefaultPydanticModel):
@@ -243,6 +247,8 @@ class JobQuery(DefaultPydanticModel):
     """List of targets to include."""
     status: list[CircuitStatus] | None = pydantic.Field(None)
     """List of statuses to include."""
+    tags: list[str] | None = pydantic.Field(None)
+    """Filter for jobs with a given tag."""
     min_priority: int | None = pydantic.Field(None)
     """Minimum priority to include."""
     max_priority: int | None = pydantic.Field(None)
@@ -417,6 +423,10 @@ class MachineTask(DefaultPydanticModel):
     """Serialized representation of the circuit."""
     shots: int
     """The number of shots to perform."""
+    metadata: dict[str, Any] = pydantic.Field(default={})
+    """Additional metadata passed by the user."""
+    user_email: pydantic.EmailStr | None = pydantic.Field(default=None)
+    """The user's email."""
 
 
 class MachineTaskStatus(DefaultPydanticModel):
