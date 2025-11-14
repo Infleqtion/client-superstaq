@@ -42,3 +42,44 @@ def test_external_provider_credentials() -> None:
     assert credentials.cq_token == "token"
     assert credentials.cq_project_id == "123"
     assert credentials.cq_org_id == "456"
+
+
+def test_worker_task_results() -> None:
+    with pytest.raises(ValueError, match=r"must return both"):
+        _ = gss.models.WorkerTaskResults(
+            circuit_ref="1234",
+            status=gss.models.CircuitStatus.COMPLETED,
+            measurements={"000": [0, 1, 3], "101": [2]},
+        )
+
+    with pytest.raises(ValueError, match=r"same length"):
+        _ = gss.models.WorkerTaskResults(
+            circuit_ref="1234",
+            status=gss.models.CircuitStatus.COMPLETED,
+            successful_shots=4,
+            measurements={"000": [0, 1, 3], "1010": [2]},
+        )
+
+    with pytest.raises(ValueError, match=r"valid bitstrings"):
+        _ = gss.models.WorkerTaskResults(
+            circuit_ref="1234",
+            status=gss.models.CircuitStatus.COMPLETED,
+            successful_shots=4,
+            measurements={"000": [0, 1, 3], "xyz": [2]},
+        )
+
+    with pytest.raises(ValueError, match=r"Not all successful shots have a measurement"):
+        _ = gss.models.WorkerTaskResults(
+            circuit_ref="1234",
+            status=gss.models.CircuitStatus.COMPLETED,
+            successful_shots=4,
+            measurements={"000": [0, 3], "101": [2]},
+        )
+
+    with pytest.raises(ValueError, match=r"Cannot return results"):
+        _ = gss.models.WorkerTaskResults(
+            circuit_ref="1234",
+            status=gss.models.CircuitStatus.RUNNING,
+            successful_shots=4,
+            measurements={"000": [0, 1, 3], "101": [2]},
+        )
