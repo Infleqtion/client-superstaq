@@ -450,7 +450,7 @@ class NewWorker(DefaultPydanticModel):
     served_target: str
 
 
-class WorkerToken(DefaultPydanticModel):
+class WorkerTokenResponse(DefaultPydanticModel):
     """Model containing new credentials for a machine worker."""
 
     worker_name: str
