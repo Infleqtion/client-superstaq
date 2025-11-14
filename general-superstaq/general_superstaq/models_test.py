@@ -134,14 +134,14 @@ def test_worker_task_results_validation() -> None:
         )
 
     _ = gss.models.WorkerTaskResults(
-        circuit_ref="1234",
+        circuit_ref="f76e84f7-0c65-4f0b-b2d7-14135db3900c",
         status=gss.models.CircuitStatus.COMPLETED,
         successful_shots=4,
         measurements={"000": [0, 1, 3], "101": [2]},
     )
 
     _ = gss.models.WorkerTaskResults(
-        circuit_ref="1234",
+        circuit_ref="f76e84f7-0c65-4f0b-b2d7-14135db3900c",
         status=gss.models.CircuitStatus.FAILED,
         status_message="message",
     )
