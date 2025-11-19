@@ -487,6 +487,16 @@ def test_qubit_subspace_gate_protocols(
     larger_gate = css.QubitSubspaceGate(sub_gate, (8,) * len(qid_shape), subspaces)
     another_gate = cirq.Y
 
+    assert 0.0 < cirq.trace_distance_bound(gate**0.01) < cirq.trace_distance_bound(gate) <= 1.0
+    assert np.isclose(
+        cirq.trace_distance_bound(gate),
+        cirq.trace_distance_bound(cirq.MatrixGate(cirq.unitary(gate), qid_shape=qid_shape)),
+    )
+    assert np.isclose(
+        cirq.trace_distance_bound(gate**0.01),
+        cirq.trace_distance_bound(cirq.MatrixGate(cirq.unitary(gate**0.01), qid_shape=qid_shape)),
+    )
+
     assert gate == gate  # noqa: PLR0124
     assert gate == same_gate
     assert gate != similar_gate
