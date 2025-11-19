@@ -368,11 +368,12 @@ class TargetStatus(str, Enum):
 
 class TargetInputType(str, Enum):
     """The input type supported by a Superstaq target."""
+
     CIRCUIT = "circuit"
     QUBO = "qubo"
 
 
-class TargetModel(DefaultPydanticModel):
+class TargetDescription(DefaultPydanticModel):
     """Model for the details of a target."""
 
     target: TargetStr
@@ -381,7 +382,7 @@ class TargetModel(DefaultPydanticModel):
     """The status of this target."""
     supported_inputs: list[TargetInputType]
     """The input types supported by this target for job submission (e.g. "circuit", "qubo")."""
-    accessible: bool
+    accessible: bool = False
     """Whether this target is accessible to the current user."""
 
     @property
@@ -389,8 +390,8 @@ class TargetModel(DefaultPydanticModel):
         return self.target.endswith("_simulator")
 
 
-class TargetModelV0(DefaultPydanticModel):
-    """Model for the details of a target."""
+class TargetModel(DefaultPydanticModel):
+    """Legacy model for the details of a target."""
 
     target_name: TargetStr
     """The target name."""

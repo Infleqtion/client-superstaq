@@ -11,6 +11,41 @@ expected.
 """
 
 
+def test_target_description() -> None:
+    target_status = gss.models.TargetDescription(
+        target="sqale_example_qpu",
+        status=gss.models.TargetStatus.OFFLINE,
+        supported_inputs=[gss.models.TargetInputType.CIRCUIT],
+    )
+    assert not target_status.accessible
+    assert not target_status.simulator
+
+    target_status = gss.models.TargetDescription(
+        target="ss_unconstrained_simulator",
+        status="available",
+        supported_inputs=("qubo", "circuit"),
+        accessible=True,
+    )
+    assert target_status.accessible
+    assert target_status.simulator
+
+    with pytest.raises(pydantic.ValidationError, match=r"valid target device type"):
+        _ = gss.models.TargetDescription(
+            target="sqale_example_system",
+            status="available",
+            supported_inputs=["circuit"],
+            accessible=True,
+        )
+
+    with pytest.raises(pydantic.ValidationError, match=r"valid string format"):
+        _ = gss.models.TargetDescription(
+            target="bad_target",
+            status="available",
+            supported_inputs=["circuit"],
+            accessible=True,
+        )
+
+
 def test_user_token_response() -> None:
     gss.models.UserTokenResponse(
         email="valid.email@infleqtion.com",
