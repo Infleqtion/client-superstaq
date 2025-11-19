@@ -8,9 +8,15 @@ import itertools
 import uuid
 from collections.abc import Mapping, Sequence
 from enum import Enum
-from typing import Any
+from typing import Annotated, Any
 
-import pydantic
+import pydantic.functional_validators
+
+from general_superstaq import validation
+
+TargetStr = Annotated[
+    str, pydantic.functional_validators.AfterValidator(validation.validate_target)
+]
 
 
 class JobType(str, Enum):
@@ -149,7 +155,7 @@ class JobData(DefaultPydanticModel):
     """Any status messages for each circuit in the job."""
     user_email: pydantic.EmailStr
     """The email address of the use who submitted the job."""
-    target: str
+    target: TargetStr
     """The target that the job was submitted to."""
     provider_id: list[str | None]
     """Any provider side ID's for each circuit in the job."""
@@ -192,7 +198,7 @@ class NewJob(DefaultPydanticModel):
 
     job_type: JobType
     """The job type."""
-    target: str
+    target: TargetStr
     """The target."""
     circuits: str
     """Serialized input circuits."""
@@ -244,7 +250,7 @@ class JobQuery(DefaultPydanticModel):
     """List of user emails to include."""
     job_id: list[uuid.UUID] | None = pydantic.Field(None)
     """List of job IDs to include."""
-    target_name: list[str] | None = pydantic.Field(None)
+    target_name: list[TargetStr] | None = pydantic.Field(None)
     """List of targets to include."""
     status: list[CircuitStatus] | None = pydantic.Field(None)
     """List of statuses to include."""
@@ -363,7 +369,7 @@ class TargetStatus(str, Enum):
 class TargetModel(DefaultPydanticModel):
     """Model for the details of a target."""
 
-    target_name: str
+    target_name: TargetStr
     """The target name."""
     supports_submit: bool
     """Targets allow job submission."""
@@ -403,7 +409,7 @@ class GetTargetsFilterModel(DefaultPydanticModel):
 class RetrieveTargetInfoModel(DefaultPydanticModel):
     """Model for retrieving detailed target info."""
 
-    target: str
+    target: TargetStr
     """The target's name."""
     options_dict: dict[str, Any] = pydantic.Field({})
     """The details of the target."""
