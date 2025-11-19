@@ -17,6 +17,7 @@ import datetime
 import io
 import json
 import os
+import secrets
 import uuid
 from typing import Any
 from unittest import mock
@@ -423,6 +424,7 @@ def test_supertstaq_client_create_job(
             "priority": 0,
             "options_dict": {"cq_token": {"@type": "RefreshFlowState", "access_token": "123"}},
             "tags": [],
+            "metadata": {},
         }
         endpoint = "/client/job"
         expected_headers = {
@@ -676,6 +678,7 @@ def test_superstaq_client_fetch_jobs(
                 "logical_qubits": ["0"],
                 "physical_qubits": ["0"],
                 "tags": [],
+                "metadata": {},
             }
         }
         mock_get.return_value.ok = True
@@ -1349,6 +1352,7 @@ def test_superstaq_client_compile_v3_failed(
             "priority": 0,
             "options_dict": {},
             "tags": [],
+            "metadata": {},
         },
         headers=EXPECTED_HEADERS[client_v3.api_version],
         verify=False,
@@ -1400,6 +1404,7 @@ def test_superstaq_client_compile_v3(
             "final_logical_to_physicals": [{0: 0}],
             "logical_qubits": ['[{"qubit": "q0"}]'],
             "physical_qubits": ['[{"qubit": "q0"}]'],
+            "metadata": {},
         }
     }
     mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
@@ -1423,6 +1428,7 @@ def test_superstaq_client_compile_v3(
             "priority": 0,
             "options_dict": {},
             "tags": [],
+            "metadata": {},
         },
         headers=EXPECTED_HEADERS[client_v3.api_version],
         verify=False,
@@ -1498,6 +1504,7 @@ def test_superstaq_client_compile_v3_with_wait(
             "priority": 0,
             "options_dict": {},
             "tags": [],
+            "metadata": {},
         },
         headers=EXPECTED_HEADERS[client_v3.api_version],
         verify=False,
@@ -2239,3 +2246,44 @@ def test_get_user_info_empty_response(
         headers=EXPECTED_HEADERS[api_version],
         verify=False,
     )
+
+
+@mock.patch("requests.Session.post")
+def test_new_worker(
+    mock_post: mock.MagicMock, client_v3: gss.superstaq_client._SuperstaqClientV3
+) -> None:
+    token = secrets.token_hex(nbytes=32)
+    mock_post.return_value = requests.Response()
+    mock_post.return_value.status_code = requests.codes.ok
+    mock_post.return_value._content = json.dumps({"worker_name": "worker", "token": token}).encode()
+
+    target = "sqale_test_qpu"
+    response = client_v3.declare_worker(target, name="worker")
+    assert response.worker_name == "worker"
+    assert response.token == token
+
+    mock_post.assert_called_once()
+    assert "cq_worker/new_worker" in mock_post.call_args.args[0]
+    assert mock_post.call_args.kwargs["json"] == {"name": "worker", "served_target": target}
+
+
+@mock.patch("requests.Session.post")
+def test_regenerate_worker_token(
+    mock_post: mock.MagicMock, client_v3: gss.superstaq_client._SuperstaqClientV3
+) -> None:
+    worker_name = "sqale_worker"
+    token = secrets.token_hex(nbytes=32)
+
+    mock_post.return_value = requests.Response()
+    mock_post.return_value.status_code = requests.codes.ok
+    mock_post.return_value._content = json.dumps(
+        {"worker_name": "sqale_worker", "token": token}
+    ).encode()
+
+    response = client_v3.regenerate_worker_token(worker_name)
+    assert response.worker_name == "sqale_worker"
+    assert response.token == token
+
+    mock_post.assert_called_once()
+    assert f"cq_worker/regenerate_token/{worker_name}" in mock_post.call_args.args[0]
+    assert mock_post.call_args.kwargs["json"] == {}

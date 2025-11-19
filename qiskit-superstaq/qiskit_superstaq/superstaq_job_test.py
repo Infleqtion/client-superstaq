@@ -109,7 +109,8 @@ def job_dictV3(n_circuits: int = 1) -> dict[str, object]:
         "final_logical_to_physicals": [{0: 0, 1: 1}] * n_circuits,
         "logical_qubits": ["0", "1"],
         "physical_qubits": ["0", "1"],
-        "tags": [],
+        "tags": ["some", "tags"],
+        "metadata": {"foo": "bar"},
     }
 
 
@@ -1132,6 +1133,14 @@ def test_to_dictV3(backendV3: qss.SuperstaqBackend) -> None:
             map(str, result_dict["last_updated_timestamp"])
         )
         assert result_dict == job_dict
+
+
+def test_metadataV3(backendV3: qss.SuperstaqBackend) -> None:
+    job = qss.SuperstaqJobV3(backend=backendV3, job_id=uuid.UUID(int=42))
+    job_dict = job_dictV3()
+    with patched_requests({str(uuid.UUID(int=42)): job_dict}):
+        assert job.metadata["foo"] == "bar"
+        assert job.tags == ["some", "tags"]
 
 
 def test_job_id(backendV3: qss.SuperstaqBackend) -> None:

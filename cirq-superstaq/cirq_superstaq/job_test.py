@@ -105,7 +105,8 @@ def job_dictV3() -> dict[str, object]:
         "final_logical_to_physicals": [{0: 0, 1: 1}],
         "logical_qubits": ["0", "1"],
         "physical_qubits": ["0", "1"],
-        "tags": [],
+        "tags": ["some", "tags"],
+        "metadata": {"foo": "bar"},
     }
 
 
@@ -238,7 +239,7 @@ def test_job_fields(job: css.Job, job_dict: dict[str, object]) -> None:
 
 @mock.patch("requests.Session.get")
 def test_job_fieldsV3(
-    mock_get: mock.MagicMock, jobV3: css.Job, job_dictV3: dict[str, object]
+    mock_get: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
 ) -> None:
     circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
     job_result = modifiy_job_result(
@@ -253,6 +254,8 @@ def test_job_fieldsV3(
     assert jobV3.num_qubits(index=0) == 2
     assert jobV3.repetitions() == 1
     assert jobV3.compiled_circuits(index=0) == circuit
+    assert jobV3.metadata["foo"] == "bar"
+    assert jobV3.tags == ["some", "tags"]
     mock_get.assert_called_once()  # Only refreshed once
 
 

@@ -559,6 +559,16 @@ class JobV3:
         else:
             return self._job_data
 
+    @property
+    def tags(self) -> list[str]:
+        """All tags associated with this job."""
+        return self.job_data.tags
+
+    @property
+    def metadata(self) -> dict[str, object]:
+        """Any metadata passed when creating this job."""
+        return self.job_data.metadata
+
     def _update_status_queue_info(self) -> None:
         """Updates the overall status based on status queue info.
 
