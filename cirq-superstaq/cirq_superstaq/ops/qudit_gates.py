@@ -556,6 +556,9 @@ class QubitSubspaceGate(cirq.Gate):
             self._subspaces,
         )
 
+    def _trace_distance_bound_(self) -> float:
+        return cirq.trace_distance_bound(self._sub_gate)
+
     def _has_unitary_(self) -> bool:
         return cirq.has_unitary(self._sub_gate)
 

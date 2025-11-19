@@ -1,2 +1,3 @@
 cirq-core>=1.0.0
-general-superstaq~=0.5.53
+general-superstaq~=0.5.55
+stimcirq~=1.15.0
