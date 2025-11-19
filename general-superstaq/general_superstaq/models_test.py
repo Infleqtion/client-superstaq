@@ -12,22 +12,46 @@ expected.
 
 
 def test_target_description() -> None:
-    target_status = gss.models.TargetDescription(
+    target_description = gss.models.TargetDescription(
         target="sqale_example_qpu",
-        status=gss.models.TargetStatus.OFFLINE,
+        status=gss.models.TargetStatus.RETIRED,
         supported_inputs=[gss.models.TargetInputType.CIRCUIT],
     )
-    assert not target_status.accessible
-    assert not target_status.simulator
+    assert not target_description.accessible
+    assert not target_description.simulator
 
-    target_status = gss.models.TargetDescription(
+    target_model = gss.models.TargetModel.from_target_description(target_description)
+    assert target_model == gss.models.TargetModel(
+        target_name="sqale_example_qpu",
+        supports_submit=True,
+        supports_submit_qubo=False,
+        supports_compile=True,
+        available=False,
+        retired=True,
+        simulator=False,
+        accessible=False,
+    )
+
+    target_description = gss.models.TargetDescription(
         target="ss_unconstrained_simulator",
         status="available",
         supported_inputs=("qubo", "circuit"),
         accessible=True,
     )
-    assert target_status.accessible
-    assert target_status.simulator
+    assert target_description.accessible
+    assert target_description.simulator
+
+    target_model = gss.models.TargetModel.from_target_description(target_description)
+    assert target_model == gss.models.TargetModel(
+        target_name="ss_unconstrained_simulator",
+        supports_submit=True,
+        supports_submit_qubo=True,
+        supports_compile=True,
+        available=True,
+        retired=False,
+        simulator=True,
+        accessible=True,
+    )
 
     with pytest.raises(pydantic.ValidationError, match=r"valid target device type"):
         _ = gss.models.TargetDescription(

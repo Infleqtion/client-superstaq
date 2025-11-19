@@ -8,7 +8,7 @@ import itertools
 import uuid
 from collections.abc import Mapping, Sequence
 from enum import Enum
-from typing import Annotated, Any
+from typing import Annotated, Any, Self
 
 import pydantic.functional_validators
 
@@ -409,6 +409,19 @@ class TargetModel(DefaultPydanticModel):
     """Target is simulator."""
     accessible: bool
     """Target is accessible to user."""
+
+    @classmethod
+    def from_target_description(cls, target_description: TargetDescription) -> Self:
+        return cls(
+            target_name=target_description.target,
+            supports_submit=(target_description.status != TargetStatus.UNSUPPORTED),
+            supports_submit_qubo=(TargetInputType.QUBO in target_description.supported_inputs),
+            supports_compile=(TargetInputType.CIRCUIT in target_description.supported_inputs),
+            available=(target_description.status == TargetStatus.AVAILABLE),
+            retired=(target_description.status == TargetStatus.RETIRED),
+            simulator=target_description.simulator,
+            accessible=target_description.accessible,
+        )
 
 
 class GetTargetsFilterModel(DefaultPydanticModel):
