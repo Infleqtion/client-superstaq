@@ -101,7 +101,6 @@ def test_post_task_status(mock_post: mock.MagicMock) -> None:
 
     worker.post_result(
         task_id=task_id,
-        status=gss.models.CircuitStatus.COMPLETED,
         bitstrings=["111", "101", "111"],
     )
     assert mock_post.call_args.kwargs["json"] == {
