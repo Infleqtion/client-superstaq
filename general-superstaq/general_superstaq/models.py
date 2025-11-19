@@ -365,8 +365,8 @@ class TargetModel(DefaultPydanticModel):
     """The target name."""
     status: TargetStatus
     """The status of this target."""
-    input_type: TargetInputType
-    """The underlying input type expected by this target (e.g. "circuit" or "qubo")."""
+    supported_inputs: list[TargetInputType]
+    """The input types supported by this target for job submission (e.g. "circuit", "qubo")."""
     accessible: bool
     """Whether this target is accessible to the current user."""
 
