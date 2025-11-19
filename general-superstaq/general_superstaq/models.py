@@ -8,7 +8,7 @@ import itertools
 import uuid
 from collections.abc import Mapping, Sequence
 from enum import Enum
-from typing import Annotated, Any, Self
+from typing import Annotated, Any
 
 import pydantic.functional_validators
 
@@ -411,7 +411,7 @@ class TargetModel(DefaultPydanticModel):
     """Target is accessible to user."""
 
     @classmethod
-    def from_target_description(cls, target_description: TargetDescription) -> Self:
+    def from_target_description(cls, target_description: TargetDescription) -> TargetModel:
         return cls(
             target_name=target_description.target,
             supports_submit=(target_description.status != TargetStatus.UNSUPPORTED),
