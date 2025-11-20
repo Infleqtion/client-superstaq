@@ -647,7 +647,7 @@ class Service(gss.service.Service):
 
         Returns:
             Object whose .circuit(s) attribute contains optimized `cirq.Circuit`(s), and
-            `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
+            `.jaqal_program` attribute contains the corresponding Jaqal program(s).
 
         Raises:
             ValueError: If `base_entangling_gate` is not a valid gate option.
