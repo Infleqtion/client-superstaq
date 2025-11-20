@@ -445,7 +445,7 @@ class SuperstaqProvider(gss.service.Service):
 
         Returns:
             Object whose .circuit(s) attribute contains optimized `qiskit.QuantumCircuit`(s), and
-            `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
+            `.jaqal_program` attribute contains the corresponding Jaqal program(s).
 
         Raises:
             ValueError: If `target` is not a valid QSCOUT target.

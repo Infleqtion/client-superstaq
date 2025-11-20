@@ -446,7 +446,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
 
         Returns:
             Object whose .circuit(s) attribute contains optimized `qiskit.QuantumCircuit`(s), and
-            `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
+            `.jaqal_program` attribute contains the corresponding Jaqal program(s).
 
         Raises:
             ValueError: If this is not a QSCOUT backend.
