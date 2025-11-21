@@ -79,7 +79,6 @@ class Worker:
     def post_result(
         self,
         task_id: str,
-        status: gss.models.CircuitStatus,
         bitstrings: Collection[str] | None,
         status_message: str | None = None,
     ) -> None:
@@ -87,7 +86,12 @@ class Worker:
         the task result including checking if the number of shots in the bitstring is equal to the
         number requested and if the bitstrings match the set of qubit_readout operations requested.
         """
-        self._client.post_result(task_id, status, bitstrings, status_message)
+        self._client.post_result(
+            task_id,
+            status=gss.models.CircuitStatus.COMPLETED,
+            bitstrings=bitstrings,
+            status_message=status_message,
+        )
 
     def update_target_status(
         self,
