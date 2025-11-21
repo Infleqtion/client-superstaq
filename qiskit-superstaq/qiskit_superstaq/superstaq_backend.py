@@ -118,6 +118,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             "cc_prx": qiskit.circuit.library.RGate,  # Classically controlled 'prx' gate
             "MS": qiskit.circuit.library.MSGate,
             "ZZ": qiskit.circuit.library.RZZGate,
+            "xx": qiskit.circuit.library.RXXGate,
             "measure_ff": qiskit.circuit.Measure(
                 label="measure_ff"
             ),  # Measurement with classical feed-forward
