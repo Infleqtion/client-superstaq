@@ -111,6 +111,8 @@ def test_read_json() -> None:
     assert not hasattr(out, "circuits")
     assert not hasattr(out, "initial_logical_to_physicals")
     assert not hasattr(out, "final_logical_to_physicals")
+    assert out.jaqal_program is None
+    assert out.jaqal_programs is None
 
     out = css.compiler_output.read_json(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit]
@@ -119,6 +121,8 @@ def test_read_json() -> None:
     assert not hasattr(out, "circuit")
     assert not hasattr(out, "initial_logical_to_physical")
     assert not hasattr(out, "final_logical_to_physical")
+    assert out.jaqal_program is None
+    assert out.jaqal_programs is None
 
 
 def test_read_json_ibmq() -> None:
@@ -359,6 +363,7 @@ def test_read_json_qscout() -> None:
     jaqal_program = textwrap.dedent(
         """\
         register allqubits[1]
+
         prepare_all
         R allqubits[0] -1.5707963267948966 1.5707963267948966
         Rz allqubits[0] -3.141592653589793
@@ -378,9 +383,9 @@ def test_read_json_qscout() -> None:
     assert out.initial_logical_to_physical == initial_logical_to_physical
     assert out.final_logical_to_physical == final_logical_to_physical
     assert out.jaqal_program == jaqal_program
+    assert out.jaqal_programs == [jaqal_program]
     assert not hasattr(out, "initial_logical_to_physicals")
     assert not hasattr(out, "final_logical_to_physicals")
-    assert not hasattr(out, "jaqal_programs")
 
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits([circuit, circuit]),
@@ -392,7 +397,21 @@ def test_read_json_qscout() -> None:
     assert out.circuits == [circuit, circuit]
     assert out.final_logical_to_physicals == [final_logical_to_physical]
     assert out.initial_logical_to_physicals == [initial_logical_to_physical]
-    assert out.jaqal_programs == json_dict["jaqal_programs"]
     assert not hasattr(out, "initial_logical_to_physical")
     assert not hasattr(out, "final_logical_to_physical")
-    assert not hasattr(out, "jaqal_program")
+    assert out.jaqal_programs == [jaqal_program, jaqal_program]
+    assert out.jaqal_program == textwrap.dedent(
+        """\
+        register allqubits[1]
+
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        Rz allqubits[0] -3.141592653589793
+        measure_all
+
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        Rz allqubits[0] -3.141592653589793
+        measure_all
+        """
+    )
