@@ -398,9 +398,9 @@ class GetTargetsFilterModel(DefaultPydanticModel):
     """Include Superstaq targets that allow/do not allow QUBO submission."""
     supports_compile: bool | None = pydantic.Field(None)
     """Include Superstaq targets that allow/do not allow circuit compilation."""
-    available: bool | None = pydantic.Field(True)
+    available: bool | None = pydantic.Field(None)
     """Include Superstaq targets that are/not currently available."""
-    retired: bool = pydantic.Field(False)
+    retired: bool | None = pydantic.Field(False)
     """Include Superstaq targets that are retired."""
     accessible: bool | None = pydantic.Field(None)
     """Include only Superstaq targets that are/aren't accessible to the user."""
