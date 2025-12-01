@@ -25,7 +25,6 @@ import cirq
 import general_superstaq as gss
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as npt
 from general_superstaq import ResourceEstimate
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 from scipy.optimize import curve_fit
@@ -33,6 +32,7 @@ from scipy.optimize import curve_fit
 import cirq_superstaq as css
 
 if TYPE_CHECKING:
+    import numpy.typing as npt
     from _typeshed import SupportsItems
 
 
@@ -344,6 +344,8 @@ class Service(gss.service.Service):
         target: str | None = None,
         method: str | None = None,
         verbatim: bool = False,
+        tag: Sequence[str] | str = (),
+        metadata: Mapping[str, object] | None = None,
         **kwargs: Any,
     ) -> css.Job | css.JobV3:
         """Creates a new job to run the given circuit(s).
@@ -354,6 +356,8 @@ class Service(gss.service.Service):
             target: Where to run the job.
             method: The optional execution method.
             verbatim: Run the provided circuit(s) verbatim (i.e. without compilation).
+            tag: An identifying tag (or list of tags) which can be used to find this job.
+            metadata: Other data to store alongside the job.
             kwargs: Other optimization and execution parameters.
 
         Returns:
@@ -373,6 +377,8 @@ class Service(gss.service.Service):
             target=target,
             method=method,
             verbatim=verbatim,
+            tag=tag,
+            metadata=metadata,
             **kwargs,
         )
         if isinstance(self._client, _SuperstaqClient):
@@ -641,7 +647,7 @@ class Service(gss.service.Service):
 
         Returns:
             Object whose .circuit(s) attribute contains optimized `cirq.Circuit`(s), and
-            `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
+            `.jaqal_program` attribute contains the corresponding Jaqal program(s).
 
         Raises:
             ValueError: If `base_entangling_gate` is not a valid gate option.

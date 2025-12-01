@@ -27,7 +27,7 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
     result = provider.get_targets()
     filtered_result = provider.get_my_targets()
     ibmq_backend_info = gss.typing.Target(
-        target="ibmq_brisbane_qpu",
+        target="ibmq_pittsburgh_qpu",
         supports_submit=True,
         supports_submit_qubo=False,
         supports_compile=True,
@@ -53,13 +53,13 @@ def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
     qc.append(qss.AceCR("-+"), [1, 2])
     qc.append(qss.AceCR("-+"), [2, 3])
 
-    out = provider.ibmq_compile(qc, target="ibmq_brisbane_qpu")
+    out = provider.ibmq_compile(qc, target="ibmq_pittsburgh_qpu")
     assert isinstance(out, qss.compiler_output.CompilerOutput)
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
     assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
     assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
 
-    out = provider.ibmq_compile([qc, qc], target="ibmq_brisbane_qpu")
+    out = provider.ibmq_compile([qc, qc], target="ibmq_fez_qpu")
     assert isinstance(out, qss.compiler_output.CompilerOutput)
 
     assert isinstance(out.circuits, list)
@@ -85,7 +85,7 @@ def test_ibmq_compile_with_token() -> None:
     qc.append(qss.AceCR("-+"), [1, 2])
     qc.append(qss.AceCR("-+"), [2, 3])
 
-    out = provider.ibmq_compile(qc, target="ibmq_brisbane_qpu")
+    out = provider.ibmq_compile(qc, target="ibmq_fez_qpu")
 
     assert isinstance(out, qss.compiler_output.CompilerOutput)
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
@@ -247,32 +247,35 @@ def test_dfe(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)
     target = "ss_unconstrained_simulator"
-    ids = provider.submit_dfe(
-        rho_1=(qc, target),
-        rho_2=(qc, target),
-        num_random_bases=5,
-        shots=1000,
-    )
-    assert len(ids) == 2
 
-    result = provider.process_dfe(ids)
-    assert isinstance(result, float)
+    with pytest.raises(gss.SuperstaqException, match=r"disabled"):
+        _ = provider.submit_dfe(
+            rho_1=(qc, target),
+            rho_2=(qc, target),
+            num_random_bases=5,
+            shots=1000,
+        )
+
+    with pytest.raises(gss.SuperstaqException, match=r"disabled"):
+        _ = provider.process_dfe(["1234", "5678"])
 
 
 def test_aces(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     backend = provider.get_backend("ss_unconstrained_simulator")
-    job_id = backend.submit_aces(
-        qubits=[0],
-        shots=100,
-        num_circuits=10,
-        mirror_depth=5,
-        extra_depth=7,
-        method="dry-run",
-        noise="bit_flip",
-        error_prob=0.1,
-    )
-    result = backend.process_aces(job_id)
-    assert len(result) == 18
+    with pytest.raises(gss.SuperstaqException, match=r"disabled"):
+        _ = backend.submit_aces(
+            qubits=[0],
+            shots=100,
+            num_circuits=10,
+            mirror_depth=5,
+            extra_depth=7,
+            method="dry-run",
+            noise="bit_flip",
+            error_prob=0.1,
+        )
+
+    with pytest.raises(gss.SuperstaqException, match=r"disabled"):
+        _ = backend.process_aces("1234")
 
 
 @pytest.mark.parametrize("target", ["cq_sqale_simulator", "aws_sv1_simulator"])
@@ -288,7 +291,7 @@ def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvi
 
 
 @pytest.mark.parametrize(
-    "target", ["qscout_peregrine_qpu", "aqt_keysight_qpu", "ibmq_brisbane_qpu"]
+    "target", ["qscout_peregrine_qpu", "aqt_keysight_qpu", "ibmq_pittsburgh_qpu"]
 )
 def test_submit_dry_run(target: str, provider: qss.SuperstaqProvider) -> None:
     qc_list = [qiskit.QuantumCircuit(2, 2), qiskit.QuantumCircuit(2, 2)]

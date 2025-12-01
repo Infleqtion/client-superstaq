@@ -4,6 +4,12 @@ import numbers
 import re
 import warnings
 from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING
+
+import numpy as np
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
@@ -27,7 +33,27 @@ def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
         raise ValueError(f"{integer_param} is less than the minimum value ({min_val}).")
 
 
-def validate_target(target: str) -> None:
+def validate_bitmap(bitmap: npt.ArrayLike) -> None:
+    """Checks that `bitmap` is in an array format acceptable by the Atom picture API.
+
+    Args:
+        bitmap: The array-like object to validate.
+
+    Raises:
+        TypeError: If `bitmap` is not a two-dimensional array.
+        TypeError: If `bitmap` is not a square two-dimensional array.
+        ValueError: If `bitmap` contains any values outside of {0, 1, 2}.
+    """
+    bitmap_array = np.asarray(bitmap)
+    if not bitmap_array.ndim == 2:
+        raise TypeError("The atom picture `bitmap` must be a 2D array-like object.")
+    if not (bitmap_array.shape[0] == bitmap_array.shape[1]):
+        raise TypeError("The atom picture `bitmap` must be a square 2D array-like object.")
+    if not np.all(np.isin(bitmap_array, [0, 1, 2])):
+        raise ValueError("The atom picture `bitmap` must only contain the integers 0, 1, or 2.")
+
+
+def validate_target(target: str) -> str:
     """Checks that `target` conforms to a valid Superstaq format and device type.
 
     Args:
@@ -54,6 +80,8 @@ def validate_target(target: str) -> None:
             f"{target!r} does not have a valid target device type. Valid device types are: "
             f"{target_device_types}."
         )
+
+    return target
 
 
 def validate_noise_type(noise: dict[str, object], n_qubits: int) -> None:
@@ -143,7 +171,7 @@ def validate_qubo(qubo: object) -> None:
             raise TypeError("QUBO values must be real numbers.")
 
 
-def _validate_ibm_channel(ibm_channel: str) -> None:
+def _validate_ibm_channel(ibm_channel: str) -> str:
     if ibm_channel == "ibm_quantum":
         raise ValueError(
             "The 'ibm_quantum' channel has been deprecated and sunset on July 1st, 2025. Instead, "
@@ -160,3 +188,5 @@ def _validate_ibm_channel(ibm_channel: str) -> None:
         )
     elif ibm_channel not in ("ibm_cloud", "ibm_quantum_platform"):
         raise ValueError("`ibmq_channel` must be either 'ibm_cloud' or 'ibm_quantum_platform'.")
+
+    return ibm_channel

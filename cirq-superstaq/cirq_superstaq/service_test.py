@@ -44,7 +44,7 @@ def test_to_matrix_gate(gate: cirq.Gate) -> None:
 
 def test_to_matrix_gate_error() -> None:
     matrix = np.eye(5)
-    with pytest.raises(ValueError, match="Could not determine qid_shape"):
+    with pytest.raises(ValueError, match=r"Could not determine qid_shape"):
         _ = css.service._to_matrix_gate(matrix)
 
 
@@ -74,13 +74,13 @@ def test_counts_to_results() -> None:
     )
     assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
 
-    with pytest.warns(UserWarning, match="raw counts contain fractional"):
+    with pytest.warns(UserWarning, match=r"raw counts contain fractional"):
         result = css.service.counts_to_results(
             {"00": 50.1, "11": 49.9}, circuit, cirq.ParamResolver({})
         )
     assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
 
-    with pytest.warns(UserWarning, match="raw counts contain negative"):
+    with pytest.warns(UserWarning, match=r"raw counts contain negative"):
         result = css.service.counts_to_results(
             {"00": -50, "11": 100}, circuit, cirq.ParamResolver({})
         )
@@ -88,7 +88,7 @@ def test_counts_to_results() -> None:
 
 
 def test_service_wrong_version() -> None:
-    with pytest.raises(ValueError, match="`api_version` can only take value 'v0.2.0' or 'v0.3.0'"):
+    with pytest.raises(ValueError, match=r"`api_version` can only take value 'v0.2.0' or 'v0.3.0'"):
         css.Service(api_version="v4")
 
 
@@ -100,7 +100,7 @@ def test_service_resolve_target(api_version: str) -> None:
 
     service = css.Service(api_key="key", api_version=api_version)
     assert service._resolve_target("ss_foo_qpu") == "ss_foo_qpu"
-    with pytest.raises(ValueError, match="requires a target"):
+    with pytest.raises(ValueError, match=r"requires a target"):
         _ = service._resolve_target(None)
 
 
@@ -384,7 +384,7 @@ def test_service_get_jobV3() -> None:
         "statuses": ["completed"],
         "status_messages": [None],
         "user_email": "test@email.com",
-        "target": "test_target",
+        "target": "ss_example_qpu",
         "provider_id": ["provider_id"],
         "num_circuits": 1,
         "compiled_circuits": ["compiled circuit"],
@@ -448,7 +448,7 @@ def test_service_create_jobV3() -> None:
         "statuses": ["completed"],
         "status_messages": [None],
         "user_email": "test@email.com",
-        "target": "test_target",
+        "target": "ss_example_qpu",
         "provider_id": ["provider_id"],
         "num_circuits": 1,
         "compiled_circuits": ["compiled circuit"],
@@ -517,7 +517,7 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
         assert not hasattr(output, "initial_logical_to_physicals")
         assert not hasattr(output, "final_logical_to_physicals")
 
-    with pytest.raises(ValueError, match="Unable to serialize configuration"):
+    with pytest.raises(ValueError, match=r"Unable to serialize configuration"):
         _ = service.aqt_compile(cirq.Circuit(), atol=1e-2, pulses=123, variables=456)
 
     gate_defs = {
@@ -557,7 +557,7 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
     assert out.circuit == cirq.Circuit()
     assert not hasattr(out, "circuits")
 
-    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid AQT target."):
+    with pytest.raises(ValueError, match=r"'ss_example_qpu' is not a valid AQT target."):
         service.aqt_compile(cirq.Circuit(), target="ss_example_qpu")
 
 
@@ -605,7 +605,7 @@ def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
     assert out.initial_logical_to_physicals == [[{}]]
     assert out.final_logical_to_physicals == [[{}]]
 
-    with pytest.warns(DeprecationWarning, match="has been deprecated"):
+    with pytest.warns(DeprecationWarning, match=r"has been deprecated"):
         deprecated_out = service.aqt_compile_eca(
             [cirq.Circuit()], num_equivalent_circuits=1, random_seed=1234, atol=1e-2
         )
@@ -689,7 +689,7 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
     assert alt_out.final_logical_to_physical == final_logical_to_physical
     assert alt_out.jaqal_program == jaqal_program
 
-    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid QSCOUT target."):
+    with pytest.raises(ValueError, match=r"'ss_example_qpu' is not a valid QSCOUT target."):
         service.qscout_compile(cirq.Circuit(), target="ss_example_qpu")
 
 
@@ -729,7 +729,7 @@ def test_service_qscout_compile_multiple(mock_qscout_compile: mock.MagicMock) ->
         "num_qubits": 2,
     }
 
-    with pytest.raises(ValueError, match="At least 2 qubits are required"):
+    with pytest.raises(ValueError, match=r"At least 2 qubits are required"):
         _ = service.qscout_compile(circuits, num_qubits=1)
 
 
@@ -832,7 +832,7 @@ def test_qscout_compile_wrong_base_entangling_gate() -> None:
     circuit = cirq.Circuit(cirq.measure(q0))
 
     service = css.Service(api_key="key", remote_host="http://example.com")
-    with pytest.raises(ValueError, match="`base_entangling_gate` must be"):
+    with pytest.raises(ValueError, match=r"`base_entangling_gate` must be"):
         _ = service.qscout_compile(circuit, base_entangling_gate="yy")
 
 
@@ -884,7 +884,7 @@ def test_service_cq_compile_single(mock_post: mock.MagicMock) -> None:
     assert out.initial_logical_to_physical == initial_logical_to_physical
     assert out.final_logical_to_physical == final_logical_to_physical
 
-    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid CQ target."):
+    with pytest.raises(ValueError, match=r"'ss_example_qpu' is not a valid CQ target."):
         service.cq_compile(cirq.Circuit(), target="ss_example_qpu")
 
 
@@ -945,18 +945,18 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
     ]
 
     with mock.patch.dict("sys.modules", {"qiskit_superstaq": None}):
-        with pytest.warns(UserWarning, match="qiskit-superstaq is required"):
+        with pytest.warns(UserWarning, match=r"qiskit-superstaq is required"):
             assert (
                 service.ibmq_compile(cirq.Circuit(), target="ibmq_fake_qpu").pulse_gate_circuit
                 is None
             )
-        with pytest.warns(UserWarning, match="qiskit-superstaq is required"):
+        with pytest.warns(UserWarning, match=r"qiskit-superstaq is required"):
             assert (
                 service.ibmq_compile([cirq.Circuit()], target="ibmq_fake_qpu").pulse_gate_circuits
                 is None
             )
 
-    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid IBMQ target."):
+    with pytest.raises(ValueError, match=r"'ss_example_qpu' is not a valid IBMQ target."):
         service.ibmq_compile(cirq.Circuit(), target="ss_example_qpu")
 
 
@@ -986,7 +986,7 @@ def test_service_dfe(mock_post: mock.MagicMock) -> None:
         shots=100,
     ) == ["id1", "id2"]
 
-    with pytest.raises(TypeError, match="should contain a single `cirq.Circuit`"):
+    with pytest.raises(TypeError, match=r"should contain a single `cirq.Circuit`"):
         service.submit_dfe(
             rho_1=([circuit, circuit], "ss_example_qpu"),  # type: ignore[arg-type]
             rho_2=(circuit, "ss_example_qpu"),

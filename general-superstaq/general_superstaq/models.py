@@ -4,12 +4,19 @@
 from __future__ import annotations
 
 import datetime
+import itertools
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from enum import Enum
-from typing import Any
+from typing import Annotated, Any
 
-import pydantic
+import pydantic.functional_validators
+
+from general_superstaq import validation
+
+TargetStr = Annotated[
+    str, pydantic.functional_validators.AfterValidator(validation.validate_target)
+]
 
 
 class JobType(str, Enum):
@@ -106,6 +113,37 @@ class DefaultPydanticModel(
     )
 
 
+class ExternalProviderCredentials(DefaultPydanticModel):
+    """Model for storing a user's credentials for external providers."""
+
+    # Aliases required for v0.2.0 API. Eventually these should be replaced.
+    cq_token: str | None = pydantic.Field(None)
+    cq_project_id: str | None = pydantic.Field(
+        None, validation_alias=pydantic.AliasChoices("project_id", "cq_project_id")
+    )
+    cq_org_id: str | None = pydantic.Field(
+        None, validation_alias=pydantic.AliasChoices("org_id", "cq_org_id")
+    )
+
+    ibmq_token: str | None = pydantic.Field(None)
+    ibmq_instance: str | None = pydantic.Field(None)
+    ibmq_channel: str | None = pydantic.Field(None)
+
+    qtm_token: str | None = pydantic.Field(None)
+    qtm_email: pydantic.EmailStr | None = pydantic.Field(None)
+
+    @pydantic.field_validator("cq_token", mode="before")
+    @classmethod
+    def _validate_cq_token(cls, cq_token: object) -> object:
+        """Convert all CQ tokens to newer style (`cq_token="token"`).
+
+        Previously CQ tokens were specified via a dict, e.g. `cq_token={"access_token": "token"}`.
+        """
+        if isinstance(cq_token, Mapping):
+            return cq_token.get("access_token")
+        return cq_token
+
+
 class JobData(DefaultPydanticModel):
     """A class to store data for a Superstaq job which is returned through to the client."""
 
@@ -117,7 +155,7 @@ class JobData(DefaultPydanticModel):
     """Any status messages for each circuit in the job."""
     user_email: pydantic.EmailStr
     """The email address of the use who submitted the job."""
-    target: str
+    target: TargetStr
     """The target that the job was submitted to."""
     provider_id: list[str | None]
     """Any provider side ID's for each circuit in the job."""
@@ -149,6 +187,10 @@ class JobData(DefaultPydanticModel):
     """Serialized logical qubits of compiled circuit. Only provided for CIRQ circuit type."""
     physical_qubits: list[str | None]
     """Serialized physical qubits of the device. Only provided for CIRQ circuit type."""
+    tags: list[str] = []
+    """Any tags attached to this job."""
+    metadata: dict[str, Any] = pydantic.Field(default={})
+    """Additional metadata passed by the user."""
 
 
 class NewJob(DefaultPydanticModel):
@@ -156,7 +198,7 @@ class NewJob(DefaultPydanticModel):
 
     job_type: JobType
     """The job type."""
-    target: str
+    target: TargetStr
     """The target."""
     circuits: str
     """Serialized input circuits."""
@@ -177,6 +219,8 @@ class NewJob(DefaultPydanticModel):
     """Options dictionary with additional configuration detail."""
     tags: list[str] = pydantic.Field(default=[])
     """Optional tags."""
+    metadata: dict[str, Any] = pydantic.Field(default={})
+    """Additional metadata passed by the user."""
 
 
 class JobCancellationResults(DefaultPydanticModel):
@@ -206,10 +250,12 @@ class JobQuery(DefaultPydanticModel):
     """List of user emails to include."""
     job_id: list[uuid.UUID] | None = pydantic.Field(None)
     """List of job IDs to include."""
-    target_name: list[str] | None = pydantic.Field(None)
+    target_name: list[TargetStr] | None = pydantic.Field(None)
     """List of targets to include."""
     status: list[CircuitStatus] | None = pydantic.Field(None)
     """List of statuses to include."""
+    tags: list[str] | None = pydantic.Field(None)
+    """Filter for jobs with a given tag."""
     min_priority: int | None = pydantic.Field(None)
     """Minimum priority to include."""
     max_priority: int | None = pydantic.Field(None)
@@ -305,10 +351,25 @@ class UpdateUserDetails(DefaultPydanticModel):
     """New user balance."""
 
 
+class TargetStatus(str, Enum):
+    """The current status of a Superstaq Target."""
+
+    AVAILABLE = "available"
+    """Target is currently accepting new jobs."""
+    DEV_ONLY = "dev_only"
+    """Target is in maintenance mode."""
+    OFFLINE = "offline"
+    """Target is temporarily unavailable for job submission."""
+    RETIRED = "retired"
+    """Target has been permanently retired."""
+    UNSUPPORTED = "unsupported"
+    """Target does not support job submission through Superstaq."""
+
+
 class TargetModel(DefaultPydanticModel):
     """Model for the details of a target."""
 
-    target_name: str
+    target_name: TargetStr
     """The target name."""
     supports_submit: bool
     """Targets allow job submission."""
@@ -337,9 +398,9 @@ class GetTargetsFilterModel(DefaultPydanticModel):
     """Include Superstaq targets that allow/do not allow QUBO submission."""
     supports_compile: bool | None = pydantic.Field(None)
     """Include Superstaq targets that allow/do not allow circuit compilation."""
-    available: bool | None = pydantic.Field(True)
+    available: bool | None = pydantic.Field(None)
     """Include Superstaq targets that are/not currently available."""
-    retired: bool = pydantic.Field(False)
+    retired: bool | None = pydantic.Field(False)
     """Include Superstaq targets that are retired."""
     accessible: bool | None = pydantic.Field(None)
     """Include only Superstaq targets that are/aren't accessible to the user."""
@@ -348,7 +409,7 @@ class GetTargetsFilterModel(DefaultPydanticModel):
 class RetrieveTargetInfoModel(DefaultPydanticModel):
     """Model for retrieving detailed target info."""
 
-    target: str
+    target: TargetStr
     """The target's name."""
     options_dict: dict[str, Any] = pydantic.Field({})
     """The details of the target."""
@@ -358,3 +419,93 @@ class TargetInfo(DefaultPydanticModel):
     """Model containing details info about a specific instance of a target."""
 
     target_info: dict[str, object]
+
+
+class WorkerTask(DefaultPydanticModel):
+    """The data model used for sending task data to machine workers."""
+
+    circuit_ref: str
+    """The circuit reference."""
+    circuit: str
+    """Serialized representation of the circuit."""
+    shots: int
+    """The number of shots to perform."""
+    metadata: dict[str, Any] = pydantic.Field(default={})
+    """Additional metadata passed by the user."""
+    user_email: pydantic.EmailStr | None = pydantic.Field(default=None)
+    """The user's email."""
+
+
+class WorkerTaskStatus(DefaultPydanticModel):
+    """Response for when the status of a task is returned."""
+
+    circuit_ref: str
+    """The circuit reference."""
+    status: CircuitStatus
+    """The current status of the task."""
+
+
+class WorkerTaskResults(DefaultPydanticModel):
+    """The data sent by the machine workers when returning job results."""
+
+    circuit_ref: str
+    """The circuit reference."""
+    status: CircuitStatus
+    """The current status of the task."""
+    status_message: str | None = pydantic.Field(default=None)
+    """Description of the task status."""
+    successful_shots: pydantic.NonNegativeInt | None = pydantic.Field(default=None)
+    """The total number of successful shots (used for validation)."""
+    measurements: dict[str, set[pydantic.NonNegativeInt]] | None = pydantic.Field(default=None)
+    """Mapping of bitstrings to a list of shot indexes."""
+
+    @pydantic.model_validator(mode="after")
+    def validate_measurements(self) -> WorkerTaskResults:
+        """Check all measurement keys are bitstrings of the same length, all values have the
+        expected number of shots and all indices are present.
+        """
+        if self.status == CircuitStatus.COMPLETED:
+            if self.successful_shots is None or self.measurements is None:
+                raise ValueError(
+                    "When status=COMPLETED the worker must return both the measurements and the "
+                    "number of successful shots."
+                )
+
+            if not all(bitstring.isdecimal() for bitstring in self.measurements):
+                raise ValueError("Measurement keys must be valid bitstrings.")
+
+            if any(
+                len(bitstring) != len(next(iter(self.measurements.keys())))
+                for bitstring in self.measurements
+            ):
+                raise ValueError("All measurement keys must have the same length.")
+            if set(itertools.chain.from_iterable(self.measurements.values())) != set(
+                range(self.successful_shots)
+            ):
+                raise ValueError("Not all successful shots have a measurement.")
+
+        elif self.status not in (
+            CircuitStatus.RUNNING,
+            CircuitStatus.COMPLETED,
+            CircuitStatus.FAILED,
+        ):
+            raise ValueError(f"Workers cannot return a status of {self.status}.")
+
+        elif self.successful_shots is not None or self.measurements is not None:
+            raise ValueError("Workers cannot return results unless status is COMPLETED")
+
+        return self
+
+
+class NewWorker(DefaultPydanticModel):
+    """Model for declaring a new machine worker."""
+
+    name: str
+    served_target: str
+
+
+class WorkerTokenResponse(DefaultPydanticModel):
+    """Model containing new credentials for a machine worker."""
+
+    worker_name: str
+    token: str

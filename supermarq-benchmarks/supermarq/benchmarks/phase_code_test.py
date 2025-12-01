@@ -19,12 +19,12 @@ def test_phase_code_score() -> None:
 
 def test_invalid_inputs() -> None:
     with pytest.raises(
-        ValueError, match="The length of `phase_state` must match the number of data qubits."
+        ValueError, match=r"The length of `phase_state` must match the number of data qubits."
     ):
         PhaseCode(3, 1, [0])
 
     with pytest.raises(TypeError, match=r"`phase_state` must be a `list\[int\]`."):
         PhaseCode(3, 1, cast("list[int]", "010"))
 
-    with pytest.raises(ValueError, match="Entries of `phase_state` must be 0, 1 integers."):
+    with pytest.raises(ValueError, match=r"Entries of `phase_state` must be 0, 1 integers."):
         PhaseCode(3, 1, cast("list[int]", ["0", "1", "0"]))

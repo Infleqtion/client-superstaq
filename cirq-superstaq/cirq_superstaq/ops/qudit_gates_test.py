@@ -85,7 +85,7 @@ def test_qudit_swap_op() -> None:
 
     assert css.qudit_swap_op(qubit0, qubit1) == cirq.SWAP(qubit0, qubit1)
     assert css.qudit_swap_op(qudit0, qudit1) == css.QuditSwapGate(7).on(qudit0, qudit1)
-    with pytest.raises(ValueError, match="do not have the same dimension"):
+    with pytest.raises(ValueError, match=r"do not have the same dimension"):
         _ = css.qudit_swap_op(qubit0, qudit1)
 
 
@@ -368,13 +368,13 @@ def test_virtual_z_pow_gate() -> None:
         use_unicode_characters=False,
     )
 
-    with pytest.raises(ValueError, match="Invalid dimension"):
+    with pytest.raises(ValueError, match=r"Invalid dimension"):
         _ = css.VirtualZPowGate(dimension=1)
 
-    with pytest.raises(ValueError, match="Invalid energy level"):
+    with pytest.raises(ValueError, match=r"Invalid energy level"):
         _ = css.VirtualZPowGate(dimension=3, level=3)
 
-    with pytest.raises(ValueError, match="Invalid energy level"):
+    with pytest.raises(ValueError, match=r"Invalid energy level"):
         _ = css.VirtualZPowGate(dimension=3, level=0)
 
 
@@ -434,16 +434,16 @@ def test_qubit_subspace_gate() -> None:
     assert css.QubitSubspaceGate(cirq.X, (3,), [(0, 2)]) == css.QubitSubspaceGate(
         cirq.X, (3,), [(0, -1)]
     )
-    with pytest.raises(ValueError, match="Only qubit gates"):
+    with pytest.raises(ValueError, match=r"Only qubit gates"):
         _ = css.QubitSubspaceGate(cirq.ZPowGate(dimension=3), (3,))
 
-    with pytest.raises(ValueError, match="same number of qubits"):
+    with pytest.raises(ValueError, match=r"same number of qubits"):
         _ = css.QubitSubspaceGate(cirq.Z, (3, 3))
 
-    with pytest.raises(ValueError, match="Invalid qid_shape"):
+    with pytest.raises(ValueError, match=r"Invalid qid_shape"):
         _ = css.QubitSubspaceGate(cirq.CZ, (1, 2))
 
-    with pytest.raises(ValueError, match="two subspace indices for every qubit"):
+    with pytest.raises(ValueError, match=r"two subspace indices for every qubit"):
         _ = css.QubitSubspaceGate(cirq.CZ, (3, 3), [(0, 1)])
 
     gate = css.QubitSubspaceGate(cirq.X, (3,))
@@ -486,6 +486,16 @@ def test_qubit_subspace_gate_protocols(
     flipped_gate = css.QubitSubspaceGate(sub_gate, qid_shape, [(j, i) for i, j in gate.subspaces])
     larger_gate = css.QubitSubspaceGate(sub_gate, (8,) * len(qid_shape), subspaces)
     another_gate = cirq.Y
+
+    assert 0.0 < cirq.trace_distance_bound(gate**0.01) < cirq.trace_distance_bound(gate) <= 1.0
+    assert np.isclose(
+        cirq.trace_distance_bound(gate),
+        cirq.trace_distance_bound(cirq.MatrixGate(cirq.unitary(gate), qid_shape=qid_shape)),
+    )
+    assert np.isclose(
+        cirq.trace_distance_bound(gate**0.01),
+        cirq.trace_distance_bound(cirq.MatrixGate(cirq.unitary(gate**0.01), qid_shape=qid_shape)),
+    )
 
     assert gate == gate  # noqa: PLR0124
     assert gate == same_gate
@@ -585,5 +595,5 @@ def test_qubit_subspace_op() -> None:
     assert css.qubit_subspace_op(
         cirq.X(cirq.NamedQubit("qubit")), (4,), [(1, -1)]
     ) == css.QubitSubspaceGate(cirq.X, (4,), [(1, 3)]).on(cirq.NamedQid("qubit", dimension=4))
-    with pytest.raises(ValueError, match="has no gate."):
+    with pytest.raises(ValueError, match=r"has no gate."):
         _ = css.qubit_subspace_op(cirq.CircuitOperation(cirq.FrozenCircuit()), ())

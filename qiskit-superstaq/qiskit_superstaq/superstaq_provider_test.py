@@ -32,7 +32,7 @@ def test_provider(fake_superstaq_provider: MockSuperstaqProvider) -> None:
 
 
 def test_provider_args() -> None:
-    with pytest.raises(ValueError, match="must be either 'ibm_cloud' or 'ibm_quantum_platform'"):
+    with pytest.raises(ValueError, match=r"must be either 'ibm_cloud' or 'ibm_quantum_platform'"):
         ss_provider = qss.SuperstaqProvider(api_key="MY_TOKEN", ibmq_channel="foo")
 
     ss_provider = qss.SuperstaqProvider(
@@ -51,7 +51,7 @@ def test_provider_args() -> None:
     ss_provider = qss.SuperstaqProvider(api_key="MY_TOKEN", api_version="v0.3.0")
     assert isinstance(ss_provider._client, gss.superstaq_client._SuperstaqClientV3)
 
-    with pytest.raises(ValueError, match="`api_version` can only take value 'v0.2.0' or 'v0.3.0'"):
+    with pytest.raises(ValueError, match=r"`api_version` can only take value 'v0.2.0' or 'v0.3.0'"):
         ss_provider = qss.SuperstaqProvider(api_key="MY_TOKEN", api_version="v0.4.0")
 
 
@@ -125,7 +125,9 @@ def test_get_job(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqPro
             "target": "ibmq_fez_qpu",
         },
     }
-    with pytest.raises(gss.SuperstaqException, match="Job ids belong to jobs at different targets"):
+    with pytest.raises(
+        gss.SuperstaqException, match=r"Job ids belong to jobs at different targets"
+    ):
         fake_superstaq_provider.get_job("job_id1,job_id2")
 
 
@@ -175,7 +177,7 @@ def test_aqt_compile(mock_post: MagicMock, fake_superstaq_provider: MockSupersta
 
 def test_invalid_target_aqt_compile() -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
-    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid AQT target."):
+    with pytest.raises(ValueError, match=r"'ss_example_qpu' is not a valid AQT target."):
         provider.aqt_compile(qiskit.QuantumCircuit(), target="ss_example_qpu")
 
 
@@ -205,7 +207,7 @@ def test_aqt_compile_eca(
     assert out.initial_logical_to_physicals == [[{}]]
     assert out.final_logical_to_physicals == [[{}]]
 
-    with pytest.warns(DeprecationWarning, match="has been deprecated"):
+    with pytest.warns(DeprecationWarning, match=r"has been deprecated"):
         deprecated_out = fake_superstaq_provider.aqt_compile_eca(
             [qc], num_equivalent_circuits=1, random_seed=1234, atol=1e-2
         )
@@ -276,7 +278,7 @@ def test_ibmq_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperst
 
 def test_invalid_target_ibmq_compile() -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
-    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid IBMQ target."):
+    with pytest.raises(ValueError, match=r"'ss_example_qpu' is not a valid IBMQ target."):
         provider.ibmq_compile(qiskit.QuantumCircuit(), target="ss_example_qpu")
 
 
@@ -370,12 +372,12 @@ def test_qscout_compile(
         "num_qubits": 2,
     }
 
-    with pytest.raises(ValueError, match="At least 2 qubits are required"):
+    with pytest.raises(ValueError, match=r"At least 2 qubits are required"):
         _ = fake_superstaq_provider.qscout_compile([qc, qc2], num_qubits=1)
 
 
 def test_invalid_target_qscout_compile(fake_superstaq_provider: MockSuperstaqProvider) -> None:
-    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid QSCOUT target."):
+    with pytest.raises(ValueError, match=r"'ss_example_qpu' is not a valid QSCOUT target."):
         fake_superstaq_provider.qscout_compile(qiskit.QuantumCircuit(), target="ss_example_qpu")
 
 
@@ -444,7 +446,7 @@ def test_qscout_compile_change_entangler(
 def test_qscout_compile_wrong_entangler(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit()
 
-    with pytest.raises(ValueError, match="`base_entangling_gate` must be"):
+    with pytest.raises(ValueError, match=r"`base_entangling_gate` must be"):
         _ = fake_superstaq_provider.qscout_compile(qc, base_entangling_gate="yy")
 
 
@@ -505,7 +507,7 @@ def test_cq_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaq
 
 
 def test_invalid_target_cq_compile(fake_superstaq_provider: MockSuperstaqProvider) -> None:
-    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid CQ target."):
+    with pytest.raises(ValueError, match=r"'ss_example_qpu' is not a valid CQ target."):
         fake_superstaq_provider.cq_compile(qiskit.QuantumCircuit(), target="ss_example_qpu")
 
 
@@ -538,7 +540,7 @@ def test_dfe(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqProvide
         shots=100,
     ) == ["id1", "id2"]
 
-    with pytest.raises(TypeError, match="should contain a single `qiskit.QuantumCircuit`"):
+    with pytest.raises(TypeError, match=r"should contain a single `qiskit.QuantumCircuit`"):
         fake_superstaq_provider.submit_dfe(
             rho_1=([qc, qc], "ss_example_qpu"),
             rho_2=(qc, "ss_example_qpu"),

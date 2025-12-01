@@ -7,13 +7,14 @@ from typing import TYPE_CHECKING, Any
 
 import cirq
 import numpy as np
-import numpy.typing as npt
 from cirq.ops.common_gates import proper_repr
 
 import cirq_superstaq as css
 
 if TYPE_CHECKING:
     from types import NotImplementedType
+
+    import numpy.typing as npt
 
 
 def _subscript(n: int) -> str:
@@ -554,6 +555,9 @@ class QubitSubspaceGate(cirq.Gate):
             self._qid_shape,
             self._subspaces,
         )
+
+    def _trace_distance_bound_(self) -> float:
+        return cirq.trace_distance_bound(self._sub_gate)
 
     def _has_unitary_(self) -> bool:
         return cirq.has_unitary(self._sub_gate)

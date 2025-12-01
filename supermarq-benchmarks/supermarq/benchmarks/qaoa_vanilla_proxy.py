@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+import random
 from collections.abc import Mapping
+from typing import TYPE_CHECKING
 
 import cirq
 import numpy as np
-import numpy.typing as npt
 import scipy
 
 import supermarq
 from supermarq.benchmark import Benchmark
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 class QAOAVanillaProxy(Benchmark):
@@ -46,7 +50,7 @@ class QAOAVanillaProxy(Benchmark):
     def _gen_sk_hamiltonian(self) -> list[tuple[int, int, float]]:
         """Randomly pick +1 or -1 for each edge weight."""
         hamiltonian = []
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(random.getrandbits(128))
         for i in range(self.num_qubits):
             for j in range(i + 1, self.num_qubits):
                 hamiltonian.append((i, j, rng.choice([-1, 1])))
@@ -114,10 +118,9 @@ class QAOAVanillaProxy(Benchmark):
 
             return -objective_value  # because we are minimizing instead of maximizing
 
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(random.getrandbits(128))
         init_params = [rng.uniform() * 2 * np.pi, rng.uniform() * 2 * np.pi]
         out = scipy.optimize.minimize(f, init_params, method="COBYLA")
-
         return out["x"], out["fun"]
 
     def _gen_angles(self) -> npt.NDArray[np.float64]:

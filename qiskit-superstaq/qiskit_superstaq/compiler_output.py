@@ -104,7 +104,7 @@ class CompilerOutput:  # noqa: PLW1641
         ),
         pulse_gate_circuits: qiskit.QuantumCircuit | list[qiskit.QuantumCircuit] = None,
         seq: qtrl.sequencer.Sequence | None = None,
-        jaqal_programs: str | list[str] | None = None,
+        jaqal_programs: list[str] | None = None,
     ) -> None:
         """Constructs a `CompilerOutput` object.
 
@@ -117,22 +117,20 @@ class CompilerOutput:  # noqa: PLW1641
             pulse_gate_circuits: Pulse-gate `qiskit.QuantumCircuit` or list thereof specifying the
                 pulse compilation.
             seq: `qtrl.sequencer.Sequence` pulse sequence if `qtrl` is available locally.
-            jaqal_programs: Optional string or list of strings specifying Jaqal programs (for
-                QSCOUT).
+            jaqal_programs: The Jaqal programs as individual strings.
         """
         if isinstance(circuits, qiskit.QuantumCircuit):
             self.circuit = circuits
             self.initial_logical_to_physical = initial_logical_to_physicals
             self.final_logical_to_physical = final_logical_to_physicals
             self.pulse_gate_circuit = pulse_gate_circuits
-            self.jaqal_program = jaqal_programs
         else:
             self.circuits = circuits
             self.initial_logical_to_physicals = initial_logical_to_physicals
             self.final_logical_to_physicals = final_logical_to_physicals
             self.pulse_gate_circuits = pulse_gate_circuits
-            self.jaqal_programs = jaqal_programs
 
+        self.jaqal_programs = jaqal_programs
         self.seq = seq
 
     def has_multiple_circuits(self) -> bool:
@@ -150,7 +148,7 @@ class CompilerOutput:  # noqa: PLW1641
             return (
                 f"CompilerOutput({self.circuit!r}, {self.initial_logical_to_physical!r}, "
                 f"{self.final_logical_to_physical!r}, {self.pulse_gate_circuit!r}, "
-                f"{self.seq!r}, {self.jaqal_program!r})"
+                f"{self.seq!r}, {self.jaqal_programs!r})"
             )
         return (
             f"CompilerOutput({self.circuits!r}, {self.initial_logical_to_physicals!r}, "
@@ -179,9 +177,23 @@ class CompilerOutput:  # noqa: PLW1641
             and self.initial_logical_to_physical == other.initial_logical_to_physical
             and self.final_logical_to_physical == other.final_logical_to_physical
             and self.pulse_gate_circuit == other.pulse_gate_circuit
-            and self.jaqal_program == other.jaqal_program
+            and self.jaqal_programs == other.jaqal_programs
             and self.seq == other.seq
         )
+
+    @property
+    def jaqal_program(self) -> str | None:
+        """Jaqal program(s) as a single string.
+
+        For multi-circuit compilation the string will contain subcircuits.
+        """
+        if not self.jaqal_programs:
+            return None
+
+        separator = "prepare_all"
+        subcircuits = [self.jaqal_programs[0]]
+        subcircuits += [program.partition(separator)[2] for program in self.jaqal_programs[1:]]
+        return f"\n{separator}".join(subcircuits)
 
 
 def read_json(
@@ -386,5 +398,5 @@ def read_json_qscout(
         compiled_circuits[0],
         initial_logical_to_physicals[0],
         final_logical_to_physicals[0],
-        jaqal_programs=jaqal_programs[0],
+        jaqal_programs=jaqal_programs,
     )
