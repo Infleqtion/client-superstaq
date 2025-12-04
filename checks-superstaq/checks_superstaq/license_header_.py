@@ -65,7 +65,7 @@ def run(
             ["licensepy", "format", *files, *args_to_pass],
             cwd=check_utils.root_dir,
         )
-        if return_code > 0:
+        if return_code > 0 and not parsed_args.fix:
             command = "./checks/license_header_.py --fix"
             text = (
                 f"Run '{command}' (from the repo root directory) to format "
