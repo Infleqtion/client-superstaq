@@ -66,7 +66,7 @@ def run(
             cwd=check_utils.root_dir,
         )
         if return_code > 0:
-            command = "./checks/license_header --fix"
+            command = "./checks/license_header_.py --fix"
             text = (
                 f"Run '{command}' (from the repo root directory) to format "
                 "files with correct license header."
