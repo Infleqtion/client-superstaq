@@ -38,6 +38,27 @@ jobs:
         run: |
           checks/format_.py
 
+  license:
+    name: License check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.13
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt', '.github/workflows/ci.yml') }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ./checks-superstaq
+      - name: licensepy format
+        run: |
+          checks/license_header_.py
+
   lint:
     name: Lint check
     runs-on: ubuntu-latest
