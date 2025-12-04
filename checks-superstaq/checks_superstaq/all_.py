@@ -76,10 +76,16 @@ def run(*args: str) -> int:
         help="Enable the `COVERAGE_CORE=sysmon` env variable for faster coverage (requires "
         "Python 3.12 or higher).",
     )
+    parser.add_argument(
+        "--licensepy",
+        action="store_true",
+        help="Enable running the 'licensepy format' tool on the repository (license header "
+        "check/formatting)",
+    )
 
     parsed_args, _ = parser.parse_known_intermixed_args(args)
 
-    # Issue deprecation warning for --ruff flag
+    # Issue deprecation warning for `--ruff` flag
     if parsed_args.ruff:
         warnings.warn(
             "The --ruff flag is deprecated and will be removed in a future version. "
@@ -89,7 +95,7 @@ def run(*args: str) -> int:
         )
 
     if parsed_args.revisions is not None:
-        # print info about incremental files once now, rather than in each check
+        # Print info about incremental files once now, rather than in each check
         _ = check_utils.extract_files(parsed_args, silent=False)
 
     if parsed_args.sysmon and sys.version_info.minor >= 12:
@@ -101,7 +107,8 @@ def run(*args: str) -> int:
     args_to_pass = [
         arg
         for arg in args
-        if arg not in ("-f", "--force-formats", "-F", "--force", "--ruff", "--sysmon")
+        if arg
+        not in ("-f", "--force-formats", "-F", "--force", "--ruff", "--sysmon", "--licensepy")
     ]
 
     # Always use ruff for formatting and linting (remove the conditional logic)
@@ -113,21 +120,24 @@ def run(*args: str) -> int:
     checks_failed |= format_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
     checks_failed |= lint_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 
-    checks_failed |= license_header_.run(
-        *args_to_pass,
-        exit_on_failure=exit_on_failure,
-        silent=True,
-    )
-    # run typing and coverage checks
+    # Run license header checking (if enabled)
+    if parsed_args.licensepy:
+        checks_failed |= license_header_.run(
+            *args_to_pass,
+            exit_on_failure=exit_on_failure,
+            silent=True,
+        )
+
+    # Run typing and coverage checks
     exit_on_failure = not parsed_args.force_all
     checks_failed |= mypy_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
     checks_failed |= coverage_.run(*args_to_pass, exit_on_failure=exit_on_failure, silent=True)
 
-    # check that all pip requirements files are in order
+    # Check that all pip requirements files are in order
     checks_failed |= requirements.run(*args_to_pass, exit_on_failure=exit_on_failure)
 
     if default_mode:
-        # checks that the docs build
+        # Checks that the docs build
         checks_failed |= build_docs.run(
             *args_to_pass,
             exit_on_failure=exit_on_failure,
