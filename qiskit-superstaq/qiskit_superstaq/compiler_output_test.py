@@ -152,6 +152,8 @@ def test_read_json() -> None:
     assert out.pulse_gate_circuit == qc_pulse
     assert out.pulse_gate_circuit.duration == 110
     assert out.pulse_gate_circuit.op_start_times == [0, 10, 20]
+    assert out.jaqal_program is None
+    assert out.jaqal_programs is None
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([qc, qc]),
@@ -167,6 +169,8 @@ def test_read_json() -> None:
     assert out.pulse_gate_circuits[0].duration == 110
     assert out.pulse_gate_circuits[1].duration == 250
     assert out.pulse_gate_circuits[1].op_start_times == [0, 100, 200]
+    assert out.jaqal_program is None
+    assert out.jaqal_programs is None
 
     json_dict["pulses"] = "oops"
     out = qss.compiler_output.read_json(json_dict, circuits_is_list=True)
@@ -209,6 +213,33 @@ def test_read_json_empty_circuit() -> None:
     assert out.pulse_gate_circuits[1].op_start_times == []
 
 
+def test_read_jsonV3() -> None:
+    qc = qiskit.QuantumCircuit(2)
+    qc.h(0)
+    qc.cx(0, 1)
+
+    json_dict = {
+        "qiskit_circuits": json.dumps([qss.serialization.serialize_circuits(qc)]),
+        "initial_logical_to_physicals": "[[[0, 0], [1, 1]]]",
+        "final_logical_to_physicals": "[[[0, 0], [1, 1]]]",
+    }
+    out = qss.compiler_output.read_json(json_dict, circuits_is_list=False, api_version="v0.3.0")
+    assert out.circuit == qc
+    assert isinstance(out.circuit, qiskit.QuantumCircuit)
+    assert out.initial_logical_to_physical == {0: 0, 1: 1}
+    assert out.final_logical_to_physical == {0: 0, 1: 1}
+
+    json_dict = {
+        "qiskit_circuits": json.dumps([qss.serialization.serialize_circuits(qc)] * 2),
+        "initial_logical_to_physicals": "[[[0, 0], [1, 1]], [[0, 0], [1, 1]]]",
+        "final_logical_to_physicals": "[[[0, 0], [1, 1]], [[0, 0], [1, 1]]]",
+    }
+    out = qss.compiler_output.read_json(json_dict, circuits_is_list=True, api_version="v0.3.0")
+    assert out.circuits == [qc, qc]
+    assert out.initial_logical_to_physicals == [{0: 0, 1: 1}, {0: 0, 1: 1}]
+    assert out.final_logical_to_physicals == [{0: 0, 1: 1}, {0: 0, 1: 1}]
+
+
 @mock.patch.dict("sys.modules", {"qtrl": None})
 def test_read_json_aqt() -> None:
     importlib.reload(qss.compiler_output)
@@ -226,13 +257,13 @@ def test_read_json_aqt() -> None:
         "state_jp": state_str,
     }
 
-    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+    with pytest.warns(UserWarning, match=r"deserialize compiled pulse sequences"):
         out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=False)
 
     assert out.circuit == circuit
     assert not hasattr(out, "circuits")
 
-    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+    with pytest.warns(UserWarning, match=r"deserialize compiled pulse sequences"):
         out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
 
     assert out.circuits == [circuit]
@@ -246,7 +277,7 @@ def test_read_json_aqt() -> None:
         "state_jp": state_str,
     }
 
-    with pytest.warns(UserWarning, match="deserialize compiled pulse sequences"):
+    with pytest.warns(UserWarning, match=r"deserialize compiled pulse sequences"):
         out = qss.compiler_output.read_json_aqt(json_dict, circuits_is_list=True)
 
     assert out.circuits == [circuit, circuit]
@@ -350,6 +381,7 @@ def test_read_json_qscout() -> None:
     assert out.initial_logical_to_physical == {0: 1}
     assert out.final_logical_to_physical == {0: 13}
     assert out.jaqal_program == jaqal_program
+    assert out.jaqal_programs == [jaqal_program]
 
     json_dict = {
         "qiskit_circuits": qss.serialization.serialize_circuits([circuit, circuit]),
@@ -361,7 +393,22 @@ def test_read_json_qscout() -> None:
     assert out.circuits == [circuit, circuit]
     assert out.initial_logical_to_physicals == [{0: 1}, {0: 1}]
     assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
-    assert out.jaqal_programs == json_dict["jaqal_programs"]
+    assert out.jaqal_programs == [jaqal_program, jaqal_program]
+    assert out.jaqal_program == textwrap.dedent(
+        """\
+        register allqubits[1]
+
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        Rz allqubits[0] -3.141592653589793
+        measure_all
+
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        Rz allqubits[0] -3.141592653589793
+        measure_all
+        """
+    )
 
 
 def test_compiler_output_eq() -> None:

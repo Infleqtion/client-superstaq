@@ -30,20 +30,21 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import cirq
-import cirq.circuits
 import cirq_superstaq as css
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as npt
 import scipy
 import seaborn as sns
 from tqdm.auto import trange
 from tqdm.contrib.itertools import product
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 ####################################################################################################
@@ -562,9 +563,9 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             )
 
         if interleaved_gate is not None:
-            self.interleaved_gate: cirq.CliffordGate | None = cirq.CliffordGate.from_op_list(
-                [interleaved_gate(*qubits)], qubits
-            )
+            if not cirq.has_stabilizer_effect(interleaved_gate):
+                raise ValueError("The interleaved gate must be a Clifford gate.")
+            self.interleaved_gate: cirq.Gate | None = interleaved_gate
         else:
             self.interleaved_gate = None
 
@@ -718,16 +719,10 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         ]
         return {
             "single_qubit_gates": np.mean(
-                [
-                    sum(1 for op in circuit.all_operations() if len(op.qubits) == 1)
-                    for circuit in sample
-                ]
+                [self._count_non_barrier_gates(circuit, num_qubits=1) for circuit in sample]
             ).item(),
             "two_qubit_gates": np.mean(
-                [
-                    sum(1 for op in circuit.all_operations() if len(op.qubits) == 2)
-                    for circuit in sample
-                ]
+                [self._count_non_barrier_gates(circuit, num_qubits=2) for circuit in sample]
             ).item(),
         }
 
@@ -757,21 +752,22 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                     circuit=rb_circuit + cirq.measure(sorted(self.qubits)),
                     data={
                         "clifford_depth": depth,
-                        "circuit_depth": len(rb_circuit),
-                        "single_qubit_gates": sum(
-                            1 for op in rb_circuit.all_operations() if len(op.qubits) == 1
-                        ),
-                        "two_qubit_gates": sum(
-                            1 for op in rb_circuit.all_operations() if len(op.qubits) == 2
-                        ),
+                        "circuit_depth": self._count_non_barrier_gates(rb_circuit),
                         "experiment": "RB",
+                        "single_qubit_gates": self._count_non_barrier_gates(
+                            rb_circuit, num_qubits=1
+                        ),
+                        "two_qubit_gates": self._count_non_barrier_gates(rb_circuit, num_qubits=2),
                     },
                     circuit_realization=k,
                 ),
             )
             if self.interleaved_gate is not None:
                 # Find final gate
-                irb_sequence = [elem for x in base_sequence for elem in (x, self.interleaved_gate)]
+                gate_clifford_repr = cirq.CliffordGate.from_op_list(
+                    [self.interleaved_gate(*self.qubits)], self.qubits
+                )
+                irb_sequence = [elem for x in base_sequence for elem in (x, gate_clifford_repr)]
                 irb_sequence_final_gate = _reduce_clifford_seq(
                     cirq.inverse(irb_sequence)  # type: ignore[arg-type]
                 )
@@ -792,14 +788,14 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                         circuit=irb_circuit + cirq.measure(sorted(self.qubits)),
                         data={
                             "clifford_depth": depth,
-                            "circuit_depth": len(irb_circuit),
-                            "single_qubit_gates": sum(
-                                1 for op in irb_circuit.all_operations() if len(op.qubits) == 1
-                            ),
-                            "two_qubit_gates": sum(
-                                1 for op in irb_circuit.all_operations() if len(op.qubits) == 2
-                            ),
+                            "circuit_depth": self._count_non_barrier_gates(irb_circuit),
                             "experiment": "IRB",
+                            "single_qubit_gates": self._count_non_barrier_gates(
+                                irb_circuit, num_qubits=1
+                            ),
+                            "two_qubit_gates": self._count_non_barrier_gates(
+                                irb_circuit, num_qubits=2
+                            ),
                         },
                         circuit_realization=k,
                     ),

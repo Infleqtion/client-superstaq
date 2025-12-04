@@ -28,19 +28,19 @@ def test_validate_cirq_circuits() -> None:
 
     with pytest.raises(
         ValueError,
-        match="Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
+        match=r"Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
         "sequence of `cirq.Circuit` instances.",
     ):
         css.validation.validate_cirq_circuits("circuit_invalid")
 
     with pytest.raises(
         ValueError,
-        match="Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
+        match=r"Invalid 'circuits' input. Must be a `cirq.Circuit` or a "
         "sequence of `cirq.Circuit` instances.",
     ):
         css.validation.validate_cirq_circuits([circuit, "circuit_invalid"])
 
-    with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
+    with pytest.raises(ValueError, match=r"Circuit has no measurements to sample"):
         css.validation.validate_cirq_circuits(circuit, require_measurements=True)
 
 

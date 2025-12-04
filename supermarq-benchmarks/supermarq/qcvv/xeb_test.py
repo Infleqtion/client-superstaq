@@ -138,7 +138,7 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
         ),
     )
     assert samples[0].data == {
-        "circuit_depth": 9,
+        "circuit_depth": 8,
         "cycle_depth": 2,
         "interleaved_layer": "CZ(q(0), q(1))",
     }
@@ -163,7 +163,7 @@ def test_build_xeb_circuit(xeb_experiment: XEB) -> None:
         ),
     )
     assert samples[1].data == {
-        "circuit_depth": 9,
+        "circuit_depth": 8,
         "cycle_depth": 2,
         "interleaved_layer": "CZ(q(0), q(1))",
     }
@@ -401,17 +401,17 @@ def test_independent_qubit_groups() -> None:
 
 def test_results_no_data() -> None:
     results = XEBResults(target="example", experiment=XEB(1, []), data=None)
-    with pytest.raises(RuntimeError, match="No data stored. Cannot perform analysis."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot perform analysis."):
         results._analyze()
 
-    with pytest.raises(RuntimeError, match="No data stored. Cannot plot results."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot plot results."):
         results.plot_results()
 
-    with pytest.raises(RuntimeError, match="No data stored. Cannot plot results."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot plot results."):
         results.plot_speckle()
 
     with pytest.raises(
-        RuntimeError, match="No stored dataframe of circuit fidelities. Something has gone wrong."
+        RuntimeError, match=r"No stored dataframe of circuit fidelities. Something has gone wrong."
     ):
         results.data = pd.DataFrame()
         results.plot_results()

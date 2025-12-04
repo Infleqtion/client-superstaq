@@ -34,7 +34,7 @@ from cirq_superstaq.circuits import (
     msd_15_to_1,
 )
 from cirq_superstaq.compiler_output import active_qubit_indices, measured_qubit_indices
-from cirq_superstaq.job import Job
+from cirq_superstaq.job import Job, JobV3
 from cirq_superstaq.ops import (
     AQTICCX,
     AQTITOFFOLI,
@@ -101,6 +101,7 @@ __all__ = [
     "Barrier",
     "DDPowGate",
     "Job",
+    "JobV3",
     "ParallelGates",
     "ParallelRGate",
     "QubitSubspaceGate",

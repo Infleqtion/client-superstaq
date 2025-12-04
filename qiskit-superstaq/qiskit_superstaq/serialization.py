@@ -19,14 +19,16 @@ import json
 import re
 import warnings
 from collections.abc import Callable, Sequence
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 import general_superstaq as gss
 import numpy as np
-import numpy.typing as npt
 import qiskit.qpy
 
 import qiskit_superstaq as qss
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 T = TypeVar("T")
 

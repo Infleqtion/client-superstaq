@@ -29,6 +29,7 @@
 from __future__ import annotations
 
 import numbers
+import uuid
 import warnings
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
@@ -38,7 +39,6 @@ import cirq
 import general_superstaq as gss
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as npt
 from general_superstaq import ResourceEstimate
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 from scipy.optimize import curve_fit
@@ -46,13 +46,8 @@ from scipy.optimize import curve_fit
 import cirq_superstaq as css
 
 if TYPE_CHECKING:
+    import numpy.typing as npt
     from _typeshed import SupportsItems
-
-
-CLIENT_VERSION = {
-    "v0.2.0": _SuperstaqClient,
-    "v0.3.0": _SuperstaqClientV3,
-}
 
 
 def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
@@ -204,12 +199,18 @@ class Service(gss.service.Service):
             EnvironmentError: If an API key was not provided and could not be found.
         """
         self.default_target = default_target
-        client_version = CLIENT_VERSION[api_version]
+        if api_version == "v0.2.0":
+            client_version: type[_SuperstaqClient | _SuperstaqClientV3] = _SuperstaqClient
+        elif api_version == "v0.3.0":
+            client_version = _SuperstaqClientV3
+        else:
+            raise ValueError("`api_version` can only take value 'v0.2.0' or 'v0.3.0'")
         self._client = client_version(
             client_name="cirq-superstaq",
             remote_host=remote_host,
             api_key=api_key,
             api_version=api_version,
+            circuit_type=gss.models.CircuitType.CIRQ,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
             cq_token=cq_token,
@@ -356,8 +357,11 @@ class Service(gss.service.Service):
         repetitions: int = 1000,
         target: str | None = None,
         method: str | None = None,
+        verbatim: bool = False,
+        tag: Sequence[str] | str = (),
+        metadata: Mapping[str, object] | None = None,
         **kwargs: Any,
-    ) -> css.job.Job:
+    ) -> css.Job | css.JobV3:
         """Creates a new job to run the given circuit(s).
 
         Args:
@@ -365,6 +369,9 @@ class Service(gss.service.Service):
             repetitions: The number of times to repeat the circuit. Defaults to 1000.
             target: Where to run the job.
             method: The optional execution method.
+            verbatim: Run the provided circuit(s) verbatim (i.e. without compilation).
+            tag: An identifying tag (or list of tags) which can be used to find this job.
+            metadata: Other data to store alongside the job.
             kwargs: Other optimization and execution parameters.
 
         Returns:
@@ -383,17 +390,23 @@ class Service(gss.service.Service):
             repetitions=repetitions,
             target=target,
             method=method,
+            verbatim=verbatim,
+            tag=tag,
+            metadata=metadata,
             **kwargs,
         )
-        # Make a virtual job_id that aggregates all of the individual jobs
-        # into a single one that comma-separates the individual jobs.
-        job_id = ",".join(result["job_ids"])
-
+        if isinstance(self._client, _SuperstaqClient):
+            # Make a virtual job_id that aggregates all of the individual jobs
+            # into a single one that comma-separates the individual jobs.
+            job_id: str | uuid.UUID = ",".join(result["job_ids"])
+        else:
+            assert isinstance(result["job_id"], (str, uuid.UUID))
+            job_id = result["job_id"]
         # The returned job does not have fully populated fields; they will be filled out by
         # when the new job's status is first queried
         return self.get_job(job_id=job_id)
 
-    def get_job(self, job_id: str) -> css.job.Job:
+    def get_job(self, job_id: str | uuid.UUID) -> css.Job | css.JobV3:
         """Gets a job that has been created on the Superstaq API.
 
         Args:
@@ -406,7 +419,11 @@ class Service(gss.service.Service):
         Raises:
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
-        return css.job.Job(client=self._client, job_id=job_id)
+        if isinstance(self._client, _SuperstaqClient):
+            return css.Job(client=self._client, job_id=str(job_id))
+        else:
+            assert isinstance(self._client, _SuperstaqClientV3)
+            return css.JobV3(client=self._client, job_id=job_id)
 
     def resource_estimate(
         self, circuits: cirq.Circuit | Sequence[cirq.Circuit], target: str | None = None
@@ -644,7 +661,7 @@ class Service(gss.service.Service):
 
         Returns:
             Object whose .circuit(s) attribute contains optimized `cirq.Circuit`(s), and
-            `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
+            `.jaqal_program` attribute contains the corresponding Jaqal program(s).
 
         Raises:
             ValueError: If `base_entangling_gate` is not a valid gate option.
@@ -902,7 +919,7 @@ class Service(gss.service.Service):
             to post-process the measurement results and return the fidelity.
 
         Raises:
-            ValueError: If `circuit` is not a valid `cirq.Circuit`.
+            TypeError: If `circuit` is not a valid `cirq.Circuit`.
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         circuit_1 = rho_1[0]
@@ -914,7 +931,7 @@ class Service(gss.service.Service):
         css.validation.validate_cirq_circuits(circuit_2)
 
         if not (isinstance(circuit_1, cirq.Circuit) and isinstance(circuit_2, cirq.Circuit)):
-            raise ValueError("Each state `rho_i` should contain a single circuit.")
+            raise TypeError("Each state `rho_i` should contain a single `cirq.Circuit`.")
 
         serialized_circuits_1 = css.serialization.serialize_circuits(circuit_1)
         serialized_circuits_2 = css.serialization.serialize_circuits(circuit_2)

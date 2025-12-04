@@ -43,6 +43,7 @@ def test_zz_swap_gate() -> None:
         ]
     )
     assert np.allclose(cirq.unitary(gate), expected)
+    assert cirq.trace_distance_bound(gate) == 1.0
 
     qubits = cirq.LineQubit.range(3)
     operation = gate(qubits[0], qubits[2])
@@ -73,7 +74,7 @@ def test_zz_swap_gate() -> None:
 
     assert gate.__pow__(sympy.var("exponent")) is NotImplemented
 
-    with pytest.raises(TypeError, match="unsupported operand type"):
+    with pytest.raises(TypeError, match=r"unsupported operand type"):
         _ = gate**1.23
 
 
@@ -119,10 +120,10 @@ def test_zz_swap_parameterized() -> None:
     assert cirq.approx_eq(gate, css.ZZSwapGate(sympy.var("θ")))
     assert cirq.equal_up_to_global_phase(gate, css.ZZSwapGate(sympy.var("θ")))
 
-    with pytest.raises(TypeError, match="cirq.unitary failed. Value doesn't have"):
+    with pytest.raises(TypeError, match=r"cirq.unitary failed. Value doesn't have"):
         _ = cirq.unitary(gate)
 
-    with pytest.raises(TypeError, match="No Pauli expansion"):
+    with pytest.raises(TypeError, match=r"No Pauli expansion"):
         _ = cirq.pauli_expansion(gate)
 
 
@@ -143,6 +144,7 @@ def test_stripped_cz_gate() -> None:
         ]
     )
     assert np.allclose(cirq.unitary(gate), expected)
+    assert cirq.trace_distance_bound(gate) == 1.0
 
     qubits = cirq.LineQubit.range(3)
     operation = gate(qubits[0], qubits[2])
@@ -202,9 +204,9 @@ def test_stripped_cz_gate_parameterized() -> None:
     assert cirq.approx_eq(gate, css.StrippedCZGate(sympy.var("φ")))
     assert cirq.equal_up_to_global_phase(gate, css.StrippedCZGate(sympy.var("φ")))
 
-    with pytest.raises(TypeError, match="cirq.unitary failed. Value doesn't have"):
+    with pytest.raises(TypeError, match=r"cirq.unitary failed. Value doesn't have"):
         _ = cirq.unitary(gate)
-    with pytest.raises(TypeError, match="No Pauli expansion"):
+    with pytest.raises(TypeError, match=r"No Pauli expansion"):
         _ = cirq.pauli_expansion(gate)
 
 
@@ -283,7 +285,7 @@ def test_zx_circuit() -> None:
 def test_acecr_init() -> None:
     css.AceCR("+-")
     css.AceCR("-+", sandwich_rx_rads=np.pi / 3)
-    with pytest.raises(ValueError, match="Polarity must be"):
+    with pytest.raises(ValueError, match=r"Polarity must be"):
         css.AceCR("++")
 
     css.AceCR(rads=np.pi / 3)
@@ -752,10 +754,10 @@ def test_parallel_gates() -> None:
         cirq.X, cirq.ParallelGate(cirq.Y, num_copies=2)
     )
 
-    with pytest.raises(ValueError, match="ParallelGates cannot contain measurements"):
+    with pytest.raises(ValueError, match=r"`ParallelGates` cannot contain measurements"):
         _ = css.ParallelGates(cirq.X, cirq.MeasurementGate(1, key="1"))
 
-    with pytest.raises(ValueError, match="is not a cirq Gate"):
+    with pytest.raises(TypeError, match=r"is not a `cirq.Gate`"):
         _ = css.ParallelGates(cirq.X(qubits[1]))
 
 
@@ -764,14 +766,14 @@ def test_parallel_gates_operation() -> None:
     op = css.parallel_gates_operation(cirq.CX(q2, q0), cirq.Y(q3))
     assert op == css.ParallelGates(cirq.CX, cirq.Y).on(q2, q0, q3)
 
-    with pytest.raises(ValueError, match="no .gate attribute"):
+    with pytest.raises(ValueError, match=r"no .gate attribute"):
         _ = css.parallel_gates_operation(cirq.X(q0).with_classical_controls("1"))
 
-    with pytest.raises(ValueError, match="tagged operations not permitted"):
+    with pytest.raises(ValueError, match=r"tagged operations not permitted"):
         _ = css.parallel_gates_operation(cirq.X(q0).with_tags("foo"))
 
     with pytest.raises(
-        ValueError, match="Duplicate qids for"
+        ValueError, match=r"Duplicate qids for"
     ):  # Overlapping qubits should be caught by `cirq`
         _ = css.parallel_gates_operation(cirq.CX(q2, q0), cirq.Y(q2))
 
@@ -830,6 +832,29 @@ def test_parallel_gates_eq() -> None:
     assert not cirq.equal_up_to_global_phase(css.ParallelGates(cirq.CX), css.ParallelGates(cirq.X))
 
 
+def test_parallel_gates_trace_distance_bound() -> None:
+    assert cirq.trace_distance_bound(css.ParallelGates(cirq.X)) == 1.0
+    assert cirq.trace_distance_bound(css.ParallelGates()) == 0.0
+    assert cirq.trace_distance_bound(css.ParallelGates(cirq.T, cirq.Z ** sympy.Expr("x"))) == 1.0
+
+    assert np.isclose(cirq.trace_distance_bound(css.ParallelGates(cirq.T)), np.sin(np.pi / 8))
+    assert np.isclose(
+        cirq.trace_distance_bound(css.ParallelGates(cirq.T, cirq.T)), np.sin(np.pi / 4)
+    )
+    assert np.isclose(
+        cirq.trace_distance_bound(css.ParallelGates(cirq.T, cirq.S)), np.sin(3 * np.pi / 8)
+    )
+
+    q0, q1, q2, q3 = cirq.LineQubit.range(4)
+    gate = css.ParallelGates(cirq.X**0.01, cirq.T**0.02, cirq.CX**0.03)
+    op = gate.on(q0, q1, q2, q3)
+
+    trace_dist = cirq.trace_distance_bound(gate)
+    assert trace_dist < 1.0
+    assert trace_dist == cirq.trace_distance_bound(op)
+    assert np.isclose(trace_dist, cirq.trace_distance_bound(cirq.Circuit(cirq.decompose_once(op))))
+
+
 def test_parallel_gates_parameterized() -> None:
     x = sympy.var("x")
     y = sympy.var("y")
@@ -877,10 +902,10 @@ def test_parallel_gates_equivalence_groups() -> None:
             assert not cirq.approx_eq(operation, gate(*permuted_qubits))
             assert not cirq.equal_up_to_global_phase(operation, gate(*permuted_qubits))
 
-    with pytest.raises(ValueError, match="index out of range"):
+    with pytest.raises(ValueError, match=r"index out of range"):
         _ = gate.qubit_index_to_equivalence_group_key(4)
 
-    with pytest.raises(ValueError, match="index out of range"):
+    with pytest.raises(ValueError, match=r"index out of range"):
         _ = gate.qubit_index_to_equivalence_group_key(-1)
 
 

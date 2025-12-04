@@ -27,6 +27,7 @@
 from __future__ import annotations
 
 import numbers
+import uuid
 import warnings
 from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
@@ -34,6 +35,7 @@ from typing import TYPE_CHECKING, Any
 import general_superstaq as gss
 import numpy as np
 import qiskit
+from general_superstaq.superstaq_client import _SuperstaqClient
 
 import qiskit_superstaq as qss
 
@@ -131,6 +133,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             "cc_prx": qiskit.circuit.library.RGate,  # Classically controlled 'prx' gate
             "MS": qiskit.circuit.library.MSGate,
             "ZZ": qiskit.circuit.library.RZZGate,
+            "xx": qiskit.circuit.library.RXXGate,
             "measure_ff": qiskit.circuit.Measure(
                 label="measure_ff"
             ),  # Measurement with classical feed-forward
@@ -161,8 +164,11 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         shots: int,
         method: str | None = None,
+        verbatim: bool = False,
+        tag: Sequence[str] | str = (),
+        metadata: Mapping[str, object] | None = None,
         **kwargs: Any,
-    ) -> qss.SuperstaqJob:
+    ) -> qss.SuperstaqJob | qss.SuperstaqJobV3:
         """Runs circuits on the stored Superstaq backend.
 
         Args:
@@ -170,6 +176,9 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             shots: The number of execution shots (times to run the circuit).
             method:  An optional string that describes the execution method
                 (e.g. 'dry-run', 'statevector', etc.).
+            verbatim: Run the provided circuit(s) verbatim (i.e. without compilation).
+            tag: An identifying tag (or list of tags) which can be used to find this job.
+            metadata: Optional other data to store alongside the job.
             kwargs: Other optimization and execution parameters.
 
         Returns:
@@ -194,17 +203,22 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             repetitions=shots,
             target=self.name,
             method=method,
+            verbatim=verbatim,
+            tag=tag,
+            metadata=metadata,
             **kwargs,
         )
 
-        #  we make a virtual job_id that aggregates all of the individual jobs
-        # into a single one, that comma-separates the individual jobs:
-        job_id = ",".join(result["job_ids"])
-        job = qss.SuperstaqJob(self, job_id)
+        if isinstance(self._provider._client, _SuperstaqClient):
+            # Make a virtual job_id that aggregates all of the individual jobs
+            # into a single one that comma-separates the individual jobs.
+            job_id = ",".join(result["job_ids"])
+            return qss.SuperstaqJob(self, job_id)
+        else:
+            job_id_v3 = result["job_id"]
+            return qss.SuperstaqJobV3(self, job_id_v3)
 
-        return job
-
-    def retrieve_job(self, job_id: str) -> qss.SuperstaqJob:
+    def retrieve_job(self, job_id: str | uuid.UUID) -> qss.SuperstaqJob | qss.SuperstaqJobV3:
         """Gets a job that has been created on the Superstaq API.
 
         Args:
@@ -224,7 +238,10 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             DeprecationWarning,
             stacklevel=2,
         )
-        return qss.SuperstaqJob(self, job_id)
+        if isinstance(self._provider._client, _SuperstaqClient):
+            return qss.SuperstaqJob(self, str(job_id))
+        else:
+            return qss.SuperstaqJobV3(self, job_id)
 
     def compile(
         self,
@@ -244,22 +261,25 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         Raises:
             ValueError: If this backend does not support compilation.
         """
-        if self.name.startswith("ibmq_"):
-            return self.ibmq_compile(circuits, **kwargs)
+        if self._provider._client.api_version == "v0.2.0":
+            if self.name.startswith("ibmq_"):
+                return self.ibmq_compile(circuits, **kwargs)
 
-        elif self.name.startswith("aqt_"):
-            return self.aqt_compile(circuits, **kwargs)
+            elif self.name.startswith("aqt_"):
+                return self.aqt_compile(circuits, **kwargs)
 
-        elif self.name.startswith("qscout_"):
-            return self.qscout_compile(circuits, **kwargs)
+            elif self.name.startswith("qscout_"):
+                return self.qscout_compile(circuits, **kwargs)
 
-        elif self.name.startswith("cq_"):
-            return self.cq_compile(circuits, **kwargs)
+            elif self.name.startswith("cq_"):
+                return self.cq_compile(circuits, **kwargs)
 
         request_json = self._get_compile_request_json(circuits, **kwargs)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
-        return qss.compiler_output.read_json(json_dict, circuits_is_list)
+        return qss.compiler_output.read_json(
+            json_dict, circuits_is_list, api_version=self._provider._client.api_version
+        )
 
     def _get_compile_request_json(
         self,
@@ -448,7 +468,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
 
         Returns:
             Object whose .circuit(s) attribute contains optimized `qiskit.QuantumCircuit`(s), and
-            `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
+            `.jaqal_program` attribute contains the corresponding Jaqal program(s).
 
         Raises:
             ValueError: If this is not a QSCOUT backend.

@@ -73,6 +73,17 @@ def run(
     if "coverage" in parsed_args.skip:
         return 0
 
+    # Enable threading setting before other args so -n can be overwritten
+    default_threads = (
+        "auto"
+        if not parsed_args.files
+        and not parsed_args.modular
+        and parsed_args.revisions is None
+        and "-s" not in pytest_args
+        else "0"
+    )
+    pytest_args = [f"-n={default_threads}", *pytest_args]
+
     coverage_args = []
     if parsed_args.sysmon and sys.version_info.minor >= 12:
         os.environ["COVERAGE_CORE"] = "sysmon"
@@ -155,6 +166,12 @@ def _run_on_files(
 
 
 def _report(test_returncode: int) -> int:
+    subprocess.call(
+        ["python", "-m", "coverage", "combine"],
+        cwd=check_utils.root_dir,
+        stdout=subprocess.DEVNULL,
+    )
+
     coverage_returncode = subprocess.call(
         ["python", "-m", "coverage", "report", "--precision=2"],
         cwd=check_utils.root_dir,

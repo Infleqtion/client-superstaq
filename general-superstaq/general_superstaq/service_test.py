@@ -72,7 +72,7 @@ def test_update_user_balance(
 
 def test_update_user_balance_limit() -> None:
     service = gss.service.Service(remote_host="http://example.com", api_key="key")
-    with pytest.raises(gss.SuperstaqException, match="exceeds limit."):
+    with pytest.raises(gss.SuperstaqException, match=r"exceeds limit."):
         (service.update_user_balance("mc@gmail.com", 3500.00))
 
 
@@ -183,6 +183,21 @@ def test_submit_qubo(
 
 
 @mock.patch(
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
+    return_value={"request_id": "foo123"},
+)
+def test_submit_atom_picture(
+    _mock_post_request: mock.MagicMock,
+) -> None:
+    example_bitmap = [[0, 1], [1, 2]]
+    service = gss.service.Service(remote_host="http://example.com", api_key="key")
+    assert (
+        service.submit_atom_picture(example_bitmap)
+        == "Submitted request for atom picture with ID: foo123"
+    )
+
+
+@mock.patch(
     "general_superstaq.superstaq_client._SuperstaqClient.aqt_upload_configs",
     return_value="Your AQT configuration has been updated",
 )
@@ -217,17 +232,17 @@ def test_service_aqt_upload_configs(
     with pytest.raises(ValueError, match=r"pulses-.*\.yaml' is not a valid file path"):
         _ = service.aqt_upload_configs(pulses_file, variables_file)
 
-    with pytest.raises(ValueError, match="AQT configs should be"):
+    with pytest.raises(ValueError, match=r"AQT configs should be"):
         # Invalid input types:
         _ = service.aqt_upload_configs([], [])
 
-    with pytest.raises(ValueError, match="AQT configs should be"):
+    with pytest.raises(ValueError, match=r"AQT configs should be"):
         # Input type that can't be serialized with yaml.SafeDumper:
         _ = service.aqt_upload_configs({"foo": mock.DEFAULT}, {})
 
     with (
         mock.patch.dict("sys.modules", {"yaml": None}),
-        pytest.raises(ModuleNotFoundError, match="PyYAML"),
+        pytest.raises(ModuleNotFoundError, match=r"PyYAML"),
     ):
         _ = service.aqt_upload_configs({}, {})
 
@@ -293,7 +308,7 @@ def test_service_aqt_get_configs(
     with open(f"{tempdir}/{variables_file}.yaml") as file:
         assert file.read() == "World"
 
-    with pytest.raises(ValueError, match="exist."):
+    with pytest.raises(ValueError, match=r"exist."):
         service.aqt_download_configs(
             f"{tempdir}/{pulses_file}.yaml", f"{tempdir}/{variables_file}.yaml"
         )
@@ -302,7 +317,7 @@ def test_service_aqt_get_configs(
         f"{tempdir}/{pulses_file}.yaml", f"{tempdir}/{variables_file}.yaml", overwrite=True
     )
 
-    with pytest.raises(ValueError, match="exists"):
+    with pytest.raises(ValueError, match=r"exists"):
         os.remove(f"{tempdir}/{pulses_file}.yaml")
         service.aqt_download_configs(
             f"{tempdir}/{pulses_file}.yaml", f"{tempdir}/{variables_file}.yaml"
@@ -310,7 +325,7 @@ def test_service_aqt_get_configs(
 
     os.remove(f"{tempdir}/{variables_file}.yaml")
 
-    with pytest.raises(ValueError, match="exists"):
+    with pytest.raises(ValueError, match=r"exists"):
         service.aqt_download_configs(
             f"{tempdir}/{pulses_file}.yaml", f"{tempdir}/{variables_file}.yaml"
         )
@@ -319,14 +334,14 @@ def test_service_aqt_get_configs(
             f"{tempdir}/{pulses_file}.yaml", f"{tempdir}/{variables_file}.yaml"
         )
 
-    with pytest.raises(ValueError, match="Please provide both pulses and variables"):
+    with pytest.raises(ValueError, match=r"Please provide both pulses and variables"):
         service.aqt_download_configs(variables_file_path="foo/bar.yaml")
 
     assert service.aqt_download_configs() == ("Hello", "World")
 
     with (
         mock.patch.dict("sys.modules", {"yaml": None}),
-        pytest.raises(ModuleNotFoundError, match="PyYAML"),
+        pytest.raises(ModuleNotFoundError, match=r"PyYAML"),
     ):
         _ = service.aqt_download_configs()
 

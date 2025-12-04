@@ -17,10 +17,13 @@ from __future__ import annotations
 import numbers
 import os
 from collections.abc import Mapping, Sequence
-from typing import Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 import general_superstaq as gss
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 TQuboKey = TypeVar("TQuboKey")
 
@@ -531,3 +534,16 @@ class Service:
             The estimated eigenvalues.
         """
         return self._client.process_aces(job_id=job_id)
+
+    def submit_atom_picture(self, bitmap: npt.ArrayLike) -> str:
+        """Performs a POST request on the `/atom_picture` endpoint.
+
+        Args:
+            bitmap: A 2D array-like object of integers from the set {0, 1, 2}. '0' is empty,
+                '1' is atom, and '2' is whatever is there.
+
+        Returns:
+            A string containing the post request id.
+        """
+        request_id = self._client.submit_atom_picture(bitmap=bitmap).get("request_id")
+        return f"Submitted request for atom picture with ID: {request_id}"

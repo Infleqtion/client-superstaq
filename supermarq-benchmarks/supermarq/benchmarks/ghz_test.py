@@ -58,7 +58,7 @@ def test_ghz_circuit_methods() -> None:
 
 
 def test_ghz_invalid_method() -> None:
-    with pytest.raises(ValueError, match="'foo' is not a valid"):
+    with pytest.raises(ValueError, match=r"'foo' is not a valid"):
         _ = GHZ(3, method="foo")
 
 

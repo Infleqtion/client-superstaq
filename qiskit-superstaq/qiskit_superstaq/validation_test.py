@@ -26,14 +26,14 @@ def test_validate_qiskit_circuits() -> None:
 
     with pytest.raises(
         ValueError,
-        match="Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a sequence "
+        match=r"Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a sequence "
         "of `qiskit.QuantumCircuit` instances.",
     ):
         qss.validation.validate_qiskit_circuits("invalid_qc_input")
 
     with pytest.raises(
         ValueError,
-        match="Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a "
+        match=r"Invalid 'circuits' input. Must be a `qiskit.QuantumCircuit` or a "
         "sequence of `qiskit.QuantumCircuit` instances.",
     ):
         qss.validation.validate_qiskit_circuits([qc, "invalid_qc_input"])
