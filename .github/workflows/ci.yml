@@ -26,10 +26,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: 3.13
-      - uses: actions/cache@v4
-        with:
-          path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml', '**/*requirements.txt', '.github/workflows/ci.yml') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
