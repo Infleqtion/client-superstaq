@@ -173,9 +173,9 @@ def test_get_targets(service: css.Service) -> None:
         supports_submit=False,
         supports_submit_qubo=False,
         supports_compile=True,
-        available=True,
+        available=False,
         retired=False,
-        accessible=True,
+        accessible=False,
     )
 
     assert ibmq_target_info in result
