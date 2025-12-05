@@ -53,7 +53,7 @@ jobs:
           pip install -e ./checks-superstaq
       - name: licensepy format
         run: |
-          checks/license_header_.py
+          checks/licenses.py
 
   lint:
     name: Lint check

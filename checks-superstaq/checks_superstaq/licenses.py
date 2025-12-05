@@ -51,7 +51,7 @@ def run(
 
     parsed_args, args_to_pass = parser.parse_known_intermixed_args(args)
 
-    if "add_license_header" in parsed_args.skip:
+    if "licenses" in parsed_args.skip:
         return 0
 
     if not parsed_args.fix:
@@ -65,7 +65,7 @@ def run(
             cwd=check_utils.root_dir,
         )
         if return_code > 0 and not parsed_args.fix:
-            command = "./checks/license_header_.py --fix"
+            command = "./checks/licenses.py --fix"
             text = (
                 f"Run '{command}' (from the repo root directory) to format "
                 "files with correct license header."

@@ -26,7 +26,7 @@ from checks_superstaq import (
     configs,
     coverage_,
     format_,
-    license_header_,
+    licenses,
     lint_,
     mypy_,
     requirements,
@@ -122,7 +122,7 @@ def run(*args: str) -> int:
 
     # Run license header checking (if enabled)
     if parsed_args.licensepy:
-        checks_failed |= license_header_.run(
+        checks_failed |= licenses.run(
             *args_to_pass,
             exit_on_failure=exit_on_failure,
             silent=True,
