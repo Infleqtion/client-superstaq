@@ -71,7 +71,7 @@ def run(
                 "files with correct license header."
             )
             print(check_utils.warning(text))  # noqa: T201
-            return 1
+            return return_code
 
         return return_code
 
