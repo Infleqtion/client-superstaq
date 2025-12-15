@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import cirq
+import qiskit
 
 import supermarq
 
@@ -57,3 +58,8 @@ def test_compute_depth() -> None:
     assert test_feature <= 1
 
     assert supermarq.features.compute_depth(cirq.Circuit()) == 0
+
+
+def test_compute_parallelism_with_qiskit() -> None:
+    qiskit_circuit = qiskit.QuantumCircuit(2)
+    assert supermarq.features.compute_parallelism_with_qiskit(qiskit_circuit) == 0
