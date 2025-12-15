@@ -1,3 +1,16 @@
+# Copyright 2025 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import itertools
@@ -30,6 +43,7 @@ def test_zz_swap_gate() -> None:
         ]
     )
     assert np.allclose(cirq.unitary(gate), expected)
+    assert cirq.trace_distance_bound(gate) == 1.0
 
     qubits = cirq.LineQubit.range(3)
     operation = gate(qubits[0], qubits[2])
@@ -130,6 +144,7 @@ def test_stripped_cz_gate() -> None:
         ]
     )
     assert np.allclose(cirq.unitary(gate), expected)
+    assert cirq.trace_distance_bound(gate) == 1.0
 
     qubits = cirq.LineQubit.range(3)
     operation = gate(qubits[0], qubits[2])
@@ -815,6 +830,29 @@ def test_parallel_gates_eq() -> None:
     assert not cirq.equal_up_to_global_phase(css.ParallelGates(), cirq.X)
     assert not cirq.equal_up_to_global_phase(css.ParallelGates(), css.ParallelGates(cirq.X))
     assert not cirq.equal_up_to_global_phase(css.ParallelGates(cirq.CX), css.ParallelGates(cirq.X))
+
+
+def test_parallel_gates_trace_distance_bound() -> None:
+    assert cirq.trace_distance_bound(css.ParallelGates(cirq.X)) == 1.0
+    assert cirq.trace_distance_bound(css.ParallelGates()) == 0.0
+    assert cirq.trace_distance_bound(css.ParallelGates(cirq.T, cirq.Z ** sympy.Expr("x"))) == 1.0
+
+    assert np.isclose(cirq.trace_distance_bound(css.ParallelGates(cirq.T)), np.sin(np.pi / 8))
+    assert np.isclose(
+        cirq.trace_distance_bound(css.ParallelGates(cirq.T, cirq.T)), np.sin(np.pi / 4)
+    )
+    assert np.isclose(
+        cirq.trace_distance_bound(css.ParallelGates(cirq.T, cirq.S)), np.sin(3 * np.pi / 8)
+    )
+
+    q0, q1, q2, q3 = cirq.LineQubit.range(4)
+    gate = css.ParallelGates(cirq.X**0.01, cirq.T**0.02, cirq.CX**0.03)
+    op = gate.on(q0, q1, q2, q3)
+
+    trace_dist = cirq.trace_distance_bound(gate)
+    assert trace_dist < 1.0
+    assert trace_dist == cirq.trace_distance_bound(op)
+    assert np.isclose(trace_dist, cirq.trace_distance_bound(cirq.Circuit(cirq.decompose_once(op))))
 
 
 def test_parallel_gates_parameterized() -> None:

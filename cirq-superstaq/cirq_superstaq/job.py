@@ -1,3 +1,17 @@
+# Copyright 2025 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Copyright 2021 The Cirq Developers
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -558,6 +572,16 @@ class JobV3:
             raise AttributeError("Job data has not been fetched yet. Run _refresh_job().")
         else:
             return self._job_data
+
+    @property
+    def tags(self) -> list[str]:
+        """All tags associated with this job."""
+        return self.job_data.tags
+
+    @property
+    def metadata(self) -> dict[str, object]:
+        """Any metadata passed when creating this job."""
+        return self.job_data.metadata
 
     def _update_status_queue_info(self) -> None:
         """Updates the overall status based on status queue info.

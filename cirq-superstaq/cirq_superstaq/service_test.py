@@ -1,3 +1,17 @@
+# Copyright 2025 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Copyright 2021 The Cirq Developers
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -384,7 +398,7 @@ def test_service_get_jobV3() -> None:
         "statuses": ["completed"],
         "status_messages": [None],
         "user_email": "test@email.com",
-        "target": "test_target",
+        "target": "ss_example_qpu",
         "provider_id": ["provider_id"],
         "num_circuits": 1,
         "compiled_circuits": ["compiled circuit"],
@@ -448,7 +462,7 @@ def test_service_create_jobV3() -> None:
         "statuses": ["completed"],
         "status_messages": [None],
         "user_email": "test@email.com",
-        "target": "test_target",
+        "target": "ss_example_qpu",
         "provider_id": ["provider_id"],
         "num_circuits": 1,
         "compiled_circuits": ["compiled circuit"],

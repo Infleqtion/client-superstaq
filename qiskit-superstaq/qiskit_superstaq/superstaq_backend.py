@@ -1,3 +1,18 @@
+# Copyright 2025 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
@@ -118,6 +133,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             "cc_prx": qiskit.circuit.library.RGate,  # Classically controlled 'prx' gate
             "MS": qiskit.circuit.library.MSGate,
             "ZZ": qiskit.circuit.library.RZZGate,
+            "xx": qiskit.circuit.library.RXXGate,
             "measure_ff": qiskit.circuit.Measure(
                 label="measure_ff"
             ),  # Measurement with classical feed-forward
@@ -149,6 +165,8 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         shots: int,
         method: str | None = None,
         verbatim: bool = False,
+        tag: Sequence[str] | str = (),
+        metadata: Mapping[str, object] | None = None,
         **kwargs: Any,
     ) -> qss.SuperstaqJob | qss.SuperstaqJobV3:
         """Runs circuits on the stored Superstaq backend.
@@ -159,6 +177,8 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             method:  An optional string that describes the execution method
                 (e.g. 'dry-run', 'statevector', etc.).
             verbatim: Run the provided circuit(s) verbatim (i.e. without compilation).
+            tag: An identifying tag (or list of tags) which can be used to find this job.
+            metadata: Optional other data to store alongside the job.
             kwargs: Other optimization and execution parameters.
 
         Returns:
@@ -184,6 +204,8 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             target=self.name,
             method=method,
             verbatim=verbatim,
+            tag=tag,
+            metadata=metadata,
             **kwargs,
         )
 
@@ -446,7 +468,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
 
         Returns:
             Object whose .circuit(s) attribute contains optimized `qiskit.QuantumCircuit`(s), and
-            `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
+            `.jaqal_program` attribute contains the corresponding Jaqal program(s).
 
         Raises:
             ValueError: If this is not a QSCOUT backend.

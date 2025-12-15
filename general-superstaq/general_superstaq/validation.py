@@ -1,3 +1,17 @@
+# Copyright 2025 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import numbers
@@ -53,7 +67,7 @@ def validate_bitmap(bitmap: npt.ArrayLike) -> None:
         raise ValueError("The atom picture `bitmap` must only contain the integers 0, 1, or 2.")
 
 
-def validate_target(target: str) -> None:
+def validate_target(target: str) -> str:
     """Checks that `target` conforms to a valid Superstaq format and device type.
 
     Args:
@@ -80,6 +94,8 @@ def validate_target(target: str) -> None:
             f"{target!r} does not have a valid target device type. Valid device types are: "
             f"{target_device_types}."
         )
+
+    return target
 
 
 def validate_noise_type(noise: dict[str, object], n_qubits: int) -> None:
@@ -169,7 +185,7 @@ def validate_qubo(qubo: object) -> None:
             raise TypeError("QUBO values must be real numbers.")
 
 
-def _validate_ibm_channel(ibm_channel: str) -> None:
+def _validate_ibm_channel(ibm_channel: str) -> str:
     if ibm_channel == "ibm_quantum":
         raise ValueError(
             "The 'ibm_quantum' channel has been deprecated and sunset on July 1st, 2025. Instead, "
@@ -186,3 +202,5 @@ def _validate_ibm_channel(ibm_channel: str) -> None:
         )
     elif ibm_channel not in ("ibm_cloud", "ibm_quantum_platform"):
         raise ValueError("`ibmq_channel` must be either 'ibm_cloud' or 'ibm_quantum_platform'.")
+
+    return ibm_channel

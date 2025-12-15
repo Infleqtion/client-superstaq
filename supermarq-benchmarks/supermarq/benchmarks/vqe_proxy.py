@@ -1,6 +1,21 @@
+# Copyright 2025 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import copy
+import random
 from typing import TYPE_CHECKING
 
 import cirq
@@ -137,9 +152,9 @@ class VQEProxy(supermarq.benchmark.Benchmark):
 
             return -energy  # because we are minimizing instead of maximizing
 
+        rng = np.random.default_rng(random.getrandbits(128))
         init_params = [
-            np.random.default_rng().uniform() * 2 * np.pi
-            for _ in range(self.num_layers * 4 * self.num_qubits)
+            rng.uniform() * 2 * np.pi for _ in range(self.num_layers * 4 * self.num_qubits)
         ]
         out = opt.minimize(f, init_params, method="COBYLA")
 

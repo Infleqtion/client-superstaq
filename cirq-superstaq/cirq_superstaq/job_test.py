@@ -1,3 +1,17 @@
+# Copyright 2025 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Copyright 2021 The Cirq Developers
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -105,7 +119,8 @@ def job_dictV3() -> dict[str, object]:
         "final_logical_to_physicals": [{0: 0, 1: 1}],
         "logical_qubits": ["0", "1"],
         "physical_qubits": ["0", "1"],
-        "tags": [],
+        "tags": ["some", "tags"],
+        "metadata": {"foo": "bar"},
     }
 
 
@@ -238,7 +253,7 @@ def test_job_fields(job: css.Job, job_dict: dict[str, object]) -> None:
 
 @mock.patch("requests.Session.get")
 def test_job_fieldsV3(
-    mock_get: mock.MagicMock, jobV3: css.Job, job_dictV3: dict[str, object]
+    mock_get: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
 ) -> None:
     circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
     job_result = modifiy_job_result(
@@ -253,6 +268,8 @@ def test_job_fieldsV3(
     assert jobV3.num_qubits(index=0) == 2
     assert jobV3.repetitions() == 1
     assert jobV3.compiled_circuits(index=0) == circuit
+    assert jobV3.metadata["foo"] == "bar"
+    assert jobV3.tags == ["some", "tags"]
     mock_get.assert_called_once()  # Only refreshed once
 
 

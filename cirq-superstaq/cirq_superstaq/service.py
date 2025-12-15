@@ -1,3 +1,17 @@
+# Copyright 2025 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Copyright 2021 The Cirq Developers
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -344,6 +358,8 @@ class Service(gss.service.Service):
         target: str | None = None,
         method: str | None = None,
         verbatim: bool = False,
+        tag: Sequence[str] | str = (),
+        metadata: Mapping[str, object] | None = None,
         **kwargs: Any,
     ) -> css.Job | css.JobV3:
         """Creates a new job to run the given circuit(s).
@@ -354,6 +370,8 @@ class Service(gss.service.Service):
             target: Where to run the job.
             method: The optional execution method.
             verbatim: Run the provided circuit(s) verbatim (i.e. without compilation).
+            tag: An identifying tag (or list of tags) which can be used to find this job.
+            metadata: Other data to store alongside the job.
             kwargs: Other optimization and execution parameters.
 
         Returns:
@@ -373,6 +391,8 @@ class Service(gss.service.Service):
             target=target,
             method=method,
             verbatim=verbatim,
+            tag=tag,
+            metadata=metadata,
             **kwargs,
         )
         if isinstance(self._client, _SuperstaqClient):
@@ -641,7 +661,7 @@ class Service(gss.service.Service):
 
         Returns:
             Object whose .circuit(s) attribute contains optimized `cirq.Circuit`(s), and
-            `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
+            `.jaqal_program` attribute contains the corresponding Jaqal program(s).
 
         Raises:
             ValueError: If `base_entangling_gate` is not a valid gate option.

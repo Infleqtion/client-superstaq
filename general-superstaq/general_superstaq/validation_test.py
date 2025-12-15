@@ -1,5 +1,19 @@
+# Copyright 2025 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
+import random
 import re
 
 import numpy as np
@@ -75,7 +89,7 @@ def test_validate_noise_type() -> None:
 def test_validate_bitmap() -> None:
     with pytest.raises(ValueError, match=r"contain the integers 0, 1, or 2"):
         gss.validation.validate_bitmap([[3, 0], [1, 0]])
-    rng = np.random.default_rng()
+    rng = np.random.default_rng(random.getrandbits(128))
     with pytest.raises(TypeError, match=r"must be a 2D"):
         gss.validation.validate_bitmap(rng.integers(0, high=3, size=(2, 2, 2)))
     with pytest.raises(TypeError, match=r"must be a square 2D"):
