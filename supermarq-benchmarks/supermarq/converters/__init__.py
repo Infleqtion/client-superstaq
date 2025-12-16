@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright 2025 Infleqtion
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,16 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from .qiskit import cirq_gate_to_qiskit_gate, cirq_to_qiskit, qiskit_to_cirq
 
-from __future__ import annotations
-
-import sys
-
-import checks_superstaq as checks
-
-if __name__ == "__main__":
-    args = [*sys.argv[1:], "--licensepy"]
-
-    if sys.version_info.minor >= 12:
-        args += ["--sysmon"]
-    sys.exit(checks.all_.run(*args))
+__all__ = [
+    "cirq_gate_to_qiskit_gate",
+    "cirq_to_qiskit",
+    "qiskit_to_cirq",
+]
