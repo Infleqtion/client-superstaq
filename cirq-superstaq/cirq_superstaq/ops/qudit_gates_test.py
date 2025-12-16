@@ -434,6 +434,10 @@ def test_qubit_subspace_gate() -> None:
     assert css.QubitSubspaceGate(cirq.X, (3,), [(0, 2)]) == css.QubitSubspaceGate(
         cirq.X, (3,), [(0, -1)]
     )
+
+    with pytest.raises(ValueError, match=r"does not support measurements"):
+        _ = css.QubitSubspaceGate(cirq.MeasurementGate(2, key="foo"), (2, 3))
+
     with pytest.raises(ValueError, match=r"Only qubit gates"):
         _ = css.QubitSubspaceGate(cirq.ZPowGate(dimension=3), (3,))
 
@@ -485,6 +489,7 @@ def test_qubit_subspace_gate_protocols(
     )
     flipped_gate = css.QubitSubspaceGate(sub_gate, qid_shape, [(j, i) for i, j in gate.subspaces])
     larger_gate = css.QubitSubspaceGate(sub_gate, (8,) * len(qid_shape), subspaces)
+    symbol_gate = gate ** sympy.Symbol("x")
     another_gate = cirq.Y
 
     assert 0.0 < cirq.trace_distance_bound(gate**0.01) < cirq.trace_distance_bound(gate) <= 1.0
@@ -503,6 +508,7 @@ def test_qubit_subspace_gate_protocols(
     assert gate != shifted_gate
     assert gate != flipped_gate
     assert gate != larger_gate
+    assert gate != symbol_gate
     assert gate != another_gate
 
     assert cirq.approx_eq(gate, gate)
@@ -529,6 +535,13 @@ def test_qubit_subspace_gate_protocols(
     cirq.testing.assert_json_roundtrip_works(
         gate, resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
     )
+    cirq.testing.assert_consistent_mixture(gate)
+
+    assert not cirq.has_unitary(symbol_gate)
+    assert cirq.unitary(symbol_gate, None) is None
+
+    assert not cirq.has_mixture(symbol_gate)
+    assert cirq.mixture(symbol_gate, None) is None
 
     # Check that it has the correct unitary in the correct subspace:
     n = cirq.num_qubits(gate)
@@ -539,6 +552,37 @@ def test_qubit_subspace_gate_protocols(
 
     assert unitary.shape == (2, 2) * n
     np.testing.assert_array_equal(unitary.reshape(2**n, 2**n), cirq.unitary(gate.sub_gate))
+
+
+@pytest.mark.parametrize(
+    ("sub_gate", "qid_shape", "subspaces"),
+    [
+        (cirq.phase_flip(0.2), (4,), [(1, 3)]),
+        (cirq.depolarize(0.2, 3), (3, 2, 5), [(1, 2), (1, 0), (0, 4)]),
+        (
+            cirq.MixedUnitaryChannel(
+                [(0.8, np.eye(4)), (0.1, cirq.unitary(cirq.XX)), (0.1, cirq.unitary(cirq.CZ))]
+            ),
+            (4, 3),
+            [(1, 3), (2, 1)],
+        ),
+    ],
+)
+def test_qubit_subspace_gate_protocols_mixture(
+    sub_gate: cirq.Gate,
+    qid_shape: tuple[int, ...],
+    subspaces: list[tuple[int, int]] | None,
+) -> None:
+    gate = css.QubitSubspaceGate(sub_gate, qid_shape, subspaces)
+    cirq.testing.assert_implements_consistent_protocols(
+        gate,
+        setup_code="import cirq, cirq_superstaq as css, sympy, numpy as np",
+        ignore_decompose_to_default_gateset=True,
+    )
+    cirq.testing.assert_consistent_mixture(gate)
+    cirq.testing.assert_json_roundtrip_works(
+        gate, resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
+    )
 
 
 def test_qubit_subspace_circuit_diagram() -> None:
@@ -585,6 +629,62 @@ def test_qubit_subspace_circuit_diagram() -> None:
     )
 
 
+def test_qubit_subspace_interchangeable_qubits() -> None:
+    q0, q1, q2 = cirq.LineQubit.range(3)
+    equals_tester = cirq.testing.EqualsTester()
+
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CX(q0, q1), [3, 3]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CX(q1, q0), [3, 3]),
+    )
+
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CZ(q0, q1), [3, 3]),
+        css.qubit_subspace_op(cirq.CZ(q1, q0), [3, 3]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CZ(q0, q1), [3, 4]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CZ(q1, q0), [3, 4]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CZ(q0, q1), [3, 3], [(1, 2), (1, 2)]),
+        css.qubit_subspace_op(cirq.CZ(q1, q0), [3, 3], [(1, 2), (1, 2)]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CZ(q0, q1), [3, 3], [(0, 1), (1, 2)]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CZ(q1, q0), [3, 3], [(0, 1), (1, 2)]),
+    )
+
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CCZ(q0, q1, q2), [3, 3, 3]),
+        css.qubit_subspace_op(cirq.CCZ(q0, q2, q1), [3, 3, 3]),
+        css.qubit_subspace_op(cirq.CCZ(q1, q0, q2), [3, 3, 3]),
+        css.qubit_subspace_op(cirq.CCZ(q1, q2, q0), [3, 3, 3]),
+        css.qubit_subspace_op(cirq.CCZ(q2, q0, q1), [3, 3, 3]),
+        css.qubit_subspace_op(cirq.CCZ(q2, q1, q0), [3, 3, 3]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CCZ(q0, q1, q2), [3, 4, 3]),
+        css.qubit_subspace_op(cirq.CCZ(q2, q1, q0), [3, 4, 3]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CCZ(q1, q0, q2), [3, 4, 3]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CCZ(q0, q1, q2), [3, 3, 3], [(0, 1), (0, 2), (0, 2)]),
+        css.qubit_subspace_op(cirq.CCZ(q0, q2, q1), [3, 3, 3], [(0, 1), (0, 2), (0, 2)]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CCZ(q1, q0, q2), [3, 3, 3], [(0, 1), (0, 2), (0, 2)]),
+    )
+
+
 def test_qubit_subspace_op() -> None:
     assert css.qubit_subspace_op(
         cirq.CZ(cirq.LineQubit(2), cirq.LineQid(1, 2)), (3, 4)
@@ -597,3 +697,56 @@ def test_qubit_subspace_op() -> None:
     ) == css.QubitSubspaceGate(cirq.X, (4,), [(1, 3)]).on(cirq.NamedQid("qubit", dimension=4))
     with pytest.raises(ValueError, match=r"has no gate."):
         _ = css.qubit_subspace_op(cirq.CircuitOperation(cirq.FrozenCircuit()), ())
+
+
+def test_qubit_subspace_apply_unitary() -> None:
+    qs = cirq.LineQid(0, 5), cirq.LineQid(1, 3)
+    unitary_from_gates = cirq.testing.random_unitary(5 * 3)
+    circuit = cirq.Circuit(cirq.MatrixGate(unitary_from_gates, qid_shape=(5, 3)).on(*qs))
+
+    # `apply_unitary()` uses `sub_gate._apply_unitary_`
+    sub_gate: cirq.Gate = css.QuditSwapGate(dimension=2)
+    gate = css.QubitSubspaceGate(sub_gate, [5, 3], [(1, 2), (0, 2)])
+    assert hasattr(sub_gate, "_apply_unitary_")
+
+    circuit += gate.on(*qs)
+    unitary_from_gates = cirq.unitary(gate) @ unitary_from_gates
+    np.testing.assert_allclose(cirq.unitary(circuit), unitary_from_gates)
+    np.testing.assert_allclose(cirq.final_state_vector(circuit), unitary_from_gates[:, 0])
+
+    # `apply_unitary()` uses `sub_gate._unitary_`
+    sub_gate = cirq.MatrixGate(cirq.testing.random_unitary(4))
+    gate = css.QubitSubspaceGate(sub_gate, [5, 3], [(1, 2), (0, 2)])
+    assert not hasattr(sub_gate, "_apply_unitary_")
+    assert hasattr(sub_gate, "_unitary_")
+
+    circuit += gate.on(*qs)
+    unitary_from_gates = cirq.unitary(gate) @ unitary_from_gates
+    np.testing.assert_allclose(cirq.unitary(circuit), unitary_from_gates)
+    np.testing.assert_allclose(
+        cirq.final_state_vector(circuit, dtype=np.complex128), unitary_from_gates[:, 0]
+    )
+
+    # `apply_unitary()` uses `gate._unitary_` instead of `sub_gate._decompose_`
+    sub_gate = cirq.circuits.qasm_output.QasmUGate(0.1, 0.2, 0.3)
+    gate = css.QubitSubspaceGate(sub_gate, [5], [(1, 2)])
+    assert not hasattr(sub_gate, "_apply_unitary_")
+    assert not hasattr(sub_gate, "_unitary_")
+    assert hasattr(sub_gate, "_decompose_")
+
+    circuit += gate.on(qs[0])
+    unitary_from_gates = np.kron(cirq.unitary(gate), np.eye(3)) @ unitary_from_gates
+    np.testing.assert_allclose(cirq.unitary(circuit), unitary_from_gates)
+    np.testing.assert_allclose(
+        cirq.final_state_vector(circuit, dtype=np.complex128), unitary_from_gates[:, 0]
+    )
+
+    # Confirm Cirq still gets this wrong
+    args = cirq.ApplyUnitaryArgs(
+        np.eye(5, dtype=complex),
+        np.eye(5, dtype=complex),
+        axes=[0],
+        subspaces=[(0, 1)],
+    )
+    unitary_from_apply = cirq.apply_unitary(sub_gate, args, allow_decompose=True)
+    assert not np.allclose(cirq.unitary(gate), unitary_from_apply, atol=1e-2, rtol=1e-2)
