@@ -82,7 +82,7 @@ A high-level description of key Superstaq tests are as follows:
     checks/pytest_.py --notebook  # Executes example notebooks to make they're working.
     checks/coverage_.py  # Same as checks/pytest_.py, but also requires that every line of code is executed at some point in the process.
     checks/requirements.py  # Makes sure *superstaq dependencies are up to date in all *requirements.txt files.
-    checks/requirements.py --apply  # Automatically updates requirements files to use the latest available version of any *superstaq dependency.checks/configs.py and checks that `setup.cfg` files are consistent across repos.
+    checks/requirements.py --fix  # Automatically updates requirements files to use the latest available version of any *superstaq dependency.checks/configs.py and checks that `setup.cfg` files are consistent across repos.
     checks/build_docs.py  # Ensures docs can be built. This will fail for e.g. incorrectly formatted code blocks in docstrings.
     checks/all_.py  # Runs all the non-integration checks described above on the whole repo.
     checks/all_.py -i # Runs all the non-integration checks described above but just on locally modified files.
