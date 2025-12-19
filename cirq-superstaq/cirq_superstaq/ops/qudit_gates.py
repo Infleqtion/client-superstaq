@@ -484,8 +484,15 @@ class QubitSubspaceGate(cirq.Gate, cirq.InterchangeableQubitsGate):
         sub_gate: cirq.Gate,
         qid_shape: Sequence[int],
         subspaces: Sequence[tuple[int, int]] | None = None,
+        warn_parallel: bool = True,
     ) -> None:
         """Initializes a `QubitSubspaceGate`.
+
+        Note for `cirq.ParallelGate` (and `css.ParallelGates`):
+            `QubitSubspaceGate(ParallelGate(gate, n), ...)` is *not* equivalent to
+            `ParallelGate(QubitSubspaceGate(gate, ...), n)`. The former acts only in the qubit
+            subspace of the entire n-qubit state (and so will have no effect if *any* qubit is
+            outside of that space). The latter will act independently in each 
 
         Args:
             sub_gate: The qubit gate to promote to a higher dimension.
@@ -502,6 +509,18 @@ class QubitSubspaceGate(cirq.Gate, cirq.InterchangeableQubitsGate):
         """
         if subspaces is None:
             subspaces = [(0, 1)] * cirq.num_qubits(sub_gate)
+
+        if isinstance(sub_gate, (cirq.ParallelGate, css.ParallelRGates)):
+            warnings.warn(
+                "Passing parallel gate instances into `QubitSubspaceGate` is *not* the same as "
+                "passing `can have unexpected "
+                "effects; namely, each component gate will act only if *every* qubit is in the "
+                "given qubit subspace, rather than each component gate acting independently. "
+                "Instead, consider constructing `QubitSubspaceGate` instances for each component "
+                "gate, and using those to construct qubit subspace gates"
+                "the to create a parallel"
+                "instead passing `QubitSubspaceGate`"
+                "If this is the intended behavior, pass `warn_parallel=False` to suppress this warning." 
 
         if cirq.is_measurement(sub_gate):
             raise ValueError("QubitSubspaceGate does not support measurements.")
@@ -623,6 +642,7 @@ class QubitSubspaceGate(cirq.Gate, cirq.InterchangeableQubitsGate):
             axes=args.axes,
             subspaces=self._subspaces,
         )
+        # Disallow decomposition because subspace indices will not propagate correctly.
         return cirq.apply_unitary(
             self._sub_gate, subspace_args, default=NotImplemented, allow_decompose=False
         )
