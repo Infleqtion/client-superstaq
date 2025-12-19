@@ -67,7 +67,7 @@ def run(
     )
 
     parser.add_argument(
-        "--apply", action="store_true", help="Apply fixes to pip requirements files."
+        "--fix", "--apply", action="store_true", help="Apply fixes to pip requirements files."
     )
     parser.add_argument(
         "--only-sort",
@@ -90,9 +90,9 @@ def run(
             requirements_to_fix[req_file] = requirements
 
     # print some helpful text and maybe apply fixes
-    _cleanup(requirements_to_fix, parsed_args.apply, silent)
+    _cleanup(requirements_to_fix, parsed_args.fix, silent)
 
-    success = not requirements_to_fix or parsed_args.apply
+    success = not requirements_to_fix or parsed_args.fix
     return 0 if success else 1
 
 
@@ -263,7 +263,7 @@ def _cleanup(
             print(check_utils.success("Requirements files fixed."))  # noqa: T201
 
     elif not silent:
-        command = "./checks/requirements.py --apply"
+        command = "./checks/requirements.py --fix"
         text = f"Run '{command}' (from the repo root directory) to fix requirements files."
         print(check_utils.warning(text))  # noqa: T201
 
