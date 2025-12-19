@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Set up Python 3.13
         uses: actions/setup-python@v6
         with:
@@ -31,7 +31,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5 # allows workflow to access repo
+      - uses: actions/checkout@v6 # allows workflow to access repo
       - name: Set date for release title
         run: echo today=$(date +"%B %d, %Y") >> $GITHUB_ENV # format date and append to env
       - name: Set version number to most recent change
