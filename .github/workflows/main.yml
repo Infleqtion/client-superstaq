@@ -35,7 +35,7 @@ jobs:
       - name: Set date for release title
         run: echo today=$(date +"%B %d, %Y") >> $GITHUB_ENV # format date and append to env
       - name: Set version number to most recent change
-        run: echo version=$(cat general-superstaq/general_superstaq/_version.py | grep -oP '[0-9\.]+') >> $GITHUB_ENV
+        run: sed -nE 's/\s*__version__\s*=\s*"([0-9]+(\.\w+)*)"/version=\1/p' general-superstaq/general_superstaq/_version.py >> $GITHUB_ENV
       - name: Create and publish release
         uses: ncipollo/release-action@v1
         with:
