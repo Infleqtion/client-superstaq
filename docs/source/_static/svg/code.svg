@@ -167,7 +167,7 @@
       }
 
       @keyframes cursor {
-        from, to, 
+        from, to,
         20%, 80% {border-color: transparent;}
         25%, 75% {border-color: white;}
       }
@@ -197,20 +197,20 @@
         </div>
 
         <div class="content">
-            <p><span class="line-01"><span class="c-i">import</span> qiskit</span><br/>
-            <span class="line-02"><span class="c-i">import</span> qiskit_superstaq <span class="c-i">as</span> qss</span></p>
-            
+            <p><span class="line-01"><span class="c-m">import</span> qiskit</span><br/>
+            <span class="line-02"><span class="c-m">import</span> qiskit_superstaq <span class="c-m">as</span> qss</span></p>
+
             <p><span class="line-03">superstaq = qss.<span class="c-o">SuperstaqProvider</span>()</span><br/>
-            <span class="line-04">backend = superstaq.<span class="c-m">get_backend</span>("sqale_boulder_qpu")</span></p>
+            <span class="line-04">backend = superstaq.<span class="c-o">get_backend</span>("sqale_boulder_qpu")</span></p>
 
             <p><span class="line-05"><span class="c-c"># Standard bell circuit</span></span><br/>
-            <span class="line-06">qc = qiskit.<span class="c-o">QuantumCircuit</span>(2, 2)</span><br/>
+            <span class="line-06">qc = qiskit.<span class="c-m">QuantumCircuit</span>(2, 2)</span><br/>
             <span class="line-07">qc.<span class="c-m">h</span>(0)</span><br/>
             <span class="line-08">qc.<span class="c-m">cx</span>(0, 1)</span><br/>
             <span class="line-09">qc.<span class="c-m">measure</span>([0, 1], [0, 1])</span></p>
 
-            <p><span class="line-10">job = backend.<span class="c-m">run</span>(qc, shots=100)</span><br/>
-            <span class="line-11"><span class="c-m">print</span>(job.<span class="c-m">result</span>().<span class="c-m">get_counts</span>())</span><br/>
+            <p><span class="line-10">job = backend.<span class="c-o">run</span>(qc, shots=100)</span><br/>
+            <span class="line-11"><span class="c-m">print</span>(job.<span class="c-o">result</span>().<span class="c-o">get_counts</span>(0))</span><br/>
             <span class="line-12"><span class="c-c"># {'11': 49, '00': 51}</span></span></p>
         </div>
       </div>
