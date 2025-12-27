@@ -488,11 +488,13 @@ class QubitSubspaceGate(cirq.Gate, cirq.InterchangeableQubitsGate):
     ) -> None:
         """Initializes a `QubitSubspaceGate`.
 
-        Note for `cirq.ParallelGate` (and `css.ParallelGates`):
-            `QubitSubspaceGate(ParallelGate(gate, n), ...)` is *not* equivalent to
-            `ParallelGate(QubitSubspaceGate(gate, ...), n)`. The former acts only in the qubit
-            subspace of the entire n-qubit state (and so will have no effect if *any* qubit is
-            outside of that space). The latter will act independently in each 
+        Note: This gate acts only in the combined subspace of all qudits it acts on, which can have
+        subtle or unexpected behavior when `sub_gate` is an instance of e.g. `cirq.ParallelGate` or
+        `css.ParallelGates`. For example, `QubitSubspaceGate(ParallelGate(X, num_copies=2), [3, 3])`
+        will have no effect on the state |20⟩ (because it is not in the (0, 1) subspace of the first
+        qutrit). Meanwhile, the similar operation `ParallelGate(QubitSubspaceGate(X, [3]), 2)` will
+        transform the state |20⟩ to |21⟩ (because each of the parallel gates acts in its own single-
+        qubit subspace).
 
         Args:
             sub_gate: The qubit gate to promote to a higher dimension.
@@ -509,18 +511,6 @@ class QubitSubspaceGate(cirq.Gate, cirq.InterchangeableQubitsGate):
         """
         if subspaces is None:
             subspaces = [(0, 1)] * cirq.num_qubits(sub_gate)
-
-        if isinstance(sub_gate, (cirq.ParallelGate, css.ParallelRGates)):
-            warnings.warn(
-                "Passing parallel gate instances into `QubitSubspaceGate` is *not* the same as "
-                "passing `can have unexpected "
-                "effects; namely, each component gate will act only if *every* qubit is in the "
-                "given qubit subspace, rather than each component gate acting independently. "
-                "Instead, consider constructing `QubitSubspaceGate` instances for each component "
-                "gate, and using those to construct qubit subspace gates"
-                "the to create a parallel"
-                "instead passing `QubitSubspaceGate`"
-                "If this is the intended behavior, pass `warn_parallel=False` to suppress this warning." 
 
         if cirq.is_measurement(sub_gate):
             raise ValueError("QubitSubspaceGate does not support measurements.")
