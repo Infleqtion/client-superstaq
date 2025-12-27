@@ -484,7 +484,6 @@ class QubitSubspaceGate(cirq.Gate, cirq.InterchangeableQubitsGate):
         sub_gate: cirq.Gate,
         qid_shape: Sequence[int],
         subspaces: Sequence[tuple[int, int]] | None = None,
-        warn_parallel: bool = True,
     ) -> None:
         """Initializes a `QubitSubspaceGate`.
 
