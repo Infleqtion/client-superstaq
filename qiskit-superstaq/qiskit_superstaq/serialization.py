@@ -406,7 +406,7 @@ def _prepare_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
             label=gate.label,
         )
 
-    if gate.definition:
+    if gate.definition is not None:
         new_gate.definition = _prepare_circuit(gate.definition)
 
     return new_gate
