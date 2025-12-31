@@ -607,7 +607,7 @@ class QubitSubspaceGate(cirq.Gate, cirq.InterchangeableQubitsGate):
     def _has_unitary_(self) -> bool:
         return cirq.has_unitary(self._sub_gate)
 
-    def _unitary_(self) -> npt.NDArray[np.complex128] | None:
+    def _unitary_(self) -> npt.NDArray[np.complex128] | NotImplementedType:
         sub_unitary = cirq.unitary(self._sub_gate, default=None)
 
         if sub_unitary is None:
@@ -621,10 +621,9 @@ class QubitSubspaceGate(cirq.Gate, cirq.InterchangeableQubitsGate):
         unitary.put(idxs, sub_unitary)
         return unitary
 
-    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> npt.NDArray[np.complex128] | None:
-        if not cirq.has_unitary(self._sub_gate):
-            return NotImplemented
-
+    def _apply_unitary_(
+        self, args: cirq.ApplyUnitaryArgs
+    ) -> npt.NDArray[np.complex128] | NotImplementedType:
         subspace_args = cirq.ApplyUnitaryArgs(
             target_tensor=args.target_tensor,
             available_buffer=args.available_buffer,
@@ -639,7 +638,7 @@ class QubitSubspaceGate(cirq.Gate, cirq.InterchangeableQubitsGate):
     def _has_mixture_(self) -> bool:
         return cirq.has_mixture(self._sub_gate)
 
-    def _mixture_(self) -> list[tuple[float, npt.NDArray[np.complex128]]]:
+    def _mixture_(self) -> list[tuple[float, npt.NDArray[np.complex128]]] | NotImplementedType:
         sub_mixture = cirq.mixture(self._sub_gate, default=None)
 
         if sub_mixture is None:
@@ -651,7 +650,7 @@ class QubitSubspaceGate(cirq.Gate, cirq.InterchangeableQubitsGate):
 
         mixture = []
         for prob, sub_unitary in sub_mixture:
-            unitary = np.eye(dim, dtype=complex)
+            unitary = np.eye(dim, dtype=np.complex128)
             unitary.put(idxs, sub_unitary)
             mixture.append((prob, unitary))
 
