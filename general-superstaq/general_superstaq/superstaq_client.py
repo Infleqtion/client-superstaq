@@ -1098,17 +1098,9 @@ class _SuperstaqClient(_AbstractUserClient):
         ]
         return target_list
 
-    def get_my_targets(self) -> list[gss.Target]:
-        json_dict: dict[str, str | bool] = {"accessible": True}
-        if self.client_kwargs:
-            json_dict["options"] = json.dumps(self.client_kwargs)
-
-        superstaq_targets = self.post_request("/targets", json_dict)["superstaq_targets"]
-        target_list = [
-            gss.Target(target=target_name, **properties)
-            for target_name, properties in superstaq_targets.items()
-        ]
-        return target_list
+    def get_my_targets(self, **kwargs: bool | None) -> list[gss.Target]:
+        kwargs["accessible"] = True
+        return self.get_targets(**kwargs)
 
     def target_info(self, target: str, **kwargs: object) -> dict[str, Any]:
         gss.validation.validate_target(target)

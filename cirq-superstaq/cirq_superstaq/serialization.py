@@ -19,7 +19,6 @@ import warnings
 from collections.abc import Sequence
 
 import cirq
-import stimcirq
 
 import cirq_superstaq as css
 
@@ -50,7 +49,15 @@ def deserialize_circuits(serialized_circuits: str) -> list[cirq.Circuit]:
     Returns:
         The circuit or list of circuits that was serialized.
     """
-    resolvers = [*SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS, stimcirq.JSON_RESOLVER]
+    resolvers = [*SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
+
+    try:
+        from stimcirq import JSON_RESOLVER  # noqa: PLC0415
+    except ImportError:
+        pass
+    else:  # pragma: no cover (takes too long to install in CI)
+        resolvers.append(JSON_RESOLVER)
+
     circuits = cirq.read_json(json_text=serialized_circuits, resolvers=resolvers)
     if isinstance(circuits, cirq.Circuit):
         return [circuits]
