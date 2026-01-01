@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "Superstaq"
-copyright = "2025, ColdQuanta, Inc., DBA Infleqtion"  # noqa: A001
+copyright = "2026, ColdQuanta, Inc., DBA Infleqtion"  # noqa: A001
 author = "ColdQuanta, Inc., DBA Infleqtion"
 
 # -- General configuration ---------------------------------------------------
