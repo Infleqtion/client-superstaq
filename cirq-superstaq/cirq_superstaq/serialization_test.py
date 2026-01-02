@@ -13,6 +13,7 @@
 # limitations under the License.
 from __future__ import annotations
 
+import sys
 from unittest import mock
 
 import cirq
@@ -40,8 +41,9 @@ def test_serialization() -> None:
     assert css.serialization.deserialize_circuits(serialized_circuits) == circuits
 
 
+@pytest.mark.skipif(sys.version_info >= (3, 14), reason="Stim installation slow for python >= 3.14")
 def test_serialization_stimcirq() -> None:  # pragma: no cover
-    stimcirq = pytest.importorskip("stimcirq", reason="stimcirq not installed")
+    import stimcirq  # noqa: PLC0415
 
     circuit = cirq.Circuit(
         cirq.X(cirq.q(0)),
