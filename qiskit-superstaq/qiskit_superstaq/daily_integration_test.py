@@ -49,13 +49,27 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
         accessible=True,
     )
     assert ibmq_backend_info in result
-    assert len(provider.backends()) == len(result)
-    assert all(target in result for target in filtered_result)
-    for gss_target in result:
-        backend_name = gss_target.target
-        backend = provider.get_backend(backend_name)
-        assert backend.target_info()["target"] == backend_name
+
+    unfiltered_targets = {t.target: t for t in result}
+    for target in filtered_result:
+        assert target.target in unfiltered_targets, f"'{target.target}' not in unfiltered result"
+        assert target == unfiltered_targets[target.target], (
+            f"Divergent targets.\nFiltered: {target!r}\n"
+            f"Unfiltered: {unfiltered_targets[target.target]!r}"
+        )
+
+    backends = provider.backends()
+    for backend in backends:
+        assert backend.name in unfiltered_targets, (
+            f"'{backend.name}' included in `backends()` but not `get_targets()`"
+        )
+        assert backend.target_info()["target"] == backend.name
         assert backend.target.num_qubits is not None
+
+    missing_backends = unfiltered_targets.keys() - {backend.name for backend in backends}
+    assert not missing_backends, (
+        f"Targets from `get_targets()` missing from `backends()`: {missing_backends}"
+    )
 
 
 def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
