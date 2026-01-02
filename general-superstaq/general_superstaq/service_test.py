@@ -321,10 +321,10 @@ def test_get_targets_v3(mock_get: mock.MagicMock) -> None:
         verify=True,
     )
 
-    my_response = service.get_my_targets()
+    my_response = service.get_my_targets(available=True)
     assert my_response == response
     mock_get.assert_called_with(
-        f"{service._client.url}/client/targets?accessible=True",
+        f"{service._client.url}/client/targets?available=True&accessible=True",
         headers=service._client.headers,
         verify=True,
     )
