@@ -202,7 +202,7 @@ class Service:
         Returns:
             A list of Superstaq targets that the user can currently submit to.
         """
-        return self._client.get_my_targets()
+        return self.get_targets(accessible=True)
 
     @overload
     def get_user_info(self) -> dict[str, str | float]: ...

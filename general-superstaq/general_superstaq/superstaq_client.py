@@ -622,14 +622,6 @@ class _AbstractUserClient(_BaseSuperstaqClient, ABC):
         """
 
     @abstractmethod
-    def get_my_targets(self) -> list[gss.Target]:
-        """Makes a GET request to retrieve targets from the Superstaq API.
-
-        Returns:
-            A list of Superstaq targets matching all provided criteria.
-        """
-
-    @abstractmethod
     def add_new_user(self, json_dict: dict[str, str]) -> str:
         """Makes a POST request to Superstaq API to add a new user.
 
@@ -1098,10 +1090,6 @@ class _SuperstaqClient(_AbstractUserClient):
         ]
         return target_list
 
-    def get_my_targets(self, **kwargs: bool | None) -> list[gss.Target]:
-        kwargs["accessible"] = True
-        return self.get_targets(**kwargs)
-
     def target_info(self, target: str, **kwargs: object) -> dict[str, Any]:
         gss.validation.validate_target(target)
 
@@ -1474,17 +1462,6 @@ class _SuperstaqClientV3(_AbstractUserClient):
         response = self.get_request(
             "/client/targets", query.model_dump(exclude_defaults=True), **credentials
         )
-        targets = [gss.models.TargetModel(**data) for data in response]
-        return [
-            gss.typing.Target(
-                target=target.target_name, **target.model_dump(exclude={"target_name"})
-            )
-            for target in targets
-        ]
-
-    def get_my_targets(self) -> list[gss.Target]:
-        credentials = self._extract_credentials(self.client_kwargs)
-        response = self.get_request("/client/targets", {"accessible": True}, **credentials)
         targets = [gss.models.TargetModel(**data) for data in response]
         return [
             gss.typing.Target(
