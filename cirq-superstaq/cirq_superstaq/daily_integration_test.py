@@ -193,7 +193,15 @@ def test_get_targets(service: css.Service) -> None:
 
     assert ibmq_target_info in result
     assert aqt_target_info in result
-    assert all(target in result for target in filtered_result)
+
+    unfiltered_targets = {t.target: t for t in result}
+    for target in filtered_result:
+        assert target.target in unfiltered_targets, f"'{target.target}' not in unfiltered result"
+        assert target == unfiltered_targets[target.target], (
+            "Divergent targets.\nFiltered: {target!r}\n"
+            "Unfiltered: {unfiltered_targets[target.target]!r}"
+        )
+
     for gss_target in result:
         target_name = gss_target.target
         assert service.target_info(target_name)["target"] == target_name

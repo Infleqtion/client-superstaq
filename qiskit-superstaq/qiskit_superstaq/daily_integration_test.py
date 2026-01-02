@@ -50,7 +50,15 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
     )
     assert ibmq_backend_info in result
     assert len(provider.backends()) == len(result)
-    assert all(target in result for target in filtered_result)
+
+    unfiltered_targets = {t.target: t for t in result}
+    for target in filtered_result:
+        assert target.target in unfiltered_targets, f"'{target.target}' not in unfiltered result"
+        assert target == unfiltered_targets[target.target], (
+            "Divergent targets.\nFiltered: {target!r}\n"
+            "Unfiltered: {unfiltered_targets[target.target]!r}"
+        )
+
     for gss_target in result:
         backend_name = gss_target.target
         backend = provider.get_backend(backend_name)
