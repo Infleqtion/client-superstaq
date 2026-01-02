@@ -198,8 +198,8 @@ def test_get_targets(service: css.Service) -> None:
     for target in filtered_result:
         assert target.target in unfiltered_targets, f"'{target.target}' not in unfiltered result"
         assert target == unfiltered_targets[target.target], (
-            "Divergent targets.\nFiltered: {target!r}\n"
-            "Unfiltered: {unfiltered_targets[target.target]!r}"
+            f"Divergent targets.\nFiltered: {target!r}\n"
+            f"Unfiltered: {unfiltered_targets[target.target]!r}"
         )
 
     for gss_target in result:
