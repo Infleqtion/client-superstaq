@@ -286,6 +286,50 @@ def test_service_get_my_targets(_mock_post_request: mock.MagicMock) -> None:
     ]
 
 
+@mock.patch("requests.Session.get")
+def test_get_targets_v3(mock_get: mock.MagicMock) -> None:
+    mock_get.return_value.ok = True
+    mock_get.return_value.json.return_value = [
+        gss.models.TargetModel(
+            target_name="ss_unconstrained_simulator",
+            simulator=True,
+            supports_submit=True,
+            supports_submit_qubo=True,
+            supports_compile=True,
+            available=True,
+            retired=False,
+            accessible=True,
+        ).model_dump()
+    ]
+
+    service = gss.Service(api_version="v0.3.0", api_key="to_my_heart")
+    response = service.get_targets(supports_submit=True)
+    assert response == [
+        gss.Target(
+            target="ss_unconstrained_simulator",
+            supports_submit=True,
+            supports_submit_qubo=True,
+            supports_compile=True,
+            available=True,
+            retired=False,
+            accessible=True,
+        )
+    ]
+    mock_get.assert_called_once_with(
+        f"{service._client.url}/client/targets?supports_submit=True",
+        headers=service._client.headers,
+        verify=True,
+    )
+
+    my_response = service.get_my_targets(available=True)
+    assert my_response == response
+    mock_get.assert_called_with(
+        f"{service._client.url}/client/targets?available=True&accessible=True",
+        headers=service._client.headers,
+        verify=True,
+    )
+
+
 @mock.patch(
     "general_superstaq.superstaq_client._SuperstaqClient.aqt_get_configs",
     return_value={"pulses": "Hello", "variables": "World"},
