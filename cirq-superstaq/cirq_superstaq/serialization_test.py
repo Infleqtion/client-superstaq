@@ -13,23 +13,18 @@
 # limitations under the License.
 from __future__ import annotations
 
+from unittest import mock
+
 import cirq
-import stimcirq
+import pytest
 
 import cirq_superstaq as css
 
 
+@mock.patch.dict("sys.modules", {"stimcirq": None})
 def test_serialization() -> None:
     qubits = cirq.LineQubit.range(2)
     circuit = cirq.Circuit(
-        stimcirq.MeasureAndOrResetGate(
-            measure=False,
-            reset=True,
-            basis="X",
-            invert_measure=False,
-            key="",
-            measure_flip_probability=0,
-        ).on(cirq.LineQubit(0)),
         cirq.CX(*qubits),
         css.ZX(*qubits),
         cirq.ms(1.23).on(*qubits),
@@ -43,3 +38,24 @@ def test_serialization() -> None:
     serialized_circuits = css.serialization.serialize_circuits(circuits)
     assert isinstance(serialized_circuits, str)
     assert css.serialization.deserialize_circuits(serialized_circuits) == circuits
+
+
+def test_serialization_stimcirq() -> None:  # pragma: no cover
+    stimcirq = pytest.importorskip("stimcirq", reason="stimcirq not installed")
+
+    circuit = cirq.Circuit(
+        cirq.X(cirq.q(0)),
+        stimcirq.MeasureAndOrResetGate(
+            measure=False,
+            reset=True,
+            basis="X",
+            invert_measure=False,
+            key="",
+            measure_flip_probability=0,
+        ).on(cirq.q(0)),
+        stimcirq.DetAnnotation(),
+    )
+
+    serialized_circuit = css.serialization.serialize_circuits(circuit)
+    assert isinstance(serialized_circuit, str)
+    assert css.serialization.deserialize_circuits(serialized_circuit) == [circuit]
