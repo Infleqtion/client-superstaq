@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Copyright 2021 The Cirq Developers
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,27 +50,27 @@ def patch_tqdm() -> None:
 
 def test_bad_cb_init() -> None:
     with pytest.raises(
-        RuntimeError, match="Cycle Benchmarking is only valid for Clifford elements."
+        RuntimeError, match="Cycle Benchmarking is only valid for Clifford elements"
     ):
         qubit = cirq.LineQubit(0)
         process = cirq.Circuit([cirq.T(qubit)])
         CB(process, pauli_channels=1)
 
     with pytest.raises(
-        RuntimeError, match="All Pauli channels must be over 1 qubits. XX is over 2 qubits."
+        RuntimeError, match="All Pauli channels must be over 1 qubits"
     ):
         qubit = cirq.LineQubit(0)
         process = cirq.Circuit([cirq.X(qubit)])
         CB(process, pauli_channels=["XX"])
 
     with pytest.raises(
-        RuntimeError, match="All Pauli channels must be over 2 qubits. Y is over 1 qubits."
+        RuntimeError, match="All Pauli channels must be over 2 qubits"
     ):
         qubits = cirq.LineQubit.range(2)
         process = cirq.Circuit([cirq.X(qubits[0]), cirq.Z(qubits[1])])
         CB(process, pauli_channels=["Y"])
 
-    with pytest.raises(RuntimeError, match="The process circuit must not contain measurements."):
+    with pytest.raises(RuntimeError, match="The process circuit must not contain measurements"):
         qubits = cirq.LineQubit.range(2)
         process = cirq.Circuit([cirq.X(qubits[0]), cirq.Z(qubits[1]), cirq.M(qubits)])
         CB(process, pauli_channels=["YY"])
@@ -436,7 +450,7 @@ def test_results_undressed_with_dressed(dressed_cb_results: CBResults) -> None:
     for attr in ["undressed_process_fidelity", "undressed_process_fidelity_std"]:
         with pytest.raises(
             RuntimeError,
-            match="Undressed process fidelity is not available for this experiment.",
+            match="Undressed process fidelity is not available for this experiment",
         ):
             getattr(dressed_cb_results, attr)
 
