@@ -47,6 +47,20 @@ if TYPE_CHECKING:
     from typing import Self
 
 
+def decay(x: float, single_qubit_noise: float, two_qubit_gate_fidelity: float) -> float:
+    """The fitting function used for SU2 benchmarking.
+
+    Args:
+        x: The number of two qubit gates.
+        single_qubit_noise: The single qubit noise parameter.
+        two_qubit_gate_fidelity: The two qubit gate fidelity parameter.
+
+    Returns:
+        The expected probability of measuring the |00> state.
+    """
+    return 3 / 4 * (1 - single_qubit_noise) * two_qubit_gate_fidelity**x + 0.25
+
+
 @dataclass
 class SU2Results(QCVVResults):
     """Data structure for the SU2 experiment results."""
@@ -107,21 +121,6 @@ class SU2Results(QCVVResults):
         """
         return self.two_qubit_gate_fidelity_std
 
-    def fit_function(
-        self, x: float, single_qubit_noise: float, two_qubit_gate_fidelity: float
-    ) -> float:
-        """The fitting function used for SU2 benchmarking.
-
-        Args:
-            x: The number of two qubit gates.
-            single_qubit_noise: The single qubit noise parameter.
-            two_qubit_gate_fidelity: The two qubit gate fidelity parameter.
-
-        Returns:
-            The expected probability of measuring the |00> state.
-        """
-        return 3 / 4 * (1 - single_qubit_noise) * two_qubit_gate_fidelity**x + 0.25
-
     def plot_results(self, filename: str | None = None) -> plt.Figure:
         """Plot the results of the experiment.
 
@@ -152,10 +151,7 @@ class SU2Results(QCVVResults):
         )
         ax.plot(
             xx := self.data["num_two_qubit_gates"],
-            [
-                self.fit_function(x, self.single_qubit_noise, self.two_qubit_gate_fidelity)
-                for x in xx
-            ],
+            [decay(x, self.single_qubit_noise, self.two_qubit_gate_fidelity) for x in xx],
             label="00 (fit)",
         )
         ax.set_xlabel("Number of two qubit gates")
@@ -183,7 +179,7 @@ class SU2Results(QCVVResults):
             raise RuntimeError("No data stored. Cannot perform analysis.")
 
         fit = curve_fit(
-            f=self.fit_function,
+            f=decay,
             xdata=self.data["num_two_qubit_gates"],
             ydata=self.data["00"],
             bounds=([0, 0], [1, 1]),
