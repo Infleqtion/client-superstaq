@@ -56,16 +56,12 @@ def test_bad_cb_init() -> None:
         process = cirq.Circuit([cirq.T(qubit)])
         CB(process, pauli_channels=1)
 
-    with pytest.raises(
-        RuntimeError, match="All Pauli channels must be over 1 qubits"
-    ):
+    with pytest.raises(RuntimeError, match="All Pauli channels must be over 1 qubits"):
         qubit = cirq.LineQubit(0)
         process = cirq.Circuit([cirq.X(qubit)])
         CB(process, pauli_channels=["XX"])
 
-    with pytest.raises(
-        RuntimeError, match="All Pauli channels must be over 2 qubits"
-    ):
+    with pytest.raises(RuntimeError, match="All Pauli channels must be over 2 qubits"):
         qubits = cirq.LineQubit.range(2)
         process = cirq.Circuit([cirq.X(qubits[0]), cirq.Z(qubits[1])])
         CB(process, pauli_channels=["Y"])
