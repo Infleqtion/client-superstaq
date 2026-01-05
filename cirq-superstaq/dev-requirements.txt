@@ -1,4 +1,4 @@
-checks-superstaq~=0.5.58
-qiskit-superstaq~=0.5.58
+checks-superstaq~=0.5.59
+qiskit-superstaq~=0.5.59
 stimcirq>=1.15.0; python_version < '3.13'
 stimcirq>=1.15.0; python_version < '3.14' and (sys_platform == 'darwin' or sys_platform == 'linux')
