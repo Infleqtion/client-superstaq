@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import os
@@ -58,6 +72,17 @@ def run(
     parsed_args, pytest_args = parser.parse_known_intermixed_args(args)
     if "coverage" in parsed_args.skip:
         return 0
+
+    # Enable threading setting before other args so -n can be overwritten
+    default_threads = (
+        "auto"
+        if not parsed_args.files
+        and not parsed_args.modular
+        and parsed_args.revisions is None
+        and "-s" not in pytest_args
+        else "0"
+    )
+    pytest_args = [f"-n={default_threads}", *pytest_args]
 
     coverage_args = []
     if parsed_args.sysmon and sys.version_info.minor >= 12:
@@ -141,6 +166,12 @@ def _run_on_files(
 
 
 def _report(test_returncode: int) -> int:
+    subprocess.call(
+        ["python", "-m", "coverage", "combine"],
+        cwd=check_utils.root_dir,
+        stdout=subprocess.DEVNULL,
+    )
+
     coverage_returncode = subprocess.call(
         ["python", "-m", "coverage", "report", "--precision=2"],
         cwd=check_utils.root_dir,

@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import io
@@ -5,14 +19,16 @@ import json
 import re
 import warnings
 from collections.abc import Callable, Sequence
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 import general_superstaq as gss
 import numpy as np
-import numpy.typing as npt
 import qiskit.qpy
 
 import qiskit_superstaq as qss
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 T = TypeVar("T")
 
@@ -390,7 +406,7 @@ def _prepare_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
             label=gate.label,
         )
 
-    if gate.definition:
+    if gate.definition is not None:
         new_gate.definition = _prepare_circuit(gate.definition)
 
     return new_gate

@@ -1,4 +1,18 @@
-# Copyright 2025 The Superstaq Developers
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Copyright 2026 Infleqtion
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,7 +43,7 @@ def test_paramval_to_float() -> None:
     assert css.evaluation.paramval_to_float(expr) == math.sqrt(8)
 
     expr = sympy.var("x")
-    with pytest.raises(gss.SuperstaqException, match="We don't support parametrized circuits."):
+    with pytest.raises(gss.SuperstaqException, match=r"We don't support parametrized circuits."):
         css.evaluation.paramval_to_float(expr)
 
 
@@ -155,7 +169,7 @@ def test_operations_to_unitary() -> None:
     mat = css.evaluation.operations_to_unitary(circuit.all_operations(), [q4, q5, q2])
     assert np.allclose(mat, circuit.unitary([q4, q5, q2]))
 
-    with pytest.raises(ValueError, match="nonunitary"):
+    with pytest.raises(ValueError, match=r"nonunitary"):
         _ = css.evaluation.operations_to_unitary([cirq.measure(q2)], [q2])
 
 

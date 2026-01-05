@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Copyright 2021 The Cirq Developers
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -459,6 +473,26 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         Returns:
            The list of experiment samples.
         """
+
+    @staticmethod
+    def _count_non_barrier_gates(circuit: cirq.Circuit, num_qubits: int | None = None) -> int:
+        """Counts the number of gates in a circuit ignoring Barriers. Optionally provide a number
+        of qubits in order to only count the number of gates with that number of qubits.
+
+        Args:
+            circuit: The circuit to count the gates in.
+            num_qubits: Optionally filter gates by the number of qubits they act on.
+
+        Returns:
+            The gate count.
+        """
+        if num_qubits is None:
+            return sum(not isinstance(op.gate, css.Barrier) for op in circuit.all_operations())
+
+        return sum(
+            (len(op.qubits) == num_qubits and not isinstance(op.gate, css.Barrier))
+            for op in circuit.all_operations()
+        )
 
     @staticmethod
     def canonicalize_bitstring(key: int | str, num_qubits: int) -> str:

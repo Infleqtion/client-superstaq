@@ -96,7 +96,6 @@ lint.ignore = [
   "SIM118",
   "TC003",
   "TRY003",
-  "UP038",
   # The following are excluded to not conflict with `ruff format`:
   "COM812",
   "COM819",
@@ -109,7 +108,6 @@ lint.ignore = [
   "Q001",
   "Q002",
   "Q003",
-  "UP038",
   "W191",
 ]
 
@@ -119,6 +117,9 @@ lint.unfixable = []
 
 # Allow unused variables when underscore-prefixed
 lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+# Enable `from __future__ import annotations` simplification for rules
+lint.future-annotations = true
 
 [tool.ruff.lint.flake8-type-checking]
 exempt-modules = ["collections.abc"]
@@ -164,3 +165,22 @@ exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "@overload"]
 [tool.coverage.run]
 include = ["./*"]
 concurrency = ["thread"]
+parallel = true
+patch = ["subprocess"]
+
+[tool.licensepy]
+license_header_template = """Copyright {year} {licensee}
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+licensee = "Infleqtion"

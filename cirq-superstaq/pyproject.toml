@@ -37,6 +37,9 @@ file = ["dev-requirements.txt"]
 [tool.setuptools.dynamic.optional-dependencies.examples]
 file = ["example-requirements.txt"]
 
+[tool.setuptools.dynamic.optional-dependencies.stim]
+file = ["stim-requirements.txt"]
+
 [tool.isort]
 profile = "black"
 line_length = 100

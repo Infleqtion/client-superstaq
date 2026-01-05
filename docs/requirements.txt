@@ -1,2 +1,2 @@
-cirq-superstaq[dev]~=0.5.49
-qiskit-superstaq[dev]~=0.5.49
+cirq-superstaq[dev]~=0.5.58
+qiskit-superstaq[dev]~=0.5.58
