@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from matplotlib.ticker import MaxNLocator
-from scipy.stats import linregress
+from scipy.optimize import curve_fit
 from tqdm.contrib.itertools import product
 
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
@@ -93,6 +93,21 @@ class SU2Results(QCVVResults):
         """
         return self.two_qubit_gate_fidelity_std
 
+    def fit_function(
+        self, x: float, single_qubit_noise: float, two_qubit_gate_fidelity: float
+    ) -> float:
+        """The fitting function used for SU2 benchmarking.
+
+        Args:
+            x: The number of two qubit gates.
+            single_qubit_noise: The single qubit noise parameter.
+            two_qubit_gate_fidelity: The two qubit gate fidelity parameter.
+
+        Returns:
+            The expected probability of measuring the |00> state.
+        """
+        return 3 / 4 * (1 - single_qubit_noise) * two_qubit_gate_fidelity**x + 0.25
+
     def plot_results(self, filename: str | None = None) -> plt.Figure:
         """Plot the results of the experiment.
 
@@ -123,7 +138,10 @@ class SU2Results(QCVVResults):
         )
         ax.plot(
             xx := self.data["num_two_qubit_gates"],
-            3 / 4 * (1 - self.single_qubit_noise) * self.two_qubit_gate_fidelity**xx + 0.25,
+            [
+                self.fit_function(x, self.single_qubit_noise, self.two_qubit_gate_fidelity)
+                for x in xx
+            ],
             label="00 (fit)",
         )
         ax.set_xlabel("Number of two qubit gates")
@@ -150,23 +168,18 @@ class SU2Results(QCVVResults):
         if self.data is None:
             raise RuntimeError("No data stored. Cannot perform analysis.")
 
-        fit = linregress(
-            x=self.data["num_two_qubit_gates"],
-            y=np.log(4 / 3 * (self.data["00"] - 1 / 4)),
-            # 1/4 < self.data["00"] < 1 so we subtract 1/4 and rescale by 4/3 to obtain a
-            # quantity in the range 0 < 4 / 3 * (self.data["00"] - 1 / 4) < 1
+        fit = curve_fit(
+            f=self.fit_function,
+            xdata=self.data["num_two_qubit_gates"],
+            ydata=self.data["00"],
+            bounds=([0, 0], [1, 1]),
         )
-        gate_fid = np.exp(fit.slope)
-        gate_fid_std = fit.stderr * gate_fid
-
-        single_qubit_noise = 1 - np.exp(fit.intercept)
-        single_qubit_noise_std = fit.intercept_stderr * (1 - single_qubit_noise)
 
         # Save results
-        self._two_qubit_gate_fidelity = gate_fid
-        self._two_qubit_gate_fidelity_std = gate_fid_std
-        self._single_qubit_noise = single_qubit_noise
-        self._single_qubit_noise_std = single_qubit_noise_std
+        self._two_qubit_gate_fidelity = fit[0][1]
+        self._two_qubit_gate_fidelity_std = np.sqrt(fit[1][1, 1])
+        self._single_qubit_noise = fit[0][0]
+        self._single_qubit_noise_std = np.sqrt(fit[1][0, 0])
 
     def print_results(self) -> None:
         """Prints the key results data."""
