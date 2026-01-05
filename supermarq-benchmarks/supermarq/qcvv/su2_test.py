@@ -42,7 +42,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from supermarq.qcvv import SU2, SU2Results
+from supermarq.qcvv.su2 import SU2, SU2Results, decay
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -151,9 +151,6 @@ def test_build_circuits_old(su2_experiment: SU2) -> None:  # pragma: no cover
 
 
 def test_analyse_results(tmp_path: pathlib.Path, su2_experiment: SU2) -> None:
-    def decay(x: float) -> float:
-        return (3 * 0.75 * 0.975**x + 1) / 4
-
     result = SU2Results(
         target="example",
         experiment=su2_experiment,
@@ -163,37 +160,37 @@ def test_analyse_results(tmp_path: pathlib.Path, su2_experiment: SU2) -> None:
                     "num_two_qubit_gates": 2,
                     "circuit_realization": 1,
                     "uuid": uuid.uuid4(),
-                    "00": decay(2),
+                    "00": decay(2, 0.25, 0.975),
                     "01": 0.0,
                     "10": 0.0,
-                    "11": 1 - decay(2),
+                    "11": 1 - decay(2, 0.25, 0.975),
                 },
                 {
                     "num_two_qubit_gates": 4,
                     "circuit_realization": 1,
                     "uuid": uuid.uuid4(),
-                    "00": decay(4),
+                    "00": decay(4, 0.25, 0.975),
                     "01": 0.0,
                     "10": 0.0,
-                    "11": 1 - decay(4),
+                    "11": 1 - decay(4, 0.25, 0.975),
                 },
                 {
                     "num_two_qubit_gates": 6,
                     "circuit_realization": 1,
                     "uuid": uuid.uuid4(),
-                    "00": decay(6),
+                    "00": decay(6, 0.25, 0.975),
                     "01": 0.0,
                     "10": 0.0,
-                    "11": 1 - decay(6),
+                    "11": 1 - decay(6, 0.25, 0.975),
                 },
                 {
                     "num_two_qubit_gates": 8,
                     "circuit_realization": 1,
                     "uuid": uuid.uuid4(),
-                    "00": decay(8),
+                    "00": decay(8, 0.25, 0.975),
                     "01": 0.0,
                     "10": 0.0,
-                    "11": 1 - decay(8),
+                    "11": 1 - decay(8, 0.25, 0.975),
                 },
             ]
         ),
@@ -205,12 +202,12 @@ def test_analyse_results(tmp_path: pathlib.Path, su2_experiment: SU2) -> None:
 
     assert pathlib.Path(tmp_path / "example.png").exists()
 
-    assert result.two_qubit_gate_fidelity == pytest.approx(0.975)
-    assert result.two_qubit_gate_fidelity_std == pytest.approx(0.0)
-    assert result.two_qubit_gate_error == pytest.approx(0.025)
-    assert result.two_qubit_gate_error_std == pytest.approx(0.0)
-    assert result.single_qubit_noise == pytest.approx(0.25)
-    assert result.single_qubit_noise_std == pytest.approx(0.0)
+    assert result.two_qubit_gate_fidelity == pytest.approx(0.975, abs=1e-6)
+    assert result.two_qubit_gate_fidelity_std == pytest.approx(0.0, abs=1e-6)
+    assert result.two_qubit_gate_error == pytest.approx(0.025, abs=1e-6)
+    assert result.two_qubit_gate_error_std == pytest.approx(0.0, abs=1e-6)
+    assert result.single_qubit_noise == pytest.approx(0.25, abs=1e-6)
+    assert result.single_qubit_noise_std == pytest.approx(0.0, abs=1e-6)
 
 
 def test_haar_random_rotation() -> None:
