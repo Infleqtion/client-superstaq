@@ -1,3 +1,16 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Integration checks that run daily (via Github action) between client and prod server."""
 
 from __future__ import annotations
@@ -173,14 +186,22 @@ def test_get_targets(service: css.Service) -> None:
         supports_submit=False,
         supports_submit_qubo=False,
         supports_compile=True,
-        available=True,
+        available=False,
         retired=False,
-        accessible=True,
+        accessible=False,
     )
 
     assert ibmq_target_info in result
     assert aqt_target_info in result
-    assert all(target in result for target in filtered_result)
+
+    unfiltered_targets = {t.target: t for t in result}
+    for target in filtered_result:
+        assert target.target in unfiltered_targets, f"'{target.target}' not in unfiltered result"
+        assert target == unfiltered_targets[target.target], (
+            f"Divergent targets.\nFiltered: {target!r}\n"
+            f"Unfiltered: {unfiltered_targets[target.target]!r}"
+        )
+
     for gss_target in result:
         target_name = gss_target.target
         assert service.target_info(target_name)["target"] == target_name

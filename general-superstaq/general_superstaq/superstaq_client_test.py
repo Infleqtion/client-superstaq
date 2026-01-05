@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Copyright 2021 The Cirq Developers
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -969,71 +983,6 @@ def test_superstaq_client_get_targets(
         response = token_client.get_targets(simulator=True)
         mock_get.assert_called_with(
             endpoint + "?simulator=True",
-            headers={**EXPECTED_HEADERS[api_version], "ibmq_token": "token"},
-            verify=False,
-        )
-
-
-@pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
-@mock.patch("requests.Session.get")
-@mock.patch("requests.Session.post")
-def test_superstaq_client_get_my_targets(
-    mock_post: mock.MagicMock,
-    mock_get: mock.MagicMock,
-    api_version: str,
-) -> None:
-    client_version = CLIENT_VERSION[api_version]
-    client = client_version(
-        client_name="general-superstaq",
-        remote_host="http://example.com",
-        api_key="to_my_heart",
-        api_version=api_version,
-        ibmq_token="token",
-    )
-    target = {
-        "ss_unconstrained_simulator": {
-            "supports_submit": True,
-            "supports_submit_qubo": True,
-            "supports_compile": True,
-            "available": True,
-            "retired": False,
-            "accessible": True,
-        }
-    }
-    if api_version == "v0.2.0":
-        mock_post.return_value.ok = True
-        mock_post.return_value.json.return_value = {"superstaq_targets": target}
-        response = client.get_my_targets()
-        assert response == [
-            gss.typing.Target(
-                target="ss_unconstrained_simulator",
-                **target["ss_unconstrained_simulator"],
-            )
-        ]
-        mock_post.assert_called_once_with(
-            f"http://example.com/{api_version}/targets",
-            headers=EXPECTED_HEADERS[api_version],
-            verify=False,
-            json={"accessible": True, "options": json.dumps({"ibmq_token": "token"})},
-        )
-    else:
-        mock_get.return_value.ok = True
-        mock_get.return_value.json.return_value = [
-            {
-                "target_name": "ss_unconstrained_simulator",
-                "simulator": True,
-                **target["ss_unconstrained_simulator"],
-            }
-        ]
-        response = client.get_my_targets()
-        assert response == [
-            gss.typing.Target(
-                target="ss_unconstrained_simulator",
-                **target["ss_unconstrained_simulator"],
-            )
-        ]
-        mock_get.assert_called_once_with(
-            f"http://example.com/{api_version}/client/targets?accessible=True",
             headers={**EXPECTED_HEADERS[api_version], "ibmq_token": "token"},
             verify=False,
         )

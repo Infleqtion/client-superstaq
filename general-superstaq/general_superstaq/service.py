@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import numbers
@@ -181,14 +195,45 @@ class Service:
         )
         return self._client.get_targets(**filters)
 
-    def get_my_targets(self) -> list[gss.Target]:
+    def get_my_targets(
+        self,
+        simulator: bool | None = None,
+        supports_submit: bool | None = None,
+        supports_submit_qubo: bool | None = None,
+        supports_compile: bool | None = None,
+        available: bool | None = None,
+        retired: bool | None = None,
+        **kwargs: bool,
+    ) -> list[gss.Target]:
         """Gets a list of Superstaq targets that the user can submit to and are available along
         with their status information.
+
+        Args:
+            simulator: Optional flag to restrict the list of targets to (non-) simulators.
+            supports_submit: Optional boolean flag to only return targets that (don't) allow
+                circuit submissions.
+            supports_submit_qubo: Optional boolean flag to only return targets that (don't)
+                allow qubo submissions.
+            supports_compile: Optional boolean flag to return targets that (don't) support
+                circuit compilation.
+            available: Optional boolean flag to only return targets that are (not) available
+                to use.
+            retired: Optional boolean flag to only return targets that are or are not retired.
+            kwargs: Any additional, supported flags to restrict/filter returned targets.
 
         Returns:
             A list of Superstaq targets that the user can currently submit to.
         """
-        return self._client.get_my_targets()
+        return self.get_targets(
+            simulator=simulator,
+            supports_submit=supports_submit,
+            supports_submit_qubo=supports_submit_qubo,
+            supports_compile=supports_compile,
+            available=available,
+            retired=retired,
+            accessible=True,
+            **kwargs,
+        )
 
     @overload
     def get_user_info(self) -> dict[str, str | float]: ...

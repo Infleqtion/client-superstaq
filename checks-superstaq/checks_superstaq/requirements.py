@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import fnmatch
@@ -53,7 +67,7 @@ def run(
     )
 
     parser.add_argument(
-        "--apply", action="store_true", help="Apply fixes to pip requirements files."
+        "--fix", "--apply", action="store_true", help="Apply fixes to pip requirements files."
     )
     parser.add_argument(
         "--only-sort",
@@ -76,9 +90,9 @@ def run(
             requirements_to_fix[req_file] = requirements
 
     # print some helpful text and maybe apply fixes
-    _cleanup(requirements_to_fix, parsed_args.apply, silent)
+    _cleanup(requirements_to_fix, parsed_args.fix, silent)
 
-    success = not requirements_to_fix or parsed_args.apply
+    success = not requirements_to_fix or parsed_args.fix
     return 0 if success else 1
 
 
@@ -249,7 +263,7 @@ def _cleanup(
             print(check_utils.success("Requirements files fixed."))  # noqa: T201
 
     elif not silent:
-        command = "./checks/requirements.py --apply"
+        command = "./checks/requirements.py --fix"
         text = f"Run '{command}' (from the repo root directory) to fix requirements files."
         print(check_utils.warning(text))  # noqa: T201
 
