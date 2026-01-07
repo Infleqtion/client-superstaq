@@ -1,4 +1,4 @@
-# Copyright 2025 Infleqtion
+# Copyright 2026 Infleqtion
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "Superstaq"
-copyright = "2025, ColdQuanta, Inc., DBA Infleqtion"  # noqa: A001
+copyright = "2026, ColdQuanta, Inc., DBA Infleqtion"  # noqa: A001
 author = "ColdQuanta, Inc., DBA Infleqtion"
 
 # -- General configuration ---------------------------------------------------

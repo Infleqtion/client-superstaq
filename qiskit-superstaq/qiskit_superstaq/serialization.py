@@ -1,4 +1,4 @@
-# Copyright 2025 Infleqtion
+# Copyright 2026 Infleqtion
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -406,7 +406,7 @@ def _prepare_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
             label=gate.label,
         )
 
-    if gate.definition:
+    if gate.definition is not None:
         new_gate.definition = _prepare_circuit(gate.definition)
 
     return new_gate

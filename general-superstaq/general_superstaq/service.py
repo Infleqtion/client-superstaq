@@ -1,4 +1,4 @@
-# Copyright 2025 Infleqtion
+# Copyright 2026 Infleqtion
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -195,14 +195,45 @@ class Service:
         )
         return self._client.get_targets(**filters)
 
-    def get_my_targets(self) -> list[gss.Target]:
+    def get_my_targets(
+        self,
+        simulator: bool | None = None,
+        supports_submit: bool | None = None,
+        supports_submit_qubo: bool | None = None,
+        supports_compile: bool | None = None,
+        available: bool | None = None,
+        retired: bool | None = None,
+        **kwargs: bool,
+    ) -> list[gss.Target]:
         """Gets a list of Superstaq targets that the user can submit to and are available along
         with their status information.
+
+        Args:
+            simulator: Optional flag to restrict the list of targets to (non-) simulators.
+            supports_submit: Optional boolean flag to only return targets that (don't) allow
+                circuit submissions.
+            supports_submit_qubo: Optional boolean flag to only return targets that (don't)
+                allow qubo submissions.
+            supports_compile: Optional boolean flag to return targets that (don't) support
+                circuit compilation.
+            available: Optional boolean flag to only return targets that are (not) available
+                to use.
+            retired: Optional boolean flag to only return targets that are or are not retired.
+            kwargs: Any additional, supported flags to restrict/filter returned targets.
 
         Returns:
             A list of Superstaq targets that the user can currently submit to.
         """
-        return self._client.get_my_targets()
+        return self.get_targets(
+            simulator=simulator,
+            supports_submit=supports_submit,
+            supports_submit_qubo=supports_submit_qubo,
+            supports_compile=supports_compile,
+            available=available,
+            retired=retired,
+            accessible=True,
+            **kwargs,
+        )
 
     @overload
     def get_user_info(self) -> dict[str, str | float]: ...

@@ -1,4 +1,4 @@
-# Copyright 2025 Infleqtion
+# Copyright 2026 Infleqtion
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -503,3 +503,11 @@ def test_different_gates_with_same_name() -> None:
     expected_circuit.append(expected_gate3, [0, 1])
 
     assert qss.deserialize_circuits(qss.serialize_circuits(circuit))[0] == expected_circuit
+
+
+def test_nested_empty_definitions() -> None:
+    circuit = qiskit.QuantumCircuit(1)
+    circuit.append(circuit.to_gate(), [0])
+    circuit.append(circuit.to_gate(), [0])
+
+    assert qss.deserialize_circuits(qss.serialize_circuits(circuit))[0] == circuit
