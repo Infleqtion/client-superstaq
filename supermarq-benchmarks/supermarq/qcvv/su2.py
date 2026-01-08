@@ -56,7 +56,7 @@ def decay(x: float, single_qubit_noise: float, two_qubit_gate_fidelity: float) -
         two_qubit_gate_fidelity: The two qubit gate fidelity parameter.
 
     Returns:
-        The expected probability of measuring the |00> state.
+        The expected probability of measuring the ``|00>`` state.
     """
     return 3 / 4 * (1 - single_qubit_noise) * two_qubit_gate_fidelity**x + 0.25
 
@@ -209,9 +209,9 @@ class SU2(QCVVExperiment[SU2Results]):
 
     .. code::
 
-        0: ──|─Rr───Q───X───Q──|─ ^{n} ... ─|─Rr───X─|─ ^{N-n} ... ──Rf───M───
-             |      │       │  |            |        |                    │
-        1: ──|─Rr───Q───X───Q──|─      ... ─|─Rr───X─|─        ... ──Rf───M───
+        0: ──│─Rr───Q───X───Q──│─ ^{n} ... ─│─Rr───X─│─ ^{N-n} ... ──Rf───M───
+             │      │       │  │            │        │                    │
+        1: ──│─Rr───Q───X───Q──│─      ... ─│─Rr───X─│─        ... ──Rf───M───
 
     Where each :code:`Rr` gate is a randomly chosen :math:`SU(2)` rotation and the :code:`Rf` gates
     are single qubit :math:`SU(2)` rotations that in the absence of noise invert the preceding
