@@ -232,41 +232,6 @@ def deserialize_circuits(serialized_circuits: str) -> list[qiskit.QuantumCircuit
     return [_resolve_circuit(circuit) for circuit in circuits]
 
 
-def insert_times_and_durations(
-    circuit: qiskit.QuantumCircuit,
-    durations: Sequence[int],
-    start_times: Sequence[int],
-) -> qiskit.QuantumCircuit:
-    """Adds timing info to a circuit.
-
-    This is a workaround for https://github.com/Qiskit/qiskit/issues/11879.
-
-    Args:
-        circuit: The circuit to add timing information to.
-        durations: A list containing the duration of every instruction in `circuit`.
-        start_times: A list containing the start_time of every instruction in `circuit`.
-
-    Returns:
-        A new circuit, in which the `.duration` attribute of every delay gate has been filled-in,
-        as well as the `.duration` and `.op_start_times` attributes of the `circuit` itself.
-    """
-    new_circuit = circuit.copy_empty_like()
-    circuit_duration = 0
-    for inst, duration, start_time in zip(circuit, durations, start_times):
-        operation = inst.operation
-        if isinstance(operation, qiskit.circuit.delay.Delay):
-            operation = inst.operation.to_mutable()
-            operation.duration = duration
-            inst = inst.replace(operation=operation)
-        circuit_duration = max(circuit_duration, start_time + duration)
-        new_circuit.append(inst)
-    if len(new_circuit) == len(circuit):
-        new_circuit._op_start_times = start_times
-        new_circuit.duration = circuit_duration
-        return new_circuit
-    return circuit
-
-
 def _is_qiskit_gate(gate: qiskit.circuit.Instruction) -> bool:
     """Returns True if `gate` will be correctly resolved by QPY."""
     base_class = getattr(gate, "base_class", type(gate))
@@ -279,6 +244,9 @@ def _is_qiskit_gate(gate: qiskit.circuit.Instruction) -> bool:
             qiskit.circuit.Instruction,
             qiskit.circuit.Gate,
             qiskit.circuit.ControlledGate,
+        )
+        and not (  # https://github.com/Qiskit/qiskit/issues/10662
+            issubclass(base_class, qiskit.circuit.Delay) and gate.unit != "dt"
         )
         and not issubclass(  # https://github.com/Qiskit/qiskit/issues/11378
             base_class, qiskit.circuit.library.MSGate
@@ -325,46 +293,27 @@ def _prepare_circuit(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:
     Returns:
         A copy of the input circuit with unique custom instruction names.
     """
-    old_gates_by_name = {}
-    new_gates_by_name = {}
-
-    def _update_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instruction:
-        # Control flow operations contain nested circuit blocks; prepare them first
-        if isinstance(gate, qiskit.circuit.ControlFlowOp):
-            gate = gate.replace_blocks([_prepare_circuit(block) for block in gate.blocks])
-
-        # Check if this is a gate QPY already handles correctly
-        if _is_qiskit_gate(gate):
-            return gate
-
-        if gate.name not in old_gates_by_name:
-            new_gate = _prepare_gate(gate)
-            old_gates_by_name[gate.name] = [gate]
-            new_gates_by_name[gate.name] = [new_gate]
-            return new_gate
-
-        for i, other in enumerate(old_gates_by_name[gate.name]):
-            if gate is other or gate == other:
-                return new_gates_by_name[gate.name][i]
-
-        # Workaround for https://github.com/Qiskit/qiskit/issues/8941: wrap gate in a temporary
-        # instruction to prevent `.definition` from being overwritten
-        new_gate = _wrap_gate(gate)
-        old_gates_by_name[gate.name].append(gate)
-        new_gates_by_name[gate.name].append(new_gate)
-        return new_gate
-
     new_circuit = circuit.copy_empty_like()
     for inst in circuit:
-        new_inst = inst.replace(operation=_update_gate(inst.operation))
+        new_inst = inst.replace(operation=_prepare_gate(inst.operation))
         new_circuit.append(new_inst)
 
     return new_circuit
 
 
 def _prepare_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instruction:
+    # Control flow operations contain nested circuit blocks; prepare them first
+    if isinstance(gate, qiskit.circuit.ControlFlowOp):
+        gate = gate.replace_blocks([_prepare_circuit(block) for block in gate.blocks])
+
     # Check if this is a gate QPY already handles
     if _is_qiskit_gate(gate):
+        return gate
+
+    # Workaround for https://github.com/Qiskit/qiskit/issues/10662
+    if isinstance(gate, qiskit.circuit.Delay) and gate.unit != gate.params[-1]:
+        gate = gate.copy()
+        gate.params.append(gate.unit)
         return gate
 
     # Workaround for https://github.com/Qiskit/qiskit/issues/8794
@@ -412,24 +361,6 @@ def _prepare_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
     return new_gate
 
 
-def _wrap_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instruction:
-    """Wrap `gate` in a uniquely=name instruction containing only that gate in its `.definition`.
-
-    This functions as a workaround for https://github.com/Qiskit/qiskit/issues/8941.
-    """
-    name = f"__superstaq_wrapper_{id(gate)}"
-    circuit = qiskit.QuantumCircuit(gate.num_qubits, gate.num_clbits, name=name)
-    circuit.append(_prepare_gate(gate), range(gate.num_qubits), range(gate.num_clbits))
-    new_gate = circuit.to_instruction(label=gate.name)
-
-    # For backwards compatibility
-    compat_name = "parallel_gates" if isinstance(gate, qss.ParallelGates) else gate.name
-    new_gate.definition.name = compat_name
-    new_gate.params.extend(gate.params)
-
-    return new_gate
-
-
 def _resolve_circuit(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:
     """Reverse of the transformation performed by `_prepare_circuit`.
 
@@ -444,7 +375,7 @@ def _resolve_circuit(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:
 
 
 def _resolve_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instruction:
-    if gate.name.startswith(r"__superstaq_wrapper_"):
+    if gate.name.startswith(r"__superstaq_wrapper_"):  # For compatibility with qss <= 0.5.58
         return _resolve_gate(gate.definition[0].operation)
 
     if isinstance(gate, qiskit.circuit.ControlFlowOp):
