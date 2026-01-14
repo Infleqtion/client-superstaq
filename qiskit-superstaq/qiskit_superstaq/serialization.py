@@ -312,15 +312,8 @@ def _prepare_circuit(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:
     namely:
     * https://github.com/Qiskit/qiskit/issues/11378 (mishandling of `MSGate`)
     * https://github.com/Qiskit/qiskit/issues/11377 (mishandling of multi-controlled gates)
-    * https://github.com/Qiskit/qiskit/issues/8941 (incorrect definitions for gates sharing a name)
     * https://github.com/Qiskit/qiskit/issues/8794 (serialization error for non-default ctrl_state)
     * https://github.com/Qiskit/qiskit/issues/8549 (incorrect gate names in deserialized circuit)
-
-    Most significantly (#8941 above), QPY requires unique custom gates to have unique `.name`
-    attributes (including parameterized gates differing by just their `.params` attributes). This
-    routine ensures this by wrapping unequal gates with the same name into uniquely-named temporary
-    instructions. The original circuit can then be recovered using the `_resolve_circuit` function
-    below.
 
     Args:
         circuit: The `qiskit.QuantumCircuit` to be rewritten.
