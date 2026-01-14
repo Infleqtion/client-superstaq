@@ -240,19 +240,17 @@ def read_json(
         map(dict, json.loads(json_dict["final_logical_to_physicals"]))
     )
 
+    pulse_start_times = json_dict.get("pulse_start_times", [])
+    for circuit, start_times in zip(compiled_circuits, pulse_start_times, strict=False):
+        circuit._op_start_times = start_times
+
     pulse_gate_circuits = None
 
     if "pulse_gate_circuits" in json_dict:
         pulse_gate_circuits = qss.deserialize_circuits(json_dict["pulse_gate_circuits"])
-        pulse_durations = json_dict.get("pulse_durations")
-        pulse_start_times = json_dict.get("pulse_start_times")
-        if pulse_durations and pulse_start_times:
-            pulse_gate_circuits = [
-                qss.serialization.insert_times_and_durations(circuit, durations, start_times)
-                for circuit, durations, start_times in zip(
-                    pulse_gate_circuits, pulse_durations, pulse_start_times
-                )
-            ]
+
+        for circuit, start_times in zip(pulse_gate_circuits, pulse_start_times, strict=False):
+            circuit._op_start_times = start_times
 
     if circuits_is_list:
         return CompilerOutput(
