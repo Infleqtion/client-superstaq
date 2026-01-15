@@ -346,7 +346,29 @@ def test_gate_preparation_and_resolution(
 
     gate = base_class(*rng.uniform(-2 * np.pi, 2 * np.pi, num_params))
     assert qss.serialization._resolve_gate(qss.serialization._prepare_gate(gate)) == gate
-    assert qss.serialization._resolve_gate(qss.serialization._wrap_gate(gate)) == gate
+
+
+@pytest.mark.parametrize("base_class", test_gates, ids=lambda g: g.name)
+def test_legacy_wrapper_resolution(
+    rng: np.random.Generator,
+    base_class: type[qiskit.circuit.Instruction],
+) -> None:
+    num_params = test_gates[base_class]
+
+    gate = base_class(*rng.uniform(-2 * np.pi, 2 * np.pi, num_params))
+
+    name = f"__superstaq_wrapper_{id(gate)}"
+    circuit = qiskit.QuantumCircuit(gate.num_qubits, gate.num_clbits, name=name)
+    circuit.append(
+        qss.serialization._prepare_gate(gate), range(gate.num_qubits), range(gate.num_clbits)
+    )
+    new_gate = circuit.to_instruction(label=gate.name)
+
+    compat_name = "parallel_gates" if isinstance(gate, qss.ParallelGates) else gate.name
+    new_gate.definition.name = compat_name
+    new_gate.params.extend(gate.params)
+
+    assert qss.serialization._resolve_gate(new_gate) == gate
 
 
 def _check_serialization(*gates: qiskit.circuit.Instruction) -> None:
@@ -473,6 +495,9 @@ def test_qiskit_gate_workarounds() -> None:
     circuit.append(qiskit.circuit.library.MCU1Gate(2.2, 3, ctrl_state=6), range(4))
     circuit.append(qiskit.circuit.library.MCPhaseGate(1.1, 3), range(4))
     circuit.append(qiskit.circuit.library.MCPhaseGate(2.2, 3), range(4))
+    circuit.delay(10, unit="dt")
+    circuit.delay(1.234, unit="ns")
+    circuit.delay(1.2e3, unit="ps")
 
     subcircuit = circuit.copy()
     subcircuit.append(circuit, circuit.qubits)

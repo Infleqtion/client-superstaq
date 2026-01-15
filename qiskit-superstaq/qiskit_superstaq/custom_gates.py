@@ -366,6 +366,7 @@ class iXGate(qiskit.circuit.Gate):
         num_ctrl_qubits: int = 1,
         label: str | None = None,
         ctrl_state: str | int | None = None,
+        annotated: bool | None = None,
     ) -> qiskit.circuit.ControlledGate:
         """Method to return a controlled version of the gate.
 
@@ -373,10 +374,13 @@ class iXGate(qiskit.circuit.Gate):
             num_ctrl_qubits: Number of control qubits for the gate. Defaults to 1.
             label: An optional label for the gate. Defaults to None.
             ctrl_state: The control qubit state to use (e.g. '00'). Defaults to None.
+            annotated: Ignored.
 
         Returns:
             The `qiskit.circuit.ControlledGate` version of the gate.
         """
+        _ = annotated
+
         if num_ctrl_qubits == 2:
             gate = iCCXGate(ctrl_state=ctrl_state)
             gate.base_gate.label = self.label
@@ -421,6 +425,7 @@ class iXdgGate(qiskit.circuit.Gate):
         num_ctrl_qubits: int = 1,
         label: str | None = None,
         ctrl_state: str | int | None = None,
+        annotated: bool | None = None,
     ) -> qiskit.circuit.ControlledGate:
         """Method to return a controlled version of the gate.
 
@@ -428,10 +433,13 @@ class iXdgGate(qiskit.circuit.Gate):
             num_ctrl_qubits: Number of control qubits for the gate. Defaults to 1.
             label: An optional label for the gate. Defaults to None.
             ctrl_state: The control qubit state to use (e.g. '00'). Defaults to None.
+            annotated: Ignored.
 
         Returns:
             The `qiskit.circuit.ControlledGate` version of the gate.
         """
+        _ = annotated
+
         if num_ctrl_qubits == 2:
             gate = iCCXdgGate(ctrl_state=ctrl_state)
             gate.base_gate.label = self.label
