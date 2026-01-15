@@ -241,7 +241,7 @@ def read_json(
     )
 
     pulse_start_times = json_dict.get("pulse_start_times", [])
-    for circuit, start_times in zip(compiled_circuits, pulse_start_times, strict=False):
+    for circuit, start_times in zip(compiled_circuits, pulse_start_times):
         circuit._op_start_times = start_times
 
     pulse_gate_circuits = None
@@ -249,7 +249,7 @@ def read_json(
     if "pulse_gate_circuits" in json_dict:
         pulse_gate_circuits = qss.deserialize_circuits(json_dict["pulse_gate_circuits"])
 
-        for circuit, start_times in zip(pulse_gate_circuits, pulse_start_times, strict=False):
+        for circuit, start_times in zip(pulse_gate_circuits, pulse_start_times):
             circuit._op_start_times = start_times
 
     if circuits_is_list:
