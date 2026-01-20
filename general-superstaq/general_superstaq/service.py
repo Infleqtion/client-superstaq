@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import numbers
 import os
-from collections.abc import Mapping, Sequence
+from collections.abc import Hashable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 import general_superstaq as gss
@@ -24,8 +24,6 @@ from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClien
 
 if TYPE_CHECKING:
     import numpy.typing as npt
-
-TQuboKey = TypeVar("TQuboKey")
 
 CLIENT_VERSION = {
     "v0.2.0": _SuperstaqClient,
@@ -295,7 +293,7 @@ class Service:
 
     def submit_qubo(
         self,
-        qubo: Mapping[tuple[TQuboKey, ...], float],
+        qubo: Mapping[tuple[gss.typing.TQuboKey, ...], float],
         target: str = "ss_unconstrained_simulator",
         repetitions: int = 10,
         method: str = "sim_anneal",
@@ -306,7 +304,7 @@ class Service:
         dry_run: bool = False,
         random_seed: int | None = None,
         **kwargs: object,
-    ) -> list[dict[TQuboKey, int]]:
+    ) -> list[dict[gss.typing.TQuboKey, int]]:
         """Solves a submitted QUBO problem via annealing.
 
         This method returns any number of specified dictionaries that seek the minimum of
