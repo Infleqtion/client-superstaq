@@ -24,7 +24,7 @@ import re
 import sys
 import textwrap
 import urllib.request
-from collections.abc import Collection, Iterable
+from collections.abc import Iterable
 
 import packaging.version
 
