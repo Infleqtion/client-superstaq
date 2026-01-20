@@ -41,7 +41,7 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, NoReturn, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, NoReturn
 
 import numpy as np
 import requests

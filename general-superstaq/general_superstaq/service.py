@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import numbers
 import os
-from collections.abc import Hashable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING, Any, overload
 
 import general_superstaq as gss
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
