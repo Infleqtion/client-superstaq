@@ -67,7 +67,6 @@ def deserialize_circuits(serialized_circuits: str) -> list[cirq.Circuit]:
 def deserialize_qiskit_circuits(
     serialized_qiskit_circuits: str,
     circuits_is_list: bool,
-    pulse_durations: Sequence[Sequence[int]] | None = None,
     pulse_start_times: Sequence[Sequence[int]] | None = None,
 ) -> list[object] | None:
     """Deserializes `qiskit.QuantumCircuit` objects, if possible; otherwise warns the user.
@@ -76,8 +75,6 @@ def deserialize_qiskit_circuits(
         serialized_qiskit_circuits: Qiskit circuits serialized via `qss.serialize_circuits()`.
         circuits_is_list: Whether to refer to "circuits" (plural) or "circuit" (singular) in warning
             messages.
-        pulse_durations: A list of lists of pulse durations, where each list contains the durations
-            of every op in the corresponding (serialized) circuit.
         pulse_start_times: A list of lists of start times, where each list contains the start times
             of every op in the corresponding (serialized) circuit.
 
@@ -110,13 +107,10 @@ def deserialize_qiskit_circuits(
                 stacklevel=2,
             )
         else:
-            if pulse_durations and pulse_start_times:
-                pulse_gate_circuits = [
-                    qss.serialization.insert_times_and_durations(circuit, durations, start_times)
-                    for circuit, durations, start_times in zip(
-                        pulse_gate_circuits, pulse_durations, pulse_start_times
-                    )
-                ]
+            if pulse_start_times:
+                for circuit, start_times in zip(pulse_gate_circuits, pulse_start_times):
+                    circuit._op_start_times = start_times
+
             return pulse_gate_circuits
 
     else:
