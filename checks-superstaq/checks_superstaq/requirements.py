@@ -36,7 +36,7 @@ def run(
     *args: str,
     include: str | Iterable[str] = "*requirements.txt",
     exclude: str | Iterable[str] = "",
-    upstream_match: str = "*superstaq*",
+    upstream_match: str | Iterable[str] = ("*superstaq*", "supermarq"),
     silent: bool = False,
 ) -> int:
     """Checks that:
@@ -47,7 +47,7 @@ def run(
         *args: Command line arguments.
         include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
         exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
-        upstream_match: String to match package name and version.
+        upstream_match: String(s) to match package name and version.
         silent: If True, restrict printing to warning and error messages.
 
     Returns:
@@ -79,12 +79,13 @@ def run(
         return 0
 
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
+    upstream_matches = [upstream_match] if isinstance(upstream_match, str) else list(upstream_match)
 
     # check all requirements files
     requirements_to_fix = {}
     for req_file in files:
         needs_cleanup, requirements = _inspect_req_file(
-            req_file, parsed_args.only_sort, upstream_match, silent
+            req_file, parsed_args.only_sort, upstream_matches, silent
         )
         if needs_cleanup:
             requirements_to_fix[req_file] = requirements
@@ -97,7 +98,7 @@ def run(
 
 
 def _inspect_req_file(
-    req_file: str, only_sort: bool, upstream_match: str, silent: bool
+    req_file: str, only_sort: bool, upstream_matches: list[str], silent: bool
 ) -> tuple[bool, list[str]]:
     # read in requirements line-by-line
     with open(os.path.join(check_utils.root_dir, req_file)) as file:
@@ -117,7 +118,7 @@ def _inspect_req_file(
 
     if not only_sort:
         needs_cleanup |= _check_package_versions(
-            req_file, requirements, upstream_match, silent, strict=True
+            req_file, requirements, upstream_matches, silent, strict=True
         )
 
     return needs_cleanup, requirements
@@ -160,10 +161,10 @@ def _sort_requirements(requirements: list[str]) -> tuple[bool, list[str]]:
 
 
 def _check_package_versions(
-    req_file: str, requirements: list[str], match: str, silent: bool, strict: bool
+    req_file: str, requirements: list[str], matches: list[str], silent: bool, strict: bool
 ) -> bool:
-    """Check whether package requirements matching 'match' are up-to-date with their latest
-    versions.
+    """Check whether package requirements matching at least one string in `matches` are up-to-date
+    with their latest versions.
     Print warnings if matching requirements are out of date.  Return whether the requirements file
     *must* be updated, i.e., return 'True' iff packages are out of date and 'strict == True'.
     """
@@ -172,7 +173,7 @@ def _check_package_versions(
     up_to_date = True
     for idx, req in enumerate(requirements):
         package = _get_package_name(req)
-        if not fnmatch.fnmatch(package, match):
+        if not any(fnmatch.fnmatch(package, match) for match in matches):
             # this is not an upstream package
             continue
 
