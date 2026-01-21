@@ -14,9 +14,12 @@
 
 from __future__ import annotations
 
-from typing import Any, TypedDict
+from collections.abc import Hashable
+from typing import Any, TypedDict, TypeVar
 
 import pydantic
+
+TQuboKey = TypeVar("TQuboKey", bound=Hashable)
 
 
 class Job(TypedDict):

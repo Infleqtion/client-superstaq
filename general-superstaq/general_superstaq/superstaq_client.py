@@ -41,7 +41,7 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, NoReturn, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, NoReturn
 
 import numpy as np
 import requests
@@ -50,8 +50,6 @@ import general_superstaq as gss
 
 if TYPE_CHECKING:
     import numpy.typing as npt
-
-TQuboKey = TypeVar("TQuboKey")
 
 RECOGNISED_CIRCUIT_TYPES = Literal[gss.models.CircuitType.CIRQ, gss.models.CircuitType.QISKIT]
 """The circuit types that are currently implemented within the `SuperstaqClient`."""
@@ -701,7 +699,7 @@ class _AbstractUserClient(_BaseSuperstaqClient, ABC):
     @abstractmethod
     def submit_qubo(
         self,
-        qubo: Mapping[tuple[TQuboKey, ...], float],
+        qubo: Mapping[tuple[gss.typing.TQuboKey, ...], float],
         target: str,
         repetitions: int,
         method: str = "sim_anneal",
@@ -1122,7 +1120,7 @@ class _SuperstaqClient(_AbstractUserClient):
 
     def submit_qubo(
         self,
-        qubo: Mapping[tuple[TQuboKey, ...], float],
+        qubo: Mapping[tuple[gss.typing.TQuboKey, ...], float],
         target: str,
         repetitions: int,
         method: str = "sim_anneal",
@@ -1618,7 +1616,7 @@ class _SuperstaqClientV3(_AbstractUserClient):
 
     def submit_qubo(
         self,
-        qubo: Mapping[tuple[TQuboKey, ...], float],
+        qubo: Mapping[tuple[gss.typing.TQuboKey, ...], float],
         target: str,
         repetitions: int,
         method: str = "sim_anneal",
