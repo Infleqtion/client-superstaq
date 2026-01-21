@@ -519,7 +519,7 @@ def _handle_qiskit_circuit(
                 )
                 conditional_circ += sub_cond_circ
                 global_phase += sub_phase
-            cirq_ops = [
+            cirq_ops: list[cirq.Operation] = [
                 op.with_classical_controls(*conditions) for op in conditional_circ.all_operations()
             ]
         else:
