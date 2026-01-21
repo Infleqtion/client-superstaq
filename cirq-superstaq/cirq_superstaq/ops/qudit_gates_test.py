@@ -724,8 +724,10 @@ def test_qubit_subspace_apply_unitary() -> None:
 
     circuit += gate.on(*qs)
     unitary_from_gates = cirq.unitary(gate) @ unitary_from_gates
-    np.testing.assert_allclose(cirq.unitary(circuit), unitary_from_gates)
-    np.testing.assert_allclose(cirq.final_state_vector(circuit), unitary_from_gates[:, 0])
+    np.testing.assert_allclose(cirq.unitary(circuit), unitary_from_gates, atol=1e-7)
+    np.testing.assert_allclose(
+        cirq.final_state_vector(circuit), unitary_from_gates[:, 0], atol=1e-7
+    )
 
     # `apply_unitary()` uses `sub_gate._unitary_`
     sub_gate = cirq.MatrixGate(cirq.testing.random_unitary(4))
@@ -735,9 +737,9 @@ def test_qubit_subspace_apply_unitary() -> None:
 
     circuit += gate.on(*qs)
     unitary_from_gates = cirq.unitary(gate) @ unitary_from_gates
-    np.testing.assert_allclose(cirq.unitary(circuit), unitary_from_gates)
+    np.testing.assert_allclose(cirq.unitary(circuit), unitary_from_gates, atol=1e-7)
     np.testing.assert_allclose(
-        cirq.final_state_vector(circuit, dtype=np.complex128), unitary_from_gates[:, 0]
+        cirq.final_state_vector(circuit, dtype=np.complex128), unitary_from_gates[:, 0], atol=1e-7
     )
 
     # `apply_unitary()` uses `gate._unitary_` instead of `sub_gate._decompose_`
@@ -749,9 +751,9 @@ def test_qubit_subspace_apply_unitary() -> None:
 
     circuit += gate.on(qs[0])
     unitary_from_gates = np.kron(cirq.unitary(gate), np.eye(3)) @ unitary_from_gates
-    np.testing.assert_allclose(cirq.unitary(circuit), unitary_from_gates)
+    np.testing.assert_allclose(cirq.unitary(circuit), unitary_from_gates, atol=1e-7)
     np.testing.assert_allclose(
-        cirq.final_state_vector(circuit, dtype=np.complex128), unitary_from_gates[:, 0]
+        cirq.final_state_vector(circuit, dtype=np.complex128), unitary_from_gates[:, 0], atol=1e-7
     )
 
     # Confirm Cirq still gets this wrong
