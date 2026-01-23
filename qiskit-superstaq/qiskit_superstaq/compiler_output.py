@@ -116,7 +116,7 @@ class CompilerOutput:  # noqa: PLW1641
         final_logical_to_physicals: (
             dict[int, int] | list[dict[int, int]] | list[list[dict[int, int]]]
         ),
-        pulse_gate_circuits: qiskit.QuantumCircuit | list[qiskit.QuantumCircuit] = None,
+        pulse_gate_circuits: qiskit.QuantumCircuit | list[qiskit.QuantumCircuit] | None = None,
         seq: qtrl.sequencer.Sequence | None = None,
         jaqal_programs: list[str] | None = None,
     ) -> None:
@@ -129,7 +129,7 @@ class CompilerOutput:  # noqa: PLW1641
             final_logical_to_physicals: Dictionary or list of dictionaries specifying final mapping
                 from logical to physical qubits.
             pulse_gate_circuits: Pulse-gate `qiskit.QuantumCircuit` or list thereof specifying the
-                pulse compilation.
+                pulse compilation, if available (`None` otherwise).
             seq: `qtrl.sequencer.Sequence` pulse sequence if `qtrl` is available locally.
             jaqal_programs: The Jaqal programs as individual strings.
         """
