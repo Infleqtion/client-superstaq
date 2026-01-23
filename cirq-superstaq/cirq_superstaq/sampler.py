@@ -45,7 +45,7 @@ class Sampler(cirq.Sampler):
             "Insert superstaq token that you received from https://superstaq.infleqtion.com"
             )
         q0, q1 = cirq.LineQubit.range(2)
-        sampler = service.sampler("ibmq_brisbane_qpu")
+        sampler = service.sampler("ibmq_fez_qpu")
         circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1), cirq.measure(q0))
         print(sampler.sample(circuit, repetitions=5))
 
