@@ -67,11 +67,11 @@ TARGET_LIST = {
         "retired": False,
     },
     "ibmq_brisbane_qpu": {
-        "supports_submit": True,
+        "supports_submit": False,
         "supports_submit_qubo": False,
         "supports_compile": True,
-        "available": True,
-        "retired": False,
+        "available": False,
+        "retired": True,
     },
     "ibmq_fake-athens_qpu": {
         "supports_submit": True,
