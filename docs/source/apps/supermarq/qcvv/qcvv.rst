@@ -20,6 +20,7 @@ Alternatively for pre-build experiments that can be used out of the box see
     qcvv_irb_css
     qcvv_su2_css
     qcvv_xeb_css
+    qcvv_cb_css
 
 .. note::
 
