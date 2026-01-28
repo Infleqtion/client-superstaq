@@ -18,6 +18,7 @@ Alternatively for pre-build experiments that can be used out of the box see
     :maxdepth: 1
 
     qcvv_irb_css
+    qcvv_ssb_css
     qcvv_su2_css
     qcvv_xeb_css
 
