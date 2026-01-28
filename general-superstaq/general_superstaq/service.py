@@ -435,12 +435,12 @@ class Service:
                     f"{pulses_file_path} and {variables_file_path} exist. Please try different "
                     "filenames to write to, or pass overwrite=True to overwrite the existing files."
                 )
-            elif not overwrite and pulses_file_exists:
+            if not overwrite and pulses_file_exists:
                 raise ValueError(
                     f"{pulses_file_path} exists. Please try a different filename to write to, "
                     "or pass overwrite=True to overwrite the existing file."
                 )
-            elif not overwrite and variables_file_exists:
+            if not overwrite and variables_file_exists:
                 raise ValueError(
                     f"{variables_file_path} exists Please try a different filename to write to, "
                     "or pass overwrite=True to overwrite the existing file."
@@ -457,23 +457,22 @@ class Service:
 
             return None
 
-        elif pulses_file_path or variables_file_path:
+        if pulses_file_path or variables_file_path:
             raise ValueError("Please provide both pulses and variables file paths, or neither.")
 
-        else:
-            try:
-                import yaml  # noqa: PLC0415
-            except ImportError:
-                raise ModuleNotFoundError(
-                    "The PyYAML package is required to parse AQT configuration files. "
-                    "You can install it using 'pip install pyyaml'."
-                )
+        try:
+            import yaml  # noqa: PLC0415
+        except ImportError:
+            raise ModuleNotFoundError(
+                "The PyYAML package is required to parse AQT configuration files. "
+                "You can install it using 'pip install pyyaml'."
+            )
 
-            config_dict = self.aqt_get_configs()
-            pulses = yaml.safe_load(config_dict["pulses"])
-            variables = yaml.safe_load(config_dict["variables"])
+        config_dict = self.aqt_get_configs()
+        pulses = yaml.safe_load(config_dict["pulses"])
+        variables = yaml.safe_load(config_dict["variables"])
 
-            return pulses, variables
+        return pulses, variables
 
     def submit_aces(
         self,

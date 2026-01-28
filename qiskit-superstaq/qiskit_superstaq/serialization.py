@@ -218,16 +218,15 @@ def deserialize_circuits(serialized_circuits: str) -> list[qiskit.QuantumCircuit
                 "Circuits failed to deserialize. This is likely because your version of Qiskit "
                 f"({qiskit.__version__}) is out of date. Consider updating it."
             )
-        else:
-            # Otherwise there is probably a more complicated issue.
-            raise ValueError(
-                "Circuits failed to deserialize. Please contact superstaq@infleqtion.com or file a "
-                "report at https://github.com/Infleqtion/client-superstaq/issues containing "
-                "the following information (as well as any other relevant context):\n\n"
-                f"qiskit-superstaq version: {qss.__version__}\n"
-                f"qiskit version: {qiskit.__version__}\n"
-                f"error: {e!r}"
-            )
+        # Otherwise there is probably a more complicated issue.
+        raise ValueError(
+            "Circuits failed to deserialize. Please contact superstaq@infleqtion.com or file a "
+            "report at https://github.com/Infleqtion/client-superstaq/issues containing "
+            "the following information (as well as any other relevant context):\n\n"
+            f"qiskit-superstaq version: {qss.__version__}\n"
+            f"qiskit version: {qiskit.__version__}\n"
+            f"error: {e!r}"
+        )
 
     return [_resolve_circuit(circuit) for circuit in circuits]
 

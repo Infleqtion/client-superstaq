@@ -192,7 +192,7 @@ def _validate_ibm_channel(ibm_channel: str) -> str:
             "use 'ibm_quantum_platform' (or equivalently, the older 'ibm_cloud') and the "
             "corresponding channel token.",
         )
-    elif ibm_channel == "ibm_cloud":
+    if ibm_channel == "ibm_cloud":
         warnings.warn(
             "The 'ibm_cloud' channel will be deprecated in the future. Instead, consider using "
             "'ibm_quantum_platform' (the newer version which points to the same channel and works "

@@ -108,7 +108,7 @@ def _inspect_req_file(
         error = f"{req_file} appears to contain lines that are not valid pip requirements"
         if req_file == "requirements.txt":
             raise SyntaxError(check_utils.failure(error))
-        elif not silent:
+        if not silent:
             print(check_utils.warning(error))  # noqa: T201
         return False, []  # file cannot be cleaned up, and there are no requirements to track
 

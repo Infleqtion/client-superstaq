@@ -63,7 +63,7 @@ class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
         if isinstance(other, QuditSwapGate):
             return other.dimension == self.dimension
 
-        elif self.dimension == 2:
+        if self.dimension == 2:
             return cirq.equal_up_to_global_phase(
                 other, cirq.SWAP, atol=atol
             ) or cirq.equal_up_to_global_phase(cirq.SWAP, other, atol=atol)

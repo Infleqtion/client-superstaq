@@ -214,9 +214,8 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             # into a single one that comma-separates the individual jobs.
             job_id = ",".join(result["job_ids"])
             return qss.SuperstaqJob(self, job_id)
-        else:
-            job_id_v3 = result["job_id"]
-            return qss.SuperstaqJobV3(self, job_id_v3)
+        job_id_v3 = result["job_id"]
+        return qss.SuperstaqJobV3(self, job_id_v3)
 
     def retrieve_job(self, job_id: str | uuid.UUID) -> qss.SuperstaqJob | qss.SuperstaqJobV3:
         """Gets a job that has been created on the Superstaq API.
@@ -240,8 +239,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         )
         if isinstance(self._provider._client, _SuperstaqClient):
             return qss.SuperstaqJob(self, str(job_id))
-        else:
-            return qss.SuperstaqJobV3(self, job_id)
+        return qss.SuperstaqJobV3(self, job_id)
 
     def compile(
         self,
@@ -265,13 +263,13 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             if self.name.startswith("ibmq_"):
                 return self.ibmq_compile(circuits, **kwargs)
 
-            elif self.name.startswith("aqt_"):
+            if self.name.startswith("aqt_"):
                 return self.aqt_compile(circuits, **kwargs)
 
-            elif self.name.startswith("qscout_"):
+            if self.name.startswith("qscout_"):
                 return self.qscout_compile(circuits, **kwargs)
 
-            elif self.name.startswith("cq_"):
+            if self.name.startswith("cq_"):
                 return self.cq_compile(circuits, **kwargs)
 
         request_json = self._get_compile_request_json(circuits, **kwargs)
