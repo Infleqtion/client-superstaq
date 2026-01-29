@@ -83,7 +83,7 @@ def validate_target(target: str) -> str:
     if not match:
         raise ValueError(
             f"{target!r} does not have a valid string format. Valid target strings should be in "
-            "the form '<provider>_<device>_<type>', e.g. 'ibmq_brisbane_qpu'."
+            "the form '<provider>_<device>_<type>', e.g. 'ibmq_fez_qpu'."
         )
 
     _, _, device_type = match.groups()

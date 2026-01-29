@@ -731,7 +731,7 @@ def test_service_qscout_compile_multiple(mock_qscout_compile: mock.MagicMock) ->
     }
 
     service = css.Service(api_key="key", remote_host="http://example.com")
-    out = service.qscout_compile(circuits)
+    out = service.qscout_compile(circuits, atol=1e-3)
     assert out.circuits == circuits
     assert out.initial_logical_to_physicals == initial_logical_to_physicals
     assert out.final_logical_to_physicals == final_logical_to_physicals
@@ -741,6 +741,7 @@ def test_service_qscout_compile_multiple(mock_qscout_compile: mock.MagicMock) ->
         "mirror_swaps": False,
         "base_entangling_gate": "xx",
         "num_qubits": 2,
+        "atol": 1e-3,
     }
 
     with pytest.raises(ValueError, match=r"At least 2 qubits are required"):
@@ -776,18 +777,19 @@ def test_qscout_compile_swap_mirror(
         "mirror_swaps": mirror_swaps,
         "base_entangling_gate": "xx",
         "num_qubits": 1,
+        "atol": 1e-8,
     }
 
 
-@mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
-def test_qscout_compile_error_rates(mock_qscout_compile: mock.MagicMock) -> None:
+@mock.patch("requests.Session.post")
+def test_qscout_compile_error_rates_and_atol_map(mock_post: mock.MagicMock) -> None:
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.measure(q0))
     final_logical_to_physical = {q0: q0}
 
     jaqal_program = ""
 
-    mock_qscout_compile.return_value = {
+    mock_post.return_value.json = lambda: {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
         "initial_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
@@ -795,17 +797,34 @@ def test_qscout_compile_error_rates(mock_qscout_compile: mock.MagicMock) -> None
     }
 
     service = css.Service(api_key="key", remote_host="http://example.com")
+
     out = service.qscout_compile(circuit, error_rates={(0, 1): 0.3, (0, 2): 0.2, (1,): 0.1})
     assert out.circuit == circuit
     assert out.initial_logical_to_physical == final_logical_to_physical
     assert out.final_logical_to_physical == final_logical_to_physical
     assert out.jaqal_program == jaqal_program
-    mock_qscout_compile.assert_called_once()
-    assert json.loads(mock_qscout_compile.call_args[0][0]["options"]) == {
+    mock_post.assert_called_once()
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "base_entangling_gate": "xx",
+        "mirror_swaps": False,
+        "atol": 1e-8,
+        "error_rates": [[[0, 1], 0.3], [[0, 2], 0.2], [[1], 0.1]],
+        "num_qubits": 3,
+    }
+
+    out = service.qscout_compile(
+        circuit,
+        error_rates={(0, 1): 0.3, (0, 2): 0.2, (1,): 0.1},
+        atol_map={(0, 3): 0.02, (1,): 0.01},
+    )
+    assert mock_post.call_count == 2
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
         "base_entangling_gate": "xx",
         "mirror_swaps": False,
         "error_rates": [[[0, 1], 0.3], [[0, 2], 0.2], [[1], 0.1]],
-        "num_qubits": 3,
+        "atol": 1e-8,
+        "atol_map": [[[0, 3], 0.02], [[1], 0.01]],
+        "num_qubits": 4,
     }
 
 
@@ -838,6 +857,7 @@ def test_qscout_compile_base_entangling_gate(
         "mirror_swaps": False,
         "base_entangling_gate": base_entangling_gate,
         "num_qubits": 1,
+        "atol": 1e-8,
     }
 
 
@@ -876,6 +896,7 @@ def test_qscout_compile_num_qubits(mock_post: mock.MagicMock) -> None:
         "mirror_swaps": False,
         "base_entangling_gate": "xx",
         "num_qubits": 5,
+        "atol": 1e-8,
     }
 
 

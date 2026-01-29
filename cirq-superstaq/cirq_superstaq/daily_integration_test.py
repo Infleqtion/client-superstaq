@@ -158,7 +158,7 @@ def test_get_resource_estimate(service: css.Service) -> None:
 
     resource_estimate = service.resource_estimate(circuit1, "ss_unconstrained_simulator")
 
-    assert resource_estimate == ResourceEstimate(2, 1, 3)
+    assert resource_estimate == ResourceEstimate(1, 1, 3)
 
     circuit2 = cirq.Circuit(cirq.H(q1), cirq.CNOT(q0, q1), cirq.CZ(q0, q1), cirq.measure(q1))
 
@@ -166,7 +166,7 @@ def test_get_resource_estimate(service: css.Service) -> None:
 
     resource_estimates = service.resource_estimate(circuits, "ss_unconstrained_simulator")
 
-    assert resource_estimates == [ResourceEstimate(2, 1, 3), ResourceEstimate(2, 2, 4)]
+    assert resource_estimates == [ResourceEstimate(1, 1, 3), ResourceEstimate(1, 2, 4)]
 
 
 def test_get_targets(service: css.Service) -> None:
