@@ -29,6 +29,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
+from enum import StrEnum
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -47,6 +48,10 @@ if TYPE_CHECKING:
 # Single-qubit basis rotations.
 STRING_TO_ROTATION = {"I": cirq.I, "X": cirq.Y**0.5, "Y": cirq.X ** (-0.5), "Z": cirq.I}
 STRING_TO_PAULI = {"I": cirq.I, "X": cirq.X, "Y": cirq.Y, "Z": cirq.Z}
+
+class Process(StrEnum):
+    DRESSED = "dressed"
+    UNDRESSED = "undressed"
 
 
 @dataclass
@@ -135,23 +140,20 @@ class CBResults(QCVVResults):
             A matplotlib figure containing the plots.
         """
         processes = self._channel_expectations.process.unique()
-        fig, axs = plt.subplots(len(processes), 2, figsize=(15, 10))
+        fig, axs = plt.subplots(len(processes), 2, figsize=(15, 10), squeeze=False)
 
-        if not self.experiment._undressed_process:
-            self._plot_decay("dressed", axs[0])
-            self._plot_fidelities("dressed", axs[1])
-        else:
-            self._plot_decay("dressed", axs[0, 0])
-            self._plot_fidelities("dressed", axs[0, 1])
-            self._plot_decay("undressed", axs[1, 0])
-            self._plot_fidelities("undressed", axs[1, 1])
+        self._plot_decay(Process.DRESSED, axs[0, 0])
+        self._plot_fidelities(Process.DRESSED, axs[0, 1])
+        if self.experiment._undressed_process:
+            self._plot_decay(Process.UNDRESSED, axs[1, 0])
+            self._plot_fidelities(Process.UNDRESSED, axs[1, 1])
 
         if filename is not None:
             fig.savefig(filename, bbox_inches="tight")
 
         return fig
 
-    def _plot_decay(self, process: str, ax: plt.Axes) -> None:
+    def _plot_decay(self, process: Process, ax: plt.Axes) -> None:
         """Plots the decay term.
 
         Args:
@@ -186,7 +188,7 @@ class CBResults(QCVVResults):
         ax.set_ylabel("Expectation value")
         ax.legend()
 
-    def _plot_fidelities(self, process: str, ax: plt.Axes) -> None:
+    def _plot_fidelities(self, process: Process, ax: plt.Axes) -> None:
         """Plots the process fidelity and the channel fidelities.
 
         Args:
@@ -776,7 +778,7 @@ class CB(QCVVExperiment[CBResults]):
             aggregate_pauli_superoperator
         )  # "Circuit right" = C P
         aggregate_pauli_phase = complex(aggregate_pauli_superoperator.coefficient)
-        if aggregate_pauli_phase.real == 0:
+        if np.isclose(aggregate_pauli_phase.real, 0):
             aggregate_pauli_superoperator *= (
                 -1
             )  # Has the effect of conjugating coefficient if it's imaginary
