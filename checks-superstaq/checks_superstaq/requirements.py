@@ -209,9 +209,8 @@ def _get_latest_version(package: str, silent: bool) -> str:
 
 def _get_local_version(package: str) -> str | None:
     """Retrieve the local version of a package (if installed)."""
-    base_package = package.split("[", maxsplit=1)[
-        0
-    ]  # remove options: package_name[options] --> package_name
+    # Remove options: package_name[options] --> package_name
+    base_package = package.split("[", maxsplit=1)[0]
     sanitized_package_name = base_package.replace("-", "_").lower()
     try:
         module = importlib.import_module(sanitized_package_name)
@@ -224,9 +223,8 @@ def _get_local_version(package: str) -> str | None:
 
 def _get_pypi_version(package: str, silent: bool) -> str | None:
     """Retrieve the latest version of a package on PyPI (if found)."""
-    base_package = package.split("[", maxsplit=1)[
-        0
-    ]  # remove options: package_name[options] --> package_name
+    # Remove options: package_name[options] --> package_name
+    base_package = package.split("[", maxsplit=1)[0]
     pypi_url = f"https://pypi.org/pypi/{base_package}/json"
     try:
         package_info = urllib.request.urlopen(pypi_url).read().decode()
