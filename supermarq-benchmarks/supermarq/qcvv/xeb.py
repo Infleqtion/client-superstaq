@@ -275,7 +275,7 @@ class XEBResults(QCVVResults):
         for k, bitstring in enumerate(indices):
             ax = axs[f"P({bitstring})"]
 
-            data = df[df["bitstring"] == bitstring].pivot(
+            data = df[df["bitstring"] == bitstring].pivot_table(
                 index="circuit_realization", columns="cycle_depth", values="value"
             )
             cmap = mpl.colormaps["rocket"]

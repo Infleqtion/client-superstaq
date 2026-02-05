@@ -274,18 +274,17 @@ class _BaseSuperstaqClient:
                 self._prompt_accept_terms_of_use()
                 return
 
-            elif response.json() == ("You must validate your registered email."):
+            if response.json() == ("You must validate your registered email."):
                 raise gss.SuperstaqServerException(
                     "You must validate your registered email.",
                     response.status_code,
                 )
 
-            else:
-                raise gss.SuperstaqServerException(
-                    '"Not authorized" returned by Superstaq API.  '
-                    "Check to ensure you have supplied the correct API key.",
-                    response.status_code,
-                )
+            raise gss.SuperstaqServerException(
+                '"Not authorized" returned by Superstaq API.  '
+                "Check to ensure you have supplied the correct API key.",
+                response.status_code,
+            )
 
         if response.status_code == requests.codes.gateway_timeout:
             # Job took too long. Don't retry, it probably won't be any faster.

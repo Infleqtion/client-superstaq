@@ -418,7 +418,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         """
         if isinstance(key, numbers.Integral):
             return self.samples[key]
-        elif isinstance(key, str):
+        if isinstance(key, str):
             key = uuid.UUID(key)
         elif not isinstance(key, uuid.UUID):
             raise TypeError(f"Key must be int, str or uuid.UUID, not {type(key)}")
@@ -426,12 +426,9 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         matching_samples = [s for s in self.samples if s.uuid == key]
         if len(matching_samples) == 1:
             return matching_samples[0]
-        elif len(matching_samples) == 0:
+        if len(matching_samples) == 0:
             raise KeyError(f"No sample found with UUID {key}")
-        else:
-            raise RuntimeError(
-                "Multiple samples found with matching key. Something has gone wrong."
-            )
+        raise RuntimeError("Multiple samples found with matching key. Something has gone wrong.")
 
     def __iter__(self) -> Iterator[Sample]:
         return iter(self.samples)
