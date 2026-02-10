@@ -248,23 +248,16 @@ class CBResults(QCVVResults):
         Returns:
             A data frame of the full results needed to analyse the experiment.
         """
-        records = []
         data: pd.DataFrame = self.data
-        for _, entry in data.iterrows():
-            probabilities = dict(entry.filter(regex=f"[01]{{{self.num_qubits}}}"))
-            records.append(
-                {
-                    "pauli_channel": entry.pauli_channel,
-                    "cycle_depth": entry.cycle_depth,
-                    "expectation": self._sequence_expectation_value(
-                        entry.c_of_p,
-                        probabilities,
-                    ),
-                    "circuit": entry.circuit,
-                    **probabilities,
-                }
-            )
-        return pd.DataFrame(records)
+        prob_cols = data.filter(regex=f"[01]{{{self.num_qubits}}}").columns
+        expectations = data.apply(
+            lambda row: self._sequence_expectation_value(row.c_of_p, row[prob_cols].to_dict()),
+            axis=1,
+        )
+        records = data[["pauli_channel", "cycle_depth", "circuit"]].copy()
+        records["expectation"] = expectations
+
+        return records
 
     def _sequence_expectation_value(
         self, c_of_p: cirq.PauliString[cirq.Qid], probabilities: dict[str, float]
