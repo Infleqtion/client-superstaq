@@ -133,6 +133,13 @@ def test_num_samples_cb_init() -> None:
     assert len(experiment.samples) == 16
 
 
+def test_non_CZ_target_gateset() -> None:
+    circuit = cirq.Circuit([cirq.T(cirq.LineQubit(0))])
+    tableau = cirq.CliffordTableau(1)
+    with pytest.raises(TypeError, match="gate must be either"):
+        CB._apply_circuit_to_tableau(circuit=circuit, tableau=tableau)
+
+
 def test_find_process_order() -> None:
     qubits = cirq.LineQubit.range(2)
     process = cirq.Circuit([cirq.H(qubits[0]), cirq.CX(qubits[0], qubits[1])])
@@ -453,11 +460,11 @@ def test_results_analyse(dressed_cb_results: CBResults) -> None:
     dressed_cb_results.analyze(plot_results=False, print_results=False)
 
     np.testing.assert_allclose(
-        dressed_cb_results._channel_expectations["expectation_mean"].values,
+        dressed_cb_results._channel_expectations["mean_exp"].values,
         [0.85, 0.65, 0.75, 0.60],
     )
     np.testing.assert_allclose(
-        dressed_cb_results._channel_expectations["expectation_delta"].values,
+        dressed_cb_results._channel_expectations["std_exp"].values,
         [0, 0, 0, 0],
         atol=1e-2,
     )
