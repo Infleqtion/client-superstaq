@@ -112,8 +112,8 @@ class CBResults(QCVVResults):
             if self._undressed_process_fidelity_estimate is None:
                 raise self._not_analyzed
             return self._undressed_process_fidelity_estimate
-        else:
-            raise RuntimeError("Undressed process fidelity is not available for this experiment.")
+
+        raise RuntimeError("Undressed process fidelity is not available for this experiment.")
 
     @property
     def undressed_process_fidelity_std(self) -> float:
@@ -127,8 +127,8 @@ class CBResults(QCVVResults):
             if self._undressed_process_fidelity_estimate_std is None:
                 raise self._not_analyzed
             return self._undressed_process_fidelity_estimate_std
-        else:
-            raise RuntimeError("Undressed process fidelity is not available for this experiment.")
+
+        raise RuntimeError("Undressed process fidelity is not available for this experiment.")
 
     def plot_results(
         self,
@@ -304,7 +304,7 @@ class CBResults(QCVVResults):
             records.groupby(["pauli_channel", "cycle_depth", "circuit"])
             .agg(mean_exp=("expectation", "mean"), std_exp=("expectation", "std"))
             .reset_index()
-            .pivot(
+            .pivot_table(
                 columns=["cycle_depth", "circuit"],
                 values=["mean_exp", "std_exp"],
                 index="pauli_channel",
@@ -326,8 +326,8 @@ class CBResults(QCVVResults):
                     + (mean_values["std_exp", d, "process"] / mean_values["mean_exp", d, "process"])
                     ** 2
                 )
-                mean_values.drop(("mean_exp", d, "identity"), axis=1, inplace=True)
-                mean_values.drop(("std_exp", d, "identity"), axis=1, inplace=True)
+                mean_values = mean_values.drop(("mean_exp", d, "identity"), axis=1)
+                mean_values = mean_values.drop(("std_exp", d, "identity"), axis=1)
 
         return mean_values
 
@@ -347,7 +347,7 @@ class CBResults(QCVVResults):
                 ** (1 / (depths[0] - depths[1]))
             )
             .reset_index()
-            .pivot(index="pauli_channel", columns=[])
+            .pivot_table(index="pauli_channel", columns=[])
         )
 
         delta_fid = (
@@ -356,7 +356,7 @@ class CBResults(QCVVResults):
                 + (expectations.std_exp / expectations.mean_exp)[depths[1]] ** 2
             )
             .reset_index()
-            .pivot(index="pauli_channel", columns=[])
+            .pivot_table(index="pauli_channel", columns=[])
         )
         delta_fid *= fid / abs(depths[0] - depths[1])
 
@@ -372,8 +372,8 @@ class CBResults(QCVVResults):
         fid.columns = pd.MultiIndex.from_product([["fidelity"], fid.columns])
         delta_fid.columns = pd.MultiIndex.from_product([["fidelity_std"], delta_fid.columns])
         fidelities = pd.concat([fid, delta_fid], axis=1)
-        fidelities = fidelities.stack(level=[1], future_stack=True).reset_index()
-        expectations = expectations.stack(level=[1, 2], future_stack=True).reset_index()
+        fidelities = fidelities.stack(level=[1], future_stack=True).reset_index()  # noqa: PD013
+        expectations = expectations.stack(level=[1, 2], future_stack=True).reset_index()  # noqa: PD013
 
         self._channel_fidelities = fidelities
 
@@ -588,9 +588,9 @@ class CB(QCVVExperiment[CBResults]):
         if self._num_qubits * np.log(4) <= np.log(num_channels):
             # Generate all possible Pauli strings
             return self._generate_all_pauli_strings()
-        else:
-            # Generate distinct random Pauli strings
-            return self._generate_random_pauli_strings(num_channels)
+
+        # Generate distinct random Pauli strings
+        return self._generate_random_pauli_strings(num_channels)
 
     def _generate_all_pauli_strings(self) -> list[str]:
         """Generates all possible Pauli strings of a given length.
