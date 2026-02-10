@@ -50,7 +50,7 @@ STRING_TO_ROTATION = {"I": cirq.I, "X": cirq.Y**0.5, "Y": cirq.X ** (-0.5), "Z":
 STRING_TO_PAULI = {"I": cirq.I, "X": cirq.X, "Y": cirq.Y, "Z": cirq.Z}
 
 class Process(StrEnum):
-    DRESSED = "dressed"
+    PROCESS = "process"
     UNDRESSED = "undressed"
 
 
@@ -78,28 +78,28 @@ class CBResults(QCVVResults):
 
     @property
     def channel_fidelities(self) -> pd.DataFrame:
-        """Returns the channel fidelities."""
+        """Return the channel fidelities."""
         if self._channel_fidelities is None:
             raise self._not_analyzed
         return self._channel_fidelities
 
     @property
     def process_fidelity(self) -> float:
-        """Returns the process fidelity estimate."""
+        """Return the process fidelity estimate."""
         if self._process_fidelity_estimate is None:
             raise self._not_analyzed
         return self._process_fidelity_estimate
 
     @property
     def process_fidelity_std(self) -> float:
-        """Returns the standard deviation of the process fidelity estimate."""
+        """Return the standard deviation of the process fidelity estimate."""
         if self._process_fidelity_estimate_std is None:
             raise self._not_analyzed
         return self._process_fidelity_estimate_std
 
     @property
     def undressed_process_fidelity(self) -> float:
-        """Returns the undressed process fidelity estimate.
+        """Return the undressed process fidelity estimate.
 
         Raises:
             RuntimeError: If the `.analyse()` method has not been ran yet.
@@ -114,7 +114,7 @@ class CBResults(QCVVResults):
 
     @property
     def undressed_process_fidelity_std(self) -> float:
-        """Returns the undressed process fidelity estimate.
+        """Return the undressed process fidelity estimate.
 
         Raises:
             RuntimeError: If the `.analyse()` method has not been ran yet.
@@ -131,7 +131,7 @@ class CBResults(QCVVResults):
         self,
         filename: str | None = None,
     ) -> plt.Figure:
-        """Plots the experiment data and the corresponding fits.
+        """Plot the experiment data and the corresponding fits.
 
         Args:
             filename: An optional file where the plot is saved.
@@ -139,11 +139,11 @@ class CBResults(QCVVResults):
         Returns:
             A matplotlib figure containing the plots.
         """
-        processes = self._channel_expectations.process.unique()
+        processes = self._channel_expectations.circuit.unique()
         fig, axs = plt.subplots(len(processes), 2, figsize=(15, 10), squeeze=False)
 
-        self._plot_decay(Process.DRESSED, axs[0, 0])
-        self._plot_fidelities(Process.DRESSED, axs[0, 1])
+        self._plot_decay(Process.PROCESS, axs[0, 0])
+        self._plot_fidelities(Process.PROCESS, axs[0, 1])
         if self.experiment._undressed_process:
             self._plot_decay(Process.UNDRESSED, axs[1, 0])
             self._plot_fidelities(Process.UNDRESSED, axs[1, 1])
@@ -154,22 +154,22 @@ class CBResults(QCVVResults):
         return fig
 
     def _plot_decay(self, process: Process, ax: plt.Axes) -> None:
-        """Plots the decay term.
+        """Plot the decay term.
 
         Args:
             process: The kind of estimation to plot (dressed or undressed).
             ax: The axis to plot to.
         """
-        expectations = self._channel_expectations[self._channel_expectations.process == process]
-        fidelities = self.channel_fidelities[self.channel_fidelities.process == process]
+        expectations = self._channel_expectations[self._channel_expectations.circuit == process]
+        fidelities = self.channel_fidelities[self.channel_fidelities.circuit == process]
         pauli_channels = expectations.pauli_channel.unique()
         depths = expectations.cycle_depth.unique()
         for p_c in pauli_channels:
-            ys = expectations[expectations.pauli_channel == p_c].expectation_mean
+            ys = expectations[expectations.pauli_channel == p_c].mean_exp
             ax.errorbar(
                 x=depths,
                 y=ys,
-                yerr=expectations[expectations.pauli_channel == p_c].expectation_delta,
+                yerr=expectations[expectations.pauli_channel == p_c].std_exp,
                 label=p_c,
                 fmt="o",
                 capsize=5,
@@ -179,7 +179,7 @@ class CBResults(QCVVResults):
             a = (
                 expectations[
                     (expectations.pauli_channel == p_c) & (expectations.cycle_depth == depths[0])
-                ].expectation_mean.iloc[0]
+                ].mean_exp.iloc[0]
                 / (fidelities[fidelities.pauli_channel == p_c].fidelity.iloc[0]) ** depths[0]
             )
             reg = a * fidelities[fidelities.pauli_channel == p_c].fidelity.iloc[0] ** xs
@@ -189,28 +189,30 @@ class CBResults(QCVVResults):
         ax.legend()
 
     def _plot_fidelities(self, process: Process, ax: plt.Axes) -> None:
-        """Plots the process fidelity and the channel fidelities.
+        """Plot the process fidelity and the channel fidelities.
 
         Args:
             process: The type of fidelity to plot (dressed or undressed).
             ax: The axis to plot to.
         """
-        fidelities = self.channel_fidelities[self.channel_fidelities.process == process]
-        if process == "dressed":
+        fidelities = self.channel_fidelities[self.channel_fidelities.circuit == process]
+        if process == Process.PROCESS:
             estimate = self.process_fidelity
             std = self.process_fidelity_std
+            title = "process fidelity"
         else:
             estimate = self.undressed_process_fidelity
             std = self.undressed_process_fidelity_std
+            title = "undressed process fidelity"
         ax.errorbar(
             x=fidelities.pauli_channel,
             y=fidelities.fidelity,
-            yerr=fidelities.delta,
+            yerr=fidelities.fidelity_std,
             fmt="D",
             capsize=5,
             label="Pauli fidelity",
         )
-        ax.axhline(y=estimate, label="process fidelity")
+        ax.axhline(y=estimate, label=title)
         xs = np.linspace(*ax.get_xlim())
         ax.fill_between(
             xs,
@@ -223,7 +225,7 @@ class CBResults(QCVVResults):
         ax.legend()
 
     def print_results(self) -> None:
-        """Prints the result of the experiment."""
+        """Print the result of the experiment."""
         print(  # noqa: T201
             "Cycle Benchmarking Results:\n"
             f"Estimated process fidelity: {self._process_fidelity_estimate:.5f}"
@@ -235,105 +237,7 @@ class CBResults(QCVVResults):
                 f"{self._undressed_process_fidelity_estimate:.5f}"
                 f" +/- {self._undressed_process_fidelity_estimate_std:.5f}"
             )
-
-    def _analyze(self) -> None:
-        """Analyzes the results of the experiment and estimates the pauli channels
-        and the process fidelities.
-        """
-        records = self._process_probabilities().rename(columns={"circuit": "process"})
-        records.replace(["identity", "process"], ["undressed", "dressed"], inplace=True)
-        depths = records.cycle_depth.unique()
-
-        expectations = (
-            records.groupby(["pauli_channel", "process", "cycle_depth"])
-            .agg(
-                expectation_mean=("expectation", "mean"),
-                expectation_delta=("expectation", "std"),
-            )
-            .reset_index()
-            .pivot(
-                columns=["cycle_depth", "process"],
-                values=["expectation_mean", "expectation_delta"],
-                index="pauli_channel",
-            )
-        )
-
-        fidelities = (
-            (
-                (
-                    expectations.expectation_mean[depths[0]]
-                    / expectations.expectation_mean[depths[1]]
-                )
-                ** (1 / (depths[0] - depths[1]))
-            )
-            .reset_index()
-            .pivot(index="pauli_channel", columns=[])
-        )
-
-        fidelities_delta = (
-            np.sqrt(
-                (expectations.expectation_delta / expectations.expectation_mean)[depths[0]] ** 2
-                + (expectations.expectation_delta / expectations.expectation_mean)[depths[1]] ** 2
-            )
-            .reset_index()
-            .pivot(index="pauli_channel", columns=[])
-        )
-
-        fidelities_delta *= fidelities / abs(depths[0] - depths[1])
-        fidelities.columns = pd.MultiIndex.from_product([["fidelity"], fidelities.columns])
-        fidelities_delta.columns = pd.MultiIndex.from_product([["delta"], fidelities_delta.columns])
-
-        if self.experiment._undressed_process:
-            fidelities_delta.loc[:, ("delta", "undressed")] = np.sqrt(
-                ((fidelities_delta.delta / fidelities.fidelity) ** 2).sum(axis=1).values
-            )
-            fidelities.loc[:, ("fidelity", "undressed")] = (
-                fidelities.fidelity.dressed / fidelities.fidelity.undressed
-            )
-            fidelities_delta.loc[:, ("delta", "undressed")] *= fidelities.fidelity.undressed
-
-            for d in depths:
-                expectations.loc[:, ("expectation_mean", d, "undressed")] = (
-                    expectations.expectation_mean[d, "dressed"]
-                    / expectations.expectation_mean[d, "undressed"]
-                )
-                expectations.loc[:, ("expectation_delta", d, "undressed")] = np.sqrt(
-                    (
-                        expectations.expectation_delta[d, "dressed"]
-                        / expectations.expectation_mean[d, "dressed"]
-                    )
-                    ** 2
-                    + (
-                        expectations.expectation_delta[d, "undressed"]
-                        / expectations.expectation_mean[d, "undressed"]
-                    )
-                    ** 2
-                )
-
-        fidelities = pd.concat([fidelities, fidelities_delta], axis=1)
-        fidelities = fidelities.stack(level=[1], future_stack=True).reset_index()
-        expectations = expectations.stack(level=[1, 2], future_stack=True).reset_index()
-
-        self._channel_fidelities = fidelities
-
-        self._channel_expectations: pd.DataFrame = expectations
-
-        self._process_fidelity_estimate = fidelities[
-            fidelities.process == "dressed"
-        ].fidelity.mean()
-
-        self._process_fidelity_estimate_std = np.sqrt(
-            (fidelities[fidelities.process == "dressed"].delta ** 2).sum()
-        ) / len(fidelities)
-
-        if self.experiment._undressed_process:
-            self._undressed_process_fidelity_estimate = fidelities[
-                fidelities.process == "undressed"
-            ].fidelity.mean()
-            self._undressed_process_fidelity_estimate_std = np.sqrt(
-                (fidelities[fidelities.process == "undressed"].delta ** 2).sum()
-            ) / len(fidelities)
-
+    
     def _process_probabilities(self) -> pd.DataFrame:
         """Processes the probabilities generated by sampling the circuits into the data structures
         needed for analyzing the results.
@@ -358,7 +262,7 @@ class CBResults(QCVVResults):
                 }
             )
         return pd.DataFrame(records)
-
+    
     def _sequence_expectation_value(
         self, c_of_p: cirq.PauliString[cirq.Qid], probabilities: dict[str, float]
     ) -> float:
@@ -384,6 +288,115 @@ class CBResults(QCVVResults):
         conj: complex = np.conj(global_phase)
         expectation_value *= conj
         return expectation_value.real
+    
+    def _compute_mean_expectations(self) -> pd.DataFrame:
+        """Compute the mean expectation and corresponding standard deviation from the measured
+        probabilities.
+
+        Returns:
+            A Dataframe with the mean expectations and std.
+        """
+        records = self._process_probabilities()
+        mean_values = records.groupby(
+            ["pauli_channel", "cycle_depth", "circuit"]
+        ).agg(
+            mean_exp=("expectation", "mean"), std_exp=("expectation", "std")
+        ).reset_index().pivot(
+            columns=["cycle_depth", "circuit"],
+            values=["mean_exp", "std_exp"],
+            index="pauli_channel",
+        )
+
+        if self.experiment._undressed_process:
+            depths = self.data.cycle_depth.unique()
+            for d in depths:
+                mean_values["mean_exp", d, "undressed"] = (
+                    mean_values["mean_exp", d, "process"]/mean_values["mean_exp", d, "identity"]
+                )
+                mean_values["std_exp", d, "undressed"] = (
+                    mean_values["mean_exp", d, "undressed"] * np.sqrt(
+                        (
+                            mean_values["std_exp", d, "identity"]
+                            / mean_values["mean_exp", d, "identity"]
+                        )**2
+                        +
+                        (
+                            mean_values["std_exp", d, "process"]
+                            / mean_values["mean_exp", d, "process"]
+                        )**2
+                    )
+                )
+                mean_values.drop(("mean_exp", d, "identity"), axis=1, inplace=True)
+                mean_values.drop(("std_exp", d, "identity"), axis=1, inplace=True)
+            
+        return mean_values
+    
+    def _compute_fidelities(self, expectations: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Compute the fidelity for each Pauli channel and the corresponding standard deviation.
+
+        Args:
+            expectations: Dataframe containing the mean expectations and uncertainties.
+        Returns:
+            Dataframes with the fidelity and standard deviation for each Pauli channel.
+        """
+        depths = self.data.cycle_depth.unique()
+        fid = (
+            (
+                (
+                    expectations.mean_exp[depths[0]]
+                    / expectations.mean_exp[depths[1]]
+                )
+                ** (1 / (depths[0] - depths[1]))
+            )
+            .reset_index()
+            .pivot(index="pauli_channel", columns=[])
+        )
+
+        delta_fid = (
+            np.sqrt(
+                (expectations.std_exp / expectations.mean_exp)[depths[0]] ** 2
+                + (expectations.std_exp / expectations.mean_exp)[depths[1]] ** 2
+            )
+            .reset_index()
+            .pivot(index="pauli_channel", columns=[])
+        )
+        delta_fid *= fid / abs(depths[0] - depths[1])
+        
+        return fid, delta_fid
+
+    def _analyze(self) -> None:
+        """Analyzes the results of the experiment and estimates the pauli channels
+        and the process fidelities.
+        """
+        expectations = self._compute_mean_expectations()
+        fid, delta_fid = self._compute_fidelities(expectations=expectations)
+
+
+        fid.columns = pd.MultiIndex.from_product([["fidelity"], fid.columns])
+        delta_fid.columns = pd.MultiIndex.from_product([["fidelity_std"], delta_fid.columns])
+        fidelities = pd.concat([fid, delta_fid], axis=1)
+        fidelities = fidelities.stack(level=[1], future_stack=True).reset_index()
+        expectations = expectations.stack(level=[1, 2], future_stack=True).reset_index()
+
+        self._channel_fidelities = fidelities
+
+        self._channel_expectations = expectations
+
+        self._process_fidelity_estimate = fidelities[
+            fidelities.circuit == "process"
+        ].fidelity.mean()
+
+        self._process_fidelity_estimate_std = np.sqrt(
+            (fidelities[fidelities.circuit == "process"].fidelity_std ** 2).sum()
+        ) / len(fidelities)
+
+        if self.experiment._undressed_process:
+            self._undressed_process_fidelity_estimate = fidelities[
+                fidelities.circuit == "undressed"
+            ].fidelity.mean()
+            self._undressed_process_fidelity_estimate_std = np.sqrt(
+                (fidelities[fidelities.circuit == "undressed"].fidelity_std ** 2).sum()
+            ) / len(fidelities)
 
 
 class CB(QCVVExperiment[CBResults]):
@@ -557,6 +570,8 @@ class CB(QCVVExperiment[CBResults]):
                     target_axis=sorted_qubits.index(op.qubits[1]),
                     exponent=op.gate.exponent,
                 )
+            else:
+                raise RuntimeError(f"gate must be either `PhaseXZGate` or `CZPowGate`.")
 
     def _generate_n_qubit_pauli_moments(
         self,
