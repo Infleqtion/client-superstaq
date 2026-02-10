@@ -344,9 +344,8 @@ class AceCR(cirq.Gate):
                 sandwich_exp,
                 *qubits,
             )
-        else:
-            exponent = self.rads / np.pi
-            return args.format("acecr({:half_turns}) {},{};\n", exponent, *qubits)
+        exponent = self.rads / np.pi
+        return args.format("acecr({:half_turns}) {},{};\n", exponent, *qubits)
 
     def _is_parameterized_(self) -> bool:
         return cirq.is_parameterized(self.sandwich_rx_rads) or cirq.is_parameterized(self.rads)
@@ -401,18 +400,18 @@ class AceCR(cirq.Gate):
     def __repr__(self) -> str:
         if not self.sandwich_rx_rads and self.rads == np.pi / 2:
             return "css.AceCR()"
-        elif self.rads == np.pi / 2:
+        if self.rads == np.pi / 2:
             return f"css.AceCR(sandwich_rx_rads={self.sandwich_rx_rads!r})"
-        elif not self.sandwich_rx_rads:
+        if not self.sandwich_rx_rads:
             return f"css.AceCR(rads={self.rads!r})"
         return f"css.AceCR(rads={self.rads!r}, sandwich_rx_rads={self.sandwich_rx_rads!r})"
 
     def __str__(self) -> str:
         if not self.sandwich_rx_rads and self.rads == np.pi / 2:
             return "AceCR"
-        elif not self.sandwich_rx_rads:
+        if not self.sandwich_rx_rads:
             return f"AceCR({self.rads})"
-        elif self.rads == np.pi / 2:
+        if self.rads == np.pi / 2:
             return f"AceCR|{cirq.rx(self.sandwich_rx_rads)}|"
         return f"AceCR({self.rads})|{cirq.rx(self.sandwich_rx_rads)}|"
 
@@ -508,9 +507,9 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         for gate in component_gates:
             if not isinstance(gate, cirq.Gate):
                 raise TypeError(f"{gate} is not a `cirq.Gate`")
-            elif cirq.is_measurement(gate):
+            if cirq.is_measurement(gate):
                 raise ValueError("`ParallelGates` cannot contain measurements")
-            elif isinstance(gate, ParallelGates):
+            if isinstance(gate, ParallelGates):
                 self.component_gates += gate.component_gates
             elif isinstance(gate, cirq.ParallelGate):
                 self.component_gates += gate.num_copies * (gate.sub_gate,)

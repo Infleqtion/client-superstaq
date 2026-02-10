@@ -702,7 +702,7 @@ def _handle_qiskit_definition(
             return css.parallel_gates_operation(*cirq_circuit.all_operations()), phase
 
         # intercept ParallelRGate
-        elif re.match(r"(gate_)?GR[\d_]*\b", inst.name):
+        if re.match(r"(gate_)?GR[\d_]*\b", inst.name):
             if parallel_op := _intercept_qiskit_parallel_r_gate(cirq_circuit):
                 return parallel_op, phase
 

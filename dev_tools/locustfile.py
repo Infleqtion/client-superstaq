@@ -31,7 +31,8 @@ import requests
 @locust.events.quitting.add_listener
 def _(environment: locust.env.Environment) -> None:
     if environment.stats.total.fail_ratio > 0.01:
-        logging.error("Test failed due to failure ratio > 1%")
+        logger = logging.getLogger(__name__)
+        logger.error("Test failed due to failure ratio > 1%")
         environment.process_exit_code = 1
     else:
         environment.process_exit_code = 0

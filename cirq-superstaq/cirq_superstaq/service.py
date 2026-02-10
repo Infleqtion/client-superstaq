@@ -421,9 +421,8 @@ class Service(gss.service.Service):
         """
         if isinstance(self._client, _SuperstaqClient):
             return css.Job(client=self._client, job_id=str(job_id))
-        else:
-            assert isinstance(self._client, _SuperstaqClientV3)
-            return css.JobV3(client=self._client, job_id=job_id)
+        assert isinstance(self._client, _SuperstaqClientV3)
+        return css.JobV3(client=self._client, job_id=job_id)
 
     def resource_estimate(
         self, circuits: cirq.Circuit | Sequence[cirq.Circuit], target: str | None = None
@@ -851,7 +850,7 @@ class Service(gss.service.Service):
 
         if target.startswith("aqt_"):
             return self.aqt_compile(circuits, **kwargs)
-        elif target.startswith("qscout_"):
+        if target.startswith("qscout_"):
             return self.qscout_compile(circuits, **kwargs)
 
         request_json = self._get_compile_request_json(circuits, target, **kwargs)

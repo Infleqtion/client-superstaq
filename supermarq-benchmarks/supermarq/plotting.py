@@ -456,7 +456,7 @@ class RadarAxesMeta(PolarAxes):
             line: The line to close.
         """
         x, y = map(np.asarray, line.get_data())
-        # FIXME: markers at x[0], y[0] get doubled-up.
+        # TODO: markers at x[0], y[0] get doubled-up.
         # See issue https://github.com/Infleqtion/client-superstaq/issues/27
         if x[0] != x[-1]:
             x = np.append(x, x[0])

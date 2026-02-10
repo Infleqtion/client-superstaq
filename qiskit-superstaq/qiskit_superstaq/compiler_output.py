@@ -176,7 +176,7 @@ class CompilerOutput:  # noqa: PLW1641
 
         if self.has_multiple_circuits() != other.has_multiple_circuits():
             return False
-        elif self.has_multiple_circuits():
+        if self.has_multiple_circuits():
             return (
                 self.circuits == other.circuits
                 and self.initial_logical_to_physicals == other.initial_logical_to_physicals

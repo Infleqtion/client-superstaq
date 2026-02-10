@@ -115,14 +115,13 @@ class AceCR(qiskit.circuit.Gate):
             sandwich_rx_rads = self.params[1]
         if sandwich_rx_rads == 0 and rads == np.pi / 2:
             return "AceCR"
-        elif sandwich_rx_rads != 0 and rads not in [0, np.pi / 2]:
+        if sandwich_rx_rads != 0 and rads not in [0, np.pi / 2]:
             arg = qiskit.circuit.tools.pi_check(sandwich_rx_rads, ndigits=8)
             return f"AceCR({rads_str})|RXGate({arg})|"
-        elif sandwich_rx_rads != 0:
+        if sandwich_rx_rads != 0:
             arg = qiskit.circuit.tools.pi_check(sandwich_rx_rads, ndigits=8)
             return f"AceCR|RXGate({arg})|"
-        else:
-            return f"AceCR({rads_str})"
+        return f"AceCR({rads_str})"
 
 
 class ZZSwapGate(qiskit.circuit.Gate):
@@ -280,7 +279,7 @@ class ParallelGates(qiskit.circuit.Gate):
 
             if not isinstance(gate, qiskit.circuit.Gate):
                 raise TypeError("Component gates must be instances of `qiskit.circuit.Gate`")
-            elif isinstance(gate, ParallelGates):
+            if isinstance(gate, ParallelGates):
                 self.component_gates += gate.component_gates
             else:
                 self.component_gates += (gate,)

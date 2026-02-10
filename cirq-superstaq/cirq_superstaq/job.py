@@ -570,8 +570,7 @@ class JobV3:
             self._refresh_job()
         if self._job_data is None:
             raise AttributeError("Job data has not been fetched yet. Run _refresh_job().")
-        else:
-            return self._job_data
+        return self._job_data
 
     @property
     def tags(self) -> list[str]:
@@ -719,8 +718,7 @@ class JobV3:
             num_qubits.append(cirq.num_qubits(circuit))
         if index is None:
             return num_qubits
-        else:
-            return num_qubits[0]
+        return num_qubits[0]
 
     def repetitions(self) -> int:
         """Gets the number of repetitions requested for this job.

@@ -648,7 +648,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         idx = self._rng.integers(20)
         if idx == 0:
             return cirq.CliffordGate.from_op_list([a(qubits[0]), b(qubits[1])], qubits)
-        elif idx == 1:
+        if idx == 1:
             return cirq.CliffordGate.from_op_list(
                 [
                     a(qubits[0]),
@@ -664,7 +664,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                 ],
                 qubits,
             )
-        elif 2 <= idx <= 10:
+        if 2 <= idx <= 10:
             idx_a = int((idx - 2) / 3)
             idx_b = (idx - 2) % 3
             return cirq.CliffordGate.from_op_list(

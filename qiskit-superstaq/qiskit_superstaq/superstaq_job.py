@@ -450,8 +450,7 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
             self._refresh_job()
         if self._job_info is None:
             raise AttributeError("Job info has not been fetched yet. Run _refresh_job().")
-        else:
-            return self._job_info
+        return self._job_info
 
     @property
     def tags(self) -> list[str]:

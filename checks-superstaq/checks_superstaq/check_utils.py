@@ -236,18 +236,17 @@ def _get_ancestor(*revisions: str, silent: bool = False) -> str:
     if len(revisions) == 1:
         return revisions[0]
 
-    elif len(revisions) > 1:
+    if len(revisions) > 1:
         if not silent:
             rev_text = " ".join([f"'{rev}'" for rev in revisions])
             print(f"Finding common ancestor of revisions {rev_text}")  # noqa: T201
         return _check_output("git", "merge-base", *revisions)
 
-    else:
-        for branch in default_branches:
-            if _revision_exists(branch):
-                return branch
-        error = f"Default git revisions not found: {default_branches}"
-        raise RuntimeError(failure(error))
+    for branch in default_branches:
+        if _revision_exists(branch):
+            return branch
+    error = f"Default git revisions not found: {default_branches}"
+    raise RuntimeError(failure(error))
 
 
 def _revision_exists(revision: str) -> bool:
