@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Copyright 2021 The Cirq Developers
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,7 +41,7 @@ import uuid
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, NoReturn, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, NoReturn
 
 import numpy as np
 import requests
@@ -36,8 +50,6 @@ import general_superstaq as gss
 
 if TYPE_CHECKING:
     import numpy.typing as npt
-
-TQuboKey = TypeVar("TQuboKey")
 
 RECOGNISED_CIRCUIT_TYPES = Literal[gss.models.CircuitType.CIRQ, gss.models.CircuitType.QISKIT]
 """The circuit types that are currently implemented within the `SuperstaqClient`."""
@@ -262,18 +274,17 @@ class _BaseSuperstaqClient:
                 self._prompt_accept_terms_of_use()
                 return
 
-            elif response.json() == ("You must validate your registered email."):
+            if response.json() == ("You must validate your registered email."):
                 raise gss.SuperstaqServerException(
                     "You must validate your registered email.",
                     response.status_code,
                 )
 
-            else:
-                raise gss.SuperstaqServerException(
-                    '"Not authorized" returned by Superstaq API.  '
-                    "Check to ensure you have supplied the correct API key.",
-                    response.status_code,
-                )
+            raise gss.SuperstaqServerException(
+                '"Not authorized" returned by Superstaq API.  '
+                "Check to ensure you have supplied the correct API key.",
+                response.status_code,
+            )
 
         if response.status_code == requests.codes.gateway_timeout:
             # Job took too long. Don't retry, it probably won't be any faster.
@@ -608,14 +619,6 @@ class _AbstractUserClient(_BaseSuperstaqClient, ABC):
         """
 
     @abstractmethod
-    def get_my_targets(self) -> list[gss.Target]:
-        """Makes a GET request to retrieve targets from the Superstaq API.
-
-        Returns:
-            A list of Superstaq targets matching all provided criteria.
-        """
-
-    @abstractmethod
     def add_new_user(self, json_dict: dict[str, str]) -> str:
         """Makes a POST request to Superstaq API to add a new user.
 
@@ -695,7 +698,7 @@ class _AbstractUserClient(_BaseSuperstaqClient, ABC):
     @abstractmethod
     def submit_qubo(
         self,
-        qubo: Mapping[tuple[TQuboKey, ...], float],
+        qubo: Mapping[tuple[gss.typing.TQuboKey, ...], float],
         target: str,
         repetitions: int,
         method: str = "sim_anneal",
@@ -1084,18 +1087,6 @@ class _SuperstaqClient(_AbstractUserClient):
         ]
         return target_list
 
-    def get_my_targets(self) -> list[gss.Target]:
-        json_dict: dict[str, str | bool] = {"accessible": True}
-        if self.client_kwargs:
-            json_dict["options"] = json.dumps(self.client_kwargs)
-
-        superstaq_targets = self.post_request("/targets", json_dict)["superstaq_targets"]
-        target_list = [
-            gss.Target(target=target_name, **properties)
-            for target_name, properties in superstaq_targets.items()
-        ]
-        return target_list
-
     def target_info(self, target: str, **kwargs: object) -> dict[str, Any]:
         gss.validation.validate_target(target)
 
@@ -1128,7 +1119,7 @@ class _SuperstaqClient(_AbstractUserClient):
 
     def submit_qubo(
         self,
-        qubo: Mapping[tuple[TQuboKey, ...], float],
+        qubo: Mapping[tuple[gss.typing.TQuboKey, ...], float],
         target: str,
         repetitions: int,
         method: str = "sim_anneal",
@@ -1476,17 +1467,6 @@ class _SuperstaqClientV3(_AbstractUserClient):
             for target in targets
         ]
 
-    def get_my_targets(self) -> list[gss.Target]:
-        credentials = self._extract_credentials(self.client_kwargs)
-        response = self.get_request("/client/targets", {"accessible": True}, **credentials)
-        targets = [gss.models.TargetModel(**data) for data in response]
-        return [
-            gss.typing.Target(
-                target=target.target_name, **target.model_dump(exclude={"target_name"})
-            )
-            for target in targets
-        ]
-
     def target_info(self, target: str, **kwargs: object) -> dict[str, Any]:
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
 
@@ -1635,7 +1615,7 @@ class _SuperstaqClientV3(_AbstractUserClient):
 
     def submit_qubo(
         self,
-        qubo: Mapping[tuple[TQuboKey, ...], float],
+        qubo: Mapping[tuple[gss.typing.TQuboKey, ...], float],
         target: str,
         repetitions: int,
         method: str = "sim_anneal",

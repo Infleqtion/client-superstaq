@@ -1,3 +1,16 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import importlib
@@ -111,32 +124,6 @@ def test_circuit_serialization() -> None:
     serialized_circuits = qss.serialization.serialize_circuits(circuits)
     assert isinstance(serialized_circuits, str)
     assert qss.serialization.deserialize_circuits(serialized_circuits) == circuits
-
-
-def test_insert_times_and_durations() -> None:
-    circuit = qiskit.QuantumCircuit(2)
-
-    # Test an empty circuit
-    new_circuit = qss.serialization.insert_times_and_durations(circuit, [], [])
-    assert new_circuit.duration == 0
-    assert new_circuit.op_start_times == []
-
-    circuit.x(0)
-    circuit.cx(0, 1)
-    circuit.measure_all()
-
-    durations = [10, 100, 0, 50, 50]
-    start_times = [0, 10, 110, 110, 110]
-
-    new_circuit = qss.serialization.insert_times_and_durations(circuit, durations, start_times)
-    assert new_circuit == circuit
-    assert new_circuit.op_start_times == start_times
-    assert new_circuit.duration == 160
-
-    # Test fallback when timing information is not provided
-    new_circuit = qss.serialization.insert_times_and_durations(circuit, [], [])
-    assert new_circuit is circuit
-    assert new_circuit.duration is None
 
 
 def test_warning_suppression() -> None:
@@ -333,7 +320,29 @@ def test_gate_preparation_and_resolution(
 
     gate = base_class(*rng.uniform(-2 * np.pi, 2 * np.pi, num_params))
     assert qss.serialization._resolve_gate(qss.serialization._prepare_gate(gate)) == gate
-    assert qss.serialization._resolve_gate(qss.serialization._wrap_gate(gate)) == gate
+
+
+@pytest.mark.parametrize("base_class", test_gates, ids=lambda g: g.name)
+def test_legacy_wrapper_resolution(
+    rng: np.random.Generator,
+    base_class: type[qiskit.circuit.Instruction],
+) -> None:
+    num_params = test_gates[base_class]
+
+    gate = base_class(*rng.uniform(-2 * np.pi, 2 * np.pi, num_params))
+
+    name = f"__superstaq_wrapper_{id(gate)}"
+    circuit = qiskit.QuantumCircuit(gate.num_qubits, gate.num_clbits, name=name)
+    circuit.append(
+        qss.serialization._prepare_gate(gate), range(gate.num_qubits), range(gate.num_clbits)
+    )
+    new_gate = circuit.to_instruction(label=gate.name)
+
+    compat_name = "parallel_gates" if isinstance(gate, qss.ParallelGates) else gate.name
+    new_gate.definition.name = compat_name
+    new_gate.params.extend(gate.params)
+
+    assert qss.serialization._resolve_gate(new_gate) == gate
 
 
 def _check_serialization(*gates: qiskit.circuit.Instruction) -> None:
@@ -460,6 +469,9 @@ def test_qiskit_gate_workarounds() -> None:
     circuit.append(qiskit.circuit.library.MCU1Gate(2.2, 3, ctrl_state=6), range(4))
     circuit.append(qiskit.circuit.library.MCPhaseGate(1.1, 3), range(4))
     circuit.append(qiskit.circuit.library.MCPhaseGate(2.2, 3), range(4))
+    circuit.delay(10, unit="dt")
+    circuit.delay(1.234, unit="ns")
+    circuit.delay(1.2e3, unit="ps")
 
     subcircuit = circuit.copy()
     subcircuit.append(circuit, circuit.qubits)
@@ -490,3 +502,11 @@ def test_different_gates_with_same_name() -> None:
     expected_circuit.append(expected_gate3, [0, 1])
 
     assert qss.deserialize_circuits(qss.serialize_circuits(circuit))[0] == expected_circuit
+
+
+def test_nested_empty_definitions() -> None:
+    circuit = qiskit.QuantumCircuit(1)
+    circuit.append(circuit.to_gate(), [0])
+    circuit.append(circuit.to_gate(), [0])
+
+    assert qss.deserialize_circuits(qss.serialize_circuits(circuit))[0] == circuit

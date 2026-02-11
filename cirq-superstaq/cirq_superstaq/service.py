@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Copyright 2021 The Cirq Developers
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -407,9 +421,8 @@ class Service(gss.service.Service):
         """
         if isinstance(self._client, _SuperstaqClient):
             return css.Job(client=self._client, job_id=str(job_id))
-        else:
-            assert isinstance(self._client, _SuperstaqClientV3)
-            return css.JobV3(client=self._client, job_id=job_id)
+        assert isinstance(self._client, _SuperstaqClientV3)
+        return css.JobV3(client=self._client, job_id=job_id)
 
     def resource_estimate(
         self, circuits: cirq.Circuit | Sequence[cirq.Circuit], target: str | None = None
@@ -611,6 +624,8 @@ class Service(gss.service.Service):
         base_entangling_gate: str = "xx",
         num_qubits: int | None = None,
         error_rates: SupportsItems[tuple[int, ...], float] | None = None,
+        atol: float = 1e-8,
+        atol_map: SupportsItems[tuple[int, ...], float] | None = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
@@ -643,6 +658,15 @@ class Service(gss.service.Service):
                 for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`) . If
                 provided, Superstaq will attempt to map the circuit to minimize the total error on
                 each qubit. Omitted qubit pairs are assumed to be error-free.
+            atol: Optional tolerance (trace distance bound) used for approximate compilation.
+                Superstaq will elide gates which can be approximated within the given tolerance by
+                identity operations.
+            atol_map: Optional dictionary assigning compilation tolerances to physical qubits, in
+                the form `{<qubit_indices>: <atol>, ...}` where `<qubit_indices>` is a tuple of
+                physical qubit indices (ints) and `<atol>` is an absolute tolerance (trace distance
+                bound) for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`).
+                If provided, these tolerances will override `atol` for gates on the given qubits.
+                Omitted qubit pairs default to `atol`.
             kwargs: Other desired qscout_compile options.
 
         Returns:
@@ -668,29 +692,37 @@ class Service(gss.service.Service):
         options_dict = {
             "mirror_swaps": mirror_swaps,
             "base_entangling_gate": base_entangling_gate,
+            "atol": atol,
             **kwargs,
         }
 
         if circuits_is_list:
-            max_circuit_qubits = max(cirq.num_qubits(c) for c in circuits)
+            inferred_num_qubits = max(cirq.num_qubits(c) for c in circuits)
         else:
-            max_circuit_qubits = cirq.num_qubits(circuits)
+            inferred_num_qubits = cirq.num_qubits(circuits)
 
         if error_rates is not None:
             error_rates_list = list(error_rates.items())
             options_dict["error_rates"] = error_rates_list
+            inferred_num_qubits = max(
+                inferred_num_qubits, *(q + 1 for qs, _ in error_rates_list for q in qs)
+            )
 
-            # Use error rate dictionary to set `num_qubits`, if not already specified
-            if num_qubits is None:
-                max_index = max(q for qs, _ in error_rates_list for q in qs)
-                num_qubits = max_index + 1
+        if atol_map is not None:
+            atol_map_list = list(atol_map.items())
+            options_dict["atol_map"] = atol_map_list
+            inferred_num_qubits = max(
+                inferred_num_qubits, *(q + 1 for qs, _ in atol_map_list for q in qs)
+            )
 
-        elif num_qubits is None:
-            num_qubits = max_circuit_qubits
+        # Infer `num_qubits` from inputs, if not already specified
+        if num_qubits is None:
+            num_qubits = inferred_num_qubits
 
         gss.validation.validate_integer_param(num_qubits)
-        if num_qubits < max_circuit_qubits:
-            raise ValueError(f"At least {max_circuit_qubits} qubits are required for this input.")
+        if num_qubits < inferred_num_qubits:
+            raise ValueError(f"At least {inferred_num_qubits} qubits are required for this input.")
+
         options_dict["num_qubits"] = num_qubits
 
         json_dict = self._client.qscout_compile(
@@ -818,7 +850,7 @@ class Service(gss.service.Service):
 
         if target.startswith("aqt_"):
             return self.aqt_compile(circuits, **kwargs)
-        elif target.startswith("qscout_"):
+        if target.startswith("qscout_"):
             return self.qscout_compile(circuits, **kwargs)
 
         request_json = self._get_compile_request_json(circuits, target, **kwargs)

@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import numbers
@@ -69,7 +83,7 @@ def validate_target(target: str) -> str:
     if not match:
         raise ValueError(
             f"{target!r} does not have a valid string format. Valid target strings should be in "
-            "the form '<provider>_<device>_<type>', e.g. 'ibmq_brisbane_qpu'."
+            "the form '<provider>_<device>_<type>', e.g. 'ibmq_fez_qpu'."
         )
 
     _, _, device_type = match.groups()
@@ -178,7 +192,7 @@ def _validate_ibm_channel(ibm_channel: str) -> str:
             "use 'ibm_quantum_platform' (or equivalently, the older 'ibm_cloud') and the "
             "corresponding channel token.",
         )
-    elif ibm_channel == "ibm_cloud":
+    if ibm_channel == "ibm_cloud":
         warnings.warn(
             "The 'ibm_cloud' channel will be deprecated in the future. Instead, consider using "
             "'ibm_quantum_platform' (the newer version which points to the same channel and works "

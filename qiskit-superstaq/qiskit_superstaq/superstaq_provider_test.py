@@ -1,3 +1,16 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import json
@@ -362,7 +375,7 @@ def test_qscout_compile(
         "final_logical_to_physicals": json.dumps([[(0, 13)], [(0, 13), (1, 11)]]),
         "jaqal_programs": [jaqal_program, jaqal_program],
     }
-    out = fake_superstaq_provider.qscout_compile([qc, qc2])
+    out = fake_superstaq_provider.qscout_compile([qc, qc2], atol=1e-3)
     assert out.circuits == [qc, qc2]
     assert out.initial_logical_to_physicals == [{0: 1}, {0: 1, 1: 2}]
     assert out.final_logical_to_physicals == [{0: 13}, {0: 13, 1: 11}]
@@ -370,6 +383,7 @@ def test_qscout_compile(
         "mirror_swaps": False,
         "base_entangling_gate": "xx",
         "num_qubits": 2,
+        "atol": 1e-3,
     }
 
     with pytest.raises(ValueError, match=r"At least 2 qubits are required"):
@@ -401,6 +415,7 @@ def test_qscout_compile_swap_mirror(
         "mirror_swaps": mirror_swaps,
         "base_entangling_gate": "xx",
         "num_qubits": 1,
+        "atol": 1e-8,
     }
 
     _ = fake_superstaq_provider.qscout_compile(qc, mirror_swaps=mirror_swaps, num_qubits=3)
@@ -408,6 +423,7 @@ def test_qscout_compile_swap_mirror(
         "mirror_swaps": mirror_swaps,
         "base_entangling_gate": "xx",
         "num_qubits": 3,
+        "atol": 1e-8,
     }
 
 
@@ -431,6 +447,7 @@ def test_qscout_compile_change_entangler(
         "mirror_swaps": False,
         "base_entangling_gate": base_entangling_gate,
         "num_qubits": 2,
+        "atol": 1e-8,
     }
 
     _ = fake_superstaq_provider.qscout_compile(
@@ -440,6 +457,7 @@ def test_qscout_compile_change_entangler(
         "mirror_swaps": False,
         "base_entangling_gate": base_entangling_gate,
         "num_qubits": 4,
+        "atol": 1e-8,
     }
 
 
@@ -471,7 +489,23 @@ def test_qscout_compile_error_rates(
         "base_entangling_gate": "xx",
         "mirror_swaps": False,
         "error_rates": [[[0, 1], 0.3], [[0, 2], 0.2], [[1], 0.1]],
+        "atol": 1e-8,
         "num_qubits": 3,
+    }
+
+    _ = fake_superstaq_provider.qscout_compile(
+        circuit,
+        error_rates={(0, 1): 0.3, (0, 2): 0.2, (1,): 0.1},
+        atol_map={(0, 3): 0.02, (1,): 0.01},
+    )
+    assert mock_post.call_count == 2
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "base_entangling_gate": "xx",
+        "mirror_swaps": False,
+        "error_rates": [[[0, 1], 0.3], [[0, 2], 0.2], [[1], 0.1]],
+        "atol": 1e-8,
+        "atol_map": [[[0, 3], 0.02], [[1], 0.01]],
+        "num_qubits": 4,
     }
 
 

@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import fnmatch
@@ -22,7 +36,7 @@ def run(
     *args: str,
     include: str | Iterable[str] = "*requirements.txt",
     exclude: str | Iterable[str] = "",
-    upstream_match: str = "*superstaq*",
+    upstream_match: str | Iterable[str] = ("*superstaq*", "supermarq"),
     silent: bool = False,
 ) -> int:
     """Checks that:
@@ -33,7 +47,7 @@ def run(
         *args: Command line arguments.
         include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
         exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
-        upstream_match: String to match package name and version.
+        upstream_match: String(s) to match package name and version.
         silent: If True, restrict printing to warning and error messages.
 
     Returns:
@@ -53,7 +67,7 @@ def run(
     )
 
     parser.add_argument(
-        "--apply", action="store_true", help="Apply fixes to pip requirements files."
+        "--fix", "--apply", action="store_true", help="Apply fixes to pip requirements files."
     )
     parser.add_argument(
         "--only-sort",
@@ -65,25 +79,26 @@ def run(
         return 0
 
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
+    upstream_matches = [upstream_match] if isinstance(upstream_match, str) else list(upstream_match)
 
     # check all requirements files
     requirements_to_fix = {}
     for req_file in files:
         needs_cleanup, requirements = _inspect_req_file(
-            req_file, parsed_args.only_sort, upstream_match, silent
+            req_file, parsed_args.only_sort, upstream_matches, silent
         )
         if needs_cleanup:
             requirements_to_fix[req_file] = requirements
 
     # print some helpful text and maybe apply fixes
-    _cleanup(requirements_to_fix, parsed_args.apply, silent)
+    _cleanup(requirements_to_fix, parsed_args.fix, silent)
 
-    success = not requirements_to_fix or parsed_args.apply
+    success = not requirements_to_fix or parsed_args.fix
     return 0 if success else 1
 
 
 def _inspect_req_file(
-    req_file: str, only_sort: bool, upstream_match: str, silent: bool
+    req_file: str, only_sort: bool, upstream_matches: list[str], silent: bool
 ) -> tuple[bool, list[str]]:
     # read in requirements line-by-line
     with open(os.path.join(check_utils.root_dir, req_file)) as file:
@@ -93,7 +108,7 @@ def _inspect_req_file(
         error = f"{req_file} appears to contain lines that are not valid pip requirements"
         if req_file == "requirements.txt":
             raise SyntaxError(check_utils.failure(error))
-        elif not silent:
+        if not silent:
             print(check_utils.warning(error))  # noqa: T201
         return False, []  # file cannot be cleaned up, and there are no requirements to track
 
@@ -103,7 +118,7 @@ def _inspect_req_file(
 
     if not only_sort:
         needs_cleanup |= _check_package_versions(
-            req_file, requirements, upstream_match, silent, strict=True
+            req_file, requirements, upstream_matches, silent, strict=True
         )
 
     return needs_cleanup, requirements
@@ -146,10 +161,10 @@ def _sort_requirements(requirements: list[str]) -> tuple[bool, list[str]]:
 
 
 def _check_package_versions(
-    req_file: str, requirements: list[str], match: str, silent: bool, strict: bool
+    req_file: str, requirements: list[str], matches: list[str], silent: bool, strict: bool
 ) -> bool:
-    """Check whether package requirements matching 'match' are up-to-date with their latest
-    versions.
+    """Check whether package requirements matching at least one string in `matches` are up-to-date
+    with their latest versions.
     Print warnings if matching requirements are out of date.  Return whether the requirements file
     *must* be updated, i.e., return 'True' iff packages are out of date and 'strict == True'.
     """
@@ -158,7 +173,7 @@ def _check_package_versions(
     up_to_date = True
     for idx, req in enumerate(requirements):
         package = _get_package_name(req)
-        if not fnmatch.fnmatch(package, match):
+        if not any(fnmatch.fnmatch(package, match) for match in matches):
             # this is not an upstream package
             continue
 
@@ -194,7 +209,8 @@ def _get_latest_version(package: str, silent: bool) -> str:
 
 def _get_local_version(package: str) -> str | None:
     """Retrieve the local version of a package (if installed)."""
-    base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
+    # Remove options: package_name[options] --> package_name
+    base_package = package.split("[", maxsplit=1)[0]
     sanitized_package_name = base_package.replace("-", "_").lower()
     try:
         module = importlib.import_module(sanitized_package_name)
@@ -207,7 +223,8 @@ def _get_local_version(package: str) -> str | None:
 
 def _get_pypi_version(package: str, silent: bool) -> str | None:
     """Retrieve the latest version of a package on PyPI (if found)."""
-    base_package = package.split("[")[0]  # remove options: package_name[options] --> package_name
+    # Remove options: package_name[options] --> package_name
+    base_package = package.split("[", maxsplit=1)[0]
     pypi_url = f"https://pypi.org/pypi/{base_package}/json"
     try:
         package_info = urllib.request.urlopen(pypi_url).read().decode()
@@ -249,7 +266,7 @@ def _cleanup(
             print(check_utils.success("Requirements files fixed."))  # noqa: T201
 
     elif not silent:
-        command = "./checks/requirements.py --apply"
+        command = "./checks/requirements.py --fix"
         text = f"Run '{command}' (from the repo root directory) to fix requirements files."
         print(check_utils.warning(text))  # noqa: T201
 

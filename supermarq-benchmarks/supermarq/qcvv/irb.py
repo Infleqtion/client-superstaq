@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Copyright 2021 The Cirq Developers
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -634,7 +648,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         idx = self._rng.integers(20)
         if idx == 0:
             return cirq.CliffordGate.from_op_list([a(qubits[0]), b(qubits[1])], qubits)
-        elif idx == 1:
+        if idx == 1:
             return cirq.CliffordGate.from_op_list(
                 [
                     a(qubits[0]),
@@ -650,7 +664,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                 ],
                 qubits,
             )
-        elif 2 <= idx <= 10:
+        if 2 <= idx <= 10:
             idx_a = int((idx - 2) / 3)
             idx_b = (idx - 2) % 3
             return cirq.CliffordGate.from_op_list(

@@ -78,12 +78,12 @@
     <!-- dark -->
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="https://img.shields.io/badge/Slack-slack?style=flat&logo=slack&logoColor=white&labelColor=00b198&color=white"
+      srcset="https://img.shields.io/badge/Slack-Join%20Us-white?logo=slack&style=flat&logoColor=white&labelColor=00b198&color=white"
     />
     <!-- light -->
     <source
       media="(prefers-color-scheme: light)"
-      srcset="https://img.shields.io/badge/Slack-slack?style=flat&logo=slack&logoColor=white&labelColor=00b198&color=141a5e"
+      srcset="https://img.shields.io/badge/Slack-Join%20Us-white?logo=slack&style=flat&logoColor=white&labelColor=00b198&color=141a5e"
     />
     <!-- fallback -->
     <img

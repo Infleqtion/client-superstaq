@@ -1,17 +1,29 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import numbers
 import os
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, overload
 
 import general_superstaq as gss
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 
 if TYPE_CHECKING:
     import numpy.typing as npt
-
-TQuboKey = TypeVar("TQuboKey")
 
 CLIENT_VERSION = {
     "v0.2.0": _SuperstaqClient,
@@ -181,14 +193,45 @@ class Service:
         )
         return self._client.get_targets(**filters)
 
-    def get_my_targets(self) -> list[gss.Target]:
+    def get_my_targets(
+        self,
+        simulator: bool | None = None,
+        supports_submit: bool | None = None,
+        supports_submit_qubo: bool | None = None,
+        supports_compile: bool | None = None,
+        available: bool | None = None,
+        retired: bool | None = None,
+        **kwargs: bool,
+    ) -> list[gss.Target]:
         """Gets a list of Superstaq targets that the user can submit to and are available along
         with their status information.
+
+        Args:
+            simulator: Optional flag to restrict the list of targets to (non-) simulators.
+            supports_submit: Optional boolean flag to only return targets that (don't) allow
+                circuit submissions.
+            supports_submit_qubo: Optional boolean flag to only return targets that (don't)
+                allow qubo submissions.
+            supports_compile: Optional boolean flag to return targets that (don't) support
+                circuit compilation.
+            available: Optional boolean flag to only return targets that are (not) available
+                to use.
+            retired: Optional boolean flag to only return targets that are or are not retired.
+            kwargs: Any additional, supported flags to restrict/filter returned targets.
 
         Returns:
             A list of Superstaq targets that the user can currently submit to.
         """
-        return self._client.get_my_targets()
+        return self.get_targets(
+            simulator=simulator,
+            supports_submit=supports_submit,
+            supports_submit_qubo=supports_submit_qubo,
+            supports_compile=supports_compile,
+            available=available,
+            retired=retired,
+            accessible=True,
+            **kwargs,
+        )
 
     @overload
     def get_user_info(self) -> dict[str, str | float]: ...
@@ -250,7 +293,7 @@ class Service:
 
     def submit_qubo(
         self,
-        qubo: Mapping[tuple[TQuboKey, ...], float],
+        qubo: Mapping[tuple[gss.typing.TQuboKey, ...], float],
         target: str = "ss_unconstrained_simulator",
         repetitions: int = 10,
         method: str = "sim_anneal",
@@ -261,7 +304,7 @@ class Service:
         dry_run: bool = False,
         random_seed: int | None = None,
         **kwargs: object,
-    ) -> list[dict[TQuboKey, int]]:
+    ) -> list[dict[gss.typing.TQuboKey, int]]:
         """Solves a submitted QUBO problem via annealing.
 
         This method returns any number of specified dictionaries that seek the minimum of
@@ -392,12 +435,12 @@ class Service:
                     f"{pulses_file_path} and {variables_file_path} exist. Please try different "
                     "filenames to write to, or pass overwrite=True to overwrite the existing files."
                 )
-            elif not overwrite and pulses_file_exists:
+            if not overwrite and pulses_file_exists:
                 raise ValueError(
                     f"{pulses_file_path} exists. Please try a different filename to write to, "
                     "or pass overwrite=True to overwrite the existing file."
                 )
-            elif not overwrite and variables_file_exists:
+            if not overwrite and variables_file_exists:
                 raise ValueError(
                     f"{variables_file_path} exists Please try a different filename to write to, "
                     "or pass overwrite=True to overwrite the existing file."
@@ -414,23 +457,22 @@ class Service:
 
             return None
 
-        elif pulses_file_path or variables_file_path:
+        if pulses_file_path or variables_file_path:
             raise ValueError("Please provide both pulses and variables file paths, or neither.")
 
-        else:
-            try:
-                import yaml  # noqa: PLC0415
-            except ImportError:
-                raise ModuleNotFoundError(
-                    "The PyYAML package is required to parse AQT configuration files. "
-                    "You can install it using 'pip install pyyaml'."
-                )
+        try:
+            import yaml  # noqa: PLC0415
+        except ImportError:
+            raise ModuleNotFoundError(
+                "The PyYAML package is required to parse AQT configuration files. "
+                "You can install it using 'pip install pyyaml'."
+            )
 
-            config_dict = self.aqt_get_configs()
-            pulses = yaml.safe_load(config_dict["pulses"])
-            variables = yaml.safe_load(config_dict["variables"])
+        config_dict = self.aqt_get_configs()
+        pulses = yaml.safe_load(config_dict["pulses"])
+        variables = yaml.safe_load(config_dict["variables"])
 
-            return pulses, variables
+        return pulses, variables
 
     def submit_aces(
         self,

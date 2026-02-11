@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import importlib.util
@@ -102,7 +116,7 @@ class CompilerOutput:  # noqa: PLW1641
         final_logical_to_physicals: (
             dict[int, int] | list[dict[int, int]] | list[list[dict[int, int]]]
         ),
-        pulse_gate_circuits: qiskit.QuantumCircuit | list[qiskit.QuantumCircuit] = None,
+        pulse_gate_circuits: qiskit.QuantumCircuit | list[qiskit.QuantumCircuit] | None = None,
         seq: qtrl.sequencer.Sequence | None = None,
         jaqal_programs: list[str] | None = None,
     ) -> None:
@@ -115,7 +129,7 @@ class CompilerOutput:  # noqa: PLW1641
             final_logical_to_physicals: Dictionary or list of dictionaries specifying final mapping
                 from logical to physical qubits.
             pulse_gate_circuits: Pulse-gate `qiskit.QuantumCircuit` or list thereof specifying the
-                pulse compilation.
+                pulse compilation, if available (`None` otherwise).
             seq: `qtrl.sequencer.Sequence` pulse sequence if `qtrl` is available locally.
             jaqal_programs: The Jaqal programs as individual strings.
         """
@@ -162,7 +176,7 @@ class CompilerOutput:  # noqa: PLW1641
 
         if self.has_multiple_circuits() != other.has_multiple_circuits():
             return False
-        elif self.has_multiple_circuits():
+        if self.has_multiple_circuits():
             return (
                 self.circuits == other.circuits
                 and self.initial_logical_to_physicals == other.initial_logical_to_physicals
@@ -226,19 +240,17 @@ def read_json(
         map(dict, json.loads(json_dict["final_logical_to_physicals"]))
     )
 
+    pulse_start_times = json_dict.get("pulse_start_times", [])
+    for circuit, start_times in zip(compiled_circuits, pulse_start_times):
+        circuit._op_start_times = start_times
+
     pulse_gate_circuits = None
 
     if "pulse_gate_circuits" in json_dict:
         pulse_gate_circuits = qss.deserialize_circuits(json_dict["pulse_gate_circuits"])
-        pulse_durations = json_dict.get("pulse_durations")
-        pulse_start_times = json_dict.get("pulse_start_times")
-        if pulse_durations and pulse_start_times:
-            pulse_gate_circuits = [
-                qss.serialization.insert_times_and_durations(circuit, durations, start_times)
-                for circuit, durations, start_times in zip(
-                    pulse_gate_circuits, pulse_durations, pulse_start_times
-                )
-            ]
+
+        for circuit, start_times in zip(pulse_gate_circuits, pulse_start_times):
+            circuit._op_start_times = start_times
 
     if circuits_is_list:
         return CompilerOutput(

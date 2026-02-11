@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import functools
@@ -101,14 +115,13 @@ class AceCR(qiskit.circuit.Gate):
             sandwich_rx_rads = self.params[1]
         if sandwich_rx_rads == 0 and rads == np.pi / 2:
             return "AceCR"
-        elif sandwich_rx_rads != 0 and rads not in [0, np.pi / 2]:
+        if sandwich_rx_rads != 0 and rads not in [0, np.pi / 2]:
             arg = qiskit.circuit.tools.pi_check(sandwich_rx_rads, ndigits=8)
             return f"AceCR({rads_str})|RXGate({arg})|"
-        elif sandwich_rx_rads != 0:
+        if sandwich_rx_rads != 0:
             arg = qiskit.circuit.tools.pi_check(sandwich_rx_rads, ndigits=8)
             return f"AceCR|RXGate({arg})|"
-        else:
-            return f"AceCR({rads_str})"
+        return f"AceCR({rads_str})"
 
 
 class ZZSwapGate(qiskit.circuit.Gate):
@@ -266,7 +279,7 @@ class ParallelGates(qiskit.circuit.Gate):
 
             if not isinstance(gate, qiskit.circuit.Gate):
                 raise TypeError("Component gates must be instances of `qiskit.circuit.Gate`")
-            elif isinstance(gate, ParallelGates):
+            if isinstance(gate, ParallelGates):
                 self.component_gates += gate.component_gates
             else:
                 self.component_gates += (gate,)
@@ -352,6 +365,7 @@ class iXGate(qiskit.circuit.Gate):
         num_ctrl_qubits: int = 1,
         label: str | None = None,
         ctrl_state: str | int | None = None,
+        annotated: bool | None = None,
     ) -> qiskit.circuit.ControlledGate:
         """Method to return a controlled version of the gate.
 
@@ -359,10 +373,13 @@ class iXGate(qiskit.circuit.Gate):
             num_ctrl_qubits: Number of control qubits for the gate. Defaults to 1.
             label: An optional label for the gate. Defaults to None.
             ctrl_state: The control qubit state to use (e.g. '00'). Defaults to None.
+            annotated: Ignored.
 
         Returns:
             The `qiskit.circuit.ControlledGate` version of the gate.
         """
+        _ = annotated
+
         if num_ctrl_qubits == 2:
             gate = iCCXGate(ctrl_state=ctrl_state)
             gate.base_gate.label = self.label
@@ -407,6 +424,7 @@ class iXdgGate(qiskit.circuit.Gate):
         num_ctrl_qubits: int = 1,
         label: str | None = None,
         ctrl_state: str | int | None = None,
+        annotated: bool | None = None,
     ) -> qiskit.circuit.ControlledGate:
         """Method to return a controlled version of the gate.
 
@@ -414,10 +432,13 @@ class iXdgGate(qiskit.circuit.Gate):
             num_ctrl_qubits: Number of control qubits for the gate. Defaults to 1.
             label: An optional label for the gate. Defaults to None.
             ctrl_state: The control qubit state to use (e.g. '00'). Defaults to None.
+            annotated: Ignored.
 
         Returns:
             The `qiskit.circuit.ControlledGate` version of the gate.
         """
+        _ = annotated
+
         if num_ctrl_qubits == 2:
             gate = iCCXdgGate(ctrl_state=ctrl_state)
             gate.base_gate.label = self.label

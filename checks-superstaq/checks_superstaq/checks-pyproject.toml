@@ -23,6 +23,7 @@ lint.select = [
   "C",      # flake8-comprehensions, mccabe checks
   "COM818", # trailing-comma-on-bare-tuple error
   "D",      # pydocstyle checks
+  "DTZ",    # flake8-datetimez checks
   "E",      # pycodestyle checks
   "ERA",    # Commented-out code checks
   "F",      # pyflakes checks
@@ -30,24 +31,29 @@ lint.select = [
   "FAST",   # FastAPI checks
   "FLY",    # flynt checks
   "FURB",   # refurb checks
+  "G",      # flake8-logging-format
   "I",      # isort checks
   "ICN",    # flake8-import-conventions
   "ISC",    # flake8-implicit-str-concat checks
+  "LOG",    # flake8-logging checks
   "NPY",    # numpy-specific checks
+  "PD",     # pandas-vet
   "PERF",   # Perflint checks
   "PGH",    # pygrep-hooks checks
   "PIE",    # flake8-pie checks
   "PL",     # pylint checks
-  "PLE",    # pylint errors
   "PT",     # flake8-pytest-style
   "PYI",    # flake8-pyi checks
   "Q",      # flake8-quotes checks
+  "RET",    # flake8-return checks
   "RSE",    # flake8-raise checks
   "RUF",    # Ruff-specific checks
   "SIM",    # flake8-simplify checks
+  "SLOT",   # flake8-slots checks
   "T10",    # flake8-debugger checks
   "T20",    # flake8-print checks
   "TC",     # flake8-type-checking checks
+  "TD",     # flake8-todos
   "TID",    # flake8-tidy-imports
   "TRY",    # tryceratops
   "UP",     # pyupgrade checks
@@ -88,6 +94,7 @@ lint.ignore = [
   "PT019",
   "PT022",
   "PYI041",
+  "RET504",
   "RUF001",
   "RUF002",
   "SIM102",
@@ -95,6 +102,8 @@ lint.ignore = [
   "SIM108",
   "SIM118",
   "TC003",
+  "TD002",
+  "TD003",
   "TRY003",
   # The following are excluded to not conflict with `ruff format`:
   "COM812",
@@ -154,7 +163,7 @@ warn_unused_ignores = true
 install_types = true
 non_interactive = true
 no_implicit_optional = true
-plugins = ["numpy.typing.mypy_plugin", "pydantic.mypy"]
+plugins = ["pydantic.mypy"]
 
 [tool.coverage.report]
 fail_under = 100
@@ -167,3 +176,20 @@ include = ["./*"]
 concurrency = ["thread"]
 parallel = true
 patch = ["subprocess"]
+
+[tool.licensepy]
+license_header_template = """Copyright {year} {licensee}
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+licensee = "Infleqtion"

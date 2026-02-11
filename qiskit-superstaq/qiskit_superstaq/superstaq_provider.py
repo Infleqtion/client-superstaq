@@ -1,3 +1,18 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
@@ -207,8 +222,7 @@ class SuperstaqProvider(gss.service.Service):
 
         if isinstance(target, str) and all(target == val["target"] for val in jobs.values()):
             return qss.SuperstaqJob(self.get_backend(target), job_id)
-        else:
-            raise gss.SuperstaqException("Job ids belong to jobs at different targets.")
+        raise gss.SuperstaqException("Job ids belong to jobs at different targets.")
 
     def resource_estimate(
         self, circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit], target: str
@@ -409,6 +423,8 @@ class SuperstaqProvider(gss.service.Service):
         base_entangling_gate: str = "xx",
         num_qubits: int | None = None,
         error_rates: SupportsItems[tuple[int, ...], float] | None = None,
+        atol: float = 1e-8,
+        atol_map: SupportsItems[tuple[int, ...], float] | None = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
@@ -441,6 +457,15 @@ class SuperstaqProvider(gss.service.Service):
                 for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`). If
                 provided, Superstaq will attempt to map the circuit to minimize the total error on
                 each qubit.
+            atol: Optional tolerance (trace distance bound) used for approximate compilation.
+                Superstaq will elide gates which can be approximated within the given tolerance by
+                identity operations.
+            atol_map: Optional dictionary assigning compilation tolerances to physical qubits, in
+                the form `{<qubit_indices>: <atol>, ...}` where `<qubit_indices>` is a tuple of
+                physical qubit indices (ints) and `<atol>` is an absolute tolerance (trace distance
+                bound) for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`).
+                If provided, these tolerances will override `atol` for gates on the given qubits.
+                Omitted qubit pairs default to `atol`.
             kwargs: Other desired qscout_compile options.
 
         Returns:
@@ -460,6 +485,8 @@ class SuperstaqProvider(gss.service.Service):
             base_entangling_gate=base_entangling_gate,
             num_qubits=num_qubits,
             error_rates=error_rates,
+            atol=atol,
+            atol_map=atol_map,
             **kwargs,
         )
 
