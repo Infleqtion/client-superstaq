@@ -126,7 +126,7 @@ def test_build_ssb_circuit(ssb_experiment: SSB) -> None:
         cirq.Moment(X(q0, q1)),
         cirq.Moment(_Y(q0, q1)),
         cirq.Moment(_X(q0, q1)),
-        css.Barrier(2)(q0, q1)
+        css.Barrier(2)(q0, q1),
     ]
     # Intermediate ops
     expected_circuit += [
