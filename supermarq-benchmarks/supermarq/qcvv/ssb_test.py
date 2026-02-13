@@ -1,4 +1,19 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Copyright 2021 The Cirq Developers
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,8 +25,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=missing-function-docstring
-# pylint: disable=missing-return-doc
 # mypy: disable-error-code=method-assign
 
 from __future__ import annotations
@@ -44,7 +57,7 @@ def test_ssb_init() -> None:
     for rot in experiment._reconciliation_rotation:
         assert len(rot) == 4
 
-    with pytest.raises(ValueError, match="Cannot perform SSB with a cycle depth of 1."):
+    with pytest.raises(ValueError, match=r"Cannot perform SSB with a cycle depth of 1."):
         SSB(num_circuits=10, cycle_depths=[1, 2, 3, 5])
 
 
@@ -92,8 +105,7 @@ def test_sss_reconciliation_circuit(ssb_experiment: SSB) -> None:
     )
 
 
-@pytest.mark.parametrize("with_barriers", [True, False])
-def test_build_ssb_circuit(with_barriers: bool, ssb_experiment: SSB) -> None:
+def test_build_ssb_circuit(ssb_experiment: SSB) -> None:
     X = css.ParallelRGate(np.pi / 2, 0.0, 2)
     _X = css.ParallelRGate(np.pi / 2, np.pi, 2)
     Y = css.ParallelRGate(np.pi / 2, np.pi / 2, 2)
@@ -101,7 +113,6 @@ def test_build_ssb_circuit(with_barriers: bool, ssb_experiment: SSB) -> None:
     ssb_experiment._rng = (rng := MagicMock())
     rng.integers.return_value = 4
     rng.choice.side_effect = [_X, _Y]
-    ssb_experiment._include_placeholders = with_barriers
     circuits = ssb_experiment._build_circuits(num_circuits=1, cycle_depths=[4])
 
     assert len(circuits) == 1
@@ -115,18 +126,20 @@ def test_build_ssb_circuit(with_barriers: bool, ssb_experiment: SSB) -> None:
         cirq.Moment(X(q0, q1)),
         cirq.Moment(_Y(q0, q1)),
         cirq.Moment(_X(q0, q1)),
+        css.Barrier(2)(q0, q1)
     ]
     # Intermediate ops
-    expected_circuit += [cirq.CZ(q0, q1).with_tags("no_compile")]
-    if with_barriers:
-        expected_circuit += [css.Barrier(2)(q0, q1)]
-    expected_circuit += [cirq.Moment(_X(q0, q1)), cirq.CZ(q0, q1).with_tags("no_compile")]
-    if with_barriers:
-        expected_circuit += [css.Barrier(2)(q0, q1)]
-    expected_circuit += [cirq.Moment(_Y(q0, q1))]
+    expected_circuit += [
+        cirq.Moment(_X(q0, q1)),
+        cirq.CZ(q0, q1).with_tags("no_compile"),
+        css.Barrier(2)(q0, q1),
+        cirq.Moment(_Y(q0, q1)),
+        cirq.CZ(q0, q1).with_tags("no_compile"),
+        css.Barrier(2)(q0, q1),
+    ]
     # Reconcilliation
     expected_circuit += [
-        cirq.Moment(Y(q0, q1)),
+        cirq.Moment(_Y(q0, q1)),
         cirq.Moment(X(q0, q1)),
         cirq.CZ(q0, q1).with_tags("no_compile"),
         cirq.Moment(Y(q0, q1)),
@@ -141,7 +154,7 @@ def test_build_ssb_circuit(with_barriers: bool, ssb_experiment: SSB) -> None:
         cirq.Circuit(expected_circuit),
     )
     assert circuits[0].data == {
-        "initial_sss_index": 11,
+        "initial_sss_index": 10,
         "num_cz_gates": 4,
     }
 
@@ -207,10 +220,10 @@ def test_ssb_analyse_results(tmp_path: pathlib.Path, ssb_experiment: SSB) -> Non
 
 def test_results_no_data() -> None:
     results = SSBResults(target="example", experiment=MagicMock(), data=None)
-    with pytest.raises(RuntimeError, match="No data stored. Cannot perform analysis."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot perform analysis."):
         results._analyze()
 
-    with pytest.raises(RuntimeError, match="No data stored. Cannot plot results."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot plot results."):
         results.plot_results()
 
 

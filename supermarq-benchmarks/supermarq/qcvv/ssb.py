@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Copyright 2021 The Cirq Developers
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +38,6 @@ import cirq
 import cirq_superstaq as css
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as npt
 import scipy.optimize
 import seaborn as sns
 import tqdm
@@ -34,6 +47,7 @@ import tqdm.contrib.itertools
 from supermarq.qcvv.base_experiment import QCVVExperiment, QCVVResults, Sample
 
 if TYPE_CHECKING:
+    import numpy.typing as npt
     from typing_extensions import Self
 
 
@@ -173,8 +187,6 @@ class SSB(QCVVExperiment[SSBResults]):
         num_circuits: int,
         cycle_depths: Iterable[int],
         *,
-        include_placeholders: bool = False,
-        distribute: bool = True,
         random_seed: int | np.random.Generator | None = None,
         _samples: list[Sample] | None = None,
         **kwargs: str,
@@ -185,16 +197,9 @@ class SSB(QCVVExperiment[SSBResults]):
             num_circuits: Number of circuits to sample.
             cycle_depths: The cycle depths to sample.
             random_seed: An optional seed to use for randomization.
-            include_placeholders: Whether to include placeholder barriers to prevent adjacent layer
-                being compiled together.
-            distribute: Whether to randomly distribute the CZ gates throughout the the circuit
-                instead of having them all at the start.
             kwargs: Additional kwargs passed to the base QCVVExperiment.
         """
         qubits = cirq.LineQubit.range(2)
-
-        self._include_placeholders = include_placeholders
-        self._distribute = distribute
 
         # Moments containing parallel rotations.
         X = css.ParallelRGate(np.pi / 2, 0.0, 2)
@@ -303,26 +308,18 @@ class SSB(QCVVExperiment[SSBResults]):
             sss_idx = int(self._rng.integers(0, 11, endpoint=True))
             circuit = self._sss_init_circuit(sss_idx)
 
-            if self._distribute and depth < max_depth:
-                indices = self._rng.choice(max_depth - 2, depth - 2, replace=False)
-            else:
-                indices = np.arange(depth - 2)
+            circuit += css.Barrier(2)(*self.qubits)
 
-            num = 0
             for i in range(max_depth - 2):
-                if i in indices:
-                    circuit += cirq.CZ.on(*self.qubits).with_tags("no_compile")
-                    sss_idx = idx_maps[cirq.CZ][sss_idx]
-                    num += 1
-
-                if self._include_placeholders:
-                    circuit += css.Barrier(2)(*self.qubits)
-
                 gate = self._random_parallel_qubit_rotation()
                 circuit += gate.on(*self.qubits)
                 sss_idx = idx_maps[gate][sss_idx]
 
-            assert num == depth - 2, (max_depth, depth, num)
+                if i < depth - 2:
+                    circuit += cirq.CZ.on(*self.qubits).with_tags("no_compile")
+                    sss_idx = idx_maps[cirq.CZ][sss_idx]
+
+                circuit += css.Barrier(2)(*self.qubits)
 
             circuit += self._sss_reconciliation_circuit(sss_idx) + cirq.measure(self.qubits)
 
