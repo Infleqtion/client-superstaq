@@ -30,7 +30,7 @@ qc.cx(0, 1)
 qc.measure(0, 0)
 qc.measure(1, 1)
 
-print(qc)
+print(qc.draw())
 
 # Submitting a circuit to IBM's Fez QPU. Providing the "dry-run" method parameter instructs Superstaq to simulate the circuit, and is available to free trial users.
 backend = superstaq.get_backend("ibmq_fez_qpu")
