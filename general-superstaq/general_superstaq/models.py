@@ -447,6 +447,10 @@ class WorkerTask(DefaultPydanticModel):
     """Additional metadata passed by the user."""
     user_email: pydantic.EmailStr | None = pydantic.Field(default=None)
     """The user's email."""
+    tags: list[str] = pydantic.Field(default_factory=list)
+    """A list of tags for the job."""
+    user_role: str  = "unknown"
+    """The role of the user that submitted the job."""
 
 
 class WorkerTaskStatus(DefaultPydanticModel):
