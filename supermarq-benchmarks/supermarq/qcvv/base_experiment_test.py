@@ -38,6 +38,7 @@ from unittest.mock import MagicMock, patch
 
 import cirq
 import cirq_superstaq as css
+import general_superstaq as gss
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -182,8 +183,10 @@ def test_results_init(
     assert results.qubits == (cirq.q(0), cirq.q(1))
 
 
+@pytest.mark.parametrize("job_type", [css.Job, css.JobV3])
 def test_results_getitem(
     abc_experiment: ExampleExperiment,
+    job_type: type[css.Job | css.JobV3],
 ) -> None:
     q0, q1 = abc_experiment.qubits
 
@@ -273,7 +276,9 @@ def test_results_getitem(
         check_like=True,
     )
 
-    mock_job = MagicMock(spec=css.Job)
+    mock_job = MagicMock(spec=job_type)
+    if job_type == css.JobV3:
+        mock_job.status.return_value = gss.models.CircuitStatus.PENDING
     mock_job.status.return_value = "Queued"
     results = ExampleResults(target="target", experiment=abc_experiment, job=mock_job)
     with pytest.raises(ValueError, match=r"No results to split."):
@@ -302,8 +307,14 @@ def test_results_not_analyzed(abc_experiment: ExampleExperiment) -> None:
         _ = results.example_final_result
 
 
-def test_results_job_still_running(abc_experiment: ExampleExperiment) -> None:
-    mock_job = MagicMock(spec=css.Job)
+@pytest.mark.parametrize("job_type", [css.Job, css.JobV3])
+def test_results_job_still_running(
+    abc_experiment: ExampleExperiment,
+    job_type: type[css.Job | css.JobV3],
+) -> None:
+    mock_job = MagicMock(spec=job_type)
+    if job_type == css.JobV3:
+        mock_job.status.return_value = gss.models.CircuitStatus.PENDING
     mock_job.status.return_value = "Pending"
     results = ExampleResults(target="target", experiment=abc_experiment, job=mock_job)
     with pytest.warns(
@@ -351,11 +362,16 @@ def test_results_ready(abc_experiment: ExampleExperiment) -> None:
     assert results.data_ready
 
 
+@pytest.mark.parametrize("job_type", [css.Job, css.JobV3])
 def test_results_ready_from_job(
-    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+    abc_experiment: ExampleExperiment,
+    sample_circuits: list[Sample],
+    job_type: type[css.Job | css.JobV3],
 ) -> None:
     abc_experiment.samples = sample_circuits
-    mock_job = MagicMock(spec=css.Job)
+    mock_job = MagicMock(spec=job_type)
+    if job_type == css.JobV3:
+        mock_job.status.return_value = gss.models.CircuitStatus.COMPLETED
     mock_job.status.return_value = "Done"
     mock_job.counts.return_value = [
         {
@@ -730,12 +746,15 @@ def test_run_with_callable_bad_bitstring(abc_experiment: ExampleExperiment) -> N
         abc_experiment.run_with_callable(_example_callable, some="kwargs")  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize("job_type", [css.Job, css.JobV3])
 def test_results_collect_device_counts(
-    abc_experiment: ExampleExperiment, sample_circuits: list[Sample]
+    abc_experiment: ExampleExperiment,
+    sample_circuits: list[Sample],
+    job_type: type[css.Job | css.JobV3],
 ) -> None:
     abc_experiment.samples = sample_circuits
 
-    mock_job = MagicMock(spec=css.Job)
+    mock_job = MagicMock(spec=job_type)
     mock_job.counts.return_value = [
         {
             "00": 20,
