@@ -1349,21 +1349,16 @@ class _SuperstaqClientV3(_AbstractUserClient):
     ) -> dict[str, object]:
         """Version 0.3.0 implementation."""
         # Infer the job type
-        if method in gss.models.JobType:
+        if method in {m.value for m in gss.models.JobType}:
             job_type = gss.models.JobType(method)
-        elif method in gss.models.SimMethod:
+            sim_method = (
+                gss.models.SimMethod.SIM if job_type == gss.models.JobType.SIMULATE else None
+            )
+        elif method in {m.value for m in gss.models.SimMethod}:
             job_type = gss.models.JobType.SIMULATE
+            sim_method = gss.models.SimMethod(method)
         else:
             job_type = gss.models.JobType.SUBMIT
-
-        # Get sim method if needed
-        if job_type == gss.models.JobType.SIMULATE:
-            sim_method = (
-                gss.models.SimMethod(method)
-                if method in gss.models.SimMethod
-                else gss.models.SimMethod.SIM
-            )
-        else:
             sim_method = None
 
         # Infer dry run
