@@ -1349,20 +1349,20 @@ class _SuperstaqClientV3(_AbstractUserClient):
     ) -> dict[str, object]:
         """Version 0.3.0 implementation."""
         # Infer the job type
-        if (
-            target.endswith("_simulator")
-            or method in gss.models.SimMethod._value2member_map_.keys()
-        ):
+        if method in gss.models.JobType:
+            job_type = gss.models.JobType(method)
+        elif method in gss.models.SimMethod:
             job_type = gss.models.JobType.SIMULATE
         else:
             job_type = gss.models.JobType.SUBMIT
 
         # Get sim method if needed
         if job_type == gss.models.JobType.SIMULATE:
-            if method in gss.models.SimMethod._value2member_map_.keys():
-                sim_method = gss.models.SimMethod(method)
-            else:
-                sim_method = None
+            sim_method = (
+                gss.models.SimMethod(method)
+                if method in gss.models.SimMethod
+                else gss.models.SimMethod.SIM
+            )
         else:
             sim_method = None
 
