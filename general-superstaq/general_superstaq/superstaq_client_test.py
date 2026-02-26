@@ -424,8 +424,7 @@ def test_supertstaq_client_create_job(
         sim_method = None
         if method == "sim":
             job_type = "simulate"
-            if method == "sim":
-                sim_method = "sim"
+            sim_method = "sim"
         elif method == "compile":
             job_type = "compile"
         expected_json = {
