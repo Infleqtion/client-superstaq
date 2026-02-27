@@ -137,6 +137,8 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             "measure_ff": qiskit.circuit.Measure(
                 label="measure_ff"
             ),  # Measurement with classical feed-forward
+            "barrier": qiskit.circuit.Barrier,
+            "measure": qiskit.circuit.Measure,
         }
         backend_target = qiskit.transpiler.Target.from_configuration(
             num_qubits=target_info.get("num_qubits"),
