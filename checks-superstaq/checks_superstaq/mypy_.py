@@ -56,7 +56,7 @@ def run(
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     return subprocess.call(
-        ["python", "-m", "mypy", *files, *args_to_pass], cwd=check_utils.root_dir
+        [sys.executable, "-m", "mypy", *files, *args_to_pass], cwd=check_utils.root_dir
     )
 
 

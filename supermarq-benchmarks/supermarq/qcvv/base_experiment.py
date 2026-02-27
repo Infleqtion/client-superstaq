@@ -43,7 +43,7 @@ import cirq
 import cirq_superstaq as css
 import numpy as np
 import pandas as pd
-from cirq_superstaq.job import JobV3
+from general_superstaq.models import CircuitStatus
 from tqdm.auto import tqdm
 
 import supermarq
@@ -140,7 +140,7 @@ class QCVVResults(ABC):
     experiment: QCVVExperiment[QCVVResults]
     """Reference to the underlying experiment that generated these results experiment."""
 
-    job: css.Job | None = None
+    job: css.Job | css.JobV3 | None = None
     """The associated Superstaq job (if applicable)."""
 
     data: pd.DataFrame | None = None
@@ -176,7 +176,7 @@ class QCVVResults(ABC):
                 "add results data in order to perform analysis"
             )
         job_status = self.job.status()
-        if job_status == "Done":
+        if job_status in ["Done", CircuitStatus.COMPLETED]:
             self.data = self._collect_device_counts()
             return True
         return False
@@ -801,10 +801,6 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
             **target_options,
         )
 
-        if isinstance(experiment_job, JobV3):  # pragma: no cover
-            raise NotImplementedError(
-                "QCVV experiments are not using v0.3.0 of the Superstaq API yet."
-            )
         return self._results_cls(
             target=target,
             experiment=self,

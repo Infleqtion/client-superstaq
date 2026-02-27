@@ -64,7 +64,8 @@ def run(
 
     if files:
         returncode_ruff_format = subprocess.call(
-            ["python", "-m", "ruff", "format", *files, *args_to_pass], cwd=check_utils.root_dir
+            [sys.executable, "-m", "ruff", "format", *files, *args_to_pass],
+            cwd=check_utils.root_dir,
         )
         if returncode_ruff_format == 1:
             command = "./checks/format_.py --fix"

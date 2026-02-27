@@ -378,7 +378,7 @@ def test_superstaq_client_use_stored_ibmq_credential(api_version: str) -> None:
         }
 
 
-@pytest.mark.parametrize("method", ["dry-run", "sim"])
+@pytest.mark.parametrize("method", ["dry-run", "sim", "compile"])
 @pytest.mark.parametrize("target", ["ss_example_qpu", "ss_example_simulator"])
 @pytest.mark.parametrize(
     ("client_name", "job_id"), [("client_v2", "id"), ("client_v3", uuid.UUID(int=0))]
@@ -422,10 +422,11 @@ def test_supertstaq_client_create_job(
     else:
         job_type = "submit"
         sim_method = None
-        if target.endswith("_simulator") or method == "sim":
+        if method == "sim":
             job_type = "simulate"
-            if method == "sim":
-                sim_method = "sim"
+            sim_method = "sim"
+        elif method == "compile":
+            job_type = "compile"
         expected_json = {
             "job_type": job_type,
             "target": target,
