@@ -11,6 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unlcss required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either exprcss or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import collections
@@ -21,12 +35,11 @@ from types import NotImplementedType
 from typing import Self, TypeVar
 
 import cirq
-import cirq_superstaq as css
 import numpy as np
 import tqdm
 import tqdm.contrib.concurrent
 
-import experiments_superstaq as ess
+import cirq_superstaq as css
 
 TTransitionMatrix = np.ndarray[tuple[int, int], np.dtype[np.float64]]
 TMeasurements = np.ndarray[tuple[int, ...], np.dtype[np.uint8]]
@@ -118,14 +131,13 @@ class LeakageState(
 
             return 0
 
-        else:
-            if np.any(self._state.v & self._state.G[axis]):
-                return 0
+        if np.any(self._state.v & self._state.G[axis]):
+            return 0
 
-            if sum(self._state.s & self._state.G[axis]) % 2:
-                return -1
+        if sum(self._state.s & self._state.G[axis]) % 2:
+            return -1
 
-            return 1
+        return 1
 
     def _promote_classical(self, qubit: cirq.Qid) -> None:
         axis = self.qubit_map[qubit]
@@ -232,7 +244,7 @@ class LeakageState(
         ```
 
         TODO: There are a number of ways we could go about improving this, e.g.
-            * use a better/less conservative approximation
+            * use a better/lcss conservative approximation
             * separate the non-stabilizer components of the operation and model them separately,
               e.g. with a Pauli-twirling approximation
             * refit the parameters of our noise model using this constraint
@@ -433,7 +445,7 @@ class ClassicalDistribution(cirq.QuantumStateRepresentation):
             transition_matrix: A matrix of jump probabilities.
 
         Returns:
-            True, indicating success.
+            True, indicating succcss.
         """
         transition_matrix = transition_matrix + np.diag(
             1 - transition_matrix.sum(0)
@@ -451,7 +463,7 @@ class ClassicalDistribution(cirq.QuantumStateRepresentation):
             channel: The channel to apply.
 
         Returns:
-            True if the channel was successfully applied, False otherwise.
+            True if the channel was succcssfully applied, False otherwise.
         """
         kraus_ops = cirq.kraus(channel, default=None)
         if kraus_ops is None:
@@ -592,7 +604,7 @@ def sample_circuit(
     repetitions: int = 1,
     oversample: int = 0,
     seed: cirq.RANDOM_STATE_OR_SEED_LIKE = None,
-    progressbar: bool = True,
+    progrcssbar: bool = True,
     ch_form: bool = False,
     max_workers: int | None = None,
 ) -> cirq.ResultDict:
@@ -609,9 +621,9 @@ def sample_circuit(
             output distribution, with a variance somewhere between that of `repetitions` and
             `oversample * repetitions` fully-independent samples.
         seed: The random seed or generator to use when sampling.
-        progressbar: Whether to display a progressbar.
+        progrcssbar: Whether to display a progrcssbar.
         ch_form: Whether to use the CH form stabilizer state (otherwise use tableau).
-        max_workers: The number of processes over which to parallelize samples (or zero to disable
+        max_workers: The number of proccsses over which to parallelize samples (or zero to disable
             parallelization). Defaults to `num_cpus // 2`.
     """
     records: dict[str, list[TMeasurements]] = {
@@ -629,14 +641,14 @@ def sample_circuit(
         max_workers = len(os.sched_getaffinity(0)) // 2
 
     if max_workers > 0:
-        process_map = tqdm.contrib.concurrent.process_map(
+        proccss_map = tqdm.contrib.concurrent.process_map(
             _sim_one,
             itertools.repeat(circuit),
             itertools.repeat(oversample),
             itertools.repeat(ch_form),
             seeds,
             max_workers=max_workers,
-            disable=not progressbar,
+            disable=not progrcssbar,
             total=repetitions,
         )
     else:
@@ -647,13 +659,13 @@ def sample_circuit(
             itertools.repeat(ch_form),
             seeds,
         )
-        process_map = tqdm.auto.tqdm(
+        proccss_map = tqdm.auto.tqdm(
             mapped,
             total=repetitions,
-            disable=not progressbar,
+            disable=not progrcssbar,
         )
 
-    for meas in process_map:
+    for meas in proccss_map:
         for k, v in meas.items():
             records[k].append(v)
 
@@ -665,7 +677,7 @@ def estimate_distribution(
     repetitions: int = 1,
     oversample: int = 10,
     seed: cirq.RANDOM_STATE_OR_SEED_LIKE = None,
-    progressbar: bool = True,
+    progrcssbar: bool = True,
     ch_form: bool = False,
     max_workers: int | None = None,
 ) -> dict[str, float]:
@@ -692,9 +704,9 @@ def estimate_distribution(
             output distribution, with a variance somewhere between that of `repetitions` and
             `oversample * repetitions` fully-independent samples.
         seed: The random seed or generator to use when sampling.
-        progressbar: Whether to display a progressbar.
+        progrcssbar: Whether to display a progrcssbar.
         ch_form: Whether to use the CH form stabilizer state (otherwise use tableau).
-        max_workers: The number of processes over which to parallelize samples (or zero to disable
+        max_workers: The number of proccsses over which to parallelize samples (or zero to disable
             parallelization). Defaults to `num_cpus // 2`.
     """
     seed = cirq.value.parse_random_state(seed)
@@ -721,14 +733,14 @@ def estimate_distribution(
         max_workers = len(os.sched_getaffinity(0)) // 2
 
     if max_workers > 0:
-        process_map = tqdm.contrib.concurrent.process_map(
+        proccss_map = tqdm.contrib.concurrent.process_map(
             _sim_one,
             itertools.repeat(circuit),
             itertools.repeat(oversample),
             itertools.repeat(ch_form),
             seeds,
             max_workers=max_workers,
-            disable=not progressbar,
+            disable=not progrcssbar,
             total=repetitions,
         )
     else:
@@ -739,13 +751,13 @@ def estimate_distribution(
             itertools.repeat(ch_form),
             seeds,
         )
-        process_map = tqdm.auto.tqdm(
+        proccss_map = tqdm.auto.tqdm(
             mapped,
             total=repetitions,
-            disable=not progressbar,
+            disable=not progrcssbar,
         )
 
-    for meas in process_map:
+    for meas in proccss_map:
         counts += collections.Counter("".join(map(str, val)) for val in meas["c"].take(-1, 1))
 
     total = repetitions * max(oversample, 1)
@@ -774,7 +786,7 @@ def simulate_true_distribution(
     qid_shape = (dimension,) * len(qubits)
     measured_qubit_indices = [qubits.index(q) for q in measured_qubits]
 
-    circuit = ess.simulation.ops.with_dimension(circuit, dimension)
+    circuit = css.sim.ops.with_dimension(circuit, dimension)
 
     sim = cirq.DensityMatrixSimulator(dtype=dtype)
     rho = sim.simulate(circuit[:-1], qubit_order=qudits).final_density_matrix.reshape(2 * qid_shape)

@@ -17,8 +17,9 @@ from collections.abc import Iterable, Iterator, Sequence
 from typing import TYPE_CHECKING, Self
 
 import cirq
-import cirq_superstaq as css
 import numpy as np
+
+import cirq_superstaq as css
 
 if TYPE_CHECKING:
     import numpy.typing as npt

@@ -11,15 +11,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unlcss required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either exprcss or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 from collections.abc import Mapping
 
 import cirq
-import cirq_superstaq as css
 import numpy as np
 
-import experiments_superstaq as ess
+import cirq_superstaq as css
 
 
 def _assert_distributions_approx_eq(
@@ -34,7 +47,7 @@ def _assert_distributions_approx_eq(
 
 
 def test_scale_by() -> None:
-    params1 = ess.simulation.sqale_leakage_model.DEFAULT_PARAMS
+    params1 = css.sim.sqale_leakage_model.DEFAULT_PARAMS
     params2 = params1.scale_by(2.0)
     params3 = params2.scale_by(3.0)
 
@@ -57,17 +70,17 @@ def test_spam_errors() -> None:
         cirq.X(q1),
         cirq.measure(q0, q1),
     )
-    res = ess.simulation.leakage_sim.simulate_true_distribution(circuit, 5)
+    res = css.sim.leakage_sim.simulate_true_distribution(circuit, 5)
     assert res == {"01": 1.0}
 
-    model = ess.simulation.sqale_leakage_model.SqaleLeakageModel()
-    res = ess.simulation.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
+    model = css.sim.sqale_leakage_model.SqaleLeakageModel()
+    res = css.sim.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
     assert res == {"01": 1.0}
 
-    model = ess.simulation.sqale_leakage_model.SqaleLeakageModel(
+    model = css.sim.sqale_leakage_model.SqaleLeakageModel(
         initial_state_probs=[0.22, 0.7, 0.03, 0.0, 0.05]
     )
-    res = ess.simulation.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
+    res = css.sim.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
     _assert_distributions_approx_eq(
         res,
         {
@@ -83,8 +96,8 @@ def test_spam_errors() -> None:
         },
     )
 
-    model = ess.simulation.sqale_leakage_model.SqaleLeakageModel(classifier_errors=(0.01, 0.1))
-    res = ess.simulation.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
+    model = css.sim.sqale_leakage_model.SqaleLeakageModel(classifier_errors=(0.01, 0.1))
+    res = css.sim.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
     _assert_distributions_approx_eq(
         res,
         {
@@ -104,11 +117,11 @@ def test_rz_errors() -> None:
         cirq.Z(q1),
     )
 
-    model = ess.simulation.sqale_leakage_model.SqaleLeakageModel()
-    res = ess.simulation.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
+    model = css.sim.sqale_leakage_model.SqaleLeakageModel()
+    res = css.sim.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
     assert res == {"01": 1.0}
 
-    model = ess.simulation.sqale_leakage_model.SqaleLeakageModel(
+    model = css.sim.sqale_leakage_model.SqaleLeakageModel(
         rz_transition_matrix=[
             [0, 3e-1, 0, 0],
             [1e-1, 0, 0, 0],
@@ -116,7 +129,7 @@ def test_rz_errors() -> None:
             [1e-3, 3e-3, 0, 0],
         ],
     )
-    res = ess.simulation.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
+    res = css.sim.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
     _assert_distributions_approx_eq(
         res,
         {
@@ -146,8 +159,8 @@ def test_rz_errors() -> None:
         cirq.S(q1),
         cirq.H.on_each(q0, q1),
     )
-    model = ess.simulation.sqale_leakage_model.SqaleLeakageModel(rz_relative_overrotation=0.1)
-    res = ess.simulation.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
+    model = css.sim.sqale_leakage_model.SqaleLeakageModel(rz_relative_overrotation=0.1)
+    res = css.sim.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
     _assert_distributions_approx_eq(
         res,
         {
@@ -167,7 +180,7 @@ def test_gr_errors() -> None:
         css.ParallelRGate(2 * np.pi - 1.0, np.pi + 1.0, 2).on(q0, q1),
     )
 
-    model = ess.simulation.sqale_leakage_model.SqaleLeakageModel(
+    model = css.sim.sqale_leakage_model.SqaleLeakageModel(
         gr_relative_overrotation=0.25,
         gr_static_overrotation_rads=0.005,
     )
@@ -188,14 +201,14 @@ def test_cz_errors() -> None:
     q0, q1 = cirq.q(0), cirq.q(1)
     circuit = cirq.Circuit(cirq.X(q1), cirq.CZ(q0, q1))
 
-    res = ess.simulation.leakage_sim.simulate_true_distribution(circuit, 5)
+    res = css.sim.leakage_sim.simulate_true_distribution(circuit, 5)
     assert res == {"01": 1.0}
 
-    model = ess.simulation.sqale_leakage_model.SqaleLeakageModel()
-    res = ess.simulation.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
+    model = css.sim.sqale_leakage_model.SqaleLeakageModel()
+    res = css.sim.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
     assert res == {"01": 1.0}
 
-    model = ess.simulation.sqale_leakage_model.SqaleLeakageModel(
+    model = css.sim.sqale_leakage_model.SqaleLeakageModel(
         cz_transition_matrix=[
             [0, 3e-1, 0, 0],
             [1e-1, 0, 0, 0],
@@ -203,7 +216,7 @@ def test_cz_errors() -> None:
             [1e-3, 3e-3, 0, 0],
         ],
     )
-    res = ess.simulation.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
+    res = css.sim.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
     _assert_distributions_approx_eq(
         res,
         {
@@ -232,14 +245,14 @@ def test_cz_errors() -> None:
         cirq.CZ(q0, q1),
         cirq.H(q1),
     )
-    model = ess.simulation.sqale_leakage_model.SqaleLeakageModel(cz_phase_error=0.1)
-    res = ess.simulation.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
+    model = css.sim.sqale_leakage_model.SqaleLeakageModel(cz_phase_error=0.1)
+    res = css.sim.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
     _assert_distributions_approx_eq(res, {"10": 0.1, "11": 0.9})
 
     # Check correct merging of phase error into transition matrix
     rng = np.random.default_rng()
     random_transitions = rng.uniform(0, 0.01, (5, 4))
-    model = ess.simulation.sqale_leakage_model.SqaleLeakageModel(
+    model = css.sim.sqale_leakage_model.SqaleLeakageModel(
         cz_transition_matrix=random_transitions.tolist(),
         cz_phase_error=0.1,
     )
@@ -250,9 +263,9 @@ def test_cz_errors() -> None:
         cirq.CZ(q0, q1),
         cirq.MatrixGate(cirq.testing.random_unitary(4)).on(q0, q1),
     )
-    res1 = ess.simulation.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
+    res1 = css.sim.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
 
-    model = ess.simulation.sqale_leakage_model.SqaleLeakageModel(
+    model = css.sim.sqale_leakage_model.SqaleLeakageModel(
         cz_transition_matrix=random_transitions.tolist(),
         cz_phase_error=0.0,
     )
@@ -265,7 +278,7 @@ def test_cz_errors() -> None:
         cirq.phase_flip(0.1).on_each(q0, q1),
         circuit[4],
     )
-    res2 = ess.simulation.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
+    res2 = css.sim.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
 
     _assert_distributions_approx_eq(res1, res2)
 
@@ -278,8 +291,8 @@ def test_permutation_errors() -> None:
         cirq.H.on_each(q0, q1, q2),
     )
 
-    model = ess.simulation.sqale_leakage_model.SqaleLeakageModel(movement_phase_error=0.1)
-    res = ess.simulation.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
+    model = css.sim.sqale_leakage_model.SqaleLeakageModel(movement_phase_error=0.1)
+    res = css.sim.leakage_sim.simulate_true_distribution(circuit.with_noise(model), 5)
     _assert_distributions_approx_eq(
         res,
         {

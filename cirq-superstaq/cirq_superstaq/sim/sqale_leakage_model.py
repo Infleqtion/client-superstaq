@@ -17,9 +17,10 @@ from collections.abc import Iterable, Iterator, Sequence
 from typing import TYPE_CHECKING
 
 import cirq
-import cirq_superstaq as css
 import numpy as np
 import pydantic
+
+import cirq_superstaq as css
 
 from .ops import JumpChannel
 
@@ -152,67 +153,64 @@ class SqaleLeakageModel(cirq.NoiseModel):
         Returns:
             An iterator of noisy operations.
         """
-        match operation.gate:
-            case cirq.CZ:
-                yield operation
+        gate = operation.gate
+        if gate == cirq.CZ:
+            yield operation
 
-                if self._cz_error_channel:
-                    yield from self._cz_error_channel.on_each(*operation.qubits)
+            if self._cz_error_channel:
+                yield from self._cz_error_channel.on_each(*operation.qubits)
+        elif isinstance(gate, (css.RGate, css.ParallelRGate)):
+            # This is how the hardware canonicalizes rotation angles:
+            theta = (gate.theta - np.pi) % (-2 * np.pi) + np.pi
+            phi = gate.phi
+            if theta < 0:
+                theta = -theta
+                phi += np.pi
+            phi %= 2 * np.pi
 
-            case css.RGate() | css.ParallelRGate():
-                # This is how the hardware canonicalizes rotation angles:
-                theta = (operation.gate.theta - np.pi) % (-2 * np.pi) + np.pi
-                phi = operation.gate.phi
-                if theta < 0:
-                    theta = -theta
-                    phi += np.pi
-                phi %= 2 * np.pi
+            new_gate = css.ParallelRGate(theta, phi, cirq.num_qubits(operation))
+            yield new_gate.on(*operation.qubits)
 
-                gate = css.ParallelRGate(theta, phi, cirq.num_qubits(operation))
-                yield gate.on(*operation.qubits)
+            # Add overrotation component as a second GR gate
+            theta_over = theta * self._gr_relative_overrotation
+            theta_over += self._gr_static_overrotation_rads
 
-                # Add overrotation component as a second GR gate
-                theta *= self._gr_relative_overrotation
-                theta += self._gr_static_overrotation_rads
+            if theta_over:
+                over_gate = css.ParallelRGate(theta_over, phi, cirq.num_qubits(operation))
+                yield over_gate.on(*operation.qubits)
 
-                if theta:
-                    gate = css.ParallelRGate(theta, phi, cirq.num_qubits(operation))
-                    yield gate.on(*operation.qubits)
+        elif isinstance(gate, cirq.ZPowGate):
+            yield operation
 
-            case cirq.ZPowGate():
-                yield operation
+            # Add overrotation component
+            yield cirq.pow(operation, self._rz_relative_overrotation)
 
-                # Add overrotation component
-                yield cirq.pow(operation, self._rz_relative_overrotation)
+            if self._rz_leak_channel:
+                yield from self._rz_leak_channel.on_each(*operation.qubits)
 
-                if self._rz_leak_channel:
-                    yield from self._rz_leak_channel.on_each(*operation.qubits)
+        elif isinstance(gate, cirq.MeasurementGate):
+            assert not gate.confusion_map
 
-            case cirq.MeasurementGate():
-                assert not operation.gate.confusion_map
+            meas_error_array = np.zeros((self.dimension, self.dimension))
+            meas_error_array[0, 0:4:2] = 1 - self.classifier_errors[0]
+            meas_error_array[0, 1:4:2] = self.classifier_errors[1]
+            meas_error_array[1, 0:4:2] = self.classifier_errors[0]
+            meas_error_array[1, 1:4:2] = 1 - self.classifier_errors[1]
+            meas_error_array[2:3, 4:] = 1  # Project all loss into "2" state
 
-                meas_error_array = np.zeros((self.dimension, self.dimension))
-                meas_error_array[0, 0:4:2] = 1 - self.classifier_errors[0]
-                meas_error_array[0, 1:4:2] = self.classifier_errors[1]
-                meas_error_array[1, 0:4:2] = self.classifier_errors[0]
-                meas_error_array[1, 1:4:2] = 1 - self.classifier_errors[1]
-                meas_error_array[2:3, 4:] = 1  # Project all loss into "2" state
+            assert np.allclose(meas_error_array.sum(0), 1)
 
-                assert np.allclose(meas_error_array.sum(0), 1)
+            classifier_error_channel = JumpChannel(meas_error_array)
 
-                classifier_error_channel = JumpChannel(meas_error_array)
+            yield from classifier_error_channel.on_each(*operation.qubits)
+            yield cirq.measure(*operation.qubits, key=cirq.measurement_key_obj(operation))
+        elif isinstance(gate, cirq.QubitPermutationGate):
+            yield operation
 
-                yield from classifier_error_channel.on_each(*operation.qubits)
-                yield cirq.measure(*operation.qubits, key=cirq.measurement_key_obj(operation))
-
-            case cirq.QubitPermutationGate():
-                yield operation
-
-                channel = cirq.phase_flip(self._movement_phase_error)
-                yield from channel.on_each(*operation.qubits)
-
-            case _:
-                yield operation
+            channel = cirq.phase_flip(self._movement_phase_error)
+            yield from channel.on_each(*operation.qubits)
+        else:
+            yield operation
 
     def noisy_moments(
         self, moments: Iterable[cirq.Moment], system_qubits: Sequence[cirq.Qid]
