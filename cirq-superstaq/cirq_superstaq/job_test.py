@@ -610,6 +610,48 @@ def test_input_circuitV3(
     assert jobV3.input_circuits(index=0) == input_circuit
 
 
+@mock.patch("requests.Session.get")
+def test_logical_to_physicals(
+    mock_get: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
+) -> None:
+    job_result = modifiy_job_result(
+        job_dictV3,
+        num_circuits=2,
+        logical_qubits=[cirq.to_json(cirq.LineQubit.range(2))] * 2,
+        physical_qubits=[cirq.to_json(cirq.GridQubit.rect(2, 1))] * 2,
+        initial_logical_to_physicals=[{0: 0, 1: 1}, {0: 1, 1: 0}],
+        final_logical_to_physicals=[{0: 1, 1: 0}, {0: 0, 1: 1}],
+    )
+    mock_get.return_value.json.return_value = {str(uuid.UUID(int=42)): job_result}
+
+    assert jobV3.initial_logical_to_physical(0) == {
+        cirq.q(0): cirq.q(0, 0),
+        cirq.q(1): cirq.q(1, 0),
+    }
+    assert jobV3.initial_logical_to_physical(1) == {
+        cirq.q(0): cirq.q(1, 0),
+        cirq.q(1): cirq.q(0, 0),
+    }
+    assert jobV3.initial_logical_to_physical() == [
+        {cirq.q(0): cirq.q(0, 0), cirq.q(1): cirq.q(1, 0)},
+        {cirq.q(0): cirq.q(1, 0), cirq.q(1): cirq.q(0, 0)},
+    ]
+    assert jobV3.final_logical_to_physical(0) == {
+        cirq.q(0): cirq.q(1, 0),
+        cirq.q(1): cirq.q(0, 0),
+    }
+    assert jobV3.final_logical_to_physical(1) == {
+        cirq.q(0): cirq.q(0, 0),
+        cirq.q(1): cirq.q(1, 0),
+    }
+    assert jobV3.final_logical_to_physical() == [
+        {cirq.q(0): cirq.q(1, 0), cirq.q(1): cirq.q(0, 0)},
+        {cirq.q(0): cirq.q(0, 0), cirq.q(1): cirq.q(1, 0)},
+    ]
+
+    mock_get.assert_called_once()
+
+
 def test_job_status_refresh() -> None:
     completed_job_dict = {"new_job_id": {"status": "Done"}}
 
