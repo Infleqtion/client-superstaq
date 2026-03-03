@@ -263,6 +263,6 @@ def test_repr(ssb_experiment: SSB) -> None:
     results._cz_fidelity_estimate = 0.98
     results._cz_fidelity_estimate_std = 0.01
     assert results.__repr__() == (
-        "SSBResults(Estimated CZ fidelity: 0.98 +/- 0.01, experiment=SSB(num_qubits=2, num_samples=30), "
-        "target=target)"
+        "SSBResults(Estimated CZ fidelity: 0.98 +/- 0.01, experiment=SSB(num_qubits=2, "
+        "num_samples=30), target=target)"
     )

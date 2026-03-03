@@ -38,11 +38,11 @@ import uuid
 from unittest.mock import MagicMock, patch
 
 import cirq
+import cirq_superstaq as css
 import numpy as np
 import pandas as pd
 import pytest
 
-import cirq_superstaq as css
 from supermarq.qcvv.su2 import SU2, SU2Results, decay
 
 
@@ -280,4 +280,3 @@ def test_repr(su2_experiment: SU2) -> None:
         "single qubit noise: 0.999 +/- 0.1, experiment=SU2(two_qubit_gate=CNOT, num_qubits=2, "
         "num_samples=16), target=target)"
     )
-    
