@@ -504,7 +504,6 @@ class Job:
         return sub_job
 
 
-@cirq.value_equality(unhashable=True)
 class JobV3:
     """***NEW API STANDARD*** A job created on the Superstaq API.
 
@@ -554,6 +553,15 @@ class JobV3:
         self._job_data: gss.models.JobData | None = None
         self._job_id = job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(job_id)
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, JobV3):
+            return NotImplemented
+
+        return self._job_id == other._job_id
+
+    def __hash__(self) -> int:
+        return hash(self._job_id)
+
     def _refresh_job(self) -> None:
         """If the last fetched job is not terminal, gets the job from the API."""
         if self._job_data is not None:
@@ -563,6 +571,25 @@ class JobV3:
             **self._client.fetch_jobs([self._job_id])[str(self._job_id)]
         )
         self._update_status_queue_info()
+
+    def _wait_for_terminal_state(
+        self, index: int | None, timeout_seconds: float | None = None, polling_seconds: float = 5
+    ) -> None:
+        """Waits untill either the job is done or some error in the job occurs.
+
+        Args:
+            timeout_seconds: The total number of seconds to poll for.
+            polling_seconds: The interval with which to poll.
+        """
+        time_waited: float = 0.0
+        timeout_seconds = timeout_seconds or self._client.max_retry_seconds
+        while (status := self.status(index)) not in gss.models.TERMINAL_CIRCUIT_STATES:
+            if time_waited > timeout_seconds:
+                raise TimeoutError(
+                    f"Timed out while waiting for results. Final status was '{status}'"
+                )
+            time.sleep(polling_seconds)
+            time_waited += polling_seconds
 
     @property
     def job_data(self) -> gss.models.JobData:
@@ -640,7 +667,7 @@ class JobV3:
         """Gets the current status of the job.
 
         If the current job is in a non-terminal state, this will update the job and return the
-        current status. A full list of states is given in `cirq_superstaq.Job.ALL_STATES`.
+        current status.
 
         Args:
             index: An optional index of the specific sub-job to get the status of.
@@ -708,17 +735,10 @@ class JobV3:
             ~gss.SuperstaqServerException: If unable to get the status of the job
                 from the API.
         """
-        num_qubits = []
         if index is None:
-            to_check = list(range(self.job_data.num_circuits))
-        else:
-            to_check = [index]
-        for k in to_check:
-            circuit = self.input_circuits(index=k)
-            num_qubits.append(cirq.num_qubits(circuit))
-        if index is None:
-            return num_qubits
-        return num_qubits[0]
+            return [self.num_qubits(i) for i in range(self.job_data.num_circuits)]
+
+        return cirq.num_qubits(self.input_circuits(index))
 
     def repetitions(self) -> int:
         """Gets the number of repetitions requested for this job.
@@ -757,21 +777,15 @@ class JobV3:
                     "This is likely because there was an error on the server. "
                     "Please check the individual circuit statuses and any status messages."
                 )
-        elif self.job_data.compiled_circuits[index] is None:
+            return [self.compiled_circuits(i) for i in range(self.job_data.num_circuits)]
+
+        serialized_circuit = self.job_data.compiled_circuits[index]
+        if serialized_circuit is None:
             raise gss.SuperstaqException(
                 f"Circuit {index} of job {self._job_id} does not have a compiled circuit."
             )
 
-        circuits = [
-            css.deserialize_circuits(self.job_data.compiled_circuits[k])[  # type: ignore[arg-type]
-                0
-            ]
-            for k in range(self.job_data.num_circuits)
-        ]
-
-        if index is None:
-            return circuits
-        return circuits[index]
+        return css.deserialize_circuits(serialized_circuit)[0]
 
     @overload
     def input_circuits(self, index: int) -> cirq.Circuit: ...
@@ -788,14 +802,10 @@ class JobV3:
         Returns:
             A single input circuit or list of submitted input circuits.
         """
-        circuits = [
-            css.deserialize_circuits(self.job_data.input_circuits[k])[0]
-            for k in range(self.job_data.num_circuits)
-        ]
-
         if index is None:
-            return circuits
-        return circuits[index]
+            return [self.input_circuits(i) for i in range(self.job_data.num_circuits)]
+
+        return css.deserialize_circuits(self.job_data.input_circuits[index])[0]
 
     @overload
     def counts(
@@ -841,33 +851,16 @@ class JobV3:
             TimeoutError: If no results are available in the provided timeout interval.
             gss.SuperstaqException: If the job counts are missing.
         """
-        time_waited_seconds: float = 0.0
-        # If not in a terminal state then poll
-        while (status := self.status(index)) not in gss.models.TERMINAL_CIRCUIT_STATES:
-            # Status does a refresh.
-            if time_waited_seconds > timeout_seconds:
-                raise TimeoutError(
-                    f"Timed out while waiting for results. Final status was '{status}'"
-                )
-            time.sleep(polling_seconds)
-            time_waited_seconds += polling_seconds
+        self._wait_for_terminal_state(index, timeout_seconds, polling_seconds)
 
         # Check to see if unsuccessful
         self._check_if_unsuccessful(index)
 
         if index is None:
-            if any(c is None for c in self.job_data.counts):
-                raise gss.SuperstaqException(
-                    f"Job {self._job_id} does not have counts for all circuits."
-                )
-            counts_list: list[dict[str, int]] = self.job_data.counts  # type: ignore[assignment]
-            # Type checking does not recognise that the above error catches the case when any of
-            # the counts are None.
-            if qubit_indices:
-                counts_list = [
-                    _get_marginal_counts(counts, qubit_indices) for counts in counts_list
-                ]
-            return counts_list
+            return [
+                self.counts(i, timeout_seconds, polling_seconds, qubit_indices)
+                for i in range(self.job_data.num_circuits)
+            ]
 
         gss.validation.validate_integer_param(index, min_val=0)
         single_counts = self.job_data.counts[index]
@@ -897,11 +890,6 @@ class JobV3:
 
     def __repr__(self) -> str:
         return f"css.JobV3(client={self._client!r}, job_id={self.job_id()!r})"
-
-    def _value_equality_values_(self) -> tuple[uuid.UUID, dict[str, Any] | None]:
-        if self._job_data is None:
-            return self._job_id, None
-        return self._job_id, self.job_data.model_dump()
 
     def __getitem__(self, index: int) -> css.Job:
         """Customized indexing operations for `css.Job`.

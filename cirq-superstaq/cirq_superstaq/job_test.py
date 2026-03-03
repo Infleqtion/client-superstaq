@@ -750,6 +750,7 @@ def test_job_counts_failedV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obj
         num_circuits=2,
         statuses=["failed", "failed"],
         status_messages=["too many qubits", "server error"],
+        counts=[None, None],
     )
     job = new_jobV3()
     mock_get.return_value.json.return_value = {str(job._job_id): job_result}
@@ -764,18 +765,23 @@ def test_job_counts_failedV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obj
         _ = job.counts(index=0)
     assert job.status() == "failed"
 
-    job_result = modifiy_job_result(job_dictV3, counts=[None])
+    job_result = modifiy_job_result(
+        job_dictV3,
+        num_circuits=3,
+        statuses=["completed", "completed", "completed"],
+        counts=[{}, None, None],
+    )
     job = new_jobV3()
     mock_get.return_value.json.return_value = {str(job._job_id): job_result}
     with pytest.raises(
-        gss.SuperstaqException, match=f"Job {job._job_id} does not have counts for all circuits."
+        gss.SuperstaqException, match=f"Circuit 1 of job {job._job_id} does not have any counts."
     ):
         job.counts()
 
     with pytest.raises(
-        gss.SuperstaqException, match=f"Circuit 0 of job {job._job_id} does not have any counts."
+        gss.SuperstaqException, match=f"Circuit 2 of job {job._job_id} does not have any counts."
     ):
-        job.counts(index=0)
+        job.counts(index=2)
 
 
 @mock.patch("time.sleep", return_value=None)
