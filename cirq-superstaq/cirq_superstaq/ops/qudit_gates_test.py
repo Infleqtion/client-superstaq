@@ -1,4 +1,16 @@
-# pylint: disable=missing-function-docstring,missing-class-docstring
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import functools
@@ -10,6 +22,7 @@ import cirq
 import numpy as np
 import pytest
 import scipy.linalg
+import sympy
 
 import cirq_superstaq as css
 
@@ -85,7 +98,7 @@ def test_qudit_swap_op() -> None:
 
     assert css.qudit_swap_op(qubit0, qubit1) == cirq.SWAP(qubit0, qubit1)
     assert css.qudit_swap_op(qudit0, qudit1) == css.QuditSwapGate(7).on(qudit0, qudit1)
-    with pytest.raises(ValueError, match="do not have the same dimension"):
+    with pytest.raises(ValueError, match=r"do not have the same dimension"):
         _ = css.qudit_swap_op(qubit0, qudit1)
 
 
@@ -98,10 +111,10 @@ def test_bswap_pow_gate() -> None:
 
     shifted_bswap = css.BSwapPowGate(global_shift=0.3)
 
-    assert css.BSWAP == css.BSwapPowGate()
+    assert css.BSwapPowGate() == css.BSWAP
     assert css.BSWAP_INV == css.BSWAP**-1 == css.BSWAP**3
 
-    assert css.BSWAP != shifted_bswap
+    assert shifted_bswap != css.BSWAP
     assert not cirq.approx_eq(css.BSWAP, shifted_bswap)
     assert cirq.equal_up_to_global_phase(css.BSWAP, shifted_bswap)
     assert cirq.equal_up_to_global_phase(css.BSWAP**1.23, shifted_bswap**5.23)
@@ -153,10 +166,11 @@ def test_qutrit_cz_pow_gate() -> None:
 
     shifted_cz3 = css.QutritCZPowGate(global_shift=0.3)
 
-    assert css.CZ3 == css.QutritCZPowGate()
-    assert css.CZ3_INV == css.CZ3**-1 == css.CZ3**2
+    assert css.QutritCZPowGate() == css.CZ3
+    assert css.CZ3_INV == css.CZ3**-1
+    assert cirq.approx_eq(css.CZ3**-1, css.CZ3**2)
 
-    assert css.CZ3 != shifted_cz3
+    assert shifted_cz3 != css.CZ3
     assert not cirq.approx_eq(css.CZ3, shifted_cz3)
     assert cirq.equal_up_to_global_phase(css.CZ3, shifted_cz3)
     assert cirq.equal_up_to_global_phase(css.CZ3**1.23, shifted_cz3**4.23)
@@ -211,6 +225,7 @@ def test_qutrit_cz_pow_gate() -> None:
 @pytest.mark.parametrize("dimension", [2, 3, 4, 5, 6])
 def test_qutrit_cz_pow_gate_implementation_for_other_qudits(dimension: int) -> None:
     """Confirm that QutritCZPowGate._eigen_components_() would work for any dimension.
+
     Args:
         dimension: The gate dimension for the current test.
     """
@@ -348,6 +363,7 @@ def test_virtual_z_pow_gate() -> None:
     assert str(css.VirtualZPowGate(dimension=4, level=2) ** 1.2) == "VZ(2+)**1.2"
     assert str(css.VirtualZPowGate(dimension=4, global_shift=0.5)) == "VZ(1+)"
     assert str(css.VirtualZPowGate(dimension=5, global_shift=0.5) ** 2.3) == "VZ(1+)**2.3"
+    assert str(css.VirtualZPowGate(dimension=5, exponent=sympy.Symbol("phi"))) == "VZ(1+)**phi"
 
     cirq.testing.assert_has_diagram(
         cirq.Circuit(css.VirtualZPowGate(dimension=3, level=1)(cirq.LineQid(0, 3))),
@@ -355,8 +371,8 @@ def test_virtual_z_pow_gate() -> None:
     )
 
     cirq.testing.assert_has_diagram(
-        cirq.Circuit(css.VirtualZPowGate(dimension=4, level=3)(cirq.LineQid(0, 4)) ** 1.2),
-        "0 (d=4): ───VZ₃₊^-0.8───",
+        cirq.Circuit(css.VirtualZPowGate(dimension=14, level=13)(cirq.LineQid(0, 14)) ** 1.2),
+        "0 (d=14): ───VZ₁₃₊^-0.8───",
     )
 
     cirq.testing.assert_has_diagram(
@@ -365,13 +381,13 @@ def test_virtual_z_pow_gate() -> None:
         use_unicode_characters=False,
     )
 
-    with pytest.raises(ValueError, match="Invalid dimension"):
+    with pytest.raises(ValueError, match=r"Invalid dimension"):
         _ = css.VirtualZPowGate(dimension=1)
 
-    with pytest.raises(ValueError, match="Invalid energy level"):
+    with pytest.raises(ValueError, match=r"Invalid energy level"):
         _ = css.VirtualZPowGate(dimension=3, level=3)
 
-    with pytest.raises(ValueError, match="Invalid energy level"):
+    with pytest.raises(ValueError, match=r"Invalid energy level"):
         _ = css.VirtualZPowGate(dimension=3, level=0)
 
 
@@ -431,16 +447,20 @@ def test_qubit_subspace_gate() -> None:
     assert css.QubitSubspaceGate(cirq.X, (3,), [(0, 2)]) == css.QubitSubspaceGate(
         cirq.X, (3,), [(0, -1)]
     )
-    with pytest.raises(ValueError, match="Only qubit gates"):
+
+    with pytest.raises(ValueError, match=r"does not support measurements"):
+        _ = css.QubitSubspaceGate(cirq.MeasurementGate(2, key="foo"), (2, 3))
+
+    with pytest.raises(ValueError, match=r"Only qubit gates"):
         _ = css.QubitSubspaceGate(cirq.ZPowGate(dimension=3), (3,))
 
-    with pytest.raises(ValueError, match="same number of qubits"):
+    with pytest.raises(ValueError, match=r"same number of qubits"):
         _ = css.QubitSubspaceGate(cirq.Z, (3, 3))
 
-    with pytest.raises(ValueError, match="Invalid qid_shape"):
+    with pytest.raises(ValueError, match=r"Invalid qid_shape"):
         _ = css.QubitSubspaceGate(cirq.CZ, (1, 2))
 
-    with pytest.raises(ValueError, match="two subspace indices for every qubit"):
+    with pytest.raises(ValueError, match=r"two subspace indices for every qubit"):
         _ = css.QubitSubspaceGate(cirq.CZ, (3, 3), [(0, 1)])
 
     gate = css.QubitSubspaceGate(cirq.X, (3,))
@@ -456,7 +476,7 @@ def test_qubit_subspace_gate() -> None:
 
 
 @pytest.mark.parametrize(
-    "sub_gate_type, qid_shape, subspaces",
+    ("sub_gate_type", "qid_shape", "subspaces"),
     [
         (cirq.XPowGate, (3,), None),
         (cirq.YPowGate, (3,), [(1, 2)]),
@@ -482,14 +502,26 @@ def test_qubit_subspace_gate_protocols(
     )
     flipped_gate = css.QubitSubspaceGate(sub_gate, qid_shape, [(j, i) for i, j in gate.subspaces])
     larger_gate = css.QubitSubspaceGate(sub_gate, (8,) * len(qid_shape), subspaces)
+    symbol_gate = gate ** sympy.Symbol("x")
     another_gate = cirq.Y
 
-    assert gate == gate
+    assert 0.0 < cirq.trace_distance_bound(gate**0.01) < cirq.trace_distance_bound(gate) <= 1.0
+    assert np.isclose(
+        cirq.trace_distance_bound(gate),
+        cirq.trace_distance_bound(cirq.MatrixGate(cirq.unitary(gate), qid_shape=qid_shape)),
+    )
+    assert np.isclose(
+        cirq.trace_distance_bound(gate**0.01),
+        cirq.trace_distance_bound(cirq.MatrixGate(cirq.unitary(gate**0.01), qid_shape=qid_shape)),
+    )
+
+    assert gate == gate  # noqa: PLR0124
     assert gate == same_gate
     assert gate != similar_gate
     assert gate != shifted_gate
     assert gate != flipped_gate
     assert gate != larger_gate
+    assert gate != symbol_gate
     assert gate != another_gate
 
     assert cirq.approx_eq(gate, gate)
@@ -516,6 +548,13 @@ def test_qubit_subspace_gate_protocols(
     cirq.testing.assert_json_roundtrip_works(
         gate, resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
     )
+    cirq.testing.assert_consistent_mixture(gate)
+
+    assert not cirq.has_unitary(symbol_gate)
+    assert cirq.unitary(symbol_gate, None) is None
+
+    assert not cirq.has_mixture(symbol_gate)
+    assert cirq.mixture(symbol_gate, None) is None
 
     # Check that it has the correct unitary in the correct subspace:
     n = cirq.num_qubits(gate)
@@ -528,9 +567,42 @@ def test_qubit_subspace_gate_protocols(
     np.testing.assert_array_equal(unitary.reshape(2**n, 2**n), cirq.unitary(gate.sub_gate))
 
 
+@pytest.mark.parametrize(
+    ("sub_gate", "qid_shape", "subspaces"),
+    [
+        (cirq.phase_flip(0.2), (4,), [(1, 3)]),
+        (cirq.depolarize(0.2, 3), (3, 2, 5), [(1, 2), (1, 0), (0, 4)]),
+        (
+            cirq.MixedUnitaryChannel(
+                [(0.8, np.eye(4)), (0.1, cirq.unitary(cirq.XX)), (0.1, cirq.unitary(cirq.CZ))]
+            ),
+            (4, 3),
+            [(1, 3), (2, 1)],
+        ),
+    ],
+)
+def test_qubit_subspace_gate_protocols_mixture(
+    sub_gate: cirq.Gate,
+    qid_shape: tuple[int, ...],
+    subspaces: list[tuple[int, int]] | None,
+) -> None:
+    gate = css.QubitSubspaceGate(sub_gate, qid_shape, subspaces)
+    cirq.testing.assert_implements_consistent_protocols(
+        gate,
+        setup_code="import cirq, cirq_superstaq as css, sympy, numpy as np",
+        ignore_decompose_to_default_gateset=True,
+    )
+    cirq.testing.assert_consistent_mixture(gate)
+    cirq.testing.assert_json_roundtrip_works(
+        gate, resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
+    )
+
+
 def test_qubit_subspace_circuit_diagram() -> None:
     q0 = cirq.LineQid(0, dimension=3)
     q1 = cirq.LineQid(1, dimension=4)
+    q2 = cirq.LineQid(2, dimension=13)
+
     cirq.testing.assert_has_diagram(
         cirq.Circuit(css.QubitSubspaceGate(cirq.rx(np.pi / 2), (3,), [(0, 2)]).on(q0)),
         textwrap.dedent(
@@ -558,6 +630,72 @@ def test_qubit_subspace_circuit_diagram() -> None:
         ),
         use_unicode_characters=False,
     )
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(css.QubitSubspaceGate(cirq.CX, (4, 13), [(0, 1), (1, 12)]).on(q1, q2)),
+        textwrap.dedent(
+            """
+            1 (d=4): ────@₀˰₁────
+                         │
+            2 (d=13): ───X₁˰₁₂───
+            """
+        ),
+    )
+
+
+def test_qubit_subspace_interchangeable_qubits() -> None:
+    q0, q1, q2 = cirq.LineQubit.range(3)
+    equals_tester = cirq.testing.EqualsTester()
+
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CX(q0, q1), [3, 3]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CX(q1, q0), [3, 3]),
+    )
+
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CZ(q0, q1), [3, 3]),
+        css.qubit_subspace_op(cirq.CZ(q1, q0), [3, 3]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CZ(q0, q1), [3, 4]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CZ(q1, q0), [3, 4]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CZ(q0, q1), [3, 3], [(1, 2), (1, 2)]),
+        css.qubit_subspace_op(cirq.CZ(q1, q0), [3, 3], [(1, 2), (1, 2)]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CZ(q0, q1), [3, 3], [(0, 1), (1, 2)]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CZ(q1, q0), [3, 3], [(0, 1), (1, 2)]),
+    )
+
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CCZ(q0, q1, q2), [3, 3, 3]),
+        css.qubit_subspace_op(cirq.CCZ(q0, q2, q1), [3, 3, 3]),
+        css.qubit_subspace_op(cirq.CCZ(q1, q0, q2), [3, 3, 3]),
+        css.qubit_subspace_op(cirq.CCZ(q1, q2, q0), [3, 3, 3]),
+        css.qubit_subspace_op(cirq.CCZ(q2, q0, q1), [3, 3, 3]),
+        css.qubit_subspace_op(cirq.CCZ(q2, q1, q0), [3, 3, 3]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CCZ(q0, q1, q2), [3, 4, 3]),
+        css.qubit_subspace_op(cirq.CCZ(q2, q1, q0), [3, 4, 3]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CCZ(q1, q0, q2), [3, 4, 3]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CCZ(q0, q1, q2), [3, 3, 3], [(0, 1), (0, 2), (0, 2)]),
+        css.qubit_subspace_op(cirq.CCZ(q0, q2, q1), [3, 3, 3], [(0, 1), (0, 2), (0, 2)]),
+    )
+    equals_tester.add_equality_group(
+        css.qubit_subspace_op(cirq.CCZ(q1, q0, q2), [3, 3, 3], [(0, 1), (0, 2), (0, 2)]),
+    )
 
 
 def test_qubit_subspace_op() -> None:
@@ -570,5 +708,60 @@ def test_qubit_subspace_op() -> None:
     assert css.qubit_subspace_op(
         cirq.X(cirq.NamedQubit("qubit")), (4,), [(1, -1)]
     ) == css.QubitSubspaceGate(cirq.X, (4,), [(1, 3)]).on(cirq.NamedQid("qubit", dimension=4))
-    with pytest.raises(ValueError, match="has no gate."):
+    with pytest.raises(ValueError, match=r"has no gate."):
         _ = css.qubit_subspace_op(cirq.CircuitOperation(cirq.FrozenCircuit()), ())
+
+
+def test_qubit_subspace_apply_unitary() -> None:
+    qs = cirq.LineQid(0, 5), cirq.LineQid(1, 3)
+    unitary_from_gates = cirq.testing.random_unitary(5 * 3)
+    circuit = cirq.Circuit(cirq.MatrixGate(unitary_from_gates, qid_shape=(5, 3)).on(*qs))
+
+    # `apply_unitary()` uses `sub_gate._apply_unitary_`
+    sub_gate: cirq.Gate = css.QuditSwapGate(dimension=2)
+    gate = css.QubitSubspaceGate(sub_gate, [5, 3], [(1, 2), (0, 2)])
+    assert hasattr(sub_gate, "_apply_unitary_")
+
+    circuit += gate.on(*qs)
+    unitary_from_gates = cirq.unitary(gate) @ unitary_from_gates
+    np.testing.assert_allclose(cirq.unitary(circuit), unitary_from_gates, atol=1e-7)
+    np.testing.assert_allclose(
+        cirq.final_state_vector(circuit), unitary_from_gates[:, 0], atol=1e-7
+    )
+
+    # `apply_unitary()` uses `sub_gate._unitary_`
+    sub_gate = cirq.MatrixGate(cirq.testing.random_unitary(4))
+    gate = css.QubitSubspaceGate(sub_gate, [5, 3], [(1, 2), (0, 2)])
+    assert not hasattr(sub_gate, "_apply_unitary_")
+    assert hasattr(sub_gate, "_unitary_")
+
+    circuit += gate.on(*qs)
+    unitary_from_gates = cirq.unitary(gate) @ unitary_from_gates
+    np.testing.assert_allclose(cirq.unitary(circuit), unitary_from_gates, atol=1e-7)
+    np.testing.assert_allclose(
+        cirq.final_state_vector(circuit, dtype=np.complex128), unitary_from_gates[:, 0], atol=1e-7
+    )
+
+    # `apply_unitary()` uses `gate._unitary_` instead of `sub_gate._decompose_`
+    sub_gate = cirq.circuits.qasm_output.QasmUGate(0.1, 0.2, 0.3)
+    gate = css.QubitSubspaceGate(sub_gate, [5], [(1, 2)])
+    assert not hasattr(sub_gate, "_apply_unitary_")
+    assert not hasattr(sub_gate, "_unitary_")
+    assert hasattr(sub_gate, "_decompose_")
+
+    circuit += gate.on(qs[0])
+    unitary_from_gates = np.kron(cirq.unitary(gate), np.eye(3)) @ unitary_from_gates
+    np.testing.assert_allclose(cirq.unitary(circuit), unitary_from_gates, atol=1e-7)
+    np.testing.assert_allclose(
+        cirq.final_state_vector(circuit, dtype=np.complex128), unitary_from_gates[:, 0], atol=1e-7
+    )
+
+    # Confirm Cirq still gets this wrong
+    args = cirq.ApplyUnitaryArgs(
+        np.eye(5, dtype=complex),
+        np.eye(5, dtype=complex),
+        axes=[0],
+        subspaces=[(0, 1)],
+    )
+    unitary_from_apply = cirq.apply_unitary(sub_gate, args, allow_decompose=True)
+    assert not np.allclose(cirq.unitary(gate), unitary_from_apply, atol=1e-2, rtol=1e-2)

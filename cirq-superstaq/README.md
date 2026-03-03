@@ -12,9 +12,10 @@ features of Superstaq with this package.
 pip install cirq-superstaq
 ```
 
-Please note that Python version `3.8` or higher is required. For further installation instructions, see [here](https://github.com/Infleqtion/client-superstaq#readme).
+Please note that Python version `3.9` or higher is required. For further installation instructions, see [here](https://github.com/Infleqtion/client-superstaq#readme).
 
 ### Creating and submitting a circuit through cirq-superstaq
+
 ```python
 import cirq
 import cirq_superstaq as css
@@ -29,8 +30,8 @@ service = css.Service(
     verbose=True,
 )
 
-# Submitting a circuit to IBM's Brisbane QPU. Providing the "dry-run" method parameter instructs Superstaq to simulate the circuit, and is available to free trial users.
-job = service.create_job(circuit, repetitions=1, target="ibmq_brisbane_qpu", method="dry-run")
+# Submitting a circuit to IBM's Fez QPU. Providing the "dry-run" method parameter instructs Superstaq to simulate the circuit, and is available to free trial users.
+job = service.create_job(circuit, repetitions=100, target="ibmq_fez_qpu", method="dry-run")
 print("This is the job that's created ", job.status())
-print(job.counts())
+print(job.counts(0))
 ```

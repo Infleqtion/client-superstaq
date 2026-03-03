@@ -1,16 +1,35 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Miscellaneous custom gates that we encounter and want to explicitly define."""
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Sequence, Set
-from typing import Any
+from collections.abc import Iterator, Sequence
+from collections.abc import Set as AbstractSet
+from typing import TYPE_CHECKING, Any
 
 import cirq
 import numpy as np
-import numpy.typing as npt
 from cirq.ops.common_gates import _pi
 
 import cirq_superstaq as css
+
+if TYPE_CHECKING:
+    from types import NotImplementedType
+
+    import numpy.typing as npt
 
 
 def approx_eq_mod(a: cirq.TParamVal, b: cirq.TParamVal, period: float, atol: float = 1e-8) -> bool:
@@ -25,7 +44,6 @@ def approx_eq_mod(a: cirq.TParamVal, b: cirq.TParamVal, period: float, atol: flo
     Returns:
         A boolean indicating whether input parameters are approximately equal.
     """
-
     if cirq.is_parameterized(a) or cirq.is_parameterized(b):
         return a == b
 
@@ -87,9 +105,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     def _value_equality_approximate_values_(self) -> cirq.PeriodicValue:
         return cirq.PeriodicValue(self.theta, 2 * np.pi)
 
-    def __pow__(
-        self, exponent: cirq.TParamVal
-    ) -> ZZSwapGate | cirq.ZZPowGate | cirq.type_workarounds.NotImplementedType:
+    def __pow__(self, exponent: cirq.TParamVal) -> ZZSwapGate | cirq.ZZPowGate | NotImplementedType:
         if exponent % 2 == 1:
             return ZZSwapGate(exponent * self.theta)
         if exponent % 2 == 0:
@@ -115,13 +131,16 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
     def _is_parameterized_(self) -> bool:
         return cirq.is_parameterized(self.theta)
 
-    def _parameter_names_(self) -> Set[str]:
+    def _parameter_names_(self) -> AbstractSet[str]:
         return cirq.parameter_names(self.theta)
 
     def _resolve_parameters_(self, resolver: cirq.ParamResolver, recursive: bool) -> ZZSwapGate:
         return ZZSwapGate(
             cirq.resolve_parameters(self.theta, resolver, recursive),
         )
+
+    def _trace_distance_bound_(self) -> float:
+        return 1.0
 
     def _has_unitary_(self) -> bool:
         return not self._is_parameterized_()
@@ -136,9 +155,7 @@ class ZZSwapGate(cirq.Gate, cirq.ops.gate_features.InterchangeableQubitsGate):
         args.target_tensor[oz] *= np.exp(1j * self.theta)
         return args.target_tensor
 
-    def _pauli_expansion_(
-        self,
-    ) -> cirq.value.LinearDict[str] | cirq.type_workarounds.NotImplementedType:
+    def _pauli_expansion_(self) -> cirq.value.LinearDict[str] | NotImplementedType:
         if cirq.is_parameterized(self):
             return NotImplemented
         return cirq.value.LinearDict(
@@ -283,6 +300,9 @@ class AceCR(cirq.Gate):
     def _num_qubits_(self) -> int:
         return 2
 
+    def _trace_distance_bound_(self) -> float:
+        return 1.0
+
     def _has_unitary_(self) -> bool:
         return not self._is_parameterized_()
 
@@ -324,14 +344,13 @@ class AceCR(cirq.Gate):
                 sandwich_exp,
                 *qubits,
             )
-        else:
-            exponent = self.rads / np.pi
-            return args.format("acecr({:half_turns}) {},{};\n", exponent, *qubits)
+        exponent = self.rads / np.pi
+        return args.format("acecr({:half_turns}) {},{};\n", exponent, *qubits)
 
     def _is_parameterized_(self) -> bool:
         return cirq.is_parameterized(self.sandwich_rx_rads) or cirq.is_parameterized(self.rads)
 
-    def _parameter_names_(self) -> Set[str]:
+    def _parameter_names_(self) -> AbstractSet[str]:
         return cirq.parameter_names(self.sandwich_rx_rads) | cirq.parameter_names(self.rads)
 
     def _resolve_parameters_(self, resolver: cirq.ParamResolver, recursive: bool) -> AceCR:
@@ -359,7 +378,9 @@ class AceCR(cirq.Gate):
             cirq.PeriodicValue(self.sandwich_rx_rads, 4 * np.pi),
         )
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
+    def _equal_up_to_global_phase_(
+        self, other: Any, atol: float = 1e-8
+    ) -> NotImplementedType | bool:
         if not isinstance(other, AceCR):
             return NotImplemented
 
@@ -379,18 +400,18 @@ class AceCR(cirq.Gate):
     def __repr__(self) -> str:
         if not self.sandwich_rx_rads and self.rads == np.pi / 2:
             return "css.AceCR()"
-        elif self.rads == np.pi / 2:
+        if self.rads == np.pi / 2:
             return f"css.AceCR(sandwich_rx_rads={self.sandwich_rx_rads!r})"
-        elif not self.sandwich_rx_rads:
+        if not self.sandwich_rx_rads:
             return f"css.AceCR(rads={self.rads!r})"
         return f"css.AceCR(rads={self.rads!r}, sandwich_rx_rads={self.sandwich_rx_rads!r})"
 
     def __str__(self) -> str:
         if not self.sandwich_rx_rads and self.rads == np.pi / 2:
             return "AceCR"
-        elif not self.sandwich_rx_rads:
+        if not self.sandwich_rx_rads:
             return f"AceCR({self.rads})"
-        elif self.rads == np.pi / 2:
+        if self.rads == np.pi / 2:
             return f"AceCR|{cirq.rx(self.sandwich_rx_rads)}|"
         return f"AceCR({self.rads})|{cirq.rx(self.sandwich_rx_rads)}|"
 
@@ -410,7 +431,7 @@ class Barrier(cirq.ops.IdentityGate, cirq.InterchangeableQubitsGate):
     Otherwise equivalent to the identity gate.
     """
 
-    def _decompose_(self, qubits: tuple[cirq.Qid, ...]) -> cirq.type_workarounds.NotImplementedType:
+    def _decompose_(self, qubits: tuple[cirq.Qid, ...]) -> NotImplementedType:
         return NotImplemented
 
     def _commutes_(self, other: object, atol: float = 1e-8) -> bool:
@@ -477,19 +498,18 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             component_gates: Gate(s) to be collected into a single gate.
 
         Raises:
-            ValueError: If `component_gates` are not `cirq.Gate` instances.
+            TypeError: If `component_gates` are not `cirq.Gate` instances.
             ValueError: If `component_gates` contains measurements.
         """
-
         self.component_gates: tuple[cirq.Gate, ...] = ()
 
         # unroll any ParallelGate(s) instances in component_gates
         for gate in component_gates:
             if not isinstance(gate, cirq.Gate):
-                raise ValueError(f"{gate} is not a cirq Gate")
-            elif cirq.is_measurement(gate):
-                raise ValueError("ParallelGates cannot contain measurements")
-            elif isinstance(gate, ParallelGates):
+                raise TypeError(f"{gate} is not a `cirq.Gate`")
+            if cirq.is_measurement(gate):
+                raise ValueError("`ParallelGates` cannot contain measurements")
+            if isinstance(gate, ParallelGates):
                 self.component_gates += gate.component_gates
             elif isinstance(gate, cirq.ParallelGate):
                 self.component_gates += gate.num_copies * (gate.sub_gate,)
@@ -553,7 +573,13 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
     def _value_equality_values_(self) -> tuple[cirq.Gate, ...]:
         return self.component_gates
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
+    def _trace_distance_bound_(self) -> float:
+        angles = np.arcsin([cirq.trace_distance_bound(gate) for gate in self.component_gates])
+        return np.sin(angles.sum().clip(0, np.pi / 2)).item()
+
+    def _equal_up_to_global_phase_(
+        self, other: Any, atol: float = 1e-8
+    ) -> NotImplementedType | bool:
         if not isinstance(other, ParallelGates):
             return NotImplemented
 
@@ -575,7 +601,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         return qid_shape
 
     def _decompose_(self, qubits: tuple[cirq.Qid, ...]) -> Iterator[cirq.Operation]:
-        """Decompose into each component gate"""
+        """Decompose into each component gate."""
         for gate in self.component_gates:
             num_qubits = gate.num_qubits()
             yield gate(*qubits[:num_qubits])
@@ -708,8 +734,10 @@ class RGate(cirq.PhasedXPowGate):
     def __pow__(self, power: cirq.TParamVal) -> RGate:
         return RGate(power * self.theta, self.phi)
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
-        """Implemented here because it isn't in cirq.PhasedXPowGate"""
+    def _equal_up_to_global_phase_(
+        self, other: Any, atol: float = 1e-8
+    ) -> NotImplementedType | bool:
+        """Implemented here because it isn't in `cirq.PhasedXPowGate`."""
         if not isinstance(other, cirq.PhasedXPowGate):
             return NotImplemented
 
@@ -810,8 +838,10 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
     def __pow__(self, power: cirq.TParamVal) -> ParallelRGate:
         return ParallelRGate(power * self.theta, self.phi, self.num_copies)
 
-    def _equal_up_to_global_phase_(self, other: Any, atol: float) -> bool | None:
-        """Implemented here because it isn't in cirq.ParallelGate"""
+    def _equal_up_to_global_phase_(
+        self, other: Any, atol: float = 1e-8
+    ) -> NotImplementedType | bool:
+        """Implemented here because it isn't in `cirq.ParallelGate`."""
         if not isinstance(other, cirq.ParallelGate):
             return NotImplemented
 
@@ -845,7 +875,7 @@ class ParallelRGate(cirq.ParallelGate, cirq.InterchangeableQubitsGate):
 
 
 class IXGate(cirq.XPowGate):
-    r"""Thin wrapper of :math:`RX(-\pi)` to improve iToffoli circuit diagrams"""
+    r"""Thin wrapper of :math:`RX(-\pi)` to improve iToffoli circuit diagrams."""
 
     def __init__(self) -> None:
         """Initializes an iXGate."""
@@ -863,7 +893,7 @@ class IXGate(cirq.XPowGate):
         return "IX"
 
     def __repr__(self) -> str:
-        return f"css.ops.qubit_gates.{str(self)}"
+        return f"css.ops.qubit_gates.{self!s}"
 
     @classmethod
     def _from_json_dict_(cls, **_kwargs: object) -> IXGate:
@@ -934,6 +964,9 @@ class StrippedCZGate(cirq.Gate):
     def _value_equality_approximate_values_(self) -> cirq.PeriodicValue:
         return cirq.PeriodicValue(self.rz_rads, 2 * np.pi)
 
+    def _trace_distance_bound_(self) -> float:
+        return 1.0
+
     def __pow__(
         self, exponent: cirq.TParamVal
     ) -> StrippedCZGate | cirq.IdentityGate | ParallelGates | cirq.DiagonalGate:
@@ -970,10 +1003,13 @@ class StrippedCZGate(cirq.Gate):
             cirq.resolve_parameters(self.rz_rads, resolver, recursive),
         )
 
+    def _phase_by_(self, phase_turns: cirq.TParamVal, qubit_index: int) -> StrippedCZGate:
+        return self
+
     def _is_parameterized_(self) -> bool:
         return cirq.is_parameterized(self.rz_rads)
 
-    def _parameter_names_(self) -> Set[str]:
+    def _parameter_names_(self) -> AbstractSet[str]:
         return cirq.parameter_names(self.rz_rads)
 
     def _has_unitary_(self) -> bool:
@@ -988,7 +1024,7 @@ class StrippedCZGate(cirq.Gate):
 
 
 class DDPowGate(cirq.EigenGate):
-    r"""The Dipole-Dipole gate for EeroQ hardware"""
+    r"""The Dipole-Dipole gate for EeroQ hardware."""
 
     def _eigen_components(self) -> list[tuple[float, npt.NDArray[np.float64]]]:
         return [

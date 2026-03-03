@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import importlib.util
@@ -30,9 +44,8 @@ def active_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
         A list of active qubit indicies.
 
     Raises:
-        ValueError: If qubit indices are requested for non-line qubits.
+        TypeError: If qubit indices are requested for non-line qubits.
     """
-
     all_qubits: set[cirq.Qid] = set()
     for op in circuit.all_operations():
         if not isinstance(op.gate, css.Barrier):
@@ -41,7 +54,7 @@ def active_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
     qubit_indices: list[int] = []
     for q in sorted(all_qubits):
         if not isinstance(q, (cirq.LineQubit, cirq.LineQid)):
-            raise ValueError("Qubit indices can only be determined for line qubits.")
+            raise TypeError("Qubit indices can only be determined for line qubits.")
         qubit_indices.append(int(q))
 
     return qubit_indices
@@ -61,9 +74,8 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
         A list of the measurement qubit indicies.
 
     Raises:
-        ValueError: If qubit indices are requested for non-line qubits.
+        TypeError: If qubit indices are requested for non-line qubits.
     """
-
     unrolled_circuit = cirq.unroll_circuit_op(circuit, deep=True, tags_to_check=None)
 
     measured_qubits: set[cirq.Qid] = set()
@@ -73,7 +85,7 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
     qubit_indices: set[int] = set()
     for q in measured_qubits:
         if not isinstance(q, (cirq.LineQubit, cirq.LineQid)):
-            raise ValueError("Qubit indices can only be determined for line qubits")
+            raise TypeError("Qubit indices can only be determined for line qubits")
         qubit_indices.add(int(q))
 
     return sorted(qubit_indices)
@@ -97,7 +109,7 @@ class CompilerOutput:
         ),
         pulse_gate_circuits: Any | None = None,
         seq: qtrl.sequencer.Sequence | None = None,
-        jaqal_programs: list[str] | str | None = None,
+        jaqal_programs: list[str] | None = None,
     ) -> None:
         """Initializes the `CompilerOutput` attributes.
 
@@ -110,22 +122,20 @@ class CompilerOutput:
             pulse_gate_circuits: Pulse-gate `qiskit.QuantumCircuit` or list thereof specifying the
                 pulse compilation.
             seq: A `qtrl` pulse sequence, if `qtrl` is available locally.
-            jaqal_programs: The Jaqal program (resp. programs) as a string (resp. list of
-                strings).
+            jaqal_programs: The Jaqal programs as individual strings.
         """
         if isinstance(circuits, cirq.Circuit):
             self.circuit = circuits
             self.initial_logical_to_physical = initial_logical_to_physicals
             self.final_logical_to_physical = final_logical_to_physicals
             self.pulse_gate_circuit = pulse_gate_circuits
-            self.jaqal_program = jaqal_programs
         else:
             self.circuits = circuits
             self.initial_logical_to_physicals = initial_logical_to_physicals
             self.final_logical_to_physicals = final_logical_to_physicals
             self.pulse_gate_circuits = pulse_gate_circuits
-            self.jaqal_programs = jaqal_programs
 
+        self.jaqal_programs = jaqal_programs
         self.seq = seq
 
     def has_multiple_circuits(self) -> bool:
@@ -143,13 +153,27 @@ class CompilerOutput:
             return (
                 f"CompilerOutput({self.circuit!r}, {self.initial_logical_to_physical!r}, "
                 f"{self.final_logical_to_physical!r}, {self.pulse_gate_circuit!r}, "
-                f"{self.seq!r}, {self.jaqal_program!r})"
+                f"{self.seq!r}, {self.jaqal_programs!r})"
             )
         return (
             f"CompilerOutput({self.circuits!r}, {self.initial_logical_to_physicals!r}, "
             f"{self.final_logical_to_physicals!r}, {self.pulse_gate_circuits!r}, "
             f"{self.seq!r}, {self.jaqal_programs!r})"
         )
+
+    @property
+    def jaqal_program(self) -> str | None:
+        """Jaqal program(s) as a single string.
+
+        For multi-circuit compilation the string will contain subcircuits.
+        """
+        if not self.jaqal_programs:
+            return None
+
+        separator = "prepare_all"
+        subcircuits = [self.jaqal_programs[0]]
+        subcircuits += [program.partition(separator)[2] for program in self.jaqal_programs[1:]]
+        return f"\n{separator}".join(subcircuits)
 
 
 def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
@@ -165,7 +189,6 @@ def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutp
         the returned object also stores the corresponding pulse gate circuit(s) in its
         .pulse_gate_circuit(s) attribute (provided qiskit-superstaq is available locally).
     """
-
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
     initial_logical_to_physicals: list[dict[cirq.Qid, cirq.Qid]] = list(
         map(dict, cirq.read_json(json_text=json_dict["initial_logical_to_physicals"]))
@@ -173,13 +196,13 @@ def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutp
     final_logical_to_physicals: list[dict[cirq.Qid, cirq.Qid]] = list(
         map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
     )
+
     pulse_gate_circuits = None
 
     if "pulse_gate_circuits" in json_dict:
         pulse_gate_circuits = css.serialization.deserialize_qiskit_circuits(
             json_dict["pulse_gate_circuits"],
             circuits_is_list,
-            pulse_durations=json_dict.get("pulse_durations"),
             pulse_start_times=json_dict.get("pulse_start_times"),
         )
 
@@ -214,7 +237,6 @@ def read_json_aqt(
         A `CompilerOutput` object with the compiled circuit(s). If `qtrl` is available locally,
         the returned object also stores the pulse sequence in the .seq attribute.
     """
-
     compiled_circuits: list[cirq.Circuit] | list[list[cirq.Circuit]]
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
 
@@ -238,7 +260,8 @@ def read_json_aqt(
         if not importlib.util.find_spec("qtrl"):
             warnings.warn(
                 "This output only contains compiled circuits. The `qtrl` package must be installed "
-                "in order to deserialize compiled pulse sequences."
+                "in order to deserialize compiled pulse sequences.",
+                stacklevel=2,
             )
         else:  # pragma: no cover, b/c qtrl is not open source so it is not in cirq-superstaq reqs
 
@@ -306,7 +329,6 @@ def read_json_qscout(json_dict: dict[str, Any], circuits_is_list: bool) -> Compi
         A `CompilerOutput` object with the compiled circuit(s) and a list of jaqal programs
         represented as strings.
     """
-
     compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
     initial_logical_to_physicals: list[dict[cirq.Qid, cirq.Qid]] = list(
         map(dict, cirq.read_json(json_text=json_dict["initial_logical_to_physicals"]))
@@ -327,5 +349,5 @@ def read_json_qscout(json_dict: dict[str, Any], circuits_is_list: bool) -> Compi
         circuits=compiled_circuits[0],
         initial_logical_to_physicals=initial_logical_to_physicals[0],
         final_logical_to_physicals=final_logical_to_physicals[0],
-        jaqal_programs=json_dict["jaqal_programs"][0],
+        jaqal_programs=json_dict["jaqal_programs"],
     )

@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import difflib
@@ -25,7 +39,6 @@ def run(*args: str, silent: bool = False) -> int:
     Returns:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
-
     parser = check_utils.get_check_parser(no_files=True)
     parser.description = textwrap.dedent(
         f"""
@@ -41,8 +54,10 @@ def run(*args: str, silent: bool = False) -> int:
     # identify the "original" config file, and the file that is supposed to be a copy
     file_orig = os.path.join(os.path.abspath(os.path.dirname(__file__)), TEMPLATE_FILE)
     file_copy = os.path.join(check_utils.root_dir, CONFIG_FILE)
-    lines_orig = open(file_orig).read().splitlines()
-    lines_copy = open(file_copy).read().splitlines()
+    with open(file_orig) as original_file:
+        lines_orig = original_file.read().splitlines()
+    with open(file_copy) as copy_file:
+        lines_copy = copy_file.read().splitlines()
 
     # trim package-specific configuration
     lines_orig, orig_offset = _trim_lines(lines_orig)
@@ -60,26 +75,26 @@ def run(*args: str, silent: bool = False) -> int:
 
     if not deltas:
         if not silent:
-            print(check_utils.success("Config files are consistent!"))
+            print(check_utils.success("Config files are consistent!"))  # noqa: T201
         return 0
 
     # print diffs
     num_differences = f"{len(deltas)} differences" if len(deltas) > 1 else "one difference"
-    print(check_utils.warning(f"WARNING: found {num_differences} between config files:"))
-    print(check_utils.styled(f"< {file_orig} (original)", check_utils.Style.RED))
-    print(check_utils.styled(f"> {file_copy} (copy)", check_utils.Style.GREEN))
-    print(check_utils.styled("-" * 70, check_utils.Style.CYAN))
+    print(check_utils.warning(f"WARNING: found {num_differences} between config files:"))  # noqa: T201
+    print(check_utils.styled(f"< {file_orig} (original)", check_utils.Style.RED))  # noqa: T201
+    print(check_utils.styled(f"> {file_copy} (copy)", check_utils.Style.GREEN))  # noqa: T201
+    print(check_utils.styled("-" * 70, check_utils.Style.CYAN))  # noqa: T201
     for tag, orig_start, orig_end, copy_start, copy_end in deltas:
         _announce_diff(tag, orig_offset, orig_start, orig_end, copy_offset, copy_start, copy_end)
         if orig_start != orig_end:
             text = "\n".join(f"< {line}" for line in lines_orig[orig_start:orig_end])
-            print(check_utils.styled(text, check_utils.Style.RED))
+            print(check_utils.styled(text, check_utils.Style.RED))  # noqa: T201
         if copy_start != copy_end:
             text = "\n".join(f"> {line}" for line in lines_copy[copy_start:copy_end])
-            print(check_utils.styled(text, check_utils.Style.GREEN))
+            print(check_utils.styled(text, check_utils.Style.GREEN))  # noqa: T201
 
     file_path = os.path.relpath(file_copy)
-    print(check_utils.warning(f"{file_path} can be fixed manually to prevent this message."))
+    print(check_utils.warning(f"{file_path} can be fixed manually to prevent this message."))  # noqa: T201
     return 0
 
 
@@ -110,15 +125,15 @@ def _announce_diff(
         text = f"{line_text_orig} of original not present in copy"
     elif tag == "insert":
         text = f"{line_text_copy} of copy not present in original"
-    print(check_utils.styled(text, check_utils.Style.CYAN))
+    print(check_utils.styled(text, check_utils.Style.CYAN))  # noqa: T201
 
 
 def _line_text(start: int, end: int) -> str:
     """Identify one or multiple line numbers."""
     if end == start + 1:
-        return f"line {start+1}"
-    return f"lines {start+1}--{end}"
+        return f"line {start + 1}"
+    return f"lines {start + 1}--{end}"
 
 
 if __name__ == "__main__":
-    exit(run(*sys.argv[1:]))
+    sys.exit(run(*sys.argv[1:]))

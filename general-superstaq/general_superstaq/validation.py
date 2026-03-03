@@ -1,8 +1,29 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import numbers
 import re
+import warnings
 from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING
+
+import numpy as np
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
@@ -16,7 +37,6 @@ def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
         TypeError: If `integer_param` is not an integer.
         ValueError: If `integer_param` is less than `min_val`.
     """
-
     if not (
         (hasattr(integer_param, "__int__") and int(integer_param) == integer_param)
         or (isinstance(integer_param, str) and integer_param.isdecimal())
@@ -27,7 +47,27 @@ def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
         raise ValueError(f"{integer_param} is less than the minimum value ({min_val}).")
 
 
-def validate_target(target: str) -> None:
+def validate_bitmap(bitmap: npt.ArrayLike) -> None:
+    """Checks that `bitmap` is in an array format acceptable by the Atom picture API.
+
+    Args:
+        bitmap: The array-like object to validate.
+
+    Raises:
+        TypeError: If `bitmap` is not a two-dimensional array.
+        TypeError: If `bitmap` is not a square two-dimensional array.
+        ValueError: If `bitmap` contains any values outside of {0, 1, 2}.
+    """
+    bitmap_array = np.asarray(bitmap)
+    if not bitmap_array.ndim == 2:
+        raise TypeError("The atom picture `bitmap` must be a 2D array-like object.")
+    if not (bitmap_array.shape[0] == bitmap_array.shape[1]):
+        raise TypeError("The atom picture `bitmap` must be a square 2D array-like object.")
+    if not np.all(np.isin(bitmap_array, [0, 1, 2])):
+        raise ValueError("The atom picture `bitmap` must only contain the integers 0, 1, or 2.")
+
+
+def validate_target(target: str) -> str:
     """Checks that `target` conforms to a valid Superstaq format and device type.
 
     Args:
@@ -43,7 +83,7 @@ def validate_target(target: str) -> None:
     if not match:
         raise ValueError(
             f"{target!r} does not have a valid string format. Valid target strings should be in "
-            "the form '<provider>_<device>_<type>', e.g. 'ibmq_brisbane_qpu'."
+            "the form '<provider>_<device>_<type>', e.g. 'ibmq_fez_qpu'."
         )
 
     _, _, device_type = match.groups()
@@ -54,6 +94,8 @@ def validate_target(target: str) -> None:
             f"{target!r} does not have a valid target device type. Valid device types are: "
             f"{target_device_types}."
         )
+
+    return target
 
 
 def validate_noise_type(noise: dict[str, object], n_qubits: int) -> None:
@@ -124,17 +166,41 @@ def validate_qubo(qubo: object) -> None:
         qubo: The input value to validate.
 
     Raises:
-        ValueError: If the provided object cannot be converted into a valid QUBO.
+        TypeError: If `qubo` is not a dict-like object.
+        TypeError: If the keys of `qubo` are of an invalid type.
+        ValueError: If `qubo` contains cubic or further higher degree terms.
+        TypeError: If the values in `qubo` are not real numbers.
     """
     if not isinstance(qubo, Mapping):
-        raise ValueError("QUBOs must be provided as dict-like objects.")
+        raise TypeError("QUBOs must be provided as dict-like objects.")
 
     for key, val in qubo.items():
         if not isinstance(key, Sequence) or isinstance(key, str):
-            raise ValueError(f"{key!r} is not a valid key for a QUBO.")
+            raise TypeError(f"{key!r} is not a valid key for a QUBO.")
 
         if len(key) > 2:
             raise ValueError(f"QUBOs must be quadratic, but key {key!r} has length {len(key)}.")
 
         if not isinstance(val, numbers.Real):
-            raise ValueError("QUBO values must be real numbers.")
+            raise TypeError("QUBO values must be real numbers.")
+
+
+def _validate_ibm_channel(ibm_channel: str) -> str:
+    if ibm_channel == "ibm_quantum":
+        raise ValueError(
+            "The 'ibm_quantum' channel has been deprecated and sunset on July 1st, 2025. Instead, "
+            "use 'ibm_quantum_platform' (or equivalently, the older 'ibm_cloud') and the "
+            "corresponding channel token.",
+        )
+    if ibm_channel == "ibm_cloud":
+        warnings.warn(
+            "The 'ibm_cloud' channel will be deprecated in the future. Instead, consider using "
+            "'ibm_quantum_platform' (the newer version which points to the same channel and works "
+            "interchangeably with the same 'ibm_cloud' token and instance).",
+            FutureWarning,
+            stacklevel=4,
+        )
+    elif ibm_channel not in ("ibm_cloud", "ibm_quantum_platform"):
+        raise ValueError("`ibmq_channel` must be either 'ibm_cloud' or 'ibm_quantum_platform'.")
+
+    return ibm_channel

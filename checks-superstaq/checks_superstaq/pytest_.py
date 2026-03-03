@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import re
@@ -8,6 +22,8 @@ import textwrap
 from collections.abc import Callable, Iterable
 
 from checks_superstaq import check_utils
+
+NBMAKE_TIMEOUT = 300  # 5 minutes
 
 
 @check_utils.enable_exit_on_failure
@@ -31,7 +47,6 @@ def run(
     Returns:
         Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
     """
-
     parser = check_utils.get_check_parser()
     parser.description = textwrap.dedent(
         """
@@ -75,7 +90,11 @@ def run(
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
 
     if parsed_args.notebook:
-        args_to_pass += ["--nbmake", "--force-enable-socket"]
+        args_to_pass += [
+            "--nbmake",
+            "--force-enable-socket",
+            f"--nbmake-timeout={NBMAKE_TIMEOUT}",
+        ]
     elif (parsed_args.integration) or (
         "--integration" not in args
         and any(re.match(r".*_integration_test\.py$", arg) for arg in args)
@@ -90,7 +109,7 @@ def run(
     if parsed_args.notebook:
         # These tests spend most of their time waiting for the server, so allow more threads than we
         # have physical processors (within reason)
-        nthreads = min(len(files), 16)
+        nthreads = min(len(files), 4)
         nthreads = 0 if nthreads <= 1 else nthreads
 
         # Setting before other args so -n can be overwritten
@@ -110,10 +129,10 @@ def run(
         integration_setup()
 
     return subprocess.call(
-        ["python", "-m", "pytest", *files, *args_to_pass],
+        [sys.executable, "-m", "pytest", *files, *args_to_pass],
         cwd=check_utils.root_dir,
     )
 
 
 if __name__ == "__main__":
-    exit(run(*sys.argv[1:]))
+    sys.exit(run(*sys.argv[1:]))

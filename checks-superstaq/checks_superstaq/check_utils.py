@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Dumping ground for check script utilities."""
 
 from __future__ import annotations
@@ -157,7 +171,6 @@ def select_files(files: Iterable[str], include: str | Iterable[str]) -> list[str
     Returns:
         The selected files.
     """
-
     files = list(files)
     excluded_files = exclude_files(files, include)
     return [file for file in files if file not in excluded_files]
@@ -203,18 +216,18 @@ def get_changed_files(
     if not silent:
         revision_commit = _check_output("git", "rev-parse", base_revision)
         if common_ancestor == revision_commit:
-            print(f"Comparing against revision '{base_revision}'")
+            print(f"Comparing against revision '{base_revision}'")  # noqa: T201
         else:
-            print(f"Comparing against revision '{base_revision}' (merge base '{common_ancestor}')")
+            print(f"Comparing against revision '{base_revision}' (merge base '{common_ancestor}')")  # noqa: T201
 
     changed_files = _check_output("git", "diff", "--name-only", common_ancestor).splitlines()
 
     files_to_examine = [file for file in files if file in changed_files]
 
     if not silent:
-        print(f"Found {len(files_to_examine)} changed file(s) to examine")
+        print(f"Found {len(files_to_examine)} changed file(s) to examine")  # noqa: T201
         for file in files_to_examine:
-            print(file)
+            print(file)  # noqa: T201
     return files_to_examine
 
 
@@ -223,18 +236,17 @@ def _get_ancestor(*revisions: str, silent: bool = False) -> str:
     if len(revisions) == 1:
         return revisions[0]
 
-    elif len(revisions) > 1:
+    if len(revisions) > 1:
         if not silent:
             rev_text = " ".join([f"'{rev}'" for rev in revisions])
-            print(f"Finding common ancestor of revisions {rev_text}")
+            print(f"Finding common ancestor of revisions {rev_text}")  # noqa: T201
         return _check_output("git", "merge-base", *revisions)
 
-    else:
-        for branch in default_branches:
-            if _revision_exists(branch):
-                return branch
-        error = f"Default git revisions not found: {default_branches}"
-        raise RuntimeError(failure(error))
+    for branch in default_branches:
+        if _revision_exists(branch):
+            return branch
+    error = f"Default git revisions not found: {default_branches}"
+    raise RuntimeError(failure(error))
 
 
 def _revision_exists(revision: str) -> bool:
@@ -262,22 +274,19 @@ def get_test_files(
     Returns:
         A list of test files corresponding to the input files.
     """
-
     test_files = []
     for file in files:
         basename = os.path.basename(file).split("::")[0]
 
         if basename.endswith("_test.py") or basename.startswith("test_"):
             test_files.append(file)
-        else:
-            if os.path.isfile(test_file := re.sub(r"\.py$", "_test.py", file)):
-                test_files.append(test_file)
+        elif os.path.isfile(test_file := re.sub(r"\.py$", "_test.py", file)) or os.path.isfile(
+            test_file := re.sub(rf"{basename}$", f"test_{basename}", file)
+        ):
+            test_files.append(test_file)
 
-            elif os.path.isfile(test_file := re.sub(rf"{basename}$", f"test_{basename}", file)):
-                test_files.append(test_file)
-
-            elif not silent:
-                print(warning(f"WARNING: no test file found for {file}"))
+        elif not silent and basename not in ("__init__.py", "conftest.py"):
+            print(warning(f"WARNING: no test file found for {file}"))  # noqa: T201
 
     if exclude:
         test_files = exclude_files(test_files, exclude)
@@ -291,8 +300,6 @@ def get_test_files(
 CHECK_LIST = [
     "configs",
     "format",
-    "flake8",
-    "pylint",
     "mypy",
     "pytest",
     "coverage",
@@ -394,7 +401,6 @@ def extract_files(
             file parser directly.
         3. Paths to extant files passed to the file parser directly, regardless of above criteria.
     """
-
     exclude = [exclude] if isinstance(exclude, str) else exclude
 
     if parsed_args.exclude:
@@ -449,7 +455,7 @@ def enable_exit_on_failure(func_with_returncode: Callable[..., int]) -> Callable
         """
         returncode = func_with_returncode(*args, **kwargs)
         if exit_on_failure and returncode:
-            exit(returncode)
+            sys.exit(returncode)
         return returncode
 
     return func_with_exit

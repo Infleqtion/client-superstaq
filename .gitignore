@@ -151,6 +151,9 @@ cython_debug/
 # Intellij/ pycharm
 .idea/
 
+# VSCode
+.vscode/
+
 # Docs
 _site
 .sass-cache

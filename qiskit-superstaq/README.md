@@ -12,27 +12,28 @@ features of Superstaq with this package.
 pip install qiskit-superstaq
 ```
 
-Please note that Python version `3.8` or higher is required. See installation instructions [here](https://github.com/Infleqtion/client-superstaq#readme).
+Please note that Python version `3.9` or higher is required. See installation instructions [here](https://github.com/Infleqtion/client-superstaq#readme).
 
 ### Creating and submitting a circuit through qiskit-superstaq
+
 ```python
 import qiskit
 import qiskit_superstaq as qss
 
 token = "Insert superstaq token that you received from https://superstaq.infleqtion.com"
 
-superstaq = qss.superstaq_provider.SuperstaqProvider(token)
+superstaq = qss.SuperstaqProvider(token)
 
-backend = superstaq.get_backend("ibmq_brisbane_qpu")
 qc = qiskit.QuantumCircuit(2, 2)
 qc.h(0)
 qc.cx(0, 1)
 qc.measure(0, 0)
 qc.measure(1, 1)
 
-print(qc)
+print(qc.draw())
 
-# Submitting a circuit to IBM's Brisbane QPU. Providing the "dry-run" method parameter instructs Superstaq to simulate the circuit, and is available to free trial users.
+# Submitting a circuit to IBM's Fez QPU. Providing the "dry-run" method parameter instructs Superstaq to simulate the circuit, and is available to free trial users.
+backend = superstaq.get_backend("ibmq_fez_qpu")
 job = backend.run(qc, shots=100, method="dry-run")
 print(job.result().get_counts())
 ```

@@ -1,3 +1,18 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
@@ -12,20 +27,21 @@
 from __future__ import annotations
 
 import numbers
+import uuid
 import warnings
 from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
 import numpy as np
-import numpy.typing as npt
 import qiskit
+from general_superstaq.superstaq_client import _SuperstaqClient
 
 import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
+    import numpy.typing as npt
     from _typeshed import SupportsItems
-    from qiskit.providers.models import BackendConfiguration
 
 
 class SuperstaqBackend(qiskit.providers.BackendV2):
@@ -49,54 +65,27 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
     def _default_options(cls) -> qiskit.providers.Options:
         return qiskit.providers.Options(shots=1000)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, qss.SuperstaqBackend):
             return False
 
-        return self._provider == other._provider and self.target_info() == other.target_info()
+        return self._provider == other._provider and self.name == other.name
+
+    def __hash__(self) -> int:
+        return hash((self.name, self._provider))
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}('{self.name}')>"
-
-    def configuration(self) -> BackendConfiguration:
-        """Retrieves configuration information for this target.
-
-        Returns:
-            A backend configuration object containing various hardware parameters.
-        """
-        warnings.warn(
-            "The `.configuration()` method of `SuperstaqBackend` has been deprecated, and will be "
-            "removed in a future version of qiskit-superstaq. Instead, use attributes of the "
-            "backend itself (e.g. `backend.num_qubits`), or of its `.target` attribute.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        target_info = self.target_info()
-
-        num_qubits = target_info.get("num_qubits")
-        configuration_dict = {
-            "backend_name": target_info.get("target"),
-            "basis_gates": target_info.get("native_gate_set", []),
-            "backend_version": "n/a",
-            "n_qubits": num_qubits,
-            "gates": [],
-            "local": False,
-            "simulator": False,
-            "conditional": False,
-            "open_pulse": False,
-            "memory": False,
-            "max_shots": None,
-            "coupling_map": None,
-            "description": f"{num_qubits} qubit device",
-        }
-
-        return qiskit.providers.models.BackendConfiguration.from_dict(configuration_dict)
 
     @property
     def max_circuits(self) -> int | None:
         """The maximum number of circuits that can be submitted to this backend."""
         return self.target_info().get("max_circuits")
+
+    @property
+    def num_qubits(self) -> int:
+        target_info = self.target_info()
+        return target_info.get("num_qubits", 0)
 
     @property
     def coupling_map(self) -> qiskit.transpiler.CouplingMap | None:
@@ -119,16 +108,68 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
     def target(self) -> qiskit.transpiler.Target:
         """A `qiskit.transpiler.Target` object for this backend."""
         target_info = self.target_info()
-        num_qubits = target_info.get("num_qubits")
-        return qiskit.transpiler.Target(description=self.description, num_qubits=num_qubits)
+
+        gate_durations = []
+        if duration_info := target_info.get("gate_durations"):
+            for gate_name, qubit_indicies, duration, unit in duration_info:
+                gate_durations.append((gate_name, tuple(qubit_indicies), duration, unit))
+
+        basis_gateset = ["reset", "measure"]
+        if native_gate_set := target_info.get("native_gate_set"):
+            basis_gateset += list(native_gate_set)
+
+        custom_name_mapping = {
+            "acecr": qss.AceCR,
+            "dd": qss.DDGate,
+            "gr": qiskit.circuit.library.GR,
+            "iccx_o0": qss.AQTiCCXGate,
+            "GPI": qiskit.circuit.library.RGate(
+                np.pi, 2 * np.pi * qiskit.circuit.Parameter("phi"), label="GPI"
+            ),
+            "GPI2": qiskit.circuit.library.RGate(
+                np.pi / 2, 2 * np.pi * qiskit.circuit.Parameter("phi"), label="GPI2"
+            ),
+            "prx": qiskit.circuit.library.RGate,
+            "cc_prx": qiskit.circuit.library.RGate,  # Classically controlled 'prx' gate
+            "MS": qiskit.circuit.library.MSGate,
+            "ZZ": qiskit.circuit.library.RZZGate,
+            "xx": qiskit.circuit.library.RXXGate,
+            "measure_ff": qiskit.circuit.Measure(
+                label="measure_ff"
+            ),  # Measurement with classical feed-forward
+            "barrier": qiskit.circuit.Barrier,
+        }
+        backend_target = qiskit.transpiler.Target.from_configuration(
+            num_qubits=target_info.get("num_qubits"),
+            basis_gates=basis_gateset,
+            coupling_map=qiskit.transpiler.CouplingMap(
+                couplinglist=target_info.get("coupling_map")
+            ),
+            instruction_durations=qiskit.transpiler.instruction_durations.InstructionDurations(
+                gate_durations
+            ),
+            timing_constraints=qiskit.transpiler.timing_constraints.TimingConstraints(
+                acquire_alignment=target_info.get("acquire_alignment", 1),
+                granularity=target_info.get("granularity", 1),
+                min_length=target_info.get("min_length", 1),
+                pulse_alignment=target_info.get("pulse_alignment", 1),
+            ),
+            dt=target_info.get("dt"),
+            custom_name_mapping=custom_name_mapping,
+        )
+        backend_target.description = self.description
+        return backend_target
 
     def run(
         self,
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         shots: int,
         method: str | None = None,
+        verbatim: bool = False,
+        tag: Sequence[str] | str = (),
+        metadata: Mapping[str, object] | None = None,
         **kwargs: Any,
-    ) -> qss.SuperstaqJob:
+    ) -> qss.SuperstaqJob | qss.SuperstaqJobV3:
         """Runs circuits on the stored Superstaq backend.
 
         Args:
@@ -136,6 +177,9 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             shots: The number of execution shots (times to run the circuit).
             method:  An optional string that describes the execution method
                 (e.g. 'dry-run', 'statevector', etc.).
+            verbatim: Run the provided circuit(s) verbatim (i.e. without compilation).
+            tag: An identifying tag (or list of tags) which can be used to find this job.
+            metadata: Optional other data to store alongside the job.
             kwargs: Other optimization and execution parameters.
 
         Returns:
@@ -160,23 +204,30 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             repetitions=shots,
             target=self.name,
             method=method,
+            verbatim=verbatim,
+            tag=tag,
+            metadata=metadata,
             **kwargs,
         )
 
-        #  we make a virtual job_id that aggregates all of the individual jobs
-        # into a single one, that comma-separates the individual jobs:
-        job_id = ",".join(result["job_ids"])
-        job = qss.SuperstaqJob(self, job_id)
+        if isinstance(self._provider._client, _SuperstaqClient):
+            # Make a virtual job_id that aggregates all of the individual jobs
+            # into a single one that comma-separates the individual jobs.
+            job_id = ",".join(result["job_ids"])
+            return qss.SuperstaqJob(self, job_id)
+        job_id_v3 = result["job_id"]
+        return qss.SuperstaqJobV3(self, job_id_v3)
 
-        return job
-
-    def retrieve_job(self, job_id: str) -> qss.SuperstaqJob:
+    def retrieve_job(self, job_id: str | uuid.UUID) -> qss.SuperstaqJob | qss.SuperstaqJobV3:
         """Gets a job that has been created on the Superstaq API.
+
         Args:
             job_id: The UUID of the job. Jobs are assigned these numbers by the server during the
             creation of the job.
+
         Returns:
             A `qss.SuperstaqJob` which can be queried for status or results.
+
         Raises:
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
@@ -187,7 +238,9 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             DeprecationWarning,
             stacklevel=2,
         )
-        return qss.SuperstaqJob(self, job_id)
+        if isinstance(self._provider._client, _SuperstaqClient):
+            return qss.SuperstaqJob(self, str(job_id))
+        return qss.SuperstaqJobV3(self, job_id)
 
     def compile(
         self,
@@ -207,22 +260,25 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         Raises:
             ValueError: If this backend does not support compilation.
         """
-        if self.name.startswith("ibmq_"):
-            return self.ibmq_compile(circuits, **kwargs)
+        if self._provider._client.api_version == "v0.2.0":
+            if self.name.startswith("ibmq_"):
+                return self.ibmq_compile(circuits, **kwargs)
 
-        elif self.name.startswith("aqt_"):
-            return self.aqt_compile(circuits, **kwargs)
+            if self.name.startswith("aqt_"):
+                return self.aqt_compile(circuits, **kwargs)
 
-        elif self.name.startswith("qscout_"):
-            return self.qscout_compile(circuits, **kwargs)
+            if self.name.startswith("qscout_"):
+                return self.qscout_compile(circuits, **kwargs)
 
-        elif self.name.startswith("cq_"):
-            return self.cq_compile(circuits, **kwargs)
+            if self.name.startswith("cq_"):
+                return self.cq_compile(circuits, **kwargs)
 
         request_json = self._get_compile_request_json(circuits, **kwargs)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
-        return qss.compiler_output.read_json(json_dict, circuits_is_list)
+        return qss.compiler_output.read_json(
+            json_dict, circuits_is_list, api_version=self._provider._client.api_version
+        )
 
     def _get_compile_request_json(
         self,
@@ -376,6 +432,8 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         base_entangling_gate: str = "xx",
         num_qubits: int | None = None,
         error_rates: SupportsItems[tuple[int, ...], float] | None = None,
+        atol: float = 1e-8,
+        atol_map: SupportsItems[tuple[int, ...], float] | None = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at Sandia
@@ -407,11 +465,20 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
                 for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`) . If
                 provided, Superstaq will attempt to map the circuit to minimize the total error on
                 each qubit.
+            atol: Optional tolerance (trace distance bound) used for approximate compilation.
+                Superstaq will elide gates which can be approximated within the given tolerance by
+                identity operations.
+            atol_map: Optional dictionary assigning compilation tolerances to physical qubits, in
+                the form `{<qubit_indices>: <atol>, ...}` where `<qubit_indices>` is a tuple of
+                physical qubit indices (ints) and `<atol>` is an absolute tolerance (trace distance
+                bound) for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`).
+                If provided, these tolerances will override `atol` for gates on the given qubits.
+                Omitted qubit pairs default to `atol`.
             kwargs: Other desired qscout_compile options.
 
         Returns:
             Object whose .circuit(s) attribute contains optimized `qiskit.QuantumCircuit`(s), and
-            `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
+            `.jaqal_program` attribute contains the corresponding Jaqal program(s).
 
         Raises:
             ValueError: If this is not a QSCOUT backend.
@@ -422,7 +489,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
 
         base_entangling_gate = base_entangling_gate.lower()
         if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
-            raise ValueError("base_entangling_gate must be 'xx', 'zz', 'sxx', or 'szz'")
+            raise ValueError("`base_entangling_gate` must be 'xx', 'zz', 'sxx', or 'szz'")
 
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
 
@@ -430,28 +497,36 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             **kwargs,
             "mirror_swaps": mirror_swaps,
             "base_entangling_gate": base_entangling_gate,
+            "atol": atol,
         }
 
         if isinstance(circuits, qiskit.QuantumCircuit):
-            max_circuit_qubits = circuits.num_qubits
+            inferred_num_qubits = circuits.num_qubits
         else:
-            max_circuit_qubits = max(c.num_qubits for c in circuits)
+            inferred_num_qubits = max(c.num_qubits for c in circuits)
 
         if error_rates is not None:
             error_rates_list = list(error_rates.items())
             options["error_rates"] = error_rates_list
+            inferred_num_qubits = max(
+                inferred_num_qubits, *(q + 1 for qs, _ in error_rates_list for q in qs)
+            )
 
-            # Use error rate dictionary to set `num_qubits`, if not already specified
-            if num_qubits is None:
-                max_index = max(q for qs, _ in error_rates_list for q in qs)
-                num_qubits = max_index + 1
+        if atol_map is not None:
+            atol_map_list = list(atol_map.items())
+            options["atol_map"] = atol_map_list
+            inferred_num_qubits = max(
+                inferred_num_qubits, *(q + 1 for qs, _ in atol_map_list for q in qs)
+            )
 
-        elif num_qubits is None:
-            num_qubits = max_circuit_qubits
+        # Infer `num_qubits` from inputs, if not already specified
+        if num_qubits is None:
+            num_qubits = inferred_num_qubits
 
         gss.validation.validate_integer_param(num_qubits)
-        if num_qubits < max_circuit_qubits:
-            raise ValueError(f"At least {max_circuit_qubits} qubits are required for this input.")
+        if num_qubits < inferred_num_qubits:
+            raise ValueError(f"At least {inferred_num_qubits} qubits are required for this input.")
+
         options["num_qubits"] = num_qubits
 
         request_json = self._get_compile_request_json(circuits, **options)

@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -31,7 +45,7 @@ def validate_qubit_types(circuits: cirq.Circuit | Sequence[cirq.Circuit]) -> Non
 
     if not all(isinstance(q, SUPPORTED_QID_TYPES) for q in all_qubits_present):
         invalid_qubit_types = ", ".join(
-            map(str, (set(type(q) for q in all_qubits_present) - set(SUPPORTED_QID_TYPES)))
+            map(str, ({type(q) for q in all_qubits_present} - set(SUPPORTED_QID_TYPES)))
         )
         raise TypeError(
             f"Input circuit(s) contains unsupported qubit types: {invalid_qubit_types}. "
@@ -56,7 +70,6 @@ def validate_cirq_circuits(circuits: object, require_measurements: bool = False)
         ValueError: If the input is not a `cirq.Circuit` or a list of `cirq.Circuit` instances.
         TypeError: If an unsupported qubit type is found in `circuits`.
     """
-
     if not (
         isinstance(circuits, cirq.Circuit)
         or (

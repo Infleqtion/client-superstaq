@@ -1,4 +1,16 @@
-# pylint: disable=missing-function-docstring,missing-class-docstring
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import importlib
@@ -24,10 +36,9 @@ def test_qpy_serialization_version() -> None:
     )
 
 
-def test_to_json() -> None:
-    real_part = np.random.uniform(-1, 1, size=(4, 4))
-    imag_part = np.random.uniform(-1, 1, size=(4, 4))
-
+def test_to_json(rng: np.random.Generator) -> None:
+    real_part = rng.uniform(-1, 1, size=(4, 4))
+    imag_part = rng.uniform(-1, 1, size=(4, 4))
     val = [
         {"abc": 123},
         real_part,
@@ -57,7 +68,7 @@ def test_to_json() -> None:
     assert np.all(resolved_val[1] == val[1])
     assert np.all(resolved_val[2] == val[2])
 
-    with pytest.raises(TypeError, match="not JSON serializable"):
+    with pytest.raises(TypeError, match=r"not JSON serializable"):
         qss.serialization.to_json(qiskit.QuantumCircuit())
 
 
@@ -115,33 +126,6 @@ def test_circuit_serialization() -> None:
     assert qss.serialization.deserialize_circuits(serialized_circuits) == circuits
 
 
-def test_insert_times_and_durations() -> None:
-    circuit = qiskit.QuantumCircuit(2)
-
-    # Test an empty circuit
-    new_circuit = qss.serialization.insert_times_and_durations(circuit, [], [])
-    assert new_circuit.duration == 0
-    assert new_circuit.op_start_times == []
-
-    circuit.x(0)
-    circuit.cx(0, 1)
-    circuit.measure_all()
-
-    durations = [10, 100, 0, 50, 50]
-    start_times = [0, 10, 110, 110, 110]
-
-    new_circuit = qss.serialization.insert_times_and_durations(circuit, durations, start_times)
-    assert new_circuit == circuit
-    assert new_circuit.op_start_times == start_times
-    assert [inst.operation.duration for inst in new_circuit] == durations
-    assert new_circuit.duration == 160
-
-    # Test fallback when timing information is not provided
-    new_circuit = qss.serialization.insert_times_and_durations(circuit, [], [])
-    assert new_circuit is circuit
-    assert new_circuit.duration is None
-
-
 def test_warning_suppression() -> None:
     circuit = qiskit.QuantumCircuit(3)
     circuit.cx(2, 1)
@@ -156,8 +140,8 @@ def test_warning_suppression() -> None:
         serialized_circuit = qss.serialization.serialize_circuits(circuit)
 
     # Check that a warning would normally be thrown
-    with pytest.warns(UserWarning):
-        buf = io.BytesIO(gss.serialization.str_to_bytes(serialized_circuit))
+    buf = io.BytesIO(gss.serialization.str_to_bytes(serialized_circuit))
+    with pytest.warns(UserWarning, match=r"This may result in an error if the QPY file"):
         _ = qiskit.qpy.load(buf)
 
     # Check that it is suppressed by deserialize_circuits
@@ -171,25 +155,31 @@ def test_deserialization_errors() -> None:
     circuit.x(0)
 
     # Mock a circuit serialized with a newer version of QPY:
-    with mock.patch("qiskit_superstaq.serialization.QPY_SERIALIZATION_VERSION", None):
-        with mock.patch("qiskit.qpy.common.QPY_VERSION", qiskit.qpy.common.QPY_VERSION + 1):
-            serialized_circuit = qss.serialize_circuits(circuit)
+    with (
+        mock.patch("qiskit_superstaq.serialization.QPY_SERIALIZATION_VERSION", None),
+        mock.patch("qiskit.qpy.common.QPY_VERSION", qiskit.qpy.common.QPY_VERSION + 1),
+    ):
+        serialized_circuit = qss.serialize_circuits(circuit)
 
     # Remove a few bytes to force a deserialization error
     serialized_circuit = gss.serialization.bytes_to_str(
         gss.serialization.str_to_bytes(serialized_circuit)[:-4]
     )
 
-    with pytest.raises(ValueError, match="your version of Qiskit"):
-        with mock.patch("qiskit.qpy.common.QPY_VERSION", qiskit.qpy.common.QPY_VERSION - 3):
-            _ = qss.deserialize_circuits(serialized_circuit)
+    with (
+        pytest.raises(ValueError, match=r"your version of Qiskit"),
+        mock.patch("qiskit.qpy.common.QPY_VERSION", qiskit.qpy.common.QPY_VERSION - 3),
+    ):
+        _ = qss.deserialize_circuits(serialized_circuit)
 
     # Mock a circuit serialized with an older of QPY:
-    with mock.patch("qiskit_superstaq.serialization.QPY_SERIALIZATION_VERSION", None):
-        with mock.patch("qiskit.qpy.common.QPY_VERSION", 3):
-            serialized_circuit = qss.serialize_circuits(circuit)
+    with (
+        mock.patch("qiskit_superstaq.serialization.QPY_SERIALIZATION_VERSION", None),
+        mock.patch("qiskit.qpy.common.QPY_VERSION", 3),
+    ):
+        serialized_circuit = qss.serialize_circuits(circuit)
 
-    with pytest.raises(ValueError, match="Please contact"):
+    with pytest.raises(ValueError, match=r"Please contact"):
         _ = qss.deserialize_circuits(serialized_circuit)
 
 
@@ -289,9 +279,9 @@ def test_completeness() -> None:
     for attr_name in dir(qss.custom_gates):
         attr = getattr(qss.custom_gates, attr_name)
         if isinstance(attr, type) and issubclass(attr, qiskit.circuit.Instruction):
-            assert issubclass(
-                attr, tuple(qss.serialization._custom_gates_by_name.values())
-            ), f"'{attr_name}' not covered in `qss.serialization._custom_gates_by_name`."
+            assert issubclass(attr, tuple(qss.serialization._custom_gates_by_name.values())), (
+                f"'{attr_name}' not covered in `qss.serialization._custom_gates_by_name`."
+            )
 
             if attr is not qss.ParallelGates:
                 assert attr in test_gates, f"'{attr_name}' missing from `test_gates`."
@@ -301,8 +291,9 @@ def test_mcphase() -> None:
     gate1 = qss.serialization._mcphase(1.1, 3, ctrl_state=2)
     with mock.patch("qiskit.__version__", "1.0.2"):
         gate3 = qss.serialization._mcphase(1.1, 3, ctrl_state=2)
-    with mock.patch("qiskit.__version__", "1.1.1"), mock.patch(
-        "qiskit.circuit.library.MCPhaseGate", return_value=gate1
+    with (
+        mock.patch("qiskit.__version__", "1.1.1"),
+        mock.patch("qiskit.circuit.library.MCPhaseGate", return_value=gate1),
     ):
         gate2 = qss.serialization._mcphase(1.1, 3, ctrl_state=2)
     assert gate1 == gate2 == gate3
@@ -321,12 +312,37 @@ def test_qft_gate() -> None:
 
 
 @pytest.mark.parametrize("base_class", test_gates, ids=lambda g: g.name)
-def test_gate_preparation_and_resolution(base_class: type[qiskit.circuit.Instruction]) -> None:
+def test_gate_preparation_and_resolution(
+    rng: np.random.Generator,
+    base_class: type[qiskit.circuit.Instruction],
+) -> None:
     num_params = test_gates[base_class]
 
-    gate = base_class(*np.random.uniform(-2 * np.pi, 2 * np.pi, num_params))
+    gate = base_class(*rng.uniform(-2 * np.pi, 2 * np.pi, num_params))
     assert qss.serialization._resolve_gate(qss.serialization._prepare_gate(gate)) == gate
-    assert qss.serialization._resolve_gate(qss.serialization._wrap_gate(gate)) == gate
+
+
+@pytest.mark.parametrize("base_class", test_gates, ids=lambda g: g.name)
+def test_legacy_wrapper_resolution(
+    rng: np.random.Generator,
+    base_class: type[qiskit.circuit.Instruction],
+) -> None:
+    num_params = test_gates[base_class]
+
+    gate = base_class(*rng.uniform(-2 * np.pi, 2 * np.pi, num_params))
+
+    name = f"__superstaq_wrapper_{id(gate)}"
+    circuit = qiskit.QuantumCircuit(gate.num_qubits, gate.num_clbits, name=name)
+    circuit.append(
+        qss.serialization._prepare_gate(gate), range(gate.num_qubits), range(gate.num_clbits)
+    )
+    new_gate = circuit.to_instruction(label=gate.name)
+
+    compat_name = "parallel_gates" if isinstance(gate, qss.ParallelGates) else gate.name
+    new_gate.definition.name = compat_name
+    new_gate.params.extend(gate.params)
+
+    assert qss.serialization._resolve_gate(new_gate) == gate
 
 
 def _check_serialization(*gates: qiskit.circuit.Instruction) -> None:
@@ -357,13 +373,13 @@ def _check_serialization(*gates: qiskit.circuit.Instruction) -> None:
         parallel_gates = qss.ParallelGates(*gates)
         circuit.append(qss.ParallelGates(*gates), range(parallel_gates.num_qubits))
 
-    # Make sure resolution recurses into control-flow operations
-    circuit.for_loop([0, 1], body=circuit.copy(), qubits=circuit.qubits, clbits=circuit.clbits)
-
     # Make sure resolution recurses into sub-operations
     subcircuit = circuit.copy()
     subcircuit.append(subcircuit.to_instruction(), subcircuit.qubits, subcircuit.clbits)
     circuit.append(subcircuit, circuit.qubits, circuit.clbits)
+
+    # Check control-flow operations in circuit
+    circuit.for_loop([0, 1], body=circuit.copy(), qubits=circuit.qubits, clbits=circuit.clbits)
 
     new_circuit = qss.deserialize_circuits(qss.serialize_circuits(circuit))[0]
     assert circuit == new_circuit
@@ -379,9 +395,12 @@ def _check_serialization(*gates: qiskit.circuit.Instruction) -> None:
 
 
 @pytest.mark.parametrize("base_class", test_gates, ids=lambda g: g.name)
-def test_gate_serialization(base_class: type[qiskit.circuit.Instruction]) -> None:
+def test_gate_serialization(
+    rng: np.random.Generator,
+    base_class: type[qiskit.circuit.Instruction],
+) -> None:
     num_params = test_gates[base_class]
-    params = np.random.uniform(-2 * np.pi, 2 * np.pi, (2, num_params))
+    params = rng.uniform(-2 * np.pi, 2 * np.pi, (2, num_params))
 
     # Construct two different gates to test https://github.com/Qiskit/qiskit/issues/8941 workaround
     gate1 = base_class(*params[0])
@@ -396,13 +415,9 @@ def test_gate_serialization(base_class: type[qiskit.circuit.Instruction]) -> Non
 @pytest.mark.parametrize(
     "gate",
     [
-        qiskit.circuit.library.MSGate(2, np.random.uniform(-2 * np.pi, 2 * np.pi)),
-        qiskit.circuit.library.MSGate(3, np.random.uniform(-2 * np.pi, 2 * np.pi)),
         qiskit.circuit.library.MCXGrayCode(4),
         qiskit.circuit.library.MCXGate(3),
         qiskit.circuit.library.MCXGate(5),
-        qiskit.circuit.library.MCU1Gate(np.random.uniform(-2 * np.pi, 2 * np.pi), 3),
-        qiskit.circuit.library.MCPhaseGate(np.random.uniform(-2 * np.pi, 2 * np.pi), 3),
         *(
             [qiskit.circuit.library.QFTGate(4)]
             if hasattr(qiskit.circuit.library, "QFTGate")
@@ -411,7 +426,7 @@ def test_gate_serialization(base_class: type[qiskit.circuit.Instruction]) -> Non
     ],
     ids=lambda g: g.name,
 )
-def test_nonstandard_gate_serialization(gate: qiskit.circuit.Instruction) -> None:
+def test_nonstandard_static_gate_serialization(gate: qiskit.circuit.Instruction) -> None:
     gates = [gate]
     if hasattr(gate, "ctrl_state"):
         gate2 = gate.copy().to_mutable()
@@ -419,6 +434,23 @@ def test_nonstandard_gate_serialization(gate: qiskit.circuit.Instruction) -> Non
         gates.append(gate2)
 
     _check_serialization(*gates)
+
+
+def test_nonstandard_param_gate_serialization(rng: np.random.Generator) -> None:
+    test_gates = [
+        qiskit.circuit.library.MSGate(2, rng.uniform(-2 * np.pi, 2 * np.pi)),
+        qiskit.circuit.library.MSGate(3, rng.uniform(-2 * np.pi, 2 * np.pi)),
+        qiskit.circuit.library.MCU1Gate(rng.uniform(-2 * np.pi, 2 * np.pi), 3),
+        qiskit.circuit.library.MCPhaseGate(rng.uniform(-2 * np.pi, 2 * np.pi), 3),
+    ]
+    for gate in test_gates:
+        gates = [gate]
+        if hasattr(gate, "ctrl_state"):
+            gate2 = gate.copy().to_mutable()
+            gate2.ctrl_state = 1
+            gates.append(gate2)
+
+        _check_serialization(*gates)
 
 
 def test_qiskit_gate_workarounds() -> None:
@@ -437,6 +469,9 @@ def test_qiskit_gate_workarounds() -> None:
     circuit.append(qiskit.circuit.library.MCU1Gate(2.2, 3, ctrl_state=6), range(4))
     circuit.append(qiskit.circuit.library.MCPhaseGate(1.1, 3), range(4))
     circuit.append(qiskit.circuit.library.MCPhaseGate(2.2, 3), range(4))
+    circuit.delay(10, unit="dt")
+    circuit.delay(1.234, unit="ns")
+    circuit.delay(1.2e3, unit="ps")
 
     subcircuit = circuit.copy()
     subcircuit.append(circuit, circuit.qubits)
@@ -467,3 +502,11 @@ def test_different_gates_with_same_name() -> None:
     expected_circuit.append(expected_gate3, [0, 1])
 
     assert qss.deserialize_circuits(qss.serialize_circuits(circuit))[0] == expected_circuit
+
+
+def test_nested_empty_definitions() -> None:
+    circuit = qiskit.QuantumCircuit(1)
+    circuit.append(circuit.to_gate(), [0])
+    circuit.append(circuit.to_gate(), [0])
+
+    assert qss.deserialize_circuits(qss.serialize_circuits(circuit))[0] == circuit

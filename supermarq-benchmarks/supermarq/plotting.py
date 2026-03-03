@@ -1,16 +1,32 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as npt
 from matplotlib.patches import Circle
 from matplotlib.projections import register_projection
 from matplotlib.projections.polar import PolarAxes
 from sklearn.linear_model import LinearRegression
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 def plot_results(
@@ -77,8 +93,8 @@ def plot_volumetric_results(
     """
     _, ax = plt.subplots(figsize=[4, 4])
 
-    cmap = matplotlib.colormaps["RdBu"]
-    norm = matplotlib.colors.Normalize(vmin=0, vmax=1)
+    cmap = mpl.colormaps["RdBu"]
+    norm = mpl.colors.Normalize(vmin=0, vmax=1)
 
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
@@ -131,7 +147,6 @@ def plot_correlations(
         savefn: Path to save the plot, if `None`, the plot is not saved.
         show: Display the plot using `plt.show`.
     """
-
     temp_correlations = []
     if isinstance(device_scores, dict):
         device_scores = [device_scores]
@@ -207,7 +222,7 @@ def plot_benchmark(
     num_spokes = len(spoke_labels)
     theta = radar_factory(num_spokes)
 
-    _, ax = plt.subplots(dpi=150, subplot_kw=dict(projection="radar"))
+    _, ax = plt.subplots(dpi=150, subplot_kw={"projection": "radar"})
     assert isinstance(ax, RadarAxesMeta)
 
     ax.set_rgrids([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
@@ -240,13 +255,13 @@ def plot_benchmark(
 
 def heatmap(
     data: npt.NDArray[np.floating[Any]],
-    ax: matplotlib.axes.Axes,
+    ax: mpl.axes.Axes,
     row_labels: list[str],
     col_labels: list[str],
     cbar_kw: dict[str, Any] | None = None,
     cbarlabel: str = "",
     **kwargs: Any,
-) -> tuple[matplotlib.image.AxesImage, Any]:
+) -> tuple[mpl.image.AxesImage, Any]:
     """Create a heatmap from a numpy array and two lists of labels.
 
     Args:
@@ -305,13 +320,13 @@ def heatmap(
 
 
 def annotate_heatmap(
-    im: matplotlib.image.AxesImage,
+    im: mpl.image.AxesImage,
     data: npt.NDArray[np.floating[Any]] | None = None,
     valfmt: Any = "{x:.2f}",
     textcolors: tuple[str, str] = ("black", "white"),
     threshold: float | None = None,
     **textkw: Any,
-) -> list[matplotlib.text.Text]:
+) -> list[mpl.text.Text]:
     """Annotate the given heatmap.
 
     Args:
@@ -329,7 +344,6 @@ def annotate_heatmap(
     Returns:
         List of the text annotations.
     """
-
     if data is None:
         data = np.asarray(im.get_array())
 
@@ -341,12 +355,12 @@ def annotate_heatmap(
 
     # Set default alignment to center, but allow it to be
     # overwritten by textkw.
-    kw: dict[str, Any] = dict(horizontalalignment="center", verticalalignment="center")
+    kw: dict[str, Any] = {"horizontalalignment": "center", "verticalalignment": "center"}
     kw.update(textkw)
 
     # Get the formatter in case a string is supplied
     if isinstance(valfmt, str):
-        valfmt = matplotlib.ticker.StrMethodFormatter(valfmt)
+        valfmt = mpl.ticker.StrMethodFormatter(valfmt)
 
     # Loop over the data and create a `Text` for each "pixel".
     # Change the text's color depending on the data.
@@ -373,10 +387,10 @@ def radar_factory(num_vars: int) -> npt.NDArray[np.float64]:
         A list of evenly spaced angles.
     """
     # calculate evenly-spaced axis angles
-    theta = np.linspace(0, 2 * np.pi, num_vars, endpoint=False)
+    theta = np.linspace(0, 2 * np.pi, num_vars, endpoint=False, dtype=np.float64)
 
     class RadarAxes(RadarAxesMeta):
-        """A helper class that sets the shape of the feature plot"""
+        """A helper class that sets the shape of the feature plot."""
 
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             """Initializes the helper `RadarAxes` class."""
@@ -406,9 +420,7 @@ class RadarAxesMeta(PolarAxes):
         # rotate plot such that the first axis is at the top
         self.set_theta_zero_location("N")
 
-    def fill(
-        self, *args: Any, closed: bool = True, **kwargs: Any
-    ) -> list[matplotlib.patches.Polygon]:
+    def fill(self, *args: Any, closed: bool = True, **kwargs: Any) -> list[mpl.patches.Polygon]:
         """Method to override fill so that line is closed by default.
 
         Args:
@@ -419,9 +431,9 @@ class RadarAxesMeta(PolarAxes):
         Returns:
             A list of `matplotlib.patches.Polygon`.
         """
-        return super().fill(closed=closed, *args, **kwargs)
+        return super().fill(*args, closed=closed, **kwargs)
 
-    def plot(self, *args: Any, **kwargs: Any) -> list[matplotlib.lines.Line2D]:
+    def plot(self, *args: Any, **kwargs: Any) -> list[mpl.lines.Line2D]:
         """Overrides plot so that line is closed by default.
 
         Args:
@@ -437,14 +449,14 @@ class RadarAxesMeta(PolarAxes):
 
         return lines
 
-    def _close_line(self, line: matplotlib.lines.Line2D) -> None:
+    def _close_line(self, line: mpl.lines.Line2D) -> None:
         """A method to close the input line.
 
         Args:
             line: The line to close.
         """
         x, y = map(np.asarray, line.get_data())
-        # FIXME: markers at x[0], y[0] get doubled-up.
+        # TODO: markers at x[0], y[0] get doubled-up.
         # See issue https://github.com/Infleqtion/client-superstaq/issues/27
         if x[0] != x[-1]:
             x = np.append(x, x[0])
@@ -459,7 +471,7 @@ class RadarAxesMeta(PolarAxes):
         """
         self.set_thetagrids(np.degrees(self.theta), labels, fontsize=14)
 
-    def _gen_axes_patch(self) -> matplotlib.patches.Circle:
+    def _gen_axes_patch(self) -> mpl.patches.Circle:
         # The Axes patch must be centered at (0.5, 0.5) and of radius 0.5
         # in axes coordinates.
         return Circle((0.5, 0.5), 0.5)

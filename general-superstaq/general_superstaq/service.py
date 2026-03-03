@@ -1,13 +1,34 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import numbers
 import os
 from collections.abc import Mapping, Sequence
-from typing import Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, overload
 
 import general_superstaq as gss
+from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 
-TQuboKey = TypeVar("TQuboKey")
+if TYPE_CHECKING:
+    import numpy.typing as npt
+
+CLIENT_VERSION = {
+    "v0.2.0": _SuperstaqClient,
+    "v0.3.0": _SuperstaqClientV3,
+}
 
 
 class Service:
@@ -24,10 +45,17 @@ class Service:
         """Initializes the `Service` class.
 
         Args:
-            client: The Superstaq client to use.
+            api_key: The key used for authenticating against the Superstaq API.
+            remote_host: The url of the server exposing the Superstaq API. This will strip anything
+                besides the base scheme and netloc, i.e. it only takes the part of the host of
+                the form `http://example.com` of `http://example.com/test`.
+            api_version: Which version of the API to use. Defaults to `client_superstaq.API_VERSION`
+                (which is the most recent version when this client was downloaded).
+            max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
+            verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
         """
-
-        self._client = gss.superstaq_client._SuperstaqClient(
+        client_version = CLIENT_VERSION[api_version]
+        self._client = client_version(
             client_name="general-superstaq",
             remote_host=remote_host,
             api_key=api_key,
@@ -47,7 +75,6 @@ class Service:
             ($-prefix, commas on LHS every three digits, and two digits after period).
             Otherwise, simply returns a float of the balance.
         """
-
         balance = self._client.get_balance()["balance"]
         if pretty_output:
             return f"{balance:,.2f} credits"
@@ -166,14 +193,45 @@ class Service:
         )
         return self._client.get_targets(**filters)
 
-    def get_my_targets(self) -> list[gss.Target]:
+    def get_my_targets(
+        self,
+        simulator: bool | None = None,
+        supports_submit: bool | None = None,
+        supports_submit_qubo: bool | None = None,
+        supports_compile: bool | None = None,
+        available: bool | None = None,
+        retired: bool | None = None,
+        **kwargs: bool,
+    ) -> list[gss.Target]:
         """Gets a list of Superstaq targets that the user can submit to and are available along
         with their status information.
+
+        Args:
+            simulator: Optional flag to restrict the list of targets to (non-) simulators.
+            supports_submit: Optional boolean flag to only return targets that (don't) allow
+                circuit submissions.
+            supports_submit_qubo: Optional boolean flag to only return targets that (don't)
+                allow qubo submissions.
+            supports_compile: Optional boolean flag to return targets that (don't) support
+                circuit compilation.
+            available: Optional boolean flag to only return targets that are (not) available
+                to use.
+            retired: Optional boolean flag to only return targets that are or are not retired.
+            kwargs: Any additional, supported flags to restrict/filter returned targets.
 
         Returns:
             A list of Superstaq targets that the user can currently submit to.
         """
-        return self._client.get_my_targets()
+        return self.get_targets(
+            simulator=simulator,
+            supports_submit=supports_submit,
+            supports_submit_qubo=supports_submit_qubo,
+            supports_compile=supports_compile,
+            available=available,
+            retired=retired,
+            accessible=True,
+            **kwargs,
+        )
 
     @overload
     def get_user_info(self) -> dict[str, str | float]: ...
@@ -235,12 +293,18 @@ class Service:
 
     def submit_qubo(
         self,
-        qubo: Mapping[tuple[TQuboKey, ...], float],
+        qubo: Mapping[tuple[gss.typing.TQuboKey, ...], float],
         target: str = "ss_unconstrained_simulator",
         repetitions: int = 10,
-        method: str | None = None,
+        method: str = "sim_anneal",
         max_solutions: int = 1000,
-    ) -> list[dict[TQuboKey, int]]:
+        *,
+        qaoa_depth: int = 1,
+        rqaoa_cutoff: int = 0,
+        dry_run: bool = False,
+        random_seed: int | None = None,
+        **kwargs: object,
+    ) -> list[dict[gss.typing.TQuboKey, int]]:
         """Solves a submitted QUBO problem via annealing.
 
         This method returns any number of specified dictionaries that seek the minimum of
@@ -254,15 +318,33 @@ class Service:
                 would be {('a',): 2, ('a', 'b'): 1, ('b', 'c'): -5, (): -3}.
             target: The target to submit the QUBO.
             repetitions: Number of times that the execution is repeated before stopping.
-            method: The parameter specifying method of QUBO solving execution. Currently,
-                will either be the "dry-run" option which runs on dwave's simulated annealer,
-                or defaults to `None` and sends it directly to the specified target.
+            method: The parameter specifying method of QUBO solving execution. Currently, the
+                supported methods include "bruteforce", "sim_anneal", "qaoa", or "rqaoa".
+                Defaults to "sim_anneal" which runs on DWave's simulated annealer.
             max_solutions: A parameter that specifies the max number of output solutions.
+            qaoa_depth: The number of QAOA layers to use. Defaults to 1.
+            rqaoa_cutoff: The stopping point for RQAOA before using switching to a classical
+                solver. Defaults to 0.
+            dry_run: If `method="qaoa"`, a boolean flag to (not) run an ideal 'dry-run'
+                QAOA execution on `target`.
+            random_seed: Optional random seed choice for RQAOA.
+            kwargs: Any optional keyword arguments supported by the qubo solver methods.
 
         Returns:
             A dictionary containing the output solutions.
         """
-        result_dict = self._client.submit_qubo(qubo, target, repetitions, method, max_solutions)
+        result_dict = self._client.submit_qubo(
+            qubo,
+            target,
+            repetitions,
+            method,
+            max_solutions,
+            qaoa_depth=qaoa_depth,
+            rqaoa_cutoff=rqaoa_cutoff,
+            dry_run=dry_run,
+            random_seed=random_seed,
+            **kwargs,
+        )
         return gss.serialization.deserialize(result_dict["solution"])
 
     @staticmethod
@@ -277,7 +359,7 @@ class Service:
         config = getattr(config, "_config_raw", config)  # required to serialize qtrl Managers
         if isinstance(config, dict):
             try:
-                import yaml
+                import yaml  # noqa: PLC0415
 
                 return yaml.safe_dump(config)
 
@@ -344,7 +426,6 @@ class Service:
             ValueError: If either file path already exists and overwrite is not True.
             ModuleNotFoundError: If file paths are unspecified and PyYAML cannot be imported.
         """
-
         if pulses_file_path and variables_file_path:
             pulses_file_exists = os.path.exists(pulses_file_path)
             variables_file_exists = os.path.exists(variables_file_path)
@@ -354,12 +435,12 @@ class Service:
                     f"{pulses_file_path} and {variables_file_path} exist. Please try different "
                     "filenames to write to, or pass overwrite=True to overwrite the existing files."
                 )
-            elif not overwrite and pulses_file_exists:
+            if not overwrite and pulses_file_exists:
                 raise ValueError(
                     f"{pulses_file_path} exists. Please try a different filename to write to, "
                     "or pass overwrite=True to overwrite the existing file."
                 )
-            elif not overwrite and variables_file_exists:
+            if not overwrite and variables_file_exists:
                 raise ValueError(
                     f"{variables_file_path} exists Please try a different filename to write to, "
                     "or pass overwrite=True to overwrite the existing file."
@@ -368,31 +449,30 @@ class Service:
             config_dict = self.aqt_get_configs()
             with open(pulses_file_path, "w") as text_file:
                 text_file.write(config_dict["pulses"])
-                print(f"Pulses configuration saved to {pulses_file_path}.")
+                print(f"Pulses configuration saved to {pulses_file_path}.")  # noqa: T201
 
             with open(variables_file_path, "w") as text_file:
                 text_file.write(config_dict["variables"])
-                print(f"Variables configuration saved to {variables_file_path}.")
+                print(f"Variables configuration saved to {variables_file_path}.")  # noqa: T201
 
             return None
 
-        elif pulses_file_path or variables_file_path:
+        if pulses_file_path or variables_file_path:
             raise ValueError("Please provide both pulses and variables file paths, or neither.")
 
-        else:
-            try:
-                import yaml
-            except ImportError:
-                raise ModuleNotFoundError(
-                    "The PyYAML package is required to parse AQT configuration files. "
-                    "You can install it using 'pip install pyyaml'."
-                )
+        try:
+            import yaml  # noqa: PLC0415
+        except ImportError:
+            raise ModuleNotFoundError(
+                "The PyYAML package is required to parse AQT configuration files. "
+                "You can install it using 'pip install pyyaml'."
+            )
 
-            config_dict = self.aqt_get_configs()
-            pulses = yaml.safe_load(config_dict["pulses"])
-            variables = yaml.safe_load(config_dict["variables"])
+        config_dict = self.aqt_get_configs()
+        pulses = yaml.safe_load(config_dict["pulses"])
+        variables = yaml.safe_load(config_dict["variables"])
 
-            return pulses, variables
+        return pulses, variables
 
     def submit_aces(
         self,
@@ -482,3 +562,16 @@ class Service:
             The estimated eigenvalues.
         """
         return self._client.process_aces(job_id=job_id)
+
+    def submit_atom_picture(self, bitmap: npt.ArrayLike) -> str:
+        """Performs a POST request on the `/atom_picture` endpoint.
+
+        Args:
+            bitmap: A 2D array-like object of integers from the set {0, 1, 2}. '0' is empty,
+                '1' is atom, and '2' is whatever is there.
+
+        Returns:
+            A string containing the post request id.
+        """
+        request_id = self._client.submit_atom_picture(bitmap=bitmap).get("request_id")
+        return f"Submitted request for atom picture with ID: {request_id}"

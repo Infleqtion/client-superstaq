@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Copyright 2021 The Cirq Developers
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -10,17 +24,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=missing-function-docstring
-# pylint: disable=missing-return-doc
 # mypy: disable-error-code=method-assign
 # mypy: disable-error-code="union-attr"
 from __future__ import annotations
 
 import pathlib
 import re
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import cirq
+import cirq_superstaq as css
 import pandas as pd
 import pytest
 
@@ -35,27 +48,40 @@ def irb() -> IRB:
 
 
 def test_irb_init() -> None:
+    q0, q1, q2 = cirq.LineQubit.range(3)
+
     experiment = IRB(num_circuits=10, cycle_depths=[1, 3, 5])
     assert experiment.num_qubits == 1
-    assert experiment.interleaved_gate == cirq.ops.SingleQubitCliffordGate.Z
+    assert experiment.qubits == (q0,)
+    assert experiment.interleaved_gate == cirq.Z
     assert experiment.clifford_op_gateset == cirq.CZTargetGateset()
     assert experiment.num_circuits == 10
     assert experiment.cycle_depths == [1, 3, 5]
 
-    experiment = IRB(
-        num_circuits=10, cycle_depths=[1, 3, 5], interleaved_gate=cirq.ops.SingleQubitCliffordGate.X
-    )
+    experiment = IRB(num_circuits=10, cycle_depths=[1, 3, 5], interleaved_gate=cirq.X)
     assert experiment.num_qubits == 1
-    assert experiment.interleaved_gate == cirq.ops.SingleQubitCliffordGate.X
+    assert experiment.qubits == (q0,)
+    assert experiment.interleaved_gate == cirq.X
     assert experiment.clifford_op_gateset == cirq.CZTargetGateset()
     assert experiment.num_circuits == 10
     assert experiment.cycle_depths == [1, 3, 5]
 
     experiment = IRB(num_circuits=10, cycle_depths=[1, 3, 5], interleaved_gate=cirq.CZ)
     assert experiment.num_qubits == 2
+    assert experiment.qubits == (q0, q1)
     assert experiment.clifford_op_gateset == cirq.CZTargetGateset()
     assert experiment.num_circuits == 10
     assert experiment.cycle_depths == [1, 3, 5]
+    assert experiment.interleaved_gate == cirq.CZ
+
+    experiment = IRB(num_circuits=10, cycle_depths=[1, 3, 5], interleaved_gate=cirq.CZ(q1, q2))
+    assert experiment.num_qubits == 2
+    assert experiment.qubits == (q1, q2)
+    assert experiment.clifford_op_gateset == cirq.CZTargetGateset()
+    assert experiment.num_circuits == 10
+    assert experiment.cycle_depths == [1, 3, 5]
+    assert all(sample.circuit.all_qubits() == {q1, q2} for sample in experiment.samples)
+    assert experiment.interleaved_gate == cirq.CZ
 
     experiment = IRB(
         num_circuits=10,
@@ -64,6 +90,7 @@ def test_irb_init() -> None:
         clifford_op_gateset=cirq.SqrtIswapTargetGateset(),
     )
     assert experiment.num_qubits == 1
+    assert experiment.qubits == (q0,)
     assert experiment.interleaved_gate is None
     assert experiment.clifford_op_gateset == cirq.SqrtIswapTargetGateset()
     assert experiment.num_circuits == 10
@@ -74,10 +101,13 @@ def test_irb_bad_init() -> None:
     with pytest.raises(NotImplementedError):
         IRB(
             interleaved_gate=None,
-            num_qubits=3,
+            qubits=3,
             num_circuits=10,
             cycle_depths=[1, 3, 5],
         )
+
+    with pytest.raises(ValueError, match=r"must be a Clifford"):
+        IRB(1, [2], interleaved_gate=cirq.T)
 
 
 def test_reduce_clifford_sequence() -> None:
@@ -138,12 +168,15 @@ def test_irb_build_circuit() -> None:
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=0.0, z_exponent=1.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=0.0, z_exponent=1.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=0.0, z_exponent=1.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=0.0, z_exponent=1.0)(
                             *irb_experiment.qubits
                         ),
@@ -165,21 +198,21 @@ def test_irb_build_circuit() -> None:
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=0.0, z_exponent=1.0)(
                             *irb_experiment.qubits
                         ),
-                        cirq.TaggedOperation(
-                            cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
-                        ),
+                        css.barrier(*irb_experiment.qubits),
+                        cirq.TaggedOperation(cirq.Z(*irb_experiment.qubits), "no_compile"),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=0.0, z_exponent=1.0)(
                             *irb_experiment.qubits
                         ),
-                        cirq.TaggedOperation(
-                            cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
-                        ),
+                        css.barrier(*irb_experiment.qubits),
+                        cirq.TaggedOperation(cirq.Z(*irb_experiment.qubits), "no_compile"),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=0.0, z_exponent=1.0)(
                             *irb_experiment.qubits
                         ),
-                        cirq.TaggedOperation(
-                            cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
-                        ),
+                        css.barrier(*irb_experiment.qubits),
+                        cirq.TaggedOperation(cirq.Z(*irb_experiment.qubits), "no_compile"),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.measure(irb_experiment.qubits),
                     ]
                 ),
@@ -198,12 +231,15 @@ def test_irb_build_circuit() -> None:
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=1.0, z_exponent=0.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=1.0, z_exponent=0.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=1.0, z_exponent=0.0)(
                             *irb_experiment.qubits
                         ),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=1.0, z_exponent=0.0)(
                             *irb_experiment.qubits
                         ),
@@ -225,21 +261,21 @@ def test_irb_build_circuit() -> None:
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=1.0, z_exponent=0.0)(
                             *irb_experiment.qubits
                         ),
-                        cirq.TaggedOperation(
-                            cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
-                        ),
+                        css.barrier(*irb_experiment.qubits),
+                        cirq.TaggedOperation(cirq.Z(*irb_experiment.qubits), "no_compile"),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=1.0, z_exponent=0.0)(
                             *irb_experiment.qubits
                         ),
-                        cirq.TaggedOperation(
-                            cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
-                        ),
+                        css.barrier(*irb_experiment.qubits),
+                        cirq.TaggedOperation(cirq.Z(*irb_experiment.qubits), "no_compile"),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=1.0, z_exponent=0.0)(
                             *irb_experiment.qubits
                         ),
-                        cirq.TaggedOperation(
-                            cirq.ops.SingleQubitCliffordGate.Z(*irb_experiment.qubits), "no_compile"
-                        ),
+                        css.barrier(*irb_experiment.qubits),
+                        cirq.TaggedOperation(cirq.Z(*irb_experiment.qubits), "no_compile"),
+                        css.barrier(*irb_experiment.qubits),
                         cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=1.0, z_exponent=1.0)(
                             *irb_experiment.qubits
                         ),
@@ -510,29 +546,29 @@ def test_analyse_results_rb_plot_saving(tmp_path: pathlib.Path) -> None:
 
 
 def test_results_no_data() -> None:
-    results = IRBResults(target="example", experiment=MagicMock(spec=IRB))
-    with pytest.raises(RuntimeError, match="No data stored. Cannot perform fit."):
+    results = IRBResults(target="example", experiment=IRB(1, []))
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot perform fit."):
         results._fit_decay()
 
-    with pytest.raises(RuntimeError, match="No data stored. Cannot make plot."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot make plot."):
         results._plot_results()
 
-    with pytest.raises(RuntimeError, match="No data stored. Cannot make plot."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot make plot."):
         results.plot_results()
 
-    rb_results = RBResults(target="example", experiment=MagicMock(spec=IRB))
-    with pytest.raises(RuntimeError, match="No data stored. Cannot perform fit."):
+    rb_results = RBResults(target="example", experiment=IRB(1, []))
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot perform fit."):
         rb_results._fit_decay()
 
-    with pytest.raises(RuntimeError, match="No data stored. Cannot make plot."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot make plot."):
         rb_results._plot_results()
 
-    with pytest.raises(RuntimeError, match="No data stored. Cannot make plot."):
+    with pytest.raises(RuntimeError, match=r"No data stored. Cannot make plot."):
         rb_results.plot_results()
 
 
 def test_irb_results_not_analyzed() -> None:
-    results = IRBResults(target="example", experiment=MagicMock(spec=IRB))
+    results = IRBResults(target="example", experiment=IRB(1, []))
     for attr in [
         "rb_decay_coefficient",
         "rb_decay_coefficient_std",
@@ -549,7 +585,7 @@ def test_irb_results_not_analyzed() -> None:
 
 
 def test_rb_results_not_analyzed() -> None:
-    results = RBResults(target="example", experiment=MagicMock(spec=IRB))
+    results = RBResults(target="example", experiment=IRB(1, []))
     for attr in [
         "rb_decay_coefficient",
         "rb_decay_coefficient_std",

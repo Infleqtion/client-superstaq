@@ -1,3 +1,18 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
@@ -16,13 +31,14 @@ from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
-import numpy as np
-import numpy.typing as npt
 import qiskit
+from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 
 import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
+    import numpy as np
+    import numpy.typing as npt
     from _typeshed import SupportsItems
 
 
@@ -35,9 +51,9 @@ class SuperstaqProvider(gss.service.Service):
 
         import qiskit_superstaq as qss
 
-        ss_provider = qss.SuperstaqProvider('MY_TOKEN')
+        ss_provider = qss.SuperstaqProvider("MY_TOKEN")
 
-        backend = ss_provider.get_backend('target')
+        backend = ss_provider.get_backend("target")
 
     where `MY_TOKEN` is the access token provided by Superstaq,
     and `target` is the name of the desired backend.
@@ -80,13 +96,15 @@ class SuperstaqProvider(gss.service.Service):
             api_version: The version of the API.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
             verbose: Whether to print to stdio and stderr on retriable errors.
-            cq_token: Token from CQ cloud. This is required to submit circuits to CQ hardware.
-            ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
-                to IBM hardware, or to access non-public IBM devices you may have access to.
+            cq_token: Token from CQ cloud. This may be required to submit circuits to CQ hardware.
+            ibmq_token: An optional IBM Quantum or IBM Cloud token. This may be required to submit
+                circuits to IBM hardware, or to access non-public IBM devices you may have access
+                to.
             ibmq_instance: An optional instance to use when running IBM jobs.
-            ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
-            use_stored_ibmq_credentials: Whether to retrieve IBM credentials from locally saved
-                accounts.
+            ibmq_channel: Optional type of IBM account. Must be either "ibm_quantum_platform" or
+                "ibm_cloud".
+            use_stored_ibmq_credentials: Boolean flag on whether to retrieve IBM credentials from
+                locally saved accounts or not. Defaults to `False`.
             ibmq_name: The name of the account to retrieve. The default is `default-ibm-quantum`.
             kwargs: Other optimization and execution parameters.
 
@@ -95,11 +113,19 @@ class SuperstaqProvider(gss.service.Service):
         """
         self._name = "superstaq_provider"
 
-        self._client = gss.superstaq_client._SuperstaqClient(
+        if api_version == "v0.2.0":
+            client_version: type[_SuperstaqClient | _SuperstaqClientV3] = _SuperstaqClient
+        elif api_version == "v0.3.0":
+            client_version = _SuperstaqClientV3
+        else:
+            raise ValueError("`api_version` can only take value 'v0.2.0' or 'v0.3.0'")
+
+        self._client = client_version(
             client_name="qiskit-superstaq",
             remote_host=remote_host,
             api_key=api_key,
             api_version=api_version,
+            circuit_type=gss.models.CircuitType.QISKIT,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
             cq_token=cq_token,
@@ -194,10 +220,9 @@ class SuperstaqProvider(gss.service.Service):
 
         target = jobs[job_ids[0]]["target"]
 
-        if all(target == val["target"] for val in jobs.values()):
+        if isinstance(target, str) and all(target == val["target"] for val in jobs.values()):
             return qss.SuperstaqJob(self.get_backend(target), job_id)
-        else:
-            raise gss.SuperstaqException("Job ids belong to jobs at different targets.")
+        raise gss.SuperstaqException("Job ids belong to jobs at different targets.")
 
     def resource_estimate(
         self, circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit], target: str
@@ -398,6 +423,8 @@ class SuperstaqProvider(gss.service.Service):
         base_entangling_gate: str = "xx",
         num_qubits: int | None = None,
         error_rates: SupportsItems[tuple[int, ...], float] | None = None,
+        atol: float = 1e-8,
+        atol_map: SupportsItems[tuple[int, ...], float] | None = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
@@ -430,11 +457,20 @@ class SuperstaqProvider(gss.service.Service):
                 for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`). If
                 provided, Superstaq will attempt to map the circuit to minimize the total error on
                 each qubit.
+            atol: Optional tolerance (trace distance bound) used for approximate compilation.
+                Superstaq will elide gates which can be approximated within the given tolerance by
+                identity operations.
+            atol_map: Optional dictionary assigning compilation tolerances to physical qubits, in
+                the form `{<qubit_indices>: <atol>, ...}` where `<qubit_indices>` is a tuple of
+                physical qubit indices (ints) and `<atol>` is an absolute tolerance (trace distance
+                bound) for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`).
+                If provided, these tolerances will override `atol` for gates on the given qubits.
+                Omitted qubit pairs default to `atol`.
             kwargs: Other desired qscout_compile options.
 
         Returns:
             Object whose .circuit(s) attribute contains optimized `qiskit.QuantumCircuit`(s), and
-            `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
+            `.jaqal_program` attribute contains the corresponding Jaqal program(s).
 
         Raises:
             ValueError: If `target` is not a valid QSCOUT target.
@@ -449,6 +485,8 @@ class SuperstaqProvider(gss.service.Service):
             base_entangling_gate=base_entangling_gate,
             num_qubits=num_qubits,
             error_rates=error_rates,
+            atol=atol,
+            atol_map=atol_map,
             **kwargs,
         )
 
@@ -558,7 +596,7 @@ class SuperstaqProvider(gss.service.Service):
             to post-process the measurement results and return the fidelity.
 
         Raises:
-            ValueError: If `circuit` is not a valid `qiskit.QuantumCircuit`.
+            TypeError: If `circuit` is not a valid `qiskit.QuantumCircuit`.
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         circuit_1 = rho_1[0]
@@ -575,7 +613,7 @@ class SuperstaqProvider(gss.service.Service):
             isinstance(circuit_1, qiskit.QuantumCircuit)
             and isinstance(circuit_2, qiskit.QuantumCircuit)
         ):
-            raise ValueError("Each state `rho_i` should contain a single circuit.")
+            raise TypeError("Each state `rho_i` should contain a single `qiskit.QuantumCircuit`.")
 
         serialized_circuit_1 = qss.serialization.serialize_circuits(circuit_1)
         serialized_circuit_2 = qss.serialization.serialize_circuits(circuit_2)

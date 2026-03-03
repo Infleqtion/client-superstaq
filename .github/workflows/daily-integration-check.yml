@@ -11,12 +11,13 @@ jobs:
     env:
       SUPERSTAQ_API_KEY: ${{ secrets.SUPERSTAQ_API_KEY }}
       TEST_USER_IBMQ_TOKEN: ${{ secrets.TEST_USER_IBMQ_TOKEN }}
+      TEST_USER_IBMQ_INSTANCE: ${{ secrets.TEST_USER_IBMQ_INSTANCE }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Python 3.13
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.13
       - name: Install dependencies
@@ -32,6 +33,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TEST_USER_IBMQ_TOKEN: ${{ secrets.TEST_USER_IBMQ_TOKEN }}
+          TEST_USER_IBMQ_INSTANCE: ${{ secrets.TEST_USER_IBMQ_INSTANCE }}
         with:
           filename: .github/integration-check-failure-issue.md
           update_existing: true

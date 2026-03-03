@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Copyright 2021 The Cirq Developers
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +29,7 @@
 from __future__ import annotations
 
 import numbers
+import uuid
 import warnings
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
@@ -24,13 +39,14 @@ import cirq
 import general_superstaq as gss
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as npt
-from general_superstaq import ResourceEstimate, superstaq_client
+from general_superstaq import ResourceEstimate
+from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 from scipy.optimize import curve_fit
 
 import cirq_superstaq as css
 
 if TYPE_CHECKING:
+    import numpy.typing as npt
     from _typeshed import SupportsItems
 
 
@@ -47,11 +63,10 @@ def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
         ValueError: If `matrix` could not be interpreted as a unitary gate acting on either
             qubits or qutrits.
     """
-
     matrix = np.asarray(matrix, dtype=complex)
 
     for dimension in (2, 3):
-        num_qids = int(round(np.log(matrix.size) / np.log(dimension**2)))
+        num_qids = round(np.log(matrix.size) / np.log(dimension**2))
         if matrix.shape == (dimension**num_qids, dimension**num_qids):
             qid_shape = (dimension,) * num_qids
             return cirq.MatrixGate(matrix, qid_shape=qid_shape)
@@ -168,13 +183,15 @@ class Service(gss.service.Service):
             api_version: Version of the api.
             max_retry_seconds: The number of seconds to retry calls for. Defaults to one hour.
             verbose: Whether to print to stdio and stderr on retriable errors.
-            cq_token: Token from CQ cloud.This is required to submit circuits to CQ hardware.
-            ibmq_token: Your IBM Quantum or IBM Cloud token. This is required to submit circuits
-                to IBM hardware, or to access non-public IBM devices you may have access to.
+            cq_token: Token from CQ cloud. This may be required to submit circuits to CQ hardware.
+            ibmq_token: An optional IBM Quantum or IBM Cloud token. This may be required to submit
+                circuits to IBM hardware, or to access non-public IBM devices you may have access
+                to.
             ibmq_instance: An optional instance to use when running IBM jobs.
-            ibmq_channel: The type of IBM account. Must be either "ibm_quantum" or "ibm_cloud".
-            use_stored_ibmq_credentials: Whether to retrieve IBM credentials from locally saved
-                accounts.
+            ibmq_channel: Optional type of IBM account. Must be either "ibm_quantum_platform" or
+                "ibm_cloud".
+            use_stored_ibmq_credentials: Boolean flag on whether to retrieve IBM credentials from
+                locally saved accounts or not. Defaults to `False`.
             ibmq_name: The name of the account to retrieve. The default is `default-ibm-quantum`.
             kwargs: Other optimization and execution parameters.
 
@@ -182,11 +199,18 @@ class Service(gss.service.Service):
             EnvironmentError: If an API key was not provided and could not be found.
         """
         self.default_target = default_target
-        self._client = superstaq_client._SuperstaqClient(
+        if api_version == "v0.2.0":
+            client_version: type[_SuperstaqClient | _SuperstaqClientV3] = _SuperstaqClient
+        elif api_version == "v0.3.0":
+            client_version = _SuperstaqClientV3
+        else:
+            raise ValueError("`api_version` can only take value 'v0.2.0' or 'v0.3.0'")
+        self._client = client_version(
             client_name="cirq-superstaq",
             remote_host=remote_host,
             api_key=api_key,
             api_version=api_version,
+            circuit_type=gss.models.CircuitType.CIRQ,
             max_retry_seconds=max_retry_seconds,
             verbose=verbose,
             cq_token=cq_token,
@@ -333,8 +357,11 @@ class Service(gss.service.Service):
         repetitions: int = 1000,
         target: str | None = None,
         method: str | None = None,
+        verbatim: bool = False,
+        tag: Sequence[str] | str = (),
+        metadata: Mapping[str, object] | None = None,
         **kwargs: Any,
-    ) -> css.job.Job:
+    ) -> css.Job | css.JobV3:
         """Creates a new job to run the given circuit(s).
 
         Args:
@@ -342,6 +369,9 @@ class Service(gss.service.Service):
             repetitions: The number of times to repeat the circuit. Defaults to 1000.
             target: Where to run the job.
             method: The optional execution method.
+            verbatim: Run the provided circuit(s) verbatim (i.e. without compilation).
+            tag: An identifying tag (or list of tags) which can be used to find this job.
+            metadata: Other data to store alongside the job.
             kwargs: Other optimization and execution parameters.
 
         Returns:
@@ -360,17 +390,23 @@ class Service(gss.service.Service):
             repetitions=repetitions,
             target=target,
             method=method,
+            verbatim=verbatim,
+            tag=tag,
+            metadata=metadata,
             **kwargs,
         )
-        # Make a virtual job_id that aggregates all of the individual jobs
-        # into a single one that comma-separates the individual jobs.
-        job_id = ",".join(result["job_ids"])
-
+        if isinstance(self._client, _SuperstaqClient):
+            # Make a virtual job_id that aggregates all of the individual jobs
+            # into a single one that comma-separates the individual jobs.
+            job_id: str | uuid.UUID = ",".join(result["job_ids"])
+        else:
+            assert isinstance(result["job_id"], (str, uuid.UUID))
+            job_id = result["job_id"]
         # The returned job does not have fully populated fields; they will be filled out by
         # when the new job's status is first queried
         return self.get_job(job_id=job_id)
 
-    def get_job(self, job_id: str) -> css.job.Job:
+    def get_job(self, job_id: str | uuid.UUID) -> css.Job | css.JobV3:
         """Gets a job that has been created on the Superstaq API.
 
         Args:
@@ -383,7 +419,10 @@ class Service(gss.service.Service):
         Raises:
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
-        return css.job.Job(client=self._client, job_id=job_id)
+        if isinstance(self._client, _SuperstaqClient):
+            return css.Job(client=self._client, job_id=str(job_id))
+        assert isinstance(self._client, _SuperstaqClientV3)
+        return css.JobV3(client=self._client, job_id=job_id)
 
     def resource_estimate(
         self, circuits: cirq.Circuit | Sequence[cirq.Circuit], target: str | None = None
@@ -426,9 +465,8 @@ class Service(gss.service.Service):
         random_seed: int | None = None,
         target: str = "aqt_keysight_qpu",
         atol: float | None = None,
-        gate_defs: None | (
-            Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]
-        ) = None,
+        gate_defs: None
+        | (Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]) = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for AQT using ECA.
@@ -490,9 +528,8 @@ class Service(gss.service.Service):
         num_eca_circuits: int | None = None,
         random_seed: int | None = None,
         atol: float | None = None,
-        gate_defs: None | (
-            Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]
-        ) = None,
+        gate_defs: None
+        | (Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]) = None,
         gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
         pulses: object = None,
         variables: object = None,
@@ -587,6 +624,8 @@ class Service(gss.service.Service):
         base_entangling_gate: str = "xx",
         num_qubits: int | None = None,
         error_rates: SupportsItems[tuple[int, ...], float] | None = None,
+        atol: float = 1e-8,
+        atol_map: SupportsItems[tuple[int, ...], float] | None = None,
         **kwargs: Any,
     ) -> css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
@@ -619,11 +658,20 @@ class Service(gss.service.Service):
                 for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`) . If
                 provided, Superstaq will attempt to map the circuit to minimize the total error on
                 each qubit. Omitted qubit pairs are assumed to be error-free.
+            atol: Optional tolerance (trace distance bound) used for approximate compilation.
+                Superstaq will elide gates which can be approximated within the given tolerance by
+                identity operations.
+            atol_map: Optional dictionary assigning compilation tolerances to physical qubits, in
+                the form `{<qubit_indices>: <atol>, ...}` where `<qubit_indices>` is a tuple of
+                physical qubit indices (ints) and `<atol>` is an absolute tolerance (trace distance
+                bound) for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`).
+                If provided, these tolerances will override `atol` for gates on the given qubits.
+                Omitted qubit pairs default to `atol`.
             kwargs: Other desired qscout_compile options.
 
         Returns:
             Object whose .circuit(s) attribute contains optimized `cirq.Circuit`(s), and
-            `.jaqal_program(s)` attribute contains the corresponding Jaqal program(s).
+            `.jaqal_program` attribute contains the corresponding Jaqal program(s).
 
         Raises:
             ValueError: If `base_entangling_gate` is not a valid gate option.
@@ -635,7 +683,7 @@ class Service(gss.service.Service):
 
         base_entangling_gate = base_entangling_gate.lower()
         if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
-            raise ValueError("base_entangling_gate must be 'xx', 'zz', 'sxx', or 'szz'")
+            raise ValueError("`base_entangling_gate` must be 'xx', 'zz', 'sxx', or 'szz'")
 
         css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
@@ -644,29 +692,37 @@ class Service(gss.service.Service):
         options_dict = {
             "mirror_swaps": mirror_swaps,
             "base_entangling_gate": base_entangling_gate,
+            "atol": atol,
             **kwargs,
         }
 
         if circuits_is_list:
-            max_circuit_qubits = max(cirq.num_qubits(c) for c in circuits)
+            inferred_num_qubits = max(cirq.num_qubits(c) for c in circuits)
         else:
-            max_circuit_qubits = cirq.num_qubits(circuits)
+            inferred_num_qubits = cirq.num_qubits(circuits)
 
         if error_rates is not None:
             error_rates_list = list(error_rates.items())
             options_dict["error_rates"] = error_rates_list
+            inferred_num_qubits = max(
+                inferred_num_qubits, *(q + 1 for qs, _ in error_rates_list for q in qs)
+            )
 
-            # Use error rate dictionary to set `num_qubits`, if not already specified
-            if num_qubits is None:
-                max_index = max(q for qs, _ in error_rates_list for q in qs)
-                num_qubits = max_index + 1
+        if atol_map is not None:
+            atol_map_list = list(atol_map.items())
+            options_dict["atol_map"] = atol_map_list
+            inferred_num_qubits = max(
+                inferred_num_qubits, *(q + 1 for qs, _ in atol_map_list for q in qs)
+            )
 
-        elif num_qubits is None:
-            num_qubits = max_circuit_qubits
+        # Infer `num_qubits` from inputs, if not already specified
+        if num_qubits is None:
+            num_qubits = inferred_num_qubits
 
         gss.validation.validate_integer_param(num_qubits)
-        if num_qubits < max_circuit_qubits:
-            raise ValueError(f"At least {max_circuit_qubits} qubits are required for this input.")
+        if num_qubits < inferred_num_qubits:
+            raise ValueError(f"At least {inferred_num_qubits} qubits are required for this input.")
+
         options_dict["num_qubits"] = num_qubits
 
         json_dict = self._client.qscout_compile(
@@ -790,12 +846,11 @@ class Service(gss.service.Service):
             A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
             circuit(s).
         """
-
         target = self._resolve_target(target)
 
         if target.startswith("aqt_"):
             return self.aqt_compile(circuits, **kwargs)
-        elif target.startswith("qscout_"):
+        if target.startswith("qscout_"):
             return self.qscout_compile(circuits, **kwargs)
 
         request_json = self._get_compile_request_json(circuits, target, **kwargs)
@@ -810,7 +865,6 @@ class Service(gss.service.Service):
         **kwargs: Any,
     ) -> dict[str, str]:
         """Helper method to compile json dictionary."""
-
         css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         request_json = {
@@ -835,7 +889,6 @@ class Service(gss.service.Service):
         Returns:
             A tuple containing the generated circuits and the fidelities for distinguishing files.
         """
-
         json_dict = self._client.supercheq(files, num_qubits, depth, "cirq_circuits")
         circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
         fidelities = gss.serialization.deserialize(json_dict["fidelities"])
@@ -884,7 +937,7 @@ class Service(gss.service.Service):
             to post-process the measurement results and return the fidelity.
 
         Raises:
-            ValueError: If `circuit` is not a valid `cirq.Circuit`.
+            TypeError: If `circuit` is not a valid `cirq.Circuit`.
             ~gss.SuperstaqServerException: If there was an error accessing the API.
         """
         circuit_1 = rho_1[0]
@@ -896,7 +949,7 @@ class Service(gss.service.Service):
         css.validation.validate_cirq_circuits(circuit_2)
 
         if not (isinstance(circuit_1, cirq.Circuit) and isinstance(circuit_2, cirq.Circuit)):
-            raise ValueError("Each state `rho_i` should contain a single circuit.")
+            raise TypeError("Each state `rho_i` should contain a single `cirq.Circuit`.")
 
         serialized_circuits_1 = css.serialization.serialize_circuits(circuit_1)
         serialized_circuits_2 = css.serialization.serialize_circuits(circuit_2)
@@ -1062,7 +1115,6 @@ class Service(gss.service.Service):
             ValueError: If the target or noise model is not valid.
             ~gss.SuperstaqServerException: If the request fails.
         """
-
         noise_dict: dict[str, object] = {}
         if isinstance(noise, str):
             noise_dict["type"] = noise
@@ -1132,7 +1184,7 @@ class Service(gss.service.Service):
             def _objective(
                 x: np.typing.NDArray[np.int_], A: float, p: float
             ) -> np.typing.NDArray[np.float64]:
-                return A * p**x
+                return np.asarray(A * p**x)
 
             fit_data: defaultdict[str, float] = defaultdict(float)
 
@@ -1158,7 +1210,6 @@ class Service(gss.service.Service):
         Args:
             circuits_and_metadata: Dictionary containing cycle benchmarking data.
         """
-
         instance_information = circuits_and_metadata["instance_information"]
         fit_data = circuits_and_metadata["fit_data"]
         x_values = instance_information["depths"]
@@ -1176,10 +1227,10 @@ class Service(gss.service.Service):
         def _objective(
             x: np.typing.NDArray[np.int_], A: float, p: float
         ) -> np.typing.NDArray[np.float64]:
-            return A * p**x
+            return np.asarray(A * p**x)
 
         e_f = 0.0
-        for ps, _ in averages.items():
+        for ps in averages.keys():
             A = fit_data["A_" + str(ps)]
             p = fit_data["p_" + str(ps)]
             for depth in x_values:
@@ -1200,7 +1251,7 @@ class Service(gss.service.Service):
             )
             e_f += p
             if legend_labels_count < max_legend_labels:
-                truncated_label = "A_" + str(ps) + "=%.2f \np_%s=%.2f" % (A, ps, p)
+                truncated_label = "A_" + str(ps) + f"={A:.2f} \np_{ps}={p:.2f}"
                 legend_labels.append(truncated_label)
                 legend_labels_count += 1
                 legend_colors.append(plt.gca().lines[-1].get_color())
@@ -1210,7 +1261,7 @@ class Service(gss.service.Service):
         # Truncate legend labels
         if instance_information["n_channels"] > 10:
             truncated_legend_labels = (
-                legend_labels[:2] + ["..."] + legend_labels[-2:]
+                [*legend_labels[:2], "...", *legend_labels[-2:]]
                 if len(legend_labels) > 2
                 else legend_labels
             )

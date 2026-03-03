@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -12,22 +26,26 @@ class BitCode(Benchmark):
     """Creates a circuit for syndrome measurement in a bit-flip error correcting code.
 
     Args:
-        num_data: The number of data qubits.
+        num_data_qubits: The number of data qubits.
         num_rounds: The number of measurement rounds.
         bit_state: A list denoting the state to initialize each data qubit to.
 
     Returns:
         A `cirq.Circuit` for the bit-flip error correcting code.
+
+    Raises:
+        ValueError: If `bit_state` is longer than `num_data_qubits`.
+        TypeError: If `bit_state` is not a `list`.
+        ValueError: If `bit_state` contains values not in {0,1}.
     """
 
     def __init__(self, num_data_qubits: int, num_rounds: int, bit_state: list[int]) -> None:
         if len(bit_state) != num_data_qubits:
             raise ValueError("The length of `bit_state` must match the number of data qubits.")
         if not isinstance(bit_state, list):
-            raise ValueError("`bit_state` must be a list[int].")
-        else:
-            if not set(bit_state).issubset({0, 1}):
-                raise ValueError("Entries of `bit_state` must be 0, 1 integers.")
+            raise TypeError("`bit_state` must be a `list[int]`.")
+        if not set(bit_state).issubset({0, 1}):
+            raise ValueError("Entries of `bit_state` must be 0, 1 integers.")
         self.num_data_qubits = num_data_qubits
         self.num_rounds = num_rounds
         self.bit_state = bit_state
@@ -39,6 +57,7 @@ class BitCode(Benchmark):
 
         Args:
             qubits: Circuit qubits, assuming data on even indices and measurement on odd indices.
+            round_idx: The index of the measurement round.
 
         Returns:
             A `cirq.Operation` iterator with the operations for a measurement round.
@@ -87,8 +106,7 @@ class BitCode(Benchmark):
             # parity checks
             ancilla_state += str((self.bit_state[i] + self.bit_state[i + 1]) % 2)
             final_state += str(self.bit_state[i]) + "0"
-        else:
-            final_state += str(self.bit_state[-1])
+        final_state += str(self.bit_state[-1])
 
         ideal_bitstring = [ancilla_state] * self.num_rounds + [final_state]
         return {"".join(ideal_bitstring): 1.0}

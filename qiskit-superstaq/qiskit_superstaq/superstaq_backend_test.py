@@ -1,8 +1,21 @@
-# pylint: disable=missing-function-docstring,missing-class-docstring
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from __future__ import annotations
 
 import json
 import textwrap
+import uuid
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
@@ -36,7 +49,28 @@ def test_run(fake_superstaq_provider: MockSuperstaqProvider) -> None:
         expected = qss.SuperstaqJob(backend, "job_id")
         assert answer == expected
 
-    with pytest.raises(ValueError, match="Circuit has no measurements to sample"):
+    with pytest.raises(ValueError, match=r"Circuit has no measurements to sample"):
+        qc.remove_final_measurements()
+        backend.run(qc, shots=1000)
+
+
+def test_runV3(fake_superstaq_providerV3: MockSuperstaqProvider) -> None:
+    qc = qiskit.QuantumCircuit(2, 2)
+    qc.h(0)
+    qc.cx(0, 1)
+    qc.measure([0, 0], [1, 1])
+
+    backend = fake_superstaq_providerV3.get_backend("ss_example_qpu")
+
+    with patch(
+        "general_superstaq.superstaq_client._SuperstaqClientV3.create_job",
+        return_value={"job_id": uuid.UUID(int=42), "num_circuits": 1},
+    ):
+        answer = backend.run(circuits=qc, shots=1000)
+        expected = qss.SuperstaqJobV3(backend, uuid.UUID(int=42))
+        assert answer == expected
+
+    with pytest.raises(ValueError, match=r"Circuit has no measurements to sample"):
         qc.remove_final_measurements()
         backend.run(qc, shots=1000)
 
@@ -93,6 +127,20 @@ def test_retrieve_job(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     assert job == backend.retrieve_job("job_id")
 
 
+def test_retrieve_jobV3(fake_superstaq_providerV3: MockSuperstaqProvider) -> None:
+    qc = qiskit.QuantumCircuit(2, 2)
+    qc.h(0)
+    qc.cx(0, 1)
+    qc.measure([0, 0], [1, 1])
+    backend = fake_superstaq_providerV3.get_backend("ibmq_brisbane_qpu")
+    with patch(
+        "general_superstaq.superstaq_client._SuperstaqClientV3.create_job",
+        return_value={"job_id": uuid.UUID(int=42), "num_circuits": 1},
+    ):
+        job = backend.run(qc, shots=1000)
+    assert job == backend.retrieve_job(uuid.UUID(int=42))
+
+
 def test_eq(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     backend1 = fake_superstaq_provider.get_backend("ibmq_brisbane_qpu")
     assert backend1 != 3
@@ -102,6 +150,17 @@ def test_eq(fake_superstaq_provider: MockSuperstaqProvider) -> None:
 
     backend3 = fake_superstaq_provider.get_backend("ibmq_brisbane_qpu")
     assert backend1 == backend3
+
+
+def test_hash(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    backend1 = fake_superstaq_provider.get_backend("ibmq_brisbane_qpu")
+    backend2 = fake_superstaq_provider.get_backend("ibmq_athens_qpu")
+    backend3 = fake_superstaq_provider.get_backend("ibmq_brisbane_qpu")
+    hash_set = set()
+    hash_set.add(backend1)
+    hash_set.add(backend2)
+    hash_set.add(backend3)
+    assert len(hash_set) == 2
 
 
 @patch("requests.Session.post")
@@ -134,7 +193,7 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         },
     )
 
-    with pytest.raises(ValueError, match="Unable to serialize configuration"):
+    with pytest.raises(ValueError, match=r"Unable to serialize configuration"):
         _ = backend.compile([qc], atol=1e-2, pulses=123, variables=456)
 
     out = backend.compile([qc], atol=1e-2, aqt_configs={}, gateset={"X90": [[0], [1]]})
@@ -180,13 +239,13 @@ def test_aqt_compile(mock_post: MagicMock) -> None:
         },
     )
 
-    with pytest.raises(ValueError, match="'aqt_keysight_qpu' is not a valid IBMQ target."):
+    with pytest.raises(ValueError, match=r"'aqt_keysight_qpu' is not a valid IBMQ target."):
         backend.ibmq_compile([qc])
 
-    with pytest.raises(ValueError, match="'aqt_keysight_qpu' is not a valid QSCOUT target."):
+    with pytest.raises(ValueError, match=r"'aqt_keysight_qpu' is not a valid QSCOUT target."):
         backend.qscout_compile([qc])
 
-    with pytest.raises(ValueError, match="'aqt_keysight_qpu' is not a valid CQ target."):
+    with pytest.raises(ValueError, match=r"'aqt_keysight_qpu' is not a valid CQ target."):
         backend.cq_compile([qc])
 
     # AQT ECA compile
@@ -252,7 +311,7 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
         "dynamical_decoupling": True,
     }
 
-    with pytest.raises(ValueError, match="'ibmq_jakarta_qpu' is not a valid AQT target."):
+    with pytest.raises(ValueError, match=r"'ibmq_jakarta_qpu' is not a valid AQT target."):
         backend.aqt_compile([qc])
 
 
@@ -329,19 +388,28 @@ def test_target_info(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     assert backend.target_info()["target"] == target
 
 
-def test_configuration(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+def test_target_without_info(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     target = "ibmq_brisbane_qpu"
     backend = fake_superstaq_provider.get_backend(target)
-    with pytest.warns(DeprecationWarning):
-        configuration = backend.configuration()
-    assert configuration.backend_name == target
-    assert configuration.num_qubits == backend.num_qubits
+    with patch.object(backend, "target_info", return_value={}):
+        _ = backend.target
+
+
+def test_target_with_custom_gates(fake_superstaq_provider: MockSuperstaqProvider) -> None:
+    target = "cq_fake_qpu"
+    backend = fake_superstaq_provider.get_backend(target)
+    with patch.object(
+        backend, "target_info", return_value={"native_gate_set": ["gr", "dd", "acecr", "iccx_o0"]}
+    ):
+        assert backend.target.instruction_supported("gr")
+        assert backend.target.instruction_supported(operation_class=qss.DDGate)
+        assert backend.target.instruction_supported("iccx_o0", [1, 2, 3], qss.AQTiCCXGate)
 
 
 def test_target(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     target = "ibmq_brisbane_qpu"
     backend = fake_superstaq_provider.get_backend(target)
-    assert backend.target.num_qubits == 4
+    assert backend.target.num_qubits == backend.num_qubits == 4
 
 
 def test_max_circuits(fake_superstaq_provider: MockSuperstaqProvider) -> None:

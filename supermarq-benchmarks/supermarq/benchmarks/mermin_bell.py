@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import itertools
@@ -61,7 +75,6 @@ class MerminBell(Benchmark):
         Returns:
             The score for the Mermin-Bell benchmark score.
         """
-
         # Store the conjugation rules for H, S, CX, CZ, SWAP in dictionaries. The keys are
         # the pauli strings to be conjugated and the values are the resulting pauli strings
         # after conjugation.
@@ -168,7 +181,7 @@ class MerminBell(Benchmark):
     def _mermin_operator(self, num_qubits: int) -> list[tuple[float, str]]:
         """Generate the Mermin operator
         (https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.65.1838), or M_n
-        (Eq. 2.8) in https://arxiv.org/pdf/2005.11271.pdf
+        (Eq. 2.8) in https://arxiv.org/pdf/2005.11271.pdf.
         """
         mermin_op = []
         for num_y in range(1, num_qubits + 1, 2):

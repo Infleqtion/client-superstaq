@@ -1,3 +1,17 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Copyright 2021 The Cirq Developers
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -10,13 +24,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=missing-function-docstring,missing-class-docstring
 from __future__ import annotations
 
 import collections
+import datetime
 import json
 import os
 import textwrap
+import uuid
 from unittest import mock
 from unittest.mock import patch
 
@@ -29,6 +44,7 @@ import qiskit
 import qiskit_superstaq as qss
 import sympy
 from general_superstaq import ResourceEstimate
+from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 
 import cirq_superstaq as css
 
@@ -42,7 +58,7 @@ def test_to_matrix_gate(gate: cirq.Gate) -> None:
 
 def test_to_matrix_gate_error() -> None:
     matrix = np.eye(5)
-    with pytest.raises(ValueError, match="Could not determine qid_shape"):
+    with pytest.raises(ValueError, match=r"Could not determine qid_shape"):
         _ = css.service._to_matrix_gate(matrix)
 
 
@@ -72,33 +88,40 @@ def test_counts_to_results() -> None:
     )
     assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
 
-    with pytest.warns(UserWarning, match="raw counts contain fractional"):
+    with pytest.warns(UserWarning, match=r"raw counts contain fractional"):
         result = css.service.counts_to_results(
             {"00": 50.1, "11": 49.9}, circuit, cirq.ParamResolver({})
         )
-        assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
+    assert result.histogram(key="01") == collections.Counter({0: 50, 3: 50})
 
-    with pytest.warns(UserWarning, match="raw counts contain negative"):
+    with pytest.warns(UserWarning, match=r"raw counts contain negative"):
         result = css.service.counts_to_results(
             {"00": -50, "11": 100}, circuit, cirq.ParamResolver({})
         )
-        assert result.histogram(key="01") == collections.Counter({3: 100})
+    assert result.histogram(key="01") == collections.Counter({3: 100})
 
 
-def test_service_resolve_target() -> None:
-    service = css.Service(api_key="key", default_target="ss_bar_qpu")
+def test_service_wrong_version() -> None:
+    with pytest.raises(ValueError, match=r"`api_version` can only take value 'v0.2.0' or 'v0.3.0'"):
+        css.Service(api_version="v4")
+
+
+@pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
+def test_service_resolve_target(api_version: str) -> None:
+    service = css.Service(api_key="key", default_target="ss_bar_qpu", api_version=api_version)
     assert service._resolve_target("ss_foo_qpu") == "ss_foo_qpu"
     assert service._resolve_target(None) == "ss_bar_qpu"
 
-    service = css.Service(api_key="key")
+    service = css.Service(api_key="key", api_version=api_version)
     assert service._resolve_target("ss_foo_qpu") == "ss_foo_qpu"
-    with pytest.raises(ValueError, match="requires a target"):
+    with pytest.raises(ValueError, match=r"requires a target"):
         _ = service._resolve_target(None)
 
 
 def test_service_run_and_get_counts() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    mock_client = mock.MagicMock()
+    assert isinstance(service._client, _SuperstaqClient)
+    mock_client = mock.MagicMock(spec=_SuperstaqClient)
     mock_client.create_job.return_value = {
         "job_ids": ["job_id"],
         "status": "Ready",
@@ -172,9 +195,109 @@ def test_service_run_and_get_counts() -> None:
     assert multi_counts == [{"11": 1}, {"11": 1}]
 
 
+def test_service_run_and_get_countsV3() -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
+    assert isinstance(service._client, _SuperstaqClientV3)
+    mock_client = mock.MagicMock(spec=_SuperstaqClientV3)
+    job_id = uuid.UUID(int=42)
+    mock_client.create_job.return_value = {"job_id": job_id, "num_circuits": 1}
+    job_dict = {
+        "job_type": "simulate",
+        "statuses": ["completed"],
+        "status_messages": [None],
+        "user_email": "test@email.com",
+        "target": "ss_unconstrained_simulator",
+        "provider_id": ["provider_id"],
+        "num_circuits": 1,
+        "compiled_circuits": ["compiled circuit"],
+        "input_circuits": ["input circuit"],
+        "circuit_type": "cirq",
+        "counts": [{"11": 1}],
+        "results_dicts": [],
+        "shots": [1],
+        "dry_run": True,
+        "submission_timestamp": datetime.datetime.now(tz=datetime.timezone.utc),
+        "last_updated_timestamp": [datetime.datetime.now(tz=datetime.timezone.utc)],
+        "initial_logical_to_physicals": [{0: 0}],
+        "final_logical_to_physicals": [{0: 0}],
+        "logical_qubits": ["0"],
+        "physical_qubits": ["0"],
+    }
+    mock_client.fetch_jobs.return_value = {str(job_id): job_dict}
+
+    service._client = mock_client
+
+    a = sympy.Symbol("a")
+    q = cirq.LineQubit(0)
+    circuit = cirq.Circuit((cirq.X**a)(q), cirq.measure(q, key="a"))
+    params = cirq.ParamResolver({"a": 0.5})
+    counts = service.get_counts(
+        circuits=circuit,
+        repetitions=4,
+        target="ss_unconstrained_simulator",
+        param_resolver=params,
+    )
+    assert counts == {"11": 1}
+
+    results = service.run(
+        circuits=circuit,
+        repetitions=4,
+        target="ss_unconstrained_simulator",
+        param_resolver=params,
+    )
+    assert results.histogram(key="a") == collections.Counter({3: 1})
+
+    # Multiple circuit run
+    mock_client.create_job.return_value = {"job_id": job_id, "num_circuits": 2}
+    job_dict = {
+        "job_type": "simulate",
+        "statuses": ["completed"] * 2,
+        "status_messages": [None] * 2,
+        "user_email": "test@email.com",
+        "target": "ss_unconstrained_simulator",
+        "provider_id": ["provider_id"] * 2,
+        "num_circuits": 1,
+        "compiled_circuits": ["compiled circuit"] * 2,
+        "input_circuits": ["input circuit"] * 2,
+        "circuit_type": "cirq",
+        "counts": [{"11": 1}] * 2,
+        "results_dicts": [],
+        "shots": [1] * 2,
+        "dry_run": True,
+        "submission_timestamp": datetime.datetime.now(tz=datetime.timezone.utc),
+        "last_updated_timestamp": [datetime.datetime.now(tz=datetime.timezone.utc)] * 2,
+        "initial_logical_to_physicals": [{0: 0}] * 2,
+        "final_logical_to_physicals": [{0: 0}] * 2,
+        "logical_qubits": ["0"] * 2,
+        "physical_qubits": ["0"] * 2,
+    }
+    mock_client.fetch_jobs.return_value = {str(job_id): job_dict}
+
+    service._client = mock_client
+    multi_results = service.run(
+        circuits=[circuit, circuit],
+        repetitions=10,
+        target="ss_unconstrained_simulator",
+        param_resolver=params,
+    )
+
+    assert isinstance(multi_results, list)
+    for result in multi_results:
+        assert result.histogram(key="a") == collections.Counter({3: 1})
+
+    multi_counts = service.get_counts(
+        circuits=[circuit, circuit],
+        repetitions=4,
+        target="ss_unconstrained_simulator",
+        param_resolver=params,
+    )
+    assert multi_counts == [{"11": 1}, {"11": 1}]
+
+
 def test_service_sampler() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    mock_client = mock.MagicMock()
+    assert isinstance(service._client, _SuperstaqClient)
+    mock_client = mock.MagicMock(spec=_SuperstaqClient)
     service._client = mock_client
     mock_client.create_job.return_value = {
         "job_ids": ["job_id"],
@@ -205,9 +328,52 @@ def test_service_sampler() -> None:
     mock_client.create_job.assert_called_once()
 
 
+def test_service_samplerV3() -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
+    assert isinstance(service._client, _SuperstaqClientV3)
+    mock_client = mock.MagicMock(spec=_SuperstaqClientV3)
+    job_id = uuid.UUID(int=42)
+    mock_client.create_job.return_value = {"job_id": job_id, "num_circuits": 1}
+
+    job_dict = {
+        "job_type": "simulate",
+        "statuses": ["completed"],
+        "status_messages": [None],
+        "user_email": "test@email.com",
+        "target": "ss_unconstrained_simulator",
+        "provider_id": ["provider_id"],
+        "num_circuits": 1,
+        "compiled_circuits": ["compiled circuit"],
+        "input_circuits": ["input circuit"],
+        "circuit_type": "cirq",
+        "counts": [{"0": 3, "1": 1}],
+        "results_dicts": [],
+        "shots": [1],
+        "dry_run": True,
+        "submission_timestamp": datetime.datetime.now(tz=datetime.timezone.utc),
+        "last_updated_timestamp": [datetime.datetime.now(tz=datetime.timezone.utc)],
+        "initial_logical_to_physicals": [{0: 0}],
+        "final_logical_to_physicals": [{0: 0}],
+        "logical_qubits": ["0"],
+        "physical_qubits": ["0"],
+    }
+    mock_client.fetch_jobs.return_value = {str(job_id): job_dict}
+    service._client = mock_client
+
+    sampler = service.sampler(target="ss_unconstrained_simulator")
+    q0 = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.X(q0), cirq.measure(q0, key="a"))
+    results = sampler.sample(program=circuit, repetitions=4)
+    pd.testing.assert_frame_equal(
+        results, pd.DataFrame(columns=["a"], index=[0, 1, 2, 3], data=[[0], [0], [0], [1]])
+    )
+    mock_client.create_job.assert_called_once()
+
+
 def test_service_get_job() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    mock_client = mock.MagicMock()
+    assert isinstance(service._client, _SuperstaqClient)
+    mock_client = mock.MagicMock(spec=_SuperstaqClient)
     job_dict = {"status": "Ready"}
     mock_client.fetch_jobs.return_value = {"job_id": job_dict}
     service._client = mock_client
@@ -223,9 +389,47 @@ def test_service_get_job() -> None:
     mock_client.fetch_jobs.assert_called_once_with(["job_id"])
 
 
+def test_service_get_jobV3() -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
+    assert isinstance(service._client, _SuperstaqClientV3)
+    mock_client = mock.MagicMock(spec=_SuperstaqClientV3)
+    job_dict = {
+        "job_type": "simulate",
+        "statuses": ["completed"],
+        "status_messages": [None],
+        "user_email": "test@email.com",
+        "target": "ss_example_qpu",
+        "provider_id": ["provider_id"],
+        "num_circuits": 1,
+        "compiled_circuits": ["compiled circuit"],
+        "input_circuits": ["input circuit"],
+        "circuit_type": "cirq",
+        "counts": [{"0": 1}],
+        "results_dicts": [],
+        "shots": [1],
+        "dry_run": True,
+        "submission_timestamp": datetime.datetime.now(tz=datetime.timezone.utc),
+        "last_updated_timestamp": [datetime.datetime.now(tz=datetime.timezone.utc)],
+        "initial_logical_to_physicals": [{0: 0}],
+        "final_logical_to_physicals": [{0: 0}],
+        "logical_qubits": ["0"],
+        "physical_qubits": ["0"],
+    }
+    job_id = uuid.UUID(int=0)
+    mock_client.fetch_jobs.return_value = {str(job_id): job_dict}
+    service._client = mock_client
+
+    job = service.get_job(job_id)
+
+    assert job.job_id() == job_id
+    assert job.status() == gss.models.CircuitStatus.COMPLETED
+    mock_client.fetch_jobs.assert_called_once_with([job_id])
+
+
 def test_service_create_job() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    mock_client = mock.MagicMock()
+    assert isinstance(service._client, _SuperstaqClient)
+    mock_client = mock.MagicMock(spec=_SuperstaqClient)
     mock_client.create_job.return_value = {"job_ids": ["job_id"], "status": "Ready"}
     mock_client.fetch_jobs.return_value = {"job_id": {"status": "Done"}}
     service._client = mock_client
@@ -245,6 +449,56 @@ def test_service_create_job() -> None:
     assert create_job_kwargs["target"] == "ss_fake_qpu"
     assert create_job_kwargs["method"] == "fake_method"
     assert create_job_kwargs["fake_data"] == ""
+
+
+def test_service_create_jobV3() -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
+    assert isinstance(service._client, _SuperstaqClientV3)
+    mock_client = mock.MagicMock(spec=_SuperstaqClientV3)
+    job_id = uuid.UUID(int=42)
+    mock_client.create_job.return_value = {"job_id": job_id, "num_circuits": 1}
+    job_dict = {
+        "job_type": "simulate",
+        "statuses": ["completed"],
+        "status_messages": [None],
+        "user_email": "test@email.com",
+        "target": "ss_example_qpu",
+        "provider_id": ["provider_id"],
+        "num_circuits": 1,
+        "compiled_circuits": ["compiled circuit"],
+        "input_circuits": ["input circuit"],
+        "circuit_type": "cirq",
+        "counts": [{"0": 1}],
+        "results_dicts": [],
+        "shots": [1],
+        "dry_run": True,
+        "submission_timestamp": datetime.datetime.now(tz=datetime.timezone.utc),
+        "last_updated_timestamp": [datetime.datetime.now(tz=datetime.timezone.utc)],
+        "initial_logical_to_physicals": [{0: 0}],
+        "final_logical_to_physicals": [{0: 0}],
+        "logical_qubits": ["0"],
+        "physical_qubits": ["0"],
+    }
+    mock_client.fetch_jobs.return_value = {str(job_id): job_dict}
+    service._client = mock_client
+
+    circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)), cirq.measure(cirq.LineQubit(0)))
+    job = service.create_job(
+        circuits=circuit,
+        repetitions=100,
+        target="ss_fake_qpu",
+        method="fake_method",
+        verbatim=True,
+        fake_data="",
+    )
+    assert job.status() == gss.models.CircuitStatus.COMPLETED
+    create_job_kwargs = mock_client.create_job.call_args[1]
+    # # Serialization induces a float, so we don't validate full circuit.
+    assert create_job_kwargs["repetitions"] == 100
+    assert create_job_kwargs["target"] == "ss_fake_qpu"
+    assert create_job_kwargs["method"] == "fake_method"
+    assert create_job_kwargs["fake_data"] == ""
+    assert create_job_kwargs["verbatim"] is True
 
 
 @mock.patch(
@@ -277,7 +531,7 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
         assert not hasattr(output, "initial_logical_to_physicals")
         assert not hasattr(output, "final_logical_to_physicals")
 
-    with pytest.raises(ValueError, match="Unable to serialize configuration"):
+    with pytest.raises(ValueError, match=r"Unable to serialize configuration"):
         _ = service.aqt_compile(cirq.Circuit(), atol=1e-2, pulses=123, variables=456)
 
     gate_defs = {
@@ -317,7 +571,7 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
     assert out.circuit == cirq.Circuit()
     assert not hasattr(out, "circuits")
 
-    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid AQT target."):
+    with pytest.raises(ValueError, match=r"'ss_example_qpu' is not a valid AQT target."):
         service.aqt_compile(cirq.Circuit(), target="ss_example_qpu")
 
 
@@ -365,13 +619,13 @@ def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
     assert out.initial_logical_to_physicals == [[{}]]
     assert out.final_logical_to_physicals == [[{}]]
 
-    with pytest.warns(DeprecationWarning, match="has been deprecated"):
+    with pytest.warns(DeprecationWarning, match=r"has been deprecated"):
         deprecated_out = service.aqt_compile_eca(
             [cirq.Circuit()], num_equivalent_circuits=1, random_seed=1234, atol=1e-2
         )
-        assert deprecated_out.circuits == out.circuits
-        assert deprecated_out.initial_logical_to_physicals == out.initial_logical_to_physicals
-        assert deprecated_out.final_logical_to_physicals == out.final_logical_to_physicals
+    assert deprecated_out.circuits == out.circuits
+    assert deprecated_out.initial_logical_to_physicals == out.initial_logical_to_physicals
+    assert deprecated_out.final_logical_to_physicals == out.final_logical_to_physicals
 
 
 @mock.patch(
@@ -449,7 +703,7 @@ def test_service_qscout_compile_single(mock_qscout_compile: mock.MagicMock) -> N
     assert alt_out.final_logical_to_physical == final_logical_to_physical
     assert alt_out.jaqal_program == jaqal_program
 
-    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid QSCOUT target."):
+    with pytest.raises(ValueError, match=r"'ss_example_qpu' is not a valid QSCOUT target."):
         service.qscout_compile(cirq.Circuit(), target="ss_example_qpu")
 
 
@@ -477,7 +731,7 @@ def test_service_qscout_compile_multiple(mock_qscout_compile: mock.MagicMock) ->
     }
 
     service = css.Service(api_key="key", remote_host="http://example.com")
-    out = service.qscout_compile(circuits)
+    out = service.qscout_compile(circuits, atol=1e-3)
     assert out.circuits == circuits
     assert out.initial_logical_to_physicals == initial_logical_to_physicals
     assert out.final_logical_to_physicals == final_logical_to_physicals
@@ -487,14 +741,15 @@ def test_service_qscout_compile_multiple(mock_qscout_compile: mock.MagicMock) ->
         "mirror_swaps": False,
         "base_entangling_gate": "xx",
         "num_qubits": 2,
+        "atol": 1e-3,
     }
 
-    with pytest.raises(ValueError, match="At least 2 qubits are required"):
+    with pytest.raises(ValueError, match=r"At least 2 qubits are required"):
         _ = service.qscout_compile(circuits, num_qubits=1)
 
 
 @mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
-@pytest.mark.parametrize("mirror_swaps", (True, False))
+@pytest.mark.parametrize("mirror_swaps", [True, False])
 def test_qscout_compile_swap_mirror(
     mock_qscout_compile: mock.MagicMock, mirror_swaps: bool
 ) -> None:
@@ -522,18 +777,19 @@ def test_qscout_compile_swap_mirror(
         "mirror_swaps": mirror_swaps,
         "base_entangling_gate": "xx",
         "num_qubits": 1,
+        "atol": 1e-8,
     }
 
 
-@mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
-def test_qscout_compile_error_rates(mock_qscout_compile: mock.MagicMock) -> None:
+@mock.patch("requests.Session.post")
+def test_qscout_compile_error_rates_and_atol_map(mock_post: mock.MagicMock) -> None:
     q0 = cirq.LineQubit(0)
     circuit = cirq.Circuit(cirq.measure(q0))
     final_logical_to_physical = {q0: q0}
 
     jaqal_program = ""
 
-    mock_qscout_compile.return_value = {
+    mock_post.return_value.json = lambda: {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
         "initial_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
         "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
@@ -541,22 +797,39 @@ def test_qscout_compile_error_rates(mock_qscout_compile: mock.MagicMock) -> None
     }
 
     service = css.Service(api_key="key", remote_host="http://example.com")
+
     out = service.qscout_compile(circuit, error_rates={(0, 1): 0.3, (0, 2): 0.2, (1,): 0.1})
     assert out.circuit == circuit
     assert out.initial_logical_to_physical == final_logical_to_physical
     assert out.final_logical_to_physical == final_logical_to_physical
     assert out.jaqal_program == jaqal_program
-    mock_qscout_compile.assert_called_once()
-    assert json.loads(mock_qscout_compile.call_args[0][0]["options"]) == {
+    mock_post.assert_called_once()
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
         "base_entangling_gate": "xx",
         "mirror_swaps": False,
+        "atol": 1e-8,
         "error_rates": [[[0, 1], 0.3], [[0, 2], 0.2], [[1], 0.1]],
         "num_qubits": 3,
     }
 
+    out = service.qscout_compile(
+        circuit,
+        error_rates={(0, 1): 0.3, (0, 2): 0.2, (1,): 0.1},
+        atol_map={(0, 3): 0.02, (1,): 0.01},
+    )
+    assert mock_post.call_count == 2
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "base_entangling_gate": "xx",
+        "mirror_swaps": False,
+        "error_rates": [[[0, 1], 0.3], [[0, 2], 0.2], [[1], 0.1]],
+        "atol": 1e-8,
+        "atol_map": [[[0, 3], 0.02], [[1], 0.01]],
+        "num_qubits": 4,
+    }
+
 
 @mock.patch("general_superstaq.superstaq_client._SuperstaqClient.qscout_compile")
-@pytest.mark.parametrize("base_entangling_gate", ("xx", "zz"))
+@pytest.mark.parametrize("base_entangling_gate", ["xx", "zz"])
 def test_qscout_compile_base_entangling_gate(
     mock_qscout_compile: mock.MagicMock, base_entangling_gate: str
 ) -> None:
@@ -584,6 +857,7 @@ def test_qscout_compile_base_entangling_gate(
         "mirror_swaps": False,
         "base_entangling_gate": base_entangling_gate,
         "num_qubits": 1,
+        "atol": 1e-8,
     }
 
 
@@ -592,7 +866,7 @@ def test_qscout_compile_wrong_base_entangling_gate() -> None:
     circuit = cirq.Circuit(cirq.measure(q0))
 
     service = css.Service(api_key="key", remote_host="http://example.com")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"`base_entangling_gate` must be"):
         _ = service.qscout_compile(circuit, base_entangling_gate="yy")
 
 
@@ -622,6 +896,7 @@ def test_qscout_compile_num_qubits(mock_post: mock.MagicMock) -> None:
         "mirror_swaps": False,
         "base_entangling_gate": "xx",
         "num_qubits": 5,
+        "atol": 1e-8,
     }
 
 
@@ -644,7 +919,7 @@ def test_service_cq_compile_single(mock_post: mock.MagicMock) -> None:
     assert out.initial_logical_to_physical == initial_logical_to_physical
     assert out.final_logical_to_physical == final_logical_to_physical
 
-    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid CQ target."):
+    with pytest.raises(ValueError, match=r"'ss_example_qpu' is not a valid CQ target."):
         service.cq_compile(cirq.Circuit(), target="ss_example_qpu")
 
 
@@ -704,18 +979,19 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
         final_logical_to_physical
     ]
 
-    with mock.patch.dict("sys.modules", {"qiskit_superstaq": None}), pytest.warns(
-        UserWarning, match="qiskit-superstaq is required"
-    ):
-        assert (
-            service.ibmq_compile(cirq.Circuit(), target="ibmq_fake_qpu").pulse_gate_circuit is None
-        )
-        assert (
-            service.ibmq_compile([cirq.Circuit()], target="ibmq_fake_qpu").pulse_gate_circuits
-            is None
-        )
+    with mock.patch.dict("sys.modules", {"qiskit_superstaq": None}):
+        with pytest.warns(UserWarning, match=r"qiskit-superstaq is required"):
+            assert (
+                service.ibmq_compile(cirq.Circuit(), target="ibmq_fake_qpu").pulse_gate_circuit
+                is None
+            )
+        with pytest.warns(UserWarning, match=r"qiskit-superstaq is required"):
+            assert (
+                service.ibmq_compile([cirq.Circuit()], target="ibmq_fake_qpu").pulse_gate_circuits
+                is None
+            )
 
-    with pytest.raises(ValueError, match="'ss_example_qpu' is not a valid IBMQ target."):
+    with pytest.raises(ValueError, match=r"'ss_example_qpu' is not a valid IBMQ target."):
         service.ibmq_compile(cirq.Circuit(), target="ss_example_qpu")
 
 
@@ -745,9 +1021,9 @@ def test_service_dfe(mock_post: mock.MagicMock) -> None:
         shots=100,
     ) == ["id1", "id2"]
 
-    with pytest.raises(ValueError, match="should contain a single circuit"):
+    with pytest.raises(TypeError, match=r"should contain a single `cirq.Circuit`"):
         service.submit_dfe(
-            rho_1=([circuit, circuit], "ss_example_qpu"),  # type: ignore # for testing
+            rho_1=([circuit, circuit], "ss_example_qpu"),  # type: ignore[arg-type]
             rho_2=(circuit, "ss_example_qpu"),
             num_random_bases=5,
             shots=100,
@@ -844,7 +1120,11 @@ def test_cb(
             }
         },
         "instance_information": cirq.to_json(
-            {"target": "ss_unconstrained_simulator", "depths": [1, 2, 3], "n_channels": 2}
+            {
+                "target": "ss_unconstrained_simulator",
+                "depths": [1, 2, 3],
+                "n_channels": 2,
+            }
         ),
         "process_fidelity_data": {
             "averages": {

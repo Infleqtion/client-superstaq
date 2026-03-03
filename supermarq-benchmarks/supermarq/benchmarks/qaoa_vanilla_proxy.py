@@ -1,14 +1,32 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
+import random
 from collections.abc import Mapping
+from typing import TYPE_CHECKING
 
 import cirq
 import numpy as np
-import numpy.typing as npt
 import scipy
 
 import supermarq
 from supermarq.benchmark import Benchmark
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 class QAOAVanillaProxy(Benchmark):
@@ -46,11 +64,12 @@ class QAOAVanillaProxy(Benchmark):
     def _gen_sk_hamiltonian(self) -> list[tuple[int, int, float]]:
         """Randomly pick +1 or -1 for each edge weight."""
         hamiltonian = []
+        rng = np.random.default_rng(random.getrandbits(128))
         for i in range(self.num_qubits):
             for j in range(i + 1, self.num_qubits):
-                hamiltonian.append((i, j, np.random.choice([-1, 1])))
+                hamiltonian.append((i, j, rng.choice([-1, 1])))
 
-        np.random.shuffle(hamiltonian)
+        rng.shuffle(hamiltonian)
 
         return hamiltonian
 
@@ -113,15 +132,16 @@ class QAOAVanillaProxy(Benchmark):
 
             return -objective_value  # because we are minimizing instead of maximizing
 
-        init_params = [np.random.uniform() * 2 * np.pi, np.random.uniform() * 2 * np.pi]
+        rng = np.random.default_rng(random.getrandbits(128))
+        init_params = [rng.uniform() * 2 * np.pi, rng.uniform() * 2 * np.pi]
         out = scipy.optimize.minimize(f, init_params, method="COBYLA")
-
         return out["x"], out["fun"]
 
     def _gen_angles(self) -> npt.NDArray[np.float64]:
         # Classically simulate the variational optimization 5 times,
         # return the parameters from the best performing simulation
-        best_params, best_cost = np.zeros(2), 0.0
+        best_params: npt.NDArray[np.float64]
+        best_params, best_cost = np.zeros(2, dtype=np.float64), 0.0
         for _ in range(5):
             params, cost = self._get_opt_angles()
             if cost < best_cost:

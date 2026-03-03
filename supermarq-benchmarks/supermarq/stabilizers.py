@@ -1,10 +1,27 @@
+# Copyright 2026 Infleqtion
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import copy
+from typing import TYPE_CHECKING
 
 import cirq
 import numpy as np
-import numpy.typing as npt
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 class MeasurementCircuit:
@@ -133,11 +150,12 @@ def construct_stabilizer(
     pauli_basis = []
     start_idx = 0
     for i, row in enumerate(echelon_matrix.T):
-        if 1 in row[start_idx:]:
+        matrix_row = np.asarray(row)
+        if 1 in matrix_row[start_idx:]:
             stabilizer_matrix.append(dependent_stabilizer.T[i])
             pauli_basis.append(clique[i][1])
             last_1_idx = 0
-            for j, val in enumerate(row):
+            for j, val in enumerate(matrix_row):
                 if val == 1:
                     last_1_idx = j
             start_idx = last_1_idx + 1
@@ -251,12 +269,12 @@ def patch_Z_matrix(measurement_circuit: MeasurementCircuit) -> None:
         measurement_circuit: The current measurement circuit to act on.
     """
     stabilizer_matrix, N = measurement_circuit.get_stabilizer(), measurement_circuit.num_qubits
-    assert np.allclose(
-        stabilizer_matrix[:N], stabilizer_matrix[:N].T
-    ), f"Z-matrix,\n{stabilizer_matrix} is not symmetric"
+    assert np.allclose(stabilizer_matrix[:N], stabilizer_matrix[:N].T), (
+        f"Z-matrix,\n{stabilizer_matrix} is not symmetric"
+    )
 
     for i in range(N):
-        for j in range(0, i):
+        for j in range(i):
             if stabilizer_matrix[i, j] == 1:
                 apply_CZ(measurement_circuit, i, j)
 
