@@ -56,7 +56,7 @@ def test_qcvv_resolver() -> None:
     assert qcvv_resolver("supermarq.qcvv.base_experiment.qcvv_resolver") is None
 
 
-@dataclass
+@dataclass(repr=False)
 class ExampleResults(QCVVResults):
     """Example results class for testing."""
 
@@ -65,14 +65,14 @@ class ExampleResults(QCVVResults):
     def _analyze(self) -> None:
         self._example_final_result = 3.142
 
-    def plot_results(self, filename: str | None = None) -> plt.Figure:
+    def plot_results(self, filename: str | None = None) -> plt.Figure:  # pragma: no cover
         fig = plt.Figure()
         if filename:
             fig.savefig(filename)
         return fig
 
-    def print_results(self) -> None:
-        print("This is a test")  # noqa: T201
+    def _results_msg(self) -> str:
+        return f"This is a test: {self.example_final_result}"
 
     @property
     def example_final_result(self) -> float:
@@ -343,18 +343,27 @@ def test_results_job_no_data(abc_experiment: ExampleExperiment) -> None:
         results.analyze()
 
 
-def test_results_analyze(abc_experiment: ExampleExperiment) -> None:
-    results = ExampleResults(target="target", experiment=abc_experiment, data=pd.DataFrame())
+@patch("builtins.print")
+def test_results_analyze(mock_print: MagicMock, abc_experiment: ExampleExperiment) -> None:
+    results = ExampleResults(
+        target="target", experiment=abc_experiment, data=MagicMock(spec=pd.DataFrame)
+    )
 
-    with (
-        patch("matplotlib.pyplot.Figure.savefig") as mock_plot,
-        patch("builtins.print") as mock_print,
-    ):
+    # Check the `print_results()` method when there are no results to print.
+    results.print_results()
+    mock_print.assert_called_once_with("Results not analyzed.")
+    mock_print.reset_mock()
+
+    # Check the `print_results()` method when there are no results to print.
+    results.print_results()
+    mock_print.assert_called_once_with("Results not analyzed.")
+    mock_print.reset_mock()
+
+    with patch("supermarq.qcvv.base_experiment_test.ExampleResults.plot_results") as mock_plot:
         results.analyze(plot_results=True, print_results=True, plot_filename="test_name")
-
-    assert results.example_final_result == 3.142
-    mock_plot.assert_called_once_with("test_name")
-    mock_print.assert_called_once_with("This is a test")
+        assert results.example_final_result == 3.142
+        mock_plot.assert_called_once_with(filename="test_name")
+        mock_print.assert_called_once_with("This is a test: 3.142")
 
 
 def test_results_ready(abc_experiment: ExampleExperiment) -> None:
@@ -1061,6 +1070,23 @@ def test_dump_and_load(
     assert exp.num_qubits == abc_experiment.num_qubits
     assert exp.num_circuits == abc_experiment.num_circuits
     assert exp.cycle_depths == abc_experiment.cycle_depths
+
+
+def test_repr(abc_experiment: ExampleExperiment) -> None:
+    assert abc_experiment.__repr__() == "ExampleExperiment(num_qubits=2, num_samples=30)"
+    results = ExampleResults(
+        target="target", experiment=abc_experiment, job=MagicMock(spec=css.Job)
+    )
+    assert results.__repr__() == (
+        "ExampleResults(Results not analyzed, "
+        "experiment=ExampleExperiment(num_qubits=2, num_samples=30), target=target)"
+    )
+
+    results._example_final_result = 1.234
+    assert results.__repr__() == (
+        "ExampleResults(This is a test: 1.234, "
+        "experiment=ExampleExperiment(num_qubits=2, num_samples=30), target=target)"
+    )
 
 
 def test_count_non_barrier_gates() -> None:

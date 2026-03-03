@@ -71,7 +71,7 @@ def _exp_decay(
     return A * (alpha**x) + B
 
 
-@dataclass
+@dataclass(repr=False)
 class SSBResults(QCVVResults):
     """Results from an SSB experiment."""
 
@@ -166,11 +166,11 @@ class SSBResults(QCVVResults):
 
         return fig
 
-    def print_results(self) -> None:
+    def _results_msg(self) -> str:
         """Prints the key results data."""
-        print(  # noqa: T201
-            f"Estimated CZ fidelity: {self.cz_fidelity_estimate:.5} "
-            f"+/- {self.cz_fidelity_estimate_std:.5}"
+        return (
+            f"Estimated CZ fidelity: {self.cz_fidelity_estimate:.6} "
+            f"+/- {self.cz_fidelity_estimate_std:.6}"
         )
 
 
