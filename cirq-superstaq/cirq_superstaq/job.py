@@ -598,6 +598,68 @@ class JobV3(gss.job.Job):
         return css.deserialize_circuits(self.job_data.input_circuits[index])[0]
 
     @overload
+    def initial_logical_to_physical(self, index: None = None) -> list[dict[cirq.Qid, cirq.Qid]]: ...
+
+    @overload
+    def initial_logical_to_physical(self, index: int) -> dict[cirq.Qid, cirq.Qid]: ...
+
+    def initial_logical_to_physical(
+        self, index: int | None = None
+    ) -> dict[cirq.Qid, cirq.Qid] | list[dict[cirq.Qid, cirq.Qid]]:
+        """Mapping of logical qubits to physical qubits at the start of the circuit(s).
+
+        Here "logical" qubits refer to qubits in the input circuit, while "physical" refers to
+        those in the compiled circuits (and on the hardware itself).
+
+        Args:
+            index: An optional index of the specific circuit to retrieve.
+
+        Returns:
+            A single logical to physical map (if `index` is passed) or list of maps for all input
+            circuits.
+        """
+        if index is None:
+            return [self.initial_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
+
+        lqs = cirq.read_json(json_text=self.job_data.logical_qubits[index])
+        pqs = cirq.read_json(json_text=self.job_data.physical_qubits[index])
+
+        logical_to_physical_indices = self.job_data.initial_logical_to_physicals[index]
+        assert logical_to_physical_indices is not None
+        return {lqs[lqi]: pqs[pqi] for lqi, pqi in logical_to_physical_indices.items()}
+
+    @overload
+    def final_logical_to_physical(self, index: None = None) -> list[dict[cirq.Qid, cirq.Qid]]: ...
+
+    @overload
+    def final_logical_to_physical(self, index: int) -> dict[cirq.Qid, cirq.Qid]: ...
+
+    def final_logical_to_physical(
+        self, index: int | None = None
+    ) -> dict[cirq.Qid, cirq.Qid] | list[dict[cirq.Qid, cirq.Qid]]:
+        """Mapping of logical qubits to physical qubits at the end of the circuit(s).
+
+        Here "logical" refers to qubits in the submitted input circuit(s), while "physical" refers
+        to those in the compiled circuits (which correspond to those on the hardware itself).
+
+        Args:
+            index: An optional index of the specific circuit to retrieve.
+
+        Returns:
+            A single logical to physical map (if `index` is passed) or list of maps for all input
+            circuits.
+        """
+        if index is None:
+            return [self.final_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
+
+        lqs = cirq.read_json(json_text=self.job_data.logical_qubits[index])
+        pqs = cirq.read_json(json_text=self.job_data.physical_qubits[index])
+
+        logical_to_physical_indices = self.job_data.final_logical_to_physicals[index]
+        assert logical_to_physical_indices is not None
+        return {lqs[lqi]: pqs[pqi] for lqi, pqi in logical_to_physical_indices.items()}
+
+    @overload
     def counts(
         self,
         index: int,

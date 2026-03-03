@@ -593,6 +593,62 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
 
         return qss.deserialize_circuits(self.job_data.input_circuits[index])[0]
 
+    @overload
+    def initial_logical_to_physical(self, index: None = None) -> list[dict[int, int]]: ...
+
+    @overload
+    def initial_logical_to_physical(self, index: int) -> dict[int, int]: ...
+
+    def initial_logical_to_physical(
+        self, index: int | None = None
+    ) -> dict[int, int] | list[dict[int, int]]:
+        """Mapping of logical qubits to physical qubits at the start of the circuit(s).
+
+        Here "logical" qubits refer to qubits in the input circuit, while "physical" refers to
+        those in the compiled circuits (and on the hardware itself).
+
+        Args:
+            index: An optional index of the specific circuit to retrieve.
+
+        Returns:
+            A single logical to physical map (if `index` is passed) or list of maps for all input
+            circuits.
+        """
+        if index is None:
+            return [self.initial_logical_to_physical(i) for i in range(self.job_info.num_circuits)]
+
+        logical_to_physical = self.job_info.initial_logical_to_physicals[index]
+        assert logical_to_physical is not None
+        return logical_to_physical
+
+    @overload
+    def final_logical_to_physical(self, index: None = None) -> list[dict[int, int]]: ...
+
+    @overload
+    def final_logical_to_physical(self, index: int) -> dict[int, int]: ...
+
+    def final_logical_to_physical(
+        self, index: int | None = None
+    ) -> dict[int, int] | list[dict[int, int]]:
+        """Mapping of logical qubits to physical qubits at the end of the circuit(s).
+
+        Here "logical" refers to qubits in the submitted input circuit(s), while "physical" refers
+        to those in the compiled circuits (which correspond to those on the hardware itself).
+
+        Args:
+            index: An optional index of the specific circuit to retrieve.
+
+        Returns:
+            A single logical to physical map (if `index` is passed) or list of maps for all input
+            circuits.
+        """
+        if index is None:
+            return [self.final_logical_to_physical(i) for i in range(self.job_info.num_circuits)]
+
+        logical_to_physical = self.job_info.final_logical_to_physicals[index]
+        assert logical_to_physical is not None
+        return logical_to_physical
+
     def status(self, index: int | None = None) -> qiskit.providers.JobStatus:
         """Query for the equivalent qiskit job status.
 
