@@ -291,7 +291,7 @@ class QCVVResults(ABC):
             msg = self._results_msg()
         except type(self._not_analyzed):
             msg = "Results not analyzed."
-        print(msg)
+        print(msg)  # noqa: T201
 
     @abstractmethod
     def _results_msg(self) -> str:

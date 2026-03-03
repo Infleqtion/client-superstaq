@@ -42,6 +42,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+import cirq_superstaq as css
 from supermarq.qcvv.su2 import SU2, SU2Results, decay
 
 
@@ -260,3 +261,23 @@ def test_dump_and_load(
     assert exp.num_circuits == su2_experiment.num_circuits
     assert exp.cycle_depths == su2_experiment.cycle_depths
     assert exp.two_qubit_gate == su2_experiment.two_qubit_gate
+
+
+def test_repr(su2_experiment: SU2) -> None:
+    assert su2_experiment.__repr__() == "SU2(two_qubit_gate=CNOT, num_qubits=2, num_samples=16)"
+    results = SU2Results(target="target", experiment=su2_experiment, job=MagicMock(spec=css.Job))
+    assert results.__repr__() == (
+        "SU2Results(Results not analyzed, experiment=SU2(two_qubit_gate=CNOT, num_qubits=2, "
+        "num_samples=16), target=target)"
+    )
+
+    results._two_qubit_gate_fidelity = 0.98
+    results._two_qubit_gate_fidelity_std = 0.01
+    results._single_qubit_noise = 0.999
+    results._single_qubit_noise_std = 0.1
+    assert results.__repr__() == (
+        "SU2Results(Estimated two qubit gate fidelity: 0.98 +/- 0.01, Estimated "
+        "single qubit noise: 0.999 +/- 0.1, experiment=SU2(two_qubit_gate=CNOT, num_qubits=2, "
+        "num_samples=16), target=target)"
+    )
+    

@@ -418,8 +418,8 @@ class IRBResults(_RBResultsBase):
     def _results_msg(self) -> str:
         """Prints the key results data."""
         return (
-            f"Estimated gate error: {self.average_interleaved_gate_error:.6f} +/- "
-            f"{self.average_interleaved_gate_error_std:.6f}"
+            f"Estimated gate error: {self.average_interleaved_gate_error:.6} +/- "
+            f"{self.average_interleaved_gate_error_std:.6}"
         )
 
 
@@ -486,8 +486,8 @@ class RBResults(_RBResultsBase):
     def _results_msg(self) -> str:
         """Prints the key results data."""
         return (
-            f"Estimated error per Clifford: {self.average_error_per_clifford:.6f} +/- "
-            f"{self.average_error_per_clifford_std:.6f}"
+            f"Estimated error per Clifford: {self.average_error_per_clifford:.6} +/- "
+            f"{self.average_error_per_clifford_std:.6}"
         )
 
 
@@ -590,16 +590,14 @@ class IRB(QCVVExperiment[_RBResultsBase]):
     def __repr__(self) -> str:
         if self.interleaved_gate is None:
             return f"RB(num_qubits={self.num_qubits}, num_samples={len(self.samples)})"
-        else:
-            # Decompose the Clifford gate into "normal" gates for printing.
-            gates = [
-                str(g)
-                for g in cirq.single_qubit_matrix_to_gates(cirq.unitary(self.interleaved_gate))
-            ]
-            return (
-                f"IRB(interleaved_gate={''.join(gates)}, num_qubits={self.num_qubits}, "
-                f"num_samples={len(self.samples)})"
-            )
+        # Decompose the Clifford gate into "normal" gates for printing.
+        gates = [
+            str(g) for g in cirq.single_qubit_matrix_to_gates(cirq.unitary(self.interleaved_gate))
+        ]
+        return (
+            f"IRB(interleaved_gate={''.join(gates)}, num_qubits={self.num_qubits}, "
+            f"num_samples={len(self.samples)})"
+        )
 
     def _clifford_gate_to_circuit(
         self,

@@ -460,17 +460,20 @@ def test_dump_and_load(
 
 
 def test_repr(xeb_experiment: XEB) -> None:
-    assert xeb_experiment.__repr__() == "XEB(two_qubit_gate=CZ, num_qubits=2, num_samples=30)"
+    assert (
+        xeb_experiment.__repr__()
+        == "XEB(interleaved_layer=CZ(q(0), q(1)), num_qubits=2, num_samples=30)"
+    )
     results = XEBResults(target="example", experiment=xeb_experiment, data=None)
     assert results.__repr__() == (
-        "XEBResults(Results not analyzed, experiment=XEB(two_qubit_gate"
-        "=CZ, num_qubits=2, num_samples=30), target=example)"
+        "XEBResults(Results not analyzed, experiment=XEB(interleaved_layer"
+        "=CZ(q(0), q(1)), num_qubits=2, num_samples=30), target=example)"
     )
 
     # Add final results
     results._cycle_fidelity_estimate = 0.99
     results._cycle_fidelity_estimate_std = 0.01
     assert results.__repr__() == (
-        "XEBResults(Estimated cycle fidelity: 0.99 +/- 0.01, experiment=XEB(two_qubit_gate"
-        "=CZ, num_qubits=2, num_samples=30), target=example)"
+        "XEBResults(Estimated cycle fidelity: 0.99 +/- 0.01, experiment=XEB(interleaved_layer"
+        "=CZ(q(0), q(1)), num_qubits=2, num_samples=30), target=example)"
     )

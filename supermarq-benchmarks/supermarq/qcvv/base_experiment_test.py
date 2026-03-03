@@ -65,7 +65,7 @@ class ExampleResults(QCVVResults):
     def _analyze(self) -> None:
         self._example_final_result = 3.142
 
-    def plot_results(self, filename: str | None = None) -> plt.Figure:
+    def plot_results(self, filename: str | None = None) -> plt.Figure:  # pragma: no cover
         fig = plt.Figure()
         if filename:
             fig.savefig(filename)
@@ -359,10 +359,11 @@ def test_results_analyze(mock_print: MagicMock, abc_experiment: ExampleExperimen
     mock_print.assert_called_once_with("Results not analyzed.")
     mock_print.reset_mock()
 
-    results.analyze(plot_results=True, print_results=True, plot_filename="test_name")
-    assert results.example_final_result == 3.142
-    mock_plot.assert_called_once_with("test_name")
-    mock_print.assert_called_once_with("This is a test: 3.142")
+    with patch("supermarq.qcvv.base_experiment_test.ExampleResults.plot_results") as mock_plot:
+        results.analyze(plot_results=True, print_results=True, plot_filename="test_name")
+        assert results.example_final_result == 3.142
+        mock_plot.assert_called_once_with(filename="test_name")
+        mock_print.assert_called_once_with("This is a test: 3.142")
 
 
 def test_results_ready(abc_experiment: ExampleExperiment) -> None:

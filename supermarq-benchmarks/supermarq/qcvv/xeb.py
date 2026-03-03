@@ -232,8 +232,8 @@ class XEBResults(QCVVResults):
     def _results_msg(self) -> str:
         """Prints the key results data."""
         return (
-            f"Estimated cycle fidelity: {self.cycle_fidelity_estimate:.5} "
-            f"+/- {self.cycle_fidelity_estimate_std:.5}"
+            f"Estimated cycle fidelity: {self.cycle_fidelity_estimate:.6} "
+            f"+/- {self.cycle_fidelity_estimate_std:.6}"
         )
 
     def plot_speckle(self, filename: str | None = None) -> plt.Figure:

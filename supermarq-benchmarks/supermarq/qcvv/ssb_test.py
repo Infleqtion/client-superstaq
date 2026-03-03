@@ -250,3 +250,19 @@ def test_dump_and_load(
     assert exp.num_circuits == ssb_experiment.num_circuits
     assert exp.cycle_depths == ssb_experiment.cycle_depths
     assert exp.samples == ssb_experiment.samples
+
+
+def test_repr(ssb_experiment: SSB) -> None:
+    assert ssb_experiment.__repr__() == "SSB(num_qubits=2, num_samples=30)"
+    results = SSBResults(target="target", experiment=ssb_experiment, job=MagicMock(spec=css.Job))
+    assert results.__repr__() == (
+        "SSBResults(Results not analyzed, experiment=SSB(num_qubits=2, "
+        "num_samples=30), target=target)"
+    )
+
+    results._cz_fidelity_estimate = 0.98
+    results._cz_fidelity_estimate_std = 0.01
+    assert results.__repr__() == (
+        "SSBResults(Estimated CZ fidelity: 0.98 +/- 0.01, experiment=SSB(num_qubits=2, num_samples=30), "
+        "target=target)"
+    )
