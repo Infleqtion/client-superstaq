@@ -261,7 +261,7 @@ class Job:
     def __str__(self) -> str:
         return f"Job with job_id={self.job_id()}"
 
-    def __getitem__(self, index: int) -> Self:
+    def __getitem__(self, index: int) -> Job:
         """Customized indexing operations for jobs.
 
         Args:
