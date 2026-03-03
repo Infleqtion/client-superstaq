@@ -79,7 +79,7 @@ def qcvv_resolver(cirq_type: str) -> type[Any] | None:
     return None
 
 
-@dataclass
+@dataclass(repr=False)
 class Sample:
     """A sample circuit to use along with any data about the circuit
     that is needed for analysis.
@@ -128,7 +128,7 @@ class Sample:
         return "supermarq.qcvv"
 
 
-@dataclass
+@dataclass(repr=False)
 class QCVVResults(ABC):
     """A dataclass for storing the data and analyze results of the experiment. Requires
     subclassing for each new experiment type.
@@ -148,6 +148,14 @@ class QCVVResults(ABC):
 
     _parent: Self | None = None
     _qubits: tuple[cirq.Qid, ...] | None = None
+
+    def __repr__(self) -> str:
+        results_type = self.__class__.__name__
+        try:
+            results = self._results_msg()
+        except type(self._not_analyzed):
+            results = "Results not analyzed"
+        return f"{results_type}({results}, experiment={self.experiment}, target={self.target})"
 
     @property
     def parent(self) -> Self:
@@ -277,9 +285,21 @@ class QCVVResults(ABC):
             A single matplotlib figure containing the relevant plots of the results data.
         """
 
-    @abstractmethod
     def print_results(self) -> None:
         """Prints the key results data."""
+        try:
+            msg = self._results_msg()
+        except type(self._not_analyzed):
+            msg = "Results not analyzed."
+        print(msg)  # noqa: T201
+
+    @abstractmethod
+    def _results_msg(self) -> str:
+        """Returns:
+        The message from analyzing the results. Note that it is expected that this method will
+        implicitly result in a `self._not_analyzed` exception being raised if there are no
+        analyzed results available.
+        """
 
     def _collect_device_counts(self) -> pd.DataFrame:
         """Process the counts returned by the server and process into a results dataframe.
@@ -432,6 +452,12 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
     def __iter__(self) -> Iterator[Sample]:
         return iter(self.samples)
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(num_qubits={self.num_qubits}, "
+            f"num_samples={len(self.samples)})"
+        )
 
     ##############
     # Properties #
