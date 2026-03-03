@@ -615,9 +615,9 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
             circuits.
         """
         if index is None:
-            return [self.initial_logical_to_physical(i) for i in range(self.job_info.num_circuits)]
+            return [self.initial_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 
-        logical_to_physical = self.job_info.initial_logical_to_physicals[index]
+        logical_to_physical = self.job_data.initial_logical_to_physicals[index]
         assert logical_to_physical is not None
         return logical_to_physical
 
@@ -643,9 +643,9 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
             circuits.
         """
         if index is None:
-            return [self.final_logical_to_physical(i) for i in range(self.job_info.num_circuits)]
+            return [self.final_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 
-        logical_to_physical = self.job_info.final_logical_to_physicals[index]
+        logical_to_physical = self.job_data.final_logical_to_physicals[index]
         assert logical_to_physical is not None
         return logical_to_physical
 

@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import time
 import uuid
-from typing import Self
 
 import general_superstaq as gss
 from general_superstaq.superstaq_client import _SuperstaqClientV3
