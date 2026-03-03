@@ -1079,6 +1079,20 @@ def test_multi_pulse_gate_circuits(backend: qss.SuperstaqBackend) -> None:
     assert job.pulse_gate_circuits() == pgc_list
 
 
+def test_logical_to_physicals(backendV3: qss.SuperstaqBackend) -> None:
+    job = qss.SuperstaqJobV3(backend=backendV3, job_id=uuid.UUID(int=42))
+
+    job_dict = job_dictV3(2)
+    with patched_requests({str(uuid.UUID(int=42)): job_dict}):
+        assert job.initial_logical_to_physical(0) == {0: 0, 1: 1}
+        assert job.initial_logical_to_physical(1) == {0: 0, 1: 1}
+        assert job.initial_logical_to_physical() == [{0: 0, 1: 1}, {0: 0, 1: 1}]
+
+        assert job.final_logical_to_physical(0) == {0: 0, 1: 1}
+        assert job.final_logical_to_physical(1) == {0: 0, 1: 1}
+        assert job.final_logical_to_physical() == [{0: 0, 1: 1}, {0: 0, 1: 1}]
+
+
 def test_submit(backend: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJob(backend=backend, job_id="12345")
     with pytest.raises(NotImplementedError, match=r"Submit through SuperstaqBackend"):
