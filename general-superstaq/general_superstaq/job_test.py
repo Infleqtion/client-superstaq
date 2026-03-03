@@ -18,9 +18,10 @@ import json
 import uuid
 from unittest import mock
 
-import general_superstaq as gss
 import pytest
 import requests
+
+import general_superstaq as gss
 
 
 @pytest.fixture
@@ -74,7 +75,7 @@ def _mocked_response(content: object) -> requests.Response:
     return response
 
 
-def test_wrong_init(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
+def test_wrong_init() -> None:
     client = gss.superstaq_client._SuperstaqClient(
         client_name="general-superstaq",
         remote_host="http://example.com",
@@ -88,7 +89,9 @@ def test_wrong_init(mock_client: gss.superstaq_client._SuperstaqClientV3) -> Non
 
 
 @mock.patch("requests.Session.put")
-def test_cancel(mock_put: mock.MagicMock, mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
+def test_cancel(
+    mock_put: mock.MagicMock, mock_client: gss.superstaq_client._SuperstaqClientV3
+) -> None:
     mock_put.return_value = _mocked_response({"succeeded": ["circuit"], "message": "message"})
 
     job = gss.job.Job(mock_client, uuid.UUID(int=123))
@@ -97,7 +100,9 @@ def test_cancel(mock_put: mock.MagicMock, mock_client: gss.superstaq_client._Sup
 
 
 @mock.patch("requests.Session.get")
-def test_fields(mock_get: mock.MagicMock, mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
+def test_fields(
+    mock_get: mock.MagicMock, mock_client: gss.superstaq_client._SuperstaqClientV3
+) -> None:
     job_dict = _job_dict()
     mock_get.return_value = _mocked_response({str(uuid.UUID(int=123)): job_dict})
 
@@ -121,7 +126,9 @@ def test_fields(mock_get: mock.MagicMock, mock_client: gss.superstaq_client._Sup
 
 
 @mock.patch("requests.Session.get")
-def test_to_dict(mock_get: mock.MagicMock, mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
+def test_to_dict(
+    mock_get: mock.MagicMock, mock_client: gss.superstaq_client._SuperstaqClientV3
+) -> None:
     job_dict = _job_dict()
     mock_get.return_value = _mocked_response({str(uuid.UUID(int=123)): job_dict})
 
@@ -240,7 +247,6 @@ def test_wait_until_completed_poll(
         {str(uuid.UUID(int=123)): {**job_dict, "statuses": ["running"]}}
     )
     completed_mock = _mocked_response({str(uuid.UUID(int=123)): job_dict})
-
 
     job = gss.job.Job(mock_client, uuid.UUID(int=123))
     with mock.patch("requests.Session.get", side_effect=[running_mock, completed_mock]) as mock_get:

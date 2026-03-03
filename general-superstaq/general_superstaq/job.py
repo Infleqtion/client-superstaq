@@ -16,11 +16,9 @@
 
 from __future__ import annotations
 
-import collections
 import time
 import uuid
-from collections.abc import Sequence
-from typing import Any, overload
+from typing import Self
 
 import general_superstaq as gss
 from general_superstaq.superstaq_client import _SuperstaqClientV3
@@ -57,7 +55,7 @@ class Job:
         """Constructs a `Job`.
 
         Users should not call this themselves. If you only know the `job_id`, use `fetch_jobs`
-        on `css.Service`.
+        on `gss.Service`.
 
         Args:
             client: The client used for calling the API.
@@ -99,9 +97,11 @@ class Job:
         timeout_seconds: float | None = None,
         polling_seconds: float = 5,
     ) -> None:
-        """Waits untill either the job is done or some error in the job occurs.
+        """Waits until either the job is done or some error in the job occurs.
 
         Args:
+            index: An optional index of the specific circuit to wait for (otherwise waits for all
+                circuits to complete).
             timeout_seconds: The total number of seconds to poll for.
             polling_seconds: The interval with which to poll.
         """
@@ -261,8 +261,8 @@ class Job:
     def __str__(self) -> str:
         return f"Job with job_id={self.job_id()}"
 
-    def __getitem__(self, index: int) -> css.Job:
-        """Customized indexing operations for `css.Job`.
+    def __getitem__(self, index: int) -> Self:
+        """Customized indexing operations for jobs.
 
         Args:
             index: The index of the sub-job to return. Each sub-job corresponds to the a single
