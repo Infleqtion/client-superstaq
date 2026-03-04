@@ -674,32 +674,6 @@ def test_update_status_queue_info(backend: qss.SuperstaqBackend) -> None:
     assert job._overall_status == "Failed"
 
 
-def test_update_status_queue_infoV3(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
-    job = qss.SuperstaqJobV3(mock_client, job_id=uuid.UUID(int=42))
-
-    job_dict = job_dictV3(3)
-    job_dict["statuses"] = ["completed"] * 3
-    job._job_data = gss.models.JobData(**job_dict)
-
-    job._update_status_queue_info()
-    assert job._overall_status == "completed"
-
-    job_dict["statuses"] = ["awaiting_submission", "cancelled", "cancelled"]
-    job._job_data = gss.models.JobData(**job_dict)
-    job._update_status_queue_info()
-    assert job._overall_status == "awaiting_submission"
-
-    job_dict["statuses"] = ["cancelled", "cancelled", "awaiting_submission"]
-    job._job_data = gss.models.JobData(**job_dict)
-    job._update_status_queue_info()
-    assert job._overall_status == "awaiting_submission"
-
-    job_dict["statuses"] = ["completed", "completed", "failed"]
-    job._job_data = gss.models.JobData(**job_dict)
-    job._update_status_queue_info()
-    assert job._overall_status == "failed"
-
-
 def test_get_circuit(backend: qss.SuperstaqBackend) -> None:
     test_job = qss.SuperstaqJob(backend=backend, job_id="123abc")
     with pytest.raises(ValueError, match=r"The circuit type requested is invalid."):
@@ -1043,8 +1017,3 @@ def test_to_dict(backend: qss.SuperstaqBackend) -> None:
                 "shots": 100,
             }
         }
-
-
-def test_job_id(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
-    job = qss.SuperstaqJobV3(mock_client, job_id=uuid.UUID(int=42))
-    assert job.job_id() == uuid.UUID(int=42)

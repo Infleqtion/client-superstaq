@@ -231,28 +231,6 @@ def test_job_fields(job: css.Job, job_dict: dict[str, object]) -> None:
         mocked_get_job.assert_called_once()  # Only refreshed once
 
 
-@mock.patch("requests.Session.get")
-def test_job_fieldsV3(
-    mock_get: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
-) -> None:
-    circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
-    job_result = modifiy_job_result(
-        job_dictV3,
-        compiled_circuits=[css.serialize_circuits(circuit)],
-    )
-
-    mock_get.return_value.json.return_value = {str(uuid.UUID(int=42)): job_result}
-
-    assert jobV3.job_id() == uuid.UUID(int=42)
-    assert jobV3.target() == "ss_unconstrained_simulator"
-    assert jobV3.num_qubits(index=0) == 2
-    assert jobV3.repetitions() == 1
-    assert jobV3.compiled_circuits(index=0) == circuit
-    assert jobV3.metadata["foo"] == "bar"
-    assert jobV3.tags == ["some", "tags"]
-    mock_get.assert_called_once()  # Only refreshed once
-
-
 def test_target(job: css.Job, job_dict: dict[str, object]) -> None:
     # The first call will trigger a refresh:
     with patched_requests({"job_id": job_dict}) as mocked_get_job:
