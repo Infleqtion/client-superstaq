@@ -425,14 +425,14 @@ def test_job(service: css.Service) -> None:
     assert multi_job.job_id() == multi_job_id
 
     # TODO: have this unit test check more things and have dedicated tests for 'v0.3.0'
-    if api_version == "v0.2.0":
+    if isinstance(job_type, css.Job):
         assert list(multi_job._job.keys()) == multi_job_id.split(",")
 
         # Force job to refresh when queried:
         job._job.clear()
         job._job["status"] = "Running"
-
     else:
+        assert isinstance(job, css.JobV3)
         job._job_data = None
 
     # State retrieved from the server should be the same:
