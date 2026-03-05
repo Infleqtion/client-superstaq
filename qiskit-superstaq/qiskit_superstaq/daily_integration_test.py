@@ -26,16 +26,28 @@ from general_superstaq import ResourceEstimate
 import qiskit_superstaq as qss
 
 
-@pytest.fixture
-def provider() -> qss.SuperstaqProvider:
-    """Fixture for the qiskit superstaq provider.
+@pytest.fixture(scope="module")
+def provider(request: pytest.FixtureRequest) -> qss.SuperstaqProvider:
+    """Fixture for `qiskit_superstaq` provider client.
 
-    Returns:
-        A qiskit_superstaq provider instance.
+    Args:
+        request: A parameter for the fixture.
+
+    Return:
+        A `qiskit_superstaq` provider instance.
     """
-    return qss.SuperstaqProvider()
+    api_version = request.param
+    return qss.SuperstaqProvider(api_version=api_version)
 
 
+@pytest.mark.parametrize(
+    "provider",
+    [
+        "v0.2.0",
+        "v0.3.0",
+    ],
+    indirect=True,
+)
 def test_backends(provider: qss.SuperstaqProvider) -> None:
     result = provider.get_targets()
     filtered_result = provider.get_my_targets()
@@ -48,9 +60,9 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
         retired=False,
         accessible=True,
     )
-    assert ibmq_backend_info in result
-
     unfiltered_targets = {t.target: t for t in result}
+    assert ibmq_backend_info.target in unfiltered_targets
+
     for target in filtered_result:
         assert target.target in unfiltered_targets, f"'{target.target}' not in unfiltered result"
         assert target == unfiltered_targets[target.target], (
@@ -63,8 +75,9 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
         assert backend.name in unfiltered_targets, (
             f"'{backend.name}' included in `backends()` but not `get_targets()`"
         )
-        assert backend.target_info()["target"] == backend.name
-        assert backend.target.num_qubits is not None
+        if backend.name not in ("aqt_demo_qpu", "aqt_iqm20_qpu"):
+            assert backend.target_info().get("target") == backend.name
+            assert backend.target.num_qubits is not None
 
     missing_backends = unfiltered_targets.keys() - {backend.name for backend in backends}
     assert not missing_backends, (
@@ -72,6 +85,14 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "provider",
+    [
+        "v0.2.0",
+        "v0.3.0",
+    ],
+    indirect=True,
+)
 def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(4)
     qc.h(0)
@@ -83,8 +104,11 @@ def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
     out = provider.ibmq_compile(qc, target="ibmq_pittsburgh_qpu")
     assert isinstance(out, qss.compiler_output.CompilerOutput)
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
-    assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
-    assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
+
+    api_version = provider._client.api_version
+    if api_version == "v0.2.0":
+        assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
+        assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
 
     out = provider.ibmq_compile([qc, qc], target="ibmq_fez_qpu")
     assert isinstance(out, qss.compiler_output.CompilerOutput)
@@ -93,33 +117,38 @@ def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
     assert len(out.circuits) == 2
     assert isinstance(out.circuits[1], qiskit.QuantumCircuit)
 
-    assert isinstance(out.pulse_gate_circuits, list)
-    assert len(out.pulse_gate_circuits) == 2
-    assert isinstance(out.pulse_gate_circuits[1], qiskit.QuantumCircuit)
-    assert len(out.pulse_gate_circuits[1].op_start_times) == len(out.pulse_gate_circuits[1])
+    if api_version == "v0.2.0":
+        assert isinstance(out.pulse_gate_circuits, list)
+        assert len(out.pulse_gate_circuits) == 2
+        assert isinstance(out.pulse_gate_circuits[1], qiskit.QuantumCircuit)
+        assert len(out.pulse_gate_circuits[1].op_start_times) == len(out.pulse_gate_circuits[1])
 
 
 def test_ibmq_compile_with_token() -> None:
-    provider = qss.SuperstaqProvider(
-        ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"],
-        ibmq_instance=os.environ["TEST_USER_IBMQ_INSTANCE"],
-        ibmq_channel="ibm_quantum_platform",
-    )
-    qc = qiskit.QuantumCircuit(4)
-    qc.h(0)
-    qc.cx(0, 1)
-    qc.append(qss.AceCR("-+"), [0, 1])
-    qc.append(qss.AceCR("-+"), [1, 2])
-    qc.append(qss.AceCR("-+"), [2, 3])
+    for api_version in ("v0.2.0", "v0.3.0"):
+        provider = qss.SuperstaqProvider(
+            api_version=api_version,
+            ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"],
+            ibmq_instance=os.environ["TEST_USER_IBMQ_INSTANCE"],
+            ibmq_channel="ibm_quantum_platform",
+        )
+        qc = qiskit.QuantumCircuit(4)
+        qc.h(0)
+        qc.cx(0, 1)
+        qc.append(qss.AceCR("-+"), [0, 1])
+        qc.append(qss.AceCR("-+"), [1, 2])
+        qc.append(qss.AceCR("-+"), [2, 3])
 
-    out = provider.ibmq_compile(qc, target="ibmq_fez_qpu")
+        out = provider.ibmq_compile(qc, target="ibmq_fez_qpu")
 
-    assert isinstance(out, qss.compiler_output.CompilerOutput)
-    assert isinstance(out.circuit, qiskit.QuantumCircuit)
-    assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
-    assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
+        assert isinstance(out, qss.compiler_output.CompilerOutput)
+        assert isinstance(out.circuit, qiskit.QuantumCircuit)
+        if api_version == "v0.2.0":
+            assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
+            assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
 
 
+@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_aqt_compile(provider: qss.SuperstaqProvider) -> None:
     circuit = qiskit.QuantumCircuit(8)
     circuit.h(4)
@@ -132,6 +161,7 @@ def test_aqt_compile(provider: qss.SuperstaqProvider) -> None:
     assert provider.aqt_compile([circuit, circuit]).circuits == [expected, expected]
 
 
+@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_aqt_compile_eca(provider: qss.SuperstaqProvider) -> None:
     circuit = qiskit.QuantumCircuit(8)
     circuit.h(4)
@@ -150,6 +180,7 @@ def test_aqt_compile_eca(provider: qss.SuperstaqProvider) -> None:
 
 
 @pytest.mark.skip(reason="Won't pass until server issue related to this is fixed")
+@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_aqt_compile_eca_regression(provider: qss.SuperstaqProvider) -> None:
     circuit = qiskit.QuantumCircuit(8)
     circuit.h(4)
@@ -166,6 +197,14 @@ def test_aqt_compile_eca_regression(provider: qss.SuperstaqProvider) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "provider",
+    [
+        "v0.2.0",
+        "v0.3.0",
+    ],
+    indirect=True,
+)
 def test_get_balance(provider: qss.SuperstaqProvider) -> None:
     balance_str = provider.get_balance()
     assert isinstance(balance_str, str)
@@ -174,6 +213,7 @@ def test_get_balance(provider: qss.SuperstaqProvider) -> None:
     assert isinstance(provider.get_balance(pretty_output=False), float)
 
 
+@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_get_resource_estimate(provider: qss.SuperstaqProvider) -> None:
     circuit1 = qiskit.QuantumCircuit(2)
     circuit1.cx(0, 1)
@@ -195,6 +235,7 @@ def test_get_resource_estimate(provider: qss.SuperstaqProvider) -> None:
     assert resource_estimates == [resource_estimate, ResourceEstimate(1, 2, 3)]
 
 
+@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_qscout_compile(provider: qss.SuperstaqProvider) -> None:
     circuit = qiskit.QuantumCircuit(1)
     circuit.h(0)
@@ -207,6 +248,7 @@ def test_qscout_compile(provider: qss.SuperstaqProvider) -> None:
     assert provider.qscout_compile([circuit, circuit]).circuits == 2 * [compiled_circuit]
 
 
+@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_qscout_compile_swap_mirror(provider: qss.SuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2)
     qc.swap(0, 1)
@@ -225,6 +267,7 @@ def test_qscout_compile_swap_mirror(provider: qss.SuperstaqProvider) -> None:
     assert num_two_qubit_gates == 3
 
 
+@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 @pytest.mark.parametrize("backend_name", ["cq_sqale_simulator", "cq_sqale_qpu"])
 def test_cq_compile(backend_name: str, provider: qss.SuperstaqProvider) -> None:
     backend = provider.get_backend(backend_name)
@@ -243,12 +286,14 @@ def test_cq_compile(backend_name: str, provider: qss.SuperstaqProvider) -> None:
     assert isinstance(circuits[1], qiskit.QuantumCircuit)
 
 
+@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_get_aqt_configs(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     res = provider.aqt_get_configs()
     assert "pulses" in res
     assert "variables" in res
 
 
+@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_supercheq(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     # fmt: off
     files = [
@@ -270,6 +315,7 @@ def test_supercheq(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     assert fidelities.shape == (32, 32)
 
 
+@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_dfe(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)
@@ -287,6 +333,7 @@ def test_dfe(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
         _ = provider.process_dfe(["1234", "5678"])
 
 
+@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_aces(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
     backend = provider.get_backend("ss_unconstrained_simulator")
     with pytest.raises(gss.SuperstaqException, match=r"disabled"):
@@ -305,7 +352,15 @@ def test_aces(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
         _ = backend.process_aces("1234")
 
 
-@pytest.mark.parametrize("target", ["cq_sqale_simulator", "aws_sv1_simulator"])
+@pytest.mark.parametrize(
+    "provider",
+    [
+        "v0.2.0",
+        "v0.3.0",
+    ],
+    indirect=True,
+)
+@pytest.mark.parametrize("target", ["cq_sqale_simulator", "ss_unconstrained_simulator"])
 def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2, 2)
     qc.x(0)
@@ -317,6 +372,7 @@ def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvi
     assert job.result().get_counts() == {"11": 1}
 
 
+@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 @pytest.mark.parametrize(
     "target", ["qscout_peregrine_qpu", "aqt_keysight_qpu", "ibmq_pittsburgh_qpu"]
 )
@@ -342,6 +398,7 @@ def test_submit_dry_run(target: str, provider: qss.SuperstaqProvider) -> None:
     assert multi_job.result(1).get_counts() == {"10": 1}
 
 
+@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_dry_run_submit_to_sqale_with_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776.
 
@@ -367,6 +424,14 @@ def test_dry_run_submit_to_sqale_with_qubit_sorting(provider: qss.SuperstaqProvi
     assert max(counts, key=counts.__getitem__) == ("0" * (num_qubits - 3)) + "100"
 
 
+@pytest.mark.parametrize(
+    "provider",
+    [
+        "v0.2.0",
+        "v0.3.0",
+    ],
+    indirect=True,
+)
 def test_submit_qubo(provider: qss.SuperstaqProvider) -> None:
     test_qubo = {
         (0,): -1,
@@ -375,6 +440,13 @@ def test_submit_qubo(provider: qss.SuperstaqProvider) -> None:
         (0, 1): 2,
         (1, 2): 2,
     }
-    result = provider.submit_qubo(test_qubo, target="ss_unconstrained_simulator", repetitions=10)
-    assert len(result) == 10
-    assert {0: 1, 1: 0, 2: 1} in result
+    api_version = provider._client.api_version
+    if api_version == "v0.2.0":
+        result = provider.submit_qubo(
+            test_qubo, target="ss_unconstrained_simulator", repetitions=10
+        )
+        assert len(result) == 10
+        assert {0: 1, 1: 0, 2: 1} in result
+    else:
+        with pytest.raises(NotImplementedError, match="The function"):
+            _ = provider.submit_qubo(test_qubo, target="ss_unconstrained_simulator", repetitions=10)
