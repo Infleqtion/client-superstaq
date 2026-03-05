@@ -75,19 +75,6 @@ def _mocked_response(content: object) -> requests.Response:
     return response
 
 
-def test_wrong_init() -> None:
-    client = gss.superstaq_client._SuperstaqClient(
-        client_name="general-superstaq",
-        remote_host="http://example.com",
-        api_key="to_my_heart",
-        api_version="v0.2.0",
-    )
-    with pytest.raises(
-        TypeError, match=r"JobV3 job can only be used with v0.3.0 of the Superstaq API."
-    ):
-        gss.job.Job(client, uuid.UUID(int=0))  # type: ignore [arg-type]
-
-
 @mock.patch("requests.Session.put")
 def test_cancel(
     mock_put: mock.MagicMock, mock_client: gss.superstaq_client._SuperstaqClientV3

@@ -20,7 +20,6 @@ import time
 import uuid
 
 import general_superstaq as gss
-from general_superstaq.superstaq_client import _SuperstaqClientV3
 
 
 class Job:
@@ -59,13 +58,7 @@ class Job:
         Args:
             client: The client used for calling the API.
             job_id: Unique identifier for the job.
-
-        Raises:
-            TypeError: If `JobV3` is used with `v0.2.0` of the Superstaq API.
         """
-        if not isinstance(client, _SuperstaqClientV3):
-            raise TypeError("JobV3 job can only be used with v0.3.0 of the Superstaq API.")
-
         self._client = client
         self._overall_status = gss.models.CircuitStatus.RECEIVED
         self._job_data: gss.models.JobData | None = None
@@ -196,8 +189,7 @@ class Job:
             index: An optional index of the specific sub-job to get the status of.
 
         Raises:
-            ~gss.SuperstaqServerException: If unable to get the status of the job
-               from the API.
+            ~gss.SuperstaqServerException: If unable to get the status of the job from the API.
 
         Returns:
             The status of the job indexed by `index` or the overall job status if `index` is `None`.
@@ -217,8 +209,8 @@ class Job:
             kwargs: Extra options needed to fetch jobs.
 
         Raises:
-            ~gss.SuperstaqServerException: If unable to get the status of the job
-                from the API or cancellations were unsuccessful.
+            ~gss.SuperstaqServerException: If unable to get the status of the job from the API or
+            cancellations were unsuccessful.
         """
         self._client.cancel_jobs([self._job_id], **kwargs)
 
@@ -229,10 +221,7 @@ class Job:
             The target to which this job was submitted.
 
         Raises:
-            ~gss.SuperstaqUnsuccessfulJobException: If the job failed or has been
-                canceled or deleted.
-            ~gss.SuperstaqServerException: If unable to get the status of the job
-                from the API.
+            ~gss.SuperstaqServerException: If unable to get the job from the API.
         """
         return self.job_data.target
 
@@ -264,8 +253,7 @@ class Job:
         """Customized indexing operations for jobs.
 
         Args:
-            index: The index of the sub-job to return. Each sub-job corresponds to the a single
-                circuit.
+            index: The index of the sub-job to return. Each sub-job corresponds to a single circuit.
 
         Returns:
             A sub-job at the given `index`.
