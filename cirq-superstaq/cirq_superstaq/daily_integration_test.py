@@ -202,7 +202,7 @@ def test_get_resource_estimate(service: css.Service) -> None:
 @pytest.mark.parametrize(
     "service",
     [
-        # "v0.2.0",
+        "v0.2.0",
         "v0.3.0",
     ],
     indirect=True,
@@ -261,7 +261,7 @@ def test_qscout_compile(service: css.Service) -> None:
         assert "measure_all" in out.jaqal_program
 
     assert service.qscout_compile([circuit]).circuits == [out.circuit]
-    assert service.compile([circuit, circuit], target="qscout_peregrine_qpu").circuits == [
+    assert service.qscout_compile([circuit, circuit]).circuits == [
         out.circuit,
         out.circuit,
     ]
