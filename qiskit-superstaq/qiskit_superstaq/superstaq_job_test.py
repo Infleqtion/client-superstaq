@@ -271,6 +271,7 @@ def test_resultV3(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
         assert ans[1].get_counts() == {"1": 100}
         assert ans[2].get_counts() == {"0": 80, "1": 20}
         assert ans[3].get_counts() == {"01": 30, "00": 50, "11": 20}
+        assert job.shots() == 100
 
     multi_job = qss.SuperstaqJobV3(mock_client, uuid.UUID(int=42))
 

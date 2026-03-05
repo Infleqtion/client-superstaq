@@ -225,7 +225,7 @@ class Job:
         """
         return self.job_data.target
 
-    def repetitions(self) -> int:
+    def _repetitions(self) -> int:
         """Gets the number of repetitions requested for this job.
 
         Returns:

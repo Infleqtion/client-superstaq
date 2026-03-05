@@ -421,6 +421,8 @@ class SuperstaqJob(qiskit.providers.JobV1):
 class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
     """This class represents a Superstaq job instance."""
 
+    shots = gss.job.Job._repetitions
+
     def _arrange_counts(
         self, counts: dict[str, int], circ_meas_bit_indices: list[int], num_clbits: int
     ) -> dict[str, int]:

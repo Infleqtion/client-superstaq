@@ -99,14 +99,14 @@ def test_fields(
     mock_get.assert_not_called()
 
     assert job.target() == "ss_unconstrained_simulator"
-    assert job.repetitions() == 1
+    assert job._repetitions() == 1
     assert job.metadata["foo"] == "bar"
     assert job.tags == ["some", "tags"]
     mock_get.assert_called_once()
 
     # Shouldn't need to retrieve anything now that `job._job_data` is populated:
     assert job.target() == "ss_unconstrained_simulator"
-    assert job.repetitions() == 1
+    assert job._repetitions() == 1
     assert job.metadata["foo"] == "bar"
     assert job.tags == ["some", "tags"]
     mock_get.assert_called_once()

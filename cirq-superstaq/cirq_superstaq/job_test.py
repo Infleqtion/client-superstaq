@@ -649,6 +649,7 @@ def test_job_countsV3(
     assert jobV3.counts(index=0) == {"10": 1}
     assert jobV3.counts(index=0, qubit_indices=[0]) == ({"1": 1})
     assert jobV3.counts() == [{"10": 1}]
+    assert jobV3.repetitions() == 1
 
 
 def test_job_counts_failed(job: css.Job, job_dict: dict[str, object]) -> None:

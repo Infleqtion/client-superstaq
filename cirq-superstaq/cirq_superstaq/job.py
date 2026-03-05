@@ -510,6 +510,7 @@ class JobV3(gss.job.Job):
     """
 
     status = gss.job.Job._status
+    repetitions = gss.job.Job._repetitions
 
     @overload
     def num_qubits(self, index: int) -> int: ...
