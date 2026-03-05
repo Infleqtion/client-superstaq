@@ -75,7 +75,7 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
         assert backend.name in unfiltered_targets, (
             f"'{backend.name}' included in `backends()` but not `get_targets()`"
         )
-        if backend.name not in ("aqt_demo_qpu", "aqt_iqm20_qpu"):
+        if backend.name not in ("aqt_demo_qpu", "aqt_iqm20q_qpu"):
             assert backend.target_info().get("target") == backend.name
             assert backend.target.num_qubits is not None
 

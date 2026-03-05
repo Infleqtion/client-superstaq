@@ -242,7 +242,7 @@ def test_get_targets(service: css.Service) -> None:
 
     for gss_target in result:
         target_name = gss_target.target
-        if target_name not in ("aqt_demo_qpu", "aqt_iqm20_qpu"):
+        if target_name not in ("aqt_demo_qpu", "aqt_iqm20q_qpu"):
             assert service.target_info(target_name).get("target") == target_name
 
 
