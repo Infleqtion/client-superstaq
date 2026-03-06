@@ -379,8 +379,32 @@ class TargetStatus(str, Enum):
     """Target does not support job submission through Superstaq."""
 
 
-class TargetModel(DefaultPydanticModel):
+class TargetInputType(str, Enum):
+    """The input type supported by a Superstaq target."""
+
+    CIRCUIT = "circuit"
+    QUBO = "qubo"
+
+
+class TargetDescription(DefaultPydanticModel):
     """Model for the details of a target."""
+
+    target: TargetStr
+    """The target name."""
+    status: TargetStatus
+    """The status of this target."""
+    supported_inputs: list[TargetInputType]
+    """The input types supported by this target (e.g. "circuit", "qubo")."""
+    accessible: bool = False
+    """Whether this target is accessible to the current user."""
+
+    @property
+    def simulator(self) -> bool:
+        return self.target.endswith("_simulator")
+
+
+class TargetModel(DefaultPydanticModel):
+    """Legacy model for the details of a target."""
 
     target_name: TargetStr
     """The target name."""
@@ -398,6 +422,19 @@ class TargetModel(DefaultPydanticModel):
     """Target is simulator."""
     accessible: bool
     """Target is accessible to user."""
+
+    @classmethod
+    def from_target_description(cls, target_description: TargetDescription) -> TargetModel:
+        return cls(
+            target_name=target_description.target,
+            supports_submit=(target_description.status != TargetStatus.UNSUPPORTED),
+            supports_submit_qubo=(TargetInputType.QUBO in target_description.supported_inputs),
+            supports_compile=(TargetInputType.CIRCUIT in target_description.supported_inputs),
+            available=(target_description.status == TargetStatus.AVAILABLE),
+            retired=(target_description.status == TargetStatus.RETIRED),
+            simulator=target_description.simulator,
+            accessible=target_description.accessible,
+        )
 
 
 class GetTargetsFilterModel(DefaultPydanticModel):
