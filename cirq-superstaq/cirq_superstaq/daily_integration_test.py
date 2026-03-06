@@ -27,16 +27,28 @@ from general_superstaq import ResourceEstimate
 import cirq_superstaq as css
 
 
-@pytest.fixture
-def service() -> css.Service:
-    """Fixture for cirq_superstaq service.
+@pytest.fixture(scope="module")
+def service(request: pytest.FixtureRequest) -> css.Service:
+    """Fixture for `cirq_superstaq` service client.
+
+    Args:
+        request: A parameter for the fixture.
 
     Return:
-        A cirq_superstaq service instance.
+        A `cirq_superstaq` service instance.
     """
-    return css.Service()
+    api_version = request.param
+    return css.Service(api_version=api_version)
 
 
+@pytest.mark.parametrize(
+    "service",
+    [
+        "v0.2.0",
+        "v0.3.0",
+    ],
+    indirect=True,
+)
 def test_ibmq_compile(service: css.Service) -> None:
     circuit = cirq.Circuit(
         cirq.H(cirq.q(3)),
@@ -48,41 +60,48 @@ def test_ibmq_compile(service: css.Service) -> None:
 
     out = service.ibmq_compile(circuit, target="ibmq_pittsburgh_qpu")
     assert isinstance(out.circuit, cirq.Circuit)
-    assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
-    assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
+
+    api_version = service._client.api_version
+    if api_version == "v0.2.0":
+        assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
+        assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
 
     out = service.ibmq_compile([circuit, circuit], target="ibmq_fez_qpu")
-
     assert isinstance(out.circuits, list)
     assert len(out.circuits) == 2
     assert isinstance(out.circuits[1], cirq.Circuit)
 
-    assert isinstance(out.pulse_gate_circuits, list)
-    assert len(out.pulse_gate_circuits) == 2
-    assert isinstance(out.pulse_gate_circuits[1], qiskit.QuantumCircuit)
-    assert len(out.pulse_gate_circuits[1].op_start_times) == len(out.pulse_gate_circuits[1])
+    if api_version == "v0.2.0":
+        assert isinstance(out.pulse_gate_circuits, list)
+        assert len(out.pulse_gate_circuits) == 2
+        assert isinstance(out.pulse_gate_circuits[1], qiskit.QuantumCircuit)
+        assert len(out.pulse_gate_circuits[1].op_start_times) == len(out.pulse_gate_circuits[1])
 
 
 def test_ibmq_compile_with_token() -> None:
-    service = css.Service(
-        ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"],
-        ibmq_instance=os.environ["TEST_USER_IBMQ_INSTANCE"],
-        ibmq_channel="ibm_quantum_platform",
-    )
-    circuit = cirq.Circuit(
-        cirq.H(cirq.q(3)),
-        cirq.CX(cirq.q(3), cirq.q(0)) ** 0.7,
-        css.AceCRMinusPlus(cirq.q(0), cirq.q(1)),
-        css.AceCRMinusPlus(cirq.q(1), cirq.q(2)),
-        css.AceCRMinusPlus(cirq.q(2), cirq.q(3)),
-    )
-    out = service.ibmq_compile(circuit, target="ibmq_fez_qpu")
+    for api_version in ("v0.2.0", "v0.3.0"):
+        service = css.Service(
+            api_version=api_version,
+            ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"],
+            ibmq_instance=os.environ["TEST_USER_IBMQ_INSTANCE"],
+            ibmq_channel="ibm_quantum_platform",
+        )
+        circuit = cirq.Circuit(
+            cirq.H(cirq.q(3)),
+            cirq.CX(cirq.q(3), cirq.q(0)) ** 0.7,
+            css.AceCRMinusPlus(cirq.q(0), cirq.q(1)),
+            css.AceCRMinusPlus(cirq.q(1), cirq.q(2)),
+            css.AceCRMinusPlus(cirq.q(2), cirq.q(3)),
+        )
+        out = service.ibmq_compile(circuit, target="ibmq_fez_qpu")
 
-    assert isinstance(out.circuit, cirq.Circuit)
-    assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
-    assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
+        assert isinstance(out.circuit, cirq.Circuit)
+        if api_version == "v0.2.0":
+            assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
+            assert len(out.pulse_gate_circuit.op_start_times) == len(out.pulse_gate_circuit)
 
 
+@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 def test_aqt_compile(service: css.Service) -> None:
     qubits = cirq.LineQubit.range(8)
     circuit = cirq.Circuit(cirq.H(qubits[4]))
@@ -108,6 +127,7 @@ def test_aqt_compile(service: css.Service) -> None:
         )
 
 
+@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 def test_aqt_compile_eca(service: css.Service) -> None:
     circuit = cirq.Circuit(
         cirq.H(cirq.LineQubit(4)),
@@ -127,6 +147,7 @@ def test_aqt_compile_eca(service: css.Service) -> None:
 
 
 @pytest.mark.skip(reason="Won't pass until server issue related to this is fixed")
+@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 def test_aqt_compile_eca_regression(service: css.Service) -> None:
     circuit = cirq.Circuit(
         cirq.H(cirq.LineQubit(4)),
@@ -142,6 +163,14 @@ def test_aqt_compile_eca_regression(service: css.Service) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "service",
+    [
+        "v0.2.0",
+        "v0.3.0",
+    ],
+    indirect=True,
+)
 def test_get_balance(service: css.Service) -> None:
     balance_str = service.get_balance()
     assert isinstance(balance_str, str)
@@ -150,6 +179,7 @@ def test_get_balance(service: css.Service) -> None:
     assert isinstance(service.get_balance(pretty_output=False), float)
 
 
+@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 def test_get_resource_estimate(service: css.Service) -> None:
     q0 = cirq.LineQubit(0)
     q1 = cirq.LineQubit(1)
@@ -169,6 +199,14 @@ def test_get_resource_estimate(service: css.Service) -> None:
     assert resource_estimates == [ResourceEstimate(1, 1, 3), ResourceEstimate(1, 2, 4)]
 
 
+@pytest.mark.parametrize(
+    "service",
+    [
+        "v0.2.0",
+        "v0.3.0",
+    ],
+    indirect=True,
+)
 def test_get_targets(service: css.Service) -> None:
     result = service.get_targets()
     filtered_result = service.get_my_targets()
@@ -190,11 +228,11 @@ def test_get_targets(service: css.Service) -> None:
         retired=False,
         accessible=False,
     )
-
-    assert ibmq_target_info in result
     assert aqt_target_info in result
 
     unfiltered_targets = {t.target: t for t in result}
+    assert ibmq_target_info.target in unfiltered_targets
+
     for target in filtered_result:
         assert target.target in unfiltered_targets, f"'{target.target}' not in unfiltered result"
         assert target == unfiltered_targets[target.target], (
@@ -204,9 +242,11 @@ def test_get_targets(service: css.Service) -> None:
 
     for gss_target in result:
         target_name = gss_target.target
-        assert service.target_info(target_name)["target"] == target_name
+        if target_name not in ("aqt_demo_qpu", "aqt_iqm20q_qpu"):
+            assert service.target_info(target_name).get("target") == target_name
 
 
+@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 def test_qscout_compile(service: css.Service) -> None:
     q0, q1 = cirq.LineQubit.range(2)
     circuit = cirq.Circuit(cirq.H(q0), cirq.measure(q0))
@@ -215,11 +255,16 @@ def test_qscout_compile(service: css.Service) -> None:
     cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
         out.circuit, circuit, atol=1e-08
     )
-    assert isinstance(out.jaqal_program, str)
-    assert "measure_all" in out.jaqal_program
+    api_version = service._client.api_version
+    if api_version == "v0.2.0":
+        assert isinstance(out.jaqal_program, str)
+        assert "measure_all" in out.jaqal_program
 
     assert service.qscout_compile([circuit]).circuits == [out.circuit]
-    assert service.qscout_compile([circuit, circuit]).circuits == [out.circuit, out.circuit]
+    assert service.qscout_compile([circuit, circuit]).circuits == [
+        out.circuit,
+        out.circuit,
+    ]
 
     cx_circuit = cirq.Circuit(cirq.H(q0), cirq.CX(q0, q1) ** 0.5, cirq.measure(q0, q1))
     out = service.qscout_compile([cx_circuit])
@@ -227,11 +272,13 @@ def test_qscout_compile(service: css.Service) -> None:
     cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
         out.circuits[0], cx_circuit, atol=1e-08
     )
-    assert isinstance(out.jaqal_programs, list)
-    assert isinstance(out.jaqal_programs[0], str)
-    assert "MS allqubits[0] allqubits[1]" in out.jaqal_programs[0]
+    if api_version == "v0.2.0":
+        assert isinstance(out.jaqal_programs, list)
+        assert isinstance(out.jaqal_programs[0], str)
+        assert "MS allqubits[0] allqubits[1]" in out.jaqal_programs[0]
 
 
+@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 def test_qscout_compile_swap_mirror(service: css.Service) -> None:
     q0, q1 = cirq.LineQubit.range(2)
     circuit = cirq.Circuit(cirq.SWAP(q0, q1))
@@ -252,6 +299,14 @@ def test_qscout_compile_swap_mirror(service: css.Service) -> None:
     assert num_two_qubit_gates == 3
 
 
+@pytest.mark.parametrize(
+    "service",
+    [
+        "v0.2.0",
+        "v0.3.0",
+    ],
+    indirect=True,
+)
 @pytest.mark.parametrize("target", ["cq_sqale_simulator", "cq_sqale_qpu"])
 def test_cq_compile(target: str, service: css.Service) -> None:
     # We use GridQubits cause CQ's qubits are laid in a grid
@@ -267,12 +322,14 @@ def test_cq_compile(target: str, service: css.Service) -> None:
     assert isinstance(out.circuit, cirq.Circuit)
 
 
+@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 def test_get_aqt_configs(service: css.Service) -> None:
     res = service.aqt_get_configs()
     assert "pulses" in res
     assert "variables" in res
 
 
+@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 def test_supercheq(service: css.Service) -> None:
     # fmt: off
     files = [
@@ -294,6 +351,7 @@ def test_supercheq(service: css.Service) -> None:
     assert fidelities.shape == (32, 32)
 
 
+@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 def test_dfe(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.H(cirq.q(0)))
     target = "ss_unconstrained_simulator"
@@ -309,6 +367,7 @@ def test_dfe(service: css.Service) -> None:
         _ = service.process_dfe(["1234", "5678"])
 
 
+@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 def test_aces(service: css.Service) -> None:
     noise_model = cirq.NoiseModel.from_noise_model_like(cirq.depolarize(0.1))
     with pytest.raises(gss.SuperstaqException, match=r"disabled"):
@@ -327,6 +386,14 @@ def test_aces(service: css.Service) -> None:
         _ = service.process_aces("1234")
 
 
+@pytest.mark.parametrize(
+    "service",
+    [
+        "v0.2.0",
+        "v0.3.0",
+    ],
+    indirect=True,
+)
 def test_job(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
     circuit_alt = cirq.Circuit(cirq.X(cirq.q(0)), cirq.measure(cirq.q(0)))
@@ -337,8 +404,9 @@ def test_job(service: css.Service) -> None:
     multi_job = service.create_job(
         [circuit, circuit_alt], target="ibmq_fez_qpu", repetitions=10, method="dry-run"
     )
-    assert isinstance(job, css.Job)
-    assert isinstance(multi_job, css.Job)
+    job_type = css.Job if service._client.api_version == "v0.2.0" else css.JobV3
+    assert isinstance(job, job_type)
+    assert isinstance(multi_job, job_type)
 
     job_id = job.job_id()  # To test for https://github.com/Infleqtion/client-superstaq/issues/452
     multi_job_id = multi_job.job_id()
@@ -347,24 +415,40 @@ def test_job(service: css.Service) -> None:
     assert multi_job.counts(0) == {"0": 10}
     assert multi_job.counts(1) == {"1": 10}
 
-    assert job.status() == "Done"
-    assert multi_job.status(0) == "Done"
-    assert multi_job.status(1) == "Done"
+    api_version = service._client.api_version
+    expected_status = "Done" if api_version == "v0.2.0" else "completed"
+    assert job.status() == expected_status
+    assert multi_job.status(0) == expected_status
+    assert multi_job.status(1) == expected_status
 
     assert job.job_id() == job_id
     assert multi_job.job_id() == multi_job_id
-    assert list(multi_job._job.keys()) == multi_job_id.split(",")
 
-    # Force job to refresh when queried:
-    job._job.clear()
-    job._job["status"] = "Running"
+    # TODO: have this unit test check more things and have dedicated tests for 'v0.3.0'
+    if isinstance(job_type, css.Job):
+        assert list(multi_job._job.keys()) == multi_job_id.split(",")
+
+        # Force job to refresh when queried:
+        job._job.clear()
+        job._job["status"] = "Running"
+    else:
+        assert isinstance(job, css.JobV3)
+        job._job_data = None
 
     # State retrieved from the server should be the same:
     assert job.counts(0) == {"0": 10}
-    assert job.status() == "Done"
+    assert job.status() == expected_status
     assert job.job_id() == job_id
 
 
+@pytest.mark.parametrize(
+    "service",
+    [
+        "v0.2.0",
+        "v0.3.0",
+    ],
+    indirect=True,
+)
 @pytest.mark.parametrize("target", ["cq_sqale_simulator", "aws_sv1_simulator"])
 def test_submit_to_provider_simulators(target: str, service: css.Service) -> None:
     q0 = cirq.LineQubit(0)
@@ -375,6 +459,14 @@ def test_submit_to_provider_simulators(target: str, service: css.Service) -> Non
     assert job.counts(0) == {"11": 1}
 
 
+@pytest.mark.parametrize(
+    "service",
+    [
+        "v0.2.0",
+        "v0.3.0",
+    ],
+    indirect=True,
+)
 def test_dry_run_submit_to_sqale_with_qubit_sorting(service: css.Service) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776.
 
@@ -399,6 +491,14 @@ def test_dry_run_submit_to_sqale_with_qubit_sorting(service: css.Service) -> Non
     assert max(counts, key=counts.__getitem__) == "001" + ("0" * (num_qubits - 3))
 
 
+@pytest.mark.parametrize(
+    "service",
+    [
+        "v0.2.0",
+        "v0.3.0",
+    ],
+    indirect=True,
+)
 def test_submit_qubo(service: css.Service) -> None:
     test_qubo = {
         (0,): -1,
@@ -407,6 +507,11 @@ def test_submit_qubo(service: css.Service) -> None:
         (0, 1): 2,
         (1, 2): 2,
     }
-    result = service.submit_qubo(test_qubo, target="ss_unconstrained_simulator", repetitions=10)
-    assert len(result) == 10
-    assert {0: 1, 1: 0, 2: 1} in result
+    api_version = service._client.api_version
+    if api_version == "v0.2.0":
+        result = service.submit_qubo(test_qubo, target="ss_unconstrained_simulator", repetitions=10)
+        assert len(result) == 10
+        assert {0: 1, 1: 0, 2: 1} in result
+    else:
+        with pytest.raises(NotImplementedError, match="The function"):
+            _ = service.submit_qubo(test_qubo, target="ss_unconstrained_simulator", repetitions=10)
