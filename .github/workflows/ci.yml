@@ -255,6 +255,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install ${{ matrix.dependencies }}
+          pip install pytest-split
       - name: Check notebooks
         if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
         run: |
