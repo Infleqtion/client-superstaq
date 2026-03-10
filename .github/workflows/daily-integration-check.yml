@@ -24,32 +24,15 @@ jobs:
               uses: actions/setup-python@v6
               with:
                   python-version: 3.14
-                  cache: "pip"
-                  cache-dependency-path: |
-                      requirements.txt
-                      pyproject.toml
             - name: Install dependencies
               run: |
                   python -m pip install --upgrade pip
                   python -m pip install ./checks-superstaq ./general-superstaq[dev] ./qiskit-superstaq[dev] ./cirq-superstaq[dev]
                   python -m pip install pytest-split
-            - name: Restore `pytest-split` durations cache
-              uses: actions/cache/restore@v5
-              with:
-                  path: .pytest-split-durations
-                  key: pytest-durations-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-run-${{ github.run_id }}
-                  restore-keys: |
-                      pytest-durations-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-
             - name: Pytest integration check (group ${{ matrix.group }}/6)
               run: |
                   touch .pytest-split-durations
                   checks/pytest_.py --integration --splits=6 --group=${{ matrix.group }} -v
-            - name: Save `pytest-split` durations cache
-              if: ${{ matrix.group == 1 }}
-              uses: actions/cache/save@v5
-              with:
-                  path: .pytest-split-durations
-                  key: pytest-durations-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-run-${{ github.run_id }}
             - name: Create issue if integration check failed
               if: ${{ failure() }}
               uses: JasonEtco/create-an-issue@v2
