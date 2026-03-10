@@ -40,14 +40,7 @@ def provider(request: pytest.FixtureRequest) -> qss.SuperstaqProvider:
     return qss.SuperstaqProvider(api_version=api_version)
 
 
-@pytest.mark.parametrize(
-    "provider",
-    [
-        "v0.2.0",
-        "v0.3.0",
-    ],
-    indirect=True,
-)
+@pytest.mark.parametrize("provider", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_backends(provider: qss.SuperstaqProvider) -> None:
     result = provider.get_targets()
     filtered_result = provider.get_my_targets()
@@ -85,14 +78,7 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
     )
 
 
-@pytest.mark.parametrize(
-    "provider",
-    [
-        "v0.2.0",
-        "v0.3.0",
-    ],
-    indirect=True,
-)
+@pytest.mark.parametrize("provider", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_ibmq_compile(provider: qss.SuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(4)
     qc.h(0)
@@ -197,14 +183,7 @@ def test_aqt_compile_eca_regression(provider: qss.SuperstaqProvider) -> None:
     )
 
 
-@pytest.mark.parametrize(
-    "provider",
-    [
-        "v0.2.0",
-        "v0.3.0",
-    ],
-    indirect=True,
-)
+@pytest.mark.parametrize("provider", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_get_balance(provider: qss.SuperstaqProvider) -> None:
     balance_str = provider.get_balance()
     assert isinstance(balance_str, str)
@@ -352,14 +331,7 @@ def test_aces(provider: qss.superstaq_provider.SuperstaqProvider) -> None:
         _ = backend.process_aces("1234")
 
 
-@pytest.mark.parametrize(
-    "provider",
-    [
-        "v0.2.0",
-        "v0.3.0",
-    ],
-    indirect=True,
-)
+@pytest.mark.parametrize("provider", ["v0.2.0", "v0.3.0"], indirect=True)
 @pytest.mark.parametrize("target", ["cq_sqale_simulator", "ss_unconstrained_simulator"])
 def test_submit_to_provider_simulators(target: str, provider: qss.SuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2, 2)
@@ -424,14 +396,7 @@ def test_dry_run_submit_to_sqale_with_qubit_sorting(provider: qss.SuperstaqProvi
     assert max(counts, key=counts.__getitem__) == ("0" * (num_qubits - 3)) + "100"
 
 
-@pytest.mark.parametrize(
-    "provider",
-    [
-        "v0.2.0",
-        "v0.3.0",
-    ],
-    indirect=True,
-)
+@pytest.mark.parametrize("provider", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_submit_qubo(provider: qss.SuperstaqProvider) -> None:
     test_qubo = {
         (0,): -1,
