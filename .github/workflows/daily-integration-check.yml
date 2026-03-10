@@ -29,9 +29,8 @@ jobs:
                   python -m pip install --upgrade pip
                   python -m pip install ./checks-superstaq ./general-superstaq[dev] ./qiskit-superstaq[dev] ./cirq-superstaq[dev]
                   python -m pip install pytest-split
-            - name: Pytest integration check (group ${{ matrix.group }}/6)
+            - name: Pytest integration check (group ${{ matrix.group }} of 6)
               run: |
-                  touch .pytest-split-durations
                   checks/pytest_.py --integration --splits=6 --group=${{ matrix.group }} -v
             - name: Create issue if integration check failed
               if: ${{ failure() }}
