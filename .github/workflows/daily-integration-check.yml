@@ -36,19 +36,20 @@ jobs:
             - name: Restore `pytest-split` durations cache
               uses: actions/cache/restore@v5
               with:
-                  path: .test_durations
-                  key: pytest-durations-${{ runner.os }}-${{ github.ref_name }}
+                  path: .pytest-split-durations
+                  key: pytest-durations-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-run-${{ github.run_id }}
                   restore-keys: |
-                      pytest-durations-${{ runner.os }}-
-            - name: Pytest integration check
+                      pytest-durations-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-
+            - name: Pytest integration check (group ${{ matrix.group }}/6)
               run: |
+                  touch .pytest-split-durations
                   checks/pytest_.py --integration --splits=6 --group=${{ matrix.group }} -v
             - name: Save `pytest-split` durations cache
               if: ${{ matrix.group == 1 }}
               uses: actions/cache/save@v5
               with:
-                  path: .test_durations
-                  key: pytest-durations-${{ runner.os }}-${{ github.ref_name }}
+                  path: .pytest-split-durations
+                  key: pytest-durations-${{ runner.os }}-py${{ steps.py.outputs.python-version }}-run-${{ github.run_id }}
             - name: Create issue if integration check failed
               if: ${{ failure() }}
               uses: JasonEtco/create-an-issue@v2
