@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import os
+import uuid
 
 import cirq
 import general_superstaq as gss
@@ -395,6 +396,7 @@ def test_aces(service: css.Service) -> None:
     indirect=True,
 )
 def test_job(service: css.Service) -> None:
+    api_version = service._client.api_version
     circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
     circuit_alt = cirq.Circuit(cirq.X(cirq.q(0)), cirq.measure(cirq.q(0)))
 
@@ -404,18 +406,20 @@ def test_job(service: css.Service) -> None:
     multi_job = service.create_job(
         [circuit, circuit_alt], target="ibmq_fez_qpu", repetitions=10, method="dry-run"
     )
-    job_type = css.Job if service._client.api_version == "v0.2.0" else css.JobV3
+    job_type = css.Job if api_version == "v0.2.0" else css.JobV3
     assert isinstance(job, job_type)
     assert isinstance(multi_job, job_type)
 
     job_id = job.job_id()  # To test for https://github.com/Infleqtion/client-superstaq/issues/452
     multi_job_id = multi_job.job_id()
 
+    id_type = str if api_version == "v0.2.0" else uuid.UUID
+    assert isinstance(job_id, id_type)
+
     assert job.counts(0) == {"0": 10}
     assert multi_job.counts(0) == {"0": 10}
     assert multi_job.counts(1) == {"1": 10}
 
-    api_version = service._client.api_version
     expected_status = "Done" if api_version == "v0.2.0" else "completed"
     assert job.status() == expected_status
     assert multi_job.status(0) == expected_status
@@ -425,14 +429,17 @@ def test_job(service: css.Service) -> None:
     assert multi_job.job_id() == multi_job_id
 
     # TODO: have this unit test check more things and have dedicated tests for 'v0.3.0'
-    if isinstance(job_type, css.Job):
+    if isinstance(multi_job, css.Job):
+        assert isinstance(multi_job_id, str)
         assert list(multi_job._job.keys()) == multi_job_id.split(",")
+    else:
+        assert isinstance(multi_job_id, uuid.UUID)
 
+    if isinstance(job, css.Job):
         # Force job to refresh when queried:
         job._job.clear()
         job._job["status"] = "Running"
     else:
-        assert isinstance(job, css.JobV3)
         job._job_data = None
 
     # State retrieved from the server should be the same:
