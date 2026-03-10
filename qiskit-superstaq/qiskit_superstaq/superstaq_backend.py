@@ -216,7 +216,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             job_id = ",".join(result["job_ids"])
             return qss.SuperstaqJob(self, job_id)
         job_id_v3 = result["job_id"]
-        return qss.SuperstaqJobV3(self, job_id_v3)
+        return qss.SuperstaqJobV3(self._provider._client, job_id_v3)
 
     def retrieve_job(self, job_id: str | uuid.UUID) -> qss.SuperstaqJob | qss.SuperstaqJobV3:
         """Gets a job that has been created on the Superstaq API.
@@ -240,7 +240,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         )
         if isinstance(self._provider._client, _SuperstaqClient):
             return qss.SuperstaqJob(self, str(job_id))
-        return qss.SuperstaqJobV3(self, job_id)
+        return qss.SuperstaqJobV3(self._provider._client, job_id)
 
     def compile(
         self,
