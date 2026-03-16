@@ -231,6 +231,7 @@ class SU2(QCVVExperiment[SU2Results]):
         cycle_depths: Iterable[int],
         two_qubit_gate: cirq.Gate = cirq.CZ,
         *,
+        qubits: Sequence[cirq.Qid] | None = None,
         random_seed: int | np.random.Generator | None = None,
         _samples: list[Sample] | None = None,
         **kwargs: str,
@@ -246,8 +247,17 @@ class SU2(QCVVExperiment[SU2Results]):
         self.two_qubit_gate = two_qubit_gate
         """The two qubit gate to be benchmarked"""
 
+        if qubits is None:
+            qubits = cirq.LineQubit.range(2)
+        else:
+            if len(qubits) != 2:
+                raise ValueError(
+                    "SU2 benchmarking is currently only implemented for 2 qubits gates."
+                )
+            qubits = qubits
+
         super().__init__(
-            qubits=2,
+            qubits=qubits,
             num_circuits=num_circuits,
             cycle_depths=cycle_depths,
             random_seed=random_seed,

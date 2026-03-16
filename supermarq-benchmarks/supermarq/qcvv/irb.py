@@ -542,20 +542,21 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             interleaved_gate: The Clifford gate to measure the gate error of. If None then no
                 interleaving is performed and instead vanilla randomized benchmarking is performed.
             qubits: The qubit(s) to experiment on. If an integer, must either be 1 or 2; otherwise
-                must be a sequence of 1 or 2 qubit(s). Ignored if a gate is provided - the qubits
-                are instead inferred from the gate.
+                must be a sequence of 1 or 2 qubit(s). If None, the qubits are inferred from the
+                gate.
             clifford_op_gateset: The gateset to use when implementing the clifford operations.
                 Defaults to the CZ/GR set.
             random_seed: An optional seed to use for randomization.
             kwargs: Any other supported string keyword args.
         """
-        if isinstance(interleaved_gate, cirq.Operation):
-            qubits = interleaved_gate.qubits
-            interleaved_gate = interleaved_gate.gate
-        elif interleaved_gate is not None:
-            qubits = cirq.LineQubit.range(cirq.num_qubits(interleaved_gate))
-        elif not isinstance(qubits, Sequence):
-            qubits = cirq.LineQubit.range(qubits)
+        if not isinstance(qubits, Sequence):
+            if isinstance(interleaved_gate, cirq.Gate):
+                qubits = cirq.LineQubit.range(interleaved_gate.num_qubits())
+            elif isinstance(interleaved_gate, cirq.Operation):
+                qubits = interleaved_gate.qubits
+                interleaved_gate = interleaved_gate.gate
+            else:
+                qubits = cirq.LineQubit.range(qubits)
 
         if len(qubits) not in [1, 2]:
             raise NotImplementedError(
@@ -566,6 +567,12 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             if not cirq.has_stabilizer_effect(interleaved_gate):
                 raise ValueError("The interleaved gate must be a Clifford gate.")
             self.interleaved_gate: cirq.Gate | None = interleaved_gate
+
+            if len(qubits) != interleaved_gate.num_qubits():
+                raise ValueError(
+                    "The number of targeted qubits must match the number of qubits interleaved_gate"
+                    " is acting on."
+                )
         else:
             self.interleaved_gate = None
 

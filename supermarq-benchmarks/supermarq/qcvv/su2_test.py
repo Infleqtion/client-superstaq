@@ -58,6 +58,11 @@ def test_su2_init() -> None:
     assert experiment.num_circuits == 4
     assert experiment.cycle_depths == [1, 2, 3, 4]
 
+    qubits = cirq.LineQubit.range(2)
+    with patch("cirq_superstaq.service.Service"):
+        experiment = SU2(4, [1, 2, 3, 4], cirq.CNOT, qubits=qubits)
+    assert experiment.qubits == tuple(qubits)
+
 
 def test_su2_init_raises() -> None:
     with (
@@ -68,6 +73,8 @@ def test_su2_init_raises() -> None:
         ),
     ):
         SU2(4, [1, 2, 3, 4], cirq.X)
+    with pytest.raises(ValueError, match=r"currently only implemented for 2 qubits gates."):
+        SU2(1, [2], qubits=cirq.LineQubit.range(3))
 
 
 @pytest.fixture

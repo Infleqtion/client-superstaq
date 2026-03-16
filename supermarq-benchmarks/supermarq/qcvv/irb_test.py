@@ -109,6 +109,9 @@ def test_irb_bad_init() -> None:
     with pytest.raises(ValueError, match=r"must be a Clifford"):
         IRB(1, [2], interleaved_gate=cirq.T)
 
+    with pytest.raises(ValueError, match=r"targeted qubits must match"):
+        IRB(1, [2], cirq.CX, qubits=[cirq.GridQid(0, 0, dimension=2)])
+
 
 def test_reduce_clifford_sequence() -> None:
     sequence = [
