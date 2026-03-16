@@ -25,7 +25,15 @@ from general_superstaq.superstaq_exceptions import (
 )
 from general_superstaq.typing import Target
 
-from . import serialization, service, superstaq_client, superstaq_exceptions, typing, validation
+from . import (
+    job,
+    serialization,
+    service,
+    superstaq_client,
+    superstaq_exceptions,
+    typing,
+    validation,
+)
 
 __all__ = [
     "API_URL",
@@ -39,6 +47,7 @@ __all__ = [
     "SuperstaqWarning",
     "Target",
     "__version__",
+    "job",
     "models",
     "serialization",
     "service",

@@ -207,32 +207,12 @@ def patched_requests(*contents: object) -> mock._patch[mock.Mock]:
     return mock.patch("requests.Session.post", side_effect=responses)
 
 
-def test_wrong_V3_init() -> None:
-    client = gss.superstaq_client._SuperstaqClient(
-        client_name="cirq-superstaq",
-        remote_host="http://example.com",
-        api_key="to_my_heart",
-    )
-    with pytest.raises(
-        TypeError, match=r"JobV3 job can only be used with v0.3.0 of the Superstaq API."
-    ):
-        css.JobV3(client, uuid.UUID(int=0))  # type: ignore [arg-type]
-
-
 def test_cancel(job: css.Job, multi_circuit_job: css.Job) -> None:
     with mock.patch("requests.Session.post", return_value=mock.MagicMock(ok=True)) as mock_post:
         job.cancel()
         new_job().cancel()
         multi_circuit_job.cancel(index=2)
         assert mock_post.call_count == 3
-
-
-@mock.patch("requests.Session.put")
-def test_cancelV3(mock_put: mock.MagicMock, jobV3: css.JobV3) -> None:
-    mock_put.return_value.json.return_value = {"succeeded": ["circuit"], "message": "message"}
-    jobV3.cancel()
-    new_jobV3().cancel()
-    assert mock_put.call_count == 2
 
 
 def test_job_fields(job: css.Job, job_dict: dict[str, object]) -> None:
@@ -251,28 +231,6 @@ def test_job_fields(job: css.Job, job_dict: dict[str, object]) -> None:
         mocked_get_job.assert_called_once()  # Only refreshed once
 
 
-@mock.patch("requests.Session.get")
-def test_job_fieldsV3(
-    mock_get: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
-) -> None:
-    circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
-    job_result = modifiy_job_result(
-        job_dictV3,
-        compiled_circuits=[css.serialize_circuits(circuit)],
-    )
-
-    mock_get.return_value.json.return_value = {str(uuid.UUID(int=42)): job_result}
-
-    assert jobV3.job_id() == uuid.UUID(int=42)
-    assert jobV3.target() == "ss_unconstrained_simulator"
-    assert jobV3.num_qubits(index=0) == 2
-    assert jobV3.repetitions() == 1
-    assert jobV3.compiled_circuits(index=0) == circuit
-    assert jobV3.metadata["foo"] == "bar"
-    assert jobV3.tags == ["some", "tags"]
-    mock_get.assert_called_once()  # Only refreshed once
-
-
 def test_target(job: css.Job, job_dict: dict[str, object]) -> None:
     # The first call will trigger a refresh:
     with patched_requests({"job_id": job_dict}) as mocked_get_job:
@@ -281,17 +239,6 @@ def test_target(job: css.Job, job_dict: dict[str, object]) -> None:
 
     # Shouldn't need to retrieve anything now that `job._job` is populated:
     assert job.target() == "ss_unconstrained_simulator"
-
-
-@mock.patch("requests.Session.get")
-def test_targetV3(mock_get: mock.MagicMock, jobV3: css.Job, job_dictV3: dict[str, object]) -> None:
-    mock_get.return_value.json.return_value = {str(uuid.UUID(int=42)): job_dictV3}
-    assert jobV3.target() == "ss_unconstrained_simulator"
-    assert mock_get.call_count == 1
-
-    # Shouldn't need to retrieve anything now that `job._job_data` is populated:
-    assert jobV3.target() == "ss_unconstrained_simulator"
-    assert mock_get.call_count == 1
 
 
 def test_num_qubits(job: css.Job, job_dict: dict[str, object]) -> None:
@@ -327,19 +274,6 @@ def test_repetitions(job: css.Job, job_dict: dict[str, object]) -> None:
 
     # Shouldn't need to retrieve anything now that `job._job` is populated:
     assert job.repetitions() == 1
-
-
-@mock.patch("requests.Session.get")
-def test_repetitionsV3(
-    mock_get: mock.MagicMock, jobV3: css.Job, job_dictV3: dict[str, object]
-) -> None:
-    mock_get.return_value.json.return_value = {str(uuid.UUID(int=42)): job_dictV3}
-    assert jobV3.repetitions() == 1
-    assert mock_get.call_count == 1
-
-    # Shouldn't need to retrieve anything now that `job._job_data` is populated:
-    assert jobV3.repetitions() == 1
-    assert mock_get.call_count == 1
 
 
 def test_get_circuit(job: css.Job) -> None:
@@ -610,6 +544,48 @@ def test_input_circuitV3(
     assert jobV3.input_circuits(index=0) == input_circuit
 
 
+@mock.patch("requests.Session.get")
+def test_logical_to_physicals(
+    mock_get: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
+) -> None:
+    job_result = modifiy_job_result(
+        job_dictV3,
+        num_circuits=2,
+        logical_qubits=[cirq.to_json(cirq.LineQubit.range(2))] * 2,
+        physical_qubits=[cirq.to_json(cirq.GridQubit.rect(2, 1))] * 2,
+        initial_logical_to_physicals=[{0: 0, 1: 1}, {0: 1, 1: 0}],
+        final_logical_to_physicals=[{0: 1, 1: 0}, {0: 0, 1: 1}],
+    )
+    mock_get.return_value.json.return_value = {str(uuid.UUID(int=42)): job_result}
+
+    assert jobV3.initial_logical_to_physical(0) == {
+        cirq.q(0): cirq.q(0, 0),
+        cirq.q(1): cirq.q(1, 0),
+    }
+    assert jobV3.initial_logical_to_physical(1) == {
+        cirq.q(0): cirq.q(1, 0),
+        cirq.q(1): cirq.q(0, 0),
+    }
+    assert jobV3.initial_logical_to_physical() == [
+        {cirq.q(0): cirq.q(0, 0), cirq.q(1): cirq.q(1, 0)},
+        {cirq.q(0): cirq.q(1, 0), cirq.q(1): cirq.q(0, 0)},
+    ]
+    assert jobV3.final_logical_to_physical(0) == {
+        cirq.q(0): cirq.q(1, 0),
+        cirq.q(1): cirq.q(0, 0),
+    }
+    assert jobV3.final_logical_to_physical(1) == {
+        cirq.q(0): cirq.q(0, 0),
+        cirq.q(1): cirq.q(1, 0),
+    }
+    assert jobV3.final_logical_to_physical() == [
+        {cirq.q(0): cirq.q(1, 0), cirq.q(1): cirq.q(0, 0)},
+        {cirq.q(0): cirq.q(0, 0), cirq.q(1): cirq.q(1, 0)},
+    ]
+
+    mock_get.assert_called_once()
+
+
 def test_job_status_refresh() -> None:
     completed_job_dict = {"new_job_id": {"status": "Done"}}
 
@@ -634,54 +610,10 @@ def test_job_status_refresh() -> None:
             assert mocked_request.call_args.kwargs["json"] == {"job_ids": ["new_job_id"]}
 
 
-def test_job_status_refreshV3(job_dictV3: dict[str, object]) -> None:
-    mock_complete_response = mock.MagicMock()
-    mock_complete_response.json.return_value = {str(uuid.UUID(int=43)): job_dictV3}
-    for status in gss.models.CircuitStatus:
-        if status not in gss.models.TERMINAL_CIRCUIT_STATES:
-            incomplete_dict = modifiy_job_result(job_dictV3, statuses=[status.value])
-            mock_incomplete_response = mock.MagicMock()
-            mock_incomplete_response.json.return_value = {str(uuid.UUID(int=43)): incomplete_dict}
-            with mock.patch(
-                "requests.Session.get",
-                side_effect=[mock_incomplete_response, mock_complete_response],
-            ) as mock_get:
-                job = new_jobV3()
-                assert job.status() == status
-                assert job.status() == "completed"
-                assert mock_get.call_count == 2
-                assert (
-                    mock_get.call_args[0][0]
-                    == f"http://example.com/v0.3.0/client/job/cirq?job_id={uuid.UUID(int=43)}"
-                )
-
-    for status in gss.models.TERMINAL_CIRCUIT_STATES:
-        result_dict = modifiy_job_result(job_dictV3, statuses=[status.value])
-        with mock.patch(
-            "requests.Session.get",
-        ) as mock_get:
-            mock_get.return_value.json.return_value = {str(uuid.UUID(int=43)): result_dict}
-            job = new_jobV3()
-            assert job.status() == status
-            assert job.status() == status
-            mock_get.assert_called_once()
-            assert (
-                mock_get.call_args[0][0]
-                == f"http://example.com/v0.3.0/client/job/cirq?job_id={uuid.UUID(int=43)}"
-            )
-
-
 def test_value_equality(job: css.Job) -> None:
     eq = cirq.testing.EqualsTester()
     eq.add_equality_group(job, job)
     eq.add_equality_group(new_job())
-
-
-def test_value_equalityV3(jobV3: css.JobV3, job_dictV3: dict[str, object]) -> None:
-    eq = cirq.testing.EqualsTester()
-    eq.add_equality_group(new_jobV3(), new_jobV3())
-    jobV3._job_data = gss.models.JobData(**job_dictV3)
-    eq.add_equality_group(jobV3, jobV3)
 
 
 def test_job_str_repr_eq(job: css.Job) -> None:
@@ -709,22 +641,6 @@ def test_job_to_dict(job: css.Job, job_dict: dict[str, object]) -> None:
 
 
 @mock.patch("requests.Session.get")
-def test_job_to_dictV3(
-    mock_get: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
-) -> None:
-    mock_get.return_value.json.return_value = {str(uuid.UUID(int=42)): job_dictV3}
-    assert jobV3.to_dict() == job_dictV3
-
-
-def test_job_counts(job: css.Job, job_dict: dict[str, object]) -> None:
-    job_result = modifiy_job_result(job_dict, data={"histogram": {"10": 1}}, samples={"10": 1})
-    with patched_requests({"job_id": job_result}):
-        assert job.counts(index=0) == {"10": 1}
-        assert job.counts(index=0, qubit_indices=[0]) == ({"1": 1})
-        assert job.counts() == [{"10": 1}]
-
-
-@mock.patch("requests.Session.get")
 def test_job_countsV3(
     mock_get: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
 ) -> None:
@@ -733,6 +649,7 @@ def test_job_countsV3(
     assert jobV3.counts(index=0) == {"10": 1}
     assert jobV3.counts(index=0, qubit_indices=[0]) == ({"1": 1})
     assert jobV3.counts() == [{"10": 1}]
+    assert jobV3.repetitions() == 1
 
 
 def test_job_counts_failed(job: css.Job, job_dict: dict[str, object]) -> None:
@@ -750,6 +667,7 @@ def test_job_counts_failedV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obj
         num_circuits=2,
         statuses=["failed", "failed"],
         status_messages=["too many qubits", "server error"],
+        counts=[None, None],
     )
     job = new_jobV3()
     mock_get.return_value.json.return_value = {str(job._job_id): job_result}
@@ -764,18 +682,23 @@ def test_job_counts_failedV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obj
         _ = job.counts(index=0)
     assert job.status() == "failed"
 
-    job_result = modifiy_job_result(job_dictV3, counts=[None])
+    job_result = modifiy_job_result(
+        job_dictV3,
+        num_circuits=3,
+        statuses=["completed", "completed", "completed"],
+        counts=[{}, None, None],
+    )
     job = new_jobV3()
     mock_get.return_value.json.return_value = {str(job._job_id): job_result}
     with pytest.raises(
-        gss.SuperstaqException, match=f"Job {job._job_id} does not have counts for all circuits."
+        gss.SuperstaqException, match=f"Circuit 1 of job {job._job_id} does not have any counts."
     ):
         job.counts()
 
     with pytest.raises(
-        gss.SuperstaqException, match=f"Circuit 0 of job {job._job_id} does not have any counts."
+        gss.SuperstaqException, match=f"Circuit 2 of job {job._job_id} does not have any counts."
     ):
-        job.counts(index=0)
+        job.counts(index=2)
 
 
 @mock.patch("time.sleep", return_value=None)
@@ -910,22 +833,6 @@ def test_multijob_overall_status(multi_circuit_job: css.Job) -> None:
         assert multi_circuit_job.status() == "Running"
 
 
-@mock.patch("requests.Session.get")
-def test_multijobv3_overall_status(
-    mock_get: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
-) -> None:
-    job_result = modifiy_job_result(
-        job_dictV3,
-        num_circuits=4,
-        statuses=["running", "pending", "pending", "completed"],
-    )
-    mock_get.return_value.json.return_value = {str(uuid.UUID(int=42)): job_result}
-
-    # Test "running" status dominates as the overall status
-    assert jobV3.status() == "running"
-    assert jobV3.status(index=3) == "completed"
-
-
 def test_job_getitem(multi_circuit_job: css.Job) -> None:
     job_1 = multi_circuit_job[0]
     assert isinstance(job_1, css.Job)
@@ -937,16 +844,3 @@ def test_get_marginal_counts() -> None:
     counts_dict = {"10": 50, "11": 50}
     indices = [0]
     assert css.job._get_marginal_counts(counts_dict, indices) == ({"1": 100})
-
-
-def test_get_itemV3() -> None:
-    with pytest.raises(NotImplementedError):
-        new_jobV3().__getitem__(0)
-
-
-def test_job_data_failureV3(jobV3: css.JobV3) -> None:
-    with (
-        mock.patch.object(jobV3, "_refresh_job", return_value=None),
-        pytest.raises(AttributeError, match=r"Job data has not been fetched yet"),
-    ):
-        _ = jobV3.job_data

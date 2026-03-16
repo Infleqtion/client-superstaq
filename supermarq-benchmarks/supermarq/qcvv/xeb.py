@@ -47,7 +47,7 @@ if TYPE_CHECKING:
     import numpy.typing as npt
 
 
-@dataclass
+@dataclass(repr=False)
 class XEBResults(QCVVResults):
     """Results from an XEB experiment."""
 
@@ -229,11 +229,11 @@ class XEBResults(QCVVResults):
 
         return fig
 
-    def print_results(self) -> None:
+    def _results_msg(self) -> str:
         """Prints the key results data."""
-        print(  # noqa: T201
-            f"Estimated cycle fidelity: {self.cycle_fidelity_estimate:.5} "
-            f"+/- {self.cycle_fidelity_estimate_std:.5}"
+        return (
+            f"Estimated cycle fidelity: {self.cycle_fidelity_estimate:.6} "
+            f"+/- {self.cycle_fidelity_estimate_std:.6}"
         )
 
     def plot_speckle(self, filename: str | None = None) -> plt.Figure:
@@ -354,7 +354,7 @@ class XEBResults(QCVVResults):
         )
 
         if filename is not None:
-            fig.savefig(filename, bbox_inches="tight")
+            fig.savefig(filename)
 
         return fig
 
@@ -453,6 +453,12 @@ class XEB(QCVVExperiment[XEBResults]):
             results_cls=XEBResults,
             _samples=_samples,
             **kwargs,
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"XEB(interleaved_layer={self.interleaved_layer}, num_qubits={self.num_qubits}, "
+            f"num_samples={len(self.samples)})"
         )
 
     def independent_qubit_groups(self) -> list[tuple[cirq.Qid, ...]]:

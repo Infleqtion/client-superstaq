@@ -61,7 +61,7 @@ def decay(x: float, single_qubit_noise: float, two_qubit_gate_fidelity: float) -
     return 3 / 4 * (1 - single_qubit_noise) * two_qubit_gate_fidelity**x + 0.25
 
 
-@dataclass
+@dataclass(repr=False)
 class SU2Results(QCVVResults):
     """Data structure for the SU2 experiment results."""
 
@@ -191,13 +191,13 @@ class SU2Results(QCVVResults):
         self._single_qubit_noise = fit[0][0]
         self._single_qubit_noise_std = np.sqrt(fit[1][0, 0])
 
-    def print_results(self) -> None:
+    def _results_msg(self) -> str:
         """Prints the key results data."""
-        print(  # noqa: T201
-            f"Estimated two qubit gate fidelity: {self.two_qubit_gate_fidelity:.5} "
-            f"+/- {self.two_qubit_gate_error_std:.5}\n"
-            f"Estimated single qubit noise: {self.single_qubit_noise:.5} "
-            f"+/- {self.single_qubit_noise_std:.5}\n"
+        return (
+            f"Estimated two qubit gate fidelity: {self.two_qubit_gate_fidelity:.6} "
+            f"+/- {self.two_qubit_gate_error_std:.6}, "
+            f"Estimated single qubit noise: {self.single_qubit_noise:.6} "
+            f"+/- {self.single_qubit_noise_std:.6}"
         )
 
 
@@ -264,6 +264,12 @@ class SU2(QCVVExperiment[SU2Results]):
             results_cls=SU2Results,
             _samples=_samples,
             **kwargs,
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"SU2(two_qubit_gate={self.two_qubit_gate}, num_qubits={self.num_qubits}, "
+            f"num_samples={len(self.samples)})"
         )
 
     def _build_circuits(

@@ -19,6 +19,7 @@ import uuid
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
+import general_superstaq as gss
 import pytest
 import qiskit
 
@@ -67,7 +68,9 @@ def test_runV3(fake_superstaq_providerV3: MockSuperstaqProvider) -> None:
         return_value={"job_id": uuid.UUID(int=42), "num_circuits": 1},
     ):
         answer = backend.run(circuits=qc, shots=1000)
-        expected = qss.SuperstaqJobV3(backend, uuid.UUID(int=42))
+        client = fake_superstaq_providerV3._client
+        assert isinstance(client, gss.superstaq_client._SuperstaqClientV3)
+        expected = qss.SuperstaqJobV3(client, uuid.UUID(int=42))
         assert answer == expected
 
     with pytest.raises(ValueError, match=r"Circuit has no measurements to sample"):
