@@ -18,16 +18,16 @@ jobs:
             matrix:
                 include:
                     - type: "qiskit-superstaq"
-                      dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq[examples] -e ./cirq-superstaq"
+                      dependencies: "./checks-superstaq ./qiskit-superstaq"
                       group: 1
                     - type: "cirq-superstaq"
-                      dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq"
+                      dependencies: "./checks-superstaq ./qiskit-superstaq ./cirq-superstaq"
                       group: 1
                     - type: "qiskit-superstaq"
-                      dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq[examples] -e ./cirq-superstaq"
+                      dependencies: "./checks-superstaq ./qiskit-superstaq"
                       group: 2
                     - type: "cirq-superstaq"
-                      dependencies: "-e ./checks-superstaq -e ./general-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq"
+                      dependencies: "./checks-superstaq ./qiskit-superstaq ./cirq-superstaq"
                       group: 2
         timeout-minutes: 15
         steps:
@@ -39,8 +39,8 @@ jobs:
             - name: Install dependencies
               run: |
                   python -m pip install --upgrade pip
-                  python -m pip install ./checks-superstaq ./general-superstaq[dev] ./qiskit-superstaq[dev] ./cirq-superstaq[dev]
-            - name: Pytest integration check (group ${{ matrix.group }} of 4)
+                  python -m pip install ${{ matrix.dependencies }}
+            - name: Pytest integration check (group ${{ matrix.group }} of 2)
               run: |
                   checks/pytest_.py --integration --splits=2 --group=${{ matrix.group }} -v ${{ matrix.type }}
             - name: Create issue if integration check failed
