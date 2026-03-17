@@ -19,20 +19,16 @@ jobs:
                     - type: "qiskit-superstaq"
                       dependencies: "./checks-superstaq ./qiskit-superstaq"
                       group: 1
-                      display_name: "qss (1 of 2)"
                     - type: "cirq-superstaq"
                       dependencies: "./checks-superstaq ./qiskit-superstaq ./cirq-superstaq"
                       group: 1
-                      display_name: "css (1 of 2)"
                     - type: "qiskit-superstaq"
                       dependencies: "./checks-superstaq ./qiskit-superstaq"
                       group: 2
-                      display_name: "qss (2 of 2)"
                     - type: "cirq-superstaq"
                       dependencies: "./checks-superstaq ./qiskit-superstaq ./cirq-superstaq"
                       group: 2
-                      display_name: "css (2 of 2)"
-        name: Pytest integration check (${{ matrix.display_name }})
+        name: Pytest integration check for ${{ matrix.type }} (${{ matrix.group }})
         timeout-minutes: 15
         steps:
             - uses: actions/checkout@v6
