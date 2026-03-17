@@ -7,7 +7,6 @@ on:
 
 jobs:
     daily-integration-check:
-        name: Pytest integration check
         env:
             SUPERSTAQ_API_KEY: ${{ secrets.SUPERSTAQ_API_KEY }}
             TEST_USER_IBMQ_TOKEN: ${{ secrets.TEST_USER_IBMQ_TOKEN }}
@@ -20,15 +19,20 @@ jobs:
                     - type: "qiskit-superstaq"
                       dependencies: "./checks-superstaq ./qiskit-superstaq"
                       group: 1
+                      display_name: "qss (1 of 2)"
                     - type: "cirq-superstaq"
                       dependencies: "./checks-superstaq ./qiskit-superstaq ./cirq-superstaq"
                       group: 1
+                      display_name: "css (1 of 2)"
                     - type: "qiskit-superstaq"
                       dependencies: "./checks-superstaq ./qiskit-superstaq"
                       group: 2
+                      display_name: "qss (2 of 2)"
                     - type: "cirq-superstaq"
                       dependencies: "./checks-superstaq ./qiskit-superstaq ./cirq-superstaq"
                       group: 2
+                      display_name: "css (2 of 2)"
+        name: Pytest integration check (${{ matrix.display_name }})
         timeout-minutes: 15
         steps:
             - uses: actions/checkout@v6
