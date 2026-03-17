@@ -526,8 +526,8 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         self,
         num_circuits: int,
         cycle_depths: Iterable[int],
-        interleaved_gate: cirq.Gate | None = cirq.Z,
-        qubits: int | Sequence[cirq.Qid] = 1,
+        interleaved_gate: cirq.Gate | cirq.Operation | None = cirq.Z,
+        qubits: int | Sequence[cirq.Qid] | None = None,
         clifford_op_gateset: cirq.CompilationTargetGateset = cirq.CZTargetGateset(),
         *,
         random_seed: int | np.random.Generator | None = None,
@@ -549,30 +549,19 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             random_seed: An optional seed to use for randomization.
             kwargs: Any other supported string keyword args.
         """
-        if not isinstance(qubits, Sequence):
-            if isinstance(interleaved_gate, cirq.Gate):
-                qubits = cirq.LineQubit.range(interleaved_gate.num_qubits())
-            elif isinstance(interleaved_gate, cirq.Operation):
-                qubits = interleaved_gate.qubits
-                interleaved_gate = interleaved_gate.gate
-            else:
-                qubits = cirq.LineQubit.range(qubits)
+        qubits = self._assign_qubits(interleaved_gate, qubits)
 
         if len(qubits) not in [1, 2]:
             raise NotImplementedError(
-                "IRB experiment is currently only implemented for single or two qubit use."
+                "IRB experiment is currently only implemented for single or two qubit gates."
             )
 
         if interleaved_gate is not None:
+            if isinstance(interleaved_gate, cirq.Operation):
+                interleaved_gate = interleaved_gate.gate
             if not cirq.has_stabilizer_effect(interleaved_gate):
                 raise ValueError("The interleaved gate must be a Clifford gate.")
             self.interleaved_gate: cirq.Gate | None = interleaved_gate
-
-            if len(qubits) != interleaved_gate.num_qubits():
-                raise ValueError(
-                    "The number of targeted qubits must match the number of qubits interleaved_gate"
-                    " is acting on."
-                )
         else:
             self.interleaved_gate = None
 
@@ -605,6 +594,37 @@ class IRB(QCVVExperiment[_RBResultsBase]):
             f"IRB(interleaved_gate={''.join(gates)}, num_qubits={self.num_qubits}, "
             f"num_samples={len(self.samples)})"
         )
+
+    def _assign_qubits(
+        self,
+        interleaved_gate: cirq.Gate | cirq.Operation | None = None,
+        qubits: int | Sequence[cirq.Qid] | None = None,
+    ) -> Sequence[cirq.Qid]:
+        if qubits is None:
+            if interleaved_gate is None:
+                raise ValueError("Please provide either interleaved_gate or qubits.")
+            if isinstance(interleaved_gate, cirq.Gate):
+                return cirq.LineQubit.range(interleaved_gate.num_qubits())
+            return interleaved_gate.qubits
+
+        if isinstance(qubits, int):
+            if interleaved_gate is not None and interleaved_gate._num_qubits_() != qubits:
+                raise ValueError(
+                    "The number of qubits must match the number of qubits interleaved_gate is "
+                    "acting on."
+                )
+            return cirq.LineQubit.range(qubits)
+
+        if interleaved_gate is not None and interleaved_gate._num_qubits_() != len(qubits):
+            raise ValueError(
+                "The length of targeted qubits must match the number of qubits interleaved_gate"
+                " is acting on."
+            )
+        if isinstance(interleaved_gate, cirq.Operation) and set(interleaved_gate.qubits) != set(
+            qubits
+        ):
+            raise ValueError("The qubits provided do not match inteleaved_gate's qubits")
+        return qubits
 
     def _clifford_gate_to_circuit(
         self,

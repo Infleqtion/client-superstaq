@@ -249,12 +249,8 @@ class SU2(QCVVExperiment[SU2Results]):
 
         if qubits is None:
             qubits = cirq.LineQubit.range(2)
-        else:
-            if len(qubits) != 2:
-                raise ValueError(
-                    "SU2 benchmarking is currently only implemented for 2 qubits gates."
-                )
-            qubits = qubits
+        elif len(qubits) != 2:
+            raise ValueError("SU2 benchmarking is currently only implemented for 2 qubits gates.")
 
         super().__init__(
             qubits=qubits,

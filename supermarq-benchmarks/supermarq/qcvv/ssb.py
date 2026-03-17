@@ -203,10 +203,8 @@ class SSB(QCVVExperiment[SSBResults]):
         """
         if qubits is None:
             qubits = cirq.LineQubit.range(2)
-        else:
-            if len(qubits) != 2:
-                raise ValueError("SSB benchmarking is only designed for 2 qubits.")
-            qubits = qubits
+        elif len(qubits) != 2:
+            raise ValueError("SSB benchmarking is only designed for 2 qubits.")
 
         # Moments containing parallel rotations.
         X = css.ParallelRGate(np.pi / 2, 0.0, 2)
