@@ -48,8 +48,6 @@ jobs:
               uses: JasonEtco/create-an-issue@v2
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  TEST_USER_IBMQ_TOKEN: ${{ secrets.TEST_USER_IBMQ_TOKEN }}
-                  TEST_USER_IBMQ_INSTANCE: ${{ secrets.TEST_USER_IBMQ_INSTANCE }}
               with:
                   filename: .github/integration-check-failure-issue.md
                   update_existing: true
