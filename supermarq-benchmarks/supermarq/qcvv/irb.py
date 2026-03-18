@@ -607,20 +607,20 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                 return cirq.LineQubit.range(interleaved_gate.num_qubits())
             return interleaved_gate.qubits
 
-        if isinstance(qubits, int):
-            if interleaved_gate is not None and interleaved_gate._num_qubits_() != qubits:
+        if isinstance(qubits, numbers.Integral):
+            if interleaved_gate is not None and cirq.num_qubits(interleaved_gate) != qubits:
                 raise ValueError(
                     "The number of qubits must match the number of qubits interleaved_gate is "
                     "acting on."
                 )
             return cirq.LineQubit.range(qubits)
 
-        if interleaved_gate is not None and interleaved_gate._num_qubits_() != len(qubits):
+        if interleaved_gate is not None and cirq.num_qubits(interleaved_gate) != len(qubits):
             raise ValueError(
                 "The length of targeted qubits must match the number of qubits interleaved_gate"
                 " is acting on."
             )
-        if isinstance(interleaved_gate, cirq.Operation) and set(interleaved_gate.qubits) != set(
+        if isinstance(interleaved_gate, cirq.Operation) and list(interleaved_gate.qubits) != list(
             qubits
         ):
             raise ValueError("The qubits provided do not match inteleaved_gate's qubits")
