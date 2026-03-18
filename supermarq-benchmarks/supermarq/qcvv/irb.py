@@ -30,6 +30,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+import numbers
 from typing import TYPE_CHECKING, Any
 
 import cirq
