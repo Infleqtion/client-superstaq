@@ -9,6 +9,7 @@ pydantic>=1.10.7
 pytest>=6.2.5
 pytest-randomly>=3.10.1
 pytest-socket>=0.7.0
+pytest-split>=0.10.0
 pytest-xdist>=3.4.0
 ruff>=0.13.0
 setuptools>=67.0.0
