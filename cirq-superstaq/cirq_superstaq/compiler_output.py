@@ -331,7 +331,7 @@ def read_json_qscout(
         json_dict: A JSON dictionary matching the format returned by qscout_compile endpoint.
         circuits_is_list: A bool flag that controls whether the returned object has a .circuits
             attribute (if `True`) or a .circuit attribute (`False`).
-        num_eca_circuits: Number of logically equivalent random circuits to generate for each
+        num_eca_circuits: Optional number of logically equivalent random circuits to generate for each.
             input circuit.
 
     Returns:
