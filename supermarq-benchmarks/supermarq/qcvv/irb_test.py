@@ -44,13 +44,13 @@ from supermarq.qcvv.irb import IRB, IRBResults, RBResults
 
 @pytest.fixture
 def irb() -> IRB:
-    return IRB(num_circuits=10, cycle_depths=[1, 3, 5])
+    return IRB(num_circuits=10, cycle_depths=[1, 3, 5], qubits=1)
 
 
 def test_irb_init() -> None:
     q0, q1, q2 = cirq.LineQubit.range(3)
 
-    experiment = IRB(num_circuits=10, cycle_depths=[1, 3, 5])
+    experiment = IRB(num_circuits=10, cycle_depths=[1, 3, 5], qubits=1)
     assert experiment.num_qubits == 1
     assert experiment.qubits == (q0,)
     assert experiment.interleaved_gate == cirq.Z
@@ -87,6 +87,7 @@ def test_irb_init() -> None:
         num_circuits=10,
         cycle_depths=[1, 3, 5],
         interleaved_gate=None,
+        qubits=1,
         clifford_op_gateset=cirq.SqrtIswapTargetGateset(),
     )
     assert experiment.num_qubits == 1
@@ -105,6 +106,18 @@ def test_irb_bad_init() -> None:
             num_circuits=10,
             cycle_depths=[1, 3, 5],
         )
+
+    with pytest.raises(ValueError, match=r"Please provide either interleaved_gate or qubits"):
+        IRB(1, [2], interleaved_gate=None)
+
+    with pytest.raises(ValueError, match=r"The number of qubits must match"):
+        IRB(1, [2], cirq.CX, qubits=1)
+
+    with pytest.raises(ValueError, match=r"The length of targeted qubits must match"):
+        IRB(1, [2], cirq.CX, qubits=[cirq.GridQubit(0, 0)])
+
+    with pytest.raises(ValueError, match=r"The qubits provided do not match"):
+        IRB(1, [2], cirq.X(cirq.GridQubit(0, 1)), qubits=[cirq.GridQubit(0, 0)])
 
     with pytest.raises(ValueError, match=r"must be a Clifford"):
         IRB(1, [2], interleaved_gate=cirq.T)
@@ -306,7 +319,7 @@ def test_irb_build_circuit() -> None:
 
 def test_analyse_results() -> None:
     irb_results = IRBResults(
-        target="example", experiment=IRB(num_circuits=1, cycle_depths=[1, 2, 5, 10])
+        target="example", experiment=IRB(num_circuits=1, cycle_depths=[1, 2, 5, 10], qubits=1)
     )
     # Noise added to allow estimate of covariance (otherwise scipy errors)
     irb_results.data = pd.DataFrame(
@@ -386,7 +399,7 @@ def test_analyse_results() -> None:
 def test_analyse_results_rb() -> None:
     rb_results = RBResults(
         target="example",
-        experiment=IRB(interleaved_gate=None, num_circuits=1, cycle_depths=[1, 3, 5, 10]),
+        experiment=IRB(interleaved_gate=None, qubits=1, num_circuits=1, cycle_depths=[1, 3, 5, 10]),
     )
     # Noise added to allow estimate of covariance (otherwise scipy errors)
 
@@ -504,7 +517,7 @@ def test_analyse_results_plot_saving(tmp_path: pathlib.Path) -> None:
 def test_analyse_results_rb_plot_saving(tmp_path: pathlib.Path) -> None:
     rb_results = RBResults(
         target="example",
-        experiment=IRB(interleaved_gate=None, num_circuits=1, cycle_depths=[1, 3, 5, 10]),
+        experiment=IRB(interleaved_gate=None, qubits=1, num_circuits=1, cycle_depths=[1, 3, 5, 10]),
     )
     # Noise added to allow estimate of covariance (otherwise scipy errors)
 
@@ -644,10 +657,10 @@ def test_repr_irb(irb: IRB) -> None:
 
 
 def test_repr_rb() -> None:
-    rb = IRB(interleaved_gate=None, num_circuits=1, cycle_depths=[1, 3, 5, 10])
+    rb = IRB(interleaved_gate=None, qubits=1, num_circuits=1, cycle_depths=[1, 3, 5, 10])
     results = RBResults(
         target="example",
-        experiment=IRB(interleaved_gate=None, num_circuits=1, cycle_depths=[1, 3, 5, 10]),
+        experiment=IRB(interleaved_gate=None, qubits=1, num_circuits=1, cycle_depths=[1, 3, 5, 10]),
     )
     assert rb.__repr__() == "RB(num_qubits=1, num_samples=4)"
 
