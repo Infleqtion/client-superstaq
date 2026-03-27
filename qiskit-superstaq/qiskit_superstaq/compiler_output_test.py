@@ -358,6 +358,21 @@ def test_read_json_qscout() -> None:
         measure_all
         """
     )
+    jaqal_program_as_subcircuits = textwrap.dedent(
+        """\
+        register allqubits[1]
+
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        Rz allqubits[0] -3.141592653589793
+        measure_all
+
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        Rz allqubits[0] -3.141592653589793
+        measure_all
+        """
+    )
 
     json_dict: dict[str, str | list[str]] = {
         "qiskit_circuits": qss.serialization.serialize_circuits(circuit),
@@ -384,21 +399,21 @@ def test_read_json_qscout() -> None:
     assert out.initial_logical_to_physicals == [{0: 1}, {0: 1}]
     assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
     assert out.jaqal_programs == [jaqal_program, jaqal_program]
-    assert out.jaqal_program == textwrap.dedent(
-        """\
-        register allqubits[1]
+    assert out.jaqal_program == jaqal_program_as_subcircuits
 
-        prepare_all
-        R allqubits[0] -1.5707963267948966 1.5707963267948966
-        Rz allqubits[0] -3.141592653589793
-        measure_all
+    out = qss.compiler_output.read_json_qscout(json_dict, circuits_is_list=True, num_eca_circuits=1)
+    assert out.circuits == [[circuit], [circuit]]
+    assert out.initial_logical_to_physicals == [[{0: 1}], [{0: 1}]]
+    assert out.final_logical_to_physicals == [[{0: 13}], [{0: 13}]]
+    assert out.jaqal_programs == [jaqal_program, jaqal_program]
 
-        prepare_all
-        R allqubits[0] -1.5707963267948966 1.5707963267948966
-        Rz allqubits[0] -3.141592653589793
-        measure_all
-        """
+    out = qss.compiler_output.read_json_qscout(
+        json_dict, circuits_is_list=False, num_eca_circuits=2
     )
+    assert out.circuits == [circuit, circuit]
+    assert out.initial_logical_to_physicals == [{0: 1}, {0: 1}]
+    assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
+    assert out.jaqal_programs == [jaqal_program_as_subcircuits]
 
 
 def test_compiler_output_eq() -> None:
