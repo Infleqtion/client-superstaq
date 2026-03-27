@@ -28,9 +28,9 @@
 
 from __future__ import annotations
 
+import numbers
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-import numbers
 from typing import TYPE_CHECKING, Any
 
 import cirq
@@ -615,6 +615,9 @@ class IRB(QCVVExperiment[_RBResultsBase]):
                     "acting on."
                 )
             return cirq.LineQubit.range(qubits)
+
+        # Error if qubits is not sequence (for benefit of type checker)
+        assert isinstance(qubits, Sequence)
 
         if interleaved_gate is not None and cirq.num_qubits(interleaved_gate) != len(qubits):
             raise ValueError(
