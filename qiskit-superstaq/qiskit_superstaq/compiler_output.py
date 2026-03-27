@@ -17,7 +17,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import warnings
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 import general_superstaq as gss
@@ -100,6 +100,13 @@ def classical_bit_mapping(circuit: qiskit.QuantumCircuit) -> dict[int, int]:
             )
 
     return {circuit.find_bit(c).index: circuit.find_bit(q).index for c, q in clbit_map.items()}
+
+
+def _jaqal_programs_to_subcircuits(jaqal_programs: Sequence[str]) -> str:
+    separator = "prepare_all"
+    subcircuits = [jaqal_programs[0]]
+    subcircuits += [jaqal_program.partition(separator)[2] for jaqal_program in jaqal_programs[1:]]
+    return f"\n{separator}".join(subcircuits)
 
 
 class CompilerOutput:  # noqa: PLW1641
@@ -204,10 +211,7 @@ class CompilerOutput:  # noqa: PLW1641
         if not self.jaqal_programs:
             return None
 
-        separator = "prepare_all"
-        subcircuits = [self.jaqal_programs[0]]
-        subcircuits += [program.partition(separator)[2] for program in self.jaqal_programs[1:]]
-        return f"\n{separator}".join(subcircuits)
+        return _jaqal_programs_to_subcircuits(self.jaqal_programs)
 
 
 def read_json(
@@ -365,8 +369,7 @@ def read_json_aqt(
 
 
 def read_json_qscout(
-    json_dict: dict[str, str | list[str]],
-    circuits_is_list: bool,
+    json_dict: dict[str, Any], circuits_is_list: bool, num_eca_circuits: int | None = None
 ) -> CompilerOutput:
     """Reads out the returned JSON from Superstaq API's QSCOUT compilation endpoint.
 
@@ -374,29 +377,49 @@ def read_json_qscout(
         json_dict: A JSON dictionary matching the format returned by /qscout_compile endpoint.
         circuits_is_list: Bool flag that controls whether the returned object has a .circuits
             attribute (if True) or a .circuit attribute (False).
+        num_eca_circuits: Number of logically equivalent random circuits to generate for each
+            input circuit.
 
     Returns:
         A `CompilerOutput` object with the compiled circuit(s) and a list of
         jaqal programs in a string representation.
     """
-    qiskit_circuits = json_dict["qiskit_circuits"]
-    jaqal_programs = json_dict["jaqal_programs"]
+    compiled_circuits: list[qiskit.QuantumCircuit] | list[list[qiskit.QuantumCircuit]]
+    compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
 
-    initial_logical_to_physicals_str = json_dict["initial_logical_to_physicals"]
-    assert isinstance(initial_logical_to_physicals_str, str)
-    initial_logical_to_physicals: list[dict[int, int]] = list(
-        map(dict, json.loads(initial_logical_to_physicals_str))
+    initial_logical_to_physicals_list: list[dict[int, int]] = list(
+        map(dict, json.loads(json_dict["initial_logical_to_physicals"]))
+    )
+    initial_logical_to_physicals: list[dict[int, int]] | list[list[dict[int, int]]] = (
+        initial_logical_to_physicals_list
     )
 
-    final_logical_to_physicals_str = json_dict["final_logical_to_physicals"]
-    assert isinstance(final_logical_to_physicals_str, str)
-    final_logical_to_physicals: list[dict[int, int]] = list(
-        map(dict, json.loads(final_logical_to_physicals_str))
+    final_logical_to_physicals_list: list[dict[int, int]] = list(
+        map(dict, json.loads(json_dict["final_logical_to_physicals"]))
+    )
+    final_logical_to_physicals: list[dict[int, int]] | list[list[dict[int, int]]] = (
+        final_logical_to_physicals_list
     )
 
-    assert isinstance(qiskit_circuits, str)
-    assert isinstance(jaqal_programs, list)
-    compiled_circuits = qss.serialization.deserialize_circuits(qiskit_circuits)
+    jaqal_programs: list[str] = json_dict["jaqal_programs"]
+
+    if num_eca_circuits:
+        compiled_circuits = [
+            compiled_circuits[i : i + num_eca_circuits]
+            for i in range(0, len(compiled_circuits), num_eca_circuits)
+        ]
+        initial_logical_to_physicals = [
+            initial_logical_to_physicals_list[i : i + num_eca_circuits]
+            for i in range(0, len(initial_logical_to_physicals_list), num_eca_circuits)
+        ]
+        final_logical_to_physicals = [
+            final_logical_to_physicals_list[i : i + num_eca_circuits]
+            for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
+        ]
+        jaqal_programs = [
+            _jaqal_programs_to_subcircuits(jaqal_programs[i : i + num_eca_circuits])
+            for i in range(0, len(jaqal_programs), num_eca_circuits)
+        ]
 
     if circuits_is_list:
         return CompilerOutput(
