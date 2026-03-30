@@ -226,9 +226,9 @@ class CBResults(QCVVResults):
         ax.set_xlabel("Pauli channel")
         ax.set_ylabel("Fidelity")
         ax.legend()
-    
+
     def _results_msg(self) -> str:
-        msg = (  # noqa: T201
+        msg = (
             "Cycle Benchmarking Results:\n"
             f"Estimated process fidelity: {self._process_fidelity_estimate:.5f}"
             f" +/- {self._process_fidelity_estimate_std:.5f}"
