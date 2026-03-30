@@ -26,8 +26,6 @@
 # that they have been altered from the originals.
 from __future__ import annotations
 
-import time
-import uuid
 from collections.abc import Sequence
 from typing import Any, overload
 
@@ -420,77 +418,10 @@ class SuperstaqJob(qiskit.providers.JobV1):
         return self._job_info
 
 
-class SuperstaqJobV3(qiskit.providers.JobV1):
+class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
     """This class represents a Superstaq job instance."""
 
-    def __init__(self, backend: qss.SuperstaqBackend, job_id: uuid.UUID | str) -> None:
-        """Initialize a job instance for v0.3.0 API.
-
-        Args:
-            backend: The `qss.SuperstaqBackend` that the job was created with.
-            job_id: The unique job ID string from Superstaq.
-        """
-        self._backend = backend
-        self._job_id = job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(job_id)
-        self._overall_status = gss.models.CircuitStatus.RECEIVED
-        self._job_info: gss.models.JobData | None = None
-
-    def __eq__(self, other: object) -> bool:
-        if not (isinstance(other, SuperstaqJobV3)):
-            return False
-
-        return self._job_id == other._job_id
-
-    def __hash__(self) -> int:
-        return hash(self._job_id)
-
-    @property
-    def job_info(self) -> gss.models.JobData:
-        if self._job_info is None:
-            self._refresh_job()
-        if self._job_info is None:
-            raise AttributeError("Job info has not been fetched yet. Run _refresh_job().")
-        return self._job_info
-
-    @property
-    def tags(self) -> list[str]:
-        """All tags associated with this job."""
-        return self.job_info.tags
-
-    @property
-    def metadata(self) -> dict[str, object]:
-        """Any metadata passed when creating this job."""
-        return self.job_info.metadata
-
-    def job_id(self) -> uuid.UUID:
-        """Returns the job's unique id."""
-        return self._job_id
-
-    def _wait_for_results(self, timeout: float, wait: float = 5) -> gss.models.JobData:
-        """Waits for the results till either the job is done or some error in the job occurs.
-
-        Args:
-            timeout: Time to wait for results. Defaults to None.
-            wait: Time to wait before checking again. Defaults to 5.
-
-        Returns:
-            Results from the job.
-        """
-        time_waited: float = 0.0
-        terminal_qiskit_statuses = [
-            qiskit.providers.jobstatus.JobStatus.ERROR,
-            qiskit.providers.jobstatus.JobStatus.DONE,
-            qiskit.providers.jobstatus.JobStatus.CANCELLED,
-        ]
-        while self.status() not in terminal_qiskit_statuses:
-            if time_waited > timeout:
-                raise TimeoutError(
-                    f"Timed out while waiting for results. Final status was '{self.status()}'"
-                )
-            time.sleep(wait)
-            time_waited += wait
-
-        return self.job_info
+    shots = gss.job.Job._repetitions
 
     def _arrange_counts(
         self, counts: dict[str, int], circ_meas_bit_indices: list[int], num_clbits: int
@@ -560,17 +491,20 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         """
         if index is not None:
             gss.validation.validate_integer_param(index, min_val=0)
-        timeout = timeout or self._backend._provider._client.max_retry_seconds
-        job_results = self._wait_for_results(timeout, wait)
+
+        self.wait_until_complete(index, timeout, wait)
+
+        # Check to see if unsuccessful
+        self._check_if_unsuccessful(index)
 
         # create list of result dictionaries
         results_list = []
         if index is None:
-            search_list = list(range(job_results.num_circuits))
+            search_list = list(range(self.job_data.num_circuits))
         else:
             search_list = [index]
         for i in search_list:
-            counts = job_results.counts[i]
+            counts = self.job_data.counts[i]
             if counts:
                 num_clbits = self._get_num_clbits(i)
                 circ_meas_bit_indices = self._get_clbit_indices(i)
@@ -583,9 +517,9 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
                     counts = qiskit.result.marginal_counts(counts, indices=qubit_indices)
             results_list.append(
                 {
-                    "success": job_results.statuses[i] == "completed",
-                    "status": job_results.statuses[i],
-                    "shots": job_results.shots[i],
+                    "success": self.job_data.statuses[i] == "completed",
+                    "status": self.job_data.statuses[i],
+                    "shots": self.job_data.shots[i],
                     "data": {"counts": counts},
                 }
             )
@@ -593,84 +527,13 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
             {
                 "results": results_list,
                 "qobj_id": -1,
-                "backend_name": self._backend.name,
+                "backend_name": self.target(),
                 "backend_version": "n/a",
                 "success": self._overall_status == "completed",
                 "status": self._overall_status,
                 "job_id": self._job_id,
             }
         )
-
-    def _check_if_stopped(self) -> None:
-        """Verifies that the job status is not in a cancelled or failed state and
-        raises an exception if it is.
-
-        Raises:
-            ~gss.SuperstaqUnsuccessfulJobException: If the job has been cancelled or
-                has failed.
-            ~gss.SuperstaqServerException: If unable to get the status of the job
-                from the API.
-        """
-        if self._overall_status in ("cancelled", "failed"):
-            raise gss.superstaq_exceptions.SuperstaqUnsuccessfulJobException(
-                str(self._job_id), self._overall_status.value
-            )
-
-    def cancel(self, index: int | None = None, **kwargs: object) -> None:
-        """Cancel the current job if it is not in a terminal state.
-
-        Args:
-            index: An optional index of the specific sub-job to cancel.
-            kwargs: Extra options needed to fetch jobs.
-
-        Raises:
-            ~gss.SuperstaqServerException: If unable to get the status of the job
-                from the API or cancellations were unsuccessful.
-        """
-        self._backend._provider._client.cancel_jobs([self._job_id], **kwargs)
-
-    def _refresh_job(self, index: int | None = None) -> None:
-        """Queries the server for an updated job result.
-
-        Args:
-            index: An optional index to check a specific sub-job.
-        """
-        if self._job_info is not None:
-            if all(s in gss.models.TERMINAL_CIRCUIT_STATES for s in self._job_info.statuses):
-                return
-        self._job_info = gss.models.JobData(
-            **self._backend._provider._client.fetch_jobs([self._job_id])[str(self._job_id)]
-        )
-
-        self._update_status_queue_info()
-
-    def _update_status_queue_info(self) -> None:
-        """Updates the overall status based on status queue info.
-
-        Note:
-            When we have multiple jobs, we will take the "worst status" among the jobs.
-            The worst status check follows the chain: Submitted -> Queued -> Running -> Failed
-            -> Cancelled -> Done. For example, if any of the jobs are still queued (even if
-            some are done), we report 'Queued' as the overall status of the entire batch.
-        """
-        status_occurrence = set(self.job_info.statuses)
-        status_priority_order = (
-            gss.models.CircuitStatus.RECEIVED,
-            gss.models.CircuitStatus.AWAITING_COMPILE,
-            gss.models.CircuitStatus.AWAITING_SUBMISSION,
-            gss.models.CircuitStatus.AWAITING_SIMULATION,
-            gss.models.CircuitStatus.PENDING,
-            gss.models.CircuitStatus.RUNNING,
-            gss.models.CircuitStatus.FAILED,
-            gss.models.CircuitStatus.CANCELLED,
-            gss.models.CircuitStatus.UNRECOGNIZED,
-            gss.models.CircuitStatus.COMPLETED,
-        )
-
-        for temp_status in status_priority_order:
-            if temp_status in status_occurrence:
-                self._overall_status = temp_status
-                return
 
     @overload
     def compiled_circuits(self, index: int) -> qiskit.QuantumCircuit: ...
@@ -690,28 +553,25 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
             A single compiled circuit or list of compiled circuits.
         """
         if index is None:
-            if all(c is None for c in self.job_info.compiled_circuits):
+            if all(c is None for c in self.job_data.compiled_circuits):
                 raise gss.SuperstaqException(f"The job {self._job_id} has no compiled circuits.")
 
-            if any(c is None for c in self.job_info.compiled_circuits):
+            if any(c is None for c in self.job_data.compiled_circuits):
                 raise gss.SuperstaqException(
                     "Some compiled circuits are missing. "
                     "This is likely because there was an error on the server. "
                     "Please check the individual circuit statuses and any status messages."
                 )
-        elif self.job_info.compiled_circuits[index] is None:
+
+            return [self.compiled_circuits(i) for i in range(self.job_data.num_circuits)]
+
+        serialized_circuit = self.job_data.compiled_circuits[index]
+        if serialized_circuit is None:
             raise gss.SuperstaqException(
                 f"Circuit {index} of job {self._job_id} does not have a compiled circuit."
             )
 
-        circuits = [
-            qss.deserialize_circuits(self.job_info.compiled_circuits[k])[0]  # type: ignore[arg-type]
-            for k in range(self.job_info.num_circuits)
-        ]
-
-        if index is None:
-            return circuits
-        return circuits[index]
+        return qss.deserialize_circuits(serialized_circuit)[0]
 
     @overload
     def input_circuits(self, index: int) -> qiskit.QuantumCircuit: ...
@@ -730,16 +590,68 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
         Returns:
             The input circuit or list of submitted input circuits.
         """
-        circuits = [
-            qss.deserialize_circuits(self.job_info.input_circuits[k])[0]
-            for k in range(self.job_info.num_circuits)
-        ]
-
         if index is None:
-            return circuits
-        return circuits[index]
+            return [self.input_circuits(i) for i in range(self.job_data.num_circuits)]
 
-    def status(self, index: int | None = None) -> qiskit.providers.jobstatus.JobStatus:
+        return qss.deserialize_circuits(self.job_data.input_circuits[index])[0]
+
+    @overload
+    def initial_logical_to_physical(self, index: None = None) -> list[dict[int, int]]: ...
+
+    @overload
+    def initial_logical_to_physical(self, index: int) -> dict[int, int]: ...
+
+    def initial_logical_to_physical(
+        self, index: int | None = None
+    ) -> dict[int, int] | list[dict[int, int]]:
+        """Mapping of logical qubits to physical qubits at the start of the circuit(s).
+
+        Here "logical" qubits refer to qubits in the input circuit, while "physical" refers to
+        those in the compiled circuits (and on the hardware itself).
+
+        Args:
+            index: An optional index of the specific circuit to retrieve.
+
+        Returns:
+            A single logical to physical map (if `index` is passed) or list of maps for all input
+            circuits.
+        """
+        if index is None:
+            return [self.initial_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
+
+        logical_to_physical = self.job_data.initial_logical_to_physicals[index]
+        assert logical_to_physical is not None
+        return logical_to_physical
+
+    @overload
+    def final_logical_to_physical(self, index: None = None) -> list[dict[int, int]]: ...
+
+    @overload
+    def final_logical_to_physical(self, index: int) -> dict[int, int]: ...
+
+    def final_logical_to_physical(
+        self, index: int | None = None
+    ) -> dict[int, int] | list[dict[int, int]]:
+        """Mapping of logical qubits to physical qubits at the end of the circuit(s).
+
+        Here "logical" refers to qubits in the submitted input circuit(s), while "physical" refers
+        to those in the compiled circuits (which correspond to those on the hardware itself).
+
+        Args:
+            index: An optional index of the specific circuit to retrieve.
+
+        Returns:
+            A single logical to physical map (if `index` is passed) or list of maps for all input
+            circuits.
+        """
+        if index is None:
+            return [self.final_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
+
+        logical_to_physical = self.job_data.final_logical_to_physicals[index]
+        assert logical_to_physical is not None
+        return logical_to_physical
+
+    def status(self, index: int | None = None) -> qiskit.providers.JobStatus:
         """Query for the equivalent qiskit job status.
 
         Args:
@@ -749,30 +661,23 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
             The equivalent `qiskit.providers.jobstatus.JobStatus` type.
         """
         status_match = {
-            "received": qiskit.providers.jobstatus.JobStatus.INITIALIZING,
-            "awaiting_compile": qiskit.providers.jobstatus.JobStatus.QUEUED,
-            "awaiting_submission": qiskit.providers.jobstatus.JobStatus.QUEUED,
-            "awaiting_simulation": qiskit.providers.jobstatus.JobStatus.QUEUED,
-            "pending": qiskit.providers.jobstatus.JobStatus.QUEUED,
-            "compiling": qiskit.providers.jobstatus.JobStatus.RUNNING,
-            "running": qiskit.providers.jobstatus.JobStatus.RUNNING,
-            "simulating": qiskit.providers.jobstatus.JobStatus.RUNNING,
-            "failed": qiskit.providers.jobstatus.JobStatus.ERROR,
-            "unrecognized": qiskit.providers.jobstatus.JobStatus.ERROR,
-            "completed": qiskit.providers.jobstatus.JobStatus.DONE,
-            "cancelled": qiskit.providers.jobstatus.JobStatus.CANCELLED,
-            "deleted": qiskit.providers.jobstatus.JobStatus.CANCELLED,
+            gss.models.CircuitStatus.RECEIVED: qiskit.providers.JobStatus.INITIALIZING,
+            gss.models.CircuitStatus.AWAITING_COMPILE: qiskit.providers.JobStatus.QUEUED,
+            gss.models.CircuitStatus.AWAITING_SUBMISSION: qiskit.providers.JobStatus.QUEUED,
+            gss.models.CircuitStatus.AWAITING_SIMULATION: qiskit.providers.JobStatus.QUEUED,
+            gss.models.CircuitStatus.PENDING: qiskit.providers.JobStatus.QUEUED,
+            gss.models.CircuitStatus.COMPILING: qiskit.providers.JobStatus.RUNNING,
+            gss.models.CircuitStatus.RUNNING: qiskit.providers.JobStatus.RUNNING,
+            gss.models.CircuitStatus.SIMULATING: qiskit.providers.JobStatus.RUNNING,
+            gss.models.CircuitStatus.FAILED: qiskit.providers.JobStatus.ERROR,
+            gss.models.CircuitStatus.UNRECOGNIZED: qiskit.providers.JobStatus.ERROR,
+            gss.models.CircuitStatus.COMPLETED: qiskit.providers.JobStatus.DONE,
+            gss.models.CircuitStatus.CANCELLED: qiskit.providers.JobStatus.CANCELLED,
+            gss.models.CircuitStatus.DELETED: qiskit.providers.JobStatus.CANCELLED,
         }
 
-        if index is None and self._overall_status in gss.models.TERMINAL_CIRCUIT_STATES:
-            return status_match.get(self._overall_status)
-
-        self._refresh_job(index)
-        if index is None:
-            status = self._overall_status
-        else:
-            status = self.job_info.statuses[index]
-        return status_match.get(status)
+        superstaq_status = self._status(index)
+        return status_match.get(superstaq_status, qiskit.providers.JobStatus.ERROR)
 
     def submit(self) -> None:
         """Unsupported submission call.
@@ -781,18 +686,3 @@ class SuperstaqJobV3(qiskit.providers.JobV1):
             NotImplementedError: If a job is submitted via `SuperstaqJob`.
         """
         raise NotImplementedError("Submit through SuperstaqBackend, not through SuperstaqJob")
-
-    def to_dict(self) -> dict[str, Any]:
-        """Refreshes and returns job information.
-
-        Note:
-            The contents of this dictionary are not guaranteed to be consistent over time. Whenever
-            possible, users should use the specific `SuperstaqJob` methods to retrieve the desired
-            job information instead of relying on particular entries in the output of this method.
-
-        Returns:
-            A dictionary containing updated job information.
-        """
-        if self._overall_status not in gss.models.TERMINAL_CIRCUIT_STATES:
-            self._refresh_job()
-        return self.job_info.model_dump()
