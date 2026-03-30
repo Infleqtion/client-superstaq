@@ -113,7 +113,7 @@ def test_irb_bad_init() -> None:
     with pytest.raises(ValueError, match=r"The number of qubits must match"):
         IRB(1, [2], cirq.CX, qubits=1)
 
-    with pytest.raises(ValueError, match=r"The length of targeted qubits must match"):
+    with pytest.raises(ValueError, match=r"The number of qubits must match"):
         IRB(1, [2], cirq.CX, qubits=[cirq.GridQubit(0, 0)])
 
     with pytest.raises(ValueError, match=r"The qubits provided do not match"):
