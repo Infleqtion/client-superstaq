@@ -28,7 +28,6 @@
 
 from __future__ import annotations
 
-import numbers
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
@@ -600,21 +599,27 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         self,
         interleaved_gate: cirq.Gate | cirq.Operation | None = None,
         qubits: int | Sequence[cirq.Qid] | None = None,
-    ) -> Sequence[cirq.Qid]:
+    ) -> list[cirq.Qid]:
         if qubits is None:
             if interleaved_gate is None:
                 raise ValueError("Please provide either interleaved_gate or qubits.")
             if isinstance(interleaved_gate, cirq.Gate):
-                return cirq.LineQubit.range(interleaved_gate.num_qubits())
-            return interleaved_gate.qubits
+                qubits = cirq.num_qubits(interleaved_gate)
+            else:
+                qubits = interleaved_gate.qubits
 
-        if isinstance(qubits, numbers.Integral):
-            if interleaved_gate is not None and cirq.num_qubits(interleaved_gate) != qubits:
-                raise ValueError(
-                    "The number of qubits must match the number of qubits interleaved_gate is "
-                    "acting on."
-                )
-            return cirq.LineQubit.range(qubits)
+        if not isinstance(qubits, Sequence):
+            qubits = cirq.LineQubit.range(qubits)
+        qubits = list(qubits)
+
+        if interleaved_gate is not None and cirq.num_qubits(interleaved_gate) != len(qubits):
+            raise ValueError(
+                "The number of qubits must match the number of qubits interleaved_gate acts on. "
+            )
+        if isinstance(interleaved_gate, cirq.Operation) and list(interleaved_gate.qubits) != qubits:
+            raise ValueError("The qubits provided do not match interleaved_gate's qubits")
+
+        return qubits
 
         # Error if qubits is not sequence (for benefit of type checker)
         assert isinstance(qubits, Sequence)
@@ -627,7 +632,7 @@ class IRB(QCVVExperiment[_RBResultsBase]):
         if isinstance(interleaved_gate, cirq.Operation) and list(interleaved_gate.qubits) != list(
             qubits
         ):
-            raise ValueError("The qubits provided do not match inteleaved_gate's qubits")
+            raise ValueError("The qubits provided do not match interleaved_gate's qubits")
         return qubits
 
     def _clifford_gate_to_circuit(
