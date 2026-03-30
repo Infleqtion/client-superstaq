@@ -363,6 +363,21 @@ def test_qscout_compile(
     assert out.initial_logical_to_physical == {0: 1}
     assert out.final_logical_to_physical == {0: 13}
 
+    out = fake_superstaq_provider.qscout_compile(qc, num_eca_circuits=1, random_seed=123, atol=1e-3)
+    assert out.circuits == [qc]
+    assert out.initial_logical_to_physicals == [{0: 1}]
+    assert out.final_logical_to_physicals == [{0: 13}]
+    assert out.jaqal_program == jaqal_program
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "num_eca_circuits": 1,
+        "keep_qubit_order": False,
+        "mirror_swaps": False,
+        "base_entangling_gate": "xx",
+        "num_qubits": 1,
+        "atol": 1e-3,
+        "random_seed": 123,
+    }
+
     out = fake_superstaq_provider.qscout_compile([qc])
     assert out.circuits == [qc]
     assert out.initial_logical_to_physicals == [{0: 1}]
@@ -375,11 +390,29 @@ def test_qscout_compile(
         "final_logical_to_physicals": json.dumps([[(0, 13)], [(0, 13), (1, 11)]]),
         "jaqal_programs": [jaqal_program, jaqal_program],
     }
-    out = fake_superstaq_provider.qscout_compile([qc, qc2], atol=1e-3)
+    out = fake_superstaq_provider.qscout_compile([qc, qc2], atol=1e-3, random_seed=123)
     assert out.circuits == [qc, qc2]
     assert out.initial_logical_to_physicals == [{0: 1}, {0: 1, 1: 2}]
     assert out.final_logical_to_physicals == [{0: 13}, {0: 13, 1: 11}]
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "keep_qubit_order": False,
+        "mirror_swaps": False,
+        "base_entangling_gate": "xx",
+        "num_qubits": 2,
+        "atol": 1e-3,
+        "random_seed": 123,
+    }
+
+    out = fake_superstaq_provider.qscout_compile(
+        [qc, qc2], num_eca_circuits=1, keep_qubit_order=True, atol=1e-3
+    )
+    assert out.circuits == [[qc], [qc2]]
+    assert out.initial_logical_to_physicals == [[{0: 1}], [{0: 1, 1: 2}]]
+    assert out.final_logical_to_physicals == [[{0: 13}], [{0: 13, 1: 11}]]
+    assert out.jaqal_programs == [jaqal_program, jaqal_program]
+    assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "num_eca_circuits": 1,
+        "keep_qubit_order": True,
         "mirror_swaps": False,
         "base_entangling_gate": "xx",
         "num_qubits": 2,
@@ -412,6 +445,7 @@ def test_qscout_compile_swap_mirror(
     _ = fake_superstaq_provider.qscout_compile(qc, mirror_swaps=mirror_swaps)
     mock_post.assert_called_once()
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "keep_qubit_order": False,
         "mirror_swaps": mirror_swaps,
         "base_entangling_gate": "xx",
         "num_qubits": 1,
@@ -420,6 +454,7 @@ def test_qscout_compile_swap_mirror(
 
     _ = fake_superstaq_provider.qscout_compile(qc, mirror_swaps=mirror_swaps, num_qubits=3)
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "keep_qubit_order": False,
         "mirror_swaps": mirror_swaps,
         "base_entangling_gate": "xx",
         "num_qubits": 3,
@@ -444,6 +479,7 @@ def test_qscout_compile_change_entangler(
     _ = fake_superstaq_provider.qscout_compile(qc, base_entangling_gate=base_entangling_gate)
     mock_post.assert_called_once()
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "keep_qubit_order": False,
         "mirror_swaps": False,
         "base_entangling_gate": base_entangling_gate,
         "num_qubits": 2,
@@ -454,6 +490,7 @@ def test_qscout_compile_change_entangler(
         qc, base_entangling_gate=base_entangling_gate, num_qubits=4
     )
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "keep_qubit_order": False,
         "mirror_swaps": False,
         "base_entangling_gate": base_entangling_gate,
         "num_qubits": 4,
@@ -486,6 +523,7 @@ def test_qscout_compile_error_rates(
     )
     mock_post.assert_called_once()
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "keep_qubit_order": False,
         "base_entangling_gate": "xx",
         "mirror_swaps": False,
         "error_rates": [[[0, 1], 0.3], [[0, 2], 0.2], [[1], 0.1]],
@@ -500,6 +538,7 @@ def test_qscout_compile_error_rates(
     )
     assert mock_post.call_count == 2
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
+        "keep_qubit_order": False,
         "base_entangling_gate": "xx",
         "mirror_swaps": False,
         "error_rates": [[[0, 1], 0.3], [[0, 2], 0.2], [[1], 0.1]],
