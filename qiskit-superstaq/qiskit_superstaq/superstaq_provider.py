@@ -419,12 +419,15 @@ class SuperstaqProvider(gss.service.Service):
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         target: str = "qscout_peregrine_qpu",
         *,
+        num_eca_circuits: int | None = None,
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
         num_qubits: int | None = None,
         error_rates: SupportsItems[tuple[int, ...], float] | None = None,
         atol: float = 1e-8,
         atol_map: SupportsItems[tuple[int, ...], float] | None = None,
+        keep_qubit_order: bool = False,
+        random_seed: int | None = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
@@ -433,6 +436,9 @@ class SuperstaqProvider(gss.service.Service):
         Compiled circuits are returned as both `qiskit.QuantumCircuit` objects and corresponding
         Jaqal [2] programs (strings).
 
+        Specifying a nonzero value for `num_eca_circuits` enables compilation with Equivalent
+        Circuit Averaging (ECA). See [3] for a description of ECA.
+
         References:
             [1] S. M. Clark et al., Engineering the Quantum Scientific Computing Open User
                 Testbed, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
@@ -440,10 +446,15 @@ class SuperstaqProvider(gss.service.Service):
             [2] B. Morrison, et al., Just Another Quantum Assembly Language (Jaqal), 2020 IEEE
                 International Conference on Quantum Computing and Engineering (QCE), 402-408 (2020).
                 https://arxiv.org/abs/2008.08042.
+            [3] A. Hashim, et al., Optimized fermionic SWAP networks with equivalent circuit
+                averaging for QAOA. Phys. Rev. Research 4, 033028 (2022).
+                https://arxiv.org/abs/2111.04572
 
         Args:
             circuits: The circuit(s) to compile.
             target: A string containing the name of a target backend.
+            num_eca_circuits: Optional number of logically equivalent random circuits to generate
+                from each input circuit for Equivalent Circuit Averaging (ECA).
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
             base_entangling_gate: The base entangling gate to use ("xx", "zz", "sxx", or "szz").
                 Compilation with the "xx" and "zz" entangling bases will use arbitrary
@@ -466,6 +477,8 @@ class SuperstaqProvider(gss.service.Service):
                 bound) for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`).
                 If provided, these tolerances will override `atol` for gates on the given qubits.
                 Omitted qubit pairs default to `atol`.
+            keep_qubit_order: If True, do not reorder input qubits when compiling with ECA.
+            random_seed: Used to seed any stochastic compilation passes (especially for ECA).
             kwargs: Other desired qscout_compile options.
 
         Returns:
@@ -481,12 +494,15 @@ class SuperstaqProvider(gss.service.Service):
 
         return self.get_backend(target).qscout_compile(
             circuits,
+            num_eca_circuits=num_eca_circuits,
             mirror_swaps=mirror_swaps,
             base_entangling_gate=base_entangling_gate,
             num_qubits=num_qubits,
             error_rates=error_rates,
             atol=atol,
             atol_map=atol_map,
+            keep_qubit_order=keep_qubit_order,
+            random_seed=random_seed,
             **kwargs,
         )
 

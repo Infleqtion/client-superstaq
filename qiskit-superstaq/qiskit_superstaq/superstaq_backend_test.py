@@ -349,6 +349,12 @@ def test_qscout_compile(
     assert out.initial_logical_to_physical == init_logical_to_physical
     assert out.final_logical_to_physical == logical_to_physical
 
+    out = backend.compile(qc, num_eca_circuits=1)
+    assert out.circuits == [qc]
+    assert out.final_logical_to_physicals == [logical_to_physical]
+    assert out.initial_logical_to_physicals == [init_logical_to_physical]
+    assert out.jaqal_program == jaqal_program
+
     out = backend.compile([qc])
     assert out.circuits == [qc]
     assert out.initial_logical_to_physicals == [{0: 1}]
@@ -364,6 +370,18 @@ def test_qscout_compile(
     assert out.circuits == [qc, qc]
     assert out.initial_logical_to_physicals == [{0: 1}, {0: 1}]
     assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
+
+    out = backend.compile([qc, qc], num_eca_circuits=1, random_seed=1234)
+    assert out.circuits == [[qc], [qc]]
+    assert out.initial_logical_to_physicals == [
+        [init_logical_to_physical],
+        [init_logical_to_physical],
+    ]
+    assert out.final_logical_to_physicals == [
+        [logical_to_physical],
+        [logical_to_physical],
+    ]
+    assert out.jaqal_programs == [jaqal_program, jaqal_program]
 
 
 @patch("requests.Session.post")

@@ -428,12 +428,15 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         self,
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         *,
+        num_eca_circuits: int | None = None,
         mirror_swaps: bool = False,
         base_entangling_gate: str = "xx",
         num_qubits: int | None = None,
         error_rates: SupportsItems[tuple[int, ...], float] | None = None,
         atol: float = 1e-8,
         atol_map: SupportsItems[tuple[int, ...], float] | None = None,
+        keep_qubit_order: bool = False,
+        random_seed: int | None = None,
         **kwargs: Any,
     ) -> qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at Sandia
@@ -442,6 +445,9 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         Compiled circuits are returned as both `qiskit.QuantumCircuit` objects and corresponding
         Jaqal [2] programs (strings).
 
+        Specifying a nonzero value for `num_eca_circuits` enables compilation with Equivalent
+        Circuit Averaging (ECA). See [3] for a description of ECA.
+
         References:
             [1] S. M. Clark et al., Engineering the Quantum Scientific Computing Open User
                 Testbed, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
@@ -449,9 +455,14 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             [2] B. Morrison, et al., Just Another Quantum Assembly Language (Jaqal), 2020 IEEE
                 International Conference on Quantum Computing and Engineering (QCE), 402-408 (2020).
                 https://arxiv.org/abs/2008.08042.
+            [3] A. Hashim, et al., Optimized fermionic SWAP networks with equivalent circuit
+                averaging for QAOA. Phys. Rev. Research 4, 033028 (2022).
+                https://arxiv.org/abs/2111.04572
 
         Args:
             circuits: The circuit(s) to compile.
+            num_eca_circuits: Optional number of logically equivalent random circuits to generate
+                from each input circuit for Equivalent Circuit Averaging (ECA).
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
             base_entangling_gate: The base entangling gate to use ("xx", "zz", "sxx", or "szz").
                 Compilation with the "xx" and "zz" entangling bases will use arbitrary
@@ -474,6 +485,8 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
                 bound) for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`).
                 If provided, these tolerances will override `atol` for gates on the given qubits.
                 Omitted qubit pairs default to `atol`.
+            keep_qubit_order: If True, do not reorder input qubits when compiling with ECA.
+            random_seed: Used to seed any stochastic compilation passes (especially for ECA).
             kwargs: Other desired qscout_compile options.
 
         Returns:
@@ -497,6 +510,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             **kwargs,
             "mirror_swaps": mirror_swaps,
             "base_entangling_gate": base_entangling_gate,
+            "keep_qubit_order": bool(keep_qubit_order),
             "atol": atol,
         }
 
@@ -504,6 +518,14 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             inferred_num_qubits = circuits.num_qubits
         else:
             inferred_num_qubits = max(c.num_qubits for c in circuits)
+
+        if num_eca_circuits is not None:
+            gss.validation.validate_integer_param(num_eca_circuits)
+            options["num_eca_circuits"] = int(num_eca_circuits)
+
+        if random_seed is not None:
+            gss.validation.validate_integer_param(random_seed)
+            options["random_seed"] = int(random_seed)
 
         if error_rates is not None:
             error_rates_list = list(error_rates.items())
@@ -531,7 +553,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
 
         request_json = self._get_compile_request_json(circuits, **options)
         json_dict = self._provider._client.qscout_compile(request_json)
-        return qss.compiler_output.read_json_qscout(json_dict, circuits_is_list)
+        return qss.compiler_output.read_json_qscout(json_dict, circuits_is_list, num_eca_circuits)
 
     def cq_compile(
         self,

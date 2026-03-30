@@ -378,6 +378,21 @@ def test_read_json_qscout() -> None:
         measure_all
         """
     )
+    jaqal_program_as_subcircuits = textwrap.dedent(
+        """\
+        register allqubits[1]
+
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        Rz allqubits[0] -3.141592653589793
+        measure_all
+
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        Rz allqubits[0] -3.141592653589793
+        measure_all
+        """
+    )
 
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits(circuit),
@@ -397,29 +412,43 @@ def test_read_json_qscout() -> None:
 
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits([circuit, circuit]),
-        "initial_logical_to_physicals": cirq.to_json([list(initial_logical_to_physical.items())]),
-        "final_logical_to_physicals": cirq.to_json([list(final_logical_to_physical.items())]),
+        "initial_logical_to_physicals": cirq.to_json(
+            2 * [list(initial_logical_to_physical.items())]
+        ),
+        "final_logical_to_physicals": cirq.to_json(2 * [list(final_logical_to_physical.items())]),
         "jaqal_programs": [jaqal_program, jaqal_program],
     }
     out = css.compiler_output.read_json_qscout(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
-    assert out.final_logical_to_physicals == [final_logical_to_physical]
-    assert out.initial_logical_to_physicals == [initial_logical_to_physical]
+    assert out.final_logical_to_physicals == [final_logical_to_physical, final_logical_to_physical]
+    assert out.initial_logical_to_physicals == [
+        initial_logical_to_physical,
+        initial_logical_to_physical,
+    ]
     assert not hasattr(out, "initial_logical_to_physical")
     assert not hasattr(out, "final_logical_to_physical")
     assert out.jaqal_programs == [jaqal_program, jaqal_program]
-    assert out.jaqal_program == textwrap.dedent(
-        """\
-        register allqubits[1]
+    assert out.jaqal_program == jaqal_program_as_subcircuits
 
-        prepare_all
-        R allqubits[0] -1.5707963267948966 1.5707963267948966
-        Rz allqubits[0] -3.141592653589793
-        measure_all
+    out = css.compiler_output.read_json_qscout(json_dict, circuits_is_list=True, num_eca_circuits=1)
+    assert out.circuits == [[circuit], [circuit]]
+    assert out.initial_logical_to_physicals == [
+        [initial_logical_to_physical],
+        [initial_logical_to_physical],
+    ]
+    assert out.final_logical_to_physicals == [
+        [final_logical_to_physical],
+        [final_logical_to_physical],
+    ]
+    assert out.jaqal_programs == [jaqal_program, jaqal_program]
 
-        prepare_all
-        R allqubits[0] -1.5707963267948966 1.5707963267948966
-        Rz allqubits[0] -3.141592653589793
-        measure_all
-        """
+    out = css.compiler_output.read_json_qscout(
+        json_dict, circuits_is_list=False, num_eca_circuits=2
     )
+    assert out.circuits == [circuit, circuit]
+    assert out.final_logical_to_physicals == [final_logical_to_physical, final_logical_to_physical]
+    assert out.initial_logical_to_physicals == [
+        initial_logical_to_physical,
+        initial_logical_to_physical,
+    ]
+    assert out.jaqal_programs == [jaqal_program_as_subcircuits]
