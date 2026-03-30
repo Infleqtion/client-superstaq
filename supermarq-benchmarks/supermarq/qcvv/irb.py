@@ -621,20 +621,6 @@ class IRB(QCVVExperiment[_RBResultsBase]):
 
         return qubits
 
-        # Error if qubits is not sequence (for benefit of type checker)
-        assert isinstance(qubits, Sequence)
-
-        if interleaved_gate is not None and cirq.num_qubits(interleaved_gate) != len(qubits):
-            raise ValueError(
-                "The length of targeted qubits must match the number of qubits interleaved_gate"
-                " is acting on."
-            )
-        if isinstance(interleaved_gate, cirq.Operation) and list(interleaved_gate.qubits) != list(
-            qubits
-        ):
-            raise ValueError("The qubits provided do not match interleaved_gate's qubits")
-        return qubits
-
     def _clifford_gate_to_circuit(
         self,
         clifford: cirq.CliffordGate,
