@@ -14,8 +14,10 @@
 
 from __future__ import annotations
 
+import json
 import numbers
 import os
+import re
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any, overload
 
@@ -24,6 +26,7 @@ from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClien
 
 if TYPE_CHECKING:
     import numpy.typing as npt
+    from _typeshed import SupportsItems
 
 CLIENT_VERSION = {
     "v0.2.0": _SuperstaqClient,
@@ -290,6 +293,161 @@ class Service:
             return user_info[0]
 
         return user_info
+
+    def jaqal_compile(  # noqa: C901
+        self,
+        jaqal_programs: str | Sequence[str],
+        target: str = "qscout_peregrine_qpu",
+        *,
+        num_eca_circuits: int | None = None,
+        mirror_swaps: bool = False,
+        base_entangling_gate: str = "xx",
+        num_qubits: int | None = None,
+        error_rates: SupportsItems[tuple[int, ...], float] | None = None,
+        atol: float = 1e-8,
+        atol_map: SupportsItems[tuple[int, ...], float] | None = None,
+        keep_qubit_order: bool = False,
+        random_seed: int | None = None,
+        **kwargs: Any,
+    ) -> gss.compiler_output.CompilerOutput:
+        """Compiles and optimizes the given Jaqal [1] program(s) for the QSCOUT trapped-ion testbed
+        at Sandia National Laboratories [2].
+
+        Specifying a nonzero value for `num_eca_circuits` enables compilation with Equivalent
+        Circuit Averaging (ECA). See [3] for a description of ECA.
+
+        References:
+            [1] B. Morrison, et al., Just Another Quantum Assembly Language (Jaqal), 2020 IEEE
+                International Conference on Quantum Computing and Engineering (QCE), 402-408 (2020).
+                https://arxiv.org/abs/2008.08042.
+            [2] S. M. Clark et al., Engineering the Quantum Scientific Computing Open User
+                Testbed, IEEE Transactions on Quantum Engineering Vol. 2, 3102832 (2021).
+                https://doi.org/10.1109/TQE.2021.3096480.
+            [3] A. Hashim, et al., Optimized fermionic SWAP networks with equivalent circuit
+                averaging for QAOA. Phys. Rev. Research 4, 033028 (2022).
+                https://arxiv.org/abs/2111.04572
+
+        Args:
+            jaqal_programs: The circuit(s) to compile.
+            target: String of target representing target device.
+            num_eca_circuits: Optional number of logically equivalent random jaqal programs to
+                generate from each input Jaqal program for Equivalent Circuit Averaging (ECA).
+            mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
+            base_entangling_gate: The base entangling gate to use ("xx", "zz", "sxx", or "szz").
+                Compilation with the "xx" and "zz" entangling bases will use arbitrary
+                parameterized two-qubit interactions, while the "sxx" and "szz" bases will only use
+                fixed maximally-entangling rotations.
+            num_qubits: An optional number of qubits that should be initialized in the returned
+                Jaqal program(s) (by default this will be determined from the input jaqal_programs).
+            error_rates: Optional dictionary assigning relative error rates to pairs of physical
+                qubits, in the form `{<qubit_indices>: <error_rate>, ...}` where `<qubit_indices>`
+                is a tuple physical qubit indices (ints) and `<error_rate>` is a relative error rate
+                for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`). If
+                provided, Superstaq will attempt to map the circuit to minimize the total error on
+                each qubit. Omitted qubit pairs are assumed to be error-free.
+            atol: Optional tolerance (trace distance bound) used for approximate compilation.
+                Superstaq will elide gates which can be approximated within the given tolerance by
+                identity operations.
+            atol_map: Optional dictionary assigning compilation tolerances to physical qubits, in
+                the form `{<qubit_indices>: <atol>, ...}` where `<qubit_indices>` is a tuple of
+                physical qubit indices (ints) and `<atol>` is an absolute tolerance (trace distance
+                bound) for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`).
+                If provided, these tolerances will override `atol` for gates on the given qubits.
+                Omitted qubit pairs default to `atol`.
+            keep_qubit_order: If `True`, do not reorder input qubits when compiling with ECA.
+            random_seed: Used to seed any stochastic compilation passes (especially for ECA).
+            kwargs: Other desired `jaqal_compile()` options.
+
+        Returns:
+            Object whose .circuit(s) attribute contains optimized Jaqal program(s).
+
+        Raises:
+            ValueError: If `base_entangling_gate` is not a valid gate option.
+            ValueError: If `target` is not a valid QSCOUT target.
+        """
+        target = gss.validation.validate_target(target)
+        if not target.startswith("qscout_"):
+            raise ValueError(f"{target!r} is not support by `jaqal_compile()`.")
+
+        base_entangling_gate = base_entangling_gate.lower()
+        if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
+            raise ValueError("`base_entangling_gate` must be 'xx', 'zz', 'sxx', or 'szz'")
+
+        circuits_is_list = not isinstance(jaqal_programs, str)
+        if circuits_is_list and len(jaqal_programs) == 1:
+            assert all(isinstance(item, str) for item in jaqal_programs)
+            jaqal_program = jaqal_programs[0]
+            if jaqal_program.count("prepare_all") > 1:
+                raise ValueError(
+                    "Subcircuits are not allowed if providing a list of Jaqal programs. Please "
+                    "consolidate all Jaqal programs into a single Jaqal program of subcircuits "
+                    "instead."
+                )
+
+        options = {
+            **kwargs,
+            "mirror_swaps": mirror_swaps,
+            "base_entangling_gate": base_entangling_gate,
+            "keep_qubit_order": bool(keep_qubit_order),
+            "atol": atol,
+        }
+
+        if isinstance(jaqal_programs, str):
+            inferred_num_qubits = None
+            match = re.search(r"allqubits\[(\d+)\]", jaqal_programs)
+            if match:
+                inferred_num_qubits = int(match.group(1))
+        else:
+            inferred_num_qubits = max(
+                int(m.group(1))
+                for register in jaqal_programs
+                if (m := re.search(r"allqubits\[(\d+)\]", register))
+            )
+        if inferred_num_qubits is None:
+            raise ValueError("Could not determine number of qubits from Jaqal program register.")
+
+        if num_eca_circuits is not None:
+            gss.validation.validate_integer_param(num_eca_circuits)
+            options["num_eca_circuits"] = int(num_eca_circuits)
+
+        if random_seed is not None:
+            gss.validation.validate_integer_param(random_seed)
+            options["random_seed"] = int(random_seed)
+
+        if error_rates is not None:
+            error_rates_list = list(error_rates.items())
+            options["error_rates"] = error_rates_list
+            inferred_num_qubits = max(
+                inferred_num_qubits, *(q + 1 for qs, _ in error_rates_list for q in qs)
+            )
+
+        if atol_map is not None:
+            atol_map_list = list(atol_map.items())
+            options["atol_map"] = atol_map_list
+            inferred_num_qubits = max(
+                inferred_num_qubits, *(q + 1 for qs, _ in atol_map_list for q in qs)
+            )
+
+        # Infer `num_qubits` from inputs, if not already specified
+        if num_qubits is None:
+            num_qubits = inferred_num_qubits
+
+        gss.validation.validate_integer_param(num_qubits)
+        if num_qubits < inferred_num_qubits:
+            raise ValueError(f"At least {inferred_num_qubits} qubits are required for this input.")
+
+        options["num_qubits"] = num_qubits
+
+        json_dict = self._client.compile(
+            {
+                "jaqal_strs": json.dumps(jaqal_programs)
+                if circuits_is_list
+                else json.dumps([jaqal_programs]),
+                "options": json.dumps(options),
+                "target": target,
+            }
+        )
+        return gss.compiler_output.read_json_jaqal(json_dict, circuits_is_list, num_eca_circuits)
 
     def submit_qubo(
         self,
