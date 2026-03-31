@@ -17,7 +17,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import warnings
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from typing import Any
 
 import general_superstaq as gss
@@ -102,15 +102,8 @@ def classical_bit_mapping(circuit: qiskit.QuantumCircuit) -> dict[int, int]:
     return {circuit.find_bit(c).index: circuit.find_bit(q).index for c, q in clbit_map.items()}
 
 
-def _jaqal_programs_to_subcircuits(jaqal_programs: Sequence[str]) -> str:
-    separator = "prepare_all"
-    subcircuits = [jaqal_programs[0]]
-    subcircuits += [jaqal_program.partition(separator)[2] for jaqal_program in jaqal_programs[1:]]
-    return f"\n{separator}".join(subcircuits)
-
-
-class CompilerOutput:  # noqa: PLW1641
-    """A class that stores the results of compiled circuits."""
+class CompilerOutput(gss.BaseCompilerOutput[qiskit.QuantumCircuit, int]):
+    """A class that stores the results of `qiskit` compiled circuits."""
 
     def __init__(
         self,
@@ -140,78 +133,14 @@ class CompilerOutput:  # noqa: PLW1641
             seq: `qtrl.sequencer.Sequence` pulse sequence if `qtrl` is available locally.
             jaqal_programs: The Jaqal programs as individual strings.
         """
-        if isinstance(circuits, qiskit.QuantumCircuit):
-            self.circuit = circuits
-            self.initial_logical_to_physical = initial_logical_to_physicals
-            self.final_logical_to_physical = final_logical_to_physicals
-            self.pulse_gate_circuit = pulse_gate_circuits
-        else:
-            self.circuits = circuits
-            self.initial_logical_to_physicals = initial_logical_to_physicals
-            self.final_logical_to_physicals = final_logical_to_physicals
-            self.pulse_gate_circuits = pulse_gate_circuits
-
-        self.jaqal_programs = jaqal_programs
-        self.seq = seq
-
-    def has_multiple_circuits(self) -> bool:
-        """Checks if this object has plural attributes (e.g. `.circuits`).
-
-        Otherwise, the object represents a single circuit, and has singular attributes (`.circuit`).
-
-        Returns:
-            A boolean indicating whether this object represents multiple circuits.
-        """
-        return hasattr(self, "circuits")
-
-    def __repr__(self) -> str:
-        if not self.has_multiple_circuits():
-            return (
-                f"CompilerOutput({self.circuit!r}, {self.initial_logical_to_physical!r}, "
-                f"{self.final_logical_to_physical!r}, {self.pulse_gate_circuit!r}, "
-                f"{self.seq!r}, {self.jaqal_programs!r})"
-            )
-        return (
-            f"CompilerOutput({self.circuits!r}, {self.initial_logical_to_physicals!r}, "
-            f"{self.final_logical_to_physicals!r}, {self.pulse_gate_circuits!r}, "
-            f"{self.seq!r}, {self.jaqal_programs!r})"
+        super().__init__(
+            circuits=circuits,
+            initial_logical_to_physicals=initial_logical_to_physicals,
+            final_logical_to_physicals=final_logical_to_physicals,
+            pulse_gate_circuits=pulse_gate_circuits,
+            seq=seq,
+            jaqal_programs=jaqal_programs,
         )
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, CompilerOutput):
-            return False
-
-        if self.has_multiple_circuits() != other.has_multiple_circuits():
-            return False
-        if self.has_multiple_circuits():
-            return (
-                self.circuits == other.circuits
-                and self.initial_logical_to_physicals == other.initial_logical_to_physicals
-                and self.final_logical_to_physicals == other.final_logical_to_physicals
-                and self.pulse_gate_circuits == other.pulse_gate_circuits
-                and self.jaqal_programs == other.jaqal_programs
-                and self.seq == other.seq
-            )
-
-        return (
-            self.circuit == other.circuit
-            and self.initial_logical_to_physical == other.initial_logical_to_physical
-            and self.final_logical_to_physical == other.final_logical_to_physical
-            and self.pulse_gate_circuit == other.pulse_gate_circuit
-            and self.jaqal_programs == other.jaqal_programs
-            and self.seq == other.seq
-        )
-
-    @property
-    def jaqal_program(self) -> str | None:
-        """Jaqal program(s) as a single string.
-
-        For multi-circuit compilation the string will contain subcircuits.
-        """
-        if not self.jaqal_programs:
-            return None
-
-        return _jaqal_programs_to_subcircuits(self.jaqal_programs)
 
 
 def read_json(
@@ -417,7 +346,9 @@ def read_json_qscout(
             for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
         ]
         jaqal_programs = [
-            _jaqal_programs_to_subcircuits(jaqal_programs[i : i + num_eca_circuits])
+            gss.compiler_output._jaqal_programs_to_subcircuits(
+                jaqal_programs[i : i + num_eca_circuits]
+            )
             for i in range(0, len(jaqal_programs), num_eca_circuits)
         ]
 
