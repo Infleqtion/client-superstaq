@@ -233,6 +233,51 @@ class Job:
         """
         return self.job_data.shots[0]
 
+    def _load_result(self, index, result):
+        # assert circuit.all_all_measurements_terminal()
+        import numpy as np
+
+        logical_to_physical = self.job_data.final_logical_to_physicals[index]
+
+        # Handling of Jaqalpaq.ExecutionResult:
+        result = getattr(result, "by_subbatch", [result])[0]
+        if view := getattr(result, "by_subcircuit", None):
+            result = view[index]
+        if normalized_counts := getattr(result, "normalized_counts", None):
+            result = normalized_counts.by_str
+        num_repeats = getattr(result, "num_repeats", 1)
+        raw_counts = {key: np.dot(prob, num_repeats).sum().item() for key, prob in result.items()}
+
+        # if isinstance(result, Mapping):
+        #     num_qubits = len(logical_to_physical)
+        #     raw_counts = {
+        #         key if isinstance(key, str) else f"{key:0>{num_qubits}b}": val
+        #         for key, val in result.items()
+        #     }
+
+        idxs = [logical_to_physical[i] for i in sorted(logical_to_physical)]
+        counts = {"".join(key[i] for i in idxs): val for key, val in raw_counts.items()}
+        self.job_data.counts[index] = counts
+        return counts
+
+    def _structure_counts(self):
+        device_qubits = cirq.read_json(json_text=self.job_data.physical_qubits[i])
+        if circuit.has_measurements():
+            keys = cirq.measurement_key_names(circuit)
+            for _, op in circuit.findall_operations(cirq.is_measurement):
+                key = cirq.measurement_key_name(op)
+                key_to_qids[key] = op.qubits
+            for key in sorted(key_to_qids):
+                qb_list.extend(key_to_qids[key])
+
+        qubit_map = qss.classical_bit_mapping(circuit)
+        qubit_map 
+
+    # def _set_counts_for_circuit(self, index: int, counts: object) -> None:
+    #     if isinstance(counts, Mapping):
+    #         f
+    #     self.job_data.counts[index] = counts
+
     def to_dict(self) -> dict[str, gss.typing.Job]:
         """Refreshes and returns job information.
 
