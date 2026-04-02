@@ -18,8 +18,15 @@ from __future__ import annotations
 
 import time
 import uuid
+from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING
+
+import numpy as np
 
 import general_superstaq as gss
+
+if TYPE_CHECKING:
+    import jaqalpaq.run
 
 
 class Job:
@@ -233,50 +240,63 @@ class Job:
         """
         return self.job_data.shots[0]
 
-    def _load_result(self, index, result):
-        # assert circuit.all_all_measurements_terminal()
-        import numpy as np
+    def set_counts(
+        self,
+        results: Sequence[Mapping[str, float]]
+        | jaqalpaq.run.result.ExecutionResult
+        | jaqalpaq.run.result.SubbatchView,
+    ) -> None:
+        """Manually input experimental counts for all circuits in this job.
 
-        logical_to_physical = self.job_data.final_logical_to_physicals[index]
+        Also accepts JaqalPaq `ExecutionResult` or `SubbatchView` objects. Both are assumed to have
+        as many subcircuits as this job contains compiled circuits. For `ExecutionResult` objects
+        containing multiple sub-batches, only the first is used. (requires `jaqalpaq>=1.3.0`)
 
-        # Handling of Jaqalpaq.ExecutionResult:
-        result = getattr(result, "by_subbatch", [result])[0]
-        if view := getattr(result, "by_subcircuit", None):
-            result = view[index]
+        Args:
+            results: A sequence of experimental counts dictionaries to load, each of which should be
+                formatted as required by `Job.set_counts_for_circuit`. Can also be one of the
+                JaqalPaq results objects described above. In either case, assumed to contain counts
+                for every compiled circuit contained in this job.
+        """
+        # Support JaqalPaq's `ExecutionResult` and `SubbatchView`:
+        results = getattr(results, "by_subbatch", [results])[0]
+        results = getattr(results, "by_subcircuit", results)
+
+        for i in range(self.job_data.num_circuits):
+            self.set_counts_for_circuit(i, results[i])
+
+    def set_counts_for_circuit(
+        self, index: int, result: Mapping[str, float] | jaqalpaq.run.result.SubcircuitView
+    ) -> None:
+        """Manually input experimental counts for one circuits in this job.
+
+        Also accepts JaqalPaq `SubcircuitView`, e.g. from `result.by_subbatch[i].by_subcircuit[j]`
+        where `result` is a JaqalPaq `ExecutionResult` object. (requires `jaqalpaq>=1.3.0`)
+
+        Args:
+            index: The circuit index for which to update counts.
+            result: An experimental counts dictionary to load (or a JaqalPaq `SubcircuitView`).
+                Counts dictionaries must be formatted with bitstrings as keys and total counts (or
+                probabilities) as values, e.g. `{"000": 100, "111": 200}`.
+        """
+        # Special handling for JaqalPaq's `SubcircuitView`
         if normalized_counts := getattr(result, "normalized_counts", None):
-            result = normalized_counts.by_str
-        num_repeats = getattr(result, "num_repeats", 1)
-        raw_counts = {key: np.dot(prob, num_repeats).sum().item() for key, prob in result.items()}
+            num_repeats = getattr(result, "num_repeats", 1)
+            result = {
+                bs: round(np.dot(prob, num_repeats).sum())
+                for bs, prob in normalized_counts.by_str.items()
+            }
 
-        # if isinstance(result, Mapping):
-        #     num_qubits = len(logical_to_physical)
-        #     raw_counts = {
-        #         key if isinstance(key, str) else f"{key:0>{num_qubits}b}": val
-        #         for key, val in result.items()
-        #     }
+            # JaqalPaq results are always ordered by qubit
+            logical_to_physical = self.job_data.final_logical_to_physicals[index]
+            if logical_to_physical is None:
+                raise ValueError("Circuit must be compiled before counts are set.")
 
-        idxs = [logical_to_physical[i] for i in sorted(logical_to_physical)]
-        counts = {"".join(key[i] for i in idxs): val for key, val in raw_counts.items()}
-        self.job_data.counts[index] = counts
-        return counts
+            classical_indices = [logical_to_physical[i] for i in sorted(logical_to_physical.keys())]
+            result = {"".join(bs[i] for i in classical_indices): val for bs, val in result.items()}
 
-    def _structure_counts(self):
-        device_qubits = cirq.read_json(json_text=self.job_data.physical_qubits[i])
-        if circuit.has_measurements():
-            keys = cirq.measurement_key_names(circuit)
-            for _, op in circuit.findall_operations(cirq.is_measurement):
-                key = cirq.measurement_key_name(op)
-                key_to_qids[key] = op.qubits
-            for key in sorted(key_to_qids):
-                qb_list.extend(key_to_qids[key])
-
-        qubit_map = qss.classical_bit_mapping(circuit)
-        qubit_map 
-
-    # def _set_counts_for_circuit(self, index: int, counts: object) -> None:
-    #     if isinstance(counts, Mapping):
-    #         f
-    #     self.job_data.counts[index] = counts
+        self.job_data.counts[index] = dict(result)
+        self.job_data.counts = self.job_data.counts  # Trigger revalidation
 
     def to_dict(self) -> dict[str, gss.typing.Job]:
         """Refreshes and returns job information.

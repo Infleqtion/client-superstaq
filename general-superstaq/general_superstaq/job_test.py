@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import textwrap
 import uuid
 from unittest import mock
 
@@ -348,3 +349,84 @@ def test_job_data_failure(mock_client: gss.superstaq_client._SuperstaqClientV3) 
         pytest.raises(AttributeError, match=r"Job data has not been fetched yet"),
     ):
         _ = job.job_data
+
+
+def test_set_counts(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
+    job = gss.job.Job(mock_client, uuid.UUID(int=123))
+
+    job_dict = _job_dict()
+    job_dict["num_circuits"] = 2
+    job_dict["counts"] = [None, None]
+    job_dict["final_logical_to_physicals"] = 2 * [{0: 0, 1: 1, 2: 2}]
+    job._job_data = gss.models.JobData(**job_dict)
+
+    counts = [{"001": 1, "010": 10, "100": 100}, {"011": 11, "101": 101, "110": 110}]
+
+    job.set_counts(counts)
+    assert job.job_data.counts == counts
+
+    job.set_counts_for_circuit(1, counts[0])
+    job.set_counts_for_circuit(0, counts[1])
+    assert job.job_data.counts == counts[::-1]
+
+
+def test_set_counts_jaqal(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
+    jaqalpaq_run = pytest.importorskip("jaqalpaq.run")
+
+    job = gss.job.Job(mock_client, uuid.UUID(int=123))
+
+    job_dict = _job_dict()
+    job_dict["num_circuits"] = 3
+    job_dict["counts"] = [None, None, None]
+    job_dict["final_logical_to_physicals"] = 3 * [{0: 0, 1: 1, 2: 2}]
+    job._job_data = gss.models.JobData(**job_dict)
+
+    jaqal_str = textwrap.dedent(
+        """\
+        from qscout.v1.std usepulses *
+
+        register allqubits[3]
+
+        prepare_all
+        R allqubits[0] 0 3.141592653589793
+        measure_all
+
+        prepare_all
+        R allqubits[1] 0 1.5708
+        R allqubits[2] 0 3.141592653589793
+        measure_all
+
+        prepare_all
+        MS allqubits[0] allqubits[1] 0 1.5708
+        measure_all
+        """
+    )
+    result = jaqalpaq_run.run_jaqal_string(jaqal_str, overrides={"__repeats__": 1000})
+
+    job.set_counts(result)
+    assert job.job_data.counts[0]
+    assert job.job_data.counts[1]
+    assert job.job_data.counts[2]
+
+    assert job.job_data.counts[0] == {"100": 1000}
+    assert job.job_data.counts[1].keys() == {"001", "011"}
+    assert job.job_data.counts[2].keys() == {"000", "110"}
+
+    job.set_counts_for_circuit(2, result.by_subbatch[0].by_subcircuit[0])
+    job.set_counts_for_circuit(0, result.by_subbatch[0].by_subcircuit[1])
+    job.set_counts_for_circuit(1, result.by_subbatch[0].by_subcircuit[2])
+    assert job.job_data.counts[0].keys() == {"001", "011"}
+    assert job.job_data.counts[1].keys() == {"000", "110"}
+    assert job.job_data.counts[2] == {"100": 1000}
+
+    job.job_data.final_logical_to_physicals[0] = {0: 1, 1: 2, 2: 0}
+    job.job_data.final_logical_to_physicals[1] = {0: 2, 1: 0, 2: 1}
+    job.job_data.final_logical_to_physicals[2] = {0: 0, 1: 2, 2: 1}
+    job.set_counts(result.by_subbatch[0])
+    assert job.job_data.counts[0] == {"001": 1000}
+    assert job.job_data.counts[1].keys() == {"100", "101"}
+    assert job.job_data.counts[2].keys() == {"000", "101"}
+
+    with pytest.raises(ValueError, match="must be compiled"):
+        job.job_data.final_logical_to_physicals[0] = None
+        job.set_counts(result)
