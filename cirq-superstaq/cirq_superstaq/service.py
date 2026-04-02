@@ -241,7 +241,7 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: str | None = None,
         **kwargs: Any,
-    ) -> dict[str, int]: ...
+    ) -> dict[str, float]: ...
 
     @overload
     def get_counts(
@@ -252,7 +252,7 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: str | None = None,
         **kwargs: Any,
-    ) -> list[dict[str, int]]: ...
+    ) -> list[dict[str, float]]: ...
 
     def get_counts(
         self,
@@ -262,7 +262,7 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: str | None = None,
         **kwargs: Any,
-    ) -> dict[str, int] | list[dict[str, int]]:
+    ) -> dict[str, float] | list[dict[str, float]]:
         """Runs circuit(s) on the Superstaq API and returns the result(s) as a `dict`.
 
         Args:
