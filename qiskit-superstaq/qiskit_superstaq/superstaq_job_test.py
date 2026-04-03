@@ -444,15 +444,13 @@ def test_get_clbit_indicesV3(mock_client: gss.superstaq_client._SuperstaqClientV
     qc.cx(0, 1)
     qc.measure([0, 1], [0, 1])
 
-    job_dict = job_dictV3(1)
-    job_dict["statuses"] = ["completed"]
-    job_dict["input_circuit"] = [qss.serialization.serialize_circuits(qc)]
-
     job = qss.SuperstaqJobV3(mock_client, job_id=uuid.UUID(int=42))
-    job._job_data = gss.models.JobData(**job_dict)
+    job._job_data = gss.models.JobData(**job_dictV3(1))
+    job._job_data.input_circuits = [qss.serialize_circuits(qc)]
+    assert job._get_clbit_indices(0) == [0, 1]
 
-    returned_meas_list = job._get_clbit_indices(index=0)
-    assert returned_meas_list == [0, 1]
+    job._job_data.input_circuits = [qss.serialize_circuits(qiskit.QuantumCircuit(2, 3))]
+    assert job._get_clbit_indices(0) == [0, 1, 2]
 
 
 def test_get_num_clbits(backend: qss.SuperstaqBackend) -> None:
@@ -505,6 +503,24 @@ def test_arrange_countsV3(mock_client: gss.superstaq_client._SuperstaqClientV3) 
         "10101": 100,
         "10001": 25,
     }
+
+
+def test_terminal_measurement_qubit_indices(
+    mock_client: gss.superstaq_client._SuperstaqClientV3,
+) -> None:
+    qc = qiskit.QuantumCircuit(2, 4)
+    qc.measure([0, 1], [3, 1])
+
+    job = qss.SuperstaqJobV3(mock_client, job_id=uuid.UUID(int=42))
+    job._job_data = gss.models.JobData(**job_dictV3(1))
+    job._job_data.compiled_circuits = [qss.serialize_circuits(qc)]
+    assert job._terminal_measurement_qubit_indices(0) == [1, 0]
+
+    job._job_data.compiled_circuits = [qss.serialize_circuits(qiskit.QuantumCircuit(2, 4))]
+    assert job._terminal_measurement_qubit_indices(0) == [0, 1]
+
+    job._job_data.final_logical_to_physicals = [{0: 1, 1: 0}]
+    assert job._terminal_measurement_qubit_indices(0) == [1, 0]
 
 
 def test_check_if_stopped(backend: qss.SuperstaqBackend) -> None:
