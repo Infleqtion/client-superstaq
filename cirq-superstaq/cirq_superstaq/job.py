@@ -725,15 +725,15 @@ class JobV3(gss.job.Job):
             return _get_marginal_counts(single_counts, qubit_indices)
         return single_counts
 
-    def __repr__(self) -> str:
-        return f"css.JobV3(client={self._client!r}, job_id={self.job_id()!r})"
+    def _terminal_measurement_qubit_indices(self, index: int) -> list[int]:
+        """Returns the ordered physical qubit indices for each measurement in a compiled circuit.
 
-    def _classical_bit_mapping(self, index: int):
+        Indices are ordered as they should appear in (big-endian) bitstrings.
+        """
         compiled_circuit = self.compiled_circuits(index)
         assert compiled_circuit.are_all_measurements_terminal()
 
         if compiled_circuit.has_measurements():
-            # This is the 1
             key_to_qids: dict[str, tuple[cirq.Qid, ...]] = {}
             for _, op in compiled_circuit.findall_operations(cirq.is_measurement):
                 key = cirq.measurement_key_name(op)
@@ -746,7 +746,10 @@ class JobV3(gss.job.Job):
             circuit_qubits = sorted(compiled_circuit.all_qubits())
             return [circuit_qubits.index(q) for q in qid_list]
 
-        return super()._classical_bit_mapping(index)
+        return super()._terminal_measurement_qubit_indices(index)
+
+    def __repr__(self) -> str:
+        return f"css.JobV3(client={self._client!r}, job_id={self.job_id()!r})"
 
 
 def _get_marginal_counts(counts: dict[str, int], indices: Sequence[int]) -> dict[str, int]:

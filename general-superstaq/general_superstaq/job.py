@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import enum
 import time
 import uuid
 from collections.abc import Mapping, Sequence
@@ -26,7 +27,14 @@ import numpy as np
 import general_superstaq as gss
 
 if TYPE_CHECKING:
-    import jaqalpaq.run
+    import jaqalpaq.run.result
+
+
+class Endian(str, enum.Enum):
+    """Endianness to use when mapping quantum objects to matrices, state vectors, and bitstrings."""
+
+    BIG = "big"  # BQSKit, Braket, Cirq, Jaqal, TKET
+    LITTLE = "little"  # Qiskit
 
 
 class Job:
@@ -51,6 +59,8 @@ class Job:
         gss.models.CircuitStatus.COMPLETED,
         gss.models.CircuitStatus.DELETED,
     )
+
+    endianness = Endian.BIG
 
     def __init__(
         self,
@@ -266,7 +276,9 @@ class Job:
             self.set_counts_for_circuit(i, results[i])
 
     def set_counts_for_circuit(
-        self, index: int, result: Mapping[str, float] | jaqalpaq.run.result.SubcircuitView
+        self,
+        index: int,
+        result: Mapping[str, int] | jaqalpaq.run.result.SubcircuitView,
     ) -> None:
         """Manually input experimental counts for one circuits in this job.
 
@@ -287,16 +299,28 @@ class Job:
                 for bs, prob in normalized_counts.by_str.items()
             }
 
-            # JaqalPaq results are always ordered by qubit
-            logical_to_physical = self.job_data.final_logical_to_physicals[index]
-            if logical_to_physical is None:
-                raise ValueError("Circuit must be compiled before counts are set.")
+            # JaqalPaq results are always ordered by qubit (big-endian)
+            bitstring_qubit_indices = self._terminal_measurement_qubit_indices(index)
+            result = {
+                "".join(bs[i] for i in bitstring_qubit_indices): val for bs, val in result.items()
+            }
 
-            classical_indices = [logical_to_physical[i] for i in sorted(logical_to_physical.keys())]
-            result = {"".join(bs[i] for i in classical_indices): val for bs, val in result.items()}
+        elif self.endianness == Endian.LITTLE:
+            result = {bs[::-1]: val for bs, val in result.items()}
 
         self.job_data.counts[index] = dict(result)
         self.job_data.counts = self.job_data.counts  # Trigger revalidation
+
+    def _terminal_measurement_qubit_indices(self, index: int) -> list[int]:
+        """Returns the ordered physical qubit indices for each measurement in a compiled circuit.
+
+        Indices are ordered as they should appear in (big-endian) bitstrings.
+        """
+        logical_to_physical = self.job_data.final_logical_to_physicals[index]
+        if logical_to_physical is None:
+            raise ValueError("Circuit must be compiled before counts are set.")
+
+        return [logical_to_physical[i] for i in sorted(logical_to_physical.keys())]
 
     def to_dict(self) -> dict[str, gss.typing.Job]:
         """Refreshes and returns job information.

@@ -180,7 +180,7 @@ class JobData(DefaultPydanticModel):
     """The input circuits as serialized strings."""
     circuit_type: CircuitType
     """The circuit type used for representing the circuits."""
-    counts: list[dict[str, int | float] | None]
+    counts: list[dict[str, int] | None]
     """Counts for each input circuit (if available/relevant)."""
     results_dicts: list[str | None]
     """Serialized results dictionary for each input circuit (if available/relevant)."""
