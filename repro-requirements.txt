@@ -1,0 +1,1 @@
+general-superstaq @ git+https://github.com/Infleqtion/client-superstaq.git#subdirectory=general-superstaq
