@@ -1159,7 +1159,7 @@ class Service(gss.service.Service):
             noise=noise_dict,
         )
 
-    def process_cb(self, job_id: str, counts: list[dict[str, int]] | None = None) -> dict[str, Any]:
+    def process_cb(self, job_id: str | uuid.UUID, counts: Sequence[Mapping[str, float]] | None = None) -> dict[str, Any]:
         """Processes the data from the Cycle Benchmarking protocol.
         Generates SPAM and decay parameter estimations in addition to the process infidelity.
 
