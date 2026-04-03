@@ -422,6 +422,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
     """This class represents a Superstaq job instance."""
 
     shots = gss.job.Job._repetitions
+    endianness = gss.job.Endian.LITTLE
 
     def _arrange_counts(
         self, counts: dict[str, int], circ_meas_bit_indices: list[int], num_clbits: int
@@ -456,7 +457,12 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
             the job.
         """
         input_circuit = self.input_circuits(index)
-        return sorted(qss.classical_bit_mapping(input_circuit))
+        classical_bit_mapping = qss.classical_bit_mapping(input_circuit)
+        if classical_bit_mapping:
+            return sorted(classical_bit_mapping)
+
+        # If no measurement gates, assume everything is measured
+        return list(range(input_circuit.num_clbits))
 
     def _get_num_clbits(self, index: int) -> int:
         """Helper to get number of classical bits in the classical register of the input circuit.
@@ -468,6 +474,19 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
             The number of classical bits for the circuit in the job.
         """
         return self.input_circuits(index).num_clbits
+
+    def _terminal_measurement_qubit_indices(self, index: int) -> list[int]:
+        """Returns the ordered physical qubit indices for each measurement in a compiled circuit.
+
+        Indices are ordered as they should appear in (big-endian) bitstrings.
+        """
+        compiled_circuit = self.compiled_circuits(index)
+
+        classical_bit_mapping = qss.classical_bit_mapping(compiled_circuit)
+        if classical_bit_mapping:
+            return [classical_bit_mapping[i] for i in sorted(classical_bit_mapping)]
+
+        return super()._terminal_measurement_qubit_indices(index)
 
     def result(
         self,

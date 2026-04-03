@@ -263,7 +263,7 @@ def test_convert_gate_static(trial_gate: qiskit.circuit.Instruction) -> None:
 @parametrize_over_qiskit_gates(*trial_qiskit_pow_gates())
 def test_convert_gate_pow(trial_gate: qiskit.circuit.Instruction) -> None:
     cirq_gate = sm.converters.qiskit.qiskit_gate_to_cirq_gate(trial_gate)
-    exponent = trial_gate.params[0] / np.pi
+    exponent: float = trial_gate.params[0] / np.pi
     assert cirq_gate == sm.converters.qiskit._qiskit_pow_gates[trial_gate.base_class] ** exponent
     assert _gates_are_equivalent(trial_gate, cirq_gate)
 
