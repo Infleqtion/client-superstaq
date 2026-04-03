@@ -77,7 +77,7 @@ _cirq_static_gates: dict[cirq.Gate, qiskit.circuit.Gate] = {
 
 # Rotation gates with exactly one argument (aside from possibly `label`), with one-to-one mapping
 # between `qiskit_gate(z * pi)` and `cirq_gate**z`. Unitaries must have the same global phase.
-_qiskit_pow_gates: dict[type[qiskit.circuit.Instruction], cirq.Gate] = {
+_qiskit_pow_gates: dict[type[qiskit.circuit.Instruction], cirq.EigenGate] = {
     qiskit.circuit.library.PhaseGate: cirq.Z,
     qiskit.circuit.library.U1Gate: cirq.Z,
     qiskit.circuit.library.RXGate: cirq.rx(np.pi),

@@ -369,6 +369,10 @@ def test_set_counts(mock_client: gss.superstaq_client._SuperstaqClientV3) -> Non
     job.set_counts_for_circuit(0, counts[1])
     assert job.job_data.counts == counts[::-1]
 
+    with mock.patch("general_superstaq.Job.endianness", gss.job.Endian.LITTLE):
+        job.set_counts_for_circuit(0, counts[0])
+    assert job.job_data.counts[0] == {"100": 1, "010": 10, "001": 100}
+
 
 def test_set_counts_jaqal(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
     jaqalpaq_run = pytest.importorskip("jaqalpaq.run")
