@@ -26,7 +26,7 @@
 # that they have been altered from the originals.
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any, overload
 
 import general_superstaq as gss
@@ -62,7 +62,9 @@ class SuperstaqJob(qiskit.providers.JobV1):
     def __hash__(self) -> int:
         return hash(self._job_id)
 
-    def _wait_for_results(self, timeout: float, wait: float = 5) -> list[dict[str, dict[str, int]]]:
+    def _wait_for_results(
+        self, timeout: float, wait: float = 5
+    ) -> list[dict[str, dict[str, float]]]:
         """Waits for the results till either the job is done or some error in the job occurs.
 
         Args:
@@ -76,8 +78,8 @@ class SuperstaqJob(qiskit.providers.JobV1):
         return [self._job_info[job_id] for job_id in self._job_id.split(",")]
 
     def _arrange_counts(
-        self, counts: dict[str, int], circ_meas_bit_indices: list[int], num_clbits: int
-    ) -> dict[str, int]:
+        self, counts: Mapping[str, float], circ_meas_bit_indices: list[int], num_clbits: int
+    ) -> dict[str, float]:
         """Arranges the classical bit strings from job counts to match classical register.
 
         Args:
@@ -424,8 +426,8 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
     shots = gss.job.Job._repetitions
 
     def _arrange_counts(
-        self, counts: dict[str, int], circ_meas_bit_indices: list[int], num_clbits: int
-    ) -> dict[str, int]:
+        self, counts: Mapping[str, float], circ_meas_bit_indices: list[int], num_clbits: int
+    ) -> dict[str, float]:
         """Arranges the classical bit strings from job counts to match classical register.
 
         Args:
