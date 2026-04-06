@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import random
 import re
+import textwrap
 
 import numpy as np
 import pytest
@@ -137,3 +138,48 @@ def test_validate_qubo() -> None:
     gss.validation.validate_qubo({(1,): 1.2, (2,): 2.3, (1, 2): -3.4})
     gss.validation.validate_qubo({("a",): 1, ("b",): 2, ("a", "b"): -3})
     gss.validation.validate_qubo({(): 123})
+
+
+def test_validate_jaqal_qubits() -> None:
+    jaqal_program = textwrap.dedent(
+        """\
+        register baseregister[1]
+
+        prepare_all
+        R baseregister[0] -1.5707963267948966 1.5707963267948966
+        Rz baseregister[0] -3.141592653589793
+        measure_all
+        """
+    )
+    jaqal_program_alt = textwrap.dedent(
+        """\
+        register allqubits[4]
+
+        prepare_all
+        <
+            Rz allqubits[1] 1.5707963267948966
+            Rz allqubits[2] 0.6283185307179592
+        >
+        MS allqubits[1] allqubits[2] 0 -1.5707963267948963
+        <
+            R allqubits[1] 1.5707963267948966 1.5707963267948966
+            R allqubits[2] 3.141592653589793 1.5707963267948966
+        >
+        measure_all
+        """
+    )
+    assert (
+        gss.validation.get_validated_jaqal_qubits([jaqal_program])
+        == gss.validation.get_validated_jaqal_qubits([jaqal_program] * 3)
+        == 1
+    )
+    assert (
+        gss.validation.get_validated_jaqal_qubits([jaqal_program_alt])
+        == gss.validation.get_validated_jaqal_qubits(
+            [jaqal_program, jaqal_program_alt, jaqal_program]
+        )
+        == 4
+    )
+    with pytest.raises(ValueError, match=r"Could not determine number"):
+        missing_qubit_jaqal = "\n".join(jaqal_program.split("\n")[1:])
+        _ = gss.validation.get_validated_jaqal_qubits([missing_qubit_jaqal])
