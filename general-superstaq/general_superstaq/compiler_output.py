@@ -21,13 +21,6 @@ C = TypeVar("C")
 Q = TypeVar("Q")
 
 
-def _jaqal_programs_to_subcircuits(jaqal_programs: Sequence[str]) -> str:
-    separator = "prepare_all"
-    subcircuits = [jaqal_programs[0]]
-    subcircuits += [jaqal_program.partition(separator)[2] for jaqal_program in jaqal_programs[1:]]
-    return f"\n{separator}".join(subcircuits)
-
-
 class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
     """A base class that stores the results of compiled circuits."""
 
@@ -153,6 +146,13 @@ class CompilerOutput(BaseCompilerOutput[str, int]):
         )
 
 
+def _jaqal_programs_to_subcircuits(jaqal_programs: Sequence[str]) -> str:
+    separator = "prepare_all"
+    subcircuits = [jaqal_programs[0]]
+    subcircuits += [jaqal_program.partition(separator)[2] for jaqal_program in jaqal_programs[1:]]
+    return f"\n{separator}".join(subcircuits)
+
+
 def read_json_jaqal(
     json_dict: dict[str, Any], circuits_is_list: bool, num_eca_circuits: int | None = None
 ) -> CompilerOutput:
@@ -170,6 +170,11 @@ def read_json_jaqal(
     """
     compiled_circuits = json.loads(json_dict["jaqal_strs"])
 
+    # Convert a single subcircuit input back to single subcircuit output
+    if not circuits_is_list and len(compiled_circuits) != 1:
+        compiled_circuits = [_jaqal_programs_to_subcircuits(compiled_circuits)]
+        circuits_is_list = True
+
     initial_logical_to_physicals_list: list[dict[int, int]] = list(
         map(dict, json.loads(json_dict["initial_logical_to_physicals"]))
     )
@@ -184,6 +189,7 @@ def read_json_jaqal(
         final_logical_to_physicals_list
     )
 
+    jaqal_programs = compiled_circuits
     if num_eca_circuits:
         compiled_circuits = [
             compiled_circuits[i : i + num_eca_circuits]
@@ -197,18 +203,21 @@ def read_json_jaqal(
             final_logical_to_physicals_list[i : i + num_eca_circuits]
             for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
         ]
+        jaqal_programs = [
+            _jaqal_programs_to_subcircuits(jaqal_programs[i : i + num_eca_circuits])
+            for i in range(0, len(jaqal_programs), num_eca_circuits)
+        ]
 
-    if circuits_is_list:
+    if not circuits_is_list:
         return CompilerOutput(
-            circuits=compiled_circuits,
-            initial_logical_to_physicals=initial_logical_to_physicals,
-            final_logical_to_physicals=final_logical_to_physicals,
-            jaqal_programs=None,
+            compiled_circuits[0],
+            initial_logical_to_physicals[0],
+            final_logical_to_physicals[0],
+            jaqal_programs=jaqal_programs,
         )
-
     return CompilerOutput(
-        compiled_circuits[0],
-        initial_logical_to_physicals[0],
-        final_logical_to_physicals[0],
-        jaqal_programs=None,
+        circuits=compiled_circuits,
+        initial_logical_to_physicals=initial_logical_to_physicals,
+        final_logical_to_physicals=final_logical_to_physicals,
+        jaqal_programs=jaqal_programs,
     )
