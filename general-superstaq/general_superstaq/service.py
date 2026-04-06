@@ -17,7 +17,6 @@ from __future__ import annotations
 import json
 import numbers
 import os
-import re
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any, overload
 
@@ -294,7 +293,7 @@ class Service:
 
         return user_info
 
-    def jaqal_compile(  # noqa: C901
+    def jaqal_compile(
         self,
         jaqal_programs: str | Sequence[str],
         target: str = "qscout_peregrine_qpu",
@@ -330,7 +329,7 @@ class Service:
         Args:
             jaqal_programs: The circuit(s) to compile.
             target: String of target representing target device.
-            num_eca_circuits: Optional number of logically equivalent random jaqal programs to
+            num_eca_circuits: Optional number of logically equivalent random Jaqal programs to
                 generate from each input Jaqal program for Equivalent Circuit Averaging (ECA).
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
             base_entangling_gate: The base entangling gate to use ("xx", "zz", "sxx", or "szz").
@@ -338,7 +337,8 @@ class Service:
                 parameterized two-qubit interactions, while the "sxx" and "szz" bases will only use
                 fixed maximally-entangling rotations.
             num_qubits: An optional number of qubits that should be initialized in the returned
-                Jaqal program(s) (by default this will be determined from the input jaqal_programs).
+                Jaqal program(s) (by default this will be determined from the input
+                `jaqal_programs`).
             error_rates: Optional dictionary assigning relative error rates to pairs of physical
                 qubits, in the form `{<qubit_indices>: <error_rate>, ...}` where `<qubit_indices>`
                 is a tuple physical qubit indices (ints) and `<error_rate>` is a relative error rate
@@ -363,27 +363,13 @@ class Service:
 
         Raises:
             ValueError: If `base_entangling_gate` is not a valid gate option.
-            ValueError: If `target` is not a valid QSCOUT target.
         """
         target = gss.validation.validate_target(target)
-        if not target.startswith("qscout_"):
-            raise ValueError(f"{target!r} is not support by `jaqal_compile()`.")
-
         base_entangling_gate = base_entangling_gate.lower()
         if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
             raise ValueError("`base_entangling_gate` must be 'xx', 'zz', 'sxx', or 'szz'")
 
         circuits_is_list = not isinstance(jaqal_programs, str)
-        if circuits_is_list and len(jaqal_programs) == 1:
-            assert all(isinstance(item, str) for item in jaqal_programs)
-            jaqal_program = jaqal_programs[0]
-            if jaqal_program.count("prepare_all") > 1:
-                raise ValueError(
-                    "Subcircuits are not allowed if providing a list of Jaqal programs. Please "
-                    "consolidate all Jaqal programs into a single Jaqal program of subcircuits "
-                    "instead."
-                )
-
         options = {
             **kwargs,
             "mirror_swaps": mirror_swaps,
@@ -392,19 +378,9 @@ class Service:
             "atol": atol,
         }
 
-        if isinstance(jaqal_programs, str):
-            inferred_num_qubits = None
-            match = re.search(r"allqubits\[(\d+)\]", jaqal_programs)
-            if match:
-                inferred_num_qubits = int(match.group(1))
-        else:
-            inferred_num_qubits = max(
-                int(m.group(1))
-                for register in jaqal_programs
-                if (m := re.search(r"allqubits\[(\d+)\]", register))
-            )
-        if inferred_num_qubits is None:
-            raise ValueError("Could not determine number of qubits from Jaqal program register.")
+        inferred_num_qubits = gss.validation.get_validated_jaqal_qubits(
+            jaqal_programs if circuits_is_list else [jaqal_programs]
+        )
 
         if num_eca_circuits is not None:
             gss.validation.validate_integer_param(num_eca_circuits)

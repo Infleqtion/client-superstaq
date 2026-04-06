@@ -98,6 +98,26 @@ def validate_target(target: str) -> str:
     return target
 
 
+def get_validated_jaqal_qubits(jaqal_programs: list[str]) -> int:
+    """Gets the maximum number of qubits that should be initialized for all `jaqal_programs`.
+
+    Args:
+        jaqal_programs: The list of Jaqal programs to infer qubit number from.
+
+    Returns:
+        The max qubit register size needed for all `jaqal_programs`.
+
+    Raises:
+        ValueError: If no qubit count could be inferred from `jaqal_programs`.
+    """
+    pattern = re.compile(r"^\s*register\b.*?\[(\d+)\]", re.MULTILINE)
+    register_sizes = (int(m.group(1)) for jp in jaqal_programs for m in [pattern.search(jp)] if m)
+    inferred_num_qubits = max(register_sizes, default=None)
+    if inferred_num_qubits is None:
+        raise ValueError("Could not determine number of qubits from Jaqal program register(s).")
+    return inferred_num_qubits
+
+
 def validate_noise_type(noise: dict[str, object], n_qubits: int) -> None:
     """Validates that an ACES noise model is valid.
 
