@@ -487,7 +487,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
                 Omitted qubit pairs default to `atol`.
             keep_qubit_order: If True, do not reorder input qubits when compiling with ECA.
             random_seed: Used to seed any stochastic compilation passes (especially for ECA).
-            kwargs: Other desired qscout_compile options.
+            kwargs: Other desired `/qscout_compile` options.
 
         Returns:
             Object whose .circuit(s) attribute contains optimized `qiskit.QuantumCircuit`(s), and
@@ -496,60 +496,31 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         Raises:
             ValueError: If this is not a QSCOUT backend.
             ValueError: If `base_entangling_gate` is not a valid entangling basis.
+            ValueError: If provided `num_qubits` is less than the register size required by
+                `circuits`.
         """
         if not self.name.startswith("qscout_"):
             raise ValueError(f"{self.name!r} is not a valid QSCOUT target.")
 
-        base_entangling_gate = base_entangling_gate.lower()
-        if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
-            raise ValueError("`base_entangling_gate` must be 'xx', 'zz', 'sxx', or 'szz'")
-
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
-
-        options = {
-            **kwargs,
-            "mirror_swaps": mirror_swaps,
-            "base_entangling_gate": base_entangling_gate,
-            "keep_qubit_order": bool(keep_qubit_order),
-            "atol": atol,
-        }
-
         if isinstance(circuits, qiskit.QuantumCircuit):
             inferred_num_qubits = circuits.num_qubits
         else:
             inferred_num_qubits = max(c.num_qubits for c in circuits)
 
-        if num_eca_circuits is not None:
-            gss.validation.validate_integer_param(num_eca_circuits)
-            options["num_eca_circuits"] = int(num_eca_circuits)
-
-        if random_seed is not None:
-            gss.validation.validate_integer_param(random_seed)
-            options["random_seed"] = int(random_seed)
-
-        if error_rates is not None:
-            error_rates_list = list(error_rates.items())
-            options["error_rates"] = error_rates_list
-            inferred_num_qubits = max(
-                inferred_num_qubits, *(q + 1 for qs, _ in error_rates_list for q in qs)
-            )
-
-        if atol_map is not None:
-            atol_map_list = list(atol_map.items())
-            options["atol_map"] = atol_map_list
-            inferred_num_qubits = max(
-                inferred_num_qubits, *(q + 1 for qs, _ in atol_map_list for q in qs)
-            )
-
-        # Infer `num_qubits` from inputs, if not already specified
-        if num_qubits is None:
-            num_qubits = inferred_num_qubits
-
-        gss.validation.validate_integer_param(num_qubits)
-        if num_qubits < inferred_num_qubits:
-            raise ValueError(f"At least {inferred_num_qubits} qubits are required for this input.")
-
-        options["num_qubits"] = num_qubits
+        options = gss.validation.get_validated_qscout_options(
+            inferred_num_qubits,
+            num_eca_circuits=num_eca_circuits,
+            mirror_swaps=mirror_swaps,
+            base_entangling_gate=base_entangling_gate,
+            num_qubits=num_qubits,
+            error_rates=error_rates,
+            atol=atol,
+            atol_map=atol_map,
+            keep_qubit_order=keep_qubit_order,
+            random_seed=random_seed,
+            **kwargs,
+        )
 
         request_json = self._get_compile_request_json(circuits, **options)
         json_dict = self._provider._client.qscout_compile(request_json)
