@@ -377,10 +377,7 @@ class Service:
             "keep_qubit_order": bool(keep_qubit_order),
             "atol": atol,
         }
-
-        inferred_num_qubits = gss.validation.get_validated_jaqal_qubits(
-            jaqal_programs if circuits_is_list else [jaqal_programs]
-        )
+        inferred_num_qubits = gss.validation.get_validated_jaqal_qubits(jaqal_programs)
 
         if num_eca_circuits is not None:
             gss.validation.validate_integer_param(num_eca_circuits)
