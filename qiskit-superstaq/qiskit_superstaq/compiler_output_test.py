@@ -429,3 +429,6 @@ def test_compiler_output_eq() -> None:
         qss.compiler_output.CompilerOutput([circuit, circuit1], [{0: 0}, {1: 1}], [{5: 0}, {4: 0}])
         != co
     )
+
+    alt_co = gss.compiler_output.CompilerOutput("", {}, {})
+    assert alt_co != co

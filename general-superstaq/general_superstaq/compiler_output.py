@@ -86,7 +86,7 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
         )
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, BaseCompilerOutput):
+        if type(self) is not type(other):
             return False
 
         if self.has_multiple_circuits() != other.has_multiple_circuits():
