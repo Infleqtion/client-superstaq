@@ -36,7 +36,8 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
         """Constructs a `CompilerOutput` object.
 
         Args:
-            circuits: Compiled circuit or list of compiled circuits.
+            circuits: A compiled circuit or a list of compiled circuits or a list of list of
+                compiled circuits (e.g., if using ECA).
             initial_logical_to_physicals: Dictionary or list of dictionaries specifying initial
                 mapping from logical to physical qubits.
             final_logical_to_physicals: Dictionary or list of dictionaries specifying final mapping
@@ -160,8 +161,8 @@ def read_json_jaqal(
 
     Args:
         json_dict: A JSON dictionary matching the format returned by `/compile` endpoint.
-        circuits_is_list: Bool flag that controls whether the returned object has a .circuits
-            attribute (if True) or a .circuit attribute (False).
+        circuits_is_list: Boolean flag that controls whether the returned object has a `.circuits`
+            attribute (if True) or a `.circuit` attribute (False).
         num_eca_circuits: Number of logically equivalent random circuits to generate for each
             input circuit.
 

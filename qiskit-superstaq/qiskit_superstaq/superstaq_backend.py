@@ -464,10 +464,10 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             num_eca_circuits: Optional number of logically equivalent random circuits to generate
                 from each input circuit for Equivalent Circuit Averaging (ECA).
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
-            base_entangling_gate: The base entangling gate to use ("xx", "zz", "sxx", or "szz").
+            base_entangling_gate: The base entangling gate to use: ("xx", "zz", "sxx", or "szz").
                 Compilation with the "xx" and "zz" entangling bases will use arbitrary
                 parameterized two-qubit interactions, while the "sxx" and "szz" bases will only use
-                fixed maximally-entangling rotations.
+                fixed maximally-entangling rotations. Defaults to "xx".
             num_qubits: An optional number of qubits that should be present in the compiled
                 circuit(s) and Jaqal program(s) (otherwise this will be determined from the input).
             error_rates: Optional dictionary assigning relative error rates to pairs of physical

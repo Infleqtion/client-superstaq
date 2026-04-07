@@ -22,8 +22,6 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-import general_superstaq as gss
-
 if TYPE_CHECKING:
     import numpy.typing as npt
     from _typeshed import SupportsItems
@@ -253,10 +251,10 @@ def get_validated_qscout_options(
         num_eca_circuits: Optional number of logically equivalent random circuits for Equivalent
             Circuit Averaging (ECA).
         mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
-        base_entangling_gate: The base entangling gate to use ("xx", "zz", "sxx", or "szz").
+        base_entangling_gate: The base entangling gate to use: ("xx", "zz", "sxx", or "szz").
             Compilation with the "xx" and "zz" entangling bases will use arbitrary
             parameterized two-qubit interactions, while the "sxx" and "szz" bases will only use
-            fixed maximally-entangling rotations.
+            fixed maximally-entangling rotations. Defaults to "xx".
         num_qubits: An optional number of qubits that should be initialized in the backend (by
             default this will be determined from `inferred_num_qubits`).
         error_rates: Optional dictionary assigning relative error rates to pairs of physical
@@ -299,11 +297,11 @@ def get_validated_qscout_options(
     }
 
     if num_eca_circuits is not None:
-        gss.validation.validate_integer_param(num_eca_circuits)
+        validate_integer_param(num_eca_circuits)
         options["num_eca_circuits"] = int(num_eca_circuits)
 
     if random_seed is not None:
-        gss.validation.validate_integer_param(random_seed)
+        validate_integer_param(random_seed)
         options["random_seed"] = int(random_seed)
 
     if error_rates is not None:
@@ -324,7 +322,7 @@ def get_validated_qscout_options(
     if num_qubits is None:
         num_qubits = inferred_num_qubits
 
-    gss.validation.validate_integer_param(num_qubits)
+    validate_integer_param(num_qubits)
     if num_qubits < inferred_num_qubits:
         raise ValueError(f"At least {inferred_num_qubits} qubits are required for this input.")
 

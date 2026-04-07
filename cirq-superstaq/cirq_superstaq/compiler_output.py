@@ -114,7 +114,8 @@ class CompilerOutput(gss.BaseCompilerOutput[cirq.Circuit, cirq.Qid]):
         """Initializes the `CompilerOutput` attributes.
 
         Args:
-            circuits: A list (of at most 2 dimensions) containing `cirq.Circuit` objects.
+            circuits: A compiled circuit or a list of compiled circuits or a list of list of
+                compiled circuits (e.g., if using ECA).
             initial_logical_to_physicals: Pre-compilation mapping of logical qubits to physical
                 qubits.
             final_logical_to_physicals: Post-compilation mapping of logical qubits to physical

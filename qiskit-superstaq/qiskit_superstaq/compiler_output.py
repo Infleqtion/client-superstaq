@@ -123,7 +123,8 @@ class CompilerOutput(gss.BaseCompilerOutput[qiskit.QuantumCircuit, int]):
         """Constructs a `CompilerOutput` object.
 
         Args:
-            circuits: Compiled circuit or list of compiled circuits.
+            circuits: A compiled circuit or a list of compiled circuits or a list of list of
+                compiled circuits (e.g., if using ECA).
             initial_logical_to_physicals: Dictionary or list of dictionaries specifying initial
                 mapping from logical to physical qubits.
             final_logical_to_physicals: Dictionary or list of dictionaries specifying final mapping

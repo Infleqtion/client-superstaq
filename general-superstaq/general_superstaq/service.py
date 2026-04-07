@@ -332,10 +332,10 @@ class Service:
             num_eca_circuits: Optional number of logically equivalent random Jaqal programs to
                 generate from each input Jaqal program for Equivalent Circuit Averaging (ECA).
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
-            base_entangling_gate: The base entangling gate to use ("xx", "zz", "sxx", or "szz").
+            base_entangling_gate: The base entangling gate to use: ("xx", "zz", "sxx", or "szz").
                 Compilation with the "xx" and "zz" entangling bases will use arbitrary
                 parameterized two-qubit interactions, while the "sxx" and "szz" bases will only use
-                fixed maximally-entangling rotations.
+                fixed maximally-entangling rotations. Defaults to "xx".
             num_qubits: An optional number of qubits that should be initialized in the returned
                 Jaqal program(s) (by default this will be determined from the input
                 `jaqal_programs`).

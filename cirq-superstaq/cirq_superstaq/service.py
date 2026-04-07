@@ -657,10 +657,10 @@ class Service(gss.service.Service):
             num_eca_circuits: Optional number of logically equivalent random circuits to generate
                 from each input circuit for Equivalent Circuit Averaging (ECA).
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
-            base_entangling_gate: The base entangling gate to use ("xx", "zz", "sxx", or "szz").
+            base_entangling_gate: The base entangling gate to use: ("xx", "zz", "sxx", or "szz").
                 Compilation with the "xx" and "zz" entangling bases will use arbitrary
                 parameterized two-qubit interactions, while the "sxx" and "szz" bases will only use
-                fixed maximally-entangling rotations.
+                fixed maximally-entangling rotations. Defaults to "xx".
             num_qubits: An optional number of qubits that should be initialized in the returned
                 Jaqal program(s) (by default this will be determined from the input circuits).
             error_rates: Optional dictionary assigning relative error rates to pairs of physical
@@ -680,7 +680,7 @@ class Service(gss.service.Service):
                 Omitted qubit pairs default to `atol`.
             keep_qubit_order: If True, do not reorder input qubits when compiling with ECA.
             random_seed: Used to seed any stochastic compilation passes (especially for ECA).
-            kwargs: Other desired qscout_compile options.
+            kwargs: Other desired `/qscout_compile` options.
 
         Returns:
             Object whose .circuit(s) attribute contains optimized `cirq.Circuit`(s), and
