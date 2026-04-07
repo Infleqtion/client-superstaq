@@ -27,25 +27,29 @@ if TYPE_CHECKING:
     from _typeshed import SupportsItems
 
 
-def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
+def validate_integer_param(
+    integer_param: object, min_val: int = 1, *, parameter_name: str | None = None
+) -> None:
     """Validates that `integer_param` is an integer and positive (or above a minimum value).
 
     Args:
         integer_param: The input parameter to validate.
         min_val: Optional parameter to validate if `integer_param` is greater than `min_val`.
+        parameter_name: Optional name to print for `integer_param` in exception messages.
 
     Raises:
         TypeError: If `integer_param` is not an integer.
         ValueError: If `integer_param` is less than `min_val`.
     """
+    param_name = f"`{parameter_name}=" if parameter_name is not None else "`"
     if not (
         (hasattr(integer_param, "__int__") and int(integer_param) == integer_param)
         or (isinstance(integer_param, str) and integer_param.isdecimal())
     ):
-        raise TypeError(f"{integer_param} cannot be safely cast as an integer.")
+        raise TypeError(f"{param_name}{integer_param}` cannot be safely cast as an integer.")
 
     if int(integer_param) < min_val:
-        raise ValueError(f"{integer_param} is less than the minimum value ({min_val}).")
+        raise ValueError(f"{param_name}{integer_param}` is less than the minimum value: {min_val}.")
 
 
 def validate_bitmap(bitmap: npt.ArrayLike) -> None:
@@ -297,11 +301,11 @@ def get_validated_qscout_options(
     }
 
     if num_eca_circuits is not None:
-        validate_integer_param(num_eca_circuits)
+        validate_integer_param(num_eca_circuits, parameter_name="num_eca_circuits")
         options["num_eca_circuits"] = int(num_eca_circuits)
 
     if random_seed is not None:
-        validate_integer_param(random_seed)
+        validate_integer_param(random_seed, parameter_name="random_seed")
         options["random_seed"] = int(random_seed)
 
     if error_rates is not None:
@@ -322,7 +326,7 @@ def get_validated_qscout_options(
     if num_qubits is None:
         num_qubits = inferred_num_qubits
 
-    validate_integer_param(num_qubits)
+    validate_integer_param(num_qubits, parameter_name="num_qubits")
     if num_qubits < inferred_num_qubits:
         raise ValueError(f"At least {inferred_num_qubits} qubits are required for this input.")
 
