@@ -72,14 +72,15 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
         return hasattr(self, "circuits")
 
     def __repr__(self) -> str:
+        class_name = type(self).__name__
         if not self.has_multiple_circuits():
             return (
-                f"CompilerOutput({self.circuit!r}, {self.initial_logical_to_physical!r}, "
+                f"{class_name}({self.circuit!r}, {self.initial_logical_to_physical!r}, "
                 f"{self.final_logical_to_physical!r}, {self.pulse_gate_circuit!r}, "
                 f"{self.seq!r}, {self.jaqal_programs!r})"
             )
         return (
-            f"CompilerOutput({self.circuits!r}, {self.initial_logical_to_physicals!r}, "
+            f"{class_name}({self.circuits!r}, {self.initial_logical_to_physicals!r}, "
             f"{self.final_logical_to_physicals!r}, {self.pulse_gate_circuits!r}, "
             f"{self.seq!r}, {self.jaqal_programs!r})"
         )
