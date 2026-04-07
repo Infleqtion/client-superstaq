@@ -44,7 +44,7 @@ def test_validate_integer_param() -> None:
         with pytest.raises(TypeError) as msg:
             gss.validation.validate_integer_param(input_value)
         assert re.search(
-            re.escape(f"{input_value} cannot be safely cast as an integer."), str(msg.value)
+            re.escape(f"`{input_value}` cannot be safely cast as an integer."), str(msg.value)
         )
 
     # Tests for invalid input -> ValueError

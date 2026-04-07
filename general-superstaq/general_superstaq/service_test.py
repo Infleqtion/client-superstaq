@@ -239,12 +239,13 @@ def test_submit_jaqal() -> None:
     ):
         out = service.jaqal_compile(jaqal_program_as_subcircuits)
         assert out.has_multiple_circuits()
-        # If input was a single subcircuit Jaqal, then output should be a subcircuit
-        assert out.circuits == [jaqal_program_as_subcircuits]
+        # If input was a single subcircuit Jaqal, then output should be a list
+        assert out.circuits == [jaqal_program, jaqal_program]
+        # But the `.jaqal_program` will convert to a subcircuit string
+        assert out.jaqal_program == jaqal_program_as_subcircuits
+        assert out.jaqal_programs == [jaqal_program, jaqal_program]
         assert out.initial_logical_to_physicals == [{0: 1}, {0: 1}]
         assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
-        assert out.jaqal_program == jaqal_program_as_subcircuits
-        assert out.jaqal_programs == [jaqal_program_as_subcircuits]
 
         out = service.jaqal_compile([jaqal_program, jaqal_program])
         assert out.has_multiple_circuits()
@@ -255,6 +256,10 @@ def test_submit_jaqal() -> None:
         assert out.jaqal_programs == [jaqal_program, jaqal_program]
         assert out.jaqal_program == jaqal_program_as_subcircuits
 
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.qscout_compile",
+        return_value=json_dict,
+    ):
         out = service.jaqal_compile(
             [jaqal_program, jaqal_program], num_eca_circuits=1, random_seed=123
         )
@@ -278,6 +283,9 @@ def test_submit_jaqal() -> None:
 
     with pytest.raises(ValueError, match=r"must be 'xx', 'zz'"):
         _ = service.jaqal_compile(jaqal_program, base_entangling_gate="yy")
+
+    with pytest.raises(ValueError, match=r"requires a valid QSCOUT"):
+        _ = service.jaqal_compile(jaqal_program, target="qtm_h2-2_qpu", num_eca_circuits=5)
 
     jaqal_program = textwrap.dedent(
         """\
