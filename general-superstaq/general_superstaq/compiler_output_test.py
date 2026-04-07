@@ -13,13 +13,12 @@
 # limitations under the License.
 from __future__ import annotations
 
-import json
 import textwrap
 
 import general_superstaq as gss
 
 
-def test_read_json_jaqal() -> None:
+def test_compiler_output_repr() -> None:
     jaqal_program = textwrap.dedent(
         """\
         register allqubits[1]
@@ -30,14 +29,28 @@ def test_read_json_jaqal() -> None:
         measure_all
         """
     )
-    jaqal_program_as_subcircuits = textwrap.dedent(
-        """\
-        register allqubits[1]
+    qubit_map: dict[int, int] = {0: 0}
+    assert (
+        repr(gss.compiler_output.CompilerOutput(jaqal_program, qubit_map, qubit_map))
+        == f"CompilerOutput({jaqal_program!r}, {{0: 0}}, {{0: 0}}, None, None, None)"
+    )
 
-        prepare_all
-        R allqubits[0] -1.5707963267948966 1.5707963267948966
-        Rz allqubits[0] -3.141592653589793
-        measure_all
+    jaqal_programs = [jaqal_program, jaqal_program]
+    assert (
+        repr(
+            gss.compiler_output.CompilerOutput(
+                jaqal_programs, [qubit_map, qubit_map], [qubit_map, qubit_map]
+            )
+        )
+        == f"CompilerOutput({jaqal_programs!r}, [{{0: 0}}, {{0: 0}}], [{{0: 0}}, {{0: 0}}], "
+        "None, None, None)"
+    )
+
+
+def test_compiler_output_eq() -> None:
+    jaqal_program = textwrap.dedent(
+        """\
+        register allqubits[2]
 
         prepare_all
         R allqubits[0] -1.5707963267948966 1.5707963267948966
@@ -45,50 +58,23 @@ def test_read_json_jaqal() -> None:
         measure_all
         """
     )
+    co = gss.compiler_output.CompilerOutput(jaqal_program, {0: 0}, {0: 1})
+    assert co != 1
+    assert not co.jaqal_programs
+    assert not co.jaqal_program
 
-    json_dict: dict[str, str | list[str]] = {
-        "jaqal_strs": json.dumps([jaqal_program]),
-        "initial_logical_to_physicals": json.dumps([[(0, 1)]]),
-        "final_logical_to_physicals": json.dumps([[(0, 13)]]),
-    }
+    jaqal_program_alt = ""
+    assert co != gss.compiler_output.CompilerOutput(jaqal_program_alt, {}, {})
 
-    out = gss.compiler_output.read_json_jaqal(json_dict, circuits_is_list=False)
-    assert out.circuit == jaqal_program
-    assert out.initial_logical_to_physical == {0: 1}
-    assert out.final_logical_to_physical == {0: 13}
-    assert out.jaqal_program == jaqal_program
-    assert out.jaqal_programs == [jaqal_program]
+    assert (
+        gss.compiler_output.CompilerOutput(
+            [jaqal_program, jaqal_program], [{0: 0}, {0: 0}], [{0: 1}, {0: 1}]
+        )
+        != co
+    )
 
-    json_dict = {
-        "jaqal_strs": json.dumps([jaqal_program, jaqal_program]),
-        "initial_logical_to_physicals": json.dumps([[(0, 1)], [(0, 1)]]),
-        "final_logical_to_physicals": json.dumps([[(0, 13)], [(0, 13)]]),
-    }
-
-    out = gss.compiler_output.read_json_jaqal(json_dict, circuits_is_list=False)
-    # If input was a single subcircuit Jaqal, then output should be a subcircuit
-    assert out.circuits == [jaqal_program_as_subcircuits]
-    assert out.initial_logical_to_physicals == [{0: 1}, {0: 1}]
-    assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
-    assert out.jaqal_program == jaqal_program_as_subcircuits
-    assert out.jaqal_programs == [jaqal_program_as_subcircuits]
-
-    out = gss.compiler_output.read_json_jaqal(json_dict, circuits_is_list=True)
-    # If input was a list of Jaqal, then output should be a list of Jaqal
-    assert out.circuits == [jaqal_program, jaqal_program]
-    assert out.initial_logical_to_physicals == [{0: 1}, {0: 1}]
-    assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
-    assert out.jaqal_programs == [jaqal_program, jaqal_program]
-    assert out.jaqal_program == jaqal_program_as_subcircuits
-
-    out = gss.compiler_output.read_json_jaqal(json_dict, circuits_is_list=True, num_eca_circuits=1)
-    assert out.circuits == [[jaqal_program], [jaqal_program]]
-    assert out.initial_logical_to_physicals == [[{0: 1}], [{0: 1}]]
-    assert out.final_logical_to_physicals == [[{0: 13}], [{0: 13}]]
-    assert out.jaqal_programs == [jaqal_program, jaqal_program]
-
-    out = gss.compiler_output.read_json_jaqal(json_dict, circuits_is_list=True, num_eca_circuits=2)
-    assert out.circuits == [[jaqal_program, jaqal_program]]
-    assert out.initial_logical_to_physicals == [[{0: 1}, {0: 1}]]
-    assert out.final_logical_to_physicals == [[{0: 13}, {0: 13}]]
-    assert out.jaqal_programs == [jaqal_program_as_subcircuits]
+    assert gss.compiler_output.CompilerOutput(
+        [jaqal_program, jaqal_program], [{0: 0}, {0: 0}], [{0: 1}, {0: 1}]
+    ) != gss.compiler_output.CompilerOutput(
+        [jaqal_program, jaqal_program_alt], [{0: 0}, {}], [{0: 1}, {}]
+    )
