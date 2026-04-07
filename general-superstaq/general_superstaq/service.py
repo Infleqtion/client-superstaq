@@ -327,7 +327,7 @@ class Service:
                 https://arxiv.org/abs/2111.04572
 
         Args:
-            jaqal_programs: The circuit(s) to compile.
+            jaqal_programs: The Jaqal program string(s) to compile.
             target: String of target representing target device.
             num_eca_circuits: Optional number of logically equivalent random Jaqal programs to
                 generate from each input Jaqal program for Equivalent Circuit Averaging (ECA).
