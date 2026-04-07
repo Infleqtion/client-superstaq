@@ -370,6 +370,12 @@ class Service:
         circuits_is_list = not isinstance(jaqal_programs, str)
 
         inferred_num_qubits = gss.validation.get_validated_jaqal_qubits(jaqal_programs)
+
+        if not target.startswith("qscout_") and num_eca_circuits is not None:
+            raise ValueError(
+                "Using Equivalent Circuit Averaging (ECA) requires a valid QSCOUT target."
+            )
+
         options = gss.validation.get_validated_qscout_options(
             inferred_num_qubits,
             num_eca_circuits=num_eca_circuits,
@@ -384,7 +390,10 @@ class Service:
             **kwargs,
         )
 
-        json_dict = self._client.compile(
+        endpoint_to_use = (
+            self._client.qscout_compile if num_eca_circuits is not None else self._client.compile
+        )
+        json_dict = endpoint_to_use(
             {
                 "jaqal_strs": json.dumps(jaqal_programs)
                 if circuits_is_list

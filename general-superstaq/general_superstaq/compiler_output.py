@@ -171,11 +171,6 @@ def read_json_jaqal(
     """
     compiled_circuits = json.loads(json_dict["jaqal_strs"])
 
-    # Convert a single subcircuit input back to single subcircuit output
-    if not circuits_is_list and len(compiled_circuits) != 1:
-        compiled_circuits = [_jaqal_programs_to_subcircuits(compiled_circuits)]
-        circuits_is_list = True
-
     initial_logical_to_physicals_list: list[dict[int, int]] = list(
         map(dict, json.loads(json_dict["initial_logical_to_physicals"]))
     )
@@ -190,7 +185,7 @@ def read_json_jaqal(
         final_logical_to_physicals_list
     )
 
-    jaqal_programs = compiled_circuits
+    jaqal_programs: list[str] = json_dict.get("jaqal_programs", compiled_circuits)
     if num_eca_circuits:
         compiled_circuits = [
             compiled_circuits[i : i + num_eca_circuits]
@@ -209,16 +204,16 @@ def read_json_jaqal(
             for i in range(0, len(jaqal_programs), num_eca_circuits)
         ]
 
-    if not circuits_is_list:
+    if circuits_is_list or len(compiled_circuits) != 1 or num_eca_circuits:
         return CompilerOutput(
-            compiled_circuits[0],
-            initial_logical_to_physicals[0],
-            final_logical_to_physicals[0],
+            circuits=compiled_circuits,
+            initial_logical_to_physicals=initial_logical_to_physicals,
+            final_logical_to_physicals=final_logical_to_physicals,
             jaqal_programs=jaqal_programs,
         )
     return CompilerOutput(
-        circuits=compiled_circuits,
-        initial_logical_to_physicals=initial_logical_to_physicals,
-        final_logical_to_physicals=final_logical_to_physicals,
+        compiled_circuits[0],
+        initial_logical_to_physicals[0],
+        final_logical_to_physicals[0],
         jaqal_programs=jaqal_programs,
     )
