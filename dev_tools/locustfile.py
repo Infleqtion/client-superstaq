@@ -27,8 +27,6 @@ import cirq_superstaq as css
 import locust.env
 import requests
 
-# ruff: noqa: INP001
-
 
 @locust.events.quitting.add_listener
 def _(environment: locust.env.Environment) -> None:

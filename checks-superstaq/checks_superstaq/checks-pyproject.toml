@@ -35,7 +35,6 @@ lint.select = [
   "G",      # flake8-logging-format
   "I",      # isort checks
   "ICN",    # flake8-import-conventions
-  "INP",    # flake8-no-pep420
   "ISC",    # flake8-implicit-str-concat checks
   "LOG",    # flake8-logging checks
   "N",      # pep8-naming
@@ -86,6 +85,7 @@ lint.ignore = [
   "FAST002",
   "N802",
   "N806",
+  "N818",
   "PERF401",
   "PLC0105",
   "PLC0206",
