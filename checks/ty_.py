@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2026 Infleqtion
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,35 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from checks_superstaq._version import __version__
+from __future__ import annotations
 
-from . import (
-    all_,
-    build_docs,
-    check_utils,
-    configs,
-    coverage_,
-    format_,
-    licenses,
-    lint_,
-    mypy_,
-    pytest_,
-    requirements,
-    ty_,
-)
+import sys
 
-__all__ = [
-    "__version__",
-    "all_",
-    "build_docs",
-    "check_utils",
-    "configs",
-    "coverage_",
-    "format_",
-    "licenses",
-    "lint_",
-    "mypy_",
-    "pytest_",
-    "requirements",
-    "ty_",
-]
+import checks_superstaq as checks
+
+if __name__ == "__main__":
+    sys.exit(checks.ty_.run(*sys.argv[1:]))

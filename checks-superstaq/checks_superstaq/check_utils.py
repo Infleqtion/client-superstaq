@@ -305,6 +305,7 @@ CHECK_LIST = [
     "coverage",
     "requirements",
     "build_docs",
+    "ty"
 ]
 
 
