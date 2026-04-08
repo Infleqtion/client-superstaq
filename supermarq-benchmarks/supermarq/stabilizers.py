@@ -195,7 +195,7 @@ def binary_gaussian_elimination(mat: npt.NDArray[np.uint8]) -> npt.NDArray[np.ui
     return mat
 
 
-def prepare_X_matrix(measurement_circuit: MeasurementCircuit) -> None:
+def prepare_x_matrix(measurement_circuit: MeasurementCircuit) -> None:
     """Apply H's to a subset of qubits to ensure that the X matrix has full rank.
 
     Args:
@@ -208,7 +208,7 @@ def prepare_X_matrix(measurement_circuit: MeasurementCircuit) -> None:
         measurement_circuit_copy = copy.deepcopy(measurement_circuit)
         for i, bit in enumerate(f"{bitstring:b}".zfill(N)):
             if bit == "1":
-                apply_H(measurement_circuit_copy, i)
+                apply_h(measurement_circuit_copy, i)
         if (
             np.linalg.matrix_rank(measurement_circuit_copy.get_stabilizer()[N:]) == N
         ):  # done if full rank
@@ -217,17 +217,17 @@ def prepare_X_matrix(measurement_circuit: MeasurementCircuit) -> None:
             return
 
 
-def row_reduce_X_matrix(measurement_circuit: MeasurementCircuit) -> None:
+def row_reduce_x_matrix(measurement_circuit: MeasurementCircuit) -> None:
     """Use Gaussian elimination to reduce the Z matrix to the Identity matrix.
 
     Args:
         measurement_circuit: The current measurement circuit to act on.
     """
-    transform_X_matrix_to_row_echelon_form(measurement_circuit)
-    transform_X_matrix_to_reduced_row_echelon_form(measurement_circuit)
+    transform_x_matrix_to_row_echelon_form(measurement_circuit)
+    transform_x_matrix_to_reduced_row_echelon_form(measurement_circuit)
 
 
-def transform_X_matrix_to_row_echelon_form(measurement_circuit: MeasurementCircuit) -> None:
+def transform_x_matrix_to_row_echelon_form(measurement_circuit: MeasurementCircuit) -> None:
     """Apply SWAPs and CNOTs until the X matrix is in row echelon form.
 
     Args:
@@ -239,14 +239,14 @@ def transform_X_matrix_to_row_echelon_form(measurement_circuit: MeasurementCircu
             i = j + 1
             while measurement_circuit.get_stabilizer()[i + N, j] == 0:
                 i += 1
-            apply_SWAP(measurement_circuit, i, j)
+            apply_swap(measurement_circuit, i, j)
 
         for i in range(N + j + 1, 2 * N):
             if measurement_circuit.get_stabilizer()[i, j] == 1:
-                apply_CNOT(measurement_circuit, j, i - N)
+                apply_cnot(measurement_circuit, j, i - N)
 
 
-def transform_X_matrix_to_reduced_row_echelon_form(measurement_circuit: MeasurementCircuit) -> None:
+def transform_x_matrix_to_reduced_row_echelon_form(measurement_circuit: MeasurementCircuit) -> None:
     """Apply CNOTs to put the X matrix in reduced echelon form.
 
     The X stabilizer matrix of the input MeasurementCircuit should already be
@@ -259,10 +259,10 @@ def transform_X_matrix_to_reduced_row_echelon_form(measurement_circuit: Measurem
     for j in range(N - 1, 0, -1):
         for i in range(N, N + j):
             if measurement_circuit.get_stabilizer()[i, j] == 1:
-                apply_CNOT(measurement_circuit, j, i - N)
+                apply_cnot(measurement_circuit, j, i - N)
 
 
-def patch_Z_matrix(measurement_circuit: MeasurementCircuit) -> None:
+def patch_z_matrix(measurement_circuit: MeasurementCircuit) -> None:
     """Apply S and CZ operations to clear the Z matrix.
 
     Args:
@@ -276,14 +276,14 @@ def patch_Z_matrix(measurement_circuit: MeasurementCircuit) -> None:
     for i in range(N):
         for j in range(i):
             if stabilizer_matrix[i, j] == 1:
-                apply_CZ(measurement_circuit, i, j)
+                apply_cz(measurement_circuit, i, j)
 
         j = i
         if stabilizer_matrix[i, j] == 1:
-            apply_S(measurement_circuit, i)
+            apply_s(measurement_circuit, i)
 
 
-def change_X_to_Z_basis(measurement_circuit: MeasurementCircuit) -> None:
+def change_x_to_z_basis(measurement_circuit: MeasurementCircuit) -> None:
     """Apply Hadamards to swap the Z and X matrices.
 
     Args:
@@ -292,10 +292,10 @@ def change_X_to_Z_basis(measurement_circuit: MeasurementCircuit) -> None:
     # change each qubit from X basis to Z basis via H
     N = measurement_circuit.num_qubits
     for j in range(N):
-        apply_H(measurement_circuit, j)
+        apply_h(measurement_circuit, j)
 
 
-def apply_H(measurement_circuit: MeasurementCircuit, i: int) -> None:
+def apply_h(measurement_circuit: MeasurementCircuit, i: int) -> None:
     """Apply a Hadamard on the specified qubit.
 
     Args:
@@ -310,7 +310,7 @@ def apply_H(measurement_circuit: MeasurementCircuit, i: int) -> None:
     measurement_circuit.get_circuit().append(cirq.H(qubits[i]))
 
 
-def apply_S(measurement_circuit: MeasurementCircuit, i: int) -> None:
+def apply_s(measurement_circuit: MeasurementCircuit, i: int) -> None:
     """Apply an S gate on the specified qubit.
 
     Args:
@@ -322,7 +322,7 @@ def apply_S(measurement_circuit: MeasurementCircuit, i: int) -> None:
     measurement_circuit.get_circuit().append(cirq.S(qubits[i]))
 
 
-def apply_CZ(measurement_circuit: MeasurementCircuit, i: int, j: int) -> None:
+def apply_cz(measurement_circuit: MeasurementCircuit, i: int, j: int) -> None:
     """Apply a CZ gate on the specified qubits.
 
     Args:
@@ -336,7 +336,7 @@ def apply_CZ(measurement_circuit: MeasurementCircuit, i: int, j: int) -> None:
     measurement_circuit.get_circuit().append(cirq.CZ(qubits[i], qubits[j]))
 
 
-def apply_CNOT(
+def apply_cnot(
     measurement_circuit: MeasurementCircuit, control_index: int, target_index: int
 ) -> None:
     """Apply a CNOT gate on the specified qubits.
@@ -359,7 +359,7 @@ def apply_CNOT(
     measurement_circuit.get_circuit().append(cirq.CNOT(qubits[control_index], qubits[target_index]))
 
 
-def apply_SWAP(measurement_circuit: MeasurementCircuit, i: int, j: int) -> None:
+def apply_swap(measurement_circuit: MeasurementCircuit, i: int, j: int) -> None:
     """Apply a SWAP gate on the specified qubits.
 
     Args:

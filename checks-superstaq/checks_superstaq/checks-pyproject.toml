@@ -83,7 +83,6 @@ lint.ignore = [
   "D301",
   "E731",
   "FAST002",
-  "N802",
   "N806",
   "N818",
   "PERF401",
@@ -149,7 +148,7 @@ docstring-code-format = true
 
 [tool.ruff.lint.per-file-ignores]
 "*.ipynb" = ["D101", "D102", "D103", "E501", "ERA001", "T201"]
-"*test.py" = ["D101", "D102", "D103", "N803", "S105", "S106"]
+"*test.py" = ["D101", "D102", "D103", "N802", "N803", "S105", "S106"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
