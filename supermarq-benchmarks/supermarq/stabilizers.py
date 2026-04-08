@@ -98,7 +98,7 @@ class MeasurementCircuit:
 
 
 def construct_stabilizer(
-    N: int, clique: list[tuple[float, str]]
+    num_qubits: int, clique: list[tuple[float, str]]
 ) -> tuple[npt.NDArray[np.uint8], list[str]]:
     """Construct the independent Z+X stabilizer matrix for the given clique.
 
@@ -118,7 +118,7 @@ def construct_stabilizer(
         strings.
 
     Args:
-        N: An integer corresponding to the number of qubits.
+        num_qubits: An integer corresponding to the number of qubits.
         clique: A list of (coefficient, Pauli string) pairs, for example:
             [(-1.2, XXY), (2.3, ZXI), ...].
 
@@ -128,14 +128,14 @@ def construct_stabilizer(
     # Construct the stabilizer matrix as rows
     stabilizer_rows = []
     for _, pauli in clique:
-        cur_row = np.zeros(2 * N)
-        for i in range(N):
+        cur_row = np.zeros(2 * num_qubits)
+        for i in range(num_qubits):
             # Pauli Z's never appear in the Mermin operator
             if pauli[i] == "X":
-                cur_row[i + N] = 1
+                cur_row[i + num_qubits] = 1
             elif pauli[i] == "Y":
                 cur_row[i] = 1
-                cur_row[i + N] = 1
+                cur_row[i + num_qubits] = 1
         stabilizer_rows.append(cur_row)
 
     # Transpose the matrix to put it in the proper Z+X form with shape (2*N, N)
@@ -163,36 +163,36 @@ def construct_stabilizer(
     return np.array(stabilizer_matrix).T, pauli_basis
 
 
-def binary_gaussian_elimination(M: npt.NDArray[np.uint8]) -> npt.NDArray[np.uint8]:
-    """Use binary Gaussian elimination to put the input matrix in row echelon form.
+def binary_gaussian_elimination(mat: npt.NDArray[np.uint8]) -> npt.NDArray[np.uint8]:
+    """Use binary Gaussian elimination to put the input matrix, `mat`, in row echelon form.
 
     The input matrix should be a binary matrix.
 
     Args:
-        M: Input matrix that contains linearly depedent columns.
+        mat: Input matrix that contains linearly dependent columns.
 
     Returns:
         A modified matrix in row echelon form.
     """
-    num_rows, num_cols = M.shape
+    num_rows, num_cols = mat.shape
     for i in range(num_cols):
         if i >= num_rows:
             break
-        # find the last non-zero element of column i, starting in row i
+        # Find the last non-zero element of column i, starting in row i
         max_i = i
         for k in range(i, num_rows):
-            if M[k, i] == 1:
+            if mat[k, i] == 1:
                 max_i = k
 
         # Swap rows i and max_i
-        M[[i, max_i], :] = M[[max_i, i], :]
+        mat[[i, max_i], :] = mat[[max_i, i], :]
 
         for u in range(i + 1, num_rows):
             # Add M[u, i] * row i to row u
-            M[u, :] = (M[u, i] * M[i, :] + M[u, :]) % 2
+            mat[u, :] = (mat[u, i] * mat[i, :] + mat[u, :]) % 2
 
-    # Matrix M is now in row echelon form
-    return M
+    # Matrix `mat` is now in row echelon form
+    return mat
 
 
 def prepare_X_matrix(measurement_circuit: MeasurementCircuit) -> None:
