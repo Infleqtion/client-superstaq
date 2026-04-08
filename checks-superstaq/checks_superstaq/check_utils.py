@@ -297,16 +297,7 @@ def get_test_files(
 ####################################################################################################
 # file parsing, incremental checks, and decorator to exit instead of returning a failing exit code
 
-CHECK_LIST = [
-    "configs",
-    "format",
-    "mypy",
-    "pytest",
-    "coverage",
-    "requirements",
-    "build_docs",
-    "ty"
-]
+CHECK_LIST = ["configs", "format", "mypy", "pytest", "coverage", "requirements", "build_docs", "ty"]
 
 
 def get_check_parser(no_files: bool = False) -> argparse.ArgumentParser:
