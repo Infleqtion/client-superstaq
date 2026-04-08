@@ -29,13 +29,16 @@ lint.select = [
   "F",      # pyflakes checks
   "FA",     # flake8-future-annotations checks
   "FAST",   # FastAPI checks
+  "FBT003", # boolean-positional-value-in-call checks
   "FLY",    # flynt checks
   "FURB",   # refurb checks
   "G",      # flake8-logging-format
   "I",      # isort checks
   "ICN",    # flake8-import-conventions
+  "INP",    # flake8-no-pep420
   "ISC",    # flake8-implicit-str-concat checks
   "LOG",    # flake8-logging checks
+  "N",      # pep8-naming
   "NPY",    # numpy-specific checks
   "PD",     # pandas-vet
   "PERF",   # Perflint checks
@@ -48,6 +51,7 @@ lint.select = [
   "RET",    # flake8-return checks
   "RSE",    # flake8-raise checks
   "RUF",    # Ruff-specific checks
+  "S",      # flake8-bandit
   "SIM",    # flake8-simplify checks
   "SLOT",   # flake8-slots checks
   "T10",    # flake8-debugger checks
@@ -80,6 +84,8 @@ lint.ignore = [
   "D301",
   "E731",
   "FAST002",
+  "N802",
+  "N806",
   "PERF401",
   "PLC0105",
   "PLC0206",
@@ -97,6 +103,9 @@ lint.ignore = [
   "RET504",
   "RUF001",
   "RUF002",
+  "S101",
+  "S112",
+  "S603",
   "SIM102",
   "SIM105",
   "SIM108",
@@ -138,7 +147,7 @@ docstring-code-format = true
 
 [tool.ruff.lint.per-file-ignores]
 "*.ipynb" = ["D101", "D102", "D103", "E501", "ERA001", "T201"]
-"*test.py" = ["D101", "D102", "D103"]
+"*test.py" = ["D101", "D102", "D103", "N803", "S105", "S106"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
