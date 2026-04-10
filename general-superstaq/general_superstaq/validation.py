@@ -247,7 +247,7 @@ def get_validated_qscout_options(
     **kwargs: object,
 ) -> dict[str, Any]:
     """Generates an options dictionary packaging all keyword args into a format compatible for
-        `/qscout_compile` and `jaqal_compile()`.
+        `/qscout_compile` and `/compile` (for Jaqal).
 
     Args:
         inferred_num_qubits: The determined number of qubits needed by the endpoint these options
