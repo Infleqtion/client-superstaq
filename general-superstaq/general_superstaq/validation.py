@@ -18,33 +18,38 @@ import numbers
 import re
 import warnings
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 if TYPE_CHECKING:
     import numpy.typing as npt
+    from _typeshed import SupportsItems
 
 
-def validate_integer_param(integer_param: object, min_val: int = 1) -> None:
+def validate_integer_param(
+    integer_param: object, min_val: int = 1, *, parameter_name: str | None = None
+) -> None:
     """Validates that `integer_param` is an integer and positive (or above a minimum value).
 
     Args:
         integer_param: The input parameter to validate.
         min_val: Optional parameter to validate if `integer_param` is greater than `min_val`.
+        parameter_name: Optional name to print for `integer_param` in exception messages.
 
     Raises:
         TypeError: If `integer_param` is not an integer.
         ValueError: If `integer_param` is less than `min_val`.
     """
+    param_name = f"`{parameter_name}=" if parameter_name is not None else "`"
     if not (
         (hasattr(integer_param, "__int__") and int(integer_param) == integer_param)
         or (isinstance(integer_param, str) and integer_param.isdecimal())
     ):
-        raise TypeError(f"{integer_param} cannot be safely cast as an integer.")
+        raise TypeError(f"{param_name}{integer_param}` cannot be safely cast as an integer.")
 
     if int(integer_param) < min_val:
-        raise ValueError(f"{integer_param} is less than the minimum value ({min_val}).")
+        raise ValueError(f"{param_name}{integer_param}` is less than the minimum value: {min_val}.")
 
 
 def validate_bitmap(bitmap: npt.ArrayLike) -> None:
@@ -96,6 +101,27 @@ def validate_target(target: str) -> str:
         )
 
     return target
+
+
+def get_validated_jaqal_qubits(jaqal_programs: str | Sequence[str]) -> int:
+    """Gets the maximum number of qubits that should be initialized for all `jaqal_programs`.
+
+    Args:
+        jaqal_programs: The Jaqal program(s) to infer qubit count from.
+
+    Returns:
+        The max qubit register size needed for all `jaqal_programs`.
+
+    Raises:
+        ValueError: If no qubit count could be inferred from `jaqal_programs`.
+    """
+    jaqal_programs = [jaqal_programs] if isinstance(jaqal_programs, str) else jaqal_programs
+    pattern = re.compile(r"^\s*register\b.*?\[(\d+)\]", re.MULTILINE)
+    register_sizes = (int(m.group(1)) for jp in jaqal_programs for m in [pattern.search(jp)] if m)
+    inferred_num_qubits = max(register_sizes, default=None)
+    if inferred_num_qubits is None:
+        raise ValueError("Could not determine number of qubits from Jaqal program register(s).")
+    return inferred_num_qubits
 
 
 def validate_noise_type(noise: dict[str, object], n_qubits: int) -> None:
@@ -204,3 +230,105 @@ def _validate_ibm_channel(ibm_channel: str) -> str:
         raise ValueError("`ibmq_channel` must be either 'ibm_cloud' or 'ibm_quantum_platform'.")
 
     return ibm_channel
+
+
+def get_validated_qscout_options(
+    inferred_num_qubits: int,
+    *,
+    num_eca_circuits: int | None = None,
+    mirror_swaps: bool = False,
+    base_entangling_gate: str = "xx",
+    num_qubits: int | None = None,
+    error_rates: SupportsItems[tuple[int, ...], float] | None = None,
+    atol: float = 1e-8,
+    atol_map: SupportsItems[tuple[int, ...], float] | None = None,
+    keep_qubit_order: bool = False,
+    random_seed: int | None = None,
+    **kwargs: object,
+) -> dict[str, Any]:
+    """Generates an options dictionary packaging all keyword args into a format compatible for
+        `/qscout_compile` and `/compile` (for Jaqal).
+
+    Args:
+        inferred_num_qubits: The determined number of qubits needed by the endpoint these options
+            correspond to.
+        num_eca_circuits: Optional number of logically equivalent random circuits for Equivalent
+            Circuit Averaging (ECA).
+        mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
+        base_entangling_gate: The base entangling gate to use: ("xx", "zz", "sxx", or "szz").
+            Compilation with the "xx" and "zz" entangling bases will use arbitrary
+            parameterized two-qubit interactions, while the "sxx" and "szz" bases will only use
+            fixed maximally-entangling rotations. Defaults to "xx".
+        num_qubits: An optional number of qubits that should be initialized in the backend (by
+            default this will be determined from `inferred_num_qubits`).
+        error_rates: Optional dictionary assigning relative error rates to pairs of physical
+            qubits, in the form `{<qubit_indices>: <error_rate>, ...}` where `<qubit_indices>`
+            is a tuple physical qubit indices (ints) and `<error_rate>` is a relative error rate
+            for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`). If
+            provided, Superstaq will attempt to map the circuit to minimize the total error on
+            each qubit. Omitted qubit pairs are assumed to be error-free.
+        atol: Optional tolerance (trace distance bound) used for approximate compilation.
+            Superstaq will elide gates which can be approximated within the given tolerance by
+            identity operations.
+        atol_map: Optional dictionary assigning compilation tolerances to physical qubits, in
+            the form `{<qubit_indices>: <atol>, ...}` where `<qubit_indices>` is a tuple of
+            physical qubit indices (ints) and `<atol>` is an absolute tolerance (trace distance
+            bound) for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`).
+            If provided, these tolerances will override `atol` for gates on the given qubits.
+            Omitted qubit pairs default to `atol`.
+        keep_qubit_order: If `True`, do not reorder input qubits when compiling with ECA.
+        random_seed: Used to seed any stochastic compilation passes (especially for ECA).
+        kwargs: Other desired options.
+
+    Returns:
+        The validated options dictionary packaging all `args`.
+
+    Raises:
+        ValueError: If `base_entangling_gate` is not a valid gate option.
+        ValueError: If provided `num_qubits` is less than the register size determined by
+            `inferred_num_qubits`.
+    """
+    base_entangling_gate = base_entangling_gate.lower()
+    if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
+        raise ValueError("`base_entangling_gate` must be 'xx', 'zz', 'sxx', or 'szz'")
+
+    options = {
+        "mirror_swaps": mirror_swaps,
+        "base_entangling_gate": base_entangling_gate,
+        "keep_qubit_order": bool(keep_qubit_order),
+        "atol": atol,
+        **kwargs,
+    }
+
+    if num_eca_circuits is not None:
+        validate_integer_param(num_eca_circuits, parameter_name="num_eca_circuits")
+        options["num_eca_circuits"] = int(num_eca_circuits)
+
+    if random_seed is not None:
+        validate_integer_param(random_seed, parameter_name="random_seed")
+        options["random_seed"] = int(random_seed)
+
+    if error_rates is not None:
+        error_rates_list = list(error_rates.items())
+        options["error_rates"] = error_rates_list
+        inferred_num_qubits = max(
+            inferred_num_qubits, *(q + 1 for qs, _ in error_rates_list for q in qs)
+        )
+
+    if atol_map is not None:
+        atol_map_list = list(atol_map.items())
+        options["atol_map"] = atol_map_list
+        inferred_num_qubits = max(
+            inferred_num_qubits, *(q + 1 for qs, _ in atol_map_list for q in qs)
+        )
+
+    # Infer `num_qubits` from inputs, if not already specified
+    if num_qubits is None:
+        num_qubits = inferred_num_qubits
+
+    validate_integer_param(num_qubits, parameter_name="num_qubits")
+    if num_qubits < inferred_num_qubits:
+        raise ValueError(f"At least {inferred_num_qubits} qubits are required for this input.")
+
+    options["num_qubits"] = num_qubits
+    return options

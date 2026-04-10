@@ -657,10 +657,10 @@ class Service(gss.service.Service):
             num_eca_circuits: Optional number of logically equivalent random circuits to generate
                 from each input circuit for Equivalent Circuit Averaging (ECA).
             mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
-            base_entangling_gate: The base entangling gate to use ("xx", "zz", "sxx", or "szz").
+            base_entangling_gate: The base entangling gate to use: ("xx", "zz", "sxx", or "szz").
                 Compilation with the "xx" and "zz" entangling bases will use arbitrary
                 parameterized two-qubit interactions, while the "sxx" and "szz" bases will only use
-                fixed maximally-entangling rotations.
+                fixed maximally-entangling rotations. Defaults to "xx".
             num_qubits: An optional number of qubits that should be initialized in the returned
                 Jaqal program(s) (by default this will be determined from the input circuits).
             error_rates: Optional dictionary assigning relative error rates to pairs of physical
@@ -680,7 +680,7 @@ class Service(gss.service.Service):
                 Omitted qubit pairs default to `atol`.
             keep_qubit_order: If True, do not reorder input qubits when compiling with ECA.
             random_seed: Used to seed any stochastic compilation passes (especially for ECA).
-            kwargs: Other desired qscout_compile options.
+            kwargs: Other desired `/qscout_compile` options.
 
         Returns:
             Object whose .circuit(s) attribute contains optimized `cirq.Circuit`(s), and
@@ -689,63 +689,35 @@ class Service(gss.service.Service):
         Raises:
             ValueError: If `base_entangling_gate` is not a valid gate option.
             ValueError: If `target` is not a valid QSCOUT target.
+            ValueError: If provided `num_qubits` is less than the register size required by
+                `circuits`.
         """
         target = self._resolve_target(target)
         if not target.startswith("qscout_"):
             raise ValueError(f"{target!r} is not a valid QSCOUT target.")
 
-        base_entangling_gate = base_entangling_gate.lower()
-        if base_entangling_gate not in ("xx", "zz", "sxx", "szz"):
-            raise ValueError("`base_entangling_gate` must be 'xx', 'zz', 'sxx', or 'szz'")
-
         css.validation.validate_cirq_circuits(circuits)
         serialized_circuits = css.serialization.serialize_circuits(circuits)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
-
-        options_dict = {
-            "mirror_swaps": mirror_swaps,
-            "base_entangling_gate": base_entangling_gate,
-            "keep_qubit_order": bool(keep_qubit_order),
-            "atol": atol,
-            **kwargs,
-        }
 
         if circuits_is_list:
             inferred_num_qubits = max(cirq.num_qubits(c) for c in circuits)
         else:
             inferred_num_qubits = cirq.num_qubits(circuits)
 
-        if num_eca_circuits is not None:
-            gss.validation.validate_integer_param(num_eca_circuits)
-            options_dict["num_eca_circuits"] = int(num_eca_circuits)
-
-        if random_seed is not None:
-            gss.validation.validate_integer_param(random_seed)
-            options_dict["random_seed"] = int(random_seed)
-
-        if error_rates is not None:
-            error_rates_list = list(error_rates.items())
-            options_dict["error_rates"] = error_rates_list
-            inferred_num_qubits = max(
-                inferred_num_qubits, *(q + 1 for qs, _ in error_rates_list for q in qs)
-            )
-
-        if atol_map is not None:
-            atol_map_list = list(atol_map.items())
-            options_dict["atol_map"] = atol_map_list
-            inferred_num_qubits = max(
-                inferred_num_qubits, *(q + 1 for qs, _ in atol_map_list for q in qs)
-            )
-
-        # Infer `num_qubits` from inputs, if not already specified
-        if num_qubits is None:
-            num_qubits = inferred_num_qubits
-
-        gss.validation.validate_integer_param(num_qubits)
-        if num_qubits < inferred_num_qubits:
-            raise ValueError(f"At least {inferred_num_qubits} qubits are required for this input.")
-
-        options_dict["num_qubits"] = num_qubits
+        options_dict = gss.validation.get_validated_qscout_options(
+            inferred_num_qubits,
+            num_eca_circuits=num_eca_circuits,
+            mirror_swaps=mirror_swaps,
+            base_entangling_gate=base_entangling_gate,
+            num_qubits=num_qubits,
+            error_rates=error_rates,
+            atol=atol,
+            atol_map=atol_map,
+            keep_qubit_order=keep_qubit_order,
+            random_seed=random_seed,
+            **kwargs,
+        )
 
         json_dict = self._client.qscout_compile(
             {

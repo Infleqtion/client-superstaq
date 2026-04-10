@@ -13,9 +13,11 @@
 # limitations under the License.
 from __future__ import annotations
 
+import json
 import os
 import secrets
 import tempfile
+import textwrap
 from unittest import mock
 
 import pytest
@@ -180,6 +182,120 @@ def test_submit_qubo(
         service.submit_qubo(example_qubo, target, repetitions=repetitions, method="dry-run")
         == [{0: 1, 1: 1}] * 10
     )
+
+
+def test_submit_jaqal() -> None:
+    service = gss.JaqalService(remote_host="http://example.com", api_key="key")
+    jaqal_program = textwrap.dedent(
+        """\
+        register allqubits[1]
+
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        Rz allqubits[0] -3.141592653589793
+        measure_all
+        """
+    )
+    jaqal_program_as_subcircuits = textwrap.dedent(
+        """\
+        register allqubits[1]
+
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        Rz allqubits[0] -3.141592653589793
+        measure_all
+
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        Rz allqubits[0] -3.141592653589793
+        measure_all
+        """
+    )
+    json_dict: dict[str, str | list[str]] = {
+        "jaqal_strs": json.dumps([jaqal_program]),
+        "initial_logical_to_physicals": json.dumps([[(0, 1)]]),
+        "final_logical_to_physicals": json.dumps([[(0, 13)]]),
+    }
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.compile",
+        return_value=json_dict,
+    ):
+        out = service.compile(jaqal_program)
+        assert not out.has_multiple_circuits()
+        assert out.circuit == jaqal_program
+        assert out.initial_logical_to_physical == {0: 1}
+        assert out.final_logical_to_physical == {0: 13}
+        assert out.jaqal_program == jaqal_program
+        assert out.jaqal_programs == [jaqal_program]
+
+    json_dict = {
+        "jaqal_strs": json.dumps([jaqal_program, jaqal_program]),
+        "initial_logical_to_physicals": json.dumps([[(0, 1)], [(0, 1)]]),
+        "final_logical_to_physicals": json.dumps([[(0, 13)], [(0, 13)]]),
+    }
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.compile",
+        return_value=json_dict,
+    ):
+        out = service.compile(jaqal_program_as_subcircuits)
+        assert out.has_multiple_circuits()
+        # If input was a single subcircuit Jaqal, then output should be a list
+        assert out.circuits == [jaqal_program, jaqal_program]
+        # But the `.jaqal_program` will convert to a subcircuit string
+        assert out.jaqal_program == jaqal_program_as_subcircuits
+        assert out.jaqal_programs == [jaqal_program, jaqal_program]
+        assert out.initial_logical_to_physicals == [{0: 1}, {0: 1}]
+        assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
+
+        out = service.compile([jaqal_program, jaqal_program])
+        assert out.has_multiple_circuits()
+        # If input was a list of Jaqal, then output should be a list of Jaqal
+        assert out.circuits == [jaqal_program, jaqal_program]
+        assert out.initial_logical_to_physicals == [{0: 1}, {0: 1}]
+        assert out.final_logical_to_physicals == [{0: 13}, {0: 13}]
+        assert out.jaqal_programs == [jaqal_program, jaqal_program]
+        assert out.jaqal_program == jaqal_program_as_subcircuits
+
+    with mock.patch(
+        "general_superstaq.superstaq_client._SuperstaqClient.qscout_compile",
+        return_value=json_dict,
+    ):
+        out = service.compile([jaqal_program, jaqal_program], num_eca_circuits=1, random_seed=123)
+        assert out.has_multiple_circuits()
+        assert out.circuits == [[jaqal_program], [jaqal_program]]
+        assert out.initial_logical_to_physicals == [[{0: 1}], [{0: 1}]]
+        assert out.final_logical_to_physicals == [[{0: 13}], [{0: 13}]]
+        assert out.jaqal_programs == [jaqal_program, jaqal_program]
+
+        out = service.compile(
+            [jaqal_program, jaqal_program],
+            num_eca_circuits=2,
+            error_rates={(0,): 0.1},
+            atol_map={(0,): 0.02},
+        )
+        assert out.has_multiple_circuits()
+        assert out.circuits == [[jaqal_program, jaqal_program]]
+        assert out.initial_logical_to_physicals == [[{0: 1}, {0: 1}]]
+        assert out.final_logical_to_physicals == [[{0: 13}, {0: 13}]]
+        assert out.jaqal_programs == [jaqal_program_as_subcircuits]
+
+    with pytest.raises(ValueError, match=r"must be 'xx', 'zz'"):
+        _ = service.compile(jaqal_program, base_entangling_gate="yy")
+
+    with pytest.raises(ValueError, match=r"requires a valid QSCOUT"):
+        _ = service.compile(jaqal_program, target="qtm_h2-2_qpu", num_eca_circuits=5)
+
+    jaqal_program = textwrap.dedent(
+        """\
+        register allqubits[5]
+
+        prepare_all
+        R allqubits[0] -1.5707963267948966 1.5707963267948966
+        measure_all
+        """
+    )
+    with pytest.raises(ValueError, match=r"qubits are required"):
+        _ = service.compile(jaqal_program, num_qubits=3)
 
 
 @mock.patch(
