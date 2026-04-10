@@ -103,7 +103,7 @@ def classical_bit_mapping(circuit: qiskit.QuantumCircuit) -> dict[int, int]:
 
 
 class CompilerOutput(gss.BaseCompilerOutput[qiskit.QuantumCircuit, int]):
-    """A class that stores the compilation results of `qiskit` circuits."""
+    """A class that arranges compiled `qiskit` circuit information."""
 
     def __init__(
         self,

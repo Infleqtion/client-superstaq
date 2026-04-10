@@ -92,7 +92,7 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
 
 
 class CompilerOutput(gss.BaseCompilerOutput[cirq.Circuit, cirq.Qid]):
-    """A class that stores the compilation results of `cirq` circuits."""
+    """A class that arranges compiled `cirq` circuit information."""
 
     def __init__(
         self,

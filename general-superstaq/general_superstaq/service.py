@@ -602,7 +602,7 @@ class JaqalService(BaseService):
         random_seed: int | None = None,
         **kwargs: Any,
     ) -> gss.compiler_output.CompilerOutput:
-        """Compiles and optimizes the given Jaqal [1] program(s) for supported `target`s.
+        """Compiles and optimizes the given Jaqal [1] program(s) for a supported `target`.
 
         Specifying a nonzero value for `num_eca_circuits` enables compilation with Equivalent
         Circuit Averaging (ECA). See [2] for a description of ECA.

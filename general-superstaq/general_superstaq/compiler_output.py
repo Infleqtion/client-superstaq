@@ -123,7 +123,7 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
 
 
 class CompilerOutput(BaseCompilerOutput[str, int]):
-    """A class that stores the compilation results of string-based circuits."""
+    """A class that arranges compiled circuit information."""
 
     def __init__(
         self,
