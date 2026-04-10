@@ -47,7 +47,7 @@ class BaseService:
         """Initializes the service to connect to the Superstaq API.
 
         Args:
-            api_key: The token/key used for authenticating against the Superstaq API.
+            api_key: The token or key used for authenticating against the Superstaq API.
             remote_host: The URL of the server exposing the Superstaq API. This will strip anything
                 besides the base scheme and netloc, i.e. it only takes the part of the host of
                 the form `http://example.com` of `http://example.com/test`.
@@ -584,7 +584,7 @@ class Service(BaseService):
 
 
 class JaqalService(BaseService):
-    """This class contains all services relating to Superstaq and Jaqal input."""
+    """This class contains services relating to Superstaq and Jaqal input."""
 
     def compile(
         self,

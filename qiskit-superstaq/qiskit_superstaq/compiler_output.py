@@ -103,7 +103,7 @@ def classical_bit_mapping(circuit: qiskit.QuantumCircuit) -> dict[int, int]:
 
 
 class CompilerOutput(gss.BaseCompilerOutput[qiskit.QuantumCircuit, int]):
-    """A class that stores the results of `qiskit` compiled circuits."""
+    """A class that stores the compilation results of `qiskit` circuits."""
 
     def __init__(
         self,
@@ -120,7 +120,7 @@ class CompilerOutput(gss.BaseCompilerOutput[qiskit.QuantumCircuit, int]):
         seq: qtrl.sequencer.Sequence | None = None,
         jaqal_programs: list[str] | None = None,
     ) -> None:
-        """Constructs a `CompilerOutput` object.
+        """Constructs a `CompilerOutput` object for Qiskit `circuits`.
 
         Args:
             circuits: A compiled circuit or a list of compiled circuits or a list of list of
@@ -129,9 +129,10 @@ class CompilerOutput(gss.BaseCompilerOutput[qiskit.QuantumCircuit, int]):
                 mapping from logical to physical qubits.
             final_logical_to_physicals: Dictionary or list of dictionaries specifying final mapping
                 from logical to physical qubits.
-            pulse_gate_circuits: Pulse-gate `qiskit.QuantumCircuit` or list thereof specifying the
-                pulse compilation, if available (`None` otherwise).
-            seq: `qtrl.sequencer.Sequence` pulse sequence if `qtrl` is available locally.
+            pulse_gate_circuits: Optional pulse-gate `qiskit.QuantumCircuit` or list thereof
+                specifying the pulse compilation, if available.
+            seq: An optional `qtrl.sequencer.Sequence` pulse sequence if `qtrl` is available
+                locally.
             jaqal_programs: The Jaqal programs as individual strings.
         """
         super().__init__(

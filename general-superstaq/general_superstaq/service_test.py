@@ -185,7 +185,7 @@ def test_submit_qubo(
 
 
 def test_submit_jaqal() -> None:
-    service = gss.service.JaqalService(remote_host="http://example.com", api_key="key")
+    service = gss.JaqalService(remote_host="http://example.com", api_key="key")
     jaqal_program = textwrap.dedent(
         """\
         register allqubits[1]

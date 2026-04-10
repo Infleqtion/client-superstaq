@@ -92,7 +92,7 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
 
 
 class CompilerOutput(gss.BaseCompilerOutput[cirq.Circuit, cirq.Qid]):
-    """A class that stores the results of `cirq` compiled circuits."""
+    """A class that stores the compilation results of `cirq` circuits."""
 
     def __init__(
         self,
@@ -111,7 +111,7 @@ class CompilerOutput(gss.BaseCompilerOutput[cirq.Circuit, cirq.Qid]):
         seq: qtrl.sequencer.Sequence | None = None,
         jaqal_programs: list[str] | None = None,
     ) -> None:
-        """Initializes the `CompilerOutput` attributes.
+        """Constructs a `CompilerOutput` object for compiled Cirq `circuits`.
 
         Args:
             circuits: A compiled circuit or a list of compiled circuits or a list of list of
@@ -120,9 +120,10 @@ class CompilerOutput(gss.BaseCompilerOutput[cirq.Circuit, cirq.Qid]):
                 qubits.
             final_logical_to_physicals: Post-compilation mapping of logical qubits to physical
                 qubits.
-            pulse_gate_circuits: Pulse-gate `qiskit.QuantumCircuit` or list thereof specifying the
-                pulse compilation.
-            seq: A `qtrl` pulse sequence, if `qtrl` is available locally.
+            pulse_gate_circuits: Optional pulse-gate `qiskit.QuantumCircuit` or list thereof
+                specifying the pulse compilation, if available.
+            seq: An optional `qtrl.sequencer.Sequence` pulse sequence if `qtrl` is available
+                locally.
             jaqal_programs: The Jaqal programs as individual strings.
         """
         super().__init__(

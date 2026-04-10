@@ -33,7 +33,7 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
         seq: Any | None = None,
         jaqal_programs: list[str] | None = None,
     ) -> None:
-        """Constructs a `CompilerOutput` object.
+        """Constructs a `BaseCompilerOutput` object.
 
         Args:
             circuits: A compiled circuit or a list of compiled circuits or a list of list of
@@ -123,7 +123,7 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
 
 
 class CompilerOutput(BaseCompilerOutput[str, int]):
-    """A class that stores the results of string-based compiled circuits."""
+    """A class that stores the compilation results of string-based circuits."""
 
     def __init__(
         self,
@@ -138,6 +138,21 @@ class CompilerOutput(BaseCompilerOutput[str, int]):
         seq: Any | None = None,
         jaqal_programs: list[str] | None = None,
     ) -> None:
+        """Constructs a `CompilerOutput` object for string-based `circuits`.
+
+        Args:
+            circuits: A compiled circuit or a list of compiled circuits or a list of list of
+                compiled circuits (e.g., if using ECA).
+            initial_logical_to_physicals: Dictionary or list of dictionaries specifying initial
+                mapping from logical to physical qubits.
+            final_logical_to_physicals: Dictionary or list of dictionaries specifying final mapping
+                from logical to physical qubits.
+            pulse_gate_circuits: Optional pulse-gate `qiskit.QuantumCircuit` or list thereof
+                specifying the pulse compilation, if available.
+            seq: An optional `qtrl.sequencer.Sequence` pulse sequence if `qtrl` is available
+                locally.
+            jaqal_programs: The Jaqal programs as individual strings.
+        """
         super().__init__(
             circuits=circuits,
             initial_logical_to_physicals=initial_logical_to_physicals,
