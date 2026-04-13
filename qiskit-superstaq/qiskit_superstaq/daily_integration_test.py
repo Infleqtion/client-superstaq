@@ -26,7 +26,7 @@ from general_superstaq import ResourceEstimate
 import qiskit_superstaq as qss
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def provider(request: pytest.FixtureRequest) -> qss.SuperstaqProvider:
     """Fixture for `qiskit_superstaq` provider client.
 
