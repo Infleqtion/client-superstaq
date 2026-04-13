@@ -24,6 +24,8 @@ import qiskit.visualization
 if TYPE_CHECKING:
     import numpy.typing as npt
 
+# ruff: noqa: N801
+
 
 class AceCR(qiskit.circuit.Gate):
     """Active Cancellation Echoed Cross Resonance gate, supporting polarity switches and sandwiches.
