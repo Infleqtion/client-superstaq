@@ -28,7 +28,7 @@ from general_superstaq import ResourceEstimate
 import cirq_superstaq as css
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def service(request: pytest.FixtureRequest) -> css.Service:
     """Fixture for `cirq_superstaq` service client.
 
