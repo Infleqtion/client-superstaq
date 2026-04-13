@@ -68,7 +68,9 @@ class MachineAPI(gss.superstaq_client._BaseSuperstaqClient):
             status=status,
             status_message=status_message,
             successful_shots=len(bitstrings) if bitstrings is not None else None,
-            measurements=compressed_bitstrings,
+            measurements={k: set(v) for k, v in compressed_bitstrings.items()}
+            if compressed_bitstrings is not None
+            else compressed_bitstrings,
         )
         self.post_request("/cq_worker/circuit_results", results.model_dump(mode="json"))
 

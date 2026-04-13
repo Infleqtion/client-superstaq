@@ -36,12 +36,12 @@ import pathlib
 import sys
 import textwrap
 import time
-import urllib
+import urllib.parse
 import uuid
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, NoReturn
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, NoReturn, TypeVar
 
 import numpy as np
 import requests
@@ -53,6 +53,8 @@ if TYPE_CHECKING:
 
 RECOGNISED_CIRCUIT_TYPES = Literal[gss.models.CircuitType.CIRQ, gss.models.CircuitType.QISKIT]
 """The circuit types that are currently implemented within the `SuperstaqClient`."""
+
+_T = TypeVar("_T")
 
 
 class ApiVersion(str, enum.Enum):
@@ -303,8 +305,11 @@ class _BaseSuperstaqClient:
             if isinstance(json_content, dict) and set(json_content.keys()).intersection(
                 {"message", "detail"}
             ):
-                alternative: str = json_content.get("detail", "")
-                message: str = json_content.get("message", alternative)
+                error_content = {str(key): value for key, value in json_content.items()}
+                detail = error_content.get("detail")
+                alternative = detail if isinstance(detail, str) else ""
+                message_content = error_content.get("message")
+                message = message_content if isinstance(message_content, str) else alternative
             else:
                 message = str(response.text)
 
@@ -385,6 +390,22 @@ class _BaseSuperstaqClient:
                 credentials["cq_token"] = json.dumps(cq_token)
 
         return credentials
+
+    @staticmethod
+    def _normalize_job_ids(job_ids: Sequence[str] | Sequence[uuid.UUID]) -> list[uuid.UUID]:
+        """Converts mixed string and UUID job IDs into UUIDs for typed request models."""
+        return [
+            job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(job_id) for job_id in job_ids
+        ]
+
+    @staticmethod
+    def _require_list_items(values: Sequence[_T | None], field_name: str) -> list[_T]:
+        """Ensures a response field is fully populated before it is serialized back to clients."""
+        if any(value is None for value in values):
+            raise gss.SuperstaqException(
+                f"Expected all values in '{field_name}' to be populated, but found `None`."
+            )
+        return [value for value in values if value is not None]
 
     def __str__(self) -> str:
         return f"Client version {self.api_version} with host={self.url} and name={self.client_name}"
@@ -1247,7 +1268,7 @@ class _SuperstaqClient(_AbstractUserClient):
         gss.validation.validate_integer_param(mirror_depth, min_val=1)
         gss.validation.validate_integer_param(extra_depth, min_val=0)
 
-        json_dict = {
+        json_dict: dict[str, Any] = {
             "target": target,
             "qubits": qubits,
             "shots": shots,
@@ -1380,8 +1401,8 @@ class _SuperstaqClientV3(_AbstractUserClient):
             shots=repetitions,
             options_dict={**self.client_kwargs, **kwargs},
             verbatim=verbatim,
-            tags=[tag] if isinstance(tag, str) else tag,
-            metadata=metadata or {},
+            tags=[tag] if isinstance(tag, str) else list(tag),
+            metadata={} if metadata is None else dict(metadata),
         )
         response = gss.models.NewJobResponse(
             **self.post_request("/client/job", new_job.model_dump(), **credentials)
@@ -1393,7 +1414,7 @@ class _SuperstaqClientV3(_AbstractUserClient):
         job_ids: Sequence[str] | Sequence[uuid.UUID],
         **kwargs: object,
     ) -> list[str]:
-        query = gss.models.JobQuery(job_id=job_ids)
+        query = gss.models.JobQuery(job_id=self._normalize_job_ids(job_ids))
         json_dict = query.model_dump(exclude_none=True)
         json_dict["job_id"] = list(map(str, json_dict["job_id"]))
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
@@ -1407,7 +1428,7 @@ class _SuperstaqClientV3(_AbstractUserClient):
         job_ids: Sequence[str] | Sequence[uuid.UUID],
         **kwargs: object,
     ) -> dict[str, dict[str, object]]:
-        query = gss.models.JobQuery(job_id=job_ids)
+        query = gss.models.JobQuery(job_id=self._normalize_job_ids(job_ids))
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
         response = self.get_request(
             f"/client/job/{self.circuit_type.value}",
@@ -1415,7 +1436,8 @@ class _SuperstaqClientV3(_AbstractUserClient):
             **credentials,
         )
         return {
-            job_id: gss.models.JobData(**data).model_dump() for (job_id, data) in response.items()
+            job_id: gss.models.JobData.model_validate(data).model_dump()
+            for (job_id, data) in response.items()
         }
 
     def get_balance(self) -> dict[str, float]:
@@ -1475,7 +1497,7 @@ class _SuperstaqClientV3(_AbstractUserClient):
         return response.model_dump()
 
     def add_new_user(self, json_dict: dict[str, str]) -> str:
-        new_user = gss.models.NewUser(**json_dict)
+        new_user = gss.models.NewUser.model_validate(json_dict)
         return self.post_request("/client/user", new_user.model_dump(exclude_none=True))
 
     def update_user_balance(self, json_dict: dict[str, float | str]) -> str:
@@ -1485,7 +1507,11 @@ class _SuperstaqClientV3(_AbstractUserClient):
             raise ValueError("Must provide a user email to update the balance of.")
         if new_balance is None:
             raise ValueError("Must provide a new balance to update the user with.")
-        request = gss.models.UpdateUserDetails(balance=json_dict.get("balance"))
+        if not isinstance(user_email, str):
+            raise TypeError("User email must be provided as a string.")
+        if not isinstance(new_balance, (int, float)):
+            raise TypeError("New balance must be provided as a number.")
+        request = gss.models.UpdateUserDetails(balance=float(new_balance))
         return self.put_request(f"/client/user/{user_email}", request.model_dump(exclude_none=True))
 
     def update_user_role(self, json_dict: dict[str, int | str]) -> str:
@@ -1495,7 +1521,9 @@ class _SuperstaqClientV3(_AbstractUserClient):
             raise ValueError("Must provide a user email to update the role of.")
         if new_role is None:
             raise ValueError("Must provide a new role to update the user with.")
-        request = gss.models.UpdateUserDetails(role=json_dict.get("role"))
+        if not isinstance(user_email, str):
+            raise TypeError("User email must be provided as a string.")
+        request = gss.models.UpdateUserDetails(role=str(new_role))
         return self.put_request(f"/client/user/{user_email}", request.model_dump(exclude_none=True))
 
     def resource_estimate(self, json_dict: dict[str, str]) -> dict[str, list[dict[str, int]]]:
@@ -1529,10 +1557,8 @@ class _SuperstaqClientV3(_AbstractUserClient):
             **self.post_request("/client/job", new_job.model_dump())
         )
         job_id = str(response.job_id)
-        job_data = self.fetch_jobs([job_id])[job_id]
-
-        assert isinstance(job_data["statuses"], list)
-        statuses: list[str] = job_data["statuses"]
+        job_data = gss.models.JobData.model_validate(self.fetch_jobs([job_id])[job_id])
+        statuses = job_data.statuses
 
         # Poll the server until all circuits have reached a terminal state.
         time_waited_seconds: float = 0.0
@@ -1545,9 +1571,8 @@ class _SuperstaqClientV3(_AbstractUserClient):
                 )
             time.sleep(2.5)
             time_waited_seconds += 2.5
-            job_data = self.fetch_jobs([job_id])[job_id]
-            assert isinstance(job_data["statuses"], list)
-            statuses = job_data["statuses"]
+            job_data = gss.models.JobData.model_validate(self.fetch_jobs([job_id])[job_id])
+            statuses = job_data.statuses
 
         # Exception if any have not been successful
         if not all(s == gss.models.CircuitStatus.COMPLETED for s in statuses):
@@ -1556,22 +1581,17 @@ class _SuperstaqClientV3(_AbstractUserClient):
                 "details."
             )
 
-        assert isinstance(job_data["compiled_circuits"], list)
-        compiled_circuits: list[str] = job_data["compiled_circuits"]
-
-        assert isinstance(job_data["final_logical_to_physicals"], list)
-        final_logical_to_physicals: list[dict[int, int]] = job_data["final_logical_to_physicals"]
-
-        assert isinstance(job_data["initial_logical_to_physicals"], list)
-        initial_logical_to_physicals: list[dict[int, int]] = job_data[
-            "initial_logical_to_physicals"
-        ]
-
-        assert isinstance(job_data["logical_qubits"], list)
-        logical_qubits: list[str] = job_data["logical_qubits"]
-
-        assert isinstance(job_data["physical_qubits"], list)
-        physical_qubits: list[str] = job_data["physical_qubits"]
+        compiled_circuits = self._require_list_items(
+            job_data.compiled_circuits, "compiled_circuits"
+        )
+        final_logical_to_physicals = self._require_list_items(
+            job_data.final_logical_to_physicals, "final_logical_to_physicals"
+        )
+        initial_logical_to_physicals = self._require_list_items(
+            job_data.initial_logical_to_physicals, "initial_logical_to_physicals"
+        )
+        logical_qubits = self._require_list_items(job_data.logical_qubits, "logical_qubits")
+        physical_qubits = self._require_list_items(job_data.physical_qubits, "physical_qubits")
 
         # Join circuits together in json string - TODO: make this neater.
         if circuit_type == gss.models.CircuitType.QISKIT:
@@ -1645,7 +1665,7 @@ class _SuperstaqClientV3(_AbstractUserClient):
     ) -> list[str]:
         self._raise_not_implemented("submit_dfe")
 
-    def submit_atom_picture(self, _bitmap: npt.ArrayLike) -> Any:
+    def submit_atom_picture(self, bitmap: npt.ArrayLike) -> Any:
         self._raise_not_implemented("submit_atom_picture")
 
     def process_dfe(self, job_ids: Sequence[str] | Sequence[uuid.UUID]) -> float:
