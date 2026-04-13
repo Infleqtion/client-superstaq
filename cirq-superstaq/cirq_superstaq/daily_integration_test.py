@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import os
+import time
 import uuid
 
 import cirq
@@ -39,6 +40,8 @@ def service(request: pytest.FixtureRequest) -> css.Service:
         A `cirq_superstaq` service instance.
     """
     api_version = request.param
+    if api_version == "v0.3.0":
+        time.sleep(3)  # Temporary wait in between unit tests
     return css.Service(api_version=api_version)
 
 

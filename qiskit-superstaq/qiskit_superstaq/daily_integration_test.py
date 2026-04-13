@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import os
+import time
 
 import general_superstaq as gss
 import numpy as np
@@ -37,6 +38,8 @@ def provider(request: pytest.FixtureRequest) -> qss.SuperstaqProvider:
         A `qiskit_superstaq` provider instance.
     """
     api_version = request.param
+    if api_version == "v0.3.0":
+        time.sleep(3)  # Temporary wait in between unit tests
     return qss.SuperstaqProvider(api_version=api_version)
 
 
