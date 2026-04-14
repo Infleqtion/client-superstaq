@@ -112,7 +112,7 @@ jobs:
           pip install -e ./checks-superstaq -e ./general-superstaq[dev] -e ./qiskit-superstaq[dev] -e ./cirq-superstaq[dev] -e ./supermarq-benchmarks[dev]
       - name: Type check
         run: |
-          checks/ty_.py
+          checks/ty_.py general-superstaq
 
   coverage:
     name: Pytest and Coverage check
