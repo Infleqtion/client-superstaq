@@ -34,7 +34,7 @@ def provider(request: pytest.FixtureRequest) -> qss.SuperstaqProvider:
     Args:
         request: A parameter for the fixture.
 
-    Return:
+    Returns:
         A `qiskit_superstaq` provider instance.
     """
     api_version = request.param

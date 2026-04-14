@@ -36,7 +36,7 @@ def service(request: pytest.FixtureRequest) -> css.Service:
     Args:
         request: A parameter for the fixture.
 
-    Return:
+    Returns:
         A `cirq_superstaq` service instance.
     """
     api_version = request.param
