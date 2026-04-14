@@ -17,8 +17,10 @@ from __future__ import annotations
 
 import os
 import re
-import time
+from collections.abc import Callable
+from typing import ParamSpec, TypeVar
 
+import backoff
 import general_superstaq as gss
 import numpy as np
 import pytest
@@ -27,9 +29,35 @@ from general_superstaq import ResourceEstimate
 
 import qiskit_superstaq as qss
 
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+def _giveup_if_not_502(exc: Exception) -> bool:
+    return not (isinstance(exc, gss.SuperstaqServerException) and exc.status_code == 502)
+
+
+def _call_with_backoff(fn: Callable[P, R]) -> Callable[P, R]:
+    return backoff.on_exception(
+        lambda: backoff.constant(interval=35),
+        gss.SuperstaqServerException,
+        giveup=_giveup_if_not_502,
+        max_tries=2,
+        jitter=None,
+    )(fn)
+
+
+class _BackoffV3Provider:
+    def __init__(self, provider: qss.SuperstaqProvider) -> None:
+        self._provider = provider
+
+    def __getattr__(self, name: str) -> object:
+        attr = getattr(self._provider, name)
+        return _call_with_backoff(attr) if callable(attr) else attr
+
 
 @pytest.fixture
-def provider(request: pytest.FixtureRequest) -> qss.SuperstaqProvider:
+def provider(request: pytest.FixtureRequest) -> qss.SuperstaqProvider | _BackoffV3Provider:
     """Fixture for `qiskit_superstaq` provider client.
 
     Args:
@@ -39,9 +67,8 @@ def provider(request: pytest.FixtureRequest) -> qss.SuperstaqProvider:
         A `qiskit_superstaq` provider instance.
     """
     api_version = request.param
-    if api_version == "v0.3.0":
-        time.sleep(3)  # Temporary wait in between unit tests
-    return qss.SuperstaqProvider(api_version=api_version)
+    qiskit_provider = qss.SuperstaqProvider(api_version=api_version)
+    return _BackoffV3Provider(qiskit_provider) if api_version == "v0.3.0" else qiskit_provider
 
 
 @pytest.mark.parametrize("provider", ["v0.2.0", "v0.3.0"], indirect=True)

@@ -17,9 +17,11 @@ from __future__ import annotations
 
 import os
 import re
-import time
 import uuid
+from collections.abc import Callable
+from typing import ParamSpec, TypeVar
 
+import backoff
 import cirq
 import general_superstaq as gss
 import numpy as np
@@ -29,9 +31,35 @@ from general_superstaq import ResourceEstimate
 
 import cirq_superstaq as css
 
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+def _giveup_if_not_502(exc: Exception) -> bool:
+    return not (isinstance(exc, gss.SuperstaqServerException) and exc.status_code == 502)
+
+
+def _call_with_backoff(fn: Callable[P, R]) -> Callable[P, R]:
+    return backoff.on_exception(
+        lambda: backoff.constant(interval=35),
+        gss.SuperstaqServerException,
+        giveup=_giveup_if_not_502,
+        max_tries=3,
+        jitter=None,
+    )(fn)
+
+
+class _BackoffV3Service:
+    def __init__(self, service: css.Service) -> None:
+        self._service = service
+
+    def __getattr__(self, name: str) -> object:
+        attr = getattr(self._service, name)
+        return _call_with_backoff(attr) if callable(attr) else attr
+
 
 @pytest.fixture
-def service(request: pytest.FixtureRequest) -> css.Service:
+def service(request: pytest.FixtureRequest) -> css.Service | _BackoffV3Service:
     """Fixture for `cirq_superstaq` service client.
 
     Args:
@@ -41,9 +69,8 @@ def service(request: pytest.FixtureRequest) -> css.Service:
         A `cirq_superstaq` service instance.
     """
     api_version = request.param
-    if api_version == "v0.3.0":
-        time.sleep(3)  # Temporary wait in between unit tests
-    return css.Service(api_version=api_version)
+    cirq_service = css.Service(api_version=api_version)
+    return _BackoffV3Service(cirq_service) if api_version == "v0.3.0" else cirq_service
 
 
 @pytest.mark.parametrize(
