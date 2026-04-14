@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import os
+import re
 import time
 
 import general_superstaq as gss
@@ -416,5 +417,8 @@ def test_submit_qubo(provider: qss.SuperstaqProvider) -> None:
         assert len(result) == 10
         assert {0: 1, 1: 0, 2: 1} in result
     else:
-        with pytest.raises(NotImplementedError, match="The function"):
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape("The function `submit_qubo()` is not implemented for version"),
+        ):
             _ = provider.submit_qubo(test_qubo, target="ss_unconstrained_simulator", repetitions=10)

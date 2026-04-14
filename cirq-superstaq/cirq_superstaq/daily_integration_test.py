@@ -23,6 +23,7 @@ import cirq
 import general_superstaq as gss
 import numpy as np
 import pytest
+import re
 import qiskit
 from general_superstaq import ResourceEstimate
 
@@ -522,5 +523,8 @@ def test_submit_qubo(service: css.Service) -> None:
         assert len(result) == 10
         assert {0: 1, 1: 0, 2: 1} in result
     else:
-        with pytest.raises(NotImplementedError, match="The function"):
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape("The function `submit_qubo()` is not implemented for version"),
+        ):
             _ = service.submit_qubo(test_qubo, target="ss_unconstrained_simulator", repetitions=10)
