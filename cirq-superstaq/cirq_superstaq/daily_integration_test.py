@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import os
+import re
 import time
 import uuid
 
@@ -23,7 +24,6 @@ import cirq
 import general_superstaq as gss
 import numpy as np
 import pytest
-import re
 import qiskit
 from general_superstaq import ResourceEstimate
 
