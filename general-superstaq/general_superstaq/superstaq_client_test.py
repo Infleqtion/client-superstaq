@@ -31,6 +31,7 @@ import datetime
 import io
 import json
 import os
+import re
 import secrets
 import textwrap
 import uuid
@@ -918,7 +919,9 @@ def test_superstaq_client_resource_estimate(
         mock_post.assert_called_once()
         assert mock_post.call_args[0][0] == f"http://example.com/{api_version}/resource_estimate"
     else:
-        with pytest.raises(NotImplementedError, match=r"resource_estimate is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`resource_estimate()` is not implemented")
+        ):
             client.resource_estimate({"Hello": "1", "World": "2"})
 
 
@@ -1544,7 +1547,9 @@ def test_superstaq_client_submit_qubo(
             verify=False,
         )
     else:
-        with pytest.raises(NotImplementedError, match=r"submit_qubo is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`submit_qubo()` is not implemented")
+        ):
             client.submit_qubo(
                 example_qubo,
                 target,
@@ -1579,7 +1584,9 @@ def test_superstaq_client_atom_picture(
             verify=False,
         )
     else:
-        with pytest.raises(NotImplementedError, match=r"atom_picture is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`submit_atom_picture()` is not implemented")
+        ):
             client.submit_atom_picture(bitmap_2d)
 
 
@@ -1609,7 +1616,9 @@ def test_superstaq_client_supercheq(
             verify=False,
         )
     else:
-        with pytest.raises(NotImplementedError, match=r"supercheq is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`supercheq()` is not implemented")
+        ):
             client.supercheq([[0]], 1, 1, "cirq_circuits")
 
 
@@ -1666,7 +1675,9 @@ def test_superstaq_client_aces(
             verify=False,
         )
     else:
-        with pytest.raises(NotImplementedError, match=r"submit_aces is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`submit_aces()` is not implemented")
+        ):
             client.submit_aces(
                 target="ss_unconstrained_simulator",
                 qubits=[0, 1],
@@ -1681,7 +1692,9 @@ def test_superstaq_client_aces(
                 noise={"type": "symmetric_depolarize", "params": (0.01,)},
             )
 
-        with pytest.raises(NotImplementedError, match=r"process_aces is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`process_aces()` is not implemented")
+        ):
             client.process_aces(uuid.UUID(int=0))
 
 
@@ -1733,7 +1746,9 @@ def test_superstaq_client_cb(
             verify=False,
         )
     else:
-        with pytest.raises(NotImplementedError, match=r"submit_cb is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`submit_cb()` is not implemented")
+        ):
             client.submit_cb(
                 target="ss_unconstrained_simulator",
                 shots=100,
@@ -1745,7 +1760,9 @@ def test_superstaq_client_cb(
                 noise={"type": "symmetric_depolarize", "params": (0.01,)},
             )
 
-        with pytest.raises(NotImplementedError, match=r"process_cb is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`process_cb()` is not implemented")
+        ):
             client.process_cb(uuid.UUID(int=0), "count")
 
 
@@ -1801,7 +1818,9 @@ def test_superstaq_client_dfe(
         with pytest.raises(ValueError, match=r"must contain exactly two job ids"):
             client.process_dfe(["1", "2", "3"])
     else:
-        with pytest.raises(NotImplementedError, match=r"submit_dfe is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`submit_dfe()` is not implemented")
+        ):
             client.submit_dfe(
                 circuit_1={"Hello": "World"},
                 target_1="ss_example_qpu",
@@ -1812,7 +1831,9 @@ def test_superstaq_client_dfe(
                 lifespan=10,
             )
 
-        with pytest.raises(NotImplementedError, match=r"process_dfe is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`process_dfe()` is not implemented")
+        ):
             client.process_dfe([uuid.UUID(int=0)])
 
 
