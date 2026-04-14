@@ -41,7 +41,7 @@ def _giveup_if_not_502(exc: Exception) -> bool:
 
 def _call_with_backoff(fn: Callable[P, R]) -> Callable[P, R]:
     return backoff.on_exception(
-        lambda: backoff.constant(interval=35),
+        lambda: backoff.constant(interval=45),
         gss.SuperstaqServerException,
         giveup=_giveup_if_not_502,
         max_tries=3,
@@ -110,6 +110,13 @@ def test_ibmq_compile(service: css.Service) -> None:
         assert len(out.pulse_gate_circuits[1].op_start_times) == len(out.pulse_gate_circuits[1])
 
 
+@backoff.on_exception(
+    lambda: backoff.constant(interval=30),
+    gss.SuperstaqServerException,
+    giveup=_giveup_if_not_502,
+    max_tries=1,
+    jitter=None,
+)
 def test_ibmq_compile_with_token() -> None:
     for api_version in ("v0.2.0", "v0.3.0"):
         service = css.Service(
