@@ -377,7 +377,7 @@ class Job:
                 deserialized_circuits = []
                 for serialized_circuit in serialized_circuits:
                     deserialized_circuit = css.serialization.deserialize_qiskit_circuits(
-                        serialized_circuit, False
+                        serialized_circuit, circuits_is_list=False
                     )
                     if deserialized_circuit is None:
                         raise ValueError("Some circuits could not be deserialized.")
@@ -386,7 +386,9 @@ class Job:
         else:
             gss.validation.validate_integer_param(index, min_val=0)
             serialized_circuit = self._job[job_ids[index]]["pulse_gate_circuits"]
-            return css.serialization.deserialize_qiskit_circuits(serialized_circuit, False)
+            return css.serialization.deserialize_qiskit_circuits(
+                serialized_circuit, circuits_is_list=False
+            )
 
         error = f"Target '{self.target()}' does not use pulse gate circuits."
         raise ValueError(error)

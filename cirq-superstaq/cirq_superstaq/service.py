@@ -1206,9 +1206,9 @@ class Service(gss.service.Service):
         if not no_submit_target:
 
             def _objective(
-                x: np.typing.NDArray[np.int_], A: float, p: float
+                x: np.typing.NDArray[np.int_], a: float, p: float
             ) -> np.typing.NDArray[np.float64]:
-                return np.asarray(A * p**x)
+                return np.asarray(a * p**x)
 
             fit_data: defaultdict[str, float] = defaultdict(float)
 
@@ -1249,9 +1249,9 @@ class Service(gss.service.Service):
         plt.xlim(0, x_values[-1] + 4)
 
         def _objective(
-            x: np.typing.NDArray[np.int_], A: float, p: float
+            x: np.typing.NDArray[np.int_], a: float, p: float
         ) -> np.typing.NDArray[np.float64]:
-            return np.asarray(A * p**x)
+            return np.asarray(a * p**x)
 
         e_f = 0.0
         for ps in averages.keys():
