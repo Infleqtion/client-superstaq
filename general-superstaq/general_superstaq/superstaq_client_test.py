@@ -31,6 +31,7 @@ import datetime
 import io
 import json
 import os
+import re
 import secrets
 import uuid
 from typing import Any
@@ -40,6 +41,7 @@ import pytest
 import requests
 
 import general_superstaq as gss
+from general_superstaq.superstaq_client import _BaseSuperstaqClient
 from general_superstaq.testing import RETURNED_TARGETS, TARGET_LIST
 
 EXPECTED_HEADERS = {
@@ -836,6 +838,12 @@ def test_update_user_balance_invalid_v3(client_v3: gss.superstaq_client._Superst
     with pytest.raises(ValueError, match=r"new balance"):
         client_v3.update_user_balance({"email": "test@email.com"})
 
+    with pytest.raises(TypeError, match=r"User email must be provided as a string."):
+        client_v3.update_user_balance({"email": 1, "balance": 1})
+
+    with pytest.raises(TypeError, match=r"New balance must be provided as a number."):
+        client_v3.update_user_balance({"email": "test@email.com", "balance": "1"})
+
 
 @pytest.mark.parametrize(
     ("client_name", "endpoint", "role", "expected_json", "call_type"),
@@ -882,6 +890,9 @@ def test_update_user_role_invalid_v3(client_v3: gss.superstaq_client._SuperstaqC
 
     with pytest.raises(ValueError, match=r"new role"):
         client_v3.update_user_role({"email": "test@email.com"})
+
+    with pytest.raises(TypeError, match=r"User email must be provided as a string."):
+        client_v3.update_user_role({"email": 1, "role": "genius"})
 
 
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
@@ -2237,3 +2248,13 @@ def test_regenerate_worker_token(
     mock_post.assert_called_once()
     assert f"cq_worker/regenerate_token/{worker_name}" in mock_post.call_args.args[0]
     assert mock_post.call_args.kwargs["json"] == {}
+
+
+def test_require_list_items_error_if_none() -> None:
+    with pytest.raises(
+        gss.SuperstaqException,
+        match=re.escape(
+            "Expected all values in 'example_field' to be populated, but found `None`."
+        ),
+    ):
+        _BaseSuperstaqClient._require_list_items([None, 1, 2], field_name="example_field")
