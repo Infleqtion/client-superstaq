@@ -17,22 +17,22 @@ jobs:
             matrix:
                 include:
                     - type: "qiskit-superstaq"
-                      dependencies: "-e ./checks-superstaq -e ./qiskit-superstaq"
+                      dependencies: "./checks-superstaq ./qiskit-superstaq"
                       group: 1
                     - type: "qiskit-superstaq"
-                      dependencies: "-e ./checks-superstaq -e ./qiskit-superstaq"
+                      dependencies: "./checks-superstaq ./qiskit-superstaq"
                       group: 2
                     - type: "qiskit-superstaq"
-                      dependencies: "-e ./checks-superstaq -e ./qiskit-superstaq"
+                      dependencies: "./checks-superstaq ./qiskit-superstaq"
                       group: 3
                     - type: "cirq-superstaq"
-                      dependencies: "-e ./checks-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq"
+                      dependencies: "./checks-superstaq ./qiskit-superstaq ./cirq-superstaq"
                       group: 1
                     - type: "cirq-superstaq"
-                      dependencies: "-e ./checks-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq"
+                      dependencies: "./checks-superstaq ./qiskit-superstaq ./cirq-superstaq"
                       group: 2
                     - type: "cirq-superstaq"
-                      dependencies: "-e ./checks-superstaq -e ./qiskit-superstaq -e ./cirq-superstaq"
+                      dependencies: "./checks-superstaq ./qiskit-superstaq ./cirq-superstaq"
                       group: 3
         name: Pytest integration check for ${{ matrix.type }} (${{ matrix.group }})
         timeout-minutes: 15
