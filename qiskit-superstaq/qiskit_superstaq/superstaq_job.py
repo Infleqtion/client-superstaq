@@ -501,10 +501,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
 
         # create list of result dictionaries
         results_list = []
-        if index is None:
-            search_list = list(range(self.job_data.num_circuits))
-        else:
-            search_list = [index]
+        search_list = list(range(self.job_data.num_circuits)) if index is None else [index]
         for i in search_list:
             counts = self.job_data.counts[i]
             if counts:
