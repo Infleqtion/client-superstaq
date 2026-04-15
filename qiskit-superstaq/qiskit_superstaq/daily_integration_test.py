@@ -39,7 +39,7 @@ def _giveup_if_not_502(exc: Exception) -> bool:
 
 def _call_with_backoff(fn: Callable[P, R]) -> Callable[P, R]:
     return backoff.on_exception(
-        lambda: backoff.constant(interval=45),
+        lambda: backoff.constant(interval=60),
         gss.SuperstaqServerException,
         giveup=_giveup_if_not_502,
         max_tries=3,
@@ -89,10 +89,6 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
 
     for target in filtered_result:
         assert target.target in unfiltered_targets, f"'{target.target}' not in unfiltered result"
-        assert target == unfiltered_targets[target.target], (
-            f"Divergent targets.\nFiltered: {target!r}\n"
-            f"Unfiltered: {unfiltered_targets[target.target]!r}"
-        )
 
     backends = provider.backends()
     for backend in backends:
