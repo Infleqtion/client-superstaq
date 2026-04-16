@@ -171,14 +171,12 @@ def _jaqal_programs_to_subcircuits(jaqal_programs: Sequence[str]) -> str:
 
 
 def read_json_jaqal(
-    json_dict: dict[str, Any], circuits_is_list: bool, num_eca_circuits: int | None = None
+    json_dict: dict[str, Any], num_eca_circuits: int | None = None
 ) -> CompilerOutput:
     """Reads out the returned JSON from Superstaq API's Jaqal compilation endpoint.
 
     Args:
         json_dict: A JSON dictionary matching the format returned by `/compile` endpoint.
-        circuits_is_list: Boolean flag that controls whether the returned object has a `.circuits`
-            attribute (if True) or a `.circuit` attribute (False).
         num_eca_circuits: Number of logically equivalent random circuits to generate for each
             input circuit.
 
@@ -220,16 +218,9 @@ def read_json_jaqal(
             for i in range(0, len(jaqal_programs), num_eca_circuits)
         ]
 
-    if circuits_is_list or len(compiled_circuits) != 1 or num_eca_circuits:
-        return CompilerOutput(
-            circuits=compiled_circuits,
-            initial_logical_to_physicals=initial_logical_to_physicals,
-            final_logical_to_physicals=final_logical_to_physicals,
-            jaqal_programs=jaqal_programs,
-        )
     return CompilerOutput(
-        compiled_circuits[0],
-        initial_logical_to_physicals[0],
-        final_logical_to_physicals[0],
+        circuits=compiled_circuits,
+        initial_logical_to_physicals=initial_logical_to_physicals,
+        final_logical_to_physicals=final_logical_to_physicals,
         jaqal_programs=jaqal_programs,
     )

@@ -221,10 +221,13 @@ def test_submit_jaqal() -> None:
         return_value=json_dict,
     ):
         out = service.qscout_compile(jaqal_program)
-    assert not out.has_multiple_circuits()
-    assert out.circuit == jaqal_program
-    assert out.initial_logical_to_physical == {0: 1}
-    assert out.final_logical_to_physical == {0: 13}
+    assert out.has_multiple_circuits()
+    assert not hasattr(out, "circuit")
+    assert not hasattr(out, "initial_logical_to_physical")
+    assert not hasattr(out, "final_logical_to_physical")
+    assert out.circuits == [jaqal_program]
+    assert out.initial_logical_to_physicals == [{0: 1}]
+    assert out.final_logical_to_physicals == [{0: 13}]
     assert out.jaqal_program == jaqal_program
     assert out.jaqal_programs == [jaqal_program]
 

@@ -103,11 +103,11 @@ def validate_target(target: str) -> str:
     return target
 
 
-def get_validated_jaqal_qubits(jaqal_programs: str | Sequence[str]) -> int:
+def get_validated_jaqal_qubits(jaqal_programs: Sequence[str]) -> int:
     """Gets the maximum number of qubits that should be initialized for all `jaqal_programs`.
 
     Args:
-        jaqal_programs: The Jaqal program(s) to infer qubit count from.
+        jaqal_programs: The Jaqal programs to infer qubit count from.
 
     Returns:
         The max qubit register size needed for all `jaqal_programs`.
@@ -115,7 +115,6 @@ def get_validated_jaqal_qubits(jaqal_programs: str | Sequence[str]) -> int:
     Raises:
         ValueError: If no qubit count could be inferred from `jaqal_programs`.
     """
-    jaqal_programs = [jaqal_programs] if isinstance(jaqal_programs, str) else jaqal_programs
     pattern = re.compile(r"^\s*register\b.*?\[(\d+)\]", re.MULTILINE)
     register_sizes = (int(m.group(1)) for jp in jaqal_programs for m in [pattern.search(jp)] if m)
     inferred_num_qubits = max(register_sizes, default=None)

@@ -657,12 +657,11 @@ class JaqalService(BaseService):
                 `jaqal_programs`.
         """
         target = gss.validation.validate_target(target)
-        circuits_is_list = not isinstance(jaqal_programs, str)
-
-        inferred_num_qubits = gss.validation.get_validated_jaqal_qubits(jaqal_programs)
-
         if not target.startswith("qscout_"):
             raise ValueError("Using `qscout_compile()` requires a valid QSCOUT target.")
+
+        jaqal_programs = [jaqal_programs] if isinstance(jaqal_programs, str) else jaqal_programs
+        inferred_num_qubits = gss.validation.get_validated_jaqal_qubits(jaqal_programs)
 
         options = gss.validation.get_validated_qscout_options(
             inferred_num_qubits,
@@ -680,11 +679,9 @@ class JaqalService(BaseService):
 
         json_dict = self._client.qscout_compile(
             {
-                "jaqal_strs": json.dumps(jaqal_programs)
-                if circuits_is_list
-                else json.dumps([jaqal_programs]),
+                "jaqal_strs": json.dumps(jaqal_programs),
                 "options": json.dumps(options),
                 "target": target,
             }
         )
-        return gss.compiler_output.read_json_jaqal(json_dict, circuits_is_list, num_eca_circuits)
+        return gss.compiler_output.read_json_jaqal(json_dict, num_eca_circuits=num_eca_circuits)
