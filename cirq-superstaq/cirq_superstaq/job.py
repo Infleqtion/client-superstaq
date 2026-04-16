@@ -29,6 +29,7 @@
 
 from __future__ import annotations
 
+import collections
 import time
 from collections.abc import Mapping, Sequence
 from typing import Any, overload
@@ -725,6 +726,24 @@ class JobV3(gss.job.Job):
         if qubit_indices:
             return _get_marginal_counts(single_counts, qubit_indices)
         return single_counts
+
+    def combined_counts(
+        self,
+        *,
+        timeout_seconds: int = 7200,
+        polling_seconds: float = 1.0,
+        qubit_indices: Sequence[int] | None = None,
+    ) -> dict[str, float]:
+        counts = self.counts(
+            timeout_seconds=timeout_seconds,
+            polling_seconds=polling_seconds,
+            qubit_indices=qubit_indices,
+        )
+        combined = sum(map(collections.Counter, counts), collections.Counter())
+        key_lens = {len(key) for key in combined.keys()}
+        if len(key_lens) > 1:
+            raise ValueError("Circuits must have the same number of measurements to be combined.")
+        return dict(combined)
 
     def _terminal_measurement_qubit_indices(self, index: int) -> list[int]:
         """Returns the ordered physical qubit indices for each measurement in a compiled circuit.

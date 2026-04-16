@@ -556,6 +556,40 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
             }
         )
 
+    def combined_result(
+        self,
+        *,
+        timeout: float | None = None,
+        wait: float = 5,
+        qubit_indices: Sequence[int] | None = None,
+    ) -> qiskit.result.Result:
+        result = self.results(timeout=timeout, wait=wait, qubit_indices=qubit_indices)
+
+        combined_result = {
+            re
+        self.job_data.statuses
+        # Check to see if unsuccessful
+        self._check_if_unsuccessful(index)
+            results_list.append(
+                {
+                    "success": self._overall_status == "completed",
+                    "status": self.job_data.statuses[i],
+                    "shots": self.job_data.shots[i],
+                    "data": {"counts": counts},
+                }
+            )
+        return qiskit.result.Result.from_dict(
+            {
+                "results": results_list,
+                "qobj_id": -1,
+                "backend_name": self.target(),
+                "backend_version": "n/a",
+                "success": self._overall_status == "completed",
+                "status": self._overall_status,
+                "job_id": self._job_id,
+            }
+        )
+
     @overload
     def compiled_circuits(self, index: int) -> qiskit.QuantumCircuit: ...
 

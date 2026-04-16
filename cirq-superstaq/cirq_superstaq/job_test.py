@@ -507,6 +507,11 @@ def test_multi_circuit_jobV3(
     assert jobV3.counts(index=2) == {"000": 8, "010": 18, "100": 15, "110": 9}
     assert jobV3.counts(index=2, qubit_indices=[0]) == {"0": 26, "1": 24}
 
+    assert jobV3.combined_counts() == {"000": 24, "010": 54, "100": 45, "110": 27}
+    jobV3.job_data.counts[1] = {"00": 10}
+    with pytest.raises(ValueError, match=r"must have the same number of measurements"):
+        _ = jobV3.combined_counts()
+
 
 def test_input_circuit(job: css.Job) -> None:
     circuit = cirq.Circuit(cirq.H(cirq.q(0)), cirq.measure(cirq.q(0)))
