@@ -586,7 +586,7 @@ class Service(BaseService):
 class JaqalService(BaseService):
     """This class contains services relating to Superstaq and Jaqal input."""
 
-    def compile(
+    def qscout_compile(
         self,
         jaqal_programs: str | Sequence[str],
         target: str = "qscout_peregrine_qpu",
@@ -602,7 +602,7 @@ class JaqalService(BaseService):
         random_seed: int | None = None,
         **kwargs: Any,
     ) -> gss.compiler_output.CompilerOutput:
-        """Compiles and optimizes the given Jaqal [1] program(s) for a supported `target`.
+        """Compiles and optimizes the given Jaqal [1] program(s) for a QSCOUT `target`.
 
         Specifying a nonzero value for `num_eca_circuits` enables compilation with Equivalent
         Circuit Averaging (ECA). See [2] for a description of ECA.
@@ -645,13 +645,14 @@ class JaqalService(BaseService):
                 Omitted qubit pairs default to `atol`.
             keep_qubit_order: If `True`, do not reorder input qubits when compiling with ECA.
             random_seed: Used to seed any stochastic compilation passes (especially for ECA).
-            kwargs: Other desired `compile()` options.
+            kwargs: Other desired `/qscout_compile` options.
 
         Returns:
             Object whose .circuit(s) attribute contains optimized Jaqal program(s).
 
         Raises:
             ValueError: If `base_entangling_gate` is not a valid gate option.
+            ValueError: If `target` is not a valid QSCOUT target.
             ValueError: If provided `num_qubits` is less than the register size required by
                 `jaqal_programs`.
         """
@@ -660,10 +661,8 @@ class JaqalService(BaseService):
 
         inferred_num_qubits = gss.validation.get_validated_jaqal_qubits(jaqal_programs)
 
-        if not target.startswith("qscout_") and num_eca_circuits is not None:
-            raise ValueError(
-                "Using Equivalent Circuit Averaging (ECA) requires a valid QSCOUT target."
-            )
+        if not target.startswith("qscout_"):
+            raise ValueError("Using `qscout_compile()` requires a valid QSCOUT target.")
 
         options = gss.validation.get_validated_qscout_options(
             inferred_num_qubits,
@@ -679,10 +678,7 @@ class JaqalService(BaseService):
             **kwargs,
         )
 
-        endpoint_to_use = (
-            self._client.qscout_compile if num_eca_circuits is not None else self._client.compile
-        )
-        json_dict = endpoint_to_use(
+        json_dict = self._client.qscout_compile(
             {
                 "jaqal_strs": json.dumps(jaqal_programs)
                 if circuits_is_list
