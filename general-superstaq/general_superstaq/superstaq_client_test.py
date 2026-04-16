@@ -32,6 +32,7 @@ import io
 import json
 import os
 import secrets
+import textwrap
 import uuid
 from typing import Any
 from unittest import mock
@@ -103,7 +104,25 @@ def test_superstaq_client_str_and_repr(client_name: str, request: pytest.Fixture
         f"Client version {api_version} with host=http://example.com/{api_version} "
         "and name=general-superstaq"
     )
-    assert str(eval(repr(client))) == str(client)
+    client_version = "SuperstaqClientV3" if api_version == "v0.3.0" else "SuperstaqClient"
+    expected_repr = textwrap.dedent(
+        f"""\
+        gss.superstaq_client._{client_version}(
+            remote_host='http://example.com/{api_version}',
+            api_key='to_my_heart',
+            client_name='general-superstaq',
+            api_version='{api_version}',
+            max_retry_seconds=60,
+            verbose=False,
+        )
+        """
+    ).rstrip()
+    assert repr(client) == expected_repr
+    assert (
+        str(client)
+        == f"Client version {api_version} with host=http://example.com/{api_version} and name="
+        "general-superstaq"
+    )
 
 
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])

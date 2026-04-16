@@ -180,7 +180,7 @@ class JobData(DefaultPydanticModel):
     """The input circuits as serialized strings."""
     circuit_type: CircuitType
     """The circuit type used for representing the circuits."""
-    counts: list[dict[str, int] | None]
+    counts: list[dict[str, int | float] | None]
     """Counts for each input circuit (if available/relevant)."""
     results_dicts: list[str | None]
     """Serialized results dictionary for each input circuit (if available/relevant)."""
@@ -413,7 +413,7 @@ class GetTargetsFilterModel(DefaultPydanticModel):
     """Include Superstaq targets that allow/do not allow circuit compilation."""
     available: bool | None = pydantic.Field(None)
     """Include Superstaq targets that are/not currently available."""
-    retired: bool | None = pydantic.Field(False)
+    retired: bool | None = pydantic.Field(default=False)
     """Include Superstaq targets that are retired."""
     accessible: bool | None = pydantic.Field(None)
     """Include only Superstaq targets that are/aren't accessible to the user."""

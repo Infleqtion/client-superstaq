@@ -29,6 +29,7 @@ lint.select = [
   "F",      # pyflakes checks
   "FA",     # flake8-future-annotations checks
   "FAST",   # FastAPI checks
+  "FBT003", # boolean-positional-value-in-call checks
   "FLY",    # flynt checks
   "FURB",   # refurb checks
   "G",      # flake8-logging-format
@@ -36,6 +37,7 @@ lint.select = [
   "ICN",    # flake8-import-conventions
   "ISC",    # flake8-implicit-str-concat checks
   "LOG",    # flake8-logging checks
+  "N",      # pep8-naming
   "NPY",    # numpy-specific checks
   "PD",     # pandas-vet
   "PERF",   # Perflint checks
@@ -48,6 +50,7 @@ lint.select = [
   "RET",    # flake8-return checks
   "RSE",    # flake8-raise checks
   "RUF",    # Ruff-specific checks
+  "S",      # flake8-bandit
   "SIM",    # flake8-simplify checks
   "SLOT",   # flake8-slots checks
   "T10",    # flake8-debugger checks
@@ -60,64 +63,70 @@ lint.select = [
   "W",      # pycodestyle warnings checks
 ]
 lint.ignore = [
-  "ANN401",
-  "ARG002",
-  "ARG005",
-  "B008",
-  "B019",
-  "B023",
-  "B034",
-  "B904",
-  "B905",
-  "C409",    # See https://github.com/astral-sh/ruff/issues/12912
-  "C416",
-  "C420",
-  "D100",
-  "D104",
-  "D105",
-  "D107",
-  "D205",
-  "D301",
-  "E731",
-  "FAST002",
-  "PERF401",
-  "PLC0105",
-  "PLC0206",
-  "PLR0911",
-  "PLR0912",
-  "PLR0913",
-  "PLR0915",
-  "PLR2004",
-  "PLW0127",
-  "PLW2901",
-  "PT012",
-  "PT019",
-  "PT022",
-  "PYI041",
-  "RET504",
-  "RUF001",
-  "RUF002",
-  "SIM102",
-  "SIM105",
-  "SIM108",
-  "SIM118",
-  "TC003",
-  "TD002",
-  "TD003",
-  "TRY003",
+  "ANN401",  # Any type
+  "ARG002",  # Unused method argument
+  "ARG005",  # Unused lambda argument
+  "B008",    # Function call in default argument
+  "B019",    # Cached instance method
+  "B023",    # Function uses loop variable
+  "B034",    # re-sub positional args
+  "B904",    # Raise without from inside except
+  "B905",    # zip without explicit strict
+  "C409",    # unnecessary-literal-within-tuple-call (see https://github.com/astral-sh/ruff/issues/12912)
+  "C416",    # Unnecessary comprehension (see https://docs.astral.sh/ruff/rules/unnecessary-comprehension/#known-problems)
+  "C420",    # Unnecessary dict comprehension for iterable
+  "D100",    # Undocumented public module
+  "D104",    # Undocumented public package
+  "D105",    # Undocumented magic method
+  "D107",    # Undocumented public init
+  "D205",    # Missing blank line after summary
+  "D301",    # Escape sequence in docstring
+  "E731",    # Lambda assignment
+  "FAST002", # FastAPI non-annotated dependency
+  "N806",    # Non-lowercase variable in function
+  "N818",    # Error suffix on exception name
+  "PERF401", # Manual list comprehension
+  "PLC0105", # Type name incorrect variance
+  "PLC0206", # Dict index missing items
+  "PLR0911", # Too many return statements
+  "PLR0912", # Too many branches
+  "PLR0913", # Too many arguments
+  "PLR0915", # Too many statements
+  "PLR2004", # Magic value comparison
+  "PLW2901", # Redefined loop name
+  "PT012",   # Pytest raises with multiple statements
+  "PT019",   # Pytest fixture param without value
+  "PT022",   # Pytest useless yield fixture
+  "PYI041",  # Redundant numeric union
+  "RET504",  # Unnecessary assign
+  "RUF001",  # Ambiguous Unicode character string
+  "RUF002",  # Ambiguous Unicode character docstring
+  "S101",    # Using asserts
+  "S112",    # Try except continue
+  "S310",    # Suspicious URL open usage
+  "S603",    # Subprocess without shell equals true
+  "S607",    # Start process with partial path
+  "SIM102",  # Collapsible if
+  "SIM105",  # Suppressible exception
+  "SIM108",  # If else block instead of if exp
+  "SIM118",  # In dict keys
+  "TC003",   # Typing-only standard-library import
+  "TD002",   # Missing todo author
+  "TD003",   # Missing todo link
+  "TRY003",  # Raise vanilla args
   # The following are excluded to not conflict with `ruff format`:
-  "COM812",
-  "COM819",
-  "D206",
-  "D300",
-  "E111",
-  "E114",
-  "E117",
-  "Q000",
-  "Q001",
-  "Q002",
-  "Q003",
-  "W191",
+  "COM812",  # Missing trailing comma
+  "COM819",  # Prohibited trailing comma
+  "D206",    # Docstring tab indentation
+  "D300",    # Triple single quotes
+  "E111",    # Indentation with invalid multiple
+  "E114",    # Indentation with invalid multiple comment
+  "E117",    # Over-indented
+  "Q000",    # Bad quotes inline string
+  "Q001",    # Bad quotes multiline string
+  "Q002",    # Bad quotes docstring
+  "Q003",    # Avoidable escaped quote
+  "W191",    # Tab indentation
 ]
 
 # Allow autofix for all enabled rules (when `--fix` is passed)
@@ -138,7 +147,7 @@ docstring-code-format = true
 
 [tool.ruff.lint.per-file-ignores]
 "*.ipynb" = ["D101", "D102", "D103", "E501", "ERA001", "T201"]
-"*test.py" = ["D101", "D102", "D103"]
+"*test.py" = ["D101", "D102", "D103", "N802", "N803", "S105", "S106"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

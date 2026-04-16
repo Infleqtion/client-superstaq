@@ -245,23 +245,23 @@ class _RBResultsBase(QCVVResults):
         return popt, np.sqrt(np.diag(pcov))
 
     @staticmethod
-    def exp_decay(x: npt.ArrayLike, A: float, alpha: float, B: float) -> npt.ArrayLike:
-        r"""Exponential decay of the form
+    def exp_decay(x: npt.ArrayLike, a: float, alpha: float, b: float) -> npt.ArrayLike:
+        r"""Exponential decay of the form:
 
         .. math::
 
-            A \alpha^x + B
+            a \alpha^x + b
 
         Args:
             x: x
-            A: Decay constant
+            a: Decay constant
             alpha: Decay coefficient
-            B: Additive constant
+            b: Additive constant
 
         Returns:
-            Exponential decay applied to x.
+            Exponential decay applied to `x`.
         """
-        return A * (np.asarray(alpha) ** x) + B
+        return a * (np.asarray(alpha) ** x) + b
 
     def _plot_results(self) -> plt.Axes:
         """Plot the exponential decay of the circuit fidelity with cycle depth.

@@ -29,9 +29,8 @@
 
 from __future__ import annotations
 
-import collections
 import time
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any, overload
 
 import cirq
@@ -378,7 +377,7 @@ class Job:
                 deserialized_circuits = []
                 for serialized_circuit in serialized_circuits:
                     deserialized_circuit = css.serialization.deserialize_qiskit_circuits(
-                        serialized_circuit, False
+                        serialized_circuit, circuits_is_list=False
                     )
                     if deserialized_circuit is None:
                         raise ValueError("Some circuits could not be deserialized.")
@@ -387,7 +386,9 @@ class Job:
         else:
             gss.validation.validate_integer_param(index, min_val=0)
             serialized_circuit = self._job[job_ids[index]]["pulse_gate_circuits"]
-            return css.serialization.deserialize_qiskit_circuits(serialized_circuit, False)
+            return css.serialization.deserialize_qiskit_circuits(
+                serialized_circuit, circuits_is_list=False
+            )
 
         error = f"Target '{self.target()}' does not use pulse gate circuits."
         raise ValueError(error)
@@ -399,7 +400,7 @@ class Job:
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
         qubit_indices: Sequence[int] | None = None,
-    ) -> dict[str, int]: ...
+    ) -> dict[str, float]: ...
 
     @overload
     def counts(
@@ -408,7 +409,7 @@ class Job:
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
         qubit_indices: Sequence[int] | None = None,
-    ) -> list[dict[str, int]]: ...
+    ) -> list[dict[str, float]]: ...
 
     def counts(
         self,
@@ -416,7 +417,7 @@ class Job:
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
         qubit_indices: Sequence[int] | None = None,
-    ) -> dict[str, int] | list[dict[str, int]]:
+    ) -> dict[str, float] | list[dict[str, float]]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
 
         Args:
@@ -667,7 +668,7 @@ class JobV3(gss.job.Job):
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
         qubit_indices: Sequence[int] | None = None,
-    ) -> dict[str, int]: ...
+    ) -> dict[str, float]: ...
 
     @overload
     def counts(
@@ -676,7 +677,7 @@ class JobV3(gss.job.Job):
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
         qubit_indices: Sequence[int] | None = None,
-    ) -> list[dict[str, int]]: ...
+    ) -> list[dict[str, float]]: ...
 
     def counts(
         self,
@@ -684,7 +685,7 @@ class JobV3(gss.job.Job):
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
         qubit_indices: Sequence[int] | None = None,
-    ) -> dict[str, int] | list[dict[str, int]]:
+    ) -> dict[str, float] | list[dict[str, float]]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
 
         Args:
@@ -752,7 +753,7 @@ class JobV3(gss.job.Job):
         return f"css.JobV3(client={self._client!r}, job_id={self.job_id()!r})"
 
 
-def _get_marginal_counts(counts: dict[str, int], indices: Sequence[int]) -> dict[str, int]:
+def _get_marginal_counts(counts: Mapping[str, float], indices: Sequence[int]) -> dict[str, float]:
     """Compute a marginal distribution, accumulating total counts on specific bits (by index).
 
     Args:
@@ -762,8 +763,9 @@ def _get_marginal_counts(counts: dict[str, int], indices: Sequence[int]) -> dict
     Returns:
         A dictionary of counts on the target indices.
     """
-    target_counts: dict[str, int] = collections.defaultdict(int)
+    target_counts: dict[str, float] = {}
     for bitstring, count in counts.items():
         target_key = "".join([bitstring[index] for index in indices])
+        target_counts.setdefault(target_key, 0)
         target_counts[target_key] += count
     return dict(target_counts)

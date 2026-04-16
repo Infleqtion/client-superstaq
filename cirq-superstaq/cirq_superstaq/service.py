@@ -241,7 +241,7 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: str | None = None,
         **kwargs: Any,
-    ) -> dict[str, int]: ...
+    ) -> dict[str, float]: ...
 
     @overload
     def get_counts(
@@ -252,7 +252,7 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: str | None = None,
         **kwargs: Any,
-    ) -> list[dict[str, int]]: ...
+    ) -> list[dict[str, float]]: ...
 
     def get_counts(
         self,
@@ -262,7 +262,7 @@ class Service(gss.service.Service):
         param_resolver: cirq.ParamResolverOrSimilarType = cirq.ParamResolver({}),
         method: str | None = None,
         **kwargs: Any,
-    ) -> dict[str, int] | list[dict[str, int]]:
+    ) -> dict[str, float] | list[dict[str, float]]:
         """Runs circuit(s) on the Superstaq API and returns the result(s) as a `dict`.
 
         Args:
@@ -1159,7 +1159,9 @@ class Service(gss.service.Service):
             noise=noise_dict,
         )
 
-    def process_cb(self, job_id: str, counts: list[dict[str, int]] | None = None) -> dict[str, Any]:
+    def process_cb(
+        self, job_id: str | uuid.UUID, counts: Sequence[Mapping[str, float]] | None = None
+    ) -> dict[str, Any]:
         """Processes the data from the Cycle Benchmarking protocol.
         Generates SPAM and decay parameter estimations in addition to the process infidelity.
 
@@ -1204,9 +1206,9 @@ class Service(gss.service.Service):
         if not no_submit_target:
 
             def _objective(
-                x: np.typing.NDArray[np.int_], A: float, p: float
+                x: np.typing.NDArray[np.int_], a: float, p: float
             ) -> np.typing.NDArray[np.float64]:
-                return np.asarray(A * p**x)
+                return np.asarray(a * p**x)
 
             fit_data: defaultdict[str, float] = defaultdict(float)
 
@@ -1247,9 +1249,9 @@ class Service(gss.service.Service):
         plt.xlim(0, x_values[-1] + 4)
 
         def _objective(
-            x: np.typing.NDArray[np.int_], A: float, p: float
+            x: np.typing.NDArray[np.int_], a: float, p: float
         ) -> np.typing.NDArray[np.float64]:
-            return np.asarray(A * p**x)
+            return np.asarray(a * p**x)
 
         e_f = 0.0
         for ps in averages.keys():

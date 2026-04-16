@@ -52,23 +52,24 @@ if TYPE_CHECKING:
 
 
 def _exp_decay(
-    x: npt.NDArray[np.float64], A: float, alpha: float, B: float
+    x: npt.NDArray[np.float64], a: float, alpha: float, b: float
 ) -> npt.NDArray[np.float64]:
-    r"""Exponential decay of the form.
+    r"""Exponential decay of the form:.
 
     .. math::
 
-        A \alpha^x + B
+        a \alpha^x + b
 
     Args:
         x: x
-        A: Decay constant
+        a: Decay constant
         alpha: Decay coefficient
-        B: Additive constant
+        b: Additive constant
+
     Returns:
-        Exponential decay applied to x.
+        Exponential decay applied to `x`.
     """
-    return A * (alpha**x) + B
+    return a * (np.asarray(alpha) ** x) + b
 
 
 @dataclass(repr=False)
