@@ -734,6 +734,19 @@ class JobV3(gss.job.Job):
         polling_seconds: float = 1.0,
         qubit_indices: Sequence[int] | None = None,
     ) -> dict[str, float]:
+        """Creates a single counts dictionary combining the counts from all circuits.
+
+        Args:
+            timeout_seconds: The total number of seconds to poll for.
+            polling_seconds: The interval with which to poll.
+            qubit_indices: If provided, only include measurements counts of these qubits.
+
+        Returns:
+            A dictionary containing the combined counts from each sub-job.
+
+        Raises:
+            ValueError: If this job's circuits don't have the same number of measurements.
+        """
         counts = self.counts(
             timeout_seconds=timeout_seconds,
             polling_seconds=polling_seconds,

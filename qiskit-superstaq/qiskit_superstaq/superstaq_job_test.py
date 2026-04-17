@@ -291,6 +291,12 @@ def test_resultV3(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
         ]
         assert multi_job.result(index=0).get_counts() == {"011": 30, "001": 50, "111": 20}
 
+    assert multi_job.combined_result().get_counts() == {"011": 60, "001": 100, "111": 40}
+
+    multi_job.job_data.counts[1] = {"00": 123}
+    with pytest.raises(ValueError, match="must have the same number of measurements"):
+        _ = multi_job.combined_result()
+
 
 def test_counts_arranged(backend: qss.SuperstaqBackend) -> None:
     # Test case: len(qiskit.ClassicalRegister()) = len(qiskit.QuantumRegister())

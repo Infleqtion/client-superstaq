@@ -463,7 +463,7 @@ def test_multi_circuit_job(multi_circuit_job: css.Job) -> None:
 
 @mock.patch("requests.Session.get")
 def test_multi_circuit_jobV3(
-    mock_get: mock.MagicMock, jobV3: css.Job, job_dictV3: dict[str, object]
+    mock_get: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
 ) -> None:
     circuit = cirq.Circuit(
         cirq.H(cirq.q(0)),
