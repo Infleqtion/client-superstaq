@@ -391,10 +391,6 @@ def _resolve_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
     if isinstance(gate, qiskit.circuit.ControlFlowOp):
         return gate.replace_blocks([_resolve_circuit(block) for block in gate.blocks])
 
-    return _resolve_specific_gates(gate)
-
-
-def _resolve_specific_gates(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instruction:
     # For deserializing non-dt delay gates in `qiskit>=2.4.0`:
     if gate.name.startswith(r"__qss_delay_"):
         duration, unit = gate.params
