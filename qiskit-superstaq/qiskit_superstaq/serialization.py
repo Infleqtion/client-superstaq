@@ -289,6 +289,7 @@ def _prepare_circuit(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:
     for inst in circuit:
         new_inst = inst.replace(operation=_prepare_gate(inst.operation))
         new_circuit.append(new_inst)
+
     return new_circuit
 
 
@@ -303,7 +304,9 @@ def _prepare_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
 
     # Workaround for https://github.com/Qiskit/qiskit/issues/10662
     if isinstance(gate, qiskit.circuit.Delay) and gate.unit != gate.params[-1]:
-        return _prepare_delay_gate(gate)
+        gate = gate.copy()
+        gate.params.append(gate.unit)
+        return gate
 
     # Workaround for https://github.com/Qiskit/qiskit/issues/8794
     if isinstance(gate, qiskit.circuit.ControlledGate):
@@ -355,22 +358,6 @@ def _prepare_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
     return new_gate
 
 
-def _prepare_delay_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instruction:
-    """Workaround for https://github.com/Qiskit/qiskit/issues/10662 during (de)serialization."""
-    gate_unit = gate.unit
-    if gate_unit != "dt":
-        return qiskit.circuit.Instruction(
-            "__qss_delay__",
-            num_qubits=gate.num_qubits,
-            num_clbits=gate.num_clbits,
-            params=[gate.params[0], gate_unit],
-            label=gate.label,
-        )
-    gate = gate.copy()
-    gate.params.append(gate.unit)
-    return gate
-
-
 def _resolve_circuit(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:
     """Reverse of the transformation performed by `_prepare_circuit`.
 
@@ -390,13 +377,6 @@ def _resolve_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
 
     if isinstance(gate, qiskit.circuit.ControlFlowOp):
         return gate.replace_blocks([_resolve_circuit(block) for block in gate.blocks])
-
-    # For deserializing non-dt delay gates in `qiskit>=2.4.0`:
-    if gate.name.startswith(r"__qss_delay_"):
-        duration, unit = gate.params
-        resolved_gate = qiskit.circuit.Delay(duration, unit=unit)
-        resolved_gate.label = gate.label
-        return resolved_gate
 
     if type(gate) is qiskit.circuit.ControlledGate:
         gate.base_gate = _resolve_gate(gate.base_gate)
