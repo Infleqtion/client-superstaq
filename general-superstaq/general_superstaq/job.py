@@ -312,9 +312,16 @@ class Job:
         self.job_data.counts = self.job_data.counts  # Trigger revalidation
 
     def _terminal_measurement_qubit_indices(self, index: int) -> list[int]:
-        """Returns the ordered physical qubit indices for each measurement in a compiled circuit.
+        """Determines the ordered physical qubit indices for each measurement in a compiled circuit.
 
-        Indices are ordered as they should appear in (big-endian) bitstrings.
+        Assumes all measurements are terminal.
+
+        Args:
+            index: The index of the compiled circuit for which to return qubit indices.
+
+        Returns:
+            A list of measured qubit indices, ordered as they should appear in (big-endian)
+            bitstrings.
         """
         logical_to_physical = self.job_data.final_logical_to_physicals[index]
         if logical_to_physical is None:

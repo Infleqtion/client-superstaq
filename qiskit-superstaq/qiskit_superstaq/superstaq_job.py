@@ -478,9 +478,16 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         return self.input_circuits(index).num_clbits
 
     def _terminal_measurement_qubit_indices(self, index: int) -> list[int]:
-        """Returns the ordered physical qubit indices for each measurement in a compiled circuit.
+        """Determines the ordered physical qubit indices for each measurement in a compiled circuit.
 
-        Indices are ordered as they should appear in (big-endian) bitstrings.
+        Assumes all measurements are terminal.
+
+        Args:
+            index: The index of the compiled circuit for which to return qubit indices.
+
+        Returns:
+            A list of measured qubit indices, ordered as they should appear in (big-endian)
+            bitstrings.
         """
         compiled_circuit = self.compiled_circuits(index)
 
