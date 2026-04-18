@@ -171,10 +171,7 @@ class Job:
         if status == gss.models.CircuitStatus.FAILED:
             message = "Failure: "
             circuit_messages = []
-            if index is None:
-                to_check = list(range(self.job_data.num_circuits))
-            else:
-                to_check = [index]
+            to_check = list(range(self.job_data.num_circuits)) if index is None else [index]
             for k in to_check:
                 if self.job_data.statuses[k] == gss.models.CircuitStatus.FAILED:
                     error = (
