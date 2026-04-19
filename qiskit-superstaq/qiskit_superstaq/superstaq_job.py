@@ -26,6 +26,7 @@
 # that they have been altered from the originals.
 from __future__ import annotations
 
+import collections
 from collections.abc import Mapping, Sequence
 from typing import Any, overload
 
@@ -424,6 +425,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
     """This class represents a Superstaq job instance."""
 
     shots = gss.job.Job._repetitions
+    endianness = gss.job.Endian.LITTLE
 
     def _arrange_counts(
         self, counts: Mapping[str, float], circ_meas_bit_indices: list[int], num_clbits: int
@@ -458,7 +460,12 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
             the job.
         """
         input_circuit = self.input_circuits(index)
-        return sorted(qss.classical_bit_mapping(input_circuit))
+        classical_bit_mapping = qss.classical_bit_mapping(input_circuit)
+        if classical_bit_mapping:
+            return sorted(classical_bit_mapping)
+
+        # If no measurement gates, assume everything is measured
+        return list(range(input_circuit.num_clbits))
 
     def _get_num_clbits(self, index: int) -> int:
         """Helper to get number of classical bits in the classical register of the input circuit.
@@ -470,6 +477,19 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
             The number of classical bits for the circuit in the job.
         """
         return self.input_circuits(index).num_clbits
+
+    def _terminal_measurement_qubit_indices(self, index: int) -> list[int]:
+        """Returns the ordered physical qubit indices for each measurement in a compiled circuit.
+
+        Indices are ordered as they should appear in (big-endian) bitstrings.
+        """
+        compiled_circuit = self.compiled_circuits(index)
+
+        classical_bit_mapping = qss.classical_bit_mapping(compiled_circuit)
+        if classical_bit_mapping:
+            return [classical_bit_mapping[i] for i in sorted(classical_bit_mapping)]
+
+        return super()._terminal_measurement_qubit_indices(index)
 
     def result(
         self,
@@ -525,6 +545,56 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         return qiskit.result.Result.from_dict(
             {
                 "results": results_list,
+                "qobj_id": -1,
+                "backend_name": self.target(),
+                "backend_version": "n/a",
+                "success": self._overall_status == "completed",
+                "status": self._overall_status,
+                "job_id": self._job_id,
+            }
+        )
+
+    def combined_result(
+        self,
+        *,
+        timeout: float | None = None,
+        wait: float = 5,
+        qubit_indices: Sequence[int] | None = None,
+    ) -> qiskit.result.Result:
+        """Create a results object combining the counts from all circuits.
+
+        Args:
+            timeout: An optional parameter that fixes when result retrieval times out. Units are
+                in seconds.
+            wait: An optional parameter that sets the interval to check for Superstaq job results.
+                Units are in seconds. Defaults to 5.
+            qubit_indices: The qubit indices to return the results of individually.
+
+        Returns:
+            A qiskit result object containing combined job information.
+
+        Raises:
+            ValueError: If this job's circuits don't have the same number of measurements.
+        """
+        result = self.result(timeout=timeout, wait=wait, qubit_indices=qubit_indices)
+        counts = result.get_counts()
+
+        if not isinstance(counts, Mapping):
+            counts = dict(sum(map(collections.Counter, counts), collections.Counter()))
+
+        key_lens = {len(key) for key in counts.keys()}
+        if len(key_lens) > 1:
+            raise ValueError("Circuits must have the same number of measurements to be combined.")
+
+        result_dict = {
+            "success": self._overall_status == "completed",
+            "status": self._overall_status,
+            "shots": sum(self.job_data.shots),
+            "data": {"counts": counts},
+        }
+        return qiskit.result.Result.from_dict(
+            {
+                "results": [result_dict],
                 "qobj_id": -1,
                 "backend_name": self.target(),
                 "backend_version": "n/a",
