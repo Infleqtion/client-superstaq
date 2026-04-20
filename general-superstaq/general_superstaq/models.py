@@ -153,7 +153,7 @@ class ExternalProviderCredentials(DefaultPydanticModel):
         Previously CQ tokens were specified via a dict, e.g. `cq_token={"access_token": "token"}`.
         """
         if isinstance(cq_token, Mapping):
-            cq_token_mapping = cast("Mapping[str, object]", cq_token)
+            cq_token_mapping = cast("Mapping[object, object]", cq_token)
             return cq_token_mapping.get("access_token")
         return cq_token
 
