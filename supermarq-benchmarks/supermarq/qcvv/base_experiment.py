@@ -320,11 +320,11 @@ class QCVVResults(ABC):
         return RuntimeError("Value has not yet been estimated. Please run `.analyze()` method.")
 
 
-ResultsT = TypeVar("ResultsT", bound=QCVVResults, covariant=True)
+ResultsT_co = TypeVar("ResultsT_co", bound=QCVVResults, covariant=True)
 # Generic results type for base experiments.
 
 
-class QCVVExperiment(ABC, Generic[ResultsT]):
+class QCVVExperiment(ABC, Generic[ResultsT_co]):
     """Base class for gate benchmarking experiments.
 
     The interface for implementing these experiments is as follows:
@@ -378,7 +378,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         cycle_depths: Iterable[int],
         *,
         random_seed: int | np.random.Generator | None = None,
-        results_cls: type[ResultsT],
+        results_cls: type[ResultsT_co],
         _samples: Sequence[Sample] | None = None,
         **kwargs: Any,
     ) -> None:
@@ -413,7 +413,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
         self._rng = np.random.default_rng(random_seed)
 
-        self._results_cls: type[ResultsT] = results_cls
+        self._results_cls: type[ResultsT_co] = results_cls
 
         if not _samples:
             self.samples = self._prepare_experiment()
@@ -801,7 +801,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         repetitions: int = 10_000,
         method: str | None = None,
         **target_options: Any,
-    ) -> ResultsT:
+    ) -> ResultsT_co:
         """Submit the circuit samples to the desired target device and store the resulting
         probabilities.
 
@@ -837,7 +837,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         self,
         simulator: cirq.Sampler | None = None,
         repetitions: int = 10_000,
-    ) -> ResultsT:
+    ) -> ResultsT_co:
         """Use the local simulator to sample the circuits and store the resulting probabilities.
 
         Args:
@@ -863,7 +863,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
         self,
         circuit_eval_func: Callable[[cirq.Circuit], Mapping[str, float] | Mapping[int, float]],
         **kwargs: Any,
-    ) -> ResultsT:
+    ) -> ResultsT_co:
         """Evaluates the probabilities for each circuit using a user provided callable function.
         This function should take a circuit as input and return a dictionary of probabilities for
         each bitstring (including states with zero probability).
@@ -885,7 +885,7 @@ class QCVVExperiment(ABC, Generic[ResultsT]):
 
     def results_from_records(
         self, records: SupportsItems[uuid.UUID | int, Mapping[str, float] | Mapping[int, float]]
-    ) -> ResultsT:
+    ) -> ResultsT_co:
         """Creates a results object from records of the counts/probabilities for each sample
         circuit. This function is aimed at users who would like to use the QCVV framework to
         generate sample circuits and analyse the results but need to run these circuits without

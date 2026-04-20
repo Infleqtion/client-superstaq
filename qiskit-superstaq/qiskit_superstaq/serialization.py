@@ -51,6 +51,7 @@ _custom_gates_by_name: dict[str, type[qiskit.circuit.Instruction]] = {
     "iccx": qss.custom_gates.iCCXGate,
     "iccxdg": qss.custom_gates.iCCXdgGate,
     "ms": qiskit.circuit.library.MSGate,
+    "delay": qiskit.circuit.Delay,
 }
 
 # Custom resolvers, necessary when `gate != type(gate)(*gate.params)`
@@ -65,6 +66,7 @@ _custom_resolvers: dict[
     qiskit.circuit.library.MSGate: lambda gate: qiskit.circuit.library.MSGate(
         gate.num_qubits, gate.params[0], label=gate.label
     ),
+    qiskit.circuit.Delay: lambda gate: qiskit.circuit.Delay(*gate.params),
 }
 
 
@@ -306,7 +308,6 @@ def _prepare_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
     if isinstance(gate, qiskit.circuit.Delay) and gate.unit != gate.params[-1]:
         gate = gate.copy()
         gate.params.append(gate.unit)
-        return gate
 
     # Workaround for https://github.com/Qiskit/qiskit/issues/8794
     if isinstance(gate, qiskit.circuit.ControlledGate):
