@@ -1262,10 +1262,7 @@ class Service(gss.service.Service):
                 else legend_labels
             )
             for t, c in zip(truncated_legend_labels, legend_colors):
-                if t == "...":
-                    linestyle = ""
-                else:
-                    linestyle = "-"
+                linestyle = "" if t == "..." else "-"
                 custom_handles.append(plt.Line2D([], [], linestyle=linestyle, label=t, color=c))
         else:
             for t, c in zip(legend_labels, legend_colors):
