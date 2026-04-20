@@ -16,10 +16,25 @@
 
 from __future__ import annotations
 
+import enum
 import time
 import uuid
+from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING
+
+import numpy as np
 
 import general_superstaq as gss
+
+if TYPE_CHECKING:
+    import jaqalpaq.run.result
+
+
+class Endian(str, enum.Enum):
+    """Endianness to use when mapping quantum objects to matrices, state vectors, and bitstrings."""
+
+    BIG = "big"  # BQSKit, Braket, Cirq, Jaqal, TKET
+    LITTLE = "little"  # Qiskit
 
 
 class Job:
@@ -44,6 +59,8 @@ class Job:
         gss.models.CircuitStatus.COMPLETED,
         gss.models.CircuitStatus.DELETED,
     )
+
+    endianness = Endian.BIG
 
     def __init__(
         self,
@@ -229,6 +246,85 @@ class Job:
             The number of repetitions for this job.
         """
         return self.job_data.shots[0]
+
+    def set_counts(
+        self,
+        results: Sequence[Mapping[str, float]]
+        | jaqalpaq.run.result.ExecutionResult
+        | jaqalpaq.run.result.SubbatchView,
+    ) -> None:
+        """Manually input experimental counts for all circuits in this job.
+
+        Also accepts JaqalPaq `ExecutionResult` or `SubbatchView` objects. Both are assumed to have
+        as many subcircuits as this job contains compiled circuits. For `ExecutionResult` objects
+        containing multiple sub-batches, only the first is used. (requires `jaqalpaq>=1.3.0`)
+
+        Args:
+            results: A sequence of experimental counts dictionaries to load, each of which should be
+                formatted as required by `Job.set_counts_for_circuit`. Can also be one of the
+                JaqalPaq results objects described above. In either case, assumed to contain counts
+                for every compiled circuit contained in this job.
+        """
+        # Support JaqalPaq's `ExecutionResult` and `SubbatchView`:
+        results = getattr(results, "by_subbatch", [results])[0]
+        results = getattr(results, "by_subcircuit", results)
+
+        for i in range(self.job_data.num_circuits):
+            self.set_counts_for_circuit(i, results[i])
+
+    def set_counts_for_circuit(
+        self,
+        index: int,
+        result: Mapping[str, int] | jaqalpaq.run.result.SubcircuitView,
+    ) -> None:
+        """Manually input experimental counts for one circuits in this job.
+
+        Also accepts JaqalPaq `SubcircuitView`, e.g. from `result.by_subbatch[i].by_subcircuit[j]`
+        where `result` is a JaqalPaq `ExecutionResult` object. (requires `jaqalpaq>=1.3.0`)
+
+        Args:
+            index: The circuit index for which to update counts.
+            result: An experimental counts dictionary to load (or a JaqalPaq `SubcircuitView`).
+                Counts dictionaries must be formatted with bitstrings as keys and total counts (or
+                probabilities) as values, e.g. `{"000": 100, "111": 200}`.
+        """
+        # Special handling for JaqalPaq's `SubcircuitView`
+        if normalized_counts := getattr(result, "normalized_counts", None):
+            num_repeats = getattr(result, "num_repeats", 1)
+            result = {
+                bs: round(np.dot(prob, num_repeats).sum())
+                for bs, prob in normalized_counts.by_str.items()
+            }
+
+            # JaqalPaq results are always ordered by qubit (big-endian)
+            bitstring_qubit_indices = self._terminal_measurement_qubit_indices(index)
+            result = {
+                "".join(bs[i] for i in bitstring_qubit_indices): val for bs, val in result.items()
+            }
+
+        elif self.endianness == Endian.LITTLE:
+            result = {bs[::-1]: val for bs, val in result.items()}
+
+        self.job_data.counts[index] = dict(result)
+        self.job_data.counts = self.job_data.counts  # Trigger revalidation
+
+    def _terminal_measurement_qubit_indices(self, index: int) -> list[int]:
+        """Determines the ordered physical qubit indices for each measurement in a compiled circuit.
+
+        Assumes all measurements are terminal.
+
+        Args:
+            index: The index of the compiled circuit for which to return qubit indices.
+
+        Returns:
+            A list of measured qubit indices, ordered as they should appear in (big-endian)
+            bitstrings.
+        """
+        logical_to_physical = self.job_data.final_logical_to_physicals[index]
+        if logical_to_physical is None:
+            raise ValueError("Circuit must be compiled before counts are set.")
+
+        return [logical_to_physical[i] for i in sorted(logical_to_physical.keys())]
 
     def to_dict(self) -> dict[str, gss.typing.Job]:
         """Refreshes and returns job information.
