@@ -360,10 +360,7 @@ class AceCR(cirq.Gate):
         )
 
     def _value_equality_values_(self) -> tuple[cirq.TParamVal, cirq.TParamVal]:
-        if cirq.is_parameterized(self.rads):
-            rads = self.rads
-        else:
-            rads = self.rads % (4 * np.pi)
+        rads = self.rads if cirq.is_parameterized(self.rads) else self.rads % (4 * np.pi)
 
         if cirq.is_parameterized(self.sandwich_rx_rads):
             sandwich_rx_rads = self.sandwich_rx_rads
