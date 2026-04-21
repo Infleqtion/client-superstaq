@@ -60,7 +60,7 @@ class MachineAPI(gss.superstaq_client._BaseSuperstaqClient):
         if bitstrings is not None:
             compressed_bitstrings = {}
             for idx, bs in enumerate(bitstrings):
-                bs_index_list = compressed_bitstrings.get(bs, set())
+                bs_index_list = compressed_bitstrings.setdefault(bs, set())
                 bs_index_list.add(idx)
 
         results = gss.models.WorkerTaskResults(
