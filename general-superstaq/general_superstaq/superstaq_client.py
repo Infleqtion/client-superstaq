@@ -389,13 +389,6 @@ class _BaseSuperstaqClient:
         return credentials
 
     @staticmethod
-    def _normalize_job_ids(job_ids: Sequence[str] | Sequence[uuid.UUID]) -> list[uuid.UUID]:
-        """Converts mixed string and UUID job IDs into UUIDs for typed request models."""
-        return [
-            job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(job_id) for job_id in job_ids
-        ]
-
-    @staticmethod
     def _require_list_items(values: Sequence[_T | None], field_name: str) -> list[_T]:
         """Ensures a response field is fully populated before it is serialized back to clients."""
         if any(value is None for value in values):
@@ -1411,7 +1404,8 @@ class _SuperstaqClientV3(_AbstractUserClient):
         job_ids: Sequence[str] | Sequence[uuid.UUID],
         **kwargs: object,
     ) -> list[str]:
-        query = gss.models.JobQuery(job_id=self._normalize_job_ids(job_ids))
+        query = gss.models.JobQuery(job_id=job_ids)  # ty: ignore[invalid-argument-type]
+        # Ignoring `ty` strict checking for the job-ids since pydanic will coerce str->uuid
         json_dict = query.model_dump(exclude_none=True)
         json_dict["job_id"] = list(map(str, json_dict["job_id"]))
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
@@ -1425,7 +1419,8 @@ class _SuperstaqClientV3(_AbstractUserClient):
         job_ids: Sequence[str] | Sequence[uuid.UUID],
         **kwargs: object,
     ) -> dict[str, dict[str, object]]:
-        query = gss.models.JobQuery(job_id=self._normalize_job_ids(job_ids))
+        query = gss.models.JobQuery(job_id=job_ids)  # ty: ignore[invalid-argument-type]
+        # Ignoring `ty` strict checking for the job-ids since pydanic will coerce str->uuid
         credentials = self._extract_credentials({**kwargs, **self.client_kwargs})
         response = self.get_request(
             f"/client/job/{self.circuit_type.value}",
