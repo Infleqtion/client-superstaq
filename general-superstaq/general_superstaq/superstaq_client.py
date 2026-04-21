@@ -50,6 +50,7 @@ import general_superstaq as gss
 
 if TYPE_CHECKING:
     import numpy.typing as npt
+    import pydantic
 
 RECOGNISED_CIRCUIT_TYPES = Literal[gss.models.CircuitType.CIRQ, gss.models.CircuitType.QISKIT]
 """The circuit types that are currently implemented within the `SuperstaqClient`."""
@@ -247,7 +248,7 @@ class _BaseSuperstaqClient:
         response = self._make_request(request)
         return self._handle_response(response)
 
-    def _handle_response(self, response: requests.Response) -> object:
+    def _handle_response(self, response: requests.Response) -> pydantic.JsonValue:
         response_json = response.json()
         if isinstance(response_json, dict) and "warnings" in response_json:
             for warning in response_json["warnings"]:
@@ -302,10 +303,9 @@ class _BaseSuperstaqClient:
             if isinstance(json_content, dict) and set(json_content.keys()).intersection(
                 {"message", "detail"}
             ):
-                error_content = {str(key): value for key, value in json_content.items()}
-                detail = error_content.get("detail")
+                detail = json_content.get("detail")
                 alternative = detail if isinstance(detail, str) else ""
-                message_content = error_content.get("message")
+                message_content = json_content.get("message")
                 message = message_content if isinstance(message_content, str) else alternative
             else:
                 message = str(response.text)
