@@ -26,6 +26,7 @@ from . import (
     mypy_,
     pytest_,
     requirements,
+    ty_,
 )
 
 __all__ = [
@@ -41,4 +42,5 @@ __all__ = [
     "mypy_",
     "pytest_",
     "requirements",
+    "ty_",
 ]

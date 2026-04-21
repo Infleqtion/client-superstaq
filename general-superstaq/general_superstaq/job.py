@@ -78,8 +78,8 @@ class Job:
         if self._job_data is not None:
             if all(s in gss.models.TERMINAL_CIRCUIT_STATES for s in self._job_data.statuses):
                 return
-        self._job_data = gss.models.JobData(
-            **self._client.fetch_jobs([self._job_id])[str(self._job_id)]
+        self._job_data = gss.models.JobData.model_validate(
+            self._client.fetch_jobs([self._job_id])[str(self._job_id)]
         )
         self._update_status_queue_info()
 

@@ -56,12 +56,12 @@ class MachineAPI(gss.superstaq_client._BaseSuperstaqClient):
         the task result including checking if the number of shots in the bitstring is equal to the
         number requested and if the bitstrings match the set of qubit_readout operations requested.
         """
-        compressed_bitstrings: dict[str, list[int]] | None = None
+        compressed_bitstrings: dict[str, set[int]] | None = None
         if bitstrings is not None:
             compressed_bitstrings = {}
             for idx, bs in enumerate(bitstrings):
-                bs_index_list = compressed_bitstrings.setdefault(bs, [])
-                bs_index_list.append(idx)
+                bs_index_list = compressed_bitstrings.setdefault(bs, set())
+                bs_index_list.add(idx)
 
         results = gss.models.WorkerTaskResults(
             circuit_ref=task_id,

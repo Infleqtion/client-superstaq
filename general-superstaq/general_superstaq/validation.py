@@ -42,13 +42,20 @@ def validate_integer_param(
         ValueError: If `integer_param` is less than `min_val`.
     """
     param_name = f"`{parameter_name}=" if parameter_name is not None else "`"
-    if not (
-        (hasattr(integer_param, "__int__") and int(integer_param) == integer_param)
-        or (isinstance(integer_param, str) and integer_param.isdecimal())
-    ):
+    integer_value: int | None = None
+    if isinstance(integer_param, str):
+        if integer_param.isdecimal():
+            integer_value = int(integer_param)
+    elif isinstance(integer_param, numbers.Integral):
+        integer_value = int(integer_param)
+    elif isinstance(integer_param, numbers.Real) and float(integer_param).is_integer():
+        # Accept integral-valued floats and numpy scalars while rejecting fractional values.
+        integer_value = int(float(integer_param))
+
+    if integer_value is None:
         raise TypeError(f"{param_name}{integer_param}` cannot be safely cast as an integer.")
 
-    if int(integer_param) < min_val:
+    if integer_value < min_val:
         raise ValueError(f"{param_name}{integer_param}` is less than the minimum value: {min_val}.")
 
 

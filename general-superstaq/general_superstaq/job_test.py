@@ -120,7 +120,7 @@ def test_to_dict(
     mock_get.return_value = _mocked_response({str(uuid.UUID(int=123)): job_dict})
 
     job = gss.job.Job(mock_client, uuid.UUID(int=123))
-    assert job.to_dict() == gss.models.JobData(**job_dict).model_dump()
+    assert job.to_dict() == gss.models.JobData.model_validate(job_dict).model_dump()
 
 
 def test_equality(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
@@ -286,23 +286,23 @@ def test_update_status_queue_info(mock_client: gss.superstaq_client._SuperstaqCl
     job_dict = _job_dict()
     job_dict["num_circuits"] = 3
     job_dict["statuses"] = ["completed"] * 3
-    job._job_data = gss.models.JobData(**job_dict)
+    job._job_data = gss.models.JobData.model_validate(job_dict)
 
     job._update_status_queue_info()
     assert job._overall_status == "completed"
 
     job_dict["statuses"] = ["awaiting_submission", "cancelled", "cancelled"]
-    job._job_data = gss.models.JobData(**job_dict)
+    job._job_data = gss.models.JobData.model_validate(job_dict)
     job._update_status_queue_info()
     assert job._overall_status == "awaiting_submission"
 
     job_dict["statuses"] = ["cancelled", "cancelled", "awaiting_submission"]
-    job._job_data = gss.models.JobData(**job_dict)
+    job._job_data = gss.models.JobData.model_validate(job_dict)
     job._update_status_queue_info()
     assert job._overall_status == "awaiting_submission"
 
     job_dict["statuses"] = ["completed", "completed", "failed"]
-    job._job_data = gss.models.JobData(**job_dict)
+    job._job_data = gss.models.JobData.model_validate(job_dict)
     job._update_status_queue_info()
     assert job._overall_status == "failed"
 
