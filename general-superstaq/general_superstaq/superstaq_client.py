@@ -944,7 +944,7 @@ class _AbstractUserClient(_BaseSuperstaqClient, ABC):
 
     def _raise_not_implemented(self, function_name: str) -> NoReturn:
         raise NotImplementedError(
-            f"The function {function_name} is not implemented for version {self.api_version}."
+            f"The function `{function_name}()` is not implemented for version {self.api_version}."
         )
 
     def _prompt_accept_terms_of_use(self) -> None:
