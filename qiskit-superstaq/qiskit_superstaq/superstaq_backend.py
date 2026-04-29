@@ -246,7 +246,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         self,
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput:
+    ) -> qss.SuperstaqJobV3 | qss.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to the backend's native gateset.
 
         Args:
@@ -254,6 +254,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             kwargs: Other desired compile options.
 
         Returns:
+            UPDATE:
             A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
             circuit(s).
 
@@ -276,8 +277,11 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         request_json = self._get_compile_request_json(circuits, **kwargs)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
-        return qss.compiler_output.read_json(
-            json_dict, circuits_is_list, api_version=self._provider._client.api_version
+        return self._provider._map_compile_request_to_client_result(
+            json_dict,
+            legacy_parser=lambda j_dict: qss.compiler_output.read_json(
+                j_dict, circuits_is_list, api_version=self._provider._client.api_version
+            ),
         )
 
     def _get_compile_request_json(
@@ -380,7 +384,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         dynamical_decoupling: bool = True,
         dd_strategy: str = "adaptive",
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput:
+    ) -> qss.SuperstaqJobV3 | qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
 
         Superstaq currently supports the following dynamical decoupling strategies:
@@ -405,6 +409,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             kwargs: Other desired compile options.
 
         Returns:
+            UPDATE:
             Object whose .circuit(s) attribute contains the compiled circuits(s), and whose
             .pulse_gate_circuit(s) attribute contains the corresponding pulse schedule(s) (when
             available).
@@ -422,7 +427,10 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         request_json = self._get_compile_request_json(circuits, **options)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
-        return qss.compiler_output.read_json(json_dict, circuits_is_list)
+        return self._provider._map_compile_request_to_client_result(
+            json_dict,
+            legacy_parser=lambda j_dict: qss.compiler_output.read_json(j_dict, circuits_is_list),
+        )
 
     def qscout_compile(
         self,
@@ -534,11 +542,11 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         control_radius: float = 1.0,
         stripped_cz_rads: float = 0.0,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput:
+    ) -> qss.SuperstaqJobV3 | qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for CQ devices.
 
         Args:
-            circuits: The qiskit.QuantumCircuit(s) to compile.
+            circuits: The `qiskit.QuantumCircuit`(s) to compile.
             grid_shape: Optional fixed dimensions for the rectangular qubit grid (by default the
                 actual qubit layout will be pulled from the hardware provider).
             control_radius: The radius with which qubits remain connected
@@ -547,6 +555,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             kwargs: Other desired compile options.
 
         Returns:
+            UPDATE:
             A CQ `CompilerOutput` object.
 
         Raises:
@@ -564,7 +573,10 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         )
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
-        return qss.compiler_output.read_json(json_dict, circuits_is_list)
+        return self._provider._map_compile_request_to_client_result(
+            json_dict,
+            legacy_parser=lambda j_dict: qss.compiler_output.read_json(j_dict, circuits_is_list),
+        )
 
     def target_info(self) -> dict[str, Any]:
         """Retrieves configuration information for this target.

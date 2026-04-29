@@ -27,7 +27,7 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 import general_superstaq as gss
@@ -143,6 +143,30 @@ class SuperstaqProvider(gss.service.Service):
     def __repr__(self) -> str:
         return f"<SuperstaqProvider(api_key={self._client.api_key}, name={self._name})>"
 
+    def _map_compile_request_to_client_result(
+        self,
+        json_dict: dict[str, Any],
+        *,
+        legacy_parser: Callable[[dict[str, Any]], qss.compiler_output.CompilerOutput],
+    ) -> qss.SuperstaqJobV3 | qss.compiler_output.CompilerOutput:
+        """Maps a compile endpoint's json response to the output type expected by the API version.
+
+        Args:
+            json_dict: The JSON output from a compile endpoint.
+            legacy_parser: The JSON parsing function to use for the v0.2.0 API version.
+
+        Returns:
+            For v0.3.0, compile-like endpoints will return a `css.JobV3`. For v0.2.0, legacy
+            behavior will be preserved and return a `css.CompilerOutput`.
+        """
+        if self._client.api_version == "v0.3.0":
+            job_id = json_dict.get("job_id")
+            if job_id is None:
+                raise KeyError("No job id was found in the compile request.")
+            assert isinstance(self._client, gss.superstaq_client._SuperstaqClientV3)
+            return qss.SuperstaqJobV3(client=self._client, job_id=job_id)
+        return legacy_parser(json_dict)
+
     def get_backend(self, target: str) -> qss.SuperstaqBackend:
         """Returns a Superstaq backend.
 
@@ -234,7 +258,7 @@ class SuperstaqProvider(gss.service.Service):
             target: A string containing the name of a target backend.
 
         Returns:
-            ResourceEstimate(s) containing resource costs (after compilation) for running
+            `gss.ResourceEstimate`(s) containing resource costs (after compilation) for running
             circuit(s) on a backend.
         """
         return self.get_backend(target).resource_estimate(circuits)
