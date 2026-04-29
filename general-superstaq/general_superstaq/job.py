@@ -83,7 +83,7 @@ class Job:
         )
         self._update_status_queue_info()
 
-    def wait_until_complete(
+    def wait_until_terminal_state(
         self,
         index: int | None = None,
         timeout_seconds: float | None = None,
@@ -94,15 +94,16 @@ class Job:
         Args:
             index: An optional index of the specific circuit to wait for (otherwise waits for all
                 circuits to complete).
-            timeout_seconds: The total number of seconds to poll for.
-            polling_seconds: The interval with which to poll.
+            timeout_seconds: Optional total number of seconds to poll for. Otherwise, uses the
+                client instance's max retry seconds.
+            polling_seconds: The time interval with which to poll. Defaults to 5.
         """
         time_waited: float = 0.0
         timeout_seconds = timeout_seconds or self._client.max_retry_seconds
         while (status := self._status(index)) not in gss.models.TERMINAL_CIRCUIT_STATES:
             if time_waited > timeout_seconds:
                 raise TimeoutError(
-                    f"Timed out while waiting for results. Final status was '{status}'"
+                    f"Timed out while waiting for results. Final status was '{status}'."
                 )
             time.sleep(polling_seconds)
             time_waited += polling_seconds
@@ -112,7 +113,7 @@ class Job:
         if self._job_data is None:
             self._refresh_job()
         if self._job_data is None:
-            raise AttributeError("Job data has not been fetched yet. Run _refresh_job().")
+            raise AttributeError("Job data has not been fetched yet. Run `_refresh_job()`.")
         return self._job_data
 
     @property
@@ -195,7 +196,7 @@ class Job:
         if index is None:
             return self._overall_status
 
-        gss.validation.validate_integer_param(index, min_val=0)
+        gss.validation.validate_integer_param(index, min_val=0, parameter_name="index")
         return self.job_data.statuses[index]
 
     def cancel(self, **kwargs: object) -> None:

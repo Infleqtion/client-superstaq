@@ -225,7 +225,7 @@ def test_status_refresh(mock_client: gss.superstaq_client._SuperstaqClientV3) ->
 
 
 @mock.patch("time.sleep", return_value=None)
-def test_wait_until_completed_poll(
+def test_wait_until_terminal_stated_poll(
     mock_sleep: mock.MagicMock, mock_client: gss.superstaq_client._SuperstaqClientV3
 ) -> None:
     job_dict = _job_dict()
@@ -237,7 +237,7 @@ def test_wait_until_completed_poll(
 
     job = gss.job.Job(mock_client, uuid.UUID(int=123))
     with mock.patch("requests.Session.get", side_effect=[running_mock, completed_mock]) as mock_get:
-        job.wait_until_complete(index=0, polling_seconds=0)
+        job.wait_until_terminal_state(index=0, polling_seconds=0)
         assert mock_get.call_count == 2
         mock_sleep.assert_called_once()
 
@@ -245,7 +245,7 @@ def test_wait_until_completed_poll(
 
 
 @mock.patch("time.sleep", return_value=None)
-def test_wait_until_completed_poll_timeout(
+def test_wait_until_terminal_stated_poll_timeout(
     mock_sleep: mock.MagicMock, mock_client: gss.superstaq_client._SuperstaqClientV3
 ) -> None:
     job_dict = _job_dict()
@@ -255,9 +255,9 @@ def test_wait_until_completed_poll_timeout(
     with mock.patch("requests.Session.get") as mock_get:
         mock_get.return_value = _mocked_response({str(uuid.UUID(int=123)): job_dict})
         with pytest.raises(
-            TimeoutError, match=r"Timed out while waiting for results. Final status was 'running'"
+            TimeoutError, match=r"Timed out while waiting for results. Final status was 'running'."
         ):
-            job.wait_until_complete(index=0, timeout_seconds=5, polling_seconds=10)
+            job.wait_until_terminal_state(index=0, timeout_seconds=5, polling_seconds=10)
 
         mock_sleep.assert_called_once()
         assert mock_get.call_count == 2
