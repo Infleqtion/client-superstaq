@@ -149,15 +149,15 @@ class SuperstaqProvider(gss.service.Service):
         *,
         legacy_parser: Callable[[dict[str, Any]], qss.compiler_output.CompilerOutput],
     ) -> qss.SuperstaqJobV3 | qss.compiler_output.CompilerOutput:
-        """Maps a compile endpoint's json response to the output type expected by the API version.
+        """Maps a compile endpoint's JSON response to the output type expected by the API version.
 
         Args:
             json_dict: The JSON output from a compile endpoint.
-            legacy_parser: The JSON parsing function to use for the v0.2.0 API version.
+            legacy_parser: The JSON parsing function to use for the v0.2.0 API.
 
         Returns:
-            For v0.3.0, compile-like endpoints will return a `css.JobV3`. For v0.2.0, legacy
-            behavior will be preserved and return a `css.CompilerOutput`.
+            For v0.3.0, compile-like endpoints will return a `qss.SuperstaqJobV3`. For v0.2.0,
+            legacy behavior will be preserved and return a `qss.CompilerOutput`.
         """
         if self._client.api_version == "v0.3.0":
             job_id = json_dict.get("job_id")
@@ -258,7 +258,7 @@ class SuperstaqProvider(gss.service.Service):
             target: A string containing the name of a target backend.
 
         Returns:
-            `gss.ResourceEstimate`(s) containing resource costs (after compilation) for running
+            ResourceEstimate(s) containing resource costs (after compilation) for running
             circuit(s) on a backend.
         """
         return self.get_backend(target).resource_estimate(circuits)

@@ -227,11 +227,11 @@ class Service(gss.service.Service):
         *,
         legacy_parser: Callable[[dict[str, Any]], css.compiler_output.CompilerOutput],
     ) -> css.JobV3 | css.compiler_output.CompilerOutput:
-        """Maps a compile endpoint's json response to the output type expected by the API version.
+        """Maps a compile endpoint's JSON response to the output type expected by the API version.
 
         Args:
             json_dict: The JSON output from a compile endpoint.
-            legacy_parser: The JSON parsing function to use for the v0.2.0 API version.
+            legacy_parser: The JSON parsing function to use for the v0.2.0 API.
 
         Returns:
             For v0.3.0, compile-like endpoints will return a `css.JobV3`. For v0.2.0, legacy
@@ -457,7 +457,7 @@ class Service(gss.service.Service):
             target: String of target representing target device.
 
         Returns:
-            `gss.ResourceEstimate`(s) containing resource costs (after compilation).
+            ResourceEstimate(s) containing resource costs (after compilation).
         """
         css.validation.validate_cirq_circuits(circuits)
         circuit_is_list = not isinstance(circuits, cirq.Circuit)

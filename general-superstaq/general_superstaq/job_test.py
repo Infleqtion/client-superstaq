@@ -225,7 +225,7 @@ def test_status_refresh(mock_client: gss.superstaq_client._SuperstaqClientV3) ->
 
 
 @mock.patch("time.sleep", return_value=None)
-def test_wait_until_terminal_stated_poll(
+def test_wait_until_terminal_state_no_poll(
     mock_sleep: mock.MagicMock, mock_client: gss.superstaq_client._SuperstaqClientV3
 ) -> None:
     job_dict = _job_dict()
@@ -245,7 +245,7 @@ def test_wait_until_terminal_stated_poll(
 
 
 @mock.patch("time.sleep", return_value=None)
-def test_wait_until_terminal_stated_poll_timeout(
+def test_wait_until_terminal_state_poll_timeout(
     mock_sleep: mock.MagicMock, mock_client: gss.superstaq_client._SuperstaqClientV3
 ) -> None:
     job_dict = _job_dict()
