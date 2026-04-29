@@ -32,14 +32,13 @@ import numbers
 import uuid
 import warnings
 from collections import defaultdict
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, overload
 
 import cirq
 import general_superstaq as gss
 import matplotlib.pyplot as plt
 import numpy as np
-from general_superstaq import ResourceEstimate
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 from scipy.optimize import curve_fit
 
@@ -221,6 +220,30 @@ class Service(gss.service.Service):
             use_stored_ibmq_credentials=use_stored_ibmq_credentials,
             **kwargs,
         )
+
+    def _map_compile_request_to_client_result(
+        self,
+        json_dict: dict[str, Any],
+        *,
+        legacy_parser: Callable[[dict[str, Any]], css.compiler_output.CompilerOutput],
+    ) -> css.JobV3 | css.compiler_output.CompilerOutput:
+        """Maps a compile endpoint's json response to the output type expected by the API version.
+
+        Args:
+            json_dict: The JSON output from a compile endpoint.
+            legacy_parser: The JSON parsing function to use for the v0.2.0 API version.
+
+        Returns:
+            For v0.3.0, compile-like endpoints will return a `css.JobV3`. For v0.2.0, legacy
+            behavior will be preserved and return a `css.CompilerOutput`.
+        """
+        if self._client.api_version == "v0.3.0":
+            job_id = json_dict.get("job_id")
+            if job_id is None:
+                raise KeyError("No job id was found in the compile request.")
+            assert isinstance(self._client, gss.superstaq_client._SuperstaqClientV3)
+            return css.JobV3(client=self._client, job_id=job_id)
+        return legacy_parser(json_dict)
 
     def _resolve_target(self, target: str | None) -> str:
         target = target or self.default_target
@@ -426,7 +449,7 @@ class Service(gss.service.Service):
 
     def resource_estimate(
         self, circuits: cirq.Circuit | Sequence[cirq.Circuit], target: str | None = None
-    ) -> ResourceEstimate | list[ResourceEstimate]:
+    ) -> gss.ResourceEstimate | list[gss.ResourceEstimate]:
         """Generates resource estimates for circuit(s).
 
         Args:
@@ -434,7 +457,7 @@ class Service(gss.service.Service):
             target: String of target representing target device.
 
         Returns:
-            ResourceEstimate(s) containing resource costs (after compilation).
+            `gss.ResourceEstimate`(s) containing resource costs (after compilation).
         """
         css.validation.validate_cirq_circuits(circuits)
         circuit_is_list = not isinstance(circuits, cirq.Circuit)
@@ -450,7 +473,7 @@ class Service(gss.service.Service):
         json_dict = self._client.resource_estimate(request_json)
 
         resource_estimates = [
-            ResourceEstimate(json_data=resource_estimate)
+            gss.ResourceEstimate(json_data=resource_estimate)
             for resource_estimate in json_dict["resource_estimates"]
         ]
 
@@ -738,7 +761,7 @@ class Service(gss.service.Service):
         control_radius: float = 1.0,
         stripped_cz_rads: float = 0.0,
         **kwargs: Any,
-    ) -> css.compiler_output.CompilerOutput:
+    ) -> css.JobV3 | css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) to the target CQ device.
 
         Args:
@@ -752,6 +775,7 @@ class Service(gss.service.Service):
             kwargs: Other desired `cq_compile` options.
 
         Returns:
+            UPDATE:
             Object whose .circuit(s) attribute contains the compiled cirq.Circuit(s).
 
         Raises:
@@ -778,7 +802,7 @@ class Service(gss.service.Service):
         dynamical_decoupling: bool = True,
         dd_strategy: str = "adaptive",
         **kwargs: Any,
-    ) -> css.compiler_output.CompilerOutput:
+    ) -> css.JobV3 | css.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) to the target IBMQ device.
 
         Qiskit Terra must be installed to correctly deserialize pulse schedules for pulse-enabled
@@ -828,7 +852,7 @@ class Service(gss.service.Service):
         circuits: cirq.Circuit | Sequence[cirq.Circuit],
         target: str,
         **kwargs: Any,
-    ) -> css.compiler_output.CompilerOutput:
+    ) -> css.JobV3 | css.compiler_output.CompilerOutput:
         """Compiles the given circuit(s) to the target device's native gateset.
 
         Args:
@@ -837,6 +861,7 @@ class Service(gss.service.Service):
             kwargs: Other desired compile options.
 
         Returns:
+            UPDATE:
             A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
             circuit(s).
         """
@@ -850,7 +875,10 @@ class Service(gss.service.Service):
         request_json = self._get_compile_request_json(circuits, target, **kwargs)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
         json_dict = self._client.compile(request_json)
-        return css.compiler_output.read_json(json_dict, circuits_is_list)
+        return self._map_compile_request_to_client_result(
+            json_dict,
+            legacy_parser=lambda j_dict: css.compiler_output.read_json(j_dict, circuits_is_list),
+        )
 
     def _get_compile_request_json(
         self,
