@@ -180,7 +180,7 @@ class Job:
             self._refresh_job()
             return self._overall_status
 
-        gss.validation.validate_integer_param(index, min_val=0)
+        gss.validation.validate_integer_param(index, min_val=0, parameter_name="index")
 
         job_ids = self._job_id.split(",")
         requested_job_id = job_ids[index]
@@ -255,7 +255,7 @@ class Job:
         if index is None:
             return [self._job[job_id]["num_qubits"] for job_id in job_ids]
 
-        gss.validation.validate_integer_param(index, min_val=0)
+        gss.validation.validate_integer_param(index, min_val=0, parameter_name="index")
         num_qubits = self._job[job_ids[index]]["num_qubits"]
         return num_qubits
 
@@ -309,7 +309,7 @@ class Job:
             serialized_circuits = [self._job[job_id][circuit_type] for job_id in job_ids]
             return [css.deserialize_circuits(serialized)[0] for serialized in serialized_circuits]
 
-        gss.validation.validate_integer_param(index, min_val=0)
+        gss.validation.validate_integer_param(index, min_val=0, parameter_name="index")
         serialized_circuit = self._job[job_ids[index]][circuit_type]
         return css.deserialize_circuits(serialized_circuit)[0]
 
@@ -384,7 +384,7 @@ class Job:
                     deserialized_circuits.append(deserialized_circuit[0])
                 return deserialized_circuits
         else:
-            gss.validation.validate_integer_param(index, min_val=0)
+            gss.validation.validate_integer_param(index, min_val=0, parameter_name="index")
             serialized_circuit = self._job[job_ids[index]]["pulse_gate_circuits"]
             return css.serialization.deserialize_qiskit_circuits(
                 serialized_circuit, circuits_is_list=False
@@ -422,8 +422,10 @@ class Job:
 
         Args:
             index: The index of the circuit which the counts correspond to.
-            timeout_seconds: The total number of seconds to poll for.
-            polling_seconds: The interval with which to poll.
+            timeout_seconds: The total number of seconds to poll results retrieval for. Defaults to
+                7200.
+            polling_seconds: The time interval (in seconds) with which to poll Superstaq job
+                results. Defaults to 1.
             qubit_indices: If provided, only include measurements counts of these qubits.
 
         Returns:
@@ -436,6 +438,9 @@ class Job:
             ~gss.SuperstaqServerException: If unable to get the results from the API.
             TimeoutError: If no results are available in the provided timeout interval.
         """
+        if index is not None:
+            gss.validation.validate_integer_param(index, min_val=0, parameter_name="index")
+
         time_waited_seconds: float = 0.0
         while (status := self.status(index)) not in self.TERMINAL_STATES:
             # Status does a refresh.
@@ -457,7 +462,6 @@ class Job:
                 ]
             return counts_list
 
-        gss.validation.validate_integer_param(index, min_val=0)
         single_counts = self._job[job_ids[index]]["samples"]
         if qubit_indices:
             return _get_marginal_counts(single_counts, qubit_indices)
@@ -541,28 +545,39 @@ class JobV3(gss.job.Job):
         return cirq.num_qubits(self.input_circuits(index))
 
     @overload
-    def compiled_circuits(self, index: int) -> cirq.Circuit: ...
+    def compiled_circuits(
+        self, index: int, *, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+    ) -> cirq.Circuit: ...
 
     @overload
-    def compiled_circuits(self, index: None = None) -> list[cirq.Circuit]: ...
+    def compiled_circuits(
+        self, index: None = None, *, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+    ) -> list[cirq.Circuit]: ...
 
-    def compiled_circuits(self, index: int | None = None) -> cirq.Circuit | list[cirq.Circuit]:
+    def compiled_circuits(
+        self, index: int | None = None, *, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+    ) -> cirq.Circuit | list[cirq.Circuit]:
         """Gets the compiled circuits that were processed for this job.
 
         Args:
             index: An optional index of the specific circuit to retrieve.
-
-        Raises:
-            gss.SuperstaqException: If the circuit at the provided index has no compiled circuit or,
-            when index is None, if any of the circuits in the job are missing the compiled circuit.
+            timeout_seconds: The total number of seconds to poll job data retrieval for. Defaults to
+                7200.
+            polling_seconds: The time interval (in seconds) with which to poll job data retrieval.
+                Defaults to 1.
 
         Returns:
             A single compiled circuit or list of compiled circuits.
-        """
-        if index is None:
-            if all(c is None for c in self.job_data.compiled_circuits):
-                raise gss.SuperstaqException(f"The job {self._job_id} has no compiled circuits.")
 
+        Raises:
+            gss.SuperstaqException: If the circuit at the provided `index` has no compiled circuit
+                or, when `index` is not specified, if any of the circuits in the job are missing a
+                compiled circuit.
+        """
+        self.wait_until_terminal_state(index, timeout_seconds, polling_seconds)
+        self._check_if_unsuccessful(index)
+
+        if index is None:
             if any(c is None for c in self.job_data.compiled_circuits):
                 raise gss.SuperstaqException(
                     "Some compiled circuits are missing. "
@@ -570,13 +585,10 @@ class JobV3(gss.job.Job):
                     "Please check the individual circuit statuses and any status messages."
                 )
             return [self.compiled_circuits(i) for i in range(self.job_data.num_circuits)]
-
-        serialized_circuit = self.job_data.compiled_circuits[index]
-        if serialized_circuit is None:
+        if (serialized_circuit := self.job_data.compiled_circuits[index]) is None:
             raise gss.SuperstaqException(
                 f"Circuit {index} of job {self._job_id} does not have a compiled circuit."
             )
-
         return css.deserialize_circuits(serialized_circuit)[0]
 
     @overload
@@ -600,13 +612,17 @@ class JobV3(gss.job.Job):
         return css.deserialize_circuits(self.job_data.input_circuits[index])[0]
 
     @overload
-    def initial_logical_to_physical(self, index: None = None) -> list[dict[cirq.Qid, cirq.Qid]]: ...
+    def initial_logical_to_physical(
+        self, index: None = None, *, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+    ) -> list[dict[cirq.Qid, cirq.Qid]]: ...
 
     @overload
-    def initial_logical_to_physical(self, index: int) -> dict[cirq.Qid, cirq.Qid]: ...
+    def initial_logical_to_physical(
+        self, index: int, *, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+    ) -> dict[cirq.Qid, cirq.Qid]: ...
 
     def initial_logical_to_physical(
-        self, index: int | None = None
+        self, index: int | None = None, *, timeout_seconds: int = 7200, polling_seconds: float = 1.0
     ) -> dict[cirq.Qid, cirq.Qid] | list[dict[cirq.Qid, cirq.Qid]]:
         """Mapping of logical qubits to physical qubits at the start of the circuit(s).
 
@@ -615,14 +631,20 @@ class JobV3(gss.job.Job):
 
         Args:
             index: An optional index of the specific circuit to retrieve.
+            timeout_seconds: The total number of seconds to poll job data retrieval for. Defaults to
+                7200.
+            polling_seconds: The time interval (in seconds) with which to poll job data retrieval.
+                Defaults to 1.
 
         Returns:
             A single logical to physical map (if `index` is passed) or list of maps for all input
             circuits.
         """
+        self.wait_until_terminal_state(index, timeout_seconds, polling_seconds)
         if index is None:
             return [self.initial_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 
+        # TODO: is it possible for a job failure to not populate this?
         lqs = cirq.read_json(json_text=self.job_data.logical_qubits[index])
         pqs = cirq.read_json(json_text=self.job_data.physical_qubits[index])
 
@@ -631,13 +653,17 @@ class JobV3(gss.job.Job):
         return {lqs[lqi]: pqs[pqi] for lqi, pqi in logical_to_physical_indices.items()}
 
     @overload
-    def final_logical_to_physical(self, index: None = None) -> list[dict[cirq.Qid, cirq.Qid]]: ...
+    def final_logical_to_physical(
+        self, index: None = None, *, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+    ) -> list[dict[cirq.Qid, cirq.Qid]]: ...
 
     @overload
-    def final_logical_to_physical(self, index: int) -> dict[cirq.Qid, cirq.Qid]: ...
+    def final_logical_to_physical(
+        self, index: int, *, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+    ) -> dict[cirq.Qid, cirq.Qid]: ...
 
     def final_logical_to_physical(
-        self, index: int | None = None
+        self, index: int | None = None, *, timeout_seconds: int = 7200, polling_seconds: float = 1.0
     ) -> dict[cirq.Qid, cirq.Qid] | list[dict[cirq.Qid, cirq.Qid]]:
         """Mapping of logical qubits to physical qubits at the end of the circuit(s).
 
@@ -646,14 +672,20 @@ class JobV3(gss.job.Job):
 
         Args:
             index: An optional index of the specific circuit to retrieve.
+            timeout_seconds: The total number of seconds to poll job data retrieval for. Defaults to
+                7200.
+            polling_seconds: The time interval (in seconds) with which to poll job data retrieval.
+                Defaults to 1.
 
         Returns:
             A single logical to physical map (if `index` is passed) or list of maps for all input
             circuits.
         """
+        self.wait_until_terminal_state(index, timeout_seconds, polling_seconds)
         if index is None:
             return [self.final_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 
+        # TODO: is it possible for a job failure to not populate this?
         lqs = cirq.read_json(json_text=self.job_data.logical_qubits[index])
         pqs = cirq.read_json(json_text=self.job_data.physical_qubits[index])
 
@@ -690,8 +722,10 @@ class JobV3(gss.job.Job):
 
         Args:
             index: The index of the circuit which the counts correspond to.
-            timeout_seconds: The total number of seconds to poll for.
-            polling_seconds: The interval with which to poll.
+            timeout_seconds: The total number of seconds to poll counts retrieval for. Defaults to
+                7200.
+            polling_seconds: The time interval (in seconds) with which to poll Superstaq job
+                counts. Defaults to 1.
             qubit_indices: If provided, only include measurements counts of these qubits.
 
         Returns:
@@ -704,9 +738,12 @@ class JobV3(gss.job.Job):
             ~gss.SuperstaqServerException: If unable to get the results from the API.
             TimeoutError: If no results are available in the provided timeout interval.
             gss.SuperstaqException: If the job counts are missing.
+            NotImplementedError: The job does not admit retrieving result counts.
         """
-        self.wait_until_complete(index, timeout_seconds, polling_seconds)
+        if self.job_data.job_type in (gss.models.JobType.COMPILE, gss.models.JobType.CONVERT):
+            raise NotImplementedError("There are no counts to be retrieved for this job type.")
 
+        self.wait_until_terminal_state(index, timeout_seconds, polling_seconds)
         # Check to see if unsuccessful
         self._check_if_unsuccessful(index)
 
@@ -716,7 +753,6 @@ class JobV3(gss.job.Job):
                 for i in range(self.job_data.num_circuits)
             ]
 
-        gss.validation.validate_integer_param(index, min_val=0)
         single_counts = self.job_data.counts[index]
         if single_counts is None:
             raise gss.SuperstaqException(
