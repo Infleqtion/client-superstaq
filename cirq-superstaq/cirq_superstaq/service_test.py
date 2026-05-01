@@ -103,11 +103,11 @@ def test_counts_to_results() -> None:
 
 def test_service_wrong_version() -> None:
     with pytest.raises(ValueError, match=r"`api_version` can only take value 'v0.2.0' or 'v0.3.0'"):
-        css.Service(api_version="v4")
+        css.Service(api_version="v4")  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
-def test_service_resolve_target(api_version: str) -> None:
+def test_service_resolve_target(api_version: gss.typing.ApiV2Like | gss.typing.ApiV3Like) -> None:
     service = css.Service(api_key="key", default_target="ss_bar_qpu", api_version=api_version)
     assert service._resolve_target("ss_foo_qpu") == "ss_foo_qpu"
     assert service._resolve_target(None) == "ss_bar_qpu"

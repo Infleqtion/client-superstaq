@@ -97,8 +97,9 @@ class _BaseSuperstaqClient:
             remote_host: The URL of the server exposing the Superstaq API. This will strip anything
                 besides the base scheme and netloc, i.e., it only takes the part of the host of
                 the form `http://example.com` of `http://example.com/test`.
-            api_version: Which version of the API to use. Defaults to `client_superstaq.API_VERSION`
-                (which is the most recent version when this client was downloaded).
+            api_version: Which version of the API to use. Defaults to
+                `general_superstaq.API_VERSION` (which is the most recent version when this
+                client was downloaded).
             circuit_type: The type of circuit, Cirq, Qiskit, or QASM.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
@@ -420,8 +421,9 @@ class _AbstractUserClient(_BaseSuperstaqClient, ABC):
             remote_host: The URL of the server exposing the Superstaq API. This will strip anything
                 besides the base scheme and netloc, i.e., it only takes the part of the host of
                 the form `http://example.com` of `http://example.com/test`.
-            api_version: Which version of the API to use. Defaults to `client_superstaq.API_VERSION`
-                (which is the most recent version when this client was downloaded).
+            api_version: Which version of the API to use. Defaults to
+                `general_superstaq.API_VERSION` (which is the most recent version when this
+                client was downloaded).
             circuit_type: The type of circuit, Cirq, Qiskit, or QASM.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
@@ -944,7 +946,7 @@ class _AbstractUserClient(_BaseSuperstaqClient, ABC):
 
     def _raise_not_implemented(self, function_name: str) -> NoReturn:
         raise NotImplementedError(
-            f"The function {function_name} is not implemented for version {self.api_version}."
+            f"The function `{function_name}()` is not implemented for version {self.api_version}."
         )
 
     def _prompt_accept_terms_of_use(self) -> None:
@@ -1525,85 +1527,7 @@ class _SuperstaqClientV3(_AbstractUserClient):
         response = gss.models.NewJobResponse(
             **self.post_request("/client/job", new_job.model_dump())
         )
-        job_id = str(response.job_id)
-        job_data = self.fetch_jobs([job_id])[job_id]
-
-        assert isinstance(job_data["statuses"], list)
-        statuses: list[str] = job_data["statuses"]
-
-        # Poll the server until all circuits have reached a terminal state.
-        time_waited_seconds: float = 0.0
-        while any(s not in gss.models.TERMINAL_CIRCUIT_STATES for s in statuses):
-            # Status does a refresh.
-            if time_waited_seconds > 7200:  # pragma: no cover
-                raise TimeoutError(
-                    f"Timed out while waiting for circuits to compile. The job ID is {job_id}. "
-                    "Please use retrieve the job later when it has finished compiling."
-                )
-            time.sleep(2.5)
-            time_waited_seconds += 2.5
-            job_data = self.fetch_jobs([job_id])[job_id]
-            assert isinstance(job_data["statuses"], list)
-            statuses = job_data["statuses"]
-
-        # Exception if any have not been successful
-        if not all(s == gss.models.CircuitStatus.COMPLETED for s in statuses):
-            raise gss.SuperstaqException(
-                f"Not all circuits were successfully compiled. Check job ID {job_id} for further "
-                "details."
-            )
-
-        assert isinstance(job_data["compiled_circuits"], list)
-        compiled_circuits: list[str] = job_data["compiled_circuits"]
-
-        assert isinstance(job_data["final_logical_to_physicals"], list)
-        final_logical_to_physicals: list[dict[int, int]] = job_data["final_logical_to_physicals"]
-
-        assert isinstance(job_data["initial_logical_to_physicals"], list)
-        initial_logical_to_physicals: list[dict[int, int]] = job_data[
-            "initial_logical_to_physicals"
-        ]
-
-        assert isinstance(job_data["logical_qubits"], list)
-        logical_qubits: list[str] = job_data["logical_qubits"]
-
-        assert isinstance(job_data["physical_qubits"], list)
-        physical_qubits: list[str] = job_data["physical_qubits"]
-
-        # Join circuits together in json string - TODO: make this neater.
-        if circuit_type == gss.models.CircuitType.QISKIT:
-            qiskit_initial_log_to_phys = [
-                [[k, v] for k, v in q_map.items()] for q_map in initial_logical_to_physicals
-            ]
-            qiskit_final_log_to_phys = [
-                [[k, v] for k, v in q_map.items()] for q_map in final_logical_to_physicals
-            ]
-
-            compile_dict = {
-                "qiskit_circuits": json.dumps(compiled_circuits),
-                "initial_logical_to_physicals": json.dumps(qiskit_initial_log_to_phys),
-                "final_logical_to_physicals": json.dumps(qiskit_final_log_to_phys),
-            }
-
-        elif circuit_type == gss.models.CircuitType.CIRQ:
-            cirq_initial_log_to_phys = []
-            cirq_final_log_to_phys = []
-            for i in range(len(initial_logical_to_physicals)):
-                logical = json.loads(logical_qubits[i])
-                physical = json.loads(physical_qubits[i])
-
-                cirq_initial_log_to_phys.append(
-                    [[logical[k], physical[v]] for k, v in initial_logical_to_physicals[i].items()]
-                )
-                cirq_final_log_to_phys.append(
-                    [[logical[k], physical[v]] for k, v in final_logical_to_physicals[i].items()]
-                )
-            compile_dict = {
-                "initial_logical_to_physicals": json.dumps(cirq_initial_log_to_phys),
-                "final_logical_to_physicals": json.dumps(cirq_final_log_to_phys),
-                "cirq_circuits": json.dumps(list(map(json.loads, compiled_circuits))),
-            }
-        return compile_dict
+        return {"job_id": str(response.job_id)}
 
     def submit_qubo(
         self,

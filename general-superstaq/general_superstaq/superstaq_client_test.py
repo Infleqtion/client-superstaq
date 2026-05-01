@@ -31,6 +31,7 @@ import datetime
 import io
 import json
 import os
+import re
 import secrets
 import textwrap
 import uuid
@@ -918,7 +919,9 @@ def test_superstaq_client_resource_estimate(
         mock_post.assert_called_once()
         assert mock_post.call_args[0][0] == f"http://example.com/{api_version}/resource_estimate"
     else:
-        with pytest.raises(NotImplementedError, match=r"resource_estimate is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`resource_estimate()` is not implemented")
+        ):
             client.resource_estimate({"Hello": "1", "World": "2"})
 
 
@@ -1269,118 +1272,25 @@ def test_superstaq_client_compile_v3__type_not_found(
         client_v3.compile({"qasm_circuits": "Hello"})
 
 
-@mock.patch("requests.Session.get")
-@mock.patch("requests.Session.post")
-def test_superstaq_client_compile_v3_failed(
-    mock_post: mock.MagicMock,
-    mock_get: mock.MagicMock,
-    client_v3: gss.superstaq_client._SuperstaqClientV3,
-) -> None:
-    job_id = uuid.UUID(int=0)
-    job_data = {
-        str(job_id): {
-            "job_type": "compile",
-            "statuses": ["failed"],
-            "status_messages": [None],
-            "user_email": "test@email.com",
-            "target": "ss_example_qpu",
-            "provider_id": ["ss"],
-            "num_circuits": 1,
-            "compiled_circuits": ["compiled world"],
-            "input_circuits": ["world"],
-            "circuit_type": "cirq",
-            "counts": [{"count": 200}],
-            "results_dicts": [None],
-            "shots": [200],
-            "dry_run": True,
-            "submission_timestamp": datetime.datetime(1, 1, 1, tzinfo=datetime.timezone.utc),
-            "last_updated_timestamp": [None],
-            "initial_logical_to_physicals": [{0: 0}],
-            "final_logical_to_physicals": [{0: 0}],
-            "logical_qubits": ["0"],
-            "physical_qubits": ["0"],
-        }
-    }
-    mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
-    mock_get.return_value.json.return_value = job_data
-
-    with pytest.raises(gss.SuperstaqException, match=f"Check job ID {job_id} for further details."):
-        _ = client_v3.compile({"cirq_circuits": "Hello", "target": "ss_example_qpu"})
-
-    mock_post.assert_called_with(
-        f"http://example.com/{client_v3.api_version}/client/job",
-        json={
-            "job_type": "compile",
-            "target": "ss_example_qpu",
-            "circuits": "Hello",
-            "circuit_type": "cirq",
-            "verbatim": False,
-            "shots": 0,
-            "dry_run": False,
-            "sim_method": None,
-            "priority": 0,
-            "options_dict": {},
-            "tags": [],
-            "metadata": {},
-        },
-        headers=EXPECTED_HEADERS[client_v3.api_version],
-        verify=False,
-    )
-    mock_get.assert_called_with(
-        f"http://example.com/{client_v3.api_version}/client/job/cirq?job_id={job_id}",
-        headers=EXPECTED_HEADERS[client_v3.api_version],
-        verify=False,
-    )
-
-
 @pytest.mark.parametrize(
-    ("circuit_type", "expected_map", "serialized_circuit"),
+    ("circuit_type", "serialized_circuit"),
     [
-        ("cirq", '[[[{"qubit": "q0"}, {"qubit": "q0"}]]]', '["compiled world"]'),
-        ("qiskit", "[[[0, 0]]]", '["\\"compiled world\\""]'),
+        ("cirq", '["compiled world"]'),
+        ("qiskit", '["\\"compiled world\\""]'),
     ],
 )
-@mock.patch("requests.Session.get")
 @mock.patch("requests.Session.post")
 def test_superstaq_client_compile_v3(
     mock_post: mock.MagicMock,
-    mock_get: mock.MagicMock,
     circuit_type: str,
-    expected_map: str,
     serialized_circuit: str,
     client_v3: gss.superstaq_client._SuperstaqClientV3,
 ) -> None:
     job_id = uuid.UUID(int=0)
-    job_data = {
-        str(job_id): {
-            "job_type": "compile",
-            "statuses": ["completed"],
-            "status_messages": [None],
-            "user_email": "test@email.com",
-            "target": "ss_example_qpu",
-            "provider_id": ["ss"],
-            "num_circuits": 1,
-            "compiled_circuits": ['"compiled world"'],
-            "input_circuits": ["world"],
-            "circuit_type": circuit_type,
-            "counts": [{"count": 200}],
-            "results_dicts": [None],
-            "shots": [200],
-            "dry_run": True,
-            "submission_timestamp": datetime.datetime(1, 1, 1, tzinfo=datetime.timezone.utc),
-            "last_updated_timestamp": [None],
-            "initial_logical_to_physicals": [{0: 0}],
-            "final_logical_to_physicals": [{0: 0}],
-            "logical_qubits": ['[{"qubit": "q0"}]'],
-            "physical_qubits": ['[{"qubit": "q0"}]'],
-            "metadata": {},
-        }
-    }
     mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
-    mock_get.return_value.json.return_value = job_data
 
-    compilation_results = client_v3.compile(
-        {f"{circuit_type}_circuits": "Hello", "target": "ss_example_qpu"}
+    job_json = client_v3.compile(
+        {f"{circuit_type}_circuits": serialized_circuit, "target": "ss_example_qpu"}
     )
 
     mock_post.assert_called_with(
@@ -1388,7 +1298,7 @@ def test_superstaq_client_compile_v3(
         json={
             "job_type": "compile",
             "target": "ss_example_qpu",
-            "circuits": "Hello",
+            "circuits": serialized_circuit,
             "circuit_type": circuit_type,
             "verbatim": False,
             "shots": 0,
@@ -1402,93 +1312,7 @@ def test_superstaq_client_compile_v3(
         headers=EXPECTED_HEADERS[client_v3.api_version],
         verify=False,
     )
-    mock_get.assert_called_with(
-        f"http://example.com/{client_v3.api_version}/client/job/cirq?job_id={job_id}",
-        headers=EXPECTED_HEADERS[client_v3.api_version],
-        verify=False,
-    )
-    assert compilation_results == {
-        f"{circuit_type}_circuits": serialized_circuit,
-        "initial_logical_to_physicals": expected_map,
-        "final_logical_to_physicals": expected_map,
-    }
-
-
-@mock.patch("requests.Session.get")
-@mock.patch("requests.Session.post")
-def test_superstaq_client_compile_v3_with_wait(
-    mock_post: mock.MagicMock,
-    mock_get: mock.MagicMock,
-    client_v3: gss.superstaq_client._SuperstaqClientV3,
-) -> None:
-    job_id = uuid.UUID(int=0)
-    compiling_data = {
-        "job_type": "compile",
-        "statuses": ["compiling"],
-        "status_messages": [None],
-        "user_email": "test@email.com",
-        "target": "ss_example_qpu",
-        "provider_id": ["ss"],
-        "num_circuits": 1,
-        "compiled_circuits": ['"compiled world"'],
-        "input_circuits": ["world"],
-        "circuit_type": "cirq",
-        "counts": [{"count": 200}],
-        "results_dicts": [None],
-        "shots": [200],
-        "dry_run": True,
-        "submission_timestamp": datetime.datetime(1, 1, 1, tzinfo=datetime.timezone.utc),
-        "last_updated_timestamp": [None],
-        "initial_logical_to_physicals": [{0: 0}],
-        "final_logical_to_physicals": [{0: 0}],
-        "logical_qubits": ['[{"qubit": "q0"}]'],
-        "physical_qubits": ['[{"qubit": "q0"}]'],
-    }
-
-    mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
-    response1 = mock.MagicMock()
-    response1.json.return_value = {str(job_id): compiling_data}
-    completed_data = compiling_data.copy()
-    completed_data["statuses"] = ["completed"]
-    response2 = mock.MagicMock()
-    response2.json.return_value = {str(job_id): completed_data}
-    mock_get.side_effect = [response1, response2]
-
-    with mock.patch("time.sleep", return_value=None):
-        compilation_results = client_v3.compile(
-            {"cirq_circuits": "Hello", "target": "ss_example_qpu"}
-        )
-
-    mock_post.assert_called_with(
-        f"http://example.com/{client_v3.api_version}/client/job",
-        json={
-            "job_type": "compile",
-            "target": "ss_example_qpu",
-            "circuits": "Hello",
-            "circuit_type": "cirq",
-            "verbatim": False,
-            "shots": 0,
-            "dry_run": False,
-            "sim_method": None,
-            "priority": 0,
-            "options_dict": {},
-            "tags": [],
-            "metadata": {},
-        },
-        headers=EXPECTED_HEADERS[client_v3.api_version],
-        verify=False,
-    )
-    mock_get.assert_called_with(
-        f"http://example.com/{client_v3.api_version}/client/job/cirq?job_id={job_id}",
-        headers=EXPECTED_HEADERS[client_v3.api_version],
-        verify=False,
-    )
-    assert mock_get.call_count == 2
-    assert compilation_results == {
-        "cirq_circuits": '["compiled world"]',
-        "initial_logical_to_physicals": '[[[{"qubit": "q0"}, {"qubit": "q0"}]]]',
-        "final_logical_to_physicals": '[[[{"qubit": "q0"}, {"qubit": "q0"}]]]',
-    }
+    assert job_json == {"job_id": str(job_id)}
 
 
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
@@ -1544,7 +1368,9 @@ def test_superstaq_client_submit_qubo(
             verify=False,
         )
     else:
-        with pytest.raises(NotImplementedError, match=r"submit_qubo is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`submit_qubo()` is not implemented")
+        ):
             client.submit_qubo(
                 example_qubo,
                 target,
@@ -1579,7 +1405,9 @@ def test_superstaq_client_atom_picture(
             verify=False,
         )
     else:
-        with pytest.raises(NotImplementedError, match=r"atom_picture is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`submit_atom_picture()` is not implemented")
+        ):
             client.submit_atom_picture(bitmap_2d)
 
 
@@ -1609,7 +1437,9 @@ def test_superstaq_client_supercheq(
             verify=False,
         )
     else:
-        with pytest.raises(NotImplementedError, match=r"supercheq is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`supercheq()` is not implemented")
+        ):
             client.supercheq([[0]], 1, 1, "cirq_circuits")
 
 
@@ -1666,7 +1496,9 @@ def test_superstaq_client_aces(
             verify=False,
         )
     else:
-        with pytest.raises(NotImplementedError, match=r"submit_aces is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`submit_aces()` is not implemented")
+        ):
             client.submit_aces(
                 target="ss_unconstrained_simulator",
                 qubits=[0, 1],
@@ -1681,7 +1513,9 @@ def test_superstaq_client_aces(
                 noise={"type": "symmetric_depolarize", "params": (0.01,)},
             )
 
-        with pytest.raises(NotImplementedError, match=r"process_aces is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`process_aces()` is not implemented")
+        ):
             client.process_aces(uuid.UUID(int=0))
 
 
@@ -1733,7 +1567,9 @@ def test_superstaq_client_cb(
             verify=False,
         )
     else:
-        with pytest.raises(NotImplementedError, match=r"submit_cb is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`submit_cb()` is not implemented")
+        ):
             client.submit_cb(
                 target="ss_unconstrained_simulator",
                 shots=100,
@@ -1745,7 +1581,9 @@ def test_superstaq_client_cb(
                 noise={"type": "symmetric_depolarize", "params": (0.01,)},
             )
 
-        with pytest.raises(NotImplementedError, match=r"process_cb is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`process_cb()` is not implemented")
+        ):
             client.process_cb(uuid.UUID(int=0), "count")
 
 
@@ -1801,7 +1639,9 @@ def test_superstaq_client_dfe(
         with pytest.raises(ValueError, match=r"must contain exactly two job ids"):
             client.process_dfe(["1", "2", "3"])
     else:
-        with pytest.raises(NotImplementedError, match=r"submit_dfe is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`submit_dfe()` is not implemented")
+        ):
             client.submit_dfe(
                 circuit_1={"Hello": "World"},
                 target_1="ss_example_qpu",
@@ -1812,7 +1652,9 @@ def test_superstaq_client_dfe(
                 lifespan=10,
             )
 
-        with pytest.raises(NotImplementedError, match=r"process_dfe is not implemented"):
+        with pytest.raises(
+            NotImplementedError, match=re.escape("`process_dfe()` is not implemented")
+        ):
             client.process_dfe([uuid.UUID(int=0)])
 
 

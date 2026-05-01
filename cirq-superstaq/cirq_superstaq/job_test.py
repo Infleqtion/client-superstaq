@@ -316,9 +316,7 @@ def test_compiled_circuitV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obje
     job_result = modifiy_job_result(job_dictV3, compiled_circuits=[None])
     mock_get.return_value.json.return_value = {str(uuid.UUID(int=43)): job_result}
     job = new_jobV3()
-    with pytest.raises(
-        gss.SuperstaqException, match=f"The job {job._job_id} has no compiled circuits."
-    ):
+    with pytest.raises(gss.SuperstaqException, match=r"Some compiled circuits are missing."):
         job.compiled_circuits()
 
     job_result = modifiy_job_result(
@@ -551,6 +549,7 @@ def test_logical_to_physicals(
     job_result = modifiy_job_result(
         job_dictV3,
         num_circuits=2,
+        statuses=["completed"] * 2,
         logical_qubits=[cirq.to_json(cirq.LineQubit.range(2))] * 2,
         physical_qubits=[cirq.to_json(cirq.GridQubit.rect(2, 1))] * 2,
         initial_logical_to_physicals=[{0: 0, 1: 1}, {0: 1, 1: 0}],
@@ -715,24 +714,28 @@ def test_job_counts_poll(
         mock_sleep.assert_called_once()
 
 
-@mock.patch("time.sleep", return_value=None)
-def test_job_counts_pollV3(
-    mock_sleep: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
-) -> None:
-    running_mock = mock.MagicMock()
-    running_response = {
-        str(uuid.UUID(int=42)): modifiy_job_result(job_dictV3, statuses=["running"])
-    }
-    running_mock.json.return_value = running_response
+def test_job_counts_pollV3(jobV3: css.JobV3, job_dictV3: dict[str, object]) -> None:
+    # Start in a non-terminal state with no counts yet
+    jobV3._job_data = gss.models.JobData(
+        **modifiy_job_result(job_dictV3, statuses=["running"], counts=[None])
+    )
 
-    completed_mock = mock.MagicMock()
-    completed_mock.json.return_value = {str(uuid.UUID(int=42)): job_dictV3}
+    # When `counts()` polls, simulate the job completing and counts becoming available:
+    def _complete_job(*_args: object, **_kwargs: object) -> None:
+        jobV3._job_data = gss.models.JobData(**job_dictV3)
 
-    with mock.patch("requests.Session.get", side_effect=[running_mock, completed_mock]) as mock_get:
-        results = jobV3.counts(index=0, polling_seconds=0)
-        assert results == {"11": 1}
-        assert mock_get.call_count == 2
-        mock_sleep.assert_called_once()
+    with mock.patch.object(jobV3, "wait_until_terminal_state", side_effect=_complete_job) as wait:
+        assert jobV3.counts(index=0, timeout_seconds=100, polling_seconds=25) == {"11": 1}
+
+    wait.assert_called_once_with(0, 100, 25)
+
+
+def test_compile_job_counts(jobV3: css.JobV3, job_dictV3: dict[str, object]) -> None:
+    jobV3._job_data = gss.models.JobData(
+        **modifiy_job_result(job_dictV3, job_type="compile", counts=[None])
+    )
+    with pytest.raises(NotImplementedError, match=r"There are no counts to be retrieved for this"):
+        _ = jobV3.counts()
 
 
 @mock.patch("time.sleep", return_value=None)
@@ -751,24 +754,20 @@ def test_job_counts_poll_timeout(
     assert mock_sleep.call_count == 11
 
 
-@mock.patch("time.sleep", return_value=None)
-def test_job_counts_poll_timeoutV3(
-    mock_sleep: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
-) -> None:
-    running_mock = mock.MagicMock()
-    running_response = {
-        str(uuid.UUID(int=42)): modifiy_job_result(job_dictV3, statuses=["running"])
-    }
-    running_mock.json.return_value = running_response
+def test_job_counts_poll_timeoutV3(jobV3: css.JobV3, job_dictV3: dict[str, object]) -> None:
+    # Update `_job_data` to a still running job
+    jobV3._job_data = gss.models.JobData(
+        **modifiy_job_result(job_dictV3, statuses=["running"], counts=[None])
+    )
 
-    with mock.patch("requests.Session.get", side_effect=[running_mock, running_mock]) as mock_get:
-        with pytest.raises(
-            TimeoutError, match=r"Timed out while waiting for results. Final status was 'running'"
-        ):
-            jobV3.counts(index=0, timeout_seconds=5, polling_seconds=10)
+    timeout_exc = TimeoutError("Timed out while waiting for results. Final status was 'running'.")
+    with (
+        mock.patch.object(jobV3, "wait_until_terminal_state", side_effect=timeout_exc) as wait,
+        pytest.raises(TimeoutError, match=r"Final status was 'running'"),
+    ):
+        jobV3.counts(index=0, timeout_seconds=5, polling_seconds=10)
 
-        mock_sleep.assert_called_once()
-        assert mock_get.call_count == 2
+    wait.assert_called_once_with(0, 5, 10)
 
 
 @mock.patch("time.sleep", return_value=None)
