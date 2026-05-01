@@ -15,17 +15,15 @@
 from __future__ import annotations
 
 from collections.abc import Hashable
-from typing import (
-    Any,
-    Literal,
-    TypeAlias,
-    TypedDict,
-)
+from typing import TYPE_CHECKING, Any, Literal, TypedDict
 
 import pydantic
 from typing_extensions import TypeVar
 
 import general_superstaq as gss
+
+if TYPE_CHECKING:
+    from typing_extensions import TypeAlias
 
 TQuboKey = TypeVar("TQuboKey", bound=Hashable)
 
