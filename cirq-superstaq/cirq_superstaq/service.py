@@ -302,6 +302,19 @@ class Service(gss.Service, Generic[CompileResultT_co]):
         *,
         legacy_parser: Callable[[dict[str, Any]], css.compiler_output.CompilerOutput],
     ) -> CompileResultT_co:
+        """Maps a compile endpoint's JSON response to the output type expected by the API version.
+
+        Args:
+            json_dict: The JSON output from a compile endpoint.
+            legacy_parser: The JSON parsing function to use for the v0.2.0 API.
+
+        Returns:
+            For v0.3.0, compile-like endpoints will return a `css.JobV3`. For v0.2.0, legacy
+            behavior will be preserved and return a `css.CompilerOutput`.
+
+        Raises:
+            NotImplementedError: If invoked directly with an unsupported API version.
+        """
         raise NotImplementedError
 
     def _resolve_target(self, target: str | None) -> str:

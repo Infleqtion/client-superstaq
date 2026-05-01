@@ -221,6 +221,19 @@ class SuperstaqProvider(gss.Service, Generic[CompileResultT_co]):
         *,
         legacy_parser: Callable[[dict[str, Any]], qss.compiler_output.CompilerOutput],
     ) -> CompileResultT_co:
+        """Maps a compile endpoint's JSON response to the output type expected by the API version.
+
+        Args:
+             json_dict: The JSON output from a compile endpoint.
+             legacy_parser: The JSON parsing function to use for the v0.2.0 API.
+
+        Returns:
+             For v0.3.0, compile-like endpoints will return a `qss.SuperstaqJobV3`. For v0.2.0,
+             legacy behavior will be preserved and return a `qss.CompilerOutput`.
+
+        Raises:
+            NotImplementedError: If invoked against an unsupported API version.
+        """
         raise NotImplementedError
 
     def get_backend(self, target: str) -> qss.SuperstaqBackend:
