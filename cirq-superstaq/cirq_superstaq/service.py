@@ -54,8 +54,8 @@ if TYPE_CHECKING:
     import numpy.typing as npt
     from _typeshed import SupportsItems
 
-CompileResultT_co = TypeVar(
-    "CompileResultT_co",
+CssCompileResultT_co = TypeVar(
+    "CssCompileResultT_co",
     bound=css.compiler_output.CompilerOutput | css.JobV3,
     covariant=True,
     default=css.compiler_output.CompilerOutput,
@@ -146,7 +146,7 @@ def counts_to_results(
     return result
 
 
-class Service(gss.Service, Generic[CompileResultT_co]):
+class Service(gss.Service, Generic[CssCompileResultT_co]):
     """A class to access Superstaq's API.
 
     To access the API, this class requires a remote host url and an API key. These can be
@@ -301,7 +301,7 @@ class Service(gss.Service, Generic[CompileResultT_co]):
         json_dict: dict[str, Any],
         *,
         legacy_parser: Callable[[dict[str, Any]], css.compiler_output.CompilerOutput],
-    ) -> CompileResultT_co:
+    ) -> CssCompileResultT_co:
         """Maps a compile endpoint's JSON response to the output type expected by the API version.
 
         Args:
@@ -563,7 +563,7 @@ class Service(gss.Service, Generic[CompileResultT_co]):
         gate_defs: None
         | (Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]) = None,
         **kwargs: Any,
-    ) -> CompileResultT_co:
+    ) -> CssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for AQT using ECA.
 
         The Advanced Quantum Testbed (AQT) is a superconducting transmon quantum computing testbed
@@ -629,7 +629,7 @@ class Service(gss.Service, Generic[CompileResultT_co]):
         pulses: object = None,
         variables: object = None,
         **kwargs: Any,
-    ) -> CompileResultT_co:
+    ) -> CssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
 
         AQT is a superconducting transmon quantum computing testbed at Lawrence Berkeley National
@@ -730,7 +730,7 @@ class Service(gss.Service, Generic[CompileResultT_co]):
         keep_qubit_order: bool = False,
         random_seed: int | None = None,
         **kwargs: Any,
-    ) -> CompileResultT_co:
+    ) -> CssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
         Sandia National Laboratories [1].
 
@@ -842,7 +842,7 @@ class Service(gss.Service, Generic[CompileResultT_co]):
         control_radius: float = 1.0,
         stripped_cz_rads: float = 0.0,
         **kwargs: Any,
-    ) -> CompileResultT_co:
+    ) -> CssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) to the target CQ device.
 
         Args:
@@ -883,7 +883,7 @@ class Service(gss.Service, Generic[CompileResultT_co]):
         dynamical_decoupling: bool = True,
         dd_strategy: str = "adaptive",
         **kwargs: Any,
-    ) -> CompileResultT_co:
+    ) -> CssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) to the target IBMQ device.
 
         Qiskit Terra must be installed to correctly deserialize pulse schedules for pulse-enabled
@@ -933,7 +933,7 @@ class Service(gss.Service, Generic[CompileResultT_co]):
         circuits: cirq.Circuit | Sequence[cirq.Circuit],
         target: str,
         **kwargs: Any,
-    ) -> CompileResultT_co:
+    ) -> CssCompileResultT_co:
         """Compiles the given circuit(s) to the target device's native gateset.
 
         Args:

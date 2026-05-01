@@ -47,8 +47,8 @@ if TYPE_CHECKING:
     import numpy.typing as npt
     from _typeshed import SupportsItems
 
-CompileResultT_co = TypeVar(
-    "CompileResultT_co",
+QssCompileResultT_co = TypeVar(
+    "QssCompileResultT_co",
     bound=qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3,
     covariant=True,
     default=qss.compiler_output.CompilerOutput,
@@ -56,7 +56,7 @@ CompileResultT_co = TypeVar(
 # ruff: noqa: ARG004
 
 
-class SuperstaqProvider(gss.Service, Generic[CompileResultT_co]):
+class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
     """Provider for Superstaq backend.
 
     Typical usage is:
@@ -220,7 +220,7 @@ class SuperstaqProvider(gss.Service, Generic[CompileResultT_co]):
         json_dict: dict[str, Any],
         *,
         legacy_parser: Callable[[dict[str, Any]], qss.compiler_output.CompilerOutput],
-    ) -> CompileResultT_co:
+    ) -> QssCompileResultT_co:
         """Maps a compile endpoint's JSON response to the output type expected by the API version.
 
         Args:
