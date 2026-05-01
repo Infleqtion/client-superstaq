@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from general_superstaq import models
-from general_superstaq._init_vars import API_URL, API_URL_V3, DEFAULT_API_VERSION
+from general_superstaq._init_vars import API_URL, API_URL_V3, API_VERSION
 from general_superstaq._version import __version__
 from general_superstaq.compiler_output import BaseCompilerOutput
 from general_superstaq.resource_estimate import ResourceEstimate
@@ -40,7 +40,7 @@ from . import (
 __all__ = [
     "API_URL",
     "API_URL_V3",
-    "DEFAULT_API_VERSION",
+    "API_VERSION",
     "BaseCompilerOutput",
     "JaqalService",
     "ResourceEstimate",

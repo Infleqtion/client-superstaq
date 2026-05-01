@@ -15,5 +15,5 @@
 from typing import Literal
 
 API_URL = "https://superstaq.infleqtion.com"
-DEFAULT_API_VERSION: Literal["v0.2.0", "v0.3.0"] = "v0.2.0"
+API_VERSION: Literal["v0.2.0", "v0.3.0"] = "v0.2.0"
 API_URL_V3 = "https://superstaq-prod.infleqtion.com"

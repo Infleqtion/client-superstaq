@@ -119,7 +119,7 @@ class MockSuperstaqProvider(qss.SuperstaqProvider):
         self,
         api_key: str | None = None,
         remote_host: str | None = None,
-        api_version: gss.typing.ApiV2Like | gss.typing.ApiV3Like = gss.DEFAULT_API_VERSION,
+        api_version: gss.typing.ApiV2Like | gss.typing.ApiV3Like = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
     ) -> None:

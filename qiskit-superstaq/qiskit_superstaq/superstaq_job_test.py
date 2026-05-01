@@ -198,7 +198,7 @@ def test_result(backend: qss.SuperstaqBackend) -> None:
             "results": expected_results,
             "qobj_id": -1,
             "backend_name": "ss_example_qpu",
-            "backend_version": gss.DEFAULT_API_VERSION,
+            "backend_version": gss.API_VERSION,
             "success": True,
             "job_id": "123abc",
         }
