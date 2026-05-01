@@ -313,7 +313,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         pulses: object = None,
         variables: object = None,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput:
+    ) -> qss.SuperstaqJobV3 | qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
 
         AQT is a superconducting transmon quantum computing testbed at Lawrence Berkeley National
@@ -375,7 +375,12 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         request_json = self._get_compile_request_json(circuits, **options)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.aqt_compile(request_json)
-        return qss.compiler_output.read_json_aqt(json_dict, circuits_is_list, num_eca_circuits)
+        return self._provider._map_compile_request_to_client_result(
+            json_dict,
+            legacy_parser=lambda j_dict: qss.compiler_output.read_json_aqt(
+                j_dict, circuits_is_list, num_eca_circuits
+            ),
+        )
 
     def ibmq_compile(
         self,
@@ -446,7 +451,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         keep_qubit_order: bool = False,
         random_seed: int | None = None,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput:
+    ) -> qss.SuperstaqJobV3 | qss.compiler_output.CompilerOutput:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at Sandia
         National Laboratories [1].
 
@@ -532,7 +537,12 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
 
         request_json = self._get_compile_request_json(circuits, **options)
         json_dict = self._provider._client.qscout_compile(request_json)
-        return qss.compiler_output.read_json_qscout(json_dict, circuits_is_list, num_eca_circuits)
+        return self._provider._map_compile_request_to_client_result(
+            json_dict,
+            legacy_parser=lambda j_dict: qss.compiler_output.read_json_qscout(
+                j_dict, circuits_is_list, num_eca_circuits
+            ),
+        )
 
     def cq_compile(
         self,

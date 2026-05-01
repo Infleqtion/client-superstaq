@@ -15,11 +15,22 @@
 from __future__ import annotations
 
 from collections.abc import Hashable
-from typing import Any, TypedDict, TypeVar
+from typing import (
+    Any,
+    Literal,
+    TypeAlias,
+    TypedDict,
+)
 
 import pydantic
+from typing_extensions import TypeVar
+
+import general_superstaq as gss
 
 TQuboKey = TypeVar("TQuboKey", bound=Hashable)
+
+ApiV2Like: TypeAlias = Literal[gss.superstaq_client.ApiVersion.V0_2_0, "v0.2.0"]
+ApiV3Like: TypeAlias = Literal[gss.superstaq_client.ApiVersion.V0_3_0, "v0.3.0"]
 
 
 class Job(TypedDict):

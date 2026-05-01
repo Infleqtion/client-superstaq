@@ -33,7 +33,12 @@ import uuid
 import warnings
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    overload,
+)
 
 import cirq
 import general_superstaq as gss
@@ -41,12 +46,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 from scipy.optimize import curve_fit
+from typing_extensions import TypeVar
 
 import cirq_superstaq as css
 
 if TYPE_CHECKING:
     import numpy.typing as npt
     from _typeshed import SupportsItems
+
+CompileResultT_co = TypeVar(
+    "CompileResultT_co",
+    bound=css.compiler_output.CompilerOutput | css.JobV3,
+    covariant=True,
+    default=css.compiler_output.CompilerOutput,
+)
+# ruff: noqa: ARG004
 
 
 def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
@@ -132,7 +146,7 @@ def counts_to_results(
     return result
 
 
-class Service(gss.service.Service):
+class Service(gss.Service, Generic[CompileResultT_co]):
     """A class to access Superstaq's API.
 
     To access the API, this class requires a remote host url and an API key. These can be
@@ -141,12 +155,73 @@ class Service(gss.service.Service):
     `SUPERSTAQ_API_KEY`, or setting an API key in a configuration file.
     """
 
+    @overload
+    def __new__(
+        cls,
+        api_key: str | None = None,
+        remote_host: str | None = None,
+        default_target: str | None = None,
+        api_version: gss.typing.ApiV2Like = "v0.2.0",
+        max_retry_seconds: int = 3600,
+        verbose: bool = False,
+        cq_token: str | None = None,
+        ibmq_token: str | None = None,
+        ibmq_instance: str | None = None,
+        ibmq_channel: str | None = None,
+        use_stored_ibmq_credentials: bool = False,
+        ibmq_name: str | None = None,
+        **kwargs: object,
+    ) -> Service[css.compiler_output.CompilerOutput]: ...
+
+    @overload
+    def __new__(
+        cls,
+        api_key: str | None = None,
+        remote_host: str | None = None,
+        default_target: str | None = None,
+        api_version: gss.typing.ApiV3Like = "v0.3.0",
+        max_retry_seconds: int = 3600,
+        verbose: bool = False,
+        cq_token: str | None = None,
+        ibmq_token: str | None = None,
+        ibmq_instance: str | None = None,
+        ibmq_channel: str | None = None,
+        use_stored_ibmq_credentials: bool = False,
+        ibmq_name: str | None = None,
+        **kwargs: object,
+    ) -> Service[css.JobV3]: ...
+
+    def __new__(  # noqa: D102
+        cls,
+        api_key: str | None = None,
+        remote_host: str | None = None,
+        default_target: str | None = None,
+        api_version: gss.typing.ApiV2Like | gss.typing.ApiV3Like = gss.API_VERSION,
+        max_retry_seconds: int = 3600,
+        verbose: bool = False,
+        cq_token: str | None = None,
+        ibmq_token: str | None = None,
+        ibmq_instance: str | None = None,
+        ibmq_channel: str | None = None,
+        use_stored_ibmq_credentials: bool = False,
+        ibmq_name: str | None = None,
+        **kwargs: object,
+    ) -> Service[css.compiler_output.CompilerOutput | css.JobV3]:
+        if cls is Service:
+            if api_version == "v0.2.0":
+                return object.__new__(_ServiceV2)
+
+            if api_version == "v0.3.0":
+                return object.__new__(_ServiceV3)
+
+        return object.__new__(cls)
+
     def __init__(
         self,
         api_key: str | None = None,
         remote_host: str | None = None,
         default_target: str | None = None,
-        api_version: str = gss.API_VERSION,
+        api_version: gss.typing.ApiV2Like | gss.typing.ApiV3Like = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
         cq_token: str | None = None,
@@ -226,24 +301,8 @@ class Service(gss.service.Service):
         json_dict: dict[str, Any],
         *,
         legacy_parser: Callable[[dict[str, Any]], css.compiler_output.CompilerOutput],
-    ) -> css.JobV3 | css.compiler_output.CompilerOutput:
-        """Maps a compile endpoint's JSON response to the output type expected by the API version.
-
-        Args:
-            json_dict: The JSON output from a compile endpoint.
-            legacy_parser: The JSON parsing function to use for the v0.2.0 API.
-
-        Returns:
-            For v0.3.0, compile-like endpoints will return a `css.JobV3`. For v0.2.0, legacy
-            behavior will be preserved and return a `css.CompilerOutput`.
-        """
-        if self._client.api_version == "v0.3.0":
-            job_id = json_dict.get("job_id")
-            if job_id is None:
-                raise KeyError("No job id was found in the compile request.")
-            assert isinstance(self._client, gss.superstaq_client._SuperstaqClientV3)
-            return css.JobV3(client=self._client, job_id=job_id)
-        return legacy_parser(json_dict)
+    ) -> CompileResultT_co:
+        raise NotImplementedError
 
     def _resolve_target(self, target: str | None) -> str:
         target = target or self.default_target
@@ -491,7 +550,7 @@ class Service(gss.service.Service):
         gate_defs: None
         | (Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]) = None,
         **kwargs: Any,
-    ) -> css.compiler_output.CompilerOutput:
+    ) -> CompileResultT_co:
         """Compiles and optimizes the given circuit(s) for AQT using ECA.
 
         The Advanced Quantum Testbed (AQT) is a superconducting transmon quantum computing testbed
@@ -557,7 +616,7 @@ class Service(gss.service.Service):
         pulses: object = None,
         variables: object = None,
         **kwargs: Any,
-    ) -> css.compiler_output.CompilerOutput:
+    ) -> CompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
 
         AQT is a superconducting transmon quantum computing testbed at Lawrence Berkeley National
@@ -636,7 +695,12 @@ class Service(gss.service.Service):
 
         request_json["options"] = cirq.to_json(options_dict)
         json_dict = self._client.post_request("/aqt_compile", request_json)
-        return css.compiler_output.read_json_aqt(json_dict, circuits_is_list, num_eca_circuits)
+        return self._map_compile_request_to_client_result(
+            json_dict,
+            legacy_parser=lambda j_dict: css.compiler_output.read_json_aqt(
+                j_dict, circuits_is_list, num_eca_circuits
+            ),
+        )
 
     def qscout_compile(
         self,
@@ -653,7 +717,7 @@ class Service(gss.service.Service):
         keep_qubit_order: bool = False,
         random_seed: int | None = None,
         **kwargs: Any,
-    ) -> css.compiler_output.CompilerOutput:
+    ) -> CompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
         Sandia National Laboratories [1].
 
@@ -749,8 +813,12 @@ class Service(gss.service.Service):
                 "target": target,
             }
         )
-
-        return css.compiler_output.read_json_qscout(json_dict, circuits_is_list, num_eca_circuits)
+        return self._map_compile_request_to_client_result(
+            json_dict,
+            legacy_parser=lambda j_dict: css.compiler_output.read_json_qscout(
+                j_dict, circuits_is_list, num_eca_circuits
+            ),
+        )
 
     def cq_compile(
         self,
@@ -761,7 +829,7 @@ class Service(gss.service.Service):
         control_radius: float = 1.0,
         stripped_cz_rads: float = 0.0,
         **kwargs: Any,
-    ) -> css.JobV3 | css.compiler_output.CompilerOutput:
+    ) -> CompileResultT_co:
         """Compiles and optimizes the given circuit(s) to the target CQ device.
 
         Args:
@@ -802,7 +870,7 @@ class Service(gss.service.Service):
         dynamical_decoupling: bool = True,
         dd_strategy: str = "adaptive",
         **kwargs: Any,
-    ) -> css.JobV3 | css.compiler_output.CompilerOutput:
+    ) -> CompileResultT_co:
         """Compiles and optimizes the given circuit(s) to the target IBMQ device.
 
         Qiskit Terra must be installed to correctly deserialize pulse schedules for pulse-enabled
@@ -852,7 +920,7 @@ class Service(gss.service.Service):
         circuits: cirq.Circuit | Sequence[cirq.Circuit],
         target: str,
         **kwargs: Any,
-    ) -> css.JobV3 | css.compiler_output.CompilerOutput:
+    ) -> CompileResultT_co:
         """Compiles the given circuit(s) to the target device's native gateset.
 
         Args:
@@ -1312,3 +1380,37 @@ class Service(gss.service.Service):
         """
         target = self._resolve_target(target)
         return self._client.target_info(target)["target_info"]
+
+
+class _ServiceV2(Service[css.compiler_output.CompilerOutput]):
+    """Subclass for handling overrides for v0.2.0 API.
+
+    Users should use `cirq_superstaq.Service(api_version="v0.2.0")` instead of this class directly.
+    """
+
+    def _map_compile_request_to_client_result(
+        self,
+        json_dict: dict[str, Any],
+        *,
+        legacy_parser: Callable[[dict[str, Any]], css.compiler_output.CompilerOutput],
+    ) -> css.compiler_output.CompilerOutput:
+        return legacy_parser(json_dict)
+
+
+class _ServiceV3(Service[css.JobV3]):
+    """Subclass for handling overrides for v0.3.0 API.
+
+    Users should use `cirq_superstaq.Service(api_version="v0.3.0")` instead of this class directly.
+    """
+
+    def _map_compile_request_to_client_result(
+        self,
+        json_dict: dict[str, Any],
+        *,
+        legacy_parser: Callable[[dict[str, Any]], css.compiler_output.CompilerOutput],
+    ) -> css.JobV3:
+        job_id = json_dict.get("job_id")
+        if not isinstance(job_id, str):
+            raise KeyError("No valid job id was found in the compile request.")
+        assert isinstance(self._client, gss.superstaq_client._SuperstaqClientV3)
+        return css.JobV3(client=self._client, job_id=job_id)
