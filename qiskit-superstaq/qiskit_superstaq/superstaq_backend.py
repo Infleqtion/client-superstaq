@@ -29,8 +29,13 @@ from __future__ import annotations
 import numbers
 import uuid
 import warnings
-from collections.abc import Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    overload,
+)
 
 import general_superstaq as gss
 import numpy as np
@@ -246,7 +251,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         self,
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         **kwargs: Any,
-    ) -> qss.SuperstaqJobV3 | qss.compiler_output.CompilerOutput:
+    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
         """Compiles the given circuit(s) to the backend's native gateset.
 
         Args:
@@ -313,7 +318,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         pulses: object = None,
         variables: object = None,
         **kwargs: Any,
-    ) -> qss.SuperstaqJobV3 | qss.compiler_output.CompilerOutput:
+    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
 
         AQT is a superconducting transmon quantum computing testbed at Lawrence Berkeley National
@@ -389,7 +394,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         dynamical_decoupling: bool = True,
         dd_strategy: str = "adaptive",
         **kwargs: Any,
-    ) -> qss.SuperstaqJobV3 | qss.compiler_output.CompilerOutput:
+    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
 
         Superstaq currently supports the following dynamical decoupling strategies:
@@ -451,7 +456,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         keep_qubit_order: bool = False,
         random_seed: int | None = None,
         **kwargs: Any,
-    ) -> qss.SuperstaqJobV3 | qss.compiler_output.CompilerOutput:
+    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at Sandia
         National Laboratories [1].
 
@@ -552,7 +557,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         control_radius: float = 1.0,
         stripped_cz_rads: float = 0.0,
         **kwargs: Any,
-    ) -> qss.SuperstaqJobV3 | qss.compiler_output.CompilerOutput:
+    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
         """Compiles and optimizes the given circuit(s) for CQ devices.
 
         Args:
