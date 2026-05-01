@@ -29,12 +29,10 @@ from __future__ import annotations
 import numbers
 import uuid
 import warnings
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
-    Generic,
-    overload,
 )
 
 import general_superstaq as gss

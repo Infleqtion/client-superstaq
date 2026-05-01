@@ -759,7 +759,8 @@ class SuperstaqProvider(gss.Service, Generic[CompileResultT_co]):
 class _SuperstaqProviderV2(SuperstaqProvider[qss.compiler_output.CompilerOutput]):
     """Subclass for handling overrides for v0.2.0 API.
 
-    Users should use `qiskit_superstaq.SuperstaqProvider(api_version="v0.2.0")` instead of this class directly.
+    Users should use `qiskit_superstaq.SuperstaqProvider(api_version="v0.2.0")` instead of this
+    class directly.
     """
 
     def _map_compile_request_to_client_result(
@@ -774,7 +775,8 @@ class _SuperstaqProviderV2(SuperstaqProvider[qss.compiler_output.CompilerOutput]
 class _SuperstaqProviderV3(SuperstaqProvider[qss.SuperstaqJobV3]):
     """Subclass for handling overrides for v0.3.0 API.
 
-    Users should use `qiskit_superstaq.SuperstaqProvider(api_version="v0.3.0")` instead of this class directly.
+    Users should use `qiskit_superstaq.SuperstaqProvider(api_version="v0.3.0")` instead of this
+    class directly.
     """
 
     def _map_compile_request_to_client_result(
