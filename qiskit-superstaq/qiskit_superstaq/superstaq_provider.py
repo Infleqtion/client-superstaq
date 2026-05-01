@@ -28,12 +28,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Generic,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, Generic, Union, overload
 
 import general_superstaq as gss
 import qiskit
@@ -49,7 +44,7 @@ if TYPE_CHECKING:
 
 QssCompileResultT_co = TypeVar(
     "QssCompileResultT_co",
-    bound=qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3,
+    bound=Union[qss.compiler_output.CompilerOutput, qss.SuperstaqJobV3],
     covariant=True,
     default=qss.compiler_output.CompilerOutput,
 )

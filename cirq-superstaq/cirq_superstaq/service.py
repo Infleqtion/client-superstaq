@@ -37,6 +37,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Generic,
+    Union,
     overload,
 )
 
@@ -56,7 +57,7 @@ if TYPE_CHECKING:
 
 CssCompileResultT_co = TypeVar(
     "CssCompileResultT_co",
-    bound=css.compiler_output.CompilerOutput | css.JobV3,
+    bound=Union[css.compiler_output.CompilerOutput, css.JobV3],
     covariant=True,
     default=css.compiler_output.CompilerOutput,
 )
