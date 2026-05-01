@@ -44,7 +44,7 @@ class BaseService:
         self,
         api_key: str | None = None,
         remote_host: str | None = None,
-        api_version: str = gss.API_VERSION,
+        api_version: str = gss.DEFAULT_API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
     ) -> None:
@@ -55,7 +55,7 @@ class BaseService:
             remote_host: The URL of the server exposing the Superstaq API. This will strip anything
                 besides the base scheme and netloc, i.e. it only takes the part of the host of
                 the form `http://example.com` of `http://example.com/test`.
-            api_version: Which version of the API to use. Defaults to `client_superstaq.API_VERSION`
+            api_version: Which version of the API to use. Defaults to `client_superstaq.DEFAULT_API_VERSION`
                 (which is the most recent version when this client was downloaded).
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.

@@ -79,7 +79,7 @@ class _BaseSuperstaqClient:
         client_name: str,
         api_key: str | None = None,
         remote_host: str | None = None,
-        api_version: str = gss.API_VERSION,
+        api_version: str = gss.DEFAULT_API_VERSION,
         circuit_type: gss.models.CircuitType = gss.models.CircuitType.CIRQ,
         max_retry_seconds: float = 60,  # 1 minute
         verbose: bool = False,
@@ -97,7 +97,7 @@ class _BaseSuperstaqClient:
             remote_host: The URL of the server exposing the Superstaq API. This will strip anything
                 besides the base scheme and netloc, i.e., it only takes the part of the host of
                 the form `http://example.com` of `http://example.com/test`.
-            api_version: Which version of the API to use. Defaults to `client_superstaq.API_VERSION`
+            api_version: Which version of the API to use. Defaults to `client_superstaq.DEFAULT_API_VERSION`
                 (which is the most recent version when this client was downloaded).
             circuit_type: The type of circuit, Cirq, Qiskit, or QASM.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
@@ -395,7 +395,7 @@ class _AbstractUserClient(_BaseSuperstaqClient, ABC):
         client_name: str,
         api_key: str | None = None,
         remote_host: str | None = None,
-        api_version: str = gss.API_VERSION,
+        api_version: str = gss.DEFAULT_API_VERSION,
         circuit_type: gss.models.CircuitType = gss.models.CircuitType.CIRQ,
         max_retry_seconds: float = 60,  # 1 minute
         verbose: bool = False,
@@ -420,7 +420,7 @@ class _AbstractUserClient(_BaseSuperstaqClient, ABC):
             remote_host: The URL of the server exposing the Superstaq API. This will strip anything
                 besides the base scheme and netloc, i.e., it only takes the part of the host of
                 the form `http://example.com` of `http://example.com/test`.
-            api_version: Which version of the API to use. Defaults to `client_superstaq.API_VERSION`
+            api_version: Which version of the API to use. Defaults to `client_superstaq.DEFAULT_API_VERSION`
                 (which is the most recent version when this client was downloaded).
             circuit_type: The type of circuit, Cirq, Qiskit, or QASM.
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
