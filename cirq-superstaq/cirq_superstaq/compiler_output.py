@@ -17,7 +17,6 @@ from __future__ import annotations
 import importlib.util
 import json
 import warnings
-from collections.abc import Sequence
 from typing import Any
 
 import cirq
@@ -72,7 +71,7 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
         circuit: The input quantum circuit.
 
     Returns:
-        A list of the measurement qubit indicies.
+        A list of the measurement qubit indices.
 
     Raises:
         TypeError: If qubit indices are requested for non-line qubits.
@@ -92,19 +91,12 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
     return sorted(qubit_indices)
 
 
-def _jaqal_programs_to_subcircuits(jaqal_programs: Sequence[str]) -> str:
-    separator = "prepare_all"
-    subcircuits = [jaqal_programs[0]]
-    subcircuits += [jaqal_program.partition(separator)[2] for jaqal_program in jaqal_programs[1:]]
-    return f"\n{separator}".join(subcircuits)
-
-
-class CompilerOutput:
-    """A class that arranges compiled circuit information."""
+class CompilerOutput(gss.BaseCompilerOutput[cirq.Circuit, cirq.Qid]):
+    """A class that arranges compiled `cirq` circuit information."""
 
     def __init__(
         self,
-        circuits: cirq.Circuit | list[cirq.Circuit] | list[list[cirq.Circuit]],
+        circuits: (cirq.Circuit | list[cirq.Circuit] | list[list[cirq.Circuit]]),
         initial_logical_to_physicals: (
             dict[cirq.Qid, cirq.Qid]
             | list[dict[cirq.Qid, cirq.Qid]]
@@ -119,66 +111,29 @@ class CompilerOutput:
         seq: qtrl.sequencer.Sequence | None = None,
         jaqal_programs: list[str] | None = None,
     ) -> None:
-        """Initializes the `CompilerOutput` attributes.
+        """Constructs a `CompilerOutput` object for compiled Cirq `circuits`.
 
         Args:
-            circuits: A list (of at most 2 dimensions) containing `cirq.Circuit` objects.
+            circuits: A compiled circuit or a list of compiled circuits or a list of list of
+                compiled circuits (e.g., if using ECA).
             initial_logical_to_physicals: Pre-compilation mapping of logical qubits to physical
                 qubits.
             final_logical_to_physicals: Post-compilation mapping of logical qubits to physical
                 qubits.
-            pulse_gate_circuits: Pulse-gate `qiskit.QuantumCircuit` or list thereof specifying the
-                pulse compilation.
-            seq: A `qtrl` pulse sequence, if `qtrl` is available locally.
+            pulse_gate_circuits: Optional pulse-gate `qiskit.QuantumCircuit` or list thereof
+                specifying the pulse compilation, if available.
+            seq: An optional `qtrl.sequencer.Sequence` pulse sequence if `qtrl` is available
+                locally.
             jaqal_programs: The Jaqal programs as individual strings.
         """
-        if isinstance(circuits, cirq.Circuit):
-            self.circuit = circuits
-            self.initial_logical_to_physical = initial_logical_to_physicals
-            self.final_logical_to_physical = final_logical_to_physicals
-            self.pulse_gate_circuit = pulse_gate_circuits
-        else:
-            self.circuits = circuits
-            self.initial_logical_to_physicals = initial_logical_to_physicals
-            self.final_logical_to_physicals = final_logical_to_physicals
-            self.pulse_gate_circuits = pulse_gate_circuits
-
-        self.jaqal_programs = jaqal_programs
-        self.seq = seq
-
-    def has_multiple_circuits(self) -> bool:
-        """Checks if this object has plural attributes (e.g. `.circuits`).
-
-        Otherwise, the object represents a single circuit, and has singular attributes (`.circuit`).
-
-        Returns:
-            `True` if this object represents multiple circuits; `False` otherwise.
-        """
-        return hasattr(self, "circuits")
-
-    def __repr__(self) -> str:
-        if not self.has_multiple_circuits():
-            return (
-                f"CompilerOutput({self.circuit!r}, {self.initial_logical_to_physical!r}, "
-                f"{self.final_logical_to_physical!r}, {self.pulse_gate_circuit!r}, "
-                f"{self.seq!r}, {self.jaqal_programs!r})"
-            )
-        return (
-            f"CompilerOutput({self.circuits!r}, {self.initial_logical_to_physicals!r}, "
-            f"{self.final_logical_to_physicals!r}, {self.pulse_gate_circuits!r}, "
-            f"{self.seq!r}, {self.jaqal_programs!r})"
+        super().__init__(
+            circuits=circuits,
+            initial_logical_to_physicals=initial_logical_to_physicals,
+            final_logical_to_physicals=final_logical_to_physicals,
+            pulse_gate_circuits=pulse_gate_circuits,
+            seq=seq,
+            jaqal_programs=jaqal_programs,
         )
-
-    @property
-    def jaqal_program(self) -> str | None:
-        """Jaqal program(s) as a single string.
-
-        For multi-circuit compilation the string will contain subcircuits.
-        """
-        if not self.jaqal_programs:
-            return None
-
-        return _jaqal_programs_to_subcircuits(self.jaqal_programs)
 
 
 def read_json(json_dict: dict[str, Any], circuits_is_list: bool) -> CompilerOutput:
@@ -371,7 +326,9 @@ def read_json_qscout(
             for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
         ]
         jaqal_programs = [
-            _jaqal_programs_to_subcircuits(jaqal_programs[i : i + num_eca_circuits])
+            gss.compiler_output._jaqal_programs_to_subcircuits(
+                jaqal_programs[i : i + num_eca_circuits]
+            )
             for i in range(0, len(jaqal_programs), num_eca_circuits)
         ]
 
