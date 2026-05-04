@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 class Endian(str, enum.Enum):
     """Endianness to use when mapping quantum objects to matrices, state vectors, and bitstrings."""
 
-    BIG = "big"  # BQSKit, Braket, Cirq, Jaqal, TKET
+    BIG = "big"  # BQSKit, Braket, Cirq, Jaqal, TKET, CUDA-Q
     LITTLE = "little"  # Qiskit
 
 
