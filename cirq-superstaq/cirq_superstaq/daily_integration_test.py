@@ -81,10 +81,7 @@ def test_ibmq_compile(service: css.Service) -> None:
 
 
 def test_ibmq_compile_with_token() -> None:
-    for api_version in (
-        "v0.2.0",
-        pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test")),
-    ):
+    for api_version in ("v0.2.0", "v0.3.0"):
         service = css.Service(
             api_version=api_version,
             ibmq_token=os.environ["TEST_USER_IBMQ_TOKEN"],
