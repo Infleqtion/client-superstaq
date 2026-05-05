@@ -112,8 +112,8 @@ class MockSuperstaqClient(gss.superstaq_client._SuperstaqClient):
         }
 
 
-class MockSuperstaqProvider(qss.SuperstaqProvider):
-    """Stand-in for `SuperstaqProvider` that the tests can call."""
+class MockSuperstaqProvider(qss.superstaq_provider._SuperstaqProviderV2):
+    """Stand-in for `SuperstaqProvider` that the tests can call for the v0.2.0 API."""
 
     def __init__(
         self,
@@ -150,25 +150,37 @@ class MockSuperstaqProvider(qss.SuperstaqProvider):
             EnvironmentError: If an API key was not provided and could not be found.
         """
         self._name = "mock_superstaq_provider"
+        self._client = MockSuperstaqClient(
+            client_name="qiskit-superstaq",
+            remote_host=remote_host,
+            api_key=api_key,
+            api_version=api_version,
+            max_retry_seconds=max_retry_seconds,
+            verbose=verbose,
+        )
 
-        if api_version == "v0.2.0":
-            self._client = MockSuperstaqClient(
-                client_name="qiskit-superstaq",
-                remote_host=remote_host,
-                api_key=api_key,
-                api_version=api_version,
-                max_retry_seconds=max_retry_seconds,
-                verbose=verbose,
-            )
-        else:
-            self._client = gss.superstaq_client._SuperstaqClientV3(
-                client_name="qiskit-superstaq",
-                remote_host=remote_host,
-                api_key=api_key,
-                api_version=api_version,
-                max_retry_seconds=max_retry_seconds,
-                verbose=verbose,
-            )
+
+class MockSuperstaqProviderV3(qss.superstaq_provider._SuperstaqProviderV3):
+    """Stand-in for `SuperstaqProvider` that the tests can call for the v0.3.0 API."""
+
+    def __init__(
+        self,
+        api_key: str | None = None,
+        remote_host: str | None = None,
+        api_version: gss.typing.ApiV2Like | gss.typing.ApiV3Like = "v0.3.0",
+        max_retry_seconds: int = 3600,
+        verbose: bool = False,
+    ) -> None:
+        """Initializes a `SuperstaqProviderV3`."""
+        self._name = "mock_superstaq_provider_v3"
+        self._client = gss.superstaq_client._SuperstaqClientV3(
+            client_name="qiskit-superstaq",
+            remote_host=remote_host,
+            api_key=api_key,
+            api_version=api_version,
+            max_retry_seconds=max_retry_seconds,
+            verbose=verbose,
+        )
 
 
 @pytest.fixture
@@ -182,10 +194,10 @@ def fake_superstaq_provider() -> MockSuperstaqProvider:
 
 
 @pytest.fixture
-def fake_superstaq_providerV3() -> MockSuperstaqProvider:
+def fake_superstaq_providerV3() -> MockSuperstaqProviderV3:
     """Fixture that retrieves the `SuperstaqProvider`.
 
     Returns:
         The Mock Superstaq provider.
     """
-    return MockSuperstaqProvider(api_key="MY_TOKEN", api_version="v0.3.0")
+    return MockSuperstaqProviderV3(api_key="MY_TOKEN")
