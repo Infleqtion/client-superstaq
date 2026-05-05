@@ -413,13 +413,13 @@ def cirq_gate_to_qiskit_gate(cirq_gate: cirq.Gate) -> qiskit.circuit.Gate:
     if cirq_gate in _cirq_static_gates:
         return _cirq_static_gates[cirq_gate]()
 
-    for gate_type in _cirq_param_gates:
-        if isinstance(cirq_gate, gate_type):
-            return _cirq_param_gates[gate_type](cirq_gate)
+    for cirq_gate_type, qiskit_gate_type in _cirq_param_gates.items():
+        if isinstance(cirq_gate, cirq_gate_type):
+            return qiskit_gate_type(cirq_gate)
 
-    for gate_type in _cirq_pow_gates:
-        if isinstance(cirq_gate, gate_type):
-            return _cirq_pow_gates[gate_type](cirq_gate.exponent * np.pi)
+    for cirq_gate_type, qiskit_gate_type in _cirq_pow_gates.items():
+        if isinstance(cirq_gate, cirq_gate_type):
+            return qiskit_gate_type(cirq_gate.exponent * np.pi)
 
     if isinstance(cirq_gate, cirq.ControlledGate):
         ctrl_state = "".join("0" if 0 in val else "1" for val in cirq_gate.control_values)[::-1]

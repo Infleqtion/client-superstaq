@@ -15,9 +15,13 @@
 from general_superstaq import models
 from general_superstaq._init_vars import API_URL, API_URL_V3, API_VERSION
 from general_superstaq._version import __version__
+<<<<<<< HEAD
+=======
+from general_superstaq.compiler_output import BaseCompilerOutput
+>>>>>>> 36fef65a015e3dadd47cac4e4d2fed6a33f87348
 from general_superstaq.job import Job
 from general_superstaq.resource_estimate import ResourceEstimate
-from general_superstaq.service import Service
+from general_superstaq.service import JaqalService, Service
 from general_superstaq.superstaq_exceptions import (
     SuperstaqException,
     SuperstaqServerException,
@@ -27,6 +31,7 @@ from general_superstaq.superstaq_exceptions import (
 from general_superstaq.typing import Target
 
 from . import (
+    compiler_output,
     job,
     serialization,
     service,
@@ -40,6 +45,8 @@ __all__ = [
     "API_URL",
     "API_URL_V3",
     "API_VERSION",
+    "BaseCompilerOutput",
+    "JaqalService",
     "Job",
     "ResourceEstimate",
     "Service",
@@ -49,6 +56,7 @@ __all__ = [
     "SuperstaqWarning",
     "Target",
     "__version__",
+    "compiler_output",
     "job",
     "models",
     "serialization",

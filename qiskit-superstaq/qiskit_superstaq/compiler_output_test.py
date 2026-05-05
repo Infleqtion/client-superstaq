@@ -421,6 +421,7 @@ def test_compiler_output_eq() -> None:
     circuit.h(0)
     co = qss.compiler_output.CompilerOutput(circuit, {0: 0}, {5: 0})
     assert co != 1
+    assert co == gss.compiler_output.BaseCompilerOutput(circuit, {0: 0}, {5: 0})
 
     circuit1 = qiskit.QuantumCircuit(1)
     circuit1.h(0)

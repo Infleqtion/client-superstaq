@@ -167,10 +167,7 @@ def plot_correlations(
 
     correlations = np.array(temp_correlations)
 
-    if isinstance(device_name, str):
-        device_names = [device_name]
-    else:
-        device_names = device_name
+    device_names = [device_name] if isinstance(device_name, str) else device_name
 
     _, ax = plt.subplots(dpi=300)
     im, _ = heatmap(
@@ -348,10 +345,7 @@ def annotate_heatmap(
         data = np.asarray(im.get_array())
 
     # Normalize the threshold to the images color range.
-    if threshold is not None:
-        threshold = im.norm(threshold)  # pragma: no cover
-    else:
-        threshold = im.norm(data.max()) / 2.0
+    threshold = im.norm(threshold) if threshold is not None else im.norm(data.max()) / 2.0
 
     # Set default alignment to center, but allow it to be
     # overwritten by textkw.

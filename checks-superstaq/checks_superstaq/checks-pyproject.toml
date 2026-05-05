@@ -69,25 +69,18 @@ lint.ignore = [
   "B008",    # Function call in default argument
   "B019",    # Cached instance method
   "B023",    # Function uses loop variable
-  "B034",    # re-sub positional args
   "B904",    # Raise without from inside except
   "B905",    # zip without explicit strict
   "C409",    # unnecessary-literal-within-tuple-call (see https://github.com/astral-sh/ruff/issues/12912)
   "C416",    # Unnecessary comprehension (see https://docs.astral.sh/ruff/rules/unnecessary-comprehension/#known-problems)
-  "C420",    # Unnecessary dict comprehension for iterable
   "D100",    # Undocumented public module
   "D104",    # Undocumented public package
   "D105",    # Undocumented magic method
   "D107",    # Undocumented public init
   "D205",    # Missing blank line after summary
-  "D301",    # Escape sequence in docstring
-  "E731",    # Lambda assignment
   "FAST002", # FastAPI non-annotated dependency
   "N806",    # Non-lowercase variable in function
-  "N818",    # Error suffix on exception name
   "PERF401", # Manual list comprehension
-  "PLC0105", # Type name incorrect variance
-  "PLC0206", # Dict index missing items
   "PLR0911", # Too many return statements
   "PLR0912", # Too many branches
   "PLR0913", # Too many arguments
@@ -108,7 +101,6 @@ lint.ignore = [
   "S607",    # Start process with partial path
   "SIM102",  # Collapsible if
   "SIM105",  # Suppressible exception
-  "SIM108",  # If else block instead of if exp
   "SIM118",  # In dict keys
   "TC003",   # Typing-only standard-library import
   "TD002",   # Missing todo author

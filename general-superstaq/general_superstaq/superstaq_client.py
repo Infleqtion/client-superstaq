@@ -174,10 +174,7 @@ class _BaseSuperstaqClient:
             Returns:
                 The Flask GET request object.
             """
-            if not query:
-                q_string = ""
-            else:
-                q_string = "?" + urllib.parse.urlencode(query, doseq=True)
+            q_string = "" if not query else "?" + urllib.parse.urlencode(query, doseq=True)
             return self.session.get(
                 f"{self.url}{endpoint}{q_string}",
                 headers=self._custom_headers(**credentials),
