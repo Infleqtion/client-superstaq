@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import textwrap
 import uuid
 from unittest import mock
 
@@ -844,3 +845,57 @@ def test_get_marginal_counts() -> None:
     counts_dict = {"10": 50, "11": 50}
     indices = [0]
     assert css.job._get_marginal_counts(counts_dict, indices) == ({"1": 100})
+
+
+@mock.patch("requests.Session.get")
+def test_set_counts_jaqal(
+    mock_get: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
+) -> None:
+    jaqalpaq_run = pytest.importorskip("jaqalpaq.run")
+
+    jaqal_str = textwrap.dedent(
+        """\
+        from qscout.v1.std usepulses *
+
+        register allqubits[3]
+
+        prepare_all
+        R allqubits[2] 0 3.141592653589793
+        measure_all
+        """
+    )
+    result = jaqalpaq_run.run_jaqal_string(jaqal_str, overrides={"__repeats__": 1000})
+
+    q0, q1, q2 = cirq.LineQubit.range(3)
+    compiled_circuit = cirq.Circuit(cirq.X(q2), css.barrier(q0, q1, q2))
+    mock_get.return_value.json.return_value = {str(uuid.UUID(int=42)): job_dictV3}
+
+    jobV3.job_data.final_logical_to_physicals[0] = {0: 0, 1: 1, 2: 2}
+    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(compiled_circuit)
+    jobV3.set_counts(result)
+    assert jobV3.counts(0) == {"001": 1000}
+
+    jobV3.job_data.final_logical_to_physicals[0] = {0: 1, 1: 2, 2: 0}
+    jobV3.set_counts(result)
+    assert jobV3.counts(0) == {"010": 1000}
+
+    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(
+        compiled_circuit + cirq.measure(q2, q1, q0)
+    )
+    jobV3.set_counts(result)
+    assert jobV3.counts(0) == {"100": 1000}
+
+    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(
+        compiled_circuit + cirq.Circuit(css.barrier(q0, q1, q2), cirq.measure(q1), cirq.measure(q2))
+    )
+    jobV3.set_counts(result)
+    assert jobV3.counts(0) == {"01": 1000}
+
+    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(
+        compiled_circuit
+        + cirq.Circuit(
+            css.barrier(q0, q1, q2), cirq.measure(q1, key="b"), cirq.measure(q2, key="a")
+        )
+    )
+    jobV3.set_counts(result)
+    assert jobV3.counts(0) == {"10": 1000}
