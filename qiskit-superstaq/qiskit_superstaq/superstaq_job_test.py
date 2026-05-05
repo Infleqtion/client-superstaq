@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import textwrap
 import uuid
 from typing import TYPE_CHECKING
 from unittest import mock
@@ -443,15 +444,13 @@ def test_get_clbit_indicesV3(mock_client: gss.superstaq_client._SuperstaqClientV
     qc.cx(0, 1)
     qc.measure([0, 1], [0, 1])
 
-    job_dict = job_dictV3(1)
-    job_dict["statuses"] = ["completed"]
-    job_dict["input_circuit"] = [qss.serialization.serialize_circuits(qc)]
-
     job = qss.SuperstaqJobV3(mock_client, job_id=uuid.UUID(int=42))
-    job._job_data = gss.models.JobData(**job_dict)
+    job._job_data = gss.models.JobData(**job_dictV3(1))
+    job._job_data.input_circuits = [qss.serialize_circuits(qc)]
+    assert job._get_clbit_indices(0) == [0, 1]
 
-    returned_meas_list = job._get_clbit_indices(index=0)
-    assert returned_meas_list == [0, 1]
+    job._job_data.input_circuits = [qss.serialize_circuits(qiskit.QuantumCircuit(2, 3))]
+    assert job._get_clbit_indices(0) == [0, 1, 2]
 
 
 def test_get_num_clbits(backend: qss.SuperstaqBackend) -> None:
@@ -504,6 +503,24 @@ def test_arrange_countsV3(mock_client: gss.superstaq_client._SuperstaqClientV3) 
         "10101": 100,
         "10001": 25,
     }
+
+
+def test_terminal_measurement_qubit_indices(
+    mock_client: gss.superstaq_client._SuperstaqClientV3,
+) -> None:
+    qc = qiskit.QuantumCircuit(2, 4)
+    qc.measure([0, 1], [3, 1])
+
+    job = qss.SuperstaqJobV3(mock_client, job_id=uuid.UUID(int=42))
+    job._job_data = gss.models.JobData(**job_dictV3(1))
+    job._job_data.compiled_circuits = [qss.serialize_circuits(qc)]
+    assert job._terminal_measurement_qubit_indices(0) == [1, 0]
+
+    job._job_data.compiled_circuits = [qss.serialize_circuits(qiskit.QuantumCircuit(2, 4))]
+    assert job._terminal_measurement_qubit_indices(0) == [0, 1]
+
+    job._job_data.final_logical_to_physicals = [{0: 1, 1: 0}]
+    assert job._terminal_measurement_qubit_indices(0) == [1, 0]
 
 
 def test_check_if_stopped(backend: qss.SuperstaqBackend) -> None:
@@ -1018,3 +1035,71 @@ def test_to_dict(backend: qss.SuperstaqBackend) -> None:
                 "shots": 100,
             }
         }
+
+
+def test_set_counts(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
+    job = qss.SuperstaqJobV3(mock_client, job_id=uuid.UUID(int=42))
+    with patched_requests({str(uuid.UUID(int=42)): job_dictV3(2)}):
+        job._refresh_job()
+
+    # Check that endianness is preserved after round-trip
+    job.set_counts([{"100": 1000}, {"001": 1000}])
+    assert job.result().get_counts(0) == {"100": 1000}
+    assert job.result().get_counts(1) == {"001": 1000}
+
+
+def test_set_counts_jaqal(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
+    jaqalpaq_run = pytest.importorskip("jaqalpaq.run")
+
+    jaqal_str = textwrap.dedent(
+        """\
+        from qscout.v1.std usepulses *
+
+        register allqubits[3]
+
+        prepare_all
+        R allqubits[2] 0 3.141592653589793
+        measure_all
+        """
+    )
+    result = jaqalpaq_run.run_jaqal_string(jaqal_str, overrides={"__repeats__": 1000})
+
+    circuit = qiskit.QuantumCircuit(3, 3)
+    circuit.x(2)
+
+    job = qss.SuperstaqJobV3(mock_client, job_id=uuid.UUID(int=42))
+    with patched_requests({str(uuid.UUID(int=42)): job_dictV3(1)}):
+        job._refresh_job()
+
+    job.job_data.input_circuits = [qss.serialize_circuits(circuit)]
+    job.job_data.compiled_circuits = [qss.serialize_circuits(circuit)]
+    job.job_data.final_logical_to_physicals[0] = {0: 0, 1: 1, 2: 2}
+
+    job.set_counts(result)
+    assert job.result().get_counts(0) == {"100": 1000}
+
+    job.job_data.final_logical_to_physicals[0] = {0: 1, 1: 2, 2: 0}
+    job.set_counts(result)
+    assert job.result().get_counts(0) == {"010": 1000}
+
+    circuit.measure([2, 1, 0], [0, 1, 2])
+    job.job_data.input_circuits = [qss.serialize_circuits(circuit)]
+    job.job_data.compiled_circuits = [qss.serialize_circuits(circuit)]
+    job.set_counts(result)
+    assert job.result().get_counts(0) == {"001": 1000}
+
+    circuit = qiskit.QuantumCircuit(3, 3)
+    circuit.x(2)
+    circuit.measure([1, 2], [0, 1])
+    job.job_data.input_circuits = [qss.serialize_circuits(circuit)]
+    job.job_data.compiled_circuits = [qss.serialize_circuits(circuit)]
+    job.set_counts(result)
+    assert job.result().get_counts(0) == {"010": 1000}
+
+    circuit = qiskit.QuantumCircuit(3, 2)
+    circuit.x(2)
+    circuit.measure([1, 2], [1, 0])
+    job.job_data.input_circuits = [qss.serialize_circuits(circuit)]
+    job.job_data.compiled_circuits = [qss.serialize_circuits(circuit)]
+    job.set_counts(result)
+    assert job.result().get_counts(0) == {"01": 1000}
