@@ -49,7 +49,7 @@ jobs:
                   python -m pip install -e ./general-superstaq
             - name: Pytest integration check (group ${{ matrix.group }} of 3)
               run: |
-                  checks/pytest_.py --integration --splits=3 --group=${{ matrix.group }} -v ${{ matrix.type }}
+                  checks/pytest_.py --integration -n=4 --dist=loadgroup --splits=3 --group=${{ matrix.group }} -v ${{ matrix.type }}
             - name: Create issue if integration check failed
               if: ${{ failure() }}
               uses: JasonEtco/create-an-issue@v2
