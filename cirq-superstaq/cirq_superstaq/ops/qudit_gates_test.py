@@ -269,7 +269,7 @@ def test_qutrit_z_pow_gate() -> None:
     )
 
     cirq.testing.assert_has_diagram(
-        cirq.Circuit(css.QutritZ1(cirq.LineQid(0, 3)) ** 1.2),
+        cirq.Circuit(css.QutritZ1(cirq.LineQid(0, 3)) ** -0.8),
         "0 (d=3): ───Z₁^-0.8───",
     )
 
@@ -371,7 +371,7 @@ def test_virtual_z_pow_gate() -> None:
     )
 
     cirq.testing.assert_has_diagram(
-        cirq.Circuit(css.VirtualZPowGate(dimension=14, level=13)(cirq.LineQid(0, 14)) ** 1.2),
+        cirq.Circuit(css.VirtualZPowGate(dimension=14, level=13)(cirq.LineQid(0, 14)) ** -0.8),
         "0 (d=14): ───VZ₁₃₊^-0.8───",
     )
 
