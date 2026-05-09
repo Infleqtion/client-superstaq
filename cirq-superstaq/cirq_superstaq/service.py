@@ -567,7 +567,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             For the v0.2.0 API, a `css.CompilerOutput` whose .circuits attribute is a list (or list
             of lists) of logically equivalent circuits. If `qtrl` is installed, the object's `.seq`
             attribute is a qtrl Sequence object containing pulse sequences for each compiled
-            circuit. Otherwise (for the v0.3.0) API, an asynchronous `css.JobV3` on which compiled
+            circuit. Otherwise (for the v0.3.0 API), an asynchronous `css.JobV3` on which compiled
             circuits can be queried via `.compiled_circuits()`.
 
         Raises:
@@ -638,7 +638,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             For the v0.2.0 API, a `css.CompilerOutput` whose .circuits attribute is a list (or list
             of lists) of logically equivalent circuits. If `qtrl` is installed, the object's `.seq`
             attribute is a qtrl Sequence object containing pulse sequences for each compiled
-            circuit. Otherwise (for the v0.3.0) API, an asynchronous `css.JobV3` on which compiled
+            circuit. Otherwise (for the v0.3.0 API), an asynchronous `css.JobV3` on which compiled
             circuits can be queried via `.compiled_circuits()`.
 
         Raises:
@@ -762,7 +762,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         Returns:
             For the v0.2.0 API, a `css.CompilerOutput` object whose .circuit(s) attribute contains
             optimized `cirq.Circuit`(s), and`.jaqal_program` attribute contains the corresponding
-            Jaqal program(s). Otherwise (for the v0.3.0) API, an asynchronous `css.JobV3` on which
+            Jaqal program(s). Otherwise (for the v0.3.0 API), an asynchronous `css.JobV3` on which
             compiled circuits can be queried via `.compiled_circuits()`.
 
         Raises:
@@ -894,7 +894,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         Returns:
             For the `v0.2.0` API, a `css.CompilerOutput` whose .circuit(s) attribute contains the
             compiled cirq.Circuit(s), and whose .pulse_gate_circuit(s) attribute contains the
-            corresponding pulse schedule(s) (when available). Otherwise (for the v0.3.0) API, an
+            corresponding pulse schedule(s) (when available). Otherwise (for the v0.3.0 API), an
             asynchronous `css.JobV3` on which compiled circuits can be queried via
             `.compiled_circuits()`.
 

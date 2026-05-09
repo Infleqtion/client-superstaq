@@ -356,7 +356,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
             the optimized circuits(s). Alternatively for ECA, an object whose .circuits attribute is
             a list (or list of lists) of logically equivalent circuits. If `qtrl` is installed, the
             object's .seq attribute is a qtrl Sequence object containing pulse sequences for each
-            compiled circuit. Otherwise (for the v0.3.0) API, an asynchronous `qss.SuperstaqJobV3`
+            compiled circuit. Otherwise (for the v0.3.0 API), an asynchronous `qss.SuperstaqJobV3`
             on which compiled circuits can be queried via `.compiled_circuits()`.
 
         Raises:
@@ -415,7 +415,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
             For the v0.2.0 API, a `qss.CompilerOutput` whose .circuits attribute is a list (or list
             of lists) of logically equivalent circuits. If `qtrl` is installed, the object's `.seq`
             attribute is a qtrl Sequence object containing pulse sequences for each compiled
-            circuit. Otherwise (for the v0.3.0) API, an asynchronous `qss.SuperstaqJobV3` on which
+            circuit. Otherwise (for the v0.3.0 API), an asynchronous `qss.SuperstaqJobV3` on which
             compiled circuits can be queried via `.compiled_circuits()`.
 
         Raises:
@@ -475,7 +475,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         Returns:
             For the `v0.2.0` API, a `qss.CompilerOutput` whose .circuit(s) attribute contains the
             compiled qiskit.QuantumCircuit(s), and whose .pulse_gate_circuit(s) attribute contains
-            the corresponding pulse schedule(s) (when available). Otherwise (for the v0.3.0) API, an
+            the corresponding pulse schedule(s) (when available). Otherwise (for the v0.3.0 API), an
             asynchronous `qss.SuperstaqJobV3` on which compiled circuits can be queried via
             `.compiled_circuits()`.
 
@@ -560,7 +560,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         Returns:
             For the v0.2.0 API, a `qss.CompilerOutput` object whose .circuit(s) attribute contains
             optimized `qiskit.QuantumCircuit`(s), and`.jaqal_program` attribute contains the
-            corresponding Jaqal program(s). Otherwise (for the v0.3.0) API, an asynchronous
+            corresponding Jaqal program(s). Otherwise (for the v0.3.0 API), an asynchronous
             `qss.SuperstaqJobV3` on which compiled circuits can be queried via
             `.compiled_circuits()`.
 
