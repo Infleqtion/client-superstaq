@@ -257,9 +257,9 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             kwargs: Other desired compile options.
 
         Returns:
-            UPDATE:
-            A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
-            circuit(s).
+            For the v0.3.0 API, an asynchronous `qss.SuperstaqJobV3` on which compiled circuits can
+            be queried via `.compiled_circuits()`. Otherwise (for the v0.2.0 API), a
+            `qss.CompilerOutput` whose .circuit(s) attribute contains the compiled circuit(s).
 
         Raises:
             ValueError: If this backend does not support compilation.
@@ -345,10 +345,12 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             kwargs: Other desired compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the optimized circuits(s). Alternatively for
-            ECA, an Object whose .circuits attribute is a list (or list of lists) of logically
-            equivalent circuits. If `qtrl` is installed, the object's .seq attribute is a qtrl
-            Sequence object containing pulse sequences for each compiled circuit.
+            For the `v0.2.0` API, a `qss.CompilerOutput` object whose .circuit(s) attribute contains
+            the optimized circuits(s). Alternatively for ECA, an object whose .circuits attribute is
+            a list (or list of lists) of logically equivalent circuits. If `qtrl` is installed, the
+            object's .seq attribute is a qtrl Sequence object containing pulse sequences for each
+            compiled circuit. Otherwise (for the v0.3.0) API, an asynchronous `qss.SuperstaqJobV3`
+            on which compiled circuits can be queried via `.compiled_circuits()`.
 
         Raises:
             ValueError: If this is not an AQT backend.
@@ -417,10 +419,11 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             kwargs: Other desired compile options.
 
         Returns:
-            UPDATE:
-            Object whose .circuit(s) attribute contains the compiled circuits(s), and whose
-            .pulse_gate_circuit(s) attribute contains the corresponding pulse schedule(s) (when
-            available).
+            For the `v0.2.0` API, a `qss.CompilerOutput` whose .circuit(s) attribute contains the
+            compiled qiskit.QuantumCircuit(s), and whose .pulse_gate_circuit(s) attribute contains
+            the corresponding pulse schedule(s) (when available). Otherwise (for the v0.3.0) API, an
+            asynchronous `qss.SuperstaqJobV3` on which compiled circuits can be queried via
+            `.compiled_circuits()`.
 
         Raises:
             ValueError: If this is not an IBMQ backend.
@@ -506,8 +509,11 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             kwargs: Other desired `/qscout_compile` options.
 
         Returns:
-            Object whose .circuit(s) attribute contains optimized `qiskit.QuantumCircuit`(s), and
-            `.jaqal_program` attribute contains the corresponding Jaqal program(s).
+            For the v0.2.0 API, a `qss.CompilerOutput` object whose .circuit(s) attribute contains
+            optimized `qiskit.QuantumCircuit`(s), and`.jaqal_program` attribute contains the
+            corresponding Jaqal program(s). Otherwise (for the v0.3.0) API, an asynchronous
+            `qss.SuperstaqJobV3` on which compiled circuits can be queried via
+            `.compiled_circuits()`.
 
         Raises:
             ValueError: If this is not a QSCOUT backend.
@@ -568,8 +574,9 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             kwargs: Other desired compile options.
 
         Returns:
-            UPDATE:
-            A CQ `CompilerOutput` object.
+            For the v0.3.0 API, an asynchronous `qss.SuperstaqJobV3` on which compiled circuits can
+            be queried via `.compiled_circuits()`. Otherwise (for the v0.2.0 API), a
+            `qss.CompilerOutput` whose .circuit(s) attribute contains the compiled circuit(s).
 
         Raises:
             ValueError: If this is not a CQ backend.
