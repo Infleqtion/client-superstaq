@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Generic, Union, cast, overload
+from typing import TYPE_CHECKING, Any, Generic, Union, overload
 
 import general_superstaq as gss
 import qiskit
@@ -190,7 +190,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         json_dict: dict[str, Any],
         *,
         legacy_parser: Callable[[dict[str, Any]], qss.compiler_output.CompilerOutput],
-    ) -> QssCompileResultT_co:
+    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
         """Maps a compile endpoint's JSON response to the output type expected by the API version.
 
         Args:
@@ -205,10 +205,8 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
             job_id = json_dict.get("job_id")
             if not isinstance(job_id, str):
                 raise KeyError("No valid job id was found in the compile request.")
-            return cast(
-                "QssCompileResultT_co", qss.SuperstaqJobV3(client=self._client, job_id=job_id)
-            )
-        return cast("QssCompileResultT_co", legacy_parser(json_dict))
+            return qss.SuperstaqJobV3(client=self._client, job_id=job_id)
+        return legacy_parser(json_dict)
 
     def get_backend(self, target: str) -> qss.SuperstaqBackend:
         """Returns a Superstaq backend.
