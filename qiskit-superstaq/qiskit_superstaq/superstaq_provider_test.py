@@ -65,7 +65,7 @@ def test_provider_args() -> None:
     assert isinstance(ss_provider._client, gss.superstaq_client._SuperstaqClientV3)
 
     with pytest.raises(ValueError, match=r"`api_version` can only take value 'v0.2.0' or 'v0.3.0'"):
-        ss_provider = qss.SuperstaqProvider(api_key="MY_TOKEN", api_version="v0.4.0")
+        _ = qss.SuperstaqProvider(api_key="MY_TOKEN", api_version="v0.1.0")  # type: ignore[call-overload]
 
 
 @patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})

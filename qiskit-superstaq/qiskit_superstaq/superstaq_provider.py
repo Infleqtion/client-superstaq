@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Generic, Union, overload
+from typing import TYPE_CHECKING, Any, Generic, Union, cast, overload
 
 import general_superstaq as gss
 import qiskit
@@ -48,7 +48,6 @@ QssCompileResultT_co = TypeVar(
     covariant=True,
     default=qss.compiler_output.CompilerOutput,
 )
-# ruff: noqa: ARG004
 
 
 class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
@@ -69,8 +68,8 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
     """
 
     @overload
-    def __new__(
-        cls,
+    def __init__(
+        self: SuperstaqProvider[qss.compiler_output.CompilerOutput],
         api_key: str | None = None,
         remote_host: str | None = None,
         api_version: gss.typing.ApiV2Like = "v0.2.0",
@@ -83,11 +82,11 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         use_stored_ibmq_credentials: bool = False,
         ibmq_name: str | None = None,
         **kwargs: object,
-    ) -> SuperstaqProvider[qss.compiler_output.CompilerOutput]: ...
+    ) -> None: ...
 
     @overload
-    def __new__(
-        cls,
+    def __init__(
+        self: SuperstaqProvider[qss.SuperstaqJobV3],
         api_key: str | None = None,
         remote_host: str | None = None,
         api_version: gss.typing.ApiV3Like = "v0.3.0",
@@ -100,37 +99,13 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         use_stored_ibmq_credentials: bool = False,
         ibmq_name: str | None = None,
         **kwargs: object,
-    ) -> SuperstaqProvider[qss.SuperstaqJobV3]: ...
-
-    def __new__(  # noqa: D102
-        cls,
-        api_key: str | None = None,
-        remote_host: str | None = None,
-        api_version: gss.typing.ApiV2Like | gss.typing.ApiV3Like = gss.API_VERSION,
-        max_retry_seconds: int = 3600,
-        verbose: bool = False,
-        cq_token: str | None = None,
-        ibmq_token: str | None = None,
-        ibmq_instance: str | None = None,
-        ibmq_channel: str | None = None,
-        use_stored_ibmq_credentials: bool = False,
-        ibmq_name: str | None = None,
-        **kwargs: object,
-    ) -> SuperstaqProvider[qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3]:
-        if cls is SuperstaqProvider:
-            if api_version == "v0.2.0":
-                return object.__new__(_SuperstaqProviderV2)
-
-            if api_version == "v0.3.0":
-                return object.__new__(_SuperstaqProviderV3)
-
-        return object.__new__(cls)
+    ) -> None: ...
 
     def __init__(
         self,
         api_key: str | None = None,
         remote_host: str | None = None,
-        api_version: str = gss.API_VERSION,
+        api_version: gss.typing.ApiV2Like | gss.typing.ApiV3Like = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
         cq_token: str | None = None,
@@ -225,11 +200,15 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         Returns:
              For v0.3.0, compile-like endpoints will return a `qss.SuperstaqJobV3`. For v0.2.0,
              legacy behavior will be preserved and return a `qss.CompilerOutput`.
-
-        Raises:
-            NotImplementedError: If invoked against an unsupported API version.
         """
-        raise NotImplementedError
+        if isinstance(self._client, gss.superstaq_client._SuperstaqClientV3):
+            job_id = json_dict.get("job_id")
+            if not isinstance(job_id, str):
+                raise KeyError("No valid job id was found in the compile request.")
+            return cast(
+                "QssCompileResultT_co", qss.SuperstaqJobV3(client=self._client, job_id=job_id)
+            )
+        return cast("QssCompileResultT_co", legacy_parser(json_dict))
 
     def get_backend(self, target: str) -> qss.SuperstaqBackend:
         """Returns a Superstaq backend.
@@ -749,39 +728,3 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
                 the jobs submitted through `submit_dfe` have not finished running.
         """
         return self._client.process_dfe(ids)
-
-
-class _SuperstaqProviderV2(SuperstaqProvider[qss.compiler_output.CompilerOutput]):
-    """Subclass for handling overrides for v0.2.0 API.
-
-    Users should use `qiskit_superstaq.SuperstaqProvider(api_version="v0.2.0")` instead of this
-    class directly.
-    """
-
-    def _map_compile_request_to_client_result(
-        self,
-        json_dict: dict[str, Any],
-        *,
-        legacy_parser: Callable[[dict[str, Any]], qss.compiler_output.CompilerOutput],
-    ) -> qss.compiler_output.CompilerOutput:
-        return legacy_parser(json_dict)
-
-
-class _SuperstaqProviderV3(SuperstaqProvider[qss.SuperstaqJobV3]):
-    """Subclass for handling overrides for v0.3.0 API.
-
-    Users should use `qiskit_superstaq.SuperstaqProvider(api_version="v0.3.0")` instead of this
-    class directly.
-    """
-
-    def _map_compile_request_to_client_result(
-        self,
-        json_dict: dict[str, Any],
-        *,
-        legacy_parser: Callable[[dict[str, Any]], qss.compiler_output.CompilerOutput],
-    ) -> qss.SuperstaqJobV3:
-        job_id = json_dict.get("job_id")
-        if not isinstance(job_id, str):
-            raise KeyError("No valid job id was found in the compile request.")
-        assert isinstance(self._client, gss.superstaq_client._SuperstaqClientV3)
-        return qss.SuperstaqJobV3(client=self._client, job_id=job_id)
