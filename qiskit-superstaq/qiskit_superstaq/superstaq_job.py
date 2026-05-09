@@ -573,10 +573,10 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         """Create a results object combining the counts from all circuits.
 
         Args:
-            timeout_seconds: An optional parameter that fixes when result retrieval times out. Units are
-                in seconds. Defaults to 7200.
-            polling_seconds: An optional parameter that sets the interval to check for Superstaq job results.
-                Units are in seconds. Defaults to 5.
+            timeout_seconds: An optional parameter that fixes when result retrieval times out. Units
+                are in seconds. Defaults to 7200.
+            polling_seconds: An optional parameter that sets the interval to check for Superstaq job
+                results. Units are in seconds. Defaults to 5.
             qubit_indices: The qubit indices to return the results of individually.
 
         Returns:
