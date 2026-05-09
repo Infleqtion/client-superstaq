@@ -280,6 +280,9 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         Returns:
             For v0.3.0, compile-like endpoints will return a `css.JobV3`. For v0.2.0, legacy
             behavior will be preserved and return a `css.CompilerOutput`.
+
+        Raises:
+            KeyError: If `json_dict` is missing a job ID for the v0.3.0 API version.
         """
         if isinstance(self._client, gss.superstaq_client._SuperstaqClientV3):
             job_id = json_dict.get("job_id")
@@ -561,9 +564,11 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             kwargs: Other desired aqt_compile_eca options.
 
         Returns:
-            Object whose .circuits attribute is a list (or list of lists) of logically equivalent
-            circuits. If `qtrl` is installed, the object's .seq attribute is a qtrl Sequence object
-            containing pulse sequences for each compiled circuit.
+            For the v0.2.0 API, a `css.CompilerOutput` whose .circuits attribute is a list (or list
+            of lists) of logically equivalent circuits. If `qtrl` is installed, the object's `.seq`
+            attribute is a qtrl Sequence object containing pulse sequences for each compiled
+            circuit. Otherwise (for the v0.3.0) API, an asynchronous `css.JobV3` on which compiled
+            circuits can be queried via `.compiled_circuits()`.
 
         Raises:
             ValueError: If `target` is not a valid AQT target.
@@ -630,10 +635,11 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             kwargs: Other desired compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the optimized circuits(s). Alternatively for
-            ECA, an object whose .circuits attribute is a list (or list of lists) of logically
-            equivalent circuits. If `qtrl` is installed, the object's .seq attribute is a qtrl
-            Sequence object containing pulse sequences for each compiled circuit.
+            For the v0.2.0 API, a `css.CompilerOutput` whose .circuits attribute is a list (or list
+            of lists) of logically equivalent circuits. If `qtrl` is installed, the object's `.seq`
+            attribute is a qtrl Sequence object containing pulse sequences for each compiled
+            circuit. Otherwise (for the v0.3.0) API, an asynchronous `css.JobV3` on which compiled
+            circuits can be queried via `.compiled_circuits()`.
 
         Raises:
             ValueError: If `target` is not a valid AQT target.
@@ -754,8 +760,10 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             kwargs: Other desired `/qscout_compile` options.
 
         Returns:
-            Object whose .circuit(s) attribute contains optimized `cirq.Circuit`(s), and
-            `.jaqal_program` attribute contains the corresponding Jaqal program(s).
+            For the v0.2.0 API, a `css.CompilerOutput` object whose .circuit(s) attribute contains
+            optimized `cirq.Circuit`(s), and`.jaqal_program` attribute contains the corresponding
+            Jaqal program(s). Otherwise (for the v0.3.0) API, an asynchronous `css.JobV3` on which
+            compiled circuits can be queried via `.compiled_circuits()`.
 
         Raises:
             ValueError: If `base_entangling_gate` is not a valid gate option.
@@ -827,8 +835,9 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             kwargs: Other desired `cq_compile` options.
 
         Returns:
-            UPDATE:
-            Object whose .circuit(s) attribute contains the compiled cirq.Circuit(s).
+            For the v0.3.0 API, an asynchronous `css.JobV3` on which compiled circuits can be
+            queried via `.compiled_circuits()`. Otherwise (for the v0.2.0 API), a
+            `css.CompilerOutput` whose .circuit(s) attribute contains the compiled circuit(s).
 
         Raises:
             ValueError: If `target` is not a valid CQ target.
@@ -883,9 +892,11 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             kwargs: Other desired compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the compiled cirq.Circuit(s), and whose
-            .pulse_gate_circuit(s) attribute contains the corresponding pulse schedule(s) (when
-            available).
+            For the `v0.2.0` API, a `css.CompilerOutput` whose .circuit(s) attribute contains the
+            compiled cirq.Circuit(s), and whose .pulse_gate_circuit(s) attribute contains the
+            corresponding pulse schedule(s) (when available). Otherwise (for the v0.3.0) API, an
+            asynchronous `css.JobV3` on which compiled circuits can be queried via
+            `.compiled_circuits()`.
 
         Raises:
             ValueError: If `target` is not a valid IBMQ target.
@@ -913,9 +924,9 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             kwargs: Other desired compile options.
 
         Returns:
-            UPDATE:
-            A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
-            circuit(s).
+            For the v0.3.0 API, an asynchronous `css.JobV3` on which compiled circuits can be
+            queried via `.compiled_circuits()`. Otherwise (for the v0.2.0 API), a
+            `css.CompilerOutput` whose .circuit(s) attribute contains the compiled circuit(s).
         """
         target = self._resolve_target(target)
 
