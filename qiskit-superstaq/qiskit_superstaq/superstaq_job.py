@@ -501,7 +501,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
     def result(
         self,
         index: int | None = None,
-        timeout_seconds: int = 7200,
+        timeout_seconds: float = 7200,
         polling_seconds: float = 1.0,
         qubit_indices: Sequence[int] | None = None,
     ) -> qiskit.result.Result:
@@ -566,16 +566,16 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
     def combined_result(
         self,
         *,
-        timeout: float | None = None,
-        wait: float = 5,
+        timeout_seconds: float = 7200,
+        polling_seconds: float = 5.0,
         qubit_indices: Sequence[int] | None = None,
     ) -> qiskit.result.Result:
         """Create a results object combining the counts from all circuits.
 
         Args:
-            timeout: An optional parameter that fixes when result retrieval times out. Units are
-                in seconds.
-            wait: An optional parameter that sets the interval to check for Superstaq job results.
+            timeout_seconds: An optional parameter that fixes when result retrieval times out. Units are
+                in seconds. Defaults to 7200.
+            polling_seconds: An optional parameter that sets the interval to check for Superstaq job results.
                 Units are in seconds. Defaults to 5.
             qubit_indices: The qubit indices to return the results of individually.
 
@@ -585,7 +585,11 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         Raises:
             ValueError: If this job's circuits don't have the same number of measurements.
         """
-        result = self.result(timeout=timeout, wait=wait, qubit_indices=qubit_indices)
+        result = self.result(
+            timeout_seconds=timeout_seconds,
+            polling_seconds=polling_seconds,
+            qubit_indices=qubit_indices,
+        )
         counts = result.get_counts()
 
         if not isinstance(counts, Mapping):
