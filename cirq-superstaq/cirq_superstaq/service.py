@@ -33,13 +33,7 @@ import uuid
 import warnings
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Generic,
-    Union,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, Generic, Union, cast, overload
 
 import cirq
 import general_superstaq as gss
@@ -61,7 +55,6 @@ CssCompileResultT_co = TypeVar(
     covariant=True,
     default=css.compiler_output.CompilerOutput,
 )
-# ruff: noqa: ARG004
 
 
 def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
@@ -157,8 +150,8 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
     """
 
     @overload
-    def __new__(
-        cls,
+    def __init__(
+        self: Service[css.compiler_output.CompilerOutput],
         api_key: str | None = None,
         remote_host: str | None = None,
         default_target: str | None = None,
@@ -172,11 +165,11 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         use_stored_ibmq_credentials: bool = False,
         ibmq_name: str | None = None,
         **kwargs: object,
-    ) -> Service[css.compiler_output.CompilerOutput]: ...
+    ) -> None: ...
 
     @overload
-    def __new__(
-        cls,
+    def __init__(
+        self: Service[css.JobV3],
         api_key: str | None = None,
         remote_host: str | None = None,
         default_target: str | None = None,
@@ -190,32 +183,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         use_stored_ibmq_credentials: bool = False,
         ibmq_name: str | None = None,
         **kwargs: object,
-    ) -> Service[css.JobV3]: ...
-
-    def __new__(  # noqa: D102
-        cls,
-        api_key: str | None = None,
-        remote_host: str | None = None,
-        default_target: str | None = None,
-        api_version: gss.typing.ApiV2Like | gss.typing.ApiV3Like = gss.API_VERSION,
-        max_retry_seconds: int = 3600,
-        verbose: bool = False,
-        cq_token: str | None = None,
-        ibmq_token: str | None = None,
-        ibmq_instance: str | None = None,
-        ibmq_channel: str | None = None,
-        use_stored_ibmq_credentials: bool = False,
-        ibmq_name: str | None = None,
-        **kwargs: object,
-    ) -> Service[css.compiler_output.CompilerOutput | css.JobV3]:
-        if cls is Service:
-            if api_version == "v0.2.0":
-                return object.__new__(_ServiceV2)
-
-            if api_version == "v0.3.0":
-                return object.__new__(_ServiceV3)
-
-        return object.__new__(cls)
+    ) -> None: ...
 
     def __init__(
         self,
@@ -312,11 +280,13 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         Returns:
             For v0.3.0, compile-like endpoints will return a `css.JobV3`. For v0.2.0, legacy
             behavior will be preserved and return a `css.CompilerOutput`.
-
-        Raises:
-            NotImplementedError: If invoked directly with an unsupported API version.
         """
-        raise NotImplementedError
+        if isinstance(self._client, gss.superstaq_client._SuperstaqClientV3):
+            job_id = json_dict.get("job_id")
+            if not isinstance(job_id, str):
+                raise KeyError("No valid job id was found in the compile request.")
+            return cast("CssCompileResultT_co", css.JobV3(client=self._client, job_id=job_id))
+        return cast("CssCompileResultT_co", legacy_parser(json_dict))
 
     def _resolve_target(self, target: str | None) -> str:
         target = target or self.default_target
@@ -1394,37 +1364,3 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         """
         target = self._resolve_target(target)
         return self._client.target_info(target)["target_info"]
-
-
-class _ServiceV2(Service[css.compiler_output.CompilerOutput]):
-    """Subclass for handling overrides for v0.2.0 API.
-
-    Users should use `cirq_superstaq.Service(api_version="v0.2.0")` instead of this class directly.
-    """
-
-    def _map_compile_request_to_client_result(
-        self,
-        json_dict: dict[str, Any],
-        *,
-        legacy_parser: Callable[[dict[str, Any]], css.compiler_output.CompilerOutput],
-    ) -> css.compiler_output.CompilerOutput:
-        return legacy_parser(json_dict)
-
-
-class _ServiceV3(Service[css.JobV3]):
-    """Subclass for handling overrides for v0.3.0 API.
-
-    Users should use `cirq_superstaq.Service(api_version="v0.3.0")` instead of this class directly.
-    """
-
-    def _map_compile_request_to_client_result(
-        self,
-        json_dict: dict[str, Any],
-        *,
-        legacy_parser: Callable[[dict[str, Any]], css.compiler_output.CompilerOutput],
-    ) -> css.JobV3:
-        job_id = json_dict.get("job_id")
-        if not isinstance(job_id, str):
-            raise KeyError("No valid job id was found in the compile request.")
-        assert isinstance(self._client, gss.superstaq_client._SuperstaqClientV3)
-        return css.JobV3(client=self._client, job_id=job_id)

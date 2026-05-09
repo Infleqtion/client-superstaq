@@ -101,30 +101,9 @@ def test_counts_to_results() -> None:
     assert result.histogram(key="01") == collections.Counter({3: 100})
 
 
-@mock.patch(
-    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
-    return_value={
-        "cirq_circuits": css.serialization.serialize_circuits(cirq.Circuit()),
-        "initial_logical_to_physicals": cirq.to_json([[]]),
-        "final_logical_to_physicals": cirq.to_json([[]]),
-    },
-)
-def test_service_wrong_version(mock_post_request: mock.MagicMock) -> None:
-    class FakeService(css.Service):
-        def __init__(
-            self,
-            api_key: str | None = None,
-            remote_host: str | None = None,
-        ) -> None:
-            super().__init__(api_key=api_key, remote_host=remote_host)
-
-    service = FakeService(api_key="key", remote_host="http://example.com")
-    with pytest.raises(NotImplementedError):
-        _ = service.aqt_compile(cirq.Circuit(), test_options="yes")
-    mock_post_request.assert_called_once()
-
+def test_service_wrong_version() -> None:
     with pytest.raises(ValueError, match=r"`api_version` can only take value 'v0.2.0' or 'v0.3.0'"):
-        css.Service(api_version="v4")  # type: ignore[arg-type]
+        css.Service(api_version="v0.1.0")  # type: ignore [call-overload]
 
 
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
