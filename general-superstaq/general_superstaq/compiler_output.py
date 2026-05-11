@@ -163,6 +163,21 @@ class CompilerOutput(BaseCompilerOutput[str, int]):
         )
 
 
+def _deserialize_qubit_mappings(json_text: str) -> list[dict[int, int]]:
+    """Deserializes qubit mappings encoded as JSON lists of key-value pairs.
+
+    Args:
+        json_text: A JSON string representing qubit mappings.
+
+    Returns:
+        A list of dictionaries mapping logical qubits to physical qubits.
+    """
+    # The service serializes mappings as key-value pairs so JSON round-tripping preserves integer
+    # qubit indices instead of coercing dictionary keys to strings.
+    serialized_mappings: list[list[tuple[int, int]]] = json.loads(json_text)
+    return [dict(qubit_mapping) for qubit_mapping in serialized_mappings]
+
+
 def _jaqal_programs_to_subcircuits(jaqal_programs: Sequence[str]) -> str:
     separator = "prepare_all"
     subcircuits = [jaqal_programs[0]]
@@ -185,15 +200,15 @@ def read_json_jaqal(
     """
     compiled_circuits = json.loads(json_dict["jaqal_strs"])
 
-    initial_logical_to_physicals_list: list[dict[int, int]] = list(
-        map(dict, json.loads(json_dict["initial_logical_to_physicals"]))
+    initial_logical_to_physicals_list = _deserialize_qubit_mappings(
+        json_dict["initial_logical_to_physicals"]
     )
     initial_logical_to_physicals: list[dict[int, int]] | list[list[dict[int, int]]] = (
         initial_logical_to_physicals_list
     )
 
-    final_logical_to_physicals_list: list[dict[int, int]] = list(
-        map(dict, json.loads(json_dict["final_logical_to_physicals"]))
+    final_logical_to_physicals_list = _deserialize_qubit_mappings(
+        json_dict["final_logical_to_physicals"]
     )
     final_logical_to_physicals: list[dict[int, int]] | list[list[dict[int, int]]] = (
         final_logical_to_physicals_list
