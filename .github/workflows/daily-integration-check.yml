@@ -25,6 +25,9 @@ jobs:
                     - type: "qiskit-superstaq"
                       dependencies: "./checks-superstaq ./qiskit-superstaq"
                       group: 3
+                    - type: "qiskit-superstaq"
+                      dependencies: "./checks-superstaq ./qiskit-superstaq"
+                      group: 4
                     - type: "cirq-superstaq"
                       dependencies: "./checks-superstaq ./qiskit-superstaq ./cirq-superstaq"
                       group: 1
@@ -34,6 +37,9 @@ jobs:
                     - type: "cirq-superstaq"
                       dependencies: "./checks-superstaq ./qiskit-superstaq ./cirq-superstaq"
                       group: 3
+                    - type: "cirq-superstaq"
+                      dependencies: "./checks-superstaq ./qiskit-superstaq ./cirq-superstaq"
+                      group: 4
         name: Pytest integration check for ${{ matrix.type }} (${{ matrix.group }})
         timeout-minutes: 15
         steps:
@@ -47,9 +53,9 @@ jobs:
                   python -m pip install --upgrade pip
                   python -m pip install ${{ matrix.dependencies }}
                   python -m pip install -e ./general-superstaq
-            - name: Pytest integration check (group ${{ matrix.group }} of 3)
+            - name: Pytest integration check (group ${{ matrix.group }} of 4)
               run: |
-                  checks/pytest_.py --integration -n=auto --dist=loadgroup --splits=3 --group=${{ matrix.group }} -v ${{ matrix.type }}
+                  checks/pytest_.py --integration -n=auto --dist=loadgroup --splits=4 --group=${{ matrix.group }} -v ${{ matrix.type }}
             - name: Create issue if integration check failed
               if: ${{ failure() }}
               uses: JasonEtco/create-an-issue@v2
