@@ -128,7 +128,9 @@ def get_validated_assembly_qubits(string_programs: Sequence[str], *, circuit_typ
     )
     inferred_num_qubits = max(register_sizes, default=None)
     if inferred_num_qubits is None:
-        raise ValueError("Could not determine number of qubits from Jaqal program register(s).")
+        raise ValueError(
+            "Could not determine maximum number of qubits from input circuit register(s)."
+        )
     return inferred_num_qubits
 
 
