@@ -139,30 +139,32 @@ class CompilerOutput(gss.BaseCompilerOutput[qiskit.QuantumCircuit, int]):
             jaqal_programs=jaqal_programs,
         )
 
+    @staticmethod
+    def _get_deserialized_content(
+        json_dict: dict[str, Any], _circuits_is_list: bool, api_version: str = gss.API_VERSION
+    ) -> tuple[
+        list[qiskit.QuantumCircuit],
+        list[qiskit.QuantumCircuit] | None,
+        list[dict[int, int]],
+        list[dict[int, int]],
+    ]:
+        if api_version == "v0.2.0":
+            compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
+        else:
+            serialized_circuits = json.loads(json_dict["qiskit_circuits"])
+            compiled_circuits = [
+                qss.serialization.deserialize_circuits(circuit)[0]
+                for circuit in serialized_circuits
+            ]
 
-def _generate_compiler_output(
-    json_dict: dict[str, Any],
-    parser: str,
-    circuits_is_list: bool,
-    num_eca_circuits: int | None = None,
-    api_version: str = gss.API_VERSION,
-) -> CompilerOutput:
-    if api_version == "v0.2.0":
-        compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
-    else:
-        serialized_circuits = json.loads(json_dict["qiskit_circuits"])
-        compiled_circuits = [
-            qss.serialization.deserialize_circuits(circuit)[0] for circuit in serialized_circuits
-        ]
+        initial_logical_to_physicals_list: list[dict[int, int]] = list(
+            map(dict, json.loads(json_dict["initial_logical_to_physicals"]))
+        )
 
-    initial_logical_to_physicals: list[dict[int, int]] = list(
-        map(dict, json.loads(json_dict["initial_logical_to_physicals"]))
-    )
-    final_logical_to_physicals: list[dict[int, int]] = list(
-        map(dict, json.loads(json_dict["final_logical_to_physicals"]))
-    )
+        final_logical_to_physicals_list: list[dict[int, int]] = list(
+            map(dict, json.loads(json_dict["final_logical_to_physicals"]))
+        )
 
-    if parser == "read_json":
         pulse_start_times = json_dict.get("pulse_start_times", [])
         for circuit, start_times in zip(compiled_circuits, pulse_start_times):
             circuit._op_start_times = start_times
@@ -170,33 +172,13 @@ def _generate_compiler_output(
         pulse_gate_circuits = None
         if "pulse_gate_circuits" in json_dict:
             pulse_gate_circuits = qss.deserialize_circuits(json_dict["pulse_gate_circuits"])
+
             for circuit, start_times in zip(pulse_gate_circuits, pulse_start_times):
                 circuit._op_start_times = start_times
 
-        return CompilerOutput.read_json(
+        return (
             compiled_circuits,
-            initial_logical_to_physicals,
-            final_logical_to_physicals,
             pulse_gate_circuits,
-            circuits_is_list,
+            initial_logical_to_physicals_list,
+            final_logical_to_physicals_list,
         )
-    if parser == "read_json_qscout":
-        jaqal_programs: list[str] = json_dict["jaqal_programs"]
-        return CompilerOutput.read_json_qscout(
-            compiled_circuits,
-            initial_logical_to_physicals,
-            final_logical_to_physicals,
-            jaqal_programs,
-            circuits_is_list,
-            num_eca_circuits,
-        )
-    if parser == "read_json_aqt":
-        return CompilerOutput.read_json_aqt(
-            compiled_circuits,
-            initial_logical_to_physicals,
-            final_logical_to_physicals,
-            json_dict,
-            circuits_is_list,
-            num_eca_circuits,
-        )
-    raise ValueError(f"Specified parser '{parser}' in an invalid or unavailable parser.")

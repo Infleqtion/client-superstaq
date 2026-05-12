@@ -217,7 +217,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
             )
         return cast(
             "QssCompileResultT_co",
-            qss.compiler_output._generate_compiler_output(
+            qss.compiler_output.CompilerOutput._generate_compiler_output(
                 json_dict=json_dict,
                 parser=legacy_parser,
                 circuits_is_list=circuits_is_list,

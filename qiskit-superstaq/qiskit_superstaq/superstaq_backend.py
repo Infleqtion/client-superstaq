@@ -355,19 +355,15 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         if not self.name.startswith("aqt_"):
             raise ValueError(f"{self.name!r} is not a valid AQT target.")
 
-        options: dict[str, Any] = {**kwargs}
-        if num_eca_circuits is not None:
-            gss.validation.validate_integer_param(num_eca_circuits)
-            options["num_eca_circuits"] = int(num_eca_circuits)
-        if random_seed is not None:
-            gss.validation.validate_integer_param(random_seed)
-            options["random_seed"] = int(random_seed)
-        if atol is not None:
-            options["atol"] = float(atol)
+        options = gss.validation.get_validated_aqt_options(
+            num_eca_circuits=num_eca_circuits,
+            random_seed=random_seed,
+            atol=atol,
+            gateset=gateset,
+            **kwargs,
+        )
         if gate_defs is not None:
             options["gate_defs"] = gate_defs
-        if gateset is not None:
-            options["gateset"] = gateset
         if pulses or variables:
             options["aqt_configs"] = {
                 "pulses": self._provider._qtrl_config_to_yaml_str(pulses),

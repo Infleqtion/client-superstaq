@@ -130,54 +130,36 @@ class CompilerOutput(gss.BaseCompilerOutput[cirq.Circuit, cirq.Qid]):
             jaqal_programs=jaqal_programs,
         )
 
+    @staticmethod
+    def _get_deserialized_content(
+        json_dict: dict[str, Any],
+        circuits_is_list: bool,
+        _api_version: str = gss.API_VERSION,
+    ) -> tuple[
+        list[cirq.Circuit],
+        list[object] | None,
+        list[dict[cirq.Qid, cirq.Qid]],
+        list[dict[cirq.Qid, cirq.Qid]],
+    ]:
+        compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
+        initial_logical_to_physicals_list: list[dict[cirq.Qid, cirq.Qid]] = list(
+            map(dict, cirq.read_json(json_text=json_dict["initial_logical_to_physicals"]))
+        )
+        final_logical_to_physicals_list: list[dict[cirq.Qid, cirq.Qid]] = list(
+            map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
+        )
 
-def _generate_compiler_output(
-    json_dict: dict[str, Any],
-    parser: str,
-    circuits_is_list: bool,
-    num_eca_circuits: int | None = None,
-) -> CompilerOutput:
-    compiled_circuits = css.serialization.deserialize_circuits(json_dict["cirq_circuits"])
-    initial_logical_to_physicals_list: list[dict[cirq.Qid, cirq.Qid]] = list(
-        map(dict, cirq.read_json(json_text=json_dict["initial_logical_to_physicals"]))
-    )
-    final_logical_to_physicals_list: list[dict[cirq.Qid, cirq.Qid]] = list(
-        map(dict, cirq.read_json(json_text=json_dict["final_logical_to_physicals"]))
-    )
-
-    if parser == "read_json":
         pulse_gate_circuits = None
-
         if "pulse_gate_circuits" in json_dict:
             pulse_gate_circuits = css.serialization.deserialize_qiskit_circuits(
                 json_dict["pulse_gate_circuits"],
                 circuits_is_list,
                 pulse_start_times=json_dict.get("pulse_start_times"),
             )
-        return CompilerOutput.read_json(
+
+        return (
             compiled_circuits,
-            initial_logical_to_physicals_list,
-            final_logical_to_physicals_list,
             pulse_gate_circuits,
-            circuits_is_list,
-        )
-    if parser == "read_json_qscout":
-        jaqal_programs: list[str] = json_dict["jaqal_programs"]
-        return CompilerOutput.read_json_qscout(
-            compiled_circuits,
             initial_logical_to_physicals_list,
             final_logical_to_physicals_list,
-            jaqal_programs,
-            circuits_is_list,
-            num_eca_circuits,
         )
-    if parser == "read_json_aqt":
-        return CompilerOutput.read_json_aqt(
-            compiled_circuits,
-            initial_logical_to_physicals_list,
-            final_logical_to_physicals_list,
-            json_dict,
-            circuits_is_list,
-            num_eca_circuits,
-        )
-    raise ValueError(f"Specified parser '{parser}' in an invalid or unavailable parser.")
