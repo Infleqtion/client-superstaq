@@ -202,12 +202,12 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
              legacy behavior will be preserved and return a `qss.CompilerOutput`.
 
         Raises:
-            KeyError: If `json_dict` is missing a job ID for the v0.3.0 API version.
+            TypeError: If `json_dict` is missing a job ID for the v0.3.0 API version.
         """
         if isinstance(self._client, gss.superstaq_client._SuperstaqClientV3):
             job_id = json_dict.get("job_id")
             if not isinstance(job_id, str):
-                raise KeyError("No valid job id was found in the compile request.")
+                raise TypeError("No valid job id was found in the compile request.")
             return cast(
                 "QssCompileResultT_co", qss.SuperstaqJobV3(client=self._client, job_id=job_id)
             )
