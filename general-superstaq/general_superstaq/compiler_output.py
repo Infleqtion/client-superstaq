@@ -364,9 +364,7 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
                 for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
             ]
             jaqal_programs = [
-                gss.compiler_output._jaqal_programs_to_subcircuits(
-                    jaqal_programs[i : i + num_eca_circuits]
-                )
+                _jaqal_programs_to_subcircuits(jaqal_programs[i : i + num_eca_circuits])
                 for i in range(0, len(jaqal_programs), num_eca_circuits)
             ]
 

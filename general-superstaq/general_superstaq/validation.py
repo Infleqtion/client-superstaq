@@ -114,7 +114,7 @@ def get_validated_assembly_qubits(string_programs: Sequence[str], *, circuit_typ
         The max qubit register size needed for all `string_programs`.
 
     Raises:
-        ValueError: If not pattern is defined for `circuit_type`.
+        ValueError: If no pattern is defined for `circuit_type`.
         ValueError: If no qubit count could be inferred from `string_programs`.
     """
     if circuit_type == "jaqal_strs":
