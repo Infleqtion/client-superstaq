@@ -734,13 +734,19 @@ def test_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
 
 
 def test_compiled_circuitsV3(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
-    job_dict = job_dictV3()
-    job_dict["statuses"] = ["awaiting_submission"]
-    job_dict["compiled_circuits"] = [qss.serialize_circuits(qiskit.QuantumCircuit(2))]
-    job_dict["input_circuits"] = [qss.serialize_circuits(qiskit.QuantumCircuit(2))]
+    job_id = uuid.UUID(int=42)
+    qc = qiskit.QuantumCircuit(2)
+    serialized = qss.serialize_circuits(qc)
 
-    job = qss.SuperstaqJobV3(mock_client, job_id=uuid.UUID(int=42))
-    with patched_requests({str(uuid.UUID(int=42)): job_dict}) as mocked_get_job:
+    def _job_dict(num_circuits: int) -> dict[str, object]:
+        job_dict = job_dictV3(num_circuits)
+        job_dict["statuses"] = ["completed"] * num_circuits
+        job_dict["compiled_circuits"] = [serialized] * num_circuits
+        job_dict["input_circuits"] = [serialized] * num_circuits
+        return job_dict
+
+    job = qss.SuperstaqJobV3(mock_client, job_id=job_id)
+    with patched_requests({str(job_id): _job_dict(1)}) as mocked_get_job:
         assert job.compiled_circuits() == [qiskit.QuantumCircuit(2)]
         mocked_get_job.assert_called_once()
 
@@ -748,13 +754,8 @@ def test_compiled_circuitsV3(mock_client: gss.superstaq_client._SuperstaqClientV
     assert job.compiled_circuits() == [qiskit.QuantumCircuit(2)]
     assert job.compiled_circuits(index=0) == qiskit.QuantumCircuit(2)
 
-    job_dict = job_dictV3(2)
-    job_dict["statuses"] = ["awaiting_submission"] * 2
-    job_dict["compiled_circuits"] = [qss.serialize_circuits(qiskit.QuantumCircuit(2))] * 2
-    job_dict["input_circuits"] = [qss.serialize_circuits(qiskit.QuantumCircuit(2))] * 2
-
-    job = qss.SuperstaqJobV3(mock_client, job_id=uuid.UUID(int=42))
-    with patched_requests({str(uuid.UUID(int=42)): job_dict}) as mocked_get_job:
+    job = qss.SuperstaqJobV3(mock_client, job_id=job_id)
+    with patched_requests({str(job_id): _job_dict(2)}) as mocked_get_job:
         assert job.compiled_circuits() == [qiskit.QuantumCircuit(2), qiskit.QuantumCircuit(2)]
         mocked_get_job.assert_called_once()
 
@@ -764,13 +765,15 @@ def test_compiled_circuitsV3(mock_client: gss.superstaq_client._SuperstaqClientV
     with pytest.raises(gss.SuperstaqException, match=r"Some compiled circuits are missing"):
         job.compiled_circuits()
 
-    with pytest.raises(gss.SuperstaqException, match=f"Circuit 0 of job {uuid.UUID(int=42)}"):
+    with pytest.raises(gss.SuperstaqException, match=f"Circuit 0 of job {job_id}"):
         job.compiled_circuits(index=0)
 
     job.job_data.compiled_circuits[1] = None
-    with pytest.raises(
-        gss.SuperstaqException, match=f"The job {uuid.UUID(int=42)} has no compiled circuits"
-    ):
+    with pytest.raises(gss.SuperstaqException, match=f"The job {job_id} has no compiled circuits"):
+        job.compiled_circuits()
+
+    job.job_data.compiled_circuits[1] = None
+    with pytest.raises(gss.SuperstaqException, match=f"The job {job_id} has no compiled circuits"):
         job.compiled_circuits()
 
 
