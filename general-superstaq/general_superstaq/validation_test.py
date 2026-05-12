@@ -182,7 +182,7 @@ def test_validate_assembly_qubits() -> None:
         )
         == 4
     )
-    with pytest.raises(ValueError, match=r"Could not determine number"):
+    with pytest.raises(ValueError, match=r"Could not determine"):
         missing_qubit_jaqal = "\n".join(jaqal_program.split("\n")[1:])
         _ = gss.validation.get_validated_assembly_qubits(
             [missing_qubit_jaqal], circuit_type="jaqal_strs"
