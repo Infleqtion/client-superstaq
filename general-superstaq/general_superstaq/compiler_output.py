@@ -201,19 +201,15 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
         )
 
         jaqal_programs: list[str] = json_dict.get("jaqal_programs", compiled_circuits)
-        if num_eca_circuits:
-            compiled_circuits = [
-                compiled_circuits[i : i + num_eca_circuits]
-                for i in range(0, len(compiled_circuits), num_eca_circuits)
-            ]
-            initial_logical_to_physicals = [
-                initial_logical_to_physicals_list[i : i + num_eca_circuits]
-                for i in range(0, len(initial_logical_to_physicals_list), num_eca_circuits)
-            ]
-            final_logical_to_physicals = [
-                final_logical_to_physicals_list[i : i + num_eca_circuits]
-                for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
-            ]
+        if num_eca_circuits is not None:
+            compiled_circuits, initial_logical_to_physicals, final_logical_to_physicals = (
+                cls._format_eca_content(
+                    compiled_circuits,
+                    initial_logical_to_physicals_list,
+                    final_logical_to_physicals_list,
+                    num_eca_circuits,
+                )
+            )
             jaqal_programs = [
                 _jaqal_programs_to_subcircuits(jaqal_programs[i : i + num_eca_circuits])
                 for i in range(0, len(jaqal_programs), num_eca_circuits)
@@ -291,18 +287,14 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
                 seq = _sequencer_from_state(state)
 
         if num_eca_circuits is not None:
-            compiled_circuits = [
-                deserialized_circuits[i : i + num_eca_circuits]
-                for i in range(0, len(deserialized_circuits), num_eca_circuits)
-            ]
-            initial_logical_to_physicals = [
-                initial_logical_to_physicals_list[i : i + num_eca_circuits]
-                for i in range(0, len(initial_logical_to_physicals_list), num_eca_circuits)
-            ]
-            final_logical_to_physicals = [
-                final_logical_to_physicals_list[i : i + num_eca_circuits]
-                for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
-            ]
+            compiled_circuits, initial_logical_to_physicals, final_logical_to_physicals = (
+                cls._format_eca_content(
+                    deserialized_circuits,
+                    initial_logical_to_physicals_list,
+                    final_logical_to_physicals_list,
+                    num_eca_circuits,
+                )
+            )
 
         if circuits_is_list:
             return cls(
@@ -350,19 +342,15 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
             final_logical_to_physicals_list
         )
 
-        if num_eca_circuits:
-            compiled_circuits = [
-                deserialized_circuits[i : i + num_eca_circuits]
-                for i in range(0, len(deserialized_circuits), num_eca_circuits)
-            ]
-            initial_logical_to_physicals = [
-                initial_logical_to_physicals_list[i : i + num_eca_circuits]
-                for i in range(0, len(initial_logical_to_physicals_list), num_eca_circuits)
-            ]
-            final_logical_to_physicals = [
-                final_logical_to_physicals_list[i : i + num_eca_circuits]
-                for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
-            ]
+        if num_eca_circuits is not None:
+            compiled_circuits, initial_logical_to_physicals, final_logical_to_physicals = (
+                cls._format_eca_content(
+                    deserialized_circuits,
+                    initial_logical_to_physicals_list,
+                    final_logical_to_physicals_list,
+                    num_eca_circuits,
+                )
+            )
             jaqal_programs = [
                 _jaqal_programs_to_subcircuits(jaqal_programs[i : i + num_eca_circuits])
                 for i in range(0, len(jaqal_programs), num_eca_circuits)
@@ -403,6 +391,27 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
             initial_logical_to_physicals_list,
             final_logical_to_physicals_list,
         )
+
+    @staticmethod
+    def _format_eca_content(
+        deserialized_circuits: list[C],
+        initial_logical_to_physicals_list: list[dict[Q, Q]],
+        final_logical_to_physicals_list: list[dict[Q, Q]],
+        num_eca_circuits: int,
+    ) -> tuple[list[list[C]], list[list[dict[Q, Q]]], list[list[dict[Q, Q]]]]:
+        compiled_circuits = [
+            deserialized_circuits[i : i + num_eca_circuits]
+            for i in range(0, len(deserialized_circuits), num_eca_circuits)
+        ]
+        initial_logical_to_physicals = [
+            initial_logical_to_physicals_list[i : i + num_eca_circuits]
+            for i in range(0, len(initial_logical_to_physicals_list), num_eca_circuits)
+        ]
+        final_logical_to_physicals = [
+            final_logical_to_physicals_list[i : i + num_eca_circuits]
+            for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
+        ]
+        return compiled_circuits, initial_logical_to_physicals, final_logical_to_physicals
 
     @classmethod
     def _generate_compiler_output(
