@@ -103,20 +103,29 @@ def validate_target(target: str) -> str:
     return target
 
 
-def get_validated_jaqal_qubits(jaqal_programs: Sequence[str]) -> int:
-    """Gets the maximum number of qubits that should be initialized for all `jaqal_programs`.
+def get_validated_assembly_qubits(string_programs: Sequence[str], *, circuit_type: str) -> int:
+    """Gets the maximum number of qubits that should be initialized for all `string_programs`.
 
     Args:
-        jaqal_programs: The Jaqal programs to infer qubit count from.
+        string_programs: The Jaqal programs to infer qubit count from.
+        circuit_type: The kind of circuit that `string_programs` correspond to.
 
     Returns:
-        The max qubit register size needed for all `jaqal_programs`.
+        The max qubit register size needed for all `string_programs`.
 
     Raises:
-        ValueError: If no qubit count could be inferred from `jaqal_programs`.
+        ValueError: If not pattern is defined for `circuit_type`.
+        ValueError: If no qubit count could be inferred from `string_programs`.
     """
-    pattern = re.compile(r"^\s*register\b.*?\[(\d+)\]", re.MULTILINE)
-    register_sizes = (int(m.group(1)) for jp in jaqal_programs for m in [pattern.search(jp)] if m)
+    if circuit_type == "jaqal_strs":
+        pattern = re.compile(r"^\s*register\b.*?\[(\d+)\]", re.MULTILINE)
+    elif circuit_type == "qasm_strs":
+        pattern = re.compile(r"^\s*qreg\b.*?\[(\d+)\]", re.MULTILINE)
+    else:
+        raise ValueError(f"Unsupported circuit type provided: '{circuit_type}'.")
+    register_sizes = (
+        int(m.group(1)) for circuit_str in string_programs for m in pattern.finditer(circuit_str)
+    )
     inferred_num_qubits = max(register_sizes, default=None)
     if inferred_num_qubits is None:
         raise ValueError("Could not determine number of qubits from Jaqal program register(s).")
@@ -229,6 +238,43 @@ def _validate_ibm_channel(ibm_channel: str) -> str:
         raise ValueError("`ibmq_channel` must be either 'ibm_cloud' or 'ibm_quantum_platform'.")
 
     return ibm_channel
+
+
+def get_validated_aqt_options(
+    num_eca_circuits: int | None = None,
+    random_seed: int | None = None,
+    atol: float | None = None,
+    gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
+    **kwargs: object,
+) -> dict[str, object]:
+    """Generates an options dictionary packaging the input args into a format compatible for
+        `/aqt_compile`.
+
+    Args:
+        num_eca_circuits: Optional number of logically equivalent random circuits to generate
+            from each input circuit for Equivalent Circuit Averaging (ECA).
+        random_seed: Optional seed used for approximate synthesis and ECA.
+        atol: An optional tolerance to use for approximate gate synthesis.
+        gateset: Which gates to use for compilation. Should be a dictionary with entries in the
+            for `gate_name: [[1, 2], [3, 4]`, where the keys refer to specific gates, and the
+            values indicate which qubit(s) they act upon.
+        kwargs: Other desired compile options.
+
+    Returns:
+        A validated options dictionary packaging provided `args`.
+    """
+    options: dict[str, object] = {**kwargs}
+    if num_eca_circuits is not None:
+        validate_integer_param(num_eca_circuits, parameter_name="num_eca_circuits")
+        options["num_eca_circuits"] = int(num_eca_circuits)
+    if random_seed is not None:
+        validate_integer_param(random_seed, parameter_name="random_seed")
+        options["random_seed"] = int(random_seed)
+    if atol is not None:
+        options["atol"] = float(atol)
+    if gateset is not None:
+        options["gateset"] = gateset
+    return options
 
 
 def get_validated_qscout_options(
