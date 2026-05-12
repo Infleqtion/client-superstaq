@@ -236,7 +236,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         """
         warnings.warn(
             "The `.retrieve_job()` method of `SuperstaqBackend` has been deprecated, and will be "
-            "removed in a future version of qiskit-superstaq. Instead, use the `.get_job()`"
+            "removed in a future version of qiskit-superstaq. Instead, use the `.get_job()` "
             "method of `SuperstaqProvider`.",
             DeprecationWarning,
             stacklevel=2,
