@@ -365,7 +365,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         if not target.startswith("aqt_"):
             raise ValueError(f"{target!r} is not a valid AQT target.")
 
-        return self.get_backend(target).compile(
+        return self.get_backend(target).aqt_compile(
             circuits,
             num_eca_circuits=num_eca_circuits,
             random_seed=random_seed,
