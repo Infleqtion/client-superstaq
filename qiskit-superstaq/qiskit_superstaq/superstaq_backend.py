@@ -345,7 +345,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             kwargs: Other desired compile options.
 
         Returns:
-            For the `v0.2.0` API, a `qss.CompilerOutput` object whose .circuit(s) attribute contains
+            For the v0.2.0 API, a `qss.CompilerOutput` object whose .circuit(s) attribute contains
             the optimized circuits(s). Alternatively for ECA, an object whose .circuits attribute is
             a list (or list of lists) of logically equivalent circuits. If `qtrl` is installed, the
             object's .seq attribute is a qtrl Sequence object containing pulse sequences for each
@@ -419,7 +419,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             kwargs: Other desired compile options.
 
         Returns:
-            For the `v0.2.0` API, a `qss.CompilerOutput` whose .circuit(s) attribute contains the
+            For the v0.2.0 API, a `qss.CompilerOutput` whose .circuit(s) attribute contains the
             compiled qiskit.QuantumCircuit(s), and whose .pulse_gate_circuit(s) attribute contains
             the corresponding pulse schedule(s) (when available). Otherwise (for the v0.3.0 API), an
             asynchronous `qss.SuperstaqJobV3` on which compiled circuits can be queried via

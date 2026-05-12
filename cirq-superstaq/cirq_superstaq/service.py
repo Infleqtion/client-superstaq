@@ -892,7 +892,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             kwargs: Other desired compile options.
 
         Returns:
-            For the `v0.2.0` API, a `css.CompilerOutput` whose .circuit(s) attribute contains the
+            For the v0.2.0 API, a `css.CompilerOutput` whose .circuit(s) attribute contains the
             compiled cirq.Circuit(s), and whose .pulse_gate_circuit(s) attribute contains the
             corresponding pulse schedule(s) (when available). Otherwise (for the v0.3.0 API), an
             asynchronous `css.JobV3` on which compiled circuits can be queried via
@@ -1063,8 +1063,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         Raises:
             ValueError: If `ids` is not of size two.
             ~gss.SuperstaqServerException: If there was an error accessing the API or
-                the jobs submitted
-                through `submit_dfe` have not finished running.
+                the jobs submitted through `submit_dfe` have not finished running.
         """
         return self._client.process_dfe(ids)
 
@@ -1230,8 +1229,8 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
 
         Args:
             job_id: String corresponding to the CB job id.
-            counts: Optional list of dictionaries containing results counts to
-        compute fidelities for.
+            counts: Optional list of dictionaries containing results counts to compute fidelities
+                for.
 
         Returns:
             A dict containing the Cycle Benchmarking process data.
