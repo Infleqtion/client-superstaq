@@ -32,6 +32,7 @@ import json
 import os
 import textwrap
 import uuid
+from collections.abc import Callable
 from unittest import mock
 from unittest.mock import patch
 
@@ -1035,6 +1036,89 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
 
     with pytest.raises(ValueError, match=r"'ss_example_qpu' is not a valid IBMQ target."):
         service.ibmq_compile(cirq.Circuit(), target="ss_example_qpu")
+
+
+@pytest.mark.parametrize(
+    "compile_call",
+    [
+        pytest.param(
+            lambda s, c: s.compile(c, target="ss_unconstrained_simulator"),
+            id="compile",
+        ),
+        pytest.param(lambda s, c: s.aqt_compile(c), id="aqt_compile"),
+        pytest.param(lambda s, c: s.qscout_compile(c), id="qscout_compile"),
+        pytest.param(lambda s, c: s.cq_compile(c), id="cq_compile"),
+        pytest.param(
+            lambda s, c: s.ibmq_compile(c, target="ibmq_fake_qpu"),
+            id="ibmq_compile",
+        ),
+    ],
+)
+def test_service_compile_jobV3(
+    compile_call: Callable[[css.Service[css.JobV3], cirq.Circuit], css.JobV3],
+    request: pytest.FixtureRequest,
+) -> None:
+    service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
+
+    mock_client = mock.MagicMock(spec=_SuperstaqClientV3)
+    mock_client.client_kwargs = {}
+    service._client = mock_client
+
+    job_id = uuid.UUID(int=42)
+    job_id_str = str(job_id)
+
+    q0 = cirq.LineQubit(0)
+    input_circuit = cirq.Circuit(cirq.H(q0), cirq.T(q0))
+    compiled_circuit = input_circuit
+
+    with pytest.raises(TypeError, match=r"No valid job id"):
+        _ = compile_call(service, input_circuit)
+
+    compile_method_type = request.node.callspec.id
+    if compile_method_type == "aqt_compile":
+        mock_client.post_request.return_value = {"job_id": job_id_str}
+    elif compile_method_type == "qscout_compile":
+        mock_client.qscout_compile.return_value = {"job_id": job_id_str}
+    else:
+        mock_client.compile.return_value = {"job_id": job_id_str}
+
+    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    mock_client.fetch_jobs.return_value = {
+        job_id_str: {
+            "job_type": "compile",
+            "statuses": ["completed"],
+            "status_messages": [None],
+            "user_email": "test@email.com",
+            "target": "ss_unconstrained_simulator",
+            "provider_id": [None],
+            "num_circuits": 1,
+            "compiled_circuits": [css.serialization.serialize_circuits(compiled_circuit)],
+            "input_circuits": [css.serialization.serialize_circuits(input_circuit)],
+            "circuit_type": "cirq",
+            "counts": [None],
+            "results_dicts": [None],
+            "shots": [0],
+            "dry_run": True,
+            "submission_timestamp": now,
+            "last_updated_timestamp": [now],
+            "initial_logical_to_physicals": [{0: 0}],
+            "final_logical_to_physicals": [{0: 0}],
+            "logical_qubits": [cirq.to_json([q0])],
+            "physical_qubits": [cirq.to_json([q0])],
+        }
+    }
+
+    job = compile_call(service, input_circuit)
+
+    assert isinstance(job, css.JobV3)
+    assert job.job_id() == job_id
+    assert job.status() == gss.models.CircuitStatus.COMPLETED
+    assert job.input_circuits(0) == input_circuit
+    assert job.compiled_circuits(0) == compiled_circuit
+    assert job.input_circuits() == [input_circuit]
+    assert job.compiled_circuits() == [compiled_circuit]
+    assert job.initial_logical_to_physical(0) == {q0: q0}
+    assert job.final_logical_to_physical(0) == {q0: q0}
 
 
 @mock.patch(
