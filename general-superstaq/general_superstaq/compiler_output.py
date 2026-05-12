@@ -417,8 +417,9 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
     def _generate_compiler_output(
         cls,
         json_dict: dict[str, Any],
-        parser: str,
+        *,
         circuits_is_list: bool,
+        parser: str = "std",
         num_eca_circuits: int | None = None,
         api_version: str = gss.API_VERSION,
     ) -> Self:
@@ -429,15 +430,7 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
             final_logical_to_physicals_list,
         ) = cls._get_deserialized_content(json_dict, circuits_is_list, api_version)
 
-        if parser == "read_json":
-            return cls._read_json(
-                compiled_circuits,
-                initial_logical_to_physicals_list,
-                final_logical_to_physicals_list,
-                pulse_gate_circuits,
-                circuits_is_list,
-            )
-        if parser == "read_json_qscout":
+        if parser == "qscout":
             jaqal_programs: list[str] = json_dict["jaqal_programs"]
             return cls._read_json_qscout(
                 compiled_circuits,
@@ -447,7 +440,7 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
                 circuits_is_list,
                 num_eca_circuits,
             )
-        if parser == "read_json_aqt":
+        if parser == "aqt":
             return cls._read_json_aqt(
                 compiled_circuits,
                 initial_logical_to_physicals_list,
@@ -456,7 +449,13 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
                 circuits_is_list,
                 num_eca_circuits,
             )
-        raise ValueError(f"Specified parser '{parser}' in an invalid or unavailable parser.")
+        return cls._read_json(
+            compiled_circuits,
+            initial_logical_to_physicals_list,
+            final_logical_to_physicals_list,
+            pulse_gate_circuits,
+            circuits_is_list,
+        )
 
 
 class CompilerOutput(BaseCompilerOutput[str, int]):

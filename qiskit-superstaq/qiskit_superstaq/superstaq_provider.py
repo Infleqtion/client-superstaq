@@ -189,16 +189,16 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         self,
         json_dict: dict[str, Any],
         *,
-        legacy_parser: str,
         circuits_is_list: bool,
+        parser: str = "std",
         num_eca_circuits: int | None = None,
     ) -> QssCompileResultT_co:
         """Maps a compile endpoint's JSON response to the output type expected by the API version.
 
         Args:
              json_dict: The JSON output from a compile endpoint.
-             legacy_parser: The JSON parsing function to use for the v0.2.0 API.
              circuits_is_list: blah
+             parser: blah
              num_eca_circuits: blah
 
         Returns:
@@ -219,8 +219,8 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
             "QssCompileResultT_co",
             qss.compiler_output.CompilerOutput._generate_compiler_output(
                 json_dict=json_dict,
-                parser=legacy_parser,
                 circuits_is_list=circuits_is_list,
+                parser=parser,
                 num_eca_circuits=num_eca_circuits,
                 api_version=self._client.api_version,
             ),

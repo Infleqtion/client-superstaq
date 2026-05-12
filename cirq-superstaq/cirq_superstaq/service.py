@@ -269,16 +269,16 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         self,
         json_dict: dict[str, Any],
         *,
-        legacy_parser: str,
         circuits_is_list: bool,
+        parser: str = "std",
         num_eca_circuits: int | None = None,
     ) -> CssCompileResultT_co:
         """Maps a compile endpoint's JSON response to the output type expected by the API version.
 
         Args:
             json_dict: The JSON output from a compile endpoint.
-            legacy_parser: The JSON parsing function to use for the v0.2.0 API.
             circuits_is_list: blah
+            parser: blah
             num_eca_circuits: blah
 
         Returns:
@@ -297,7 +297,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             "CssCompileResultT_co",
             css.compiler_output.CompilerOutput._generate_compiler_output(
                 json_dict=json_dict,
-                parser=legacy_parser,
+                parser=parser,
                 circuits_is_list=circuits_is_list,
                 num_eca_circuits=num_eca_circuits,
             ),
@@ -695,8 +695,8 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         json_dict = self._client.post_request("/aqt_compile", request_json)
         return self._map_compile_request_to_client_result(
             json_dict,
-            legacy_parser="read_json_aqt",
             circuits_is_list=circuits_is_list,
+            parser="aqt",
             num_eca_circuits=num_eca_circuits,
         )
 
@@ -815,8 +815,8 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         )
         return self._map_compile_request_to_client_result(
             json_dict,
-            legacy_parser="read_json_qscout",
             circuits_is_list=circuits_is_list,
+            parser="qscout",
             num_eca_circuits=num_eca_circuits,
         )
 
@@ -948,7 +948,6 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         json_dict = self._client.compile(request_json)
         return self._map_compile_request_to_client_result(
             json_dict,
-            legacy_parser="read_json",
             circuits_is_list=circuits_is_list,
         )
 

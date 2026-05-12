@@ -146,7 +146,7 @@ def test_read_json() -> None:
     }
 
     out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-        json_dict, parser="read_json", circuits_is_list=False
+        json_dict, circuits_is_list=False
     )
     assert out.circuit == qc
     assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
@@ -163,7 +163,7 @@ def test_read_json() -> None:
         "pulse_start_times": [[0, 10, 20], [0, 100, 200]],
     }
     out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-        json_dict, parser="read_json", circuits_is_list=True
+        json_dict, circuits_is_list=True
     )
     assert out.circuits == [qc, qc]
     assert out.pulse_gate_circuits == [qc_pulse, qc_pulse]
@@ -173,7 +173,7 @@ def test_read_json() -> None:
 
     json_dict["pulses"] = "oops"
     out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-        json_dict, parser="read_json", circuits_is_list=True
+        json_dict, circuits_is_list=True
     )
     assert out.circuits == [qc, qc]
 
@@ -191,7 +191,7 @@ def test_read_json_empty_circuit() -> None:
     }
 
     out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-        json_dict, parser="read_json", circuits_is_list=False
+        json_dict, circuits_is_list=False
     )
     assert out.circuit == qc
     assert isinstance(out.pulse_gate_circuit, qiskit.QuantumCircuit)
@@ -206,7 +206,7 @@ def test_read_json_empty_circuit() -> None:
         "pulse_start_times": [[], []],
     }
     out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-        json_dict, parser="read_json", circuits_is_list=True
+        json_dict, circuits_is_list=True
     )
     assert out.circuits == [qc, qc]
     assert out.pulse_gate_circuits == [qc, qc]
@@ -224,7 +224,7 @@ def test_read_jsonV3() -> None:
         "final_logical_to_physicals": "[[[0, 0], [1, 1]]]",
     }
     out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-        json_dict, parser="read_json", circuits_is_list=False, api_version="v0.3.0"
+        json_dict, circuits_is_list=False, api_version="v0.3.0"
     )
     assert out.circuit == qc
     assert isinstance(out.circuit, qiskit.QuantumCircuit)
@@ -237,7 +237,7 @@ def test_read_jsonV3() -> None:
         "final_logical_to_physicals": "[[[0, 0], [1, 1]], [[0, 0], [1, 1]]]",
     }
     out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-        json_dict, parser="read_json", circuits_is_list=True, api_version="v0.3.0"
+        json_dict, circuits_is_list=True, api_version="v0.3.0"
     )
     assert out.circuits == [qc, qc]
     assert out.initial_logical_to_physicals == [{0: 0, 1: 1}, {0: 0, 1: 1}]
@@ -263,7 +263,7 @@ def test_read_json_aqt() -> None:
 
     with pytest.warns(UserWarning, match=r"deserialize compiled pulse sequences"):
         out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-            json_dict, parser="read_json_aqt", circuits_is_list=False
+            json_dict, parser="aqt", circuits_is_list=False
         )
 
     assert out.circuit == circuit
@@ -271,7 +271,7 @@ def test_read_json_aqt() -> None:
 
     with pytest.warns(UserWarning, match=r"deserialize compiled pulse sequences"):
         out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-            json_dict, parser="read_json_aqt", circuits_is_list=True
+            json_dict, parser="aqt", circuits_is_list=True
         )
 
     assert out.circuits == [circuit]
@@ -287,7 +287,7 @@ def test_read_json_aqt() -> None:
 
     with pytest.warns(UserWarning, match=r"deserialize compiled pulse sequences"):
         out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-            json_dict, parser="read_json_aqt", circuits_is_list=True
+            json_dict, parser="aqt", circuits_is_list=True
         )
 
     assert out.circuits == [circuit, circuit]
@@ -296,7 +296,7 @@ def test_read_json_aqt() -> None:
     # no sequence returned
     json_dict.pop("state_jp")
     out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-        json_dict, parser="read_json_aqt", circuits_is_list=True
+        json_dict, parser="aqt", circuits_is_list=True
     )
     assert out.seq is None
 
@@ -319,7 +319,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     }
 
     out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-        json_dict, parser="read_json_aqt", circuits_is_list=False
+        json_dict, parser="aqt", circuits_is_list=False
     )
     assert out.circuit == circuit
     assert isinstance(out.seq, qtrl.sequencer.Sequence)
@@ -331,7 +331,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
     json_dict["readout_jp"] = state_str
     json_dict["readout_qubits"] = "[4, 5, 6, 7]"
     out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-        json_dict, parser="read_json_aqt", circuits_is_list=False
+        json_dict, parser="aqt", circuits_is_list=False
     )
     assert out.circuit == circuit
     assert isinstance(out.seq, qtrl.sequencer.Sequence)
@@ -345,7 +345,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
 
     # Multiple circuits:
     out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-        json_dict, parser="read_json_aqt", circuits_is_list=True
+        json_dict, parser="aqt", circuits_is_list=True
     )
     assert out.circuits == [circuit]
 
@@ -361,7 +361,7 @@ def test_read_json_with_qtrl() -> None:  # pragma: no cover, b/c test requires q
         "readout_qubits": "[4, 5, 6, 7]",
     }
     out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-        json_dict, parser="read_json_aqt", circuits_is_list=True
+        json_dict, parser="aqt", circuits_is_list=True
     )
     assert out.circuits == [circuit, circuit]
     assert pickle.dumps(out.seq) == pickle.dumps(seq)
@@ -412,7 +412,7 @@ def test_read_json_qscout() -> None:
     }
 
     out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-        json_dict, parser="read_json_qscout", circuits_is_list=False
+        json_dict, parser="qscout", circuits_is_list=False
     )
     assert out.circuit == circuit
     assert out.initial_logical_to_physical == {0: 1}
@@ -427,7 +427,7 @@ def test_read_json_qscout() -> None:
         "jaqal_programs": [jaqal_program, jaqal_program],
     }
     out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-        json_dict, parser="read_json_qscout", circuits_is_list=True
+        json_dict, parser="qscout", circuits_is_list=True
     )
     assert out.circuits == [circuit, circuit]
     assert out.initial_logical_to_physicals == [{0: 1}, {0: 1}]
@@ -436,7 +436,7 @@ def test_read_json_qscout() -> None:
     assert out.jaqal_program == jaqal_program_as_subcircuits
 
     out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-        json_dict, parser="read_json_qscout", circuits_is_list=True, num_eca_circuits=1
+        json_dict, parser="qscout", circuits_is_list=True, num_eca_circuits=1
     )
     assert out.circuits == [[circuit], [circuit]]
     assert out.initial_logical_to_physicals == [[{0: 1}], [{0: 1}]]
@@ -444,7 +444,7 @@ def test_read_json_qscout() -> None:
     assert out.jaqal_programs == [jaqal_program, jaqal_program]
 
     out = qss.compiler_output.CompilerOutput._generate_compiler_output(
-        json_dict, parser="read_json_qscout", circuits_is_list=False, num_eca_circuits=2
+        json_dict, parser="qscout", circuits_is_list=False, num_eca_circuits=2
     )
     assert out.circuits == [circuit, circuit]
     assert out.initial_logical_to_physicals == [{0: 1}, {0: 1}]

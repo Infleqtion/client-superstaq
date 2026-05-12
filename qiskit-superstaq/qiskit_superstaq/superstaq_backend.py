@@ -281,7 +281,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
         return self._provider._map_compile_request_to_client_result(
-            json_dict, legacy_parser="read_json", circuits_is_list=circuits_is_list
+            json_dict, circuits_is_list=circuits_is_list
         )
 
     def _get_compile_request_json(
@@ -375,8 +375,8 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         json_dict = self._provider._client.aqt_compile(request_json)
         return self._provider._map_compile_request_to_client_result(
             json_dict,
-            legacy_parser="read_json_aqt",
             circuits_is_list=circuits_is_list,
+            parser="aqt",
             num_eca_circuits=num_eca_circuits,
         )
 
@@ -432,7 +432,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
         return self._provider._map_compile_request_to_client_result(
-            json_dict, legacy_parser="read_json", circuits_is_list=circuits_is_list
+            json_dict, circuits_is_list=circuits_is_list
         )
 
     def qscout_compile(
@@ -540,8 +540,8 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         json_dict = self._provider._client.qscout_compile(request_json)
         return self._provider._map_compile_request_to_client_result(
             json_dict,
-            legacy_parser="read_json_qscout",
             circuits_is_list=circuits_is_list,
+            parser="qscout",
             num_eca_circuits=num_eca_circuits,
         )
 
@@ -586,7 +586,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
         return self._provider._map_compile_request_to_client_result(
-            json_dict, legacy_parser="read_json", circuits_is_list=circuits_is_list
+            json_dict, circuits_is_list=circuits_is_list
         )
 
     def target_info(self) -> dict[str, Any]:
