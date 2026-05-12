@@ -114,8 +114,8 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
 
         gate_durations = []
         if duration_info := target_info.get("gate_durations"):
-            for gate_name, qubit_indicies, duration, unit in duration_info:
-                gate_durations.append((gate_name, tuple(qubit_indicies), duration, unit))
+            for gate_name, qubit_indices, duration, unit in duration_info:
+                gate_durations.append((gate_name, tuple(qubit_indices), duration, unit))
 
         basis_gateset = ["reset", "measure"]
         if native_gate_set := target_info.get("native_gate_set"):
@@ -281,10 +281,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
         return self._provider._map_compile_request_to_client_result(
-            json_dict,
-            legacy_parser=lambda j_dict: qss.compiler_output.read_json(
-                j_dict, circuits_is_list, api_version=self._provider._client.api_version
-            ),
+            json_dict, legacy_parser="read_json", circuits_is_list=circuits_is_list
         )
 
     def _get_compile_request_json(
@@ -382,9 +379,9 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         json_dict = self._provider._client.aqt_compile(request_json)
         return self._provider._map_compile_request_to_client_result(
             json_dict,
-            legacy_parser=lambda j_dict: qss.compiler_output.read_json_aqt(
-                j_dict, circuits_is_list, num_eca_circuits
-            ),
+            legacy_parser="read_json_aqt",
+            circuits_is_list=circuits_is_list,
+            num_eca_circuits=num_eca_circuits,
         )
 
     def ibmq_compile(
@@ -439,8 +436,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
         return self._provider._map_compile_request_to_client_result(
-            json_dict,
-            legacy_parser=lambda j_dict: qss.compiler_output.read_json(j_dict, circuits_is_list),
+            json_dict, legacy_parser="read_json", circuits_is_list=circuits_is_list
         )
 
     def qscout_compile(
@@ -548,9 +544,9 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         json_dict = self._provider._client.qscout_compile(request_json)
         return self._provider._map_compile_request_to_client_result(
             json_dict,
-            legacy_parser=lambda j_dict: qss.compiler_output.read_json_qscout(
-                j_dict, circuits_is_list, num_eca_circuits
-            ),
+            legacy_parser="read_json_qscout",
+            circuits_is_list=circuits_is_list,
+            num_eca_circuits=num_eca_circuits,
         )
 
     def cq_compile(
@@ -594,8 +590,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
         return self._provider._map_compile_request_to_client_result(
-            json_dict,
-            legacy_parser=lambda j_dict: qss.compiler_output.read_json(j_dict, circuits_is_list),
+            json_dict, legacy_parser="read_json", circuits_is_list=circuits_is_list
         )
 
     def target_info(self) -> dict[str, Any]:

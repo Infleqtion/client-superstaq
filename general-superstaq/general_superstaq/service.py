@@ -588,6 +588,40 @@ class Service(BaseService):
         return f"Submitted request for atom picture with ID: {request_id}"
 
 
+class QasmService(BaseService):
+    """This class contains services relating to Superstaq and OpenQasm input."""
+
+    def compile(
+        self,
+        qasm_strs: str | Sequence[str],
+        target: str,
+        **kwargs: Any,
+    ) -> gss.compiler_output.CompilerOutput:
+        """Compiles the given circuit(s) to the target device's native gateset.
+
+        Args:
+            qasm_strs: The OpenQasm string(s) to compile.
+            target: String of target device.
+            kwargs: Other desired compile options.
+
+        Returns:
+            A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
+            circuit(s).
+        """
+        target = gss.validation.validate_target(target)
+        qasm_circuits = [qasm_strs] if isinstance(qasm_strs, str) else qasm_strs
+        json_dict = self._client.compile(
+            {
+                "qasm_strs": json.dumps(qasm_circuits),
+                "target": target,
+                **kwargs,
+            }
+        )
+        return gss.compiler_output.read_json_jaqal(
+            json_dict, num_eca_circuits=kwargs.get("num_eca_circuits"), circuit_type="qasm_strs"
+        )
+
+
 class JaqalService(BaseService):
     """This class contains services relating to Superstaq and Jaqal input."""
 

@@ -32,7 +32,7 @@ import numbers
 import uuid
 import warnings
 from collections import defaultdict
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Generic, Union, cast, overload
 
 import cirq
@@ -269,13 +269,17 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         self,
         json_dict: dict[str, Any],
         *,
-        legacy_parser: Callable[[dict[str, Any]], css.compiler_output.CompilerOutput],
+        legacy_parser: str,
+        circuits_is_list: bool,
+        num_eca_circuits: int | None = None,
     ) -> CssCompileResultT_co:
         """Maps a compile endpoint's JSON response to the output type expected by the API version.
 
         Args:
             json_dict: The JSON output from a compile endpoint.
             legacy_parser: The JSON parsing function to use for the v0.2.0 API.
+            circuits_is_list: blah
+            num_eca_circuits: blah
 
         Returns:
             For v0.3.0, compile-like endpoints will return a `css.JobV3`. For v0.2.0, legacy
@@ -289,7 +293,15 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             if not isinstance(job_id, str):
                 raise KeyError("No valid job id was found in the compile request.")
             return cast("CssCompileResultT_co", css.JobV3(client=self._client, job_id=job_id))
-        return cast("CssCompileResultT_co", legacy_parser(json_dict))
+        return cast(
+            "CssCompileResultT_co",
+            css.compiler_output._generate_compiler_output(
+                json_dict=json_dict,
+                parser=legacy_parser,
+                circuits_is_list=circuits_is_list,
+                num_eca_circuits=num_eca_circuits,
+            ),
+        )
 
     def _resolve_target(self, target: str | None) -> str:
         target = target or self.default_target
@@ -687,9 +699,9 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         json_dict = self._client.post_request("/aqt_compile", request_json)
         return self._map_compile_request_to_client_result(
             json_dict,
-            legacy_parser=lambda j_dict: css.compiler_output.read_json_aqt(
-                j_dict, circuits_is_list, num_eca_circuits
-            ),
+            legacy_parser="read_json_aqt",
+            circuits_is_list=circuits_is_list,
+            num_eca_circuits=num_eca_circuits,
         )
 
     def qscout_compile(
@@ -807,9 +819,9 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         )
         return self._map_compile_request_to_client_result(
             json_dict,
-            legacy_parser=lambda j_dict: css.compiler_output.read_json_qscout(
-                j_dict, circuits_is_list, num_eca_circuits
-            ),
+            legacy_parser="read_json_qscout",
+            circuits_is_list=circuits_is_list,
+            num_eca_circuits=num_eca_circuits,
         )
 
     def cq_compile(
@@ -940,7 +952,8 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         json_dict = self._client.compile(request_json)
         return self._map_compile_request_to_client_result(
             json_dict,
-            legacy_parser=lambda j_dict: css.compiler_output.read_json(j_dict, circuits_is_list),
+            legacy_parser="read_json",
+            circuits_is_list=circuits_is_list,
         )
 
     def _get_compile_request_json(

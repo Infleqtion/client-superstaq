@@ -27,7 +27,7 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Generic, Union, cast, overload
 
 import general_superstaq as gss
@@ -189,13 +189,17 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         self,
         json_dict: dict[str, Any],
         *,
-        legacy_parser: Callable[[dict[str, Any]], qss.compiler_output.CompilerOutput],
+        legacy_parser: str,
+        circuits_is_list: bool,
+        num_eca_circuits: int | None = None,
     ) -> QssCompileResultT_co:
         """Maps a compile endpoint's JSON response to the output type expected by the API version.
 
         Args:
              json_dict: The JSON output from a compile endpoint.
              legacy_parser: The JSON parsing function to use for the v0.2.0 API.
+             circuits_is_list: blah
+             num_eca_circuits: blah
 
         Returns:
              For v0.3.0, compile-like endpoints will return a `qss.SuperstaqJobV3`. For v0.2.0,
@@ -211,7 +215,16 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
             return cast(
                 "QssCompileResultT_co", qss.SuperstaqJobV3(client=self._client, job_id=job_id)
             )
-        return cast("QssCompileResultT_co", legacy_parser(json_dict))
+        return cast(
+            "QssCompileResultT_co",
+            qss.compiler_output._generate_compiler_output(
+                json_dict=json_dict,
+                parser=legacy_parser,
+                circuits_is_list=circuits_is_list,
+                num_eca_circuits=num_eca_circuits,
+                api_version=self._client.api_version,
+            ),
+        )
 
     def get_backend(self, target: str) -> qss.SuperstaqBackend:
         """Returns a Superstaq backend.
