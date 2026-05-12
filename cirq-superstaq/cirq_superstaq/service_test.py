@@ -1077,19 +1077,26 @@ def test_service_compile_jobV3(
     compile_method_type = request.node.callspec.id
     if compile_method_type == "aqt_compile":
         mock_client.post_request.return_value = {"job_id": job_id_str}
+        target = "aqt_keysight_qpu"
     elif compile_method_type == "qscout_compile":
         mock_client.qscout_compile.return_value = {"job_id": job_id_str}
+        target = "qscout_peregrine_qpu"
     else:
         mock_client.compile.return_value = {"job_id": job_id_str}
+        if compile_method_type.startswith("cq_"):
+            target = "cq_sqale_qpu"
+        elif compile_method_type.startswith("ibmq_"):
+            target = "ibmq_fake_qpu"
+        else:
+            target = "ss_unconstrained_simulator"
 
-    now = datetime.datetime.now(tz=datetime.timezone.utc)
     mock_client.fetch_jobs.return_value = {
         job_id_str: {
             "job_type": "compile",
             "statuses": ["completed"],
             "status_messages": [None],
             "user_email": "test@email.com",
-            "target": "ss_unconstrained_simulator",
+            "target": target,
             "provider_id": [None],
             "num_circuits": 1,
             "compiled_circuits": [css.serialization.serialize_circuits(compiled_circuit)],
@@ -1099,8 +1106,8 @@ def test_service_compile_jobV3(
             "results_dicts": [None],
             "shots": [0],
             "dry_run": True,
-            "submission_timestamp": now,
-            "last_updated_timestamp": [now],
+            "submission_timestamp": datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc),
+            "last_updated_timestamp": [datetime.datetime(2026, 1, 2, tzinfo=datetime.timezone.utc)],
             "initial_logical_to_physicals": [{0: 0}],
             "final_logical_to_physicals": [{0: 0}],
             "logical_qubits": [cirq.to_json([q0])],
@@ -1119,6 +1126,8 @@ def test_service_compile_jobV3(
     assert job.compiled_circuits() == [compiled_circuit]
     assert job.initial_logical_to_physical(0) == {q0: q0}
     assert job.final_logical_to_physical(0) == {q0: q0}
+    assert job.repetitions() == 0
+    assert job.target() == target
 
 
 @mock.patch(
