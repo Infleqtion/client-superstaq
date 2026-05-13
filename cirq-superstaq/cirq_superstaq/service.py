@@ -479,11 +479,12 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         """Gets a job that has been created on the Superstaq API.
 
         Args:
-            job_id: The UUID of the job. Jobs are assigned these numbers by the server during the
-            creation of the job.
+            job_id: The UUID or string of the job id. Jobs are assigned these numbers by the server
+                during the creation of the job.
 
         Returns:
-            A `css.Job` which can be queried for status or results.
+            A `css.Job` or `css.JobV3` for the v0.2.0 and v0.3.0 API respectively
+            on which job data associated with `job_id` can be queried and/or retrieved.
 
         Raises:
             ~gss.SuperstaqServerException: If there was an error accessing the API.
