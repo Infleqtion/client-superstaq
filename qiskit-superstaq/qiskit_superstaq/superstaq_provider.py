@@ -26,6 +26,7 @@
 # that they have been altered from the originals.
 from __future__ import annotations
 
+import uuid
 import warnings
 from collections.abc import Callable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Generic, cast, overload
@@ -264,25 +265,30 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
             superstaq_backends.append(self.get_backend(backend.target))
         return superstaq_backends
 
-    def get_job(self, job_id: str) -> qss.SuperstaqJob:
+    def get_job(self, job_id: uuid.UUID | str) -> qss.SuperstaqJob | qss.SuperstaqJobV3:
         """Gets a job that has been created on the Superstaq API.
 
         Args:
-            job_id: The UUID of the job. Jobs are assigned these numbers by the server during the
-            creation of the job.
+            job_id: The UUID or string of the job id. Jobs are assigned these numbers by the server
+                during the creation of the job.
 
         Returns:
-            A `qss.SuperstaqJob` which can be queried for status or results.
+            A `qss.SuperstaqJob` or `qss.SuperstaqJobV3` for the v0.2.0 and v0.3.0 API respectively
+            on which job data associated with `job_id` can be queried and/or retrieved.
 
         Raises:
             ~gss.SuperstaqServerException: If there was an error accessing the API.
             ~gss.SuperstaqException: If retrived jobs are from different targets.
         """
+        client = self._client
+        if isinstance(client, gss.superstaq_client._SuperstaqClientV3):
+            return qss.SuperstaqJobV3(client=client, job_id=job_id)
+
+        job_id = str(job_id)
         job_ids = job_id.split(",")
-        jobs = self._client.fetch_jobs(job_ids)
+        jobs = client.fetch_jobs(job_ids)
 
         target = jobs[job_ids[0]]["target"]
-
         if isinstance(target, str) and all(target == val["target"] for val in jobs.values()):
             return qss.SuperstaqJob(self.get_backend(target), job_id)
         raise gss.SuperstaqException("Job ids belong to jobs at different targets.")
